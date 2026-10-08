@@ -1,0 +1,41 @@
+Source 751bb9cc89ee73bc4066565143e211d097aef2ce
+Command ["bash", "scripts/dev/test-focused.sh", "^(TestLiveConsoleSendLCN11Unknown|TestLiveConsoleSendLCN13DisplayCopyAndThread|TestLiveConsoleSendLCN06DM|TestLiveConsoleInboxLCN03PermissionSplit|TestLiveConsoleInboxCrossStoreIsolation|TestLiveClaimsCoreSmoke|TestLiveClaimsKC12Isolation|TestLiveClaimsP2gLinkTTLInDatabase|TestLiveLifecycleMultiWindow)$"]
+=== RUN   TestLiveClaimsKC12Isolation
+--- PASS: TestLiveClaimsKC12Isolation (3.24s)
+=== RUN   TestLiveClaimsP2gLinkTTLInDatabase
+--- PASS: TestLiveClaimsP2gLinkTTLInDatabase (1.76s)
+=== RUN   TestLiveClaimsCoreSmoke
+--- PASS: TestLiveClaimsCoreSmoke (0.40s)
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit/viewer_cannot_open_inbox:read_scope
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit/viewer_definer_gate_denies_read_and_mark_read
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit/reader_sees_the_conversation_and_mark_read_stays_put_without_inbox:reply
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit/replier_mark_read_advances_to_7
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit/A9_thread_opened_requires_inbox:read_and_coalesces_its_audit
+--- PASS: TestLiveConsoleInboxLCN03PermissionSplit (0.06s)
+    --- PASS: TestLiveConsoleInboxLCN03PermissionSplit/viewer_cannot_open_inbox:read_scope (0.00s)
+    --- PASS: TestLiveConsoleInboxLCN03PermissionSplit/viewer_definer_gate_denies_read_and_mark_read (0.01s)
+    --- PASS: TestLiveConsoleInboxLCN03PermissionSplit/reader_sees_the_conversation_and_mark_read_stays_put_without_inbox:reply (0.01s)
+    --- PASS: TestLiveConsoleInboxLCN03PermissionSplit/replier_mark_read_advances_to_7 (0.01s)
+    --- PASS: TestLiveConsoleInboxLCN03PermissionSplit/A9_thread_opened_requires_inbox:read_and_coalesces_its_audit (0.02s)
+=== RUN   TestLiveConsoleInboxCrossStoreIsolation
+--- PASS: TestLiveConsoleInboxCrossStoreIsolation (0.02s)
+=== RUN   TestLiveConsoleSendLCN11Unknown
+=== RUN   TestLiveConsoleSendLCN11Unknown/5xx
+=== RUN   TestLiveConsoleSendLCN11Unknown/garbled
+=== RUN   TestLiveConsoleSendLCN11Unknown/hang
+--- PASS: TestLiveConsoleSendLCN11Unknown (15.66s)
+    --- PASS: TestLiveConsoleSendLCN11Unknown/5xx (2.31s)
+    --- PASS: TestLiveConsoleSendLCN11Unknown/garbled (1.98s)
+    --- PASS: TestLiveConsoleSendLCN11Unknown/hang (3.02s)
+=== RUN   TestLiveConsoleSendLCN13DisplayCopyAndThread
+--- PASS: TestLiveConsoleSendLCN13DisplayCopyAndThread (2.81s)
+=== RUN   TestLiveConsoleSendLCN06DM
+--- PASS: TestLiveConsoleSendLCN06DM (3.15s)
+=== RUN   TestLiveLifecycleMultiWindow
+--- PASS: TestLiveLifecycleMultiWindow (0.31s)
+PASS
+ok  	livecommerce/tests/foundation	29.258s
+test-focused: top-level PASS=9 FAIL=0 SKIP=0 exit=0
+
+Exit 0

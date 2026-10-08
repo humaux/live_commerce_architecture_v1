@@ -1,0 +1,10 @@
+Source 0875e548bd70dc38ab8720b92b85940ad9046f53
+34 source SHA256 values verified
+Command ["git", "diff", "--check"]
+Exit 0
+Command ["git", "merge-base", "--is-ancestor", "26e9aec2", "HEAD"]
+Exit 0
+Command ["git", "merge-base", "--is-ancestor", "1aad42d0", "HEAD"]
+Exit 0
+Command ["gofmt", "-l", "tests/foundation/browser_click_sweep_test.go"]
+Exit 0

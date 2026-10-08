@@ -1,0 +1,22 @@
+Base7b50074c + latched A9 UNKNOWN
+Command ["node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--test", "--experimental-strip-types", "tests/admin/inbox-unknown.test.ts"]
+✔ persisted A9 UNKNOWN after page entry warns and blocks the real composer in en (19.441833ms)
+✔ persisted A9 UNKNOWN after page entry warns and blocks the real composer in zh-TW (1.685542ms)
+✔ persisted A9 UNKNOWN after page entry warns and blocks the real composer in zh-CN (1.104583ms)
+✔ A12 queued ACK followed by final A9 UNKNOWN overrides the local queued notice and blocks another send (1.608375ms)
+✔ a captured previously enabled composer cannot bypass final UNKNOWN learned by Refresh (0.969667ms)
+✔ a later A9 page omitting the known UNKNOWN is not delivery reconciliation (1.344667ms)
+✔ persisted queued is not mislabeled UNKNOWN and retains ordinary composer eligibility (0.562291ms)
+✔ persisted sent is not mislabeled UNKNOWN and retains ordinary composer eligibility (1.895708ms)
+✔ persisted failed is not mislabeled UNKNOWN and retains ordinary composer eligibility (0.65175ms)
+✔ persisted blocked is not mislabeled UNKNOWN and retains ordinary composer eligibility (0.55ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 280.133041
+
+Exit 0

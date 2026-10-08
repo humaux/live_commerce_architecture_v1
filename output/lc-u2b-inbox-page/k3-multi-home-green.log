@@ -1,0 +1,16 @@
+✔ actual login settles /en/inventory and fixture store (real switch, scoped=false) (15.4555ms)
+✔ actual login settles /en/inventory and fixture store (real switch, scoped=true) (3.196792ms)
+✔ actual login settles /en/messages and fixture store (real switch, scoped=false) (2.586375ms)
+✔ actual login settles /en/messages and fixture store (real switch, scoped=true) (1.757875ms)
+✔ actual login settles /en/inventory and fixture store (already selected, scoped=false) (3.276875ms)
+✔ actual login settles /en/inventory and fixture store (already selected, scoped=true) (2.072041ms)
+✔ actual login settles /en/messages and fixture store (already selected, scoped=false) (1.54ms)
+✔ actual login settles /en/messages and fixture store (already selected, scoped=true) (2.193375ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 217.176792

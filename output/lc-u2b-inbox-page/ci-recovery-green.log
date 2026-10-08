@@ -1,0 +1,1201 @@
+task_id: c1615b58-8da8-4202-a279-732639422426-sub-recovery
+base_commit: 4d19a45aeb2aefe60c18a8fb09ad5235869e6996
+status: MOCK Node actual source only, Go/PG/browser/build NOT_RUN
+sha256 21df8fbc0f47a0f98f9aeef5cfd1348ed3be7e5e1753e1f0da43e430c1e3e9b7 tests/admin/inbox-review-recovery.test.ts
+sha256 c084293c0a7e2523be72966c642b660be351ed91423fd87f701925e2c17444d2 tests/admin/inbox-recovery-env.test.ts
+sha256 fbbe0732daa9abf40cff885c251a21b6af9028e04fd874308f4bb9f0c9b4436f tests/admin/inbox-review-host.test.ts
+sha256 3ba890539149491f8b6fb47f4b3b0449b1c0fac8dbb872a632ddefe39b006a77 apps/admin/src/features/messages/bundle-recovery.tsx
+sha256 afd6a068f2a17ada0b902f8b22837fab5e11c4b1eea2615fcf8c591d79156017 apps/admin/components/InboxThread.tsx
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "UTC", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2026-10-07T16:32:00Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"}
+node: v24.21.0
+repeat: 1
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (44.199917ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (4.98325ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (3.896958ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (3.399417ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (2.800333ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (2.283833ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (1.757208ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (1.230917ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (1.557666ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (0.971917ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (0.704791ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (0.713459ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (0.933041ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (11.84525ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (6.022167ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (1.125708ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (1.790334ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (0.924333ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (1.005ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (1.068292ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (1.73975ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (0.989458ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (1.857667ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 607.371958
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "UTC", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2026-10-07T16:32:00Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"}
+node: v24.21.0
+repeat: 2
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (20.578542ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (3.574417ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (2.597208ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (2.362083ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (1.963542ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (2.169625ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (1.374875ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (4.841792ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (1.688958ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (0.806208ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (0.689084ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (0.667875ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (0.742209ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (2.455583ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (0.732ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (0.73125ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (0.800709ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (0.511375ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (0.616333ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (0.651625ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (1.5435ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (0.848ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (2.968833ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 474.31775
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "UTC", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2026-10-07T16:32:00Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"}
+node: v24.21.0
+repeat: 3
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (22.487291ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (2.590083ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (2.52475ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (2.595917ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (1.411625ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (1.443125ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (1.595167ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (1.417666ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (2.154375ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (1.1695ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (0.912708ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (1.240917ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (1.374375ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (4.83875ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (6.191792ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (0.972792ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (0.74025ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (0.69575ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (0.5635ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (0.696208ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (1.217167ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (0.524833ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (1.526292ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 447.709375
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "UTC", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2026-10-07T16:32:00Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "50"}
+node: v24.21.0
+repeat: 1
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (384.920875ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (414.423792ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (463.813833ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (369.248625ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (312.070417ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (363.402958ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (368.238458ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (363.956042ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (362.409708ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (211.437583ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (208.444458ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (209.174ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (259.152666ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (212.434708ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (210.702ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (207.944375ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (206.834625ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (207.263542ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (208.511541ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (207.420459ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (521.389583ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (206.035458ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (412.087041ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7313.267208
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "UTC", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2026-10-07T16:32:00Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "50"}
+node: v24.21.0
+repeat: 2
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (385.020292ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (420.680166ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (470.543834ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (365.246083ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (308.185583ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (360.001791ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (371.480209ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (363.329625ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (361.80375ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (210.807458ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (208.702458ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (210.169875ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (262.362959ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (216.186875ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (206.968917ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (208.474208ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (208.91775ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (208.873708ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (206.7245ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (208.441042ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (520.653ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (208.12825ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (414.522583ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7264.194667
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "Asia/Shanghai", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2026-10-07T16:32:00Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"}
+node: v24.21.0
+repeat: 1
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (30.323208ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (3.101417ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (3.958334ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (2.022375ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (1.968833ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (2.4805ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (2.040167ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (2.055208ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (5.77975ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (1.854875ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (2.481625ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (3.443666ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (2.453667ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (7.649792ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (1.798ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (1.092042ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (1.080708ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (0.865ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (2.37175ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (1.766083ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (3.120917ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (2.358792ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (3.634166ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 570.758417
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "Asia/Shanghai", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2026-10-07T16:32:00Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"}
+node: v24.21.0
+repeat: 2
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (18.414833ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (2.679708ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (2.077ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (1.626458ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (1.443ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (1.074791ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (1.2365ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (0.9375ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (1.237125ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (0.63675ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (0.647292ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (0.659ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (0.887667ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (2.188458ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (4.365958ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (0.700625ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (0.569833ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (0.469666ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (0.50025ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (0.428458ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (0.960208ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (0.492667ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (1.349583ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 417.683792
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "Asia/Shanghai", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2026-10-07T16:32:00Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"}
+node: v24.21.0
+repeat: 3
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (17.5ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (2.213958ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (1.70775ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (1.432875ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (1.399334ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (1.214666ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (1.215292ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (4.774208ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (1.050792ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (0.882458ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (0.579375ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (0.658583ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (0.740583ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (2.548042ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (0.861542ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (0.577333ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (0.740625ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (0.54625ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (0.53725ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (0.455417ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (1.085375ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (0.66325ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (1.236459ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 355.209416
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "Asia/Shanghai", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2026-10-07T16:32:00Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "50"}
+node: v24.21.0
+repeat: 1
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (392.734792ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (422.256208ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (471.496708ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (366.119958ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (311.181666ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (365.100458ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (367.29825ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (366.74825ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (367.8895ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (209.459875ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (205.400541ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (210.052083ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (262.4135ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (217.94475ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (208.638625ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (210.585583ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (209.699333ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (205.591375ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (210.965209ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (210.338125ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (521.537375ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (208.296459ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (418.159959ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7261.966875
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "Asia/Shanghai", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2026-10-07T16:32:00Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "50"}
+node: v24.21.0
+repeat: 2
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (385.000375ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (420.399ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (464.044917ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (368.142459ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (314.279916ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (370.251291ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (378.481959ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (362.00375ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (364.770791ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (208.379584ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (210.411292ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (209.4445ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (261.20575ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (216.47125ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (206.672625ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (209.941125ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (212.05525ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (209.42625ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (209.663792ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (208.697416ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (518.983209ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (211.024167ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (415.356667ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7267.220792
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "UTC", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2031-06-08T04:05:06Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"}
+node: v24.21.0
+repeat: 1
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (30.195208ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (2.246875ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (2.97575ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (1.8965ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (3.793333ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (4.956334ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (3.646875ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (3.79525ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (2.061208ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (1.774542ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (1.975292ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (2.347209ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (3.868708ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (6.334709ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (8.350459ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (1.504ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (1.205625ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (2.223833ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (1.320541ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (0.709208ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (3.051583ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (0.792333ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (2.979875ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 581.047041
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "UTC", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2031-06-08T04:05:06Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"}
+node: v24.21.0
+repeat: 2
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (17.132916ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (1.992375ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (1.763166ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (1.218875ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (1.270042ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (1.302333ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (1.24675ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (3.399875ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (1.316041ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (0.915875ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (0.637333ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (0.667375ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (0.669208ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (2.565292ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (0.847209ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (0.928125ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (1.054667ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (0.74125ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (0.52975ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (0.454334ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (1.64675ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (0.735292ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (2.847791ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 400.539583
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "UTC", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2031-06-08T04:05:06Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"}
+node: v24.21.0
+repeat: 3
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (15.751459ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (1.875667ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (1.673667ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (1.434667ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (1.257042ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (1.523959ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (1.286667ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (6.247667ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (1.540083ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (0.92975ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (0.521583ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (0.682583ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (0.668292ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (2.433917ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (0.769209ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (0.658916ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (0.766792ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (0.485375ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (0.556ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (0.794625ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (1.560125ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (0.612667ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (1.583292ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 353.75875
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "UTC", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2031-06-08T04:05:06Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "50"}
+node: v24.21.0
+repeat: 1
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (382.399041ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (419.238708ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (473.286542ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (365.845417ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (314.663083ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (362.174083ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (366.927584ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (364.196ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (362.510959ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (205.700958ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (210.906542ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (210.764375ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (264.331958ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (218.666167ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (207.543583ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (211.444ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (208.735291ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (207.462333ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (207.487833ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (208.993042ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (521.840625ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (210.936ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (416.142625ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7248.947792
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "UTC", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2031-06-08T04:05:06Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "50"}
+node: v24.21.0
+repeat: 2
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (387.708917ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (421.630458ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (466.816125ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (365.708208ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (311.67725ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (364.625458ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (367.722083ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (364.274458ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (359.31275ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (208.659416ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (210.312083ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (207.879833ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (262.041541ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (210.855833ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (210.319541ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (209.201375ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (206.976042ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (206.356542ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (207.239583ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (209.74175ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (522.683292ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (209.968333ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (419.088041ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7274.582042
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "Asia/Shanghai", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2031-06-08T04:05:06Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"}
+node: v24.21.0
+repeat: 1
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (17.782625ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (2.555875ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (2.210667ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (1.431625ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (1.426042ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (1.510292ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (1.29375ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (3.346666ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (1.113583ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (0.784ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (0.548375ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (0.529667ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (0.614583ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (2.294042ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (0.68275ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (0.533875ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (0.545291ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (0.446791ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (0.4755ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (0.500292ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (2.381666ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (0.667417ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (1.638958ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 372.948417
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "Asia/Shanghai", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2031-06-08T04:05:06Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"}
+node: v24.21.0
+repeat: 2
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (25.229333ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (7.292084ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (3.940416ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (1.655541ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (1.907375ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (1.390042ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (1.537542ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (1.391416ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (9.374167ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (5.319084ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (3.888542ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (3.22475ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (2.969458ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (4.810166ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (2.332208ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (3.004292ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (2.87ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (3.984542ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (2.367ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (2.3545ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (3.513542ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (3.961084ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (5.272667ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 490.280166
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "Asia/Shanghai", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2031-06-08T04:05:06Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"}
+node: v24.21.0
+repeat: 3
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (15.348458ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (1.996625ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (1.632666ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (1.1575ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (0.995417ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (0.953708ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (1.053583ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (3.102542ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (1.082625ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (0.694ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (0.548291ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (0.565541ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (0.619542ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (2.477041ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (0.890625ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (0.565333ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (0.53525ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (0.421292ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (0.411875ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (0.399708ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (0.949708ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (0.465542ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (1.38325ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 352.639875
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "Asia/Shanghai", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2031-06-08T04:05:06Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "50"}
+node: v24.21.0
+repeat: 1
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (385.29825ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (422.066667ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (469.384583ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (367.383875ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (312.393917ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (366.95675ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (363.095167ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (369.79475ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (364.050125ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (208.219084ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (205.805209ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (211.602291ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (259.751959ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (219.292334ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (212.159375ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (210.506125ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (210.037ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (214.587083ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (209.387417ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (205.743042ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (519.650291ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (210.726709ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (413.153625ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7244.676209
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "Asia/Shanghai", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2031-06-08T04:05:06Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "50"}
+node: v24.21.0
+repeat: 2
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (386.068333ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (422.112417ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (475.550875ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (367.752209ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (313.361792ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (363.853667ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (368.360625ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (361.65925ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (366.29525ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (208.347417ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (208.857916ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (208.8615ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (260.397417ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (213.038292ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (207.542833ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (209.195125ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (208.87075ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (208.234125ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (205.552167ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (219.423625ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (514.868916ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (208.337708ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (412.435875ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7268.159417
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "UTC", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2098-12-30T12:00:00Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"}
+node: v24.21.0
+repeat: 1
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (29.050459ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (3.779875ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (2.2235ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (1.593833ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (1.479791ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (4.393709ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (3.77125ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (8.249ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (4.080666ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (1.388ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (0.906708ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (1.012166ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (1.238ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (2.821625ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (1.02975ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (0.744708ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (2.007917ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (1.244625ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (1.806666ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (0.726125ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (1.303167ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (1.883667ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (1.41475ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 547.7155
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "UTC", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2098-12-30T12:00:00Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"}
+node: v24.21.0
+repeat: 2
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (19.037375ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (2.620041ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (2.613625ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (2.865791ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (3.378208ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (3.480834ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (2.414ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (4.786541ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (1.648708ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (1.1945ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (0.908083ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (0.896667ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (1.3655ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (2.559542ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (1.122708ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (0.972958ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (1.777458ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (4.271334ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (0.93325ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (0.98225ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (1.603959ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (0.74375ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (3.694291ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 406.440125
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "UTC", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2098-12-30T12:00:00Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"}
+node: v24.21.0
+repeat: 3
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (16.410042ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (3.010208ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (2.630042ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (1.879292ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (2.20025ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (2.546667ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (1.554958ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (1.627416ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (5.583791ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (0.936125ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (0.574375ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (0.765417ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (0.727625ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (2.446417ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (0.824958ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (0.647458ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (0.624791ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (0.512125ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (0.528792ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (0.497625ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (1.169042ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (0.556584ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (1.139958ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 385.20025
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "UTC", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2098-12-30T12:00:00Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "50"}
+node: v24.21.0
+repeat: 1
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (385.725209ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (418.00825ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (466.988584ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (365.921291ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (331.811125ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (366.316875ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (365.861ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (364.815583ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (360.658333ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (206.452292ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (208.508416ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (207.456083ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (262.191084ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (213.468125ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (209.4905ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (208.141ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (209.072292ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (208.952ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (212.447125ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (209.705166ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (521.052625ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (209.27325ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (416.276375ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7281.261291
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "UTC", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2098-12-30T12:00:00Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "50"}
+node: v24.21.0
+repeat: 2
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (389.190416ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (418.233208ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (474.436916ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (370.907959ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (320.602542ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (367.523542ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (365.195083ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (367.539041ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (366.990541ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (207.429833ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (207.445833ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (207.851291ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (259.695625ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (218.713875ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (208.228709ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (208.660666ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (210.986875ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (211.232166ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (207.040667ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (209.592833ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (520.684959ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (211.061916ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (417.68175ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7446.868542
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "Asia/Shanghai", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2098-12-30T12:00:00Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"}
+node: v24.21.0
+repeat: 1
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (24.963084ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (4.139125ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (2.187792ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (1.50475ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (1.672875ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (1.435667ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (1.191958ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (1.096792ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (1.165625ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (0.869417ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (0.705708ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (0.905375ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (1.065875ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (3.191667ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (5.945875ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (1.225333ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (0.700291ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (1.326625ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (0.813625ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (0.485708ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (1.205666ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (0.751458ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (2.618916ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 522.257458
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "Asia/Shanghai", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2098-12-30T12:00:00Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"}
+node: v24.21.0
+repeat: 2
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (21.001917ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (2.597458ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (1.968667ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (1.460875ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (1.317125ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (1.213875ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (1.300792ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (1.009083ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (1.179833ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (0.652583ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (0.628833ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (0.67025ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (0.739209ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (4.877084ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (1.602542ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (1.181958ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (0.691916ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (0.702083ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (0.577333ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (0.861208ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (1.400916ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (0.714ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (2.073ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 427.914917
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "Asia/Shanghai", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2098-12-30T12:00:00Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"}
+node: v24.21.0
+repeat: 3
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (21.675875ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (3.249792ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (2.804875ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (1.310166ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (1.365667ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (2.639958ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (1.359625ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (0.938208ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (1.122042ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (0.837708ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (1.928334ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (1.113833ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (0.87125ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (3.122459ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (1.610541ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (7.049833ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (2.193541ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (0.792292ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (0.558ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (0.539292ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (1.055875ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (0.51875ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (1.703584ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 402.908
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "Asia/Shanghai", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2098-12-30T12:00:00Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "50"}
+node: v24.21.0
+repeat: 1
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (400.368334ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (419.823792ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (468.775125ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (366.7075ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (315.749875ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (363.342958ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (363.81525ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (364.60425ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (366.878375ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (209.165667ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (208.909583ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (210.497584ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (259.378834ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (212.852833ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (209.685417ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (210.252125ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (205.257792ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (207.509125ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (210.405875ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (207.011542ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (523.233375ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (211.368625ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (416.287333ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7344.290125
+
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "Asia/Shanghai", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2098-12-30T12:00:00Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "50"}
+node: v24.21.0
+repeat: 2
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (384.093167ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (415.586541ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (469.670583ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (368.311917ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (315.347917ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (364.980792ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (363.150125ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (364.322209ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (367.655792ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (208.708125ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (209.722417ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (210.219125ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (257.971333ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (214.272584ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (211.041583ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (208.412666ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (207.016375ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (206.372709ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (211.721ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (212.543833ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (518.832958ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (208.653417ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (418.714041ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7255.087
+
+command argv: ["/opt/homebrew/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "UTC", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2026-10-07T16:32:00Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"}
+node: v24.15.0
+repeat: 1
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (30.331208ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (3.242041ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (1.765791ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (1.725667ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (1.384041ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (1.343375ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (3.967709ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (1.170833ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (1.021917ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (0.7785ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (0.917417ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (0.940583ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (0.726334ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (7.242458ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (2.41475ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (0.907833ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (1.047833ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (1.822875ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (1.163208ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (0.538625ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (1.310792ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (0.782917ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (2.018125ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 502.880458
+
+command argv: ["/opt/homebrew/bin/node", "--experimental-strip-types", "--import", "./tests/admin/inbox-recovery-env.test.ts", "--test", "tests/admin/inbox-review-recovery.test.ts"]
+env: {"TZ": "UTC", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2026-10-07T16:32:00Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "50"}
+node: v24.15.0
+repeat: 1
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (388.716ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (420.768459ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (472.899ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (366.818542ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (316.032125ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (365.456083ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (363.979ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (365.283292ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (362.37525ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (207.312041ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (208.725334ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (207.699459ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (261.109292ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (213.807292ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (210.351208ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (211.653167ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (206.691084ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (208.423791ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (210.844625ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (207.768125ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (515.108875ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (210.253208ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (416.400334ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7235.292791
+
+TOTAL 32 runs 736 cases PASS all exits0; elapsed 105.28s
+
+Assertion preservation and typecheck argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--input-type=module", "-e", "import ts from \"typescript-api\";import assert from \"node:assert/strict\";import {execFileSync} from \"node:child_process\";import {readFileSync} from \"node:fs\";const old=execFileSync(\"git\",[\"show\",\"4d19a45a:tests/admin/inbox-review-recovery.test.ts\"],{encoding:\"utf8\"}),now=readFileSync(\"tests/admin/inbox-review-recovery.test.ts\",\"utf8\");const collect=source=>{const f=ts.createSourceFile(\"t.ts\",source,ts.ScriptTarget.Latest,true);const found=[];const tree=n=>{const ch=[];ts.forEachChild(n,c=>{ch.push(tree(c));});return[n.kind,ts.isIdentifier(n)||ts.isStringLiteral(n)||ts.isNumericLiteral(n)?n.text:null,ch];};const walk=n=>{if(ts.isCallExpression(n)&&n.expression.getText(f).startsWith(\"assert.\"))found.push(tree(n));ts.forEachChild(n,walk);};walk(f);return found;};assert.deepEqual(collect(now),collect(old));console.log(\"Original assertion ASTs unchanged: \"+collect(now).length);const parsed=ts.parseJsonConfigFileContent(ts.readConfigFile(\"apps/admin/tsconfig.json\",ts.sys.readFile).config,ts.sys,\"apps/admin\");parsed.options.incremental=false;parsed.options.types=[\"node\",\"react\"];parsed.options.typeRoots=[\"apps/admin/node_modules/@types\"];const program=ts.createProgram([\"tests/admin/inbox-review-recovery.test.ts\",\"tests/admin/inbox-recovery-env.test.ts\",\"apps/admin/next-env.d.ts\"],parsed.options);const errors=ts.getPreEmitDiagnostics(program);console.log(ts.formatDiagnosticsWithColorAndContext(errors,{getCurrentDirectory:ts.sys.getCurrentDirectory,getCanonicalFileName:f=>f,getNewLine:()=>\"\\n\"}));process.exit(errors.length?1:0);"]
+exit_code: 0
+Original assertion ASTs unchanged: 67
+
+
+Shared Host unchanged SHA256: fbbe0732daa9abf40cff885c251a21b6af9028e04fd874308f4bb9f0c9b4436f

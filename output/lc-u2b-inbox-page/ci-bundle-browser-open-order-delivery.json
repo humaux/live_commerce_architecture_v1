@@ -1,0 +1,69 @@
+{
+  "task_id": "c1615b58-sub-bundle-browser",
+  "base_commit": "4d19a45aeb2aefe60c18a8fb09ad5235869e6996",
+  "delta_base_commit": "07c24e2df4a8ebe74149a4e2cba2cf1b831bfd22",
+  "source_commit": "bec02ce947b914bad9c413ea1c340c57c7509df2",
+  "branch": "codex/lc-u2b-bundle-browser",
+  "changed_delta_paths": [
+    "tests/foundation/browser_inbox_ui_test.go",
+    "tests/admin/inbox-bundle-browser.test.ts"
+  ],
+  "sha256": {
+    "tests/foundation/browser_inbox_ui_test.go": "c9d90bfc2d1419ec0a4d5f410e955547e5fc29c00596024a3e6220a492949122",
+    "tests/admin/inbox-ui.spec.ts": "a4162b608acaa48fe3c0a0ce71c595fb4d0653aaf5f9827521c3ee137bb83ae9",
+    "tests/admin/inbox-bundle-browser.test.ts": "8c27047542c51b356d0eadecf528c50bd9f9ebc0cad0fbe8cd47a0586faacd9c"
+  },
+  "role": "Codex-4 delegated test implementer",
+  "model": "UNKNOWN inherited runtime configuration",
+  "reasoning": "UNKNOWN inherited runtime configuration",
+  "summary": "Close e.session inherited OPEN claim window through existing closeWindow before opening recovery session. Preserve DM fixtures and all old browser assertions. Static ordering guard references actual mciSetup and SQL0060 unique OPEN invariant.",
+  "commands": [
+    {
+      "command": "node --test --experimental-strip-types --test-name-pattern=single-OPEN tests/admin/inbox-bundle-browser.test.ts",
+      "exit_code": 1,
+      "source": "07c24e2d + new guard only",
+      "result": "RED on missing inherited close before recovery OPEN",
+      "evidence": "ci-bundle-browser-open-order-red.log"
+    },
+    {
+      "command": "node --test --experimental-strip-types --test-name-pattern=single-OPEN tests/admin/inbox-bundle-browser.test.ts",
+      "exit_code": 0,
+      "result": "GREEN 1/1 ordering guard",
+      "evidence": "ci-bundle-browser-open-order-green.log"
+    },
+    {
+      "command": "node --test --experimental-strip-types tests/admin/inbox-bundle-browser.test.ts tests/admin/inbox-browser-source.test.ts tests/admin/inbox-evidence.test.ts",
+      "exit_code": 0,
+      "result": "11 PASS 0 FAIL 0 SKIP",
+      "evidence": "ci-bundle-browser-open-order-node-green.log"
+    },
+    {
+      "command": "node_modules/.bin/tsc --noEmit --strict --skipLibCheck --target ES2023 --module esnext --moduleResolution bundler --types node --typeRoots /Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/apps/admin/node_modules/@types tests/admin/inbox-ui.spec.ts tests/admin/inbox-bundle-browser.test.ts",
+      "exit_code": 0,
+      "evidence": "ci-bundle-browser-open-order-typecheck.log"
+    },
+    {
+      "command": "bash scripts/dev/check-headers.sh",
+      "exit_code": 0,
+      "evidence": "ci-bundle-browser-open-order-headers.log"
+    },
+    {
+      "command": "gofmt -l tests/foundation/browser_inbox_ui_test.go",
+      "exit_code": 0,
+      "result": "empty formatting list"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ],
+  "evidence_class": "E1 source/static; MODEL_ONLY evaluator; runtime NOT_RUN",
+  "not_run": [
+    "Go tests/build",
+    "PG/browser fixture startup and browser red/green/calibration",
+    "Full check-gates at bec02ce9 (parent runner registration still pending;07c check-gates orphan exit1 retained)",
+    "Independent final acceptance"
+  ],
+  "cleanup": "No runtime process started. Borrowed node_modules symlink removed after checks.",
+  "prior_evidence": "ci-bundle-browser-delivery.json retained binds07c; followup supersedes current source pointer only"
+}

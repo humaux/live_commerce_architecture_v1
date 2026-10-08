@@ -1,0 +1,12 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-inbox"
+  ],
+  "source": "551f3d141d3450e302e9c99adb979bd22f8297d4",
+  "exit": 1,
+  "timeout": false,
+  "elapsed_seconds": 196.696,
+  "log": "output/lc-u2b-inbox-page/k3-browser-inbox-r5.log"
+}

@@ -1,0 +1,4 @@
+source: e5a70499a204c2e227bfc49ed7527a7b90596860
+command: pnpm exec tsc --noEmit -p output/lc-u2b-inbox-page/pr8-test-tsconfig.json
+
+exit: 0

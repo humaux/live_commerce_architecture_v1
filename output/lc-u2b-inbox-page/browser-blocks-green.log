@@ -1,0 +1,20 @@
+command: node --test --experimental-strip-types tests/admin/inbox-entry.test.ts tests/admin/inbox-browser-source.test.ts
+exit: 0
+✔ actual login settles authentication and the real fixture-store navigation before Messages (22.703458ms)
+✔ A real Inbox selection admits Go A9 attachments null without losing thread (19.658916ms)
+✔ A real Inbox selection admits Go A9 attachments empty array without losing thread (3.019625ms)
+✔ A malformed non-array A9 attachments is refused without painting DM or crashing selected entry (1.402041ms)
+✔ C A8 HTTP200 empty list is ordinary data with no alert, selection or focus request storm (0.70475ms)
+✔ C A8 list404 is scoped inbox unavailable in en, never an empty list or conversation denial (0.735708ms)
+✔ C A8 list404 is scoped inbox unavailable in zh-TW, never an empty list or conversation denial (0.524833ms)
+✔ C A8 list404 is scoped inbox unavailable in zh-CN, never an empty list or conversation denial (0.41ms)
+✔ C click-sweep Go harness mounts existing Inbox/templates services (STRUCTURE_ONLY, Go NOT_RUN) (0.420667ms)
+✔ C click-sweep includes actual-router owner200 empty inbox assertion (STRUCTURE_ONLY, Go NOT_RUN) (0.2645ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 439.065042

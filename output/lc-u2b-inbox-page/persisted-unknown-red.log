@@ -1,0 +1,107 @@
+Baseline4d19a45a, new tests before UI fix
+Command ["node", "--test", "--experimental-strip-types", "tests/admin/inbox-unknown.test.ts"]
+✖ persisted A9 UNKNOWN after page entry warns and blocks the real composer in en (46.190375ms)
+✖ persisted A9 UNKNOWN after page entry warns and blocks the real composer in zh-TW (1.643375ms)
+✖ persisted A9 UNKNOWN after page entry warns and blocks the real composer in zh-CN (0.950917ms)
+✖ A12 queued ACK followed by final A9 UNKNOWN overrides the local queued notice and blocks another send (6.913125ms)
+✖ a captured previously enabled composer cannot bypass final UNKNOWN learned by Refresh (3.2735ms)
+✔ persisted queued is not mislabeled UNKNOWN and retains ordinary composer eligibility (1.402458ms)
+✔ persisted sent is not mislabeled UNKNOWN and retains ordinary composer eligibility (1.072167ms)
+✔ persisted failed is not mislabeled UNKNOWN and retains ordinary composer eligibility (0.850333ms)
+✔ persisted blocked is not mislabeled UNKNOWN and retains ordinary composer eligibility (1.206083ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 4
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 340.073625
+
+✖ failing tests:
+
+test at tests/admin/inbox-unknown.test.ts:39:3
+✖ persisted A9 UNKNOWN after page entry warns and blocks the real composer in en (46.190375ms)
+  AssertionError [ERR_ASSERTION]: persisted UNKNOWN must show the full verify-Messenger warning, not only its short badge
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-unknown.test.ts:43:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-unknown.test.ts:39:3
+✖ persisted A9 UNKNOWN after page entry warns and blocks the real composer in zh-TW (1.643375ms)
+  AssertionError [ERR_ASSERTION]: persisted UNKNOWN must show the full verify-Messenger warning, not only its short badge
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-unknown.test.ts:43:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-unknown.test.ts:39:3
+✖ persisted A9 UNKNOWN after page entry warns and blocks the real composer in zh-CN (0.950917ms)
+  AssertionError [ERR_ASSERTION]: persisted UNKNOWN must show the full verify-Messenger warning, not only its short badge
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-unknown.test.ts:43:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-unknown.test.ts:53:1
+✖ A12 queued ACK followed by final A9 UNKNOWN overrides the local queued notice and blocks another send (6.913125ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+    assert.ok(textOf(host.output).includes(warning.en))
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-unknown.test.ts:65:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-unknown.test.ts:73:1
+✖ a captured previously enabled composer cannot bypass final UNKNOWN learned by Refresh (3.2735ms)
+  AssertionError [ERR_ASSERTION]: action-time authority must reject a callback captured before the final UNKNOWN read
+  + actual - expected
+
+  + {
+  +   body: {
+  +     expected_generation: 7,
+  +     text: 'MOCK_CAPTURED_DRAFT'
+  +   },
+  +   key: '85b24d87-0ca7-40fd-8a23-59fe16fa8bb7'
+  + }
+  - null
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-unknown.test.ts:85:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { key: '85b24d87-0ca7-40fd-8a23-59fe16fa8bb7', body: { text: 'MOCK_CAPTURED_DRAFT', expected_generation: 7 } },
+    expected: null,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+Exit 1

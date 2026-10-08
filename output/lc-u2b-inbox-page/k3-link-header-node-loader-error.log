@@ -1,0 +1,38 @@
+✔ A8/A9/A13 and published templates: exact reads forward once with no-store (29.76875ms)
+✔ real streamed POST bodies: A10-A14 exact keys reach upstream (25.056583ms)
+✔ query, read headers, methods and body allowlists refuse before upstream (7.216334ms)
+✔ session, CSRF and store authority precede content forwarding (4.510333ms)
+✔ A12 fixed codes preserved; arbitrary upstream diagnostics stripped (8.502084ms)
+✔ client preserves codes and receipt; changed/aborted session cannot publish private response (6.624167ms)
+✔ A9 admits a full page of valid Unicode replies while bounding private response bytes (5.275667ms)
+✔ non-JSON upstream 401 still expires both authentication cookies without diagnostic leakage (1.694333ms)
+✖ real M7 response keeps no-referrer after matching Next production header rules (4.993334ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 8
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 267.25825
+
+✖ failing tests:
+
+test at tests/admin/inbox-bff.test.ts:461:1
+✖ real M7 response keeps no-referrer after matching Next production header rules (4.993334ms)
+  file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/apps/admin/next.config.ts:2
+  import { PHASE_PRODUCTION_BUILD } from "next/constants";
+           ^^^^^^^^^^^^^^^^^^^^^^
+  SyntaxError: Named export 'PHASE_PRODUCTION_BUILD' not found. The requested module 'next/constants' is a CommonJS module, which may not support all module.exports as named exports.
+  CommonJS modules can always be imported via the default export, for example using:
+
+  import pkg from 'next/constants';
+  const { PHASE_PRODUCTION_BUILD } = pkg;
+
+      at #asyncInstantiate (node:internal/modules/esm/module_job:326:21)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async ModuleJob.run (node:internal/modules/esm/module_job:429:5)
+      at async node:internal/modules/esm/loader:639:26
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-bff.test.ts:462:23)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)

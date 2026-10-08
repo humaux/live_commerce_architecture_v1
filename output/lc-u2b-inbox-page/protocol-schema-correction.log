@@ -1,0 +1,13 @@
+✔ bundle fixture uses real claim commands and mounts existing M6/M7 without issuing early (0.74475ms)
+✔ sensitive bundle scenario clicks native clipboard with trace/video disabled and no token body reads (0.847833ms)
+✔ persisted link and token-free command receipt are compared without disclosing credentials (0.165ms)
+✔ actual clipboard evaluator exports only safe summary and detects malformed or retained synthetic credentials (138.386666ms)
+✔ claim-window fixture isolates recovery after the current migration permits multiple OPEN windows (4.023ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 244.564

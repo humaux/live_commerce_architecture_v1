@@ -1,0 +1,4 @@
+source: aa346aa741df9b50baa66e9002b3e3efde65788b
+command: pnpm --filter @live-commerce/admin exec tsc --noEmit
+
+exit: 0

@@ -1,0 +1,40 @@
+=== RUN   TestInboxUnknownAuthority
+=== RUN   TestInboxUnknownAuthority/empty
+    inbox_unknown_authority_test.go:104: has_unknown_outbound=null (exists=false), want false
+    inbox_unknown_authority_test.go:105: has_unknown_outbound=null (exists=false), want false
+=== RUN   TestInboxUnknownAuthority/exhaustive_healthy
+    inbox_unknown_authority_test.go:104: has_unknown_outbound=null (exists=false), want false
+    inbox_unknown_authority_test.go:105: has_unknown_outbound=null (exists=false), want false
+=== RUN   TestInboxUnknownAuthority/known_unknown
+    inbox_unknown_authority_test.go:104: has_unknown_outbound=null (exists=false), want true
+    inbox_unknown_authority_test.go:105: has_unknown_outbound=null (exists=false), want true
+=== RUN   TestInboxUnknownAuthority/missing_operation
+    inbox_unknown_authority_test.go:104: has_unknown_outbound=null (exists=false), want null
+    inbox_unknown_authority_test.go:105: has_unknown_outbound=null (exists=false), want null
+=== RUN   TestInboxUnknownAuthority/exactly_50_healthy
+    inbox_unknown_authority_test.go:104: has_unknown_outbound=null (exists=false), want null
+    inbox_unknown_authority_test.go:105: has_unknown_outbound=null (exists=false), want null
+=== RUN   TestInboxUnknownAuthority/unknown_in_full_scan
+    inbox_unknown_authority_test.go:104: has_unknown_outbound=null (exists=false), want true
+    inbox_unknown_authority_test.go:105: has_unknown_outbound=null (exists=false), want true
+=== RUN   TestInboxUnknownAuthority/old_unknown_outside_50_newer_outbound
+    inbox_unknown_authority_test.go:114: has_unknown_outbound=null (exists=false), want null
+    inbox_unknown_authority_test.go:115: has_unknown_outbound=null (exists=false), want null
+=== RUN   TestInboxUnknownAuthority/known_unknown_below_50_newer_inbound
+    inbox_unknown_authority_test.go:124: has_unknown_outbound=null (exists=false), want true
+    inbox_unknown_authority_test.go:125: has_unknown_outbound=null (exists=false), want true
+=== RUN   TestInboxUnknownAuthority/scope_not_found
+--- FAIL: TestInboxUnknownAuthority (22.68s)
+    --- FAIL: TestInboxUnknownAuthority/empty (0.02s)
+    --- FAIL: TestInboxUnknownAuthority/exhaustive_healthy (0.05s)
+    --- FAIL: TestInboxUnknownAuthority/known_unknown (0.01s)
+    --- FAIL: TestInboxUnknownAuthority/missing_operation (0.01s)
+    --- FAIL: TestInboxUnknownAuthority/exactly_50_healthy (0.05s)
+    --- FAIL: TestInboxUnknownAuthority/unknown_in_full_scan (0.06s)
+    --- FAIL: TestInboxUnknownAuthority/old_unknown_outside_50_newer_outbound (0.07s)
+    --- FAIL: TestInboxUnknownAuthority/known_unknown_below_50_newer_inbound (12.73s)
+    --- PASS: TestInboxUnknownAuthority/scope_not_found (0.01s)
+FAIL
+FAIL	livecommerce/tests/foundation	23.719s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

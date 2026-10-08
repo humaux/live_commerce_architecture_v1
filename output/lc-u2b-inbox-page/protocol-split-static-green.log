@@ -1,0 +1,23 @@
+Actual Playwright split support/parser/clipboard source tests
+Command ["node", "--test", "--experimental-strip-types", "tests/admin/inbox-evidence.test.ts", "tests/admin/inbox-browser-source.test.ts", "tests/admin/inbox-bundle-browser.test.ts"]
+✔ actual login settles authentication and the real fixture-store navigation before Messages (19.155416ms)
+✔ bundle fixture uses real claim commands and mounts existing M6/M7 without issuing early (0.45475ms)
+✔ sensitive bundle scenario clicks native clipboard with trace/video disabled and no token body reads (0.134583ms)
+✔ persisted link and token-free command receipt are compared without disclosing credentials (0.105916ms)
+✔ actual clipboard evaluator exports only safe summary and detects malformed or retained synthetic credentials (230.662375ms)
+✔ claim-window fixture isolates recovery after the current migration permits multiple OPEN windows (3.83825ms)
+✔ inbox evidence is covered by the CI upload root (2.120125ms)
+✔ failed Playwright closes its log and emits sanitized diagnostics before Fatalf (0.118792ms)
+✔ failure diagnostics match INU cases/counts without admitting private text (0.996291ms)
+✔ INU04 delayed handler 1 signals completion when fulfillment rejects (16.034375ms)
+✔ INU04 delayed handler 2 signals completion when fulfillment rejects (1.61425ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 334.395291
+
+Exit 0

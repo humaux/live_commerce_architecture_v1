@@ -1,0 +1,35 @@
+baseline: 39abae9f
+command: node --test --experimental-strip-types tests/admin/inbox-browser-source.test.ts
+exit: 1
+✖ actual login settles authentication and the real fixture-store navigation before Messages (16.611834ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 277.669791
+
+✖ failing tests:
+
+test at tests/admin/inbox-browser-source.test.ts:15:1
+✖ actual login settles authentication and the real fixture-store navigation before Messages (16.611834ms)
+  AssertionError [ERR_ASSERTION]: selector must retain the fixture store
+  + actual - expected
+
+  + '20000000-0000-4000-8000-000000000002'
+  - '10000000-0000-4000-8000-000000000001'
+
+      at Object.toHaveValue (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:52:47)
+      at login (eval at <anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:61:17), <anonymous>:11:32)
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:64:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: '20000000-0000-4000-8000-000000000002',
+    expected: '10000000-0000-4000-8000-000000000001',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

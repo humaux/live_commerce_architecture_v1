@@ -1,0 +1,3 @@
+Removed only task-owned checksum-verified Node24.21 runtime and archive under node_modules/.cache/lc-u2b-ci-node after all owned runs ended.
+Official source/SHA remains in ci-node-version.log; shared pnpm/system caches and worker worktrees preserved.
+Exit 0

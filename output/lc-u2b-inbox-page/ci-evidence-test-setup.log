@@ -1,0 +1,30 @@
+Non-acceptance setup failure evidence; source dumps omitted.
+✖ inbox evidence is covered by the CI upload root (1.147666ms)
+✖ failed Playwright closes its log and emits sanitized diagnostics before Fatalf (0.254292ms)
+✖ failure diagnostics match INU cases/counts without admitting private text (0.231208ms)
+✖ INU04 delayed handler 1 signals completion when fulfillment rejects (13.46775ms)
+✖ INU04 delayed handler 2 signals completion when fulfillment rejects (3.491583ms)
+ℹ tests 5
+ℹ pass 0
+ℹ fail 5
+✖ failing tests:
+✖ inbox evidence is covered by the CI upload root (1.147666ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /filepath\.Join\(root, "output\/playwright\/inbox-ui",/. Input:
+✖ failed Playwright closes its log and emits sanitized diagnostics before Fatalf (0.254292ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /runErr := browser\.Run\(\)[\s\S]*?log\.Close\(\)[\s\S]*?if runErr != nil/. Input:
+✖ failure diagnostics match INU cases/counts without admitting private text (0.231208ms)
+  AssertionError [ERR_ASSERTION]: inboxFailureCasePattern must be an explicit bounded pattern
+✖ INU04 delayed handler 1 signals completion when fulfillment rejects (13.46775ms)
+  TypeError: handler is not a function
+✖ INU04 delayed handler 2 signals completion when fulfillment rejects (3.491583ms)
+  TypeError: handler is not a function
+✖ INU04 delayed handler 1 signals completion when fulfillment rejects (12.384541ms)
+✖ INU04 delayed handler 2 signals completion when fulfillment rejects (1.357541ms)
+ℹ tests 5
+ℹ pass 3
+ℹ fail 2
+✖ failing tests:
+✖ INU04 delayed handler 1 signals completion when fulfillment rejects (12.384541ms)
+  TypeError: handler is not a function
+✖ INU04 delayed handler 2 signals completion when fulfillment rejects (1.357541ms)
+  TypeError: handler is not a function

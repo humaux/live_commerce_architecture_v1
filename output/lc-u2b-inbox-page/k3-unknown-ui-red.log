@@ -1,0 +1,110 @@
+✔ persisted A9 UNKNOWN after page entry warns and blocks the real composer in en (37.504792ms)
+✔ persisted A9 UNKNOWN after page entry warns and blocks the real composer in zh-TW (4.95275ms)
+✔ persisted A9 UNKNOWN after page entry warns and blocks the real composer in zh-CN (2.792458ms)
+✔ A12 queued ACK followed by final A9 UNKNOWN overrides the local queued notice and blocks another send (4.581292ms)
+✔ a captured previously enabled composer cannot bypass final UNKNOWN learned by Refresh (1.065416ms)
+✔ a later A9 page omitting the known UNKNOWN is not delivery reconciliation (3.153042ms)
+✔ persisted queued is not mislabeled UNKNOWN and retains ordinary composer eligibility (2.510542ms)
+✔ persisted sent is not mislabeled UNKNOWN and retains ordinary composer eligibility (2.5495ms)
+✔ persisted failed is not mislabeled UNKNOWN and retains ordinary composer eligibility (0.580584ms)
+✔ persisted blocked is not mislabeled UNKNOWN and retains ordinary composer eligibility (0.499083ms)
+✖ fresh mount refuses when an old UNKNOWN is beyond 51 newer messages (fact=true) (1.234625ms)
+✖ fresh mount refuses when an old UNKNOWN is beyond 51 newer messages (fact=null) (0.989625ms)
+✖ fresh mount refuses when an old UNKNOWN is beyond 51 newer messages (fact=undefined) (0.817125ms)
+✖ fresh mount refuses when an old UNKNOWN is beyond 51 newer messages (fact=false) (6.995208ms)
+✖ a refreshed unknown authority replaces old clear authority even for a captured composer (8.272042ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 10
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 630.893125
+
+✖ failing tests:
+
+test at tests/admin/inbox-unknown.test.ts:127:3
+✖ fresh mount refuses when an old UNKNOWN is beyond 51 newer messages (fact=true) (1.234625ms)
+  AssertionError [ERR_ASSERTION]: only authoritative false may enable a fresh composer
+
+  false !== true
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-unknown.test.ts:139:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-unknown.test.ts:127:3
+✖ fresh mount refuses when an old UNKNOWN is beyond 51 newer messages (fact=null) (0.989625ms)
+  AssertionError [ERR_ASSERTION]: only authoritative false may enable a fresh composer
+
+  false !== true
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-unknown.test.ts:139:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-unknown.test.ts:127:3
+✖ fresh mount refuses when an old UNKNOWN is beyond 51 newer messages (fact=undefined) (0.817125ms)
+  AssertionError [ERR_ASSERTION]: only authoritative false may enable a fresh composer
+
+  false !== true
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-unknown.test.ts:139:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-unknown.test.ts:127:3
+✖ fresh mount refuses when an old UNKNOWN is beyond 51 newer messages (fact=false) (6.995208ms)
+  AssertionError [ERR_ASSERTION]: only authoritative false may enable a fresh composer
+
+  false !== true
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-unknown.test.ts:139:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-unknown.test.ts:148:1
+✖ a refreshed unknown authority replaces old clear authority even for a captured composer (8.272042ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  false !== true
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-unknown.test.ts:159:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

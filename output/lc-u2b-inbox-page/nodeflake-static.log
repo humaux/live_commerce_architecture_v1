@@ -1,0 +1,12 @@
+source: 66dd7b038728ad72d5def0e78deef2b48a3d03a0
+
+command: git diff --check
+exit: 0
+
+command: git merge-base --is-ancestor 26e9aec2 HEAD
+exit: 0
+
+command: git merge-base --is-ancestor 30ddeedc HEAD
+exit: 0
+
+Thirty source hashes verified; production unchanged from30ddeedc. Captured logs normalized for trailing whitespace only.

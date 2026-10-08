@@ -1,0 +1,128 @@
+task_id: lc-u2b-pr8-component-tests
+parent_task_id: db10123d-1eba-4b95-8d38-e346102d80b3
+base_commit: d32b009311d87d37ac2181cc26e3bd9b0838b5c8
+role: independent test author; model: inherited gpt-6.1-sol; reasoning: inherited high
+evidence: MOCK Node hook-host lifecycle; BROWSER/Go/PG/build NOT_RUN
+command: node --test --experimental-strip-types tests/admin/inbox-review.test.ts
+exit_code: 1
+pnpm install --frozen-lockfile: exit0
+test typecheck via typescript-api+admin config+next-env.d.ts: exit0
+sha256 5b46cf9161e9d50e72d0bd11be754ff6f3b64fdfe744a2a069a36495bb21cd5e tests/admin/inbox-review.test.ts
+sha256 56a51c4777080efdb550015c5f479097d12e800e3cf8375a2a2748463d1edfa7 apps/admin/src/features/messages/use-privacy.ts
+sha256 d7af9586828221b518a90ab5352ddd1793d3e38cacf683b3a6089e8921cf9c3b apps/admin/src/features/messages/privacy.ts
+sha256 42f90bbd57560fced47253c4bfe694c0fe4849ae1082bb9e8bdf70fad5ca2e3d apps/admin/components/InboxThread.tsx
+sha256 2bebf5b04b7a8111a1e3998c97e69572aa735316dfd21ebafed176c9332466ec apps/admin/components/BuyerPanel.tsx
+sha256 80efa1d6c1ba3a4d62103a08826e2c4c1c018c524563cdb30c90efbd41977b88 apps/admin/lib/inbox-client.ts
+
+✖ P1-1 actual visible focus preserves pending ticket, selection, revision and real retry receipt (2.07425ms)
+✖ P1-1 actual unchanged-session pageshow checks without clearing; changed-session focus expires (0.356042ms)
+✔ P1-1 actual hide/reveal clears and requests fresh revision, never accepts obsolete completion (0.290209ms)
+✔ P1-1 changed-session visible focus expires even with a pending request (0.196ms)
+✖ P1-2 actual A9 refresh 404 removes rendered DM and unsent draft (14.947375ms)
+✖ P1-2 actual send-finally A9 404 removes DM, draft and uncertain immutable receipt (4.033708ms)
+✔ actual uncertain send still retains exact receipt when A9 authority remains (1.942625ms)
+✔ actual A9 stale held completion cannot paint after component cleanup (0.672584ms)
+✖ P2 actual A14 404 clears buyer facts and customer draft (explicit future-version MOCK) (1.320959ms)
+✔ safe authority errors remain the actual InboxError transport class (0.081583ms)
+✔ actual current A13 without version keeps A14 disabled; future MOCK grants no backend claim (0.603625ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 6
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 268.042459
+
+✖ failing tests:
+
+test at tests/admin/inbox-review.test.ts:313:1
+✖ P1-1 actual visible focus preserves pending ticket, selection, revision and real retry receipt (2.07425ms)
+  AssertionError [ERR_ASSERTION]: ordinary visible focus must not abort actual pending ticket
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review.test.ts:329:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-review.test.ts:337:1
+✖ P1-1 actual unchanged-session pageshow checks without clearing; changed-session focus expires (0.356042ms)
+  AssertionError [ERR_ASSERTION]: same-session visible pageshow must not clear
+
+  1 !== 0
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review.test.ts:356:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-review.test.ts:415:1
+✖ P1-2 actual A9 refresh 404 removes rendered DM and unsent draft (14.947375ms)
+  AssertionError [ERR_ASSERTION]: 404 must remove previously authorized private DM
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review.test.ts:426:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-review.test.ts:435:1
+✖ P1-2 actual send-finally A9 404 removes DM, draft and uncertain immutable receipt (4.033708ms)
+  AssertionError [ERR_ASSERTION]: 404 must drop earlier private rendering
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review.test.ts:468:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-review.test.ts:524:1
+✖ P2 actual A14 404 clears buyer facts and customer draft (explicit future-version MOCK) (1.320959ms)
+  AssertionError [ERR_ASSERTION]: A14 authority-loss 404 removes old buyer facts
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review.test.ts:559:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

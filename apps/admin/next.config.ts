@@ -1,6 +1,6 @@
-// Purpose: Next packaging and response security headers; the console uses an external Facebook link, never an embedded frame.
+// Purpose: Next packaging/security headers; the console uses external links, never embedded frames.
 // Depends on: Next build phases, companyConfig and NODE_ENV; no provider credentials.
-// Used by: admin Next build/server and header/security acceptance tests.
+// Used by: admin build/server and header tests; sensitive route overrides must follow global defaults.
 import type { NextConfig } from "next";
 import { PHASE_PRODUCTION_BUILD } from "next/constants";
 import { companyConfig } from "./lib/company";
@@ -40,6 +40,11 @@ const config: NextConfig = {
             value: contentPolicy,
           },
         ],
+      },
+      // M7 returns a one-time claim credential. Preserve the BFF's policy through Next's global header layer.
+      {
+        source: "/api/stores/:store/live-sessions/:session/claims/bundles/:bundle/link",
+        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
       },
       // staff-team D3: the invitation token is in this path, so neither the page's own subresources nor anything else may receive
       // it as a Referer, and the page is never cached. A real header (not only the <meta>) covers the stylesheet/script requests

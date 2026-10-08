@@ -1,0 +1,17 @@
+source: aa346aa741df9b50baa66e9002b3e3efde65788b
+command: node --test --experimental-strip-types tests/admin/inbox-evidence.test.ts
+✔ inbox evidence is covered by the CI upload root (0.445459ms)
+✔ failed Playwright closes its log and emits sanitized diagnostics before Fatalf (0.145667ms)
+✔ failure diagnostics match INU cases/counts without admitting private text (1.493791ms)
+✔ INU04 delayed handler 1 signals completion when fulfillment rejects (32.361125ms)
+✔ INU04 delayed handler 2 signals completion when fulfillment rejects (8.953083ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1718.081417
+
+exit: 0
