@@ -29,10 +29,22 @@ const en = {
   publicRule: "Public replies must not contain payment links.",
   verify:
     "Delivery is uncertain. Verify in Messenger before taking any further action; this reply will not be resent automatically.",
-  verified:"I checked delivery in Messenger",
-  confirmVerified:"Have you checked this session's pending replies in Messenger? This only unlocks new replies; it does not resend anything.",
+  verified: "I checked delivery in Messenger",
+  confirmVerified:
+    "Have you checked this session's pending replies in Messenger? This only unlocks new replies; it does not resend anything.",
   testOnly: "Test accounts only",
   permission: "Reply permission is required.",
+  missing_permission:
+    "The connected account has not granted this reply permission. Reauthorise it in Facebook settings.",
+  missing_task:
+    "The connected account is missing the required Page task. Review its Page access.",
+  not_subscribed:
+    "This connected account is not subscribed to the required events. Check Facebook settings.",
+  reauth_required:
+    "The connected account needs reauthorisation in Facebook settings.",
+  unsupported: "The platform does not support this reply action.",
+  unknown_capability:
+    "Reply capability has not been confirmed. Check the account connection first.",
   preempt:
     "The system may be about to send a claim link automatically. A manual private reply uses this comment's only private-reply opportunity. Continue?",
   confirm: "Confirm manual reply",
@@ -117,15 +129,24 @@ const tw: Copy = {
   window: "買家主動傳訊後才開啟 24 小時私訊視窗；傳送此私密回覆不會開啟視窗。",
   publicRule: "公開回覆不得包含付款連結。",
   verify: "傳送結果未確認。請先到 Messenger 核對；系統不會自動重送。",
-  verified:"已到 Messenger 核對傳送結果",
-  confirmVerified:"已在 Messenger 核對這個場次尚未確認的回覆了嗎？此操作僅解鎖後續回覆，不會重送。",
+  verified: "已到 Messenger 核對傳送結果",
+  confirmVerified:
+    "已在 Messenger 核對這個場次尚未確認的回覆了嗎？此操作僅解鎖後續回覆，不會重送。",
   testOnly: "僅測試帳號",
   permission: "需要回覆訊息權限。",
+  missing_permission:
+    "已連接帳號尚未授予這項回覆權限，請到 Facebook 設定重新授權。",
+  missing_task: "已連接帳號缺少必要的主頁工作權限，請檢查主頁存取設定。",
+  not_subscribed: "已連接帳號尚未訂閱必要事件，請檢查 Facebook 設定。",
+  reauth_required: "已連接帳號需要到 Facebook 設定重新授權。",
+  unsupported: "平台不支援這項回覆功能。",
+  unknown_capability: "尚未確認回覆能力，請先檢查帳號連接。",
   preempt:
     "系統可能正要自動傳送認領連結。手動私訊會用掉這則留言唯一一次私訊機會，確定繼續？",
   confirm: "確認手動回覆",
   cancel: "取消",
-  pendingLink: "此買家的認領連結無法送出：這則留言的私訊額度已用。買家回覆私訊後 24 小時內可用一般私訊補發認領連結",
+  pendingLink:
+    "此買家的認領連結無法送出：這則留言的私訊額度已用。買家回覆私訊後 24 小時內可用一般私訊補發認領連結",
   reset: "留言串已重啟，正在重新載入。",
   hidden: "頁面隱藏時已清除留言。",
   queued: "排隊中",
@@ -192,14 +213,23 @@ const cn: Copy = {
     "买家主动发消息后才开启 24 小时私信窗口；发送此私密回复不会开启窗口。",
   publicRule: "公开回复不得包含付款链接。",
   verify: "发送结果未确认。请先到 Messenger 核对；系统不会自动重发。",
-  verified:"已到 Messenger 核对发送结果",
-  confirmVerified:"已在 Messenger 核对这个场次尚未确认的回复了吗？此操作仅解锁后续回复，不会重发。",
+  verified: "已到 Messenger 核对发送结果",
+  confirmVerified:
+    "已在 Messenger 核对这个场次尚未确认的回复了吗？此操作仅解锁后续回复，不会重发。",
   testOnly: "仅测试账号",
   permission: "需要回复消息权限。",
+  missing_permission:
+    "已连接账号尚未授予这项回复权限，请到 Facebook 设置重新授权。",
+  missing_task: "已连接账号缺少必要的主页工作权限，请检查主页访问设置。",
+  not_subscribed: "已连接账号尚未订阅必要事件，请检查 Facebook 设置。",
+  reauth_required: "已连接账号需要到 Facebook 设置重新授权。",
+  unsupported: "平台不支持这项回复功能。",
+  unknown_capability: "尚未确认回复能力，请先检查账号连接。",
   preempt:
     "系统可能正要自动发送认领链接。手动私信会用掉这条评论唯一一次私信机会，确定继续？",
   confirm: "确认手动回复",
-  pendingLink: "此买家的认领链接无法发出：这条评论的私信额度已用。买家回复私信后 24 小时内可用普通私信补发认领链接",
+  pendingLink:
+    "此买家的认领链接无法发出：这条评论的私信额度已用。买家回复私信后 24 小时内可用普通私信补发认领链接",
   reset: "评论流已重启，正在重新加载。",
   hidden: "页面隐藏时已清除评论。",
   queued: "排队中",

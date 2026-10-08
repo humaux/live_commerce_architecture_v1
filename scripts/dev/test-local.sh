@@ -644,7 +644,7 @@ elif [[ "$test_mode" == --browser-studio-ui ]]; then
   printf 'PASS: isolated Studio B UI with signed MOCK IdP and local MOCK Egress; not Cloud or production acceptance.\n'
 elif [[ "$test_mode" == --browser-live-console ]]; then
   LC_BROWSER_LIVE_CONSOLE_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=780s -run '^TestBrowserLiveConsoleRealChain$' -v ./tests/foundation
-  printf 'PASS: LC-U1 real browser + Next session/CSRF + PG identity; Console upstream/receipts MOCK, not LC-B1/LC-B7 SQL or provider acceptance.\n'
+  printf 'PASS: LC-U1 MOCK Console and LC-U2a REAL_PG comment/inbox browser; MOCK Graph only, no LIVE provider acceptance.\n'
 elif [[ "$test_mode" == --browser-claim-checkout ]]; then
   LC_BROWSER_CLAIM_CHECKOUT_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=900s -run '^TestBrowserClaimDirectCheckout$' -v ./tests/foundation
   printf 'PASS: claim direct checkout real-click BROWSER + MOCK manual claims, real PG; no PSP/Meta/LIVE acceptance.\n'

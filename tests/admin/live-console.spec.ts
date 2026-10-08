@@ -135,7 +135,7 @@ test.describe("LC-U2a REAL_PG comment stream",()=>{
       await expect(page.getByTestId("comment-reply-error")).toHaveText(c.public_reply_forbidden_content);
       expect((await facts(request)).comments.private_operations).toBe(before.private_operations+1);
       expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
-      await page.screenshot({path:`${evidence}/comments-${locale}-${size.width}.png`,fullPage:true,animations:"disabled",mask:[page.getByTestId("comment-rows"),page.getByTestId("comment-buyer"),page.getByTestId("comment-reply-text")]});
+      await page.screenshot({path:`${evidence}/comments-${locale}-${size.width}.png`,fullPage:true,animations:"disabled",mask:[page.locator('[data-private]'),page.getByTestId("buyer-panel"),page.getByTestId("comment-reply-text")]});
     });
   }
   test("native hidden tab stops A2 and clears private selections",async({request})=>{

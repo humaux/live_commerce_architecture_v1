@@ -218,10 +218,12 @@ export function CommentStream({
                   data-selected={chosen?.ref === row.ref || undefined}
                 >
                   <div className="comment-byline">
-                    <strong>{row.author_name ?? c.unnamed}</strong>
+                    <strong data-private="comment-author">
+                      {row.author_name ?? c.unnamed}
+                    </strong>
                     <time>{displayTime(locale, row.created_at)}</time>
                   </div>
-                  <p>{row.text}</p>
+                  <p data-private="comment-text">{row.text}</p>
                   {row.has_attachment && (
                     <span className="live-helper">{c.attachment}</span>
                   )}
@@ -232,6 +234,9 @@ export function CommentStream({
                         ? ` × ${row.marks.claim.quantity}`
                         : ""}
                     </p>
+                  )}
+                  {row.marks.claim?.reason === "restricted" && (
+                    <p className="comment-mark">{c.restricted}</p>
                   )}
                   {row.marks.private_reply && (
                     <p className="live-helper">

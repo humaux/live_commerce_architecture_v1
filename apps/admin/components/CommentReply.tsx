@@ -46,8 +46,11 @@ export function CommentReply({
     [error, setError] = useState(""),
     [state, setState] = useState<SendState | null>(null),
     [confirm, setConfirm] = useState(false);
-  const [receiptReady,setReceiptReady]=useState(false),[receiptBlocked,setReceiptBlocked]=useState(true);
-  const receipt=useRef<CommentReceipt|null>(null);
+  const [receiptReady, setReceiptReady] = useState(false),
+    [receiptBlocked, setReceiptBlocked] = useState(true);
+  const [restrictionChecked, setRestrictionChecked] = useState(false);
+  const restricted = comment.marks.claim?.reason === "restricted";
+  const receipt = useRef<CommentReceipt | null>(null);
   const fence = useRef(new InboxFence()),
     active = useRef(false),
     callbacks = useRef({ onSent, onDenied });
@@ -59,22 +62,42 @@ export function CommentReply({
     ];
   const capable = !!cap && ["ok", "review_required"].includes(cap.state);
   const terminalUnknown =
-    receiptBlocked || state === "unknown" || comment.marks.private_reply?.state === "unknown";
-  useEffect(()=>{
-    let alive=true;
-    void sessionBoundary().then(boundary=>{
-      if(!alive)return;
-      try {receipt.current=new CommentReceipt(sessionStorage,store.id,session,boundary);setReceiptBlocked(receipt.current.blocked());}
-      catch {setReceiptBlocked(true);}
-      setReceiptReady(true);
-    }).catch(()=>{if(alive)callbacks.current.onDenied();});
-    return()=>{alive=false;receipt.current=null;};
-  },[store.id,session]);
+    receiptBlocked ||
+    state === "unknown" ||
+    comment.marks.private_reply?.state === "unknown";
+  useEffect(() => {
+    let alive = true;
+    void sessionBoundary()
+      .then((boundary) => {
+        if (!alive) return;
+        try {
+          receipt.current = new CommentReceipt(
+            sessionStorage,
+            store.id,
+            session,
+            boundary,
+          );
+          setReceiptBlocked(receipt.current.blocked());
+        } catch {
+          setReceiptBlocked(true);
+        }
+        setReceiptReady(true);
+      })
+      .catch(() => {
+        if (alive) callbacks.current.onDenied();
+      });
+    return () => {
+      alive = false;
+      receipt.current = null;
+    };
+  }, [store.id, session]);
   const privateReason =
     mode === "private" && !comment.marks.private_reply_available
       ? (comment.marks.private_reply_unavailable_reason ?? "used")
       : "";
-  const canPreempt = privateReason === "auto_pending_confirm" || error === "auto_pending_confirm";
+  const canPreempt =
+    privateReason === "auto_pending_confirm" ||
+    error === "auto_pending_confirm";
   const rule =
     privateReason ||
     (mode === "public" && platform === "instagram"
@@ -128,11 +151,15 @@ export function CommentReply({
       terminalUnknown ||
       !allowed ||
       !capable ||
+      (restricted && !restrictionChecked) ||
       (!selected && !limit.valid) ||
       (rule && !(canPreempt && preempt))
     )
       return;
-    if(!receipt.current?.arm()){setReceiptBlocked(true);return;}
+    if (!receipt.current?.arm()) {
+      setReceiptBlocked(true);
+      return;
+    }
     active.current = true;
     setBusy(true);
     setError("");
@@ -167,7 +194,8 @@ export function CommentReply({
       setState(value.send_state);
       // A queued public send has no terminal-state field in A2. Preserve the coarse guard
       // until explicit external verification rather than pretending the operation is final.
-      if(["sent","failed","blocked"].includes(value.send_state))setReceiptBlocked(!receipt.current?.clear());
+      if (["sent", "failed", "blocked"].includes(value.send_state))
+        setReceiptBlocked(!receipt.current?.clear());
       else setReceiptBlocked(true);
       setText("");
       setTemplate("");
@@ -176,8 +204,10 @@ export function CommentReply({
       if (!fence.current.current(ticket)) return;
       const code = e instanceof InboxError ? e.code : "retry_later";
       setError(code);
-      if (!(e instanceof InboxError) || e.status >= 500){setState("unknown");setReceiptBlocked(true);}
-      else setReceiptBlocked(!receipt.current?.clear());
+      if (!(e instanceof InboxError) || e.status >= 500) {
+        setState("unknown");
+        setReceiptBlocked(true);
+      } else setReceiptBlocked(!receipt.current?.clear());
       if (e instanceof InboxError && [401, 403].includes(e.status))
         callbacks.current.onDenied();
       if (code === "auto_pending_confirm") setConfirm(true);
@@ -230,21 +260,53 @@ export function CommentReply({
       {!allowed ? (
         <p>{c.permission}</p>
       ) : !capable ? (
-        <p>{c.capability}</p>
+        <p>
+          {commentReason(
+            locale,
+            !cap || cap.state === "unknown" ? "unknown_capability" : cap.state,
+          )}
+        </p>
       ) : null}
       {rule && (
         <p role="status" data-testid="comment-rule">
           {commentReason(locale, rule)}
         </p>
       )}
+      {restricted && (
+        <label className="comment-restriction">
+          <span>{c.restrictedWarning}</span>
+          <span>
+            <input
+              type="checkbox"
+              checked={restrictionChecked}
+              onChange={(e) => setRestrictionChecked(e.target.checked)}
+            />
+            {c.reviewSend}
+          </span>
+        </label>
+      )}
       {receiptReady && terminalUnknown && (
         <p role="alert" data-testid="comment-unknown">
           {c.verify}
         </p>
       )}
-      {receiptReady && receiptBlocked && !busy && <button type="button" data-testid="comment-verified" onClick={()=>{
-        if(window.confirm(c.confirmVerified) && receipt.current?.clear()){setReceiptBlocked(false);setState(null);setError("");setText("");setTemplate("");}
-      }}>{c.verified}</button>}
+      {receiptReady && receiptBlocked && !busy && (
+        <button
+          type="button"
+          data-testid="comment-verified"
+          onClick={() => {
+            if (window.confirm(c.confirmVerified) && receipt.current?.clear()) {
+              setReceiptBlocked(false);
+              setState(null);
+              setError("");
+              setText("");
+              setTemplate("");
+            }
+          }}
+        >
+          {c.verified}
+        </button>
+      )}
       {state && (
         <p role="status" data-testid="comment-send-state">
           {c[state]}
@@ -302,7 +364,9 @@ export function CommentReply({
           type="submit"
           className="primary"
           data-testid="comment-send"
-          disabled={!selected && !limit.valid}
+          disabled={
+            (!selected && !limit.valid) || (restricted && !restrictionChecked)
+          }
         >
           {busy ? c.sending : c.send}
         </button>
