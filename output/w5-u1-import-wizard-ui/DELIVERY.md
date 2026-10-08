@@ -1,42 +1,57 @@
-<!-- Purpose: deliver the import wizard alone on the canonical W6 base, with local evidence and CI handoff.
-Depends on: W6 9f7ec2cd, frozen migration-import APIs0152/0156, current scope/source proofs and local checks.
-Used by: integrator review and GitHub acceptance after W6 PR3 merges. -->
-# W5-U1 import wizard — reconciled delivery
+<!-- Purpose: hand off W5-U1 after the merged W6 base, with current local acceptance and CI limits.
+Depends on: r3/integration 97e34a4c, migration-import-v1 APIs 0152/0156, signed MOCK/REAL_PG browser evidence.
+Used by: integrator K3 pre-review, push, PR creation and GitHub acceptance. -->
+# W5-U1 import wizard — post-W6 delivery
 
-Branch: unit/w5-u1-import-wizard-ui. Base: 9f7ec2cd84e34ff87dfb472e4a475126cb3908d5. Final commit is recorded in the main checkout receipt after FINAL STEP. Configured Codex family; exact deployed runtime model UNKNOWN. Root owns this worktree; read-only reviewer uses no write paths or recursive delegation.
+- Branch: `unit/w5-u1-import-wizard-ui`; merged trunk: `97e34a4c7646de9d0753fb83ed88d56c1b43f01c` (PR #3 merged).
+- Tested source: `224df03a102f3a90815b98132f08c07014fc4f97`. Final documentation commit and 45-file SHA256 binding are in the main checkout's `output/w5-u1-import-wizard-ui/after-pr3-merge/final-receipt.json`.
+- Owner: Codex root; read-only explorer/high review, no overlapping writes or recursive delegation. Exact deployed model identifier unavailable.
+- Evidence: E3 in the tested local environment, BROWSER signed MOCK IdP + REAL_PG synthetic data. Provider/production acceptance is not claimed.
 
-The customer/history CSV wizard, safe row verdicts, UTF-8 refusal guidance, immutable manual replay, receipt confirmation, terminal replay mismatch, failure CSV and read-only customer archive remain intact. Marketing consent is always unknown; historical orders do not enter revenue. PRIVATEALL wraps import responses including real auth/coded errors. Thirty-one import namespace files are byte-identical to rollback8c1183a; no behavior rewrite in this reconciliation.
+## Changes and merge
 
-## Scope reconciliation
+Merged the approved W6 customer/detail, notes privacy/own-author controls, reports and tests. The 18 pure-W6 conflicts use the incoming approved version; CustomerDetail/Customers/copy retain both W6 behavior and the W5 history/import additions. Gate and runner lists are unions: both parents' 80 modes are retained in the resulting 81. No W6 duplicate-fix reversion, backend contract, schema, lockfile or migration changes.
 
-The old branch included b20e1bcf duplicates and unrelated settlement work via trunk merges. Latest W6 was fetched and merged first; rollback codex/w5-u1-before-reconcile-20261007=8c1183a8678ee6d7ed3c82b89a7c36b55d30a848 retains all history. The unpublished W5 branch is reconstructed from W6 with only import paths. All47 unrelated paths (14 source/migration/deploy/tests,33 settlement evidence) are excluded from its diff. They are retained in the rollback history, without a revert of trunk settlement code.
+The earlier K3 fixes remain: every import response is private/no-store, coded refusals stay actionable, and a replay-confirmed receipt mismatch terminates UNKNOWN. Raw CSV stays in memory; previews/failure files contain safe row verdicts; consent remains unknown; history is read-only and excluded from revenue.
 
-W6 tag/report/privacy/readiness fixes and tests are the canonical base; b20 is absent from the reconstructed history. Shared GATES keeps the exact W6 seam row. test-node adds only the import block. test-local retains every W6 flag/order/heartbeat lock and adds migration-import once to validation, usage and admin-build, plus its own preflight/run blocks. Mode count79→80; no thresholds or tests weakened. No backend/runtime/schema/lockfile changes belong to this unit.
+The first real local acceptance runs found one product defect: oversized files used the generic unreadable-header message. ImportWizard now selects the existing localized 2 MiB guidance; the size bound is unchanged. Test integration corrections follow actual contracts: data rows count after the header, denied readers reach the shell refusal, and erased imported-only customers disappear from the customer projection (POST 200, refreshed GET 404, exact DB deltas and tombstone refusal).
 
-## Local checks and evidence
+W6 regression locators now select the shared tags/notes recovery status, excluding the new archive Refresh. Its one-shot read-fault test waits for actual completed reads before arming the fault and explicitly verifies the refreshed GET 503; all original failure/retry/CAS/draft/privacy assertions remain.
 
-Candidate tree3195778e70893d1da860179ee58d229755758e56 was tested with:
+## Local commands and actual results
 
-- bash scripts/dev/test-node.sh: exit0; optional R04 binary NOT_RUN.
-- pnpm --filter @live-commerce/admin typecheck: exit0.
-- Strict import/customer-tags/reports spec tsc: exit0; exact args in reconcile/specs.status.json.
-- bash scripts/dev/check-gates.sh: exit0.
-- Native scope audit: pre-reconcile47 foreign paths RED1; candidate0 foreign paths GREEN0. This is tree-scope evidence, not browser calibration.
-- git diff --check and source-byte comparison: exit0. Final source/commit receipt is in main output.
+Evidence root (main checkout): `output/w5-u1-import-wizard-ui/after-pr3-merge/`. Every command has a raw log and status JSON; browser status includes the exact tested SHA. All PG/browser modes ran serially.
 
-Read-only review accepts scope:144 original candidate paths (43 source/gate/harness plus101 W5 evidence);31 import files unchanged; W6 files/Node suites/flag order retained. Source-only same family, no runtime review claim. Final delivery/evidence additions remain inside the unit's output path.
+| Command | Exit | Evidence / result |
+|---|---:|---|
+| `node --test --experimental-strip-types tests/admin/shell-registry.test.ts` | 0 | registry.log: 11 pass |
+| `bash scripts/dev/test-node.sh` | 0 | customer-ready-node.log: 936 pass, 0 fail |
+| `pnpm --filter @live-commerce/admin typecheck` | 0 | customer-fix-types.log |
+| Strict tsc of import-wizard/customer-tags/reports specs | 0 | customer-ready-spec-types.status.json has exact arguments |
+| `bash scripts/dev/check-gates.sh` | 0 | customer-ready-gates.log: 81 modes |
+| `bash scripts/dev/test-local.sh --browser-migration-import` (fault unset) | 0 | migration-import-final-green: 15/15 + Go harness pass at 224df03a |
+| `bash scripts/dev/test-local.sh --browser-customers-billing` | 0 | customers-billing-attempt4: CB11 admin/buyer + W6 9/9, both Go harnesses pass at 224df03a |
+| `LC_MIUI_CALIBRATION=drop-customer-commit bash scripts/dev/test-local.sh --browser-migration-import` | 1 expected | calibration-drop-commit: MIUI-RED-COMMIT-RECEIPT |
+| `LC_MIUI_CALIBRATION=truncate-preview bash scripts/dev/test-local.sh --browser-migration-import` | 1 expected | calibration-truncate-preview: MIUI-RED-PREVIEW-DATA |
+| `node scripts/dev/pr-modes.mjs origin/r3/integration HEAD` | 0 | pr-modes.json: 51 planned modes |
+| `git diff --check 97e34a4c -- ':!output'` | 0 | source-diff-check.status.json |
 
-Setup failures are retained as failures: two normalization probes guessed lowercase Usage and stopped before test-local writes; exact uppercase source was then used. The initial parallel wrappers contended on git write-tree; three tests did not start. One serial tree binding fixed the wrappers; fresh Node/types/specs0 and the already-passed gates0 bind the same candidate. None of these is credited as behavioral RED.
+Both calibrations fail after real signed readiness for the named injected fault; the final fault-free 15/15 run follows them on unchanged source. Production Next builds ran through the browser runners. Their Go commands include `-race -tags browser` against real PostgreSQL; no separate backend source change requires a new focused Go regex.
 
-## CI gates
+## Red → green record
 
-Integrator pushes the final branch after the source handoff. W5 gets its own PR only after W6 PR3 merges; no stacked PR and no force push. Before each commit, fetch and merge the branch's own origin ref if it exists. Current origin/unit/w5-u1-import-wizard-ui is absent; its absence is checked and logged rather than claimed as a merge.
+- W6 scope Node loader lacked the new historical child: node-integration-red exit1; actual child-boundary registration preserved scope-loss assertions, scope-green 5 pass/0 and full Node green.
+- Reader readiness: reader-ready-red 1 pass/1 fail exit1 → reader-ready-green 2 pass exit0.
+- Oversize guidance: browser attempt2 RED and size-red 5 pass/1 fail exit1 → actual header/form test size-green 6 pass exit0 in all three locales → full import browser green.
+- Import browser attempts1/3 exit1 retained in browser-red-1/browser-red-3: row/reader and imported-only erasure oracle mismatches. Updated assertions add precise network/DB facts; full15 green.
+- Customer regression REDs are retained in customer-red, customer-red-2 and customer-red-3. The first locator repair was too narrow and timed out; the second uses the actual shared status. A separate earlier read-fault race was fixed with completed-read barriers. Final CB11 + W6 nine pass. No failed attempt is counted as green.
 
-- bash scripts/dev/test-local.sh --browser-migration-import: normal GREEN.
-- LC_MIUI_CALIBRATION=drop-customer-commit bash scripts/dev/test-local.sh --browser-migration-import: RED for MIUI-RED-COMMIT-RECEIPT after readiness.
-- LC_MIUI_CALIBRATION=truncate-preview bash scripts/dev/test-local.sh --browser-migration-import: RED for MIUI-RED-PREVIEW-DATA after readiness, then normal GREEN.
-- Affected regressions: --browser-customers-billing, --browser-admin-shell, click-sweep shards/aggregate, visual-lint shards/aggregate, admin build.
+The protocol's one-argument planner invocation returned usage exit1; this repository requires explicit base and head. The corrected command above exited0. This setup error is not behavioral red evidence.
 
-## NOT_RUN and cleanup
+## CI gates / NOT_RUN
 
-Browser/Next build/real import PG/full foundation/CI and both import fault calibrations NOT_RUN locally. Provider sandbox/live, production, money and real PII NOT_RUN. E3 applies only to local Node/types/structure and source scope. No PR/push/deploy performed. All owned local checks finish before commit; no PG containers/ports started. Old source/evidence is historical in the rollback branch; new final SHA/current source receipt supersedes the old W5 handoff.
+Ready for integrator K3 pre-review, then push and open the W5 PR. No push/PR/force-push/deploy was performed. Own origin/unit/w5-u1-import-wizard-ui was absent at each pre-commit fetch; absence is recorded, not represented as a merge.
+
+Run normal `--browser-migration-import`, the two named calibration environments, and `--browser-customers-billing` on GitHub. The remaining planned regression set is recorded verbatim in pr-modes.json; full click-sweep shards/aggregate, visual-lint, admin-shell and the other planner modes are NOT_RUN locally in this batch and remain CI acceptance. Full foundation, optional R04 binary, provider SANDBOX/LIVE, production, money and real PII: NOT_RUN.
+
+Current local gates are complete; independent cross-family K3 and full GitHub regression acceptance remain outstanding. Existing w5-w6 follow-up automation is already PAUSED. All owned processes finish before final handoff; shared PostgreSQL resources are left to the runner's lifecycle.
