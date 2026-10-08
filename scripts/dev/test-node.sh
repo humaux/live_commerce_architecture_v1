@@ -24,7 +24,7 @@ node --test --experimental-strip-types tests/admin/card-payments-model.test.ts t
 node --test --experimental-strip-types tests/admin/product-document.test.ts tests/admin/product-patch.test.ts tests/admin/product-media-model.test.ts tests/admin/backend-parity.test.ts
 node --test --experimental-transform-types tests/admin/catalog-receipt.test.ts
 node --test --experimental-transform-types tests/admin/live-workspace.test.ts tests/admin/live-console-model.test.ts tests/admin/live-console-bff.test.ts
-node --test --experimental-strip-types tests/admin/comment-stream.test.ts
+node --test --experimental-strip-types tests/admin/comment-stream.test.ts tests/admin/comment-stream-hooks.test.ts
 node --test --experimental-strip-types tests/admin/live-workspace-hooks.test.ts tests/admin/live-console-render.test.ts
 node --test --experimental-strip-types tests/admin/claims-backend-parity.test.ts tests/admin/claims-model.test.ts tests/admin/claims-request.test.ts
 if [[ -n "${COMMERCE_R04_LIVEKIT_BINARY:-}" ]]; then

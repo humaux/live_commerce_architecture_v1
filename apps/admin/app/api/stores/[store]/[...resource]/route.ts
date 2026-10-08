@@ -557,7 +557,7 @@ async function proxy(request: Request, context: Context) {
   const response = await route(request, context);
   if (path.startsWith("live-sessions") || path.startsWith("inbox/") || path === "message-templates" || path.startsWith("operations") || path === "ads/catalog-feed" || path === "ads/meta/unbind") response.headers.set("Cache-Control", "private, no-store");
   // Every M7 answer (success or not) forbids a Referer, like the Go route (§7.1).
-  if (claimLinkRoute(path)) response.headers.set("Referrer-Policy", "no-referrer");
+  if (claimLinkRoute(path) || inboxResource(path)) response.headers.set("Referrer-Policy", "no-referrer");
   return response;
 }
 export const GET = proxy;

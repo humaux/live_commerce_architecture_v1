@@ -28,5 +28,6 @@ export default async function LiveConsolePage({ params, searchParams }: {
     if (!listed.stores) { const failure = await safeError(listed.response); error = failure.status === 401 ? "signed-out" : failure.status === 403 ? "forbidden" : "unavailable"; }
     else { store = requested ? listed.stores.find((s) => s.id === requested) ?? null : [...listed.stores].sort((a, b) => a.id.localeCompare(b.id))[0] ?? null; if (requested && !store) notFound(); }
   }
-  return <LiveWorkspace key={store?.id ?? "signed-out"} locale={locale} store={store} scene={scene} initialError={error} />;
+  const commentCalibration=process.env.LC_CONSOLE_CALIBRATION==="retain-on-reset" && process.env.LC_BROWSER_LIVE_CONSOLE_ACCEPTANCE==="1" && process.env.COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS==="1" && /^http:\/\/127\.0\.0\.1:[1-9][0-9]{0,4}$/.test(authConfig?.publicOrigin??"");
+  return <LiveWorkspace key={store?.id ?? "signed-out"} locale={locale} store={store} scene={scene} initialError={error} commentCalibration={commentCalibration} />;
 }

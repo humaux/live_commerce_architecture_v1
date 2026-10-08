@@ -15,9 +15,10 @@ import { liveRequest } from "@/src/features/live/command-journal";
 import { primaryAction, stockDelta, facebookPostLink, liveStockAllowed, consoleCommentStat } from "@/src/features/live/workspace-model";
 import { useLiveRead, useLiveCommand } from "@/src/features/live/use-live-workspace";
 import { workspaceCopy, type WorkspaceCopy } from "@/src/features/live/workspace-copy";
+import { CommentStream } from "./CommentStream";
 
 /** Shows server-authored lifecycle and snapshots; unresolved writes remain fenced across refreshes. */
-export function LiveConsole({ locale, store, sessionID, navigationGuard, onRefreshList }: { locale: Locale; store: Store; sessionID: string; navigationGuard: RefObject<() => boolean>; onRefreshList?: () => void }) {
+export function LiveConsole({ locale, store, sessionID, navigationGuard, onRefreshList, commentCalibration=false }: { locale: Locale; store: Store; sessionID: string; navigationGuard: RefObject<() => boolean>; onRefreshList?: () => void; commentCalibration?:boolean }) {
   const c = workspaceCopy[locale], router = useRouter(), scope = `${store.id}:${sessionID}`;
   const view = useLiveRead(scope, true, (signal) => readConsole(store.id, sessionID, signal), true);
   const detailView = useLiveRead(`${scope}:detail`, true, (signal) => readStudioDetail(store.id, sessionID, signal));
@@ -96,6 +97,7 @@ export function LiveConsole({ locale, store, sessionID, navigationGuard, onRefre
         <button type="button" disabled={command.busy} onClick={() => setCopying(false)}>{c.cancel}</button>
       </form>}
       <div className="live-console-columns">
+        <div className="live-console-left">
         <section className="live-preview"><h3>{c.facebook}</h3>
           {facebookLink ? <><p className="live-helper">{c.facebookLinkNotice}</p><a href={facebookLink} target="_blank" rel="noopener noreferrer">{c.openFacebook}</a></> : <p>{c.noFacebookLink}</p>}
           {(data.stream.source_platform === "instagram" || !data.stream.video_embeddable) && <p className="live-instagram-notice">{c.instagram}</p>}
@@ -111,6 +113,8 @@ export function LiveConsole({ locale, store, sessionID, navigationGuard, onRefre
             onStock={(delta, version, saved) => offer.stock.warehouse_id ? command.run(liveRequest(store.id, sessionID, "inventory/adjustments", "POST", { warehouse_id: offer.stock.warehouse_id, sku_id: offer.sku_id, delta, expected_version: version, reason: "live_console_edit" }), saved) : Promise.resolve()}
           />)}</ul>
         </section>
+        </div>
+        <CommentStream locale={locale} store={store} session={sessionID} platform={data.stream.source_platform} capabilities={data.capabilities} calibration={commentCalibration}/>
       </div>
     </>}
   </section>;

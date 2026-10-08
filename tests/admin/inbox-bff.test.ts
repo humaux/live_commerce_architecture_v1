@@ -143,6 +143,28 @@ async function call(path: string, over: Options = {}) {
   };
 }
 const base = `inbox/conversations/${cid}`;
+test("LC-U2a real BFF seam A2-A5 exact grammar, privacy, denial and no diagnostic reflection", async () => {
+  const root=`live-sessions/${cid}/comments`;
+  answer={status:200,body:JSON.stringify({items:[]})};
+  const read=await call(root,{query:"?after_epoch=0&after_seq=7&limit=50"});
+  assert.equal(read.status,200);assert.match(read.headers.get("cache-control")??"",/no-store/);assert.equal(read.headers.get("referrer-policy"),"no-referrer");
+  for(const suffix of ["private-reply","public-reply","print"]) {
+    const result=await call(`${root}/123_456/${suffix}`,{method:"POST",body:suffix==="print"?{}:{text:"Synthetic reply"}});
+    assert.equal(result.status,200);assert.equal(seen.at(-1)?.headers["idempotency-key"],"synthetic-receipt");
+    assert.equal(seen.at(-1)?.headers.cookie,undefined);
+  }
+  const before=seen.length;
+  for(const opts of [{query:"?text=private"},{query:"?after_seq=2"},{headers:{"idempotency-key":"forbidden-read"}}])assert.equal((await call(root,opts)).status,422);
+  assert.equal((await call(`${root}/123/private-reply`,{method:"POST",body:{text:"x",tenant_id:store}})).status,422);
+  assert.equal((await call(`${root}/123/private-reply`,{method:"POST",body:{text:"x"},headers:{"x-csrf-token":"wrong"}})).status,403);
+  assert.equal(seen.length,before);
+  answer={status:422,body:JSON.stringify({code:"public_reply_forbidden_content",debug:"DO_NOT_FORWARD"})};
+  const denial=await call(`${root}/123/public-reply`,{method:"POST",body:{text:"Synthetic payment URL"}});
+  answer={status:200,body:JSON.stringify({items:[],next_cursor:"",unread_total:0})};
+  assert.equal(denial.status,422);assert.equal(denial.body.code,"public_reply_forbidden_content");
+  assert.equal(denial.body.message,"Request failed.");assert.deepEqual(denial.body.details,{});assert.equal(denial.body.retryable,false);
+  assert.equal(JSON.stringify(denial.body).includes("DO_NOT_FORWARD"),false);
+});
 const writes: [string, Record<string, unknown>][] = [
   [`${base}/read`, { read_seq: 3 }],
   [`${base}/takeover`, { expected_generation: 0 }],
