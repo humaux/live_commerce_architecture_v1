@@ -29,7 +29,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { expect } from "@playwright/test";
 import { engine, launch, ctxOpts, phone, iosZoomOffenders } from "./browser-engine.mjs";
-import { reachCheckout } from "./shop-helpers.mjs";
+import { reachCheckout, switchLocale } from "./shop-helpers.mjs";
 import { displayTime } from "../../packages/format/src/index.ts";
 
 const env = (name) => {
@@ -60,7 +60,8 @@ const copy = {
     headConfirmed: "Order confirmed", headCancelled: "Order canceled", headWaiting: "Waiting for bank transfer",
   },
 };
-const storeTime = { "zh-TW": "店鋪時間（UTC+8）", en: "Store time (UTC+8)" };
+const storeTime = { "zh-TW": "店鋪時間（UTC+8）", "zh-CN": "店铺时间（UTC+8）", en: "Store time (UTC+8)" };
+const inputZoneCopy = { "zh-TW": "你裝置的時區：", "zh-CN": "你设备的时区：", en: "Your device time zone: " };
 const pii = { recipient_name: "Synthetic Gate Recipient", phone: "+886900000091", region: "Synthetic Region", city: "Synthetic City", postal_code: "99991", line1: "Synthetic Address Ninety One", line2: "Synthetic Unit Ninety Two" };
 
 function relayTo(target, req, body) {
@@ -125,6 +126,15 @@ async function assertTransferTime(page, locale, transfer, proof = false) {
     await expect(echo).toContainText(storeTime[locale]);
   }
 }
+// The input and the store-time echo must identify their different zones, including after navigation/reload.
+async function assertInputZone(page, locale) {
+  const zone = await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone);
+  const hint = inputZoneCopy[locale] + zone;
+  const field = page.locator('input[name="paid_at"]');
+  await expect(field).toBeVisible();
+  await expect(field).toHaveAccessibleDescription(hint);
+  await expect(page.getByText(hint, { exact: true })).toBeVisible();
+}
 async function signal(step) { await writeFile(path.join(evidence, `ready-${step}`), "1"); }
 async function waitGo(step) {
   const file = path.join(evidence, `go-${step}`);
@@ -133,25 +143,33 @@ async function waitGo(step) {
 }
 const view = (page) => page.getByTestId("bank-transfer");
 
-async function send(page, last5, minor) {
+async function send(page, last5, minor, minutesAgo = 10) {
+  await assertInputZone(page, new URL(page.url()).pathname.split("/")[1]);
   await page.locator('input[name="last5"]').fill(last5);
   await page.locator('input[name="amount"]').fill(money(minor));
-  // datetime-local is intentionally browser-local; read that wall clock inside this Playwright context.
-  const localInput = await page.evaluate(() => {
-    const d = new Date(Date.now() - 10 * 60000), p = (n) => String(n).padStart(2, "0");
+  // Independent instant oracle: format it in the browser zone for entry, then require the same instant from real PUT/GET.
+  const expectedInstant = new Date(Math.floor(Date.now() / 60000) * 60000 - minutesAgo * 60000).toISOString();
+  const localInput = await page.evaluate(instant => {
+    const d = new Date(instant), p = n => String(n).padStart(2, "0");
     return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
-  });
+  }, expectedInstant);
   await page.locator('input[name="paid_at"]').fill(localInput);
-  // Ignore an older periodic GET: only the UI-triggered read with this submitted proof is evidence.
+  const written = page.waitForResponse(r => r.request().method() === "PUT" && new URL(r.url()).pathname.endsWith("/bank-transfer/proof"));
   const updated = page.waitForResponse(async (r) => {
     if (!transferRead(r)) return false;
     const body = await r.json().catch(() => null);
-    return body?.state === "SUBMITTED" && body.proof?.last5 === last5;
+    return body?.state === "SUBMITTED" && body.proof?.last5 === last5 && Date.parse(body.proof.paid_at) === Date.parse(expectedInstant);
   });
   await page.getByTestId("transfer-send").click();
+  const write = await written;
+  assert.equal(write.status(), 200);
+  assert.equal(write.request().postDataJSON().paid_at, expectedInstant, "real UI serializes the buyer's local wall clock");
   await expect(view(page)).toHaveAttribute("data-state", "SUBMITTED");
   await expect(page.getByTestId("transfer-proof")).toContainText(last5);
-  return (await updated).json();
+  const submitted = await (await updated).json();
+  assert.equal(Date.parse(submitted.proof.paid_at), Date.parse(expectedInstant), "real persisted proof is the same instant");
+  await expect(page.locator('input[name="paid_at"]')).toHaveValue(localInput);
+  return submitted;
 }
 // Product page -> home delivery quote at the free-shipping boundary -> address -> bank transfer -> order page with the bank details and countdown.
 async function belowThreshold(buyer) {
@@ -231,6 +249,42 @@ async function place(buyer, store) {
     assert.equal(savedProof.deadline_at, submitted.deadline_at, "deadline DTO survives reload");
     assert.equal(savedProof.proof?.paid_at, submitted.proof.paid_at);
     await assertTransferTime(page, locale, savedProof, true);
+    await assertInputZone(page, locale);
+    if (label === "order C") {
+      // Existing mobile Los Angeles buyer: real footer navigation, editable proof submissions and reload in all three locales; no new orders.
+      // Winter/summer offsets straddling the LA DST transition. Old dates must serialize correctly AND remain rejected by the real time-window rule.
+      for (const [wall, iso] of [["2020-03-08T01:30", "2020-03-08T09:30:00.000Z"], ["2020-03-08T03:30", "2020-03-08T10:30:00.000Z"]]) {
+        await page.locator('input[name="last5"]').fill("12345");
+        await page.locator('input[name="amount"]').fill(money(price));
+        await page.locator('input[name="paid_at"]').fill(wall);
+        const refused = page.waitForResponse(r => r.request().method() === "PUT" && new URL(r.url()).pathname.endsWith("/bank-transfer/proof"));
+        await page.getByTestId("transfer-send").click();
+        const response = await refused;
+        assert.equal(response.request().postDataJSON().paid_at, iso);
+        assert.equal(response.status(), 422, "historical DST dates remain outside the transfer-proof window");
+        assert.equal((await response.json()).code, "invalid_proof");
+        await expect(view(page).getByRole("alert")).toBeVisible();
+      }
+      for (const nextLocale of ["zh-CN", "en", "zh-TW"]) {
+        await switchLocale(page, nextLocale);
+        await expect(view(page)).toHaveAttribute("data-state", "SUBMITTED");
+        // A rejected proof also triggers an old-document GET; do not carry its response handle across navigation.
+        const current = await api(page, "GET", `orders/${id}/bank-transfer`);
+        assert.equal(current.status, 200);
+        await assertTransferTime(page, nextLocale, current.body, true);
+        await assertInputZone(page, nextLocale);
+        const edited = await send(page, "12345", price, { "zh-CN": 9, en: 8, "zh-TW": 7 }[nextLocale]);
+        await assertTransferTime(page, nextLocale, edited, true);
+        await page.reload();
+        await expect(view(page)).toHaveAttribute("data-state", "SUBMITTED");
+        const persistedEdit = await api(page, "GET", `orders/${id}/bank-transfer`);
+        assert.equal(persistedEdit.status, 200);
+        assert.equal(persistedEdit.body.proof.paid_at, edited.proof.paid_at);
+        await assertInputZone(page, nextLocale);
+        await assertTransferTime(page, nextLocale, persistedEdit.body, true);
+        await shot(page, "input-zone", nextLocale, "mobile");
+      }
+    }
     await shot(page, "order-submitted", locale, viewport);
   }
   pass(`${label} ${locale}/${viewport}/${buyer.timezoneId}: Taipei deadline and ${pay ? "paid-at proof" : "unpaid state"} survive reload; free shipping and bank details`);
@@ -295,6 +349,27 @@ try {
     if (p.key === "A") { const probe = await newContext(false); await belowThreshold({ ctx: probe, locale: p.locale }); await probe.close(); } // its own buyer: a quoted cart locks the quantity
     buyers[p.key] = await place({ ...p, label: `order ${p.key}`, ctx, timezoneId });
   }
+  // Same existing paid buyer in Asia/Taipei; reach the proof through real owned-history clicks, not a new order fixture.
+  const taipei = await newContext(true, "Asia/Taipei");
+  await taipei.addCookies(await buyers.C.ctx.cookies(origin));
+  const taipeiPage = await taipei.newPage();
+  const openTaipeiProof = async () => {
+    await taipeiPage.goto(origin + "/zh-TW/checkout");
+    await taipeiPage.getByTestId("toggle-order-history").click();
+    const read = taipeiPage.waitForResponse(transferRead);
+    await taipeiPage.locator(`button[data-order-id="${buyers.C.id}"]`).click();
+    const value = await (await read).json();
+    await assertInputZone(taipeiPage, "zh-TW");
+    await assertTransferTime(taipeiPage, "zh-TW", value, true);
+    return value;
+  };
+  await openTaipeiProof();
+  const taipeiEdit = await send(taipeiPage, "12345", price, 5);
+  const taipeiReload = await openTaipeiProof();
+  assert.equal(taipeiReload.proof.paid_at, taipeiEdit.proof.paid_at);
+  await shot(taipeiPage, "input-zone-taipei", "zh-TW", "mobile");
+  await taipei.close();
+  pass("device-zone proof input: LA/UTC/Taipei, three locales, mobile re-edit/reload, DST serialization and authoritative window rejection");
   await writeFile(path.join(evidence, "orders.json"), JSON.stringify(Object.fromEntries(Object.entries(buyers).map(([k, v]) => [k, { id: v.id, locale: v.locale, mobile: v.mobile }])), null, 2));
   await signal("placed"); await waitGo("1");
 

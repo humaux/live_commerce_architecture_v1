@@ -104,6 +104,24 @@ for (const [locale, label] of [["en", "Store time (UTC+8)"], ["zh-TW", "店鋪�
   });
 }
 
+for (const [locale, prefix] of [["en", "Your device time zone: "], ["zh-TW", "你裝置的時區："], ["zh-CN", "你设备的时区："]]) {
+  test(`BankTransfer input describes the device zone in ${locale}`, () => {
+    const view = { state: "SUBMITTED", deadline_at: "2026-12-31T17:30:00Z", currency: "TWD", amount_minor: 100, bank: null,
+      proof: { last5: "12345", amount_minor: 100, paid_at: instant } };
+    const component = load("BankTransfer", [view, false, Date.parse(instant), "", "", "", false, "", null], {
+      "../lib/buyer-client": { BuyerClientError: Error }, "../lib/purchase": {}, "../lib/bank-transfer-copy": { bankTransferCopy },
+      "../lib/browse-copy": { browseCopy }, "../lib/bank-transfer-contract": bankTransferContract,
+    }).default;
+    const tree = component({ context: "test", orderID: "order-1", locale, money: () => "NT$1", refreshToken: 0 });
+    const field = find(tree, node => node.type === "input" && node.props.name === "paid_at");
+    assert.ok(field, "loaded editable proof input");
+    const descriptionID = field.props["aria-describedby"];
+    assert.equal(typeof descriptionID, "string", "device-zone hint is associated with the input");
+    const hint = find(tree, node => node.props?.id === descriptionID);
+    assert.equal(text(hint), prefix + Intl.DateTimeFormat().resolvedOptions().timeZone);
+  });
+}
+
 test("ShopFooter uses Taipei year across UTC year boundary", () => {
   const stub = () => null;
   const component = load("ShopChrome", [], {

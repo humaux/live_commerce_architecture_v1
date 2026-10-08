@@ -67,6 +67,9 @@ export default function BankTransfer({
   onState?: (state: TransferState) => void;
 }) {
   const copy = bankTransferCopy[locale];
+  // The proof is entered as device-local wall time; its saved echo is explicitly store time.
+  const inputTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const inputTimeZoneID = `transfer-paid-at-zone-${orderID}`;
   const [view, setView] = useState<TransferView | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [now, setNow] = useState(() => Date.now());
@@ -267,8 +270,9 @@ export default function BankTransfer({
           </label>
           <label>
             <span>{copy.paidAt}</span>
-            <input name="paid_at" type="datetime-local" required value={paidAt} onChange={(event) => setPaidAt(event.target.value)} />
+            <input name="paid_at" type="datetime-local" aria-describedby={inputTimeZoneID} required value={paidAt} onChange={(event) => setPaidAt(event.target.value)} />
           </label>
+          <p id={inputTimeZoneID}>{copy.paidAtZone(inputTimeZone)}</p>
           <button type="submit" data-testid="transfer-send" disabled={sending}>
             {sending ? copy.sending : copy.send}
           </button>

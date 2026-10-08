@@ -1,6 +1,6 @@
 // Purpose: Buyer-facing bank-transfer checkout and proof feedback in three locales.
 // Depends on: Locale and frozen bank-transfer state/error types (storefront-v2 §C).
-// Used by: OrderFlow checkout and BankTransfer order panels; proof echo names the store timezone.
+// Used by: OrderFlow checkout and BankTransfer order panels; input names the device timezone and proof echo names the store timezone.
 // Buyer-facing copy (zh-CN / zh-TW / en) for the bank-transfer payment mode (contracts/storefront-v2.md §C): the payment choice and optional
 // email at checkout (components/OrderFlow.tsx) and the order page panel (components/BankTransfer.tsx).
 // Rules encoded here: the order is never "paid" until the shop confirms it (CONFIRMED text names the shop as the confirmer); a REJECTED
@@ -47,6 +47,7 @@ const en = {
   last5: "Last 5 digits of the account you sent from",
   amountSent: "Amount you transferred",
   paidAt: "Transfer date and time",
+  paidAtZone: (zone: string) => `Your device time zone: ${zone}`,
   send: "Send transfer details",
   sending: "Sending…",
   sent: "Transfer details sent. The shop will confirm after checking its account.",
@@ -104,6 +105,7 @@ const zhCN: typeof en = {
   last5: "转出账户的后 5 码",
   amountSent: "你转账的金额",
   paidAt: "转账日期与时间",
+  paidAtZone: (zone: string) => `你设备的时区：${zone}`,
   send: "送出转账资料",
   sending: "送出中…",
   sent: "转账资料已送出。商家核对账户后会确认。",
@@ -161,6 +163,7 @@ const zhTW: typeof en = {
   last5: "轉出帳戶的後 5 碼",
   amountSent: "你轉帳的金額",
   paidAt: "轉帳日期與時間",
+  paidAtZone: (zone: string) => `你裝置的時區：${zone}`,
   send: "送出轉帳資料",
   sending: "送出中…",
   sent: "轉帳資料已送出。商家核對帳戶後會確認。",
