@@ -93,23 +93,6 @@
   font-size: 13px;
   color: var(--pe-accent);
 }
-/* Readiness accordion: the toggle chrome is visible only ≤900px (see the media query below);
-   on desktop the section stays always open and these two elements take no layout space. */
-.pe-readiness-toggle {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
-}
-.pe-readiness-toggle-label {
-  display: none;
-}
 .pe-fields,
 .pe-fieldset {
   min-width: 0;
@@ -781,14 +764,15 @@
     font-size: 11px;
     color: var(--pe-muted);
   }
-  /* The pre-publish missing-items list collapses behind a real toggle instead of being
-     removed at this width (PR #1 review comment 4212540352). */
-  .pe-readiness-toggle-label {
+  /* The pre-publish missing-items list collapses behind a real toggle button (only rendered at
+     this width by ProductDocumentForm) instead of being removed (PR #1 review 4212540352). */
+  .pe-readiness-toggle {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
     box-sizing: border-box;
+    width: 100%;
     min-height: 44px;
     padding: 10px 12px;
     border: 1px solid var(--pe-rule);
@@ -796,8 +780,10 @@
     background: white;
     font-size: 14px;
     font-weight: 600;
+    text-align: left;
+    cursor: pointer;
   }
-  .pe-readiness-toggle-label::after {
+  .pe-readiness-toggle::after {
     content: "";
     flex: none;
     width: 8px;
@@ -805,16 +791,10 @@
     border-right: 2px solid var(--pe-muted);
     border-bottom: 2px solid var(--pe-muted);
     transform: rotate(45deg) translate(-2px, -2px);
+    transition: transform 120ms ease;
   }
-  .pe-readiness-toggle:checked + .pe-readiness-toggle-label::after {
+  .pe-readiness-toggle[aria-expanded="true"]::after {
     transform: rotate(225deg) translate(-2px, -2px);
-  }
-  .pe-readiness-toggle:focus-visible + .pe-readiness-toggle-label {
-    outline: 2px solid var(--pe-accent);
-    outline-offset: -2px;
-  }
-  .pe-readiness-toggle:not(:checked) ~ section {
-    display: none;
   }
 }
 @media (max-width: 680px) {

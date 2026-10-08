@@ -10,6 +10,7 @@ import {
   safeEditProblem,
   parseBulk,
 } from "../../apps/admin/lib/product-document.ts";
+import { productEditorCopy } from "../../apps/admin/lib/product-editor-copy.ts";
 
 test("PE13 Cartesian matrix is local, preserves edits and deduplicates values", () => {
   const axes = [
@@ -131,19 +132,36 @@ test("PR #1 4212540344: per-row matrix labels reappear where the matrix header i
   assert.equal((variants.match(/aria-label=\{/g) ?? []).length >= 7, true);
   assert.match(variants, /<label>\n\s+<span>\{c\.price\}<\/span>/);
 });
-test("PR #1 4212540352: pre-publish missing-items list collapses behind a toggle at ≤900px instead of being removed", () => {
+test("PR #1 4212540352: pre-publish missing-items list collapses behind a real toggle at ≤900px instead of being removed", () => {
   const css = readFileSync(new URL("../../apps/admin/components/ProductDocument.css", import.meta.url), "utf8");
   const form = readFileSync(new URL("../../apps/admin/components/ProductDocumentForm.tsx", import.meta.url), "utf8");
-  // The old unconditional removal is gone…
+  // The old unconditional removal is gone and no CSS rule hides the section anymore — visibility
+  // is owned by the component so the control and its label are always rendered together.
   assert.doesNotMatch(css, /\.pe-index section \{\n\s+display: none;\n\s*\}/);
-  // …replaced by a checkbox accordion scoped to the small-screen block…
+  assert.doesNotMatch(css, /pe-readiness-toggle[^\n]*~ section/);
+  // The toggle is a REAL button with a visible text label, aria-expanded/aria-controls, and it is
+  // only rendered at ≤900px — at >900px no toggle exists in the DOM at all (axe
+  // hidden-explicit-label fired on the previous visually-hidden checkbox).
+  assert.doesNotMatch(form, /pe-readiness-toggle[^\n]*type="checkbox"/);
+  assert.doesNotMatch(form, /pe-readiness-toggle-label/);
+  // The ≤900px breakpoint is owned by the presentation layout hook (axe hidden-explicit-label
+  // fix: no labelled control may exist without its visible label, so >900px renders nothing).
+  const layout = readFileSync(new URL("../../apps/admin/components/useProductEditorLayout.ts", import.meta.url), "utf8");
+  assert.match(layout, /window\.matchMedia\("\(max-width: 900px\)"\)/);
+  assert.match(form, /noteSaveAttempt, narrowViewport \} =/);
+  assert.match(form, /narrowViewport && \(/);
+  assert.match(
+    form,
+    /<button type="button" className="pe-readiness-toggle" aria-expanded=\{readinessOpen\}\n\s+aria-controls="pe-readiness-section" onClick=\{\(\) => setReadinessOpen\(\(open\) => !open\)\}>/,
+  );
+  assert.match(form, /\{c\.progress\}\n\s+<\/button>/);
+  // The controlled section carries the id and is hidden only while collapsed on a small screen.
+  assert.match(form, /<section id="pe-readiness-section" hidden=\{narrowViewport && !readinessOpen\}>/);
+  // The visible label exists in all three locales via the existing copy file.
+  for (const locale of ["zh-TW", "zh-CN", "en"] as const)
+    assert.ok(productEditorCopy[locale].progress.length > 0, `${locale}: toggle label`);
+  // The button styling lives in the ≤900px block; desktop has no toggle chrome at all.
   const media = css.indexOf("@media (max-width: 900px)");
-  const rule = css.indexOf(".pe-readiness-toggle:not(:checked) ~ section", media);
-  assert.ok(rule > media, "collapse rule must live in the ≤900px block");
-  assert.match(css.slice(rule), /\.pe-readiness-toggle:not\(:checked\) ~ section \{\n\s+display: none;\n\s*\}/);
-  // …with the real toggle markup in the editor (checkbox stays in the DOM and names the label)…
-  assert.match(form, /className="pe-readiness-toggle" type="checkbox" id="pe-readiness-toggle"/);
-  assert.match(form, /<label className="pe-readiness-toggle-label" htmlFor="pe-readiness-toggle">/);
-  // …and desktop hides only the toggle chrome, never the section.
-  assert.match(css, /\.pe-readiness-toggle-label \{\n\s+display: none;\n\s*\}/);
+  const rule = css.indexOf(".pe-readiness-toggle {", media);
+  assert.ok(rule > media, "toggle styles must live in the ≤900px block");
 });

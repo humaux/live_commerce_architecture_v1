@@ -73,6 +73,7 @@ export function ProductDocumentForm({
     [imageAxis, setImageAxis] = useState<string|null>(null),
     [mediaBusy, setMediaBusy] = useState(false),
     [mediaKnown, setMediaKnown] = useState(false);
+  const [readinessOpen, setReadinessOpen] = useState(false);
   const initial = useRef(JSON.stringify(initialDraft(detail))),
     urlPhotos = useRef<DraftPhoto[]>([]),
     rowArchive = useRef<DraftRow[]>([]);
@@ -102,7 +103,7 @@ export function ProductDocumentForm({
     "shipping",
     "seo",
   ] as const;
-  const { editor, fields, feedback, focus, noteSaveAttempt } =
+  const { editor, fields, feedback, focus, noteSaveAttempt, narrowViewport } =
     useProductEditorLayout(
       sections,
       setSection,
@@ -298,14 +299,14 @@ export function ProductDocumentForm({
             </button>
           ))}
         </nav>
-        {/* CSS-only accordion: on ≤900px the readiness list collapses behind this toggle instead
-            of disappearing (PR #1 review comment 4212540352). The checkbox stays focusable and
-            names the toggle; desktop (>900px) hides both chrome pieces and always shows the section. */}
-        <input className="pe-readiness-toggle" type="checkbox" id="pe-readiness-toggle" />
-        <label className="pe-readiness-toggle-label" htmlFor="pe-readiness-toggle">
-          {c.progress}
-        </label>
-        <section>
+        {/* Readiness accordion (comment 4212540352): real button with a visible label in all locales; >900px renders no toggle at all, desktop layout unchanged. */}
+        {narrowViewport && (
+          <button type="button" className="pe-readiness-toggle" aria-expanded={readinessOpen}
+            aria-controls="pe-readiness-section" onClick={() => setReadinessOpen((open) => !open)}>
+            {c.progress}
+          </button>
+        )}
+        <section id="pe-readiness-section" hidden={narrowViewport && !readinessOpen}>
           <h2>{c.progress}</h2>
           <h3>{c.required}</h3>
           <ProductReadiness c={c} items={requirements} focus={focus} activeSection={section} />

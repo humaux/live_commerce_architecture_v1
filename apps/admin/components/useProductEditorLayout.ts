@@ -1,5 +1,5 @@
 // Purpose: Reserve editor scroll/footer space and reveal focused sections or command feedback without moving the shell.
-// Depends on: React hooks; browser ResizeObserver, IntersectionObserver and visualViewport; ProductDocumentForm element refs.
+// Depends on: React hooks; browser ResizeObserver, IntersectionObserver, visualViewport and matchMedia; ProductDocumentForm element refs.
 // Used by: ProductDocumentForm; presentation only, with no draft, API, receipt or persistence ownership.
 "use client";
 import {
@@ -24,6 +24,17 @@ export function useProductEditorLayout(
     feedback = useRef<HTMLDivElement>(null);
   const sectionKey = sections.join("|");
   const [feedbackAttempt, setFeedbackAttempt] = useState(0);
+  // Small-screen readiness accordion breakpoint (PR #1 review comment 4212540352): the toggle
+  // button and its visible label are rendered only ≤900px, so a labelled control never exists
+  // without its label (axe hidden-explicit-label). Server render reports the desktop layout.
+  const [narrowViewport, setNarrowViewport] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 900px)");
+    const update = () => setNarrowViewport(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
   const noteSaveAttempt = useCallback(
     () => setFeedbackAttempt((n) => n + 1),
     [],
@@ -161,5 +172,5 @@ export function useProductEditorLayout(
     },
     [onSection],
   );
-  return { editor, fields, feedback, focus, noteSaveAttempt };
+  return { editor, fields, feedback, focus, noteSaveAttempt, narrowViewport };
 }
