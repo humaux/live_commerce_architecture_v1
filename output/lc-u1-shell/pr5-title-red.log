@@ -1,0 +1,39 @@
+✔ A1 failures back off 3/6/12/24/30 seconds and success resets to five seconds (205.59075ms)
+✔ Retry-After is a minimum; hidden tabs cancel polling; forbidden locks and conceals (307.570292ms)
+✔ secondary reads are mount/refresh only, independent from A1 and non-fatal (66.882ms)
+✔ UNKNOWN journal restores the exact key/method/path/body and explicit retry after reload (43.12325ms)
+✔ first definite 403 clears journal but locks commands; late success after navigation clears only its own key (79.255792ms)
+✔ private reads preserve Retry-After seconds and dates, without changing existing error codes (85.847417ms)
+✔ a restored in-flight or UNKNOWN request retains its journal after a replay 403 (979.802292ms)
+✔ restored copy success dispatches completion only in the still-current scene (121.10325ms)
+✖ SessionCopy resyncs closed same-ID titles, preserves open edits and cancels to latest draft (58.657833ms)
+✔ SessionCopy submit uses latest version; UNKNOWN request survives later draft/input changes (45.389125ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 9
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2811.999708
+
+✖ failing tests:
+
+test at tests/admin/live-workspace-hooks.test.ts:172:1
+✖ SessionCopy resyncs closed same-ID titles, preserves open edits and cancels to latest draft (58.657833ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'Original session'
+  - 'Renamed in Studio'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/live-workspace-hooks.test.ts:179:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'Original session',
+    expected: 'Renamed in Studio',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

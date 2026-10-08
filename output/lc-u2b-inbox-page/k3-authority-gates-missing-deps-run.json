@@ -1,0 +1,13 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/check-gates.sh"
+  ],
+  "env": {
+    "GOTOOLCHAIN": "go1.27.1"
+  },
+  "exit_code": 1,
+  "timeout_seconds": 300,
+  "started_epoch": 1791399678.719401,
+  "elapsed_seconds": 0.45574307441711426
+}

@@ -1,5 +1,5 @@
 // Purpose: Owns customer detail and merchant privacy-action controls.
-// Depends on: react, next/link, @live-commerce/i18n, @live-commerce/ui, @/lib/presentation-copy, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/customers-model, @/lib/orders-model, @/lib/orders-copy, @/lib/customers-copy, ./WorkspaceFrame, ./AdminPageHeader, ./orders.css, ./order-actions.css, ./customers.css
+// Depends on: react, next/link, @live-commerce/i18n, @live-commerce/ui, @/lib/presentation-copy, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/customers-model, @/lib/orders-model, @/lib/orders-copy, @/lib/customers-copy, ./CustomerTags, ./CustomerHistoricalOrders, ./WorkspaceFrame, ./AdminPageHeader, ./orders.css, ./order-actions.css, ./customers.css
 // Used by: apps/admin/app/[locale]/customers/[customer]/page.tsx
 "use client";
 
@@ -31,6 +31,8 @@ import { ordersCopy } from "@/lib/orders-copy";
 import { customersCopy, type CustomersCopy } from "@/lib/customers-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminPageHeader } from "./AdminPageHeader";
+import { CustomerTags } from "./CustomerTags";
+import { CustomerHistoricalOrders } from "./CustomerHistoricalOrders";
 import "./orders.css";
 import "./order-actions.css";
 import "./customers.css";
@@ -60,6 +62,10 @@ export function CustomerDetail({
     store ? (signal) => readCustomer(store.id, customerID, signal) : null,
     initialError,
   );
+  // Catalogue/notes report a lost scope from inside Body, which the reload remounts: guard once per page so a read that stays
+  // forbidden while the detail is still allowed cannot reload forever.
+  const scopeLost = useRef(false);
+  const onScopeLost = () => { if (scopeLost.current) return; scopeLost.current = true; read.reload(); };
   const failure =
     read.status === "signed-out" ? c.signedOut
     : read.status === "forbidden" ? c.forbidden
@@ -81,7 +87,7 @@ export function CustomerDetail({
           </div>
         )}
         {read.status === "ready" && read.data && store && (
-          <Body detail={read.data} store={store.id} boundary={read.boundary} refresh={read.refresh} locale={locale} c={c} />
+          <Body detail={read.data} storeInfo={store} store={store.id} boundary={read.boundary} refresh={read.refresh} onScopeLost={onScopeLost} locale={locale} c={c} />
         )}
       </div>
     </WorkspaceFrame>
@@ -97,16 +103,20 @@ type Pending = {
 
 function Body({
   detail,
+  storeInfo,
   store,
   boundary,
   refresh,
+  onScopeLost,
   locale,
   c,
 }: {
   detail: Detail;
+  storeInfo: Store;
   store: string;
   boundary: string;
   refresh: () => Promise<boolean>;
+  onScopeLost: () => void;
   locale: Locale;
   c: CustomersCopy;
 }) {
@@ -157,6 +167,13 @@ function Body({
   const label = (purpose: string) => (purpose === "marketing_messages" ? c.marketing : c.ads);
   return (
     <>
+      {detail.active && <CustomerTags key={`${store}|${detail.customer_id}|${boundary}`} locale={locale} store={storeInfo}
+        detail={detail} boundary={boundary} onChanged={refresh} onScopeLost={onScopeLost} />}
+      {detail.active && detail.imported && <>
+        <Badge tone="neutral">{c.imported}</Badge>
+        <CustomerHistoricalOrders key={`history|${store}|${detail.customer_id}|${boundary}`} locale={locale}
+          store={store} customer={detail.customer_id} boundary={boundary} />
+      </>}
       {!detail.active && <p className="customers-erased" role="status" data-testid="customer-erased">{c.erasedState}</p>}
       <section className="customers-section" aria-label={c.facts}>
         <h2>{c.facts}</h2>

@@ -1,0 +1,32 @@
+{
+  "command": [
+    "pnpm",
+    "exec",
+    "tsc",
+    "--noEmit",
+    "--strict",
+    "--skipLibCheck",
+    "--target",
+    "ES2023",
+    "--module",
+    "esnext",
+    "--moduleResolution",
+    "bundler",
+    "--esModuleInterop",
+    "--allowImportingTsExtensions",
+    "--typeRoots",
+    "apps/admin/node_modules/@types",
+    "--types",
+    "node",
+    "tests/admin/import-wizard.spec.ts",
+    "tests/admin/customer-tags.spec.ts",
+    "tests/admin/reports.spec.ts"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-import-wizard-ui",
+  "base_sha": "9f7ec2cd84e34ff87dfb472e4a475126cb3908d5",
+  "candidate_tree": "3195778e70893d1da860179ee58d229755758e56",
+  "started": "2026-10-07T14:12:46.259960+00:00",
+  "ended": "2026-10-07T14:12:49.557326+00:00",
+  "exit_code": 0,
+  "log": "/Volumes/data/live_commerce_architecture_v1/output/w5-u1-import-wizard-ui/reconcile/specs.log"
+}

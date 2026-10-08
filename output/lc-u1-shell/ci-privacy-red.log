@@ -1,0 +1,12 @@
+--- FAIL: TestCvsNoIframeAndPrivacy (0.19s)
+    --- FAIL: TestCvsNoIframeAndPrivacy/CSP_frame-src_is_unchanged_and_no_ECPay_frame_exists (0.03s)
+        taiwan_cvs_guards_test.go:92: apps/admin/next.config.ts: frame-src directives changed: [frame-src https://www.facebook.com` }],
+                  },
+                  // staff-team D3: the invitation token is in this path, so neither the page's own subresources nor anything else may receive
+                  // it as a Referer, and the page is never cached. A real header (not only the <meta>) covers the stylesheet/script requests
+                  // the browser starts before it parses <head>.
+                  {
+                    source: ] (base [])
+FAIL
+FAIL	command-line-arguments	0.762s
+FAIL

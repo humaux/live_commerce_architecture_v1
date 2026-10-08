@@ -1,3 +1,6 @@
+// Purpose: Private Studio/Claims reads and idempotent commands, preserving HTTP refusal and Retry-After metadata.
+// Depends on: settings-client session/CSRF authority, Studio parsers, same-origin fetch and frozen BFF routes.
+// Used by: Studio, Claims and LC-U1 clients; uncertain writes never auto-retry.
 import { csrfCookie, sessionBoundary } from "./settings-client";
 import { validStudioInputToken } from "./studio-request";
 import {
@@ -14,7 +17,7 @@ export type StudioErrorCode = "signed-out" | "forbidden" | "not-found" | "confli
 export class StudioError extends Error {
   // `api` is the backend's own bounded error code (e.g. "binding_missing") of a definite
   // 4xx answer, for callers that word specific refusals; never set for an unknown result.
-  constructor(readonly code: StudioErrorCode, readonly api = "") { super(code); }
+  constructor(readonly code: StudioErrorCode, readonly api = "", readonly retryAfterMs = 0, readonly status = 0) { super(code); }
 }
 export type DraftInput = { title: string; scheduled_at: string | null; aspect_ratio: AspectRatio };
 
@@ -33,13 +36,19 @@ async function json(response: Response, uncertain: boolean): Promise<unknown> {
   try { return await response.json(); }
   catch { throw new StudioError(uncertain ? "uncertain" : "unavailable"); }
 }
+function retryAfter(response: Response): number {
+  const value = response.headers.get("retry-after");
+  if (!value) return 0;
+  const delay = /^\d+$/.test(value) ? Number(value) * 1000 : Date.parse(value) - Date.now();
+  return Number.isFinite(delay) ? Math.max(0, delay) : 0;
+}
 // Studio › Claims (claims-client.ts) reuses this private read/write boundary unchanged.
 export async function read(path: string, signal: AbortSignal): Promise<unknown> {
   let response: Response;
   try {
     response = await fetch(path, { method: "GET", cache: "no-store", credentials: "same-origin", signal });
   } catch { throw new StudioError("unavailable"); }
-  if (!response.ok) throw new StudioError(classify(response.status));
+  if (!response.ok) throw new StudioError(classify(response.status), "", retryAfter(response), response.status);
   return json(response, false);
 }
 export async function readStudioPage(store: string, cursor: string, signal: AbortSignal) {
@@ -78,7 +87,7 @@ export async function write(path: string, method: "POST" | "PATCH" | "PUT", body
     if (response.status >= 500) throw new StudioError("uncertain");
     const body: unknown = await response.json().catch(() => null);
     const api = body && typeof body === "object" && typeof (body as { code?: unknown }).code === "string" ? (body as { code: string }).code : "";
-    throw new StudioError(classify(response.status), /^[a-z0-9_]{1,64}$/.test(api) ? api : "");
+    throw new StudioError(classify(response.status), /^[a-z0-9_]{1,64}$/.test(api) ? api : "", retryAfter(response), response.status);
   }
   const result = await json(response, true);
   try {

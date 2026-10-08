@@ -23,6 +23,7 @@ const en = {
   reopen: "Reopen the link in the seller’s message to view these items again, or continue from your cart.",
   cartLink: "View cart",
   expires: (time: string) => `This link works until ${time}.`,
+  taipeiTime: "Taipei time (UTC+8)", // same label as purchase-copy (checkout/order expiry)
   added: "Added to your cart.", nothing: "Your cart already has these items.",
   skipped: "Some items were not added because they are not available right now. They stay on this link.",
   notFound: "This link expired or was replaced. Message the seller for a new link.",
@@ -52,6 +53,7 @@ export const claimCopy: Record<Locale, ClaimCopy> = {
     reopen: "请重新打开商家私信中的链接查看这些商品，或从购物车继续。",
     cartLink: "查看购物车",
     expires: (time: string) => `此链接有效至 ${time}。`,
+    taipeiTime: "台北时间（UTC+8）", // same label as purchase-copy (checkout/order expiry)
     added: "已加入购物车。", nothing: "购物车里已有这些商品。",
     skipped: "部分商品目前无法购买，未加入购物车，仍保留在此链接中。",
     notFound: "链接已失效或已更换，请私信商家重新取得",
@@ -77,6 +79,7 @@ export const claimCopy: Record<Locale, ClaimCopy> = {
     reopen: "請重新開啟商家私訊中的連結查看這些商品，或從購物車繼續。",
     cartLink: "查看購物車",
     expires: (time: string) => `此連結有效至 ${time}。`,
+    taipeiTime: "台北時間（UTC+8）", // same label as purchase-copy (checkout/order expiry)
     added: "已加入購物車。", nothing: "購物車裡已有這些商品。",
     skipped: "部分商品目前無法購買，未加入購物車，仍保留在此連結中。",
     notFound: "連結已失效或已更換，請私訊商家重新取得",

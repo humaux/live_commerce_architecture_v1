@@ -1,0 +1,12 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-cvs"
+  ],
+  "source": "b4495ba280527bb692227e12c6230be9e47e8ef9",
+  "exit": 0,
+  "timeout": false,
+  "elapsed_seconds": 101.91,
+  "log": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/codex4-cvs-baseline.log"
+}

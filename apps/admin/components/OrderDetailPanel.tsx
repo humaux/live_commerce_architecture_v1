@@ -52,6 +52,11 @@ export type Sections = {
   actions: OrderActions;
   boundary: string;
   onChanged: () => Promise<boolean>;
+  // W3-07B: returns the group-block hint text when the order sits in an OPEN parcel group this session knows about;
+  // undefined when ungrouped (or unknown — the server in_parcel_group guard stays the authority).
+  parcelBlockText?: (orderID: string) => string | undefined;
+  // W3-07B: told the refusal code of a single-order shipment so the page can re-read the parcel state (in_parcel_group).
+  onShipmentRefused?: (code: string) => void;
 };
 
 /**
@@ -448,6 +453,8 @@ export function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, 
               canWrite={sections.actions.fulfillment_write}
               boundary={sections.boundary}
               onChanged={sections.onChanged}
+              parcelBlock={sections.parcelBlockText?.(detail.order_id)}
+              onRefused={sections.onShipmentRefused}
             />
           )}
         </section>

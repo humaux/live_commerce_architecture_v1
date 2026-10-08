@@ -1,5 +1,9 @@
 //go:build browser
 
+// Purpose: real buyer order browser acceptance with exact completed-case and PostgreSQL fact checks.
+// Depends on: the production storefront, buyer HTTP fixture, Playwright order-gate.mjs and disposable PostgreSQL.
+// Used by: --browser-order and the order step of --browser-webkit.
+
 package foundation_test
 
 import (
@@ -189,8 +193,9 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 		Cases          int      `json:"cases"`
 		Orders         []string `json:"orders"`
 		RepeatedOrders []string `json:"repeated_orders"`
+		Observations   []string `json:"observations"`
 	}
-	if json.Unmarshal(data, &result) != nil || result.Cases != 23 || len(result.Orders) != 7 || len(result.RepeatedOrders) != 2 || result.RepeatedOrders[0] == result.RepeatedOrders[1] {
+	if json.Unmarshal(data, &result) != nil || !buyerOrderCasesComplete(result.Cases, result.Observations) || len(result.Orders) != 7 || len(result.RepeatedOrders) != 2 || result.RepeatedOrders[0] == result.RepeatedOrders[1] {
 		t.Fatal("incomplete browser order evidence")
 	}
 	after, err := facts(context.Background())

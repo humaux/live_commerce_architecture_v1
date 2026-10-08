@@ -1,0 +1,23 @@
+{
+  "_header": {
+    "Purpose": "bind current P2 command or test source evidence",
+    "Depends on": "recorded command/hash/base/exit fields",
+    "Used by": "integrator CI retry"
+  },
+  "Purpose": "whole registered Node suite after P2 registration",
+  "Depends on": "current source/node hooks and test-node",
+  "Used by": "integrator gate retry",
+  "run_id": "w6-p2-all-node-95792",
+  "pid": 95792,
+  "command": [
+    "bash",
+    "scripts/dev/test-node.sh"
+  ],
+  "state": "finished",
+  "timeout_seconds": 180,
+  "wake": "root foreground boundedawait",
+  "failure_match": "nonzero orno matchedtest",
+  "at": "2026-10-07T12:12:46.202729+00:00",
+  "exit_code": 0,
+  "ended_at": "2026-10-07T12:13:07.358355+00:00"
+}

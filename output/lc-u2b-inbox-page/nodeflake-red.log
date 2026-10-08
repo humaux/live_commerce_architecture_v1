@@ -1,0 +1,45 @@
+task_id: 4354f6cb-268a-4cd3-9d6f-cbdc8b5a66d1-sub-nodeflake-tests
+base_commit: 30ddeedc0bad0f090f9e94762d0751019805d176
+CI reference: 37632486132 on remote d313 (parent context, not re-queried here)
+status: MOCK actual components/client; only post-send A9 I/O delayed; BROWSER/Go/PG/build NOT_RUN
+command argv: ["node", "--test", "--experimental-strip-types", "--test-name-pattern", "actual uncertain send still retains exact receipt", "tests/admin/inbox-review.test.ts"]
+exit_code: 1
+sha256 cced9457b0bb5e49400d420835045e187345f07c837819b764e94effe946ac0f tests/admin/inbox-review.test.ts
+sha256 5b9b4a6d6be0a2138585cd4b310aa62c6089a40f4470d931834d090e89bfd001 tests/admin/inbox-review-host.test.ts
+sha256 8b987b84a0a78906363703068467a2a7c12fe97a43b77b5d0ea6eb2dd67a5bbd apps/admin/components/InboxThread.tsx
+sha256 80efa1d6c1ba3a4d62103a08826e2c4c1c018c524563cdb30c90efbd41977b88 apps/admin/lib/inbox-client.ts
+sha256 b2d8d351293deefdccea1fc273a96725d7aa40932e0de815bc08b09f6083185a apps/admin/src/features/messages/privacy.ts
+
+✔ actual uncertain send still retains exact receipt when A9 authority remains (0ms post-send A9) (19.83325ms)
+✖ actual uncertain send still retains exact receipt when A9 authority remains (50ms post-send A9) (3.617083ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 1
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 348.795875
+
+✖ failing tests:
+
+test at tests/admin/inbox-review.test.ts:167:3
+✖ actual uncertain send still retains exact receipt when A9 authority remains (50ms post-send A9) (3.617083ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  true !== false
+
+      at submit (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:259:10)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review.test.ts:202:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+strict typecheck command argv: ["node", "--input-type=module", "-e", "import ts from \"typescript-api\"; const file=\"apps/admin/tsconfig.json\"; const parsed=ts.parseJsonConfigFileContent(ts.readConfigFile(file,ts.sys.readFile).config,ts.sys,\"apps/admin\"); parsed.options.incremental=false; parsed.options.types=[\"node\",\"react\"]; parsed.options.typeRoots=[\"apps/admin/node_modules/@types\"]; const program=ts.createProgram([\"tests/admin/inbox-review.test.ts\",\"apps/admin/next-env.d.ts\"],parsed.options); const errors=ts.getPreEmitDiagnostics(program); console.log(ts.formatDiagnosticsWithColorAndContext(errors,{getCurrentDirectory:ts.sys.getCurrentDirectory,getCanonicalFileName:f=>f,getNewLine:()=>\"\\n\"})); process.exit(errors.length?1:0);"]
+strict typecheck exit_code: 0

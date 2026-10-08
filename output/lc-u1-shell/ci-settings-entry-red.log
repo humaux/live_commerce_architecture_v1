@@ -1,0 +1,23 @@
+(node:9373) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✖ Live settings navigation accepts a scene picker entry but never a malformed or unscoped deep link (2.965958ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 134.776834
+
+✖ failing tests:
+
+test at tests/admin/live-workspace.test.ts:9:1
+✖ Live settings navigation accepts a scene picker entry but never a malformed or unscoped deep link (2.965958ms)
+  TypeError: workspace.liveSettingsSelection is not a function
+      at TestContext.<anonymous> (/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/live-workspace.test.ts:11:30)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)

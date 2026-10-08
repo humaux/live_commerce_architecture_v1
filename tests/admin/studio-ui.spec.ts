@@ -24,7 +24,9 @@ const readOnlyToken = required("LC_BROWSER_STUDIO_READONLY_TOKEN");
 const expiredToken = required("LC_BROWSER_STUDIO_EXPIRED_TOKEN");
 const cookieName = "__Host-commerce_session";
 
-test.use({ baseURL: origin, headless: false, trace: "retain-on-failure", screenshot: "only-on-failure" });
+// Chromium native pickers can lose their keyboard target when screencast capture
+// intervenes. Keep trace actions/DOM/source data; explicit shots follow selection.
+test.use({ baseURL: origin, headless: false, trace: { mode: "retain-on-failure", screenshots: false, snapshots: true, sources: true }, screenshot: "only-on-failure" });
 test.setTimeout(240_000);
 
 async function signedLogin(page: Page) {
@@ -34,7 +36,9 @@ async function signedLogin(page: Page) {
   const menu = page.locator('button[aria-controls="workspace-navigation"]');
   if (await menu.isVisible()) await menu.click();
   await expect(page.getByTestId("nav-group-live")).toBeVisible();
-  await page.getByTestId("nav-group-live").click();
+  if (await page.getByTestId("nav-group-live").getAttribute("aria-expanded") !== "true")
+    await page.getByTestId("nav-group-live").click();
+  await page.getByTestId("nav-studio").click();
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
   await expect(page.getByRole("heading", { level: 1, name: shellCopy.en.studio })).toBeVisible();
   await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
@@ -284,7 +288,9 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   // Back/forward below must cross a page that unmounts Studio if permitted.
   await page.getByTestId("nav-orders").click();
   await expect(page.getByTestId("merchant-orders")).toBeVisible();
-  await page.getByTestId("nav-group-live").click();
+  if (await page.getByTestId("nav-group-live").getAttribute("aria-expanded") !== "true")
+    await page.getByTestId("nav-group-live").click();
+  await page.getByTestId("nav-studio").click();
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
 
   // Fault applies only after the real Go write has committed; retry must
@@ -413,7 +419,7 @@ test("STU05 the Studio route without a scene settles: live-sessions reads stay b
   page.on("request", (request) => {
     if (request.method() === "GET" && /\/api\/stores\/[^/]+\/live-sessions(\?|$)/.test(request.url())) reads.push(request.url());
   });
-  await signedLogin(page); // clicks the Live nav group
+  await signedLogin(page); // expands Live and clicks its session-list route
   for (let round = 0; round < 4; round++) {
     reads.length = 0;
     if (round === 0) await page.goto(`/en/studio?store=${store}`);

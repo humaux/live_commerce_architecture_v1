@@ -1,0 +1,12 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-merchant-orders-ui"
+  ],
+  "source": "cf84032fbecb02327b978455d28921771ad504fa",
+  "exit": 1,
+  "timeout": false,
+  "elapsed_seconds": 143.638,
+  "log": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/codex4-mou-r2.log"
+}

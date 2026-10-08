@@ -1,0 +1,353 @@
+output/lc-u1-shell/CI4-evidence/red/console-cookie-url.log:38: trailing whitespace.
++  2) tests/admin/live-console.spec.ts:264:1 › LC-U1 unknown receipt stays fenced after real logout and reauthentication
+output/lc-u1-shell/CI4-evidence/red/console-cookie-url.log:64: trailing whitespace.
++  3) tests/admin/live-console.spec.ts:319:3 › LC-U1 en: bounded live_adjust works, no-stock permission stays disabled, missing A1 is graceful
+output/lc-u1-shell/CI4-evidence/red/console-cookie-url.log:89: trailing whitespace.
++    tests/admin/live-console.spec.ts:264:1 › LC-U1 unknown receipt stays fenced after real logout and reauthentication
+output/lc-u1-shell/CI4-evidence/red/console-cookie-url.log:90: trailing whitespace.
++    tests/admin/live-console.spec.ts:319:3 › LC-U1 en: bounded live_adjust works, no-stock permission stays disabled, missing A1 is graceful
+output/lc-u1-shell/CI4-evidence/red/studio-selector-setup.log:4: new blank line at EOF.
+output/lc-u1-shell/browser-red.log:18: trailing whitespace.
++  Generating static pages using 9 workers (3/15)
+output/lc-u1-shell/browser-red.log:19: trailing whitespace.
++  Generating static pages using 9 workers (7/15)
+output/lc-u1-shell/browser-red.log:20: trailing whitespace.
++  Generating static pages using 9 workers (11/15)
+output/lc-u1-shell/ci-proxy-green.log:45: trailing whitespace.
++
+output/lc-u1-shell/ci-proxy-green.log:47: trailing whitespace.
++
+output/lc-u1-shell/ci-proxy-red.log:18: trailing whitespace.
++
+output/lc-u1-shell/ci-proxy-red.log:20: trailing whitespace.
++
+output/lc-u1-shell/ci2-focused-browser-final.log:18: trailing whitespace.
++  Generating static pages using 9 workers (3/15)
+output/lc-u1-shell/ci2-focused-browser-final.log:19: trailing whitespace.
++  Generating static pages using 9 workers (7/15)
+output/lc-u1-shell/ci2-focused-browser-final.log:20: trailing whitespace.
++  Generating static pages using 9 workers (11/15)
+output/lc-u1-shell/ci2-focused-browser.log:18: trailing whitespace.
++  Generating static pages using 9 workers (3/15)
+output/lc-u1-shell/ci2-focused-browser.log:19: trailing whitespace.
++  Generating static pages using 9 workers (7/15)
+output/lc-u1-shell/ci2-focused-browser.log:20: trailing whitespace.
++  Generating static pages using 9 workers (11/15)
+output/lc-u1-shell/ci4-console-final.log:18: trailing whitespace.
++  Generating static pages using 9 workers (3/15)
+output/lc-u1-shell/ci4-console-final.log:19: trailing whitespace.
++  Generating static pages using 9 workers (7/15)
+output/lc-u1-shell/ci4-console-final.log:20: trailing whitespace.
++  Generating static pages using 9 workers (11/15)
+output/lc-u1-shell/ci4-console-focused.log:18: trailing whitespace.
++  Generating static pages using 9 workers (3/15)
+output/lc-u1-shell/ci4-console-focused.log:19: trailing whitespace.
++  Generating static pages using 9 workers (7/15)
+output/lc-u1-shell/ci4-console-focused.log:20: trailing whitespace.
++  Generating static pages using 9 workers (11/15)
+output/lc-u1-shell/ci4-console-green.log:18: trailing whitespace.
++  Generating static pages using 9 workers (3/15)
+output/lc-u1-shell/ci4-console-green.log:19: trailing whitespace.
++  Generating static pages using 9 workers (7/15)
+output/lc-u1-shell/ci4-console-green.log:20: trailing whitespace.
++  Generating static pages using 9 workers (11/15)
+output/lc-u1-shell/ci4-console-replay-green.log:18: trailing whitespace.
++  Generating static pages using 9 workers (3/15)
+output/lc-u1-shell/ci4-console-replay-green.log:19: trailing whitespace.
++  Generating static pages using 9 workers (7/15)
+output/lc-u1-shell/ci4-console-replay-green.log:20: trailing whitespace.
++  Generating static pages using 9 workers (11/15)
+output/lc-u1-shell/ci4-studio-focused.log:18: trailing whitespace.
++  Generating static pages using 9 workers (3/15)
+output/lc-u1-shell/ci4-studio-focused.log:19: trailing whitespace.
++  Generating static pages using 9 workers (7/15)
+output/lc-u1-shell/ci4-studio-focused.log:20: trailing whitespace.
++  Generating static pages using 9 workers (11/15)
+output/lc-u1-shell/ci4-studio-setup-red.log:18: trailing whitespace.
++  Generating static pages using 9 workers (3/15)
+output/lc-u1-shell/ci4-studio-setup-red.log:19: trailing whitespace.
++  Generating static pages using 9 workers (7/15)
+output/lc-u1-shell/ci4-studio-setup-red.log:20: trailing whitespace.
++  Generating static pages using 9 workers (11/15)
+output/lc-u1-shell/ci5-heading-calibration-red.log:20: trailing whitespace.
++
+output/lc-u1-shell/ci5-heading-calibration-red.log:22: trailing whitespace.
++
+output/lc-u1-shell/ci5-nav-calibration-red.log:20: trailing whitespace.
++
+output/lc-u1-shell/ci5-nav-calibration-red.log:22: trailing whitespace.
++
+output/lc-u1-shell/ci5-shell-red.log:20: trailing whitespace.
++
+output/lc-u1-shell/ci5-shell-red.log:22: trailing whitespace.
++
+output/lc-u1-shell/d3-red.log:27: trailing whitespace.
++
+output/lc-u1-shell/d3-red.log:30: trailing whitespace.
++
+output/lc-u1-shell/depmap-candidate.log:5: trailing whitespace.
++
+output/lc-u1-shell/depmap-candidate.log:10: trailing whitespace.
++
+output/lc-u1-shell/depmap-candidate.log:12: trailing whitespace.
++
+output/lc-u1-shell/depmap-candidate.log:15: trailing whitespace.
++
+output/lc-u1-shell/depmap-candidate.log:21: trailing whitespace.
++
+output/lc-u1-shell/depmap-candidate.log:23: trailing whitespace.
++
+output/lc-u1-shell/depmap-candidate.log:25: trailing whitespace.
++
+output/lc-u1-shell/depmap-candidate.log:27: trailing whitespace.
++
+output/lc-u1-shell/depmap-candidate.log:34: trailing whitespace.
++
+output/lc-u1-shell/depmap-candidate.log:36: trailing whitespace.
++
+output/lc-u1-shell/depmap-candidate.log:38: trailing whitespace.
++
+output/lc-u1-shell/lc-b7-large-a1-red.log:18: trailing whitespace.
++
+output/lc-u1-shell/lc-b7-large-a1-red.log:20: trailing whitespace.
++
+output/lc-u1-shell/lc-b7-red.log:43: trailing whitespace.
++
+output/lc-u1-shell/lc-b7-red.log:45: trailing whitespace.
++
+output/lc-u1-shell/pr5-refresh-red.log:19: trailing whitespace.
++
+output/lc-u1-shell/pr5-refresh-red.log:21: trailing whitespace.
++
+output/lc-u1-shell/pr5-refresh-red.log:41: trailing whitespace.
++
+output/lc-u1-shell/pr5-refresh-red.log:44: trailing whitespace.
++
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:57: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:17:25.5734335Z   EXTRA_ENV:
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:344: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:17:32.2444862Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:348: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:17:32.2449192Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:351: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:17:32.2451537Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:353: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:17:32.2452310Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:355: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:17:32.2452772Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:357: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:17:32.2453213Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:359: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:17:32.2454295Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:384: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:17:32.3618033Z   EXTRA_ENV:
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:400: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:17:41.4584361Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:449: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:17:41.6050783Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:463: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:17:41.6295610Z   EXTRA_ENV:
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:483: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:17:42.2361662Z   EXTRA_ENV:
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:494: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:17:47.0575137Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:502: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:17:47.0579173Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:513: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:17:47.1328936Z   EXTRA_ENV:
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:524: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:17:48.0673026Z   EXTRA_ENV:
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:539: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:17:48.1044399Z   EXTRA_ENV:
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:561: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:17:52.2239510Z   EXTRA_ENV:
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:962: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:02.4487450Z (Reading database ...
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1554: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:13.1121277Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1741: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:14.5957027Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1743: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:14.5958184Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1746: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:14.7088634Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1748: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:14.7090053Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1750: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:14.7091041Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1761: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:15.7192133Z   EXTRA_ENV:
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1860: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:21.7379383Z   EXTRA_ENV:
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1875: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:22.5769176Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1878: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:22.5771553Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1879: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:22.8936385Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1882: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:22.8938275Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1890: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:23.2951472Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1891: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:23.3129240Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1900: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:30.9760763Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1932: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:30.9840665Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1933: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:30.9840674Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1935: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:30.9841190Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1938: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:30.9844704Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1939: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:31.8046213Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1942: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:31.8049288Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1943: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:32.1188291Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1946: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:32.1191032Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1954: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:32.5232544Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1955: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:32.5405576Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1962: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:44.4167175Z   Generating static pages using 3 workers (3/15)
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1963: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:44.5133331Z   Generating static pages using 3 workers (7/15)
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1964: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:44.5190130Z   Generating static pages using 3 workers (11/15)
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:1967: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:44.8587705Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:2021: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:44.8648540Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:2022: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:44.8648552Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:2024: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:44.8649083Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:2027: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:20:44.8650624Z
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:2075: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:23:30.4444754Z   EXTRA_ENV:
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:2089: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops-failed.log:2101: trailing whitespace.
++gate (--browser-ops-polish)	UNKNOWN STEP	2026-10-07T19:23:30.4599301Z   EXTRA_ENV:
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops/en-error-context.md:118: trailing whitespace.
++  130 |
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops/en-error-context.md:130: trailing whitespace.
++  142 |
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops/en-error-context.md:135: trailing whitespace.
++  147 |
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops/en-error-context.md:141: trailing whitespace.
++  153 |
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops/en-error-context.md:153: trailing whitespace.
++  165 |
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops/en-error-context.md:180: trailing whitespace.
++  192 |
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops/en-error-context.md:198: trailing whitespace.
++  210 |
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops/en-error-context.md:246: trailing whitespace.
++  257 |
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops/en-error-context.md:282: trailing whitespace.
++  293 |
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops/playwright.log:14: trailing whitespace.
++  1) tests/admin/ops-polish.spec.ts:236:3 › OP4 Studio subtitle is neutral and the dead nav entries are gone in en
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops/playwright.log:61: trailing whitespace.
++  2) tests/admin/ops-polish.spec.ts:236:3 › OP4 Studio subtitle is neutral and the dead nav entries are gone in zh-CN
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops/playwright.log:108: trailing whitespace.
++  3) tests/admin/ops-polish.spec.ts:236:3 › OP4 Studio subtitle is neutral and the dead nav entries are gone in zh-TW
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops/playwright.log:156: trailing whitespace.
++    tests/admin/ops-polish.spec.ts:236:3 › OP4 Studio subtitle is neutral and the dead nav entries are gone in en
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops/playwright.log:157: trailing whitespace.
++    tests/admin/ops-polish.spec.ts:236:3 › OP4 Studio subtitle is neutral and the dead nav entries are gone in zh-CN
+output/lc-u1-shell/pr5-round-2ad65bcd/ci-ops/playwright.log:158: trailing whitespace.
++    tests/admin/ops-polish.spec.ts:236:3 › OP4 Studio subtitle is neutral and the dead nav entries are gone in zh-TW
+output/lc-u1-shell/pr5-round-2ad65bcd/live-console-focused-green.log:18: trailing whitespace.
++  Generating static pages using 9 workers (3/15)
+output/lc-u1-shell/pr5-round-2ad65bcd/live-console-focused-green.log:19: trailing whitespace.
++  Generating static pages using 9 workers (7/15)
+output/lc-u1-shell/pr5-round-2ad65bcd/live-console-focused-green.log:20: trailing whitespace.
++  Generating static pages using 9 workers (11/15)
+output/lc-u1-shell/pr5-round-2ad65bcd/live-console-green.log:18: trailing whitespace.
++  Generating static pages using 9 workers (3/15)
+output/lc-u1-shell/pr5-round-2ad65bcd/live-console-green.log:19: trailing whitespace.
++  Generating static pages using 9 workers (7/15)
+output/lc-u1-shell/pr5-round-2ad65bcd/live-console-green.log:20: trailing whitespace.
++  Generating static pages using 9 workers (11/15)
+output/lc-u1-shell/pr5-round-2ad65bcd/live-console-red.log:18: trailing whitespace.
++  Generating static pages using 9 workers (3/15)
+output/lc-u1-shell/pr5-round-2ad65bcd/live-console-red.log:19: trailing whitespace.
++  Generating static pages using 9 workers (7/15)
+output/lc-u1-shell/pr5-round-2ad65bcd/live-console-red.log:20: trailing whitespace.
++  Generating static pages using 9 workers (11/15)
+output/lc-u1-shell/pr5-round-2ad65bcd/ops-polish-green.log:89: trailing whitespace.
++  Generating static pages using 9 workers (3/15)
+output/lc-u1-shell/pr5-round-2ad65bcd/ops-polish-green.log:90: trailing whitespace.
++  Generating static pages using 9 workers (7/15)
+output/lc-u1-shell/pr5-round-2ad65bcd/ops-polish-green.log:91: trailing whitespace.
++  Generating static pages using 9 workers (11/15)
+output/lc-u1-shell/pr5-round-2ad65bcd/test-setup-api-cookie.log:18: trailing whitespace.
++  Generating static pages using 9 workers (3/15)
+output/lc-u1-shell/pr5-round-2ad65bcd/test-setup-api-cookie.log:19: trailing whitespace.
++  Generating static pages using 9 workers (7/15)
+output/lc-u1-shell/pr5-round-2ad65bcd/test-setup-api-cookie.log:20: trailing whitespace.
++  Generating static pages using 9 workers (11/15)
+output/lc-u1-shell/pr5-round-2ad65bcd/test-setup-missing-context.log:18: trailing whitespace.
++  Generating static pages using 9 workers (3/15)
+output/lc-u1-shell/pr5-round-2ad65bcd/test-setup-missing-context.log:19: trailing whitespace.
++  Generating static pages using 9 workers (7/15)
+output/lc-u1-shell/pr5-round-2ad65bcd/test-setup-missing-context.log:20: trailing whitespace.
++  Generating static pages using 9 workers (11/15)
+output/lc-u1-shell/pr5-title-red.log:26: trailing whitespace.
++
+output/lc-u1-shell/pr5-title-red.log:29: trailing whitespace.
++
+output/lc-u1-shell/red-csp.log:19: trailing whitespace.
++
+output/lc-u1-shell/red-csp.log:89: trailing whitespace.
++
+output/lc-u1-shell/red-reauth-fence.log:21: trailing whitespace.
++
+output/lc-u1-shell/red-reauth-fence.log:125: trailing whitespace.
++
+output/lc-u1-shell/red-resume-20261006T060525Z/run.log:18: trailing whitespace.
++  Generating static pages using 9 workers (3/15)
+output/lc-u1-shell/red-resume-20261006T060525Z/run.log:19: trailing whitespace.
++  Generating static pages using 9 workers (7/15)
+output/lc-u1-shell/red-resume-20261006T060525Z/run.log:20: trailing whitespace.
++  Generating static pages using 9 workers (11/15)
+output/lc-u1-shell/review-console-render-notice-red.log:16: trailing whitespace.
++
+output/lc-u1-shell/review-console-render-notice-red.log:18: trailing whitespace.
++
+output/lc-u1-shell/review-console-render-poll-red.log:17: trailing whitespace.
++
+output/lc-u1-shell/review-console-render-poll-red.log:25: trailing whitespace.
++
+output/lc-u1-shell/review-hooks-red.log:28: trailing whitespace.
++
+output/lc-u1-shell/review-hooks-red.log:30: trailing whitespace.
++
+output/lc-u1-shell/review-hooks-red.log:45: trailing whitespace.
++
+output/lc-u1-shell/review-hooks-red.log:47: trailing whitespace.
++
+output/lc-u1-shell/review-hooks-red.log:70: trailing whitespace.
++
+output/lc-u1-shell/review-hooks-red.log:72: trailing whitespace.
++
+output/lc-u1-shell/review-hooks-red.log:87: trailing whitespace.
++
+output/lc-u1-shell/review-hooks-red.log:89: trailing whitespace.
++
+output/lc-u1-shell/review-journal-race-red.log:22: trailing whitespace.
++
+output/lc-u1-shell/review-journal-race-red.log:24: trailing whitespace.
++
+output/lc-u1-shell/review-real-a1-red.log:5: trailing whitespace.
++
+output/lc-u1-shell/review-real-a1-red.log:14: trailing whitespace.
++

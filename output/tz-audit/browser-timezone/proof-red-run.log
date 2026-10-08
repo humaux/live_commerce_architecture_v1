@@ -1,0 +1,8 @@
+=== RUN   TestBrowserStoreDesign
+    browser_store_design_test.go:188: SDB browser gate failed: exit status 1; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/tz-browser-proof/output/playwright/store-design/20261007T160340.914735000
+    browser_store_design_test.go:211: Journey en desktop: history [{Version:1 Source:1 Kind:publish Doc:{"nav": {"footer": [], "header": []}, "home": {"sections": [{"type": "hero", "heading": "Welcome", "cta_kind": null, "image_id": "7188018d-a238-4f29-9412-96ebc8c6cb66", "cta_label": null, "cta_target": null, "subheading": null}, {"sort": "newest", "type": "product_grid", "limit": 12, "heading": "Bestsellers"}, {"body": "Hello **bold** and [a link](https://example.com/story)", "type": "rich_text", "heading": "Our story"}]}, "pages": [{"body": "About **us**\n\n- one\n- two\n\n[our site](https://example.com)", "slug": "about", "title": "About us"}], "profile": {"name": "Gate Shop en desktop", "contact": {"email": "shop@example.com", "phone": "+886 2 1234 5678", "address": null, "line_url": null, "facebook_url": null, "instagram_url": null}, "tagline": null, "accent_color": "#ff6600", "announcement": null, "logo_image_id": "7188018d-a238-4f29-9412-96ebc8c6cb66", "favicon_image_id": null}}}], want publish(v1 of draft 1), publish(v2 of draft 2), rollback of v1
+--- FAIL: TestBrowserStoreDesign (64.89s)
+FAIL
+FAIL	livecommerce/tests/foundation	65.740s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

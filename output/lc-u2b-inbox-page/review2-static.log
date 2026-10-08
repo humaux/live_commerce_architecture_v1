@@ -1,0 +1,12 @@
+source: e5a70499a204c2e227bfc49ed7527a7b90596860
+
+command: git diff --check
+exit: 0
+
+command: git merge-base --is-ancestor 26e9aec2 HEAD
+exit: 0
+
+command: git merge-base --is-ancestor 1aad42d0 HEAD
+exit: 0
+
+Captured new review2 logs normalize only trailing whitespace; assertions, outcomes and timestamps retained.

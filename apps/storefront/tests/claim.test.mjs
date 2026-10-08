@@ -1,5 +1,5 @@
 // Purpose: claim wire validation and purchase-lock/token-leak regression tests.
-// Depends on: buyer BFF, claim-contract and purchase helpers with synthetic transport.
+// Depends on: buyer BFF, claim-contract and purchase helpers with synthetic transport; real shared Taipei formatter for the TSX seam.
 // Used by: scripts/dev/test-node.sh and CDC03.
 // Claim-link BFF and contract (live-keyword-claims-v1 §7.2, §11.1): the token travels only
 // as X-Commerce-Claim-Token on B1/B2, is never echoed, and only the frozen projections
@@ -14,6 +14,7 @@ import { claimCopy } from "../lib/claim-copy.ts";
 import assert from "node:assert/strict";
 import { handleBuyerRequest } from "../lib/buyer-server.ts";
 import { cartSelection, cartWithQuantity } from "../lib/purchase.ts";
+import * as format from "../../../packages/format/src/index.ts";
 import {
   claimFragment,
   validClaimPreview,
@@ -244,6 +245,7 @@ function claimPage({ lines, items, refreshedLines = lines, view = "ready", recov
       writePurchase: async (ctx, command) => { calls.writes.push(command); return { kind: "cart", value: { ...cart, items: command.body.items } }; } },
     "../lib/routes": { cartPath: locale => `/${locale}/cart`, checkoutPath: locale => `/${locale}/checkout` },
     "../lib/claim-contract": claimContract, "../lib/claim-copy": { claimCopy }, "../lib/money": { formatMoney: () => "NT$200" },
+    "../../../packages/format/src/index": format,
   };
   const exports = {};
   runInNewContext(compiled, { exports, require: name => { assert(name in modules, name); return modules[name]; }, window: { location: { assign: url => calls.navigation.push(url) } } });

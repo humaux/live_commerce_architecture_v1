@@ -1,0 +1,826 @@
+foundation	Node unit suites (storefront, i18n)	﻿2026-10-07T13:57:20.1095458Z ##[group]Run bash scripts/dev/test-node.sh
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.1095697Z [36;1mbash scripts/dev/test-node.sh[0m
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.1151665Z shell: /usr/bin/bash -e {0}
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.1151829Z env:
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.1151944Z   GOTOOLCHAIN: local
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.1152079Z   GOFLAGS: -mod=readonly
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.1152214Z ##[endgroup]
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.2644494Z ✔ /products/{uuid} redirects permanently to the zh-TW product page (29.311051ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.2685576Z ✔ non-uuid ids are 404, never redirected (2.277474ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.2716884Z ✔ AT1: the locale redirect preserves the ad-click query without allowing a redirect target (0.356169ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.2848850Z ✔ R10: standalone signed signals survive a missing or expired seven-day touch (3.629918ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.2865969Z ✔ R10: standalone signals reject expiry, bad signature, duplicates and another host (0.763274ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.2871185Z ✔ AT1 R5: browser identity survives expired touch and rolls for ninety days (0.531694ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.2875722Z ✔ AT1 R5: missing ad parameters create no cookies; fbclid alone creates no touch (0.443621ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.2877132Z ✔ AT1 R5: lc_ad alone updates attribution and does not replace fbc (0.62183ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.2878052Z ✔ AT1: host-only first-party cookies contain no PII and read back exactly (0.634539ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.2879209Z ✔ AT1: a later valid click replaces the draft but preserves the browser identifier (0.47628ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.2880025Z ✔ R10: only a different fbclid replaces fbc and its first-seen timestamp (0.660178ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.2880978Z ✔ AT1: malformed and ambiguous links do not overwrite a valid prior touch (1.143729ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.2881637Z ✔ AT1: host and key binding reject copied cookies (0.705267ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.2882472Z ✔ AT1: duplicates and tampering invalidate the entire envelope (0.518795ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.2883288Z ✔ AT1: exactly seven days is valid, the next millisecond and future clicks are not (0.447898ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.2980095Z ✔ catalog list query limits equal the Go v2 parser (internal/buyerhttp/catalogv2.go) (6.326626ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.2995231Z ✔ collection list cap equals Go maxCollectionsPerStore (2.124602ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.3025139Z ✔ design caps equal internal/design/schema.go (nav, sections, pages) (2.90726ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.3055291Z ✔ CVS buyer-entered store bounds and return path equal Go (internal/checkout/cvs.go, migration 0093) (4.90464ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.5105898Z ✔ transfer view: closed shape and state rules mirror Go validTransferView (1.941526ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.5115946Z ✔ proof body and result: five digits, positive minor amount, ISO instant (0.441848ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.5117138Z ✔ minorFromText: major units with at most two decimals, never a float surprise (0.223788ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.5118219Z ✔ buyer email mirror: one plain address, 254 characters at most (0.216757ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.5119223Z ✔ countdown: whole hours and minutes, never negative (0.761512ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.5120060Z ✔ copy: three locales carry every key and every refusal code (0.455589ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.5121067Z ✔ options: a home row lists modes only with bank_transfer and then needs its window (1.727321ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.5122328Z ✔ checkoutInput: a home bank_transfer body, the optional trimmed email, and every refusal before any request (0.918809ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.5123350Z ✔ order: AWAITING_TRANSFER is a valid commercial state without a hold time (0.710724ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.5132516Z ✔ BFF: exact transfer routes, keyed proof PUT, strict body, validated answers, no generic proxy (45.030362ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.5134988Z ✔ BFF: transfer refusal codes pass through as definite 422; checkout accepts bank_transfer and a valid email only (6.729374ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.5136442Z ✔ D06 order heading follows a settled transfer: never 'waiting for transfer' above a confirmed or expired one (0.250098ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.5385880Z ✔ uncertain prepare blocks all mutations; changed cookie context resolves journal (30.221423ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.5429620Z ✔ fully parsed local denial clears only its own pending operation (4.651953ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.5455263Z ✔ malformed journal, unavailable lock and stale context fail before writes (1.334478ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.5459263Z ✔ BPT05 exact handoff permits absent body/key, one fetch, no form persistence (37.939902ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.5460308Z ✔ BPT05 wrong handoff form and ordinary writes fail before any fetch (3.620173ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.5461292Z ✔ BPT05 unresolved cookie journal blocks handoff; lost response is one fetch without persistence (0.423921ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.5462239Z ✔ SU02 refresh permits absent body/key, one fetch, no persistence (0.936025ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.5463058Z ✔ SU02 refresh rejects a body, a key or a malformed path before any fetch (2.624448ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.5464103Z ✔ SU02 cancel permits absent body/key, one fetch, no persistence (1.155527ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.5464970Z ✔ SU02 cancel rejects a body, a key or a malformed path before any fetch (2.223603ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.8155526Z ✔ BPT01 exact private path, headers, body and three-locale one-fetch transport (85.343628ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.8265721Z ✔ BPT02 payment routes reject untrusted path, context, headers, key and body before fetch (27.51525ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.8298328Z ✔ BPT03 hostile upstream success is sanitized, never returned as payment data (25.739937ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.8300358Z ✔ BPT04 every handoff failure is nonretryable, including pre-route and transport loss (13.848948ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.8301323Z ✔ SU02 five routes: exact upstream path, method, key, body, one fetch each (10.603632ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.8302333Z ✔ SU02 refresh and cancel are keyless and pass every CSRF/context denial before fetch (15.905518ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.8303217Z ✔ SU02 every handoff/refresh/cancel failure is nonretryable and sanitized (20.791095ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.8304371Z ✔ SU02 hostile Stripe bodies become the sanitized 503; PAYUNi and Stripe bodies stay byte-identical (23.11624ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.8305225Z ✔ SU02 prepare accepts only the two known method codes (2.392747ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.8589431Z ✔ disabled and invalid configuration fail closed before private fetch (33.273166ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.8590416Z ✔ private authority, cookie lifecycle and strict local denial (24.554424ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.8591196Z ✔ bad host, cookie, query and method never reach private API (4.569669ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.8592003Z ✔ stalled inbound POST body is canceled at its deadline without a cookie or private call (1.754773ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.8595331Z ✔ R10: Begin forwards independently signed signals; browser attribution and forwarded hosts are not authority (14.019517ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.8595973Z ✔ CVS BFF: exact routes, keyed open/store, keyless verify, validated answers, no generic proxy (23.967888ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:20.8596573Z ✔ CVS BFF: contract refusal codes pass through; pay_at_pickup_limit is a definite (non-retryable) 429 (17.652329ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.2965558Z ✔ fragment grammar accepts only one canonical token (1.341078ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.2978791Z ✔ claim projections are closed (0.583082ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.2979647Z ✔ claim token rides only its header on B1/B2 and is never echoed (59.672531ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.2983608Z ✔ claim-priced cart edits send only SKU and quantity, keeping server price authority (9.459923ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.2992439Z ✔ direct-checkout sold-out projection is mandatory, boolean and closed (0.485894ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3011712Z ✔ claim redeem shares the purchase lock, guards recovery and never persists the token (10.181604ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3186005Z ✔ ClaimLink removal projects live-priced survivors on ready and conflict pages (475.466639ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3290033Z ✔ ClaimLink revisit checks out applied A while pending B is sold out or unavailable (15.079042ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3353442Z ✔ ClaimLink refreshes a nothing result after a second tab applied the claim (4.587396ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3428239Z ✔ ClaimLink does not navigate when a buyable claim target is absent or has changed quantity (9.392551ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3536555Z ✔ ClaimLink optional prior-order notice tolerates unreadable storage without bypassing recovery (15.236727ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3720188Z ✔ CVS01 map form: only the two ECPay e-map actions, exact fields, top-level-safe values (1.997841ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3721161Z ✔ CVS02 return path allowlist excludes /claim and anything but the checkout or product page (0.2118ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3722107Z ✔ CVS03 selection projection: VERIFIED<=>pickup, REJECTED<=>reject_code, absent keys read as null (0.899931ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3722793Z ✔ CVS04 buyer-entered store answer and request body (0.550172ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3723428Z ✔ CVS05 store code table (§16.1) keeps leading zeros and per-chain lengths (0.317349ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3724333Z ✔ CVS06 recipient mirror: real-name width 4..10 (CJK=2), no digits/symbols/emoji; 09 mobile (0.790906ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3724846Z ✔ CVS07 checkout draft: name, phone and mode only; read once; corrupt/foreign shapes are dropped (0.360525ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3725249Z ✔ CVS08 return URL: only ?cvs_selection=<uuid> is accepted (0.188815ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3725654Z ✔ CVS09 buyer order projection and copy keys: nothing but PICKED_UP says picked up (0.348797ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3726169Z ✔ CVS10 error codes: field mapping, definite refusals, official links are https constants (0.445594ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3726803Z ✔ CVS11 client transport: verify is the one new keyless POST; the server refusal code rides BuyerClientError.detail (21.136727ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3727637Z ✔ every locale x page has a title, an updated line and at least one section (1.619248ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3728438Z ✔ locales share the section count and per-section body count of every page (1.907955ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3729395Z ✔ final text is only the owner-confirmed company facts (CR 81215167 name + registered address); nothing else is final (0.452854ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3730502Z ✔ a legal page is published only when every text on it is final; buyers see no link to an unpublished one (1.238392ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3731291Z ✔ data-deletion path is named in the privacy page of every locale (0.200753ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3732171Z ✔ pendingOwnerText lists exactly the texts that keep a page unpublished and is written for the owner (1.389861ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3733066Z ✔ a live (claim-origin) price replaces the catalog price and strikes it through (1.276761ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3734066Z ✔ without a live price the catalog price and its compare-at are shown unchanged (0.168825ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3804892Z ✔ a live price equal to or above the catalog price is shown as set (strike hidden by the UI guard) (0.120182ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3806323Z ✔ a live price strikes the catalog price, never the variant sale price (0.176567ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3807017Z ✔ order ref: 12 hex (dashes or spaces, any case) or a full id (1.030859ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3807577Z ✔ contact: one email or a phone of 6..20 digits (0.324151ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3808193Z ✔ body is exactly {order_ref, contact}; the answer is exactly {order_id} (0.295026ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3809059Z ✔ BFF lookup: no cookie needed, fresh token goes upstream, cookie only on 200 and it carries that same token (43.125903ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3809786Z ✔ BFF lookup: strict local denial before any private fetch (2.192515ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3810274Z ✔ copy: three locales carry every key (0.39728ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3810926Z ✔ MS4 srcset descriptors use actual decoded widths and deduplicate small renditions (0.851758ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3811767Z ✔ MS1 product rendition allowlist preserves trusted Host and never forwards buyer cookies (30.09786ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3812610Z ✔ MS2 invalid, duplicate, extra, encoded widths and non-product variants fail before fetch (5.526511ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3814203Z ✔ MS3 old-image fallback is never promoted to immutable; committed variants are cacheable (1.518225ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3815283Z ✔ TWD whole amounts show no decimals in every locale and at every magnitude (line, subtotal, total, zero) (92.185417ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3816251Z ✔ cents appear only when there are cents, then always as two digits; the minor-unit arithmetic is untouched (0.685216ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3817046Z ✔ digits come from the currency: JPY none, USD two when there are cents (1.938081ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3817884Z ✔ one formatter: no component, page or lib builds a currency Intl.NumberFormat outside lib/money.ts (11.035755ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3818719Z ✔ fragment: exactly #o=<order id>&t=<43-char token>; anything else is null (1.705809ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3819487Z ✔ body is exactly {order_id, token, proof}; the answer is exactly the order the link named (0.279032ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3820440Z ✔ BFF link: no cookie needed, fresh token upstream, cookie only on a 200 naming the same order, link token never echoed (32.25702ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3821238Z ✔ BFF link: strict local denial before any private fetch (2.660392ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.3821845Z ✔ copy: three locales, one refusal text, a retry and a lookup path (0.230118ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.5799222Z ✔ BPU01 fresh payment writes exact metadata before prepare, one bodyless Take, no persistent form (67.175614ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.5838030Z ✔ BPU01 lost prepare response replays original key/body only on explicit next click (3.543388ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.5986020Z ✔ BPU01 lost handoff is permanently GET-only, even after a second click (3.693805ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6004862Z ✔ BPU01 storage, amount, scope and child/screen fences reject before irreversible writes (2.805883ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6046307Z ✔ BPU01 document/child loss after prepare but before Take leaves exact replay marker (1.60071ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6080216Z ✔ BPU01 malformed server handoff never submits and Take remains nonretryable (2.919043ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6102549Z ✔ BPU01 marker replacement before Take and after Take blocks release/form reuse (3.839605ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6103709Z ✔ BPU01 context replacement after prepare and after Take closes destination without form (2.577798ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6105787Z ✔ BPU01 synchronous destination refuses invalid locale before opening a window (0.625426ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6106888Z ✔ SU03 fresh Stripe pay: marker before prepare, one prepare, one handoff, navigate, URL never stored (6.34987ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6108029Z ✔ SU03 marker replay: lost prepare response replays key/body, no uncertain on PENDING view with leftover marker (6.015485ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6108996Z ✔ SU03 cross-device Continue needs no marker and never prepares (1.56121ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6109966Z ✔ SU03 marker/view matrix: PAYUNi marker on Stripe view and Stripe marker on PAYUNi view send nothing (5.876155ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6110795Z ✔ SU03 any other view renders without a POST (4.905837ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6111759Z ✔ SU03 CREATING: waits on the schedule without the lock, then hands off once when READY (35.892206ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6548649Z ✔ SU03 CREATING budget: 10 reads over 30 s, then the blank child is closed, no POST, no throw (9.096042ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6585378Z ✔ SU03 cancel_requested seen on the re-GET aborts before the handoff POST (0.99187ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6586708Z ✔ SU03 handoff outcomes: CREATING closes child, CLOSED/UNAVAILABLE/error/malformed reject; one POST each, never retried (13.919315ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6593387Z ✔ SU03 Stripe prepare errors, amount/currency mismatch and popup loss stop before any handoff (3.941039ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6625193Z ✔ SU03 two clicks make two handoff POSTs only because there were two clicks; sequential, none from reads (3.878664ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6655125Z ✔ SU03 navigate: validates again, needs an owned blank child, sets used before replace, no URL in errors (0.897257ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6673875Z ✔ SU03 refresh signal: keyless single POST, validated, throttled 1/10 s and 30 per page life, cancel never throttled (9.577019ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6675237Z ✔ SU03 signal failures are single-shot and sanitized: HTTP error, malformed body, wrong order (0.923896ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6760080Z ✔ private quote/option authority fields are required; only exact MANUAL home can checkout (3.810501ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6775393Z ✔ continue shopping advances only ordered version, clears hint, keeps SQL history authoritative (37.008308ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6776663Z ✔ lost next-cart response retries identical key/body and preserves a newer cart (2.838081ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6777439Z ✔ continuation never overwrites an already advanced cart (3.209593ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6778135Z ✔ unknown checkout blocks continuation without any business request (0.819699ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6788367Z ✔ two queued continuation clicks mutate once; stale order ID cannot clear another order (1.865822ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6816253Z ✔ CAS conflict resolves only after a newer cart is read (2.650327ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6822838Z ✔ locator removal failure retains next-cart journal and recovery survives missing locator (2.312476ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6828537Z ✔ order history summary rejects PII/unknown fields and malformed scope IDs (0.425113ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6829516Z ✔ native address validation mirrors printable Unicode, limits and phone; journal forbids PII (3.946607ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6830481Z ✔ address lost reply replays exact in-memory intent, then confirms current head (2.229902ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6831511Z ✔ address reload requires explicit new intent and exact observed CAS; stale head never auto-bumps (1.890758ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6832498Z ✔ old address receipt cannot confirm another tab's newer current head (0.643803ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6833417Z ✔ a late address CAS winner requires another explicit confirmation, not an automatic version bump (1.43513ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6834582Z ✔ checkout lost reply, queued duplicate and current GET reuse one key and one order (2.082589ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6835610Z ✔ uncertain checkout retains original journal across later 401/403/404/5xx and malformed success (3.265186ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6836576Z ✔ only a fresh definitive denial clears checkout; no order locator is invented (0.7675ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6837474Z ✔ locator storage failure after commit retains same key; reload GET failure keeps locator (1.207777ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6838545Z ✔ locator persisted but journal removal failed resumes pending receipt, not unrelated pointer (1.553348ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6839421Z ✔ unavailable storage, invalid locator and late changed context fail closed (0.741431ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6840442Z ✔ order locator readback mismatch and no-op journal removal both retain checkout recovery (1.539888ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6841478Z ✔ direct claim continuation refuses a newer ordered cart inside the purchase lock (0.845458ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6842332Z ✔ direct claim continuation keeps next-cart recovery after a conflicting clear (0.974443ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6843313Z ✔ collector projection: admitted for derived connections, absent/null for primary (4.23989ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6844242Z ✔ collector rejects identifiers, extra keys and malformed text (0.298361ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6845160Z ✔ disclosure renders the contract §5 line with all three slots substituted (2.659952ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6845987Z ✔ the disclosure line exists exactly when the hosted view returns a collector (1.285319ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6846910Z ✔ a shop or collector name with a replacement pattern is shown literally (0.154744ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6847981Z ✔ OrderPayment renders the disclosure with the view, above every pay button, through the helper only (0.607308ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6848824Z ✔ BPT03 exact valid projection and Go nanosecond UTC timestamps (2.3211ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6849714Z ✔ BPT03 view rejects private fields, inconsistent state and malformed names (0.588981ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6851027Z ✔ BPT03 prepared receipt enforces exact original credit-card amount (0.205261ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6851984Z ✔ BPT03 hosted form and replay are exact, bounded and action-allowlisted (0.5155ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6852875Z ✔ SU01 Stripe views: fresh, both methods, attempt states, PAYUNi unchanged (0.397581ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6853499Z ✔ SU01 Stripe view negatives (0.411502ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6854316Z ✔ SU01 prepared amounts follow the corrected per-currency table (0.412374ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6855058Z ✔ SU01 Stripe handoff union and every redirect_url negative (0.561619ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6857234Z ✔ SU01 payment signal is exactly {order_id, scheduled:boolean} (0.717324ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6857995Z ✔ RUI01 refund summary: refunded states, pending money, absent ≡ null (0.587007ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.6858778Z ✔ RUI01 refund summary negatives (0.408988ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.7375842Z ✔ BPU03 neutral GET and POST return ignore every callback field and cookie (23.089339ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.7716314Z ✔ primary origin: exact path/query, same host, and no URL-controlled destination (4.605514ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.7748441Z ✔ GET and HEAD use trusted Host, private bounded uncached resolver and exact 301 (27.49158ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.7805119Z ✔ no writes redirected; resolution failures fail closed; unknown hosts keep native 404 (1.620049ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.7917846Z ✔ policy version is the frozen constant, in the customers-core D4 shape (1.004349ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.7918909Z ✔ route table: exactly the four buyer privacy routes, methods and body kinds (0.938018ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.7919737Z ✔ body shapes are closed and mirror the frozen Go inputs (no source, no policy_version) (0.50271ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.7920597Z ✔ GET privacy validator: closed shape, erased owner holds no consent (0.265181ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.7921228Z ✔ consent result and erasure summary validators (1.240005ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.7921806Z ✔ buyer export envelope never carries customer_id (0.234775ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.7922492Z ✔ failure classification: 410 and erased are the erased state (0.10616ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.7923338Z ✔ copy: every locale has the same keys, the ads box discloses that sent events cannot be recalled (0.209547ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.9636057Z ✔ selected option photo uses a main display slot without adding a fifth main image (1.743336ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.9666416Z ✔ use-cover selection and a main-thumbnail selection restore the original main gallery (0.233543ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.9694370Z ✔ cart thumbnail uses variant then catalog image_id, including when main images are absent (0.304711ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.9721901Z ✔ migrated four-main/five-detail images stay separate when the option photo changes (0.288937ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.9806396Z ✔ real cart-detail composition uses server SKU image_id (v2 detail available) (37.309599ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.9846133Z ✔ real cart-detail composition uses server SKU image_id (v2 detail unavailable) (2.792092ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.9925099Z ✔ parity: frontend caps equal the Go constants (4.299281ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:21.9986180Z ✔ detail parser: 4 main + 20 detail + option-value images are accepted and mapped (4.112418ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.0015825Z ✔ detail parser: 5 main, 21 detail, bad ids and over-cap option images are refused (0.481838ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.0018648Z ✔ detail parser: a backend before product-media-v2 (no new keys) still parses with empty defaults (0.333004ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.0019669Z ✔ v1 catalog row: images are main-only (<= 4) and image_id is a uuid or null (0.472605ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.0405874Z ✔ PRO-S1 code mirror: any case and spaces normalise; impossible codes never become a request (2.682546ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.0407152Z ✔ PRO-S2 promotion object: closed keys, kind/value pairing (0.451963ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.0435508Z ✔ PRO-S3 quote validator: promotion is optional but never malformed; the discount stays the server's own number (0.571143ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.0438238Z ✔ PRO-S4 journal grammar: a quote write may carry one canonical promo_code, nothing else (1.119974ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.0516715Z ✔ PRO-S5 copy: three locales cover every refusal code and the same keys (1.068536ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.0520041Z ✔ PRO-S6 BFF quote route: promo_code relayed untouched when canonical, refused before the private API otherwise (52.345743ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.0521279Z ✔ PRO-S7 BFF: every promo_* refusal is a definite, non-retryable 422 with its own code (9.930284ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2076756Z ✔ demonstration disclosure is explicit and local-only (1.11775ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2077933Z ✔ cart selection preserves unrelated SKUs and the observed CAS version (9.911055ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2082325Z ✔ minor amounts are bounded before multiplication, including zero (0.259723ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2115414Z ✔ delivery identity includes country for one market and method (0.17824ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2132807Z ✔ journal is bound to context and rejects PII/unknown fields (0.577534ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2157760Z ✔ lost response replays exact key/body, then clears only after parsed receipt (58.404628ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2158993Z ✔ RUI02 buyer order admits MERCHANT_SHIPPED only with a SHIPPED head; absent shipment ≡ null (1.215788ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2159810Z ✔ RUI02 shipment shape negatives (incl. unsafe links) (0.90634ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2160584Z ✔ RUI02 history summary admits MERCHANT_SHIPPED (a shipped order must not break the list) (0.510712ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2161545Z ✔ CVSP01 options: CVS rows carry pickup_selection/payment_modes; unavailable rows are a separate shape (1.388009ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2162530Z ✔ CVSP02 CVS destination write: TW only, pickup_id required, empty home address; home unchanged (4.216565ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2163514Z ✔ CVSP03 checkoutInput: payment_mode only for CVS rows and only a mode the row offers (1.28989ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2164604Z ✔ COD confirmation includes expected fee, enforces collect cap and validates immutable order money (0.789183ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2165669Z ✔ CVSP04 buyer order: pay_at_pickup <=> collection_state; cvs_shipment only on a matching CVS destination (2.921767ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2174367Z ✔ CVSP05 journal accepts a CVS destination marker and a checkout body with payment_mode, nothing else (0.577964ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2176050Z ✔ validProduct accepts up to the Go photo cap and rejects one more (0.772188ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2291404Z ✔ design: garbage and hostile documents collapse to the safe default shape (2.489534ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2292513Z ✔ design: links, preview token propagation, nav resolution (0.345953ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2293453Z ✔ design: any merchant accent yields readable button text and link colour (WCAG AA) (1.237321ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2294590Z ✔ variants: resolution, disabled out-of-stock combinations, initial choice, price bounds (0.441397ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2295383Z ✔ catalog-v2 parsers accept the frozen shapes and refuse drift (1.314373ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2296206Z ✔ free-delivery progress words the hint only when a threshold exists (0.188926ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2296955Z ✔ list query: only whitelisted, canonical values survive (0.537002ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2297711Z ✔ seo: JSON-LD cannot break out of its script tag; offers reflect stock and price range (14.176433ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2298515Z ✔ seo: sitemap escapes and carries hreflang; robots refuses everything for a closed host (0.415579ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2299408Z ✔ money: whole amounts drop cents, minor digits come from the currency, filters round-trip (0.980071ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2326936Z ✔ cart line write: replaces one line, keeps the others, 0 removes, CAS version is the one shown (1.770336ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2329463Z ✔ cart problems map to buyer-facing classes without leaking transport detail (0.191079ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2330679Z ✔ checkout options accept the optional free-shipping threshold only as a positive integer or null (0.458703ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2331753Z ✔ no-image placeholder copy: exactly the locale label a photo-less card or gallery renders (0.142205ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2333216Z ✔ storefront image caps equal the Go catalog caps (internal/catalog MaxMainImages, MaxDetailImages) (16.255922ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2334963Z ✔ design text limits count code points like Go, never splitting a surrogate pair (1.373287ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2335914Z ✔ G3: same-series cards exclude the current product and never invent absent draft/foreign products (1.251292ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2336992Z ✔ G5: safety guidance exists in three languages without changing the five merchant policy approval boundaries (6.483072ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.2338097Z ✔ G4: category chips omit empty collections; hidden collections absent from the public API stay absent (0.209417ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.3019146Z ✔ dictionaries have exact parity and non-empty values (1.226715ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.3045258Z ✔ locale precedence and language quality mapping (3.695127ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.3046700Z ✔ localized paths preserve deep links and reject dangerous input (1.490103ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.3106130Z ✔ path locale only matches a canonical first segment (0.179531ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.3396956Z ✔ the four constructs render (1.660551ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.3413262Z ✔ XSS payloads stay inert text (1.001133ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.3414369Z ✔ fuzz: any string over a hostile alphabet renders only whitelisted tags (16.268757ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.3415049Z ✔ validator mirrors the Go rules (0.433506ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.4454516Z ✔ SDN1 allowlist: exactly the contract routes, per method (1.284392ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.4477176Z ✔ SDN1 allowlist: traversal, case, suffix and prefix tricks never match (3.716038ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.4484105Z ✔ SDN1 request shape: no query string anywhere, reads carry no body, key, length or transfer-encoding (30.012306ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.4485300Z ✔ SDN1 cap: 260 KiB = Go's 256 KiB document + 4 KiB envelope, and a body of exactly the cap is still below it (0.195856ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.4486387Z ✔ SDN2 renderer: every XSS payload comes out as whitelisted tags and escaped text only (1.722044ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.4487447Z ✔ SDN2 renderer: escape-first means the merchant's text never becomes markup (2.180787ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.4488363Z ✔ SDN2 renderer: fuzz (seeded) never produces a tag outside the whitelist (42.813786ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.4489330Z ✔ SDN2 client validator rejects what the server rejects (HTML, non-https links, `<` anywhere) (3.732403ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.4882642Z ✔ cleanForSave turns cleared fields into null but keeps an empty body (1.089708ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.4934470Z ✔ localIssues names each missing mandatory value by server path (2.210202ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.4965324Z ✔ moved swaps neighbours and ignores out-of-range moves (0.318722ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.4966450Z ✔ parsers accept the exact Go shapes and refuse extra or missing keys (0.915574ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.4985651Z ✔ BFF allowlist covers exactly the design resources (0.46933ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.5015584Z ✔ validDesignRequest refuses queries and bodies on reads, ignores other paths (27.084014ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.5036097Z ✔ designDetails forwards only a bounded {path, reason} pair (0.424772ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.5070529Z ✔ accepts exactly the three locale invite paths with a 20-200 char token (3.49847ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.5071527Z ✔ rejects anything that is not an exact same-origin relative invite path (0.251511ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.5072248Z ✔ rejects percent-encoded variants of the exact shape (0.149206ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.5072970Z ✔ the token is an opaque invite token shape, never a URL (0.106971ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.5074168Z ✔ fragment carrier: round-trips the exact invite path, is never a query string, and rejects hostile fragments (1.896067ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.6170667Z ✔ dashboard: accepts the frozen shape, rejects drift (9.149574ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.6196916Z ✔ import result: strict keys, closed error codes, committed never carries errors (0.816104ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.6227173Z ✔ csv file guard mirrors the Go bounds (0.23115ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.6248633Z ✔ manual options: a COD home row parses with its offer (D01: the page used to refuse the whole list) (2.014175ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.6256472Z ✔ manual options: only bank_transfer / pay_at_pickup / cash_on_delivery, key must equal market|country|code (0.360785ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.6257826Z ✔ manual result: link is https with the order id and a 43-char capability in the fragment only (0.682792ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.6258890Z ✔ draft: first problem, and the body has no price-like field at all (0.99886ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.6259731Z ✔ BFF grammar: exactly the seven tools resources (0.235656ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.6260760Z ✔ regenerate body/result: exactly {order_id, locale} and a fresh https link naming that order (0.855323ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.6261892Z ✔ copy parity: every locale has every key, import rules and error codes (4.897295ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.6318575Z ✔ callback redirect target is always a same-origin /<locale>/settings path whatever the cookies, store, code or error say (5.069314ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.6335729Z ✔ the binding cookie: exactly one canonical store uuid, path-scoped to the callback, HttpOnly, Lax, 10 minutes, Secure (0.339233ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.6366127Z ✔ callback query: exactly one code and one state within charset/length bounds; Meta's error=… and repeats are not forwarded (1.358574ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.6369984Z ✔ the dialog URL the BFF hands the browser is https://www.facebook.com only (0.437742ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.6370989Z ✔ callback error mapping only ever yields fixed codes, never an upstream message (0.345141ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.6625969Z ✔ selected Page qualifies only a bare Facebook id, never rewrites another Page or external URL (1.777548ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.6655731Z ✔ status: not connected, connected with and without Instagram, and every deviation throws (3.021904ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.6659294Z ✔ pick state: closed shape, optional Instagram keys come as a pair, id must match (0.588951ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.6696337Z ✔ route grammar: only status/states/pick/disconnect; start and callback are dedicated routes; no query; reads carry no body or key (26.167223ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.6698280Z ✔ connect cookie, body and callback redirect never carry code/state and only fixed codes (2.868547ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:22.6699448Z ✔ copy: three locales have the same keys and every Go error code has a message (0.301736ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.2785839Z ✔ review-required remains restricted; evidence does not promote state (1.624746ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.2795103Z ✔ legacy omission remains unidentified, independent of array order (0.38992ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.2886228Z ✔ closed shapes reject unknown state/provider/evidence, leaked fields and inconsistent severity (0.599516ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.2945928Z ✔ duplicate capabilities/pages and unbounded arrays cannot become trusted state (0.295647ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.2975475Z ✔ worst Page determines advice, no raw upstream reason reaches copy (0.433635ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3035599Z ✔ recheck receipt means scheduled; timestamps and closed keys are checked (0.25161ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3058098Z ✔ exact keyless route grammar rejects query/key/body confusion (19.658983ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3088513Z ✔ recheck takes exactly page_id and no caller-provided scope (0.315306ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3166009Z ✔ blocking advice comes from the blocking capability, not a secondary public-reply warning (0.480677ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3167179Z ✔ clean health browser mode prepares admin standalone before starting its fixture (9.667863ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3167992Z ✔ en: expired connection retains its full refusal inside a wrapping badge (26.219501ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3168781Z ✔ zh-TW: expired connection retains its full refusal inside a wrapping badge (1.315699ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3169663Z ✔ zh-CN: expired connection retains its full refusal inside a wrapping badge (0.922045ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3205526Z ✔ actual B1 snapshot state remains ok even when a fixture expected review_required (5.167993ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3267170Z ✔ D02 TWD input: whole dollars only, x100 on the wire (14.974801ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3268971Z ✔ D02 TWD edit text: whole dollars have no decimals; a legacy amount with cents is never shown as another price (0.649182ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3269981Z ✔ D02 display: NT$ without decimals in every language, cents only when there are cents (2.436964ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3270881Z ✔ D02 live-price input (Studio claims): TWD whole dollars, other currencies their decimals (0.441568ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3271737Z ✔ D02 discount code amounts: TWD whole dollars, a decimal is refused before it is sent (0.544894ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3272503Z ✔ D02 no admin copy or component says 'minor units' to the merchant (25.788751ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3273172Z ✔ M06 time: Asia/Taipei everywhere, labelled, never UTC (21.160939ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3273899Z ✔ settings answer: exactly one boolean key (1.928165ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3274416Z ✔ PUT body is the frozen single key (0.199562ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3275015Z ✔ BFF grammar: GET read, PUT keyed command, nothing else (0.502781ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3275622Z ✔ copy: three locales, same keys, no empty text (0.447527ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3276418Z ✔ PRM01 parse: exact keys, kind/value pairing and ranges; duplicates and unknown keys are refused (1.82569ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3285216Z ✔ PRM02 Taipei wall time: +08:00 on the wire, instant shown back in Taipei, impossible dates refused (15.337089ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3286402Z ✔ PRM03 create body: normalised code, major units to minor units, optional fields null, whole body validated (5.127593ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3287377Z ✔ PRM04 update + toggle: version CAS key, form round trip, pause keeps every other field (0.997358ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3288226Z ✔ PRM05 BFF grammar: exactly list, create and update; nothing generic (0.404983ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.3289081Z ✔ PRM06 copy: three locales carry the same keys and every refusal code the Go routes can answer (0.310209ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9638562Z ✔ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (832.537627ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9641720Z ✔ G-UI3/G-UI5 negatives: new formatter, component fetch, >800 lines and wider allowance fail (0.792187ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9908322Z ✔ Readiness jump controls expose the actual active section, not a click flag (1.255468ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9909290Z ✔ Integrator P2: legal CN comment ordering and a distinct three-image recommendation (0.399364ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9910033Z ✔ ADM04 and ADM06 explain unavailable SKUs and keep collection vocabulary consistent (0.46281ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9910881Z ✔ ADM06 create/detail titles share the route vocabulary without adding a phantom Next page (0.769704ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9911712Z ✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (1.993143ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9912396Z ✔ G-UI1 copy key parity: no missing or extra key in any locale (0.270719ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9913097Z ✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.514337ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9914120Z ✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (36.610352ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9914864Z ✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.721722ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9915515Z ✔ W6-U2 ledger is a settings in-page route, preserving existing navigation (0.344461ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9916340Z ✔ Every browser spec clicks nav-orders: the orders group stays a singleton, so returns/new/print routes are nav: false (0.381627ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9917107Z ✔ created address is a strict HTTPS origin matching the assigned handle (1.158681ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9917753Z ✔ DNS instructions must name the requested origin and a bare hostname target (3.877833ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9918380Z ✔ domain kind is authoritative and closed, not inferred from host or token (0.415138ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9919050Z ✔ apex DNS retains every concrete IPv4/IPv6 address and rejects malformed values (1.059622ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9920292Z ✔ pending domain journal preserves exact action/key/target; legacy or corrupt markers never replay (4.157586ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9921290Z ✔ browser-origin gate: every refusal happens before Go is called, for every action (31.811688ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9921828Z ✔ only POST exists on the team routes (2.691339ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9922278Z ✔ unknown action is a local 404 and never reaches Go (0.85996ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9922956Z ✔ strict request grammar: wrong keys, types, ids, roles, locales and token shapes are 422 locally (7.472097ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9923742Z ✔ what reaches Go: BFF key, bearer from the cookie, no Cookie/Origin, body unchanged, exactly one call per request (41.685866ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9924649Z ✔ Go failures are rebuilt locally from allow-listed codes, never retried, and never echo the token (56.652019ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9925298Z ✔ team answer: accepts the frozen shape, null role and OIDC member without email (3.645472ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9925735Z ✔ team answer: unknown key, unknown role, bad id, bad mail state are rejected (0.816785ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9926067Z ✔ invite and accept answers are strict (3.584179ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9926420Z ✔ request grammar: every action has an exact key set and rejects junk values (0.776023ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9926813Z ✔ copy: three locales carry the same keys and a label for every role (3.857332ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:23.9927514Z ✔ role-aware navigation: hides entries the member's permissions cannot use; unknown shows all; Team is owner-only (0.881933ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2667895Z ✔ P02 settlements directory rejects missing/link/owner/group/mode with a valid control (210.543295ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2668971Z ✔ preflight health permission grammars and API/worker consistency fail closed (1398.952678ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2670080Z ✔ merchant alert flag is explicit 0|1 and independently requires SMTP (992.404349ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2670973Z ✔ shared loader makes API/worker LIVE pair file-only before Compose interpolation (373.934926ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2671855Z ✔ export bind accepts omitted JSON false but rejects unsafe source/config mutations (2.3018ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2672701Z ✔ sanctioned operator allowlist and fail-closed gates (fake docker, no network) (8785.52701ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2673518Z ✔ platform operator custody, export mount and binary are wired (174.185697ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2674639Z ✔ actual export bind refuses a missing directory; enabling auto-create is detected (278.565469ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2675622Z ✔ R3 preflight rejects cancelled PAYUNi, validates Page app and keeps LIVE pair mandatory (420.649141ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2676586Z ✔ R3 smoke exercises exact denied probes, accepts 404 only for disabled mounts (49.076857ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2733019Z ✔ positive control: a complete, valid configuration raises no META_LOGIN finding (406.008844ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2734287Z ✔ feature off (COMMERCE_META_LOGIN_CONFIG_ID empty): no rule applies even with the other keys empty (171.04714ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2735043Z ✔ P06: the Page route needs the webhook receiver (117.795182ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2735530Z ✔ P06: sessions come from identity (114.640302ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2736187Z ✔ P06: without the claims profile nobody sends the private replies (a WARN, not a FAIL) (121.144671ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2736878Z ✔ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("abc") (136.65382ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2737472Z ✔ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("12 34") (122.903355ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2738080Z ✔ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("111111111111") (117.012208ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2738672Z ✔ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("0x10") (115.192172ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2739209Z ✔ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("-1") (131.126623ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2740018Z ✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (wrong host) (128.933818ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2741539Z ✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (http scheme) (134.882252ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2742764Z ✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (the ads callback path) (125.51561ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2743936Z ✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (trailing slash) (130.919941ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2744952Z ✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (query string) (138.507944ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2745896Z ✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (empty) (126.429963ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2746608Z ✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("26.0") (95.714553ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2747196Z ✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("v26") (95.034235ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2747813Z ✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("v26.0.1") (97.235462ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2748436Z ✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("latest") (94.586187ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2749020Z ✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("") (101.98569ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2749613Z ✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("v1000.0") (85.752075ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2750186Z ✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION accepts v26.0 (97.778894ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2750741Z ✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION accepts v22.0 (137.847755ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2751288Z ✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION accepts v99.9 (110.966192ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2752027Z ✔ production without any alert channel is a FAIL (nobody would hear the next outage) (138.751812ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2752717Z ✔ outside production the same gap is only a WARN (159.039355ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2753286Z ✔ a webhook alone satisfies the rule (136.056898ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2756174Z ✔ an e-mail target with a complete relay (host, username, secret) satisfies the rule (128.542496ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2757230Z ✔ an e-mail target without the relay secret cannot be sent: FAIL in production, WARN elsewhere (250.937948ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2758202Z ✔ the example's CHANGE_ME_SENDER placeholder is not a relay: the e-mail target cannot be sent (108.927019ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2765204Z ✔ LC_ALERT_EMAIL must be one plain address ("not-an-address") (116.53035ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2765982Z ✔ LC_ALERT_EMAIL must be one plain address ("two@fake.invalid,three@fake.invalid") (111.270627ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2766720Z ✔ LC_ALERT_EMAIL must be one plain address ("a b@fake.invalid") (122.4199ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2767436Z ✔ LC_ALERT_EMAIL must be one plain address ("<owner@fake.invalid>") (132.998914ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2768065Z ✔ LC_ALERT_EMAIL must be one plain address ("owner@fake") (122.052123ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2768755Z ✔ storefront cart-line removal is reversible: clicked for real, not guarded (0.865739ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2769543Z ✔ destructive / irreversible / sign-out classification (owner list, en + zh) (0.708351ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2770232Z ✔ alike controls (rows with ids / numbers) share one class key (0.241315ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2770880Z ✔ known defects classify, never silence: stale entries are reported (0.642482ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2771553Z ✔ the markdown ledger has one row per interaction and names the verdict (0.424442ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2772293Z ✔ protocolHrefOK accepts well-formed tel:/mailto: and rejects malformed ones (0.25842ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2773218Z ✔ J1 waits for enabled media and clicks a real chooser; the uploaded cover is bound to the main section (373.076218ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2774034Z ✔ J1 cannot credit a detail-image receipt as the main cover (1.601952ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2774678Z ✔ J1 refuses a failed cover upload rather than continuing to activate (0.584955ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2775616Z ✔ thresholds are the named constants of the brief (2.265625ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2776277Z ✔ R1: document wider than the viewport, and the outermost element past the edge (0.50912ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2777103Z ✔ R2: label tops, control tops and control heights of one visual row (1.020803ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2777680Z ✔ R2: what is one row and what is not (0.365192ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2778220Z ✔ R2: a button beside a field has to line up with its control (0.372313ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2778859Z ✔ R3: a row made tall by stacked controls, a control wider than its cell (0.950458ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2779609Z ✔ R3: a matrix whose EVERY row is doubled by a stacked stock cell (the median cannot see it) (0.53571ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2780313Z ✔ R4: small text, helper text apart, icons and duplicates excepted (1.222709ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2780854Z ✔ R5: tap targets on the 390 viewport only (1.050248ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2781371Z ✔ R6: interactive elements and text boxes that overlap (0.640068ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2782125Z ✔ R7: text clipped inside a control or label (either side), and select values that do not fit (0.777756ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2782767Z ✔ R8: the same visible label twice in one list (0.256728ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2783531Z ✔ evaluate() tags severity, selectRecords() keeps distinct groups first and counts every instance (0.693588ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2784366Z ✔ R9: text and controls flush to the screen edge at 390 (0.550862ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2785181Z ✔ R6/R9 judge the visible (ancestor-clipped) rectangle, not the raw one (integrator ruling 2026-10-05) (0.366615ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2785962Z ✔ R10: a fixed or sticky bar covering main content after scrolling (0.640819ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2786505Z ✔ R11: controls narrower than a usable width (0.451292ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2786871Z ℹ tests 418
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2787105Z ℹ suites 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2787310Z ℹ pass 418
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2787527Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2787734Z ℹ cancelled 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2787995Z ℹ skipped 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2788191Z ℹ todo 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.2788449Z ℹ duration_ms 16127.158131
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.4095603Z ✔ closed projections reject secret-shaped extras, invalid enums, IDs and contradictory capabilities (1.334367ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.4096794Z ✔ detail accepts only bounded events and keeps actual server action flags (0.771175ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.4097941Z ✔ BFF exact routes and request grammar forbid keys/body on reads, filters on detail and arbitrary writes (21.489095ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.4098774Z ✔ copy parity, safe object navigation and UNKNOWN/protective reasons (0.402899ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.4099550Z ✔ read-only store capability never exposes a command even if the state allows one (0.134122ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.4100298Z ✔ duplicate escaped keys cannot bypass the exact command grammar (0.114333ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.4101031Z ✔ query backoff affects only its operation and expires without another action (0.137197ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.4103747Z ✔ merchant reason text translates ledger events and conceals unknown or prototype codes (0.306253ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.4105052Z ✔ ledger read navigation requires effective integration:read permission regardless of role (0.22454ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.4237246Z ℹ tests 9
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.4237668Z ℹ suites 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.4237879Z ℹ pass 9
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.4238024Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.4238155Z ℹ cancelled 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.4238306Z ℹ skipped 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.4238436Z ℹ todo 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.4238595Z ℹ duration_ms 117.652982
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.5365835Z ✔ legacy display sentinels preserve a list row without admitting arbitrary or private data (3.478567ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.5367372Z ✔ orders-v2 accepts bounded filters and Taipei inclusive dates; rejects ambiguity (0.843505ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.5368347Z ✔ orders-v2 rejects client count approximations, unbounded or extra response data (0.361266ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.5369235Z ✔ all three locales label every task queue, payment and delivery mode (0.641599ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.5443402Z ℹ tests 4
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.5443939Z ℹ suites 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.5444745Z ℹ pass 4
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.5444943Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.5445148Z ℹ cancelled 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.5458330Z ℹ skipped 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.5464577Z ℹ todo 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.5464891Z ℹ duration_ms 93.214846
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.6343400Z ✔ numeric store IDs have no suggestion BFF or browser client (1.023256ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.6463581Z ℹ tests 1
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.6465065Z ℹ suites 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.6465284Z ℹ pass 1
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.6465472Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.6465664Z ℹ cancelled 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.6465889Z ℹ skipped 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.6466084Z ℹ todo 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.6466317Z ℹ duration_ms 72.643167
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.7594943Z ✔ ADM10 operator sentence is localized while product and company facts stay authoritative (0.731004ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.7615461Z ✔ PS review: actual Host matching normalizes case, port and a terminal DNS dot, never forwarded authority (0.560808ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.7616963Z ✔ PS review: privacy/terms retain Messenger and Instagram purpose disclosure; deletion uses exact UI labels (0.345633ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.7618144Z ✔ P2-N1 zh-TW/privacy: current comments and private reply, conditional inbound messages (0.177908ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.7619111Z ✔ P2-N1 zh-TW/terms: current comments and private reply, conditional inbound messages (0.065899ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.7620037Z ✔ P2-N1 zh-CN/privacy: current comments and private reply, conditional inbound messages (0.055233ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.7620964Z ✔ P2-N1 zh-CN/terms: current comments and private reply, conditional inbound messages (0.087462ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.7621910Z ✔ P2-N1 en/privacy: current comments and private reply, conditional inbound messages (0.061703ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.7623298Z ✔ P2-N1 en/terms: current comments and private reply, conditional inbound messages (0.109245ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.7624154Z ✔ PS1 legal identity is one untranslated source (0.226522ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.7624945Z ✔ PS1 contact and hosts come only from configuration; production fails closed (0.721691ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.7625837Z ✔ PS2 public routes default to zh-TW, restrict page/locale, and never include admin (0.713699ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.7626623Z ✔ PS4 optional Meta verification value never has a fake default (0.141604ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.7627370Z ✔ PS1 every locale uses the same product name in auth page titles (0.079971ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.7629401Z ✔ PS1 public page copy has three complete locales, no invented operator identity or contact (0.369699ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.7630495Z ✔ PS1 production build validates config; public data is not bundled through NEXT_PUBLIC (0.361997ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.7631448Z ✔ PS review: admin image installs the manifests for its workspace dependencies before building (0.223507ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.7691522Z ℹ tests 17
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.7691884Z ℹ suites 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.7692097Z ℹ pass 17
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.7692342Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.7692549Z ℹ cancelled 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.7692766Z ℹ skipped 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.7693024Z ℹ todo 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:36.7693261Z ℹ duration_ms 94.006646
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.2709862Z ✔ R11 SQL's exact receipt states are accepted; missing/forged operation/state remains unknown (1.75993ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.2715195Z ✔ R11 durable receipt journal validates phase against exact operation state (0.762632ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.2716016Z ✔ R11 actual read control distinguishes replay/inflight/unknown/failure in en (8.991768ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.2716599Z ✔ R11 actual read control distinguishes replay/inflight/unknown/failure in zh-TW (1.469501ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.2717155Z ✔ R11 actual read control distinguishes replay/inflight/unknown/failure in zh-CN (1.159132ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.2717798Z ✔ unknown journal retains exact key/boundary and is scoped to store+session; malformed state fails closed (0.413385ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.2794073Z ✔ R12 read hook keeps network UNKNOWN on one key and explicitly refreshes acknowledged UNKNOWN (24.292312ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.3058695Z ✔ actual POST transport uses CSRF and session fence; 403 independent of response text (30.846417ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.3262554Z ✔ R10 ROAS has exactly two decimals in en (16.933991ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.3263118Z ✔ R10 unknown ROAS is never fabricated as zero in en (0.325683ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.3263560Z ✔ R10 ROAS has exactly two decimals in zh-TW (0.392163ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.3264156Z ✔ R10 unknown ROAS is never fabricated as zero in zh-TW (0.11849ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.3264464Z ✔ R10 ROAS has exactly two decimals in zh-CN (0.332172ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.3264781Z ✔ R10 unknown ROAS is never fabricated as zero in zh-CN (0.094964ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.4953524Z ✔ shared presentation preserves registry title and one empty buyer message in en (32.902594ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.4954854Z ✔ R11 large linked-draft list is complete but collapsed in en (5.371828ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.4955775Z ✔ shared presentation preserves registry title and one empty buyer message in zh-TW (9.221186ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.4956976Z ✔ R11 large linked-draft list is complete but collapsed in zh-TW (4.356244ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.4959948Z ✔ shared presentation preserves registry title and one empty buyer message in zh-CN (8.861662ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.4964221Z ✔ R11 large linked-draft list is complete but collapsed in zh-CN (4.072004ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.4966566Z ✔ R11 timeline distinguishes local unknown spend from explicit Meta zero in en (4.742066ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.4967660Z ✔ R11 timeline distinguishes local unknown spend from explicit Meta zero in zh-TW (5.853906ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.4968605Z ✔ R11 timeline distinguishes local unknown spend from explicit Meta zero in zh-CN (3.303122ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.4969536Z ✔ R11 I12 nullable Meta evidence survives without becoming zero (0.670042ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.4970374Z ✔ R11 actual panel rendering preserves unknowns and reconnect route in en (16.560697ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.4971286Z ✔ R11 actual panel rendering preserves unknowns and reconnect route in zh-TW (16.611094ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.4972206Z ✔ R11 actual panel rendering preserves unknowns and reconnect route in zh-CN (18.363361ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.4980315Z ✔ D1, D6, R7: exact amounts and sources remain independent, account days stay labelled (0.437762ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.4985129Z ✔ R12: null stays unknown and unread / unauthorised / insufficient remain different states (0.544253ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.4986119Z ✔ R12 granted but unread audience offers a read, never reconnect in en (2.847133ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.4986938Z ✔ R12 granted but unread audience offers a read, never reconnect in zh-TW (2.83837ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.4987736Z ✔ R12 granted but unread audience offers a read, never reconnect in zh-CN (2.702054ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.4988451Z ✔ I12 forged / missing frozen fields never silently become zeros (1.64114ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.4989278Z ✔ only whitelisted aggregates survive: extra identifiers and HTML are never interpreted (0.148575ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.4990614Z ✔ attribution is a read-only BFF resource with exact bounded query grammar (0.544263ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.4991705Z ✔ audience-read is exactly the new local intention POST and never a data GET or queried write (0.284089ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.4992649Z ✔ route fails closed without ads:read and is not a duplicate navigation entry; locale keys match (0.21183ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.5301884Z ℹ tests 37
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.5302164Z ℹ suites 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.5302299Z ℹ pass 37
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.5302429Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.5302560Z ℹ cancelled 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.5302707Z ℹ skipped 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.5302836Z ℹ todo 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.5303020Z ℹ duration_ms 732.049191
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.6913753Z ✔ card-payments copy: identical key sets in all three locales (3.02402ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.6945558Z ✔ merchant terms are quoted verbatim (contract §5) in the enable dialog (0.281626ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.6978274Z ✔ ruling-fixed strings: platform not OPEN and BLOCKED note (0.136226ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7026598Z ✔ error map covers every frozen refusal code from migrations/0137 (0.209957ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7070598Z ✔ no Stripe account id, key or approval id shape appears in any copy string (0.556481ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7095473Z ✔ storefront collector disclosure matches contract §5 templates in three languages (0.184208ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7115937Z ✔ the merchant terms in the dialog are the contract §5 sentence, extracted from the contract (0.210969ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7145314Z ✔ the storefront templates are the contract §5 lines, extracted from the contract (0.273222ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7155436Z ✔ settlement copy: deduction columns are labelled as deductions in every language, with a legend and the net formula (0.545414ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7185515Z ✔ there is no separate 'not on the allowlist' message: it reads as not open (review P1-2) (0.268455ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7625586Z ✔ card summary accepts the frozen shape incl. all-null platform NONE (1.645707ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7627207Z ✔ card summary rejects unknown keys, bad enums, bad money, bad version (0.627168ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7628237Z ✔ card result is exactly {state, version, max_minor, currency, descriptor_preview} (0.224769ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7631178Z ✔ descriptor suffix rule: charset, 2..10 chars, must contain a letter (0.288797ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7632593Z ✔ the suffix length rule is the charset rule's 10; the 22-character descriptor total stays the server's (SANDBOX L=10, LIVE PrefixLength) (0.209567ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7639675Z ✔ descriptor preview mirrors the contract projection (base + '* ' + suffix) (0.126541ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7640832Z ✔ settlement list accepts statements without payout/lines keys (omitempty) (0.666878ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7641780Z ✔ settlement detail carries lines whose count and sums match the totals (0.832748ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7645312Z ✔ settlement parsers reject malformed reads (1.456311ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7671368Z ✔ fees, refunds and disputes are signed exactly as the ledger stores them (1.317841ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7710869Z ✔ a returned fee is a positive line fee; the detail's lines must add up to the statement totals (0.334525ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7735169Z ✔ closed_at/paid_at accept the offsets PostgreSQL emits as well as Z (0.214424ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7740706Z ✔ a payout reference shaped like a Stripe key or account id is never displayed (0.314455ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7747520Z ✔ platform not OPEN: 'not open yet' and no enable control, for every non-OPEN state; the platform badge still tells why (0.816975ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7774216Z ✔ allowlisted + OPEN: enable from NONE/DISABLED, disable from ENABLED (0.222396ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7815362Z ✔ not allowlisted on an OPEN platform reads exactly like not open: the same message, no 'platform open' badge, no enable (review P1-2) (0.270539ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7816447Z ✔ BLOCKED: the suspended note, disable only, never enable (whatever the platform says) (0.168305ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7817800Z ✔ without billing:manage nothing can be changed, but the state is still readable (0.143407ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7818858Z ✔ enable carries the platform's current terms, the suffix and the version read; NONE starts at 0 (0.132229ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7819845Z ✔ disable never sends a suffix and quotes the terms the store accepted (the platform's may have moved on) (0.074723ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7820762Z ✔ a retained suffix is recovered from the final preview so a re-enable can keep it (0.067352ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7821544Z ✔ the period label shows the last day inside the (exclusive-end) week (0.280164ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7822384Z ✔ payout state: paid, pending only when money is due, none when the week nets to zero or less (0.063917ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7823297Z ✔ card-payments and settlements are nav:false routes, so no group loses or gains a nav button (0.237359ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7855458Z ✔ settlements need billing:manage, the card page integration:read; the owner opens both (0.245892ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7857301Z ✔ statement cells: a dispute reversal and a returned fee read as credits (+) and every deduction as -, and the columns add up to the server's net (11.611388ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7875367Z ✔ the detail parser requires the lines of a statement that has lines; a quiet week (line_count 0) may omit them (0.344471ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7876502Z ✔ route table: exactly the four resources, nothing generic (1.132952ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7877670Z ✔ query grammar: card and settlement-detail are exact; settlements takes before/limit only (0.462078ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7878545Z ✔ request fence: keyless PUT (CAS), bodyless GETs, no transfer-encoding (35.632569ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7879335Z ✔ PUT body is the exact frozen shape {enabled, terms_version, descriptor_suffix, expected_version} (1.193553ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.7879859Z ✔ the BFF route wires the card grammar: keyless CAS PUT, exact body, no-store, auth required (0.624544ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.8613668Z ✔ the real card summary parses and drives the display state machine (2.476793ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.8619289Z ✔ the real statement list parses: newest first, no lines, three payout states (1.454288ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.8620191Z ✔ every real detail parses with its lines and the lines add up to the statement (0.984859ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.8620843Z ✔ an empty ledger parses to no statements (0.222757ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.8621294Z ✔ no account id, key or approval shape is in any real body (0.994503ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.8621988Z ✔ the real statements display literally as signed contributions that add up to the server's net (17.304661ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.8722907Z ℹ tests 48
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.8723219Z ℹ suites 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.8723429Z ℹ pass 48
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.8723631Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.8724249Z ℹ cancelled 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.8724451Z ℹ skipped 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.8724579Z ℹ todo 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:37.8724739Z ℹ duration_ms 312.166963
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.0283294Z ✔ option/slug/SKU caps equal internal/catalog (options.go, catalog.go) (9.326825ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.0315446Z ✔ text caps equal the Go validators (name 120, description 8000, SEO 70/160, collection title 80) (4.01719ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.0365713Z ✔ photo caps equal Go (MaxMainImages, MaxDetailImages, MaxImageBytes) and the SKU code pattern (5.786465ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.0519820Z ✔ PE13 Cartesian matrix is local, preserves edits and deduplicates values (4.313449ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.0525892Z ✔ PE13 bulk quantity skips negative rows without modifying them (0.230388ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.0526824Z ✔ PE12 untracked document uses whole currency and per-order cap, never quantity (15.912087ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.0527639Z ✔ PE14 missing readback is not guessed or silently cleared by full replacement (0.186582ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.0528506Z ✔ bulk status accepts explicit per-item results, never empty or duplicated confirmations (0.645496ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.0529733Z ✔ matrix refuses over 100 SKUs before expansion (0.248015ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.0612652Z ✔ parity: admin caps equal the Go constants (1.730816ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.0618112Z ✔ image list: 4 main + 20 detail + 2 sku in role order is accepted (0.832709ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.0618995Z ✔ image list: 5 main, 21 detail, wrong role order, gaps and extra keys are refused (0.474177ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.0619832Z ✔ single image: role is required and its position is bounded by the role cap (1.520217ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.0620604Z ✔ option text limits count Go runes rather than UTF-16 units (0.482399ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.1256405Z ✔ PE14 new edit SKU carries its own shipping and clears no existing fields (13.527594ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.1263552Z ✔ PE14 patch changes only price and preserves unmentioned fields (0.430691ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.1269928Z ✔ PE14 on_hand is not available, zero target is transmitted, ambiguous warehouse refuses (0.597413ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.1301570Z ✔ PE14 explicit clears and shipping remain per SKU on an active row (0.326514ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.1316590Z ✔ PE14 archive supersedes every other edit on that SKU (b77eeb11) (0.272302ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.1318457Z ✔ PE14 no-op has no command fields and changed axes explicitly archive omitted variants (0.174513ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.1357104Z ℹ tests 20
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.1357543Z ℹ suites 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.1357788Z ℹ pass 20
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.1358008Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.1358219Z ℹ cancelled 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.1358467Z ℹ skipped 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.1358691Z ℹ todo 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.1358930Z ℹ duration_ms 234.981573
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.2348181Z (node:16772) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.2349173Z (Use `node --trace-warnings ...` to show where the warning was created)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.3151591Z ✔ UNKNOWN retry client authorization loss requires reconciliation, not a fresh command (6.801258ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.3306538Z ✔ UNKNOWN retry 401 authorization loss requires reconciliation, not a fresh command (15.503059ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.3320750Z ✔ UNKNOWN retry 403 authorization loss requires reconciliation, not a fresh command (1.622663ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.3334037Z ✔ a conclusive command rejection stays distinct from authorization loss (1.719709ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.3464557Z ℹ tests 4
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.3464902Z ℹ suites 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.3465118Z ℹ pass 4
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.3465258Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.3465399Z ℹ cancelled 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.3465553Z ℹ skipped 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.3465684Z ℹ todo 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.3465853Z ℹ duration_ms 181.442669
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.3514764Z NOT_RUN: tests/media/r04-input-runner.test.mjs (COMMERCE_R04_LIVEKIT_BINARY unset)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.7100273Z ✔ main/detail/sku caps use the existing frozen image contract (1.139603ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.7100905Z ✔ phone and tall dimensions fit2000 without enlarging small assets (0.290859ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.7101362Z ✔ upload query requires one exact role and sku value; reads/actions carry no query (0.660317ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.7101859Z ✔ role transport encodes current option values and refuses invalid identities (0.325172ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.7102295Z ✔ effective image axis follows current options, then falls back to first (0.119721ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.7102705Z ✔ detail and option photos cannot satisfy the main-photo recommendation (0.148064ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.7103134Z ✔ PM-U copy has matching keys in ja and all currently routed locales (0.225651ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.7103530Z ✔ real-upload mode builds both Next applications on a clean CI checkout (9.504784ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.7105449Z ✔ upload recovery journal survives a new session while remaining product/store scoped (0.296438ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.7106266Z ✔ an option upload receipt requires its captured axis, value and image id on canonical readback (0.222586ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.7106964Z ✔ failed durable recovery storage cannot authorize a media write (0.166642ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.7108210Z ✔ an active product needs a main image after canonical media is known; repair paths stay possible (0.093311ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.7109238Z ✔ empty media sections render a readable localized placeholder until photos are present (8.04655ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.7109969Z ✔ real-upload mode never exits through the storefront MOCK shortcut (14.857163ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.7110425Z ✔ a valid active zero-main product keeps an inline repair hint rather than a page error (6.876562ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.7110838Z ✔ a new product issues the image-axis stage only for a chosen axis (0.928082ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.7262569Z ℹ tests 16
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.7262943Z ℹ suites 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.7263154Z ℹ pass 16
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.7263342Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.7263536Z ℹ cancelled 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.7263929Z ℹ skipped 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.7264132Z ℹ todo 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.7264375Z ℹ duration_ms 351.612611
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.8525008Z (node:16809) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.8545045Z (Use `node --trace-warnings ...` to show where the warning was created)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.8663318Z ✔ a fitting PNG keeps the exact original File, bytes and alpha-capable format (1.659989ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.8669556Z ✔ a JPEG exactly at both limits remains original, not a lossy re-encode (0.998228ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.8670695Z ✔ an oversized phone JPEG is encoded below the cap after oriented scaling (1.609523ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.8671532Z ✔ a large transparent PNG stays alpha-capable and is never painted with an opaque matte (1.4817ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.8781606Z ℹ tests 4
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.8781979Z ℹ suites 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.8782192Z ℹ pass 4
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.8782394Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.8782600Z ℹ cancelled 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.8782826Z ℹ skipped 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.8783028Z ℹ todo 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:38.8783267Z ℹ duration_ms 123.390052
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.4311511Z ✔ HTTPS picklist fixture carries Secure session cookies automatically while preserving CSRF refusals (212.469192ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.4312447Z ✔ batch controls stay compact until an order selection or live-session scope exists (0.365392ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.4312920Z ✔ selection has XOR bodies, canonical unique IDs and separate 500/100 limits (0.720439ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.4313406Z ✔ cross-page selection retains existing rows, deduplicates and refuses overflow atomically (1.249398ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.4314052Z ✔ pick projection rejects PII/extra keys, invalid quantities and unmatched order identities (0.915884ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.4314527Z ✔ batch replies bind one-for-one to confirmed orders and preserve uncertainty code (0.238501ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.4314976Z ✔ pick/export POSTs reject keys and all query variants except one exact template (3.068768ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.4315412Z ✔ CSV filename binds to selected template and store; no path/header injection (0.366193ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.4465869Z ✔ MOCK browser fixture list matches the incumbent closed order parser (20.883329ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.4476015Z ✔ recovery never clears an unknown or missing current attempt (0.38398ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.4830157Z ✔ recovery and order-detail MOCK fixtures satisfy real read parsers (16.064497ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.4831383Z ✔ order selection can read its session fence during SSR without browser globals (1.838118ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.4832371Z ✔ MOU keeps native headed checks runnable on a Linux CI worker without DISPLAY (24.015803ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.5132637Z ℹ tests 13
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.5133219Z ℹ suites 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.5133436Z ℹ pass 13
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.5134205Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.5134429Z ℹ cancelled 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.5134659Z ℹ skipped 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.5134866Z ℹ todo 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.5135117Z ℹ duration_ms 605.566255
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.6516497Z ✔ parseShard: i/N, empty means unsharded, anything malformed throws (1.386675ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.6521696Z ✔ assignShards: deterministic, every key owned once, near-balanced (LPT bound) (2.127095ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.6523539Z ✔ planClick: for every N the shards partition the whole universe (every registry route x variant, storefront walk, journey) (2.933333ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.6524887Z ✔ planClick at N=10 keeps every shard within ~1.3x of the mean planned cost (0.340314ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.6526682Z ✔ aggregate click: honest shards pass for several N (4.869028ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.6529075Z ✔ aggregate click: a missing shard, a dropped page row, a lost journey, a failing row, a stale known defect and a missing platform marker are each a failure (7.934571ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.6532908Z ✔ aggregate click: a route added to the registry after the shards ran cannot pass (the registry is re-read) (1.044228ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.6535191Z ✔ aggregate visual: honest shards pass; a missing shard, a missing shot, a blocking verdict and a registry route outside the universe each fail (10.123599ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.6685467Z ℹ tests 8
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.6686081Z ℹ suites 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.6686400Z ℹ pass 8
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.6686599Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.6686816Z ℹ cancelled 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.6687049Z ℹ skipped 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.6687251Z ℹ todo 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.6687490Z ℹ duration_ms 127.278759
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.7475215Z ci-plan: 10 job(s); click-sweep x10 (aggregate)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.7476611Z   --browser-click-sweep@1/10  -> artifact gate-browser-click-sweep_1_10
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.7479638Z   --browser-click-sweep@2/10  -> artifact gate-browser-click-sweep_2_10
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.7480455Z   --browser-click-sweep@3/10  -> artifact gate-browser-click-sweep_3_10
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.7481183Z   --browser-click-sweep@4/10  -> artifact gate-browser-click-sweep_4_10
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.7481970Z   --browser-click-sweep@5/10  -> artifact gate-browser-click-sweep_5_10
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.7483353Z   --browser-click-sweep@6/10  -> artifact gate-browser-click-sweep_6_10
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.7514889Z   --browser-click-sweep@7/10  -> artifact gate-browser-click-sweep_7_10
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.7515808Z   --browser-click-sweep@8/10  -> artifact gate-browser-click-sweep_8_10
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.7516536Z   --browser-click-sweep@9/10  -> artifact gate-browser-click-sweep_9_10
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.7517473Z   --browser-click-sweep@10/10  -> artifact gate-browser-click-sweep_10_10
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.7518826Z ✔ the full sweep and the full visual lint fan out into every shard and ask for the aggregate (2.401109ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.7519891Z ✔ foundation-shards = the unit shard + every plan group; the serial `foundation` mode is untouched (0.48962ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.7520849Z ✔ an explicit shard re-run (or a partial list) never claims the whole-run aggregate (0.20469ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.7521964Z ✔ duplicates collapse, artifact names are safe and unique, bad input is refused (0.585245ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.7522871Z ✔ main writes matrix / sweep_n / visual_n to GITHUB_OUTPUT (1.338542ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.7728815Z ✔ backend-only paths run foundation-shards only (3.465768ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.7736706Z ✔ node tests of deploy scripts and of the CI planner are backend-only (they cannot change a browser) (0.836965ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.7738885Z ✔ a UI path adds the whole browser set, including click-sweep and visual-lint (6.420823ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.7739510Z ✔ docs-only and output-only diffs keep the single required check (foundation-shards) (0.760629ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.7739998Z ✔ tests/foundation/browser_* is a browser path, other tests/foundation files are not (0.788281ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.7740405Z ✔ deploy flag: deploy/ and scripts/deploy* only (1.591185ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:39.7740827Z ✔ the browser set is release-gate's browser-mode universe minus the documented exclusions (8.899058ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:41.9015239Z ✔ parser: only compiled, correctly-shaped Test functions of untagged _test.go files (1.749454ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:41.9016738Z ✔ the real plan: every top-level test of tests/foundation runs in exactly one group (531.513774ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:41.9022844Z ✔ a new test (in no list) still runs, exactly once, in the catch-all group; the same name with no catch-all is red (791.711405ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:41.9024256Z ✔ a test listed in two groups is red; drift beyond the limit is red (787.176792ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:41.9025198Z ✔ regexes: anchored explicit lists; the catch-all skips exactly everyone else's tests (0.724985ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:41.9026065Z ✔ pack: deterministic, balanced to within the longest test, every name once (7.21974ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:41.9026768Z ✔ parseDurations: top-level lines only (0.354747ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:41.9178528Z ℹ tests 19
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:41.9178891Z ℹ suites 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:41.9179104Z ℹ pass 19
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:41.9179307Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:41.9179515Z ℹ cancelled 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:41.9179727Z ℹ skipped 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:41.9179912Z ℹ todo 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:41.9180151Z ℹ duration_ms 2219.924044
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.1586380Z ✔ A8/A9/A13 and published templates: exact reads forward once with no-store (36.139716ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.1811251Z ✔ real streamed POST bodies: A10-A14 exact keys reach upstream (21.545079ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.1923276Z ✔ query, read headers, methods and body allowlists refuse before upstream (13.094259ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.1999815Z ✔ session, CSRF and store authority precede content forwarding (4.604078ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.2182352Z ✔ A12 fixed codes preserved; arbitrary upstream diagnostics stripped (18.730897ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.2211330Z ✔ client preserves codes and receipt; changed/aborted session cannot publish private response (6.020649ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.2300229Z ✔ A9 admits a full page of valid Unicode replies while bounding private response bytes (8.7478ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.2352012Z ✔ non-JSON upstream 401 still expires both authentication cookies without diagnostic leakage (5.105275ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.2487549Z ✔ three unit languages cover identical fixed labels and delivery states (1.624655ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.2488505Z ✔ hiding aborts requests and rejects late responses, even after reveal (1.113293ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.2489302Z ✔ switching selection invalidates both reads and write completions (0.188254ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.2490058Z ✔ owner and explicit inbox permissions only; viewer fails closed (0.170868ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.2490781Z ✔ Messenger counts Unicode codepoints; Instagram counts NFC UTF8 bytes (1.949005ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.2491658Z ✔ uncertain transport retries retain the exact submission; definitive conflicts retire it (1.137059ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.2492535Z ✔ privacy calibration cannot activate with production origin or ordinary caller env (0.422128ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.2493466Z ✔ late focus/pageshow while native document remains hidden cannot reveal requests (0.582691ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.2494451Z ✔ terminal navigation revocation cannot be undone by focus or refresh until a new page fence (0.18508ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.2495133Z ✔ a ticket from another store/page fence is never accepted (0.394837ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.2495774Z ✔ focus while already visible preserves the active epoch and the uncertain reply receipt (0.270078ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.2496079Z ℹ tests 19
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.2496216Z ℹ suites 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.2496343Z ℹ pass 19
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.2496476Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.2496602Z ℹ cancelled 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.2496739Z ℹ skipped 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.2496866Z ℹ todo 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.2497019Z ℹ duration_ms 300.608951
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.5866716Z ✔ inbox evidence is covered by the CI upload root (1.054564ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.5923155Z ✔ failed Playwright closes its log and emits sanitized diagnostics before Fatalf (0.186391ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.5961683Z ✔ failure diagnostics match INU cases/counts without admitting private text (0.904306ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.5966430Z ✔ INU04 delayed handler 1 signals completion when fulfillment rejects (23.484961ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.5967040Z ✔ INU04 delayed handler 2 signals completion when fulfillment rejects (3.617056ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7344011Z ✔ P1-1 actual visible focus preserves pending ticket, selection, revision and real retry receipt (3.034086ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7349669Z ✔ P1-1 actual unchanged-session pageshow checks without clearing; changed-session focus expires (0.612295ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7350427Z ✔ P1-1 actual hide/reveal clears and requests fresh revision, never accepts obsolete completion (0.561718ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7350995Z ✔ P1-1 changed-session visible focus expires even with a pending request (0.434607ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7437037Z ✔ P1-2 actual A9 refresh 404 removes rendered DM and unsent draft (24.594017ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7468768Z ✔ P1-2 actual send-finally A9 404 removes DM, draft and uncertain immutable receipt (3.603055ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7513550Z ✖ actual uncertain send still retains exact receipt when A9 authority remains (3.608122ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7527119Z ✔ actual A9 stale held completion cannot paint after component cleanup (1.774823ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7549118Z ✔ P2 actual A14 404 clears buyer facts and customer draft (explicit future-version MOCK) (2.195839ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7549783Z ✔ safe authority errors remain the actual InboxError transport class (0.194384ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7559377Z ✔ actual current A13 without version keeps A14 disabled; future MOCK grants no backend claim (1.154785ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7577143Z ✔ P1-2 actual A11 takeover write 404 clears private state despite failing follow-up A9 (1.875655ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7590538Z ✔ P1-2 actual A12 send write 404 clears private state despite failing follow-up A9 (1.480878ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7755952Z ℹ tests 18
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7756510Z ℹ suites 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7756855Z ℹ pass 17
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7757153Z ℹ fail 1
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7757431Z ℹ cancelled 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7757730Z ℹ skipped 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7757969Z ℹ todo 0
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7758203Z ℹ duration_ms 495.863774
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7763070Z
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7763281Z ✖ failing tests:
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7763456Z
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7763692Z test at tests/admin/inbox-review.test.ts:441:1
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7764351Z ✖ actual uncertain send still retains exact receipt when A9 authority remains (3.608122ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7764755Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7764983Z
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7765110Z   1 !== 2
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7765223Z
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7765747Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-review.test.ts:460:10)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7766256Z       at async Test.run (node:internal/test_runner/test:1409:7)
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7766643Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7766913Z     generatedMessage: true,
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7767083Z     code: 'ERR_ASSERTION',
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7767233Z     actual: 1,
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7767365Z     expected: 2,
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7767524Z     operator: 'strictEqual',
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7767693Z     diff: 'simple'
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7767831Z   }
+foundation	Node unit suites (storefront, i18n)	2026-10-07T13:57:42.7832265Z ##[error]Process completed with exit code 1.

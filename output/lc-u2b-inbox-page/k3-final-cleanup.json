@@ -1,0 +1,11 @@
+{
+  "owned_runtime_process_matches": [],
+  "owned_fixture_container_matches": [],
+  "preserved_external_workspace_monitor_pids": [
+    33373
+  ],
+  "other_container_count": 4,
+  "initial_broad_inventory_exit": 1,
+  "initial_match_explanation": "Pre-existing Claude QUIET git monitor is not an author test process and was left untouched. No external command text retained.",
+  "owned_inventory_exit": 0
+}

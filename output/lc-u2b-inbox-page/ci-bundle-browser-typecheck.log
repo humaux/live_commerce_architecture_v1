@@ -1,0 +1,7 @@
+tests/admin/fixtures/native-device.ts(6,45): error TS2591: Cannot find name 'node:fs/promises'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+tests/admin/fixtures/native-device.ts(7,23): error TS2591: Cannot find name 'node:child_process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+tests/admin/fixtures/native-device.ts(22,11): error TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+tests/admin/fixtures/native-device.ts(32,24): error TS7006: Parameter 'error' implicitly has an 'any' type.
+tests/admin/inbox-ui.spec.ts(5,34): error TS2591: Cannot find name 'node:fs/promises'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+tests/admin/inbox-ui.spec.ts(6,25): error TS2591: Cannot find name 'node:path'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+tests/admin/inbox-ui.spec.ts(10,17): error TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.

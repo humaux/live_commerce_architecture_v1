@@ -1,3 +1,6 @@
+// Purpose: ops-polish independent gates OP2/OP3/OP4, including the authorized current-route expanded navigation contract.
+// Depends on: Playwright, native-device, signed MOCK IdP, actual admin Next -> Go API -> isolated PG.
+// Used by: browser_ops_polish_test.go and test-local.sh --browser-ops-polish.
 // ops-polish independent gates (docs/delivery/units/ops-polish.md OP2, OP3 UI half, OP4), real admin Next build -> private Go API -> isolated PG,
 // signed MOCK IdP. Driven by tests/foundation/browser_ops_polish_test.go (TestBrowserOpsPolishAdmin), written from the brief, not the implementation.
 // BFF routes exercised: GET /api/stores/{store}/orders (list poll), /orders/{id} (detail), /finance/summary(.csv) -> Go internal/httpapi.
@@ -214,7 +217,7 @@ const removedNav: Record<string, string[]> = {
   "zh-CN": ["网站客服", "Meta 消息", "平台支持"],
   "zh-TW": ["網站客服", "Meta 訊息", "平台支援"],
 };
-async function assertRegistryNavigation(page: Page, locale: string) {
+async function assertRegistryNavigation(page: Page, locale: string, liveSelected = false) {
   const nav = page.locator("[data-shell-rail]");
   // Exact authorized groups replace the obsolete nine flat-button assumption.
   // Do not grant Customers, add placeholder routes, or derive expected IDs from
@@ -222,9 +225,24 @@ async function assertRegistryNavigation(page: Page, locale: string) {
   await expect.poll(() => nav.locator('button[data-testid^="nav-"]').evaluateAll(
     (buttons) => buttons.map((button) => button.getAttribute("data-testid")),
   )).toEqual([
-    "nav-group-overview", "nav-group-live", "nav-orders", "nav-group-catalog",
+    "nav-group-overview", "nav-group-live",
+    ...(liveSelected ? ["nav-studio", "nav-live-console", "nav-claims"] : []),
+    "nav-orders", "nav-group-catalog",
     "nav-group-marketing", "nav-group-storefront", "nav-group-finance", "nav-group-settings",
   ]);
+  if (liveSelected) {
+    // LC-U1 adds three authorized live routes; W0 opens the current group.
+    // Keep exact inventory/permission assertions, and exercise its real toggle.
+    const live = nav.getByTestId("nav-group-live");
+    await expect(live).toHaveAttribute("aria-expanded", "true");
+    await expect(nav.getByTestId("nav-studio")).toHaveAttribute("aria-current", "page");
+    await live.click();
+    await expect(live).toHaveAttribute("aria-expanded", "false");
+    await expect(nav.locator('button[data-testid^="nav-"]')).toHaveCount(8);
+    for (const id of ["studio", "live-console", "claims"]) await expect(nav.getByTestId(`nav-${id}`)).toHaveCount(0);
+    await live.click();
+    for (const id of ["studio", "live-console", "claims"]) await expect(nav.getByTestId(`nav-${id}`)).toBeVisible();
+  }
   await nav.getByTestId("nav-group-catalog").click();
   for (const id of ["products", "collections", "inventory"]) await expect(nav.getByTestId(`nav-${id}`)).toBeVisible();
   await expect(nav.locator('button[data-testid^="nav-"]')).toHaveCount(11);
@@ -242,7 +260,7 @@ for (const locale of ["en", "zh-CN", "zh-TW"]) {
     const text = (await heading.innerText()).trim();
     expect(text, "the Studio heading must carry a subtitle line").toMatch(/\n./);
     expect(text, "the local rehearsal wording must be gone").not.toMatch(/MOCK|rehears|演练|演練|模拟|模擬|local/i);
-    await assertRegistryNavigation(page, locale);
+    await assertRegistryNavigation(page, locale, true);
     // none of the remaining entries is a placeholder panel
     await expect(page.getByText(/not connected in the current build|当前版本尚未连接|目前版本尚未連線|目前版本尚未连接/)).toHaveCount(0);
   });

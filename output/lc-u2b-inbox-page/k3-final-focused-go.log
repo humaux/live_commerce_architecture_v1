@@ -1,0 +1,59 @@
+=== RUN   TestInboxUnknownAuthority
+=== RUN   TestInboxUnknownAuthority/empty
+=== RUN   TestInboxUnknownAuthority/exhaustive_healthy
+=== RUN   TestInboxUnknownAuthority/known_unknown
+=== RUN   TestInboxUnknownAuthority/missing_operation
+=== RUN   TestInboxUnknownAuthority/exactly_50_healthy
+=== RUN   TestInboxUnknownAuthority/unknown_in_full_scan
+=== RUN   TestInboxUnknownAuthority/old_unknown_outside_50_newer_outbound
+=== RUN   TestInboxUnknownAuthority/known_unknown_below_50_newer_inbound
+=== RUN   TestInboxUnknownAuthority/scope_not_found
+--- PASS: TestInboxUnknownAuthority (22.13s)
+    --- PASS: TestInboxUnknownAuthority/empty (0.01s)
+    --- PASS: TestInboxUnknownAuthority/exhaustive_healthy (0.04s)
+    --- PASS: TestInboxUnknownAuthority/known_unknown (0.01s)
+    --- PASS: TestInboxUnknownAuthority/missing_operation (0.01s)
+    --- PASS: TestInboxUnknownAuthority/exactly_50_healthy (0.04s)
+    --- PASS: TestInboxUnknownAuthority/unknown_in_full_scan (0.04s)
+    --- PASS: TestInboxUnknownAuthority/old_unknown_outside_50_newer_outbound (0.04s)
+    --- PASS: TestInboxUnknownAuthority/known_unknown_below_50_newer_inbound (12.82s)
+    --- PASS: TestInboxUnknownAuthority/scope_not_found (0.01s)
+=== RUN   TestLiveClaimsKC12Isolation
+--- PASS: TestLiveClaimsKC12Isolation (0.60s)
+=== RUN   TestLiveClaimsP2gLinkTTLInDatabase
+--- PASS: TestLiveClaimsP2gLinkTTLInDatabase (1.77s)
+=== RUN   TestLiveClaimsCoreSmoke
+--- PASS: TestLiveClaimsCoreSmoke (0.65s)
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit/viewer_cannot_open_inbox:read_scope
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit/viewer_definer_gate_denies_read_and_mark_read
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit/reader_sees_the_conversation_and_mark_read_stays_put_without_inbox:reply
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit/replier_mark_read_advances_to_7
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit/A9_thread_opened_requires_inbox:read_and_coalesces_its_audit
+--- PASS: TestLiveConsoleInboxLCN03PermissionSplit (0.04s)
+    --- PASS: TestLiveConsoleInboxLCN03PermissionSplit/viewer_cannot_open_inbox:read_scope (0.00s)
+    --- PASS: TestLiveConsoleInboxLCN03PermissionSplit/viewer_definer_gate_denies_read_and_mark_read (0.00s)
+    --- PASS: TestLiveConsoleInboxLCN03PermissionSplit/reader_sees_the_conversation_and_mark_read_stays_put_without_inbox:reply (0.01s)
+    --- PASS: TestLiveConsoleInboxLCN03PermissionSplit/replier_mark_read_advances_to_7 (0.00s)
+    --- PASS: TestLiveConsoleInboxLCN03PermissionSplit/A9_thread_opened_requires_inbox:read_and_coalesces_its_audit (0.01s)
+=== RUN   TestLiveConsoleInboxCrossStoreIsolation
+--- PASS: TestLiveConsoleInboxCrossStoreIsolation (0.02s)
+=== RUN   TestLiveConsoleSendLCN11Unknown
+=== RUN   TestLiveConsoleSendLCN11Unknown/5xx
+=== RUN   TestLiveConsoleSendLCN11Unknown/garbled
+=== RUN   TestLiveConsoleSendLCN11Unknown/hang
+--- PASS: TestLiveConsoleSendLCN11Unknown (14.94s)
+    --- PASS: TestLiveConsoleSendLCN11Unknown/5xx (2.30s)
+    --- PASS: TestLiveConsoleSendLCN11Unknown/garbled (2.00s)
+    --- PASS: TestLiveConsoleSendLCN11Unknown/hang (3.25s)
+=== RUN   TestLiveConsoleSendLCN13DisplayCopyAndThread
+--- PASS: TestLiveConsoleSendLCN13DisplayCopyAndThread (2.53s)
+=== RUN   TestLiveConsoleSendMigration0128ExactACL
+--- PASS: TestLiveConsoleSendMigration0128ExactACL (0.03s)
+=== RUN   TestLiveConsoleSendLCN06DM
+--- PASS: TestLiveConsoleSendLCN06DM (2.91s)
+=== RUN   TestLiveLifecycleMultiWindow
+--- PASS: TestLiveLifecycleMultiWindow (0.27s)
+PASS
+ok  	livecommerce/tests/foundation	47.932s
+test-focused: top-level PASS=11 FAIL=0 SKIP=0 exit=0

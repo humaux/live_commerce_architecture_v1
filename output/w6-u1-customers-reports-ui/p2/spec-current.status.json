@@ -1,0 +1,46 @@
+{
+  "_header": {
+    "Purpose": "bind current P2 command or test source evidence",
+    "Depends on": "recorded command/hash/base/exit fields",
+    "Used by": "integrator CI retry"
+  },
+  "Purpose": "pin final P2 local checks",
+  "Depends on": "current candidate hashes and command",
+  "Used by": "integrator normal/calibration retry",
+  "run_id": "spec-current-91601",
+  "pid": 91601,
+  "command": [
+    "pnpm",
+    "exec",
+    "tsc",
+    "--noEmit",
+    "--strict",
+    "--skipLibCheck",
+    "--target",
+    "ES2023",
+    "--module",
+    "esnext",
+    "--moduleResolution",
+    "bundler",
+    "--esModuleInterop",
+    "--allowImportingTsExtensions",
+    "--typeRoots",
+    "apps/admin/node_modules/@types",
+    "--types",
+    "node",
+    "tests/admin/customer-tags.spec.ts",
+    "tests/admin/reports.spec.ts"
+  ],
+  "timeout_seconds": 120,
+  "state": "finished",
+  "at": "2026-10-07T12:07:32.696125+00:00",
+  "wake": "root activeforeground awaitedtoolcompletion",
+  "failure_match": "nonzero orzero matchedtests",
+  "base": "00979c2779bcdca384cc8cf31fd8e0678d5a748e",
+  "source_hashes": {
+    "apps/admin/app/api/stores/[store]/customers/route.ts": "9cc4be843615235d214db9fa2f332a6889022cdb01684041eb6a454d34348474",
+    "apps/admin/app/api/stores/[store]/reports/[report]/route.ts": "083268654682222a7ff0c30dab5f3d5c8adb03d13f37400e05d6cf7ad8046134"
+  },
+  "exit_code": 0,
+  "ended_at": "2026-10-07T12:07:34.171169+00:00"
+}

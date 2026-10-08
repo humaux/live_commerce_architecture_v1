@@ -1,0 +1,85 @@
+[
+  {
+    "command": [
+      "node",
+      "--test",
+      "--experimental-strip-types",
+      "tests/admin/inbox-review.test.ts",
+      "tests/admin/inbox-review-recovery.test.ts",
+      "tests/admin/inbox-window.test.ts",
+      "tests/admin/inbox-evidence.test.ts",
+      "tests/admin/inbox-entry.test.ts",
+      "tests/admin/inbox-browser-source.test.ts"
+    ],
+    "exit": 0,
+    "timeout": false,
+    "log": "output/lc-u2b-inbox-page/unified-components.log",
+    "source": "0875e548bd70dc38ab8720b92b85940ad9046f53",
+    "elapsed_seconds": 1.252
+  },
+  {
+    "command": [
+      "bash",
+      "scripts/dev/test-node.sh"
+    ],
+    "exit": 0,
+    "timeout": false,
+    "log": "output/lc-u2b-inbox-page/unified-node.log",
+    "source": "0875e548bd70dc38ab8720b92b85940ad9046f53",
+    "elapsed_seconds": 29.116
+  },
+  {
+    "command": [
+      "bash",
+      "scripts/dev/check-gates.sh"
+    ],
+    "exit": 0,
+    "timeout": false,
+    "log": "output/lc-u2b-inbox-page/unified-check-gates.log",
+    "source": "0875e548bd70dc38ab8720b92b85940ad9046f53",
+    "elapsed_seconds": 5.844
+  },
+  {
+    "command": [
+      "pnpm",
+      "--filter",
+      "@live-commerce/admin",
+      "exec",
+      "tsc",
+      "--noEmit"
+    ],
+    "exit": 0,
+    "timeout": false,
+    "log": "output/lc-u2b-inbox-page/unified-admin-typecheck.log",
+    "source": "0875e548bd70dc38ab8720b92b85940ad9046f53",
+    "elapsed_seconds": 1.499
+  },
+  {
+    "command": [
+      "pnpm",
+      "exec",
+      "tsc",
+      "--noEmit",
+      "-p",
+      "output/lc-u2b-inbox-page/pr8-test-tsconfig.json"
+    ],
+    "exit": 0,
+    "timeout": false,
+    "log": "output/lc-u2b-inbox-page/unified-test-typecheck.log",
+    "source": "0875e548bd70dc38ab8720b92b85940ad9046f53",
+    "elapsed_seconds": 1.081
+  },
+  {
+    "command": [
+      "node",
+      "scripts/dev/pr-modes.mjs",
+      "origin/r3/integration",
+      "HEAD"
+    ],
+    "exit": 0,
+    "timeout": false,
+    "log": "output/lc-u2b-inbox-page/unified-pr-plan.log",
+    "source": "0875e548bd70dc38ab8720b92b85940ad9046f53",
+    "elapsed_seconds": 0.131
+  }
+]

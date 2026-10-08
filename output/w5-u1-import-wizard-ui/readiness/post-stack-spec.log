@@ -1,0 +1,4 @@
+# Purpose: preserve fixed remote stack local command evidence.
+# Depends on: original main raw SHA256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.
+# Used by: integrator CI normal/calibration.
+# Evidence normalization: trailing whitespace/blank EOF only; rawmain retained.

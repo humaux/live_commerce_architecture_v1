@@ -1,0 +1,1 @@
+{"command": ["go", "vet", "-tags", "browser", "./tests/foundation"], "state": "complete", "exit_code": 0, "elapsed_seconds": 2.1510627269744873, "timeout_seconds": 240, "source_manifest": "source-hashes.json"}

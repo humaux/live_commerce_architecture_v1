@@ -1,0 +1,19 @@
+✔ OrderHistory renders server order instant in Taipei (17.525041ms)
+✔ ClaimLink renders claim expiry in Taipei (3.845833ms)
+✔ BankTransfer renders deadline and proof instant in Taipei (3.139583ms)
+✔ BankTransfer proof echo labels store time in en (3.610583ms)
+✔ BankTransfer proof echo labels store time in zh-TW (5.196208ms)
+✔ BankTransfer proof echo labels store time in zh-CN (3.737459ms)
+✔ ShopFooter uses Taipei year across UTC year boundary (5.252541ms)
+✔ TSX seam refuses an unlisted import (17.992ms)
+✔ Ads merchant timestamp uses Taipei at the year boundary (26.429458ms)
+✔ Design version published_at cell uses Taipei at the year boundary (6.112167ms)
+✔ ManualOrder bank-transfer expiry uses Taipei at the year boundary (6.889125ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 222.567666

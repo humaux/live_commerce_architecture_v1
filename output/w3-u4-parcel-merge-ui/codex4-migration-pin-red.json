@@ -1,0 +1,10 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/test-focused.sh",
+    "^TestR2IntegrationUpgradeFromReleaseHead$"
+  ],
+  "source_sha": "28a154bff04944eca03b19040202faadea1b3f68",
+  "exit_code": 1,
+  "elapsed_seconds": 23.831
+}

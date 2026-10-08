@@ -1,0 +1,28 @@
+✔ hiding aborts requests and rejects late responses, even after reveal (0.776292ms)
+✔ switching selection invalidates both reads and write completions (0.088208ms)
+✔ owner and explicit inbox permissions only; viewer fails closed (0.060625ms)
+✔ Messenger counts Unicode codepoints; Instagram counts NFC UTF8 bytes (1.444125ms)
+✔ uncertain transport retries retain the exact submission; definitive conflicts retire it (1.938584ms)
+✔ privacy calibration cannot activate with production origin or ordinary caller env (0.247625ms)
+✖ late focus/pageshow while native document remains hidden cannot reveal requests (0.150625ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 6
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 113.036458
+
+✖ failing tests:
+
+test at tests/admin/inbox-privacy.test.ts:63:1
+✖ late focus/pageshow while native document remains hidden cannot reveal requests (0.150625ms)
+  TypeError: fence.reveal is not a function
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-privacy.test.ts:66:22)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)

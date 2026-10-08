@@ -1,0 +1,25 @@
+✖ A13 server orders omission remains distinct from authorized omitted data (23.398542ms)
+✔ A13 server orders omission remains distinct from authorized empty data (1.195625ms)
+✔ A13 server orders omission remains distinct from authorized populated data (0.707875ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 2
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 306.287458
+
+✖ failing tests:
+
+test at tests/admin/inbox-review.test.ts:412:3
+✖ A13 server orders omission remains distinct from authorized omitted data (23.398542ms)
+  TypeError: Cannot read properties of undefined (reading 'length')
+      at BuyerPanel (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/apps/admin/components/BuyerPanel.tsx:130:555)
+      at Host.render (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-review.test.ts:431:34)
+      at Host.flush (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-review-host.test.ts:43:23)
+      at inspect (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-review-host.test.ts:103:16)
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-review-host.test.ts:89:51
+      at node:internal/process/task_queues:150:7
+      at AsyncResource.runInAsyncScope (node:async_hooks:227:14)
+      at AsyncResource.runMicrotask (node:internal/process/task_queues:147:8)

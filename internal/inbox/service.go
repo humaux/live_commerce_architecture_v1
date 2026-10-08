@@ -117,13 +117,15 @@ type MessageItem struct {
 	Unreadable  *bool            `json:"unreadable,omitempty"`
 }
 
-// ThreadView is the A9 response envelope.
+// ThreadView is the A9 response envelope. HasUnknownOutbound is true for a known UNKNOWN send, false only for
+// an exhaustive scan of known states, and null when the bounded scan cannot establish safe sending authority.
 type ThreadView struct {
 	Items              []MessageItem `json:"items"`
 	WindowOpenUntil    time.Time     `json:"window_open_until"`
 	Mode               string        `json:"mode"`
 	TakeoverGeneration int64         `json:"takeover_generation"`
 	HumanUntil         *time.Time    `json:"human_until"`
+	HasUnknownOutbound *bool         `json:"has_unknown_outbound"`
 	LinkVersion        int64         `json:"link_version"` // A14 expected_version (LC-B3b)
 	BindingID          *string       `json:"binding_id"`   // the send binding of this conversation's asset, null when none (LC-B3b)
 }

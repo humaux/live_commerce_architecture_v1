@@ -1,0 +1,61 @@
+# Purpose: preserve final local real-seam command output after this prologue.
+# Depends on: DELIVERY commands and original main raw SHA256=36128d2d6ffebe722749e5c848100e0fd3169dd6334034d8cfb31b96a3e30c89.
+# Used by: integrator; runtime acceptance remains pending.
+# Evidence normalization: trailing whitespace/blank EOF only; original raw bytes and SHA256 retained in main checkout/provenance above.
+✔ real localError no-store coded 401/403/413/415/422/409 reaches client without retry_later replacement (345.411125ms)
+✔ preflight missing CSRF is definite and sends nothing; actual route CSRF and session refusals stay definite (6.437458ms)
+✔ actual route uses real cookies/store membership and method/error envelopes, no helper substitutions (17.627333ms)
+✔ actual client/route preserves original Blob bytes, trusted transport and privacy projection on200/409 (14.569833ms)
+✔ success or stale preview must remain private; malformed/unknown/mismatched coded errors are uncertain after commit (19.101333ms)
+✔ lost/unreadable/session-changed dispatched commit remains UNKNOWN; no automatic retry (7.442875ms)
+✔ actual failed-only result route strips IDs and real final session/cancel fence exposes no download (5.057875ms)
+✔ actual route refuses unknown resource/query and duplicate session cookies before any upstream call (2.080833ms)
+✔ actual route incoming cancellation aborts one dispatched transport and preserves client UNKNOWN (5.619333ms)
+✔ real coded error cache may not be public, and closed payload may not acquire data-bearing fields (12.816125ms)
+✔ copy still exposes specific merchant field reasons across three locales (21.160583ms)
+✔ commit uses the original requested mapping, including an empty optional field, not resolved preview metadata (70.390291ms)
+✔ an UNKNOWN commit remains locked through a later forbidden retry and only explicit same-file success unlocks (38.804958ms)
+✔ leaving during a dispatched commit drops its payload and keeps an unconfirmed boolean without replay (16.806083ms)
+✔ a definite first preflight refusal clears pending before sign-out and does not invent an unconfirmed import (13.539ms)
+✔ real cookie and CSRF helpers generate and validate the actual host-cookie pair (3.09675ms)
+✔ exact route rejects methods/keys/body/query/scope before any upstream request using real localError (86.563667ms)
+✔ missing/duplicate session cookies reject and real clearAuthCookies expires session and CSRF (5.459459ms)
+✔ actual authenticatedStores denies a store absent from the server projection (1.292042ms)
+✔ private success routes server cookie token and exact canonical after, never caller bearer/cookie to Go (3.710334ms)
+✔ actual safeError/localError preserve coded status with no-store and redact upstream diagnostics (21.271209ms)
+✔ actual readBody and strict projection refuse MIME/oversize/extra private fields/city; network loss stays private (34.810292ms)
+✔ actual client issues GET50/after through real route/private successful projection (18.626208ms)
+✔ actual helper-issued browser fence rejects changed parent before dispatch (2.560917ms)
+✔ private success from real route is discarded when the browser session changes during upstream read (283.375416ms)
+✔ real localError no-store 401/403/404/503 preserves correct read category with no retry (27.822583ms)
+✔ malformed sensitive backend projection becomes real unavailable, never a fake BFF success (2.463458ms)
+✔ strict archive rows decode external order text, safe minor units and public keys (13.260125ms)
+✔ PII-shaped city and extra sensitive fields never pass the safe projection (0.3175ms)
+✔ all canonical Go cities pass; malformed types/bounds/order/time/money/cursor fail (0.877667ms)
+✔ read grammar is exact limit/after, not the stale brief's cursor name (58.995833ms)
+✔ three locales retain truthful history-not-revenue basis and copy parity (0.643083ms)
+✔ SSR renders actual safe rows, shared money/time, total count and read-only three-locale basis (37.408333ms)
+✔ SSR distinguishes empty archive, 403, session loss and unavailable without stale rows/count (6.876333ms)
+✔ actual pagination callbacks use opaque trail; double click cannot skip; refresh/scope reset page1 (1.304208ms)
+✔ the static import subpage wins over customer detail and leaves the single customers nav intact (0.5295ms)
+✔ the actual list offers import only to privacy holders and carries the current authorized store (620.509583ms)
+✔ the actual detail mounts archive only for an active imported customer and passes its fenced identity (250.482709ms)
+✔ failure verdicts precede successful rows, by source row number, without mutating the input (9.617917ms)
+✔ the failure download contains only failed row metadata, with no source cell or success identifier (0.706209ms)
+✔ reads quoted/BOM header only, without decoding malformed bytes from data rows (2.263125ms)
+✔ guess only unique metadata aliases with explicit unmapped values (0.268875ms)
+✔ shared dynamic leaf admits only exact import methods/actions and bounded mapping/count (81.662292ms)
+✔ failed CSV emits only row/outcome/code, refusing any unexpected identifier or raw cell (0.312625ms)
+✔ raw-byte cap does not decode/rebuild uploads and cancels oversized chunks (27.323458ms)
+✔ backend privacy projection strips all source IDs on successful and failed rows (1.874708ms)
+✔ closed preview parser refuses data-bearing rows, unknown keys and inconsistent counts (0.389625ms)
+✔ order preview counts units while first CSV record numbers can exceed rows_total (0.110542ms)
+✔ commit receipt has exactly five keys and no extra customer cells (0.112208ms)
+ℹ tests 49
+ℹ suites 0
+ℹ pass 49
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3034.515667
