@@ -1,3 +1,6 @@
+// Purpose: strict merchant-tools DTO and request grammar with opt-in A16 replay redaction.
+// Depends on: customers/orders model validators.
+// Used by: merchant tooling components and authenticated tools BFF.
 // Merchant-tools model (contracts/storefront-v2.md section G): strict parsers for the three BFF answers (dashboard, product import
 // preview/commit, manual-order options and result), the client-side CSV size guard, the manual-order request builder and the BFF request
 // grammar of apps/admin/app/api/stores/[store]/tools/[...resource]/route.ts (-> Go internal/httpapi/merchanttools.go).
@@ -134,7 +137,8 @@ export type ManualResult = {
   order_id: string; commercial_state: "AWAITING_TRANSFER" | "CONFIRMED" | "AWAITING_COLLECTION"; payment_mode: ManualPaymentMode; total_minor: number; currency: string;
   expires_at: string; buyer_link: string | null; link_state: "configured" | "storefront_unavailable" | "domain_selection_required"; source: "merchant_manual";
 };
-export function parseManualResult(value: unknown): ManualResult {
+/** Parse a manual result; only A16 callers may opt into replay link redaction. */
+export function parseManualResult(value: unknown, options: { allowRedactedLink?: boolean } = {}): ManualResult {
   const v = object(value, ["order_id", "commercial_state", "payment_mode", "total_minor", "currency", "expires_at", "buyer_link", "link_state", "source"]);
   if (typeof v.order_id !== "string" || !canonicalUUID.test(v.order_id) ||
     !(manualPaymentModes as readonly string[]).includes(String(v.payment_mode)) || v.commercial_state !== placementState[v.payment_mode as ManualPaymentMode] ||
@@ -142,7 +146,7 @@ export function parseManualResult(value: unknown): ManualResult {
     !isInstant(v.expires_at) || !["configured", "storefront_unavailable", "domain_selection_required"].includes(String(v.link_state)) ||
     v.source !== "merchant_manual") throw fail();
   // The link is an https URL whose fragment carries the order id and a 43-character capability; nothing else is accepted.
-  if (v.link_state === "configured") {
+  if (v.link_state === "configured" && !(options.allowRedactedLink && v.buyer_link === null)) {
     if (typeof v.buyer_link !== "string" || v.buyer_link.length > 400) throw fail();
     const url = new URL(v.buyer_link);
     if (url.protocol !== "https:" || url.search !== "" || !/^#o=[0-9a-f-]{36}&t=[A-Za-z0-9_-]{43}$/.test(url.hash) || !url.hash.includes(v.order_id)) throw fail();
@@ -207,12 +211,12 @@ export function parseRegenerateResult(value: unknown): RegenerateResult {
 }
 
 // ---- BFF request grammar -----------------------------------------------------------------------------------------------------
-export type ToolsRoute = "dashboard" | "export" | "import-preview" | "import-commit" | "manual-options" | "manual-place" | "manual-regenerate";
+export type ToolsRoute = "dashboard" | "export" | "import-preview" | "import-commit" | "manual-options" | "manual-place" | "manual-regenerate" | "order-prefill" | "for-buyer";
 /** The only resources of the tools BFF, per method. Everything else is a 404 there. */
 export function toolsRoute(method: string, path: string): ToolsRoute | null {
   const table: Record<string, Record<string, ToolsRoute>> = {
-    GET: { dashboard: "dashboard", "products/export.csv": "export", "orders/manual/options": "manual-options" },
-    POST: { "products/import/preview": "import-preview", "products/import/commit": "import-commit", "orders/manual": "manual-place", "orders/manual/regenerate-link": "manual-regenerate" },
+    GET: { "inbox/order-prefill": "order-prefill", dashboard: "dashboard", "products/export.csv": "export", "orders/manual/options": "manual-options" },
+    POST: { "orders/for-buyer": "for-buyer", "products/import/preview": "import-preview", "products/import/commit": "import-commit", "orders/manual": "manual-place", "orders/manual/regenerate-link": "manual-regenerate" },
   };
   return table[method]?.[path] ?? null;
 }
