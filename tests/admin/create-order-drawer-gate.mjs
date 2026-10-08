@@ -73,6 +73,39 @@ async function addCatalog(drawer,prefix="drawer") {
  await expect(prefix==="drawer"?drawer.getByTestId(`drawer-quantity-${sku}`):drawer.getByTestId("mo-lines").locator('input[type="number"]')).toBeVisible();
  record("catalog search and variant","fill/search/expand/add","one real catalog SKU selected");
 }
+async function definitiveRefusal(page,form,{requestPath,submitId,errorId,newAttemptId,editDraft=false}) {
+ const before=await (await fetch(`${api}/__test/drawer-facts`)).json();
+ let posts=0;
+ const observe=request=>{if(request.method()==="POST"&&new URL(request.url()).pathname===requestPath) posts++;};
+ page.on("request",observe);
+ // Network-edge request fault only: forward to the real BFF/Go with solely the first line's quantity changed.
+ await page.route(`**${requestPath}`,async route=>{
+  const body=JSON.parse(route.request().postData());body.items[0].quantity=0;
+  const real=await route.fetch({postData:JSON.stringify(body)});
+  assert.equal(real.status(),422,"real BFF/Go must definitively refuse zero quantity");
+  await route.fulfill({response:real});
+ });
+ const [refusal]=await Promise.all([page.waitForResponse(r=>r.request().method()==="POST"&&new URL(r.url()).pathname===requestPath),form.getByTestId(submitId).click()]);
+ assert.equal(refusal.status(),422);assert(refusal.headers()["cache-control"]?.includes("no-store"));
+ await expect(form.getByTestId(errorId)).toBeVisible();
+ await expect(form.getByTestId(newAttemptId)).toBeVisible();
+ if(editDraft) {
+  await form.getByTestId("mo-name").fill("SYNTHETIC Refused Draft");
+  await expect(form.getByTestId("mo-name")).toHaveValue("SYNTHETIC Refused Draft");
+ }
+ await expect(form.getByTestId(submitId)).toBeDisabled();
+ const refused=await (await fetch(`${api}/__test/drawer-facts`)).json();
+ assert.equal(refused.orders,before.orders,"actual definitive refusal creates zero orders");
+ assert.equal(posts,1,"one explicit refused POST, including after any draft edit");
+ await page.unroute(`**${requestPath}`);
+ await form.getByTestId(newAttemptId).click();
+ await expect(form.getByTestId(submitId)).toBeEnabled();
+ const after=await (await fetch(`${api}/__test/drawer-facts`)).json();
+ assert.equal(posts,1,"explicit new-attempt action must not POST");
+ assert.equal(after.orders,before.orders,"explicit new-attempt action creates zero orders");
+ page.off("request",observe);
+ record(newAttemptId,"real 422 then explicit click","zero PG orders; submit remains disabled after refusal/draft edit; new-attempt enables without network write");
+}
 async function privateBoundary(page,link="") {
  // G-UI8 audit [READ/MEASURE]: read private DOM/storage/resource surfaces; never persist their contents.
  const state=await page.evaluate(()=>({dom:document.documentElement.outerHTML,storage:JSON.stringify([Object.entries(localStorage),Object.entries(sessionStorage)]),urls:[location.href,...performance.getEntriesByType("resource").map(e=>e.name)]}));
@@ -99,7 +132,7 @@ try {
  }
  assert(ready,"owned standalone Next readiness");
  browser=await launch({headless:true});
- // Separate signed context and the ordinary ManualOrder page; the only injected fault is loss of a real committed response.
+ // Separate signed context and the ordinary ManualOrder page; faults affect only real request/response network edges.
  {
   const context=await browser.newContext(ctxOpts({ignoreHTTPSErrors:true,viewport:{width:1440,height:900}})),page=await context.newPage();
   current="DU3-manual-unknown-draft-edit";
@@ -133,6 +166,10 @@ try {
   if(outcome.attempts!==2||!outcome.same_key||!outcome.same_body||outcome.pg_delta!==1||exact.orders!==1||exact.receipts!==1||replay.status()!==200){
    failed.push(current);ledger.push({case:current,control:"manual UNKNOWN draft edit retry",action:"commit/abort/fill/click",actual:outcome,status:"FAIL"});
   }else record("manual UNKNOWN draft edit retry","commit/abort/fill/click","edited draft; original key/body; real replay 200; exact one order and receipt in PG");
+  // Success already resolved the old attempt: use the existing explicit "another order" action to start the refusal subcheck.
+  await page.getByTestId("manual-order-another").click();await expect(form).toBeVisible();
+  await addCatalog(form,"mo");await fillEmpty(form,"mo");
+  await definitiveRefusal(page,form,{requestPath:manualPath,submitId:"manual-order-submit",errorId:"manual-order-error",newAttemptId:"manual-order-new-attempt",editDraft:true});
   await context.close();
  }
  let index=0;
@@ -211,6 +248,7 @@ try {
   await drawer.getByTestId("drawer-store-address").fill("1 Synthetic Pickup Road");
   await drawer.getByTestId("drawer-mode-pay_at_pickup").check();
   await fillEmpty(drawer);
+  if(locale==="en"&&width===1440) await definitiveRefusal(page,drawer,{requestPath:routePath,submitId:"drawer-submit",errorId:"drawer-error",newAttemptId:"drawer-new-attempt"});
   await page.screenshot({path:path.join(evidence,`unlinked-${locale}-${width}.png`),fullPage:true});
   record("unlinked warning/empty fields/zero","edit form","no customer guessing; quantity zero removes; valid catalog line re-added");cases++;
 
