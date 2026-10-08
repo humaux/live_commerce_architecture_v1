@@ -535,6 +535,18 @@ export function registerProductEditorAcceptance() {
         page.getByTestId("product-save"),
         "PE14 requires safe editable document",
       ).toBeEnabled();
+      const editReadiness = page.locator(".pe-readiness-toggle");
+      const editChecklist = page.locator("#pe-readiness-section");
+      await expect(editReadiness).toBeVisible();
+      await expect(editReadiness).toHaveAttribute("aria-expanded", "false");
+      await expect(editChecklist).toBeHidden();
+      await editReadiness.click();
+      await expect(editReadiness).toHaveAttribute("aria-expanded", "true");
+      await expect(editChecklist).toBeVisible();
+      await editReadiness.click();
+      await expect(editReadiness).toHaveAttribute("aria-expanded", "false");
+      await expect(editChecklist).toBeHidden();
+      ledger.push({ page: "edit", locale: "en", width: 375, control: "readiness toggle", action: "click expand, click collapse", expected: "aria-expanded false→true→false; checklist visible then hidden", actual: "PASS", persistence: "view state only" });
       const editStart = writes.length;
       await page.getByTestId("product-price").fill("80");
       await page.getByTestId("product-save").click();

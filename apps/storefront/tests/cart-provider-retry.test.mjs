@@ -33,6 +33,64 @@ const cart = {
 const expiry = new Date(Date.now() + 3600_000).toISOString();
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 
+for (const newer of ["refresh", "mutation"]) {
+  test(`round2 stale A session response cannot supersede newer ${newer} B or its lost-write Retry`, async () => {
+    browser();
+    const originalFetch = globalThis.fetch, contextB = "b".repeat(43);
+    const cartB = { ...cart, id: "00000000-0000-0000-0000-000000000004", version: 20, items: [{ sku_id: sku, quantity: 2 }] };
+    let session = { state: "active", context: ctx, expires_at: expiry };
+    let holdNext = false, releaseOld;
+    const puts = [];
+    globalThis.fetch = async (url, init = {}) => {
+      if (url === "/api/buyer/session") {
+        if (holdNext) { holdNext = false; return new Promise(resolve => { releaseOld = resolve; }); }
+        return Response.json(session);
+      }
+      if (String(url).startsWith("/api/buyer/session/")) throw new Error("must not create a replacement session");
+      if (url === "/api/buyer/cart" && init.method === "PUT") {
+        puts.push({ body: init.body, key: new Headers(init.headers).get("Idempotency-Key"), context: new Headers(init.headers).get("X-Buyer-Context") });
+        if (puts.length === 1) throw new Error("synthetic lost B acknowledgement");
+        return Response.json({ ...cartB, version: 21 });
+      }
+      if (url === "/api/buyer/cart") return Response.json(session.context === ctx ? cart : { ...cartB, version: puts.length > 1 ? 22 : 20 });
+      throw new Error("unexpected MOCK route");
+    };
+    try {
+      const { render, api } = harness();
+      const settle = async () => { for (let i=0;i<4;i++) await tick(); render(); };
+      render();await settle();assert.equal(api().cart.id,cart.id);
+      holdNext = true;
+      const olderRefresh = api().refresh();
+      assert.equal(typeof releaseOld,"function","older session read is actually in flight");
+      session = { state: "active", context: contextB, expires_at: expiry };
+      if (newer === "refresh") {
+        await api().refresh();await settle();
+        assert.equal(api().context,contextB);assert.equal(api().cart.id,cartB.id);
+      } else {
+        assert.equal(await api().add(sku,1),false);await settle();
+        assert.equal(api().problem,"uncertain");assert.equal(api().context,contextB);
+      }
+      releaseOld(Response.json({ state:"active", context:ctx, expires_at:expiry }));
+      await olderRefresh;await settle();
+      assert.equal(api().context,contextB,"late A must not roll back the published context");
+      if (newer === "refresh") {
+        assert.equal(api().cart.id,cartB.id,"late A must not clear the newer cart");
+        assert.equal(await api().add(sku,1),false);await settle();
+      }
+      assert.equal(api().problem,"uncertain");
+      const pending=pendingPurchase(contextB);assert.equal(pending?.kind,"cart");assert.equal(pendingPurchase(ctx),null);
+      assert.equal(puts.length,1);assert.equal(puts[0].key,pending.key);assert.equal(puts[0].context,contextB);
+      await api().retry();await settle();
+      assert.equal(puts.length,2);assert.deepEqual(puts[1],puts[0],"Retry must replay B's same context/key/body");
+      assert.equal(api().context,contextB);assert.equal(api().cart.id,cartB.id);assert.equal(api().cart.version,22);
+      assert.equal(pendingPurchase(contextB),null);assert.equal(api().problem,null);
+    } finally {
+      globalThis.fetch=originalFetch;
+      for(const name of ["window","localStorage","sessionStorage","navigator"]) delete globalThis[name];
+    }
+  });
+}
+
 for (const failure of ["read", "lost-write", "refresh-read"]) {
   test(`rotated buyer context clears the prior cart on ${failure} and preserves the B receipt`, async () => {
     browser();
