@@ -172,7 +172,13 @@ async function stableLocaleTarget(p,mobile=false) {
   // Causal layout gate: release the real destination-head read only after the footer link is positioned.
   // A buyer can press a language link while this read completes; removing the loading paragraph must not move it.
   const headLoading=arm("destination",{method:"GET",after:true});
-  await switchLocale(p,"zh-TW");await headLoading.result.promise;
+  await switchLocale(p,"zh-TW");
+  let headDeadline;
+  try {
+    await Promise.race([headLoading.result.promise, new Promise((_, reject) => {
+      headDeadline = setTimeout(() => reject(new Error(`BO01 ${mobile ? "mobile" : "desktop"} destination-head wait exceeded 10000ms: GET /api/buyer/destination at ${p.url()}`)), 10000);
+    })]);
+  } finally { clearTimeout(headDeadline); }
   await expect(p.getByTestId("address-section")).toBeVisible();
   await expect(p.getByTestId("cart-line")).toHaveCount(1);
   await expect(p.getByRole("status").filter({hasText:"正在載入收件資訊…"})).toBeVisible();
