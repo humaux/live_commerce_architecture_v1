@@ -1,4 +1,4 @@
-// Purpose: second-occurrence guard for the actual import browser signed() helper waiting on a visible store selector.
+// Purpose: guard the actual import login helper's visible readiness for authorized and route-denied identities.
 // Depends on: Node test/assert/fs/vm and installed typescript-api; extracts and executes only the actual helper AST.
 // Used by: focused W5 Node readiness red/green; MOCK browser/page only, no real browser, authentication or BFF claim.
 import test from "node:test";
@@ -8,16 +8,16 @@ import { runInNewContext } from "node:vm";
 import ts from "typescript-api";
 
 const file = new URL("./import-wizard.spec.ts", import.meta.url);
-function helper() {
+function helper(actor = "owner", root = "import-wizard") {
   const tree = ts.createSourceFile(file.pathname, readFileSync(file, "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
   const signed = tree.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === "signed");
   assert.ok(signed, "actual signed helper must exist");
   const exports = {}, flags = { cookie: 0, wizard: 0 };
   const expect = value => ({ toBe: expected => { flags.cookie++; assert.equal(value, expected, "MIUI-COOKIE-SECURE-HTTPONLY"); },
-    toBeVisible: async () => { flags.wizard++; assert.equal(value.id, "import-wizard"); } });
+    toBeVisible: async () => { flags.wizard++; assert.equal(value.id, root, "MIUI-READY-AUTHORIZED-ROOT"); } });
   const code = ts.transpileModule("export " + signed.getText(tree), { compilerOptions: { target: ts.ScriptTarget.ES2023, module: ts.ModuleKind.CommonJS } }).outputText;
   runInNewContext(code, { exports, expect, origin: "https://admin.example.invalid", store: "synthetic-store",
-    ctl: async (route, actor) => { assert.equal(route, "actor"); assert.equal(actor, "owner"); },
+    ctl: async (route, selected) => { assert.equal(route, "actor"); assert.equal(selected, actor); },
     step: async (_page, _name, _expected, action) => action(), wizard: page => page.getByTestId("import-wizard") });
   return { signed: exports.signed, flags };
 }
@@ -51,4 +51,11 @@ test("MIUI-READY-VISIBLE-STORE actual signed helper waits on the visible selecto
     const loaded = helper(), fake = browser(cookie);
     await assert.rejects(loaded.signed(fake.value, "en", 1440), /MIUI-COOKIE-SECURE-HTTPONLY/);
   }
+});
+
+test("MIUI-READY-DENIED read-only staff reaches the real shell refusal instead of waiting for a private wizard", async () => {
+  const loaded = helper("reader", "route-forbidden"), fake = browser({ name: "__Host-synthetic", secure: true, httpOnly: true });
+  await loaded.signed(fake.value, "en", 390, "reader");
+  assert.deepEqual(fake.calls.waited, ["shell-store-selector"]);
+  assert.equal(loaded.flags.cookie, 1); assert.equal(loaded.flags.wizard, 1);
 });

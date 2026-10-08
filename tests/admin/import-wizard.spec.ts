@@ -6,6 +6,7 @@ import { expect, test, type Browser, type Locator, type Page } from "@playwright
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { shellCopy } from "../../apps/admin/src/shell-copy";
 import { importCopy } from "../../apps/admin/lib/import-copy";
 import { importViewCopy } from "../../apps/admin/lib/import-view-copy";
 import { importHistoryCopy } from "../../apps/admin/lib/import-history-copy";
@@ -46,7 +47,8 @@ async function signed(browser: Browser, locale: Locale, width: number, actor = "
     await page.getByRole("button", { name: "Sign in with identity service" }).click(); await page.getByTestId("shell-store-selector").waitFor();
     expect((await context.cookies()).some((c) => c.name.startsWith("__Host-") && c.secure && c.httpOnly)).toBe(true);
   });
-  await page.goto(`${origin}/${locale}/customers/import?store=${store}`); await expect(wizard(page)).toBeVisible();
+  await page.goto(`${origin}/${locale}/customers/import?store=${store}`);
+  await expect(actor === "reader" ? page.getByTestId("route-forbidden") : wizard(page)).toBeVisible();
   return { page, context, consoleMessages };
 }
 function customers(prefix: string, partial = false): FileCase {
@@ -147,7 +149,8 @@ for (const locale of ["en", "zh-TW"] as const) for (const width of [1440, 390]) 
       await step(page, "Guess mapping", "guess does not silently import unknown columns", async () => { await page.getByTestId("import-guess").click(); await expect(page.getByTestId("import-preview")).toBeDisabled(); });
       for (const [field, header] of Object.entries(file.mapping)) await page.getByTestId(`import-map-${field}`).selectOption(header);
       await preview(page, file, { new: 2, update: 0, failed: 2 }, locale); await expect(page.getByTestId("import-consent-count").locator("dd")).toHaveText("4");
-      await expect(page.getByTestId("import-rows").locator("tbody tr").first()).toHaveAttribute("data-testid", "import-row-3");
+      // Go numbers nonempty data rows from 1, excluding the header; failed rows keep those original numbers.
+      await expect(page.getByTestId("import-rows").locator("tbody tr").first()).toHaveAttribute("data-testid", "import-row-2");
       await privacy(page, file.markers, consoleMessages, file.buffer);
       await step(page, "Preview Back", "back to mapping discards previous confirmation; explicit new preview required", async () => { await page.getByTestId("import-back").click(); await expect(page.getByTestId("import-map-phone")).toBeVisible(); await expect(page.getByTestId("import-confirm-next")).toHaveCount(0); });
       await preview(page, file, { new: 2, update: 0, failed: 2 }, locale);
@@ -168,7 +171,7 @@ for (const locale of ["en", "zh-TW"] as const) for (const width of [1440, 390]) 
       await expect(page.getByTestId("import-type-orders")).toBeEnabled(); await upload(page, order, "orders"); await preview(page, order, { new: 2, update: 0, failed: 1 }, locale);
       await expect(page.getByTestId("import-city-count").locator("dd")).toHaveText("1"); await privacy(page, order.markers, consoleMessages, order.buffer);
       await confirm(page, { created: 2, updated: 0, failed: 1 }, locale); const orderCSV = await failureCSV(page, true);
-      expect(orderCSV[0]).toEqual(["row", "outcome", "code"]); expect(orderCSV.slice(1)).toEqual([["5", "failed", "customer_not_imported"]]);
+      expect(orderCSV[0]).toEqual(["row", "outcome", "code"]); expect(orderCSV.slice(1)).toEqual([["4", "failed", "customer_not_imported"]]);
       expect((await state()).counts.city_dropped).toBeGreaterThanOrEqual(1);
       const owner = (await state()).owners[`${file.prefix}-A`]; expect(owner).toBeTruthy();
       await page.goto(`${origin}/${locale}/customers?store=${store}`);
@@ -203,7 +206,11 @@ test("MIUI all-invalid local CSV, duplicate mapping, Unicode/size/line limits an
     const lines = (n: number) => Buffer.from(`customer_id,name\n${Array.from({ length: n }, () => "DUPLICATE,MIUI-NAME-LINE").join("\n")}\n`);
     const many: FileCase = { prefix: "LINES5000", buffer: lines(5000), mapping: { external_id: "customer_id", name: "name" }, markers: [] };
     await upload(page, many); await preview(page, many, { new: 0, update: 0, failed: 5000 });
-    await step(page, "Verdict Next/Previous", "safe fifty-row pages change without exposing raw source IDs", async () => { await page.getByTestId("import-row-next").click(); await expect(page.getByTestId("import-row-52")).toBeVisible(); await page.getByTestId("import-row-previous").click(); await expect(page.getByTestId("import-row-2")).toBeVisible(); });
+    await step(page, "Verdict Next/Previous", "safe fifty-row pages change without exposing raw source IDs", async () => {
+      const first = page.getByTestId("import-rows").locator("tbody tr").first();
+      await page.getByTestId("import-row-next").click(); await expect(first).toHaveAttribute("data-testid", "import-row-51");
+      await page.getByTestId("import-row-previous").click(); await expect(first).toHaveAttribute("data-testid", "import-row-1");
+    });
     const overLines = { ...many, prefix: "LINES5001", buffer: lines(5001) };
     expect(overLines.buffer.length).toBeLessThan(2 << 20); await upload(page, overLines); const beforeRefusal = await state();
     await step(page, "5001-line Preview", "actual Go422 too_many_rows stays a confirmed plain-language refusal, with no UNKNOWN or mutation", async () => {
@@ -329,8 +336,13 @@ test("MIUI imported-only erasure removes history and tombstone blocks same sourc
 });
 
 test("MIUI read-only identity sees history but import permission refusal", async ({ browser }) => {
-  const { page, context } = await signed(browser, "en", 390, "reader"), c = importCopy.en;
-  try { await expect(wizard(page)).toContainText(c.forbidden); await expect(page.getByTestId("import-file")).toHaveCount(0); const owner = (await state()).owners["HISTORY-A"]; await page.goto(`${origin}/en/customers/${owner}?store=${store}`); await expect(page.getByTestId("customer-historical-orders").locator("tbody tr")).toHaveCount(50); } finally { await context.close(); }
+  const { page, context } = await signed(browser, "en", 390, "reader");
+  try {
+    await expect(page.getByTestId("route-forbidden")).toContainText(shellCopy.en.forbidden);
+    await expect(wizard(page)).toHaveCount(0); await expect(page.getByTestId("import-file")).toHaveCount(0);
+    const owner = (await state()).owners["HISTORY-A"]; await page.goto(`${origin}/en/customers/${owner}?store=${store}`);
+    await expect(page.getByTestId("customer-historical-orders").locator("tbody tr")).toHaveCount(50);
+  } finally { await context.close(); }
 });
 
 test("MIUI pagehide drops raw file, UNKNOWN revoked session cannot submit under new boundary", async ({ browser }) => {
