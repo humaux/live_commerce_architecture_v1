@@ -3,7 +3,9 @@ Depends on: PR5 packet2ad65bcd, stock edit/comment4212525433 repair and the auto
 Used by: The integrator pushing unit/lc-u1-shell and running .github/workflows/gates.yml; independent review. -->
 # LC-U1 PR5 — latest packet repair
 
-Latest integration: [PR8 union merge](pr8-union-merge/DELIVERY.md), incoming trunk **f2ac619f**. Both inbox and LC-U1 modes/routes/fixture services retained; **check-gates: 80 modes, all documented**. Merged-source Node, typecheck and browser-tag compile passed. The browser results in the paragraph below predate this merge; fresh runtime/CI acceptance remains pending. No push.
+Latest Codex-2 handoff: [current acceptance](codex2-pr5-handoff/DELIVERY.md), tested merge **ea212c5e** includes trunk **97e34a4c**. UNION retains inbox/live-console/reports (**81 modes**, zero omissions). Fresh G-UI1 **11/11**, Node **933/933**, typecheck/check-gates exit0; ops-polish buyer+admin exit0 (**8 admin specs**) and full live-console exit0 (**11 specs**). No push; integrator K3 pre-review and fresh required CI remain pending.
+
+Previous integration: [PR8 union merge](pr8-union-merge/DELIVERY.md), incoming trunk **f2ac619f**. Its earlier source/evidence is preserved in the current handoff's inherited-evidence directory.
 
 Latest: [PR5-ROUND2-DELIVERY.md](PR5-ROUND2-DELIVERY.md), source **de968f18477f648aeb99a22a59f65f423385e27b**, merge **6d75db16** includes trunk #10/#11/#12. Stable offer keys preserve edited stock across polls; changed snapshots require explicit confirmation before CAS Save. Ops-polish exact navigation expectations now cover the approved expanded Live group. **Local ops-polish exit0 (both halves; admin8/8), full live-console exit0 (11/11), Node672/672, admin tsc and check-gates79 exit0.** Comment4212525437 stays deferred in FOLLOWUPS. No push; integrator K3 pre-review and fresh required CI remain pending.
 
