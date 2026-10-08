@@ -1,5 +1,5 @@
 // Purpose: Owns the merchant manual-order entry workflow.
-// Depends on: @live-commerce/format (Taipei store timestamps), react, next/link, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/catalog-v2-client, @/lib/catalog-v2-model, @/lib/settings-client, @/lib/merchant-tools-client, @/lib/merchant-tools-model, @/lib/merchant-tools-copy, @/lib/cod-copy, ./WorkspaceFrame, ./AdminPageHeader, ./OperationalForms.module.css, ./orders.css, ./customers.css, ./merchant-tools.css
+// Depends on: @live-commerce/format (Taipei store timestamps), react, next/link, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/settings-client, @/lib/merchant-tools-client, @/lib/merchant-tools-model, @/lib/merchant-tools-copy, @/lib/manual-order-form, ./ManualOrderFormFields, ./WorkspaceFrame, ./AdminPageHeader, ./OperationalForms.module.css, ./orders.css, ./customers.css, ./merchant-tools.css
 // Used by: apps/admin/app/[locale]/orders/new/page.tsx
 "use client";
 
@@ -10,21 +10,20 @@
 // There is NO price field anywhere in this form or in the request: the server quotes from the catalog (I05), so the displayed unit prices are
 // information only. The submit key is kept for a retry of the SAME body (an uncertain answer replays, never double-reserves) and replaced as
 // soon as the form changes. The session fence is lib/merchant-tools-client.
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import type { Locale } from "@live-commerce/i18n";
 import { displayTime } from "@live-commerce/format";
-import { Badge, Field, FormRow } from "@live-commerce/ui";
+import { Badge } from "@live-commerce/ui";
 import type { Store } from "@/lib/model";
 import { money } from "@/lib/client";
 import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
-import { readProduct, readProducts } from "@/lib/catalog-v2-client";
-import type { ProductDetail, ProductSummary } from "@/lib/catalog-v2-model";
 import { sessionBoundary } from "@/lib/settings-client";
 import { placeManualOrder, readManualOptions, regenerateManualLink } from "@/lib/merchant-tools-client";
 import { draftProblem, manualBody, type ManualDraft, type ManualOption, type ManualPaymentMode, type ManualResult } from "@/lib/merchant-tools-model";
 import { toolsCopy } from "@/lib/merchant-tools-copy";
-import { codCopy } from "@/lib/cod-copy";
+import { emptyManualForm, type ManualFormLine, type ManualFormValues } from "@/lib/manual-order-form";
+import { ManualOrderFormFields } from "./ManualOrderFormFields";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminPageHeader } from "./AdminPageHeader";
 import s from "./OperationalForms.module.css";
@@ -32,9 +31,8 @@ import "./orders.css";
 import "./customers.css";
 import "./merchant-tools.css";
 
-type Line = { sku_id: string; quantity: number; label: string; code: string; price: string };
-const blankHome = { region: "", city: "", postal_code: "", line1: "", line2: "" };
-const blankCVS = { store_code: "", store_name: "", store_address: "" };
+const blankHome = emptyManualForm().home;
+const blankCVS = emptyManualForm().cvs;
 
 /** Owns the merchant manual-order entry workflow. User actions submit manual-order commands through merchant-tools-client. */
 export function ManualOrder({
@@ -51,7 +49,7 @@ export function ManualOrder({
     return () => { live = false; };
   }, [renderKey]);
 
-  const [lines, setLines] = useState<Line[]>([]);
+  const [lines, setLines] = useState<ManualFormLine[]>([]);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -73,16 +71,20 @@ export function ManualOrder({
 
   const available: ManualOption[] = options.data ?? [];
   const option = available.find((item) => item.option_key === optionKey) ?? null;
-  const optionName = (o: ManualOption) =>
-    `${locale === "zh-CN" ? o.name_hans : locale === "zh-TW" ? o.name_hant : o.name_en || o.name_hant} · ${c.kinds[o.delivery_kind] ?? o.delivery_kind}`;
   const mapOnly = !!option && option.delivery_kind !== "home" && option.pickup_selection !== "buyer_entered";
   const draft: ManualDraft = { lines, name, phone, email, option, mode, home, cvs, locale: buyerLocale };
   const problem = draftProblem(draft);
 
-  function selectOption(key: string) {
-    setOptionKey(key);
-    const next = available.find((item) => item.option_key === key);
-    setMode(next && next.payment_modes.length === 1 ? next.payment_modes[0] : "");
+  function changeFields(patch: Partial<ManualFormValues>) {
+    if (patch.lines !== undefined) setLines(patch.lines);
+    if (patch.name !== undefined) setName(patch.name);
+    if (patch.phone !== undefined) setPhone(patch.phone);
+    if (patch.email !== undefined) setEmail(patch.email);
+    if (patch.optionKey !== undefined) setOptionKey(patch.optionKey);
+    if (patch.mode !== undefined) setMode(patch.mode);
+    if (patch.home !== undefined) setHome(patch.home);
+    if (patch.cvs !== undefined) setCVS(patch.cvs);
+    if (patch.buyerLocale !== undefined) setBuyerLocale(patch.buyerLocale);
   }
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -183,65 +185,9 @@ export function ManualOrder({
         {/* The form stays mounted while the delivery choices (re)load: a guarded re-read must never wipe what the merchant typed. */}
         {!placed && store && !listFailure && (
           <form className="mt-form" onSubmit={(event) => void submit(event)} data-testid="manual-order-form" noValidate>
-            <ItemPicker locale={locale} store={store} lines={lines} setLines={setLines} />
-            <section className="mt-card">
-              <h2>{c.customerTitle}</h2>
-              <FormRow>
-                <Field id="mo-name" label={c.name}><input id="mo-name" data-testid="mo-name" value={name} maxLength={120} autoComplete="off" onChange={(e) => setName(e.target.value)} /></Field>
-                <Field id="mo-phone" label={c.phone} width="short"><input id="mo-phone" data-testid="mo-phone" value={phone} inputMode="tel" maxLength={32} autoComplete="off" onChange={(e) => setPhone(e.target.value)} /></Field>
-                <Field id="mo-email" label={c.email}><input id="mo-email" data-testid="mo-email" value={email} type="email" maxLength={254} autoComplete="off" onChange={(e) => setEmail(e.target.value)} /></Field>
-              </FormRow>
-            </section>
-            <section className="mt-card">
-              <h2>{c.deliveryTitle}</h2>
-              <FormRow><Field id="mo-option" label={c.delivery} width="long">
-                <select id="mo-option" data-testid="mo-option" value={optionKey} disabled={options.status !== "ready"} onChange={(e) => selectOption(e.target.value)}>
-                  <option value="">{c.choose}</option>
-                  {available.map((o) => <option key={o.option_key} value={o.option_key}>{optionName(o)}</option>)}
-                </select>
-              </Field></FormRow>
-              {mapOnly && <p className="mt-warn" role="status" style={{ marginTop: 12 }}>{c.mapOnly}</p>}
-              {option?.delivery_kind === "home" && (
-                <FormRow style={{ marginTop: 12 }}>
-                  <Field id="mo-region" label={c.region}><input id="mo-region" value={home.region} maxLength={100} onChange={(e) => setHome({ ...home, region: e.target.value })} /></Field>
-                  <Field id="mo-city" label={c.city}><input id="mo-city" data-testid="mo-city" value={home.city} maxLength={100} onChange={(e) => setHome({ ...home, city: e.target.value })} /></Field>
-                  <Field id="mo-postal" label={c.postal} width="short"><input id="mo-postal" value={home.postal_code} maxLength={20} onChange={(e) => setHome({ ...home, postal_code: e.target.value })} /></Field>
-                  <Field id="mo-line1" label={c.line1} width="long"><input id="mo-line1" data-testid="mo-line1" value={home.line1} maxLength={200} onChange={(e) => setHome({ ...home, line1: e.target.value })} /></Field>
-                  <Field id="mo-line2" label={c.line2} width="long"><input id="mo-line2" value={home.line2} maxLength={200} onChange={(e) => setHome({ ...home, line2: e.target.value })} /></Field>
-                </FormRow>
-              )}
-              {option && option.delivery_kind !== "home" && !mapOnly && (
-                <>
-                  <p className="mt-note">{c.cvsHint}</p>
-                  <FormRow style={{ marginTop: 8 }}>
-                    <Field id="mo-store-code" label={c.storeCode} width="short"><input id="mo-store-code" data-testid="mo-store-code" value={cvs.store_code} maxLength={32} onChange={(e) => setCVS({ ...cvs, store_code: e.target.value })} /></Field>
-                    <Field id="mo-store-name" label={c.storeName}><input id="mo-store-name" data-testid="mo-store-name" value={cvs.store_name} maxLength={40} onChange={(e) => setCVS({ ...cvs, store_name: e.target.value })} /></Field>
-                    <Field id="mo-store-address" label={c.storeAddress} width="long"><input id="mo-store-address" data-testid="mo-store-address" value={cvs.store_address} maxLength={120} onChange={(e) => setCVS({ ...cvs, store_address: e.target.value })} /></Field>
-                  </FormRow>
-                </>
-              )}
-            </section>
-            <section className="mt-card">
-              <h2>{c.paymentTitle}</h2>
-              {option ? option.payment_modes.map((m) => (
-                <label key={m} className="mt-radio">
-                  <input type="radio" name="mode" value={m} checked={mode === m} onChange={() => setMode(m)} data-testid={`mo-mode-${m}`} />
-                  {m === "bank_transfer" ? c.bank : m === "cash_on_delivery" ? c.cod : c.pickup}
-                </label>
-              )) : <p className="mt-note">{c.choose}</p>}
-              {mode === "cash_on_delivery" && option?.cod_max_minor !== undefined && option.cod_carrier && (
-                <p className="mt-note" data-testid="mo-cod-note">
-                  {c.codNote(money(locale, option.currency, option.cod_surcharge_minor ?? 0), money(locale, option.currency, option.cod_max_minor),
-                    option.cod_carrier === "black_cat" ? codCopy[locale].carrierBlackCat : codCopy[locale].carrierHsinchu)}
-                </p>
-              )}
-              <p className="mt-note">{c.noCard}</p>
-              <FormRow style={{ marginTop: 14 }}><Field id="mo-buyer-locale" label={c.linkTitle} width="short">
-                <select id="mo-buyer-locale" value={buyerLocale} onChange={(e) => setBuyerLocale(e.target.value as Locale)}>
-                  {(["zh-TW", "zh-CN", "en"] as const).map((l) => <option key={l} value={l}>{l}</option>)}
-                </select>
-              </Field></FormRow>
-            </section>
+            <ManualOrderFormFields locale={locale} store={store}
+              value={{ lines, name, phone, email, optionKey, mode, home, cvs, buyerLocale }}
+              onChange={changeFields} available={available} optionsReady={options.status === "ready"} />
             {failure && <p className="mt-warn" role="alert" data-testid="manual-order-error">{failure}{uncertain ? ` ${c.retrySame}` : ""}</p>}
             {problem && <p className="mt-note" data-testid="manual-order-hint">{c.problems[problem]}</p>}
             <div className="mt-actions">
@@ -254,93 +200,5 @@ export function ManualOrder({
         )}
       </div>
     </WorkspaceFrame>
-  );
-}
-
-// Product search (active products only: a draft cannot hold stock) and variant pick. Reads are the existing catalog BFF routes.
-function ItemPicker({ locale, store, lines, setLines }: { locale: Locale; store: Store; lines: Line[]; setLines: (next: Line[]) => void }) {
-  const c = toolsCopy[locale].manual;
-  const [q, setQ] = useState("");
-  const [results, setResults] = useState<ProductSummary[] | null>(null);
-  const [open, setOpen] = useState<ProductDetail | null>(null);
-  const [searching, setSearching] = useState(false);
-  const controller = useRef<AbortController | null>(null);
-  useEffect(() => () => controller.current?.abort(), []);
-  async function search() {
-    controller.current?.abort();
-    const active = new AbortController();
-    controller.current = active;
-    setSearching(true);
-    setOpen(null);
-    try {
-      const page = await readProducts(store.id, q.trim(), "active", "", active.signal);
-      if (!active.signal.aborted) setResults(page.items);
-    } catch {
-      if (!active.signal.aborted) setResults([]);
-    }
-    if (!active.signal.aborted) setSearching(false);
-  }
-  async function expand(id: string) {
-    controller.current?.abort();
-    const active = new AbortController();
-    controller.current = active;
-    try {
-      const detail = await readProduct(store.id, id, active.signal);
-      if (!active.signal.aborted) setOpen(detail);
-    } catch {
-      /* the list stays; the merchant can retry */
-    }
-  }
-  const add = (v: ProductDetail["skus"][number], product: ProductDetail) => {
-    if (lines.some((l) => l.sku_id === v.id)) return;
-    setLines([...lines, { sku_id: v.id, quantity: 1, label: `${product.name} · ${v.title}`, code: v.code, price: money(locale, v.currency, v.price_minor) }]);
-  };
-  const ordered = useMemo(() => lines, [lines]);
-  return (
-    <section className="mt-card" data-testid="mo-items">
-      <h2>{c.itemsTitle}</h2>
-      {/* Not a <form>: this picker lives inside the order form, and HTML forbids nested forms (the parser would drop the inner one). */}
-      <FormRow className={s.searchRow}>
-        <Field id="mo-search" label={c.search} width="long">
-          <input id="mo-search" data-testid="mo-search" value={q} maxLength={120} onChange={(e) => setQ(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void search(); } }} />
-        </Field>
-      </FormRow>
-      <div className={`mt-actions ${s.searchActions}`}><button type="button" data-testid="mo-search-button" disabled={searching} onClick={() => void search()}>{c.searchButton}</button></div>
-      {results && (results.length === 0 ? <p className="mt-note">{c.noResults}</p> : (
-        <ul className="mt-results">
-          {results.map((p) => (
-            <li key={p.id}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                <span>{p.name}<small>{p.sku_count} · {c.available} {p.available}</small></span>
-                <button type="button" className="mt-btn" onClick={() => void expand(p.id)}>{c.add}</button>
-              </div>
-              {open?.id === p.id && (
-                <ul className="mt-variants">
-                  {open.skus.filter((v) => v.price_minor >= 0).map((v) => (
-                    <li key={v.id}>
-                      <span>{v.title}<small>{v.code} · {money(locale, v.currency, v.price_minor)} · {c.available} {v.available}</small></span>
-                      <button type="button" className="mt-btn" disabled={lines.some((l) => l.sku_id === v.id)} onClick={() => add(v, open)}>{c.add}</button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          ))}
-        </ul>
-      ))}
-      {ordered.length === 0 ? <p className="mt-note">{c.noLines}</p> : (
-        <ul className="mt-lines" data-testid="mo-lines">
-          {ordered.map((l) => (
-            <li key={l.sku_id}>
-              <span>{l.label}<small>{l.code} · {l.price}</small></span>
-              <input type="number" min={1} max={1000} step={1} aria-label={c.quantity} value={l.quantity}
-                onChange={(e) => setLines(lines.map((x) => (x.sku_id === l.sku_id ? { ...x, quantity: Math.max(1, Math.min(1000, Math.trunc(Number(e.target.value) || 1))) } : x)))} />
-              <button type="button" className="mt-btn" onClick={() => setLines(lines.filter((x) => x.sku_id !== l.sku_id))}>{c.remove}</button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
   );
 }
