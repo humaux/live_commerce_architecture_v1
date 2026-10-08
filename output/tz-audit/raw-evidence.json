@@ -1,0 +1,50 @@
+{
+  "baseline-loader-error-America-Los_Angeles.log": {
+    "raw_sha256": "eb33517eb043201d1e217776d9b549461f9bb9f71a28c047d76a5246bae1f6eb",
+    "archive": "baseline-loader-error-America-Los_Angeles.log.gz"
+  },
+  "baseline-loader-error-UTC.log": {
+    "raw_sha256": "1731e0aa1ab234eecbe660144112be1f756797a5b2bfa45f0e2e5a1828f75558",
+    "archive": "baseline-loader-error-UTC.log.gz"
+  },
+  "red-all-UTC.log": {
+    "raw_sha256": "b2af608952860d0c3bf1d1cc41ade22906783ea717ed0c2792e775d723850a06",
+    "archive": "red-all-UTC.log.gz"
+  },
+  "red-America-Los_Angeles.log": {
+    "raw_sha256": "7273970c33d6e0ebe7d147b5de78fa2398810014078d5ac38e8e69071a32901d",
+    "archive": "red-America-Los_Angeles.log.gz"
+  },
+  "red-all-America-Los_Angeles.log": {
+    "raw_sha256": "d2e54ce24bd9c6fffc654367b3c6a41f062376600a9e09425b58a06cd028627e",
+    "archive": "red-all-America-Los_Angeles.log.gz"
+  },
+  "red-UTC.log": {
+    "raw_sha256": "721f1d3226086f0243fbc949de97d4baa7d114e4a21c04bbfcdd8931b02eae6a",
+    "archive": "red-UTC.log.gz"
+  },
+  "storefront/red-la.log": {
+    "raw_sha256": "223c40536b9b5dc7eeac7cb585de1e6bc99404685cb6d448faa23a2ca86b44bf",
+    "archive": "storefront/red-la.log.gz"
+  },
+  "storefront/red-utc.log": {
+    "raw_sha256": "abae7f6aeb69eb57a9902d4326032fb196bb8d1b78d8c21090d9a1b89acb92e8",
+    "archive": "storefront/red-utc.log.gz"
+  },
+  "admin/red-America-Los_Angeles.log": {
+    "raw_sha256": "0d6812798196cc7e819626c845fcaca7d32092a215671d8161b9edf16ba68dfc",
+    "archive": "admin/red-America-Los_Angeles.log.gz"
+  },
+  "admin/red-UTC.log": {
+    "raw_sha256": "91bae6edc5ca84f0224c2d052e8d36eb8922331d08d562e8ed7d5e2d14dac718",
+    "archive": "admin/red-UTC.log.gz"
+  },
+  "storefront/worker.patch": {
+    "raw_sha256": "b513a8f332ef49e256cd83c1ff27da795cb157fc8f0ba647b6f0312a2d463fe0",
+    "archive": "storefront/worker.patch.gz"
+  },
+  "admin/baseline-test-fixtures.patch": {
+    "raw_sha256": "3435eba515336763173f2cdb65492c0a810e4f66ca76268644fe84a9b9a3184f",
+    "archive": "admin/baseline-test-fixtures.patch.gz"
+  }
+}

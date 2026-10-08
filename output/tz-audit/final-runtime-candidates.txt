@@ -1,0 +1,32 @@
+apps/storefront/components/BankTransfer.tsx:49:  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+apps/storefront/components/BankTransfer.tsx:75:  const [paidAt, setPaidAt] = useState(() => localInput(new Date()));
+apps/storefront/components/BankTransfer.tsx:126:    const iso = paidAt ? new Date(paidAt).toISOString() : "";
+apps/storefront/lib/payment-contract.ts:111:    new Date(time).toISOString().slice(0, 19) === value.slice(0, 19)
+apps/storefront/components/ShopChrome.tsx:195:        <p>© {instantToTaipei(new Date().toISOString()).slice(0, 4)} {profile.name}</p>
+apps/storefront/components/OrderFlow.tsx:788:            {new Intl.DateTimeFormat(locale, {
+apps/storefront/components/OrderFlow.tsx:789:              timeZone: "Asia/Taipei",
+apps/storefront/components/OrderFlow.tsx:792:            }).format(new Date(order.hold_expires_at))} · {common.taipeiTime}
+apps/admin/app/api/auth/password/step1.ts:131:          new Date(),
+apps/admin/lib/customers-model.ts:270:  const shifted = new Date(now.getTime() + 8 * 3_600_000 + offsetDays * 86_400_000);
+apps/admin/lib/ads-request.ts:46:    const t = new Date(Date.UTC(y, m - 1, d));
+apps/admin/lib/card-payments-request.ts:26:  const back = new Date(parsed);
+apps/admin/components/Studio.tsx:87:    const date = new Date(taipeiToInstant(form.scheduled) ?? NaN);
+apps/admin/lib/studio-model.ts:70:  const wall = new Date(`${match[1]}Z`);
+apps/admin/app/[locale]/finance/page.tsx:20:  const now = new Date();
+apps/admin/lib/attribution-model.ts:145:    new Date(s).toISOString().slice(0, 10) === s
+apps/admin/lib/ads-model.ts:402:  const t = new Date(Date.UTC(y, m - 1, d));
+apps/admin/lib/ads-model.ts:418:const storeDay = (ms: number) => instantToTaipei(new Date(ms).toISOString()).slice(0, 10);
+apps/admin/lib/ads-model.ts:429:export const isoSeconds = (ms: number) => new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z");
+apps/admin/lib/ads-model.ts:432:  return instantToTaipei(new Date(ms).toISOString());
+apps/admin/lib/returns-model.ts:56:  return Number.isFinite(new Date(value).getTime());
+apps/admin/lib/returns-model.ts:105:  if (new Date(v.updated_at as string).getTime() < new Date(v.created_at as string).getTime()) throw new Error("unavailable");
+apps/admin/lib/card-payments-settlements-model.ts:62:  const back = new Date(parsed);
+apps/admin/lib/card-payments-settlements-model.ts:101:  return `${start} – ${last === null ? end : new Date((last - 1) * 86_400_000).toISOString().slice(0, 10)}`;
+apps/admin/lib/customers-request.ts:51:  const back = new Date(parsed);
+apps/storefront/lib/buyer-server.ts:921:      expires === null ? null : new Date(expires * 1000).toISOString(),
+apps/admin/lib/orders-model.ts:184:  const parsed = new Date(value);
+apps/admin/lib/orders-v2.ts:18:    Number.isFinite(Date.parse(`${value}T00:00:00Z`)) && new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value;
+apps/storefront/lib/ad-touch.ts:208:    new Date(clicked).toISOString() !== row.clicked_at
+apps/storefront/lib/ad-touch.ts:262:    ? { draft_id: drafts[0], clicked_at: new Date(now).toISOString(), fbc, fbp }
+apps/admin/app/[locale]/ads/attribution/page.tsx:49:  const today = instantToTaipei(new Date().toISOString()).slice(0, 10);
+apps/admin/app/[locale]/ads/attribution/page.tsx:50:  const first = new Date(`${today}T00:00:00Z`);

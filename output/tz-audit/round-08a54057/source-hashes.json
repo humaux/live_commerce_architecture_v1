@@ -1,0 +1,11 @@
+{
+  "apps/storefront/components/BankTransfer.tsx": "244cb1fa486b932fc1c056134780cab726ad61670ff1024f2fa11f82ab55bc5a",
+  "apps/storefront/components/OrderFlow.tsx": "a1674b98c55bbcb17eb6d95039bcb7a783e3351a0aff1ab8c12243582c133d48",
+  "apps/storefront/lib/bank-transfer-copy.ts": "84d3b3ea0a10f3c72b549f5a30def7f119060da757e853c13e20a7e481b96607",
+  "apps/storefront/tests/timezone.test.mjs": "1f256541fafb57d6e089694020fc5c12177c4e44d16be0638417290ef922e1d4",
+  "tests/foundation/browser_checkout_offline_test.go": "560841b8f8e07e5da984de4ab6b5a3782329ea45315e7800f925abdb2dfa7f3e",
+  "tests/foundation/browser_order_chain_test.go": "a2370a2c6cdc627bfeaabdc92d79dcbb081f8504071f3fb8405d029806291159",
+  "tests/foundation/buyer_order_evidence_test.go": "77b902f7f779033bc9b7db253ab5780d01f2087d1d91456a457a213b56b601fa",
+  "tests/storefront/offline-buyer.mjs": "86c8487a4a4d91d13e5eeab568f099e96109a26d19ecaabc224a914733af839b",
+  "tests/storefront/order-gate.mjs": "22d7aae7da2e2c17f192c3cec718f2eba69e4a8a085084c1bf3eeddd76439da7"
+}

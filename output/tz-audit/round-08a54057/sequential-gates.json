@@ -1,0 +1,93 @@
+{
+  "state": "complete",
+  "runs": [
+    {
+      "name": "bank-green",
+      "command": [
+        "env",
+        "LC_BROWSER_ENGINE=chromium",
+        "bash",
+        "scripts/dev/test-local.sh",
+        "--browser-checkout-offline"
+      ],
+      "root": "/Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit",
+      "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit",
+      "out": "/Volumes/data/live_commerce_architecture_v1/output/tz-audit/round-08a54057/final/bank-green",
+      "timeout_seconds": 1800,
+      "head_sha": "8c8186d23b2a9a743ebb8b7f72ccd45eaa01048f",
+      "source_sha256": "8f3238b72131bbbd286560b1d8cb52142ca8753d2f86d35b4cf583b45e6a0d0a",
+      "state": "complete",
+      "started_at": "2026-10-08T00:40:01Z",
+      "pid": 96661,
+      "exit_code": 0,
+      "elapsed_seconds": 68.951,
+      "source_unchanged": true
+    },
+    {
+      "name": "order-green",
+      "command": [
+        "env",
+        "LC_BROWSER_ENGINE=chromium",
+        "bash",
+        "scripts/dev/test-local.sh",
+        "--browser-order"
+      ],
+      "root": "/Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit",
+      "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit",
+      "out": "/Volumes/data/live_commerce_architecture_v1/output/tz-audit/round-08a54057/final/order-green",
+      "timeout_seconds": 1500,
+      "head_sha": "8c8186d23b2a9a743ebb8b7f72ccd45eaa01048f",
+      "source_sha256": "8f3238b72131bbbd286560b1d8cb52142ca8753d2f86d35b4cf583b45e6a0d0a",
+      "state": "complete",
+      "started_at": "2026-10-08T00:41:10Z",
+      "pid": 512,
+      "exit_code": 0,
+      "elapsed_seconds": 38.69,
+      "source_unchanged": true
+    },
+    {
+      "name": "webkit-green",
+      "command": [
+        "env",
+        "-u",
+        "LC_WEBKIT_STEPS",
+        "LC_BROWSER_ENGINE=webkit",
+        "bash",
+        "scripts/dev/test-local.sh",
+        "--browser-webkit"
+      ],
+      "root": "/Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit",
+      "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit",
+      "out": "/Volumes/data/live_commerce_architecture_v1/output/tz-audit/round-08a54057/final/webkit-green",
+      "timeout_seconds": 3600,
+      "head_sha": "8c8186d23b2a9a743ebb8b7f72ccd45eaa01048f",
+      "source_sha256": "8f3238b72131bbbd286560b1d8cb52142ca8753d2f86d35b4cf583b45e6a0d0a",
+      "state": "complete",
+      "started_at": "2026-10-08T00:41:50Z",
+      "pid": 1708,
+      "exit_code": 0,
+      "elapsed_seconds": 274.493,
+      "source_unchanged": true
+    },
+    {
+      "name": "focused-green",
+      "command": [
+        "bash",
+        "scripts/dev/test-focused.sh",
+        "^TestBankTransfer(Lifecycle|K303ProofPrivacy)$"
+      ],
+      "root": "/Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit",
+      "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit",
+      "out": "/Volumes/data/live_commerce_architecture_v1/output/tz-audit/round-08a54057/final/focused-green",
+      "timeout_seconds": 1200,
+      "head_sha": "8c8186d23b2a9a743ebb8b7f72ccd45eaa01048f",
+      "source_sha256": "8f3238b72131bbbd286560b1d8cb52142ca8753d2f86d35b4cf583b45e6a0d0a",
+      "state": "complete",
+      "started_at": "2026-10-08T00:46:25Z",
+      "pid": 3667,
+      "exit_code": 0,
+      "elapsed_seconds": 25.576,
+      "source_unchanged": true
+    }
+  ]
+}

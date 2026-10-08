@@ -1,0 +1,77 @@
+✖ Ads merchant timestamp uses Taipei at the year boundary (57.717209ms)
+✖ Design version published_at cell uses Taipei at the year boundary (3.733916ms)
+✖ ManualOrder bank-transfer expiry uses Taipei at the year boundary (6.260416ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 0
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 466.15625
+
+✖ failing tests:
+
+test at tests/admin/timezone-ui.test.mjs:52:1
+✖ Ads merchant timestamp uses Taipei at the year boundary (57.717209ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /2027\D+0?1\D+0?1\D+00:30/. Input:
+
+  '2026年12月31日 上午8:30'
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit-admin-tests/tests/admin/timezone-ui.test.mjs:54:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '2026年12月31日 上午8:30',
+    expected: /2027\D+0?1\D+0?1\D+00:30/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at tests/admin/timezone-ui.test.mjs:58:1
+✖ Design version published_at cell uses Taipei at the year boundary (3.733916ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /2027\D+0?1\D+0?1\D+00:30/. Input:
+
+  'help  version published at  v 1 live published  2026年12月31日 上午8:30 '
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit-admin-tests/tests/admin/timezone-ui.test.mjs:67:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'help  version published at  v 1 live published  2026年12月31日 上午8:30 ',
+    expected: /2027\D+0?1\D+0?1\D+00:30/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at tests/admin/timezone-ui.test.mjs:70:1
+✖ ManualOrder bank-transfer expiry uses Taipei at the year boundary (6.260416ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /2027\D+0?1\D+0?1\D+00:30/. Input:
+
+  '    created   order-12  NT$100  expires 2026/12/31 上午8:30:00     '
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit-admin-tests/tests/admin/timezone-ui.test.mjs:86:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '    created   order-12  NT$100  expires 2026/12/31 上午8:30:00     ',
+    expected: /2027\D+0?1\D+0?1\D+00:30/,
+    operator: 'match',
+    diff: 'simple'
+  }
+command=TZ=America/Los_Angeles node --test tests/admin/timezone-ui.test.mjs
+base=35abffcadaa1240888d291391712e1411cb820a3
+exit=1

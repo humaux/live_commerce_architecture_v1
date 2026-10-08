@@ -8,6 +8,8 @@ import path from "node:path";
 import { expect } from "@playwright/test";
 import { engine, launch, ctxOpts, phone, iosZoomOffenders, isWebkitCancelledFetch } from "./browser-engine.mjs";
 import { addToCart } from "./shop-helpers.mjs";
+import { displayTime } from "../../packages/format/src/index.ts";
+import { claimCopy } from "../../apps/storefront/lib/claim-copy.ts";
 
 const origin = process.env.LC_CDC_ORIGIN, evidence = process.env.LC_CDC_EVIDENCE;
 assert(origin && evidence && process.env.LC_CDC_CONTROL_KEY);
@@ -19,6 +21,7 @@ const copy = {
   "zh-CN": { checkout: "直接结账", delivery: "选择配送", quote: "获取当前总额", pickup: /取货付款/, merge: /其他商品也会一起结账/ },
   en: { checkout: "Check out now", delivery: "Choose delivery", quote: "Get current total", pickup: /Pay at pickup/i, merge: /other items.*checked out together/i },
 };
+const taipeiLabel = { "zh-TW": "台北時間（UTC+8）", "zh-CN": "台北时间（UTC+8）", en: "Taipei time (UTC+8)" };
 async function fixture(name, action = "link", order = undefined, sku = undefined) {
   // SETUP/FAULT INJECTION: loopback owner fixture; never substitutes for a buyer UI action.
   const response = await fetch(process.env.LC_CDC_CONTROL, { method: "POST", headers: {
@@ -27,8 +30,8 @@ async function fixture(name, action = "link", order = undefined, sku = undefined
   assert.equal(response.status, 200, "fixture setup must succeed");
   const result = await response.json(); tokens.push(result.token); return result;
 }
-async function newPage(mobile = false) {
-  const context = await browser.newContext(ctxOpts({ ...(mobile ? phone : { viewport: { width: 1440, height: 900 } }), ignoreHTTPSErrors: true }));
+async function newPage(mobile = false, timezoneId = "America/Los_Angeles") {
+  const context = await browser.newContext(ctxOpts({ ...(mobile ? phone : { viewport: { width: 1440, height: 900 } }), ignoreHTTPSErrors: true, timezoneId }));
   contexts.push(context);
   const page = await context.newPage(), seen = { redeem: 0, cart: null, quote: null, preview: null, redeemed: null, errors: [], urls: [] };
   page.on("pageerror", (e) => { if (!isWebkitCancelledFetch(e)) seen.errors.push(e.message); });
@@ -68,8 +71,17 @@ async function noLeaks(page, link) {
 }
 async function openClaim(page, link, locale = "zh-TW") {
   activePage = page;
+  page.seen.preview = null;
+  const previewReply = page.waitForResponse((r) => r.status() === 200 && r.request().method() === "GET" &&
+    new URL(r.url()).pathname === "/api/buyer/claim-link" && r.request().headers()["x-commerce-claim-token"] === link.token);
   await page.goto(`${origin}/${locale}/claim#t=${link.token}`);
+  const freshPreview = await (await previewReply).json();
   await expect(page.getByTestId("claim-line-A1")).toBeVisible();
+  await expect.poll(() => page.seen.preview?.expires_at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  assert.equal(page.seen.preview.expires_at, freshPreview.expires_at, "visible preview belongs to the fresh GET");
+  const expiry = page.locator("p.claim-note").filter({ hasText: taipeiLabel[locale] });
+  await expect(expiry).toHaveCount(1);
+  await expect(expiry).toHaveText(`${claimCopy[locale].expires(displayTime(locale, page.seen.preview.expires_at))} · ${taipeiLabel[locale]}`);
   assert.equal(page.seen.redeem, 0, "opening a claim is read-only");
   await noLeaks(page, link);
 }
@@ -126,11 +138,21 @@ try {
   // One full purchase per locale; phone profile runs every matrix cell on WebKit.
   let previous, previousLink;
   for (const locale of ["zh-TW", "zh-CN", "en"]) {
-    const page = await newPage(engine === "webkit" || locale !== "zh-TW"), link = await fixture(locale);
+    const timezoneId = locale === "zh-CN" ? "UTC" : "America/Los_Angeles";
+    const page = await newPage(engine === "webkit" || locale !== "zh-TW", timezoneId), link = await fixture(locale);
     await openClaim(page, link, locale);
+    assert.equal(await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone), timezoneId);
+    const expiresAt = page.seen.preview.expires_at;
+    // The claim token is memory-only. A reload must ask for the original message link again;
+    // reopening this same issued fixture link tests persistence without storing the token.
+    await page.reload();
+    await expect(page.getByTestId("claim-not-found")).toBeVisible();
+    assert.equal(new URL(page.url()).hash, "");
+    await openClaim(page, link, locale);
+    assert.equal(page.seen.preview.expires_at, expiresAt, "reopening the same link retains the server expiry");
     await expect(page.getByTestId("claim-add")).toHaveText(copy[locale].checkout);
     await checkout(page, link, locale); await place(page, link, locale);
-    await noLeaks(page, link); pass(`chosen SKU/quantity/live price -> order -> reload ${locale}`);
+    await noLeaks(page, link); pass(`chosen SKU/quantity/live price -> order -> reload; Taipei expiry in ${locale}/${timezoneId}`);
     if (locale === "zh-TW") { previous = page; previousLink = link; }
   }
   // An already-ordered cart is cleared before a second, different claim is merged.

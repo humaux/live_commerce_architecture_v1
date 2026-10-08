@@ -1,0 +1,6 @@
+{
+  "status": "NOT_RUN",
+  "reason": "restored browser never started; new foundation owner holds global PG lock; normal browser modes remain GitHub-only per user",
+  "own_process_group_terminated": 70664,
+  "red_proof": "real-red-proof.json is actual four date assertion failures"
+}
