@@ -1,0 +1,19 @@
+{
+  "name": "p1-red",
+  "command": [
+    "bash",
+    "scripts/dev/test-focused.sh",
+    "TestLiveConsoleBuyerPanel(PriceNeutralOrigin|ReviewOriginProjections)$"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-b3b-buyer-panel",
+  "out": "/Volumes/data/live_commerce_architecture_v1/output/lc-b3b-buyer-panel/review-round",
+  "timeout_seconds": 1200,
+  "head_sha": "06a03c6c4c3ecb73cabecb783c15c3b99877152e",
+  "source_sha256": "65e50fc16d4522bb4c0bdbb84750a32d9ab07fd87a2736f03fdbf5b9cdab1133",
+  "started_at": "2026-10-07T17:45:36Z",
+  "state": "complete",
+  "pid": 82436,
+  "exit_code": 1,
+  "elapsed_seconds": 32.822,
+  "source_unchanged": true
+}

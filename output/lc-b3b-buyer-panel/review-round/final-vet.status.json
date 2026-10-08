@@ -1,0 +1,19 @@
+{
+  "name": "final-vet",
+  "command": [
+    "go",
+    "vet",
+    "./..."
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-b3b-buyer-panel",
+  "out": "/Volumes/data/live_commerce_architecture_v1/output/lc-b3b-buyer-panel/review-round",
+  "timeout_seconds": 300,
+  "head_sha": "a0c6ec2bfcd8a1a20c112330d5658de5525c579b",
+  "source_sha256": "31e23ae2aca45f8131ccb7f6b264c40ff67c894d118e4c3e46b67954c78f1afc",
+  "started_at": "2026-10-07T18:01:44Z",
+  "state": "complete",
+  "pid": 93496,
+  "exit_code": 0,
+  "elapsed_seconds": 10.049,
+  "source_unchanged": true
+}

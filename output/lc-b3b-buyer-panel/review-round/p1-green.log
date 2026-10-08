@@ -1,0 +1,67 @@
+=== RUN   TestLiveClaimsKC03Schema
+=== RUN   TestLiveClaimsKC03Schema/fresh-migrated-twice
+=== RUN   TestLiveClaimsKC03Schema/privilege-matrix
+=== RUN   TestLiveClaimsKC03Schema/definers
+=== RUN   TestLiveClaimsKC03Schema/checks-and-keys
+=== RUN   TestLiveClaimsKC03Schema/foreign-roles-denied
+=== RUN   TestLiveClaimsKC03Schema/release-only-with-rotation
+=== RUN   TestLiveClaimsKC03Schema/pool-validator
+=== RUN   TestLiveClaimsKC03Schema/populated-pre-0060-upgrade
+--- PASS: TestLiveClaimsKC03Schema (6.60s)
+    --- PASS: TestLiveClaimsKC03Schema/fresh-migrated-twice (0.07s)
+    --- PASS: TestLiveClaimsKC03Schema/privilege-matrix (0.10s)
+    --- PASS: TestLiveClaimsKC03Schema/definers (0.01s)
+    --- PASS: TestLiveClaimsKC03Schema/checks-and-keys (0.17s)
+    --- PASS: TestLiveClaimsKC03Schema/foreign-roles-denied (0.53s)
+    --- PASS: TestLiveClaimsKC03Schema/release-only-with-rotation (0.10s)
+    --- PASS: TestLiveClaimsKC03Schema/pool-validator (0.10s)
+    --- PASS: TestLiveClaimsKC03Schema/populated-pre-0060-upgrade (3.70s)
+=== RUN   TestLiveConsoleBuyerPanelReviewOriginProjections
+=== RUN   TestLiveConsoleBuyerPanelReviewOriginProjections/conversation
+=== RUN   TestLiveConsoleBuyerPanelReviewOriginProjections/bundle
+--- PASS: TestLiveConsoleBuyerPanelReviewOriginProjections (0.12s)
+    --- PASS: TestLiveConsoleBuyerPanelReviewOriginProjections/conversation (0.02s)
+    --- PASS: TestLiveConsoleBuyerPanelReviewOriginProjections/bundle (0.01s)
+=== RUN   TestLiveConsoleBuyerPanelClaimsAndOrders
+--- PASS: TestLiveConsoleBuyerPanelClaimsAndOrders (0.03s)
+=== RUN   TestLiveConsoleBuyerPanelPriceNeutralOrigin
+--- PASS: TestLiveConsoleBuyerPanelPriceNeutralOrigin (0.02s)
+=== RUN   TestLiveConsoleBuyerPanelUnlinkedAndI09
+--- PASS: TestLiveConsoleBuyerPanelUnlinkedAndI09 (0.04s)
+=== RUN   TestLiveConsoleBuyerPanelScope404
+--- PASS: TestLiveConsoleBuyerPanelScope404 (0.03s)
+=== RUN   TestLiveConsoleBuyerPanelOrdersPermission
+--- PASS: TestLiveConsoleBuyerPanelOrdersPermission (0.02s)
+=== RUN   TestLiveConsoleBuyerPanelBounds
+--- PASS: TestLiveConsoleBuyerPanelBounds (0.10s)
+=== RUN   TestLiveConsoleBuyerPanelAutoReply
+--- PASS: TestLiveConsoleBuyerPanelAutoReply (0.02s)
+=== RUN   TestLiveConsoleBuyerPanelA8SessionAndLiveComment
+--- PASS: TestLiveConsoleBuyerPanelA8SessionAndLiveComment (0.03s)
+=== RUN   TestLiveConsoleBuyerPanelA9A14
+--- PASS: TestLiveConsoleBuyerPanelA9A14 (0.02s)
+=== RUN   TestLiveConsoleBuyerPanelLeakScan
+--- PASS: TestLiveConsoleBuyerPanelLeakScan (0.02s)
+=== RUN   TestLiveConsoleBuyerPanelExactACL
+=== RUN   TestLiveConsoleBuyerPanelExactACL/social.list_conversations(text,uuid,timestamptz,uuid,int)
+=== RUN   TestLiveConsoleBuyerPanelExactACL/social.conversation_meta(uuid)
+=== RUN   TestLiveConsoleBuyerPanelExactACL/claims.buyer_panel_claims(uuid,uuid,uuid[])
+=== RUN   TestLiveConsoleBuyerPanelExactACL/claims.orders_of_bundles(uuid,uuid,uuid[])
+=== RUN   TestLiveConsoleBuyerPanelExactACL/claims.session_peer_linked(uuid,uuid,uuid,text,text,text,text)
+=== RUN   TestLiveConsoleBuyerPanelExactACL/checkout.order_panel_facts(uuid,uuid,uuid[])
+=== RUN   TestLiveConsoleBuyerPanelExactACL/inbox.buyer_panel(uuid,uuid)
+=== RUN   TestLiveConsoleBuyerPanelExactACL/inbox.live_comment_bundles(uuid,int)
+=== RUN   TestLiveConsoleBuyerPanelExactACL/inbox.conversation_binding(uuid)
+--- PASS: TestLiveConsoleBuyerPanelExactACL (0.01s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/social.list_conversations(text,uuid,timestamptz,uuid,int) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/social.conversation_meta(uuid) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/claims.buyer_panel_claims(uuid,uuid,uuid[]) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/claims.orders_of_bundles(uuid,uuid,uuid[]) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/claims.session_peer_linked(uuid,uuid,uuid,text,text,text,text) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/checkout.order_panel_facts(uuid,uuid,uuid[]) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/inbox.buyer_panel(uuid,uuid) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/inbox.live_comment_bundles(uuid,int) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/inbox.conversation_binding(uuid) (0.00s)
+PASS
+ok      livecommerce/tests/foundation   8.873s
+test-focused: top-level PASS=13 FAIL=0 SKIP=0 exit=0
