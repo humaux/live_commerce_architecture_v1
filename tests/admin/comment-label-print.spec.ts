@@ -57,7 +57,8 @@ for (const locale of ["zh-TW", "zh-CN", "en"]) for (const width of [1586, 390]) 
       await expect(label.locator("time")).not.toBeEmpty();
     }
     await page.getByTestId("comment-label-paper").selectOption("a4");
-    await page.screenshot({ path: `${evidence}/labels-${locale}-${width}-preview.png`, fullPage: true, mask: [page.getByTestId("comment-rows"), page.getByTestId("buyer-panel")] });
+    // Fixture-only synthetic names: a mask over the underlying stream would cover the modal too.
+    await page.screenshot({ path: `${evidence}/labels-${locale}-${width}-preview.png`, fullPage: false });
     await page.getByTestId("comment-label-print").click();
     await expect.poll(() => writes.length).toBe(3);
     expect(new Set(writes.map((w) => w.key)).size).toBe(3);
