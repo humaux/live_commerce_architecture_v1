@@ -406,3 +406,42 @@ for (const kind of ["takeover", "messages"] as const) {
     assert.equal(host.ref(ReplyReceipt).pending(), null, "definitive write404 retires real receipt");
   });
 }
+
+// LC-B3b A13 intentionally omits orders without server authority; a stale shell hint cannot restore it.
+for (const shape of ["omitted", "empty", "populated"] as const) {
+  test(`A13 server orders omission remains distinct from authorized ${shape} data`, async (t) => {
+    const env = environment(t);
+    const order = {
+      order_id: "30000000-0000-4000-8000-000000000003", number: "MOCK_A13_ORDER",
+      state: "CONFIRMED", total_minor: 10000, created_at: "2030-01-01T00:00:00Z",
+    };
+    const buyer = {
+      display_name: "MOCK_B3B_BUYER", platform: "messenger", purchase_ordinal: 2,
+      claims: [{ session_id: store.id, offer_id: conversation.conversation_id, keyword: "MOCK_CLAIM", quantity: 1 }],
+      claim_total_minor: 10000, link_pending_manual: false,
+      ...(shape === "omitted" ? {} : { orders: shape === "empty" ? [] : [order] }),
+    };
+    let writes = 0;
+    globalThis.fetch = async (input, init) => {
+      if (init?.method === "POST") writes++;
+      assert.ok(String(input).includes("buyer-panel?"), "actual A13 request only");
+      return response(buyer);
+    };
+    // The owner hint is intentionally stale for omitted orders. Server omission remains authoritative.
+    const host = env.mount(() => BuyerPanel({ store, conversationId: conversation.conversation_id, onOrder() {} }));
+    await host.waitFor(
+      () => host.output.props["aria-busy"] === false && textOf(host.output).includes("MOCK_B3B_BUYER"),
+      "actual LC-B3b A13 completion",
+    );
+    const rendered = textOf(host.output);
+    assert.ok(rendered.includes("MOCK_CLAIM"), "authorized claim facts remain visible");
+    assert.equal(rendered.includes("Order details require order read access."), shape === "omitted");
+    assert.equal(rendered.includes("No orders supplied."), shape === "empty", "omission must never pretend authorized emptiness");
+    assert.equal(rendered.includes("MOCK_A13_ORDER"), shape === "populated");
+    assert.equal(nodes(host.output).filter((n) => n.type === "button" && textOf(n) === "MOCK_A13_ORDER").length, shape === "populated" ? 1 : 0);
+    assert.equal(node(host, (n) => n.type === "input").props.disabled, true);
+    for (const label of ["Link customer", "Unlink customer"])
+      assert.equal(node(host, (n) => n.type === "button" && textOf(n) === label).props.disabled, true, "A14 stays deferred without its supplied version");
+    assert.equal(writes, 0);
+  });
+}

@@ -1,5 +1,35 @@
 # LC-U2b inbox page + BuyerPanel delivery
 
+## LC-B3b trunk merge compatibility — 2026-10-08 (current handoff)
+
+**E3 within tested MOCK/REAL_PG environment.** PR #8 merge commit `c3b41bd95fe412cad069b93f9e0c206c53e86bf9` incorporates `origin/r3/integration` at `18f82636efcda03351e141d9bbd14b523161dd26` (including LC-B3b merge `9dcd6c54`). Conflict resolution keeps both contract amendments and the server union: LC-B3b A8 session/live-comment/link-version behavior, real A13 fields and permission-aware omitted orders, A9 link_version/binding_id, plus this PR's nullable has_unknown_outbound guard. No rebase or force-push.
+
+A real compatibility defect was found: A13 omits `orders` when server permission is absent, but a stale local permission hint made BuyerPanel access `undefined.length`. Three actual-component MOCK tests distinguish omitted, explicitly empty and populated orders; old code RED = 1 TypeError + 2 positive controls, fixed code GREEN = 3/3. `BuyerData.orders` is optional and the existing permission message handles omission, without inventing an empty list. Claim facts remain visible. A14 controls stay disabled and issue zero writes; wiring A9 link_version/binding_id into new controls remains the follow-up requested by the integrator.
+
+PR #2's requested second fetch/merge was a no-op: it already contains that trunk at `973ed2d02f10caa4f233566d7e32be25257f53a5`, with own migration 0166 and R2 pin 91. No separate push is made for either PR.
+
+| Command | Exit | Evidence |
+|---|---:|---|
+| `git fetch origin && git merge origin/r3/integration` (PR #8) | fetch 0; merge 1 for two conflicts; resolution/merge commit 0 | `c3b41bd9`, contract + service union; read.go auto-merge reviewed |
+| Same fetch/merge in PR #2 | 0 | Already up to date at 973ed2d0 |
+| `go build ./...` | 0 | `b3b-merge-build.*` |
+| `go test ./internal/inbox` | 0 | `b3b-merge-inbox-unit.*` |
+| `bash scripts/dev/test-focused.sh '^(TestInboxUnknownAuthority\|TestLiveConsoleInbox.*\|TestLiveConsoleBuyerPanel.*\|TestLiveConsoleSendLCN11Unknown\|TestLiveConsoleSendLCN13DisplayCopyAndThread)$'` | 0 | 21 PASS / 0 FAIL / 0 SKIP, REAL_PG; exact argv in `b3b-merge-inbox-focused.json` |
+| `node --test --experimental-strip-types --test-name-pattern='A13 server orders omission' tests/admin/inbox-review.test.ts` | 1 RED → 0 GREEN | `b3b-compat-red.log`, `b3b-compat-green.log`, exact proof in `b3b-compat-red-green.json` |
+| `bash scripts/dev/test-node.sh` | 0 | 761 tests; `b3b-merge-node.*` |
+| `bash scripts/dev/check-gates.sh` | 0 | `b3b-merge-check-gates.*` |
+| `pnpm --filter @live-commerce/admin exec tsc --noEmit` | 0 | `b3b-merge-typecheck.*` |
+| Strict changed-test TypeScript check using admin tsconfig | 0 | Exact executable argv in `b3b-merge-tests-typecheck.json` |
+| `git diff --check`; current changed-source hashes | 0 | `b3b-merge-source-hashes.json` matches current bytes |
+
+Go commands ran on c3b41bd9; the subsequent compatibility change touches only BuyerPanel, its TypeScript DTO and its Node test. The source-hash manifest binds all six relevant current frontend/server/contract files, and the final handoff commit adds the compatibility patch plus this evidence.
+
+NOT_RUN after this merge: browser-inbox, calibration and CVS; integrator CI remains required. The separate CVS diagnosis/proposed print-close synchronization scope ruling remains pending. The unchanged 2c940f76 CVS baseline passed before this merge (MOCK + WebKit); its `cvs-addendum-baseline.*` and archived-file manifest are historical evidence, not proof for this merged head. No product or existing CVS test was changed for that issue. Optional media R04 binary test remains NOT_RUN as reported by test-node.sh.
+
+Authoritative retained evidence: `/Volumes/data/live_commerce_architecture_v1/output/lc-u2b-inbox-page/`. All owned build/test processes completed. No live provider, deployment or push. Previous backend-gap statements below describe their historical SHA; LC-B3b now supplies the additive data, while the new control integration is deferred.
+
+---
+
 - Branch: `unit/lc-u2b-inbox-page`; worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page`.
 - Base: `f73405150a1cca3c588d4546f3b5a8e0d1a456a3` (owner-assigned base overrides the older brief reference). Tested source commit: `845989e6f331dbcf64c10378ba71c14dea95edc5`; authorized trunk merge: `26e9aec2` of `1aad42d0`; final evidence commit is reported in the author handoff. Source is also bound by `source-hashes.txt`.
 - Author: Codex-4, GPT-6-based Codex; exact parent model/effort not exposed. Only the requested local trunk merge; no push/deployment.

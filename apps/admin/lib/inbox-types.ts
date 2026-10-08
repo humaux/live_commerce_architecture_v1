@@ -49,7 +49,7 @@ export type Thread = {
   takeover_generation: number;
   human_until: string | null;
 };
-/** A13 server-only facts; no CAS version is currently published for A14. */
+/** A13 server facts; wiring the separate A9 link_version into A14 remains a follow-up. */
 export type BuyerData = {
   display_name?: string | null;
   platform: string;
@@ -61,7 +61,8 @@ export type BuyerData = {
     quantity: number;
   }[];
   claim_total_minor: number;
-  orders: {
+  // LC-B3b omits this key when server-side orders:read is absent; omission is not an empty order list.
+  orders?: {
     order_id: string;
     number: string;
     state: string;

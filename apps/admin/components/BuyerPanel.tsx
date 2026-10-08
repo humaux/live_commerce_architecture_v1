@@ -98,7 +98,8 @@ export function BuyerPanel({
     clear,
     revision,
   ]);
-  // Frozen A13 supplies no link version. Never guess zero or derive it from a linked customer id.
+  // A13 supplies no version; wiring LC-B3b's A9 link_version here is a separate follow-up.
+  // Never guess zero or derive it from a linked customer id.
   const version =
     data &&
     "version" in data &&
@@ -211,7 +212,7 @@ export function BuyerPanel({
             </p>
           )}
           <h3>{c.orders}</h3>
-          {permitted(store, "orders:read") ? (
+          {permitted(store, "orders:read") && data.orders !== undefined ? (
             data.orders.length ? (
               <ul>
                 {data.orders.map((order) => (
