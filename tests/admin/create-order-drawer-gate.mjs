@@ -4,6 +4,7 @@
 // Invariants: I02/I03/I06/I09/I11; only fixed case names, status/counts and synthetic screenshots enter evidence.
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
+import { once } from "node:events";
 import { createWriteStream } from "node:fs";
 import { writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
@@ -20,6 +21,8 @@ await mkdir(evidence,{recursive:true});
 const ledger=[], failed=[], results=[];
 let browser, child, cases=0, current="DU3-setup";
 const log=createWriteStream(path.join(evidence,"admin.log"),{flags:"wx",mode:0o600});
+// spawn requires an opened file descriptor; passing a pending WriteStream throws before Next starts.
+await once(log,"open");
 const record=(control,action,actual)=>ledger.push({case:current,control,action,actual,status:"PASS"});
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const routePath=`/api/stores/${store}/tools/orders/for-buyer`;
