@@ -742,7 +742,10 @@
     grid-template-rows: auto minmax(0, 1fr) auto;
   }
   .pe-index {
-    overflow: visible;
+    /* Expanded readiness must not consume the reserved fields row. Its entries
+       scroll inside the index while their target controls remain usable. */
+    max-height: min(300px, 42dvh);
+    overflow-y: auto;
   }
   .pe-index nav {
     display: flex;
