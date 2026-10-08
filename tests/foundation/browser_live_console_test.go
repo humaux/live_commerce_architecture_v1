@@ -346,6 +346,10 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 	if os.Getenv("LC_BROWSER_LIVE_CONSOLE_ACCEPTANCE") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
 		t.Fatal("use scripts/dev/test-local.sh --browser-live-console")
 	}
+	calibration := os.Getenv("LC_CONSOLE_CALIBRATION")
+	if calibration != "" && calibration != "retain-on-reset" {
+		t.Fatal("unsupported LC_CONSOLE_CALIBRATION")
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 700*time.Second)
 	defer cancel()
 	comments := newConsoleCommentsFixture(t)
@@ -541,7 +545,7 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 	nextLog := browserLog(t, filepath.Join(evidence, "next.log"))
 	next := exec.CommandContext(ctx, "node", filepath.Join(root, "apps/admin/.next/standalone/apps/admin/server.js"))
 	next.Dir = root
-	next.Env = browserEnvironment(map[string]string{"HOSTNAME": "127.0.0.1", "PORT": port, "NODE_ENV": "production", "COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1", "COMMERCE_PUBLIC_ORIGIN": origin, "COMMERCE_API_ORIGIN": api.URL, "COMMERCE_OIDC_ISSUER": idp.server.URL, "COMMERCE_BFF_KEY": bffKey})
+	next.Env = browserEnvironment(map[string]string{"HOSTNAME": "127.0.0.1", "PORT": port, "NODE_ENV": "production", "COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1", "COMMERCE_PUBLIC_ORIGIN": origin, "COMMERCE_API_ORIGIN": api.URL, "COMMERCE_OIDC_ISSUER": idp.server.URL, "COMMERCE_BFF_KEY": bffKey, "LC_BROWSER_LIVE_CONSOLE_ACCEPTANCE": "1", "LC_CONSOLE_CALIBRATION": calibration})
 	next.Stdout, next.Stderr = nextLog, nextLog
 	if err = next.Start(); err != nil {
 		t.Fatal(err)
@@ -585,9 +589,13 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 		t.Logf("FOCUSED_SPEC_ONLY: live-console grep=%q; full-mode acceptance remains NOT_RUN", grep)
 	}
 	cmd.Dir = root
-	cmd.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "live-console", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_EVIDENCE": evidence, "LC_BROWSER_CONSOLE_SCENES": string(sceneJSON), "LC_BROWSER_CONSOLE_LATE_SCENE": lateScenes[0], "LC_BROWSER_CONSOLE_LATE_DEST": lateScenes[1], "LC_BROWSER_CONSOLE_STORE": h.f.storeA1, "LC_BROWSER_CONSOLE_OTHER_STORE": h.f.storeA2, "LC_BROWSER_CONSOLE_OTHER_SCENE": other, "LC_BROWSER_CONSOLE_CONTROL": controlKey, "LC_BROWSER_CONSOLE_NARROW_TOKEN": narrowToken, "LC_BROWSER_CONSOLE_READ_TOKEN": readToken, "LC_BROWSER_CONSOLE_COMMENTS": string(commentsJSON)})
-	cmd.Stdout, cmd.Stderr = log, log
+	cmd.Env = browserEnvironment(map[string]string{"LC_CONSOLE_CALIBRATION": calibration, "FORCE_COLOR": "0", "NO_COLOR": "1", "LC_BROWSER_SUITE": "live-console", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_EVIDENCE": evidence, "LC_BROWSER_CONSOLE_SCENES": string(sceneJSON), "LC_BROWSER_CONSOLE_LATE_SCENE": lateScenes[0], "LC_BROWSER_CONSOLE_LATE_DEST": lateScenes[1], "LC_BROWSER_CONSOLE_STORE": h.f.storeA1, "LC_BROWSER_CONSOLE_OTHER_STORE": h.f.storeA2, "LC_BROWSER_CONSOLE_OTHER_SCENE": other, "LC_BROWSER_CONSOLE_CONTROL": controlKey, "LC_BROWSER_CONSOLE_NARROW_TOKEN": narrowToken, "LC_BROWSER_CONSOLE_READ_TOKEN": readToken, "LC_BROWSER_CONSOLE_COMMENTS": string(commentsJSON)})
+	var diagnostics consoleDiagnosticBuffer
+	cmd.Stdout, cmd.Stderr = &diagnostics, &diagnostics
 	runErr := cmd.Run()
+	if _, err := io.WriteString(log, consolePlaywrightSummary(diagnostics.Bytes())); err != nil {
+		t.Error("console diagnostic write failed")
+	}
 	commentFacts, factsErr := comments.facts(ctx)
 	if factsErr != nil {
 		t.Error("LC-U2a final fixture facts failed")

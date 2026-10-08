@@ -76,6 +76,7 @@ func newConsoleCommentsFixture(t *testing.T) *consoleCommentsFixture {
 		postID: e.postID, sourceID: e.srcFB, graph: graph, graphURL: graphServer.URL, bridgeToken: randomBytes(32), cursorKey: randomBytes(32)}
 	at := time.Now().UTC()
 	claimRef, replyRef, resetRef := lcnRef(), lcnRef(), lcnRef()
+	replyRefs := make([]string, 0, 6)
 	for i := 1; i <= 60; i++ {
 		ref := lcnRef()
 		if i == 59 {
@@ -83,6 +84,9 @@ func newConsoleCommentsFixture(t *testing.T) *consoleCommentsFixture {
 		}
 		if i == 60 {
 			ref = claimRef
+		}
+		if i >= 50 && i <= 55 {
+			replyRefs = append(replyRefs, ref)
 		}
 		author, name := mciDigits(15), "LC-U2a synthetic author"
 		if i == 58 {
@@ -96,6 +100,7 @@ func newConsoleCommentsFixture(t *testing.T) *consoleCommentsFixture {
 		}
 	}
 	x.ids["claim_ref"], x.ids["latest_ref"], x.ids["reply_ref"], x.ids["reset_ref"] = claimRef, claimRef, replyRef, resetRef
+	x.ids["reply_refs"] = replyRefs
 	x.resetRow = lcnComment(resetRef, at.Format(time.RFC3339), "", "", "LC-U2a reset row", "", false)
 	graph.setRef(resetRef, x.resetRow)
 	// Calls signed Meta ingress and the real intake worker (live-console-v1 §2.5): text remains encrypted.
