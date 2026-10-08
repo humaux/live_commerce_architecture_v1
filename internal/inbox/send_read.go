@@ -3,6 +3,7 @@
 // Depends on: SQL inbox.read_outbound (migration 0128), internal/inbox/keyring.go (openOutbound).
 // Used by: internal/inbox/read.go (ReadThread).
 // Invariants: a display copy that cannot be opened renders unreadable, never dropped; no link ever persists in a display copy (send.go).
+// UNKNOWN authority uses unfiltered operation states; incomplete scans and missing/unrecognized states never authorize sending.
 
 package inbox
 
@@ -34,9 +35,9 @@ func sendState(state *string) (string, bool) {
 	return "", false
 }
 
-// outboundItems reads up to limit newest sends of the conversation (inbox:read) and returns those that fall inside the page's time
-// window: all of them when the inbound page is not full, else only those not older than the oldest inbound row shown.
-func (s *Service) outboundItems(ctx context.Context, tx pgx.Tx, conversationID string, limit int, inbound []MessageItem) ([]MessageItem, error) {
+// outboundItems scans the newest 50 sends for A9 authority on every page. Only the first page renders the first limit rows inside
+// the existing inbound time window. Authority is independent of that display filtering and of display-copy decryption.
+func (s *Service) outboundItems(ctx context.Context, tx pgx.Tx, conversationID string, limit int, inbound []MessageItem, display bool) ([]MessageItem, *bool, error) {
 	var floor *time.Time
 	if len(inbound) >= limit {
 		for _, it := range inbound {
@@ -46,14 +47,16 @@ func (s *Service) outboundItems(ctx context.Context, tx pgx.Tx, conversationID s
 			}
 		}
 	}
+	// Calls inbox.read_outbound (live-console-v1 §11 A9); its scoped SECURITY DEFINER caps reads at 50.
 	rows, err := tx.Query(ctx, `SELECT outbound_id::text, kind, principal_id::text, key_id, nonce, ciphertext, created_at, send_state, result_code,
 			tenant_id::text, store_id::text
-		FROM inbox.read_outbound($1::uuid, $2::integer)`, conversationID, limit)
+		FROM inbox.read_outbound($1::uuid, $2::integer)`, conversationID, 50)
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, nil, databaseError(err)
 	}
 	defer rows.Close()
 	var out []MessageItem
+	count, allKnown, hasUnknown := 0, true, false
 	for rows.Next() {
 		var id, kind, principal, keyID, tenant, store string
 		var nonce, ct []byte
@@ -61,15 +64,19 @@ func (s *Service) outboundItems(ctx context.Context, tx pgx.Tx, conversationID s
 		var state *string
 		var code *string
 		if err := rows.Scan(&id, &kind, &principal, &keyID, &nonce, &ct, &at, &state, &code, &tenant, &store); err != nil {
-			return nil, databaseError(err)
+			return nil, nil, databaseError(err)
 		}
-		if floor != nil && at.Before(*floor) {
+		count++
+		st, known := sendState(state)
+		allKnown = allKnown && known
+		hasUnknown = hasUnknown || st == "unknown"
+		if !display || count > limit || (floor != nil && at.Before(*floor)) {
 			continue
 		}
 		when := at
 		k, p := kind, principal
 		item := MessageItem{Direction: "out", At: &when, Attachments: []attachmentView{}, Kind: &k, PrincipalID: &p}
-		if st, ok := sendState(state); ok {
+		if known {
 			item.SendState = &st
 			if (st == "failed" || st == "blocked") && code != nil && *code != "" {
 				item.SendCode = code
@@ -83,7 +90,15 @@ func (s *Service) outboundItems(ctx context.Context, tx pgx.Tx, conversationID s
 		}
 		out = append(out, item)
 	}
-	return out, databaseErrorOrNil(rows.Err())
+	if err := rows.Err(); err != nil {
+		return nil, nil, databaseError(err)
+	}
+	// ponytail: the frozen definer's 50-row cap cannot exclude an older UNKNOWN. Upgrade to an unbounded scoped DB fact
+	// when its contract/migration is authorized; until then a full or unrecognized scan deliberately fails closed.
+	if hasUnknown || (count < 50 && allKnown) {
+		return out, &hasUnknown, nil
+	}
+	return out, nil, nil
 }
 
 // sortThread orders a merged page newest first (inbound by time then seq; outbound by time).

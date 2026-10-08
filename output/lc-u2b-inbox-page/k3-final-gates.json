@@ -1,0 +1,91 @@
+[
+  {
+    "command": [
+      "bash",
+      "scripts/dev/test-node.sh"
+    ],
+    "environment": {
+      "CI": "true",
+      "TZ": "UTC",
+      "LANG": "C.UTF-8"
+    },
+    "source": "845989e6f331dbcf64c10378ba71c14dea95edc5",
+    "exit": 0,
+    "timeout": false,
+    "elapsed_seconds": 17.569,
+    "log": "output/lc-u2b-inbox-page/k3-final-node.log"
+  },
+  {
+    "command": [
+      "bash",
+      "scripts/dev/check-gates.sh"
+    ],
+    "environment": {
+      "CI": "true",
+      "TZ": "UTC",
+      "LANG": "C.UTF-8"
+    },
+    "source": "845989e6f331dbcf64c10378ba71c14dea95edc5",
+    "exit": 0,
+    "timeout": false,
+    "elapsed_seconds": 6.998,
+    "log": "output/lc-u2b-inbox-page/k3-final-check-gates.log"
+  },
+  {
+    "command": [
+      "pnpm",
+      "--filter",
+      "@live-commerce/admin",
+      "exec",
+      "tsc",
+      "--noEmit"
+    ],
+    "environment": {
+      "CI": "true",
+      "TZ": "UTC",
+      "LANG": "C.UTF-8"
+    },
+    "source": "845989e6f331dbcf64c10378ba71c14dea95edc5",
+    "exit": 0,
+    "timeout": false,
+    "elapsed_seconds": 0.749,
+    "log": "output/lc-u2b-inbox-page/k3-final-admin-typecheck.log"
+  },
+  {
+    "command": [
+      "pnpm",
+      "exec",
+      "tsc",
+      "--noEmit",
+      "-p",
+      "output/lc-u2b-inbox-page/pr8-test-tsconfig.json"
+    ],
+    "environment": {
+      "CI": "true",
+      "TZ": "UTC",
+      "LANG": "C.UTF-8"
+    },
+    "source": "845989e6f331dbcf64c10378ba71c14dea95edc5",
+    "exit": 0,
+    "timeout": false,
+    "elapsed_seconds": 0.623,
+    "log": "output/lc-u2b-inbox-page/k3-final-test-typecheck.log"
+  },
+  {
+    "command": [
+      "bash",
+      "scripts/dev/test-focused.sh",
+      "^(TestInboxUnknownAuthority|TestLiveConsoleSendLCN11Unknown|TestLiveConsoleSendLCN13DisplayCopyAndThread|TestLiveConsoleSendLCN06DM|TestLiveConsoleInboxLCN03PermissionSplit|TestLiveConsoleInboxCrossStoreIsolation|TestLiveClaimsCoreSmoke|TestLiveClaimsKC12Isolation|TestLiveClaimsP2gLinkTTLInDatabase|TestLiveLifecycleMultiWindow|TestLiveConsoleSendMigration0128ExactACL)$"
+    ],
+    "environment": {
+      "CI": "true",
+      "TZ": "UTC",
+      "LANG": "C.UTF-8"
+    },
+    "source": "845989e6f331dbcf64c10378ba71c14dea95edc5",
+    "exit": 0,
+    "timeout": false,
+    "elapsed_seconds": 51.996,
+    "log": "output/lc-u2b-inbox-page/k3-final-focused-go.log"
+  }
+]

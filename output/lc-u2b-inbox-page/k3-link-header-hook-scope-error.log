@@ -1,0 +1,38 @@
+✔ A8/A9/A13 and published templates: exact reads forward once with no-store (22.255709ms)
+✔ real streamed POST bodies: A10-A14 exact keys reach upstream (11.664959ms)
+✔ query, read headers, methods and body allowlists refuse before upstream (6.499958ms)
+✔ session, CSRF and store authority precede content forwarding (4.580292ms)
+✔ A12 fixed codes preserved; arbitrary upstream diagnostics stripped (7.035084ms)
+✔ client preserves codes and receipt; changed/aborted session cannot publish private response (3.557042ms)
+✔ A9 admits a full page of valid Unicode replies while bounding private response bytes (5.457625ms)
+✔ non-JSON upstream 401 still expires both authentication cookies without diagnostic leakage (1.741375ms)
+✖ real M7 response keeps no-referrer after matching Next production header rules (3.838292ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 8
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 213.325833
+
+✖ failing tests:
+
+test at tests/admin/inbox-bff.test.ts:465:1
+✖ real M7 response keeps no-referrer after matching Next production header rules (3.838292ms)
+  Error: Cannot find module './dist/shared/lib/constants.ts'
+  Require stack:
+  - /Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.pnpm/next@16.3.5_@playwright+test@1.63.0_@types+node@24.13.6_react-dom@19.3.0_react@19.3.0__react@19.3.0/node_modules/next/constants.js
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1476:15)
+      at wrapResolveFilename (node:internal/modules/cjs/loader:1049:27)
+      at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1073:10)
+      at defaultResolve (node:internal/modules/cjs/loader:1124:20)
+      at nextStep (node:internal/modules/customization_hooks:189:26)
+      at resolve (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-bff.test.ts:34:14)
+      at nextStep (node:internal/modules/customization_hooks:189:26)
+      at resolveWithHooks (node:internal/modules/customization_hooks:417:10)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1137:25)
+      at Module._load (node:internal/modules/cjs/loader:1262:25) {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: [ '/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.pnpm/next@16.3.5_@playwright+test@1.63.0_@types+node@24.13.6_react-dom@19.3.0_react@19.3.0__react@19.3.0/node_modules/next/constants.js' ]
+  }

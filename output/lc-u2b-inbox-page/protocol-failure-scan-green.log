@@ -1,0 +1,18 @@
+✔ bundle fixture uses real claim commands and mounts existing M6/M7 without issuing early (5.285ms)
+✔ sensitive bundle scenario clicks native clipboard with trace/video disabled and no token body reads (0.376625ms)
+✔ persisted link and token-free command receipt are compared without disclosing credentials (0.558209ms)
+✔ actual clipboard evaluator exports only safe summary and detects malformed or retained synthetic credentials (284.768084ms)
+✔ claim-window fixture isolates recovery after the current migration permits multiple OPEN windows (1.123833ms)
+✔ inbox evidence is covered by the CI upload root (2.051584ms)
+✔ failed Playwright closes its log and emits sanitized diagnostics before Fatalf (0.314708ms)
+✔ failure diagnostics match INU cases/counts without admitting private text (1.165459ms)
+✔ INU04 delayed handler 1 signals completion when fulfillment rejects (27.176791ms)
+✔ INU04 delayed handler 2 signals completion when fulfillment rejects (2.267834ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 417.195

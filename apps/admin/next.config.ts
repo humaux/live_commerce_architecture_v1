@@ -1,3 +1,6 @@
+// Purpose: configure the admin build and response security headers.
+// Depends on: Next configuration phases and deliberate operator company configuration.
+// Used by: Next build/start; sensitive route overrides must follow the global header defaults.
 import type { NextConfig } from "next";
 import { PHASE_PRODUCTION_BUILD } from "next/constants";
 import { companyConfig } from "./lib/company";
@@ -36,6 +39,11 @@ const config: NextConfig = {
             value: `default-src 'self'; ${scriptSrc}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'`,
           },
         ],
+      },
+      // M7 returns a one-time claim credential. Preserve the BFF's policy through Next's global header layer.
+      {
+        source: "/api/stores/:store/live-sessions/:session/claims/bundles/:bundle/link",
+        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
       },
       // staff-team D3: the invitation token is in this path, so neither the page's own subresources nor anything else may receive
       // it as a Referer, and the page is never cached. A real header (not only the <meta>) covers the stylesheet/script requests

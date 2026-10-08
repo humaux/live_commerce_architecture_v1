@@ -1,0 +1,44 @@
+apps/admin/components/BuyerPanel.tsx(7,28): error TS2307: Cannot find module '@/lib/model' or its corresponding type declarations.
+apps/admin/components/BuyerPanel.tsx(9,32): error TS2307: Cannot find module '@/lib/inbox-types' or its corresponding type declarations.
+apps/admin/components/BuyerPanel.tsx(10,51): error TS2307: Cannot find module '@/lib/inbox-client' or its corresponding type declarations.
+apps/admin/components/BuyerPanel.tsx(11,39): error TS2307: Cannot find module '@/src/features/messages/copy' or its corresponding type declarations.
+apps/admin/components/BuyerPanel.tsx(12,27): error TS2307: Cannot find module '@/src/features/messages/privacy' or its corresponding type declarations.
+apps/admin/components/BuyerPanel.tsx(13,33): error TS2307: Cannot find module '@/src/features/messages/use-privacy' or its corresponding type declarations.
+apps/admin/components/BuyerPanel.tsx(73,14): error TS7006: Parameter 'result' implicitly has an 'any' type.
+apps/admin/components/BuyerPanel.tsx(76,15): error TS7006: Parameter 'cause' implicitly has an 'any' type.
+apps/admin/components/BuyerPanel.tsx(140,50): error TS18046: 'cause' is of type 'unknown'.
+apps/admin/components/BuyerPanel.tsx(141,42): error TS18046: 'cause' is of type 'unknown'.
+apps/admin/components/BuyerPanel.tsx(146,62): error TS18046: 'cause' is of type 'unknown'.
+apps/admin/components/BuyerPanel.tsx(199,33): error TS7006: Parameter 'claim' implicitly has an 'any' type.
+apps/admin/components/BuyerPanel.tsx(199,40): error TS7006: Parameter 'index' implicitly has an 'any' type.
+apps/admin/components/BuyerPanel.tsx(217,35): error TS7006: Parameter 'order' implicitly has an 'any' type.
+apps/admin/components/InboxThread.tsx(6,28): error TS2307: Cannot find module '@/lib/model' or its corresponding type declarations.
+apps/admin/components/InboxThread.tsx(8,57): error TS2307: Cannot find module '@/lib/inbox-types' or its corresponding type declarations.
+apps/admin/components/InboxThread.tsx(9,51): error TS2307: Cannot find module '@/lib/inbox-client' or its corresponding type declarations.
+apps/admin/components/InboxThread.tsx(10,31): error TS2307: Cannot find module '@/lib/meta-health-hook' or its corresponding type declarations.
+apps/admin/components/InboxThread.tsx(16,8): error TS2307: Cannot find module '@/src/features/messages/privacy' or its corresponding type declarations.
+apps/admin/components/InboxThread.tsx(17,39): error TS2307: Cannot find module '@/src/features/messages/copy' or its corresponding type declarations.
+apps/admin/components/InboxThread.tsx(71,17): error TS7006: Parameter 'page' implicitly has an 'any' type.
+apps/admin/components/InboxThread.tsx(73,10): error TS7006: Parameter 'cap' implicitly has an 'any' type.
+apps/admin/components/InboxThread.tsx(82,17): error TS7006: Parameter 'cap' implicitly has an 'any' type.
+apps/admin/components/InboxThread.tsx(83,29): error TS7006: Parameter 'cap' implicitly has an 'any' type.
+apps/admin/components/InboxThread.tsx(85,16): error TS7006: Parameter 'cap' implicitly has an 'any' type.
+apps/admin/components/InboxThread.tsx(106,20): error TS7006: Parameter 'old' implicitly has an 'any' type.
+apps/admin/components/InboxThread.tsx(112,37): error TS7006: Parameter 'item' implicitly has an 'any' type.
+apps/admin/components/InboxThread.tsx(113,52): error TS7006: Parameter 'item' implicitly has an 'any' type.
+apps/admin/components/InboxThread.tsx(127,52): error TS18046: 'cause' is of type 'unknown'.
+apps/admin/components/InboxThread.tsx(128,44): error TS18046: 'cause' is of type 'unknown'.
+apps/admin/components/InboxThread.tsx(131,64): error TS18046: 'cause' is of type 'unknown'.
+apps/admin/components/InboxThread.tsx(154,16): error TS7006: Parameter 'value' implicitly has an 'any' type.
+apps/admin/components/InboxThread.tsx(157,35): error TS7006: Parameter 'item' implicitly has an 'any' type.
+apps/admin/components/InboxThread.tsx(199,18): error TS7006: Parameter 'old' implicitly has an 'any' type.
+apps/admin/components/InboxThread.tsx(203,50): error TS18046: 'cause' is of type 'unknown'.
+apps/admin/components/InboxThread.tsx(204,42): error TS18046: 'cause' is of type 'unknown'.
+apps/admin/components/InboxThread.tsx(206,62): error TS18046: 'cause' is of type 'unknown'.
+apps/admin/components/InboxThread.tsx(263,20): error TS7006: Parameter 'old' implicitly has an 'any' type.
+apps/admin/components/InboxThread.tsx(270,50): error TS18046: 'cause' is of type 'unknown'.
+apps/admin/components/InboxThread.tsx(271,42): error TS18046: 'cause' is of type 'unknown'.
+apps/admin/components/InboxThread.tsx(275,62): error TS18046: 'cause' is of type 'unknown'.
+apps/admin/components/InboxThread.tsx(286,28): error TS7006: Parameter 'item' implicitly has an 'any' type.
+apps/admin/components/InboxThread.tsx(362,42): error TS7006: Parameter 'attachment' implicitly has an 'any' type.
+apps/admin/components/InboxThread.tsx(362,54): error TS7006: Parameter 'i' implicitly has an 'any' type.

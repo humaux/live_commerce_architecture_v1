@@ -1,0 +1,55 @@
+=== RUN   TestLiveConsoleBuyerPanelClaimsAndOrders
+    live_console_buyer_panel_test.go:377: claims=[] body={"platform":"messenger","purchase_ordinal":0,"claims":[],"claim_total_minor":0,"orders":[],"window_open_until":"2026-10-08T22:30:58.916583+08:00","link_pending_manual":false}
+--- FAIL: TestLiveConsoleBuyerPanelClaimsAndOrders (1.47s)
+=== RUN   TestLiveConsoleBuyerPanelUnlinkedAndI09
+    live_console_buyer_panel_test.go:500: A13 by bundle for b2: status=200 body={"platform":"facebook","purchase_ordinal":0,"claims":[],"claim_total_minor":0,"orders":[],"link_pending_manual":false}
+--- FAIL: TestLiveConsoleBuyerPanelUnlinkedAndI09 (0.03s)
+=== RUN   TestLiveConsoleBuyerPanelScope404
+--- PASS: TestLiveConsoleBuyerPanelScope404 (0.02s)
+=== RUN   TestLiveConsoleBuyerPanelOrdersPermission
+    live_console_buyer_panel_test.go:569: orders key present without orders:read (must be omitted entirely): {"platform":"messenger","purchase_ordinal":0,"claims":[],"claim_total_minor":0,"orders":[],"window_open_until":"2026-10-08T22:30:59.002629+08:00","link_pending_manual":false}
+--- FAIL: TestLiveConsoleBuyerPanelOrdersPermission (0.02s)
+=== RUN   TestLiveConsoleBuyerPanelBounds
+    live_console_buyer_panel_test.go:619: claims=0 want 50 (cap)
+    live_console_buyer_panel_test.go:627: claim_total_minor=0 want 100000 (spans the full set, not the 50 shown)
+    live_console_buyer_panel_test.go:630: orders=0 want 20 (cap)
+    live_console_buyer_panel_test.go:633: purchase_ordinal=0 want 21 (20 for-buyer CONFIRMED + the claim-checkout CONFIRMED; CANCELLED excluded)
+--- FAIL: TestLiveConsoleBuyerPanelBounds (0.12s)
+=== RUN   TestLiveConsoleBuyerPanelAutoReply
+    live_console_buyer_panel_test.go:657: auto_reply=<nil> want {send_state:sent} (newest AUTO operation; the older FAILED_FINAL maps to failed, the manual send is ignored) body={"platform":"messenger","purchase_ordinal":0,"claims":[],"claim_total_minor":0,"orders":[],"window_open_until":"2026-10-08T22:30:59.13704+08:00","link_pending_manual":false}
+--- FAIL: TestLiveConsoleBuyerPanelAutoReply (0.02s)
+=== RUN   TestLiveConsoleBuyerPanelA8SessionAndLiveComment
+    live_console_buyer_panel_test.go:704: A8 /inbox/conversations?filter=all: status=500 body={"code":"internal","message":"Request could not be completed.","request_id":"b98d4dbadd9fd260300ca1e2c762a985","retryable":false,"details":{}}
+--- FAIL: TestLiveConsoleBuyerPanelA8SessionAndLiveComment (0.02s)
+=== RUN   TestLiveConsoleBuyerPanelA9A14
+    live_console_buyer_panel_test.go:804: A9 has no link_version: {"items":[],"window_open_until":"2026-10-08T22:30:59.166915+08:00","mode":"auto","takeover_generation":0,"human_until":null}
+--- FAIL: TestLiveConsoleBuyerPanelA9A14 (0.02s)
+=== RUN   TestLiveConsoleBuyerPanelLeakScan
+    live_console_buyer_panel_test.go:895: non-vacuity: the claims keyword is missing from A13: {"platform":"messenger","purchase_ordinal":0,"claims":[],"claim_total_minor":0,"orders":[],"window_open_until":"2026-10-08T22:30:59.186011+08:00","link_pending_manual":false}
+    live_console_buyer_panel_test.go:898: non-vacuity: the order id is missing from A13: {"platform":"messenger","purchase_ordinal":0,"claims":[],"claim_total_minor":0,"orders":[],"window_open_until":"2026-10-08T22:30:59.186011+08:00","link_pending_manual":false}
+--- FAIL: TestLiveConsoleBuyerPanelLeakScan (0.03s)
+=== RUN   TestLiveConsoleBuyerPanelExactACL
+=== RUN   TestLiveConsoleBuyerPanelExactACL/social.list_conversations(text,uuid,timestamptz,uuid,int)
+=== RUN   TestLiveConsoleBuyerPanelExactACL/social.conversation_meta(uuid)
+=== RUN   TestLiveConsoleBuyerPanelExactACL/claims.buyer_panel_claims(uuid,uuid,uuid[])
+=== RUN   TestLiveConsoleBuyerPanelExactACL/claims.orders_of_bundles(uuid,uuid,uuid[])
+=== RUN   TestLiveConsoleBuyerPanelExactACL/claims.session_peer_linked(uuid,uuid,uuid,text,text,text,text)
+=== RUN   TestLiveConsoleBuyerPanelExactACL/checkout.order_panel_facts(uuid,uuid,uuid[])
+=== RUN   TestLiveConsoleBuyerPanelExactACL/inbox.buyer_panel(uuid,uuid,boolean)
+=== RUN   TestLiveConsoleBuyerPanelExactACL/inbox.live_comment_bundles(uuid,int)
+=== RUN   TestLiveConsoleBuyerPanelExactACL/inbox.conversation_binding(uuid)
+--- PASS: TestLiveConsoleBuyerPanelExactACL (0.01s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/social.list_conversations(text,uuid,timestamptz,uuid,int) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/social.conversation_meta(uuid) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/claims.buyer_panel_claims(uuid,uuid,uuid[]) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/claims.orders_of_bundles(uuid,uuid,uuid[]) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/claims.session_peer_linked(uuid,uuid,uuid,text,text,text,text) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/checkout.order_panel_facts(uuid,uuid,uuid[]) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/inbox.buyer_panel(uuid,uuid,boolean) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/inbox.live_comment_bundles(uuid,int) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/inbox.conversation_binding(uuid) (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	2.519s
+FAIL
+test-focused: top-level PASS=2 FAIL=8 SKIP=0 exit=1
+bash scripts/dev/test-focused.sh 'TestLiveConsoleBuyerPanel'  40.64s user 5.80s system 160% cpu 28.959 total

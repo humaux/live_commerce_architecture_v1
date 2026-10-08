@@ -1,0 +1,28 @@
+command: node --test --experimental-strip-types --test-name-pattern actual uncertain send still retains exact receipt tests/admin/inbox-review.test.ts
+exit: 1
+✖ actual uncertain send still retains exact receipt when A9 authority remains (0ms post-send A9) (5024.205959ms)
+✖ actual uncertain send still retains exact receipt when A9 authority remains (50ms post-send A9) (5003.477584ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 10375.1985
+
+✖ failing tests:
+
+test at tests/admin/inbox-review.test.ts:167:3
+✖ actual uncertain send still retains exact receipt when A9 authority remains (0ms post-send A9) (5024.205959ms)
+  Error: Timed out waiting for initial A9/A10 completion
+      at Timeout.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-review-host.test.ts:107:45)
+      at listOnTimeout (node:internal/timers:605:17)
+      at process.processTimers (node:internal/timers:541:7)
+
+test at tests/admin/inbox-review.test.ts:167:3
+✖ actual uncertain send still retains exact receipt when A9 authority remains (50ms post-send A9) (5003.477584ms)
+  Error: Timed out waiting for initial A9/A10 completion
+      at Timeout.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-review-host.test.ts:107:45)
+      at listOnTimeout (node:internal/timers:605:17)
+      at process.processTimers (node:internal/timers:541:7)

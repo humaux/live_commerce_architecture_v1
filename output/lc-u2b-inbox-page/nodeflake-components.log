@@ -1,0 +1,49 @@
+source: 66dd7b038728ad72d5def0e78deef2b48a3d03a0
+command: node --test --experimental-strip-types tests/admin/inbox-review.test.ts tests/admin/inbox-review-recovery.test.ts
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (114.272667ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (8.120291ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (39.052958ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (15.327959ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (7.239083ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (9.28325ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (71.468667ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (20.799125ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (41.40925ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (11.564167ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (15.893625ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (8.647584ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (13.796125ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (19.021292ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (6.202125ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (3.74075ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (15.975833ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (43.890375ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (16.944875ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (8.748667ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (18.314125ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (3.019209ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (25.734375ms)
+✔ P1-1 actual visible focus preserves pending ticket, selection, revision and real retry receipt (95.9015ms)
+✔ P1-1 actual unchanged-session pageshow checks without clearing; changed-session focus expires (0.476166ms)
+✔ P1-1 actual hide/reveal clears and requests fresh revision, never accepts obsolete completion (0.30725ms)
+✔ P1-1 changed-session visible focus expires even with a pending request (0.193542ms)
+✔ P1-2 actual A9 refresh 404 removes rendered DM and unsent draft (57.848833ms)
+✔ P1-2 actual send-finally A9 404 removes DM, draft and uncertain immutable receipt (21.003084ms)
+✔ actual uncertain send still retains exact receipt when A9 authority remains (0ms post-send A9) (285.9465ms)
+✔ actual uncertain send still retains exact receipt when A9 authority remains (50ms post-send A9) (130.293125ms)
+✔ actual A9 stale held completion cannot paint after component cleanup (7.076709ms)
+✔ P2 actual A14 404 clears buyer facts and customer draft (explicit future-version MOCK) (13.1135ms)
+✔ safe authority errors remain the actual InboxError transport class (0.320625ms)
+✔ actual current A13 without version keeps A14 disabled; future MOCK grants no backend claim (5.0075ms)
+✔ P1-2 actual A11 takeover write 404 clears private state despite failing follow-up A9 (7.819791ms)
+✔ P1-2 actual A12 send write 404 clears private state despite failing follow-up A9 (17.120458ms)
+ℹ tests 37
+ℹ suites 0
+ℹ pass 37
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3712.675916
+
+exit: 0

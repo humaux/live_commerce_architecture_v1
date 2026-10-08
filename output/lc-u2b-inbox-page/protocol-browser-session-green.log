@@ -1,0 +1,25 @@
+task_id: c975698a-sub-browser-session
+base_commit: c87adefba99d9be5a19ec1a0369d8c5804db95d8
+status: MOCK actual spec/helper and installed cookie matcher; browser/Go/PG NOT_RUN
+command: node --test --experimental-strip-types tests/admin/inbox-browser-session.test.ts
+exit_code: 0
+sha256 47635ba7c33560df67b17c0f89e66025c3487194692f15fd5354025000fb5476 tests/admin/inbox-ui.spec.ts
+sha256 92fec02bd1a39d326d31acd93b21235e1a9d8b5da10d847500c3e47db5a1d2d0 tests/admin/inbox-browser-session.test.ts
+sha256 549070af3acabb3efcc4f55bfe6210f9f7c2fcf633cf7eaa59bfe60719969171 node_modules/.pnpm/playwright-core@1.63.0/node_modules/playwright-core/lib/coreBundle.js
+✔ installed APIRequestContext cookie rules exclude Secure cookie from HTTP127 but retain HTTPS/localhost (0.43225ms)
+✔ actual INU02 cross uses browser auth and retains exact 404/DM absence (26.962292ms)
+✔ actual INU02 cross still rejects wrong authority 401 (6.736125ms)
+✔ actual INU02 cross still rejects wrong authority 200 (2.044958ms)
+✔ actual INU02 cross still rejects DM in denied response (3.001458ms)
+✔ actual INU02 denied uses browser auth and retains exact 403/DM absence (2.929ms)
+✔ actual INU02 denied still rejects wrong authority 401 (4.881708ms)
+✔ actual INU02 denied still rejects wrong authority 200 (2.1815ms)
+✔ actual INU02 denied still rejects DM in denied response (1.419ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 794.690458

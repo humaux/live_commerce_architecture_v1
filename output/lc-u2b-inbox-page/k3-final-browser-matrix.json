@@ -1,0 +1,48 @@
+[
+  {
+    "command": [
+      "bash",
+      "scripts/dev/test-local.sh",
+      "--browser-inbox"
+    ],
+    "environment": {
+      "LC_INBOX_BUNDLE_CALIBRATION": "retain-credential"
+    },
+    "source": "845989e6f331dbcf64c10378ba71c14dea95edc5",
+    "exit": 1,
+    "expected_exit": 1,
+    "timeout": false,
+    "elapsed_seconds": 47.937,
+    "log": "output/lc-u2b-inbox-page/k3-final-credential-calibration.log"
+  },
+  {
+    "command": [
+      "bash",
+      "scripts/dev/test-local.sh",
+      "--browser-inbox"
+    ],
+    "environment": {
+      "LC_INBOX_CALIBRATION": "retain-thread"
+    },
+    "source": "845989e6f331dbcf64c10378ba71c14dea95edc5",
+    "exit": 1,
+    "expected_exit": 1,
+    "timeout": false,
+    "elapsed_seconds": 54.521,
+    "log": "output/lc-u2b-inbox-page/k3-final-visibility-calibration.log"
+  },
+  {
+    "command": [
+      "bash",
+      "scripts/dev/test-local.sh",
+      "--browser-inbox"
+    ],
+    "environment": {},
+    "source": "845989e6f331dbcf64c10378ba71c14dea95edc5",
+    "exit": 0,
+    "expected_exit": 0,
+    "timeout": false,
+    "elapsed_seconds": 42.183,
+    "log": "output/lc-u2b-inbox-page/k3-final-browser-inbox.log"
+  }
+]

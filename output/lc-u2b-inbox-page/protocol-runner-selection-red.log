@@ -1,0 +1,34 @@
+Source33f5d30f before real role-home/Go-selector fixes
+Command ["node", "--test", "--experimental-strip-types", "tests/admin/inbox-discovery.test.ts"]
+✖ real Playwright --list collects each original INU case and isolated INU09 exactly once (753.381417ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1017.950542
+
+✖ failing tests:
+
+test at tests/admin/inbox-discovery.test.ts:30:1
+✖ real Playwright --list collects each original INU case and isolated INU09 exactly once (753.381417ms)
+  AssertionError [ERR_ASSERTION]: all existing locale scenarios plus protocol scenario are collected
+
+  12 !== 13
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-discovery.test.ts:72:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 12,
+    expected: 13,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+Exit 1

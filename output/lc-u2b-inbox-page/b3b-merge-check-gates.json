@@ -1,0 +1,17 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/check-gates.sh"
+  ],
+  "base_sha": "c3b41bd95fe412cad069b93f9e0c206c53e86bf9",
+  "file_hashes": {
+    "apps/admin/components/BuyerPanel.tsx": "928090b34be3daa4d8d190bd48418e281a7706b736160d5f7f0b39202de3e3b6",
+    "apps/admin/lib/inbox-types.ts": "f3d106aea4626186daab1bf138c991e570075267856059a2f2c0bceba1a7965f",
+    "tests/admin/inbox-review.test.ts": "32d54ad7304c89c6ea6c90442a3d590af09b929a3210be85201cdfd2f92f359d",
+    "contracts/live-console-v1.md": "d3a4b994a65f9b5f3afa69ef73133933e52a6e59c15aa69cd62e887175c98c4b",
+    "internal/inbox/service.go": "8eb92ad02839211c71f3a5154ce41caeebcb2ced6fbccb7d9c85b0baece43606",
+    "internal/inbox/read.go": "9e2ed08cba71c1ba4eb4bf9c41626cd58a3dcc6388c2fe4d31d3531659d823b7"
+  },
+  "exit_code": 0,
+  "elapsed_seconds": 5.51
+}

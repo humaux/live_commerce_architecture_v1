@@ -1,0 +1,12 @@
+✔ actual shell-store-selector captures selection before synchronous privacy teardown (allowed=true) (22.568208ms)
+✔ actual shell-store-selector captures selection before synchronous privacy teardown (allowed=false) (3.418875ms)
+✔ actual locale-switch captures selection before synchronous privacy teardown (allowed=true) (8.067875ms)
+✔ actual locale-switch captures selection before synchronous privacy teardown (allowed=false) (1.951209ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 270.999666
