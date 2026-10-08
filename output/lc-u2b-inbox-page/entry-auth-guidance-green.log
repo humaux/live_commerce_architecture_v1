@@ -1,0 +1,21 @@
+Source base9f6fe578 + UI correction; bound by source-hashes.txt
+Command ["node", "--test", "--experimental-strip-types", "tests/admin/inbox-entry.test.ts"]
+✔ A real Inbox selection admits Go A9 attachments null without losing thread (21.514042ms)
+✔ A real Inbox selection admits Go A9 attachments empty array without losing thread (2.112458ms)
+✔ A malformed non-array A9 attachments is refused without painting DM or crashing selected entry (1.106459ms)
+✔ C A8 HTTP200 empty list is ordinary data with no alert, selection or focus request storm (0.572791ms)
+✔ C A8 list404 is scoped inbox unavailable in en, never an empty list or conversation denial (0.45575ms)
+✔ C A8 list404 is scoped inbox unavailable in zh-TW, never an empty list or conversation denial (0.449708ms)
+✔ C A8 list404 is scoped inbox unavailable in zh-CN, never an empty list or conversation denial (1.145834ms)
+✔ C click-sweep Go harness mounts existing Inbox/templates services (STRUCTURE_ONLY, Go NOT_RUN) (0.726292ms)
+✔ C click-sweep includes actual-router owner200 empty inbox assertion (STRUCTURE_ONLY, Go NOT_RUN) (0.632583ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 391.447125
+
+Exit 0

@@ -1,0 +1,459 @@
+CI exact Node v24.21.0; virtual original Git test module, only import paths relocated; original source snapshot preserved ci-recovery-base.config
+original_source_sha256: e91ebb711d07f99f976661fe123d0c01307a62766669cf08bb5f3373ebea5a37
+command argv: ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--experimental-strip-types", "--input-type=module", "-e", "import ts from \"typescript-api\";import {execFileSync} from \"node:child_process\";import {pathToFileURL} from \"node:url\";import {resolve} from \"node:path\";await import(pathToFileURL(resolve(\"tests/admin/inbox-recovery-env.test.ts\")).href);let text=execFileSync(\"git\",[\"show\",\"4d19a45a:tests/admin/inbox-review-recovery.test.ts\"],{encoding:\"utf8\"});text=text.replaceAll('\"./inbox-review-host.test.ts\"',JSON.stringify(pathToFileURL(resolve(\"tests/admin/inbox-review-host.test.ts\")).href)).replaceAll('\"../../apps/admin/components/Inbox.tsx\"',JSON.stringify(pathToFileURL(resolve(\"apps/admin/components/Inbox.tsx\")).href));const js=ts.transpileModule(text,{compilerOptions:{target:ts.ScriptTarget.ES2023,module:ts.ModuleKind.ESNext}}).outputText+\"\\n//# sourceURL=virtual-original-4d19a45a-inbox-review-recovery.js\";await import(\"data:text/javascript;base64,\"+Buffer.from(js).toString(\"base64\"));"]
+env: {"TZ": "UTC", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2026-10-07T16:32:00Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "50"}
+exit_code: 1
+✖ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (31.308334ms)
+✖ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (1.266042ms)
+✖ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (1.073666ms)
+✖ review2 P1 missing CSRF before cached recopy cannot copy or issue again (0.710167ms)
+✖ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (0.653666ms)
+✖ review2 P1 late issued-link completion after hide cannot write clipboard (0.563708ms)
+✖ review2 P1 late issued-link completion after selection cannot write clipboard (0.595875ms)
+✖ review2 P1 late issued-link completion after unmount cannot write clipboard (1.361125ms)
+✖ review2 P1 late issued-link completion after logout cannot write clipboard (1.000083ms)
+✖ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (1.346375ms)
+✖ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (0.676625ms)
+✖ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (0.8135ms)
+✖ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (0.613833ms)
+✖ review2 P2 exactly one matching binding uses named DM hard gate ok (2.99925ms)
+✖ review2 P2 exactly one matching binding uses named DM hard gate review_required (0.647375ms)
+✖ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (0.53175ms)
+✖ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (0.749583ms)
+✖ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (0.577375ms)
+✖ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (0.45575ms)
+✖ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (0.442417ms)
+✖ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (0.538792ms)
+✖ review2 P2 missing health and single binding without named DM remain disabled (0.679792ms)
+✖ review2 P2 expired cached issued link cannot be recopied or silently reissued (0.63725ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 0
+ℹ fail 23
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 105.238709
+
+✖ failing tests:
+
+test at virtual-original-4d19a45a-inbox-review-recovery.js:198:1
+✖ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (31.308334ms)
+  AssertionError [ERR_ASSERTION]: actual component VNode found
+      at node (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:284:10)
+      at openBundle (virtual-original-4d19a45a-inbox-review-recovery.js:178:5)
+      at async TestContext.<anonymous> (virtual-original-4d19a45a-inbox-review-recovery.js:201:18)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at virtual-original-4d19a45a-inbox-review-recovery.js:215:1
+✖ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (1.266042ms)
+  AssertionError [ERR_ASSERTION]: actual component VNode found
+      at node (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:284:10)
+      at openBundle (virtual-original-4d19a45a-inbox-review-recovery.js:178:5)
+      at async TestContext.<anonymous> (virtual-original-4d19a45a-inbox-review-recovery.js:218:18)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at virtual-original-4d19a45a-inbox-review-recovery.js:228:1
+✖ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (1.073666ms)
+  AssertionError [ERR_ASSERTION]: actual component VNode found
+      at node (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:284:10)
+      at openBundle (virtual-original-4d19a45a-inbox-review-recovery.js:178:5)
+      at async TestContext.<anonymous> (virtual-original-4d19a45a-inbox-review-recovery.js:235:18)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at virtual-original-4d19a45a-inbox-review-recovery.js:260:1
+✖ review2 P1 missing CSRF before cached recopy cannot copy or issue again (0.710167ms)
+  AssertionError [ERR_ASSERTION]: actual component VNode found
+      at node (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:284:10)
+      at openBundle (virtual-original-4d19a45a-inbox-review-recovery.js:178:5)
+      at async TestContext.<anonymous> (virtual-original-4d19a45a-inbox-review-recovery.js:263:18)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at virtual-original-4d19a45a-inbox-review-recovery.js:277:1
+✖ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (0.653666ms)
+  AssertionError [ERR_ASSERTION]: actual component VNode found
+      at node (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:284:10)
+      at openBundle (virtual-original-4d19a45a-inbox-review-recovery.js:178:5)
+      at async TestContext.<anonymous> (virtual-original-4d19a45a-inbox-review-recovery.js:282:18)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at virtual-original-4d19a45a-inbox-review-recovery.js:295:5
+✖ review2 P1 late issued-link completion after hide cannot write clipboard (0.563708ms)
+  AssertionError [ERR_ASSERTION]: actual component VNode found
+      at node (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:284:10)
+      at openBundle (virtual-original-4d19a45a-inbox-review-recovery.js:178:5)
+      at async TestContext.<anonymous> (virtual-original-4d19a45a-inbox-review-recovery.js:301:22)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at virtual-original-4d19a45a-inbox-review-recovery.js:295:5
+✖ review2 P1 late issued-link completion after selection cannot write clipboard (0.595875ms)
+  AssertionError [ERR_ASSERTION]: actual component VNode found
+      at node (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:284:10)
+      at openBundle (virtual-original-4d19a45a-inbox-review-recovery.js:178:5)
+      at async TestContext.<anonymous> (virtual-original-4d19a45a-inbox-review-recovery.js:301:22)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at virtual-original-4d19a45a-inbox-review-recovery.js:295:5
+✖ review2 P1 late issued-link completion after unmount cannot write clipboard (1.361125ms)
+  AssertionError [ERR_ASSERTION]: actual component VNode found
+      at node (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:284:10)
+      at openBundle (virtual-original-4d19a45a-inbox-review-recovery.js:178:5)
+      at async TestContext.<anonymous> (virtual-original-4d19a45a-inbox-review-recovery.js:301:22)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at virtual-original-4d19a45a-inbox-review-recovery.js:295:5
+✖ review2 P1 late issued-link completion after logout cannot write clipboard (1.000083ms)
+  AssertionError [ERR_ASSERTION]: actual component VNode found
+      at node (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:284:10)
+      at openBundle (virtual-original-4d19a45a-inbox-review-recovery.js:178:5)
+      at async TestContext.<anonymous> (virtual-original-4d19a45a-inbox-review-recovery.js:301:22)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at virtual-original-4d19a45a-inbox-review-recovery.js:333:5
+✖ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (1.346375ms)
+  AssertionError [ERR_ASSERTION]: actual component VNode found
+      at node (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:284:10)
+      at openBundle (virtual-original-4d19a45a-inbox-review-recovery.js:178:5)
+      at async TestContext.<anonymous> (virtual-original-4d19a45a-inbox-review-recovery.js:337:22)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at virtual-original-4d19a45a-inbox-review-recovery.js:333:5
+✖ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (0.676625ms)
+  AssertionError [ERR_ASSERTION]: actual component VNode found
+      at node (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:284:10)
+      at openBundle (virtual-original-4d19a45a-inbox-review-recovery.js:178:5)
+      at async TestContext.<anonymous> (virtual-original-4d19a45a-inbox-review-recovery.js:337:22)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at virtual-original-4d19a45a-inbox-review-recovery.js:344:5
+✖ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (0.8135ms)
+  AssertionError [ERR_ASSERTION]: actual component VNode found
+      at node (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:284:10)
+      at openBundle (virtual-original-4d19a45a-inbox-review-recovery.js:178:5)
+      at async TestContext.<anonymous> (virtual-original-4d19a45a-inbox-review-recovery.js:348:22)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at virtual-original-4d19a45a-inbox-review-recovery.js:344:5
+✖ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (0.613833ms)
+  AssertionError [ERR_ASSERTION]: actual component VNode found
+      at node (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:284:10)
+      at openBundle (virtual-original-4d19a45a-inbox-review-recovery.js:178:5)
+      at async TestContext.<anonymous> (virtual-original-4d19a45a-inbox-review-recovery.js:348:22)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at virtual-original-4d19a45a-inbox-review-recovery.js:383:5
+✖ review2 P2 exactly one matching binding uses named DM hard gate ok (2.99925ms)
+  AssertionError [ERR_ASSERTION]: actual input is enabled
+
+  true !== false
+
+      at change (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:289:10)
+      at TestContext.<anonymous> (virtual-original-4d19a45a-inbox-review-recovery.js:389:9)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at virtual-original-4d19a45a-inbox-review-recovery.js:383:5
+✖ review2 P2 exactly one matching binding uses named DM hard gate review_required (0.647375ms)
+  AssertionError [ERR_ASSERTION]: actual input is enabled
+
+  true !== false
+
+      at change (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:289:10)
+      at TestContext.<anonymous> (virtual-original-4d19a45a-inbox-review-recovery.js:389:9)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at virtual-original-4d19a45a-inbox-review-recovery.js:383:5
+✖ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (0.53175ms)
+  AssertionError [ERR_ASSERTION]: actual input is enabled
+
+  true !== false
+
+      at change (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:289:10)
+      at TestContext.<anonymous> (virtual-original-4d19a45a-inbox-review-recovery.js:389:9)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at virtual-original-4d19a45a-inbox-review-recovery.js:401:5
+✖ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (0.749583ms)
+  AssertionError [ERR_ASSERTION]: actual input is enabled
+
+  true !== false
+
+      at change (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:289:10)
+      at TestContext.<anonymous> (virtual-original-4d19a45a-inbox-review-recovery.js:407:9)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at virtual-original-4d19a45a-inbox-review-recovery.js:401:5
+✖ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (0.577375ms)
+  AssertionError [ERR_ASSERTION]: actual input is enabled
+
+  true !== false
+
+      at change (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:289:10)
+      at TestContext.<anonymous> (virtual-original-4d19a45a-inbox-review-recovery.js:407:9)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at virtual-original-4d19a45a-inbox-review-recovery.js:401:5
+✖ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (0.45575ms)
+  AssertionError [ERR_ASSERTION]: actual input is enabled
+
+  true !== false
+
+      at change (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:289:10)
+      at TestContext.<anonymous> (virtual-original-4d19a45a-inbox-review-recovery.js:407:9)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at virtual-original-4d19a45a-inbox-review-recovery.js:401:5
+✖ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (0.442417ms)
+  AssertionError [ERR_ASSERTION]: actual input is enabled
+
+  true !== false
+
+      at change (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:289:10)
+      at TestContext.<anonymous> (virtual-original-4d19a45a-inbox-review-recovery.js:407:9)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at virtual-original-4d19a45a-inbox-review-recovery.js:414:1
+✖ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (0.538792ms)
+  AssertionError [ERR_ASSERTION]: actual input is enabled
+
+  true !== false
+
+      at change (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:289:10)
+      at TestContext.<anonymous> (virtual-original-4d19a45a-inbox-review-recovery.js:420:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at virtual-original-4d19a45a-inbox-review-recovery.js:429:1
+✖ review2 P2 missing health and single binding without named DM remain disabled (0.679792ms)
+  AssertionError [ERR_ASSERTION]: actual input is enabled
+
+  true !== false
+
+      at change (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:289:10)
+      at TestContext.<anonymous> (virtual-original-4d19a45a-inbox-review-recovery.js:435:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at virtual-original-4d19a45a-inbox-review-recovery.js:442:1
+✖ review2 P2 expired cached issued link cannot be recopied or silently reissued (0.63725ms)
+  AssertionError [ERR_ASSERTION]: actual component VNode found
+      at node (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:284:10)
+      at openBundle (virtual-original-4d19a45a-inbox-review-recovery.js:178:5)
+      at async TestContext.<anonymous> (virtual-original-4d19a45a-inbox-review-recovery.js:450:18)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+CONTROL exactCI same2026timestamp delay0
+env: {"TZ": "UTC", "LANG": "C.UTF-8", "LC_RECOVERY_TEST_NOW": "2026-10-07T16:32:00Z", "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"}
+exit_code: 0
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (34.512667ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (2.883417ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (3.204459ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (2.231334ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (2.44475ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (1.7455ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (3.579125ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (1.657708ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (1.742208ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (0.86625ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (0.818291ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (0.906709ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (1.103792ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (8.586208ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (0.836166ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (0.57825ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (0.546083ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (0.504459ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (0.59625ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (0.560125ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (1.123917ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (0.594583ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (1.853666ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 77.738208

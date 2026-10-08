@@ -1,0 +1,156 @@
+gate (--browser-inbox)	Gate	﻿2026-10-07T13:34:19.4500751Z ##[group]Run set -o pipefail
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4501164Z [36;1mset -o pipefail[0m
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4501486Z [36;1mmkdir -p output/ci-gates[0m
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4502139Z [36;1m# Only LC_* names with plain values: an inject-fail run of a new gate must not be able to set arbitrary env.[0m
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4502797Z [36;1mfor kv in $EXTRA_ENV; do[0m
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4503339Z [36;1m  [[ "$kv" =~ ^LC_[A-Z0-9_]+=[A-Za-z0-9._:-]*$ ]] || { echo "refusing extra_env entry: $kv" >&2; exit 2; }[0m
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4504012Z [36;1m  export "$kv"; echo "extra_env: ${kv%%=*} set"[0m
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4504733Z [36;1mdone[0m
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4505171Z [36;1mlog="output/ci-gates/$(printf '%s' "$MODE" | tr -c 'A-Za-z0-9_-' '_').log"[0m
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4505623Z [36;1mcase "$MODE" in[0m
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4505993Z [36;1m  foundation) bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;[0m
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4506776Z [36;1m  shard:unit) LC_FOUNDATION_PKGS="$(go list ./... | grep -v '/tests/foundation$' | tr '\n' ' ')" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;[0m
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4507975Z [36;1m  # A balanced group of scripts/dev/shard-plan.json: an anchored explicit -run list, or (the catch-all) -skip of every other group's tests.[0m
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4509453Z [36;1m  shard:g[0-9][0-9]) LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="$(node scripts/dev/shard-plan.mjs run "${MODE#shard:}")" LC_FOUNDATION_SKIP="$(node scripts/dev/shard-plan.mjs skip "${MODE#shard:}")" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;[0m
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4510890Z [36;1m  shard:*)    LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="${MODE#shard:}" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;[0m
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4511824Z [36;1m  focused:*)  LC_FOCUSED_TIMEOUT=7200s bash scripts/dev/test-focused.sh "${MODE#focused:}" 2>&1 | tee "$log" ;;[0m
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4512800Z [36;1m  # One slice of the sweep / visual lint (tests/ui/sweep-shard-lib.mjs): its own PG, fixture and store, so click-sweep runs its single worker race-free.[0m
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4513940Z [36;1m  --browser-click-sweep@*|--browser-visual-lint@*) LC_SWEEP_SHARD="${MODE##*@}" xvfb-run -a bash scripts/dev/test-local.sh "${MODE%@*}" 2>&1 | tee "$log" ;;[0m
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4515273Z [36;1m  # Some browser suites run headed on purpose (MOU03 native bfcache/visibility); the runner has no display.[0m
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4515886Z [36;1m  # Xvfb comes with `playwright install --with-deps`.[0m
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4516465Z [36;1m  --browser*|--stripe-browser*) xvfb-run -a bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$log" ;;[0m
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4517081Z [36;1m  --*)        bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$log" ;;[0m
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4517501Z [36;1m  *) echo "unknown mode: $MODE" >&2; exit 2 ;;[0m
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4517805Z [36;1mesac[0m
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4582031Z shell: /usr/bin/bash -e {0}
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4582316Z env:
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4582538Z   GOTOOLCHAIN: local
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4582816Z   GOFLAGS: -mod=readonly
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4583128Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4583480Z   MODE: --browser-inbox
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4583777Z   EXTRA_ENV: LC_INBOX_CALIBRATION=retain-thread
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4584401Z ##[endgroup]
+gate (--browser-inbox)	Gate	2026-10-07T13:34:19.4687169Z extra_env: LC_INBOX_CALIBRATION set
+gate (--browser-inbox)	Gate	2026-10-07T13:34:22.2793112Z
+gate (--browser-inbox)	Gate	2026-10-07T13:34:22.2794775Z > live-commerce-workspace@ build:admin /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+gate (--browser-inbox)	Gate	2026-10-07T13:34:22.2795996Z > pnpm --filter @live-commerce/admin build
+gate (--browser-inbox)	Gate	2026-10-07T13:34:22.2796626Z
+gate (--browser-inbox)	Gate	2026-10-07T13:34:22.5984708Z
+gate (--browser-inbox)	Gate	2026-10-07T13:34:22.5986319Z > @live-commerce/admin@ build /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/apps/admin
+gate (--browser-inbox)	Gate	2026-10-07T13:34:22.5987500Z > next build && node ../../scripts/dev/package-admin.mjs
+gate (--browser-inbox)	Gate	2026-10-07T13:34:22.5987889Z
+gate (--browser-inbox)	Gate	2026-10-07T13:34:22.9704868Z ▲ Next.js 16.3.5 (Turbopack)
+gate (--browser-inbox)	Gate	2026-10-07T13:34:22.9996475Z ✓ Running next.config.ts took 28ms
+gate (--browser-inbox)	Gate	2026-10-07T13:34:22.9999518Z ⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+gate (--browser-inbox)	Gate	2026-10-07T13:34:23.0053784Z Attention: Next.js now collects completely anonymous telemetry regarding usage.
+gate (--browser-inbox)	Gate	2026-10-07T13:34:23.0055848Z This information is used to shape Next.js' roadmap and prioritize features.
+gate (--browser-inbox)	Gate	2026-10-07T13:34:23.0057457Z You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+gate (--browser-inbox)	Gate	2026-10-07T13:34:23.0058620Z https://nextjs.org/telemetry
+gate (--browser-inbox)	Gate	2026-10-07T13:34:23.0058990Z
+gate (--browser-inbox)	Gate	2026-10-07T13:34:23.0224832Z
+gate (--browser-inbox)	Gate	2026-10-07T13:34:23.0718020Z   Creating an optimized production build ...
+gate (--browser-inbox)	Gate	2026-10-07T13:34:32.7725731Z ✓ Compiled successfully in 8.9s
+gate (--browser-inbox)	Gate	2026-10-07T13:34:32.7845434Z   Running TypeScript ...
+gate (--browser-inbox)	Gate	2026-10-07T13:34:34.5473987Z   Finished TypeScript in 1765ms ...
+gate (--browser-inbox)	Gate	2026-10-07T13:34:34.5500428Z   Collecting page data using 3 workers ...
+gate (--browser-inbox)	Gate	2026-10-07T13:34:35.4476643Z   Generating static pages using 3 workers (0/15) ...
+gate (--browser-inbox)	Gate	2026-10-07T13:34:35.4727832Z   Generating static pages using 3 workers (3/15)
+gate (--browser-inbox)	Gate	2026-10-07T13:34:35.5812429Z   Generating static pages using 3 workers (7/15)
+gate (--browser-inbox)	Gate	2026-10-07T13:34:35.5954590Z   Generating static pages using 3 workers (11/15)
+gate (--browser-inbox)	Gate	2026-10-07T13:34:35.6014731Z ✓ Generating static pages using 3 workers (15/15) in 154ms
+gate (--browser-inbox)	Gate	2026-10-07T13:34:35.6070106Z   Finalizing page optimization ...
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0174869Z
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0190698Z Route (app)
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0191420Z ┌ ○ /_not-found
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0191833Z ├ ƒ /[locale]
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0192210Z ├ ƒ /[locale]/ads
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0192518Z ├ ƒ /[locale]/ads/attribution
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0192837Z ├ ƒ /[locale]/billing
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0193116Z ├ ƒ /[locale]/collections
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0193401Z ├ ƒ /[locale]/customers
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0193734Z ├ ƒ /[locale]/customers/[customer]
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0194040Z ├ ƒ /[locale]/design
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0194774Z ├ ƒ /[locale]/finance
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0195269Z ├ ƒ /[locale]/inventory
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0195760Z ├ ƒ /[locale]/invite/[token]
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0196245Z ├ ƒ /[locale]/messages
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0196533Z ├ ƒ /[locale]/orders
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0196852Z ├ ƒ /[locale]/orders/cvs-print
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0197163Z ├ ƒ /[locale]/orders/new
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0197450Z ├ ƒ /[locale]/products
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0197779Z ├ ƒ /[locale]/products/[product]
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0198102Z ├ ƒ /[locale]/products/import
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0198412Z ├ ƒ /[locale]/promotions
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0198684Z ├ ƒ /[locale]/reset
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0198962Z ├ ƒ /[locale]/returns
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0199230Z ├ ƒ /[locale]/settings
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0199557Z ├ ƒ /[locale]/settings/payments/card
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0199923Z ├ ƒ /[locale]/settings/settlements
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0200662Z ├ ƒ /[locale]/signup
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0201014Z ├ ƒ /[locale]/studio
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0201304Z ├ ƒ /[locale]/studio/claims
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0201610Z ├ ƒ /[locale]/team
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0201890Z ├ ƒ /api/ads/meta/callback
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0202187Z ├ ƒ /api/ads/meta/connect
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0202465Z ├ ƒ /api/auth/callback
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0202727Z ├ ƒ /api/auth/login
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0203074Z ├ ƒ /api/auth/logout
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0203613Z ├ ƒ /api/auth/password/login
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0204329Z ├ ƒ /api/auth/password/reset
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0204676Z ├ ƒ /api/auth/password/signup
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0204999Z ├ ƒ /api/auth/password/verify
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0205294Z ├ ƒ /api/meta/callback
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0205824Z ├ ƒ /api/meta/connect
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0206149Z ├ ƒ /api/onboarding/initial-store
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0206430Z ├ ƒ /api/stores
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0206740Z ├ ƒ /api/stores/[store]/[...resource]
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0207100Z ├ ƒ /api/stores/[store]/orders/export
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0207466Z ├ ƒ /api/stores/[store]/orders/pick-list
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0207848Z ├ ƒ /api/stores/[store]/shipments/cvs-batch
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0208425Z ├ ƒ /api/stores/[store]/tools/[...resource]
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0208739Z ├ ƒ /api/team/[action]
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0209013Z ├ ƒ /site/[locale]/[page]
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0209283Z ├ ƒ /site/robots.txt
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0209537Z └ ƒ /site/sitemap.xml
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0209667Z
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0209682Z
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0209814Z ƒ Proxy (Middleware)
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0209948Z
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0210156Z ○  (Static)   prerendered as static content
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0210537Z ƒ  (Dynamic)  server-rendered on demand
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.0210716Z
+gate (--browser-inbox)	Gate	2026-10-07T13:34:36.2085735Z Packaged standalone admin server and static assets.
+gate (--browser-inbox)	Gate	2026-10-07T13:34:38.0966952Z go: downloading github.com/jackc/pgx/v5 v5.11.0
+gate (--browser-inbox)	Gate	2026-10-07T13:34:38.3132923Z go: downloading github.com/riverqueue/river v0.40.0
+gate (--browser-inbox)	Gate	2026-10-07T13:34:38.3145247Z go: downloading github.com/riverqueue/river/rivertype v0.40.0
+gate (--browser-inbox)	Gate	2026-10-07T13:34:38.3146296Z go: downloading github.com/riverqueue/river/riverdriver/riverpgxv5 v0.40.0
+gate (--browser-inbox)	Gate	2026-10-07T13:34:38.3483957Z go: downloading github.com/riverqueue/river/riverdriver v0.40.0
+gate (--browser-inbox)	Gate	2026-10-07T13:34:38.3993096Z go: downloading golang.org/x/crypto v0.57.0
+gate (--browser-inbox)	Gate	2026-10-07T13:34:38.4750872Z go: downloading github.com/jackc/pgpassfile v1.0.0
+gate (--browser-inbox)	Gate	2026-10-07T13:34:38.4758880Z go: downloading github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761
+gate (--browser-inbox)	Gate	2026-10-07T13:34:38.4969981Z go: downloading golang.org/x/text v0.42.0
+gate (--browser-inbox)	Gate	2026-10-07T13:34:38.5049592Z go: downloading github.com/jackc/puddle/v2 v2.2.2
+gate (--browser-inbox)	Gate	2026-10-07T13:34:38.5264938Z go: downloading github.com/riverqueue/river/rivershared v0.40.0
+gate (--browser-inbox)	Gate	2026-10-07T13:34:38.5767120Z go: downloading golang.org/x/image v0.46.0
+gate (--browser-inbox)	Gate	2026-10-07T13:34:38.8290889Z go: downloading golang.org/x/net v0.59.0
+gate (--browser-inbox)	Gate	2026-10-07T13:34:38.9931903Z go: downloading github.com/coreos/go-oidc/v3 v3.21.0
+gate (--browser-inbox)	Gate	2026-10-07T13:34:38.9935812Z go: downloading golang.org/x/oauth2 v0.37.0
+gate (--browser-inbox)	Gate	2026-10-07T13:34:39.0391065Z go: downloading github.com/tidwall/gjson v1.19.0
+gate (--browser-inbox)	Gate	2026-10-07T13:34:39.0392442Z go: downloading github.com/tidwall/sjson v1.2.5
+gate (--browser-inbox)	Gate	2026-10-07T13:34:39.0537745Z go: downloading golang.org/x/sync v0.23.0
+gate (--browser-inbox)	Gate	2026-10-07T13:34:39.0693834Z go: downloading golang.org/x/sys v0.48.0
+gate (--browser-inbox)	Gate	2026-10-07T13:34:39.0719232Z go: downloading github.com/go-jose/go-jose/v4 v4.1.4
+gate (--browser-inbox)	Gate	2026-10-07T13:34:39.0860658Z go: downloading github.com/stretchr/testify v1.11.1
+gate (--browser-inbox)	Gate	2026-10-07T13:34:39.0869096Z go: downloading go.uber.org/goleak v1.3.0
+gate (--browser-inbox)	Gate	2026-10-07T13:34:39.1223378Z go: downloading github.com/tidwall/match v1.2.0
+gate (--browser-inbox)	Gate	2026-10-07T13:34:39.1332510Z go: downloading github.com/tidwall/pretty v1.2.1
+gate (--browser-inbox)	Gate	2026-10-07T13:34:39.1347407Z go: downloading github.com/davecgh/go-spew v1.1.1
+gate (--browser-inbox)	Gate	2026-10-07T13:34:39.1485194Z go: downloading github.com/pmezard/go-difflib v1.0.0
+gate (--browser-inbox)	Gate	2026-10-07T13:34:39.1597581Z go: downloading gopkg.in/yaml.v3 v3.0.1
+gate (--browser-inbox)	Gate	2026-10-07T13:36:02.9422825Z === RUN   TestBrowserInboxUIRealChain
+gate (--browser-inbox)	Gate	2026-10-07T13:38:36.7737029Z     browser_inbox_ui_test.go:200: inbox browser failed: exit status 1; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/lc-u2b-inbox-page/browser/20261007T133606.362529704
+gate (--browser-inbox)	Gate	2026-10-07T13:38:44.0135964Z --- FAIL: TestBrowserInboxUIRealChain (161.07s)
+gate (--browser-inbox)	Gate	2026-10-07T13:38:44.0166619Z FAIL
+gate (--browser-inbox)	Gate	2026-10-07T13:38:44.0276860Z FAIL	livecommerce/tests/foundation	161.176s
+gate (--browser-inbox)	Gate	2026-10-07T13:38:44.0366100Z FAIL
+gate (--browser-inbox)	Gate	2026-10-07T13:38:44.4814484Z ##[error]Process completed with exit code 1.

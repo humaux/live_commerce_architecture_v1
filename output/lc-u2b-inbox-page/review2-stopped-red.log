@@ -1,0 +1,49 @@
+baseline: 75d589d8
+command: node --test --experimental-strip-types --test-name-pattern lost M7 ACK|expired cached issued link tests/admin/inbox-review-recovery.test.ts
+exit: 1
+✖ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (31.473292ms)
+✖ review2 P2 expired cached issued link cannot be recopied or silently reissued (3.756417ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 483.563
+
+✖ failing tests:
+
+test at tests/admin/inbox-review-recovery.test.ts:295:1
+✖ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (31.473292ms)
+  AssertionError [ERR_ASSERTION]: a captured retry handler cannot mint a fresh key after null replay
+
+  3 !== 2
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-review-recovery.test.ts:339:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 3,
+    expected: 2,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-review-recovery.test.ts:559:1
+✖ review2 P2 expired cached issued link cannot be recopied or silently reissued (3.756417ms)
+  AssertionError [ERR_ASSERTION]: expired M7 credential must not reach clipboard on explicit recopy
+
+  1 !== 0
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-review-recovery.test.ts:570:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

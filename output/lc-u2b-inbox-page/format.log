@@ -1,0 +1,16 @@
+apps/admin/app/[locale]/messages/page.tsx 53ms
+apps/admin/components/Inbox.tsx 27ms
+apps/admin/components/InboxThread.tsx 32ms
+apps/admin/components/BuyerPanel.tsx 10ms
+apps/admin/src/features/messages/copy.ts 8ms
+apps/admin/src/features/messages/privacy.ts 4ms
+apps/admin/src/features/messages/routes.ts 1ms
+apps/admin/src/features/messages/use-privacy.ts 4ms
+apps/admin/src/features/messages/Inbox.module.css 21ms
+apps/admin/lib/inbox-bff.ts 6ms
+apps/admin/lib/inbox-client.ts 4ms
+apps/admin/lib/inbox-types.ts 2ms
+tests/admin/inbox-bff.test.ts 17ms
+tests/admin/inbox-copy.test.ts 2ms
+tests/admin/inbox-privacy.test.ts 8ms
+tests/admin/inbox-ui.spec.ts 24ms

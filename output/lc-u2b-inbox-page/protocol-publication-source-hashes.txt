@@ -1,0 +1,3 @@
+87a82d4e7d48ac6662b8e91ad38a6774c380a7ecdc811187f1bfacba482ab5d9  tests/foundation/browser_inbox_ui_test.go
+0caf9c50a35d815f6f4b7d2dba4b6f7682994320f415a2ba15c076e71be4438d  tests/admin/inbox-ui.spec.ts
+39e808c3c7d073f0c784b9e7b38e8883ba349c40c19f721d1f0da3f1bc5b23f9  tests/admin/inbox-bundle-browser.test.ts

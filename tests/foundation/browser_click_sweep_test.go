@@ -1,5 +1,8 @@
 //go:build browser
 
+// Purpose: mount real optional merchant surfaces and exercise the complete UI registry over MOCK providers.
+// Depends on: tcvEnv, private Go router, inbox/msgtemplates services and signed MOCK IdP/Next/Playwright.
+// Used by: --browser-click-sweep CI; empty inbox uses its real authorized API, never a missing-route fallback.
 package foundation_test
 
 // G-UI8 real-click sweep (owner 2026-10-03; docs/engineering/ui-architecture.md 10.6b). `TestBrowserClickSweep`, prefix `cs`.
@@ -53,12 +56,14 @@ import (
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/identity"
 	"livecommerce/internal/identityhttp"
+	"livecommerce/internal/inbox"
 	"livecommerce/internal/integrations/accounts"
 	core "livecommerce/internal/integrations/core"
 	metaoauth "livecommerce/internal/integrations/meta/oauth"
 	metaads "livecommerce/internal/integrations/meta_ads"
 	"livecommerce/internal/live"
 	"livecommerce/internal/metaconnect"
+	"livecommerce/internal/msgtemplates"
 	"livecommerce/internal/oidclogin"
 	"livecommerce/internal/platform"
 	adsfake "livecommerce/tests/ads/fakegraph"
@@ -190,7 +195,28 @@ func TestBrowserClickSweep(t *testing.T) {
 	if err != nil || !billSvc.Enabled() {
 		t.Fatalf("billing service: enabled=%v err=%v", billSvc != nil && billSvc.Enabled(), err)
 	}
+	// The /messages route is part of the live UI registry, even when this store has no conversations.
+	payloadJSON := fmt.Sprintf(`{"keys":[{"id":"click_sweep_mock","key_base64":%q}]}`, base64.StdEncoding.EncodeToString(randomBytes(32)))
+	payloadKeys, err := inbox.LoadKeyring(func(name string) string {
+		switch name {
+		case "COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID":
+			return "click_sweep_mock"
+		case "COMMERCE_META_PAYLOAD_KEYS_JSON":
+			return payloadJSON
+		}
+		return ""
+	})
+	if err != nil {
+		t.Fatal("MOCK inbox payload keyring configuration failed")
+	}
+	inboxService, err := inbox.NewService(payloadKeys)
+	if err != nil {
+		t.Fatal("MOCK inbox service configuration failed")
+	}
+	templates := msgtemplates.NewService()
+	inboxService.EnableSend(seal, metaJobs, templates)
 	options := httpapi.Options{SessionStoreList: true, CVS: e.cvs, Accounts: accountService, Studio: true, ClaimLabels: &labels, RefundJobs: e.jobs,
+		Inbox: inboxService, MsgTemplates: templates,
 		MetaConnect: metaSvc, Ads: adsSvc, Billing: billSvc, ManualOrders: mtManualOrders(t, e), StoreBaseDomain: "lctest.example",
 		PaymentProfile: "PROVIDER_MOCK"} // W4-U1: mounts payments/card so /settings/payments/card renders its real (platform NONE) state instead of "not available"
 	api := httpapi.NewHandler(f.runtime, options)
@@ -222,6 +248,20 @@ func TestBrowserClickSweep(t *testing.T) {
 				t.Fatalf("%s %s: %v: %s", method, path, err, w.Body.String())
 			}
 		}
+	}
+
+	// The same handler/options are handed to csStartAdmin; prove the empty-list route before browser startup.
+	var emptyInbox struct {
+		Items []json.RawMessage `json:"items"`
+	}
+	call(http.MethodGet, "/inbox/conversations?filter=all&limit=50", "", nil, http.StatusOK, &emptyInbox)
+	if emptyInbox.Items == nil || len(emptyInbox.Items) != 0 {
+		t.Fatal("fresh sweep store must return an authorized empty inbox array")
+	}
+	unauthenticatedInbox := httptest.NewRecorder()
+	api.ServeHTTP(unauthenticatedInbox, httptest.NewRequest("GET", "/v1/admin/stores/"+e.store()+"/inbox/conversations?filter=all&limit=50", nil))
+	if unauthenticatedInbox.Code != http.StatusUnauthorized {
+		t.Fatal("empty inbox route must still require authentication")
 	}
 
 	// ---- storefront-shell catalogue through the admin API (the harness product already exists: rename it, give it a SKU axis) -------------

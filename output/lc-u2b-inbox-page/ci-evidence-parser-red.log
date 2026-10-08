@@ -1,0 +1,49 @@
+baseline: 84aa157c
+command: node --test --experimental-strip-types tests/admin/inbox-evidence.test.ts
+exit: 1
+✔ inbox evidence is covered by the CI upload root (1.782083ms)
+✔ failed Playwright closes its log and emits sanitized diagnostics before Fatalf (0.268125ms)
+✖ failure diagnostics match INU cases/counts without admitting private text (4.109125ms)
+✔ INU04 delayed handler 1 signals completion when fulfillment rejects (29.328208ms)
+✔ INU04 delayed handler 2 signals completion when fulfillment rejects (4.415959ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 4
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 275.316291
+
+✖ failing tests:
+
+test at tests/admin/inbox-evidence.test.ts:27:1
+✖ failure diagnostics match INU cases/counts without admitting private text (4.109125ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+    [
+      [
+  +     '999',
+  +     '9',
+  +     'INU98'
+  -     '450',
+  -     '1',
+  -     'INU05'
+      ]
+    ]
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-evidence.test.ts:39:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ [ '999', '9', 'INU98' ] ],
+    expected: [ [ '450', '1', 'INU05' ] ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

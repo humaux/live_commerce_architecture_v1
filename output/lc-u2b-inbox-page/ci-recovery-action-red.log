@@ -1,0 +1,30 @@
+Sourcef982e5a1 recoveryclientwait import0eab plusactualactionwaittest; handler stilldropsPromise
+Command ["node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--test", "--experimental-strip-types", "--test-name-pattern=lost M7 ACK", "tests/admin/inbox-review-recovery.test.ts"]
+✖ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (235.312875ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 725.727125
+
+✖ failing tests:
+
+test at tests/admin/inbox-review-recovery.test.ts:294:1
+✖ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (235.312875ms)
+  AssertionError [ERR_ASSERTION]: the actual copy action exposes its full completion
+      at copyAction (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-review-recovery.test.ts:217:10)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-review-recovery.test.ts:302:3)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+Exit 1

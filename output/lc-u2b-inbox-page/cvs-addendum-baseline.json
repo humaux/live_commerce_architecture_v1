@@ -1,0 +1,6 @@
+{
+  "command": "bash scripts/dev/test-local.sh --browser-cvs",
+  "source_sha": "2c940f76387c8d0674029278e44bf26d181b106c",
+  "exit_code": 0,
+  "elapsed_seconds": 297.671
+}

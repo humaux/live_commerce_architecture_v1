@@ -1,0 +1,10 @@
+Source c3bca7871953c5f88c055c7619030aecc4c182a4
+37 SHA256 source hashes verified
+Command ["git", "diff", "--check"]
+Exit 0
+Command ["git", "merge-base", "--is-ancestor", "4d19a45a", "HEAD"]
+Exit 0
+Command ["git", "merge-base", "--is-ancestor", "26e9aec2", "HEAD"]
+Exit 0
+Command ["gofmt", "-l", "tests/foundation/browser_inbox_ui_test.go"]
+Exit 0

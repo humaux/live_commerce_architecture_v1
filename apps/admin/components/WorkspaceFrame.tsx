@@ -302,9 +302,11 @@ export function WorkspaceFrame({
                   value={selectedStore?.id ?? ""}
                   disabled={locked || !stores.length}
                   onChange={(e) => {
+                    // Inbox teardown flushes controlled inputs; retain the user's choice before it runs.
+                    const nextStore = e.currentTarget.value;
                     if (before())
                       window.location.assign(
-                        `/${locale}/?store=${encodeURIComponent(e.target.value)}`,
+                        `/${locale}/?store=${encodeURIComponent(nextStore)}`,
                       );
                   }}
                 >
@@ -324,10 +326,11 @@ export function WorkspaceFrame({
                 value={locale}
                 disabled={locked}
                 onChange={(e) => {
+                  const nextLocale = e.currentTarget.value as Locale;
                   if (before())
                     router.push(
                       localizedPath(
-                        e.target.value as Locale,
+                        nextLocale,
                         error === "expired" || signingOut
                           ? "/"
                           : `${pathname}?${search}`,

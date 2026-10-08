@@ -1,0 +1,56 @@
+task_id: c975698a-sub-recovery-locale
+base_commit: e7e1d317c707557ba773f61118499f5c53ae46a9
+status: MOCK actual helper/BundleRecovery/claims client and held transport, no browser/Go/PG
+command argv: ["node", "--test", "--experimental-strip-types", "tests/admin/inbox-recovery-locale.test.ts"]
+exit_code: 1
+sha256 fb537639bcf0f6916684da302679d5f23c7d99fa7ac26457db08b6f8479e9f10 tests/admin/inbox-recovery-env.test.ts
+sha256 434750de74b8a196c61afa4d97480170a3d2000c9efd2203da7926cd802acff3 tests/admin/inbox-recovery-locale.test.ts
+sha256 57e28d94c4b2284e0feb749edc9889f21d4139e6d33e9054ea5a5c2794839277 apps/admin/src/features/messages/bundle-recovery.tsx
+
+✖ recoveryDone waits for actual held M7 completion in zh-TW (38.54825ms)
+✖ recoveryDone waits for actual held M7 completion in zh-CN (9.241375ms)
+✔ recoveryDone waits for actual held M7 completion in en (4.442292ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 1
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 770.962084
+
+✖ failing tests:
+
+test at tests/admin/inbox-recovery-locale.test.ts:12:3
+✖ recoveryDone waits for actual held M7 completion in zh-TW (38.54825ms)
+  AssertionError [ERR_ASSERTION]: helper must stay pending while locale-specific control is busy
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-recovery-locale.test.ts:37:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-recovery-locale.test.ts:12:3
+✖ recoveryDone waits for actual held M7 completion in zh-CN (9.241375ms)
+  AssertionError [ERR_ASSERTION]: helper must stay pending while locale-specific control is busy
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-recovery-locale.test.ts:37:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

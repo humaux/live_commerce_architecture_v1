@@ -1,0 +1,7 @@
+base_commit: c6c628fcd6fde4a367b14902582a9aefb933ed04
+command: node --input-type=module (AST assertion preservation source shown in worker command evidence)
+original_assertions: 16
+preserved_assertions_in_original_order: 16
+original_assertion_AST_sha256: 155e9c1230f564b515d4a2aefc92cf7ccf503d3ac31fcf2b0dcdf8db91b8e222
+source_sha256: 165d97e50b8906d2c4c58c3b70b3f20a56bc5c022bfb08835b2df4f2406b717e
+exit_code: 0

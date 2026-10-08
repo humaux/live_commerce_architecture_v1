@@ -1,0 +1,11 @@
+✔ bundle fixture uses real claim commands and mounts existing M6/M7 without issuing early (0.398875ms)
+✔ sensitive bundle scenario clicks native clipboard with trace/video disabled and no token body reads (0.127833ms)
+✔ persisted link and token-free command receipt are compared without disclosing credentials (0.1205ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 72.089084

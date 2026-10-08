@@ -1,0 +1,13 @@
+Publication reuse plus separated credential-only spec
+Command ["node", "--test", "--experimental-strip-types", "tests/admin/inbox-discovery.test.ts"]
+✔ real Playwright --list collects each original INU case and isolated INU09 exactly once (1295.879ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1493.87125
+
+Exit 0

@@ -1,0 +1,125 @@
+✔ A8/A9/A13 and published templates: exact reads forward once with no-store (31.166459ms)
+✔ real streamed POST bodies: A10-A14 exact keys reach upstream (17.363625ms)
+✔ query, read headers, methods and body allowlists refuse before upstream (11.678ms)
+✔ session, CSRF and store authority precede content forwarding (7.713667ms)
+✔ A12 fixed codes preserved; arbitrary upstream diagnostics stripped (14.012542ms)
+✔ client preserves codes and receipt; changed/aborted session cannot publish private response (10.299959ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 276.476459
+Scope: all 6 workspace projects
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages: +49
++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 49, reused 49, downloaded 0, added 47
+Progress: resolved 49, reused 49, downloaded 0, added 48
+Progress: resolved 49, reused 49, downloaded 0, added 49, done
+
+devDependencies:
++ @playwright/test 1.63.0
++ axe-core 4.13.0
++ livekit-client 2.22.3
++ prettier 3.9.8
++ typescript 7.0.2
++ typescript-api <- typescript 6.0.3
+
+Done in 3.1s using pnpm v10.33.0
+
+> @live-commerce/admin@ typecheck /Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-bff/apps/admin
+> tsc --noEmit
+
+✔ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (329.117ms)
+✔ G-UI3/G-UI5 negatives: new formatter, component fetch, >800 lines and wider allowance fail (0.454334ms)
+✔ Readiness jump controls expose the actual active section, not a click flag (0.688833ms)
+✔ Integrator P2: legal CN comment ordering and a distinct three-image recommendation (0.19025ms)
+✔ ADM04 and ADM06 explain unavailable SKUs and keep collection vocabulary consistent (0.322292ms)
+✔ ADM06 create/detail titles share the route vocabulary without adding a phantom Next page (0.349291ms)
+✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (1.379167ms)
+✔ G-UI1 copy key parity: no missing or extra key in any locale (0.073958ms)
+✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.129958ms)
+✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (220.10525ms)
+✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.242333ms)
+✔ Every browser spec clicks nav-orders: the orders group stays a singleton, so returns/new/print routes are nav: false (0.314125ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 480.5925
+WARN G-UI5 apps/admin/app/api/stores/[store]/[...resource]/route.ts: >500 lines
+WARN G-UI5 apps/admin/components/Ads.tsx: >500 lines
+WARN G-UI5 apps/admin/components/AdsDraft.tsx: >500 lines
+WARN G-UI5 apps/admin/components/AttributionPanels.tsx: >500 lines
+WARN G-UI5 apps/admin/components/CollectionManager.tsx: >500 lines
+WARN G-UI5 apps/admin/components/Design.tsx: >500 lines
+WARN G-UI5 apps/admin/components/Entry.tsx: >500 lines
+WARN G-UI5 apps/admin/components/Ledger.tsx: >500 lines
+WARN G-UI5 apps/admin/components/OrderReturns.tsx: >500 lines
+WARN G-UI5 apps/admin/components/ProductDocumentForm.tsx: >500 lines
+WARN G-UI5 apps/admin/components/ProductList.tsx: >500 lines
+WARN G-UI5 apps/admin/components/ProductMediaManager.tsx: >500 lines
+WARN G-UI5 apps/admin/components/StorefrontSettings.tsx: >500 lines
+WARN G-UI5 apps/admin/components/Studio.tsx: >500 lines
+WARN G-UI5 apps/admin/components/StudioClaims.tsx: >500 lines
+WARN G-UI5 apps/admin/lib/ads-copy.ts: >500 lines
+WARN G-UI5 apps/admin/lib/ads-model.ts: >500 lines
+WARN G-UI5 apps/admin/lib/auth.ts: >500 lines
+WARN G-UI5 apps/admin/lib/catalog-v2-copy.ts: >500 lines
+WARN G-UI5 apps/admin/lib/product-editor-copy.ts: >500 lines
+WARN G-UI5 apps/storefront/components/CheckoutFlow.tsx: >500 lines
+WARN G-UI5 apps/storefront/components/CvsPickup.tsx: >500 lines
+WARN G-UI5 apps/storefront/components/OrderPayment.tsx: >500 lines
+WARN G-UI5 apps/storefront/lib/order-payment.ts: >500 lines
+PASS G-UI3/G-UI5
+shard-plan: note: 1 test(s) are in no list and run in the catch-all g06: TestMerchantCancelClosesWorkItem
+shard-plan: ok (1218 top-level tests, each in exactly one of 10 groups)
+check-gates: tests/admin/inbox-bff.test.ts is run by no gate (test-local.sh, tests/foundation, test-node.sh, or a selected playwright suite)
+✔ A8/A9/A13 and published templates: exact reads forward once with no-store (42.719583ms)
+✔ real streamed POST bodies: A10-A14 exact keys reach upstream (29.30725ms)
+✔ query, read headers, methods and body allowlists refuse before upstream (6.610667ms)
+✔ session, CSRF and store authority precede content forwarding (4.9085ms)
+✔ A12 fixed codes preserved; arbitrary upstream diagnostics stripped (14.509291ms)
+✔ client preserves codes and receipt; changed/aborted session cannot publish private response (6.093459ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 253.783333
+✔ A8/A9/A13 and published templates: exact reads forward once with no-store (32.108875ms)
+✔ real streamed POST bodies: A10-A14 exact keys reach upstream (15.320042ms)
+✔ query, read headers, methods and body allowlists refuse before upstream (9.724833ms)
+✔ session, CSRF and store authority precede content forwarding (4.093875ms)
+✔ A12 fixed codes preserved; arbitrary upstream diagnostics stripped (32.377416ms)
+✔ client preserves codes and receipt; changed/aborted session cannot publish private response (6.882667ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 254.399917
+
+> @live-commerce/admin@ typecheck /Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-bff/apps/admin
+> tsc --noEmit
+
+
+DELIVERY: LC-U2b BFF; task_id=d378c85f-2030-4047-8dc9-e297bc45bfd4; base_commit=f73405150a1cca3c588d4546f3b5a8e0d1a456a3; branch=codex/lc-u2b-bff; role=ui_worker; model=GPT-6 (exact variant UNKNOWN); reasoning=UNKNOWN
+COMMANDS: node --test --experimental-strip-types tests/admin/inbox-bff.test.ts -> RED exit1 (unchanged route404); GREEN exit0 6/6; pnpm install --frozen-lockfile -> exit0; pnpm --filter @live-commerce/admin typecheck -> exit0; git diff --check -> exit0; bash scripts/dev/check-headers.sh f73405150a1cca3c588d4546f3b5a8e0d1a456a3 -> exit0; bash scripts/dev/check-gates.sh -> exit1 new test unregistered, integration worker owns runner.
+MOCK Node HTTP only. NOT_RUN: build, browser-inbox/calibration/browser regressions, Go/PG, SANDBOX/LIVE, independent acceptance. BLOCKED: A14 expected_version getter absent; A13 claims/orders/name/auto_reply projection gaps. No Go/migrations/contracts/lock changes. Native fetch preserves AbortSignal/no-store/post-response session fence absent in writeSettings; reused csrfCookie/sessionBoundary.
+c2c9de1a205a008fb9cf4e656c4a8a76554cf44c6698831f2990828947ecfa14 apps/admin/lib/inbox-types.ts
+7bef620b6dd31b3cadaecf77cf149b1cf3a85f833b5d14ab572a42baa060d73e apps/admin/lib/inbox-client.ts
+aebdb84ce4c157c55e1dcaf2d345288978bd8180024a6094ba103e19ecd57a34 apps/admin/lib/inbox-bff.ts
+b2781553255bd31854b7235e18159fddbe76d3086f9215224d33a9aee66ddfc8 apps/admin/app/api/stores/[store]/[...resource]/route.ts
+271623c7d277383ce34da9184b090882d591ce818077e392ad88044a67e43e9a tests/admin/inbox-bff.test.ts

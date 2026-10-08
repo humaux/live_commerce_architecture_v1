@@ -1,0 +1,21 @@
+Base4d19a45a + source UNKNOWN fix
+Command ["node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--test", "--experimental-strip-types", "tests/admin/inbox-unknown.test.ts"]
+✔ persisted A9 UNKNOWN after page entry warns and blocks the real composer in en (51.488167ms)
+✔ persisted A9 UNKNOWN after page entry warns and blocks the real composer in zh-TW (6.473834ms)
+✔ persisted A9 UNKNOWN after page entry warns and blocks the real composer in zh-CN (7.356291ms)
+✔ A12 queued ACK followed by final A9 UNKNOWN overrides the local queued notice and blocks another send (10.3615ms)
+✔ a captured previously enabled composer cannot bypass final UNKNOWN learned by Refresh (8.757334ms)
+✔ persisted queued is not mislabeled UNKNOWN and retains ordinary composer eligibility (4.8875ms)
+✔ persisted sent is not mislabeled UNKNOWN and retains ordinary composer eligibility (5.632083ms)
+✔ persisted failed is not mislabeled UNKNOWN and retains ordinary composer eligibility (5.220083ms)
+✔ persisted blocked is not mislabeled UNKNOWN and retains ordinary composer eligibility (3.520458ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 538.416
+
+Exit 0

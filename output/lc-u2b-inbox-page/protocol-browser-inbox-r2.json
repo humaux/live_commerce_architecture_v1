@@ -1,0 +1,13 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-inbox"
+  ],
+  "source_base": "751bb9cc89ee73bc4066565143e211d097aef2ce",
+  "source_hashes": "protocol-publication-source-hashes.txt",
+  "exit": 1,
+  "timeout": false,
+  "elapsed_seconds": 39.951,
+  "log": "output/lc-u2b-inbox-page/protocol-browser-inbox-r2.log"
+}

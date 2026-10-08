@@ -1,0 +1,74 @@
+Source 9f6fe578987bd6f6a33735f211d38fba1146f336; strengthened tests before UI correction
+Command ["node", "--test", "--experimental-strip-types", "tests/admin/inbox-entry.test.ts"]
+✔ A real Inbox selection admits Go A9 attachments null without losing thread (18.160416ms)
+✔ A real Inbox selection admits Go A9 attachments empty array without losing thread (2.274542ms)
+✔ A malformed non-array A9 attachments is refused without painting DM or crashing selected entry (1.275ms)
+✔ C A8 HTTP200 empty list is ordinary data with no alert, selection or focus request storm (0.711417ms)
+✖ C A8 list404 is scoped inbox unavailable in en, never an empty list or conversation denial (1.001334ms)
+✖ C A8 list404 is scoped inbox unavailable in zh-TW, never an empty list or conversation denial (0.781541ms)
+✖ C A8 list404 is scoped inbox unavailable in zh-CN, never an empty list or conversation denial (0.663792ms)
+✔ C click-sweep Go harness mounts existing Inbox/templates services (STRUCTURE_ONLY, Go NOT_RUN) (1.115166ms)
+✔ C click-sweep includes actual-router owner200 empty inbox assertion (STRUCTURE_ONLY, Go NOT_RUN) (0.246042ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 6
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 391.441667
+
+✖ failing tests:
+
+test at tests/admin/inbox-entry.test.ts:173:3
+✖ C A8 list404 is scoped inbox unavailable in en, never an empty list or conversation denial (1.001334ms)
+  AssertionError [ERR_ASSERTION]: authenticated unavailable inbox must not suggest a lost sign-in
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-entry.test.ts:186:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-entry.test.ts:173:3
+✖ C A8 list404 is scoped inbox unavailable in zh-TW, never an empty list or conversation denial (0.781541ms)
+  AssertionError [ERR_ASSERTION]: authenticated unavailable inbox must not suggest a lost sign-in
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-entry.test.ts:186:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-entry.test.ts:173:3
+✖ C A8 list404 is scoped inbox unavailable in zh-CN, never an empty list or conversation denial (0.663792ms)
+  AssertionError [ERR_ASSERTION]: authenticated unavailable inbox must not suggest a lost sign-in
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-entry.test.ts:186:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+Exit 1

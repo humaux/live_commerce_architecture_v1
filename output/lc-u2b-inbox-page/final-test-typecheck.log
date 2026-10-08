@@ -1,0 +1,4 @@
+Source 9f6fe578987bd6f6a33735f211d38fba1146f336
+Command ["pnpm", "exec", "tsc", "--noEmit", "-p", "output/lc-u2b-inbox-page/pr8-test-tsconfig.json"]
+
+Exit 0

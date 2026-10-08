@@ -1,0 +1,55 @@
+task_id: 0b278eb7-323b-4f94-9c9c-bcb96772c6df-sub-review2-tests
+base_commit: 4ba673ba4704a8b3d5ded14f41893c8ccb39cdc3
+status: MOCK; two CSRF guards cannot reach missing feature on baseline; guards NOT_RUN until implemented source green
+command argv: ["node", "--test", "--experimental-strip-types", "--test-name-pattern", "missing CSRF", "tests/admin/inbox-review-recovery.test.ts"]
+exit_code: 1
+sha256 8f67893d0a31f3b6a396f4039b3ec10aac108ea9cce722e00338f08e98103e07 tests/admin/inbox-review-recovery.test.ts
+
+✖ review2 P1 missing CSRF before cached recopy cannot copy or issue again (28.285667ms)
+✖ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (2.455ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 365.737625
+
+✖ failing tests:
+
+test at tests/admin/inbox-review-recovery.test.ts:339:1
+✖ review2 P1 missing CSRF before cached recopy cannot copy or issue again (28.285667ms)
+  AssertionError [ERR_ASSERTION]: bundle-only recovery has an enabled explicit claim-link action
+
+  true !== false
+
+      at copyAction (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-recovery.test.ts:214:10)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-recovery.test.ts:344:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-review-recovery.test.ts:358:1
+✖ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (2.455ms)
+  AssertionError [ERR_ASSERTION]: bundle-only recovery has an enabled explicit claim-link action
+
+  true !== false
+
+      at copyAction (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-recovery.test.ts:214:10)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-recovery.test.ts:365:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
