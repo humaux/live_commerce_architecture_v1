@@ -73,7 +73,8 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0161 (PAY-RM1 drops the never-deployed W4-01B notify receiver; forward-only, no data) adds one: 86 -> 87.
 	// 0162 (cancel-closes-work-item: merchant cancel closes the payment work item) adds one more: 87 -> 88.
 	// 0163 (S2-OPEN-1 settlement-resolve: append-only resolutions of unmapped_source rows + the in-place close patch) adds one more: 88 -> 89.
-	// 0164 (W3-U4 open parcel-group read + server-masked merge suggestions) adds one more: 89 -> 90.
+	// 0165 (LC-B3b buyer panel read model: A13 claims/orders/ordinal, A8 session filter + live_comment rows, A9 link_version/binding_id) adds one more: 89 -> 90.
+	// 0164 (W3-U4) lands separately on PR #2; whichever of 0164/0165 merges second takes 91 and the integrator reconciles.
 	if len(r2) != 90 {
 		t.Fatalf("R2 migration set = %d files %v, want 90", len(r2), r2)
 	}
