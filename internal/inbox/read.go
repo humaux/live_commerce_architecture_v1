@@ -1,14 +1,18 @@
 // Purpose: the inbox read side's definer callers and projections: A8 ListConversations (metadata only, no ciphertext),
-// A9 ReadThread (header + opened/decrypted inbound messages), A13 BuyerPanel (conversation-scoped fields), and the
-// shared databaseError mapper that passes only the fixed PT400/PT403/PT404/PT409/PT422 codes through.
+// A9 ReadThread (header + opened/decrypted inbound messages), A13 BuyerPanel / BuyerPanelByBundle (claims, orders, ordinal,
+// auto_reply), and the shared databaseError mapper that passes only the fixed PT400/PT403/PT404/PT409/PT422 codes through.
 // Depends on: the SECURITY DEFINER functions social.list_conversations / social.read_thread / social.conversation_meta /
-// social.unread_conversation_count / inbox.thread_opened (migration 0119), internal/inbox/keyring.go + classifier.go.
+// social.unread_conversation_count / inbox.thread_opened (migration 0119, the first two re-created by 0165),
+// inbox.buyer_panel / inbox.live_comment_bundles / inbox.link_pending_bundles / inbox.conversation_binding (migration 0165, LC-B3b),
+// internal/inbox/keyring.go + classifier.go.
 // Used by: internal/httpapi/inbox.go (A8/A9/A13 handlers), internal/inbox tests.
+// Invariants: I09 (the panel's identity link is inbox.bundle_peers only, decided in SQL), LCN03 (out of scope = 404).
 
 package inbox
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -22,18 +26,21 @@ import (
 // ListRequest is the A8 filter and keyset position. The httpapi layer decodes the opaque cursor into LastAt/CursorID;
 // the definer re-scopes every read to the transaction's tenant/store, so a cursor never widens authority.
 type ListRequest struct {
-	Filter   string
-	Limit    int
-	LastAt   *time.Time
-	CursorID *string
+	Filter    string
+	SessionID *string // LC-B3b: keep conversations bundle_peers-linked to a bundle of this session
+	Limit     int
+	LastAt    *time.Time
+	CursorID  *string
 }
 
-// ListConversations is A8: conversation metadata only (no ciphertext), ordered by last_at DESC, conversation_id DESC.
+// ListConversations is A8: metadata only (no ciphertext), keyset-ordered by last_at/conversation_id;
+// live_comment uses the bundle's created_at/id instead, without changing the other filters.
 func (s *Service) ListConversations(ctx context.Context, tx pgx.Tx, req ListRequest) (ConversationList, error) {
 	out := ConversationList{Items: []ConversationItem{}}
-	rows, err := tx.Query(ctx, `SELECT conversation_id::text, platform, last_at, unread, unreplied, mode, assignee::text, window_open_until, linked_customer_id::text
-		FROM social.list_conversations($1::text, $2::timestamptz, $3::uuid, $4::integer)`,
-		req.Filter, req.LastAt, req.CursorID, req.Limit)
+	// Calls social.list_conversations (0165: session filter + link_version). filter=live_comment matches no conversation there.
+	rows, err := tx.Query(ctx, `SELECT conversation_id::text, platform, last_at, unread, unreplied, mode, assignee::text, window_open_until, linked_customer_id::text, link_version
+		FROM social.list_conversations($1::text, $2::uuid, $3::timestamptz, $4::uuid, $5::integer)`,
+		req.Filter, req.SessionID, req.LastAt, req.CursorID, req.Limit)
 	if err != nil {
 		return out, databaseError(err)
 	}
@@ -45,7 +52,7 @@ func (s *Service) ListConversations(ctx context.Context, tx pgx.Tx, req ListRequ
 		var lastAt, windowUntil pgtype.Timestamptz
 		var unread, unreplied *bool
 		if err := rows.Scan(&item.ConversationID, &item.Platform, &lastAt, &unread, &unreplied,
-			&item.Mode, &item.Assignee, &windowUntil, &item.LinkedCustomerID); err != nil {
+			&item.Mode, &item.Assignee, &windowUntil, &item.LinkedCustomerID, &item.LinkVersion); err != nil {
 			return out, databaseError(err)
 		}
 		item.Unread, item.Unreplied = unread != nil && *unread, unreplied != nil && *unreplied
@@ -64,9 +71,16 @@ func (s *Service) ListConversations(ctx context.Context, tx pgx.Tx, req ListRequ
 	if err := s.fillDisplayNames(ctx, tx, out.Items); err != nil {
 		return out, err
 	}
-	// Amendment 1 P2-2: bundles whose claim link could not be sent appear as bundle-only items on the first page (copy-link only).
-	if req.LastAt == nil && req.Filter != "messenger" && req.Filter != "instagram" {
-		bundles, err := s.linkPendingItems(ctx, tx, 10)
+	// Live comments have their own bundle keyset on every page. Other eligible filters retain
+	// Amendment 1 P2-2's first-page-only pending-link append (copy-link only).
+	if req.Filter == "live_comment" || (req.LastAt == nil && req.Filter != "messenger" && req.Filter != "instagram") {
+		var bundles []ConversationItem
+		var err error
+		if req.Filter == "live_comment" {
+			bundles, err = s.liveCommentItems(ctx, tx, req)
+		} else {
+			bundles, err = s.linkPendingItems(ctx, tx, req.SessionID)
+		}
 		if err != nil {
 			return out, err
 		}
@@ -118,22 +132,50 @@ func (s *Service) fillDisplayNames(ctx context.Context, tx pgx.Tx, items []Conve
 	return databaseErrorOrNil(rows.Err())
 }
 
-// linkPendingItems lists the bundle-only A8 items (inbox.link_pending_bundles, migration 0128).
-func (s *Service) linkPendingItems(ctx context.Context, tx pgx.Tx, limit int) ([]ConversationItem, error) {
-	rows, err := tx.Query(ctx, `SELECT bundle_id::text, session_id::text, created_at FROM inbox.link_pending_bundles($1::integer)`, limit)
+// linkPendingItems lists at most 10 bundle-only link-pending A8 items. The 0165 overload
+// applies the optional session predicate before its SQL limit, so other sessions cannot consume the bound.
+func (s *Service) linkPendingItems(ctx context.Context, tx pgx.Tx, session *string) ([]ConversationItem, error) {
+	rows, err := tx.Query(ctx, `SELECT bundle_id::text, session_id::text, created_at FROM inbox.link_pending_bundles($1::integer, $2::uuid)`, 10, session)
 	if err != nil {
 		return nil, databaseError(err)
 	}
 	defer rows.Close()
 	var out []ConversationItem
 	for rows.Next() {
-		var bundle, session string
+		var bundle, sess string
 		var at time.Time
-		if err := rows.Scan(&bundle, &session, &at); err != nil {
+		if err := rows.Scan(&bundle, &sess, &at); err != nil {
 			return nil, databaseError(err)
 		}
-		b, sid := bundle, session
+		b, sid := bundle, sess
 		out = append(out, ConversationItem{BundleOnly: true, BundleID: &b, SessionID: &sid, Platform: "messenger", LastAt: at, Unreplied: true, LinkPendingManual: true})
+	}
+	return out, databaseErrorOrNil(rows.Err())
+}
+
+// liveCommentItems is A8 filter=live_comment (LC-B3b): the bundle-only rows of the store's live comments (inbox.live_comment_bundles,
+// migration 0165), newest first, at most req.Limit, with session and keyset predicates before LIMIT.
+// Platform facebook renders as the console name messenger.
+func (s *Service) liveCommentItems(ctx context.Context, tx pgx.Tx, req ListRequest) ([]ConversationItem, error) {
+	rows, err := tx.Query(ctx, `SELECT bundle_id::text, session_id::text, platform, created_at, link_pending_manual
+		FROM inbox.live_comment_bundles($1::uuid, $2::integer, $3::timestamptz, $4::uuid)`, req.SessionID, req.Limit, req.LastAt, req.CursorID)
+	if err != nil {
+		return nil, databaseError(err)
+	}
+	defer rows.Close()
+	var out []ConversationItem
+	for rows.Next() {
+		var bundle, sess, platform string
+		var at time.Time
+		var pending bool
+		if err := rows.Scan(&bundle, &sess, &platform, &at, &pending); err != nil {
+			return nil, databaseError(err)
+		}
+		if platform == "facebook" {
+			platform = "messenger"
+		}
+		b, sid := bundle, sess
+		out = append(out, ConversationItem{BundleOnly: true, BundleID: &b, SessionID: &sid, Platform: platform, LastAt: at, Unreplied: pending, LinkPendingManual: pending})
 	}
 	return out, databaseErrorOrNil(rows.Err())
 }
@@ -172,6 +214,11 @@ func (s *Service) ReadThread(ctx context.Context, tx pgx.Tx, conversationID stri
 	out.Mode = meta.mode
 	out.TakeoverGeneration = meta.generation
 	out.HumanUntil = meta.humanUntil
+	out.LinkVersion = meta.linkVersion
+	// Calls inbox.conversation_binding (0165): the send binding the UI matches against the capability row; NULL = none.
+	if err := tx.QueryRow(ctx, `SELECT inbox.conversation_binding($1::uuid)::text`, conversationID).Scan(&out.BindingID); err != nil {
+		return out, databaseError(err)
+	}
 
 	rows, err := tx.Query(ctx, `SELECT event_id::text, key_id, nonce, ciphertext, app_id, object, asset_id, event_key, payload_hash,
 			tenant_id::text, store_id::text, route_id::text, route_epoch, server_seq, occurred_at, direction
@@ -245,13 +292,14 @@ type conversationMeta struct {
 	humanUntil       *time.Time
 	windowOpenUntil  time.Time
 	linkedCustomerID *string
+	linkVersion      int64
 }
 
 func (s *Service) conversationMeta(ctx context.Context, tx pgx.Tx, conversationID string) (conversationMeta, error) {
 	var m conversationMeta
-	err := tx.QueryRow(ctx, `SELECT platform, mode, assignee::text, takeover_generation, human_until, window_open_until, linked_customer_id::text
+	err := tx.QueryRow(ctx, `SELECT platform, mode, assignee::text, takeover_generation, human_until, window_open_until, linked_customer_id::text, link_version
 		FROM social.conversation_meta($1::uuid)`, conversationID).
-		Scan(&m.platform, &m.mode, &m.assignee, &m.generation, &m.humanUntil, &m.windowOpenUntil, &m.linkedCustomerID)
+		Scan(&m.platform, &m.mode, &m.assignee, &m.generation, &m.humanUntil, &m.windowOpenUntil, &m.linkedCustomerID, &m.linkVersion)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return m, command.ErrNotFound
 	}
@@ -261,34 +309,65 @@ func (s *Service) conversationMeta(ctx context.Context, tx pgx.Tx, conversationI
 	return m, nil
 }
 
-// BuyerPanel is A13. LC-B3 implements the conversation-scoped fields only; claims, orders, purchase_ordinal and
-// auto_reply are LC-B4 and always empty/omitted here (documented in DELIVERY.md).
-func (s *Service) BuyerPanel(ctx context.Context, tx pgx.Tx, conversationID string) (BuyerPanel, error) {
-	out := BuyerPanel{PurchaseOrdinal: 0, Claims: []ClaimRef{}, ClaimTotalMinor: 0, Orders: []OrderRef{}}
-	meta, err := s.conversationMeta(ctx, tx, conversationID)
-	if err != nil {
-		return out, err
-	}
-	out.Platform = meta.platform
-	out.LinkedCustomerID = meta.linkedCustomerID
-	out.WindowOpenUntil = &meta.windowOpenUntil
-	// Calls inbox.link_pending_for (migration 0128): the flag of the bundles linked to this conversation's peer.
-	if err := tx.QueryRow(ctx, `SELECT link_pending_manual FROM inbox.link_pending_for($1::uuid, NULL)`, conversationID).Scan(&out.LinkPendingManual); err != nil {
+// panelFacts is inbox.buyer_panel's jsonb. Orders is nil when the principal lacks orders:read (the key is absent);
+// AutoReplyState is the raw operation state (§4.4 mapping stays here).
+type panelFacts struct {
+	Claims            []ClaimRef  `json:"claims"`
+	ClaimTotalMinor   int64       `json:"claim_total_minor"`
+	PurchaseOrdinal   int         `json:"purchase_ordinal"`
+	LinkPendingManual bool        `json:"link_pending_manual"`
+	Platform          string      `json:"platform"`
+	Orders            *[]OrderRef `json:"orders"`
+	AutoReplyState    *string     `json:"auto_reply_state"`
+}
+
+// panel calls inbox.buyer_panel (0165) for exactly one of conversation/bundle and fills the shared DTO fields. Side effect: none (STABLE).
+func (s *Service) panel(ctx context.Context, tx pgx.Tx, conversationID, bundleID *string) (BuyerPanel, error) {
+	out := BuyerPanel{Claims: []ClaimRef{}}
+	var raw []byte
+	if err := tx.QueryRow(ctx, `SELECT inbox.buyer_panel($1::uuid, $2::uuid)::text`, conversationID, bundleID).Scan(&raw); err != nil {
 		return out, databaseError(err)
+	}
+	var f panelFacts
+	if err := json.Unmarshal(raw, &f); err != nil {
+		return out, ErrDatabase
+	}
+	if f.Claims != nil {
+		out.Claims = f.Claims
+	}
+	out.Platform, out.ClaimTotalMinor, out.PurchaseOrdinal, out.LinkPendingManual = f.Platform, f.ClaimTotalMinor, f.PurchaseOrdinal, f.LinkPendingManual
+	out.Orders = f.Orders
+	if state, ok := sendState(f.AutoReplyState); ok {
+		out.AutoReply = &AutoReply{SendState: state}
 	}
 	return out, nil
 }
 
-// BuyerPanelByBundle is A13 with ?bundle_id= (Amendment 1 A1.1/P2-2): the bundle-scoped panel. It carries the platform and the
-// link_pending_manual flag; claims/orders stay empty here (their read model is a later unit) and a bundle outside the caller's
-// scope is a 404.
-func (s *Service) BuyerPanelByBundle(ctx context.Context, tx pgx.Tx, bundleID string) (BuyerPanel, error) {
-	out := BuyerPanel{Claims: []ClaimRef{}, Orders: []OrderRef{}}
-	err := tx.QueryRow(ctx, `SELECT platform, link_pending_manual FROM inbox.link_pending_for(NULL, $1::uuid)`, bundleID).Scan(&out.Platform, &out.LinkPendingManual)
+// BuyerPanel is A13 by conversation (LC-B3b): the conversation header fields plus the claims/orders of the bundles that
+// inbox.bundle_peers links to this conversation's peer (I09). display_name only from the conversation's own newest inbound envelope.
+func (s *Service) BuyerPanel(ctx context.Context, tx pgx.Tx, conversationID string) (BuyerPanel, error) {
+	meta, err := s.conversationMeta(ctx, tx, conversationID)
 	if err != nil {
-		return out, databaseError(err)
+		return BuyerPanel{Claims: []ClaimRef{}}, err
 	}
+	out, err := s.panel(ctx, tx, &conversationID, nil)
+	if err != nil {
+		return out, err
+	}
+	out.LinkedCustomerID = meta.linkedCustomerID
+	out.WindowOpenUntil = &meta.windowOpenUntil
+	one := []ConversationItem{{ConversationID: conversationID}}
+	if err := s.fillDisplayNames(ctx, tx, one); err != nil {
+		return out, err
+	}
+	out.DisplayName = one[0].DisplayName
 	return out, nil
+}
+
+// BuyerPanelByBundle is A13 with ?bundle_id= (Amendment 1 A1.1/P2-2 + LC-B3b): that bundle's claims/orders only, no conversation-scoped
+// fields. A bundle outside the caller's tenant/store (or retention-purged) is a 404.
+func (s *Service) BuyerPanelByBundle(ctx context.Context, tx pgx.Tx, bundleID string) (BuyerPanel, error) {
+	return s.panel(ctx, tx, nil, &bundleID)
 }
 
 // databaseError passes the fixed definer codes through unchanged (the httpapi inbox classifier maps them) and flattens

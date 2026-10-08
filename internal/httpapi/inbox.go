@@ -50,8 +50,8 @@ func registerInboxRoutes(mux *http.ServeMux, pool *pgxpool.Pool, svc *inbox.Serv
 	const base = "/v1/admin/stores/{store_id}/inbox/conversations"
 	const panelBase = "/v1/admin/stores/{store_id}/inbox/buyer-panel"
 
-	// A8 conversation list. session_id is accepted (valid uuid) but matches nothing in 0119: comment read-through
-	// (LC-B2) has not projected any comment conversations yet, so the live_comment filter returns empty.
+	// A8 conversation list. session_id (LC-B3b) keeps the conversations whose peer is bundle_peers-linked to a bundle of that
+	// session; filter=live_comment returns the bundle-only comment rows (inbox.live_comment_bundles).
 	mux.HandleFunc("GET "+base, inboxRoute(http.MethodGet, false, true, func(w http.ResponseWriter, r *http.Request) {
 		req, err := parseInboxListRequest(r.URL)
 		if err != nil {
@@ -67,7 +67,18 @@ func registerInboxRoutes(mux *http.ServeMux, pool *pgxpool.Pool, svc *inbox.Serv
 			if err != nil {
 				return nil, err
 			}
-			// Bundle-only items (Amendment 1 P2-2) follow the conversations and never carry the keyset cursor.
+			// LC-B3b live_comment is a homogeneous bundle list: use its created_at/id as the
+			// existing opaque keyset. Other filters keep their conversation-only cursor below.
+			if req.Filter == "live_comment" {
+				if len(out.Items) == req.Limit && len(out.Items) > 0 {
+					last := out.Items[len(out.Items)-1]
+					if last.BundleID != nil {
+						out.NextCursor = encodeInboxCursor(last.LastAt, *last.BundleID)
+					}
+				}
+				return out, nil
+			}
+			// Appended pending-link rows (Amendment 1 P2-2) never advance the conversation keyset.
 			conversations := 0
 			for _, it := range out.Items {
 				if !it.BundleOnly {
@@ -137,7 +148,8 @@ func registerInboxRoutes(mux *http.ServeMux, pool *pgxpool.Pool, svc *inbox.Serv
 		})(w, r)
 	}))
 
-	// A13 buyer panel: conversation-scoped fields, or the bundle-scoped panel (platform + link_pending_manual, LC-B4).
+	// A13 buyer panel (LC-B3b): by conversation (bundles = its bundle_peers links) or by bundle. The `orders` key is decided inside
+	// inbox.buyer_panel (orders:read held by the principal) and omitted from the JSON otherwise; this route needs only inbox:read.
 	mux.HandleFunc("GET "+panelBase, inboxRoute(http.MethodGet, false, true, func(w http.ResponseWriter, r *http.Request) {
 		conversationID, bundleID, err := parseInboxBuyerPanel(r.URL)
 		if err != nil {
@@ -231,7 +243,8 @@ func parseInboxListRequest(u *url.URL) (inbox.ListRequest, error) {
 			if !command.ValidID(list[0]) {
 				return req, command.ErrInvalid
 			}
-			// LC-B2 boundary: no comment conversations exist in 0119, so a session scope matches nothing.
+			id := list[0]
+			req.SessionID = &id // LC-B3b: filters by the bundle_peers link of the session's bundles (inbox.ListConversations)
 		case "cursor":
 			if len(list[0]) > 1024 {
 				return req, command.ErrInvalid
@@ -330,9 +343,10 @@ func parseInboxBuyerPanel(u *url.URL) (conversationID, bundleID string, err erro
 	return conversationID, bundleID, nil
 }
 
-// encodeInboxCursor is the opaque A8 keyset cursor: base64url of "<RFC3339Nano last_at>|<conversation_id>".
-func encodeInboxCursor(lastAt time.Time, conversationID string) string {
-	return base64.RawURLEncoding.EncodeToString([]byte(lastAt.UTC().Format(time.RFC3339Nano) + "|" + conversationID))
+// encodeInboxCursor is the opaque A8 keyset: base64url of "<RFC3339Nano last_at>|<row_id>".
+// row_id is the conversation ID, or the bundle ID for filter=live_comment (LC-B3b).
+func encodeInboxCursor(lastAt time.Time, rowID string) string {
+	return base64.RawURLEncoding.EncodeToString([]byte(lastAt.UTC().Format(time.RFC3339Nano) + "|" + rowID))
 }
 
 func decodeInboxCursor(c string) (time.Time, string, error) {

@@ -64,6 +64,7 @@ type ConversationItem struct {
 	Assignee          *string   `json:"assignee"`
 	WindowOpenUntil   time.Time `json:"window_open_until"`
 	LinkedCustomerID  *string   `json:"linked_customer_id"`
+	LinkVersion       *int64    `json:"link_version"` // A14 expected_version (LC-B3b); explicit null on bundle-only rows
 	BundleID          *string   `json:"bundle_id,omitempty"`
 	SessionID         *string   `json:"session_id,omitempty"`
 	LinkPendingManual bool      `json:"link_pending_manual,omitempty"`
@@ -88,8 +89,9 @@ func (c ConversationItem) MarshalJSON() ([]byte, error) {
 		Assignee          *string   `json:"assignee"`
 		WindowOpenUntil   *string   `json:"window_open_until"`
 		LinkedCustomerID  *string   `json:"linked_customer_id"`
+		LinkVersion       *int64    `json:"link_version"`
 		LinkPendingManual bool      `json:"link_pending_manual"`
-	}{nil, c.BundleID, c.SessionID, c.Platform, c.LastAt, false, true, nil, nil, nil, nil, true})
+	}{nil, c.BundleID, c.SessionID, c.Platform, c.LastAt, false, c.Unreplied, nil, nil, nil, nil, nil, c.LinkPendingManual})
 }
 
 // ConversationList is the A8 response envelope. NextCursor is empty on the last page.
@@ -124,10 +126,11 @@ type ThreadView struct {
 	TakeoverGeneration int64         `json:"takeover_generation"`
 	HumanUntil         *time.Time    `json:"human_until"`
 	HasUnknownOutbound *bool         `json:"has_unknown_outbound"`
+	LinkVersion        int64         `json:"link_version"` // A14 expected_version (LC-B3b)
+	BindingID          *string       `json:"binding_id"`   // the send binding of this conversation's asset, null when none (LC-B3b)
 }
 
-// ClaimRef is one A13 claim; LC-B3 always returns them empty (bundles/claims are LC-B4). The shape is fixed here so
-// the response contract stays stable for the integrator's reader.
+// ClaimRef is one A13 accepted claim (LC-B3b, claims.buyer_panel_claims): exactly these four keys, never a name or an actor.
 type ClaimRef struct {
 	SessionID string `json:"session_id"`
 	OfferID   string `json:"offer_id"`
@@ -135,7 +138,7 @@ type ClaimRef struct {
 	Quantity  int    `json:"quantity"`
 }
 
-// OrderRef is one A13 order; LC-B3 always returns them empty (orders:read is LC-B4).
+// OrderRef is one A13 order (LC-B3b, inbox.buyer_panel; only for a principal holding orders:read). Number is the LC-… rule.
 type OrderRef struct {
 	OrderID    string    `json:"order_id"`
 	Number     string    `json:"number"`
@@ -144,17 +147,24 @@ type OrderRef struct {
 	CreatedAt  time.Time `json:"created_at"`
 }
 
-// BuyerPanel is the A13 response (LC-B3 implements the conversation-scoped fields only; claims/orders/auto_reply are
-// LC-B4 and always empty/omitted).
+// AutoReply is the A13 auto_reply: the §4.4 send_state of the newest automated private reply of the linked bundles.
+type AutoReply struct {
+	SendState string `json:"send_state"`
+}
+
+// BuyerPanel is the A13 response (LC-B3b). Orders is a pointer so the key is omitted entirely without orders:read (an empty
+// non-nil slice still renders `[]`); AutoReply and DisplayName are omitted when there is no data. Every identity link comes from
+// inbox.bundle_peers (I09); owner_id never feeds any field.
 type BuyerPanel struct {
-	DisplayName      *string    `json:"display_name,omitempty"`
-	Platform         string     `json:"platform"`
-	PurchaseOrdinal  int        `json:"purchase_ordinal"`
-	Claims           []ClaimRef `json:"claims"`
-	ClaimTotalMinor  int64      `json:"claim_total_minor"`
-	Orders           []OrderRef `json:"orders"`
-	LinkedCustomerID *string    `json:"linked_customer_id,omitempty"`
-	WindowOpenUntil  *time.Time `json:"window_open_until,omitempty"`
+	DisplayName      *string     `json:"display_name,omitempty"`
+	Platform         string      `json:"platform"`
+	PurchaseOrdinal  int         `json:"purchase_ordinal"`
+	Claims           []ClaimRef  `json:"claims"`
+	ClaimTotalMinor  int64       `json:"claim_total_minor"`
+	Orders           *[]OrderRef `json:"orders,omitempty"`
+	AutoReply        *AutoReply  `json:"auto_reply,omitempty"`
+	LinkedCustomerID *string     `json:"linked_customer_id,omitempty"`
+	WindowOpenUntil  *time.Time  `json:"window_open_until,omitempty"`
 	// LinkPendingManual (Amendment 1 A1.1): the bundle's claim link could not be sent because the comment's private reply was used.
 	LinkPendingManual bool `json:"link_pending_manual"`
 }
