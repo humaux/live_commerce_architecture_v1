@@ -1,0 +1,41 @@
+(node:65705) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ offer controls read authoritative limits without parsing unrelated KEYWORD_QTY_CONTAINS window/stats (12.414042ms)
+✔ offer controls accept 101 through the backend cap of 200 distinct offers, reject 201 (1.946042ms)
+✔ offer toggle preserves exactly the authoritative maximum in the real M4 payload (3.326709ms)
+✔ console BFF admits exactly A1/A7/A6 and A5 read/copy methods (0.339125ms)
+✖ Next proxy admits the exact console family and results query before the BFF (128.126833ms)
+✔ results query is canonical repeated session_id 1..50, everything else queryless (0.127083ms)
+✔ real BFF route forwards only exact resources, authenticates scope and returns private scrubbed errors (49.302875ms)
+✔ new commands reject unknown keys and preserve frozen copy/lifecycle/recommend body (0.1595ms)
+✔ browser commands reuse Studio fences, exact no-comment recommend body and backend refusal codes (1.41725ms)
+✔ results client preserves canonical ids/order and rejects invalid list before fetch (0.315125ms)
+✔ stock client reuses catalog transport/key/parser and fences a changed login without retries (1.033584ms)
+✔ journal replay sends the exact original method/path/body/key for all five commands (1.897833ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 11
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 358.381084
+
+✖ failing tests:
+
+test at tests/admin/live-console-bff.test.ts:88:1
+✖ Next proxy admits the exact console family and results query before the BFF (128.126833ms)
+  AssertionError [ERR_ASSERTION]: A2 must reach the BFF before Go
+  
+  null !== '1'
+  
+      at TestContext.<anonymous> (/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/live-console-bff.test.ts:92:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: null,
+    expected: '1',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

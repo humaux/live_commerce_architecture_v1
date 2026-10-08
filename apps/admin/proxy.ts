@@ -12,6 +12,7 @@ import { validStudioQuery } from "./lib/studio-request";
 import { claimsCollection, claimsSubpath } from "./lib/claims-request";
 import { platformRoute, requestHostname } from "./lib/company";
 import { consolePaths, consoleAny, validConsoleQuery } from "./src/features/live/console-request";
+import { commentResource, commentRoute, validCommentRequest } from "./src/features/live/comment-request";
 
 const uuid = "[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}";
 const orderPath = new RegExp(`^/api/stores/${uuid}/orders(?:/${uuid})?$`);
@@ -74,6 +75,13 @@ export function proxy(request: NextRequest) {
           },
         );
       }
+    }
+    const relativeCommentPath=decoded.replace(storePrefix, "");
+    if (studioPrefix.test(decoded) && path===decoded && commentResource(relativeCommentPath)) {
+      // A2-A5 use their own closed grammar; the catchall still owns session, CSRF and body validation.
+      if (!commentRoute(request.method,relativeCommentPath)) return NextResponse.json({code:"method_not_allowed"},{status:405,headers:{"Cache-Control":"private, no-store","Referrer-Policy":"no-referrer"}});
+      if (!validCommentRequest(request,relativeCommentPath)) return NextResponse.json({code:"invalid_request"},{status:422,headers:{"Cache-Control":"private, no-store","Referrer-Policy":"no-referrer"}});
+      return NextResponse.next();
     }
     if (
       studioPrefix.test(decoded) &&

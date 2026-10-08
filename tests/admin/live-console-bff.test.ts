@@ -88,6 +88,12 @@ test("console BFF admits exactly A1/A7/A6 and A5 read/copy methods", () => {
 test("Next proxy admits the exact console family and results query before the BFF", async () => {
   const { NextRequest } = await import("../../apps/admin/node_modules/next/server.js");
   const { proxy } = await import("../../apps/admin/proxy.ts");
+  const commentRead = new NextRequest(`https://admin.example.test/api/stores/${store}/${root}/comments?after_epoch=0&after_seq=2&limit=50`);
+  assert.equal(proxy(commentRead).headers.get("x-middleware-next"),"1","A2 must reach the BFF before Go");
+  for(const suffix of ["print","private-reply","public-reply"]) {
+    const request=new NextRequest(`https://admin.example.test/api/stores/${store}/${root}/comments/123_456/${suffix}`,{method:"POST",headers:{"Idempotency-Key":"synthetic-key"}});
+    assert.equal(proxy(request).headers.get("x-middleware-next"),"1");
+  }
   const invoke = (path: string, method = "GET", query = "") => {
     const raw = `https://admin.example.test/api/stores/${store}/${path}${query}`;
     const request = new NextRequest(raw, { method });

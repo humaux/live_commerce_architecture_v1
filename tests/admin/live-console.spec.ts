@@ -2,7 +2,8 @@
 // Depends on: @playwright/test, node:fs/promises, node:crypto; signed OIDC/Next/PG harness env LC_BROWSER_CONSOLE_*.
 // Used by: browser_live_console_test.go and test-local.sh --browser-live-console.
 // Invariants: I01/I02/I06/I10/I11/I14/I18; Console upstream/receipts are explicitly MOCK, never SQL/provider acceptance.
-import { test, expect, type Page, type APIRequestContext, type BrowserContext } from "@playwright/test";
+import { expect, type Page, type APIRequestContext, type BrowserContext } from "@playwright/test";
+import { test } from "./inbox-private-evidence";
 import { writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { workspaceCopy } from "../../apps/admin/src/features/live/workspace-copy";
