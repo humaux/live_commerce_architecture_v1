@@ -84,10 +84,8 @@ selected() { [[ -z "$only" || "$only" == *",$1,"* ]]; }
 
 # ---- mode discovery: test-local.sh --list reads the single case registry ------------------
 # No errexit in this script: a registry that --list rejects mid-way would otherwise yield a truncated inventory (PR #22 review).
-if ! modes=$(bash scripts/dev/test-local.sh --list); then
-  echo "release-gate: test-local.sh --list failed; refusing a partial gate inventory" >&2
-  exit 2
-fi
+# Keep it one line starting with modes=$(: tests/ci/pr-modes.test.mjs evaluates this derivation line.
+modes=$(bash scripts/dev/test-local.sh --list) || { echo "release-gate: test-local.sh --list failed; refusing a partial gate inventory" >&2; exit 2; }
 browser_modes=$(printf '%s\n' "$modes" | grep -E -- '^--(.*browser.*|e2e)$' || true)
 all_modes=$(printf '%s\n' "$modes" | grep -c . | tr -d ' ')
 ids="G01 G02 G03 G04 G05 G06 G06n G07 G07z"
