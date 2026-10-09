@@ -13,6 +13,7 @@ import (
 type bffSinkContext struct {
 	m      *bffModule
 	tokens []bffToken
+	refs   []location
 }
 
 func bffCallKey(m *bffModule, call []bffToken) string {
@@ -21,11 +22,13 @@ func bffCallKey(m *bffModule, call []bffToken) string {
 	}
 	return fmt.Sprintf("%s:%d:%d", m.name, call[0].start, call[len(call)-1].end)
 }
-func (s *bffScanner) sinkContext(m *bffModule, tokens []bffToken) {
+func (s *bffScanner) sinkContext(m *bffModule, tokens []bffToken, refs ...location) {
 	if s.contexts == nil {
 		s.contexts = map[string]bffSinkContext{}
 	}
-	s.contexts[bffCallKey(m, tokens)] = bffSinkContext{m, tokens}
+	key := bffCallKey(m, tokens)
+	prior := s.contexts[key]
+	s.contexts[key] = bffSinkContext{m: m, tokens: tokens, refs: bffUniqueRefs(append(prior.refs, refs...))}
 }
 func (s *bffScanner) consumeSink(m *bffModule, call []bffToken) {
 	if s.consumed == nil {
@@ -47,67 +50,6 @@ func bffSinkName(name string) bool {
 		return true
 	}
 	return false
-}
-
-// Inspect only exports and reached helper bodies. Follow local references to
-// include module aliases used by an export, while excluding unused declarations.
-// Unknown uses of a sink value are not an invitation to guess their call graph.
-func (s *bffScanner) unaccountedSinkValues(root string) {
-	seen := map[string]bool{}
-	var inspect func(*bffModule, []bffToken)
-	inspect = func(m *bffModule, tokens []bffToken) {
-		key := bffCallKey(m, tokens)
-		if seen[key] {
-			return
-		}
-		seen[key] = true
-		for i, t := range tokens {
-			if t.kind != "ident" {
-				continue
-			}
-			if i+1 < len(tokens) && tokens[i+1].text == ":" {
-				continue
-			} // object/type key
-			name := t.text
-			remote := name
-			if imp, ok := m.imports[name]; ok {
-				remote = imp[1]
-			}
-			if bffSinkName(remote) {
-				if s.consumedValues[fmt.Sprintf("%s:%d", m.name, t.start)] {
-					continue
-				}
-				literal := name == remote && i+1 < len(tokens) && tokens[i+1].text == "(" && (i == 0 || tokens[i-1].text != "." && tokens[i-1].text != "?.")
-				if !literal {
-					addUnresolved(&s.out, m.ref(tokens[i:i+1]), "unaccounted forwarding sink value (alias, member or higher-order use)")
-				}
-				continue
-			}
-			if i > 0 && (tokens[i-1].text == "." || tokens[i-1].text == "?." || tokens[i-1].text == "const" || tokens[i-1].text == "let" || tokens[i-1].text == "function") {
-				continue
-			}
-			if f, ok := m.funcs[name]; ok {
-				inspect(m, f.tokens)
-			} else if d, ok := m.defs[name]; ok {
-				inspect(m, d.tokens)
-			}
-		}
-	}
-	if m := s.reader.modules[root]; m != nil {
-		for name := range bffExports(m) {
-			if f, ok := m.funcs[name]; ok {
-				inspect(m, f.tokens)
-			} else if d, ok := m.defs[name]; ok {
-				inspect(m, d.tokens)
-			}
-		}
-	}
-	for _, ctx := range s.contexts {
-		if ctx.m.name == root && bffCallKey(ctx.m, ctx.tokens) == bffCallKey(ctx.m, ctx.m.tokens) {
-			continue
-		}
-		inspect(ctx.m, ctx.tokens)
-	}
 }
 
 // Resolve only top-level RequestInit members, respecting spread/override order.
@@ -242,13 +184,13 @@ func (s *bffScanner) remainingSinks() {
 			m := ctx.m
 			for _, sink := range []string{"fetch", "fetcher", "transport", "callBackend", "merchantBackend", "privateIdentity"} {
 				for _, call := range bffCalls(m, ctx.tokens, sink) {
-					if s.consumed[bffCallKey(m, call)] {
+					if s.consumed[bffCallKey(m, call)] || s.closedSinks[bffCallKey(m, call)] {
 						continue
 					}
 					s.consumeSink(m, call)
 					args := bffSplit(call, ",")
 					if len(args) == 0 || len(args[0]) == 0 {
-						addUnresolved(&s.out, m.ref(call), "empty forwarding sink")
+						s.sinkUnknown(ctx, call, "empty forwarding sink")
 						continue
 					}
 					refs := []location{m.ref(call)}
@@ -274,7 +216,7 @@ func (s *bffScanner) remainingSinks() {
 						refs = append(refs, more...)
 					}
 					if err != nil {
-						addUnresolved(&s.out, m.ref(call), err.Error())
+						s.sinkUnknown(ctx, call, err.Error())
 						continue
 					}
 					v, err := s.dynamicPath(m, args[0])
@@ -290,12 +232,19 @@ func (s *bffScanner) remainingSinks() {
 						}
 					}
 					if err != nil {
-						addUnresolved(&s.out, m.ref(call), err.Error())
+						s.sinkUnknown(ctx, call, err.Error())
 						continue
 					}
-					s.emit(method, prefix, v, refs...)
+					s.emit(method, prefix, v, append(refs, ctx.refs...)...)
 				}
 			}
 		}
+	}
+}
+
+func (s *bffScanner) sinkUnknown(ctx bffSinkContext, call []bffToken, detail string) {
+	addUnresolved(&s.out, ctx.m.ref(call), detail)
+	for _, ref := range ctx.refs {
+		addUnresolved(&s.out, ref, detail)
 	}
 }

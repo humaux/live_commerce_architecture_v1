@@ -167,7 +167,7 @@ func TestBFFRealSourceMutation(t *testing.T) {
 	sourceRoot := "../../.."
 	// Copy only existing TypeScript sources into this test-owned tree. No source under
 	// test changes while concurrent gates may be reading the repository.
-	for _, app := range []string{"apps/admin", "apps/storefront"} {
+	for _, app := range []string{"apps/admin", "apps/storefront", "packages"} {
 		if e := filepath.WalkDir(filepath.Join(sourceRoot, app), func(path string, d os.DirEntry, e error) error {
 			if e != nil {
 				return e
@@ -178,7 +178,7 @@ func TestBFFRealSourceMutation(t *testing.T) {
 				}
 				return nil
 			}
-			if !strings.HasSuffix(path, ".ts") {
+			if !strings.HasSuffix(path, ".ts") && filepath.Base(path) != "package.json" {
 				return nil
 			}
 			rel, e := filepath.Rel(sourceRoot, path)

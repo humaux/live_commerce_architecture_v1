@@ -5,6 +5,7 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -25,11 +26,15 @@ type bffModule struct {
 	defs         map[string]bffExpr
 	imports      map[string][2]string
 	importRefs   map[string]location
+	bindingRefs  map[string][]location
+	typeImports  map[string]bool
+	types        map[string]bool
 	funcs        map[string]bffExpr
 }
 type bffReader struct {
-	root    string
-	modules map[string]*bffModule
+	root       string
+	modules    map[string]*bffModule
+	importDeps map[string][]location
 }
 type bffValue struct {
 	texts  []string
@@ -248,11 +253,14 @@ func (r *bffReader) load(name string) (*bffModule, error) {
 	if err != nil {
 		return nil, err
 	}
-	m := &bffModule{name: name, source: string(data), defs: map[string]bffExpr{}, imports: map[string][2]string{}, importRefs: map[string]location{}, funcs: map[string]bffExpr{}}
+	m := &bffModule{name: name, source: string(data), defs: map[string]bffExpr{}, imports: map[string][2]string{}, importRefs: map[string]location{}, bindingRefs: map[string][]location{}, typeImports: map[string]bool{}, types: map[string]bool{}, funcs: map[string]bffExpr{}}
 	m.tokens = bffLex(m.source)
 	r.modules[name] = m
 	t := m.tokens
 	for i := 0; i < len(t); i++ {
+		if (t[i].text == "type" || t[i].text == "interface") && i+1 < len(t) && t[i+1].kind == "ident" {
+			m.types[t[i+1].text] = true
+		}
 		if t[i].text == "import" || t[i].text == "export" && i+1 < len(t) && t[i+1].text == "{" {
 			end := i + 1
 			for end < len(t) && t[end].text != ";" {
@@ -273,12 +281,15 @@ func (r *bffReader) load(name string) (*bffModule, error) {
 						continue
 					}
 					remote, local := frag[j].text, frag[j].text
+					typeOnly := frag[1].text == "type" || frag[j-1].text == "type"
 					if j+2 < from && frag[j+1].text == "as" {
 						local = frag[j+2].text
 						j += 2
 					}
 					m.imports[local] = [2]string{file, remote}
 					m.importRefs[local] = m.ref(frag)
+					m.bindingRefs[local] = append([]location{m.ref(frag)}, r.importDeps[name+"\x00"+source]...)
+					m.typeImports[local] = typeOnly
 				}
 			}
 			i = end
@@ -351,6 +362,47 @@ func (r *bffReader) importPath(from, source string) string {
 	} else if strings.HasPrefix(source, ".") {
 		p = filepath.Join(filepath.Dir(from), source)
 	} else {
+		// Workspace exports are source bindings, not opaque external packages.
+		// Both current and immutable-base snapshots must include packages/ metadata.
+		entries, _ := os.ReadDir(filepath.Join(r.root, "packages"))
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
+			}
+			base := filepath.Join("packages", entry.Name())
+			data, err := os.ReadFile(filepath.Join(r.root, base, "package.json"))
+			if err != nil {
+				continue
+			}
+			var pkg struct {
+				Name    string          `json:"name"`
+				Exports json.RawMessage `json:"exports"`
+			}
+			if json.Unmarshal(data, &pkg) != nil || pkg.Name == "" {
+				continue
+			}
+			if source != pkg.Name && !strings.HasPrefix(source, pkg.Name+"/") {
+				continue
+			}
+			if r.importDeps == nil {
+				r.importDeps = map[string][]location{}
+			}
+			r.importDeps[from+"\x00"+source] = []location{{File: filepath.ToSlash(filepath.Join(base, "package.json")), Line: 1, End: 1 + strings.Count(string(data), "\n")}}
+			var exports map[string]string
+			if json.Unmarshal(pkg.Exports, &exports) != nil {
+				return source
+			}
+			key := "."
+			if source != pkg.Name {
+				key = "./" + strings.TrimPrefix(source, pkg.Name+"/")
+			}
+			if target := exports[key]; strings.HasPrefix(target, "./") {
+				candidate := filepath.Clean(filepath.Join(base, target))
+				if strings.HasPrefix(filepath.ToSlash(candidate), filepath.ToSlash(base)+"/") {
+					return filepath.ToSlash(candidate)
+				}
+			}
+		}
 		return source
 	}
 	if !strings.HasSuffix(p, ".ts") {

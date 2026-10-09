@@ -352,6 +352,12 @@ func (s *bffScanner) forwardingMethod(m *bffModule, start int) {
 				addUnresolved(&s.out, m.ref(call), err.Error())
 				continue
 			}
+			// Reached imports can call a previously scanned API root (legacyGET).
+			// Reuse only this individual call's proven closed admission seam.
+			if s.closedSinks == nil {
+				s.closedSinks = map[string]bool{}
+			}
+			s.closedSinks[bffCallKey(m, call)] = true
 			for i := start; i < len(s.out.Routes); i++ {
 				if method != "" {
 					s.out.Routes[i].Method = method

@@ -34,6 +34,7 @@ type bffScanner struct {
 	consumed       map[string]bool
 	contexts       map[string]bffSinkContext
 	consumedValues map[string]bool
+	closedSinks    map[string]bool
 }
 
 const bffStorePrefix = "/v1/admin/stores/{}/"
@@ -71,12 +72,7 @@ func scanBFF(root string) (inventory, error) {
 		s.producer(m.name, func() { s.primaryOrigin(m) })
 	}
 	if m, e := s.reader.load("apps/admin/proxy.ts"); e == nil {
-		for _, sink := range []string{"fetch", "callBackend", "privateIdentity", "merchantBackend"} {
-			if len(bffCalls(m, m.tokens, sink)) > 0 {
-				s.producer(m.name, func() { s.directSinks(m, bffExports(m), bffLeafRefs(m)...) })
-				break
-			}
-		}
+		s.producer(m.name, func() {}) // Guard-only proxy still must finalize its supported entry.
 	}
 	s.dedupe()
 	return s.out, nil
@@ -97,6 +93,7 @@ func (s *bffScanner) producer(name string, scan func()) {
 	// Extra upstream verbs are independent of the browser's exported verb.
 	s.remainingSinks()
 	s.unaccountedSinkValues(name)
+	s.remainingSinks() // Reached imported bindings add contexts during value traversal.
 	s.out.Producers[name] = append([]route(nil), s.out.Routes[start:]...)
 }
 func (s *bffScanner) dedupe() {

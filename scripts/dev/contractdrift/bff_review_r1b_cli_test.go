@@ -4,6 +4,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,7 +16,7 @@ import (
 func bffReviewFixture(t *testing.T, call func(string, ...string) (int, string)) string {
 	t.Helper()
 	root := fixture(t, "aligned")
-	for _, app := range []string{"apps/admin", "apps/storefront"} {
+	for _, app := range []string{"apps/admin", "apps/storefront", "packages"} {
 		if err := filepath.WalkDir(filepath.Join("../../..", app), func(p string, d os.DirEntry, err error) error {
 			if err != nil {
 				return err
@@ -26,7 +27,7 @@ func bffReviewFixture(t *testing.T, call func(string, ...string) (int, string)) 
 				}
 				return nil
 			}
-			if strings.HasSuffix(p, ".ts") {
+			if strings.HasSuffix(p, ".ts") || filepath.Base(p) == "package.json" {
 				rel, err := filepath.Rel("../../..", p)
 				if err != nil {
 					return err
@@ -192,5 +193,205 @@ func TestReviewR1bUnreachableSinkValueRealCLI(t *testing.T) {
 	mustWrite(t, p, s)
 	if code, out := call(root); code != 0 {
 		t.Fatalf("unreachable alias became forwarding evidence: %d %s", code, out)
+	}
+}
+
+func TestReviewR1bImportedSinkValuesRealCLI(t *testing.T) {
+	call := reviewCLI(t)
+	for _, kind := range []string{"alias", "wrapper", "re-export", "unknown binding", "unused import"} {
+		t.Run(kind, func(t *testing.T) {
+			root := bffReviewFixture(t, call)
+			file := "apps/admin/app/api/stores/[store]/[...resource]/route.ts"
+			p := filepath.Join(root, file)
+			alias := `import {callBackend} from "./backend"; export const hidden=callBackend;`
+			if kind == "wrapper" {
+				alias = `import {callBackend} from "./backend"; export function hidden(...args){return callBackend(...args);}`
+			}
+			if kind == "re-export" {
+				bffWrite(t, root, "apps/admin/lib/extra-inner.ts", alias)
+				alias = `export {hidden} from "./extra-inner";`
+			}
+			if kind == "unknown binding" {
+				alias = `export const other=1;`
+			}
+			bffWrite(t, root, "apps/admin/lib/extra.ts", alias)
+			s := `import {hidden} from "@/lib/extra";` + "\n" + readText(t, p)
+			if kind != "unused import" {
+				s = strings.Replace(s, "async function route(request: Request, context: Context) {", "async function route(request: Request, context: Context) {\nawait hidden(\"new-uncontracted\",{method:\"POST\"});\n", 1)
+			}
+			mustWrite(t, p, s)
+			code, out := call(root)
+			if kind == "unused import" {
+				if code != 0 {
+					t.Fatalf("unused imported alias: %d %s", code, out)
+				}
+				return
+			}
+			if code != 1 || !strings.Contains(out, "ERROR") || !strings.Contains(out, "UNRESOLVED") || !strings.Contains(out, file+":") {
+				t.Fatalf("imported sink binding invisible: %d %s", code, out)
+			}
+		})
+	}
+}
+
+func TestReviewR1bAdminProxySinkValuesRealCLI(t *testing.T) {
+	call := reviewCLI(t)
+	for _, reachable := range []bool{false, true} {
+		t.Run(map[bool]string{true: "reachable alias", false: "unreachable alias"}[reachable], func(t *testing.T) {
+			root := bffReviewFixture(t, call)
+			file := "apps/admin/proxy.ts"
+			p := filepath.Join(root, file)
+			s := readText(t, p)
+			if reachable {
+				s = "const hidden=fetch;\n" + strings.Replace(s, "export function proxy(request: NextRequest) {", "export function proxy(request: NextRequest) {\nhidden(\"https://go.invalid/v1/__proxy_probe\",{method:\"POST\"});\n", 1)
+			} else {
+				s += "\nfunction unused(){const hidden=fetch;return hidden(\"https://go.invalid/v1/__unused\",{method:\"POST\"});}\n"
+			}
+			mustWrite(t, p, s)
+			code, out := call(root)
+			if !reachable {
+				if code != 0 {
+					t.Fatalf("unreachable proxy alias: %d %s", code, out)
+				}
+				return
+			}
+			if code != 1 || !strings.Contains(out, "UNRESOLVED") || !strings.Contains(out, "ERROR") || !strings.Contains(out, file+":") {
+				t.Fatalf("proxy alias invisible: %d %s", code, out)
+			}
+		})
+	}
+}
+
+func TestReviewR1bTypeValueDualBindingRealCLI(t *testing.T) {
+	call := reviewCLI(t)
+	root := seedFixture(t, "aligned")
+	file := "apps/admin/app/api/stores/[store]/[...resource]/route.ts"
+	p := filepath.Join(root, file)
+	s := readText(t, p)
+	s = "type hidden=typeof fetch;\nconst hidden=fetch;\n" + strings.Replace(s, "{if(!routes", "{hidden(\"https://go.invalid/v1/__dual\",{method:\"POST\"});if(!routes", 1)
+	mustWrite(t, p, s)
+	code, out := call(root)
+	if code != 1 || !strings.Contains(out, "UNRESOLVED") || !strings.Contains(out, "ERROR") || !strings.Contains(out, file+":") {
+		t.Fatalf("dual type/value runtime alias erased: %d %s", code, out)
+	}
+}
+
+func TestReviewR1bSharedCyclicSinkGraphRealCLI(t *testing.T) {
+	call := reviewCLI(t)
+	root := bffReviewFixture(t, call)
+	helper := `import {callBackend} from "./backend"; function shared(){const hidden=callBackend;return hidden("new-uncontracted",{method:"POST"});}` + "\n"
+	for i := 0; i < 48; i++ {
+		helper += fmt.Sprintf("export function a%d(flag){shared();if(flag)a%d(false);}\n", i, (i+1)%48)
+	}
+	bffWrite(t, root, "apps/admin/lib/shared-cycle.ts", helper)
+	file := "apps/admin/app/api/stores/[store]/[...resource]/route.ts"
+	p := filepath.Join(root, file)
+	s := `import {a0,a24} from "@/lib/shared-cycle";` + "\n" + readText(t, p)
+	s = strings.Replace(s, "async function route(request: Request, context: Context) {", "async function route(request: Request, context: Context) {\na0(false);a24(false);\n", 1)
+	mustWrite(t, p, s)
+	code, out := call(root) // reviewCLI retains its existing 30-second process bound.
+	if code != 1 || !strings.Contains(out, "ERROR") || !strings.Contains(out, "UNRESOLVED") || !strings.Contains(out, file+":") || !strings.Contains(out, "shared-cycle.ts:") {
+		t.Fatalf("shared/cyclic graph lost hazard: %d %s", code, out)
+	}
+}
+
+func TestReviewR1bWorkspaceSinkBindingsRealCLI(t *testing.T) {
+	call := reviewCLI(t)
+	for _, used := range []bool{false, true} {
+		t.Run(map[bool]string{true: "reached export", false: "unused import"}[used], func(t *testing.T) {
+			root := bffReviewFixture(t, call)
+			bffWrite(t, root, "packages/drift-extra/package.json", `{"name":"@fixture/drift-extra","exports":{".":"./src/index.ts"}}`)
+			bffWrite(t, root, "packages/drift-extra/src/index.ts", `export {hidden} from "./sink";`)
+			bffWrite(t, root, "packages/drift-extra/src/sink.ts", `export const hidden=fetch;`)
+			file := "apps/admin/app/api/stores/[store]/[...resource]/route.ts"
+			p := filepath.Join(root, file)
+			s := `import {hidden} from "@fixture/drift-extra";` + "\n" + readText(t, p)
+			if used {
+				s = strings.Replace(s, "async function route(request: Request, context: Context) {", "async function route(request: Request, context: Context) {\nhidden(\"https://go.invalid/v1/__workspace\",{method:\"POST\"});\n", 1)
+			}
+			mustWrite(t, p, s)
+			code, out := call(root)
+			if !used {
+				if code != 0 {
+					t.Fatalf("unused workspace import: %d %s", code, out)
+				}
+				return
+			}
+			for _, want := range []string{"ERROR", "UNRESOLVED", file + ":", "packages/drift-extra/package.json:", "packages/drift-extra/src/sink.ts:"} {
+				if code != 1 || !strings.Contains(out, want) {
+					t.Fatalf("workspace binding lost %s: %d %s", want, code, out)
+				}
+			}
+		})
+	}
+}
+
+func TestReviewR1bWorkspaceManifestRetargetRealCLI(t *testing.T) {
+	call := reviewCLI(t)
+	root := bffReviewFixture(t, call)
+	manifest := "packages/drift-extra/package.json"
+	bffWrite(t, root, manifest, `{"name":"@fixture/drift-extra","exports":{".":"./src/first.ts"}}`)
+	for _, name := range []string{"first", "second"} {
+		bffWrite(t, root, "packages/drift-extra/src/"+name+".ts", `export const hidden=fetch;`)
+	}
+	file := "apps/admin/app/api/stores/[store]/[...resource]/route.ts"
+	p := filepath.Join(root, file)
+	s := `import {hidden} from "@fixture/drift-extra";` + "\n" + readText(t, p)
+	s = strings.Replace(s, "async function route(request: Request, context: Context) {", "async function route(request: Request, context: Context) {\nhidden(\"https://go.invalid/v1/__workspace\",{method:\"POST\"});\n", 1)
+	mustWrite(t, p, s)
+	git(t, root, "add", ".")
+	git(t, root, "commit", "-qm", "legacy workspace alias")
+	git(t, root, "tag", "-f", "trunk")
+	if code, out := call(root); code != 0 {
+		t.Fatalf("unchanged legacy hazard: %d %s", code, out)
+	}
+	mustWrite(t, filepath.Join(root, manifest), `{"name":"@fixture/drift-extra","exports":{".":"./src/second.ts"}}`)
+	code, out := call(root)
+	if code != 1 || !strings.Contains(out, "ERROR") || !strings.Contains(out, "UNRESOLVED") || !strings.Contains(out, manifest+":") {
+		t.Fatalf("manifest-only retarget escaped touched: %d %s", code, out)
+	}
+}
+
+func TestReviewR1bMerchantTransportProofRealCLI(t *testing.T) {
+	call := reviewCLI(t)
+	for _, kind := range []string{"fixed override", "dynamic URL", "spread before init", "path reassigned", "config origin retarget", "config property reassigned", "computed config assignment", "config object escape"} {
+		t.Run(kind, func(t *testing.T) {
+			root := bffReviewFixture(t, call)
+			file := "apps/admin/lib/auth.ts"
+			p := filepath.Join(root, file)
+			s := readText(t, p)
+			start := strings.Index(s, "export async function merchantBackend(")
+			if start < 0 {
+				t.Fatal("merchant seam moved")
+			}
+			prefix, transport := s[:start], s[start:]
+			if kind == "computed config assignment" {
+				transport = strings.Replace(transport, "  const headers = new Headers(init.headers);", "  authConfig[\"apiOrigin\"] = \"https://go.invalid/v1/__merchant_probe\";\n  const headers = new Headers(init.headers);", 1)
+			} else if kind == "config object escape" {
+				transport = strings.Replace(transport, "  const headers = new Headers(init.headers);", "  Object.assign(authConfig, {apiOrigin: \"https://go.invalid/v1/__merchant_probe\"});\n  const headers = new Headers(init.headers);", 1)
+			} else if kind == "config property reassigned" {
+				transport = strings.Replace(transport, "  const headers = new Headers(init.headers);", "  authConfig.apiOrigin = \"https://go.invalid/v1/__merchant_probe\";\n  const headers = new Headers(init.headers);", 1)
+			} else if kind == "config origin retarget" {
+				prefix = strings.Replace(prefix, "apiOrigin: exactOrigin(", "apiOrigin: unprovenOrigin(", 1)
+			} else if kind == "path reassigned" {
+				transport = strings.Replace(transport, "  if (!authConfig)", "  path = \"/v1/__merchant_probe\";\n  if (!authConfig)", 1)
+			} else if kind == "dynamic URL" {
+				transport = strings.Replace(transport, "fetch(`${authConfig.apiOrigin}${path}`", "fetch(dynamicURL()", 1)
+			} else {
+				extra := "...init, method: \"DELETE\","
+				if kind == "spread before init" {
+					extra = "method: \"DELETE\", ...init,"
+				}
+				transport = strings.Replace(transport, "...init,", extra, 1)
+			}
+			if prefix+transport == s {
+				t.Fatal("merchant mutation did not apply")
+			}
+			mustWrite(t, p, prefix+transport)
+			code, out := call(root)
+			if code != 1 || !strings.Contains(out, "UNRESOLVED") || !strings.Contains(out, "ERROR") || !strings.Contains(out, file+":") {
+				t.Fatalf("merchant proof accepted unsupported transport: %d %s", code, out)
+			}
+		})
 	}
 }
