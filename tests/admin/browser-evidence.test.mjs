@@ -203,6 +203,9 @@ test("visual review refuses an incomplete report: every captured page needs exac
     assert.notEqual(check("VERDICT: PASS\n## admin orders: PASS\n"), 0, "missing page refused");
     assert.notEqual(check("VERDICT: PASS\n## admin orders: PASS\n## admin orders: FIX\n## storefront cart: PASS\n"), 0, "duplicate section refused");
     assert.notEqual(check("## admin orders: PASS\n## storefront cart: PASS\n"), 0, "missing VERDICT refused");
+    writeFileSync(index, JSON.stringify({ shards: [{ shard: "n", index: { expected: 2, captured: 1, missing: [], shots: [{ app: "admin", id: "orders" }], notRun: [{ unit: "admin|cvs-print|en|390x844", reason: "NOT_RUN: left the stack" }] } }] }));
+    assert.notEqual(check("VERDICT: PASS\n## admin orders: PASS\n"), 0, "a NOT_RUN page without its own section is refused");
+    assert.equal(check("VERDICT: PASS\n## admin orders: PASS\n## admin cvs-print: NOT_RUN\nleft the stack\n"), 0, "an explicitly declared NOT_RUN page is accepted and listed");
     writeFileSync(index, JSON.stringify({ shards: [{ shard: "c", index: { expected: 2, captured: 1, missing: ["storefront/cart/en"], shots: [{ app: "admin", id: "orders" }] } }] }));
     assert.notEqual(check("VERDICT: PASS\n## admin orders: PASS\n"), 0, "a shard with missing shots is refused");
   } finally { rmSync(dir, { recursive: true, force: true }); }

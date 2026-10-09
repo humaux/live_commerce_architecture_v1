@@ -26,5 +26,6 @@ Severity:
 Write output/ext-agents/visual-review/findings.md with:
 - First line: "VERDICT: PASS" if there is no P1, otherwise "VERDICT: FIX".
 - Then one section per page, in index.json order: "## <app> <page-id>: PASS|FIX". Under it, list findings as "- [P1|P2] <locale>-<size>: what is wrong, where on the screen, and a concrete fix (which shared component or token)".
+- For every page listed in an index's "notRun" (the harness could not capture it), write "## <app> <page-id>: NOT_RUN" with the recorded reason. Never omit one.
 - Finally, "## Cross-page consistency": the components or patterns that differ between pages and should be unified.
 Be specific and honest. Mark any judgement you are unsure of as "(uncertain)". Never invent a page you did not open.
