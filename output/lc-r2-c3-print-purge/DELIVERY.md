@@ -170,3 +170,64 @@ LCR2, both LCN05 print tests):
 
 Task cleanup: the test-focused containers are removed by the script's own trap; no processes, fixtures, containers or
 ports of this task remain; no other task directory was touched; shared caches untouched.
+
+## Round 1 (K3 data-safety review — P2 fixed, 2026-10-10)
+
+K3 verdict PASS with one P2: no behaviour-level RLS cases existed for the three C3x tables (catalog-level only, in
+CRP02's matrix/RLS assertions). Fixed — **0169 itself is unchanged** (`git diff` clean; no defect found); all work is
+test-side.
+
+### What was added (REAL_PG, `tests/foundation/claims_retention_test.go` → `writerPolicyBehaviour`)
+
+The CRP02 `writer-policy-behaviour` subtest now seeds (owner SQL, synthetic sentinels, removed by a defer that runs
+before the harness cleanup) an aged print fact, its aged `live.comment.print` receipt, an aged `live.draft.create`
+receipt and an aged peer link, and exercises 34 new cases through `crAs` (SET LOCAL ROLE
+`commerce_retention_writer`, each statement in its own rolled-back transaction):
+
+- **(a) operation scoping of the shared receipt ledger:** on the aged *other-operation* receipt, SELECT, SELECT … FOR
+  UPDATE, UPDATE and DELETE all affect 0 rows; on the aged *print* receipt the same statements succeed (1 row each).
+- **(b) lock-only UPDATE (`WITH CHECK (false)`):** real UPDATEs of `live.comment_prints.first_printed_at`,
+  `ops.command_results.created_at` and `inbox.bundle_peers.created_at` fail 42501 (even same-value rewrites), while
+  SELECT … FOR UPDATE succeeds on all three tables.
+- **(c) column grants limited to the purge scope:** `response`/`request_hash`/`principal_id` (command_results),
+  `print_count`/`last_printed_at`/`last_principal_id` (comment_prints), `app_id`/`object`/`asset_id`/`operation_id`
+  (bundle_peers) and `SELECT *` on each table all fail 42501; ungranted-column *writes* fail 42501 too.
+
+### Witness proof (every case is real: widen one control in a scratch working-tree copy of 0169 → red, revert → green)
+
+Rounds ran as `bash scripts/dev/test-focused.sh '^TestClaimsRetentionCRP02Schema$/^writer-policy-behaviour$'`;
+`tools/r1-witness-red.sh` is the byte-faithful reproduction script (this sandbox denied executing scripts under
+`output/`, so the rounds were orchestrated by hand: edit → run → revert → `git diff` clean).
+
+| Round | Temporary widening in 0169 | Result | Log |
+| --- | --- | --- | --- |
+| a-delete-only | `command_print_retention_delete` USING → (true) | **GREEN** — see finding below | `r1-green-a-delete-only-widened.log` |
+| a-read | `command_print_retention_read` USING → (true) | RED: other-op receipt becomes readable | `r1-red-a-read.log` |
+| a-read-delete | read + delete USING → (true) | RED: …and deletable | `r1-red-a-read-delete.log` |
+| a-read-lock | read + lock USING → (true), WITH CHECK stays false | RED: …and FOR UPDATE-visible; a real UPDATE still fails 42501 on WITH CHECK | `r1-red-a-read-lock.log` |
+| b-print-lock | `comment_print_retention_lock` WITH CHECK → (true) | RED: `first_printed_at` updatable (2 cases) | `r1-red-b-print-lock.log` |
+| b-receipt-lock | `command_print_retention_lock` WITH CHECK → (true) | RED: `created_at` updatable | `r1-red-b-receipt-lock.log` |
+| b-peer-lock | `bundle_peer_retention_lock` WITH CHECK → (true) | RED: `created_at` updatable (2 cases) | `r1-red-b-peer-lock.log` |
+| c-print-grant | comment_prints `GRANT SELECT(cols)` → whole table | RED: 4 column cases | `r1-red-c-print-grant.log` |
+| c-receipt-grant | command_results `GRANT SELECT(cols)` → whole table | RED: 4 column cases | `r1-red-c-receipt-grant.log` |
+| c-peer-grant | bundle_peers `GRANT SELECT(cols)` → whole table | RED: 5 column cases | `r1-red-c-peer-grant.log` |
+
+**Finding (defense-in-depth, not a defect):** the review's example — widening `command_print_retention_delete` alone —
+does **not** flip the DELETE case, because PostgreSQL also applies the SELECT policy to a DELETE's scan: the scoped
+read policy alone keeps another operation's receipt invisible to the delete. Making the DELETE witness red requires
+widening read **and** delete together (round a-read-delete). The green a-delete-only round is kept as evidence that
+the scoping has two independent guards. 0169 needs no change.
+
+### Round 1 commands and exit codes
+
+| Command | Exit | Result |
+| --- | --- | --- |
+| `bash scripts/dev/test-focused.sh '^TestClaimsRetentionCRP02Schema$/^writer-policy-behaviour$'` (baseline, pre-mutation) | 0 | PASS (`r1-green-writer-policy-baseline.log`) |
+| the 10 witness rounds above | 1×9 red / 1 green as expected | `r1-red-*.log`, `r1-green-a-delete-only-widened.log` |
+| same focused subtest after all reverts | 0 | PASS (`r1-green-writer-policy-reverted.log`) |
+| `bash scripts/dev/test-focused.sh '^(TestClaimsRetention\|TestLiveConsoleLCN05)'` | 0 | **PASS=13 FAIL=0 SKIP=0** (`r1-green-full.log`) |
+| `go vet ./...` | 0 | clean (`r1-go-vet.log`) |
+| `bash scripts/dev/check-gates.sh` | 0 | ok — 82 modes documented, every tracked test file run, shard-plan ok (1257 tests), check-headers OK (`r1-check-gates.log`). Resolves round 0's P1 BLOCKED (node_modules now present). |
+
+No existing assertion was weakened or removed; no PII (every key/ref/hash is a synthetic sentinel); the 0169 file is
+byte-identical to HEAD after the rounds (`git status` shows only the test file + this output directory).

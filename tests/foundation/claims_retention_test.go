@@ -3260,7 +3260,9 @@ func crAs(t *testing.T, pool *pgxpool.Pool, role, query string, args ...any) (in
 	return tag.RowsAffected(), err
 }
 
-// crWindowsAndPolicyChecks exercises every RLS policy of contract §4 as commerce_retention_writer.
+// crWindowsAndPolicyChecks exercises every RLS policy of contract §4 as commerce_retention_writer, plus the C3x
+// policies and column grants of 0169 (live-console-v1 §7.4/§10 "C3 (extended)") on live.comment_prints,
+// ops.command_results (operation-scoped to live.comment.print) and inbox.bundle_peers.
 func (e *crEnv) writerPolicyBehaviour(t *testing.T) {
 	w := e.w
 	ctx := context.Background()
@@ -3297,6 +3299,31 @@ func (e *crEnv) writerPolicyBehaviour(t *testing.T) {
 		t.Fatal(err)
 	}
 	w.logs = append(w.logs, policyLog)
+
+	// C3x (0169 LC-R2, live-console-v1 §7.4/§10 "C3 (extended)"): the three purge tables in the shape the C3x
+	// batch finds them at intake_days — an aged print fact, its aged live.comment.print receipt, an aged receipt
+	// of ANOTHER operation (the shared-ledger scope guard) and an aged peer link of the live bundle. Owner-seeded
+	// (production writes them through the A3 print route / command.Run / inbox.finish_send); every case below runs
+	// in crAs's rolled-back transaction, and the deferred removal runs before the harness' w.cleanup (FK order
+	// comment_prints → sessions). Synthetic sentinels only; the request hashes hash a test tag, never a request.
+	refPrint := miAsset() + "_" + crDigits(10)
+	keyPrint, keyOther := t04Key("wpb-print"), t04Key("wpb-draft")
+	peerC3x := crHex64()
+	hashPrint := sha256.Sum256([]byte("crp02-wpb|" + keyPrint))
+	hashOther := sha256.Sum256([]byte("crp02-wpb|" + keyOther))
+	mustExec(t, w.owner, `INSERT INTO live.comment_prints(tenant_id,store_id,session_id,comment_ref,print_count,first_printed_at,last_printed_at,last_principal_id)
+		VALUES($1,$2,$3,$4,3,`+crOld(30)+`,`+crOld(30)+`,$5)`, w.tenant, w.store, s.id, refPrint, w.prin)
+	mustExec(t, w.owner, `INSERT INTO ops.command_results(tenant_id,store_id,operation,idempotency_key,request_hash,response,principal_id,created_at)
+		VALUES($1,$2,'live.comment.print',$3,$4,$5::jsonb,$6,`+crOld(30)+`)`, w.tenant, w.store, keyPrint, hashPrint[:], `{"print_count":3}`, w.prin)
+	mustExec(t, w.owner, `INSERT INTO ops.command_results(tenant_id,store_id,operation,idempotency_key,request_hash,response,principal_id,created_at)
+		VALUES($1,$2,'live.draft.create',$3,$4,$5::jsonb,$6,`+crOld(30)+`)`, w.tenant, w.store, keyOther, hashOther[:], `{"v":1}`, w.prin)
+	mustExec(t, w.owner, `INSERT INTO inbox.bundle_peers(tenant_id,store_id,bundle_id,peer_key,app_id,object,asset_id,operation_id,created_at)
+		VALUES($1,$2,$3,$4,$5,'page',$6,$7,`+crOld(30)+`)`, w.tenant, w.store, live.id, peerC3x, miApp, miAsset(), randomUUID())
+	defer func() {
+		mustExec(t, w.owner, `DELETE FROM live.comment_prints WHERE session_id=$1 AND comment_ref=$2`, s.id, refPrint)
+		mustExec(t, w.owner, `DELETE FROM ops.command_results WHERE idempotency_key=ANY($1::text[])`, []string{keyPrint, keyOther})
+		mustExec(t, w.owner, `DELETE FROM inbox.bundle_peers WHERE peer_key=$1`, peerC3x)
+	}()
 
 	type c struct {
 		name  string
@@ -3370,6 +3397,44 @@ func (e *crEnv) writerPolicyBehaviour(t *testing.T) {
 		{"retention_log: DELETE a run row", `DELETE FROM claims.retention_log WHERE kind='run' AND counts='{"links":0}'::jsonb`, nil, 1, ""},
 		{"retention_log: a policy_set row is undeletable (USING kind='run')", `DELETE FROM claims.retention_log WHERE id=$1`, []any{policyLog}, 0, ""},
 		{"retention_log: UPDATE refused (no privilege)", `UPDATE claims.retention_log SET counts='{}' WHERE id=$1`, []any{policyLog}, 0, "42501"},
+		// live.comment_prints (0169 C3x): read/delete USING true, lock-only update; only the purge-scope columns
+		{"comment_prints: granted columns readable", `SELECT tenant_id,store_id,session_id,comment_ref,first_printed_at FROM live.comment_prints WHERE session_id=$1 AND comment_ref=$2`, []any{s.id, refPrint}, 1, ""},
+		{"comment_prints: SELECT * needs every column", `SELECT * FROM live.comment_prints WHERE comment_ref=$1`, []any{refPrint}, 0, "42501"},
+		{"comment_prints: print_count unreadable", `SELECT print_count FROM live.comment_prints WHERE comment_ref=$1`, []any{refPrint}, 0, "42501"},
+		{"comment_prints: last_printed_at unreadable", `SELECT last_printed_at FROM live.comment_prints WHERE comment_ref=$1`, []any{refPrint}, 0, "42501"},
+		{"comment_prints: last_principal_id unreadable", `SELECT last_principal_id FROM live.comment_prints WHERE comment_ref=$1`, []any{refPrint}, 0, "42501"},
+		{"comment_prints: FOR UPDATE lock works", `SELECT comment_ref FROM live.comment_prints WHERE comment_ref=$1 FOR UPDATE`, []any{refPrint}, 1, ""},
+		{"comment_prints: lock-only UPDATE cannot change first_printed_at", `UPDATE live.comment_prints SET first_printed_at=clock_timestamp() WHERE comment_ref=$1`, []any{refPrint}, 0, "42501"},
+		{"comment_prints: lock-only UPDATE cannot even rewrite the same value", `UPDATE live.comment_prints SET first_printed_at=first_printed_at WHERE comment_ref=$1`, []any{refPrint}, 0, "42501"},
+		{"comment_prints: ungranted column write", `UPDATE live.comment_prints SET last_printed_at=clock_timestamp() WHERE comment_ref=$1`, []any{refPrint}, 0, "42501"},
+		{"comment_prints: DELETE the aged fact", `DELETE FROM live.comment_prints WHERE session_id=$1 AND comment_ref=$2`, []any{s.id, refPrint}, 1, ""},
+		// ops.command_results (0169 C3x): all three policies are scoped to operation='live.comment.print' — another
+		// operation's aged receipt is invisible, unlockable, undeletable and unupdatable; only the purge-scope columns
+		{"command_results: print receipt's granted columns readable", `SELECT tenant_id,store_id,operation,idempotency_key,created_at FROM ops.command_results WHERE idempotency_key=$1`, []any{keyPrint}, 1, ""},
+		{"command_results: SELECT * needs every column", `SELECT * FROM ops.command_results WHERE idempotency_key=$1`, []any{keyPrint}, 0, "42501"},
+		{"command_results: response unreadable", `SELECT response FROM ops.command_results WHERE idempotency_key=$1`, []any{keyPrint}, 0, "42501"},
+		{"command_results: request_hash unreadable", `SELECT request_hash FROM ops.command_results WHERE idempotency_key=$1`, []any{keyPrint}, 0, "42501"},
+		{"command_results: principal_id unreadable", `SELECT principal_id FROM ops.command_results WHERE idempotency_key=$1`, []any{keyPrint}, 0, "42501"},
+		{"command_results: another operation's aged receipt unreadable (USING operation)", `SELECT idempotency_key FROM ops.command_results WHERE idempotency_key=$1`, []any{keyOther}, 0, ""},
+		{"command_results: another operation's aged receipt unlockable-invisible (FOR UPDATE)", `SELECT idempotency_key FROM ops.command_results WHERE idempotency_key=$1 FOR UPDATE`, []any{keyOther}, 0, ""},
+		{"command_results: another operation's aged receipt undeletable", `DELETE FROM ops.command_results WHERE idempotency_key=$1`, []any{keyOther}, 0, ""},
+		{"command_results: another operation's aged receipt not updatable", `UPDATE ops.command_results SET created_at=clock_timestamp() WHERE idempotency_key=$1`, []any{keyOther}, 0, ""},
+		{"command_results: print receipt FOR UPDATE lock works", `SELECT idempotency_key FROM ops.command_results WHERE idempotency_key=$1 FOR UPDATE`, []any{keyPrint}, 1, ""},
+		{"command_results: lock-only UPDATE cannot change created_at", `UPDATE ops.command_results SET created_at=clock_timestamp() WHERE idempotency_key=$1`, []any{keyPrint}, 0, "42501"},
+		{"command_results: ungranted column write", `UPDATE ops.command_results SET response='{}' WHERE idempotency_key=$1`, []any{keyPrint}, 0, "42501"},
+		{"command_results: aged print receipt DELETE works", `DELETE FROM ops.command_results WHERE idempotency_key=$1`, []any{keyPrint}, 1, ""},
+		// inbox.bundle_peers (0169 C3x): read/delete USING true, lock-only update; only the purge-scope columns
+		{"bundle_peers: granted columns readable", `SELECT tenant_id,store_id,bundle_id,peer_key,created_at FROM inbox.bundle_peers WHERE peer_key=$1`, []any{peerC3x}, 1, ""},
+		{"bundle_peers: SELECT * needs every column", `SELECT * FROM inbox.bundle_peers WHERE peer_key=$1`, []any{peerC3x}, 0, "42501"},
+		{"bundle_peers: app_id unreadable", `SELECT app_id FROM inbox.bundle_peers WHERE peer_key=$1`, []any{peerC3x}, 0, "42501"},
+		{"bundle_peers: object unreadable", `SELECT object FROM inbox.bundle_peers WHERE peer_key=$1`, []any{peerC3x}, 0, "42501"},
+		{"bundle_peers: asset_id unreadable", `SELECT asset_id FROM inbox.bundle_peers WHERE peer_key=$1`, []any{peerC3x}, 0, "42501"},
+		{"bundle_peers: operation_id unreadable", `SELECT operation_id FROM inbox.bundle_peers WHERE peer_key=$1`, []any{peerC3x}, 0, "42501"},
+		{"bundle_peers: FOR UPDATE lock works", `SELECT peer_key FROM inbox.bundle_peers WHERE peer_key=$1 FOR UPDATE`, []any{peerC3x}, 1, ""},
+		{"bundle_peers: lock-only UPDATE cannot change created_at", `UPDATE inbox.bundle_peers SET created_at=clock_timestamp() WHERE peer_key=$1`, []any{peerC3x}, 0, "42501"},
+		{"bundle_peers: lock-only UPDATE cannot even rewrite the same value", `UPDATE inbox.bundle_peers SET created_at=created_at WHERE peer_key=$1`, []any{peerC3x}, 0, "42501"},
+		{"bundle_peers: ungranted column write", `UPDATE inbox.bundle_peers SET app_id='1' WHERE peer_key=$1`, []any{peerC3x}, 0, "42501"},
+		{"bundle_peers: DELETE the aged link", `DELETE FROM inbox.bundle_peers WHERE peer_key=$1`, []any{peerC3x}, 1, ""},
 		// everything else stays closed
 		{"claims.events unreadable", `SELECT count(*) FROM claims.events`, nil, 0, "42501"},
 		{"live.offers unreadable", `SELECT count(*) FROM live.offers`, nil, 0, "42501"},
@@ -3425,7 +3490,9 @@ var crValidators = []struct {
 //     FORCE RLS + policy set, definer owner/prosecdef/proconfig, COMMENT ON, objects, D4 label CHECK.
 //   - non-retention-roles-denied: 42501 for every other role on the new tables and functions (catalog and behaviour).
 //   - writer-policy-behaviour: every RLS policy of §4 exercised as commerce_retention_writer (lock-only UPDATE cannot
-//     change a value, PENDING intake undeletable, redaction shape, ...).
+//     change a value, PENDING intake undeletable, redaction shape, ...), plus the 0169 C3x policies: another
+//     operation's receipt unreadable/unlockable/undeletable, the three lock-only UPDATEs refused, and the column
+//     grants limited to the purge scope on live.comment_prints / ops.command_results / inbox.bundle_peers.
 //   - pool-validators: dedicated logins pass; mixed / SET ROLE / owner-reachable logins are rejected by both retention
 //     validators; every other validator rejects a login that reaches a retention role.
 //   - constraints-and-policy-api: retention_log/retention_policy CHECKs, set_retention_policy/retention_status.
