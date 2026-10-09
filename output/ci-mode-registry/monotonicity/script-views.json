@@ -1,0 +1,16 @@
+[
+  {
+    "executed_file": "compare.py",
+    "view": "compare.py.txt",
+    "raw_gzip": "compare.py.raw.gz",
+    "raw_sha256": "8a7f78eef1435e45c88c24ece42405a9c5a626b732f2f9d9c6177b20b81ebb0d",
+    "view_sha256": "db11145ca81c58b248cb4359ebb6350c4959f14de66f46cb75b9c1bcc785574a"
+  },
+  {
+    "executed_file": "monotonicity.test.mjs",
+    "view": "monotonicity-assertions.mjs.txt",
+    "raw_gzip": "monotonicity-assertions.mjs.raw.gz",
+    "raw_sha256": "e4d6bd517af3b6c7ea883bd100e0d139f796dc7d4d9ba1ad23afdacf8d7137e2",
+    "view_sha256": "414bcaa5d574cd35d06c4891865506ea18e9600f579c8e203e3a55a5eb6e8c15"
+  }
+]

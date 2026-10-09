@@ -1,0 +1,23 @@
+✔ backend-only paths run foundation-shards only (2.470875ms)
+✔ node tests of deploy scripts and of the CI planner are backend-only (they cannot change a browser) (6.196541ms)
+✔ a UI path adds the whole browser set, including click-sweep and visual-lint (4.452833ms)
+✔ docs-only and output-only diffs keep the single required check (foundation-shards) (0.909208ms)
+✔ legacy browser_* paths still select all browsers; a known untagged foundation file stays backend-only (0.676166ms)
+✔ legacy deploy prefixes remain selected and unrelated paths do not select smoke (14.452458ms)
+✔ the browser set is release-gate's browser-mode universe minus the documented exclusions (207.676334ms)
+✔ every real browser-tagged foundation file selects registry browser modes, including non-browser names (260.807334ms)
+✔ tagged runner discovery follows registry additions, command arrays and line continuations (1.127708ms)
+✔ deploy smoke is selected for its workflow, verdict/helpers and executable test inputs (191.777292ms)
+✔ new selection never drops legacy modes or deploy for any tracked path (601.465792ms)
+✔ CLI classifies merge-base and explicit head, including removed tags, deleted files and renames (1222.401291ms)
+✔ CLI explicit head and stdin include tags outside the checkout and uncommitted tag removals (357.652ms)
+✔ compound/legacy tags and unknown source are conservative; known untagged source stays backend-only (1.985833ms)
+✔ explicit-head CLI derives tagged runner modes from that head's real registry (303.269834ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3328.622334
