@@ -1,0 +1,16 @@
+{
+  "source_review": "932eca31-3f42-4e48-8ab2-2d2bdcd75ec6",
+  "artifact_review": "a4e1f7df-7c80-4449-812c-6934e650fe70",
+  "level": "E1 read-only; no independent runtime rerun",
+  "result": "no confirmed P0/P1 in inspected receiver/method/source-binding scope",
+  "code_graph": {
+    "index_submitted": "tests/ci/product-editor-matrix-ledger.test.mjs",
+    "index_status": {
+      "state": "done",
+      "files": 0,
+      "entities": 0
+    },
+    "code_memory_link": "not linked: locatorIdentities entity unavailable",
+    "equivalent": "fix memory fcd0f44c-7abf-4cd9-8402-79b8b62f2c12 binds file, function, why, current hash and source card; no successful link claimed"
+  }
+}

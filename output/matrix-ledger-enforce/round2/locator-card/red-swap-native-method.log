@@ -1,0 +1,54 @@
+✖ every actual mobile control operation is enclosed by its recording callback (59.155625ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 225.282042
+
+✖ failing tests:
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:413:1
+✖ every actual mobile control operation is enclosed by its recording callback (59.155625ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   'identity mismatch: {"page":"mobile axis remove","control":"native archive confirmation","action":"accept"} (zh-TW): operated methods must match the canonical action\n' +
+  +     '+ actual - expected\n' +
+  +     '\n' +
+  +     '  [\n' +
+  +     "+   'check'\n" +
+  +     "-   'accept'\n" +
+  +     '  ]\n',
+  +   'identity mismatch: {"page":"mobile axis remove","control":"native archive confirmation","action":"accept"} (zh-CN): operated methods must match the canonical action\n' +
+  +     '+ actual - expected\n' +
+  +     '\n' +
+  +     '  [\n' +
+  +     "+   'check'\n" +
+  +     "-   'accept'\n" +
+  +     '  ]\n',
+  +   'identity mismatch: {"page":"mobile axis remove","control":"native archive confirmation","action":"accept"} (en): operated methods must match the canonical action\n' +
+  +     '+ actual - expected\n' +
+  +     '\n' +
+  +     '  [\n' +
+  +     "+   'check'\n" +
+  +     "-   'accept'\n" +
+  +     '  ]\n'
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-locator-binding/tests/ci/product-editor-matrix-ledger.test.mjs:414:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ `identity mismatch: {"page":"mobile axis remove","control":"native archive confirmation","action":"accept"} (zh-TW): operated methods must match the canonical action\n+ actual - expected\n\n  [\n+   'check'\n-   'accept'\n  ]\n`, `identity mismatch: {"page":"mobile axis remove","control":"native archive confirmation","action":"accept"} (zh-CN): operated methods must match the canonical action\n+ actual - expected\n\n  [\n+   'check'\n-   'accept'\n  ]\n`, `identity mismatch: {"page":"mobile axis remove","control":"native archive confirmation","action":"accept"} (en): operated methods must match the canonical action\n+ actual - expected\n\n  [\n+   'check'\n-   'accept'\n  ]\n` ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

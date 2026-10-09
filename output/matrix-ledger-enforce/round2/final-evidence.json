@@ -1,0 +1,6 @@
+{
+  "command": "GOTOOLCHAIN=go1.27.2 go test -run '^TestProductEditorMatrixLedgerEvidence$' -count=1 -v ./tests/foundation",
+  "exit": 0,
+  "log": "output/matrix-ledger-enforce/round2/final-evidence.log",
+  "sha256": "9d8129d3ff5776b2f0b74a3ac9182243e45cf9c657032815b2431b1eff08b2d5"
+}

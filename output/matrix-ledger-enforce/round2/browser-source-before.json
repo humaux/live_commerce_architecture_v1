@@ -1,0 +1,18 @@
+{
+  "tested_source_commit": "25bb988fff059217ab731ab922b05ca49ab4e5d7",
+  "source_files_sha256": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "a3be2d3102f59cc6888389ff5b157558507a7bb89c4ac78003193d11da128a37",
+    "tests/foundation/browser_catalog_core_test.go": "677c2903574f91f4b61445bb1a743ecd17404a196b92ad72a9e313b56b44ad45",
+    "tests/admin/product-editor.acceptance.ts": "eb359bb73f13d3185935f34fc782a9f686d9ebe0704c18912386689af542f88e",
+    "tests/admin/product-editor-matrix-ledger.ts": "bca2b1bed9cc9810cf7225b8f67b42efb9fd7453c979909df6c802cb3d827f1d",
+    "tests/foundation/testdata/product_editor_matrix_cases.json": "17ac97d4e2b3146cb5775a6cc0d1352c7806516ba96d74c1b8b610d53d339855",
+    "tests/foundation/testdata/product_editor_mobile_matrix_ledger.json": "c3af74c89f8d9ea8b30299a3a5281eb0a3b41b8d47892f1a235e0affbf9dcc23",
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "deff2b4ca0cea6bfb91d59b5a1b387f3ab4818d1ec8f904a6132eb1881014c4a",
+    "scripts/dev/test-node.sh": "6a6b80a950f2dcfcfb5d5ea7759b3aae53805ce7bddb434fb3c8b3b375a2409d",
+    "docs/delivery/GATES.md": "3f7355c62f6f3227732dd9b5001c44b1bccc39a1f70effea02df3e1e880d8ca3",
+    "scripts/dev/test-local.sh": "60b3111139512ac994b028969dd363cfba88a6d175eaa90d809afcf3e6b4f9b0",
+    "playwright.config.ts": "8f99c3ff304b372a62961eb8d36cfa1bf4865672dd6e35b1e63fb695aef5c8e3",
+    "apps/admin/lib/product-editor-copy.ts": "aff626c4a8a8a8c889ef5c4bfeeb77d5359df7a8692bc83f3162bae4d3aa0cc2",
+    "apps/admin/components/ProductDocumentVariants.tsx": "1ec1bf7b57e7a76ea10fee10620eebbd7b0e34b687d8b427b20fb5c20d6386a6"
+  }
+}
