@@ -9,7 +9,9 @@ export async function measureMediaSizes({ browser, origin, evidence, ctxOpts }) 
   const phase = process.env.LC_MEDIA_SIZES_PHASE;
   if (!phase) return;
   assert(["before", "after"].includes(phase));
-  const directory = path.resolve("output/media-sizes");
+  const directory = path.resolve(evidence, "media-sizes");
+  const baseline = phase === "after" ? process.env.LC_MEDIA_SIZES_BASELINE : null;
+  assert(phase !== "after" || baseline, "LC_MEDIA_SIZES_BASELINE must name the read-only before.json for after comparison");
   await mkdir(directory, { recursive: true });
   const result = { phase, fixture: "cmiJPEG-1440x1800-v1", viewport: { width: 390, height: 844 }, dpr: 2,
     network: "Chromium CDP 1.6Mbps down / 750Kbps up / 150ms RTT; CPU 1x", samples: [] };
@@ -59,7 +61,7 @@ export async function measureMediaSizes({ browser, origin, evidence, ctxOpts }) 
   result.medianLCP = median(result.samples.map(s => s.lcp.time));
   await writeFile(path.join(directory, `${phase}.json`), JSON.stringify(result, null, 2) + "\n");
   if (phase === "after") {
-    const before = JSON.parse(await readFile(path.join(directory, "before.json"), "utf8"));
+    const before = JSON.parse(await readFile(path.resolve(baseline), "utf8"));
     assert.equal(before.fixture, result.fixture);
     for (const sample of result.samples) {
       assert.deepEqual(sample.images.map(i => i.originalSHA256), before.samples[0].images.map(i => i.originalSHA256), "same originals and order");

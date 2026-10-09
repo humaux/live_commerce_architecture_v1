@@ -20,8 +20,8 @@ export function registerProductEditorAcceptance() {
     const origin = process.env.LC_BROWSER_PUBLIC_ORIGIN!,
       store = process.env.LC_BROWSER_STORE!,
       tag = `pe${process.env.LC_BROWSER_TAG}`;
-    const out = path.resolve("output/product-ui-v2"),
-      evidence = process.env.LC_BROWSER_EVIDENCE!;
+    const evidence = process.env.LC_BROWSER_EVIDENCE!,
+      out = path.resolve(evidence, "product-ui-v2");
     await mkdir(out, { recursive: true });
     const ledger: unknown[] = [],
       shots: unknown[] = [],

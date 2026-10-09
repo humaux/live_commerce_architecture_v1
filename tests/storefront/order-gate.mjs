@@ -27,8 +27,8 @@ const pause=ms=>new Promise(r=>setTimeout(r,ms));
 const listen=async s=>{s.listen(0,"127.0.0.1");await once(s,"listening");return s.address().port;};
 const pass=name=>{observations.push(name);console.log(`PASS ${name}`);};
 const certDir=await mkdtemp(path.join(tmpdir(),"lc-order-edge-"));
-const review=path.join(root,"output/playwright/review/buyer-order");
-const historyReview=path.join(root,"output/playwright/review/buyer-history");
+const review=path.join(evidence,"review/buyer-order");
+const historyReview=path.join(evidence,"review/buyer-history");
 let browser,edge,proxy,hook,sessionResets=0;
 const calls=[];
 async function control(resource,method="GET") {

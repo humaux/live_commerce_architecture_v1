@@ -2,6 +2,7 @@
 // Depends on: Playwright Chromium, Node process/fs/net helpers, shell-fixture and shell-browser.
 // Used by: --browser-admin-shell and W0 baseline capture; signed Go/PG acceptance remains separate.
 // UI-only MOCK gate; existing signed Go/PG modes remain separate acceptance.
+import { browserEvidenceDirectory } from "../browser-evidence.mjs";
 import { chromium } from "@playwright/test";
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
@@ -10,7 +11,7 @@ import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
 import { fixture, storeID, entityID } from "./shell-fixture.mjs";
 const baseline = process.argv.includes("--baseline");
-const output = baseline ? "tests/admin/baselines/w0" : "output/ui-w0-shell";
+const output = baseline ? "tests/admin/baselines/w0" : (process.env.LC_SHELL_EVIDENCE || browserEvidenceDirectory("ui-w0-shell"));
 await mkdir(output, { recursive: true });
 const probe = createServer();
 await new Promise((r) => probe.listen(0, "127.0.0.1", r));
@@ -187,7 +188,7 @@ try {
     try {
       await runShellGate({ page, context, f, base, output, storeID });
       const { runBrandGate } = await import("./platform-brand-browser.mjs");
-      await runBrandGate({ browser, base, output: "output/platform-site/brand-browser" });
+      await runBrandGate({ browser, base, output: `${output}/brand-browser` });
     } catch (error) {
       const red = `${output}/red/run-${Date.now()}`;
       await mkdir(red, { recursive: true });
