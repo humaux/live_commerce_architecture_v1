@@ -181,7 +181,9 @@ test.describe("LC-U2a REAL_PG comment stream",()=>{
     try {
       const denied=page.waitForResponse(r=>{
         const path=new URL(r.url()).pathname;
-        return r.status()===404&&(path.endsWith("/comments")||path.endsWith("/inbox/conversations"));
+        // Any scoped read may observe the loss first (an in-flight buyer-panel or template read now expires like the A2/A8 polls);
+        // the assertions below still require every private view cleared, the login kept and zero reads afterwards.
+        return r.status()===404&&(path.endsWith("/comments")||path.endsWith("/inbox/conversations")||path.endsWith("/inbox/buyer-panel")||path.endsWith("/message-templates"));
       },{timeout:15000});
       // FIXTURE/SETUP: only this synthetic store/principal grant is deleted in PG; no response interception.
       await fault(request,comments.session,"grant_revoke");await denied;
