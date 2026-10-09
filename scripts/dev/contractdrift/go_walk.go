@@ -290,7 +290,10 @@ func (s *goScanner) fallback(expr ast.Expr, e goEnv) (bool, []location) {
 		return false, nil
 	}
 	fn := s.Package.Named[goCallName(call.Fun)]
-	if len(call.Args) == 1 && fn != nil && goHeaderDecorator(fn.AST) {
+	if _, shadowed := e.lookup(goCallName(call.Fun)); shadowed {
+		fn = nil
+	}
+	if len(call.Args) == 1 && fn != nil && goHeaderDecorator(fn) {
 		proof, refs := s.fallback(call.Args[0], e)
 		return proof, goRefs(refs, []location{s.loc(fn.AST)})
 	}
@@ -298,7 +301,8 @@ func (s *goScanner) fallback(expr ast.Expr, e goEnv) (bool, []location) {
 }
 
 // A syntactically transparent header-only decorator preserves its child's 405.
-func goHeaderDecorator(fn *ast.FuncDecl) bool {
+func goHeaderDecorator(source *goFunc) bool {
+	fn := source.AST
 	if fn.Type.Params == nil || len(fn.Type.Params.List) != 1 || len(fn.Type.Params.List[0].Names) != 1 || len(fn.Body.List) != 1 {
 		return false
 	}
@@ -311,6 +315,7 @@ func goHeaderDecorator(fn *ast.FuncDecl) bool {
 	if !ok || len(lit.Body.List) == 0 {
 		return false
 	}
+	bound := go405Params(lit.Type.Params, source.File, nil, true)
 	for i, stmt := range lit.Body.List {
 		e, ok := stmt.(*ast.ExprStmt)
 		if !ok {
@@ -322,18 +327,15 @@ func goHeaderDecorator(fn *ast.FuncDecl) bool {
 		}
 		if i == len(lit.Body.List)-1 {
 			id, ok := call.Fun.(*ast.Ident)
-			return ok && id.Name == param
+			if !ok || id.Name != param || len(call.Args) != 2 {
+				return false
+			}
+			w, writer := call.Args[0].(*ast.Ident)
+			r, request := call.Args[1].(*ast.Ident)
+			return writer && request && bound[w.Name].Writer && bound[r.Name].Request
 		}
-		sel, ok := call.Fun.(*ast.SelectorExpr)
-		if !ok || (sel.Sel.Name != "Set" && sel.Sel.Name != "Add" && sel.Sel.Name != "Del") {
-			return false
-		}
-		receiver, ok := sel.X.(*ast.CallExpr)
-		if !ok {
-			return false
-		}
-		header, ok := receiver.Fun.(*ast.SelectorExpr)
-		if !ok || header.Sel.Name != "Header" {
+		// Header arguments may call a writer before the 405 delegate. Only a proven pure Header operation is transparent.
+		if !go405Header(call, bound) {
 			return false
 		}
 	}

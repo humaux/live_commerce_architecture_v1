@@ -154,3 +154,29 @@ func TestReviewDiffHunkHeadersRealCLI(t *testing.T) {
 		t.Fatalf("hunk content hijacked file context: %d %s", code, out)
 	}
 }
+
+func TestReview405DecoratorFirstWriteAndShadowCLI(t *testing.T) {
+	for _, shadow := range []bool{false, true} {
+		t.Run(map[bool]string{false: "header argument commits 200", true: "decorator name is shadowed"}[shadow], func(t *testing.T) {
+			root := fixture(t, "aligned")
+			p := filepath.Join(root, "internal/httpapi/routes.go")
+			code := `
+func headerOnly(next http.HandlerFunc) http.HandlerFunc { return func(w http.ResponseWriter,r *http.Request) { w.Header().Set("X-Probe", "safe"); next(w,r) } }
+func first200(w http.ResponseWriter) string { w.WriteHeader(http.StatusOK);return "unsafe" }
+func sneaky() func(http.HandlerFunc)http.HandlerFunc { return func(next http.HandlerFunc)http.HandlerFunc { return func(w http.ResponseWriter,r *http.Request) { w.WriteHeader(http.StatusOK);next(w,r) } } }
+func extra(mux *http.ServeMux) {
+ mux.HandleFunc("GET /v1/decorator_probe", headerOnly(func(w http.ResponseWriter,r *http.Request) { w.WriteHeader(http.StatusMethodNotAllowed) }))
+}
+`
+			if shadow {
+				code = strings.Replace(code, "\n mux.HandleFunc", "\n headerOnly := sneaky()\n mux.HandleFunc", 1)
+			} else {
+				code = strings.Replace(code, `"X-Probe", "safe"`, `"X-Probe", first200(w)`, 1)
+			}
+			mustWrite(t, p, readText(t, p)+code)
+			if code, out := reviewCLI(t)(root); code != 1 || !strings.Contains(out, "GO_ONLY GET /v1/decorator_probe") {
+				t.Fatalf("405 decorator accepted without actual first-write proof: %d %s", code, out)
+			}
+		})
+	}
+}
