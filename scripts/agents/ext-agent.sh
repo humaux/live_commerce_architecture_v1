@@ -82,7 +82,7 @@ cd "$wt"
 set +e  # the model run may fail (quota, budget); the cost accounting below must still run
 env -i PATH="/Users/luolimo/.local/share/fnm/node-versions/v24.15.0/installation/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$HOME/go/bin:/usr/local/go/bin" \
   HOME="$sandbox_home" TMPDIR="${TMPDIR:-/tmp}" LANG=en_US.UTF-8 TERM=dumb \
-  GOMODCACHE="$(go env GOMODCACHE)" GOCACHE="$(go env GOCACHE)" GOTOOLCHAIN=go1.27.1 \
+  GOMODCACHE="$(go env GOMODCACHE)" GOCACHE="$(go env GOCACHE)" GOTOOLCHAIN=go1.27.2 \
   npm_config_store_dir="$(pnpm store path 2>/dev/null || true)" PLAYWRIGHT_BROWSERS_PATH="$HOME/Library/Caches/ms-playwright" \
   DOCKER_CONFIG="$HOME/.docker" LC_TEST_LOCK_DIR="${TMPDIR:-/tmp}/lc-test-pg.lock" \
   ANTHROPIC_BASE_URL="$base_url" ANTHROPIC_AUTH_TOKEN="$key" \

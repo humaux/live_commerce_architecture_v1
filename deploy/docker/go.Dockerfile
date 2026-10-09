@@ -14,7 +14,7 @@
 #   login; the operator login never reaches the deploy host (claims-retention-purge-v1 §10(5)).
 # Used by: deploy/compose.yml services api, expiry-worker, payment-worker-{sandbox,live},
 #   meta-worker, claims-worker, ads-worker (profile ads), migrate, stripe-admin, meta-admin. media-worker is built but NOT deployed (MOCK-only, worker_env.go:174).
-# Depends on: go.mod/go.sum (module "livecommerce", go 1.27.1), cmd/**, internal/**,
+# Depends on: go.mod/go.sum (module "livecommerce", go 1.27.2), cmd/**, internal/**,
 #   migrations/** (embedded SQL), deploy/tools/lcentry. `cmd/migrate` is REQUIRES_INTEGRATOR (I1):
 #   until it exists this build stops with exit 3 "BLOCKED" instead of shipping an image without it.
 # Status: DESIGN (NOT_RUN: blocked on cmd/migrate); verified by smoke S07, S08.
@@ -24,9 +24,9 @@
 #   smoke S08 reads the expected binary list from the one-line `ARG GO_CMDS="..."` below (+ lcentry):
 #   keep that line format, or S08 fails.
 
-# golang 1.27.1 (matches go.mod `go 1.27.1`), Debian 13; resolved 2026-09-28.
-ARG GO_IMAGE=golang:1.27.1-trixie@sha256:433790e515d27dc6003e847e644cc0af956985cf315c1c58a3b73ee2dd305183
-# distroless static nonroot (UID 65532): CA certs for OIDC/PAYUNi TLS + tzdata, no shell; resolved 2026-09-28.
+# golang 1.27.2 (matches go.mod `go 1.27.2`), Debian 13; resolved 2026-10-09 (GO-2026-6613/6617 fix release).
+ARG GO_IMAGE=golang:1.27.2-trixie@sha256:e58d6f83b3416618d8bcac2b3dde1b7f7e3c4a77d25e88637f8bbae81536c48d
+# distroless static nonroot (UID 65532): CA certs for OIDC/PAYUNi TLS + tzdata, no shell; resolved 2026-10-09 (GO-2026-6613/6617 fix release).
 ARG RUNTIME_IMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:e2e927ec666bae08560abb3c55d0659eceabb657f56b6782ab500a9fc7f555e3
 
 FROM ${GO_IMAGE} AS build
