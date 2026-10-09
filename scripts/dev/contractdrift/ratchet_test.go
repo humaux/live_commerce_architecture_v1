@@ -239,3 +239,45 @@ func TestMultilineUnresolvedJSONValueIsTouched(t *testing.T) {
 		}
 	}
 }
+
+func TestInitialLoadedBaselineCannotHideNewDrift(t *testing.T) {
+	root := fixture(t, "aligned")
+	p := filepath.Join(root, "internal/httpapi/routes.go")
+	lines := strings.Split(readText(t, p), "\n")
+	for i, line := range lines {
+		if strings.Contains(line, "mux.HandleFunc") {
+			lines[i] = ""
+		}
+	}
+	mustWrite(t, p, strings.Join(lines, "\n"))
+	g, err := scanGo(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d, err := scanContracts(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := scanBFF(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b := baseline{Version: 1, Seed: "handwritten", Entries: []finding{}}
+	for _, finding := range compare(g, d, f) {
+		if mismatchKinds[finding.Kind] {
+			b.Entries = append(b.Entries, finding)
+		}
+	}
+	bp := filepath.Join(root, "scripts/dev/contractdrift/baseline.json")
+	if err := writeBaseline(bp, b); err != nil {
+		t.Fatal(err)
+	}
+	before := readText(t, bp)
+	code, out := cli(root)
+	if code != 1 || !strings.Contains(out, "BASELINE_ADDED") {
+		t.Fatalf("initial normal-mode grandfathering bypass: %d %s", code, out)
+	}
+	if readText(t, bp) != before {
+		t.Fatal("normal gate rewrote baseline")
+	}
+}

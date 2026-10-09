@@ -99,6 +99,14 @@ func run(args []string, out, errOut io.Writer) int {
 			}
 		}
 	}
+	// First adoption is reviewed legacy too: a hand-edited file must obey the same admission as -write-baseline.
+	if !oldExists {
+		for key := range legacy {
+			if _, ok := baseIssues[key]; !ok {
+				return fail(fmt.Errorf("BASELINE_ADDED %s: not legacy at merge base", key))
+			}
+		}
+	}
 	if *write {
 		seed := baseline{Version: 1, Seed: changes.Base, Entries: []finding{}}
 		for _, f := range findings {
