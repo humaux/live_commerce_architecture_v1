@@ -58,7 +58,9 @@ cd $ROOT/.worktrees/r3-integration
 # an older ext-agent.sh would ignore READONLY=1 and grant Bash/Edit with the provider token.
 grep -q '"deny": \["Bash"' scripts/agents/ext-agent.sh && grep -q 'READONLY:-0' scripts/agents/ext-agent.sh || {
   printf 'NOT_RUN: trusted runner %s/scripts/agents/ext-agent.sh lacks READONLY enforcement\n' "$PWD" | tee "$OUT/findings.md"; exit 4; }
-rc=0; READONLY=1 MODEL=kimi-for-coding PROVIDER=kimi bash scripts/agents/ext-agent.sh "$WT" $ROOT/output/integrator/tools/visual-review-prompt.md "$OUT" high > "$OUT/run.log" 2>&1 || rc=$?
+# The rubric comes from the trusted trunk worktree, never from $ROOT (which may hold PR-controlled content) (PR #23 security review).
+[ -f "$WT/output/integrator/tools/visual-review-prompt.md" ] || { printf 'NOT_RUN: trusted trunk %s has no visual-review rubric yet\n' "${TRUST:0:8}" | tee "$OUT/findings.md"; exit 4; }
+rc=0; READONLY=1 MODEL=kimi-for-coding PROVIDER=kimi bash scripts/agents/ext-agent.sh "$WT" "$WT/output/integrator/tools/visual-review-prompt.md" "$OUT" high > "$OUT/run.log" 2>&1 || rc=$?
 F="$WT/output/ext-agents/visual-review/findings.md"
 if [ "$rc" -eq 0 ] && [ -f "$F" ] && head -1 "$F" | grep -qE '^VERDICT: (PASS|FIX)'; then
   cp "$F" "$OUT/findings.md"; head -1 "$OUT/findings.md"; grep -c '^- \[P1\]' "$OUT/findings.md" | sed 's/^/P1 count: /' || true
