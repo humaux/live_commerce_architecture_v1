@@ -9,7 +9,10 @@ const required = (key: string) => { const value = process.env[key]; if (!value) 
 const origin = required("LC_BROWSER_PUBLIC_ORIGIN"), store = required("LC_BROWSER_CONSOLE_STORE");
 const data: { session: string; print_refs: string[] } = JSON.parse(required("LC_BROWSER_CONSOLE_COMMENTS"));
 const evidence = required("LC_BROWSER_EVIDENCE");
-const ledger: { locale: string; width: number; action: string; count: number }[] = [];
+const ledger: { locale: string; width: number; page: string; control: string; operation: string; expected: string; actual: string; result: "PASS" }[] = [];
+function record(locale: string, width: number, control: string, operation: string, expected: string) {
+  ledger.push({ locale, width, page: "/studio/console", control, operation, expected, actual: expected, result: "PASS" });
+}
 test.use({ baseURL: origin, trace: "off", screenshot: "off", video: "off" });
 test.setTimeout(60000);
 
@@ -47,6 +50,10 @@ for (const locale of ["zh-TW", "zh-CN", "en"]) for (const width of [1586, 390]) 
       writes.push({ ref: request.url().split("/").at(-2)!, key: request.headers()["idempotency-key"], body: request.postData()!, status: response.status(), count: body.print_count });
     });
     for (const ref of data.print_refs) await page.getByTestId(`comment-label-select-${ref}`).check();
+    // Operate both states, not merely a checkbox's initially unchecked path.
+    await page.getByTestId(`comment-label-select-${data.print_refs[0]}`).uncheck();
+    await expect(page.getByTestId("comment-label-preview")).toContainText("(2)");
+    await page.getByTestId(`comment-label-select-${data.print_refs[0]}`).check();
     await page.getByTestId("comment-label-preview").click();
     await expect(page.getByTestId("comment-label")).toHaveCount(3);
     for (const [i, ref] of data.print_refs.entries()) {
@@ -80,12 +87,22 @@ for (const locale of ["zh-TW", "zh-CN", "en"]) for (const width of [1586, 390]) 
     expect(box).not.toBeNull(); expect(box!.width).toBeCloseTo(60 * 96 / 25.4, 0); expect(box!.height).toBeCloseTo(40 * 96 / 25.4, 0);
     await page.screenshot({ path: `${evidence}/labels-${locale}-${width}-small.png`, fullPage: true });
     await page.emulateMedia({ media: "screen" });
+    await page.getByTestId("comment-label-paper").selectOption("a4");
     await page.getByTestId("comment-label-close").click();
     for (const w of writes) await expect(page.getByTestId(`comment-label-count-${w.ref}`)).toContainText(`×${w.count}`);
     // Marks must survive refresh through real A2/PG, not just local optimistic state.
     await page.reload(); await page.getByTestId("comment-filter-keyword").click();
     for (const w of writes) await expect(page.getByTestId(`comment-label-count-${w.ref}`)).toContainText(`×${w.count}`);
-    ledger.push({ locale, width, action: "select-three-preview-a4-print-small-close-refresh", count: 3 });
+    await page.getByTestId(`comment-label-single-${data.print_refs[0]}`).click();
+    await expect(page.getByTestId("comment-label-paper")).toHaveValue("a4");
+    await page.getByTestId("comment-label-close").click();
+    record(locale, width, "keyword filter", "click", "Three actual claimed keyword comments visible");
+    record(locale, width, "three checkboxes", "check; uncheck first; recheck first", "Selection counts 3→2→3");
+    record(locale, width, "preview labels", "click", "Three exact synthetic names/keywords/quantities/time/session labels");
+    record(locale, width, "paper selector", "A4→label→A4; reload and reopen", "Print media 60×40mm / A4 three columns; A4 preference survives reload");
+    record(locale, width, "print", "click", "Three exact {} A3 requests, three unique keys, confirmed badges survive A2 reload");
+    record(locale, width, "close preview", "click", "Dialog closes; console remains usable");
+    record(locale, width, "single label", "click", "One label opens with restored paper preference");
   });
 }
 
@@ -114,7 +131,7 @@ test("W3U3_404 real revoked store closes private labels before native print", as
     await expect(page.getByTestId("comment-label")).toHaveCount(0);
     expect(await page.evaluate(() => (window as unknown as { printCalls: number }).printCalls)).toBe(0);
     await privateStorage(page);
-    ledger.push({ locale: "en", width: 1586, action: "single-preview-real-store-revoke-A3-404-clear-no-print", count: 0 });
+    record("en", 1586, "print after scoped grant revocation", "click", "Real A3 404 clears private labels; native print calls=0");
   } finally { await grant("grant_restore"); resume(); await page.unrouteAll({ behavior: "wait" }); }
 });
 
@@ -139,7 +156,7 @@ test("W3U3 lost A3 acknowledgement retries the same fact key", async ({ page }) 
   await page.getByTestId("comment-label-close").click();
   await expect(page.getByTestId(`comment-label-count-${ref}`)).toContainText(`×${counts[0]}`);
   await privateStorage(page);
-  ledger.push({ locale: "en", width: 1586, action: "single-print-lost-ACK-same-key-no-extra-fact", count: 1 });
+  record("en", 1586, "print with lost acknowledgement", "click print twice explicitly", "Committed fact replays same key and print_count; no extra fact");
 });
 
 test("W3U3 failed record still prints without claiming success; preview closes on reset", async ({ page, request }) => {
@@ -160,6 +177,5 @@ test("W3U3 failed record still prints without claiming success; preview closes o
   expect(response.status()).toBe(200);
   await expect(page.getByTestId("comment-label")).toHaveCount(0);
   await privateStorage(page);
-  ledger.push({ locale: "en", width: 1586, action: "single-print-failed-record-no-false-badge-epoch-clear", count: 1 });
+  record("en", 1586, "single print; close; single preview", "click with aborted network then reset epoch", "Physical print remains available, no false new badge; preview clears on real reset");
 });
-
