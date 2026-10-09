@@ -351,6 +351,31 @@ func bffMerchantOrigin(m *bffModule) bool {
 	if constructor != 1 || returns != 1 {
 		return false
 	}
+	// The actual native URL value may only be initialized and read through
+	// primitive fields; passing/aliasing/computed access cannot prove origin.
+	primitive := map[string]bool{"protocol": true, "hostname": true, "pathname": true, "username": true, "password": true, "search": true, "hash": true, "origin": true, "href": true, "host": true, "port": true}
+	for i, tok := range t {
+		if tok.text != "url" || i > 0 && (t[i-1].text == "." || t[i-1].text == "?.") || i+1 < len(t) && t[i+1].text == ":" {
+			continue
+		}
+		if i > 0 && i+6 < len(t) && bffText(t[i-1:i+7]) == "const url = new URL ( value ) " {
+			continue
+		}
+		if i+3 < len(t) && t[i+1].text == "." && primitive[t[i+2].text] {
+			read := false
+			switch t[i+3].text {
+			case ";", ",", ")", "]", "}", "?", ":", "&&", "||", "??", "===", "!==", "==", "!=", ".":
+				read = true
+			}
+			if i > 0 && t[i-1].text == "delete" {
+				read = false
+			}
+			if read {
+				continue
+			}
+		}
+		return false
+	}
 	config, ok := m.funcs["readAuthConfig"]
 	if !ok {
 		return false

@@ -395,3 +395,17 @@ func TestReviewR1bMerchantTransportProofRealCLI(t *testing.T) {
 		})
 	}
 }
+
+func TestReviewR1bOriginObjectEscapeRealCLI(t *testing.T) {
+	call := reviewCLI(t)
+	root := bffReviewFixture(t, call)
+	file := "apps/admin/lib/auth.ts"
+	p := filepath.Join(root, file)
+	s := readText(t, p)
+	s = strings.Replace(s, "  return url.origin;", "  Object.defineProperty(url, \"origin\", {value: \"https://go.invalid/v1/__merchant_probe\"});\n  return url.origin;", 1)
+	mustWrite(t, p, s)
+	code, out := call(root)
+	if code != 1 || !strings.Contains(out, "UNRESOLVED") || !strings.Contains(out, "ERROR") || !strings.Contains(out, file+":") {
+		t.Fatalf("origin object escape accepted as native getter: %d %s", code, out)
+	}
+}
