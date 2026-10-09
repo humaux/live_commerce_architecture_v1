@@ -119,6 +119,10 @@ export function useLiveSettingsController({
     canManage = permitted(store, "live:manage"),
     canReport = permitted(store, "inbox:read"),
     canRemind = canManage && permitted(store, "inbox:reply");
+  // A captured callback belongs to its render's privacy generation. Beginning a
+  // new request after reveal must not lend the new generation to discarded work.
+  const ownership = privacy.fence.begin();
+  const ownsPage = () => privacy.fence.current(ownership);
   const fail = useCallback(
     (cause: unknown) => {
       if (liveSettingsDenied(cause)) {
@@ -133,10 +137,10 @@ export function useLiveSettingsController({
     },
     [clear, privacy.expire],
   );
-  // Missing send-side dependencies leave this optional route unmounted. A
-  // report 404 is local; actual session/permission refusals still revoke all data.
+  // Only the BFF's positively scoped missing-route proof is local. A store or
+  // session not_found refusal must still clear all private sections.
   const reportFailure = useCallback((cause: unknown) => {
-    if (cause instanceof LiveSettingsError && cause.status === 404) {
+    if (cause instanceof LiveSettingsError && cause.status === 404 && cause.code === "reminders_unavailable") {
       setReport(null);
       setRemindersUnavailable(true);
     } else fail(cause);
@@ -239,6 +243,7 @@ export function useLiveSettingsController({
     revision,
   ]);
   async function loadMoreSessions() {
+    if (!ownsPage()) return;
     if (!sessions?.next_cursor || sessionsLoading || inFlight.current || receipt.current || !privacy.visible || privacy.blocked.current) return;
     const ticket = privacy.fence.begin();
     if (!privacy.fence.current(ticket)) return;
@@ -260,6 +265,7 @@ export function useLiveSettingsController({
     }
   }
   async function page(next: string, previous = false) {
+    if (!ownsPage()) return;
     if (!scene || inFlight.current || receipt.current || !privacy.visible)
       return;
     const ticket = privacy.fence.begin();
@@ -288,6 +294,7 @@ export function useLiveSettingsController({
     }
   }
   async function run(first: SettingsReceipt) {
+    if (!ownsPage()) return;
     const ticket = privacy.fence.begin();
     if (!privacy.fence.current(ticket)) return;
     // Disabled controls cannot revoke already captured callbacks: UNKNOWN admits only its retained receipt.
@@ -387,6 +394,7 @@ export function useLiveSettingsController({
     }
   }
   function save() {
+    if (!ownsPage()) return;
     if (!settings || !canManage || receipt.current || inFlight.current) return;
     if (draft && !validSoldOutText(draft)) {
       setError("invalid_request");
@@ -421,6 +429,7 @@ export function useLiveSettingsController({
     }
   }
   async function copy(link: string) {
+    if (!ownsPage()) return;
     const ticket = privacy.fence.begin();
     try {
       const cookie = csrfCookie();

@@ -46,14 +46,14 @@ test("PR31 split permissions actual reminder click retains queued receipt withou
 });
 
 test("PR31 optional reminder GET 404 preserves healthy settings and blocklist",async t=>{
- const env=environment(t);globalThis.fetch=async input=>String(input).includes("/reminders")?response({code:"not_found"},404):reads(input);
+ const env=environment(t);globalThis.fetch=async input=>String(input).includes("/reminders")?response({code:"reminders_unavailable"},404):reads(input);
  const h=env.mount(()=>useLiveSettingsController({store:allStore,locale:"en",scene:sid,initialError:null}));await h.settle();
  assert.equal(h.output.settings?.version,3);assert.deepEqual(h.output.blocked?.items,[]);
  assert.equal(h.output.remindersUnavailable,true);assert.equal(h.output.privacy.visible,true);assert.equal(h.output.privacy.blocked.current,false);
 });
 
 test("PR31 missing reminder POST is local even when staff cannot discover it with a report read",async t=>{
- const env=environment(t);globalThis.fetch=async(input,init)=>init?.method==="POST"?response({code:"not_found"},404):reads(input);
+ const env=environment(t);globalThis.fetch=async(input,init)=>init?.method==="POST"?response({code:"reminders_unavailable"},404):reads(input);
  const h=env.mount(()=>useLiveSettingsController({store:noReportStore,locale:"en",scene:sid,initialError:null}));await h.waitFor(()=>!h.output.loading&&h.output.settings!==null,"staff settings ready");
  await h.output.run({method:"POST",resource:`live-sessions/${sid}/reminders`,key:"missing-reminder-route"});h.flush();
  assert.equal(h.output.settings?.version,3);assert.deepEqual(h.output.blocked?.items,[]);assert.equal(h.output.remindersUnavailable,true);assert.equal(h.output.privacy.blocked.current,false);
@@ -154,4 +154,61 @@ test("W3-U2 captured BuyerPanel add cannot dispatch after native hide",async t=>
  const staleAdd=node(h,n=>n.props["data-testid"]==="buyer-block-add").props.onClick;
  env.document.visibilityState="hidden";env.document.dispatchEvent(new Event("visibilitychange"));
  await staleAdd();await h.settle();assert.equal(writes,0);
+});
+
+test("PR31 reminder scope 404 clears already loaded private sections",async t=>{
+ const env=environment(t);let release!:(r:Response)=>void;
+ const held=new Promise<Response>(resolve=>release=resolve);
+ globalThis.fetch=async input=>String(input).includes("/reminders")?held:reads(input);
+ const h=env.mount(()=>useLiveSettingsController({store:allStore,locale:"en",scene:sid,initialError:null}));
+ await h.waitFor(()=>h.output.settings?.version===3&&h.output.blocked!==null,"healthy private sections before scope refusal");
+ release(response({code:"not_found"},404));await held;await h.settle();
+ assert.equal(h.output.settings,null,"a store/session refusal is not an absent optional route");
+ assert.equal(h.output.blocked,null);assert.equal(h.output.sessions,null);assert.equal(h.output.result,null);
+ assert.equal(h.output.remindersUnavailable,false);assert.equal(h.output.receipt.current,null);
+});
+
+for(const action of ["run","save","copy","page","loadMoreSessions"] as const)test(`PR31 old ${action} callback cannot borrow a revealed page's new fence`,async t=>{
+ const env=environment(t);let writes=0,copies=0,readsAfterReveal=0,recordReads=false;
+ const navigatorDescriptor=Object.getOwnPropertyDescriptor(globalThis,"navigator");
+ Object.defineProperty(globalThis,"navigator",{configurable:true,value:{clipboard:{async writeText(){copies++;}}}});
+ t.after(()=>navigatorDescriptor?Object.defineProperty(globalThis,"navigator",navigatorDescriptor):Reflect.deleteProperty(globalThis,"navigator"));
+ globalThis.fetch=async(input,init)=>{
+  if(init?.method==="POST"||init?.method==="PUT"){writes++;return response(queued);}
+  if(recordReads)readsAfterReveal++;
+  return reads(input);
+ };
+ const h=env.mount(()=>useLiveSettingsController({store:allStore,locale:"en",scene:sid,initialError:null}));
+ await h.waitFor(()=>!h.output.loading&&h.output.settings?.version===3,"ready private settings");
+ h.output.setDraft("MOCK old private draft");h.flush();
+ const stale=h.output[action],before=h.output.privacy.fence.begin();
+ env.document.visibilityState="hidden";env.document.dispatchEvent(new Event("visibilitychange"));h.flush();
+ assert.equal(h.output.draft,"");assert.equal(h.output.settings,null);
+ env.document.visibilityState="visible";env.document.dispatchEvent(new Event("visibilitychange"));
+ await h.waitFor(()=>h.output.privacy.visible&&!h.output.loading&&h.output.settings?.version===3,"new authoritative settings after reveal");
+ assert.equal(h.output.privacy.fence.current(before),false);
+ recordReads=true;
+ if(action==="run")await stale({method:"POST",resource:`live-sessions/${sid}/reminders`,key:"old-visible-epoch"});
+ else if(action==="copy")await stale("https://shop.example.invalid/claims/MOCK-capability");
+ else if(action==="page")await stale("old-private-cursor");
+ else await stale();
+ await h.settle();
+ assert.equal(writes,0,"a captured callback cannot resend the discarded draft/command");
+ assert.equal(copies,0,"a captured callback cannot copy a discarded private link");
+ assert.equal(readsAfterReveal,0,"a captured callback cannot start stale pagination");
+});
+
+test("PR31 normal visible focus preserves captured command admission and UNKNOWN receipt",async t=>{
+ const env=environment(t);const writes:{key:string|null;body:unknown}[]=[];
+ globalThis.fetch=async(input,init)=>{
+  if(init?.method==="POST"){writes.push({key:new Headers(init.headers).get("Idempotency-Key"),body:init.body});return response({code:"unavailable"},503);}
+  return reads(input);
+ };
+ const h=env.mount(()=>useLiveSettingsController({store:allStore,locale:"en",scene:sid,initialError:null}));
+ await h.waitFor(()=>!h.output.loading&&h.output.settings?.version===3,"ready visible settings");
+ const run=h.output.run,first={method:"POST" as const,resource:`live-sessions/${sid}/reminders`,key:"normal-focus-same-key"},ticket=h.output.privacy.fence.begin();
+ env.window.dispatchEvent(new Event("focus"));await h.settle();
+ assert.equal(h.output.privacy.fence.current(ticket),true);
+ await run(first);await h.settle();assert.equal(writes.length,1);assert.equal(h.output.unknown,true);assert.equal(h.output.receipt.current,first);
+ await h.output.run(first);await h.settle();assert.equal(writes.length,2);assert.deepEqual(writes[0],writes[1]);
 });
