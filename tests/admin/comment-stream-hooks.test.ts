@@ -140,6 +140,14 @@ test("K3 pasted tab is refused with invalid_text copy before any reply POST",asy
   node(h,n=>n.props["data-testid"]==="comment-reply-text").props.onChange({target:{value:"Synthetic\treply"}});h.flush();node(h,n=>n.type==="form").props.onSubmit({preventDefault(){}});await h.settle();
   assert.equal(sends,0);assert.equal(stored.size,0,"invalid text must not arm an uncertain-send receipt");assert.ok(textOf(h.output).includes(commentCopy("en").invalid_text));
 });
+for(const locale of ["zh-TW","zh-CN","en"])test(`PR18 facts_unavailable mark uses actionable copy ${locale}`,async t=>{
+  const env=environment(t);globalThis.fetch=async()=>response({items:[]});
+  const cap={state:"ok",reason:"ok",evidence:"MOCK",checked_at:null};
+  const h=env.mount(()=>CommentReply({store,session:sid,comment:{...row,marks:{...row.marks,private_reply_available:false,private_reply_unavailable_reason:"facts_unavailable"}},locale,platform:"facebook",capabilities:{facebook:{private_reply:cap,reply_public:cap}},onSent(){},onDenied(){}} as any));
+  await h.settle();
+  assert.equal(textOf(node(h,n=>n.props["data-testid"]==="comment-rule")),commentCopy(locale).comment_facts_unavailable);
+  assert.equal(node(h,n=>n.type==="fieldset").props.disabled,true);
+});
 test("real SQL UNKNOWN mark blocks public-mode switching without a local receipt",async t=>{
   const env=environment(t);globalThis.fetch=async()=>response({items:[]});
   const h=env.mount(()=>CommentReply({store,session:sid,comment:{...row,marks:{...row.marks,private_reply:{kind:"manual",state:"UNKNOWN",blocked_reason:null},private_reply_available:false,private_reply_unavailable_reason:"auto_pending"}},locale:"en",platform:"facebook",capabilities:{facebook:{private_reply:{state:"ok",reason:"ok",evidence:"MOCK",checked_at:null},reply_public:{state:"ok",reason:"ok",evidence:"MOCK",checked_at:null}}},onSent(){},onDenied(){}} as any));

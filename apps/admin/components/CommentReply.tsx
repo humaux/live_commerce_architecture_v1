@@ -102,7 +102,9 @@ export function CommentReply({
   }, [store.id, session, comment.ref]);
   const privateReason =
     mode === "private" && !comment.marks.private_reply_available
-      ? (comment.marks.private_reply_unavailable_reason ?? "used")
+      ? (comment.marks.private_reply_unavailable_reason === "facts_unavailable"
+          ? "comment_facts_unavailable"
+          : (comment.marks.private_reply_unavailable_reason ?? "used"))
       : "";
   const canPreempt =
     privateReason === "auto_pending_confirm" ||

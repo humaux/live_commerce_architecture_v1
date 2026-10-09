@@ -20,6 +20,31 @@ import {
 
 const sid = "22222222-2222-4222-8222-222222222222";
 const path = `live-sessions/${sid}/comments`;
+test("PR18 mixed FB and IG page orders normalize chronologically after dedupe", () => {
+  const row=(ref:string,created_at:string)=>({ref,created_at,text:ref});
+  const a=row("1","2026-10-09T00:00:01Z"),b=row("2","2026-10-09T00:00:02Z"),c=row("3","2026-10-09T08:00:02+08:00"),d=row("4","2026-10-09T00:00:03Z");
+  const page=(items:unknown[])=>({epoch:1,reset:false,items,next:{epoch:1,seq:4},older_cursor:null}) as never;
+  let fb=applyCommentPage(emptyComments(),page([c,b]),false);
+  assert.deepEqual(fb.items.map(r=>r.ref),["2","3"],"equal instants use ref order, not provider insertion order");
+  fb=applyCommentPage(fb,page([d,{...b,text:"updated"}]),false);
+  assert.deepEqual(fb.items.map(r=>r.ref),["2","3","4"]);
+  fb=applyCommentPage(fb,page([a,b]),true);
+  const ig=applyCommentPage(emptyComments(),page([a,b,c,d]),false);
+  assert.deepEqual(fb.items.map(r=>r.ref),["1","2","3","4"]);
+  assert.deepEqual(fb.items.map(r=>r.ref),ig.items.map(r=>r.ref));
+  assert.equal(fb.items.find(r=>r.ref==="2")?.text,"updated","older overlap must not replace newer marks/text");
+});
+for(const older of [false,true])test(`PR18 cap keeps newest1000 with mixed page order older=${older}`,()=>{
+  const rows=Array.from({length:1002},(_,i)=>({ref:String(i+1),created_at:new Date(1000*i).toISOString()}));
+  const page=(items:unknown[])=>({epoch:1,reset:false,items,next:{epoch:1,seq:1002},older_cursor:"more"}) as never;
+  let old=emptyComments();
+  for(let offset=3;offset<rows.length;offset+=100)
+    old=applyCommentPage(old,page(rows.slice(offset,offset+100).reverse()),false);
+  const merged=applyCommentPage(old,page([rows[2],rows[0],rows[1]]),older);
+  assert.deepEqual(merged.items.map(r=>r.ref),rows.slice(2).map(r=>r.ref));
+  const recent=applyCommentPage(merged,page([{ref:"1003",created_at:new Date(1002000).toISOString()}]),false);
+  assert.equal(recent.items[0].ref,"4");assert.equal(recent.items.at(-1)?.ref,"1003");assert.equal(recent.items.length,1000);
+});
 test("PR18 A3 invalid_ref remains a definite 422 refusal", () => {
   assert.equal(commentErrorCode(422, { code: "invalid_ref" }), "invalid_ref");
 });
