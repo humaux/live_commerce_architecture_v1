@@ -61,12 +61,13 @@ type ConsolePageQuery struct {
 
 // ConsoleStreamPage is the A2 response envelope (§2.6).
 type ConsoleStreamPage struct {
-	Epoch       int64              `json:"epoch"`
-	Reset       bool               `json:"reset"`
-	Items       []ConsoleComment   `json:"items"`
-	Next        ConsoleCursor      `json:"next"`
-	OlderCursor *string            `json:"older_cursor"`
-	Stream      ConsoleStreamState `json:"stream"`
+	Epoch         int64              `json:"epoch"`
+	Reset         bool               `json:"reset"`
+	ScanExhausted bool               `json:"scan_exhausted"` // §2.6: false means the producer has no EOF proof.
+	Items         []ConsoleComment   `json:"items"`
+	Next          ConsoleCursor      `json:"next"`
+	OlderCursor   *string            `json:"older_cursor"`
+	Stream        ConsoleStreamState `json:"stream"`
 }
 
 type ConsoleCursor struct {
@@ -273,6 +274,7 @@ func (cs *CommentStream) instagramPage(ctx context.Context, tx pgx.Tx, scope pla
 	defer rows.Close()
 	comments := make([]ConsoleComment, 0, q.Limit)
 	lastSeq := afterSeq
+	scanned := 0
 	var newest time.Time
 	for rows.Next() {
 		var env meta.CommentEnvelope
@@ -280,6 +282,11 @@ func (cs *CommentStream) instagramPage(ctx context.Context, tx pgx.Tx, scope pla
 			&env.Ciphertext, &env.AppID, &env.Object, &env.AssetID, &env.EventKey, &env.PayloadHash,
 			&env.RouteID, &env.RouteEpoch, &env.Seq); err != nil {
 			return ConsoleStreamPage{}, ErrStreamUnavailable
+		}
+		// §2.6: raw query progress survives decryption/media filtering; visible length cannot prove EOF.
+		scanned++
+		if env.Seq > lastSeq {
+			lastSeq = env.Seq
 		}
 		cr, err := cs.payload.OpenComment(scope.TenantID, scope.StoreID, env)
 		if err != nil || cr.MediaID != src.SourceObjectID {
@@ -300,9 +307,6 @@ func (cs *CommentStream) instagramPage(ctx context.Context, tx pgx.Tx, scope pla
 			Ref: cr.Ref, Seq: &seq, ParentRef: parent, CreatedAt: cr.CreatedAt, AuthorName: name,
 			Text: cr.Text, IsPage: cr.IsPage, HasAttachment: cr.HasAttachment,
 		})
-		if env.Seq > lastSeq {
-			lastSeq = env.Seq
-		}
 		if cr.CreatedAt.After(newest) {
 			newest = cr.CreatedAt
 		}
@@ -321,10 +325,11 @@ func (cs *CommentStream) instagramPage(ctx context.Context, tx pgx.Tx, scope pla
 		lag = &l
 	}
 	return ConsoleStreamPage{
-		Epoch: 0,
-		Reset: q.AfterEpoch != nil && *q.AfterEpoch != 0,
-		Items: items,
-		Next:  ConsoleCursor{Epoch: 0, Seq: lastSeq},
+		Epoch:         0,
+		Reset:         q.AfterEpoch != nil && *q.AfterEpoch != 0,
+		ScanExhausted: scanned < q.Limit,
+		Items:         items,
+		Next:          ConsoleCursor{Epoch: 0, Seq: lastSeq},
 		Stream: ConsoleStreamState{
 			State: "live", PollIntervalMs: 3000, LastOKAt: &now, LagMs: lag,
 			SourcePlatform: "instagram", VideoEmbeddable: false,

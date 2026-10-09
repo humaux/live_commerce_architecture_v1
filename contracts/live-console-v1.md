@@ -215,7 +215,7 @@ holds for the page; the authoritative check at send time is §3.3 via `comment-f
 ### 2.6 Console HTTP and cadence
 
 `GET /v1/admin/stores/{store_id}/live-sessions/{session_id}/comments?after_epoch=&after_seq=&limit=` and
-`?before_cursor=`. Response `{epoch, reset: bool, items: [ConsoleComment], next: {epoch, seq}, older_cursor,
+`?before_cursor=`. Response `{epoch, reset: bool, scan_exhausted: bool, items: [ConsoleComment], next: {epoch, seq}, older_cursor,
 stream: StreamState}`; `reset=true` when `after_epoch` ≠ current epoch (worker restarted: the UI clears and re-reads).
 `ConsoleComment = {ref, seq: number|null, parent_ref, created_at, author_name (may be null, LC-U2), text, is_page: bool,
 has_attachment: bool, marks}`. `limit` 1..100; negative or non-integer `after_seq` → `400 invalid_cursor`.
@@ -224,6 +224,14 @@ webhook-copy items use the returned envelope's `seq` from `social.read_comment_e
 history/backfill items have no authoritative item sequence and MUST emit `seq: null` (never omit the field).
 Do not derive item `seq` from the page's `next.seq`/`next_seq` or from `created_at`. Numeric seq coverage applies
 only within an authoritative window; `seq: null` history items are excluded from absence-based deletion.
+Every A2 response includes `scan_exhausted` (never omit false). For the trusted IG webhook-copy reader it is
+true only when a successful raw `social.read_comment_events` query returns fewer rows than the requested
+`limit`, before decryption/media filtering. `next.seq` advances to the highest raw envelope sequence scanned,
+including dropped/undecryptable/other-media rows; an empty raw query preserves the requested after-sequence.
+FB and readers without raw-scan exhaustion proof conservatively emit false: this means no EOF proof, not
+an assertion that more rows exist. The proof describes the completed query's view, not future arrivals.
+Ordinary IG HEAD pages keep their existing earliest-window merge semantics; the field allows an explicit
+staged forward rebuild to finish even when a previously held final comment has disappeared.
 Headers `Cache-Control: no-store`, `Referrer-Policy: no-referrer` (I15).
 
 Cadence (OPEN-1, deviation A17): **polling**, not SSE, in v1 — comments every 3 s while the tab is visible, console
