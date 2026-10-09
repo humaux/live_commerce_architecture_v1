@@ -644,6 +644,126 @@ export function registerProductEditorAcceptance() {
           "one patch per save, stock0 persists, twelve-SKU popover and focus return",
         actual: "PASS",
       });
+      // Keep additional products after the frozen list-count checks. This uses
+      // the same isolated PG fixture; every write goes through a real UI save.
+      await page.setViewportSize({ width: 390, height: 844 });
+      const mobileMatrixTag = `M${Date.now().toString().slice(-10)}`;
+      for (const [localeIndex, locale] of (["zh-TW", "zh-CN", "en"] as const).entries()) {
+        const c = productEditorCopy[locale];
+        await page.goto(url(locale, "products/new"));
+        await page.getByTestId("product-name").fill(`${tag} mobile matrix ${locale}`);
+        const axesStart = writes.length;
+        for (const [i, name, values] of [[0, c.color, "White, Black"], [1, c.size, "S"]] as const) {
+          await page.getByTestId("axis-add").click();
+          await page.getByTestId(`axis-name-${i}`).fill(name);
+          await page.getByTestId(`axis-values-${i}`).fill(values);
+          await page.getByTestId(`axis-values-${i}`).press("Enter");
+          await expect(page.getByTestId(`axis-name-${i}`)).toHaveValue(name);
+          await expect(page.locator(".product-axis").nth(i).locator(".pe-value-chips > span"))
+            .toHaveCount(i === 0 ? 2 : 1);
+          ledger.push({ page: "mobile matrix new", locale, width: 390, control: `axis-add/axis-name-${i}/axis-values-${i}`, action: "click fill Enter", expected: { name, values }, actual: "PASS", persistence: "local draft until UI save" });
+        }
+        await expect(page.locator('[data-testid^="matrix-row-"]')).toHaveCount(2);
+        expect(writes.length).toBe(axesStart);
+        for (const editing of [false, true]) {
+          const phase = editing ? "edit" : "new";
+          const rows = ["White / S", "Black / S"].map((name, i) => ({
+            name,
+            price: String((editing ? 80 : 60) + i),
+            compare: String((editing ? 120 : 100) + i),
+            quantity: String((editing ? 7 : 5) + i),
+            untracked: (i === 1) !== editing,
+            code: `${mobileMatrixTag}-${localeIndex}-${i}`,
+            keyword: `${mobileMatrixTag}${localeIndex}${editing ? "E" : "C"}${i}`,
+          }));
+          const fieldsFor = (i: number, existing: boolean) => {
+            const row = page.getByTestId(`matrix-row-${i}`), state = rows[i];
+            return [
+              { control: row.getByTestId(`new-price-${i}`), label: c.price, value: state.price },
+              { control: row.getByTestId(`matrix-compare-${i}`), label: c.compare, value: state.compare },
+              { control: row.getByTestId(`matrix-quantity-${i}`), label: state.untracked ? c.max : existing ? c.targetQty : c.quantity, value: state.quantity },
+              { control: row.getByTestId(`matrix-code-${i}`), label: c.code, value: state.code },
+              { control: row.getByRole("textbox", { name: `${c.keyword} ${i + 1}`, exact: true }), label: c.keyword, value: state.keyword },
+            ];
+          };
+          for (const [i, state] of rows.entries()) {
+            const row = page.getByTestId(`matrix-row-${i}`);
+            await expect(row.locator("strong")).toHaveText(state.name);
+            const selected = row.getByTestId(`matrix-select-${i}`);
+            await selected.check();
+            await expect(selected).toBeChecked();
+            await selected.uncheck();
+            await expect(selected).not.toBeChecked();
+            ledger.push({ page: `mobile matrix ${phase}`, locale, width: 390, row: state.name, control: `matrix-select-${i}`, action: "check uncheck", expected: "selected true→false", actual: "PASS", persistence: "selection is view state" });
+            const tracking = row.getByRole("checkbox", { name: c.untracked, exact: true });
+            // Exercise both tracking states, then leave distinct persisted modes.
+            await tracking.check();
+            await expect(tracking).toBeChecked();
+            await tracking.uncheck();
+            await expect(tracking).not.toBeChecked();
+            if (state.untracked) await tracking.check();
+            await expect(tracking).toBeChecked({ checked: state.untracked });
+            await expect(tracking.locator("..")).toHaveText(c.untracked);
+            await expect(tracking.locator("..")).toBeVisible();
+            ledger.push({ page: `mobile matrix ${phase}`, locale, width: 390, row: state.name, control: c.untracked, action: "check uncheck; choose mode", expected: { untracked: state.untracked }, actual: "PASS", persistence: "verified after UI save below" });
+            for (const field of fieldsFor(i, editing)) {
+              const label = field.control.locator("..").locator(":scope > span");
+              await expect(label, `${locale} ${phase} ${state.name}: visible ${field.label}`).toBeVisible();
+              await expect(label).toHaveText(field.label);
+              await label.scrollIntoViewIfNeeded();
+              await expect(label).toBeInViewport({ ratio: 0.99 });
+              if (editing && field.label === c.code) await expect(field.control).toBeDisabled();
+              else await field.control.fill(field.value);
+              await expect(field.control).toHaveValue(field.value);
+              ledger.push({ page: `mobile matrix ${phase}`, locale, width: 390, row: state.name, control: field.label, action: editing && field.label === c.code ? "verify existing SKU code disabled" : "fill", expected: { visibleLabel: field.label, value: field.value }, actual: "PASS", persistence: "verified after UI save below" });
+            }
+            const active = row.getByTestId(`matrix-active-${i}`);
+            await active.uncheck();
+            await expect(active).not.toBeChecked();
+            await active.check();
+            await expect(active).toBeChecked();
+            const activeLabel = row.locator("label.pe-check > span");
+            await expect(activeLabel).toHaveText(c.active);
+            await expect(activeLabel).toBeVisible();
+            await activeLabel.scrollIntoViewIfNeeded();
+            await expect(activeLabel).toBeInViewport({ ratio: 0.99 });
+            ledger.push({ page: `mobile matrix ${phase}`, locale, width: 390, row: state.name, control: `matrix-active-${i}`, action: "uncheck check", expected: { visibleLabel: c.active, enabled: true }, actual: "PASS", persistence: "verified after UI save below" });
+          }
+          const saveStart = writes.length;
+          const response = page.waitForResponse((r) => r.url().includes(`/api/stores/${store}/products/`) && r.url().endsWith("/document") && r.request().method() !== "GET");
+          await page.getByTestId(editing ? "product-save" : "product-create").click();
+          expect((await response).ok()).toBe(true);
+          if (!editing) {
+            const result = page.getByTestId("product-save-result");
+            await expect(result).toBeVisible();
+            await result.getByRole("link", { name: c.save, exact: true }).click();
+          }
+          await expect(page.getByTestId("product-save")).toBeEnabled();
+          await page.reload();
+          await expect(page.locator('[data-testid^="matrix-row-"]')).toHaveCount(2);
+          for (const [i, state] of rows.entries()) {
+            const row = page.getByTestId(`matrix-row-${i}`);
+            await expect(row.locator("strong")).toHaveText(state.name);
+            for (const field of fieldsFor(i, true)) {
+              const label = field.control.locator("..").locator(":scope > span");
+              await expect(label).toBeVisible();
+              await expect(label).toHaveText(field.label);
+              await label.scrollIntoViewIfNeeded();
+              await expect(label).toBeInViewport({ ratio: 0.99 });
+              await expect(field.control).toHaveValue(field.value);
+            }
+            await expect(row.getByRole("checkbox", { name: c.untracked, exact: true })).toBeChecked({ checked: state.untracked });
+            await expect(row.getByTestId(`matrix-active-${i}`)).toBeChecked();
+            await expect(row.getByTestId(`matrix-code-${i}`)).toBeDisabled();
+            ledger.push({ page: `mobile matrix ${phase}`, locale, width: 390, row: state.name, control: "saved row readback", action: "UI save, editor reopen/reload, read visible fields", expected: state, actual: "PASS", tier: "BROWSER+REAL_PG" });
+          }
+          expect(writes.slice(saveStart).filter((r) => r.path.endsWith("/document"))).toHaveLength(1);
+          const capture = `mobile-matrix-${locale}-390-${phase}`;
+          await page.getByTestId("new-price-0").scrollIntoViewIfNeeded();
+          await shot(capture);
+          ledger.push({ page: `mobile matrix ${phase}`, locale, width: 390, control: editing ? "product-save" : "product-create", action: "click reload", expected: "one document write; both matrix rows persist", actual: "PASS", screenshot: `${capture}.png`, tier: "BROWSER+REAL_PG" });
+        }
+      }
       // Controlled read-only ambiguity: do not fabricate a stock quantity when the API has no single warehouse.
       await page.route(
         `**/api/stores/${store}/products/${id}`,
