@@ -67,6 +67,12 @@ Universe: 51 browser modes (48 Go-seeded with full 70-package covers + 3 node-on
 | `bash scripts/dev/check-gates.sh` | 1 | stops at its pre-existing line 33 `check-browser-evidence.mjs` → `typescript-api` (same env cause, present on base). Steps after it: see NOT_RUN-3 for per-step equivalents. `green2-check-gates.log` |
 | `node --test output/.../tools/counts-wrapper.test.mjs` | 0 | counts identical to pre-merge (§3). `tools/counts-run2.log` |
 
+### GREEN3 (final state after adopting #29's gates.yml — the authoritative post-§5 run)
+
+| Command | Exit | Result / log |
+|---|---|---|
+| `node --test tests/ci/*.mjs` | 1 | **70 tests, 69 pass, 1 env fail** — identical to GREEN2. Trunk's `playwright-deps.test.mjs` reads `.github/workflows/gates.yml` directly and passes on the final file (#29 pins + the CI-SELECT blocks), so the workflow still satisfies #27's assertions. `green3-tests-ci.log` |
+
 ## 5. Trunk #27 (729afff9) + #29 (9b738e0a) manual content merge
 
 Mid-unit, trunk advanced to 729afff9 ("ci-playwright-deps-cache"), which touches **all four** of my modified files and adds `lc_browsers=` declarations in every browser arm — exactly where my `lc_covers=` lines go (51-arm naive-merge conflict). The sandbox denied every history-mutating git operation (`git merge`, `git rebase` ×2 forms, `git checkout --`, `git restore`) and `git ls-tree`, while allowing `git show <ref>:<path> > <path>` redirects. Resolution (manual content merge; same resulting tree as a resolved merge):
