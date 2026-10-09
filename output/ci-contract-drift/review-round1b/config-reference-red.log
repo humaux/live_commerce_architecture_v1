@@ -1,0 +1,11 @@
+=== RUN   TestReviewR1bMerchantTransportProofRealCLI
+=== RUN   TestReviewR1bMerchantTransportProofRealCLI/computed_config_assignment
+    bff_review_r1b_cli_test.go:393: merchant proof accepted unsupported transport: 0 WARNING (legacy) BFF_NO_GO DELETE /v1/admin/stores/{}/customers/tags/{} apps/admin/app/api/stores/[store]/customers/tags/[tag]/route.ts:9, apps/admin/app/api/stores/[store]/customers/tags/[tag]/route.ts:12, apps/admin/app/api/stores/[store]/customers/tags/[tag]/route.ts:14, apps/admin/lib/customer-tags-bff.ts:4, apps/admin/lib/customer-tags-request.ts:11, apps/admin/lib/customer-tags-request.ts:27, apps/admin/lib/customer-tags-request.ts:28, apps/admin/lib/customer-tags-request.ts:29, apps/admin/lib/customer-tags-request.ts:30, apps/admin/lib/customer-tags-request.ts:31, apps/admin/lib/customer-tags-request.ts:32, apps/admin/lib/customer-tags-request.ts:33, apps/admin/lib/customer-tags-request.ts:34, apps/admin/lib/customer-tags-request.ts:35, apps/admin/lib/customer-tags-request.ts:36, apps/admin/lib/customer-tags-request.ts:42 
+=== RUN   TestReviewR1bMerchantTransportProofRealCLI/config_object_escape
+    bff_review_r1b_cli_test.go:393: merchant proof accepted unsupported transport: 0 WARNING (legacy) BFF_NO_GO DELETE /v1/admin/stores/{}/customers/tags/{} apps/admin/app/api/stores/[store]/customers/tags/[tag]/route.ts:9, apps/admin/app/api/stores/[store]/customers/tags/[tag]/route.ts:12, apps/admin/app/api/stores/[store]/customers/tags/[tag]/route.ts:14, apps/admin/lib/customer-tags-bff.ts:4, apps/admin/lib/customer-tags-request.ts:11, apps/admin/lib/customer-tags-request.ts:27, apps/admin/lib/customer-tags-request.ts:28, apps/admin/lib/customer-tags-request.ts:29, apps/admin/lib/customer-tags-request.ts:30, apps/admin/lib/customer-tags-request.ts:31, apps/admin/lib/customer-tags-request.ts:32, apps/admin/lib/customer-tags-request.ts:33, apps/admin/lib/customer-tags-request.ts:34, apps/admin/lib/customer-tags-request.ts:35, apps/admin/lib/customer-tags-request.ts:36, apps/admin/lib/customer-tags-request.ts:42 
+--- FAIL: TestReviewR1bMerchantTransportProofRealCLI (3.67s)
+    --- FAIL: TestReviewR1bMerchantTransportProofRealCLI/computed_config_assignment (1.73s)
+    --- FAIL: TestReviewR1bMerchantTransportProofRealCLI/config_object_escape (1.43s)
+FAIL
+FAIL	livecommerce/scripts/dev/contractdrift	3.965s
+FAIL

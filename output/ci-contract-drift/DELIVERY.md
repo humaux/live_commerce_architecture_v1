@@ -1,6 +1,44 @@
 # CI-DRIFT delivery
 
-## Current batch — PR #33 round 1, six review findings (2026-10-10)
+## Current batch — PR #33 round 1b (2026-10-10)
+
+- **READY for integrator pre-review**, branch `unit/ci-contract-drift`, base `45ef5641`; frozen tested source **`df9bf2b6b53c17ca2fdf767586deb756dc4476a5`**. Integrator trunk merge and setup-go v6.5.0 retained. No push. Implementer Codex-3; exact parent runtime model/reasoning is unavailable. Isolated Go/BFF workers and read-only reviewer; no recursive delegation. Per-file source hashes and worker configurations are retained in raw task evidence.
+- Allowed writes: `scripts/dev/contractdrift/**`, `docs/delivery/GATES.md`, this DELIVERY and unit-local curated static evidence. No final product, contract, workflow, dependency or lockfile change; baseline **237**, byte-for-byte unchanged. LC-U3 remains explicitly paused. This delivery commit adds evidence only; tested source remains unchanged.
+
+| Packet item | Root cause → fix / prior coverage | Actual CLI regression |
+| --- | --- | --- |
+| 1 raw Git provenance | Attributes/config suppressed hunks → force raw text/no textconv, fixed a/b prefixes and independent changed-source enumeration; missing raw provenance fails closed. | `TestReviewR1BForcedTextDiffCLI` (binary, textconv, mnemonic, no-prefix) |
+| 2 pure deletions | Current-only spans ignored deleted lines → use actual merge-base spans and surviving line mapping; preserve legitimate complete removal and unrelated unknowns. Duplicate-signature regions cannot mask a new unknown. Ordinary and baseline-write paths share the check. | `TestReviewR1BDeletedUnresolvedCLI`, `TestReviewR1BDeletionFixLeavesUnrelatedUnknownCLI`, `TestReviewR1BDeletionCreatesSecondUnknownCLI` |
+| 3 methodless Handle | **Already covered by r1**: unproven children are unknown, not mounts/notes. Added inline Handle/HandleFunc equivalence and transparent net/http.HandlerFunc pure405 proof; first200/unknown status remain errors. | existing `TestGoReviewMethodlessHandleCLI`; new `TestGoReviewR1BInlineMethodlessCLI`, `TestGoReviewR1BHandle405BodyCLI` |
+| 4 unknown range tail | append discarded Unknown, range visited only known items → retain unknown alternative with expression/call provenance alongside known routes. | `TestGoReviewR1BUnknownRangeTailCLI`, `TestGoUnknownRangeTailRetainsKnownRoutesAndProvenance` |
+| 5 buyer method | Admission replaced actual fetch method → prove passthrough, otherwise use fixed/default GET or report unknown; require actual transport and sink. | `TestReviewR1bBuyerTransportRealCLI` (DELETE, dynamic, omitted, removed function/fetch) |
+| 6 extra leaf sinks | Specialized adapters returned before extras → consume individual proven calls, then scan remaining reached calls after export filtering. Extra POST is not clipped by exported GET. | `TestReviewR1bSpecializedExtraSinksRealCLI` (reports/tools/buyer/import/picklist, fixed POST/dynamic URL) |
+| 7 P1 sink values | Name-only literal-call scans lost aliases → uniform reached-binding graph and unknown sink-value rule; aliases, wrappers, members, spread/higher-order, imports/reexports/workspace and proxy are unknown unless proven. | `TestReviewR1bSinkValuesRealCLI`, `TestReviewR1bImportedSinkValuesRealCLI`, `TestReviewR1bAdminProxySinkValuesRealCLI`, `TestReviewR1BGlobalNamespaceSinkRealCLI` |
+
+- Added defenses from independent/parent review: runtime definitions take priority over erased types; shared/cyclic graphs preserve caller provenance without recursive diagnostic expansion; workspace export manifests join source spans and immutable snapshots. `TestReviewR1bTypeValueDualBindingRealCLI`, `TestReviewR1bSharedCyclicSinkGraphRealCLI`, `TestReviewR1bWorkspaceSinkBindingsRealCLI`, `TestReviewR1bWorkspaceManifestRetargetRealCLI`.
+- The reached merchant transport has an individual URL/path/init passthrough proof, not a helper/module exemption. Config and URL-object escape/mutation, dynamic URL, method override and path reassignment fail closed. `TestReviewR1bMerchantTransportProofRealCLI`, `TestReviewR1bOriginObjectEscapeRealCLI`. Existing real-source fixtures copy actual workspace exports as well as apps; assertions retained.
+- **Red → green:** curated `review-round1b/` and its `red-log-index.json` preserve compiled OS CLI failures and hashes of full raw logs. Item3's r1 coverage was already green; it was not presented as a newly reproduced bug. Initial buyer mutation's incorrect text anchor is superseded by authoritative `final-base-red.log`. The intermediate graph/config false positives and failed child race remain raw historical evidence, never counted green; parent final race passed. Temporary child snapshot overlay was restored exactly before its BFF-only commit.
+- **Actual repository P1 proof at final source:** requested alias family, reached imported alias and proxy alias were checked through compiled CLI. Imported/proxy probes previously escaped with exit0 at `6012f01b`; same probes now exit **1**, exact restoration exits **0**, original/restored hashes equal. Each ERROR UNRESOLVED includes the changed producer file. See `review-round1b/real-alias-mutations.json`; no product mutation remains.
+
+| Final local gate at df9bf2b6 | Result |
+| --- | --- |
+| `GOFLAGS=-p=1 go test -race -count=1 -timeout=300s -v ./scripts/dev/contractdrift` | 0; **64** top-level passes |
+| `bash scripts/dev/test-node.sh` | 0; **1323** passes |
+| `pnpm --dir apps/admin exec tsc --noEmit -p .` | 0 |
+| `bash scripts/dev/check-gates.sh` / `go vet ./scripts/dev/contractdrift` | 0 /0 |
+| `bash scripts/dev/check-pkgdocs.sh` / `bash scripts/dev/depmap.sh --check` | 0 /0 |
+| `bash scripts/dev/test-local.sh --list` | 0; **83**, unchanged versus base |
+
+Evidence **E3 STATIC**, source hash **`48e1035694d1554075f1b7e655d637ad43190800621d2a7688a4115191075877`**. All four final runners recorded unchanged source, tracked status and historical-output hash. Normal CLI: Go278 / contracts146 / BFF292, errors0 / warnings362. Index: `review-round1b-evidence.json`; raw evidence: `output/playwright/ci-contract-drift-r1b/`. Independent exact-repair read-only review at df9bf2b6 found no remaining scoped finding (E1; parent owns E3 tests).
+
+### CI gates / NOT_RUN
+
+Required plan job still runs the CLI with the PR base. `node scripts/dev/pr-modes.mjs origin/r3/integration` selects **52** modes; exact list is in `review-round1b/pr-modes.json` and the evidence index. Browser modes and foundation/G07 remain GitHub-only per preamble; API/PG/provider runtime, SANDBOX/LIVE and deployment NOT_RUN. Static proof covers documented finite source forms and assumes standard platform intrinsics; it does not evaluate arbitrary JavaScript or certify runtime behavior. Integrator runs K3 pre-review/CI and pushes.
+
+Own gate processes finished; Go/BFF child worktrees removed after preserving logs/commits. Integrator's untracked `output/ext-agents/` remains untouched.
+
+
+## Historical batch — PR #33 round 1, superseded by round 1b
 
 - **READY for integrator review**, branch `unit/ci-contract-drift`, base `6023b55a`; source commits `ce5860a3`, `3febbff5`, **`5f64bd2853b9ae0bb431f471436201f05d703b82`**. Synced integrator merge `de592635` and required-plan wiring `6023b55a`, both preserved. No push. Implementer Codex-3; parent model/effort unavailable in this runtime; isolated Go worker and read-only reviewer explicitly `gpt-6.1-sol/high`.
 - Allowed writes: `scripts/dev/contractdrift/**`, `docs/delivery/GATES.md`, this unit's DELIVERY and curated evidence. Temporary actual product-source/BFF mutations were restored byte-for-byte; no final apps/internal/contracts/module/lock/workflow diff against `6023b55a`. No new dependency, mode, contract or baseline entry; baseline **237** unchanged. LC-U3 remains owner-paused with its seven uncommitted files and checkpoint preserved.

@@ -1,0 +1,31 @@
+=== RUN   TestGoReviewR1BInlineMethodlessCLI
+=== RUN   TestGoReviewR1BInlineMethodlessCLI/Handle
+=== RUN   TestGoReviewR1BInlineMethodlessCLI/HandleFunc
+--- PASS: TestGoReviewR1BInlineMethodlessCLI (1.07s)
+    --- PASS: TestGoReviewR1BInlineMethodlessCLI/Handle (0.47s)
+    --- PASS: TestGoReviewR1BInlineMethodlessCLI/HandleFunc (0.11s)
+=== RUN   TestGoReviewR1BHandle405BodyCLI
+=== RUN   TestGoReviewR1BHandle405BodyCLI/static405
+    go_review_r1b_cli_test.go:44: 405 proof crossed actual body/import boundary: exit=1 INFO () GO_MOUNT_OR_FALLBACK  /v1/review_405 internal/httpapi/routes.go:6, internal/httpapi/routes.go:18 methodless registration; child paths remain absolute unless StripPrefix is explicit
+        ERROR (TOUCHED) UNRESOLVED MOUNT /v1/review_405 internal/httpapi/routes.go:6, internal/httpapi/routes.go:18 opaque Go methodless mount; child route identity is unproven
+        SUMMARY routes go=1 contract=1 bff=1; errors=1 warnings=0 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=1
+=== RUN   TestGoReviewR1BHandle405BodyCLI/first200
+=== RUN   TestGoReviewR1BHandle405BodyCLI/shadowConversion
+--- FAIL: TestGoReviewR1BHandle405BodyCLI (0.94s)
+    --- FAIL: TestGoReviewR1BHandle405BodyCLI/static405 (0.43s)
+    --- PASS: TestGoReviewR1BHandle405BodyCLI/first200 (0.14s)
+    --- PASS: TestGoReviewR1BHandle405BodyCLI/shadowConversion (0.13s)
+=== RUN   TestGoReviewR1BUnknownRangeTailCLI
+=== RUN   TestGoReviewR1BUnknownRangeTailCLI/emptyAppend
+    go_review_r1b_cli_test.go:63: known items hid unknown range tail: exit=0 SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=0
+=== RUN   TestGoReviewR1BUnknownRangeTailCLI/knownAppend
+    go_review_r1b_cli_test.go:63: known items hid unknown range tail: exit=0 SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=0
+=== RUN   TestGoReviewR1BUnknownRangeTailCLI/knownUnknownBranch
+    go_review_r1b_cli_test.go:63: known items hid unknown range tail: exit=0 SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=0
+--- FAIL: TestGoReviewR1BUnknownRangeTailCLI (0.89s)
+    --- FAIL: TestGoReviewR1BUnknownRangeTailCLI/emptyAppend (0.40s)
+    --- FAIL: TestGoReviewR1BUnknownRangeTailCLI/knownAppend (0.12s)
+    --- FAIL: TestGoReviewR1BUnknownRangeTailCLI/knownUnknownBranch (0.12s)
+FAIL
+FAIL	livecommerce/scripts/dev/contractdrift	3.253s
+FAIL
