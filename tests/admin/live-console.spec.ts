@@ -167,6 +167,39 @@ test.describe("LC-U2a REAL_PG comment stream",()=>{
     const flags=await page.evaluate(()=>Object.entries(sessionStorage).filter(([key])=>key.startsWith("live-comment-unresolved:")));
     expect(flags).toHaveLength(1);expect(flags[0][1]).toBe("1");expect(flags[0][0]).not.toContain(comments.latest_ref);
   });
+  for(const view of ["all","private"] as const)test(`LCU2_404 real store grant revoked clears ${view} view and selected buyer`,async({page,request})=>{
+    await login(page);await page.goto(route("en",comments.session));
+    await expect(page.getByTestId(`comment-row-${comments.latest_ref}`)).toBeVisible();
+    if(view==="private") {
+      await page.getByTestId("comment-filter-private").click();
+      await page.getByTestId("comment-conversations").getByRole("button").first().click();
+    } else await page.getByTestId(`comment-select-${comments.claim_ref}`).click();
+    await expect(page.getByTestId("buyer-panel")).toBeVisible();
+    const beforeSession=(await authorityCookies(page.context())).find(c=>c.name==="__Host-commerce_session")?.value;
+    let reads=0;
+    page.on("request",r=>{const path=new URL(r.url()).pathname;if(path.endsWith("/comments")||path.endsWith("/inbox/conversations"))reads++;});
+    try {
+      const denied=page.waitForResponse(r=>{
+        const path=new URL(r.url()).pathname;
+        return r.status()===404&&(path.endsWith("/comments")||path.endsWith("/inbox/conversations"));
+      },{timeout:15000});
+      // FIXTURE/SETUP: only this synthetic store/principal grant is deleted in PG; no response interception.
+      await fault(request,comments.session,"grant_revoke");await denied;
+      await expect(page.getByTestId("comment-refresh")).toBeDisabled();
+      await expect(page.getByTestId("comment-rows")).toHaveCount(0);
+      await expect(page.getByTestId("comment-conversations")).toHaveCount(0);
+      await expect(page.getByTestId("buyer-panel")).toHaveCount(0);
+      await expect(page.locator("[data-private=comment-author],[data-private=comment-text]")).toHaveCount(0);
+      const afterSession=(await authorityCookies(page.context())).find(c=>c.name==="__Host-commerce_session")?.value;
+      expect(!!beforeSession&&afterSession===beforeSession,"scope loss must be exercised with a still-valid login").toBe(true);
+      await fault(request,comments.session,"grant_restore");
+      const stopped=reads;
+      await page.waitForTimeout(6500); // Two healthy A2 intervals: assert absence, not a readiness sleep.
+      expect(reads).toBe(stopped);await expect(page.getByTestId("comment-refresh")).toBeDisabled();
+      await writeFile(`${evidence}/grant-revocation-${view}.json`,JSON.stringify({class:"REAL_PG",view,status:404,privateRows:0,buyerPanel:0,sessionRetained:true,postLossReads:reads-stopped}));
+      await page.reload();await expect(page.getByTestId(`comment-row-${comments.latest_ref}`)).toBeVisible();
+    } finally { await fault(request,comments.session,"grant_restore"); }
+  });
   test("LCU2_RESET epoch replacement clears every old comment before reread",async({page,request})=>{
     await login(page);await page.goto(route("en",comments.session));await expect(page.getByTestId(`comment-row-${comments.latest_ref}`)).toBeVisible();
     await fault(request,comments.session,"comments_reset");

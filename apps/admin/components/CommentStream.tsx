@@ -85,7 +85,8 @@ export function CommentStream({
         }); setListError(""); failures = 0;
       } catch (e) {
         if (generation !== request.current || !privacy.fence.current(ticket)) return;
-        if (e instanceof InboxError && [401, 403].includes(e.status)) privacy.expire();
+        // Match the standalone inbox: a scoped 404 terminally revokes both private views.
+        if (e instanceof InboxError && [401, 403, 404].includes(e.status)) privacy.expire();
         delay = Math.max(Math.min(30000, 10000 * 2 ** failures++), e instanceof InboxError ? e.retryAfter : 0);
         setListError(e instanceof InboxError ? e.code : "unavailable");
       } finally {
@@ -138,7 +139,7 @@ export function CommentStream({
       }
     } catch (e) {
       if (generation === request.current && privacy.fence.current(ticket)) {
-        if (e instanceof InboxError && [401, 403].includes(e.status))
+        if (e instanceof InboxError && [401, 403, 404].includes(e.status))
           privacy.expire();
         setListError(e instanceof InboxError ? e.code : "unavailable");
       }

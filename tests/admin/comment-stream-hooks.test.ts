@@ -29,6 +29,37 @@ const { CommentStream } =
 const { commentCopy } =
   await import("../../apps/admin/src/features/live/comment-copy.ts");
 const sid = "22222222-2222-4222-8222-222222222222";
+for (const deniedPath of ["a2", "a8", "older"] as const) test(`PR18 R2 scoped404 ${deniedPath} clears both private views and stops recovery reads`, async t => {
+  const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-09T01:00:00Z")});
+  let revoked=false, reads=0;
+  const claim={status:"ACCEPTED",reason:null,offer_id:sid,keyword:"A1",quantity:1,bundle_id:sid};
+  globalThis.fetch=async input=>{
+    const url=String(input);
+    if(url.includes("buyer-panel?"))return response({display_name:"SYNTHETIC_PANEL",platform:"facebook",purchase_ordinal:1,claims:[],claim_total_minor:0,orders:[],link_pending_manual:false});
+    if(url.includes("message-templates"))return response({items:[]});
+    reads++;
+    const a8=url.includes("inbox/conversations");
+    if(revoked && ((deniedPath==="a2"&&!a8)||(deniedPath==="a8"&&a8)||(deniedPath==="older"&&url.includes("cursor="))))return response({code:"not_found"},404);
+    if(a8)return response({items:[{conversation_id:sid,bundle_id:sid,platform:"facebook",display_name:"SYNTHETIC_A8_NAME",last_at:"2026-10-09T01:00:00Z",unreplied:true}],next_cursor:"more",unread_total:1});
+    return response(page(1,[{...row,author_name:"SYNTHETIC_A2_NAME",marks:{...row.marks,claim}}]));
+  };
+  const h=env.mount(()=>CommentStream({store,session:sid,locale:"en",platform:"facebook",capabilities:{}} as any));await h.settle();
+  assert.ok(textOf(h.output).includes("SYNTHETIC_COMMENT"));
+  node(h,n=>n.props["data-testid"]==="comment-filter-private").props.onClick();await h.settle();
+  node(h,n=>n.type==="button"&&textOf(n).includes("SYNTHETIC_A8_NAME")).props.onClick();await h.settle();
+  assert.ok(textOf(h.output).includes("SYNTHETIC_PANEL"));
+  revoked=true;
+  if(deniedPath==="older")node(h,n=>n.type==="button"&&textOf(n)===commentCopy("en").older).props.onClick();
+  else t.mock.timers.tick(deniedPath==="a2"?3000:10000);
+  await h.settle();
+  assert.equal(node(h,n=>n.props["data-testid"]==="comment-refresh").props.disabled,true);
+  assert.equal(nodes(h.output).some(n=>n.props["data-testid"]==="buyer-panel"),false);
+  assert.equal(/SYNTHETIC_(PANEL|A8_NAME|A2_NAME|COMMENT)/.test(textOf(h.output)),false);
+  assert.equal(h.slots.some(s=>[...(s.value?.items??[]),...(s.value?.current?.items??[])].some((r:any)=>r.text||r.display_name||r.author_name)),false,"private A2/A8 state is cleared, not merely hidden");
+  const stopped=reads;
+  env.window.dispatchEvent(new Event("focus"));t.mock.timers.tick(90000);await h.settle();
+  assert.equal(reads,stopped,"terminal loss cannot resume polling on focus or timers");
+});
 test("PR18 A8 clears names synchronously and keeps loaded older pages through a head poll",async t=>{
   const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-08T01:00:00Z")});
   const item=(id:string,name:string)=>({conversation_id:id,bundle_id:null,display_name:name,platform:"facebook",last_at:"2026-10-08T01:00:00Z",unreplied:true});
