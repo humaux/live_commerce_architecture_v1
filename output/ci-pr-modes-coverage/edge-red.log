@@ -1,0 +1,67 @@
+✔ backend-only paths run foundation-shards only (1.118042ms)
+✔ node tests of deploy scripts and of the CI planner are backend-only (they cannot change a browser) (0.391375ms)
+✔ a UI path adds the whole browser set, including click-sweep and visual-lint (1.758625ms)
+✔ docs-only and output-only diffs keep the single required check (foundation-shards) (0.291333ms)
+✔ legacy browser_* paths still select all browsers; a known untagged foundation file stays backend-only (0.152959ms)
+✔ legacy deploy prefixes remain selected and unrelated paths do not select smoke (0.724083ms)
+✔ the browser set is release-gate's browser-mode universe minus the documented exclusions (17.430125ms)
+✔ every real browser-tagged foundation file selects registry browser modes, including non-browser names (133.650375ms)
+✔ tagged runner discovery follows registry additions, command arrays and line continuations (0.2725ms)
+✔ deploy smoke is selected for its workflow, verdict/helpers and executable test inputs (0.167958ms)
+✔ new selection never drops legacy modes or deploy for any tracked path (57.826417ms)
+✔ CLI classifies merge-base and explicit head, including removed tags, deleted files and renames (420.615708ms)
+✔ CLI explicit head and stdin include tags outside the checkout and uncommitted tag removals (173.02825ms)
+✖ compound/legacy tags and unknown source are conservative; known untagged source stays backend-only (4.362292ms)
+✖ explicit-head CLI derives tagged runner modes from that head's real registry (155.284958ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 13
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1018.327875
+
+✖ failing tests:
+
+test at tests/ci/pr-modes.test.mjs:140:1
+✖ compound/legacy tags and unknown source are conservative; known untagged source stays backend-only (4.362292ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(planPr(["tests/foundation/new_process.go"], usage, () => [text]).modes.includes("--studio-backend"))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-pr-modes-coverage/tests/ci/pr-modes.test.mjs:142:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/pr-modes.test.mjs:146:1
+✖ explicit-head CLI derives tagged runner modes from that head's real registry (155.284958ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(r.cli([base, head]).modes.includes("--head-tagged-process"))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-pr-modes-coverage/tests/ci/pr-modes.test.mjs:152:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

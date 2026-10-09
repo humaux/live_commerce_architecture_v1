@@ -126,6 +126,9 @@ jobs:
       - name: Browsers for browser modes
         if: startsWith(matrix.mode, '--browser') || startsWith(matrix.mode, '--stripe-browser')
         # With a cache hit the browser downloads are skipped; --with-deps still installs the system libraries and Xvfb (apt, not cacheable here).
+        # Bounded: on 2026-10-08 this apt step hung for the whole 150-min job limit on 10+ jobs at once (PR #10), holding runners of the
+        # 20-job free tier; a healthy install takes < 3 min, so a hang now fails fast and the integrator's triage reruns it as INFRA.
+        timeout-minutes: 15
         run: pnpm exec playwright install --with-deps chromium webkit
       - name: Save Playwright browsers
         # Saved right after the install (not at job end), so a run whose gate then fails still seeds the cache. Parallel jobs racing for the same key only log a warning.
@@ -164,6 +167,8 @@ jobs:
       - name: Failure summary
         if: always()
         run: grep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log | head -200 || true
+      # shots/ + index.json (owner 2026-10-08: every page needs visual acceptance): the full G-UI9 screenshot corpus of each PR is kept so the
+      # visual reviewer (Kimi K2.8 vision) can judge the real pages, not only the lint verdict. Only --browser-visual-lint jobs produce it.
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
@@ -172,6 +177,8 @@ jobs:
             output/ci-gates/
             output/ui-visual-audit/*/lint.md
             output/ui-visual-audit/*/lint.json
+            output/ui-visual-audit/*/index.json
+            output/ui-visual-audit/*/shots/
             output/ui-click-sweep/
             output/playwright/
           retention-days: 14
