@@ -1,0 +1,5 @@
+workspace Source: output/playwright/live-console-2538642664/playwright.log
+23 passed
+labels Source: output/playwright/live-console-193622318/playwright.log
+7 passed
+Full Go mode: exit0; workspace330.00s labels21.05s total351.04s
