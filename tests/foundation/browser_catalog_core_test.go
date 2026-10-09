@@ -210,6 +210,15 @@ func runCatalogCoreBrowser(t *testing.T, productEditor bool) {
 	}
 	brfPlaywright(t, ctx, stack, []string{"catalog-core.spec.ts"}, env)
 	if productEditor {
+		ledgerPath := filepath.Join(evidence, "product-editor-click-ledger.json")
+		ledger, err := os.ReadFile(ledgerPath)
+		if err != nil {
+			t.Fatalf("PE mobile matrix ledger unavailable: %v; evidence=%s", err, evidence)
+		}
+		if err := validateProductEditorMatrixLedger(ledger); err != nil {
+			t.Fatalf("PE mobile matrix ledger rejected: %v; evidence=%s", err, evidence)
+		}
+		t.Logf("PASS mobile matrix click ledger: %d declared unique PASS identities; evidence=%s", len(productEditorMatrixLedgerExpected()), ledgerPath)
 		prefix := "pe" + tag
 		// Preserve the original exact four-product fence. Exclude only the
 		// three explicitly named mobile matrices and three axis-removal

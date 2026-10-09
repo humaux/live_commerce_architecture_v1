@@ -41,9 +41,15 @@ export function registerProductEditorAcceptance() {
         });
     });
     const saveEvidence = async () => {
+      const ledgerJSON = JSON.stringify(ledger, null, 2);
       await writeFile(
         path.join(out, "click-ledger.json"),
-        JSON.stringify(ledger, null, 2),
+        ledgerJSON,
+      );
+      // Bind the exact in-memory ledger to this run, never a prior shared output.
+      await writeFile(
+        path.join(evidence, "product-editor-click-ledger.json"),
+        ledgerJSON,
       );
       await writeFile(
         path.join(out, "screenshots.json"),
