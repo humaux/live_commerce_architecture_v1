@@ -1,0 +1,32 @@
+Retained failed shell fixture: /private/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/lc-shell-evidence-znBbCQ
+✔ browser evidence uses unique local runs or the selected harness parent without rewriting history (93.681417ms)
+✔ browser evidence rejects labels that escape the harness directory before creating files (29.48ms)
+✖ shell isolates visual fixtures from a click ledger when caller reuses its evidence root (18.31925ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 2
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 179.521083
+
+✖ failing tests:
+
+test at tests/admin/browser-evidence.test.mjs:66:1
+✖ shell isolates visual fixtures from a click ledger when caller reuses its evidence root (18.31925ms)
+  AssertionError [ERR_ASSERTION]: visual empty journeys must not share click journey evidence
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/tests/admin/browser-evidence.test.mjs:82:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: '/private/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/lc-shell-evidence-znBbCQ/ui-click-sweep',
+    expected: '/private/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/lc-shell-evidence-znBbCQ/ui-click-sweep',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
