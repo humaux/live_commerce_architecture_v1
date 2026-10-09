@@ -115,7 +115,7 @@ const imagesAny = new RegExp(`^(?:${imagesRoot}|${imageItem}|${imageItem}/(?:del
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 type Context = { params: Promise<{ store: string; resource: string[] }> };
 
-async function route(request: Request, context: Context) {
+async function route(request: Request, context: Context, scopeProofDeadline: number) {
   const error = localError;
   const { store, resource } = await context.params;
   const path = resource.join("/");
@@ -418,6 +418,17 @@ async function route(request: Request, context: Context) {
     catch { return error(503, "retry_later"); }
     if (!response.ok) {
       const code = inboxErrorCode(response.status, value, path);
+      if (request.method === "GET" && response.status === 403 && code === "forbidden" && authConfig && token) {
+        // A grant can disappear after the admission check but before Go's definer runs.
+        // Recheck only scope; never replay the private read or soften an unproven denial.
+        // Calls identity /v1/admin/stores with the same authenticated bearer (LCN03).
+        const remaining = Math.min(500, Math.floor(scopeProofDeadline - performance.now()));
+        if (remaining > 0) {
+          const signal = AbortSignal.any([request.signal, AbortSignal.timeout(remaining)]);
+          const current = await authenticatedStores(token, signal);
+          if (current.stores && !current.stores.some((item) => item.id === store)) return error(404, "not_found");
+        }
+      }
       const denied = error(code ? response.status : 503, code ?? "retry_later");
       if (response.status === 401) clearAuthCookies(denied.headers);
       const backoff = response.headers.get("retry-after") ?? "";
@@ -570,8 +581,11 @@ async function route(request: Request, context: Context) {
   });
 }
 async function proxy(request: Request, context: Context) {
+  // inboxRead's whole-fetch ceiling is 8s. Never prolong a known refusal beyond
+  // 7s of server work; a proof has at most 500ms and aborts with the caller.
+  const scopeProofDeadline = performance.now() + 7000;
   const path = (await context.params).resource.join("/");
-  const response = await route(request, context);
+  const response = await route(request, context, scopeProofDeadline);
   if (path.startsWith("live-sessions") || path.startsWith("inbox/") || path === "message-templates" || path.startsWith("operations") || path === "ads/catalog-feed" || path === "ads/meta/unbind") response.headers.set("Cache-Control", "private, no-store");
   // Every M7 answer (success or not) forbids a Referer, like the Go route (§7.1).
   if (claimLinkRoute(path) || inboxResource(path)) response.headers.set("Referrer-Policy", "no-referrer");

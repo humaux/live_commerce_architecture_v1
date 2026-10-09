@@ -1,3 +1,6 @@
+// Purpose: merchant BFF config, cookies, Origin/CSRF and private authenticated Go transport.
+// Depends on: server-only, Web Crypto/fetch, COMMERCE_* identity config and Go identity endpoints.
+// Used by: auth/onboarding/store API routes and lib/backend; commands keep their existing timeout.
 // Merchant BFF auth core: config, cookies, Origin/CSRF, private-Go transport. Callers:
 // app/api/auth/{login,callback,logout}, app/api/auth/password/*, app/api/onboarding, app/api/stores*,
 // lib/backend.ts. Go endpoints: /v1/identity/* (internal/identityhttp). Password-login config (U4)
@@ -318,7 +321,9 @@ export async function merchantBackend(
       headers,
       cache: "no-store",
       redirect: "error",
-      signal: AbortSignal.timeout(6000),
+      signal: init.method === "GET" && init.signal
+        ? AbortSignal.any([init.signal, AbortSignal.timeout(6000)])
+        : AbortSignal.timeout(6000),
     });
   } catch {
     return localError(503, "retry_later");
@@ -479,9 +484,11 @@ export function validAuthorizationURL(value: unknown) {
   }
 }
 
-export async function authenticatedStores(token: string) {
+/** Read and validate server-authorised stores; an optional signal bounds read-only scope proofs. */
+export async function authenticatedStores(token: string, signal?: AbortSignal) {
   const response = await merchantBackend("/v1/admin/stores", token, {
     method: "GET",
+    ...(signal ? { signal } : {}),
   });
   if (!response.ok) return { response, stores: null as Store[] | null };
   const body = await safeJSON<{ items?: unknown }>(response);
