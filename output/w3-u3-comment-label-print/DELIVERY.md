@@ -1,70 +1,75 @@
-<!-- Purpose: final W3-U3 author delivery, current-source gate evidence and honest CI/physical-print boundaries.
-Depends on: frozen owner W3-U3 brief, live-console-v1 section7.4, approved fixture/host extensions and remote LC-U2a.
-Used by: integrator review, CI dispatch and merge; author E3 evidence only. -->
+<!-- Purpose: current W3-U3 scoped UI handoff, exact gate evidence and the retained A3 backend blocker.
+Depends on: frozen brief, live-console-v1 section 7.4, PR18 trunk and approved test-only extensions.
+Used by: integrator K3/PR preparation and backend replay-receipt owner; no all-green claim. -->
 # W3-U3 comment label print — DELIVERY
 
-- Branch `unit/w3-u3-comment-label-print`; resumed WIP **`2a3a7864`** and merged requested `origin/unit/lc-u2a-comment-stream` **`1c43bfe4`** without conflicts.
-- Tested merged source **`c921c1132ba25116d0ad7035e424ea81932e574e`**. Final evidence commit changes no product/test source.
-- Codex-1; exact runtime model/effort identifier unavailable; no delegates. Own worktree only.
-- Scope: four brief files + explicitly approved Playwright registration/Go TEST fixture and `inbox-review-host.test.ts`/its isolation tests. No product Go/SQL/OpenAPI/dependency change. Lockfile unchanged from the installed WIP.
-- The brief retains its historical DRAFT header; direct owner/integrator freeze and scope rulings govern this unit.
+**Status: BLOCKED_BACKEND (A3 same-key replay). UI changes committed; do not call this unit all green.**
 
-## Result
+## Source and scope
 
-Current keyword comments can be checked or printed individually. Native dialog preview renders name, keyword, quantity, Taipei time and session short code; paper preference supports60×40mm or A4 three columns. Labels are browser memory/DOM only; storage contains only the validated paper preference. Native print CSS hides the console.
+- Branch `unit/w3-u3-comment-label-print`, own worktree only.
+- Resumed `c012cf08`; merged fetched `origin/r3/integration 4ff99766` (#18) as **53023aaf**. Kept the single mode registry and every trunk privacy/cursor fix.
+- **5200bf06**: label scoped-404 authority clear, latest management permission guard across awaits, lost-ACK regression.
+- **26d665f2**: each real control and paper-preference reload assertions; reset case runs last.
+- **7877c4ef014604d4f16617364568cef958374235**: final tested source; per-case ledgers survive Playwright worker restarts. Final evidence commit changes no product/test source.
+- Root author: Codex-1; exact runtime model/effort unavailable. One read-only explorer `gpt-6.1-sol` / medium, one merge audit + bounded recheck; E1, not independent K3.
+- Product write paths: brief's CommentLabelPrint / print.css / minimal seven-line CommentStream entry. Approved tests: Playwright registration, isolated Go TEST labels fixture and faithful Context/Portal host. No product Go/SQL/DTO/contract, dependency or lockfile change.
+- Test-only merger preserves trunk's digest sync-throw/quiescence fixes and all original inbox review/recovery assertions. Those test files have zero diff against trunk.
 
-A3 uses actual inbox transport/CSRF and sends exactly `{}` with a separate UUID key per selected ref. Confirmed record counts alone produce badges, with real A2/PG refresh persistence. Lost acknowledgements retain their keys in component memory; failed records still permit physical printing without claiming a new recorded count. Scope/hide/reset unmount label state. No second comment reader/reply writer.
+## Implemented path
 
-The approved Go TEST extension uses a separate labels fixture with three signed-ingress, real-worker ACCEPTED claims. It leaves the workspace fixture's60 comments/one claim intact and cleans only its synthetic A3 rows before session teardown.
+Current keyword rows can be checked/un-checked or printed singly. Preview shows transient name, keyword, quantity, Taipei time and short session code; native CSS supports 60×40mm / A4 three columns. Only the paper preference enters storage. Labels remain browser memory/DOM, not the API or DB. No new printing library or duplicate comment/reply reader.
 
-The former Node import blocker is **resolved** by the approved faithful Context/Portal host in2a3a7864: nested/default/undefined/null values, stable-child context updates, root isolation, render-error ownership restoration, portal identity/state/cleanup and target validation have runnable isolation cases. No production component stub. Original inbox-review/recovery files remain identical to the WIP (146 original assertions); the merged source also retains07cc90e5's real WebCrypto settle tracking. Later unpublished PR18 host/deletion work was not silently cherry-picked into this requested remote base.
+A3 sends exactly `{}` with one UUID key per ref through the existing CSRF/session transport. Badges use only confirmed counts and survive a real A2 reload. Network failures still permit native printing without claiming a new record; UNKNOWN retains the same key for an explicit retry, never an automatic retry. Scoped 401/403/**404** expires private state. Latest management permission is checked before/after awaits; the portal also gates on current authority.
 
-## Current-source gates
+## Current results and exit codes
 
-| Command | Exit | Evidence |
+| Command / tested input | Exit | Counts / evidence |
 |---|---:|---|
-| `bash scripts/dev/test-node.sh` | 0 | `final/node.log`,**1234 tests /0 failures**,including Context/Portal cases |
-| `pnpm --filter admin exec tsc --noEmit` | 0 | `final/tsc.log` |
-| `bash scripts/dev/check-gates.sh` | 0 | `final/gates.log`,82 documented modes/header/architecture gates |
-| `LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-live-console` | 0 | `final/browser-live-console.log`,**workspace23/23 +labels7/7**,Go351.04s |
-| `node scripts/dev/pr-modes.mjs origin/r3/integration HEAD` | 0 | `final/pr-modes.json`,52 selected modes across this stacked branch; no deploy |
+| `bash scripts/dev/test-node.sh` on 7877 | 0 | **1308 executions, 0 failures**; `resume/node-delivery.log` |
+| `pnpm --filter admin exec tsc --noEmit` on 7877 | 0 | `resume/tsc-delivery.log` |
+| `bash scripts/dev/check-gates.sh` on 7877 | 0 | 82 modes documented, 1253 top-level Go inventory; `resume/gates-delivery.log` |
+| `bash scripts/dev/test-local.sh --list` | 0 | Single registry preserved; `resume/modes.txt` |
+| `LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-live-console` on 7877 | **1** | **workspace 23/23; labels 8/9**. Only red is real backend same-key replay; `resume/browser-live-console-final.log` |
+| `LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-inbox` | 0 | **13/13**, `resume/browser-inbox.log` / `resume/inbox-results.txt` |
+| `LC_TEST_LOCK_WAIT=14400 LC_FOCUSED_TIMEOUT=900s bash scripts/dev/test-focused.sh '^TestLiveConsoleLCN05PrintAndMarks$'` | 0 | 1 PASS / 0 FAIL / 0 SKIP; `resume/pg-print.log`; does **not** test key replay |
+| `node scripts/dev/pr-modes.mjs origin/r3/integration HEAD` | 0 | 53 selected modes; `resume/pr-modes-delivery.json` |
+| scoped Impeccable detector | 0 | `resume/detector.json` = []; not visual acceptance |
 
-The current selector requires base AND head; an initial one-argument usage diagnostic was corrected, not treated as a passing gate. All PG/browser runs serial; source fixed. Artifacts:
-- workspace: `output/playwright/live-console-2538642664/`.
-- labels: `output/playwright/live-console-193622318/`.
-- committed current18 screenshots (1586×992 /390×844 × zh-TW/zh-CN/en × preview/A4/small) and six-locale/width action records: `final/evidence/`.
-- `final/SOURCE-SHA256.txt` binds feature, registration, fixture and host files.
+Inbox and focused PG ran before the final **test-reporting-only** 7877 commit; their product/harness inputs remain identical (no inbox / Go / SQL change between 26d and 7877). Final full console/labels, node, tsc and check-gates bind directly to 7877. `resume/SOURCE-DELIVERY-SHA256.txt` records exact feature/fixture/registration hashes.
 
-Author inspected current zh-TW390 and en1586 preview shots: labels/controls remain visible, modal scrolls at narrow width, three desktop cards align, no text/control overlap observed. This is self-QA, not independent visual acceptance.
+All test-local/PG runs strictly serial with the current heartbeat lock. The last console run queued until another holder finished; no lock removal or other-agent process termination.
 
-## Red and causal evidence retained
+## Red → green and backend handoff
 
-- Feature red on baseline d5c865a5: real3 claims loaded but new checkbox missing; `red.log`,exit1. Feature/fixture gates subsequently7/7 green (feature05079102, capture38375e72, per-ref5b01bf58).
-- Initial7 passing cases with fixture FK cleanup failure remain `labels-green.log`; approved teardown repair made the unchanged seven cases +cleanup pass (`labels-cleanup-green.log`). They were not labelled full PASS before cleanup.
-- Host APIs absent:6 isolation cases red →6 green (`host/isolation-red.log`,`host/isolation-green.log`). Actual installed React19.3 reference evidence: `host/react-reference.log`. Original assertion/order parity: `host/assertion-parity.json`,`host/execution-parity.json`.
-- Current final full mode passes both lanes above; old red/blocked logs remain history.
+- Actual A3 scoped 404: pre-fix label count **1**, expected **0**; `resume/privacy-red.log` / `privacy-red-error.txt`. Filtered workspace had zero matching tests, not PASS. The same unchanged privacy regression passes in both subsequent full runs.
+- Same-key UNKNOWN counterexample is deliberately **still red**: real first transaction commits, ACK is dropped, next real click sends identical key/body; count **7 → 8**. Key equality passes. Evidence: `resume/idempotency-final-error.txt`, labels artifact below.
+- Root: `internal/httpapi/live_stream.go:53–62` bypasses command receipts; `PrintComment` takes no key; SQL `live.comment_print` increments every call. Contract §7.4 requires per-key idempotency.
+- Owner explicitly ruled **backend unit fixes this, UI scope retained**. Backend task **f4c26fcb-ab2d-4a1b-9e29-0908e02406d3** submitted for assignment, not claimed/implemented here.
+- Details / required backend replay negatives: `A3-IDEMPOTENCY-BLOCKER.md`. No assertion deleted, relaxed, retried or converted to an expected failure.
+- Prior feature/host red→green logs and c012 evidence remain historical under the existing directories, not current all-green proof.
 
-## Click ledger
+## Current screenshots / click ledger
 
-| Controls/path | Real operation and required outcome | Current result |
-|---|---|---|
-| Keyword filter / three checkboxes / Preview | Select three real claims; exact name/keyword/quantity/time/short code on three labels | PASS ×6 locale/width cases |
-| Paper A4 / Print | Exactly one `{}` A3 per selected ref,3 distinct keys,200 responses; print invoked once | PASS |
-| Print media A4 / small paper | Only3 labels visible; console/heading/tools hidden; small card60×40mm measured | PASS |
-| Close / reload | Badges show confirmed counts; real A2 read after reload preserves them | PASS |
-| Single label / failed record | Network-edge abort; print still invoked; recorded badge unchanged and failure copy visible | PASS |
-| Single preview / epoch reset | Real worker epoch replacement removes private preview | PASS |
-| local/session storage | No synthetic name/text/ref; paper preference only | PASS |
+- Workspace artifact: `output/playwright/live-console-843701277/` (23 passed).
+- Labels artifact: `output/playwright/live-console-2056379755/` (8 passed, 1 failed).
+- Inbox artifact: `output/playwright/inbox-ui/20261009T142832.855140000/` (13 passed).
+- Committed `resume/delivery-evidence/`: **18 screenshots**, 1586×992 / 390×844 × zh-TW/zh-CN/en × preview/A4/small; **9 per-case ledger files, 45 rows (44 PASS / 1 FAIL)**.
+- Ledger covers keyword filter, check/uncheck/recheck, preview, A4/small, print, close, single-print, reload, real scoped revocation, failed-record truthfulness/reset and the failed same-key replay.
+- Author inspected current zh-TW390/en1586 previews; modal controls and labels visible, desktop three-column alignment intact. Self-QA only; not independent visual acceptance.
+- Historical 26d global ledger was overwritten on a worker restart; it is retained under `resume/evidence/` but **not** cited as current coverage. Per-case 7877 artifacts fix that evidence loss.
 
-`final/evidence/label-click-ledger.json` preserves the six normal action summaries; the single/failure/reset path is the seventh tested case, recorded above.
+## CI gates / NOT_RUN / stop
 
-## CI gates / NOT_RUN / review
+Integrator GitHub gates (standing RAM-heavy rule):
+- `bash scripts/dev/test-local.sh --browser-live-console` after the backend fix (must be fully green).
+- `bash scripts/dev/test-local.sh --browser-inbox`.
+- `bash scripts/dev/test-local.sh --browser-click-sweep` — **NOT_RUN locally**.
+- `bash scripts/dev/test-local.sh --browser-visual-lint` — **NOT_RUN locally**.
+- Remaining selector-required modes from `resume/pr-modes-delivery.json`; recompute on the PR after backend integration.
 
-Requested local author work is E3 (real Next/Go/PG +MOCK Graph), ready for independent review. Still **NOT_RUN**:
-- `bash scripts/dev/test-local.sh --browser-click-sweep`.
-- `bash scripts/dev/test-local.sh --browser-visual-lint`.
-- Other repository-selected required PR modes (`final/pr-modes.json`), new PR CI and non-author K3/visual review.
+New K3/required PR CI, physical printer/OS print dialog/paper pagination, LIVE Meta and production: **NOT_RUN**.
+No migrations/GRANT/checkout runtime were changed, so no local full G07 was run. Native `window.print` was intercepted only to count invocation; A3/A2/PG and print CSS stayed real.
 
-These heavy regression modes are listed for the integrator's GitHub runners per owner policy; not launched locally. Recompute selection against trunk after PR18 integrates, since this is a stacked dependency branch.
-
-Actual OS print dialog, physical printer/drivers/paper pagination and LIVE Meta are NOT_RUN. `window.print` was intercepted only to count invocation; API, app handlers and print-media CSS remained real. No production/customer/provider mutation, push or deployment. Existing tracked output evidence was not overwritten by runs; old evidence is retained. All owned processes ended, shared locks untouched. Commit and stop; settings-followups stays queued.
+Evidence class: **MOCK Graph + REAL_PG browser E3 for tested paths; backend P1 keeps whole unit BLOCKED**.
+All owned runs/servers/fixtures ended; shared caches untouched. No push/deploy/production/provider mutation. Commit and stop for integrator review; backend handoff remains open.
