@@ -147,7 +147,7 @@ jobs:
           done
           log_root=output/ci-gates
           case "$MODE" in
-            --browser*|--stripe-browser*)
+            --browser*|--stripe-browser*|--ops-disk-guard)
               mkdir -p output/playwright
               export LC_BROWSER_EVIDENCE_ROOT="$(mktemp -d "$PWD/output/playwright/run.XXXXXXXX")"
               log_root="$LC_BROWSER_EVIDENCE_ROOT/ci-gates"
@@ -174,12 +174,24 @@ jobs:
         if: always()
         run: grep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log | head -200 || true
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        if: always()
+        if: always() && !startsWith(matrix.mode, '--browser-visual-lint')
         with:
           name: ${{ matrix.art }}
           path: |
             output/ci-gates/
             output/playwright/
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Upload visual lint evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always() && startsWith(matrix.mode, '--browser-visual-lint')
+        with:
+          name: ${{ matrix.art }}
+          path: |
+            output/playwright/**/ci-gates/*.log
+            output/playwright/**/ui-visual-audit/**/lint.*
+            output/playwright/**/ui-visual-audit/**/index.json
+            output/playwright/**/ui-visual-audit/**/shots/**
           retention-days: 14
           if-no-files-found: ignore
 

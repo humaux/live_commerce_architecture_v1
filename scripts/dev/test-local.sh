@@ -26,7 +26,7 @@ fi
 # Allocate once before any browser build/log write. Explicit caller roots are kept,
 # made absolute and shared by shell, Go and Node; the default is always ignored.
 case "$test_mode" in
-  --browser*|--stripe-browser*)
+  --browser*|--stripe-browser*|--ops-disk-guard)
     if [[ -z "${LC_BROWSER_EVIDENCE_ROOT:-}" ]]; then
       mkdir -p output/playwright
       LC_BROWSER_EVIDENCE_ROOT="$(mktemp -d "$PWD/output/playwright/run.XXXXXXXX")"
@@ -35,6 +35,9 @@ case "$test_mode" in
       LC_BROWSER_EVIDENCE_ROOT="$(cd "$LC_BROWSER_EVIDENCE_ROOT" && pwd)"
     fi
     export LC_BROWSER_EVIDENCE_ROOT
+    if [[ "$test_mode" == --ops-disk-guard ]]; then
+      export LC_OD_EVIDENCE="${LC_OD_EVIDENCE:-$LC_BROWSER_EVIDENCE_ROOT/ops-disk-guard}"
+    fi
     export LC_PLATFORM_EVIDENCE="$LC_BROWSER_EVIDENCE_ROOT/platform-site"
     export LC_SWEEP_OUT="$LC_BROWSER_EVIDENCE_ROOT/ui-click-sweep"
     # A caller may reuse its run root: visual empty fixtures must not overwrite click evidence.
@@ -50,8 +53,8 @@ esac
 # removes them at exit; takes no machine PG lock (no published port, no shared fixture). LC_OD_IDLE_SECONDS (default 300) = OD1 window.
 if [[ "$test_mode" == --ops-disk-guard ]]; then
   test -f tests/deploy/ops-disk-guard.sh
-  mkdir -p output/ops-disk-guard
-  bash tests/deploy/ops-disk-guard.sh all 2>&1 | tee output/ops-disk-guard/od-all.log
+  mkdir -p "$LC_OD_EVIDENCE"
+  bash tests/deploy/ops-disk-guard.sh all 2>&1 | tee "$LC_OD_EVIDENCE/od-all.log"
   exit 0
 fi
 # W3-U1b MOCK real-click gate (picklist.spec.ts), CI only per owner RAM policy.

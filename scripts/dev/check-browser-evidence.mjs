@@ -8,17 +8,17 @@ import {fileURLToPath} from 'node:url';
 import ts from 'typescript-api';
 
 const writers = new Map([
- ...['writeFile','writeFileSync','appendFile','appendFileSync','createWriteStream','mkdir','mkdirSync','mkdtemp','mkdtempSync','WriteFile','MkdirAll','Mkdir','MkdirTemp','Create','CreateTemp','CopyFS'].map(x=>[x,0]),
+ ...['writeFile','writeFileSync','appendFile','appendFileSync','createWriteStream','writeSync','write','mkdir','mkdirSync','mkdtemp','mkdtempSync','WriteFile','MkdirAll','Mkdir','MkdirTemp','Create','CreateTemp','CopyFS'].map(x=>[x,0]),
  ...['copyFile','copyFileSync','cp','cpSync','rename','renameSync','Rename'].map(x=>[x,1]),
 ]);
 const constructors = new Set(['join','resolve','Join','Abs','Clean']);
-const body = n => ts.isParenthesizedExpression(n) || ts.isAsExpression(n) || ts.isNonNullExpression(n) ? body(n.expression) : n;
+const body = n => ts.isParenthesizedExpression(n) || ts.isAsExpression(n) || ts.isNonNullExpression(n) || ts.isAwaitExpression(n) ? body(n.expression) : n;
 const nameOf = n => ts.isPropertyAccessExpression(n) ? n.name.text : ts.isElementAccessExpression(n) ? nameOf(n.argumentExpression) : ts.isIdentifier(n) || ts.isStringLiteralLike(n) ? n.text : '';
 const products = arrays => arrays.reduce((rows,values)=>rows.flatMap(row=>values.map(value=>[...row,value])),[[]]).slice(0,128);
 function expression(text) {return ts.createSourceFile('expression.ts',`(${text})`,ts.ScriptTarget.Latest,true).statements[0]?.expression;}
 /** Scan a producer's actual write destinations, following local path aliases and helper returns. */
 export function inspectEvidenceSource(file,source,{tracked=[]}={}) {
- const findings=[], bindings=new Map(), returns=new Map(), aliases=new Map();
+ const findings=[], bindings=new Map(), returns=new Map(), aliases=new Map(), boundArguments=new Map();
  const canonical = name => aliases.get(name) || name;
  const add=(name,value)=>bindings.set(name,[...(bindings.get(name)||[]),value]);
  const tree=ts.createSourceFile(file,source,ts.ScriptTarget.Latest,true,file.endsWith('.tsx')?ts.ScriptKind.TSX:ts.ScriptKind.TS);
@@ -29,8 +29,13 @@ export function inspectEvidenceSource(file,source,{tracked=[]}={}) {
    if(imports&&ts.isNamedImports(imports))for(const spec of imports.elements)aliases.set(spec.name.text,(spec.propertyName||spec.name).text);
   }
   if(ts.isVariableDeclaration(n)&&ts.isIdentifier(n.name)&&n.initializer){
-   const target=canonical(nameOf(body(n.initializer)));
-   if(writers.has(target)||constructors.has(target))aliases.set(n.name.text,target);
+   const initial=body(n.initializer);
+   const bound=ts.isCallExpression(initial)&&nameOf(initial.expression)==='bind'&&ts.isPropertyAccessExpression(initial.expression);
+   const target=canonical(nameOf(bound?initial.expression.expression:initial));
+   if(writers.has(target)||constructors.has(target)||['open','openSync','OpenFile'].includes(target)){
+    aliases.set(n.name.text,target);
+    if(bound)boundArguments.set(n.name.text,initial.arguments.slice(1));
+   }
   }
   if(ts.isVariableDeclaration(n)&&ts.isIdentifier(n.name)&&n.initializer)add(n.name.text,n.initializer);
   if(ts.isBinaryExpression(n)&&n.operatorToken.kind===ts.SyntaxKind.EqualsToken&&ts.isIdentifier(n.left))add(n.left.text,n.right);
@@ -54,14 +59,20 @@ export function inspectEvidenceSource(file,source,{tracked=[]}={}) {
    for(const span of n.templateSpans){const part=evaluate(span.expression,seen);values=products([values,part.length?part:['*']]).map(v=>v.join('')+span.literal.text);}
    return values;
   }
+  if(ts.isNewExpression(n)&&nameOf(n.expression)==='URL')return evaluate(n.arguments?.[0],seen);
   if(ts.isCallExpression(n)){
    const name=canonical(nameOf(n.expression));
+   if(['open','openSync','OpenFile'].includes(name))return evaluate(n.arguments[0],seen);
    if(name==='TempDir')return['__TEST_TEMP__'];
    if(constructors.has(name))return products(n.arguments.map(a=>{const v=evaluate(a,seen);return v.length?v:['*'];})).map(v=>path.posix.normalize(v.join('/')));
    if(['mkdtemp','mkdtempSync','MkdirTemp','CreateTemp'].includes(name))return evaluate(n.arguments[0],seen);
    if(!seen.has(name)&&returns.has(name))return returns.get(name).flatMap(v=>evaluate(v,new Set([...seen,name])));
   }
   return[];
+ }
+ function writableOpen(flags,seen=new Set()){
+  if(flags&&ts.isIdentifier(flags)&&!seen.has(flags.text))return (bindings.get(flags.text)||[]).some(v=>writableOpen(v,new Set([...seen,flags.text])));
+  return evaluate(flags).some(v=>/^[wax]|\+/.test(v))||!!flags&&/\bO_(?:WRONLY|RDWR|CREAT|CREATE|APPEND|TRUNC)\b/.test(flags.getText());
  }
  function unsafe(value){
   const normalized=path.posix.normalize(value.replaceAll('\\','/'));
@@ -80,8 +91,9 @@ export function inspectEvidenceSource(file,source,{tracked=[]}={}) {
  }
  if(!file.endsWith('.go'))visit(tree,n=>{
   if(ts.isCallExpression(n)||ts.isNewExpression(n)){
-   const name=canonical(nameOf(n.expression)),args=n.arguments||[];
+   const local=nameOf(n.expression),name=canonical(local),args=[...(boundArguments.get(local)||[]),...(n.arguments||[])];
    if(writers.has(name))check(args[writers.get(name)],n.getStart(tree));
+   if(['open','openSync'].includes(name)&&writableOpen(args[1]))check(args[0],n.getStart(tree));
    if(['screenshot','pdf'].includes(name)&&args[0]){
     const options=body(args[0]);
     if(ts.isObjectLiteralExpression(options))for(const p of options.properties)if(ts.isPropertyAssignment(p)&&nameOf(p.name)==='path')check(p.initializer,n.getStart(tree));
@@ -104,11 +116,14 @@ export function inspectEvidenceSource(file,source,{tracked=[]}={}) {
   function end(start){let depth=0;for(let j=start;j<masked.length;j++){const c=masked[j];if('([{'.includes(c))depth++;if(')]}'.includes(c)){if(!depth)return j;depth--;}if(!depth&&['\n',';'].includes(c))return j;}return masked.length;}
   for(const m of masked.matchAll(/\b(?:var\s+|const\s+)?([A-Za-z_]\w*)\s*(?::=|=(?!=))\s*/g)){const start=m.index+m[0].length;const n=expression(source.slice(start,end(start)));if(n)add(m[1],n);}
   for(const m of masked.matchAll(/\b(?:[A-Za-z_]\w*\.)?([A-Za-z_]\w*)\s*\(/g)){
-   if(!writers.has(m[1]))continue;
+   if(!writers.has(m[1])&&m[1]!=='OpenFile')continue;
    const start=m.index,open=start+m[0].lastIndexOf('(');let depth=1,j=open+1;
    for(;j<masked.length&&depth;j++){if(masked[j]==='(')depth++;if(masked[j]===')')depth--;}
    const n=body(expression(source.slice(start,j)));
-   if(n&&ts.isCallExpression(n))check(n.arguments[writers.get(m[1])],start);
+   if(n&&ts.isCallExpression(n)){
+    if(m[1]==='OpenFile'){if(writableOpen(n.arguments[1]))check(n.arguments[0],start);}
+    else check(n.arguments[writers.get(m[1])],start);
+   }
   }
  }
  return findings;

@@ -12,6 +12,11 @@ for(const [name,source] of [
  ['renamed import',`import {writeFile as persist} from 'node:fs/promises';await persist('output/product-ui-v2/x','x')`],
  ['local writer alias',`const persist=fs.writeFileSync;persist('output/product-ui-v2/x','x')`],
  ['quoted reporter',`export default defineConfig({'outputDir':'output/product-ui-v2/results'})`],
+ ['openSync write',`const fd=fs.openSync('output/product-ui-v2/x','w');fs.writeSync(fd,'x')`],
+ ['open write',`const handle=await fs.open('output/product-ui-v2/x','a');await handle.write('x')`],
+ ['URL writer',`await fs.writeFile(new URL('output/product-ui-v2/x',import.meta.url),'x')`],
+ ['bound writer',`const persist=fs.writeFileSync.bind(fs);persist('output/product-ui-v2/x','x')`],
+ ['bound path',`const persist=fs.writeFileSync.bind(fs,'output/product-ui-v2/x');persist('x')`],
  ['direct',`await writeFile('output/product-ui-v2/ledger.json','x')`],
  ['alias',`const out=path.resolve('output/product-ui-v2'); const file=path.join(out,'x.png'); await page.screenshot({path:file})`],
  ['split join',`const out=path.join(root,'output','product-ui-v2');await mkdir(out)`],
@@ -23,6 +28,8 @@ for(const [name,source] of [
  ['tracked nonoutput',`await page.screenshot({path:'.impeccable/review/hero-repro.png'})`],
 ])test(`reject ${name}`,()=>assert.ok(bad(source).length,source));
 for(const [name,source] of [
+ ['read-only open',`const fd=fs.openSync('output/product-ui-v2/x','r');fs.readSync(fd,buffer)`],
+ ['read-only URL open',`const handle=await fs.open(new URL('output/product-ui-v2/x',import.meta.url),'r');await handle.read(buffer)`],
  ['historical read',`const baseline=path.join(root,'output','product-ui-v2','before.json'); const data=await readFile(baseline); await writeFile(path.join(evidence,'after.json'),data)`],
  ['copy source',`await copyFile('output/product-ui-v2/before.png','output/playwright/run/before.png')`],
  ['comment',`// await writeFile('output/product-ui-v2/x','x')\nawait writeFile('output/playwright/run/x','x')`],
@@ -44,4 +51,13 @@ test('synthetic Go historical fixtures stay inside t.TempDir; real CopyFS destin
  const fake='package example\nfunc test(){ root := t.TempDir()\n os.WriteFile(filepath.Join(root,"output","product-ui-v2","x"),data,0600)\n}';
  assert.deepEqual(inspectEvidenceSource('tests/foundation/browser_paths_test.go',fake),[]);
  assert.ok(inspectEvidenceSource('tests/foundation/browser_paths_test.go','os.CopyFS(filepath.Join(root,"output","product-ui-v2"),fsys)').length);
+});
+
+
+test('Go OpenFile rejects create/write flags but preserves historical read-only descriptors',()=>{
+ const file='tests/foundation/browser_example_test.go';
+ const bad=`package example\nfunc test(){ os.OpenFile(filepath.Join(root,"output","product-ui-v2","x"),os.O_CREATE|os.O_WRONLY,0600) }`;
+ assert.ok(inspectEvidenceSource(file,bad).length);
+ assert.ok(inspectEvidenceSource(file,`package example\nfunc test(){ flags := os.O_CREATE|os.O_WRONLY\n os.OpenFile("output/product-ui-v2/x",flags,0600) }`).length);
+ assert.deepEqual(inspectEvidenceSource(file,bad.replace('os.O_CREATE|os.O_WRONLY','os.O_RDONLY')),[]);
 });
