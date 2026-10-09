@@ -53,6 +53,10 @@ n=$(find "$WT/visual-shots" -name '*.png' | wc -l | tr -d ' ')
 [ "$n" -gt 0 ] || { printf 'NOT_RUN: complete shard set but no shots in run %s (artifact layout changed?)\n' "$RUN" | tee "$OUT/findings.md"; exit 4; }
 echo "run $RUN @ ${SHA:0:8} (reviewed in trunk ${TRUST:0:8}): $n shots -> K2.8 review"
 cd $ROOT/.worktrees/r3-integration
+# Fail closed unless the trusted runner actually enforces READONLY (PR #23 security review): before this lands on trunk,
+# an older ext-agent.sh would ignore READONLY=1 and grant Bash/Edit with the provider token.
+grep -q '"deny": \["Bash"' scripts/agents/ext-agent.sh && grep -q 'READONLY:-0' scripts/agents/ext-agent.sh || {
+  printf 'NOT_RUN: trusted runner %s/scripts/agents/ext-agent.sh lacks READONLY enforcement\n' "$PWD" | tee "$OUT/findings.md"; exit 4; }
 rc=0; READONLY=1 MODEL=kimi-for-coding PROVIDER=kimi bash scripts/agents/ext-agent.sh "$WT" $ROOT/output/integrator/tools/visual-review-prompt.md "$OUT" high > "$OUT/run.log" 2>&1 || rc=$?
 F="$WT/output/ext-agents/visual-review/findings.md"
 if [ "$rc" -eq 0 ] && [ -f "$F" ] && head -1 "$F" | grep -qE '^VERDICT: (PASS|FIX)'; then
