@@ -137,7 +137,7 @@ try {
     const captureViewport = page.viewportSize();
     await page.setViewportSize({ width: mobile ? 390 : 1586, height: mobile ? 844 : 992 });
     await codUnavailable.scrollIntoViewIfNeeded();
-    const disabledCapture = await page.screenshot({ path: path.join(root, "output/home-cod-ui", `buyer-cvs-cod-disabled-${locale}-${mobile ? 390 : 1586}.png`), fullPage: false, animations: "disabled", scale: "css" });
+    const disabledCapture = await page.screenshot({ path: path.join(evidence, "home-cod-ui", `buyer-cvs-cod-disabled-${locale}-${mobile ? 390 : 1586}.png`), fullPage: false, animations: "disabled", scale: "css" });
     assert.equal(disabledCapture.readUInt32BE(16), mobile ? 390 : 1586);
     assert.equal(disabledCapture.readUInt32BE(20), mobile ? 844 : 992);
     await page.setViewportSize(captureViewport);

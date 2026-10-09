@@ -1,0 +1,191 @@
+[
+  {
+    "case_id": "BC01 en drawer visible cart Retry preserves key/body and one committed write after reload",
+    "page": "https://buyer.example/en/products/t04-99da1754aad8",
+    "control": "add-to-cart",
+    "action": "click",
+    "expected": "first cart write settles as uncertain",
+    "actual": "first cart write settles as uncertain",
+    "status": "PASS"
+  },
+  {
+    "case_id": "BC01 en drawer visible cart Retry preserves key/body and one committed write after reload",
+    "page": "https://buyer.example/en/products/t04-99da1754aad8",
+    "control": "header-cart",
+    "action": "click",
+    "expected": "uncertain cart notice is visible",
+    "actual": "uncertain cart notice is visible",
+    "status": "PASS"
+  },
+  {
+    "case_id": "BC01 en drawer visible cart Retry preserves key/body and one committed write after reload",
+    "page": "https://buyer.example/en/products/t04-99da1754aad8",
+    "control": "cart-problem > Retry",
+    "action": "click",
+    "expected": "uncertainty clears and committed quantity appears",
+    "actual": "uncertainty clears and committed quantity appears",
+    "status": "PASS"
+  },
+  {
+    "case_id": "BC01 en drawer visible cart Retry preserves key/body and one committed write after reload",
+    "page": "https://buyer.example/en/products/t04-99da1754aad8",
+    "control": "header-cart after reload",
+    "action": "click",
+    "expected": "persisted cart drawer opens with the committed quantity",
+    "actual": "persisted cart drawer opens with the committed quantity",
+    "status": "PASS"
+  },
+  {
+    "case_id": "BC01 en cart-page visible cart Retry preserves key/body and one committed write after reload",
+    "page": "https://buyer.example/en/products/t04-99da1754aad8",
+    "control": "View cart",
+    "action": "click",
+    "expected": "cart page shows the retained first item",
+    "actual": "cart page shows the retained first item",
+    "status": "PASS"
+  },
+  {
+    "case_id": "BC01 en cart-page visible cart Retry preserves key/body and one committed write after reload",
+    "page": "https://buyer.example/en/cart",
+    "control": "Increase quantity",
+    "action": "click",
+    "expected": "cart page shows uncertain committed edit",
+    "actual": "cart page shows uncertain committed edit",
+    "status": "PASS"
+  },
+  {
+    "case_id": "BC01 en cart-page visible cart Retry preserves key/body and one committed write after reload",
+    "page": "https://buyer.example/en/cart",
+    "control": "cart-problem > Retry",
+    "action": "click",
+    "expected": "uncertainty clears and committed quantity appears",
+    "actual": "uncertainty clears and committed quantity appears",
+    "status": "PASS"
+  },
+  {
+    "case_id": "BC01 zh-CN drawer visible cart Retry preserves key/body and one committed write after reload",
+    "page": "https://buyer.example/zh-CN/products/t04-99da1754aad8",
+    "control": "add-to-cart",
+    "action": "click",
+    "expected": "first cart write settles as uncertain",
+    "actual": "first cart write settles as uncertain",
+    "status": "PASS"
+  },
+  {
+    "case_id": "BC01 zh-CN drawer visible cart Retry preserves key/body and one committed write after reload",
+    "page": "https://buyer.example/zh-CN/products/t04-99da1754aad8",
+    "control": "header-cart",
+    "action": "click",
+    "expected": "uncertain cart notice is visible",
+    "actual": "uncertain cart notice is visible",
+    "status": "PASS"
+  },
+  {
+    "case_id": "BC01 zh-CN drawer visible cart Retry preserves key/body and one committed write after reload",
+    "page": "https://buyer.example/zh-CN/products/t04-99da1754aad8",
+    "control": "cart-problem > Retry",
+    "action": "click",
+    "expected": "uncertainty clears and committed quantity appears",
+    "actual": "uncertainty clears and committed quantity appears",
+    "status": "PASS"
+  },
+  {
+    "case_id": "BC01 zh-CN drawer visible cart Retry preserves key/body and one committed write after reload",
+    "page": "https://buyer.example/zh-CN/products/t04-99da1754aad8",
+    "control": "header-cart after reload",
+    "action": "click",
+    "expected": "persisted cart drawer opens with the committed quantity",
+    "actual": "persisted cart drawer opens with the committed quantity",
+    "status": "PASS"
+  },
+  {
+    "case_id": "BC01 zh-CN cart-page visible cart Retry preserves key/body and one committed write after reload",
+    "page": "https://buyer.example/zh-CN/products/t04-99da1754aad8",
+    "control": "View cart",
+    "action": "click",
+    "expected": "cart page shows the retained first item",
+    "actual": "cart page shows the retained first item",
+    "status": "PASS"
+  },
+  {
+    "case_id": "BC01 zh-CN cart-page visible cart Retry preserves key/body and one committed write after reload",
+    "page": "https://buyer.example/zh-CN/cart",
+    "control": "Increase quantity",
+    "action": "click",
+    "expected": "cart page shows uncertain committed edit",
+    "actual": "cart page shows uncertain committed edit",
+    "status": "PASS"
+  },
+  {
+    "case_id": "BC01 zh-CN cart-page visible cart Retry preserves key/body and one committed write after reload",
+    "page": "https://buyer.example/zh-CN/cart",
+    "control": "cart-problem > Retry",
+    "action": "click",
+    "expected": "uncertainty clears and committed quantity appears",
+    "actual": "uncertainty clears and committed quantity appears",
+    "status": "PASS"
+  },
+  {
+    "case_id": "BC01 zh-TW drawer visible cart Retry preserves key/body and one committed write after reload",
+    "page": "https://buyer.example/zh-TW/products/t04-99da1754aad8",
+    "control": "add-to-cart",
+    "action": "click",
+    "expected": "first cart write settles as uncertain",
+    "actual": "first cart write settles as uncertain",
+    "status": "PASS"
+  },
+  {
+    "case_id": "BC01 zh-TW drawer visible cart Retry preserves key/body and one committed write after reload",
+    "page": "https://buyer.example/zh-TW/products/t04-99da1754aad8",
+    "control": "header-cart",
+    "action": "click",
+    "expected": "uncertain cart notice is visible",
+    "actual": "uncertain cart notice is visible",
+    "status": "PASS"
+  },
+  {
+    "case_id": "BC01 zh-TW drawer visible cart Retry preserves key/body and one committed write after reload",
+    "page": "https://buyer.example/zh-TW/products/t04-99da1754aad8",
+    "control": "cart-problem > Retry",
+    "action": "click",
+    "expected": "uncertainty clears and committed quantity appears",
+    "actual": "uncertainty clears and committed quantity appears",
+    "status": "PASS"
+  },
+  {
+    "case_id": "BC01 zh-TW drawer visible cart Retry preserves key/body and one committed write after reload",
+    "page": "https://buyer.example/zh-TW/products/t04-99da1754aad8",
+    "control": "header-cart after reload",
+    "action": "click",
+    "expected": "persisted cart drawer opens with the committed quantity",
+    "actual": "persisted cart drawer opens with the committed quantity",
+    "status": "PASS"
+  },
+  {
+    "case_id": "BC01 zh-TW cart-page visible cart Retry preserves key/body and one committed write after reload",
+    "page": "https://buyer.example/zh-TW/products/t04-99da1754aad8",
+    "control": "View cart",
+    "action": "click",
+    "expected": "cart page shows the retained first item",
+    "actual": "cart page shows the retained first item",
+    "status": "PASS"
+  },
+  {
+    "case_id": "BC01 zh-TW cart-page visible cart Retry preserves key/body and one committed write after reload",
+    "page": "https://buyer.example/zh-TW/cart",
+    "control": "Increase quantity",
+    "action": "click",
+    "expected": "cart page shows uncertain committed edit",
+    "actual": "cart page shows uncertain committed edit",
+    "status": "PASS"
+  },
+  {
+    "case_id": "BC01 zh-TW cart-page visible cart Retry preserves key/body and one committed write after reload",
+    "page": "https://buyer.example/zh-TW/cart",
+    "control": "cart-problem > Retry",
+    "action": "click",
+    "expected": "uncertainty clears and committed quantity appears",
+    "actual": "uncertainty clears and committed quantity appears",
+    "status": "PASS"
+  }
+]

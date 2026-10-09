@@ -71,3 +71,5 @@ node --input-type=module -e 'import assert from "node:assert/strict"; import {re
 # W3-U2 actual BFF Request seams and closed command/copy policy.
 node --test --experimental-strip-types tests/admin/live-settings-bff.test.ts tests/admin/live-settings-model.test.ts
 node --test --experimental-transform-types tests/admin/live-settings-hooks.test.ts
+# Browser-run artifact isolation and regression write-root counterexamples.
+node --test tests/admin/browser-evidence.test.mjs tests/ci/browser-evidence-paths.test.mjs

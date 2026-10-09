@@ -1,0 +1,58 @@
+✖ failed later transport session refresh keeps an earlier observed cart eligible (47.660625ms)
+✖ failed later 503 session refresh keeps an earlier observed cart eligible (7.998709ms)
+✔ newer successful B session supersedes a delayed valid A cart when B cart (5.862417ms)
+✔ newer successful B session supersedes a delayed valid A cart when B cart-fails (6.027667ms)
+✔ round2 stale A session response cannot supersede newer refresh B or its lost-write Retry (10.710875ms)
+✔ round2 stale A session response cannot supersede newer mutation B or its lost-write Retry (5.883584ms)
+✔ rotated buyer context clears the prior cart on read and preserves the B receipt (7.84725ms)
+✔ rotated buyer context clears the prior cart on lost-write and preserves the B receipt (4.993584ms)
+✔ rotated buyer context clears the prior cart on refresh-read and preserves the B receipt (5.122958ms)
+✔ lost first write keeps Retry alive: same context, same idempotency key, no second purchase (13.051333ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 8
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 351.583708
+
+✖ failing tests:
+
+test at apps/storefront/tests/cart-provider-retry.test.mjs:38:3
+✖ failed later transport session refresh keeps an earlier observed cart eligible (47.660625ms)
+  AssertionError [ERR_ASSERTION]: failed later session read must not discard the valid earlier cart
+  + actual - expected
+
+  + undefined
+  - '00000000-0000-0000-0000-000000000003'
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/cart-refresh-generation/apps/storefront/tests/cart-provider-retry.test.mjs:73:14)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: '00000000-0000-0000-0000-000000000003',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at apps/storefront/tests/cart-provider-retry.test.mjs:38:3
+✖ failed later 503 session refresh keeps an earlier observed cart eligible (7.998709ms)
+  AssertionError [ERR_ASSERTION]: failed later session read must not discard the valid earlier cart
+  + actual - expected
+
+  + undefined
+  - '00000000-0000-0000-0000-000000000003'
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/cart-refresh-generation/apps/storefront/tests/cart-provider-retry.test.mjs:73:14)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: '00000000-0000-0000-0000-000000000003',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

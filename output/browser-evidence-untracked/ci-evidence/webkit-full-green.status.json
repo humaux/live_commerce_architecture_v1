@@ -1,0 +1,21 @@
+{
+  "name": "webkit-full-green",
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-webkit"
+  ],
+  "timeout": 3600,
+  "head": "89afd133df1bdd841c3a6a16206fcb5e8e40676b",
+  "exit_code": 1,
+  "source_sha256": "b7c2511000dc43b2b248de2f3528597da97e71bb1930cefd118273c19f6e9d6e",
+  "source_after": "b7c2511000dc43b2b248de2f3528597da97e71bb1930cefd118273c19f6e9d6e",
+  "source_unchanged": true,
+  "historical_output_sha256": "ad49966b857ddd22e602fbf28d2d0b2d948c83b0a6757a5c1d0e8d4eb6fe7ffe",
+  "historical_output_after": "ad49966b857ddd22e602fbf28d2d0b2d948c83b0a6757a5c1d0e8d4eb6fe7ffe",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": true,
+  "tracked_status_clean_after": true,
+  "elapsed_seconds": 252.557
+}

@@ -1,0 +1,8 @@
+{
+  "owner_tool": "/Volumes/data/live_commerce_architecture_v1/output/integrator/tools/visual_review.sh",
+  "rollback_copy": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/evidence-p2-validation/visual_review.original",
+  "before_sha256": "831abfbf03736dcab9b773222b214e5848f0e8fc0990555e9ef83530189ddef9",
+  "after_sha256": "3a95c37a6881035742d2b072f49f558ab44b841011ed8e098de7cd8114ef7959",
+  "branch_copy_matches": true,
+  "executed_external_review": false
+}

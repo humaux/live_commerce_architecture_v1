@@ -165,10 +165,7 @@ func TestBrowserLiveSettingsUIRealChain(t *testing.T) {
 	}
 	evidenceRoot := os.Getenv("LC_BROWSER_EVIDENCE_ROOT")
 	if evidenceRoot == "" {
-		evidenceRoot = filepath.Join(root, "output/playwright")
-		if os.Getenv("CI") == "true" {
-			evidenceRoot = filepath.Join(root, "output/ci-gates")
-		}
+		evidenceRoot = filepath.Join(root, "output/playwright") // CI uploads output/playwright/ too (PR #23 evidence guard)
 	}
 	evidence := filepath.Join(evidenceRoot, "live-settings", time.Now().UTC().Format("20060102T150405.000000000Z"))
 	if err = os.MkdirAll(evidence, 0700); err != nil {

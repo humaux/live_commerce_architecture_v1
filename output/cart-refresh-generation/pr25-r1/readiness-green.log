@@ -1,0 +1,22 @@
+✔ failed later transport session refresh keeps an earlier observed cart eligible (102.413375ms)
+✔ failed later 503 session refresh keeps an earlier observed cart eligible (16.529542ms)
+✔ newer successful session supersedes a delayed valid A cart on cart (15.908125ms)
+✔ newer successful session supersedes a delayed valid A cart on cart-fails (8.328167ms)
+✔ newer successful session supersedes a delayed valid A cart on absent (6.710833ms)
+✔ a completed same-context command fences an earlier valid cart read (29.827417ms)
+✔ unmount still fences a delayed session refresh after separating issued and observed generations (8.717208ms)
+✔ unmount still fences a delayed cart refresh after separating issued and observed generations (13.459208ms)
+✔ round2 stale A session response cannot supersede newer refresh B or its lost-write Retry (22.951834ms)
+✔ round2 stale A session response cannot supersede newer mutation B or its lost-write Retry (18.242166ms)
+✔ rotated buyer context clears the prior cart on read and preserves the B receipt (13.022ms)
+✔ rotated buyer context clears the prior cart on lost-write and preserves the B receipt (9.119458ms)
+✔ rotated buyer context clears the prior cart on refresh-read and preserves the B receipt (7.020625ms)
+✔ lost first write keeps Retry alive: same context, same idempotency key, no second purchase (14.863ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 551.385375

@@ -1,0 +1,23 @@
+{
+  "name": "browser-product-editor",
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-product-editor"
+  ],
+  "timeout": 2400,
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked",
+  "out": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/evidence-hygiene-validation",
+  "require_clean": true,
+  "head": "bb393536dd03a88daa1b2a5d238b14ee9d9945ae",
+  "pid": 85330,
+  "exit_code": 0,
+  "source_sha256": "44d026f2f3cada76e14adee685173aa945abd8f07f85cda267c0ee2577f40d90",
+  "source_after": "44d026f2f3cada76e14adee685173aa945abd8f07f85cda267c0ee2577f40d90",
+  "source_unchanged": true,
+  "historical_sha256_before": "ad7871b3f073064134b5c9c507403052afd361fc7a4eb592b69317db57c41f6e",
+  "historical_sha256_after": "ad7871b3f073064134b5c9c507403052afd361fc7a4eb592b69317db57c41f6e",
+  "historical_unchanged": true,
+  "tracked_status_empty": true,
+  "elapsed_seconds": 287.147
+}

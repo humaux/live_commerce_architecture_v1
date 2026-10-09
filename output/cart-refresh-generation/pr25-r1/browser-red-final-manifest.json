@@ -1,0 +1,195 @@
+{
+  "task_id": "c4bf3500-sub-browser",
+  "base_commit": "ae509c18e839a54f7e921804cd942fc0a8be2896",
+  "head_commit": "66dcd83a620a4c30df0771361c94bd90d99d79d2",
+  "test_commits": [
+    "1dda5fdcad388da05d0ab6ca274ca2bc5ecaa30b",
+    "66dcd83a620a4c30df0771361c94bd90d99d79d2"
+  ],
+  "write_paths": [
+    "tests/storefront/order-gate.mjs",
+    "tests/foundation/browser_order_chain_test.go"
+  ],
+  "source_sha256": {
+    "tests/storefront/order-gate.mjs": "fd93e9f103101d3656c3b1f1aeb0dc9050bea5f84366474c6c1d58fc111b798f",
+    "tests/foundation/browser_order_chain_test.go": "4bb2820b1f3e41633b82b03c52ff4d49b856edc49aa86bcd60cf894b0f6306ed",
+    "apps/storefront/components/CartProvider.tsx": "f710037b23d513e504fa81291df6fef8e6cc031b37de4658a52415e9e7008b6d"
+  },
+  "implementation": "Passive same-native-Promise fetch and LockManager.request settlement observers, exact503/lockrejection counts, queued real native session lock grant/release barrier before rendering sample. All PG scalar facts exact; full semantic Items comparison rejects extra fields; independent current PG fact persisted before comparison.",
+  "unit_commands": [
+    {
+      "command": "GOTOOLCHAIN=go1.27.2 go test -tags browser -run '^TestBuyerOrder(Evidence|RefreshFact)' -v ./tests/foundation",
+      "exit_code": 0,
+      "log": "barrier-pg-fact-tests.log"
+    },
+    {
+      "command": "node --check tests/storefront/order-gate.mjs",
+      "exit_code": 0
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ],
+  "runs": {
+    "chromium": {
+      "command": "LC_BROWSER_ENGINE=chromium bash scripts/dev/test-local.sh --browser-order",
+      "exit_code": 1,
+      "result": "EXPECTED_RED: BC02 mount visible empty assertion1!=0 while actual nonempty cart held AFTER native503fetch/sessionlock failure and barrier settled",
+      "log": "barrier-final-red-chromium.log",
+      "raw_dir": "barrier-final-red-chromium",
+      "phases": [
+        {
+          "surface": "drawer",
+          "held_status": 200,
+          "session_status": 503,
+          "session_failures": 1,
+          "settlement": {
+            "fetch": {
+              "status": 503,
+              "settlement": "resolved",
+              "sequence": 3
+            },
+            "lock": {
+              "name": "commerce-buyer-session-v1",
+              "settlement": "rejected",
+              "code": "request_failed",
+              "status": 503,
+              "sequence": 4
+            },
+            "fetch_count": 1,
+            "lock_count": 1,
+            "barrier": {
+              "name": "commerce-buyer-session-v1",
+              "acquired_sequence": 5,
+              "settled_sequence": 6
+            }
+          },
+          "empty": 0,
+          "line_loss": 0
+        },
+        {
+          "surface": "mount",
+          "held_status": 200,
+          "session_status": 503,
+          "session_failures": 1,
+          "settlement": {
+            "fetch": {
+              "status": 503,
+              "settlement": "resolved",
+              "sequence": 1
+            },
+            "lock": {
+              "name": "commerce-buyer-session-v1",
+              "settlement": "rejected",
+              "code": "request_failed",
+              "status": 503,
+              "sequence": 2
+            },
+            "fetch_count": 1,
+            "lock_count": 1,
+            "barrier": {
+              "name": "commerce-buyer-session-v1",
+              "acquired_sequence": 3,
+              "settled_sequence": 4
+            }
+          },
+          "empty": 1,
+          "line_loss": 0
+        }
+      ],
+      "raw_sha256": {
+        "browser.log": "566541a92ec7016b04ea7483b24826b5e7131396c66c6e335f5f5842ed9fdf65",
+        "next.log": "67af04965bd2b16cda1891815866b7c67e58db50b9f3f92bbfcfc5653d66282f",
+        "cart-click-ledger.json": "e2386c0f79f0b05a6c063628d49c5a4013e820a3d1e84563ef01473efb77de1a",
+        "cart-refresh-race-facts.json": "c33faed9f43cf5f8523c183e1ed69e7cc3462415f8b8706b2eacd222dd439ca6",
+        "cart-retry-facts.json": "20f3182f7366b7ae1e3f42993f6594b175863ad9d5a42567a8f9e6e6dd6575f1",
+        "failure-0.png": "8225c6ad0d82fe6d77641d39c2960a62469f53e877b4b1562870ce32284a73ea",
+        "failure-0.txt": "7a4968e68412e50ab7cb3a51c52ec12a2f182e25b8a72b867ba5de0eb453e4e5"
+      }
+    },
+    "webkit": {
+      "command": "LC_BROWSER_ENGINE=webkit bash scripts/dev/test-local.sh --browser-order",
+      "exit_code": 1,
+      "result": "EXPECTED_RED: BC02 mount visible empty assertion1!=0 while actual nonempty cart held AFTER native503fetch/sessionlock failure and barrier settled",
+      "log": "barrier-final-red-webkit.log",
+      "raw_dir": "barrier-final-red-webkit",
+      "phases": [
+        {
+          "surface": "drawer",
+          "held_status": 200,
+          "session_status": 503,
+          "session_failures": 1,
+          "settlement": {
+            "fetch": {
+              "status": 503,
+              "settlement": "resolved",
+              "sequence": 3
+            },
+            "lock": {
+              "name": "commerce-buyer-session-v1",
+              "settlement": "rejected",
+              "code": "request_failed",
+              "status": 503,
+              "sequence": 4
+            },
+            "fetch_count": 1,
+            "lock_count": 1,
+            "barrier": {
+              "name": "commerce-buyer-session-v1",
+              "acquired_sequence": 5,
+              "settled_sequence": 6
+            }
+          },
+          "empty": 0,
+          "line_loss": 0
+        },
+        {
+          "surface": "mount",
+          "held_status": 200,
+          "session_status": 503,
+          "session_failures": 1,
+          "settlement": {
+            "fetch": {
+              "status": 503,
+              "settlement": "resolved",
+              "sequence": 1
+            },
+            "lock": {
+              "name": "commerce-buyer-session-v1",
+              "settlement": "rejected",
+              "code": "request_failed",
+              "status": 503,
+              "sequence": 2
+            },
+            "fetch_count": 1,
+            "lock_count": 1,
+            "barrier": {
+              "name": "commerce-buyer-session-v1",
+              "acquired_sequence": 3,
+              "settled_sequence": 4
+            }
+          },
+          "empty": 1,
+          "line_loss": 0
+        }
+      ],
+      "raw_sha256": {
+        "browser.log": "c7a62a45b5af22c38fcb921da9111a6fa983a39198a46786a879401ab08ae918",
+        "next.log": "5499aaf2db13575fa627a22f8d7366291cac225e3031961888ea78e1459d0bca",
+        "cart-click-ledger.json": "9be2cd04a7ca33410e1f1a8e5efcedde1c1856fcdde12b5322eee8faa3df636f",
+        "cart-refresh-race-facts.json": "e08c247e3a8bfe143261f75560c565bc7dc908d098fe8e246e142b5a426a60b3",
+        "cart-retry-facts.json": "cab9df60d3a78ec70513dfcb560a1ae80bdc25cf371aba0a4308b06b3df509b3",
+        "failure-0.png": "7f45c18d0395a237ce289cb1110b507c7f3e8ea548128037a9a5a5aabc11e454",
+        "failure-0.txt": "7a4968e68412e50ab7cb3a51c52ec12a2f182e25b8a72b867ba5de0eb453e4e5"
+      }
+    }
+  },
+  "not_run": [
+    "fixed-source Chromium/WebKit GREEN: root owns",
+    "independent PG postcondition runs only after Node GREEN",
+    "full generation-fix revert ddba31c9: root owns"
+  ],
+  "historical": "Original red-{chromium,webkit}/ belong to864c3bb7; preserved unchanged, not final-hash proof.",
+  "evidence_level": "E3 exact-final-test-hash old-provider RED both engines; fixed-provider GREEN and independent PG completion still root-owned NOT_RUN by worker"
+}

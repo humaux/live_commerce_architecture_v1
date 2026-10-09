@@ -1,0 +1,17 @@
+{
+  "name": "gates",
+  "command": [
+    "bash",
+    "scripts/dev/check-gates.sh"
+  ],
+  "timeout": 300,
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked",
+  "out": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/evidence-hygiene-validation",
+  "head": "db9011b15fc622822a181f456023cacb2758ead7",
+  "pid": 77062,
+  "exit_code": 0,
+  "source_sha256": "c5d33cb36707bff7853bae6849174525ae936fec520130c3d482526297fc0068",
+  "source_after": "c5d33cb36707bff7853bae6849174525ae936fec520130c3d482526297fc0068",
+  "source_unchanged": true,
+  "elapsed_seconds": 23.354
+}
