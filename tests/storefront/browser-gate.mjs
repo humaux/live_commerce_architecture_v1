@@ -207,8 +207,8 @@ try {
   await expect(ui.getByRole("radio").first()).toBeEnabled();
   assert.equal(await ui.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   // F7: run output never rewrites the tracked .impeccable/review baselines.
-  await mkdir(path.join(root,"output/playwright/review/buyer-inline"),{recursive:true});
-  await ui.screenshot({path:path.join(root,"output/playwright/review/buyer-inline/hero-repro.png")});
+  await mkdir(path.join(evidence,"review/buyer-inline"),{recursive:true});
+  await ui.screenshot({path:path.join(evidence,"review/buyer-inline/hero-repro.png")});
   await ui.screenshot({path:path.join(evidence,"buyer-mobile.png"),fullPage:true});
   await ui.getByRole("button",{name:"增加數量",exact:true}).click();
   await expect(ui.getByTestId("qty-input")).toHaveValue("2");

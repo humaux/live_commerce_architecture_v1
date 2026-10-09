@@ -1,0 +1,772 @@
+[
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/list-zh-TW-1366.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1366,
+      "height": 768,
+      "topbarY": 0
+    },
+    "sha256": "2df84383073a0bd5d26f0ea1a4e53936dc100864d761408fb44ed4833c730787"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-TW-1366.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1366,
+      "height": 768,
+      "topbarY": 0
+    },
+    "sha256": "bc09002c563439365cc88ad5751ad88b4d6108ad5182157da39debafc514d490"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/list-zh-TW-1586.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "b9d14568cacda5c9f993941bbb0ac58f754525a53e126c0268c9ed41207798c2"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-TW-1586-media.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "1c739685c25a51087355e311cfc91af52f9c919768dc4bae33758d37122409ad"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-TW-1586-basics.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "bee96a5d0f9077a46aacbd6d02bc2a2b55569f795d7d293baf4dc6e41e36da81"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-TW-1586-pricing.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "793914b1ce0eace983e67a9fa187e4084372cd71de266cf5dbcfa315b3aa5d1b"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-TW-1586-variants.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "ca2930175104e722de0e64a9fecd08c55a8355727a4677294b1ecc4129abe139"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-TW-1586-collections.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "dfcce42c92871c44a412eb73f818898581307ca902662c51544044343a692052"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-TW-1586-shipping.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "debac3eff4eb12a1005e9232859ee19dd78869c786a883cb59732d06e23edf04"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-TW-1586-seo.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "5b3e64e1cb18f9cf03627e2eacdf8a5be1e83baee100f252d0ed0b7620614122"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-TW-1586.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "bd9feccd0d968667a54f657f706db02b1e50f42569c8610b5215e8f6f916cda2"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/list-zh-TW-390.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "9d4f12873c341a4e39e3d08c03b3d6fd1be4c8a865580be5feb20594fe46a44b"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-TW-390-media.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "100ad20e0beb9e22e4e6a98791ce12eeeff96cdfde1b9950e11d4f33b68ed3f4"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-TW-390-basics.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "de44aab8ccca3f1b98ce13aea98530fead829f98e3b477d76648f925bb87989a"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-TW-390-pricing.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "53d03177307ad6109834a9c796e0b5fefc86bc9121546da2c9d71da2638ac4dd"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-TW-390-variants.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "01009f7c2f7eb36e016264c044abd88cefa40825bd1448bb82ac5f265afbdca6"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-TW-390-collections.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "fce28c32bf610cb47d9e7b7cbcaa134ca208573cfcc7a702957c53460b15167b"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-TW-390-shipping.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "819f0d64ada0063f5ed158af5c8ed3daa6f7a303bc0ca426da3405eebd5768d8"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-TW-390-seo.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "4f53330fe0ef295ec6a001d695034ee7c50061e73db98aff860ab1282315f6e3"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-TW-390.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "100ad20e0beb9e22e4e6a98791ce12eeeff96cdfde1b9950e11d4f33b68ed3f4"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/list-zh-TW-375.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 375,
+      "height": 812,
+      "topbarY": 0
+    },
+    "sha256": "75eef92aa48257bc77fcff25844784e04cc2b48a25f877eccbe60bc0966b69d3"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-TW-375.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 375,
+      "height": 812,
+      "topbarY": 0
+    },
+    "sha256": "d9d46d48488a8724b6967bf5e2d2da8eb1927f54228f21765817df4bdf4cd6a1"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/list-zh-CN-1366.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1366,
+      "height": 768,
+      "topbarY": 0
+    },
+    "sha256": "185e3c8ee66560d82f91b4972fd4581df2bb3700332d20eacfcc234c0e566d16"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-CN-1366.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1366,
+      "height": 768,
+      "topbarY": 0
+    },
+    "sha256": "92d95b73e778924776bdbbf3a42fc351cdb85e58e9a18bd1416eae2d7773cebb"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/list-zh-CN-1586.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "2d98a63e09e5c9acece08814ccc28f83894bd20a0bd97c3da6d627f376291848"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-CN-1586-media.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "781fa5d0e0306fbeb40315652e9b54d3d2462d90cce48453de89091af106f11a"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-CN-1586-basics.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "8c78a110bcefb63bac7220e18fe934f4554496eb57ab94aa3183b4644006ad36"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-CN-1586-pricing.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "5338191b0a00996053e4f181c2632e2d3db9fdd6ef24c3235917ef4732e01ae4"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-CN-1586-variants.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "51747108dfccfd0104e2cc027fca3ca6f255a31e4a59c0aa4b3698802089338a"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-CN-1586-collections.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "2c260943d9e5c95d4b0fccb25e8eeb81e8a7732e677920a35dea0828e8360090"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-CN-1586-shipping.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "c9e90c6dd18d51ff366b931dcc4bdf95a6fe346250b6f23db19df3c90b038584"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-CN-1586-seo.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "dfb797828f9b2e48b189df84af049ee34eb896f5af66576e1f9a49d55cea9c68"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-CN-1586.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "31af35a2dca0a0d5c604d6429a74e244c9344a47982af09723284d8ba6bf2dd6"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/list-zh-CN-390.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "053d89740ddf0786eaae568d24c16f7ce96540a77d88a741e9a70b1620470006"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-CN-390-media.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "f29d86861c064c0039aed48fdd36f66c798624e7a99b75eb336f867466beee40"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-CN-390-basics.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "6f4b2f2261e7d271c5e66bf9a7355095f660311f7cfe34402e64b7669937fdfb"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-CN-390-pricing.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "2a67017d996fe4cc5e930809a65434eba33448c6818ffc772aa605c362888d81"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-CN-390-variants.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "1818ac8f3a2683e9b4803d5c639a814a3034580822e46cf30e4cf5255fa20311"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-CN-390-collections.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "0bfd70d406f64afce7b15e51c2b31e9bdd938b004d08f786730e59ec28733e40"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-CN-390-shipping.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "16b6de091d381aef66acfaa4743989f3d3314249137d99c4a9180a5220553a4b"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-CN-390-seo.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "f129d680fac32956cd29c1162459b13ee63d42ea05d325e471fd1d14ecf137d3"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-CN-390.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "f29d86861c064c0039aed48fdd36f66c798624e7a99b75eb336f867466beee40"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/list-zh-CN-375.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 375,
+      "height": 812,
+      "topbarY": 0
+    },
+    "sha256": "fb85a999898850ea5a0f59b02006a0fd9f50dc33bb7f2997db56e31a10cde20e"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-zh-CN-375.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 375,
+      "height": 812,
+      "topbarY": 0
+    },
+    "sha256": "b161f51b7490589708d36d87f91fea3482027ae22191d961da65937b98c49acb"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/list-en-1366.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1366,
+      "height": 768,
+      "topbarY": 0
+    },
+    "sha256": "a09f61b4f04620c2098ca2abd7f28caa3ba5811321490a2ace753a686f931bed"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-en-1366.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1366,
+      "height": 768,
+      "topbarY": 0
+    },
+    "sha256": "fead7e9710d97414841d10df30a406628e9b5ea522ea8a94866dfe8ca24c17bf"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/list-en-1586.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "ae5e2b96d174118da3407305d0ae5490f0c4d0a451dbc93724bcb0f3bae3868c"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-en-1586-media.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "761d44b1a659fbd31ec54022fe8952eeaee679596db7b94e6de65ddc2943cd93"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-en-1586-basics.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "8562992ae2be4e5d184fcabafb8f6f5cc78fc8d66941b8a3b618418fb3c12bec"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-en-1586-pricing.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "60f404daab7edf0817c1f45e6e7ff69cef725de95ed19b97845675ef7c8b201c"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-en-1586-variants.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "ea95ca1ed39aa36f6432a08d0a00fba26669c8b044b9b64ea27d437deabce986"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-en-1586-collections.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "9f426c7d6e17742d181e78d56eade4d4de9fca7e4f39638d3a44eacea0aeae7a"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-en-1586-shipping.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "96137e2cbcd4cff016a6051c7597ee4bed06fe9712f44c5840ecfb7fbf9bf084"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-en-1586-seo.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "215d996d04445d0ccc0d1d5e086bcc27959a00c4b9dc76203ec2b08c507df4c8"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-en-1586.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "0062652000ca18a74a24e800393073792a0a0c3234e80feb078569e65e8d8a55"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/list-en-390.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "a11ed8f84adf4646552fe556f301c0338263c09d77e7940c131589d218769282"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-en-390-media.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "b475b9841c5d2ff7bb13dddbbd4c9db9829478b63f5d8fbc7dc36deb473fceba"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-en-390-basics.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "56a4284e583eb037da76a23b1035142d1362576911e38ca5481921b9389f63f6"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-en-390-pricing.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "dbc0a953209f6bde3b247b73f812331f4309299c0220ff78d6a85bb4767857a6"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-en-390-variants.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "3a6bfd3dcc56c122fedcf9a2e08f2b40cf61e527b3832b74e7d628d785c051fd"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-en-390-collections.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "2eab6acacf8362eedbc4af34250aabcd3a0e28b84d008fc945e8eb5d7c509f99"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-en-390-shipping.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "fe29fa2f3f0b1ae55d03307a29e7cc040dd66decf424f3791dc79ac83e359a3b"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-en-390-seo.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "57361b5757d9811649c666340c726cc78e8c42f30c14a9bb8c1153d9403a58ec"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-en-390.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "b475b9841c5d2ff7bb13dddbbd4c9db9829478b63f5d8fbc7dc36deb473fceba"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/list-en-375.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 375,
+      "height": 812,
+      "topbarY": 0
+    },
+    "sha256": "57565f5444bf45e974e8d634956fc57126f0461cc2d84c8707a14a9116775c4f"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-en-375.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 375,
+      "height": 812,
+      "topbarY": 0
+    },
+    "sha256": "7e9368a798f3ac8ec7a57c13b2dac9c258a5d5b0d97c05be8b0a99e7759bdb7f"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/matrix-en-1586.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "67179a670bfed00987e18e801e187fd6a38604906a74965bc4c67b32fc937194"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/list-populated-zh-TW-1586.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "273928a9d9275410da95099dbe6b19198a27bcc3d7851228e2af9090443efd1d"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/list-populated-zh-TW-390.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "71e77048d5ef580f9f4ff594f8e287d070a83fed56f9e80b2b017ff2f74f3988"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/list-populated-zh-CN-1586.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "08158c56ad2c94a1e957c32c354944ab1d680ff4a305a750646e6407f39436df"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/list-populated-zh-CN-390.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "1203f16ed5326b64b758ca08e62e02dc68e44d1a7a3ccf8faace72b8e64d8f1e"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/list-populated-en-1586.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "ee8108bbeb4d7348602e6e1d1e16fdd9bd80733ce21f8f1e4fffd71c93a57928"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/list-populated-en-390.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 390,
+      "height": 844,
+      "topbarY": 0
+    },
+    "sha256": "84a9a88c6afc0e9373f3ad9b9095170207d7dc42109b77b5a453e6c0289d5984"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/batch-result-en-1586.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "3a368f23a7a1834098f5b0d58583391ff102b99a6745dd664aab9985f412a8e1"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/inventory-en-1366.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1366,
+      "height": 768,
+      "topbarY": 0
+    },
+    "sha256": "10135f1c093be0d423a67c6df389b12587d0d0baba416015c307f67886db23b1"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/inventory-en-1586.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "4e260c3c02d8412527d275e7655a2d4ff0e4169ecc64f8e5fb9efa4d877090e0"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.1jQPcVY9/catalog-core/20261009T064655.151079000/product-ui-v2/editor-bottom-en-375.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 375,
+      "height": 812,
+      "topbarY": 0
+    },
+    "sha256": "d2d6ef4bfe45bda6a2ac28e6406c5e01d534b0a4a880ce3df9634baf7801ef4c"
+  }
+]

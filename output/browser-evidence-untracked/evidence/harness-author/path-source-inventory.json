@@ -1,0 +1,586 @@
+{
+  "task_id": "evidence-harness-paths",
+  "kind": "SOURCE_ONLY",
+  "go_helpers": [
+    {
+      "file": "tests/foundation/browser_admin_legacy_test.go",
+      "path_definitions": [
+        {
+          "line": 46,
+          "source": "evidence := adminEvidence(t, root, \"admin-ledger\")"
+        },
+        {
+          "line": 276,
+          "source": "func adminEvidence(t *testing.T, root, name string) string {"
+        },
+        {
+          "line": 306,
+          "source": "evidence := adminEvidence(t, root, \"admin-\"+suite)"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_ads_attribution_test.go",
+      "path_definitions": [
+        {
+          "line": 87,
+          "source": "evidence := brfEvidence(t, root, \"ads-attribution-report\")"
+        },
+        {
+          "line": 129,
+          "source": "evidence := brfEvidence(t, root, \"ads-attribution-checkout\")"
+        },
+        {
+          "line": 210,
+          "source": "adminEvidence := brfEvidence(t, root, \"ads-attribution-checkout-admin\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_buyer_chain_test.go",
+      "path_definitions": [
+        {
+          "line": 37,
+          "source": "evidence, err := os.MkdirTemp(filepath.Join(root, \"output/playwright\"), \"buyer-real-\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_buyer_comms_test.go",
+      "path_definitions": [
+        {
+          "line": 38,
+          "source": "evidence := brfEvidence(t, root, \"buyer-comms\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_card_payments_test.go",
+      "path_definitions": [
+        {
+          "line": 130,
+          "source": "evidence := brfEvidence(t, root, \"card-payments\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_catalog_core_test.go",
+      "path_definitions": [
+        {
+          "line": 196,
+          "source": "evidence := brfEvidence(t, root, \"catalog-core\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_catalog_media_test.go",
+      "path_definitions": [
+        {
+          "line": 53,
+          "source": "evidence := brfEvidence(t, root, \"catalog-media\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_checkout_offline_test.go",
+      "path_definitions": [
+        {
+          "line": 64,
+          "source": "evidence := brfEvidence(t, root, \"checkout-offline\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_claim_checkout_test.go",
+      "path_definitions": [
+        {
+          "line": 43,
+          "source": "evidence := brfEvidence(t, root, \"claim-checkout\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_click_sweep_test.go",
+      "path_definitions": [
+        {
+          "line": 112,
+          "source": "evidence := brfEvidence(t, root, \"click-sweep\")"
+        },
+        {
+          "line": 113,
+          "source": "sweepRoot := os.Getenv(\"LC_BROWSER_EVIDENCE_ROOT\")"
+        },
+        {
+          "line": 114,
+          "source": "if sweepRoot == \"\" {"
+        },
+        {
+          "line": 115,
+          "source": "sweepRoot = evidence"
+        },
+        {
+          "line": 117,
+          "source": "outDir := filepath.Join(sweepRoot, \"ui-click-sweep\")"
+        },
+        {
+          "line": 118,
+          "source": "if supplied := os.Getenv(\"LC_SWEEP_OUT\"); supplied != \"\" {"
+        },
+        {
+          "line": 489,
+          "source": "\"LC_BROWSER_EVIDENCE_ROOT\": filepath.Dir(outDir),"
+        },
+        {
+          "line": 490,
+          "source": "\"LC_SWEEP_ADMIN_ORIGIN\":    stack.origin, \"LC_SWEEP_STORE\": e.store(), \"LC_SWEEP_EVIDENCE\": evidence, \"LC_SWEEP_OUT\": outDir, \"LC_SWEEP_FACTS\": factsPath,"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_customers_billing_test.go",
+      "path_definitions": [
+        {
+          "line": 282,
+          "source": "evidence := brfEvidence(t, root, \"customers-billing\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_e2e_test.go",
+      "path_definitions": [
+        {
+          "line": 154,
+          "source": "x.evidence = brfEvidence(t, x.root, \"e2e\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_evidence_paths_test.go",
+      "path_definitions": [
+        {
+          "line": 18,
+          "source": "legacy := filepath.Join(root, \"output\", \"ui-click-sweep\", \"journeys.json\")"
+        },
+        {
+          "line": 26,
+          "source": "t.Setenv(\"LC_BROWSER_EVIDENCE_ROOT\", \"\")"
+        },
+        {
+          "line": 27,
+          "source": "if got, want := browserEvidenceRoot(root), filepath.Join(root, \"output\", \"playwright\"); got != want {"
+        },
+        {
+          "line": 32,
+          "source": "base := filepath.Join(root, \"output\", \"playwright\")"
+        },
+        {
+          "line": 35,
+          "source": "t.Setenv(\"LC_BROWSER_EVIDENCE_ROOT\", base)"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_home_cod_test.go",
+      "path_definitions": [
+        {
+          "line": 62,
+          "source": "evidence := brfEvidence(t, root, \"home-cod\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_identity_chain_test.go",
+      "path_definitions": [
+        {
+          "line": 152,
+          "source": "evidence := filepath.Join(root, \"output\", \"playwright\", suite+\"-\"+time.Now().UTC().Format(\"20060102T150405.000000000\"))"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_inbox_ui_test.go",
+      "path_definitions": [
+        {
+          "line": 167,
+          "source": "evidence := filepath.Join(root, \"output/playwright/inbox-ui\", time.Now().UTC().Format(\"20060102T150405.000000000\"))"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_input_delivery_test.go",
+      "path_definitions": [
+        {
+          "line": 47,
+          "source": "evidence := filepath.Join(root, \"output\", \"playwright\", \"input-delivery-\"+time.Now().UTC().Format(\"20060102T150405.000000000\"))"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_live_claims_test.go",
+      "path_definitions": [
+        {
+          "line": 102,
+          "source": "if err := os.MkdirAll(filepath.Join(root, \"output\", \"playwright\"), 0o755); err != nil {"
+        },
+        {
+          "line": 105,
+          "source": "evidence, err := os.MkdirTemp(filepath.Join(root, \"output\", \"playwright\"), \"live-claims-\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_live_console_test.go",
+      "path_definitions": [
+        {
+          "line": 5,
+          "source": "// LC_BROWSER_LIVE_CONSOLE_ACCEPTANCE, LC_TEST_DATABASE_ALLOWED, LC_BROWSER_EVIDENCE_ROOT, optional LC_BROWSER_CONSOLE_GREP."
+        },
+        {
+          "line": 489,
+          "source": "evidence, err := os.MkdirTemp(evidenceRoot, \"live-console-\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_live_tools_test.go",
+      "path_definitions": [
+        {
+          "line": 93,
+          "source": "x.evidence = brfEvidence(t, x.root, \"live-tools\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_manual_order_link_test.go",
+      "path_definitions": [
+        {
+          "line": 39,
+          "source": "evidence, err := os.MkdirTemp(filepath.Join(root, \"output/playwright\"), \"manual-order-link-\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_merchant_buyer_chain_test.go",
+      "path_definitions": [
+        {
+          "line": 42,
+          "source": "evidence, err := os.MkdirTemp(filepath.Join(root, \"output/playwright\"), \"merchant-buyer-real-\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_merchant_orders_bff_test.go",
+      "path_definitions": [
+        {
+          "line": 160,
+          "source": "evidence := filepath.Join(root, \"output\", \"playwright\", \"merchant-orders-bff-\"+time.Now().UTC().Format(\"20060102T150405.000000000\"))"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_merchant_orders_ui_test.go",
+      "path_definitions": [
+        {
+          "line": 325,
+          "source": "evidence := filepath.Join(root, \"output/playwright/merchant-orders-c-browser\", time.Now().UTC().Format(\"20060102T150405.000000000\"))"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_meta_ads_test.go",
+      "path_definitions": [
+        {
+          "line": 159,
+          "source": "evidence := brfEvidence(t, root, \"meta-ads\")"
+        },
+        {
+          "line": 366,
+          "source": "evidence := brfEvidence(t, root, \"meta-ads-consent\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_meta_connect_gate_test.go",
+      "path_definitions": [
+        {
+          "line": 142,
+          "source": "evidence := brfEvidence(t, root, \"meta-connect-gate\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_meta_connect_test.go",
+      "path_definitions": [
+        {
+          "line": 118,
+          "source": "evidence := brfEvidence(t, root, \"meta-connect\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_meta_health_ui_test.go",
+      "path_definitions": [
+        {
+          "line": 163,
+          "source": "evidence := brfEvidence(t, root, \"meta-health-ui\")"
+        },
+        {
+          "line": 164,
+          "source": "durable := os.Getenv(\"LC_META_HEALTH_EVIDENCE_ROOT\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_migration_import_ui_test.go",
+      "path_definitions": [
+        {
+          "line": 72,
+          "source": "evidence := brfEvidence(t, root, \"migration-import\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_operations_ads_test.go",
+      "path_definitions": [
+        {
+          "line": 35,
+          "source": "evidence := brfEvidence(t, root, \"operations-ads\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_ops_polish_test.go",
+      "path_definitions": [
+        {
+          "line": 42,
+          "source": "evidence := brfEvidence(t, root, \"ops-polish-storefront\")"
+        },
+        {
+          "line": 109,
+          "source": "evidence := brfEvidence(t, root, \"ops-polish-admin\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_order_chain_test.go",
+      "path_definitions": [
+        {
+          "line": 36,
+          "source": "evidence, err := os.MkdirTemp(filepath.Join(root, \"output/playwright\"), \"buyer-order-\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_password_auth_test.go",
+      "path_definitions": [
+        {
+          "line": 16,
+          "source": "// Owner-pool use: reads only. Evidence: output/playwright/password-auth-<ts>/ (or LC_BROWSER_EVIDENCE_ROOT)."
+        },
+        {
+          "line": 130,
+          "source": "evidenceRoot := os.Getenv(\"LC_BROWSER_EVIDENCE_ROOT\")"
+        },
+        {
+          "line": 132,
+          "source": "evidenceRoot = filepath.Join(root, \"output\", \"playwright\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_payment_chain_test.go",
+      "path_definitions": [
+        {
+          "line": 44,
+          "source": "evidence, err := os.MkdirTemp(filepath.Join(root, \"output/playwright\"), \"buyer-payment-\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_product_media_v2_test.go",
+      "path_definitions": [
+        {
+          "line": 111,
+          "source": "evidence := brfEvidence(t, root, \"product-media-v2\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_promotions_test.go",
+      "path_definitions": [
+        {
+          "line": 85,
+          "source": "evidence := brfEvidence(t, root, \"promotions\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_refund_fulfilment_test.go",
+      "path_definitions": [
+        {
+          "line": 244,
+          "source": "if base := os.Getenv(\"LC_BROWSER_EVIDENCE_ROOT\"); base != \"\" {"
+        },
+        {
+          "line": 247,
+          "source": "return filepath.Join(root, \"output\", \"playwright\")"
+        },
+        {
+          "line": 250,
+          "source": "func brfEvidence(t *testing.T, root, name string) string {"
+        },
+        {
+          "line": 301,
+          "source": "evidence := brfEvidence(t, root, \"manual-fulfilment\")"
+        },
+        {
+          "line": 339,
+          "source": "evidence := brfEvidence(t, root, \"refund\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_returns_ui_test.go",
+      "path_definitions": [
+        {
+          "line": 101,
+          "source": "evidence := brfEvidence(t, root, \"returns-ui\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_staff_team_test.go",
+      "path_definitions": [
+        {
+          "line": 15,
+          "source": "// Evidence: output/playwright/staff-team-<ts>/ (or LC_BROWSER_EVIDENCE_ROOT)."
+        },
+        {
+          "line": 134,
+          "source": "evidenceRoot := os.Getenv(\"LC_BROWSER_EVIDENCE_ROOT\")"
+        },
+        {
+          "line": 136,
+          "source": "evidenceRoot = filepath.Join(root, \"output\", \"playwright\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_store_design_test.go",
+      "path_definitions": [
+        {
+          "line": 137,
+          "source": "evidence := filepath.Join(root, \"output/playwright/store-design\", time.Now().UTC().Format(\"20060102T150405.000000000\"))"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_store_domains_test.go",
+      "path_definitions": [
+        {
+          "line": 70,
+          "source": "evidence, err := os.MkdirTemp(filepath.Join(root, \"output/playwright\"), \"store-domains-\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_storefront_publish_test.go",
+      "path_definitions": [
+        {
+          "line": 62,
+          "source": "evidence, err := os.MkdirTemp(filepath.Join(root, \"output/playwright\"), \"storefront-publish-\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_storefront_test.go",
+      "path_definitions": [
+        {
+          "line": 102,
+          "source": "evidence := brfEvidence(t, root, \"storefront\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_stripe_test.go",
+      "path_definitions": [
+        {
+          "line": 623,
+          "source": "base := os.Getenv(\"LC_STRIPE_EVIDENCE_ROOT\")"
+        },
+        {
+          "line": 625,
+          "source": "base = brfEvidence(t, root, \"stripe-b2-browser-tests\")"
+        },
+        {
+          "line": 641,
+          "source": "evidence, err := os.MkdirTemp(sbEvidenceRoot(t), c.Mode+\"-\"+strings.ReplaceAll(t.Name()[strings.Index(t.Name(), \"/\")+1:], \"/\", \"_\")+\"-\")"
+        },
+        {
+          "line": 1037,
+          "source": "dir := os.Getenv(\"LC_BASELINE_OUT_DIR\")"
+        },
+        {
+          "line": 1039,
+          "source": "dir = brfEvidence(t, root, \"stripe-b2-browser-tests\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_studio_bff_test.go",
+      "path_definitions": [
+        {
+          "line": 154,
+          "source": "evidence := filepath.Join(root, \"output\", \"playwright\", \"studio-bff-\"+time.Now().UTC().Format(\"20060102T150405.000000000\"))"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_studio_ui_test.go",
+      "path_definitions": [
+        {
+          "line": 197,
+          "source": "evidence := filepath.Join(root, \"output\", \"playwright\", \"studio-ui-\"+time.Now().UTC().Format(\"20060102T150405.000000000\"))"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_taiwan_cvs_test.go",
+      "path_definitions": [
+        {
+          "line": 95,
+          "source": "evidence := brfEvidence(t, root, \"taiwan-cvs\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_tracking_backfill_test.go",
+      "path_definitions": [
+        {
+          "line": 93,
+          "source": "evidenceRoot := os.Getenv(\"LC_TRACKING_EVIDENCE_ROOT\")"
+        },
+        {
+          "line": 95,
+          "source": "t.Fatal(\"run-owned LC_TRACKING_EVIDENCE_ROOT required\")"
+        },
+        {
+          "line": 141,
+          "source": "configDir, err := os.MkdirTemp(configBase, \"tracking-playwright-\")"
+        }
+      ]
+    },
+    {
+      "file": "tests/foundation/browser_w6_customers_reports_test.go",
+      "path_definitions": [
+        {
+          "line": 122,
+          "source": "evidence := brfEvidence(t, root, \"w6-\"+mode)"
+        }
+      ]
+    }
+  ],
+  "shell_mode_count": 51,
+  "canonical_timestamped_builders_unchanged": true,
+  "source_commit": "3e3ce8e3a88545547c0561571911b1a5db39d5b7"
+}

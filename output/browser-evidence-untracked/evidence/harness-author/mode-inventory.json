@@ -1,0 +1,700 @@
+{
+  "task_id": "evidence-harness-paths",
+  "base_commit": "5008661622d35a130e32d1b1fe7d0111ac03ad43",
+  "inventory_kind": "SOURCE_ONLY",
+  "browser_modes": [
+    {
+      "mode": "--browser-admin-legacy",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        259,
+        551,
+        671
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-admin-shell",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        79
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-ads-attribution",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        382,
+        545,
+        551,
+        810
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-buyer",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        539,
+        545,
+        713,
+        898
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-buyer-comms",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        539,
+        545,
+        898
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-card-payments",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        349,
+        545,
+        551,
+        797
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-catalog-core",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        459,
+        551,
+        833
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-catalog-media",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        427,
+        545,
+        551,
+        844
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-checkout-offline",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        499,
+        545,
+        551,
+        853
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-claim-checkout",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        267,
+        545,
+        683
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-click-sweep",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        515,
+        545,
+        551,
+        859
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-customers-billing",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        336,
+        545,
+        551,
+        794
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-cvs",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        417,
+        545,
+        551,
+        836
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-design",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        369,
+        378,
+        551,
+        803
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-e2e",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        481,
+        545,
+        551,
+        777
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-home-cod",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        507,
+        545,
+        551,
+        856
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-identity",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        551,
+        664
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-inbox",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        200,
+        551,
+        695
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-input-delivery",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        280,
+        551,
+        689
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-live-claims",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        272,
+        545,
+        551,
+        686
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-live-console",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        241,
+        551,
+        680
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-manual-order",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        109,
+        545,
+        551,
+        719
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-merchant-buyer",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        105,
+        545,
+        551,
+        716
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-merchant-orders-bff",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        218,
+        222,
+        551,
+        674
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-merchant-orders-ui",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        205,
+        551,
+        704
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-meta-ads",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        396,
+        545,
+        551,
+        816
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-meta-connect",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        406,
+        551,
+        824
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-meta-health-ui",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        551,
+        822
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-migration-import",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        318,
+        551,
+        786
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-operations-ads",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        390,
+        551,
+        813
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-ops-polish",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        434,
+        545,
+        551,
+        847
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-order",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        166,
+        545,
+        722
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-password-auth",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        247,
+        551,
+        667
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-payment",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        169,
+        545,
+        725
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-picklist",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        54
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-platform-site",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        64
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-product-editor",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        459,
+        464,
+        551,
+        830
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-product-media-v2",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        452,
+        545,
+        551,
+        827
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-promotions",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        445,
+        545,
+        551,
+        850
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-refund-fulfilment",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        298,
+        545,
+        551,
+        780
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-reports",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        327,
+        551,
+        790
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-returns-ui",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        310,
+        545,
+        551,
+        783
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-store-domains",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        361,
+        545,
+        551,
+        800
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-storefront",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        87,
+        88,
+        369,
+        492,
+        545,
+        551,
+        807,
+        839,
+        843
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-storefront-publish",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        369,
+        545,
+        551,
+        807
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-studio-bff",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        290,
+        551,
+        692
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-studio-ui",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        235,
+        551,
+        677
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-tracking-backfill",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        551,
+        559
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-visual-lint",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        527,
+        545,
+        551,
+        874
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--browser-webkit",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        470,
+        545,
+        551,
+        620,
+        901,
+        931,
+        932
+      ],
+      "runtime": "NOT_RUN"
+    },
+    {
+      "mode": "--stripe-browser",
+      "default_root": "<worktree>/output/playwright/run.XXXXXXXX",
+      "caller_root": "LC_BROWSER_EVIDENCE_ROOT (preserved, made absolute)",
+      "dispatch_lines": [
+        21,
+        22,
+        29,
+        172,
+        545,
+        620,
+        728,
+        774,
+        932
+      ],
+      "runtime": "NOT_RUN"
+    }
+  ]
+}

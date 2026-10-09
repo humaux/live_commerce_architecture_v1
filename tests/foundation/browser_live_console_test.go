@@ -551,14 +551,7 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	evidenceRoot := os.Getenv("LC_BROWSER_EVIDENCE_ROOT")
-	if evidenceRoot == "" {
-		evidenceRoot = filepath.Join(root, "output", "playwright")
-		if os.Getenv("CI") == "true" {
-			// gates.yml uploads output/ci-gates; preserve screenshots/receipts on the ephemeral runner.
-			evidenceRoot = filepath.Join(root, "output", "ci-gates")
-		}
-	}
+	evidenceRoot := browserEvidenceRoot(root)
 	if err = os.MkdirAll(evidenceRoot, 0700); err != nil {
 		t.Fatal(err)
 	}

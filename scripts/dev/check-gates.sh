@@ -29,6 +29,8 @@ else
   # 1 means no match; any other status (bad pathspec, unreadable repo) must fail closed.
   [[ "$grep_exit" == 1 ]] || exit "$grep_exit"
 fi
+# Browser artifact writes must stay in ignored run roots; history is input, never a mutable output.
+node scripts/dev/check-browser-evidence.mjs
 # UI W0 G-UI1 registry/parity and G-UI3/G-UI5 architecture ratchet.
 node --test --experimental-strip-types tests/admin/shell-registry.test.ts tests/admin/shell-architecture.test.mjs
 node scripts/dev/ui-architecture-gate.mjs
