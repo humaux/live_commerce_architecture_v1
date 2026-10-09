@@ -1,0 +1,20 @@
+{
+  "name": "node-webkit",
+  "command": [
+    "bash",
+    "scripts/dev/test-node.sh"
+  ],
+  "timeout": 300,
+  "head": "22e7eb3597822be3e6cd8518da731b8f611a34be",
+  "exit_code": 0,
+  "source_sha256": "b7c2511000dc43b2b248de2f3528597da97e71bb1930cefd118273c19f6e9d6e",
+  "source_after": "b7c2511000dc43b2b248de2f3528597da97e71bb1930cefd118273c19f6e9d6e",
+  "source_unchanged": true,
+  "historical_output_sha256": "ad49966b857ddd22e602fbf28d2d0b2d948c83b0a6757a5c1d0e8d4eb6fe7ffe",
+  "historical_output_after": "ad49966b857ddd22e602fbf28d2d0b2d948c83b0a6757a5c1d0e8d4eb6fe7ffe",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 43.56
+}
