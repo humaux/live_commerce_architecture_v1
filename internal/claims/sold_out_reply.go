@@ -1,7 +1,7 @@
 // Purpose: the merchant settings of the sold-out automatic private reply (W3-04B): whether a sold-out claim gets the "sold out" text and which
 // template renders it. The reply itself is planned in SQL (integration.plan_claim_reply) and sent by internal/integrations/metareply.
 // Depends on: SQL claims.get_sold_out_reply / claims.set_sold_out_reply (migration 0151; live:read / live:manage re-checked by the definers).
-// Used by: the W3-U2 settings route (not wired here: no HTTP surface in this unit) and tests/foundation/sold_out_reply_test.go.
+// Used by: internal/httpapi/sold_out_settings.go (W3-U2 settings route) and tests/foundation/sold_out_reply_test.go.
 // Invariants: the reply consumes the comment's single private reply (mpr: key); compare-and-swap on Version (0 = never saved).
 
 package claims
