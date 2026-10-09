@@ -116,6 +116,15 @@ test("PR31 selected first-page scene disables the empty no-op option",async t=>{
  assert.equal(node(h,n=>n.type==="option"&&n.props.value==="").props.disabled,true);
 });
 
+test("PR31 scene selector has an explicit accessible label outside its option ancestry",async t=>{
+ const env=environment(t);globalThis.fetch=async input=>reads(input);
+ const h=env.mount(()=>LiveSettings({store:allStore,locale:"en",scene:sid,initialError:null}));await h.waitFor(()=>!node(h,n=>n.props["data-testid"]==="scene-select").props.disabled,"selector ready");
+ const select=node(h,n=>n.props["data-testid"]==="scene-select");
+ assert.equal(typeof select.props.id,"string","explicit label association requires an id");assert.ok(select.props.id);
+ const label=node(h,n=>n.type==="label"&&n.props.htmlFor===select.props.id);assert.equal(label.props.children,"Choose a session");
+ assert.equal((label.props.children as unknown)===select,false,"label must not enclose the select/options");
+});
+
 test("W3-U2 UNKNOWN rejects a stale fresh command and admits only exact receipt retry",async t=>{
  const env=environment(t), writes:{key:string|null;body:unknown}[]=[];
  globalThis.fetch=async (_input,init)=>{

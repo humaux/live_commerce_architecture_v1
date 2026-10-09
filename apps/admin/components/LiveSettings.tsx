@@ -1,7 +1,8 @@
 // Purpose: W3-U2 manual reminders, sold-out settings and restricted buyers within the existing W0 ledger layout.
-// Depends on: live-settings controller/client -> scoped Go routes, shared privacy fences and W0 presentation tokens.
+// Depends on: React useId, live-settings controller/client -> scoped Go routes, shared privacy fences and W0 presentation tokens.
 // Used by: /[locale]/studio/settings and BuyerPanel; private fields remain in visible component memory only.
 "use client";
+import { useId } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { displayTime } from "@live-commerce/format";
 import type { Store } from "@/lib/model";
@@ -28,6 +29,7 @@ export function LiveSettings({
   scene: string;
   initialError: StudioErrorCode | null;
 }) {
+  const sceneSelectID = useId();
   const {
     c,
     router,
@@ -99,9 +101,11 @@ export function LiveSettings({
         ) : (
           <>
             <div className="live-workspace-toolbar">
-              <label>
-                {c.choose}
+              {/* Keep the label explicit: option state checks must inspect the option itself, not its enclosing label's select. */}
+              <div style={{ display: "grid", gap: 6, minWidth: 0, maxWidth: 460, flex: "1 1 260px" }}>
+                <label htmlFor={sceneSelectID}>{c.choose}</label>
                 <select
+                  id={sceneSelectID}
                   data-testid="scene-select"
                   value={scene}
                   disabled={locked || !sessions}
@@ -126,7 +130,7 @@ export function LiveSettings({
                     </option>
                   ))}
                 </select>
-              </label>
+              </div>
               {sessions?.next_cursor && <button type="button" data-testid="scene-more" disabled={locked || sessionsLoading} onClick={() => loadMoreSessions()}>{sessionsLoading ? c.loading : c.next}</button>}
               <button
                 type="button"
