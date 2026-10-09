@@ -15,7 +15,7 @@ const required = (name: string): string => {
 };
 const origin = required("LC_BROWSER_PUBLIC_ORIGIN"), api = required("LC_BROWSER_API_ORIGIN");
 const evidence = required("LC_BROWSER_EVIDENCE"), control = required("LC_BROWSER_SETTINGS_CONTROL");
-const f: {store:string;other_store:string;scene:string;other_scene:string;bundle:string;restricted_bundle:string;entry:string;next_entry:string;comment:string} = JSON.parse(required("LC_BROWSER_SETTINGS_FIXTURE"));
+const f: {store:string;other_store:string;scene:string;other_scene:string;bundle:string;restricted_bundle:string;entry:string;next_entry:string;comment:string;later_scene:string;later_entry:string;reply_refs:string[]} = JSON.parse(required("LC_BROWSER_SETTINGS_FIXTURE"));
 const locales = ["zh-TW", "zh-CN", "en"] as const;
 const viewports = [{ width:1440,height:992 },{ width:390,height:844 }];
 const reminderRule = "只有在 24 小時內傳過訊息給粉專的買家會收到提醒；其他買家會列在待跟進清單";
@@ -25,12 +25,12 @@ type Receipt = {action:string;key_hash:string;body_hash:string;status:number;eff
 type Facts = {class:"MOCK";receipts:Receipt[];enabled:boolean;version:number;template_id:string;template_version:number;blocked:boolean;removed:boolean;bad_authority:number;reads:number;held:boolean};
 type Ledger = {control:string;operation:string;expected:string;actual:string;result:"PASS"|"FAIL"}[];
 const ledgers = new WeakMap<Page,Ledger>();
-const responseFacts = new WeakMap<Page, {resource:string;status:number}[]>();
+const responseFacts = new WeakMap<Page, {resource:string;status:number;method:string}[]>();
 const leakFlags = new WeakMap<Page,{console:boolean;url:boolean}>();
 function privateMonitors(page:Page) {
   const flags={console:false,url:false};leakFlags.set(page,flags);
-  const responses:{resource:string;status:number}[]=[];responseFacts.set(page,responses);
-  page.on("response",response=>{const path=new URL(response.url()).pathname;const resource=["sold-out-reply","reminders","blocklist","live-sessions","session"].find(x=>path.endsWith(`/${x}`));if(resource)responses.push({resource,status:response.status()});});
+  const responses:{resource:string;status:number;method:string}[]=[];responseFacts.set(page,responses);
+  page.on("response",response=>{const path=new URL(response.url()).pathname;const resource=["sold-out-reply","reminders","blocklist","live-sessions","session"].find(x=>path.endsWith(`/${x}`));if(resource)responses.push({resource,status:response.status(),method:response.request().method()});});
   page.on("console",message=>{if(privateText.test(message.text()))flags.console=true;});
   page.on("request",request=>{if(privateText.test(request.url()))flags.url=true;});
 }
@@ -186,10 +186,28 @@ for (const locale of locales) for (const viewport of viewports) {
 
 test("scene selector real click when scene absent",async({page})=>{
   await login(page);await page.goto(settings("zh-TW",f.store,""));
-  await step(page,"scene-select","selectOption","chosen session mounts reminder and list controls",async()=>{
-    await page.getByTestId("scene-select").selectOption(f.scene);await expect(page.getByTestId("reminder-trigger")).toBeVisible();await expect(blockRow(page,f.entry)).toBeVisible();
+  await expect(page.getByTestId("scene-select")).toBeEnabled();
+  await step(page,"nav-live-settings","click","same explicit-store settings navigation remains selectable",async()=>{
+    await page.getByTestId("nav-live-settings").click();await expect(page.getByTestId("scene-select")).toBeEnabled();
   });
+  await step(page,"scene-select","selectOption","chosen session mounts reminder and list controls; placeholder disabled",async()=>{
+    await page.getByTestId("scene-select").selectOption(f.scene);await expect(page.getByTestId("reminder-trigger")).toBeVisible();await expect(blockRow(page,f.entry)).toBeVisible();
+    await expect(page.getByTestId("scene-select").locator('option[value=""]')).toBeDisabled();
+  });
+  // FIXTURE/AUTH ONLY: real signed PG principal has exactly one store, making the no-store default deterministic.
+  await signedStaff(page,"LC_BROWSER_SETTINGS_READ_TOKEN");
+  await page.goto(`${origin}/en/studio/settings`);
+  await expect(page.getByTestId("shell-store-selector")).toHaveValue(f.store);
+  await expect(page.getByTestId("scene-select")).toBeEnabled();
+  await step(page,"nav-live-settings","click","same default-store URL navigation preserves selectable page",async()=>{
+    await page.getByTestId("nav-live-settings").click();await expect(page.getByTestId("scene-select")).toBeEnabled();
+  });
+  await step(page,"scene-select","selectOption","default-store page can choose a session after same-address navigation",async()=>{
+    await page.getByTestId("scene-select").selectOption(f.scene);await expect(blockRow(page,f.entry)).toBeVisible();
+    await expect(page.getByTestId("scene-select").locator('option[value=""]')).toBeDisabled();
+  });await privacyCheck(page);
 });
+
 test("409 is visible and never auto overwrites newer settings",async({page,request})=>{
   await login(page);await page.goto(settings("zh-TW"));await expect(page.getByTestId("sold-out-enabled")).toBeChecked();
   await fixture(request,"fault",{mode:"conflict"});await page.getByTestId("sold-out-enabled").click();
@@ -277,3 +295,134 @@ test("read-only signed merchant cannot write; CSRF denies owner command",async({
     });expect(response.status()).toBe(403);expect((await facts(request)).receipts).toHaveLength(0);
   } finally {await context.close();}
 });
+
+// FIXTURE/AUTH ONLY: inject a server-issued signed session, as in the existing read-only staff case.
+// No product request or BFF response is seeded/replaced; browser UI executes every business command.
+async function signedStaff(page:Page, tokenName:string) {
+  await page.context().clearCookies();
+  const csrf=randomBytes(32).toString("base64url");
+  await page.context().addCookies([
+    {name:"__Host-commerce_session",value:required(tokenName),url:origin.replace(/^http:/,"https:"),secure:true,httpOnly:true,sameSite:"Lax"},
+    {name:"__Host-commerce_csrf",value:csrf,url:origin.replace(/^http:/,"https:"),secure:true,httpOnly:false,sameSite:"Lax"},
+  ]);
+}
+
+test("split signed staff sees reminder result without report read and local send404",async({page,request})=>{
+  await signedStaff(page,"LC_BROWSER_SETTINGS_SPLIT_TOKEN");await page.goto(settings("en"));
+  await expect(page.getByTestId("reminder-trigger")).toBeEnabled();
+  await expect(blockRow(page,f.entry)).toBeVisible();
+  const reminders:{method:string;status:number}[]=[];
+  page.on("response",response=>{if(new URL(response.url()).pathname.endsWith("/reminders"))reminders.push({method:response.request().method(),status:response.status()});});
+  await step(page,"reminder-trigger","click","single successful POST; aggregate receipt visible without inbox:read GET",async()=>{
+    const response=await waitWrite(page,"/reminders","POST",()=>page.getByTestId("reminder-trigger").click());
+    expect(response.status()).toBe(200);
+    await expect(page.getByTestId("reminder-result")).toContainText("Queued 2");
+    await expect(page.getByTestId("reminder-report")).toHaveCount(0);
+    await expect(page.getByTestId("sold-out-enabled")).toBeVisible();await expect(blockRow(page,f.entry)).toBeVisible();
+    expect((await facts(request)).receipts.filter(r=>r.action==="remind")).toHaveLength(1);
+    expect(responseFacts.get(page)?.filter(r=>r.resource==="reminders"&&r.method==="GET")).toHaveLength(0);
+    expect(reminders).toEqual([{method:"POST",status:200}]);
+  });
+  await fixture(request,"fault",{mode:"missing-reminders"});
+  await step(page,"reminder-trigger","click","unmounted send route produces local unavailable panel and preserves healthy sections",async()=>{
+    const response=await waitWrite(page,"/reminders","POST",()=>page.getByTestId("reminder-trigger").click());expect(response.status()).toBe(404);
+    await expect(page.getByTestId("reminders-unavailable")).toBeVisible();await expect(page.getByTestId("reminder-trigger")).toBeDisabled();
+    await expect(page.getByTestId("sold-out-enabled")).toBeVisible();await expect(blockRow(page,f.entry)).toBeVisible();
+    expect((await facts(request)).receipts.filter(r=>r.action==="remind")).toHaveLength(1);
+    expect(reminders).toEqual([{method:"POST",status:200},{method:"POST",status:404}]);
+    expect(responseFacts.get(page)?.filter(r=>r.resource==="reminders"&&r.method==="GET")).toHaveLength(0);
+  });await privacyCheck(page);
+});
+
+test("scene picker loads page21 and targets reminders and blocklist",async({page,request})=>{
+  await fixture(request,"fault",{mode:"many-scenes"});await login(page);await page.goto(settings("en",f.store,""));
+  await expect(page.getByTestId("scene-select").locator('option:not([value=""])')).toHaveCount(20);
+  await expect(page.getByTestId("scene-select").locator(`option[value="${f.later_scene}"]`)).toHaveCount(0);
+  await step(page,"scene-more","click","actual next cursor read appends the 21st scene",async()=>{
+    const response=await waitWrite(page,"/live-sessions","GET",()=>page.getByTestId("scene-more").click());
+    expect(response.status()).toBe(200);expect(new URL(response.url()).searchParams.get("cursor")).toBe("mock-scenes-page-two");
+    await expect(page.getByTestId("scene-select").locator('option:not([value=""])')).toHaveCount(21);
+    await expect(page.getByTestId("scene-select").locator(`option[value="${f.later_scene}"]`)).toHaveText("MOCK settings scene 21");
+    await expect(page.getByTestId("scene-more")).toHaveCount(0);
+  });
+  await step(page,"scene-select","selectOption","scene21 requests its own reminder report and blocklist",async()=>{
+    const report=page.waitForResponse(r=>new URL(r.url()).pathname.endsWith(`/live-sessions/${f.later_scene}/reminders`)&&r.request().method()==="GET");
+    const list=page.waitForResponse(r=>new URL(r.url()).pathname.endsWith(`/live-sessions/${f.later_scene}/claims/blocklist`)&&r.request().method()==="GET");
+    await page.getByTestId("scene-select").selectOption(f.later_scene);
+    expect((await report).status()).toBe(200);expect((await list).status()).toBe(200);
+    await expect(page.getByTestId("scene-select")).toHaveValue(f.later_scene);await expect(blockRow(page,f.later_entry)).toBeVisible();await expect(blockRow(page,f.entry)).toHaveCount(0);
+  });
+  await step(page,"reminder-trigger","click","scene21 business command targets selected scene exactly once",async()=>{
+    const response=await waitWrite(page,`/live-sessions/${f.later_scene}/reminders`,"POST",()=>page.getByTestId("reminder-trigger").click());expect(response.status()).toBe(200);
+    await expect(page.getByTestId("reminder-result")).toContainText("Queued 2");expect((await facts(request)).receipts.filter(r=>r.action==="remind"&&r.effect)).toHaveLength(1);
+  });
+  await page.reload();await expect(page.getByTestId("scene-select")).toHaveValue(f.later_scene);await expect(blockRow(page,f.later_entry)).toBeVisible();await privacyCheck(page);
+});
+
+test("scene21 direct link shows authoritative title and selectable option",async({page,request})=>{
+  await fixture(request,"fault",{mode:"many-scenes"});await login(page);
+  const detail=page.waitForResponse(r=>new URL(r.url()).pathname.endsWith(`/live-sessions/${f.later_scene}`)&&r.request().method()==="GET");
+  await page.goto(settings("en",f.store,f.later_scene));expect((await detail).status()).toBe(200);
+  await expect(page.getByTestId("scene-select")).toHaveValue(f.later_scene);
+  await expect(page.getByTestId("scene-select").locator(`option[value="${f.later_scene}"]`)).toHaveText("MOCK settings scene 21");
+  await expect(page.getByTestId("scene-select").locator('option[value=""]')).toBeDisabled();await expect(blockRow(page,f.later_entry)).toBeVisible();
+  await step(page,"live-settings-refresh","click","refresh retains scene21 title from actual scoped detail",async()=>{
+    await page.getByTestId("live-settings-refresh").click();await expect(page.getByTestId("scene-select")).toBeEnabled();
+    await expect(page.getByTestId("scene-select").locator(`option[value="${f.later_scene}"]`)).toHaveText("MOCK settings scene 21");await expect(blockRow(page,f.later_entry)).toBeVisible();
+  });await privacyCheck(page);
+});
+
+test("unmounted reminder report stays local while settings and blocklist work",async({page,request})=>{
+  await fixture(request,"fault",{mode:"missing-reminders"});await login(page);
+  const missing=page.waitForResponse(r=>new URL(r.url()).pathname.endsWith("/reminders")&&r.request().method()==="GET");
+  await page.goto(settings("en"));expect((await missing).status()).toBe(404);
+  await expect(page.getByTestId("reminders-unavailable")).toBeVisible();await expect(page.getByTestId("reminder-trigger")).toBeDisabled();
+  await expect(page.getByTestId("sold-out-enabled")).toBeChecked();await expect(blockRow(page,f.entry)).toBeVisible();
+  await step(page,"sold-out-enabled","click","sold-out draft remains operable after independent report404",async()=>{
+    await page.getByTestId("sold-out-enabled").click();await expect(page.getByTestId("sold-out-enabled")).not.toBeChecked();
+  });
+  await step(page,"sold-out-template","fill","merchant template editor remains operable",async()=>{
+    await page.getByTestId("sold-out-template").fill("MOCK unavailable {{product.name}} sold out");await expect(page.getByTestId("sold-out-preview")).toContainText("MOCK unavailable");
+  });
+  await step(page,"sold-out-save","click","actual publish/save persists despite optional reminder service404",async()=>{
+    const response=await waitWrite(page,"/live-settings/sold-out-reply","PUT",()=>page.getByTestId("sold-out-save").click());expect(response.status()).toBe(200);
+    await expect(page.getByTestId("sold-out-enabled")).not.toBeChecked();expect((await facts(request)).enabled).toBe(false);
+  });
+  await step(page,"blocklist-next","click","restriction list remains independently pageable",async()=>{
+    await page.getByTestId("blocklist-next").click();await expect(blockRow(page,f.next_entry)).toBeVisible();
+  });
+  await page.reload();await expect(page.getByTestId("reminders-unavailable")).toBeVisible();await expect(page.getByTestId("sold-out-enabled")).not.toBeChecked();await expect(blockRow(page,f.entry)).toBeVisible();await privacyCheck(page);
+});
+
+const stateCopy = {
+  "en": ["Sent","Queued","Failed","Blocked","Delivery uncertain"],
+  "zh-TW": ["已傳送","排隊中","傳送失敗","已阻擋","結果未確認"],
+  "zh-CN": ["已发送","排队中","发送失败","已阻止","结果未确认"],
+} as const;
+const sentCopy = {"en":"Sold-out reply sent","zh-TW":"沒貨已回覆","zh-CN":"没货已回复"} as const;
+for(const locale of locales)for(const viewport of viewports) {
+  test(`five sold-out delivery states real clicks and masked badges ${locale}-${viewport.width}`,async({page,request})=>{
+    await fixture(request,"fault",{mode:"reply-states"});await page.setViewportSize(viewport);await login(page);
+    await page.goto(`${origin}/${locale}/studio/console?store=${f.store}&scene=${f.scene}`);
+    const assertStates=async()=>{
+      await expect(page.getByTestId("comment-rows").locator('[data-testid^="comment-row-"]')).toHaveCount(5);
+      await expect(page.locator('[data-testid^="comment-soldout-sent-"]')).toHaveCount(1);
+      for(let i=0;i<f.reply_refs.length;i++) {
+        const ref=f.reply_refs[i]!;
+        await expect(page.getByTestId(`comment-send-state-${ref}`)).toHaveText(stateCopy[locale][i]!);
+        if(i===0)await expect(page.getByTestId(`comment-soldout-sent-${ref}`)).toHaveText(sentCopy[locale]);
+        else await expect(page.getByTestId(`comment-soldout-sent-${ref}`)).toHaveCount(0);
+      }
+    };
+    await assertStates();
+    for(const ref of f.reply_refs)await step(page,`comment-select-${ref}`,"click","selected row shows buyer panel without claiming unsent reply delivered",async()=>{
+      await page.getByTestId(`comment-select-${ref}`).click();await expect(page.getByTestId(`comment-row-${ref}`)).toHaveAttribute("data-selected","true");await expect(page.getByTestId("buyer-panel")).toBeVisible();await assertStates();
+    });
+    await page.reload();await assertStates();
+    // READ/MEASURE: custom screenshot keeps five public status/badge rows visible.
+    // Only author/body fields and unrelated private panels are masked; the whole comment list is NOT masked.
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+    await page.screenshot({path:`${evidence}/soldout-states-${locale}-${viewport.width}.png`,fullPage:true,animations:"disabled",mask:[page.locator('[data-private="comment-author"], [data-private="comment-text"]'),page.getByTestId("buyer-panel"),page.getByTestId("buyer-block-note")]});
+    await privacyCheck(page);
+  });
+}

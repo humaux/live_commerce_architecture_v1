@@ -8,6 +8,7 @@ package foundation_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -52,6 +53,94 @@ func TestBrowserLiveSettingsMockCommentsContract(t *testing.T) {
 	}
 }
 
+// PR31 regression sources are exercised through the actual MOCK handler, not browser response replacement.
+func TestBrowserLiveSettingsMockPR31Sources(t *testing.T) {
+	for _, scenario := range []string{"many-scenes", "reply-states", "missing-reminders"} {
+		t.Run(scenario, func(t *testing.T) {
+			m := &blsMock{store: randomUUID(), scene: randomUUID(), bundle: randomUUID(), entry: randomUUID(), comment: "700_800"}
+			m.reset()
+			m.fault = scenario
+			get := func(resource string) (int, map[string]any) {
+				t.Helper()
+				response := httptest.NewRecorder()
+				request := httptest.NewRequest(http.MethodGet, "/v1/admin/stores/"+m.store+"/"+resource, nil)
+				if !m.serve(response, request, m.store) {
+					t.Fatal("regression source route unavailable")
+				}
+				var body map[string]any
+				if json.Unmarshal(response.Body.Bytes(), &body) != nil {
+					t.Fatal("regression source invalid JSON")
+				}
+				return response.Code, body
+			}
+			switch scenario {
+			case "many-scenes":
+				_, first := get("live-sessions?limit=20")
+				rows, ok := first["items"].([]any)
+				if !ok || len(rows) != 20 || first["next_cursor"] == "" {
+					t.Fatal("21-scene source must expose a bounded first page and next cursor")
+				}
+				_, second := get("live-sessions?limit=20&cursor=" + first["next_cursor"].(string))
+				rows, ok = second["items"].([]any)
+				if !ok || len(rows) != 1 || second["next_cursor"] != "" {
+					t.Fatal("21-scene source must expose one final scene")
+				}
+				last := rows[0].(map[string]any)
+				id := last["session_id"].(string)
+				status, detail := get("live-sessions/" + id)
+				if status != 200 || detail["draft"].(map[string]any)["title"] != last["title"] {
+					t.Fatal("later-scene detail disagrees with picker")
+				}
+				status, _ = get("live-sessions/" + id + "/reminders")
+				if status != 200 {
+					t.Fatal("later scene report not addressable")
+				}
+				status, block := get("live-sessions/" + id + "/claims/blocklist")
+				if status != 200 || len(block["items"].([]any)) != 1 {
+					t.Fatal("later scene blocklist not addressable")
+				}
+			case "reply-states":
+				_, body := get("live-sessions/" + m.scene + "/comments")
+				rows, ok := body["items"].([]any)
+				if !ok || len(rows) != 5 {
+					t.Fatal("five reply states absent")
+				}
+				states := []string{"SUCCEEDED", "READY", "FAILED_FINAL", "BLOCKED_POLICY", "UNKNOWN"}
+				for i, value := range rows {
+					row := value.(map[string]any)
+					reply := row["marks"].(map[string]any)["private_reply"].(map[string]any)
+					if row["seq"] != float64(i+1) || reply["state"] != states[i] || reply["kind"] != "out_of_stock" {
+						t.Fatal("state or A2 sequence incorrect")
+					}
+				}
+				if body["scan_exhausted"] != true || body["next"].(map[string]any)["seq"] != float64(5) {
+					t.Fatal("five-row A2 coverage incomplete")
+				}
+			case "missing-reminders":
+				status, _ := get("live-sessions/" + m.scene + "/reminders")
+				if status != 404 {
+					t.Fatal("unmounted reminder route must return404")
+				}
+				response := httptest.NewRecorder()
+				request := httptest.NewRequest(http.MethodPost, "/v1/admin/stores/"+m.store+"/live-sessions/"+m.scene+"/reminders", nil)
+				request.Header.Set("Idempotency-Key", "fixture-unmounted-route")
+				m.serve(response, request, m.store)
+				if response.Code != 404 || m.triggered || len(m.receipts) != 0 {
+					t.Fatal("unmounted send route recorded an effect")
+				}
+				status, _ = get("live-settings/sold-out-reply")
+				if status != 200 {
+					t.Fatal("missing reminders broke settings")
+				}
+				status, _ = get("live-sessions/" + m.scene + "/claims/blocklist")
+				if status != 200 {
+					t.Fatal("missing reminders broke blocklist")
+				}
+			}
+		})
+	}
+}
+
 // TestBrowserLiveSettingsMockRequiresMerchantTemplate guards the test backend against accepting a fixed template PUT.
 func TestBrowserLiveSettingsMockRequiresMerchantTemplate(t *testing.T) {
 	m := &blsMock{store: randomUUID(), scene: randomUUID()}
@@ -72,6 +161,12 @@ func TestBrowserLiveSettingsMockRequiresMerchantTemplate(t *testing.T) {
 		t.Fatal("fixed-template refusal recorded an effect")
 	}
 }
+
+// Synthetic handles are stable fixture authority only, never real buyer identifiers.
+func blsSceneID(index int) string { return fmt.Sprintf("81000000-0000-4000-8000-%012d", index) }
+
+var blsReplyStates = []string{"SUCCEEDED", "READY", "FAILED_FINAL", "BLOCKED_POLICY", "UNKNOWN"}
+var blsReplyRefs = []string{"700_801", "700_802", "700_803", "700_804", "700_805"}
 
 type blsMock struct {
 	mu                                                                                        sync.Mutex
@@ -148,13 +243,51 @@ func (m *blsMock) serve(w http.ResponseWriter, r *http.Request, store string) bo
 	if store == m.otherStore {
 		session = m.otherScene
 	}
+	title := "MOCK settings scene"
+	if m.fault == "many-scenes" && store == m.store {
+		title = "MOCK settings scene 01"
+		for i := 2; i <= 21; i++ {
+			candidate := blsSceneID(i)
+			if path == "live-sessions/"+candidate || strings.HasPrefix(path, "live-sessions/"+candidate+"/") {
+				session = candidate
+				title = fmt.Sprintf("MOCK settings scene %02d", i)
+				break
+			}
+		}
+	}
 	base := "live-sessions/" + session
 	if path == "live-sessions" && r.Method == "GET" {
-		s := consoleMockScene{ID: session, SKU: randomUUID(), Title: "MOCK settings scene"}
-		consoleJSON(w, 200, map[string]any{"items": []any{s.draft()}, "next_cursor": ""})
+		rows := []any{(&consoleMockScene{ID: session, SKU: m.bundle, Title: title}).draft()}
+		cursor := ""
+		if m.fault == "many-scenes" && store == m.store {
+			rows = []any{}
+			if r.URL.Query().Get("cursor") == "mock-scenes-page-two" {
+				rows = append(rows, (&consoleMockScene{ID: blsSceneID(21), SKU: m.bundle, Title: "MOCK settings scene 21"}).draft())
+			} else {
+				for i := 1; i <= 20; i++ {
+					id := blsSceneID(i)
+					if i == 1 {
+						id = m.scene
+					}
+					rows = append(rows, (&consoleMockScene{ID: id, SKU: m.bundle, Title: fmt.Sprintf("MOCK settings scene %02d", i)}).draft())
+				}
+				cursor = "mock-scenes-page-two"
+			}
+		}
+		consoleJSON(w, 200, map[string]any{"items": rows, "next_cursor": cursor})
+		return true
+	}
+	if path == base && r.Method == "GET" {
+		draft := (&consoleMockScene{ID: session, SKU: m.bundle, Title: title}).draft()
+		consoleJSON(w, 200, map[string]any{"draft": draft, "prepared": nil, "attempt": nil, "can_manage": true, "media_enabled": false})
 		return true
 	}
 	if strings.HasPrefix(path, "live-sessions/") && !strings.HasPrefix(path, base+"/") {
+		consoleJSON(w, 404, map[string]any{"code": "not_found"})
+		return true
+	}
+	// Fault represents an unmounted optional read/send service, before receipt/effect handling.
+	if path == base+"/reminders" && m.fault == "missing-reminders" {
 		consoleJSON(w, 404, map[string]any{"code": "not_found"})
 		return true
 	}
@@ -194,6 +327,9 @@ func (m *blsMock) serve(w http.ResponseWriter, r *http.Request, store string) bo
 			cursor := ""
 			if store == m.store {
 				id := m.entry
+				if session == blsSceneID(21) {
+					id = blsSceneID(22)
+				}
 				note := "PRIVATE_NOTE_SENTINEL"
 				if r.URL.Query().Get("cursor") != "" {
 					id = m.nextEntry
@@ -223,7 +359,28 @@ func (m *blsMock) serve(w http.ResponseWriter, r *http.Request, store string) bo
 		case base + "/comments":
 			row := map[string]any{"ref": m.comment, "seq": 1, "parent_ref": nil, "created_at": "2030-01-01T00:00:00Z", "author_name": "PRIVATE_BUYER_SENTINEL", "text": "PRIVATE_COMMENT_SENTINEL", "is_page": false, "has_attachment": false,
 				"marks": map[string]any{"intake": nil, "claim": map[string]any{"status": "ACCEPTED", "reason": nil, "offer_id": m.entry, "keyword": "A1", "quantity": 1, "bundle_id": m.bundle}, "private_reply": nil, "printed": nil, "public_replies": 0, "private_reply_available": false, "private_reply_unavailable_reason": "no_source"}}
-			consoleJSON(w, 200, map[string]any{"epoch": 1, "reset": false, "scan_exhausted": true, "items": []any{row}, "next": map[string]any{"epoch": 1, "seq": 1}, "older_cursor": nil, "stream": map[string]any{"state": "live", "source_platform": "facebook", "video_embeddable": false}})
+			rows := []any{row}
+			seq := 1
+			if m.fault == "reply-states" {
+				rows = []any{}
+				for i, state := range blsReplyStates {
+					copyRow := map[string]any{}
+					for key, value := range row {
+						copyRow[key] = value
+					}
+					copyMarks := map[string]any{}
+					for key, value := range row["marks"].(map[string]any) {
+						copyMarks[key] = value
+					}
+					copyMarks["private_reply"] = map[string]any{"kind": "out_of_stock", "state": state, "blocked_reason": nil}
+					copyRow["marks"] = copyMarks
+					copyRow["ref"] = blsReplyRefs[i]
+					copyRow["seq"] = i + 1
+					rows = append(rows, copyRow)
+				}
+				seq = len(rows)
+			}
+			consoleJSON(w, 200, map[string]any{"epoch": 1, "reset": false, "scan_exhausted": true, "items": rows, "next": map[string]any{"epoch": 1, "seq": seq}, "older_cursor": nil, "stream": map[string]any{"state": "live", "source_platform": "facebook", "video_embeddable": false}})
 			return true
 		}
 		return false

@@ -38,6 +38,7 @@ func TestBrowserLiveSettingsUIRealChain(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 700*time.Second)
 	defer cancel()
 	h := lcSetup(t)
+	_, splitToken := lcPrincipal(t, h.f, h.f.tenantA, []string{h.f.storeA1}, "store:read", "live:read", "live:manage", "inbox:reply")
 	_, readToken := lcPrincipal(t, h.f, h.f.tenantA, []string{h.f.storeA1}, "store:read", "live:read", "inbox:read")
 	for _, permission := range []string{"inbox:read", "inbox:reply"} {
 		mustExec(t, h.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,$4)`, h.f.tenantA, h.f.storeA1, h.actor, permission)
@@ -104,7 +105,7 @@ func TestBrowserLiveSettingsUIRealChain(t *testing.T) {
 					return
 				}
 				switch b.Mode {
-				case "conflict", "unknown":
+				case "conflict", "unknown", "many-scenes", "reply-states", "missing-reminders":
 					m.fault = b.Mode
 				case "hold-report":
 					m.hold = make(chan struct{})
@@ -131,14 +132,29 @@ func TestBrowserLiveSettingsUIRealChain(t *testing.T) {
 				m.badAuthority++
 				m.mu.Unlock()
 			}
-			permission := "live:read"
+			permissions := []string{"live:read"}
 			if parts[4] == "inbox" {
-				permission = "inbox:read"
+				permissions = []string{"inbox:read"}
 			}
 			if r.Method != "GET" {
-				permission = "live:manage"
+				permissions = []string{"live:manage"}
 			}
-			err := platform.WithScope(r.Context(), h.f.runtime, strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "), parts[3], permission, func(pgx.Tx, platform.Scope) error { return nil })
+			if len(parts) == 7 && parts[4] == "live-sessions" && parts[6] == "reminders" {
+				permissions = []string{"inbox:read"}
+				if r.Method == "POST" {
+					permissions = []string{"live:manage", "inbox:reply"}
+				}
+			}
+			if parts[4] == "message-templates" && r.Method == "GET" {
+				permissions = []string{"inbox:reply"}
+			}
+			var err error
+			for _, permission := range permissions {
+				err = platform.WithScope(r.Context(), h.f.runtime, strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "), parts[3], permission, func(pgx.Tx, platform.Scope) error { return nil })
+				if err != nil {
+					break
+				}
+			}
 			if err != nil {
 				status, code := 503, "unavailable"
 				switch {
@@ -215,8 +231,8 @@ func TestBrowserLiveSettingsUIRealChain(t *testing.T) {
 		cmd.Args = append(cmd.Args, "--grep", filter)
 		t.Log("FOCUSED_SPEC_ONLY; full-mode acceptance NOT_RUN")
 	}
-	fixture := map[string]any{"store": m.store, "other_store": m.otherStore, "scene": m.scene, "other_scene": m.otherScene, "bundle": m.bundle, "restricted_bundle": m.restrictedBundle, "entry": m.entry, "next_entry": m.nextEntry, "comment": m.comment}
-	cmd.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "live-settings", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_EVIDENCE": evidence, "LC_BROWSER_SETTINGS_CONTROL": control, "LC_BROWSER_SETTINGS_READ_TOKEN": readToken, "LC_BROWSER_SETTINGS_FIXTURE": mustJSON(t, fixture), "FORCE_COLOR": "0", "NO_COLOR": "1"})
+	fixture := map[string]any{"store": m.store, "other_store": m.otherStore, "scene": m.scene, "other_scene": m.otherScene, "bundle": m.bundle, "restricted_bundle": m.restrictedBundle, "entry": m.entry, "next_entry": m.nextEntry, "comment": m.comment, "later_scene": blsSceneID(21), "later_entry": blsSceneID(22), "reply_refs": blsReplyRefs}
+	cmd.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "live-settings", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_EVIDENCE": evidence, "LC_BROWSER_SETTINGS_CONTROL": control, "LC_BROWSER_SETTINGS_READ_TOKEN": readToken, "LC_BROWSER_SETTINGS_SPLIT_TOKEN": splitToken, "LC_BROWSER_SETTINGS_FIXTURE": mustJSON(t, fixture), "FORCE_COLOR": "0", "NO_COLOR": "1"})
 	var diagnostics consoleDiagnosticBuffer
 	cmd.Stdout, cmd.Stderr = &diagnostics, &diagnostics
 	runErr := cmd.Run()
@@ -260,8 +276,8 @@ func TestBrowserLiveSettingsUIRealChain(t *testing.T) {
 	if !regexp.MustCompile(`\b[1-9][0-9]* passed\b`).MatchString(summary) {
 		t.Fatal("zero matched browser tests is not acceptance")
 	}
-	if os.Getenv("LC_BROWSER_SETTINGS_GREP") == "" && !regexp.MustCompile(`(?m)^12 passed$`).MatchString(summary) {
-		t.Fatal("full browser mode requires exactly 12 passed cases")
+	if os.Getenv("LC_BROWSER_SETTINGS_GREP") == "" && !regexp.MustCompile(`(?m)^22 passed$`).MatchString(summary) {
+		t.Fatal("full browser mode requires exactly 22 passed cases (12 existing plus 10 PR31 regressions)")
 	}
 	t.Logf("BROWSER MOCK business + REAL_PG signed authorization; evidence=%s", evidence)
 }
