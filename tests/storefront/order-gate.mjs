@@ -190,8 +190,14 @@ async function stableLocaleTarget(p,mobile=false) {
   // Match the real new document and observed owner cookie, not whichever GET arrives first.
   const headLoading=arm("destination",{method:"GET",after:true,sourcePath:"/zh-TW/checkout",cookie:`${cookie.name}=${cookie.value}`});
   const warmup=bo01Warmups.get(p);
-  if(warmup){warmup.release.resolve();await warmup.served.promise;bo01Warmups.delete(p);}
-  await switchLocale(p,"zh-TW");
+  if(warmup){warmup.cookie=headLoading.cookie;warmup.release.resolve();await warmup.served.promise;bo01Warmups.delete(p);}
+  // Enter the probed document from a settled old form; its loading is measured below.
+  await expect(p.locator('input[name="recipient_name"]')).toBeEnabled();
+  if(mobile&&process.env.LC_BROWSER_ENGINE==="webkit") {
+    await p.locator('footer nav a[hreflang="zh-TW"]').tap();
+    await expect(p).toHaveURL(`${origin}/zh-TW/checkout`);
+    await expect(p.locator('html[lang="zh-TW"]')).toBeVisible();
+  } else await switchLocale(p,"zh-TW");
   let headDeadline;
   try {
     const status=await Promise.race([headLoading.result.promise, new Promise((_, reject) => {
@@ -237,7 +243,7 @@ try {
       if(req.url==="/api/buyer/destination"&&req.method==="GET") {
         bo01Reads.push({sourcePath:call.sourcePath,status:out.status,held:!!active?.after});
         await writeFile(path.join(evidence,"bo01-head-reads.json"),JSON.stringify(bo01Reads,null,2));
-        for(const [page,warmup] of bo01Warmups)if(call.sourcePath==="/en/checkout"&&page.url()===origin+"/en/checkout")warmup.served.resolve();
+        for(const [page,warmup] of bo01Warmups)if(call.sourcePath==="/en/checkout"&&page.url()===origin+"/en/checkout"&&cookiePairs.includes(warmup.cookie))warmup.served.resolve();
       }
       if(active){active.out=out;active.result.resolve(out.status);}
       if(active?.drop){res.destroy();return;}

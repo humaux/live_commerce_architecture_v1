@@ -17,11 +17,11 @@ function probe(promise) {
     assert, origin: "https://buyer.example", process: {env:{}}, bo01Warmups: new Map(),
     setTimeout: (callback, delay) => { const timer = { callback, delay }; timers.push(timer); return timer; },
     clearTimeout: timer => cleared.push(timer),
-    expect: () => { throw new Error("HEAD arrived: continue real UI assertions"); },
+    expect: value => { if (value?.setupReady) return {toBeEnabled: async () => {}}; throw new Error("HEAD arrived: continue real UI assertions"); },
   });
   return { run, timers, cleared };
 }
-const page = { context: () => ({cookies: async () => [{name:"synthetic",value:"canary",httpOnly:true,secure:true}]}), url: () => "https://buyer.example/zh-TW/checkout", getByTestId: () => ({}) };
+const page = { locator: () => ({setupReady:true}), context: () => ({cookies: async () => [{name:"synthetic",value:"canary",httpOnly:true,secure:true}]}), url: () => "https://buyer.example/zh-TW/checkout", getByTestId: () => ({}) };
 
 test("locale probe bounds a missing destination head with a route/device diagnostic", async () => {
   const p = probe(new Promise(() => {}));
