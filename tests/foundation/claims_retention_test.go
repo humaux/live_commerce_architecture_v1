@@ -2931,7 +2931,19 @@ func crWantMatrix() map[string]bool {
 	// 0154 (W3-05B): apply_actor_erasure deletes the erased actor's restricted-buyer entry (WHERE actor_key = ...): the key column and DELETE, nothing else.
 	cols("claims.blocked_actors", "SELECT", "actor_key")
 	add(W, "table", "claims.blocked_actors", "DELETE")
-	for _, s := range []string{"claims", "live", "integration", "social", "meta_inbox"} {
+	// 0169 (LC-R2) C3x: the purge scope columns + DELETE, and the lock-only UPDATE column of each FOR UPDATE SKIP LOCKED batch:
+	// live.comment_prints (aged by first_printed_at), ops.command_results (operation = live.comment.print only) and inbox.bundle_peers.
+	cols("live.comment_prints", "SELECT", "tenant_id", "store_id", "session_id", "comment_ref", "first_printed_at")
+	add(W, "table", "live.comment_prints", "DELETE")
+	cols("live.comment_prints", "UPDATE", "first_printed_at")
+	cols("ops.command_results", "SELECT", "tenant_id", "store_id", "operation", "idempotency_key", "created_at")
+	add(W, "table", "ops.command_results", "DELETE")
+	cols("ops.command_results", "UPDATE", "created_at")
+	cols("inbox.bundle_peers", "SELECT", "tenant_id", "store_id", "bundle_id", "peer_key", "created_at")
+	add(W, "table", "inbox.bundle_peers", "DELETE")
+	cols("inbox.bundle_peers", "UPDATE", "created_at")
+	// 0169 (LC-R2): the C3x tables live in the inbox and ops schemas.
+	for _, s := range []string{"claims", "live", "integration", "social", "meta_inbox", "inbox", "ops"} {
 		add(W, "schema", s, "USAGE")
 	}
 	add(W, "func", "meta_inbox.lock_purgeable", "EXECUTE")
@@ -3098,7 +3110,8 @@ func crAssertDefiners(t *testing.T, pool *pgxpool.Pool, label string) {
 func crAssertRLS(t *testing.T, pool *pgxpool.Pool, label string) {
 	t.Helper()
 	for _, table := range []string{"claims.retention_policy", "claims.retention_log", "claims.bundles", "claims.lines", "claims.links", "claims.meta_intake",
-		"live.claim_windows", "integration.operations", "social.conversations", "social.messages", "social.comment_events"} {
+		"live.claim_windows", "integration.operations", "social.conversations", "social.messages", "social.comment_events",
+		"live.comment_prints", "ops.command_results", "inbox.bundle_peers"} { // 0169 (LC-R2) C3x
 		var enabled, force bool
 		if err := pool.QueryRow(context.Background(), `SELECT relrowsecurity,relforcerowsecurity FROM pg_class WHERE oid=$1::regclass`, table).Scan(&enabled, &force); err != nil || !enabled || !force {
 			t.Errorf("%s: %s row security enabled=%t forced=%t (%v), want both", label, table, enabled, force, err)
@@ -3117,6 +3130,10 @@ func crAssertRLS(t *testing.T, pool *pgxpool.Pool, label string) {
 		"claims.retention_policy|SELECT": 1, "claims.retention_policy|UPDATE": 1,
 		"claims.retention_log|SELECT": 1, "claims.retention_log|INSERT": 1, "claims.retention_log|DELETE": 1,
 		"claims.blocked_actors|SELECT": 1, "claims.blocked_actors|DELETE": 1, // 0154 (W3-05B)
+		// 0169 (LC-R2) C3x: read, delete and lock-only policies on the three purge tables.
+		"live.comment_prints|SELECT": 1, "live.comment_prints|DELETE": 1, "live.comment_prints|UPDATE": 1,
+		"ops.command_results|SELECT": 1, "ops.command_results|DELETE": 1, "ops.command_results|UPDATE": 1,
+		"inbox.bundle_peers|SELECT": 1, "inbox.bundle_peers|DELETE": 1, "inbox.bundle_peers|UPDATE": 1,
 	}
 	rows, err := pool.Query(context.Background(), `SELECT schemaname||'.'||tablename||'|'||cmd,roles::text,permissive FROM pg_policies WHERE roles::text LIKE '%retention%'`)
 	if err != nil {
@@ -3905,6 +3922,11 @@ func crUpgradeAndPreconditions(t *testing.T) {
 		t.Fatal(err)
 	}
 	stripeSum := fmt.Sprintf("%x", sha256.Sum256(stripeBody))
+	lcR2Body, err := os.ReadFile("../../migrations/0169_lc_r2_c3x_purge.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	lcR2Sum := fmt.Sprintf("%x", sha256.Sum256(lcR2Body))
 	mustExec(t, owner, `CREATE TABLE public.lc_schema_migrations (version text PRIMARY KEY, checksum text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now())`)
 	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0071_claims_retention.sql',$1)`, sum)        // hold 0071 back
 	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0127_lc_r1_retention.sql',$1)`, r1Sum)       // hold 0127 back (its 55000 precondition needs 0071)
@@ -3923,8 +3945,10 @@ func crUpgradeAndPreconditions(t *testing.T) {
 	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0166_open_parcel_groups.sql',$1)`, pgSum)
 	// Exercise the new Stripe definer in the populated second-stage upgrade too.
 	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0167_stripe_untracked_reservation.sql',$1)`, stripeSum)
+	// hold 0169 back: its 55000 precondition demands the 0127 definers it recreates (held back above), so it must run after 0127
+	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0169_lc_r2_c3x_purge.sql',$1)`, lcR2Sum)
 	if err := migrations.Apply(ctx, owner); err != nil {
-		t.Fatalf("apply every migration but 0071, 0127, 0129, 0144, 0151, 0154, 0158, 0165, 0166 and 0167: %v", err)
+		t.Fatalf("apply every migration but 0071, 0127, 0129, 0144, 0151, 0154, 0158, 0165, 0166, 0167 and 0169: %v", err)
 	}
 	for _, q := range []string{`SELECT to_regclass('claims.retention_policy')::text`, `SELECT to_regclass('claims.retention_log')::text`} {
 		var got *string
@@ -4001,10 +4025,10 @@ func crUpgradeAndPreconditions(t *testing.T) {
 	// the operator renames the row (no auto-relabel of merchant data), the migration then applies (0071, then the
 	// 0127 A1.4 amendment that depends on it)
 	mustExec(t, owner, `UPDATE claims.bundles SET label='renamed-by-operator' WHERE id=$1`, reserved.id)
-	mustExec(t, owner, `DELETE FROM public.lc_schema_migrations WHERE version IN ('0127_lc_r1_retention.sql','0129_lc_b6_order_for_buyer.sql','0144_checkout_reminders.sql','0151_sold_out_reply.sql','0154_buyer_blocklist.sql','0158_live_price_keep_on_pause.sql','0165_lc_b3b_buyer_panel.sql','0166_open_parcel_groups.sql','0167_stripe_untracked_reservation.sql')`)
+	mustExec(t, owner, `DELETE FROM public.lc_schema_migrations WHERE version IN ('0127_lc_r1_retention.sql','0129_lc_b6_order_for_buyer.sql','0144_checkout_reminders.sql','0151_sold_out_reply.sql','0154_buyer_blocklist.sql','0158_live_price_keep_on_pause.sql','0165_lc_b3b_buyer_panel.sql','0166_open_parcel_groups.sql','0167_stripe_untracked_reservation.sql','0169_lc_r2_c3x_purge.sql')`)
 	before = snap()
 	if err := migrations.Apply(ctx, owner); err != nil {
-		t.Fatalf("0071 + 0127 + 0129 + 0144 + 0151 + 0154 + 0158 + 0165 + 0166 + 0167 on the populated database: %v", err)
+		t.Fatalf("0071 + 0127 + 0129 + 0144 + 0151 + 0154 + 0158 + 0165 + 0166 + 0167 + 0169 on the populated database: %v", err)
 	}
 	afterFirst := crExplicitDigest(t, owner, "public.lc_schema_migrations", "applied_at")
 	if err := migrations.Apply(ctx, owner); err != nil {
@@ -4015,6 +4039,9 @@ func crUpgradeAndPreconditions(t *testing.T) {
 	}
 	if n := crCount(t, owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version='0167_stripe_untracked_reservation.sql' AND checksum=$1`, stripeSum); n != 1 {
 		t.Errorf("0167 migration checksum rows after populated upgrade: %d", n)
+	}
+	if n := crCount(t, owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version='0169_lc_r2_c3x_purge.sql' AND checksum=$1`, lcR2Sum); n != 1 {
+		t.Errorf("0169 ledger rows with the file checksum after populated upgrade: %d", n)
 	}
 	if n := crCount(t, owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version='0166_open_parcel_groups.sql' AND checksum=$1`, pgSum); n != 1 {
 		t.Errorf("0166 ledger rows with the file checksum after the populated upgrade: %d", n)

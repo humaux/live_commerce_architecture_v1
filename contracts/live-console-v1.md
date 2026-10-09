@@ -607,7 +607,8 @@ v1 (claims never touch stock, arch §11.2; the buyer sees sold-out at checkout, 
 (tenant_id, store_id, session_id, comment_ref, print_count, first_printed_at, last_printed_at, last_principal_id)`
 (0123, FORCE RLS, upsert by definer). The label content (display name, keyword, quantity, time) is rendered by the
 browser from the in-memory comment it already holds (W3-U3); the server stores only the fact of printing. Retention
-class C3 (`intake_days`).
+class C3 (`intake_days`); the A3 state receipt (`ops.command_results`, operation `live.comment.print`) is purged with
+the fact (0169, §10 "C3 (extended)").
 
 ## 8. Several OPEN windows per store
 
@@ -648,7 +649,7 @@ Reopening an ended session = `start` again (new window generation), not allowed 
 | C5 (extended) | `inbox.outbound_messages` | `created_at < now() − social_days` **regardless of operation state** (an UNKNOWN operation never becomes terminal); the frozen request is redacted by C4 | DELETE |
 | C5c | `inbox.conversation_state`, plus the `inbox.outbound_messages` of the conversation | the conversation is selected by C5b | DELETE in the same batch **before** the conversation delete (order C5 → C5c → C5b); `conversation_state` has no FK to `social.conversations` (§3.6) |
 | C7 | `inbox.send_secrets` | operation terminal (wiped at completion) or `created_at < now() − 8 d` | DELETE |
-| C3 (extended) | `live.comment_prints`, `inbox.bundle_peers` | `created_at < now() − intake_days`; bundle_peers also on bundle de-identify (C2) and actor erasure (RD4) | DELETE |
+| C3 (extended) | `live.comment_prints`, `inbox.bundle_peers`, and the `ops.command_results` receipts of operation `live.comment.print` | `created_at < now() − intake_days` (`comment_prints` ages by `first_printed_at`, its creation stamp — the row has no `created_at`; receipts of every other operation are never touched); bundle_peers also on bundle de-identify (C2, uncounted) and actor erasure (RD4, counted). Implemented by 0169 (`claims.run_retention` C3x step + `apply_actor_erasure` peer-link hook); receipts of other operations stay governed by claims-retention-purge-v1 §1 | DELETE |
 | C4 (extended) | `integration.operations` actions `meta.dm_send/public_reply/offer_recommend` and manual `meta.private_reply` | terminal and `created_at < now() − intake_days` | redact `comment_ref`, `peer_key`, `conversation_id` as RD-C4 |
 
 Actor erasure (RD4 / `apply_actor_erasure`): for every `peer_key` it resolves, it also deletes that peer's
@@ -1141,3 +1142,30 @@ All changes are additive response fields or filters; no permission, route or err
   `filter=live_comment` returns the bundle-only rows (`bundle_id`, `session_id`, `conversation_id: null`, platform facebook rendered as `messenger`, real `link_pending_manual`) of
   the store's non-purged facebook/instagram bundles, at most `limit`, ordered by `(created_at DESC, bundle_id DESC)`. The LC-B3b review amendment (2026-10-08) adds keyset pagination: `next_cursor` encodes the last returned bundle's stored timestamp and ID using the existing opaque A8 cursor format. Follow it with the same filter and session; a full final page may lead to an empty terminal page. Tenant/store/session and keyset predicates apply before LIMIT. Other filters retain their conversation cursor and first-page pending-link append. Every item gains `link_version` (`inbox.conversation_state.version`; explicit `null` on bundle-only rows).
 - **A9.** The header gains `link_version` (the value A14 takes as `expected_version`) and `binding_id` (the enabled binding of the conversation's provider and asset, same rule as `plan_dm`; `null` when none).
+
+## Amendment "LC-R2" C3x print purge (2026-10-09; migration 0169)
+
+§10 promised a "C3 (extended)" class for `live.comment_prints` and `inbox.bundle_peers`, but no code deleted either
+table: print facts (and the A3 `live.comment.print` receipts beside them) outlived `intake_days` forever. 0169 adds the
+missing step to `claims.run_retention` (same definer, owner, SECURITY-DEFINER `search_path`, advisory lock, batching and
+run-log shape as C1–C6) and the missing RD4 hook to `claims.apply_actor_erasure`:
+
+- **C3x (age).** Per policy row, oldest first, `p_limit`-batched `FOR UPDATE SKIP LOCKED`: DELETE `live.comment_prints`
+  with `first_printed_at < now() − intake_days` (the table has no `created_at`; `first_printed_at` is the creation stamp
+  the upsert never changes, so reprints do not extend the fact's life); DELETE `ops.command_results` with
+  `operation = 'live.comment.print'` AND `created_at < now() − intake_days` (every other operation's receipts are out of
+  scope — the ledger stays the idempotency source for A1/A2/CRM commands); DELETE `inbox.bundle_peers` with
+  `created_at < now() − intake_days`. Report-only (`enforced = false`) counts the eligible rows and deletes nothing, as
+  in C1–C6. New run-row count keys: `prints`, `print_receipts`, `bundle_peers` (numbers only, RD6); `more = 1` covers
+  them. The RLS policies are read/delete plus a lock-only UPDATE (`USING (true) WITH CHECK (false)`; on
+  `ops.command_results` all three are `USING (operation = 'live.comment.print')`), and grants follow the §4 column-level
+  pattern of 0071.
+- **C2 hook.** De-identifying a bundle (§10 C2) also deletes its `inbox.bundle_peers` rows — uncounted: C2 is a
+  de-identify, not a purge class; the age rule above counts peer-link purges separately.
+- **RD4 hook.** `apply_actor_erasure` deletes `inbox.bundle_peers WHERE peer_key = ANY(p_peer_keys)` after the
+  `social.conversations` delete and COUNTS the rows (`bundle_peers` in the returned/logged counts; `internal/retention`'s
+  closed count set gains the key, so replays of a stored erasure round-trip). A counted peer-link delete keeps a
+  peer-link-only erasure away from PT404, the 0154 `blocked_actors` rationale.
+- **Gate.** `tests/foundation/claims_retention_lc_r2_test.go` (REAL_PG): aged vs young rows in two stores and two
+  tenants, other-operation receipts untouched, the batch cap and `more`, report-only counting, the C2 hook, the RD4 hook
+  with its replay, and the peer-link-only PT404 case. CRP02's privilege/RLS matrix declares the new grants and policies.
