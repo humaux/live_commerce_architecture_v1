@@ -90,17 +90,23 @@ bash scripts/dev/check-headers.sh
 # A submodule may share its parent's row when the row names it, e.g. river (+ `riverdriver/riverpgxv5`, `rivertype`).
 python3 - <<'PY'
 import re, sys
-mods = [l.split()[:2] for l in re.findall(r"^require \(\n(.*?)^\)", open("go.mod").read(), re.S | re.M)[0].splitlines()
-        if l.strip() and "// indirect" not in l]
-rows = [l for l in open("docs/engineering/dependencies.md") if l.startswith("| `")]
+gomod = open("go.mod").read()
+lines = [l for blk in re.findall(r"^require \(\n(.*?)^\)", gomod, re.S | re.M) for l in blk.splitlines()]
+lines += re.findall(r"^require (\S+ \S+.*)$", gomod, re.M)   # single-line form
+mods = [l.split()[:2] for l in lines if l.strip() and "// indirect" not in l]
+if not mods:
+    sys.exit("check-gates: parsed no direct requires from go.mod (fail closed)")
+rows = [(m.group(1), l) for l in open("docs/engineering/dependencies.md") if (m := re.match(r"\| `([^`]+)`", l))]
 bad = []
 for mod, ver in mods:
-    row = next((r for r in rows if f"`{mod}`" in r), None) or next(
-        (r for r in rows for p in re.findall(r"^\| `([^`]+)`", r) if mod.startswith(p + "/") and f"`{mod[len(p)+1:]}`" in r), None)
+    # Match on the row's first cell only; prose elsewhere in a row may name other modules.
+    row = next((r for name, r in rows if name == mod), None) or next(
+        (r for name, r in rows if mod.startswith(name + "/") and f"`{mod[len(name)+1:]}`" in r), None)
+    cell = row.split("|")[2] if row else ""
     if row is None:
         bad.append(f"{mod} has no row in docs/engineering/dependencies.md")
-    elif ver not in row.split("|")[2]:
-        bad.append(f"{mod} is {ver} in go.mod but the register row says{row.split('|')[2].rstrip()}")
+    elif cell.split()[:1] != [ver]:   # leading version token only: "v0.42.0 (raised from v0.39.0 ...)" must not satisfy v0.39.0
+        bad.append(f"{mod} is {ver} in go.mod but the register row says {cell.strip()}")
 if bad:
     print("\n".join("check-gates: " + b for b in bad), file=sys.stderr)
     sys.exit(1)
