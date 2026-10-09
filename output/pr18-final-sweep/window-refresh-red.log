@@ -1,0 +1,76 @@
+✖ PR18 bounded window refresh removes FB deletion behind60 arrivals (19.264792ms)
+✖ PR18 bounded window refresh preserves explicit history until manual refresh (2.569625ms)
+✖ PR18 bounded window refresh atomically rebuilds IG100 deleted75=false (11.448458ms)
+✖ PR18 bounded window refresh atomically rebuilds IG100 deleted75=true (7.530667ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 0
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 372.761208
+
+✖ failing tests:
+
+test at tests/admin/comment-stream-hooks.test.ts:456:1
+✖ PR18 bounded window refresh removes FB deletion behind60 arrivals (19.264792ms)
+  AssertionError [ERR_ASSERTION]: successful full refresh removes stale live rows within5min
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/comment-stream-hooks.test.ts:472:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:475:1
+✖ PR18 bounded window refresh preserves explicit history until manual refresh (2.569625ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/comment-stream-hooks.test.ts:486:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:488:35
+✖ PR18 bounded window refresh atomically rebuilds IG100 deleted75=false (11.448458ms)
+  AssertionError [ERR_ASSERTION]: full rebuild must follow the fresh continuation, not keep old100 against earliest50
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/comment-stream-hooks.test.ts:504:52)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:488:35
+✖ PR18 bounded window refresh atomically rebuilds IG100 deleted75=true (7.530667ms)
+  AssertionError [ERR_ASSERTION]: full rebuild must follow the fresh continuation, not keep old100 against earliest50
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/comment-stream-hooks.test.ts:504:52)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

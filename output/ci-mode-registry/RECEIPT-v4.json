@@ -1,0 +1,136 @@
+{
+  "NOT_RUN": [
+    "real Docker",
+    "real Go",
+    "pnpm build",
+    "JS payloads",
+    "real PG",
+    "browser",
+    "network",
+    "provider",
+    "production",
+    "Linux runtime"
+  ],
+  "base_commit": "88d3ba1369de0b13c4a9d4ba8051c1540ca9cfd6",
+  "candidate_command": [
+    "python3",
+    "output/ci-mode-registry/oracle/oracle.py",
+    "--candidate",
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-pr-modes-coverage",
+    "--label",
+    "candidate-v4",
+    "--compare"
+  ],
+  "candidate_exit": 0,
+  "cases": 120,
+  "change_reviewed": "V4 fail-closed scanner for all non-function registry declarations; runtime/source equivalence replay only, scanner negatives independently owned by root/reviewer.",
+  "coverage_detail": "COVERAGE-v4.json",
+  "differences": 0,
+  "expected_exits": 120,
+  "identity_cases": 120,
+  "identity_differences": 0,
+  "identity_exit": 0,
+  "metadata_cases": 85,
+  "metadata_command": [
+    "python3",
+    "output/ci-mode-registry/oracle/metadata.py",
+    "--candidate",
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-pr-modes-coverage",
+    "--label",
+    "candidate-listings-v4"
+  ],
+  "metadata_effect_commands": 0,
+  "metadata_exit": 0,
+  "mutations": [
+    {
+      "cases": 1,
+      "command": [
+        "python3",
+        "output/ci-mode-registry/oracle/oracle.py",
+        "--candidate",
+        "output/ci-mode-registry/oracle/mutations/timeout",
+        "--label",
+        "red-timeout",
+        "--compare",
+        "--only",
+        "^browser-inbox$"
+      ],
+      "exit": 1,
+      "fields": [
+        "commands"
+      ],
+      "mutation": "timeout",
+      "supported": 1
+    },
+    {
+      "cases": 1,
+      "command": [
+        "python3",
+        "output/ci-mode-registry/oracle/oracle.py",
+        "--candidate",
+        "output/ci-mode-registry/oracle/mutations/build-env",
+        "--label",
+        "red-build-env",
+        "--compare",
+        "--only",
+        "^browser-inbox$"
+      ],
+      "exit": 1,
+      "fields": [
+        "commands"
+      ],
+      "mutation": "build-env",
+      "supported": 1
+    },
+    {
+      "cases": 1,
+      "command": [
+        "python3",
+        "output/ci-mode-registry/oracle/oracle.py",
+        "--candidate",
+        "output/ci-mode-registry/oracle/mutations/early-return",
+        "--label",
+        "red-early-return",
+        "--compare",
+        "--only",
+        "^browser-admin-shell$"
+      ],
+      "exit": 1,
+      "fields": [
+        "commands"
+      ],
+      "mutation": "early-return",
+      "supported": 1
+    }
+  ],
+  "normal_cases": 83,
+  "normalization": "Only owned temporary root and generated lc-foundation-test PID; no command flags, semantic env values or outcomes normalized. Utility events compared as multiset; risky/filesystem event order exact.",
+  "prior_green_receipt": "RECEIPT-v3.json",
+  "prior_red_receipt": "RECEIPT-v1.json",
+  "raw_policy": "Raw exact comparison remains primary-only; use commit-evidence copies with SHA256 redaction manifests; do not stage inputs/versions/raw directories.",
+  "runtime": "macOS /bin/bash3.2.57; tracing stubs use local Python3; host interpreter paths require adaptation before portable promotion",
+  "source_manifest": {
+    "scripts/dev/admin-fixture.sh": "254dc31c16f2a9dbc40f9614f8763cd0a402a661efee0598dbea92e421b1199b",
+    "scripts/dev/check-gates.sh": "72c322a74f9df817649bf617428a98da9c86567f383cbb99d9855cd4e5c0c7b3",
+    "scripts/dev/check-headers.sh": "7f91ae296d501fd3cfc8bce516f698cb7a296a9867334727b036ddf017106179",
+    "scripts/dev/check-pkgdocs.sh": "371f188ed9fe7405cf6c1ecb8969336ef87bd3c9f3806ce25de84450c2b7e7c9",
+    "scripts/dev/depmap.sh": "d4fe3a88fb76894b7ae39507129aa1cb66e54b0dab9bfefdac8b61e4f5ec3d00",
+    "scripts/dev/gen-deps.sh": "f3a0b7eef20e9702ed35596c1646db04f436e7006334874a8dc42c4099885bf6",
+    "scripts/dev/release-gate.sh": "63c9908283d4741b5094082e11499903f7fa5aad3f4059ec1e6aa0c0ee9bfce0",
+    "scripts/dev/test-focused.sh": "7f28ef804e055cc928758116d2132390f7dbd57e2a217651614ae63e8cf22516",
+    "scripts/dev/test-local-runtime.sh": "95cdf57a14cae8a213b4224df9f456fe00fdd9dc59067494c4c7f731cb546687",
+    "scripts/dev/test-local.sh": "04d788579912289ddbd3be444a988448da8119ca2ac67c37be4428454a31eacf",
+    "scripts/dev/test-lock.sh": "1a7b80dea58c9c5df50872744eda2d4ac7573ca8aeccc429341209b19a191175",
+    "scripts/dev/test-node.sh": "9010560b85a2228d3451a8df71830f0a9d2d868ec805e861b72c9a359684aaae"
+  },
+  "status": "E3 MOCK actual Bash3.2 command/env equivalence; no product gate execution",
+  "supported": 120,
+  "task_id": "6c3b7b4a-sub-mode-oracle",
+  "tool_hashes": {
+    "metadata.py": "50842f6b0c3bf987b03426c4d4543f203265a4c31fe96674275919b69cbe2ccc",
+    "oracle.py": "a038d951ac6df252c391917cc296904bb52469568ef580aacc32b75f51332402",
+    "redact.py": "90a9b6cbb8e4aeca10a3b4a5f6a26e596fea32ab9e84c07ce437f8003d4b3626",
+    "stub.py": "3f9891d6e8ee5daddc13e7315c11d9baf2da401b6749f76ba7a141fcce5979a6"
+  },
+  "variant_cases": 37
+}

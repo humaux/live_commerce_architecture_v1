@@ -1,0 +1,27 @@
+✖ CLI reads the merge checkout's source when the base adds a browser tag after the fork (PR #22 review P1) (356.015208ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 424.167208
+
+✖ failing tests:
+
+test at tests/ci/pr-modes.test.mjs:160:1
+✖ CLI reads the merge checkout's source when the base adds a browser tag after the fork (PR #22 review P1) (356.015208ms)
+  AssertionError [ERR_ASSERTION]: the merged file is browser-tagged, so tagged runners must be selected
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-pr-modes-coverage/tests/ci/pr-modes.test.mjs:168:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

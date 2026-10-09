@@ -1,0 +1,63 @@
+
+Running 12 tests using 1 worker
+
+(node:69093) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"zh-TW","width":1366,"navLeft":244,"navRight":428,"navTargets":[{"label":"商品圖片","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"基本資訊","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"價格與庫存","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"規格","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"分類","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"物流","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"搜尋引擎最佳化","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"zh-TW","width":1586,"navLeft":244,"navRight":428,"navTargets":[{"label":"商品圖片","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"基本資訊","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"價格與庫存","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"規格","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"分類","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"物流","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"搜尋引擎最佳化","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415}],"rawTails":[]}
+  ✘   1 tests/admin/product-editor.acceptance.ts:16:3 › PE12-17 document workflow, matrix, list actions and click ledger (14.3s)
+  -   2 tests/admin/product-review.acceptance.ts:49:3 › review: bulk price 80 plus archive sends exclusive archive entry and persists
+  -   3 tests/admin/product-review.acceptance.ts:125:5 › review: create UNKNOWN then client preserves receipt fence after reload
+  -   4 tests/admin/product-review.acceptance.ts:125:5 › review: create UNKNOWN then 401 preserves receipt fence after reload
+  -   5 tests/admin/product-review.acceptance.ts:125:5 › review: create UNKNOWN then 403 preserves receipt fence after reload
+  -   6 tests/admin/product-review.acceptance.ts:125:5 › review: copy UNKNOWN then client preserves receipt fence after reload
+  -   7 tests/admin/product-review.acceptance.ts:125:5 › review: copy UNKNOWN then 401 preserves receipt fence after reload
+  -   8 tests/admin/product-review.acceptance.ts:125:5 › review: copy UNKNOWN then 403 preserves receipt fence after reload
+  -   9 tests/admin/product-review.acceptance.ts:125:5 › review: order UNKNOWN then 403 preserves receipt fence after reload
+  -  10 tests/admin/product-review.acceptance.ts:125:5 › review: publish UNKNOWN then 403 preserves receipt fence after reload
+  -  11 tests/admin/product-feedback.acceptance.ts:15:5 › feedback: identical image-required validation reveals again at 1586px
+  -  12 tests/admin/product-feedback.acceptance.ts:15:5 › feedback: identical image-required validation reveals again at 390px
+
+
+  1) tests/admin/product-editor.acceptance.ts:16:3 › PE12-17 document workflow, matrix, list actions and click ledger 
+
+    Error: expect(locator).toHaveAttribute(expected) failed
+
+    Locator:  locator('.pe-readiness-toggle')
+    Expected: "true"
+    Received: "false"
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveAttribute" locator('.pe-readiness-toggle') with timeout 10000ms
+      - waiting for locator('.pe-readiness-toggle')
+        24 × locator resolved to <button type="button" aria-expanded="false" class="pe-readiness-toggle" aria-controls="pe-readiness-section">完成度</button>
+           - unexpected value "false"
+
+
+      142 |             await expect(checklist).toBeHidden();
+      143 |             await toggle.click();
+    > 144 |             await expect(toggle).toHaveAttribute("aria-expanded", "true");
+          |                                  ^
+      145 |             await expect(checklist).toBeVisible();
+      146 |             const missing = checklist.locator(".pe-readiness:has([data-ready=false])");
+      147 |             const missingCount = await missing.count();
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups/tests/admin/product-editor.acceptance.ts:144:34
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/catalog-core/20261008T165037.118538000/results/catalog-core-PE12-17-docum-0e9d3-st-actions-and-click-ledger/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/catalog-core/20261008T165037.118538000/results/catalog-core-PE12-17-docum-0e9d3-st-actions-and-click-ledger/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/catalog-core/20261008T165037.118538000/results/catalog-core-PE12-17-docum-0e9d3-st-actions-and-click-ledger/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/catalog-core/20261008T165037.118538000/results/catalog-core-PE12-17-docum-0e9d3-st-actions-and-click-ledger/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/admin/product-editor.acceptance.ts:16:3 › PE12-17 document workflow, matrix, list actions and click ledger 
+  11 did not run

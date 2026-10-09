@@ -1,0 +1,8 @@
+=== RUN   TestCommentDeletionLateBatchReportsCustodyFence
+=== RUN   TestCommentDeletionLateBatchReportsCustodyFence/source_replaced
+=== RUN   TestCommentDeletionLateBatchReportsCustodyFence/lease_lost
+--- PASS: TestCommentDeletionLateBatchReportsCustodyFence (0.00s)
+    --- PASS: TestCommentDeletionLateBatchReportsCustodyFence/source_replaced (0.00s)
+    --- PASS: TestCommentDeletionLateBatchReportsCustodyFence/lease_lost (0.00s)
+PASS
+ok  	livecommerce/internal/integrations/metareply	1.729s

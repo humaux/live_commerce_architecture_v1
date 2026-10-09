@@ -142,14 +142,38 @@ test.describe("LC-U2a REAL_PG comment stream",()=>{
   test("native hidden tab stops A2 and clears private selections",async({request})=>{
     const {page,close}=await nativePage(evidence,"console-native-");
     try {
+    // READ/MEASURE only: preserve native fetch arguments/results and count starts synchronously
+    // inside the document, so an aborted pre-hide read cannot masquerade as a hidden poll.
+    await page.addInitScript(()=>{
+      const original=window.fetch.bind(window);
+      const counts={visible:0,hidden:0,visibility:[] as {state:string;trusted:boolean}[]};
+      (window as unknown as {a2Starts:typeof counts}).a2Starts=counts;
+      document.addEventListener("visibilitychange",event=>counts.visibility.push({state:document.visibilityState,trusted:event.isTrusted}));
+      window.fetch=(...args:Parameters<typeof fetch>)=>{
+        const input=args[0],url=new URL(input instanceof Request?input.url:String(input),location.href);
+        if(url.pathname.endsWith("/comments"))counts[document.visibilityState==="hidden"?"hidden":"visible"]++;
+        return original(...args);
+      };
+    });
     await login(page);await page.goto(route("en",comments.session));await expect(page.getByTestId(`comment-row-${comments.latest_ref}`)).toBeVisible();
     await page.getByTestId(`comment-select-${comments.claim_ref}`).click();await expect(page.getByTestId("buyer-panel")).toBeVisible();
-    const cover=await page.context().newPage();await cover.goto("about:blank");await cover.bringToFront();
+    // A visible DOM may retain the last result while a poll is in flight. Establish actual
+    // network readiness before hiding, rather than comparing a server-arrival counter mid-read.
+    await page.waitForLoadState("networkidle",{timeout:10000});
+    // Match the passing INU05 native fixture: a real app cover remains the active tab.
+    const cover=await page.context().newPage();await cover.goto(`${origin}/en/settings`);await cover.bringToFront();
     await expect.poll(()=>page.evaluate(()=>document.visibilityState)).toBe("hidden");
     await expect(page.getByTestId("comment-rows")).toHaveCount(0);await expect(page.getByTestId("buyer-panel")).toHaveCount(0);
+    const visibilityStart=await page.evaluate(()=>(window as unknown as {a2Starts:{visibility:unknown[]}}).a2Starts.visibility.length);
     const before=(await facts(request)).comments.requests;
     await cover.waitForTimeout(6500); // two real 3s intervals; absence of requests is the assertion.
-    expect((await facts(request)).comments.requests).toBe(before);
+    const after=(await facts(request)).comments.requests;
+    const starts=await page.evaluate(()=>(window as unknown as {a2Starts:{visible:number;hidden:number;visibility:{state:string;trusted:boolean}[]}}).a2Starts);
+    await writeFile(`${evidence}/native-hidden-read-counts.json`,JSON.stringify({class:"REAL_PG",...starts,serverReadsBefore:before,serverReadsAfter:after,documentVisibility:await page.evaluate(()=>document.visibilityState)}));
+    expect(await page.evaluate(()=>document.visibilityState)).toBe("hidden");
+    expect(starts.visibility.slice(visibilityStart).every(event=>event.state==="hidden"&&event.trusted)).toBe(true);
+    expect(after).toBe(before);
+    expect(starts.visible).toBeGreaterThan(0);expect(starts.hidden).toBe(0);
     await page.bringToFront();await expect(page.getByTestId(`comment-row-${comments.latest_ref}`)).toBeVisible();await cover.close();
     } finally { await close(); }
   });

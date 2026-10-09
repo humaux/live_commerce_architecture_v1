@@ -1,0 +1,28 @@
+✖ PR18 bounded window refresh removes deleted IG final sequence (20.165709ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 394.614083
+
+✖ failing tests:
+
+test at tests/admin/comment-stream-hooks.test.ts:545:1
+✖ PR18 bounded window refresh removes deleted IG final sequence (20.165709ms)
+  AssertionError [ERR_ASSERTION]: the deleted last seq must not remain indefinitely after an exhausted rebuild
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/comment-stream-hooks.test.ts:557:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

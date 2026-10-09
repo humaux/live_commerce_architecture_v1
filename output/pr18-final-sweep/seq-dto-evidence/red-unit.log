@@ -1,0 +1,8 @@
+=== RUN   TestConsoleCommentItemSeqWire
+    comment_poll_seq_test.go:39: item 0 seq="" want numeric 2 (page cursor=1)
+    comment_poll_seq_test.go:39: item 1 seq="" want numeric 1 (page cursor=1)
+--- FAIL: TestConsoleCommentItemSeqWire (0.00s)
+FAIL
+FAIL	livecommerce/internal/integrations/metareply	0.420s
+FAIL
+exit=1

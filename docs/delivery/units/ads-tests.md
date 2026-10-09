@@ -76,7 +76,7 @@ Per gate one targeted mutation of the merged candidate in a scratch copy (revert
 
 ## Verify
 ```sh
-GOTOOLCHAIN=go1.27.1 go vet ./tests/... && gofmt -l tests
+GOTOOLCHAIN=go1.27.2 go vet ./tests/... && gofmt -l tests
 LC_FOCUSED_TIMEOUT=2400s bash scripts/dev/test-focused.sh '^TestMetaAdsMA(01|02Schema|02Allowance|04|05|06|07|11)'
 bash scripts/dev/test-local.sh --browser-meta-ads                                         # MA09a
 LC_FOCUSED_TIMEOUT=2400s bash scripts/dev/test-focused.sh '^TestMetaAdsMA(02Billing|03|08)'   # phase B

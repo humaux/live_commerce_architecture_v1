@@ -14,7 +14,9 @@ export class CommentReceipt {
   ) {
     this.key = publicRef === undefined
       ? `live-comment-unresolved:${store}:${session}:${boundary}`
-      : `live-comment-public-pending:${store}:${session}:${boundary}:${encodeURIComponent(publicRef)}`;
+      // Public UNKNOWN/queued remains unresolved after re-login in this tab. Only
+      // the coarse session fence follows the CSRF boundary; this ref guard must not.
+      : `live-comment-public-pending:${store}:${session}:${encodeURIComponent(publicRef)}`;
   }
   /** Missing storage authority fails closed rather than losing an uncertain-send guard. */
   blocked(): boolean {

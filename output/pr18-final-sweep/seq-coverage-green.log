@@ -1,0 +1,19 @@
+✔ PR18 seq coverage keeps older arrival with newer time and out-of-range rows (1.036584ms)
+✔ PR18 seq coverage removes a missing numeric row despite its older created_at (0.119792ms)
+✔ PR18 seq coverage never absence-deletes null history (0.067458ms)
+✔ PR18 seq coverage treats epoch0 as an initialized cursor (0.07075ms)
+✔ PR18 short complete HEAD never expands numeric coverage to an absent oldest row (0.3735ms)
+✔ PR18 full or cursor-bearing HEAD uses the same numeric coverage (0.080917ms)
+✔ PR18 loaded history stays protected from short complete HEAD (0.065208ms)
+✔ PR18 deletion HEAD removes absent refs inside its window (0.04825ms)
+✔ PR18 deletion HEAD keeps paged history below its oldest tuple (0.062125ms)
+✔ PR18 deletion is never inferred from incremental or older pages (0.093042ms)
+✔ PR18 deletion coverage ignores equal timestamps and timezone spellings (0.062ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 129.441042

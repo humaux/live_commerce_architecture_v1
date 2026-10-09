@@ -1,0 +1,12 @@
+[
+  {
+    "sourcePath": "/en/checkout",
+    "status": 200,
+    "held": true
+  },
+  {
+    "sourcePath": "/zh-TW/checkout",
+    "status": 200,
+    "held": false
+  }
+]

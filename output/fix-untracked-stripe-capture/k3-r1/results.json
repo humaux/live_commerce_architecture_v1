@@ -1,0 +1,95 @@
+{
+  "source_commit": "fb238b1ed540ee2de38889c4bda0650a1ad90c5d",
+  "baseline_commit": "852b515f809dc13588e045b624648a2e09ea2dab",
+  "evidence": "REAL_PG + MOCK, macOS, Go race",
+  "commands": [
+    {
+      "command": "bash scripts/dev/test-focused.sh '^TestStripeUntrackedDriftReview$'",
+      "exit": 1,
+      "log": "red.log",
+      "sha256": "00de332e513a497922733493be253c05718e98bb583399a48a923afdd8cca626",
+      "top_pass": 0,
+      "top_fail": 1,
+      "top_skip": 0,
+      "not_run": [],
+      "zero_match_packages": []
+    },
+    {
+      "command": "bash scripts/dev/test-focused.sh '^TestStripeUntracked|^TestStripeRF12Guards$|^TestStripeSP06'",
+      "exit": 0,
+      "log": "green.log",
+      "sha256": "77df4cfa1a425c0d174f93d3d7d13626597a1ad5d63159e1f2c8ad1dc3086eb0",
+      "top_pass": 7,
+      "top_fail": 0,
+      "top_skip": 0,
+      "not_run": [],
+      "zero_match_packages": []
+    },
+    {
+      "command": "LC_FOCUSED_TIMEOUT=1800s bash scripts/dev/test-focused.sh '^TestStripe(SP|SL|RF|Untracked)'",
+      "exit": 0,
+      "log": "stripe-regression.log",
+      "sha256": "cd92c51bfb112daf1826a29eda16a093359c6a23ce29e0e22b871ddf5a43d92e",
+      "top_pass": 40,
+      "top_fail": 0,
+      "top_skip": 2,
+      "not_run": [
+        "stripe_live_rak_test.go:99: NOT_RUN: SL08 needs STRIPE_SANDBOX=1 and the owner's rk_test_ restricted test key (STRIPE_RESTRICTED_TEST_KEY); SANDBOX only, LIVE is refused",
+        "stripe_refund_sandbox_test.go:85: NOT_RUN: RF10 requires STRIPE_SANDBOX=1 with a Stripe test key (owner-provided; SANDBOX only, LIVE refused)",
+        "stripe_refund_schema_test.go:794: NOT_RUN: migrations.Apply has no partial-apply hook; a database frozen at 0061 with rows cannot be built without re-implementing the migrator",
+        "stripe_registrar_test.go:403: NOT_RUN: set STRIPE_SANDBOX=1 with a test STRIPE_SECRET_KEY and STRIPE_ACCOUNT_ID to probe the real sandbox (creates and expires one test session, no charge)"
+      ],
+      "zero_match_packages": []
+    },
+    {
+      "command": "GOTOOLCHAIN=go1.27.1 go test -race -p 1 -count=1 -timeout=600s -run '^TestStripe(SP|SL|RF)|Refund' -v ./internal/integrations/psp/stripe/... ./internal/payments/... ./internal/merchantorders",
+      "exit": 0,
+      "log": "stripe-package-gates.log",
+      "sha256": "4af77eeeb1a8b11f07c1f1f19995f4e7d92b467844ba207c5735642e6d743afa",
+      "top_pass": 37,
+      "top_fail": 0,
+      "top_skip": 1,
+      "not_run": [
+        "sandbox_test.go:62: NOT_RUN: SP16 requires STRIPE_SANDBOX=1 with a Stripe test key"
+      ],
+      "zero_match_packages": [
+        "ok  \tlivecommerce/internal/payments/settlement\t1.424s [no tests to run]",
+        "ok  \tlivecommerce/internal/payments/stripeadmin\t1.477s [no tests to run]",
+        "ok  \tlivecommerce/internal/payments/stripewebhook\t1.463s [no tests to run]"
+      ]
+    },
+    {
+      "command": "bash scripts/dev/test-focused.sh '^TestR2IntegrationUpgradeFromReleaseHead$|^TestLiveClaimsKC03|^TestClaimsRetentionCRP02'",
+      "exit": 0,
+      "log": "upgrade.log",
+      "sha256": "6f4bb2d19d30f1892298faf79964f9b06bd594e60889da732732e305f51d1ec9",
+      "top_pass": 3,
+      "top_fail": 0,
+      "top_skip": 0,
+      "not_run": [],
+      "zero_match_packages": []
+    },
+    {
+      "command": "bash scripts/dev/test-node.sh",
+      "exit": 0,
+      "log": "node.log",
+      "sha256": "55b8a5f42e0cac15a846c1e8085dba60f3b03a67ac0006c6f0c021a245258ecb",
+      "pass": 1137,
+      "fail": 0
+    },
+    {
+      "command": "pnpm --filter @live-commerce/admin typecheck",
+      "exit": 0,
+      "log": "typecheck.log",
+      "sha256": "18888e037704a2c0b8d6922a994f8d496bf85a37ae37595625c7da915bb0a0be",
+      "review_copy_sha256": "5160d2d0b6672ecb686948110025718973afa5c3ba34bd794394cc9d8a60f68f",
+      "review_copy_normalization": "Trailing blank EOF line removed for git whitespace gate; raw stdout remains unchanged at canonical evidence path."
+    },
+    {
+      "command": "bash scripts/dev/check-gates.sh",
+      "exit": 0,
+      "log": "check-gates.log",
+      "sha256": "dd63de6b1a5665df6bbf0a8d03468d91fb6da18e956a414e4cc2eaac6f9e3d8f"
+    }
+  ]
+}

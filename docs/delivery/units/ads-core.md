@@ -185,8 +185,8 @@ part), MA02, MA04–MA07, MA09 (admin part), MA11 (loader part) — red-then-gre
 
 ## Verify
 ```sh
-GOTOOLCHAIN=go1.27.1 go vet ./... && gofmt -l internal cmd
-GOTOOLCHAIN=go1.27.1 go test -race -count=1 ./internal/ads/... ./internal/httpapi ./cmd/meta-admin
+GOTOOLCHAIN=go1.27.2 go vet ./... && gofmt -l internal cmd
+GOTOOLCHAIN=go1.27.2 go test -race -count=1 ./internal/ads/... ./internal/httpapi ./cmd/meta-admin
 LC_FOCUSED_TIMEOUT=1800s bash scripts/dev/test-focused.sh '^Test(T06|MetaClaimsMCI0[1-4]|LiveClaims.*Schema|LocalRecovery|Pool)'
 bash scripts/dev/depmap.sh && python3 scripts/check_packet.py
 ```

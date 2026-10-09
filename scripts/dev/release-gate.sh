@@ -14,7 +14,7 @@
 #   G05 dependency map, G06 unit tests (all packages but tests/foundation), G06n Node unit suites
 #   (scripts/dev/test-node.sh, ruling F9), G07 the whole foundation
 #   package (real PG, race, vet: test-local.sh), then EVERY browser mode listed in test-local.sh's
-#   usage line (names containing "browser", plus --browser-e2e; --browser-webkit is its own B-browser-webkit row on Playwright
+#   registry (names containing "browser", plus --browser-e2e; --browser-webkit is its own B-browser-webkit row on Playwright
 #   WebKit, NOT_RUN when WebKit is not installed; --browser-admin-shell emits no go test events and is counted from the node --test
 #   summary plus the Playwright matrix-case line, zero of either is FAIL), SANDBOX modes only with the Stripe
 #   TEST key present, then G90 deploy smoke static, G91 deploy smoke full and G99 (no gate rewrote a
@@ -31,7 +31,7 @@
 # Reads env: STRIPE_BROWSER=1 and STRIPE_SANDBOX=1 (opt in to SANDBOX modes), LC_SECRETS_FILE
 #   (default ~/.config/livecommerce/secrets.env; only the presence and the sk_test_/rk_test_ prefix
 #   of STRIPE_SECRET_KEY are checked, in a subshell, never printed), LC_RELEASE_GATE_OUT (evidence
-#   dir), LC_RELEASE_GATE_SMOKE_FULL, GOTOOLCHAIN (default go1.27.1).
+#   dir), LC_RELEASE_GATE_SMOKE_FULL, GOTOOLCHAIN (default go1.27.2).
 # Reads secrets: none printed. Logs may hold what the tests print; the secret grep (G04) and the CI
 #   rule keep key-shaped literals out of the repo, and no command here echoes an environment.
 # Used by: the integrator before merging a release branch; docs/delivery/PROCESS.md §1 R1-8.
@@ -44,7 +44,7 @@
 #   results.tsv (id, tier, status, note, exit code, log), summary.txt (the table, commit, dirty flag),
 #   one <id>.log per step with the command and its exit code. Worktrees are deleted after merge, so the
 #   default is the MAIN checkout's output/ (PROCESS.md §4).
-# Change rules: a new gate mode in test-local.sh needs no change here (parsed from its usage line) but
+# Change rules: a new gate mode in test-local.sh needs no change here (read from its registry) but
 #   must be added to docs/delivery/GATES.md; never map a SKIP or an empty run to PASS; keep bash 3.2
 #   compatible (macOS): no associative arrays, no mapfile.
 set -uo pipefail
@@ -68,7 +68,7 @@ done
 
 cd "$(dirname "$0")/../.." || exit 2
 ROOT=$(pwd)
-export GOTOOLCHAIN="${GOTOOLCHAIN:-go1.27.1}"
+export GOTOOLCHAIN="${GOTOOLCHAIN:-go1.27.2}"
 sha=$(git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 dirty=$(git status --porcelain 2>/dev/null | grep -v '^?? output/' | wc -l | tr -d ' ')
 MAIN=$(cd "$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)/.." 2>/dev/null && pwd || echo "$ROOT")
@@ -82,8 +82,10 @@ stripe_opt_in=0
 unset STRIPE_BROWSER STRIPE_SANDBOX STRIPE_SECRET_KEY STRIPE_SECRET_KEY_ROTATED STRIPE_ACCOUNT_ID
 selected() { [[ -z "$only" || "$only" == *",$1,"* ]]; }
 
-# ---- mode discovery: the usage line of test-local.sh is the single list of modes ------------------
-modes=$(sed -n "s/.*Usage: bash scripts\/dev\/test-local.sh \[\(.*\)\]\\\\n'.*/\1/p" scripts/dev/test-local.sh | tr '|' '\n')
+# ---- mode discovery: test-local.sh --list reads the single case registry ------------------
+# No errexit in this script: a registry that --list rejects mid-way would otherwise yield a truncated inventory (PR #22 review).
+# Keep it one line starting with modes=$(: tests/ci/pr-modes.test.mjs evaluates this derivation line.
+modes=$(bash scripts/dev/test-local.sh --list) || { echo "release-gate: test-local.sh --list failed; refusing a partial gate inventory" >&2; exit 2; }
 browser_modes=$(printf '%s\n' "$modes" | grep -E -- '^--(.*browser.*|e2e)$' || true)
 all_modes=$(printf '%s\n' "$modes" | grep -c . | tr -d ' ')
 ids="G01 G02 G03 G04 G05 G06 G06n G07 G07z"
@@ -95,7 +97,7 @@ if ((list)); then
   exit 0
 fi
 if [[ -z "$browser_modes" ]]; then
-  echo "release-gate: cannot parse the usage line of scripts/dev/test-local.sh (no browser modes found)" >&2
+  echo "release-gate: cannot read the mode registry of scripts/dev/test-local.sh (no browser modes found)" >&2
   exit 2
 fi
 
