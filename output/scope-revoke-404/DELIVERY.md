@@ -155,3 +155,8 @@ differently-lagged opinion is consulted.
 - **Fail-closed tests.**
   - `internal/platform/scope_recheck_test.go` `TestScopeRecheckFailureKeepsDenial`: a re-check whose row scan fails never reports scope loss. Mutation red: `err != nil || …` fails the test; green after reverting.
   - `TestScopeSupportGrantRevokedMidTransactionBecomesScopeNotFound` (REAL_PG): a 0153 support grant revoked inside the scope, followed by a denial, gives `ErrScopeNotFound`, the same as the between-request answer. Red on trunk `platform.go` (`forbidden`, `r1-red-support-revoke.log`); green on the fix (`r1-green-support-revoke.log`).
+- **Round-1 logs, cited for Qwen r1 review P2s:**
+  - `r1-focused.log` — the full foundation run with the round-1 tests present: PASS=113 FAIL=0 exit 0. It covers the five race legs, including the new support-grant leg, the SG support suite and the platform-operator suites.
+  - `r1-red-support-revoke.log` / `r1-green-support-revoke.log` — the support-grant leg, red on trunk `platform.go` and green on the fix.
+  - `r1-mutation-red-recheck.log` — `scopeLost` mutated to `err != nil || …` makes TestScopeRecheckFailureKeepsDenial FAIL (exit 1).
+  - `r1-green-platform-vet.log` — at this HEAD after the revert: `go test ./internal/platform` exit 0, `go vet ./internal/platform ./tests/foundation` exit 0, `gofmt -l` empty.
