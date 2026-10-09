@@ -53,10 +53,18 @@ Full exact argv/environment, exits and log hashes: `pr31-r1/extra/{final-local-g
 
 Focused parent current Node 132/132 and BFF 38/38 pass; worker cards retain their actual RED commands and raw logs. Current live-settings is **22/22**, KC16 result **21 cases / 3 locales**; both console and ops full repetitions exit 0. The original live-settings 5b run was 20/22: a wrapping label redirected Playwright's option state check to the enabled select. Explicit label association fixed it, with a new actual view RED→GREEN counterexample and no browser assertion change. Earlier claims attempt exit 2 was **NOT_RUN** due another owner's PG lock, not a browser failure. Both records remain preserved.
 
+## Shared GET 403 race follow-up
+
+The reviewed local runs observed first scoped **404** responses; they do not establish the cause of CI run `37956489889`, job `113918794414` at `539f1cb8`. Its two LCU2_404 cases time out after 15s, but the retained artifact records only one initial A2 200 per case and lacks network/HAR/trace data for the other scoped responses. Their first 403/404 status is **UNKNOWN** from this evidence.
+
+Current GET 403 handling is still direct; the unit-specific 404 observer/purged-bundle fix does **not** normalize an admitted request that becomes forbidden in Go. The shared candidate `58510545` proves store disappearance with the same token before mapping GET 403 to 404. Per the integrator ruling, this unit does not duplicate that implementation and awaits its reviewed trunk integration. That commit changes catchall inbox handling; the dedicated live-settings-proxy used by blocklist/check is outside its scope, so its coverage must be confirmed during shared integration.
+
+Source/artifact check and sanitized CI references: `pr31-r1/extra/scope403-check/REPORT.json`. No product source or browser assertion changed in this follow-up. Earlier E3 local passes remain valid for their tested cases; they are not evidence that the shared 403 race is fixed or that the PR is merge-ready without the shared dependency.
+
 ## Evidence class / remaining gates
 
 **E3: complete in the tested BROWSER + MOCK business + REAL_PG signed-authority/adapter environment**, bound to the current frozen source and file hashes. Read-only audits are E1; current-head independent K3/CI remains pending with the integrator. No new K3 PASS or production/provider acceptance claim.
 
-CI gates needed: foundation-shards and the planner's 54-mode set. Four relevant modes were run here (console/ops twice, settings/claims once); other 50 modes, full foundation, provider SANDBOX/LIVE and deployment are NOT_RUN locally. The integrator prioritizes #29/#33, then pushes this batch. No local blocker remains.
+CI gates needed: foundation-shards and the planner's 54-mode set. Four relevant modes were run here (console/ops twice, settings/claims once); other 50 modes, full foundation, provider SANDBOX/LIVE and deployment are NOT_RUN locally. The integrator prioritizes #29/#33, then pushes this batch. Local gates passed; shared 403-race integration remains an external dependency.
 
 Owned browser/PG/Next runners finished, mutex released; other agents' processes, fixtures and shared caches untouched. RULINGS supersede old READINESS questions. Commit only, stop; no push.
