@@ -170,18 +170,20 @@ test("PR18 A8 hides clear before effects even without pagination",async t=>{
   env.document.visibilityState="hidden";env.document.dispatchEvent(new Event("visibilitychange"));
   assert.equal(h.slots.some(s=>s.value?.items?.some((r:any)=>r.display_name==="PRIVATE_A8_NAME")),false);
 });
-for(const loadedHistory of [true,false])test(loadedHistory ? "PR18 deletion HEAD clears selected comment composer but keeps history and public guard" : "PR18 short complete HEAD clears oldest selected comment and composer",async t=>{
+for(const loadedHistory of [true,false])test(loadedHistory ? "PR18 deletion HEAD clears selected comment composer but keeps history and public guard" : "PR18 short complete HEAD clears a covered selected comment and composer",async t=>{
   const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-09T00:00:00Z")});
   let deleted=false,headReads=0;
-  const history={...row,ref:"100",text:"Synthetic old history",created_at:"2026-10-08T00:00:00Z"};
-  const survivor={...row,ref:loadedHistory?"123_455":"123_457",text:"Synthetic surviving recent",created_at:row.created_at};
+  const history={...row,ref:"100",seq:null,text:"Synthetic old history",created_at:"2026-10-08T00:00:00Z"};
+  const selected={...row,seq:2};
+  const left={...row,ref:"123_455",seq:1,text:"Synthetic window left",created_at:"2026-10-08T00:59:59Z"};
+  const survivor={...row,ref:"123_457",seq:3,text:"Synthetic surviving recent",created_at:row.created_at};
   globalThis.fetch=async(input,init)=>{
     const url=String(input);
     if(init?.method==="POST")return response({send_state:"queued",operation_id:sid,outbound_id:sid});
     if(url.includes("message-templates"))return response({items:[]});
     if(url.includes("before_cursor"))return response(page(1,[history]));
     if(url.includes("after_seq"))return response(page(1,[]));
-    headReads++;return response({...page(1,deleted?[survivor]:loadedHistory?[row,survivor]:[history,row,survivor]),older_cursor:loadedHistory?"history":null});
+    headReads++;return response({...page(1,deleted?[left,survivor]:[left,selected,survivor]),older_cursor:loadedHistory?"history":null});
   };
   const cap={state:"ok",reason:"ok",evidence:"MOCK",checked_at:null};
   const h=env.mount(()=>CommentStream({store,session:sid,locale:"en",platform:"facebook",capabilities:{facebook:{private_reply:cap,reply_public:cap}}} as any));await h.settle();
@@ -393,6 +395,7 @@ const page = (epoch = 1, items = [row], reset = false) => ({
   epoch,
   items,
   reset,
+  scan_exhausted: false,
   next: { epoch, seq: items.length },
   older_cursor: null,
   stream: {
@@ -452,6 +455,106 @@ test("PR18 final expired older cursor keeps live buffer selection and polling",a
   h.output.older();await h.settle();assert.equal(olderReads,1,"expired pagination is not retried");
   t.mock.timers.tick(3000);await h.settle();
   assert.equal(incrementalReads,1);assert.equal(h.output.selection.ref,row.ref);
+});
+for(const initial of [0,1])test(`PR18 command refresh keeps epoch evidence while cursorless initial=${initial}`,async t=>{
+  const env=environment(t);let changed=false;
+  globalThis.fetch=async()=>response(changed?page(initial+1,[{...row,ref:"999"}]):page(initial));
+  const h=env.mount(()=>useCommentStream(store.id,sid,true));await h.settle();h.output.select({ref:row.ref});h.flush();
+  changed=true;h.output.refresh();await h.settle();
+  assert.deepEqual(h.output.buffer.items.map((r:any)=>r.ref),["999"]);assert.equal(h.output.buffer.epoch,initial+1);assert.equal(h.output.selection,null);
+});
+for(const loadedHistory of [false,true])test(`PR18 bounded window refresh removes FB deletion behind60 arrivals history=${loadedHistory}`,async t=>{
+  const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-09T00:00:00Z")});
+  const rows=Array.from({length:61},(_,i)=>({...row,ref:String(i+1),seq:i+1,created_at:new Date(Date.parse(row.created_at)+i*1000).toISOString()}));let heads=0;
+  const reply=(items:typeof rows,seq:number)=>({...page(1,items),next:{epoch:1,seq}});
+  globalThis.fetch=async input=>{
+    const url=new URL(String(input),"https://example.invalid"),after=url.searchParams.get("after_seq");
+    if(url.searchParams.has("before_cursor"))return response(reply([{...row,ref:"100",seq:null,created_at:"2026-10-01T00:00:00Z"}] as any,1));
+    if(after==="1")return response(reply(rows.slice(1,51),51));
+    if(after==="51")return response(reply(rows.slice(51),61));
+    if(after)return response(reply([],61));
+    heads++;return response(heads===1?{...reply([rows[0]],1),older_cursor:loadedHistory?"history":null}:reply(rows.slice(11),12));
+  };
+  const h=env.mount(()=>useCommentStream(store.id,sid,true));await h.settle();
+  if(loadedHistory){h.output.older();await h.settle();}
+  for(let n=0;n<4;n++){t.mock.timers.tick(3000);await h.settle();}
+  assert.equal(h.output.buffer.items.length,loadedHistory?62:61);assert.ok(h.output.buffer.items.some((r:any)=>r.ref==="1"));
+  t.mock.timers.tick(227999);await h.settle();assert.ok(h.output.buffer.items.some((r:any)=>r.ref==="1"),"no premature absence inference outside the head coverage");
+  t.mock.timers.tick(3000);await h.settle();
+  assert.equal(h.output.buffer.items.some((r:any)=>r.ref==="1"),false,"successful full refresh removes stale live rows within5min");
+  assert.equal(h.output.buffer.next.seq,61,"FB rebuild does not rewind the incremental cursor");
+  if(loadedHistory){assert.ok(h.output.buffer.items.some((r:any)=>r.ref==="100"));assert.equal(h.output.buffer.historyLoaded,true);}
+});
+test("PR18 bounded window refresh preserves explicit history until manual refresh",async t=>{
+  const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-09T00:00:00Z")});
+  const history={...row,ref:"100",seq:null,created_at:"2026-10-01T00:00:00Z"};
+  globalThis.fetch=async input=>{
+    const url=String(input);return response(url.includes("before_cursor")?page(1,[history] as any):url.includes("after_seq")?page(1,[]):{...page(),older_cursor:"history"});
+  };
+  const h=env.mount(()=>useCommentStream(store.id,sid,true));await h.settle();h.output.older();await h.settle();
+  assert.equal(h.output.buffer.historyLoaded,true);t.mock.timers.tick(300000);await h.settle();
+  assert.ok(h.output.buffer.items.some((r:any)=>r.ref===history.ref));
+  h.output.refresh();await h.settle();assert.ok(h.output.buffer.items.some((r:any)=>r.ref===history.ref),"command mark refresh is not manual history reset");
+  h.output.refresh(true);await h.settle();
+  assert.equal(h.output.buffer.items.some((r:any)=>r.ref===history.ref),false);assert.equal(h.output.buffer.historyLoaded,false);
+});
+for(const deleted of [false,true])test(`PR18 bounded window refresh atomically rebuilds IG100 deleted75=${deleted}`,async t=>{
+  const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-09T00:00:00Z")});
+  const rows=Array.from({length:100},(_,i)=>({...row,ref:String(i+1),seq:i+1,created_at:new Date(Date.parse(row.created_at)+i*1000).toISOString()}));let loaded=false,tailReads=0;
+  const reply=(items:typeof rows,seq:number)=>({...page(0,items),next:{epoch:0,seq},stream:{state:"live",source_platform:"instagram",video_embeddable:false}});
+  globalThis.fetch=async input=>{
+    const url=String(input);if(url.includes("message-templates"))return response({items:[]});
+    const after=new URL(url,"https://example.invalid").searchParams.get("after_seq");
+    if(after==="50"){tailReads++;return response(reply(rows.slice(50).filter(r=>!loaded||!deleted||r.ref!=="75"),100));}
+    return response(after?reply([],100):reply(rows.slice(0,50),50));
+  };
+  const cap={state:"ok",reason:"ok",evidence:"MOCK",checked_at:null};
+  const h=env.mount(()=>CommentStream({store,session:sid,locale:"en",platform:"instagram",capabilities:{instagram:{private_reply:cap,reply_public:cap}}} as any));await h.settle();
+  t.mock.timers.tick(3000);await h.settle();assert.equal(tailReads,1);loaded=true;
+  node(h,n=>n.props["data-testid"]==="comment-select-75").props.onClick();await h.settle();
+  node(h,n=>n.props["data-testid"]==="comment-reply-text").props.onChange({target:{value:"Synthetic retained IG draft"}});h.flush();
+  t.mock.timers.tick(236999);await h.settle();assert.equal(node(h,n=>n.props["data-testid"]==="comment-reply-text").props.value,"Synthetic retained IG draft");
+  t.mock.timers.tick(3000);await h.settle();assert.ok(tailReads>=2,"full rebuild must follow the fresh continuation, not keep old100 against earliest50");
+  assert.equal(nodes(h.output).filter(n=>String(n.props["data-testid"]??"").startsWith("comment-row-")).length,deleted?99:100);
+  assert.equal(nodes(h.output).some(n=>n.props["data-testid"]==="comment-reply-text"),!deleted);
+  if(!deleted)assert.equal(node(h,n=>n.props["data-testid"]==="comment-reply-text").props.value,"Synthetic retained IG draft");
+  assert.ok(h.slots.some(s=>s.value?.next?.seq===100));
+});
+for(const refusal of ["stalled","budget"] as const)test(`PR18 bounded window refresh ${refusal} never publishes an incomplete IG window`,async t=>{
+  const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-09T00:00:00Z")});
+  const started=Date.now(),rows=Array.from({length:100},(_,i)=>({...row,ref:String(i+1),seq:i+1,created_at:new Date(Date.parse(row.created_at)+i*1000).toISOString()}));let scanReads=0;
+  const reply=(items:typeof rows,seq:number)=>({...page(0,items),next:{epoch:0,seq},stream:{source_platform:"instagram",video_embeddable:false}});
+  globalThis.fetch=async input=>{
+    const url=String(input);if(url.includes("message-templates"))return response({items:[]});
+    const after=new URL(url,"https://example.invalid").searchParams.get("after_seq");
+    if(after==="100")return response(reply([],100));
+    if(Date.now()-started>=240000){scanReads++;if(after)return response(refusal==="stalled"?reply([],Number(after)):reply([rows[Number(after)]],Number(after)+1));}
+    return response(after?reply(rows.slice(50),100):reply(rows.slice(0,50),50));
+  };
+  const cap={state:"ok",reason:"ok",evidence:"MOCK",checked_at:null};
+  const h=env.mount(()=>CommentStream({store,session:sid,locale:"en",platform:"instagram",capabilities:{instagram:{private_reply:cap,reply_public:cap}}} as any));await h.settle();
+  t.mock.timers.tick(3000);await h.settle();node(h,n=>n.props["data-testid"]==="comment-select-75").props.onClick();await h.settle();
+  node(h,n=>n.props["data-testid"]==="comment-reply-text").props.onChange({target:{value:"Synthetic retained incomplete-scan draft"}});h.flush();
+  t.mock.timers.tick(236999);await h.settle();t.mock.timers.tick(3000);await h.settle();
+  assert.equal(scanReads,refusal==="stalled"?2:20,"scan budget and forward progress are enforced");
+  assert.equal(nodes(h.output).filter(n=>String(n.props["data-testid"]??"").startsWith("comment-row-")).length,100);
+  assert.equal(node(h,n=>n.props["data-testid"]==="comment-row-75").props["data-selected"],true);
+  assert.equal(node(h,n=>n.props["data-testid"]==="comment-reply-text").props.value,"Synthetic retained incomplete-scan draft");
+  assert.ok(h.slots.some(s=>s.value?.next?.seq===100));assert.ok(h.slots.some(s=>s.value==="stream_unavailable"));
+});
+test("PR18 bounded window refresh removes deleted IG final sequence",async t=>{
+  const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-09T00:00:00Z")});
+  const rows=Array.from({length:100},(_,i)=>({...row,ref:String(i+1),seq:i+1,created_at:new Date(Date.parse(row.created_at)+i*1000).toISOString()}));let deleted=false;
+  const reply=(items:typeof rows,seq:number)=>({...page(0,items),next:{epoch:0,seq},stream:{source_platform:"instagram",video_embeddable:false}});
+  globalThis.fetch=async input=>{
+    const after=new URL(String(input),"https://example.invalid").searchParams.get("after_seq");
+    if(after==="50")return response({...reply(rows.slice(50).filter(r=>!deleted||r.ref!=="100"),deleted?99:100),scan_exhausted:deleted});
+    if(after)return response(reply([],Number(after)));
+    return response(reply(rows.slice(0,50),50));
+  };
+  const h=env.mount(()=>useCommentStream(store.id,sid,true));await h.settle();t.mock.timers.tick(3000);await h.settle();assert.equal(h.output.buffer.items.length,100);
+  deleted=true;t.mock.timers.tick(236999);await h.settle();t.mock.timers.tick(3000);await h.settle();
+  assert.equal(h.output.buffer.items.some((r:any)=>r.ref==="100"),false,"the deleted last seq must not remain indefinitely after an exhausted rebuild");
 });
 test("actual A2 hook fake clock: 3/6/12/24/30 backoff, success reset, hide clears and stops, 403 locks", async (t) => {
   const env = environment(t);

@@ -156,7 +156,7 @@ export function CommentStream({
           <button
             type="button"
             data-testid="comment-refresh"
-            onClick={stream.refresh}
+            onClick={() => stream.refresh(true)}
             disabled={privacy.blocked.current || !privacy.visible}
           >
             {c.refresh}

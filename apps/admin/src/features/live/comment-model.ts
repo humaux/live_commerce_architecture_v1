@@ -1,7 +1,7 @@
 // Purpose: transient A2 stream parsing, epoch reconciliation and filter/cadence policy.
 // Depends on: live-console-v1 CommentStream and A8 inbox DTOs; no browser storage or identity inference.
 // Used by: CommentStream hook and Node acceptance tests.
-// Invariant: deduped buffer is oldest-first by (created_at instant, ref); cap evicts only the oldest rows.
+// Invariant: display/cap order is chronological; absence coverage uses only server seq, never time.
 // Deletions are inferred only from a non-empty, same-epoch FB newest window; IG head is earliest-first.
 import type { ConversationItem, ConversationList } from "../../../lib/inbox-types";
 /** I23 bounds both console comment and conversation memory. */
@@ -49,6 +49,7 @@ export type StreamComment = {
 export type CommentPage = {
   epoch: number;
   reset: boolean;
+  scan_exhausted: boolean;
   items: StreamComment[];
   next: CommentCursor;
   older_cursor: string | null;
@@ -65,6 +66,7 @@ export type CommentBuffer = {
   older: string | null;
   reset: boolean;
   historyLoaded: boolean;
+  initialized: boolean;
 };
 /** A privacy boundary always starts with an empty in-memory buffer. */
 export const emptyComments = (): CommentBuffer => ({
@@ -74,6 +76,7 @@ export const emptyComments = (): CommentBuffer => ({
   older: null,
   reset: false,
   historyLoaded: false,
+  initialized: false,
 });
 const compareComments = (a: StreamComment, b: StreamComment) =>
   Date.parse(a.created_at) - Date.parse(b.created_at) || (a.ref < b.ref ? -1 : a.ref > b.ref ? 1 : 0);
@@ -83,9 +86,8 @@ export function applyCommentPage(
   page: CommentPage,
   older: boolean,
   reconcileHead = false,
-  headLimit = 50,
 ): CommentBuffer {
-  if (page.reset || (old.epoch !== 0 && old.epoch !== page.epoch))
+  if (page.reset || ((old.initialized || old.next !== null) && old.epoch !== page.epoch))
     return { ...emptyComments(), reset: true };
   // Historical paging stops at the memory cap: never consume a cursor for an unseen page.
   if (older && old.items.length >= COMMENT_MEMORY_CAP) return old;
@@ -93,26 +95,35 @@ export function applyCommentPage(
   // The existing server platform contract proves FB's cursorless buffer page is newest-by-seq.
   // IG starts from seq0 (ASC), so its missing tail rows must retain merge semantics.
   if (reconcileHead && !older && page.stream?.source_platform === "facebook" && page.items.length > 0) {
-    const floor = page.items.reduce((a, b) => compareComments(a, b) <= 0 ? a : b);
     const refs = new Set(page.items.map(row => row.ref));
-    // Explicit history uses the conservative floor rule. Without it, a short terminal
-    // head is the complete server window, including any now-deleted oldest live rows.
-    const wholeWindow = page.items.length < headLimit && page.older_cursor === null && !old.historyLoaded;
-    retained = old.items.filter(row => refs.has(row.ref) || (!wholeWindow && compareComments(row, floor) < 0));
+    const seqs = page.items.flatMap(row => typeof row.seq === "number" ? [row.seq] : []);
+    if (seqs.length) {
+      const low = Math.min(...seqs), high = Math.max(...seqs);
+      // Null-seq Graph history and rows outside this proven numerical interval stay.
+      // The page endpoint and created_at are not per-row sequence evidence.
+      retained = old.items.filter(row => typeof row.seq !== "number" || row.seq < low || row.seq > high || refs.has(row.ref));
+    }
   }
   const map = new Map(
     (older ? [...page.items, ...retained] : [...retained, ...page.items]).map(
       (row) => [row.ref, row],
     ),
   );
+  // Explicit Graph history reserves its part of I23's cap, including on same-ref
+  // numeric overlap. Only an explicit manual reset creates a fresh empty baseline.
+  for (const row of old.items) if (row.seq === null && map.has(row.ref)) map.set(row.ref, { ...map.get(row.ref)!, seq: null });
+  const protectedRows = [...map.values()].filter(row => row.seq === null).sort(compareComments).slice(-COMMENT_MEMORY_CAP);
+  const liveRows = [...map.values()].filter(row => row.seq !== null).sort(compareComments);
+  const room = COMMENT_MEMORY_CAP - protectedRows.length;
   return {
     epoch: page.epoch,
     // FB bridge and IG fallback arrive in opposite orders. Never use arrival order for retention.
-    items: [...map.values()].sort(compareComments).slice(-COMMENT_MEMORY_CAP),
+    items: [...protectedRows, ...(room ? liveRows.slice(-room) : [])].sort(compareComments),
     next: older ? old.next : page.next,
-    older: older || !old.epoch ? page.older_cursor : old.older,
+    older: older || !old.initialized ? page.older_cursor : old.older,
     reset: false,
     historyLoaded: old.historyLoaded || (older && page.items.length > 0),
+    initialized: true,
   };
 }
 /** Merge A8 pages in memory, evicting oldest entries; head refresh may preserve the loaded history cursor. */
@@ -160,6 +171,7 @@ export function parseCommentPage(value: unknown): CommentPage {
   const r = exact(value, [
       "epoch",
       "reset",
+      "scan_exhausted",
       "items",
       "next",
       "older_cursor",
@@ -173,6 +185,7 @@ export function parseCommentPage(value: unknown): CommentPage {
     next.epoch !== r.epoch ||
     !num(next.seq) ||
     typeof r.reset !== "boolean" ||
+    typeof r.scan_exhausted !== "boolean" ||
     !Array.isArray(r.items) ||
     r.items.length > 100 ||
     !(

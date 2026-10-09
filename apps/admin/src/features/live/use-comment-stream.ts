@@ -34,6 +34,7 @@ export function useCommentStream(
     inFlight = useRef(false),
     failCount = useRef(0),
     deadline = useRef(0);
+  const fullReadAt = useRef<number | null>(null), manualFull = useRef(false);
   const related = useRef(clearRelated), marksReadAt = useRef(0);
   related.current = clearRelated;
   const clear = useCallback(() => {
@@ -42,6 +43,8 @@ export function useCommentStream(
     select(null);
     setError("");
     setBusy(false);
+    fullReadAt.current = null;
+    manualFull.current = false;
     related.current?.();
   }, []);
   const privacy = useInboxPrivacy(clear),
@@ -86,14 +89,56 @@ export function useCommentStream(
         );
         if (!alive || !fence.current(ticket)) return;
         let next = applyCommentPage(current.current, page, older);
+        let rebuilt = false;
         // Only the existing 10s HEAD window is evidence for deletions; incremental/history
         // reads cannot establish absence. Preserve their cursors and older merchant history.
         if (!older && !next.reset) {
-          if (!current.current.next) marksReadAt.current = Date.now();
+          // Four minutes + a 60s scan budget bounds successful visible live refreshes
+          // to five minutes. Explicit Graph history is retained until a manual reset.
+          const full = manualFull.current || (fullReadAt.current !== null && Date.now() - fullReadAt.current >= 240000);
+          if (full) {
+            const base = next, scanDeadline = Date.now() + 60000;
+            const target = Math.max(base.next?.seq ?? 0, ...base.items.flatMap(row => typeof row.seq === "number" ? [row.seq] : []));
+            const numeric = base.items.flatMap(row => typeof row.seq === "number" ? [row.seq] : []);
+            // Re-read the published IG range, not a possibly million-event session prefix.
+            // A manual reset starts at zero; normal earliest-head reads never prune IG.
+            let after = !manualFull.current && numeric.length ? Math.max(0, Math.min(...numeric) - 1) : 0;
+            let stage = emptyComments(), reads = 0;
+            const readWindow = async (cursor?: number) => {
+              if (!alive || !fence.current(ticket) || document.visibilityState !== "visible") throw new DOMException("scope changed", "AbortError");
+              const remaining = scanDeadline - Date.now();
+              if (reads++ >= 20 || remaining <= 0) throw new InboxError("stream_unavailable", 503);
+              const params = new URLSearchParams({ limit: String(pageLimit) });
+              if (cursor !== undefined) { params.set("after_epoch", String(base.epoch)); params.set("after_seq", String(cursor)); }
+              return parseCommentPage(await inboxRead<unknown>(store, `${root}?${params}`, AbortSignal.any([ticket.signal, AbortSignal.timeout(remaining)])));
+            };
+            let fresh = await readWindow(page.stream.source_platform === "instagram" && after > 0 ? after : undefined);
+            for (;;) {
+              if (!alive || !fence.current(ticket)) return;
+              if (fresh.reset || fresh.epoch !== base.epoch) { next = { ...emptyComments(), reset: true }; break; }
+              stage = applyCommentPage(stage, fresh, false);
+              const continuation = stage.next!.seq;
+              if (fresh.stream.source_platform === "facebook" || fresh.scan_exhausted || continuation >= target) {
+                const kept = manualFull.current ? [] : base.items.filter(row => row.seq === null);
+                next = applyCommentPage({ ...emptyComments(), items: kept }, { ...fresh, items: stage.items, next: stage.next! }, false);
+                if (!manualFull.current && base.historyLoaded) next = { ...next, historyLoaded: true, older: base.older };
+                if (fresh.stream.source_platform === "facebook") next = { ...next, next: base.next ?? next.next };
+                select(selected => selected?.ref && !next.items.some(row => row.ref === selected.ref) ? null : selected);
+                rebuilt = true;
+                manualFull.current = false;
+                break;
+              }
+              // Short/empty IG pages can be post-LIMIT filtered. Only forward cursor
+              // coverage proves completion; never publish a truncated half-window.
+              if (continuation <= after) throw new InboxError("stream_unavailable", 503);
+              after = continuation;
+              fresh = await readWindow(after);
+            }
+          } else if (!current.current.next) marksReadAt.current = Date.now();
           else if (Date.now() - marksReadAt.current >= 10000) {
             const head = parseCommentPage(await inboxRead<unknown>(store, `${root}?limit=${pageLimit}`, ticket.signal));
             if (!alive || !fence.current(ticket)) return;
-            const refreshed = applyCommentPage(next, head, false, true, pageLimit);
+            const refreshed = applyCommentPage(next, head, false, true);
             if (!refreshed.reset && head.items.length > 0)
               select(selected => selected?.ref && !refreshed.items.some(row => row.ref === selected.ref) ? null : selected);
             next = refreshed.reset ? refreshed : { ...refreshed, next: next.next, older: next.older };
@@ -116,6 +161,8 @@ export function useCommentStream(
           if (next.reset) throw new InboxError("stream_unavailable", 503);
         }
         current.current = next;
+        if (fullReadAt.current === null || rebuilt) fullReadAt.current = Date.now();
+        if (rebuilt) marksReadAt.current = Date.now();
         setBuffer(next);
         failCount.current = 0;
         deadline.current = 0;
@@ -183,8 +230,9 @@ export function useCommentStream(
     revision,
     resetGeneration: resetSelection.current,
     // A command refresh rereads current marks for existing rows, not only new comment sequence numbers.
-    refresh: () => {
+    refresh: (resetHistory = false) => {
       if (!enabled) return;
+      if (resetHistory === true) manualFull.current = true;
       deadline.current = 0;
       current.current = { ...current.current, next: null };
       refresh((n) => n + 1);
