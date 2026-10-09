@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 // Purpose: CI-SELECT round-2/3 evidence — how many browser modes the narrowed lc_covers data selects for the REAL file
+// Depends on: real Git PR commits, pr-modes.mjs and test-local.sh; does not start a PG or browser gate.
+// Used by: CI-SELECT DELIVERY tables; optional argument selects a round-2 or round-3 JSON evidence name.
 //   lists of PR #30 (b1bfbeb3) and PR #24 (3034c407), the mandated single-path cases, and three realistic domain
 //   examples (orders/payments, catalog, migrations), against what round 1's full-closure covers selected for the same
 //   lists (round 1: every internal/ hit selected all 48 Go-seeded modes; cmd//migrations/ selected all 47 PG modes).

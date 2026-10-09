@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 // Purpose: round-2/3 (owner decision 2026-10-10 "Narrow per domain + nightly") evidence derivation of each browser mode's
+// Depends on: mode registry, Go route/service imports, harness/spec sources and Git's tracked-file inventory.
+// Used by: CI-SELECT; insert-narrow-covers.mjs consumes covers-narrow.json; file-coverage.json records exact file evidence.
 //   lc_covers DOMAIN packages, replacing round 1's import-closure covers (48/51 modes covered all 70 internal packages
 //   because every harness boots the full httpapi.NewHandler, which made any backend PR as heavy as a UI PR).
 //   Evidence per mode, never guesses:
@@ -26,7 +28,7 @@
 // Depends on: scripts/dev/pr-modes.mjs (modeEntries, browserModes, SHARED_BACKEND_PACKAGES), scripts/dev/test-local.sh,
 //   playwright.config.ts, internal/{httpapi,identityhttp,buyerhttp}/*.go, tests/foundation/*.go, cmd/**/*.go,
 //   apps/{admin,storefront} route/lib sources, git ls-files.
-// Used by: unit ci-select-backend-browser round 2 (writes the lc_covers lines of scripts/dev/test-local.sh via
+// Used by: unit ci-select-backend-browser rounds 2/3 (writes the lc_covers lines of scripts/dev/test-local.sh via
 //   insert-narrow-covers.mjs); evidence for DELIVERY.md. Run: node output/ci-select-backend-browser/tools/derive-narrow-covers.mjs
 import { readFileSync, readdirSync, writeFileSync, existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
