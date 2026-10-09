@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -81,7 +82,15 @@ func deletionConsole(t *testing.T, g *deletionGraph) (*Console, time.Time) {
 		t.Fatal(err)
 	}
 	c := &Console{graph: graph, cfg: ConsoleConfig{PollInterval: 3 * time.Second, MaxBackoff: time.Minute, CallTimeout: time.Second, BufferAge: 2 * time.Hour, BufferCap: 2000}, sources: map[string]*consoleSource{}}
-	return c, time.Date(2030, 1, 1, 0, 10, 0, 0, time.UTC)
+	now := time.Date(2030, 1, 1, 0, 10, 0, 0, time.UTC)
+	c.cfg.Now = func() time.Time { return now }
+	return c, now
+}
+
+// deletionPollAt advances the injected clock, keeping existing scheduling assertions on the actual rate path.
+func deletionPollAt(c *Console, ctx context.Context, s *consoleSource, at time.Time) {
+	c.cfg.Now = func() time.Time { return at }
+	c.pollOne(ctx, s)
 }
 func deletionSource(c *Console, source, asset string, now time.Time, refs ...string) *consoleSource {
 	s := &consoleSource{source: source, assetID: asset, sourceObjectID: asset + "_post", byRef: map[string]consoleComment{}, owned: true, pollEpoch: 9, pollInterval: 3 * time.Second, token: core.NewSecret([]byte("deletion-token-sentinel"))}
@@ -98,7 +107,7 @@ func TestCommentDeletionEvictsOnlyMissingAndKeepsSequence(t *testing.T) {
 	g := &deletionGraph{missing: map[string]bool{"1_1": true}}
 	c, now := deletionConsole(t, g)
 	s := deletionSource(c, "source", "asset", now, "1_1", "1_2")
-	c.pollOne(context.Background(), s, now)
+	deletionPollAt(c, context.Background(), s, now)
 	if _, ok := s.byRef["1_1"]; ok {
 		t.Fatal("deleted comment still served")
 	}
@@ -111,15 +120,15 @@ func TestCommentDeletionEvictsOnlyMissingAndKeepsSequence(t *testing.T) {
 	if len(g.batches) != 1 {
 		t.Fatalf("batched checks=%d", len(g.batches))
 	}
-	c.pollOne(context.Background(), s, now.Add(59*time.Second))
+	deletionPollAt(c, context.Background(), s, now.Add(59*time.Second))
 	if len(g.batches) != 1 {
 		t.Fatal("check ran before60s")
 	}
-	c.pollOne(context.Background(), s, now.Add(time.Minute))
+	deletionPollAt(c, context.Background(), s, now.Add(time.Minute))
 	if len(g.batches) != 1 {
 		t.Fatal("deletion bypassed the59s forward call's shared budget")
 	}
-	c.pollOne(context.Background(), s, now.Add(62*time.Second))
+	deletionPollAt(c, context.Background(), s, now.Add(62*time.Second))
 	if len(g.batches) != 2 {
 		t.Fatal("due deletion did not resume when the shared budget reopened")
 	}
@@ -142,7 +151,7 @@ func TestCommentDeletionUncertainResponseKeepsEveryEntry(t *testing.T) {
 			g := &deletionGraph{status: tc.status, body: tc.body}
 			c, now := deletionConsole(t, g)
 			s := deletionSource(c, "s", "asset", now, "1_1", "1_2")
-			c.pollOne(context.Background(), s, now)
+			deletionPollAt(c, context.Background(), s, now)
 			if len(g.batches) != 1 {
 				t.Fatal("uncertainty case did not execute actual batch")
 			}
@@ -157,19 +166,19 @@ func TestCommentDeletionSharedAssetBudgetIncludesBridgeReads(t *testing.T) {
 	c, now := deletionConsole(t, g)
 	a := deletionSource(c, "a", "asset", now, "1_1")
 	b := deletionSource(c, "b", "asset", now, "2_2")
-	c.pollOne(context.Background(), a, now)
-	c.pollOne(context.Background(), b, now)
+	deletionPollAt(c, context.Background(), a, now)
+	deletionPollAt(c, context.Background(), b, now)
 	_, _ = c.facts(context.Background(), b, "9_9", now)
 	_, _, _ = c.graphOlder(context.Background(), b.sourceObjectID, b.assetID, "before", 50, b.token.Reveal())
 	if g.calls != 1 {
 		t.Fatalf("same asset spent %d calls in one slot", g.calls)
 	}
-	c.pollOne(context.Background(), b, now.Add(3*time.Second))
+	deletionPollAt(c, context.Background(), b, now.Add(3*time.Second))
 	if len(g.batches) != 2 || g.calls != 2 {
 		t.Fatal("denied source did not receive the next shared slot")
 	}
 	other := deletionSource(c, "other", "other-asset", now, "3_3")
-	c.pollOne(context.Background(), other, now.Add(3*time.Second))
+	deletionPollAt(c, context.Background(), other, now.Add(3*time.Second))
 	if g.calls != 3 {
 		t.Fatal("independent asset budget coupled")
 	}
@@ -181,8 +190,8 @@ func TestCommentDeletionSharedBackoff(t *testing.T) {
 			c, now := deletionConsole(t, g)
 			a := deletionSource(c, "a", "asset", now, "1_1")
 			b := deletionSource(c, "b", "asset", now, "2_2")
-			c.pollOne(context.Background(), a, now)
-			c.pollOne(context.Background(), b, now.Add(time.Second))
+			deletionPollAt(c, context.Background(), a, now)
+			deletionPollAt(c, context.Background(), b, now.Add(time.Second))
 			if g.calls != 1 {
 				t.Fatal("source bypassed another source's Graph backoff")
 			}
@@ -204,7 +213,7 @@ func TestCommentDeletionRotatesYoungEntriesInBoundedBatches(t *testing.T) {
 	s.comments = append(s.comments, old)
 	s.byRef[old.Ref] = old
 	for i := 0; i < 3; i++ {
-		c.pollOne(context.Background(), s, now.Add(time.Duration(i)*time.Minute))
+		deletionPollAt(c, context.Background(), s, now.Add(time.Duration(i)*time.Minute))
 	}
 	if len(g.batches) != 3 {
 		t.Fatalf("checks=%d", len(g.batches))
@@ -234,13 +243,13 @@ func TestCommentDeletionUsagePacesAllSources(t *testing.T) {
 	a := deletionSource(c, "a", "asset", now, "1_1")
 	b := deletionSource(c, "b", "asset", now, "2_2")
 	started := time.Now()
-	c.pollOne(context.Background(), a, now)
+	deletionPollAt(c, context.Background(), a, now)
 	completed := now.Add(time.Since(started))
-	c.pollOne(context.Background(), b, completed.Add(5*time.Second))
+	deletionPollAt(c, context.Background(), b, completed.Add(5*time.Second))
 	if g.calls != 1 {
 		t.Fatal("usage80% did not pace sharedasset to15s")
 	}
-	c.pollOne(context.Background(), b, completed.Add(15*time.Second))
+	deletionPollAt(c, context.Background(), b, completed.Add(15*time.Second))
 	if g.calls != 2 {
 		t.Fatal("shared usage slot did not reopen")
 	}
@@ -259,7 +268,7 @@ func TestCommentDeletionTransportFailureRetainsBuffer(t *testing.T) {
 	}
 	c.graph = graph
 	s := deletionSource(c, "s", "asset", now, "1_1")
-	c.pollOne(context.Background(), s, now)
+	deletionPollAt(c, context.Background(), s, now)
 	if len(s.comments) != 1 {
 		t.Fatal("transport failure removed private state")
 	}
@@ -273,13 +282,16 @@ func TestCommentDeletionDelayedFailureBackoffStartsAfterResponse(t *testing.T) {
 			c.cfg.PollInterval = time.Millisecond
 			c.cfg.MaxBackoff = 4 * time.Millisecond
 			calls := 0
+			var clock atomic.Int64
+			clock.Store(now.UnixNano())
+			c.cfg.Now = func() time.Time { return time.Unix(0, clock.Load()) }
 			body := `{"error":{"code":4}}`
 			if status == 200 {
 				body = `{"unknown":{"id":"unknown"}}`
 			}
 			graph, err := metaoauth.NewGraph("http://127.0.0.1:1", "v99.0", &http.Client{Transport: deletionRoundTrip(func(*http.Request) (*http.Response, error) {
 				calls++
-				time.Sleep(20 * time.Millisecond)
+				clock.Add(int64(20 * time.Millisecond))
 				return &http.Response{StatusCode: status, Header: http.Header{}, Body: io.NopCloser(strings.NewReader(body))}, nil
 			})})
 			if err != nil {
@@ -288,10 +300,10 @@ func TestCommentDeletionDelayedFailureBackoffStartsAfterResponse(t *testing.T) {
 			c.graph = graph
 			a := deletionSource(c, "a", "asset", now, "1_1")
 			b := deletionSource(c, "b", "asset", now, "2_2")
-			started := time.Now()
-			c.pollOne(context.Background(), a, now)
-			afterResponse := now.Add(time.Since(started))
-			c.pollOne(context.Background(), b, afterResponse.Add(time.Millisecond))
+			c.pollOne(context.Background(), a)
+			afterResponse := c.cfg.Now()
+			clock.Store(afterResponse.Add(time.Millisecond).UnixNano())
+			c.pollOne(context.Background(), b)
 			if calls != 1 {
 				t.Fatalf("another source called %d times before response-completion + backoff", calls)
 			}
@@ -306,6 +318,8 @@ func TestCommentDeletionDelayedFailureBackoffStartsAfterResponse(t *testing.T) {
 func TestCommentDeletionFacts404DoesNotManufactureBackoff(t *testing.T) {
 	g := &deletionGraph{}
 	c, now := deletionConsole(t, g)
+	realStart := time.Now()
+	c.cfg.Now = func() time.Time { return now.Add(time.Since(realStart)) }
 	c.cfg.PollInterval = time.Millisecond
 	calls := 0
 	graph, err := metaoauth.NewGraph("http://127.0.0.1:1", "v99.0", &http.Client{Transport: deletionRoundTrip(func(*http.Request) (*http.Response, error) {
@@ -335,6 +349,9 @@ func TestCommentDeletionContractDefaults(t *testing.T) {
 	if cfg.PollInterval != 2*time.Second || cfg.MaxBackoff != 60*time.Second {
 		t.Fatalf("contract pacing/backoff defaults=%s/%s", cfg.PollInterval, cfg.MaxBackoff)
 	}
+	if cfg.Now == nil || cfg.Now().IsZero() {
+		t.Fatal("default request clock is not wired")
+	}
 }
 
 func TestCommentDeletionLateBatchCannotMutateReplacementSource(t *testing.T) {
@@ -358,7 +375,7 @@ func TestCommentDeletionLateBatchCannotMutateReplacementSource(t *testing.T) {
 	c.graph = graph
 	old := deletionSource(c, "s", "asset", now, "1_1")
 	done := make(chan struct{})
-	go func() { c.pollOne(context.Background(), old, now); close(done) }()
+	go func() { deletionPollAt(c, context.Background(), old, now); close(done) }()
 	<-entered
 	c.mu.Lock()
 	replacement := deletionSource(c, "s", "asset", now, "1_1")
@@ -376,7 +393,7 @@ func TestCommentDeletionClearsDiscardedBackingSlots(t *testing.T) {
 	c, now := deletionConsole(t, g)
 	s := deletionSource(c, "s", "asset", now, "1_1", "1_2")
 	backing := s.comments
-	c.pollOne(context.Background(), s, now)
+	deletionPollAt(c, context.Background(), s, now)
 	if backing[len(s.comments)].Text != "" || backing[len(s.comments)].AuthorName != nil || backing[len(s.comments)].Ref != "" {
 		t.Fatal("deleted private text/reference remained in backing storage")
 	}

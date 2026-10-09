@@ -66,22 +66,23 @@ var (
 
 // ConsoleConfig is every tunable of the poller/bridge; all values are validated (no secret material).
 type ConsoleConfig struct {
-	Graph         Config        // GraphBaseURL/GraphVersion/HTTPClient (MOCK loopback in tests)
-	HolderID      string        // stable replica id, ^[a-z0-9_-]{1,64}$ (Docker HOSTNAME)
-	BridgeToken   []byte        // 32-byte shared bridge bearer
-	CursorKey     []byte        // 32-byte older_cursor HMAC key
-	FleetCap      int           // max polled sources fleet-wide (default 20)
-	TenantCap     int           // max polled sources per tenant (default 5)
-	SweepInterval time.Duration // default 2s
-	PollInterval  time.Duration // default 2s
-	MaxBackoff    time.Duration // default 60s
-	LeaseTTL      time.Duration // default 60s
-	DemandTTL     time.Duration // default 10s
-	CursorTTL     time.Duration // default 5m
-	CallTimeout   time.Duration // default 15s
-	BufferCap     int           // default 2000
-	BufferAge     time.Duration // default 2h
-	IdleDrop      time.Duration // default 10m
+	Now           func() time.Time // optional concurrent-safe clock; defaults to time.Now
+	Graph         Config           // GraphBaseURL/GraphVersion/HTTPClient (MOCK loopback in tests)
+	HolderID      string           // stable replica id, ^[a-z0-9_-]{1,64}$ (Docker HOSTNAME)
+	BridgeToken   []byte           // 32-byte shared bridge bearer
+	CursorKey     []byte           // 32-byte older_cursor HMAC key
+	FleetCap      int              // max polled sources fleet-wide (default 20)
+	TenantCap     int              // max polled sources per tenant (default 5)
+	SweepInterval time.Duration    // default 2s
+	PollInterval  time.Duration    // default 2s
+	MaxBackoff    time.Duration    // default 60s
+	LeaseTTL      time.Duration    // default 60s
+	DemandTTL     time.Duration    // default 10s
+	CursorTTL     time.Duration    // default 5m
+	CallTimeout   time.Duration    // default 15s
+	BufferCap     int              // default 2000
+	BufferAge     time.Duration    // default 2h
+	IdleDrop      time.Duration    // default 10m
 }
 
 // Console is the worker-side poller + bridge server. The zero value is invalid; use NewConsole.
@@ -187,6 +188,9 @@ func NewConsole(pool *pgxpool.Pool, keys *PageTokenKeyring, v2 *pageopen.Keyring
 // withDefaults fills every zero tunable from the §2.2 default* constants, so a caller that
 // configures only the transport + secrets still gets the documented caps and intervals.
 func (c ConsoleConfig) withDefaults() ConsoleConfig {
+	if c.Now == nil {
+		c.Now = time.Now
+	}
 	if c.FleetCap == 0 {
 		c.FleetCap = defaultFleetCap
 	}
@@ -287,7 +291,7 @@ func (c *Console) stopAll() {
 // SweepOnce reconciles candidates, applies fleet/tenant caps and polls every owned source once. Graph
 // calls run outside the mutex with a zeroed token copy.
 func (c *Console) SweepOnce(ctx context.Context) {
-	now := time.Now()
+	now := c.clockNow()
 	cands, err := c.pollSources(ctx)
 	if err != nil {
 		return
@@ -390,7 +394,7 @@ func (c *Console) SweepOnce(ctx context.Context) {
 	}
 	c.mu.Unlock()
 	for _, s := range toPoll {
-		c.pollOne(ctx, s, now)
+		c.pollOne(ctx, s)
 	}
 }
 
@@ -494,18 +498,19 @@ func (c *Console) renewLocked(ctx context.Context, s *consoleSource, now time.Ti
 }
 
 // pollOne runs either a forward Graph read (after-cursor) or the §2.2 deletion batch outside the mutex, then commits under custody fences.
-func (c *Console) pollOne(ctx context.Context, s *consoleSource, now time.Time) {
+func (c *Console) pollOne(ctx context.Context, s *consoleSource) {
 	c.mu.Lock()
 	if s.reading || c.sources[s.source] != s || !s.owned {
 		c.mu.Unlock()
 		return
 	}
 	s.reading = true
+	tok := c.ensureTokenLocked(ctx, s)
+	now := c.clockNow() // Credential loading can also outlive the sweep's initial scheduling instant.
 	refs := c.deletionBatch(s, now)
 	if !now.Before(s.nextPollAt) {
 		s.nextPollAt = now.Add(c.cfg.PollInterval) // move now so a slow Graph call can't double-poll
 	}
-	tok := c.ensureTokenLocked(ctx, s)
 	objID, assetID, after := s.sourceObjectID, s.assetID, s.lastAfter
 	c.mu.Unlock()
 
@@ -515,7 +520,7 @@ func (c *Console) pollOne(ctx context.Context, s *consoleSource, now time.Time) 
 	if len(refs) > 0 {
 		err = c.checkDeletions(ctx, s, refs, tok, now)
 	} else {
-		items, newAfter, newBefore, err = c.pollGraph(ctx, objID, assetID, after, tok, now)
+		items, newAfter, newBefore, err = c.pollGraph(ctx, objID, assetID, after, tok)
 	}
 	clear(tok)
 
@@ -578,21 +583,20 @@ var (
 )
 
 // pollGraph reads one page of the source's comments (the source_object_id is the live video / post).
-func (c *Console) pollGraph(ctx context.Context, objID, assetID, after string, tok []byte, now time.Time) ([]BridgeComment, string, string, error) {
+func (c *Console) pollGraph(ctx context.Context, objID, assetID, after string, tok []byte) ([]BridgeComment, string, string, error) {
 	ctx, cancel := context.WithTimeout(ctx, c.cfg.CallTimeout)
 	defer cancel()
 	q := url.Values{"fields": {commentFields}, "order": {"chronological"}, "limit": {strconv.Itoa(maxGraphPageSize)}}
 	if after != "" {
 		q.Set("after", after)
 	}
-	started := time.Now()
-	rep, err := c.commentGraph(ctx, assetID, objID+"/comments", q, tok, now, false)
+	rep, err := c.commentGraph(ctx, assetID, objID+"/comments", q, tok, false)
 	if err != nil || !rep.OK() || commentReplyCode(rep.Body) != 0 {
 		return nil, "", "", classifyGraphErr(rep, err)
 	}
 	items, newAfter, newBefore, ok := normalizeComments(rep.Body, assetID, maxGraphPageSize)
 	if !ok {
-		c.commentParseFailure(assetID, now.Add(time.Since(started)))
+		c.commentParseFailure(assetID)
 		return nil, "", "", errors.New("metareply: bad comment page")
 	}
 	return items, newAfter, newBefore, nil
@@ -826,7 +830,7 @@ func (c *Console) graphOlder(ctx context.Context, objID, assetID, before string,
 	ctx, cancel := context.WithTimeout(ctx, c.cfg.CallTimeout)
 	defer cancel()
 	q := url.Values{"fields": {commentFields}, "order": {"chronological"}, "before": {before}, "limit": {strconv.Itoa(limit)}}
-	rep, err := c.commentGraph(ctx, assetID, objID+"/comments", q, tok, time.Now(), true)
+	rep, err := c.commentGraph(ctx, assetID, objID+"/comments", q, tok, true)
 	if err != nil || !rep.OK() || commentReplyCode(rep.Body) != 0 {
 		return nil, "", ErrBridgeUnavailable
 	}
@@ -899,7 +903,7 @@ func (c *Console) facts(ctx context.Context, s *consoleSource, ref string, now t
 	ctx, cancel := context.WithTimeout(ctx, c.cfg.CallTimeout)
 	defer cancel()
 	// Calls Graph GET /{comment_id} (live-console-v1 §2.3 / Amendment 1 A1.2 1a); token in the header only.
-	rep, err := c.commentGraph(ctx, assetID, ref, url.Values{"fields": {factsFields(object)}}, tok, now, true)
+	rep, err := c.commentGraph(ctx, assetID, ref, url.Values{"fields": {factsFields(object)}}, tok, true)
 	if err != nil {
 		return CommentFacts{}, ErrBridgeUnavailable
 	}

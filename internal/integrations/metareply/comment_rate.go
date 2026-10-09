@@ -24,12 +24,13 @@ type consoleRate struct {
 }
 
 // commentGraph reserves the shared slot before I/O. Polls skip occupied slots; bridge reads may wait within their existing deadline.
-func (c *Console) commentGraph(ctx context.Context, asset, path string, q url.Values, tok []byte, now time.Time, wait bool) (metaoauth.Reply, error) {
+func (c *Console) commentGraph(ctx context.Context, asset, path string, q url.Values, tok []byte, wait bool) (metaoauth.Reply, error) {
 	if len(tok) == 0 {
 		return metaoauth.Reply{}, errGraphReauth
 	}
 	started := time.Now()
 	var b *consoleRate
+	var spacing time.Duration
 	for {
 		if ctx.Err() != nil {
 			return metaoauth.Reply{}, errCommentBudget
@@ -43,14 +44,12 @@ func (c *Console) commentGraph(ctx context.Context, asset, path string, q url.Va
 			b = &consoleRate{}
 			c.rates[asset] = b
 		}
-		at := now
-		if wait {
-			at = now.Add(time.Since(started))
-		}
+		// Admission follows the actual clock after token loading/previous sources, never a sweep snapshot.
+		at := c.clockNow()
 		if !b.busy && !at.Before(b.next) {
 			b.busy = true
-			b.next = at.Add(max(c.cfg.PollInterval, b.usage))
-			now = at
+			spacing = max(c.cfg.PollInterval, b.usage)
+			b.next = at.Add(spacing)
 			c.mu.Unlock()
 			break
 		}
@@ -73,11 +72,13 @@ func (c *Console) commentGraph(ctx context.Context, asset, path string, q url.Va
 		}
 	}
 	// Calls Graph GET with Authorization only (live-console-v1 §2.4); root ids checks share the exact transport.
-	callStarted := time.Now()
+	callStarted := c.clockNow()
 	rep, err := c.graph.Do(ctx, http.MethodGet, path, q, tok, nil)
-	completed := now.Add(time.Since(callStarted))
+	completed := c.clockNow()
 	c.mu.Lock()
 	b.busy = false
+	// Preserve the reserved spacing if this goroutine was delayed after admission but before the actual GET.
+	b.next = maxTime(b.next, callStarted.Add(spacing))
 	code := commentReplyCode(rep.Body)
 	// A single-comment404 is a confirmed absence, not a quota failure. It still spent this slot.
 	if err != nil || (!commentFactsMissing(rep, path) && (!rep.OK() || code != 0 || !json.Valid(rep.Body))) {
@@ -100,12 +101,20 @@ func (c *Console) backoffLocked(b *consoleRate, now time.Time, reauth bool) {
 	}
 	b.next = now.Add(max(c.cfg.PollInterval, b.backoff, b.usage))
 }
-func (c *Console) commentParseFailure(asset string, now time.Time) {
+func (c *Console) commentParseFailure(asset string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if b := c.rates[asset]; b != nil {
-		c.backoffLocked(b, now, false)
+		c.backoffLocked(b, c.clockNow(), false)
 	}
+}
+
+// clockNow supplies one absolute clock for comment scheduling and request deadlines; elapsed wait caps stay monotonic.
+func (c *Console) clockNow() time.Time {
+	if c.cfg.Now != nil {
+		return c.cfg.Now()
+	}
+	return time.Now()
 }
 
 // Error envelopes can be per-id in a successful batch response. Only fixed codes are consumed, never messages.

@@ -75,8 +75,7 @@ func (c *Console) checkDeletions(ctx context.Context, s *consoleSource, refs []d
 	}
 	ctx, cancel := context.WithTimeout(ctx, c.cfg.CallTimeout)
 	defer cancel()
-	started := time.Now()
-	rep, err := c.commentGraph(ctx, s.assetID, "", url.Values{"ids": {strings.Join(ids, ",")}, "fields": {"id"}}, tok, now, false)
+	rep, err := c.commentGraph(ctx, s.assetID, "", url.Values{"ids": {strings.Join(ids, ",")}, "fields": {"id"}}, tok, false)
 	if !errors.Is(err, errCommentBudget) {
 		c.mu.Lock()
 		s.lastDeletionAt = now
@@ -95,7 +94,7 @@ func (c *Console) checkDeletions(ctx context.Context, s *consoleSource, refs []d
 	}
 	present, ok := parseDeletionIDs(rep.Body, asked)
 	if !ok {
-		c.commentParseFailure(s.assetID, now.Add(time.Since(started)))
+		c.commentParseFailure(s.assetID)
 		return errors.New("metareply: invalid comment id batch")
 	}
 	c.mu.Lock()
