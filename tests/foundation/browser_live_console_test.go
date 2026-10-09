@@ -1,9 +1,9 @@
 //go:build browser
 
-// Purpose: LC-U1 real-browser contract gate with an explicitly MOCK Console upstream.
+// Purpose: LC-U1 MOCK Console gate plus LC-U2a real Go/PG comment/inbox browser fixtures.
 // Depends on: lcSetup/newBrowserIDP, real identity/PG scope, packaged Next BFF and Playwright;
 // LC_BROWSER_LIVE_CONSOLE_ACCEPTANCE, LC_TEST_DATABASE_ALLOWED, LC_BROWSER_EVIDENCE_ROOT, optional LC_BROWSER_CONSOLE_GREP.
-// Used by: scripts/dev/test-local.sh --browser-live-console; no provider or SQL Console acceptance.
+// Used by: scripts/dev/test-local.sh --browser-live-console; REAL_PG comments, MOCK Graph and legacy Console scenes.
 // Invariants: I01/I02/I06/I11/I14/I18; browser writes cross actual session/Origin/CSRF checks.
 package foundation_test
 
@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -29,6 +30,8 @@ import (
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/identity"
 	"livecommerce/internal/identityhttp"
+	"livecommerce/internal/metaconnect"
+	"livecommerce/internal/msgtemplates"
 	"livecommerce/internal/oidclogin"
 	"livecommerce/internal/platform"
 )
@@ -337,15 +340,20 @@ func (m *consoleMock) serve(w http.ResponseWriter, r *http.Request, store string
 	return true
 }
 
-// TestBrowserLiveConsoleRealChain runs LC-U1 through signed MOCK OIDC, real PG identity and Next.
-// Console business responses/receipts are MOCK; this gate cannot accept LC-B1/LC-B7 or Graph.
+// TestBrowserLiveConsoleRealChain runs signed MOCK OIDC, Next and Go with LC-U1 MOCK scenes
+// and LC-U2a real PG comments/inbox services. No LIVE Graph or production acceptance.
 func TestBrowserLiveConsoleRealChain(t *testing.T) {
 	if os.Getenv("LC_BROWSER_LIVE_CONSOLE_ACCEPTANCE") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
 		t.Fatal("use scripts/dev/test-local.sh --browser-live-console")
 	}
+	calibration := os.Getenv("LC_CONSOLE_CALIBRATION")
+	if calibration != "" && calibration != "retain-on-reset" {
+		t.Fatal("unsupported LC_CONSOLE_CALIBRATION")
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 700*time.Second)
 	defer cancel()
-	h := lcSetup(t)
+	comments := newConsoleCommentsFixture(t)
+	h := comments.e.h
 	mustExec(t, h.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'inventory:write')`, h.f.tenantA, h.f.storeA1, h.actor)
 	narrow, narrowToken := lcPrincipal(t, h.f, h.f.tenantA, []string{h.f.storeA1}, "store:read", "live:read", "inventory:live_adjust")
 	_, readToken := lcPrincipal(t, h.f, h.f.tenantA, []string{h.f.storeA1}, "store:read", "live:read", "live:manage")
@@ -382,7 +390,9 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 	}
 	mux := http.NewServeMux()
 	mux.Handle("/v1/identity/", private)
-	mux.Handle("/", httpapi.NewHandler(h.f.runtime, httpapi.Options{SessionStoreList: true, Studio: true, ClaimLabels: &h.labels}))
+	mux.Handle("/", httpapi.NewHandler(h.f.runtime, httpapi.Options{SessionStoreList: true, Studio: true, ClaimLabels: &h.labels,
+		CommentStream: comments.stream, Inbox: comments.e.svc, MsgTemplates: msgtemplates.NewService(),
+		MetaHealth: &metaconnect.Health{Reader: metaconnect.TableReader{Fallback: metaconnect.SnapshotReader{}}}}))
 	mock := &consoleMock{scenes: map[string]*consoleMockScene{}, responses: map[string]any{}, receipts: []consoleMockReceipt{}}
 	ids := []string{}
 	lateScenes := []string{}
@@ -408,6 +418,51 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 				consoleJSON(w, 403, map[string]any{"code": "forbidden"})
 				return
 			}
+			if r.URL.Path == "/__test/live-console/fault" && r.Method == http.MethodPost {
+				// Decode once so the pre-existing MOCK fault controls retain their exact behavior.
+				var in struct {
+					Scene string `json:"scene"`
+					Mode  string `json:"mode"`
+				}
+				if json.NewDecoder(r.Body).Decode(&in) != nil {
+					consoleJSON(w, 400, map[string]any{"code": "invalid_request"})
+					return
+				}
+				if in.Scene == comments.e.session && in.Mode == "comments_reset" {
+					if err := comments.resetComments(r.Context()); err != nil {
+						consoleJSON(w, 500, map[string]any{"code": "fixture_reset_failed"})
+						return
+					}
+					consoleJSON(w, 200, map[string]any{"armed": true})
+					return
+				}
+				if in.Scene == comments.e.session && (in.Mode == "public_graph_unknown" || in.Mode == "public_graph_restore") {
+					// TEST-ONLY network fault: the real operation worker receives a MOCK Graph 5xx.
+					mode := "5xx"
+					if in.Mode == "public_graph_restore" {
+						mode = "ok"
+					}
+					comments.e.g.setMode(mode)
+					consoleJSON(w, 200, map[string]any{"armed": true})
+					return
+				}
+				if in.Scene == comments.e.session && (in.Mode == "grant_revoke" || in.Mode == "grant_restore") {
+					// TEST SETUP ONLY: mutate this synthetic principal/store's real grant. The
+					// BFF's authenticatedStores lookup must produce the scoped 404, not a mock response.
+					query := `DELETE FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission='store:read'`
+					if in.Mode == "grant_restore" {
+						query = `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'store:read') ON CONFLICT DO NOTHING`
+					}
+					if _, err := h.f.owner.Exec(r.Context(), query, h.f.tenantA, h.f.storeA1, h.actor); err != nil {
+						consoleJSON(w, 500, map[string]any{"code": "fixture_grant_failed"})
+						return
+					}
+					consoleJSON(w, 200, map[string]any{"granted": in.Mode == "grant_restore"})
+					return
+				}
+				raw, _ := json.Marshal(in)
+				r.Body = io.NopCloser(strings.NewReader(string(raw)))
+			}
 			mock.mu.Lock()
 			defer mock.mu.Unlock()
 			if r.URL.Path == "/__test/live-console/fault" && r.Method == http.MethodPost {
@@ -432,13 +487,19 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 				return
 			}
 			if r.URL.Path == "/__test/live-console/facts" && r.Method == http.MethodGet {
-				consoleJSON(w, 200, map[string]any{"class": "MOCK", "scenes": mock.scenes, "receipts": mock.receipts, "bad_authority": mock.badAuthority})
+				facts, err := comments.facts(r.Context())
+				if err != nil {
+					consoleJSON(w, 500, map[string]any{"code": "fixture_facts_failed"})
+					return
+				}
+				consoleJSON(w, 200, map[string]any{"class": "MOCK", "scenes": mock.scenes, "receipts": mock.receipts, "bad_authority": mock.badAuthority, "comments": facts})
 				return
 			}
 			consoleJSON(w, 404, map[string]any{"code": "not_found"})
 			return
 		}
 		parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+		comments.observe(r)
 		if len(parts) >= 5 && parts[0] == "v1" && parts[1] == "admin" && parts[2] == "stores" && (parts[4] == "live-sessions" || parts[4] == "inventory") {
 			if r.Header.Get("Cookie") != "" || r.Header.Get("X-Tenant-ID") != "" || r.Header.Get("X-Forwarded-Host") != "" {
 				mock.mu.Lock()
@@ -449,6 +510,9 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 			permission := "live:read"
 			if r.Method != http.MethodGet {
 				permission = "live:manage"
+			}
+			if len(parts) == 9 && parts[6] == "comments" && (parts[8] == "private-reply" || parts[8] == "public-reply") {
+				permission = "inbox:reply"
 			}
 			if parts[4] == "inventory" {
 				permission = "inventory:write"
@@ -476,6 +540,11 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 			}
 		}
 		mux.ServeHTTP(w, r)
+		if r.Method == http.MethodPost && strings.Contains(r.URL.Path, "/live-sessions/"+comments.e.session+"/comments/") {
+			if err := comments.dispatch(r.Context()); err != nil {
+				t.Error("LC-U2a fixture dispatch failed")
+			}
+		}
 	}))
 	defer api.Close()
 	root, err := filepath.Abs("../..")
@@ -500,7 +569,7 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 	nextLog := browserLog(t, filepath.Join(evidence, "next.log"))
 	next := exec.CommandContext(ctx, "node", filepath.Join(root, "apps/admin/.next/standalone/apps/admin/server.js"))
 	next.Dir = root
-	next.Env = browserEnvironment(map[string]string{"HOSTNAME": "127.0.0.1", "PORT": port, "NODE_ENV": "production", "COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1", "COMMERCE_PUBLIC_ORIGIN": origin, "COMMERCE_API_ORIGIN": api.URL, "COMMERCE_OIDC_ISSUER": idp.server.URL, "COMMERCE_BFF_KEY": bffKey})
+	next.Env = browserEnvironment(map[string]string{"HOSTNAME": "127.0.0.1", "PORT": port, "NODE_ENV": "production", "COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1", "COMMERCE_PUBLIC_ORIGIN": origin, "COMMERCE_API_ORIGIN": api.URL, "COMMERCE_OIDC_ISSUER": idp.server.URL, "COMMERCE_BFF_KEY": bffKey, "LC_BROWSER_LIVE_CONSOLE_ACCEPTANCE": "1", "LC_CONSOLE_CALIBRATION": calibration})
 	next.Stdout, next.Stderr = nextLog, nextLog
 	if err = next.Start(); err != nil {
 		t.Fatal(err)
@@ -535,6 +604,7 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 		t.Fatalf("Next not ready; evidence=%s", evidence)
 	}
 	sceneJSON, _ := json.Marshal(ids)
+	commentsJSON, _ := json.Marshal(comments.ids)
 	log := browserLog(t, filepath.Join(evidence, "playwright.log"))
 	cmd := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/live-console.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
 	if grep := os.Getenv("LC_BROWSER_CONSOLE_GREP"); grep != "" {
@@ -543,11 +613,19 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 		t.Logf("FOCUSED_SPEC_ONLY: live-console grep=%q; full-mode acceptance remains NOT_RUN", grep)
 	}
 	cmd.Dir = root
-	cmd.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "live-console", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_EVIDENCE": evidence, "LC_BROWSER_CONSOLE_SCENES": string(sceneJSON), "LC_BROWSER_CONSOLE_LATE_SCENE": lateScenes[0], "LC_BROWSER_CONSOLE_LATE_DEST": lateScenes[1], "LC_BROWSER_CONSOLE_STORE": h.f.storeA1, "LC_BROWSER_CONSOLE_OTHER_STORE": h.f.storeA2, "LC_BROWSER_CONSOLE_OTHER_SCENE": other, "LC_BROWSER_CONSOLE_CONTROL": controlKey, "LC_BROWSER_CONSOLE_NARROW_TOKEN": narrowToken, "LC_BROWSER_CONSOLE_READ_TOKEN": readToken})
-	cmd.Stdout, cmd.Stderr = log, log
+	cmd.Env = browserEnvironment(map[string]string{"LC_CONSOLE_CALIBRATION": calibration, "FORCE_COLOR": "0", "NO_COLOR": "1", "LC_BROWSER_SUITE": "live-console", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_EVIDENCE": evidence, "LC_BROWSER_CONSOLE_SCENES": string(sceneJSON), "LC_BROWSER_CONSOLE_LATE_SCENE": lateScenes[0], "LC_BROWSER_CONSOLE_LATE_DEST": lateScenes[1], "LC_BROWSER_CONSOLE_STORE": h.f.storeA1, "LC_BROWSER_CONSOLE_OTHER_STORE": h.f.storeA2, "LC_BROWSER_CONSOLE_OTHER_SCENE": other, "LC_BROWSER_CONSOLE_CONTROL": controlKey, "LC_BROWSER_CONSOLE_NARROW_TOKEN": narrowToken, "LC_BROWSER_CONSOLE_READ_TOKEN": readToken, "LC_BROWSER_CONSOLE_COMMENTS": string(commentsJSON)})
+	var diagnostics consoleDiagnosticBuffer
+	cmd.Stdout, cmd.Stderr = &diagnostics, &diagnostics
 	runErr := cmd.Run()
+	if _, err := io.WriteString(log, consolePlaywrightSummary(diagnostics.Bytes())); err != nil {
+		t.Error("console diagnostic write failed")
+	}
+	commentFacts, factsErr := comments.facts(ctx)
+	if factsErr != nil {
+		t.Error("LC-U2a final fixture facts failed")
+	}
 	mock.mu.Lock()
-	raw, _ := json.MarshalIndent(map[string]any{"class": "MOCK", "scenes": mock.scenes, "receipts": mock.receipts, "bad_authority": mock.badAuthority}, "", "  ")
+	raw, _ := json.MarshalIndent(map[string]any{"class": "MOCK", "comments_class": "REAL_PG + MOCK Graph", "comments": commentFacts, "scenes": mock.scenes, "receipts": mock.receipts, "bad_authority": mock.badAuthority}, "", "  ")
 	bad := mock.badAuthority
 	mock.mu.Unlock()
 	if err = os.WriteFile(filepath.Join(evidence, "mock-receipts.json"), raw, 0600); err != nil {
@@ -557,7 +635,7 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 		t.Errorf("unexpected forwarded identity headers: %d", bad)
 	}
 	if runErr != nil {
-		t.Fatalf("LC-U1 browser failed: %v; evidence=%s", runErr, evidence)
+		t.Fatalf("LC-U1/U2a browser failed: %v; evidence=%s", runErr, evidence)
 	}
-	t.Logf("LC-U1 BROWSER with MOCK Console upstream (not SQL/provider acceptance); evidence=%s", evidence)
+	t.Logf("LC-U1 MOCK Console; LC-U2a REAL_PG + MOCK Graph browser evidence=%s", evidence)
 }

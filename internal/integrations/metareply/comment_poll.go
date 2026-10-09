@@ -807,7 +807,10 @@ func (c *Console) pageLocked(s *consoleSource, req BridgePageRequest, now time.T
 		if cc.seq <= afterSeq {
 			break
 		}
-		items = append(items, cc.BridgeComment)
+		item := cc.BridgeComment
+		seq := cc.seq // §2.6: arrival position, never the page cursor or created_at; Graph history stays nil.
+		item.Seq = &seq
+		items = append(items, item)
 		lastSeq = cc.seq
 		if len(items) >= req.Limit {
 			break

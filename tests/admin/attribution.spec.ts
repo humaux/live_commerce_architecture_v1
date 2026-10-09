@@ -1,4 +1,6 @@
-// AT7/AT9 browser UI half: REAL_PG + real Go/BFF, Meta MOCK in the root-owned runner.
+// Purpose: AT7/AT9 real-click report, evidence separation and responsive table interaction gates.
+// Depends on: production Next/Go/PG, synthetic Meta fixtures, Playwright and native scrollend readiness.
+// Used by: --browser-ads-attribution; no response interception or LIVE provider acceptance.
 // No response interception or completed-order synthesis. The runner supplies authoritative fixture totals.
 // Actual buyer ad URL -> checkout (AT5) is added by the root's storefront/checkout acceptance path.
 import { expect, test, type Page } from "@playwright/test";
@@ -601,11 +603,19 @@ async function tableLayout(page: Page, locale: Locale, width: number) {
     expect(await region.evaluate((el) => el.scrollLeft)).toBe(0);
     await region.click({ position: { x: 8, y: 8 } });
     await expect(region).toBeFocused();
-    await region.press("ArrowRight");
+    // Observe native scrollend before reversing direction. A positive intermediate scrollLeft
+    // is not readiness: the CI trace has 38px, then 40px while ArrowLeft is already dispatched.
+    // This is read-only browser measurement; neither position, CSS nor keyboard behavior is patched.
+    const scrollEnd = () => region.evaluate((el) => new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => { el.removeEventListener("scrollend", done); reject(new Error("native table scroll did not settle")); }, 5000);
+      function done() { clearTimeout(timer); el.removeEventListener("scrollend", done); resolve(); }
+      el.addEventListener("scrollend", done, { once: true });
+    }));
+    await Promise.all([scrollEnd(), region.press("ArrowRight")]);
     await expect
       .poll(() => region.evaluate((el) => el.scrollLeft))
       .toBeGreaterThan(0);
-    await region.press("ArrowLeft");
+    await Promise.all([scrollEnd(), region.press("ArrowLeft")]);
     await expect.poll(() => region.evaluate((el) => el.scrollLeft)).toBe(0);
   }
 }

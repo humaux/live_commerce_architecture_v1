@@ -1,0 +1,26 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: live-console.spec.ts >> LC-U2a REAL_PG comment stream >> LCU2_RESET epoch replacement clears every old comment before reread
+- Location: tests/admin/live-console.spec.ts:254:3
+
+# Error details
+
+```
+Error: LCU2_RESET old epoch retained
+
+expect(locator).toHaveCount(expected) failed
+
+Locator:  getByTestId('comment-row-579790701424625_2713649979')
+Expected: 0
+Received: 1
+Timeout:  10000ms
+
+Call log:
+  - LCU2_RESET old epoch retained getByTestId('comment-row-579790701424625_2713649979') with timeout 10000ms
+  - waiting for getByTestId('comment-row-579790701424625_2713649979')

@@ -43,6 +43,10 @@ const config: NextConfig = {
       },
       // M7 returns a one-time claim credential. Preserve the BFF's policy through Next's global header layer.
       {
+        source: "/api/stores/:store/live-sessions/:session/comments/:path*",
+        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
+      },
+      {
         source: "/api/stores/:store/live-sessions/:session/claims/bundles/:bundle/link",
         headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
       },

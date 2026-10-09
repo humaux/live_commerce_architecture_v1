@@ -1,0 +1,26 @@
+✔ actual A2 hook fake clock: 3/6/12/24/30 backoff, success reset, hide clears and stops, 403 locks (15.792875ms)
+✔ actual reset clears selected buyer and rereads without the old epoch cursor (1.629125ms)
+✔ reply hints, coded error, UNKNOWN and capability state execute the actual composer (1.964958ms)
+✔ A2 grammar refuses private/duplicate/ambiguous cursors and keys on reads (10.416792ms)
+✔ A3-A5 exact comment ref and bodies; explicit preemption private only (0.250084ms)
+✔ A4/A5 preserve frozen refusal codes, never provider/debug text (0.07425ms)
+✔ reset invalidates old buffers and cursor before reread; older page cannot advance live cursor (0.353959ms)
+✔ filter resources have only authorised opaque ids; backoff is capped and success resets (0.07025ms)
+✔ LC-U2a real BFF seam A2-A5 exact grammar, privacy, denial and no diagnostic reflection (24.877583ms)
+✔ A8/A9/A13 and published templates: exact reads forward once with no-store (5.524208ms)
+✔ real streamed POST bodies: A10-A14 exact keys reach upstream (4.762583ms)
+✔ query, read headers, methods and body allowlists refuse before upstream (6.895833ms)
+✔ session, CSRF and store authority precede content forwarding (1.030792ms)
+✔ A12 fixed codes preserved; arbitrary upstream diagnostics stripped (6.065334ms)
+✔ client preserves codes and receipt; changed/aborted session cannot publish private response (5.152417ms)
+✔ A9 admits a full page of valid Unicode replies while bounding private response bytes (3.687125ms)
+✔ non-JSON upstream 401 still expires both authentication cookies without diagnostic leakage (1.42ms)
+✔ real M7 response keeps no-referrer after matching Next production header rules (16.631042ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 322.008875

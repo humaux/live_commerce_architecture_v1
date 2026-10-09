@@ -1,0 +1,12 @@
+✔ UNKNOWN and queued public receipt survive selection remount without storing private identifiers (12.25075ms)
+✔ actual A2 hook fake clock: 3/6/12/24/30 backoff, success reset, hide clears and stops, 403 locks (6.9735ms)
+✔ actual reset clears selected buyer and rereads without the old epoch cursor (1.361292ms)
+✔ reply hints, coded error, UNKNOWN and capability state execute the actual composer (1.5865ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 300.2795
