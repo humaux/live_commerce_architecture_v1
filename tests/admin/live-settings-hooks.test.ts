@@ -28,3 +28,25 @@ test("W3-U2 UNKNOWN rejects a stale fresh command and admits only exact receipt 
  assert.equal(h.output.receipt.current,first);
  await h.output.run(h.output.receipt.current);await h.settle();assert.equal(writes.length,2);assert.deepEqual(writes[1],writes[0]);
 });
+
+for(const boundary of ["hide","departure","unmount"] as const)test(`W3-U2 captured command cannot dispatch after ${boundary}`,async t=>{
+ const env=environment(t);let writes=0;
+ globalThis.fetch=async (_input,init)=>{if(init?.method==="POST"){writes++;return response({code:"unavailable"},503);}return response({items:[],next_cursor:""});};
+ const h=env.mount(()=>useLiveSettingsController({store,locale:"en",scene:"",initialError:null}));await h.settle();const staleRun=h.output.run;
+ if(boundary==="hide"){env.document.visibilityState="hidden";env.document.dispatchEvent(new Event("visibilitychange"));}
+ else if(boundary==="departure")h.output.privacy.suspend();else h.dispose();
+ await staleRun({method:"POST",resource:`live-sessions/${store.id}/reminders`,key:"departed-callback-key"});
+ assert.equal(writes,0,"revoked fence must refuse before any transport side effect");
+});
+
+test("W3-U2 captured BuyerPanel add cannot dispatch after native hide",async t=>{
+ const {BuyerPanel,node}=await import("./inbox-review-host.test.ts");const env=environment(t);let writes=0;
+ globalThis.fetch=async(input,init)=>{
+  if(init?.method==="POST"){writes++;return response({code:"unavailable"},503);}
+  return String(input).includes("blocklist/check")?response({restricted:false}):response({display_name:"Synthetic",platform:"facebook",purchase_ordinal:1,claims:[],claim_total_minor:0,orders:[],link_pending_manual:false});
+ };
+ const h=env.mount(()=>BuyerPanel({store,locale:"en",bundleId:store.id,sessionId:store.id}));await h.settle();
+ const staleAdd=node(h,n=>n.props["data-testid"]==="buyer-block-add").props.onClick;
+ env.document.visibilityState="hidden";env.document.dispatchEvent(new Event("visibilitychange"));
+ await staleAdd();await h.settle();assert.equal(writes,0);
+});

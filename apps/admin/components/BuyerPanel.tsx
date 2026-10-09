@@ -400,6 +400,7 @@ function BuyerRestriction({
     )
       return;
     const ticket = privacy.fence.begin();
+    if (!privacy.fence.current(ticket)) return;
     const action = pending.current ?? {
       key: crypto.randomUUID(),
       method: "POST" as const,

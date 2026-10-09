@@ -218,8 +218,9 @@ export function useLiveSettingsController({
   async function page(next: string, previous = false) {
     if (!scene || inFlight.current || receipt.current || !privacy.visible)
       return;
-    const sequence = ++pageLoad.current,
-      ticket = privacy.fence.begin();
+    const ticket = privacy.fence.begin();
+    if (!privacy.fence.current(ticket)) return;
+    const sequence = ++pageLoad.current;
     setLoading(true);
     setError("");
     try {
@@ -243,6 +244,8 @@ export function useLiveSettingsController({
     }
   }
   async function run(first: SettingsReceipt) {
+    const ticket = privacy.fence.begin();
+    if (!privacy.fence.current(ticket)) return;
     // Disabled controls cannot revoke already captured callbacks: UNKNOWN admits only its retained receipt.
     if (inFlight.current || (receipt.current && receipt.current !== first) || !privacy.visible || privacy.blocked.current) return;
     inFlight.current = true;
@@ -252,7 +255,6 @@ export function useLiveSettingsController({
     setUnknown(false);
     setError("");
     setNotice("");
-    const ticket = privacy.fence.begin();
     let action = first;
     try {
       for (;;) {
