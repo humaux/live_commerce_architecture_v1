@@ -19,7 +19,7 @@ import { displayTime } from "../../packages/format/src/index.ts";
 const root=process.cwd(), evidence=process.env.LC_ORDER_EVIDENCE;
 assert(evidence && /^http:\/\/127\.0\.0\.1:\d+$/.test(process.env.LC_ORDER_CONTROL));
 const origin="https://buyer.example", checkoutPath="/en/checkout";
-const children=new Set(), sockets=new Set(), logs=[], contexts=[], orders=[], observations=[], storageWrites=[], consoleText=[], requestURLs=[], cartRetries=[], clickLedger=[];
+const children=new Set(), sockets=new Set(), logs=[], contexts=[], orders=[], observations=[], storageWrites=[], consoleText=[], requestURLs=[], cartRetries=[], cartRefreshes=[], clickLedger=[];
 const pii={recipient_name:"Synthetic Gate Recipient",phone:"+886900000091",region:"Synthetic Region",city:"Synthetic City",postal_code:"99991",line1:"Synthetic Address Ninety One",line2:"Synthetic Unit Ninety Two"};
 const secrets=[], pageErrors=[], closedContextStates=new Map();
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return{promise,resolve};};
@@ -203,6 +203,119 @@ async function cartClick(p,caseID,control,locator,expected,verify) {
   catch(error){row.actual=String(error.message).slice(0,1000);row.status="FAIL";throw error;}
   finally {await writeFile(path.join(evidence,"cart-click-ledger.json"),JSON.stringify(clickLedger,null,2),{mode:0o600});}
 }
+// BC02 instruments DOM/focus only. It never changes app state, request bodies or cart replies.
+async function measureCart(p,surface) {
+  await p.evaluate(surface=>{
+    const state=window.__cartRace={focus:[],samples:[],empty:0,line_loss:0,seen_line:false};
+    const sample=()=>{
+      const host=document.querySelector(`[data-testid="${surface}"]`);
+      if(!host||!host.getClientRects().length)return;
+      const lines=host.querySelectorAll('[data-testid="cart-line"]');
+      const title=host.querySelector('.sf-empty__title')?.textContent;
+      const empty=title==="Your cart is empty";
+      if(empty)state.empty++;
+      if(state.seen_line&&!lines.length)state.line_loss++;
+      if(lines.length)state.seen_line=true;
+      const row={title:title||null,lines:lines.length,qty:host.querySelector('[data-testid="cart-line-qty"]')?.textContent||null};
+      if(JSON.stringify(row)!==JSON.stringify(state.samples.at(-1)))state.samples.push(row);
+    };
+    window.addEventListener("focus",e=>state.focus.push({type:"focus",trusted:e.isTrusted}));
+    window.addEventListener("blur",e=>state.focus.push({type:"blur",trusted:e.isTrusted}));
+    new MutationObserver(sample).observe(document.documentElement,{childList:true,subtree:true,characterData:true});
+    sample();
+  },surface);
+}
+async function focusFixture(p,surface) {
+  // Controlled same-origin HTML is only a physical focus boundary. It contains no application/cart state.
+  await p.evaluate(surface=>{
+    const frame=document.createElement("iframe");frame.dataset.testid="native-focus-fixture";
+    frame.title="Browser gate native focus boundary";frame.src="/__gate/native-focus";
+    frame.style.cssText="position:fixed;right:8px;bottom:8px;width:170px;height:60px;z-index:9999;background:white";
+    document.querySelector(`[data-testid="${surface}"]`).append(frame);
+  },surface);
+}
+async function nativeFocus(p,caseID,label,parent) {
+  const before=await p.evaluate(()=>window.__cartRace.focus.length);
+  await cartClick(p,caseID,`${label} frame button`,p.frameLocator('[data-testid="native-focus-fixture"]').getByRole("button",{name:"Native focus boundary",exact:true}),"actual iframe click emits a trusted parent-window blur",async()=>{
+    await expect.poll(()=>p.evaluate(()=>window.__cartRace.focus.at(-1))).toEqual({type:"blur",trusted:true});
+    await expect.poll(()=>p.evaluate(()=>document.activeElement?.tagName)).toBe("IFRAME");
+  });
+  await cartClick(p,caseID,`${label} cart text`,parent,"actual cart text click emits a new trusted parent-window focus",async()=>{
+    await expect.poll(()=>p.evaluate(()=>window.__cartRace.focus.at(-1))).toEqual({type:"focus",trusted:true});
+    assert((await p.evaluate(()=>window.__cartRace.focus.length))>before,"a NEW trusted native focus event starts the refresh");
+  });
+}
+async function cartRefreshRace() {
+  const caseID="BC02 native focus failure preserves held real cart on retained drawer and fresh mount";
+  const c=await newContext(),p=await c.newPage();
+  await p.goto(`${origin}/en/products/${process.env.LC_ORDER_PRODUCT}`);
+  await expect(p.getByTestId("add-to-cart")).toBeEnabled();
+  const created=p.waitForResponse(r=>requestIs(r,"cart","PUT")&&r.status()===200);
+  await cartClick(p,caseID,"add-to-cart",p.getByTestId("add-to-cart"),"real UI creates one persisted cart line",async()=>expect(p.getByTestId("cart-drawer").getByTestId("cart-line-qty")).toHaveText("1"));
+  const actual=await(await created).json(),write=calls.filter(x=>x.path==="/api/buyer/cart"&&x.method==="PUT").at(-1);
+  assert.equal(actual.items.length,1);
+  const factPath=`cart-facts/${actual.id}/${write.key}`,before=await control(factPath);
+  assert.equal(before.version,1);assert.equal(before.receipts,1);assert.equal(before.writes,1);
+  const phases=[];
+  for(const surface of ["drawer","mount"]){
+    let held;
+    const phase={surface,held_status:0,session_status:0,measurement:null};phases.push(phase);
+    try {
+      if(surface==="drawer") {
+        await measureCart(p,"cart-drawer");
+        await focusFixture(p,"cart-drawer");
+        held=arm("cart",{method:"GET",after:true});
+        await nativeFocus(p,caseID,"drawer held",p.getByTestId("cart-drawer").getByTestId("cart-line-qty"));
+      } else {
+        // Full navigation mounts a new Provider with ready=false and no in-memory cart.
+        // Unlike a loaded same-context cart, it exposes premature ready+empty while the persisted GET is held.
+        held=arm("cart",{method:"GET",after:true});
+        await p.goto(`${origin}/en/cart`);
+        await measureCart(p,"cart-page");
+        await expect(p.getByTestId("cart-empty")).toContainText("Loading…");
+        await focusFixture(p,"cart-page");
+      }
+      phase.held_status=await held.result.promise;
+      assert.equal(phase.held_status,200,"held cart response is the actual production Next/Go/PG read");
+      phase.held_cart=JSON.parse(held.out.body.toString());
+      assert.deepEqual(phase.held_cart,actual,"cart payload is unmodified and nonempty");
+      const failedStart=calls.length;
+      const failed=arm("session",{method:"GET",session503:true});
+      const reply=p.waitForResponse(r=>requestIs(r,"session","GET")&&r.status()===503);
+      await nativeFocus(p,caseID,`${surface} failed`,surface==="drawer"?p.getByTestId("cart-drawer").getByTestId("cart-line-qty"):p.getByTestId("cart-empty").locator(".sf-empty__title"));await reply;
+      phase.session_status=await failed.result.promise;
+      phase.session_failures=calls.slice(failedStart).filter(x=>x.path==="/api/buyer/session"&&x.method==="GET"&&x.status===503).length;
+      // Browser response receipt precedes React's rejection/finally; allow two actual rendering frames.
+      await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+      phase.measurement=await p.evaluate(()=>window.__cartRace);
+      await writeFile(path.join(evidence,"cart-refresh-race-facts.json"),JSON.stringify({case_id:caseID,cart_id:actual.id,key:write.key,before,phases},null,2),{mode:0o600});
+      assert.equal(phase.session_failures,1,"exactly one session GET failure follows the native focus click");
+      assert.equal(phase.session_status,503,"one later native-focus session request fails");
+      assert.equal(phase.measurement.empty,0,`BC02 ${surface}: visible cart must NEVER render empty while valid cart is held`);
+      if(surface==="drawer")assert.equal(phase.measurement.line_loss,0,"rendered line stays continuous throughout the failed refresh");
+      else await expect(p.getByTestId("cart-empty")).toContainText("Loading…");
+      held.release.resolve();
+      const host=p.getByTestId(surface==="drawer"?"cart-drawer":"cart-page");
+      await expect(host.getByTestId("cart-line-qty")).toHaveText("1");
+      phase.measurement=await p.evaluate(()=>window.__cartRace);
+      assert.equal(phase.measurement.empty,0,"released actual response produces the line without an empty flash");
+      if(surface==="drawer")assert.equal(phase.measurement.line_loss,0);
+    } finally {
+      held?.release.resolve();hook=null;
+      await p.getByTestId("native-focus-fixture").evaluate(frame=>frame.remove()).catch(()=>{});
+      await writeFile(path.join(evidence,"cart-refresh-race-facts.json"),JSON.stringify({case_id:caseID,cart_id:actual.id,key:write.key,before,phases},null,2),{mode:0o600});
+    }
+  }
+  await cartClick(p,caseID,"header-cart",p.getByTestId("header-cart"),"drawer still shows the persisted line after both real read races",async()=>expect(p.getByTestId("cart-drawer").getByTestId("cart-line-qty")).toHaveText("1"));
+  const writes=calls.filter(x=>x.path==="/api/buyer/cart"&&x.method==="PUT").length;
+  await p.reload();await expect(p.getByTestId("cart-page").getByTestId("cart-line-qty")).toHaveText("1");
+  await cartClick(p,caseID,"header-cart after reload",p.getByTestId("header-cart"),"reloaded drawer keeps exactly one persisted line",async()=>expect(p.getByTestId("cart-drawer").getByTestId("cart-line-qty")).toHaveText("1"));
+  assert.equal(calls.filter(x=>x.path==="/api/buyer/cart"&&x.method==="PUT").length,writes,"races and reload issue no writes");
+  const after=await control(factPath);assert.deepEqual(after,before);
+  cartRefreshes.push({case_id:caseID,cart_id:actual.id,key:write.key,sku_id:actual.items[0].sku_id,before,after,phases});
+  await writeFile(path.join(evidence,"cart-refresh-race-facts.json"),JSON.stringify(cartRefreshes,null,2),{mode:0o600});
+  await c.close();pass(caseID);
+}
 async function cartRetry(p,locale,surface,initiate) {
   const caseID=`BC01 ${locale} ${surface} visible cart Retry preserves key/body and one committed write after reload`;
   const host=()=>p.getByTestId(surface==="drawer"?"cart-drawer":"cart-page");
@@ -246,13 +359,19 @@ try {
   const port=await startNext();
   edge=https.createServer({key:await readFile(path.join(certDir,"key.pem")),cert:await readFile(path.join(certDir,"cert.pem"))},async(req,res)=>{
     try {
+      if(req.url==="/__gate/native-focus"){
+        res.writeHead(200,{"content-type":"text/html","cache-control":"no-store"});
+        res.end('<!doctype html><html lang="en"><button type="button">Native focus boundary</button></html>');return;
+      }
       const chunks=[];for await(const x of req)chunks.push(x);const body=Buffer.concat(chunks);
       if(req.url.startsWith("/api/buyer/session/")&&req.url.includes("prepare")&&body.toString().includes('"reset"'))sessionResets++;
       const call={path:req.url,method:req.method,key:req.headers["idempotency-key"],body:body.length?body.toString():null};
       if(req.url.startsWith("/api/buyer/"))calls.push(call);
       const active=hook&&hook.path===req.url&&(!hook.method||hook.method===req.method)?hook:null;
       if(active){if(!active.repeat)hook=null;active.entered.resolve();if(active.before)await active.release.promise;}
-      const out=await relay(port,req,body);call.status=out.status;
+      // Documented BC02 fixture outage: fail one session GET at the synthetic edge.
+      // Cart GET/PUT always relay the actual production response and are never replaced.
+      const out=active?.session503?{status:503,headers:{"content-type":"application/json","cache-control":"no-store"},body:Buffer.from('{"error":"synthetic_session_unavailable"}')} : await relay(port,req,body);call.status=out.status;
       if(active){active.out=out;active.result.resolve(out.status);}
       call.dropped=!!active?.drop;
       if(active?.drop){res.destroy();return;}
@@ -283,6 +402,8 @@ try {
     await cartRetry(p,locale,"cart-page",async caseID=>cartClick(p,caseID,"Increase quantity",p.getByTestId("cart-page").getByRole("button",{name:cartCopy[locale].increase,exact:true}),"cart page shows uncertain committed edit",async()=>expect(p.getByTestId("cart-page").getByTestId("cart-problem")).toBeVisible()));
     await context.close();
   }
+
+  await cartRefreshRace();
 
   // BO01/BO03: native form, all locales, in-memory PII and causal lost PUT.
   const c1=await newContext(),{p:a,quote:q1}=await quotePage(c1);await rememberCookie(c1);
@@ -596,7 +717,7 @@ try {
   }
   assert.deepEqual(pageErrors.filter(e=>!isWebkitCancelledFetch(e)).map(e=>e.name),[],"browser application exception"); // WebKit cancelled-fetch console noise: browser-engine.mjs
   pass("BO06 all attempted local/session writes, URLs and console exclude PII/bearer; other owner denied");
-  await writeFile(path.join(evidence,"result.json"),JSON.stringify({cases:observations.length,orders,repeated_orders:[order1,orderB],observations,cart_retries:cartRetries,click_ledger:clickLedger,storage_write_attempts:storageWrites.length,scope:"actual UI/Next/Go/isolated PG; synthetic TLS and buyer data; no PSP/production",not_run:["full foundation/race/vet and existing browser regression are separate root gates","independent visual review"]},null,2),{mode:0o600});
+  await writeFile(path.join(evidence,"result.json"),JSON.stringify({cases:observations.length,orders,repeated_orders:[order1,orderB],observations,cart_retries:cartRetries,cart_refreshes:cartRefreshes,click_ledger:clickLedger,storage_write_attempts:storageWrites.length,scope:"actual UI/Next/Go/isolated PG; synthetic TLS and buyer data; no PSP/production",not_run:["full foundation/race/vet and existing browser regression are separate root gates","independent visual review"]},null,2),{mode:0o600});
 }catch(error){
   // A failed step leaves what the buyer was looking at (screenshot + visible text of every page), so an intermittent failure is diagnosable from its own run.
   if(browser)for(const context of browser.contexts())for(const [index,page] of context.pages().entries()){

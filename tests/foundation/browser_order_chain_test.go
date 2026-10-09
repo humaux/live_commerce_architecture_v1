@@ -80,6 +80,10 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 		}
 		return out, rows.Err()
 	}
+	type cartItem struct {
+		SKUID    string `json:"sku_id"`
+		Quantity int64  `json:"quantity"`
+	}
 	type cartFact struct {
 		ID             string          `json:"id"`
 		Version        int64           `json:"version"`
@@ -250,6 +254,39 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 			After       cartFact `json:"after"`
 			Reloaded    cartFact `json:"reloaded"`
 		} `json:"cart_retries"`
+		CartRefreshes []struct {
+			CaseID string   `json:"case_id"`
+			CartID string   `json:"cart_id"`
+			Key    string   `json:"key"`
+			SKUID  string   `json:"sku_id"`
+			Before cartFact `json:"before"`
+			After  cartFact `json:"after"`
+			Phases []struct {
+				Surface         string `json:"surface"`
+				HeldStatus      int    `json:"held_status"`
+				SessionStatus   int    `json:"session_status"`
+				SessionFailures int    `json:"session_failures"`
+				HeldCart        struct {
+					ID      string     `json:"id"`
+					Version int64      `json:"version"`
+					Items   []cartItem `json:"items"`
+				} `json:"held_cart"`
+				Measurement struct {
+					Empty    int  `json:"empty"`
+					LineLoss int  `json:"line_loss"`
+					SeenLine bool `json:"seen_line"`
+					Focus    []struct {
+						Type    string `json:"type"`
+						Trusted bool   `json:"trusted"`
+					} `json:"focus"`
+					Samples []struct {
+						Title *string `json:"title"`
+						Lines int     `json:"lines"`
+						Qty   *string `json:"qty"`
+					} `json:"samples"`
+				} `json:"measurement"`
+			} `json:"phases"`
+		} `json:"cart_refreshes"`
 		ClickLedger []struct {
 			CaseID   string `json:"case_id"`
 			Page     string `json:"page"`
@@ -260,11 +297,25 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 			Status   string `json:"status"`
 		} `json:"click_ledger"`
 	}
-	if json.Unmarshal(data, &result) != nil || !buyerOrderCasesComplete(result.Cases, result.Observations) || len(result.Orders) != 7 || len(result.RepeatedOrders) != 2 || result.RepeatedOrders[0] == result.RepeatedOrders[1] {
+	const refreshCase = "BC02 native focus failure preserves held real cart on retained drawer and fresh mount"
+	if json.Unmarshal(data, &result) != nil {
+		t.Fatal("unreadable browser order evidence")
+	}
+	// Keep the frozen existing order/Retry registry intact; BC02 adds exactly one required observation.
+	oldObservations := []string{}
+	refreshObservations := 0
+	for _, observation := range result.Observations {
+		if observation == refreshCase {
+			refreshObservations++
+		} else {
+			oldObservations = append(oldObservations, observation)
+		}
+	}
+	if result.Cases != len(result.Observations) || refreshObservations != 1 || !buyerOrderCasesComplete(result.Cases-1, oldObservations) || len(result.Orders) != 7 || len(result.RepeatedOrders) != 2 || result.RepeatedOrders[0] == result.RepeatedOrders[1] {
 		t.Fatal("incomplete browser order evidence")
 	}
-	if len(result.CartRetries) != len(orderCartRetryCases) || len(result.ClickLedger) != 21 {
-		t.Fatal("expected six cart Retry cases and exactly 21 real-click ledger rows")
+	if len(result.CartRetries) != len(orderCartRetryCases) || len(result.CartRefreshes) != 1 || len(result.ClickLedger) != 30 {
+		t.Fatal("expected six cart Retry cases, one two-phase native-focus race, and 21 old plus nine new real-click ledger rows")
 	}
 	seenCartCases, seenCartKeys := map[string]bool{}, map[string]bool{}
 	cartIDs := map[string]int{}
@@ -319,7 +370,7 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 	seenClicks := map[string]bool{}
 	for _, row := range result.ClickLedger {
 		key := row.CaseID + "/" + row.Control
-		if !seenCartCases[row.CaseID] || seenClicks[key] || row.Action != "click" || row.Status != "PASS" || row.Expected == "" || row.Actual != row.Expected || !strings.HasPrefix(row.Page, "https://buyer.example/") {
+		if (!seenCartCases[row.CaseID] && row.CaseID != refreshCase) || seenClicks[key] || row.Action != "click" || row.Status != "PASS" || row.Expected == "" || row.Actual != row.Expected || !strings.HasPrefix(row.Page, "https://buyer.example/") {
 			t.Fatal("incomplete or duplicated cart click ledger")
 		}
 		seenClicks[key] = true
@@ -334,6 +385,55 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 				t.Fatal("cart Retry ledger omits an initiating, retry or reload verification click")
 			}
 		}
+	}
+	for _, control := range []string{"add-to-cart", "drawer held frame button", "drawer held cart text", "drawer failed frame button", "drawer failed cart text", "mount failed frame button", "mount failed cart text", "header-cart", "header-cart after reload"} {
+		if !seenClicks[refreshCase+"/"+control] {
+			t.Fatal("native-focus race omits a physical focus, cart creation or reload-verification click")
+		}
+	}
+	r := result.CartRefreshes[0]
+	if r.CaseID != refreshCase || !uuidPattern.MatchString(r.CartID) || !uuidPattern.MatchString(r.SKUID) || !keyPattern.MatchString(r.Key) || seenCartKeys[r.Key] || len(r.Phases) != 2 {
+		t.Fatal("native-focus race is not uniquely bound to a real persisted cart/key")
+	}
+	current, e := cartFacts(context.Background(), r.CartID, r.Key)
+	var currentItems []cartItem
+	itemsError := json.Unmarshal(current.Items, &currentItems)
+	if e != nil || !reflect.DeepEqual(current, r.Before) || !reflect.DeepEqual(current, r.After) || current.ID != r.CartID || current.Version != 1 || current.Writes != 1 || current.Receipts != 1 || current.ReceiptVersion != 1 || !regexp.MustCompile(`^[a-f0-9]{64}$`).MatchString(current.RequestHash) || itemsError != nil || len(currentItems) != 1 || currentItems[0].SKUID != r.SKUID || currentItems[0].Quantity != 1 {
+		t.Fatal("independent PostgreSQL re-read disagrees with the retained/reloaded cart or found an extra write")
+	}
+	for i, phase := range r.Phases {
+		wantSurface, wantFocus := "drawer", 2
+		if i == 1 {
+			wantSurface, wantFocus = "mount", 1
+		}
+		m := phase.Measurement
+		if phase.Surface != wantSurface || phase.HeldStatus != 200 || phase.SessionStatus != 503 || phase.SessionFailures != 1 || phase.HeldCart.ID != current.ID || phase.HeldCart.Version != current.Version || !reflect.DeepEqual(phase.HeldCart.Items, currentItems) || m.Empty != 0 || m.LineLoss != 0 || !m.SeenLine || len(m.Focus) != wantFocus*2 || len(m.Samples) == 0 {
+			t.Fatal("native-focus held-response/continuity evidence is incomplete or failed")
+		}
+		for j, event := range m.Focus {
+			wantType := "blur"
+			if j%2 == 1 {
+				wantType = "focus"
+			}
+			if !event.Trusted || event.Type != wantType {
+				t.Fatal("race was not triggered by the expected new native trusted focus events")
+			}
+		}
+		for j, sample := range m.Samples {
+			if i == 1 && j == 0 {
+				if sample.Title == nil || *sample.Title != "Loading…" || sample.Lines != 0 {
+					t.Fatal("fresh Provider mount never observed the held initial-read loading state")
+				}
+			} else if sample.Lines != 1 || sample.Qty == nil || *sample.Qty != "1" {
+				t.Fatal("visible cart line disappeared or changed during held-read/failure/release")
+			}
+		}
+		if i == 1 && len(m.Samples) < 2 {
+			t.Fatal("fresh mount lacks loading-to-line publication proof after release")
+		}
+	}
+	if data, e := json.MarshalIndent(current, "", "  "); e != nil || os.WriteFile(filepath.Join(evidence, "cart-refresh-final-pg-facts.json"), data, 0o600) != nil {
+		t.Fatal("cannot preserve independent native-focus race PG facts")
 	}
 	if data, e := json.MarshalIndent(finalCartFacts, "", "  "); e != nil || os.WriteFile(filepath.Join(evidence, "cart-final-pg-facts.json"), data, 0o600) != nil {
 		t.Fatal("cannot preserve independent final cart facts")
