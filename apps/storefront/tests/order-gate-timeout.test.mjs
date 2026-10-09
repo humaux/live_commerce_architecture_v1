@@ -66,7 +66,8 @@ for(const phase of ["request interception","upstream completion"]) {
 test("warmup timer is cleared on upstream success and upstream rejection",async()=>{
   for(const reject of [false,true]){
     const p=warmupProbe(reject?Promise.reject(new Error("relay failed")):Promise.resolve(200));
-    try {assert.equal(await p.run("upstream completion"),200);} catch(error){assert.match(error.message,/relay failed/);}
+    if(reject)await assert.rejects(p.run("upstream completion"),/relay failed/);
+    else assert.equal(await p.run("upstream completion"),200);
     assert.equal(p.timers.length,1);assert.deepEqual(p.cleared,p.timers);
   }
 });
