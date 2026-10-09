@@ -140,7 +140,7 @@ func run(args []string, out, errOut io.Writer) int {
 			seed.Entries = append(seed.Entries, f)
 		}
 		for _, f := range findings {
-			if f.Kind == "UNRESOLVED" && intersects(f.Locations, changes.Current) {
+			if f.Kind == "UNRESOLVED" && unresolvedTouched(f, baseFacts, changes) {
 				return fail(fmt.Errorf("changed UNRESOLVED cannot be grandfathered"))
 			}
 		}
@@ -171,7 +171,7 @@ func run(args []string, out, errOut io.Writer) int {
 				level, reason = "WARNING", "legacy"
 			}
 		} else if f.Kind == "UNRESOLVED" {
-			if intersects(f.Locations, changes.Current) {
+			if unresolvedTouched(f, baseFacts, changes) {
 				level, reason = "ERROR", "TOUCHED"
 			} else {
 				level, reason = "WARNING", "unresolved"

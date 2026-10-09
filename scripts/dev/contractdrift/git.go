@@ -1,10 +1,12 @@
 // Purpose: bind drift decisions to the PR merge base plus staged/working/untracked source changes.
-// Depends on: Go stdlib os/exec and git --no-ext-diff; missing refs fail closed.
+// Depends on: Go stdlib os/exec and raw text git diffs with fixed prefixes; missing provenance fails closed.
 // Used by: baseline ratchet; no fetch, shell, checkout or repository mutation.
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -16,7 +18,9 @@ type lineRange struct{ First, Last int }
 type changes struct {
 	Current, Previous map[string][]lineRange
 	Base              string
+	Edits             map[string][]lineEdit
 }
+type lineEdit struct{ OldStart, OldCount, NewStart, NewCount int }
 
 func gitRead(root string, args ...string) ([]byte, error) {
 	cmd := exec.Command("git", args...)
@@ -56,6 +60,21 @@ func parseDiff(data []byte, c *changes) {
 			continue
 		}
 		inHunk = true
+		oldStart, _ := strconv.Atoi(m[1])
+		newStart, _ := strconv.Atoi(m[3])
+		oldCount, newCount := 1, 1
+		if m[2] != "" {
+			oldCount, _ = strconv.Atoi(m[2])
+		}
+		if m[4] != "" {
+			newCount, _ = strconv.Atoi(m[4])
+		}
+		if old != "" && old != "/dev/null" {
+			if c.Edits == nil {
+				c.Edits = map[string][]lineEdit{}
+			}
+			c.Edits[old] = append(c.Edits[old], lineEdit{oldStart, oldCount, newStart, newCount})
+		}
 		for i, dst := range []map[string][]lineRange{c.Previous, c.Current} {
 			start, _ := strconv.Atoi(m[1+i*2])
 			count := 1
@@ -84,11 +103,34 @@ func gitChanges(root, base string) (changes, error) {
 	}
 	// Diff the merge base against final files: committed/staged/working edits share one coordinate system.
 	// When clean this is the PR's merge-base...HEAD diff; the working supplement catches local mutations too.
-	data, err = gitRead(root, "diff", "--no-ext-diff", "--no-color", "--no-renames", "-U0", c.Base, "--")
+	data, err = gitRead(root, "diff", "--patch", "--text", "--no-textconv", "--no-ext-diff", "--no-color", "--no-renames", "--no-relative", "--src-prefix=a/", "--dst-prefix=b/", "-U0", c.Base, "--")
 	if err != nil {
 		return c, err
 	}
 	parseDiff(data, &c)
+	// An independently enumerated changed source must have raw line provenance, even if Git attributes/config suppress output.
+	names, err := gitRead(root, "diff", "--name-only", "-z", "--no-ext-diff", "--no-textconv", "--no-renames", "--no-relative", c.Base, "--")
+	if err != nil {
+		return c, err
+	}
+	for _, name := range strings.Split(string(names), "\x00") {
+		if !apiSourceFile(name) || len(c.Current[name])+len(c.Previous[name]) > 0 {
+			continue
+		}
+		before, e := gitRead(root, "show", c.Base+":"+name)
+		if e != nil {
+			if _, exists := gitRead(root, "cat-file", "-e", c.Base+":"+name); exists == nil {
+				return c, e
+			}
+		}
+		after, e := os.ReadFile(filepath.Join(root, filepath.FromSlash(name)))
+		if e != nil && !os.IsNotExist(e) {
+			return c, e
+		}
+		if !bytes.Equal(before, after) {
+			return c, fmt.Errorf("changed API source lacks raw line provenance: %s", name)
+		}
+	}
 	data, err = gitRead(root, "ls-files", "--others", "--exclude-standard", "-z")
 	if err != nil {
 		return c, err
@@ -101,6 +143,66 @@ func gitChanges(root, base string) (changes, error) {
 		c.Current[name] = append(c.Current[name], lineRange{1, 1 << 30})
 	}
 	return c, nil
+}
+
+func apiSourceFile(name string) bool {
+	ext := filepath.Ext(name)
+	return name == "go.mod" || (strings.HasPrefix(name, "internal/") || strings.HasPrefix(name, "cmd/api/")) && ext == ".go" || strings.HasPrefix(name, "apps/") && (ext == ".ts" || ext == ".tsx" || ext == ".js" || ext == ".jsx" || ext == ".mjs") || strings.HasPrefix(name, "contracts/") && (ext == ".md" || strings.HasSuffix(name, "-openapi.json"))
+}
+
+func previousLine(line int, edits []lineEdit) (int, bool) {
+	delta := 0
+	for _, h := range edits {
+		if h.OldCount > 0 && line >= h.OldStart && line < h.OldStart+h.OldCount {
+			return 0, false
+		}
+		if h.OldCount == 0 && line > h.OldStart || h.OldCount > 0 && line >= h.OldStart+h.OldCount {
+			delta += h.NewCount - h.OldCount
+		}
+	}
+	return line + delta, true
+}
+
+// Persisting unknown regions retain their merge-base identity even when a hunk has no new-side lines.
+// A completely removed old region has no surviving lines and cannot taint an unrelated remaining unknown.
+func unresolvedTouched(f finding, base baseline, c changes) bool {
+	if intersects(f.Locations, c.Current) {
+		return true
+	}
+	if len(f.Locations) == 0 {
+		return false
+	}
+	current := f.Locations[0]
+	end := current.End
+	if end < current.Line {
+		end = current.Line
+	}
+	equivalent := false
+	for _, old := range base.Entries {
+		if old.Kind != "UNRESOLVED" || len(old.Locations) == 0 || old.Method != f.Method || old.Path != f.Path || old.Detail != f.Detail {
+			continue
+		}
+		ref := old.Locations[0]
+		if ref.File != current.File {
+			continue
+		}
+		equivalent = true
+		if !intersects(old.Locations, c.Previous) {
+			continue
+		}
+		last := ref.End
+		if last < ref.Line {
+			last = ref.Line
+		}
+		for line := ref.Line; line <= last; line++ {
+			mapped, ok := previousLine(line, c.Edits[ref.File])
+			if ok && mapped >= current.Line && mapped <= end {
+				return true
+			}
+		}
+	}
+	// Deleting a previously valid field may introduce a new unknown with no Current hunk.
+	return !equivalent && len(c.Previous[current.File]) > 0
 }
 func intersects(refs []location, set map[string][]lineRange) bool {
 	for _, ref := range refs {
