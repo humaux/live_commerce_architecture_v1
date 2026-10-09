@@ -260,6 +260,7 @@ func runPlaywright(t *testing.T, ctx context.Context, root, evidence, suite stri
 	path := filepath.Join(evidence, "playwright.log")
 	logFile := browserLog(t, path)
 	env["LC_BROWSER_SUITE"] = suite
+	env["LC_BROWSER_EVIDENCE"] = evidence
 	browser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
 	browser.Dir, browser.Env = root, browserEnvironment(env)
 	browser.Stdout, browser.Stderr = logFile, logFile
@@ -274,7 +275,7 @@ func runPlaywright(t *testing.T, ctx context.Context, root, evidence, suite stri
 
 func adminEvidence(t *testing.T, root, name string) string {
 	t.Helper()
-	dir := filepath.Join(root, "output", "playwright", name+"-"+time.Now().UTC().Format("20060102T150405.000000000"))
+	dir := filepath.Join(browserEvidenceRoot(root), name+"-"+time.Now().UTC().Format("20060102T150405.000000000"))
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		t.Fatal(err)
 	}

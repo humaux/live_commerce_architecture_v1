@@ -1,0 +1,18 @@
+{
+  "source_sha": "a4989bc6e55c8f813acf99f95850e98213f4d264",
+  "engine": "chromium",
+  "exit": 0,
+  "command": "LC_BROWSER_ENGINE=chromium LC_TEST_LOCK_WAIT=300 bash scripts/dev/test-local.sh --browser-buyer",
+  "evidence": "/Volumes/data/live_commerce_architecture_v1/output/cart-refresh-generation/pr25-r1/v2-green-buyer",
+  "cases": 13,
+  "files": {
+    "browser.log": "846095cf7afe1d1b4cc71d13ac110bf3af53d7610663592d5a47e747d2375077",
+    "next-0-1791548731531.log": "d034f1f20d322776c413e052396916328e837985dbe52bfe90046408d213b764",
+    "result.json": "fe18ccbdab5d55b90dce0a345d157bf8be96cbc632a5e626c8dde3f6b83c946a",
+    "buyer-mobile.png": "3d932a6cd1b2eb81e7809922507bdf425ee7d8b9b163ac85be3dcaf89e864f8e",
+    "next-0-1791548730070.log": "cc4889fd970a0bdfa96bfcf006567bcc07cbe96528214a6f5410cddc3f533b14",
+    "buyer-desktop.png": "344b2ee3c347333bacf68843dc086c97352c2af39553ff5f54404abf533b6ad4",
+    "next-1-1791548730392.log": "b426f210032f33206570418ec45c8cdc420be63c20423f08d693c084b6ca0c9b",
+    "gate.log": "7bf576106cdfba2764a7de949cf51446a1e88ca88c396db2c07c6fef55e54644"
+  }
+}

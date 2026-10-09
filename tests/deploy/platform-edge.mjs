@@ -1,5 +1,6 @@
 // PS3: actual pinned Caddy validates/adapts the shipping config, then serves it
 // against a container-local MOCK upstream. No production network or shared container.
+import { browserEvidenceDirectory } from "../browser-evidence.mjs";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { readFile, writeFile, mkdir, mkdtemp, rm } from "node:fs/promises";
@@ -8,7 +9,7 @@ import { request } from "node:https";
 import { isIP } from "node:net";
 import path from "node:path";
 
-const out = process.env.LC_PLATFORM_EDGE_EVIDENCE ?? "output/platform-site",
+const out = process.env.LC_PLATFORM_EDGE_EVIDENCE ?? browserEvidenceDirectory("platform-edge"),
   name = `lc-platform-ps3-${process.pid}`;
 await mkdir(out, { recursive: true });
 const dir = await mkdtemp(path.join(tmpdir(), "lc-platform-edge-"));

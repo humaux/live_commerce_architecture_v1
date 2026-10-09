@@ -1,0 +1,178 @@
+Retained failed ops fixture: /private/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/lc-od-evidence-6t09gO
+✔ browser evidence uses unique local runs or the selected harness parent without rewriting history (100.254708ms)
+✔ browser evidence rejects labels that escape the harness directory before creating files (28.699ms)
+✔ shell isolates visual fixtures from a click ledger when caller reuses its evidence root (14.415666ms)
+✖ ops disk guard allocation isolates its log and child evidence from committed history (5.811125ms)
+✔ reject quoted screenshot path (3.496292ms)
+✔ reject computed writer (0.413334ms)
+✔ reject renamed import (1.008709ms)
+✔ reject local writer alias (1.033208ms)
+✔ reject quoted reporter (0.235875ms)
+✖ reject openSync write (0.481375ms)
+✖ reject open write (0.262708ms)
+✖ reject URL writer (0.708041ms)
+✖ reject bound writer (0.214333ms)
+✖ reject bound path (0.216375ms)
+✔ reject direct (0.12975ms)
+✔ reject alias (0.227625ms)
+✔ reject split join (0.144458ms)
+✔ reject template (0.310459ms)
+✔ reject helper (0.37125ms)
+✔ reject copy destination (0.07525ms)
+✔ reject reporter (0.145792ms)
+✔ reject traversal (0.077834ms)
+✔ reject tracked nonoutput (0.076916ms)
+✔ allow read-only open (0.415667ms)
+✔ allow read-only URL open (0.215292ms)
+✔ allow historical read (0.169625ms)
+✔ allow copy source (0.063083ms)
+✔ allow comment (0.225625ms)
+✔ allow string data (0.0685ms)
+✔ allow run directory (0.16475ms)
+✔ Go Join aliases flag writes but not read-only history or comments (2.094958ms)
+✔ producer discovery covers acceptance suites and helpers, not documentation/artifacts (0.183792ms)
+✔ synthetic Go historical fixtures stay inside t.TempDir; real CopyFS destinations are audited (0.327667ms)
+✖ Go OpenFile rejects create/write flags but preserves historical read-only descriptors (3.9615ms)
+ℹ tests 34
+ℹ suites 0
+ℹ pass 27
+ℹ fail 7
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 226.491
+
+✖ failing tests:
+
+test at tests/admin/browser-evidence.test.mjs:96:1
+✖ ops disk guard allocation isolates its log and child evidence from committed history (5.811125ms)
+  AssertionError [ERR_ASSERTION]: bash: line 19: LC_OD_EVIDENCE: unbound variable
+
+
+  1 !== 0
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/tests/admin/browser-evidence.test.mjs:108:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/browser-evidence-paths.test.mjs:29:3
+✖ reject openSync write (0.481375ms)
+  AssertionError [ERR_ASSERTION]: const fd=fs.openSync('output/product-ui-v2/x','w');fs.writeSync(fd,'x')
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/tests/ci/browser-evidence-paths.test.mjs:29:36)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/browser-evidence-paths.test.mjs:29:3
+✖ reject open write (0.262708ms)
+  AssertionError [ERR_ASSERTION]: const handle=await fs.open('output/product-ui-v2/x','a');await handle.write('x')
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/tests/ci/browser-evidence-paths.test.mjs:29:36)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/browser-evidence-paths.test.mjs:29:3
+✖ reject URL writer (0.708041ms)
+  AssertionError [ERR_ASSERTION]: await fs.writeFile(new URL('output/product-ui-v2/x',import.meta.url),'x')
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/tests/ci/browser-evidence-paths.test.mjs:29:36)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/browser-evidence-paths.test.mjs:29:3
+✖ reject bound writer (0.214333ms)
+  AssertionError [ERR_ASSERTION]: const persist=fs.writeFileSync.bind(fs);persist('output/product-ui-v2/x','x')
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/tests/ci/browser-evidence-paths.test.mjs:29:36)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/browser-evidence-paths.test.mjs:29:3
+✖ reject bound path (0.216375ms)
+  AssertionError [ERR_ASSERTION]: const persist=fs.writeFileSync.bind(fs,'output/product-ui-v2/x');persist('x')
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/tests/ci/browser-evidence-paths.test.mjs:29:36)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/browser-evidence-paths.test.mjs:57:1
+✖ Go OpenFile rejects create/write flags but preserves historical read-only descriptors (3.9615ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+    assert.ok(inspectEvidenceSource(file,bad).length)
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/tests/ci/browser-evidence-paths.test.mjs:60:9)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

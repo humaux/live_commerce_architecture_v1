@@ -1,0 +1,20 @@
+{
+  "name": "gates-canary",
+  "command": [
+    "bash",
+    "scripts/dev/check-gates.sh"
+  ],
+  "timeout": 300,
+  "head": "89afd133df1bdd841c3a6a16206fcb5e8e40676b",
+  "exit_code": 0,
+  "source_sha256": "030f8332057fe4781ab20bbe959d8dd7893af19ca12c3bbd4255eda1458e9bf5",
+  "source_after": "030f8332057fe4781ab20bbe959d8dd7893af19ca12c3bbd4255eda1458e9bf5",
+  "source_unchanged": true,
+  "historical_output_sha256": "ad49966b857ddd22e602fbf28d2d0b2d948c83b0a6757a5c1d0e8d4eb6fe7ffe",
+  "historical_output_after": "ad49966b857ddd22e602fbf28d2d0b2d948c83b0a6757a5c1d0e8d4eb6fe7ffe",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 29.996
+}

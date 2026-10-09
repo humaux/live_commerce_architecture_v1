@@ -1,0 +1,7 @@
+{
+  "mutation": "erase message/details while excluding request_id; real helper tests must detect loss of sensitive body fields",
+  "red_exit": 1,
+  "green_exit": 0,
+  "restored_sha256": "19567bd49311a0b0ba1f13923b29c48a4a90fbbc0a224772aacdd7bc3452c9fb",
+  "byte_exact_restored": true
+}

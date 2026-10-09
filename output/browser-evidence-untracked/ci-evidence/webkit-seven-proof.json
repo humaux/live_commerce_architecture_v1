@@ -1,0 +1,71 @@
+{
+  "head": "bdb12aa3a3a9fd27586356f4fd12692a03f642b8",
+  "seven_steps": [
+    {
+      "step": "buyer",
+      "counts": "pass=1 fail=0 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0",
+      "go_exit": 0,
+      "parser_verdict": 0,
+      "seconds": 25,
+      "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.0kCZB8vM/webkit/bdb12aa3a3a9-buyer.jsonl",
+      "jsonl_sha256": "2c0b8653f423a3132b25f7164780d4583824776c99b22f3aa2a33b63bce7e838"
+    },
+    {
+      "step": "order",
+      "counts": "pass=1 fail=0 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0",
+      "go_exit": 0,
+      "parser_verdict": 0,
+      "seconds": 71,
+      "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.0kCZB8vM/webkit/bdb12aa3a3a9-order.jsonl",
+      "jsonl_sha256": "945d63fe8d17b2fffffbd9f8aa242a74ad575d51c3bd01cea84107a79b11cfea"
+    },
+    {
+      "step": "payment",
+      "counts": "pass=1 fail=0 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0",
+      "go_exit": 0,
+      "parser_verdict": 0,
+      "seconds": 45,
+      "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.0kCZB8vM/webkit/bdb12aa3a3a9-payment.jsonl",
+      "jsonl_sha256": "910eb329daf9279ef6b82589929caaf1d312b012b57ea7f0e1ddd427f392d7c4"
+    },
+    {
+      "step": "merchant-buyer",
+      "counts": "pass=1 fail=0 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0",
+      "go_exit": 0,
+      "parser_verdict": 0,
+      "seconds": 17,
+      "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.0kCZB8vM/webkit/bdb12aa3a3a9-merchant-buyer.jsonl",
+      "jsonl_sha256": "60656c8aa3615d521771f424a574571c58ab4de009e8639008c27dd84f56f4b1"
+    },
+    {
+      "step": "cvs",
+      "counts": "pass=2 fail=0 skip=0 leaf_pass=1 leaf_fail=0 leaf_skip=0",
+      "go_exit": 0,
+      "parser_verdict": 0,
+      "seconds": 50,
+      "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.0kCZB8vM/webkit/bdb12aa3a3a9-cvs.jsonl",
+      "jsonl_sha256": "669ac4eb0a1549324f011f75cd37818f2fab0b9841b379dee78f8150965b56c2"
+    },
+    {
+      "step": "password-auth",
+      "counts": "pass=1 fail=0 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0",
+      "go_exit": 0,
+      "parser_verdict": 0,
+      "seconds": 97,
+      "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.0kCZB8vM/webkit/bdb12aa3a3a9-password-auth.jsonl",
+      "jsonl_sha256": "18fc56e1338ef1b40e4ef564a6c9b49b456463cdf76d66a6c60178204b2db0cc"
+    },
+    {
+      "step": "claim-checkout",
+      "counts": "pass=2 fail=0 skip=0 leaf_pass=1 leaf_fail=0 leaf_skip=0",
+      "go_exit": 0,
+      "parser_verdict": 0,
+      "seconds": 32,
+      "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.0kCZB8vM/webkit/bdb12aa3a3a9-claim-checkout.jsonl",
+      "jsonl_sha256": "6a7aafa5ff1f7ce83630e6cd7d8da5717c38c6f9bb192d6cbe032c84afe606ae"
+    }
+  ],
+  "password_playwright_log": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.0kCZB8vM/password-auth-20261009T115910.962977000/playwright.log",
+  "password_playwright_sha256": "3feddfaafa0850e86a6e686540ad6b0c4f474a2bd5062b19781f502833a421f5",
+  "password_cases": 11
+}

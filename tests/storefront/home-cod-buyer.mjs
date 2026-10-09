@@ -96,7 +96,7 @@ async function shot(page, name, locale, viewport) {
       await expect.poll(() => page.evaluate(() => window.scrollX)).toBe(0);
       // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${name} ${locale} overflow at ${width}`);
-      await page.screenshot({ path: path.join(root, "output/home-cod-ui", `buyer-${name}-${locale}-${width}.png`), fullPage: false, animations: "disabled", scale: "css" });
+      await page.screenshot({ path: path.join(evidence, "home-cod-ui", `buyer-${name}-${locale}-${width}.png`), fullPage: false, animations: "disabled", scale: "css" });
       if (name === "checkout") {
         await page.getByTestId("checkout-cod-amount").scrollIntoViewIfNeeded();
         assert(await page.locator(".purchase-footer strong").evaluate((el) => {
@@ -109,7 +109,7 @@ async function shot(page, name, locale, viewport) {
           const footer = document.querySelector(".purchase-footer strong");
           return footer && parseFloat(getComputedStyle(el).fontSize) > parseFloat(getComputedStyle(footer).fontSize);
         }), `${locale}/${width}: carrier amount has primary visual emphasis`);
-        await page.screenshot({ path: path.join(root, "output/home-cod-ui", `buyer-confirm-${locale}-${width}.png`), fullPage: false, animations: "disabled", scale: "css" });
+        await page.screenshot({ path: path.join(evidence, "home-cod-ui", `buyer-confirm-${locale}-${width}.png`), fullPage: false, animations: "disabled", scale: "css" });
       } else {
         assert(await page.locator(".cod-amount strong").evaluate((el) => {
           const subtotal = document.querySelector(".order-total strong");
@@ -335,7 +335,7 @@ try {
           await preview.setViewportSize({ width, height: width === 390 ? 844 : 992 });
           await preview.evaluate(async () => { await document.fonts.ready; window.scrollTo({ top: 0, behavior: "instant" }); });
           assert(await preview.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
-          await preview.screenshot({ path: path.join(root, "output/home-cod-ui", `buyer-${state.toLowerCase()}-mock-${locale}-${width}.png`), fullPage: false, animations: "disabled" });
+          await preview.screenshot({ path: path.join(evidence, "home-cod-ui", `buyer-${state.toLowerCase()}-mock-${locale}-${width}.png`), fullPage: false, animations: "disabled" });
         }
       }
       await preview.close();

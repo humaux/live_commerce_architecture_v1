@@ -1,0 +1,10 @@
+{
+  "owned_failed_fixtures_archived_then_removed": [
+    "/private/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/lc-od-evidence-6t09gO",
+    "/private/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/lc-upload-layout-vPum5K",
+    "/private/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/lc-visual-review-layout-DRDW9u",
+    "/private/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/lc-visual-review-layout-qCPh3C"
+  ],
+  "archive": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/evidence-p2-validation/failed-fixtures.tar.gz",
+  "archive_sha256": "24ae9f48ea6b06c4b1899ce7c879f59e8bce9f0c9762c377fa7d1eb2abd17b56"
+}

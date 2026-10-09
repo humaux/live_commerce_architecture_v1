@@ -4,10 +4,10 @@
 // webhook copy via social.read_comment_events (Instagram: decrypted here with the payload keyring), and
 // joins each comment to its claims/prints/replies facts through live.console_marks. Comment text and
 // names exist only in these in-memory values and the HTTP response; nothing here persists or logs them.
-// Depends on: draft.go (authorize/mapError/mapReadError), metabridge.BridgeClient (client.go),
+// Depends on: draft.go (authorize/mapError/mapReadError), command.Run (ops.command_results receipts),
 //
-//	meta.PayloadKeyring.OpenComment (comment_read.go), live.console_source/read_comment_events/
-//	console_marks/comment_print (0123).
+//	metabridge.BridgeClient (client.go), meta.PayloadKeyring.OpenComment (comment_read.go),
+//	live.console_source/read_comment_events/console_marks/comment_print (0123).
 //
 // Used by: internal/httpapi/live_stream.go (routes A2/A3); cmd/api (NewCommentStream).
 package live
@@ -171,20 +171,37 @@ func (cs *CommentStream) Comments(ctx context.Context, tx pgx.Tx, scope platform
 }
 
 // PrintComment records one label print (A3): the browser renders the label from the comment it already
-// holds; only the fact is stored (live.comment_print, idempotent per key). live:manage re-checked by the
-// definer; a foreign/cross-store session id raises 23503 → 404.
-func (cs *CommentStream) PrintComment(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, sessionID, commentRef string) (CommentPrint, error) {
+// holds; only the fact is stored (live.comment_print), wrapped in the command.Run receipt so the route is
+// idempotent per Idempotency-Key (§7.4): a same-key replay returns the stored {print_count,last_printed_at}
+// without a new increment, and the same key with a different canonical request {principal_id,session_id,comment_ref}
+// conflicts. live:manage re-checked by the definer; a foreign/cross-store session id raises 23503 → 404.
+func (cs *CommentStream) PrintComment(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, sessionID, commentRef string) (CommentPrint, error) {
 	if !command.ValidID(sessionID) || !consoleRef.MatchString(commentRef) {
 		return CommentPrint{}, ErrInvalidRef
 	}
 	if err := authorize(ctx, tx, scope, token, managePermission); err != nil {
 		return CommentPrint{}, err
 	}
+	request := struct { // principal bound like live.draft.*: another principal's same key conflicts, never replays
+		PrincipalID string `json:"principal_id"`
+		SessionID   string `json:"session_id"`
+		CommentRef  string `json:"comment_ref"`
+	}{scope.PrincipalID, sessionID, commentRef}
 	var out CommentPrint
-	err := tx.QueryRow(ctx, `SELECT print_count,last_printed_at FROM live.comment_print($1::uuid,$2::text,$3::uuid)`,
-		sessionID, commentRef, scope.PrincipalID).Scan(&out.PrintCount, &out.LastPrintedAt)
+	err := command.Run(ctx, tx, scope, "live.comment.print", key, request, &out, func() error {
+		err := tx.QueryRow(ctx, `SELECT print_count,last_printed_at FROM live.comment_print($1::uuid,$2::text,$3::uuid)`,
+			sessionID, commentRef, scope.PrincipalID).Scan(&out.PrintCount, &out.LastPrintedAt)
+		if err != nil {
+			return mapReadError(err)
+		}
+		return nil
+	})
 	if err != nil {
-		return CommentPrint{}, mapReadError(err)
+		return CommentPrint{}, mapError(err)
+	}
+	// Run may replay a saved receipt after the advisory-lock wait; revocation still denies it.
+	if err := authorize(ctx, tx, scope, token, managePermission); err != nil {
+		return CommentPrint{}, err
 	}
 	return out, nil
 }

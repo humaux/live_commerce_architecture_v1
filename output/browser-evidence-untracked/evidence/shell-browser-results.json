@@ -1,0 +1,226 @@
+{
+  "tier": "MOCK",
+  "matrix": [
+    {
+      "locale": "zh-CN",
+      "width": 1366,
+      "height": 768,
+      "axe": "no serious/critical",
+      "navigation": "15 destinations clicked",
+      "geometry": "pass",
+      "touch": "not required"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "height": 992,
+      "axe": "no serious/critical",
+      "navigation": "15 destinations clicked",
+      "geometry": "pass",
+      "touch": "not required"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 2000,
+      "height": 1100,
+      "axe": "no serious/critical",
+      "navigation": "15 destinations clicked",
+      "geometry": "pass",
+      "touch": "not required"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1024,
+      "height": 768,
+      "axe": "no serious/critical",
+      "navigation": "15 destinations clicked",
+      "geometry": "pass",
+      "touch": "not required"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 768,
+      "height": 1024,
+      "axe": "no serious/critical",
+      "navigation": "15 destinations clicked",
+      "geometry": "pass",
+      "touch": "44px"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "height": 844,
+      "axe": "no serious/critical",
+      "navigation": "15 destinations clicked",
+      "geometry": "pass",
+      "touch": "44px"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 375,
+      "height": 812,
+      "axe": "no serious/critical",
+      "navigation": "15 destinations clicked",
+      "geometry": "pass",
+      "touch": "44px"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 360,
+      "height": 740,
+      "axe": "no serious/critical",
+      "navigation": "15 destinations clicked",
+      "geometry": "pass",
+      "touch": "44px"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1366,
+      "height": 768,
+      "axe": "no serious/critical",
+      "navigation": "15 destinations clicked",
+      "geometry": "pass",
+      "touch": "not required"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "height": 992,
+      "axe": "no serious/critical",
+      "navigation": "15 destinations clicked",
+      "geometry": "pass",
+      "touch": "not required"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 2000,
+      "height": 1100,
+      "axe": "no serious/critical",
+      "navigation": "15 destinations clicked",
+      "geometry": "pass",
+      "touch": "not required"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1024,
+      "height": 768,
+      "axe": "no serious/critical",
+      "navigation": "15 destinations clicked",
+      "geometry": "pass",
+      "touch": "not required"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 768,
+      "height": 1024,
+      "axe": "no serious/critical",
+      "navigation": "15 destinations clicked",
+      "geometry": "pass",
+      "touch": "44px"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "height": 844,
+      "axe": "no serious/critical",
+      "navigation": "15 destinations clicked",
+      "geometry": "pass",
+      "touch": "44px"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 375,
+      "height": 812,
+      "axe": "no serious/critical",
+      "navigation": "15 destinations clicked",
+      "geometry": "pass",
+      "touch": "44px"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 360,
+      "height": 740,
+      "axe": "no serious/critical",
+      "navigation": "15 destinations clicked",
+      "geometry": "pass",
+      "touch": "44px"
+    },
+    {
+      "locale": "en",
+      "width": 1366,
+      "height": 768,
+      "axe": "no serious/critical",
+      "navigation": "15 destinations clicked",
+      "geometry": "pass",
+      "touch": "not required"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "height": 992,
+      "axe": "no serious/critical",
+      "navigation": "15 destinations clicked",
+      "geometry": "pass",
+      "touch": "not required"
+    },
+    {
+      "locale": "en",
+      "width": 2000,
+      "height": 1100,
+      "axe": "no serious/critical",
+      "navigation": "15 destinations clicked",
+      "geometry": "pass",
+      "touch": "not required"
+    },
+    {
+      "locale": "en",
+      "width": 1024,
+      "height": 768,
+      "axe": "no serious/critical",
+      "navigation": "15 destinations clicked",
+      "geometry": "pass",
+      "touch": "not required"
+    },
+    {
+      "locale": "en",
+      "width": 768,
+      "height": 1024,
+      "axe": "no serious/critical",
+      "navigation": "15 destinations clicked",
+      "geometry": "pass",
+      "touch": "44px"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "height": 844,
+      "axe": "no serious/critical",
+      "navigation": "15 destinations clicked",
+      "geometry": "pass",
+      "touch": "44px"
+    },
+    {
+      "locale": "en",
+      "width": 375,
+      "height": 812,
+      "axe": "no serious/critical",
+      "navigation": "15 destinations clicked",
+      "geometry": "pass",
+      "touch": "44px"
+    },
+    {
+      "locale": "en",
+      "width": 360,
+      "height": 740,
+      "axe": "no serious/critical",
+      "navigation": "15 destinations clicked",
+      "geometry": "pass",
+      "touch": "44px"
+    }
+  ],
+  "role": "pass UI403",
+  "storeSwitch": "hard-navigation clears old page",
+  "backendAuthorization": "NOT_PROVEN_BY_THIS_MOCK",
+  "publicTitles": "9 registry title checks passed",
+  "sessionExpiry": "401 has dedicated sign-in recovery; domain remains unmounted"
+}

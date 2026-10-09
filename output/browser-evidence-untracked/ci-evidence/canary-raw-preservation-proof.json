@@ -1,0 +1,8 @@
+{
+  "mutation": "drop canonical guard, losing rawduplicatekeys/large numeric token",
+  "red_exit": 1,
+  "green_exit": 0,
+  "noncolliding_request_id": "112233445566478890aabbccddeeff00",
+  "restored_helper_sha256": "19567bd49311a0b0ba1f13923b29c48a4a90fbbc0a224772aacdd7bc3452c9fb",
+  "byte_exact_restored": true
+}

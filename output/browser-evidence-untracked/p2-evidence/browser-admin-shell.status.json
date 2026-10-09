@@ -1,0 +1,23 @@
+{
+  "name": "browser-admin-shell",
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-admin-shell"
+  ],
+  "timeout": 1200,
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked",
+  "out": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/evidence-p2-validation",
+  "require_clean": true,
+  "head": "f3fab830cb2ce009b89b71a8607b8c6df3dce598",
+  "pid": 79950,
+  "exit_code": 0,
+  "source_sha256": "24e78ac2a5d7c4fc35d3bccbc12ccfe76a28e5c2045c7e7e572852253c1850e2",
+  "source_after": "24e78ac2a5d7c4fc35d3bccbc12ccfe76a28e5c2045c7e7e572852253c1850e2",
+  "source_unchanged": true,
+  "historical_sha256_before": "c8fd2d5a77c0ec7ee76e44852eb67ef710ca9da21ed5b3e168643973db063def",
+  "historical_sha256_after": "c8fd2d5a77c0ec7ee76e44852eb67ef710ca9da21ed5b3e168643973db063def",
+  "historical_unchanged": true,
+  "tracked_status_empty": true,
+  "elapsed_seconds": 107.082
+}
