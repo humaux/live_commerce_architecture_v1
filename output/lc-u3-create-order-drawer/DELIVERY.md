@@ -1,6 +1,36 @@
 # LC-U3 create-order drawer delivery
 
-## Current addendum — ManualOrder P1 (4212512394)
+## Current batch — trunk merge + W3-U2 blocklist warning (2026-10-09)
+
+- Source commit **`3a0f6aa1b36c246127986eca38342c0516544935`**, parents old K3-reviewed `f515dcdb` and trunk `4ff99766`. Branch `unit/lc-u3-create-order-drawer`; own worktree unchanged. No push/deployment. Parent model/effort is not exposed by this runtime; read-only explorers explicitly used `gpt-6.1-sol/high`.
+- Trunk registry is byte-identical (82 modes, `--list` exit0), along with the 13 reviewed LC-U2a seams/tests. Merge preserves trunk privacy/cursor/parcel/import routes and reapplies the six U3 CommentStream drawer hooks.
+- Warning consumes the existing **W3-05B boolean-only GET**, no contract change: regular BFF `/live-sessions/{sid}/claims/blocklist/check?bundle_id=...`, exact canonical query, HTTP200 `{restricted:boolean}`, no-store/no-referrer, bounded response. The SID comes from the server A13 claim snapshot or the current CommentStream and is only a store-level path prefix. Every known A15 bundle is checked under a common18s budget; auth failure always clears private state, non-auth lookup failure cannot claim clear. Three locales show restricted/unknown guidance; restriction never changes Quote, body, key, permission or submit eligibility.
+- Own functional write paths: `apps/admin/components/{CreateOrderDrawer,BuyerPanel,CommentStream}.tsx`, `apps/admin/lib/{claims-request,create-order-client,create-order-copy}.ts`, `apps/admin/proxy.ts`, the root store catchall BFF, `tests/admin/create-order-{client,bff}.test.ts`, `tests/admin/create-order-drawer-gate.mjs`, `tests/foundation/browser_create_order_drawer_test.go`, and this unit's curated delivery/evidence. Merge-only paths preserve trunk versions. No product Go, SQL, migration, schema, lockfile or W3-U2 UI edits.
+- Real fixture uses existing signed Meta ingress/consumer/intake in the trade store, validates APPLIED/ACCEPTED/facebook/quantity2, and executes real A14 link + restriction POST. Cleanup is limited to its six sessions/restrictions; first consumer stops before the differently-keyed comment harness. New drawer runs use ignored `output/playwright/create-order-drawer-*`.
+
+| Local command | Exit/result | Raw evidence in `output/playwright/lc-u3-merge-validation/` |
+| --- | --- | --- |
+| `bash scripts/dev/test-node.sh` | 0,1295 tests | `node-final.{log,status.json}` |
+| `pnpm --dir apps/admin exec tsc --noEmit -p .` | 0 | `tsc-final.{log,status.json}` |
+| `bash scripts/dev/check-gates.sh` | 0,82 modes/headers | `gates-final.{log,status.json}` |
+| `GOFLAGS=-p=1 go vet -tags browser ./tests/foundation` | 0 | `vet-final.{log,status.json}` |
+| `GOFLAGS=-p=1 bash scripts/dev/test-local.sh --browser-manual-order` | 0,legacy10 +drawer25,PG14/14 | `manual-order-green-ignored.{log,status.json}` |
+| Same mode with `LC_DRAWER_CALIBRATION=new-key-on-retry` | 1 expected,only `DU3-single-order-en-1440`,PG15/14 | `manual-new-key-calibration.{log,status.json}` |
+| `GOFLAGS=-p=1 bash scripts/dev/test-local.sh --browser-live-console` | 0 | `live-console-green.{log,status.json}` |
+| `GOFLAGS=-p=1 bash scripts/dev/test-local.sh --browser-inbox` | 0,real chain/I11 | `inbox-green.{log,status.json}` |
+| `bash scripts/dev/test-local.sh --browser-admin-shell` | mode0,24 cases +role/store/axe | `admin-shell-green.{log,status.json}` |
+
+- E3 evidence binds every final run to unchanged source hash **`3a8ceac72784de4ee5e958501f299245e3f95387af60758e2a9c271c6d32a137`**, committed verbatim in `3a0f6aa1`. Curated metadata: `merge-warning-evidence.json`; actual browser/Go/PG with synthetic data and MOCK identity/Meta only. Independent read-only merge and source/evidence review found no newP0/P1; integrator's K3 delta re-review remains required.
+- Warning browser: `output/playwright/create-order-drawer-3722851862/{result,click-ledger,pg-readback}.json` has25/25, six real BuyerPanel warning clicks (en/zh-TW/zh-CN×1440/390), seven same-key/body one-order/receipt retries, and PG14/14. Calibration root `create-order-drawer-4163076078` has25 cases and exactly the intentional changed-key failure: same body, two request orders/receipts, replay201, PG15/14.
+- New BFF gate non-vacuity: remove only the GET grammar for the actual authenticated root handler → **RED405 vs200 (exit1)**, restore exact bytes → GREEN0. `blocklist-root-bff-{red,green}-final.log`, `blocklist-bff-red-green.json`. Initial tools-route probe and manual-bundle422 are setup failures, not causal product red proofs. One consumer wait also failed without a diagnostic; no unproven root cause is claimed. All final normal/calibration runs completed without worker/cleanup errors. Early submit-enable assertion was moved to the valid payment/Quote state; it remains required before the real201 submit.
+- Trunk's old Admin shell mode overwrote tracked evidence; the protection wrapper correctly exited99 despite mode0. All88 generated files were preserved under `admin-shell-evidence/`, then historical output restored byte-for-byte to hash `9e02b5a43e89f1c334d1f6b3721f0366d4cda6db5db9f4bf68241ed92b4e8aac`; source stayed unchanged and git was clean. See `admin-shell-evidence-restore.json`. Earlier untracked drawer runs are preserved in `legacy-layout/`; no historical screenshots/logs are committed anew.
+
+### CI gates
+
+Changed browser spec/mode remains only `--browser-manual-order`: `create-order-drawer-gate.mjs` and its Go fixture; no added mode. Local hosts rerun: live-console, inbox, admin-shell. Run manual-order and its expected-red calibration in CI; retain **click-sweep and visual-lint**, NOT_RUN locally per the frozen brief. `node scripts/dev/pr-modes.mjs origin/r3/integration` selects53 modes due to shared BFF/proxy/forms; the complete exact list is in `merge-warning-evidence.json.pr_modes`. Remaining selected modes, full foundation/G07, SANDBOX/LIVE providers and deployment are NOT_RUN locally. Integrator re-reviews this delta and pushes.
+
+
+## Prior addendum — ManualOrder P1 (4212512394)
 
 - Implementation `d0422a6c`; real regressions `0d91f236`, `778de008`; base previous delivery `6aabe6b6`. This addendum supersedes the original claim that ManualOrder submission behavior is unchanged.
 - Root cause: editing the live draft after UNKNOWN regenerated its request key/body. The real baseline `addendum-edit-unknown-red.log` failed only `DU3-manual-unknown-draft-edit`: two attempts, different key and body, HTTP201, two request-specific PG orders/receipts (store total15 instead of14).

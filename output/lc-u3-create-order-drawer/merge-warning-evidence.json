@@ -1,0 +1,328 @@
+{
+  "tested_source_commit": "3a0f6aa1b36c246127986eca38342c0516544935",
+  "parents": [
+    "f515dcdb87e103061b0a9b6da4e90ba8bc048eb1",
+    "4ff99766e1a4b9f7b7f6931444f8f71dacc7ea09"
+  ],
+  "source_sha256": "3a8ceac72784de4ee5e958501f299245e3f95387af60758e2a9c271c6d32a137",
+  "source_files": {
+    "apps/admin/lib/claims-request.ts": "5ac0fcfe7d025ab3aca00675dc7c032982a9cf11128ed0c73d3fe3c0bab57c50",
+    "apps/admin/lib/create-order-client.ts": "2002f9558fee1f49a5f476591de8d6f944e7cce67c45f9dbb7270be7e9dd5883",
+    "apps/admin/lib/create-order-copy.ts": "9c1c9747a2dc430ac15f4accbda7423ee3be0a24c2194bc7e67f9ff9fdf06fd8",
+    "apps/admin/components/CreateOrderDrawer.tsx": "081758ae702aa23547b55dc7ef70f19114dbe097a373f68210c72d72f666c5c7",
+    "apps/admin/components/BuyerPanel.tsx": "78d131a9c0c86cdd26a3006ff833acd2d0f4c6a42f479a01404187f5db736df0",
+    "apps/admin/components/CommentStream.tsx": "04b7d7797602139c06fec2e18f7ab3d043ec935c878b1757ed09375292ecb85a",
+    "apps/admin/proxy.ts": "664df37539feca7144f529a360ef74639813aedb7dab3213f9e9220fa5d45099",
+    "apps/admin/app/api/stores/[store]/[...resource]/route.ts": "2e4a01298a4654053057544a4218788412845f835ad9421768c2ba5c6e3ad36a",
+    "tests/admin/create-order-client.test.ts": "069f23844f022993f245c423e6c9ff7a7cb5650b5412ad94c7895944c97c5f25",
+    "tests/admin/create-order-bff.test.ts": "19a5efdc501f083b6eaf3ee5de868340d9402b65a2dc2ed5a2887d9abf4a5728",
+    "tests/admin/create-order-drawer-gate.mjs": "fbdfdc79d012382e1034530598037746384f18100d8e76ec26d44a026064afcf",
+    "tests/foundation/browser_create_order_drawer_test.go": "90ce85384848cafd27c90bb51729d10c76e1ff9dfe43017a4078723bbae4adcb"
+  },
+  "runs": {
+    "node-final": {
+      "name": "node-final",
+      "command": [
+        "bash",
+        "scripts/dev/test-node.sh"
+      ],
+      "timeout": 900,
+      "head": "f515dcdb87e103061b0a9b6da4e90ba8bc048eb1",
+      "exit_code": 0,
+      "source_sha256": "3a8ceac72784de4ee5e958501f299245e3f95387af60758e2a9c271c6d32a137",
+      "source_after": "3a8ceac72784de4ee5e958501f299245e3f95387af60758e2a9c271c6d32a137",
+      "source_unchanged": true,
+      "historical_output_sha256": "9e02b5a43e89f1c334d1f6b3721f0366d4cda6db5db9f4bf68241ed92b4e8aac",
+      "historical_output_after": "9e02b5a43e89f1c334d1f6b3721f0366d4cda6db5db9f4bf68241ed92b4e8aac",
+      "historical_output_unchanged": true,
+      "tracked_status_unchanged": true,
+      "tracked_status_clean_before": false,
+      "tracked_status_clean_after": false,
+      "elapsed_seconds": 43.468
+    },
+    "gates-final": {
+      "name": "gates-final",
+      "command": [
+        "bash",
+        "scripts/dev/check-gates.sh"
+      ],
+      "timeout": 600,
+      "head": "f515dcdb87e103061b0a9b6da4e90ba8bc048eb1",
+      "exit_code": 0,
+      "source_sha256": "3a8ceac72784de4ee5e958501f299245e3f95387af60758e2a9c271c6d32a137",
+      "source_after": "3a8ceac72784de4ee5e958501f299245e3f95387af60758e2a9c271c6d32a137",
+      "source_unchanged": true,
+      "historical_output_sha256": "9e02b5a43e89f1c334d1f6b3721f0366d4cda6db5db9f4bf68241ed92b4e8aac",
+      "historical_output_after": "9e02b5a43e89f1c334d1f6b3721f0366d4cda6db5db9f4bf68241ed92b4e8aac",
+      "historical_output_unchanged": true,
+      "tracked_status_unchanged": true,
+      "tracked_status_clean_before": false,
+      "tracked_status_clean_after": false,
+      "elapsed_seconds": 22.19
+    },
+    "tsc-final": {
+      "name": "tsc-final",
+      "command": [
+        "pnpm",
+        "--dir",
+        "apps/admin",
+        "exec",
+        "tsc",
+        "--noEmit",
+        "-p",
+        "."
+      ],
+      "timeout": 300,
+      "head": "f515dcdb87e103061b0a9b6da4e90ba8bc048eb1",
+      "exit_code": 0,
+      "source_sha256": "3a8ceac72784de4ee5e958501f299245e3f95387af60758e2a9c271c6d32a137",
+      "source_after": "3a8ceac72784de4ee5e958501f299245e3f95387af60758e2a9c271c6d32a137",
+      "source_unchanged": true,
+      "historical_output_sha256": "9e02b5a43e89f1c334d1f6b3721f0366d4cda6db5db9f4bf68241ed92b4e8aac",
+      "historical_output_after": "9e02b5a43e89f1c334d1f6b3721f0366d4cda6db5db9f4bf68241ed92b4e8aac",
+      "historical_output_unchanged": true,
+      "tracked_status_unchanged": true,
+      "tracked_status_clean_before": false,
+      "tracked_status_clean_after": false,
+      "elapsed_seconds": 10.769
+    },
+    "vet-final": {
+      "name": "vet-final",
+      "command": [
+        "go",
+        "vet",
+        "-tags",
+        "browser",
+        "./tests/foundation"
+      ],
+      "timeout": 300,
+      "head": "f515dcdb87e103061b0a9b6da4e90ba8bc048eb1",
+      "exit_code": 0,
+      "source_sha256": "3a8ceac72784de4ee5e958501f299245e3f95387af60758e2a9c271c6d32a137",
+      "source_after": "3a8ceac72784de4ee5e958501f299245e3f95387af60758e2a9c271c6d32a137",
+      "source_unchanged": true,
+      "historical_output_sha256": "9e02b5a43e89f1c334d1f6b3721f0366d4cda6db5db9f4bf68241ed92b4e8aac",
+      "historical_output_after": "9e02b5a43e89f1c334d1f6b3721f0366d4cda6db5db9f4bf68241ed92b4e8aac",
+      "historical_output_unchanged": true,
+      "tracked_status_unchanged": true,
+      "tracked_status_clean_before": false,
+      "tracked_status_clean_after": false,
+      "elapsed_seconds": 15.083
+    },
+    "manual-order-green-ignored": {
+      "name": "manual-order-green-ignored",
+      "command": [
+        "bash",
+        "scripts/dev/test-local.sh",
+        "--browser-manual-order"
+      ],
+      "timeout": 1500,
+      "head": "f515dcdb87e103061b0a9b6da4e90ba8bc048eb1",
+      "exit_code": 0,
+      "source_sha256": "3a8ceac72784de4ee5e958501f299245e3f95387af60758e2a9c271c6d32a137",
+      "source_after": "3a8ceac72784de4ee5e958501f299245e3f95387af60758e2a9c271c6d32a137",
+      "source_unchanged": true,
+      "historical_output_sha256": "9e02b5a43e89f1c334d1f6b3721f0366d4cda6db5db9f4bf68241ed92b4e8aac",
+      "historical_output_after": "9e02b5a43e89f1c334d1f6b3721f0366d4cda6db5db9f4bf68241ed92b4e8aac",
+      "historical_output_unchanged": true,
+      "tracked_status_unchanged": true,
+      "tracked_status_clean_before": false,
+      "tracked_status_clean_after": false,
+      "elapsed_seconds": 107.136
+    },
+    "manual-new-key-calibration": {
+      "name": "manual-new-key-calibration",
+      "command": [
+        "bash",
+        "scripts/dev/test-local.sh",
+        "--browser-manual-order"
+      ],
+      "env": {
+        "LC_DRAWER_CALIBRATION": "new-key-on-retry"
+      },
+      "timeout": 1500,
+      "head": "f515dcdb87e103061b0a9b6da4e90ba8bc048eb1",
+      "exit_code": 1,
+      "source_sha256": "3a8ceac72784de4ee5e958501f299245e3f95387af60758e2a9c271c6d32a137",
+      "source_after": "3a8ceac72784de4ee5e958501f299245e3f95387af60758e2a9c271c6d32a137",
+      "source_unchanged": true,
+      "historical_output_sha256": "9e02b5a43e89f1c334d1f6b3721f0366d4cda6db5db9f4bf68241ed92b4e8aac",
+      "historical_output_after": "9e02b5a43e89f1c334d1f6b3721f0366d4cda6db5db9f4bf68241ed92b4e8aac",
+      "historical_output_unchanged": true,
+      "tracked_status_unchanged": true,
+      "tracked_status_clean_before": false,
+      "tracked_status_clean_after": false,
+      "elapsed_seconds": 212.924
+    },
+    "live-console-green": {
+      "name": "live-console-green",
+      "command": [
+        "bash",
+        "scripts/dev/test-local.sh",
+        "--browser-live-console"
+      ],
+      "timeout": 1800,
+      "head": "3a0f6aa1b36c246127986eca38342c0516544935",
+      "exit_code": 0,
+      "source_sha256": "3a8ceac72784de4ee5e958501f299245e3f95387af60758e2a9c271c6d32a137",
+      "source_after": "3a8ceac72784de4ee5e958501f299245e3f95387af60758e2a9c271c6d32a137",
+      "source_unchanged": true,
+      "historical_output_sha256": "9e02b5a43e89f1c334d1f6b3721f0366d4cda6db5db9f4bf68241ed92b4e8aac",
+      "historical_output_after": "9e02b5a43e89f1c334d1f6b3721f0366d4cda6db5db9f4bf68241ed92b4e8aac",
+      "historical_output_unchanged": true,
+      "tracked_status_unchanged": true,
+      "tracked_status_clean_before": true,
+      "tracked_status_clean_after": true,
+      "elapsed_seconds": 360.167
+    },
+    "inbox-green": {
+      "name": "inbox-green",
+      "command": [
+        "bash",
+        "scripts/dev/test-local.sh",
+        "--browser-inbox"
+      ],
+      "timeout": 1500,
+      "head": "3a0f6aa1b36c246127986eca38342c0516544935",
+      "exit_code": 0,
+      "source_sha256": "3a8ceac72784de4ee5e958501f299245e3f95387af60758e2a9c271c6d32a137",
+      "source_after": "3a8ceac72784de4ee5e958501f299245e3f95387af60758e2a9c271c6d32a137",
+      "source_unchanged": true,
+      "historical_output_sha256": "9e02b5a43e89f1c334d1f6b3721f0366d4cda6db5db9f4bf68241ed92b4e8aac",
+      "historical_output_after": "9e02b5a43e89f1c334d1f6b3721f0366d4cda6db5db9f4bf68241ed92b4e8aac",
+      "historical_output_unchanged": true,
+      "tracked_status_unchanged": true,
+      "tracked_status_clean_before": true,
+      "tracked_status_clean_after": true,
+      "elapsed_seconds": 61.589
+    },
+    "admin-shell-green": {
+      "name": "admin-shell-green",
+      "command": [
+        "bash",
+        "scripts/dev/test-local.sh",
+        "--browser-admin-shell"
+      ],
+      "timeout": 1500,
+      "head": "3a0f6aa1b36c246127986eca38342c0516544935",
+      "exit_code": 0,
+      "source_sha256": "3a8ceac72784de4ee5e958501f299245e3f95387af60758e2a9c271c6d32a137",
+      "source_after": "3a8ceac72784de4ee5e958501f299245e3f95387af60758e2a9c271c6d32a137",
+      "source_unchanged": true,
+      "historical_output_sha256": "9e02b5a43e89f1c334d1f6b3721f0366d4cda6db5db9f4bf68241ed92b4e8aac",
+      "historical_output_after": "7182cac313c2b36e63d6a4491c4e29f96a78bb539eebe0bd7e678ac30df96d6b",
+      "historical_output_unchanged": false,
+      "tracked_status_unchanged": false,
+      "tracked_status_clean_before": true,
+      "tracked_status_clean_after": false,
+      "elapsed_seconds": 94.052
+    }
+  },
+  "blocklist_real_bff_red_green": {
+    "mutation": "Remove blocklist/check from the actual root BFF GET grammar; real authenticated handler refuses with 405 vs expected200. Restore exact original bytes, no test changes.",
+    "red_exit": 1,
+    "green_exit": 0,
+    "source_sha256": "5ac0fcfe7d025ab3aca00675dc7c032982a9cf11128ed0c73d3fe3c0bab57c50",
+    "source_restored": true,
+    "test_sha256": "19a5efdc501f083b6eaf3ee5de868340d9402b65a2dc2ed5a2887d9abf4a5728"
+  },
+  "manual_browser": {
+    "root": "output/playwright/create-order-drawer-3722851862",
+    "cases": 25,
+    "failed": 0,
+    "localized_warning_clicks": 6,
+    "pg_orders": 14,
+    "expected_orders": 14,
+    "legacy_cases": 10
+  },
+  "new_key_calibration": {
+    "root": "output/playwright/create-order-drawer-4163076078",
+    "cases": 25,
+    "failed": [
+      "DU3-single-order-en-1440"
+    ],
+    "pg_orders": 15,
+    "expected_orders": 14
+  },
+  "admin_shell_restoration": {
+    "head": "3a0f6aa1b36c246127986eca38342c0516544935",
+    "mode_exit": 0,
+    "guard_exit": 99,
+    "guard_reason": "old trunk shell mode overwrites tracked historical evidence, copied before restore",
+    "source_unchanged": true,
+    "source_sha256": "3a8ceac72784de4ee5e958501f299245e3f95387af60758e2a9c271c6d32a137",
+    "historical_output_restored_sha256": "9e02b5a43e89f1c334d1f6b3721f0366d4cda6db5db9f4bf68241ed92b4e8aac",
+    "historical_output_restored": true,
+    "git_status_clean": true
+  },
+  "pr_modes": {
+    "modes": [
+      "foundation-shards",
+      "--browser-inbox",
+      "--browser-meta-health-ui",
+      "--browser-tracking-backfill",
+      "--browser-platform-site",
+      "--browser-admin-shell",
+      "--browser-click-sweep",
+      "--browser-visual-lint",
+      "--browser-identity",
+      "--browser-buyer-comms",
+      "--browser-checkout-offline",
+      "--browser-home-cod",
+      "--browser-promotions",
+      "--browser-password-auth",
+      "--browser-admin-legacy",
+      "--browser-buyer",
+      "--browser-merchant-buyer",
+      "--browser-manual-order",
+      "--browser-merchant-orders-bff",
+      "--browser-merchant-orders-ui",
+      "--browser-input-delivery",
+      "--browser-studio-bff",
+      "--browser-studio-ui",
+      "--browser-live-console",
+      "--browser-claim-checkout",
+      "--browser-live-claims",
+      "--browser-order",
+      "--browser-payment",
+      "--browser-refund-fulfilment",
+      "--browser-customers-billing",
+      "--browser-card-payments",
+      "--browser-meta-ads",
+      "--browser-ads-attribution",
+      "--browser-cvs",
+      "--browser-catalog-media",
+      "--browser-storefront-publish",
+      "--browser-store-domains",
+      "--browser-storefront",
+      "--browser-webkit",
+      "--browser-e2e",
+      "--live-browser-input",
+      "--browser-design",
+      "--browser-ops-polish",
+      "--browser-meta-connect",
+      "--browser-product-editor",
+      "--browser-catalog-core",
+      "--browser-returns-ui",
+      "--browser-picklist",
+      "--browser-operations-ads",
+      "--browser-product-media-v2",
+      "--browser-reports",
+      "--browser-migration-import",
+      "--studio-backend"
+    ],
+    "deploy": false
+  },
+  "raw_evidence_root": "output/playwright/lc-u3-merge-validation",
+  "independent_reviews": [
+    "LC-U3 merge map: no merge-loss; registry/U2a bytes match trunk",
+    "LC-U3 warning source+normal/calibration evidence review: no newP0/P1; ownerK3 delta re-review pending"
+  ],
+  "not_run": [
+    "full foundation/G07",
+    "click-sweep",
+    "visual-lint",
+    "remaining selected CI modes",
+    "SANDBOX/LIVE/providers/deployment"
+  ]
+}
