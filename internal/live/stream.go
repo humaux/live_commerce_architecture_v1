@@ -86,8 +86,10 @@ type ConsoleStreamState struct {
 }
 
 // ConsoleComment is §2.6's Comment plus marks; text/author_name exist only in memory and this response.
+// Seq is the FB buffer or IG webhook-envelope item position; direct Graph history emits null.
 type ConsoleComment struct {
 	Ref           string       `json:"ref"`
+	Seq           *int64       `json:"seq"`
 	ParentRef     *string      `json:"parent_ref"`
 	CreatedAt     time.Time    `json:"created_at"`
 	AuthorName    *string      `json:"author_name"`
@@ -228,7 +230,7 @@ func (cs *CommentStream) facebookPage(ctx context.Context, tx pgx.Tx, scope plat
 	}
 	items := make([]ConsoleComment, len(page.Items))
 	for i, it := range page.Items {
-		items[i] = ConsoleComment{Ref: it.Ref, ParentRef: it.ParentRef, CreatedAt: it.CreatedAt,
+		items[i] = ConsoleComment{Ref: it.Ref, Seq: it.Seq, ParentRef: it.ParentRef, CreatedAt: it.CreatedAt,
 			AuthorName: it.AuthorName, Text: it.Text, IsPage: it.IsPage, HasAttachment: it.HasAttachment}
 	}
 	items, err = cs.attachMarks(ctx, tx, scope, token, sessionID, items)
@@ -293,8 +295,9 @@ func (cs *CommentStream) instagramPage(ctx context.Context, tx pgx.Tx, scope pla
 			n := cr.AuthorName
 			name = &n
 		}
+		seq := env.Seq // §2.6: preserve this decrypted envelope's position, not the page's last sequence.
 		comments = append(comments, ConsoleComment{
-			Ref: cr.Ref, ParentRef: parent, CreatedAt: cr.CreatedAt, AuthorName: name,
+			Ref: cr.Ref, Seq: &seq, ParentRef: parent, CreatedAt: cr.CreatedAt, AuthorName: name,
 			Text: cr.Text, IsPage: cr.IsPage, HasAttachment: cr.HasAttachment,
 		})
 		if env.Seq > lastSeq {

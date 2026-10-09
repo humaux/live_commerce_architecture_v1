@@ -217,8 +217,13 @@ holds for the page; the authoritative check at send time is §3.3 via `comment-f
 `GET /v1/admin/stores/{store_id}/live-sessions/{session_id}/comments?after_epoch=&after_seq=&limit=` and
 `?before_cursor=`. Response `{epoch, reset: bool, items: [ConsoleComment], next: {epoch, seq}, older_cursor,
 stream: StreamState}`; `reset=true` when `after_epoch` ≠ current epoch (worker restarted: the UI clears and re-reads).
-`ConsoleComment = {ref, parent_ref, created_at, author_name (may be null, LC-U2), text, is_page: bool,
+`ConsoleComment = {ref, seq: number|null, parent_ref, created_at, author_name (may be null, LC-U2), text, is_page: bool,
 has_attachment: bool, marks}`. `limit` 1..100; negative or non-integer `after_seq` → `400 invalid_cursor`.
+Every item includes `seq`: FB buffer items use their existing buffer-local arrival sequence in `epoch`; IG
+webhook-copy items use the returned envelope's `seq` from `social.read_comment_events`. Direct Graph
+history/backfill items have no authoritative item sequence and MUST emit `seq: null` (never omit the field).
+Do not derive item `seq` from the page's `next.seq`/`next_seq` or from `created_at`. Numeric seq coverage applies
+only within an authoritative window; `seq: null` history items are excluded from absence-based deletion.
 Headers `Cache-Control: no-store`, `Referrer-Policy: no-referrer` (I15).
 
 Cadence (OPEN-1, deviation A17): **polling**, not SSE, in v1 — comments every 3 s while the tab is visible, console

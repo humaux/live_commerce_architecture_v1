@@ -18,6 +18,7 @@ export function commentSendState(state:string):"queued"|"sent"|"failed"|"blocked
 export type CommentCursor = { epoch: number; seq: number };
 export type StreamComment = {
   ref: string;
+  seq: number | null;
   parent_ref: string | null;
   created_at: string;
   author_name: string | null;
@@ -186,6 +187,7 @@ export function parseCommentPage(value: unknown): CommentPage {
   for (const raw of r.items as unknown[]) {
     const row = exact(raw, [
       "ref",
+      "seq",
       "parent_ref",
       "created_at",
       "author_name",
@@ -196,6 +198,7 @@ export function parseCommentPage(value: unknown): CommentPage {
     ]);
     if (
       !ref(row.ref) ||
+      !(row.seq === null || num(row.seq)) ||
       !(row.parent_ref === null || ref(row.parent_ref)) ||
       typeof row.created_at !== "string" ||
       !Number.isFinite(Date.parse(row.created_at)) ||

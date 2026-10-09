@@ -373,6 +373,7 @@ for(const outcome of ["sent","failed","blocked","refused"] as const)test(`PR18 p
 });
 const row = {
   ref: "123_456",
+  seq: 1,
   parent_ref: null,
   created_at: "2026-10-08T01:00:00Z",
   author_name: null,
@@ -402,7 +403,7 @@ const page = (epoch = 1, items = [row], reset = false) => ({
 });
 test("PR18 P1 IG earliest50 refresh preserves100 rows selection and private draft",async t=>{
   const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-09T00:00:00Z")});
-  const igRows=Array.from({length:100},(_,i)=>({...row,ref:String(i+1),text:`Synthetic IG ${i+1}`,created_at:new Date(Date.parse(row.created_at)+1000*i).toISOString()}));
+  const igRows=Array.from({length:100},(_,i)=>({...row,ref:String(i+1),seq:i+1,text:`Synthetic IG ${i+1}`,created_at:new Date(Date.parse(row.created_at)+1000*i).toISOString()}));
   const igPage=(items:typeof igRows,seq:number)=>({...page(0,items),next:{epoch:0,seq},stream:{state:"live",source_platform:"instagram",video_embeddable:false}});
   let heads=0,sends=0;const afterSeqs:string[]=[];
   globalThis.fetch=async(input,init)=>{

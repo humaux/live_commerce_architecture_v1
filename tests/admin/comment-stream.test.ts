@@ -117,6 +117,15 @@ test("K3 reply text rejects every C0/C1 control except newline",()=>{
   }
 });
 const signedCursor = `eyJ0ZXN0IjoxfQ.${"a".repeat(43)}`;
+test("PR18 approved seq DTO parser accepts safe numbers and explicit history null",()=>{
+  const row={ref:"1",seq:null,parent_ref:null,created_at:"2026-10-09T00:00:00Z",author_name:null,text:"Synthetic DTO",is_page:false,has_attachment:false,marks:{intake:null,claim:null,private_reply:null,printed:null,public_replies:0,private_reply_available:true}};
+  const envelope=(item:unknown)=>({epoch:1,reset:false,items:[item],next:{epoch:1,seq:1},older_cursor:null,stream:{source_platform:"facebook",video_embeddable:true}});
+  for(const seq of [0,1,Number.MAX_SAFE_INTEGER,null])
+    assert.equal(parseCommentPage(envelope({...row,seq})).items[0].seq,seq);
+  for(const seq of [undefined,-1,1.5,"1",NaN,Infinity,Number.MAX_SAFE_INTEGER+1])
+    assert.throws(()=>parseCommentPage(envelope({...row,seq})),/invalid_comment_response/);
+  const {seq,...missing}=row;assert.throws(()=>parseCommentPage(envelope(missing)),/invalid_comment_response/);
+});
 test("SQL operation marks map to every merchant-visible delivery state",()=>{
   assert.deepEqual(["READY","DISPATCHING","SUCCEEDED","ACKNOWLEDGED","FAILED_FINAL","BLOCKED_POLICY","STALE_BINDING","CANCELLED","UNKNOWN"].map(commentSendState),["queued","queued","sent","sent","failed","blocked","blocked","blocked","unknown"]);
 });
