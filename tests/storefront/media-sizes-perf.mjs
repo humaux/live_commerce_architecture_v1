@@ -10,8 +10,8 @@ export async function measureMediaSizes({ browser, origin, evidence, ctxOpts }) 
   if (!phase) return;
   assert(["before", "after"].includes(phase));
   const directory = path.resolve(evidence, "media-sizes");
-  const baseline = phase === "after" ? process.env.LC_MEDIA_SIZES_BASELINE : null;
-  assert(phase !== "after" || baseline, "LC_MEDIA_SIZES_BASELINE must name the read-only before.json for after comparison");
+  // Reading the committed baseline is fine; only writes must stay in the run root (PR #23 review).
+  const baseline = phase === "after" ? (process.env.LC_MEDIA_SIZES_BASELINE || path.resolve("output/media-sizes/before.json")) : null;
   await mkdir(directory, { recursive: true });
   const result = { phase, fixture: "cmiJPEG-1440x1800-v1", viewport: { width: 390, height: 844 }, dpr: 2,
     network: "Chromium CDP 1.6Mbps down / 750Kbps up / 150ms RTT; CPU 1x", samples: [] };

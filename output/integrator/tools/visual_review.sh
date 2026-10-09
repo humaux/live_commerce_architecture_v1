@@ -50,7 +50,7 @@ shards = [{"shard": str(p.parent.relative_to(dl)), "index": json.loads(p.read_te
 json.dump({"shards": shards}, open(dst, "w"), ensure_ascii=False, indent=1)
 PY
 n=$(find "$WT/visual-shots" -name '*.png' | wc -l | tr -d ' ')
-[ "$n" -gt 0 ] || { echo "no shots in run $RUN (was it before ci(visual) 338ceb24, or did visual-lint not run?)"; exit 3; }
+[ "$n" -gt 0 ] || { printf 'NOT_RUN: complete shard set but no shots in run %s (artifact layout changed?)\n' "$RUN" | tee "$OUT/findings.md"; exit 4; }
 echo "run $RUN @ ${SHA:0:8} (reviewed in trunk ${TRUST:0:8}): $n shots -> K2.8 review"
 cd $ROOT/.worktrees/r3-integration
 rc=0; READONLY=1 MODEL=kimi-for-coding PROVIDER=kimi bash scripts/agents/ext-agent.sh "$WT" $ROOT/output/integrator/tools/visual-review-prompt.md "$OUT" high > "$OUT/run.log" 2>&1 || rc=$?
