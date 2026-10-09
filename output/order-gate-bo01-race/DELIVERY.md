@@ -5,6 +5,9 @@ Used by: integrator review/CI; no provider/production claim. -->
 
 - Branch `unit/order-gate-bo01-race`, base `30ddfb109059340070dd7aa4eabd0469f38983de`; final tested source `75d4917baec234effbcdade2b24a8346be510eda`. Source commits `318a5516`, `2d4acb53`, `d9914b38`, `75d4917b`; final delivery commit adds evidence only.
 - Scope: order browser driver, its Go harness flag forwarding, existing deadline unit test. No product/contract/dependency changes, retries, timeout increases or weakened assertions.
+- Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race`.
+- Explicit allowed `write_paths`: `tests/storefront/order-gate.mjs`, `tests/foundation/browser_order_chain_test.go`, `apps/storefront/tests/order-gate-timeout.test.mjs`, `output/order-gate-bo01-race/`. This P2 round modifies only the driver, deadline unit tests and delivery evidence.
+- Reasoning effort: root inherits its current runtime setting; the API/host environment does not expose its exact value (recorded as unavailable, not guessed). Read-only reviewer actual configured `reasoning_effort=high`, model `gpt-6.1-sol`.
 - Role: Codex-3 implements and runs runtime gates (GPT-6 family; exact deployment/effort not exposed). Existing read-only reviewer configured `gpt-6.1-sol/high` inspected d9914b38 and final75d4917b, ran two deadline tests and independently checked JSON proof; no P1/P2 found. Browser runtime was run by root, not independently rerun by reviewer.
 
 ## Root cause and fix

@@ -103,6 +103,15 @@ async function assertHistoryTimes(p,locale,response) {
     await expect(row.locator("time[datetime]")).toHaveText(displayTime(locale,item.created_at));
   }
 }
+// Both calibration barriers fail locally; a lost read must not wait for Go's 180 s kill.
+async function waitBo01Warmup(promise,phase,page) {
+  let deadline;
+  try {
+    return await Promise.race([promise,new Promise((_,reject)=>{
+      deadline=setTimeout(()=>reject(new Error(`BO01 warmup ${phase} exceeded 10000ms: GET /api/buyer/destination at ${page.url()}`)),10000);
+    })]);
+  } finally {clearTimeout(deadline);}
+}
 async function quotePage(c,clock=false,p,bo01=false) {
   if(!p){p=await c.newPage();if(clock)await p.clock.install();}
   if(bo01&&process.env.LC_BO01_EARLY_HEAD==="1") {
@@ -110,7 +119,7 @@ async function quotePage(c,clock=false,p,bo01=false) {
     let waiting=true;
     await p.route("**/api/buyer/destination",async route=>{
       const request=route.request();
-      if(waiting&&request.method()==="GET"&&new URL(request.headers().referer).pathname==="/en/checkout") {
+      if(waiting&&request.method()==="GET"&&new URL(request.headers().referer||origin).pathname==="/en/checkout") {
         waiting=false;warmup.entered.resolve();await warmup.release.promise;
       }
       await route.continue();
@@ -123,7 +132,7 @@ async function quotePage(c,clock=false,p,bo01=false) {
   const response=await pending;assert.equal(response.status(),200);
   const quote=await response.json();
   await expect(p.getByTestId("address-section")).toBeVisible();
-  if(bo01Warmups.has(p))await bo01Warmups.get(p).entered.promise;
+  if(bo01Warmups.has(p))await waitBo01Warmup(bo01Warmups.get(p).entered.promise,"request interception",p);
   return {p,quote};
 }
 async function fill(p,values=pii) {for(const [key,value] of Object.entries(values))await p.locator(`input[name="${key}"]`).fill(value);}
@@ -190,7 +199,7 @@ async function stableLocaleTarget(p,mobile=false) {
   // Match the real new document and observed owner cookie, not whichever GET arrives first.
   const headLoading=arm("destination",{method:"GET",after:true,sourcePath:"/zh-TW/checkout",cookie:`${cookie.name}=${cookie.value}`});
   const warmup=bo01Warmups.get(p);
-  if(warmup){warmup.cookie=headLoading.cookie;warmup.release.resolve();await warmup.served.promise;bo01Warmups.delete(p);}
+  if(warmup){warmup.cookie=headLoading.cookie;warmup.release.resolve();await waitBo01Warmup(warmup.served.promise,"upstream completion",p);bo01Warmups.delete(p);}
   // Enter the probed document from a settled old form; its loading is measured below.
   await expect(p.locator('input[name="recipient_name"]')).toBeEnabled();
   if(mobile&&process.env.LC_BROWSER_ENGINE==="webkit") {
@@ -205,8 +214,6 @@ async function stableLocaleTarget(p,mobile=false) {
     })]);
     assert.equal(status,200);assert.equal(headLoading.receivedSourcePath,"/zh-TW/checkout");assert.equal(headLoading.ownerMatched,true);
   } finally { clearTimeout(headDeadline); }
-  // Calibration makes the unheld target head finish before observing loading, as the CI artifact did.
-  if(warmup&&headLoading.receivedSourcePath==="/en/checkout")await expect(p.locator('input[name="recipient_name"]')).toBeEnabled();
   await expect(p.getByTestId("address-section")).toBeVisible();
   await expect(p.getByTestId("cart-line")).toHaveCount(1);
   await expect(p.getByRole("status").filter({hasText:"正在載入收件資訊…"})).toBeVisible();
