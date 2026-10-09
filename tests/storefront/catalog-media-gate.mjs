@@ -1,9 +1,13 @@
+// Purpose: catalog-media-gate.mjs startup uses bounded shared bind-race recovery; gate assertions are unchanged.
+// Depends on: tests/helpers/next-startup.mjs and existing app/fixture/edge imports below.
+// Used by: its scripts/dev/test-local.sh browser mode; GATE-PORT acceptance.
 // Independent catalog-media browser gate (R3 test author; docs/delivery/units/catalog-media.md CM3-CM6).
 // Merchant half (production admin Next + signed MOCK IdP + real BFF/Go/PG): upload 2 photos, reorder, rename the product, change a SKU
 // price and archive the other SKU in the Ledger. Buyer half (production storefront Next, a fresh anonymous context on the published
 // shop origin): the home grid shows the cover photo, the new name and the new lowest price; the product page shows the gallery in the new
 // order, the new price and no archived SKU. Matrix: zh-TW + en, desktop 1280px + mobile 390px, four distinct products.
 // Driven by TestBrowserCatalogMedia (tests/foundation/browser_catalog_media_test.go); the only host mapping is a disposable TLS/CONNECT edge.
+import { startNextWithPortRetry, nextAttemptLog } from "../helpers/next-startup.mjs";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import http from "node:http";
@@ -48,27 +52,31 @@ function relay(port, request, body = Buffer.alloc(0)) {
     call.on("error", reject); call.end(body);
   });
 }
-async function startNext(app, port) {
-  if (!port) { const reserve = net.createServer(); port = await listen(reserve); await new Promise(resolve => reserve.close(resolve)); }
-  const log = createWriteStream(path.join(evidence, `${app}.log`), {flags: "wx", mode: 0o600});
-  logs.push(log); await once(log, "open");
-  const env = {...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1"};
-  for (const name of Object.keys(env)) if (name.startsWith("LC_CM_")) delete env[name];
-  const args = app === "admin"
-    ? [path.join(root, "apps/admin/.next/standalone/apps/admin/server.js")]
-    : [path.join(root, "apps/storefront/node_modules/next/dist/bin/next"), "start", "--hostname", "127.0.0.1", "--port", String(port)];
-  env.HOSTNAME = "127.0.0.1"; env.PORT = String(port);
-  const child = spawn(process.execPath, args, {cwd: path.join(root, `apps/${app}`), env, stdio: ["ignore", log, log]});
-  children.add(child);
-  for (let i = 0; i < 100; i++) {
-    if (!running(child)) throw new Error(`owned ${app} exited before readiness`);
-    try {
-      const response = await relay(port, {url: app === "admin" ? "/api/stores" : "/api/buyer/session", method: "GET", headers: {host: app === "admin" ? new URL(adminOrigin).host : "buyer.example"}});
-      if (response.status === (app === "admin" ? 401 : 200)) return port;
-    } catch {}
-    await wait(50);
-  }
-  throw new Error(`owned ${app} readiness deadline`);
+async function startNext(app, requestedPort) {
+  return startNextWithPortRetry({ port: requestedPort }, async ({ port, attempt, track }) => {
+
+    const log = createWriteStream(nextAttemptLog(path.join(evidence, `${app}.log`), attempt), {flags: "wx", mode: 0o600});
+    logs.push(log); await once(log, "open");
+    const env = {...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1"};
+    for (const name of Object.keys(env)) if (name.startsWith("LC_CM_")) delete env[name];
+    const args = app === "admin"
+      ? [path.join(root, "apps/admin/.next/standalone/apps/admin/server.js")]
+      : [path.join(root, "apps/storefront/node_modules/next/dist/bin/next"), "start", "--hostname", "127.0.0.1", "--port", String(port)];
+    env.HOSTNAME = "127.0.0.1"; env.PORT = String(port);
+    const child = spawn(process.execPath, args, {cwd: path.join(root, `apps/${app}`), env, stdio: ["ignore", log, log]});
+    track(child, log);
+    children.add(child);
+    for (let i = 0; i < 100; i++) {
+      if (!running(child)) throw new Error(`owned ${app} exited before readiness`);
+      try {
+        const response = await relay(port, {url: app === "admin" ? "/api/stores" : "/api/buyer/session", method: "GET", headers: {host: app === "admin" ? new URL(adminOrigin).host : "buyer.example"}});
+        if (response.status === (app === "admin" ? 401 : 200)) return port;
+      } catch {}
+      await wait(50);
+    }
+    throw new Error(`owned ${app} readiness deadline`);
+
+  });
 }
 async function shot(page, name, run) {
   const file = path.join(evidence, `${name}-${run.locale}-${run.vp}.png`);

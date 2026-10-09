@@ -1,3 +1,6 @@
+// Purpose: shop-real-gate.mjs startup uses bounded shared bind-race recovery; gate assertions are unchanged.
+// Depends on: tests/helpers/next-startup.mjs and existing app/fixture/edge imports below.
+// Used by: its scripts/dev/test-local.sh browser mode; GATE-PORT acceptance.
 // SFR gate (SANDBOX tier, REAL stack): the buyer storefront shell in a real browser against the production Next build, the real private
 // buyerhttp handler and PG, with a shop the merchant built through the real admin API (products, option axes, stock, photos, collections, design
 // saved + published + a preview draft, a delivery policy with a free-shipping threshold) and published through the migration 0081 definers.
@@ -6,6 +9,7 @@
 // Host) behind a CONNECT-only proxy. The MOCK sibling tests/storefront/shop-gate.mjs (SF01-SF12, fake API) stays for fast iteration.
 // Env: LC_SFR_EVIDENCE, LC_SFR_FACTS (json), LC_SFR_CONTROL + LC_SFR_CONTROL_KEY (Go-only publication toggle), COMMERCE_BUYER_*,
 // LC_BROWSER_ENGINE=chromium|webkit (tests/storefront/browser-engine.mjs).
+import { startNextWithPortRetry, nextAttemptLog } from "../helpers/next-startup.mjs";
 import assert from "node:assert/strict";
 import http from "node:http";
 import https from "node:https";
@@ -42,22 +46,25 @@ async function control(action) {
 }
 
 async function startNext() {
-  const log = createWriteStream(path.join(evidence, `next-${Date.now()}.log`), { flags: "wx", mode: 0o600 });
-  logs.push(log); await once(log, "open");
-  const probe = net.createServer(); const port = await listen(probe); await new Promise((r) => probe.close(r));
-  const bin = path.join(root, "apps/storefront/node_modules/next/dist/bin/next");
-  const child = spawn(process.execPath, [bin, "start", "--hostname", "127.0.0.1", "--port", String(port)], {
-    cwd: path.join(root, "apps/storefront"),
-    env: { ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1" },
-    stdio: ["ignore", log, log],
+  return startNextWithPortRetry({}, async ({ port, attempt, track }) => {
+    const log = createWriteStream(nextAttemptLog(path.join(evidence, `next-${Date.now()}.log`), attempt), { flags: "wx", mode: 0o600 });
+    logs.push(log); await once(log, "open");
+    const bin = path.join(root, "apps/storefront/node_modules/next/dist/bin/next");
+    const child = spawn(process.execPath, [bin, "start", "--hostname", "127.0.0.1", "--port", String(port)], {
+      cwd: path.join(root, "apps/storefront"),
+      env: { ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1" },
+      stdio: ["ignore", log, log],
+    });
+    track(child, log);
+    children.add(child);
+    for (let i = 0; i < 400; i++) {
+      if (child.exitCode !== null) throw new Error("Next exited before readiness");
+      try { const r = await relay(port, { url: "/robots.txt", method: "GET", headers: { host: HOST } }, Buffer.alloc(0)); if (r.status === 200) return { port, child }; } catch { /* not up yet */ }
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    throw new Error("Next readiness timeout");
+
   });
-  children.add(child);
-  for (let i = 0; i < 400; i++) {
-    if (child.exitCode !== null) throw new Error("Next exited before readiness");
-    try { const r = await relay(port, { url: "/robots.txt", method: "GET", headers: { host: HOST } }, Buffer.alloc(0)); if (r.status === 200) return { port, child }; } catch { /* not up yet */ }
-    await new Promise((r) => setTimeout(r, 100));
-  }
-  throw new Error("Next readiness timeout");
 }
 // Raw http keeps the virtual Host exactly as the browser sent it (Node fetch would rewrite it).
 function relay(port, req, body) {
