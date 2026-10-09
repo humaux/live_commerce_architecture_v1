@@ -49,7 +49,9 @@ const cells: { n: number; locale: Locale; viewport: Viewport }[] = [
 ];
 // 30000 minor = 300.00 normal price, 20000 = 200.00 live price, quantity 2 on the claim and 1 on the direct purchase.
 const live = { total: "400", unit: "200", normalTotal: "600", normalUnit: "300" };
-const has = (n: string) => new RegExp(`(^|[^0-9.,])${n}(\\.00)?([^0-9]|$)`);
+// An amount token: no digit, ASCII letter, "." or "," on either side, so ids such as an order UUID "2ef200c7" or a SKU "LT2"
+// never count as a price (a random UUID made "must not show 200" flaky on PR #33).
+const has = (n: string) => new RegExp(`(^|[^0-9A-Za-z.,])${n}(\\.00)?([^0-9A-Za-z]|$)`);
 
 async function act(name: string, body: Record<string, unknown> = {}) {
   const response = await fetch(`${control}/act?name=${name}`, { method: "POST", headers: { "X-Gate-Key": controlKey, "content-type": "application/json" }, body: JSON.stringify(body) });
