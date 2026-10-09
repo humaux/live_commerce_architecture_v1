@@ -147,6 +147,12 @@ export function main(argv = process.argv.slice(2), env = process.env) {
     readSources = (file) => [revisionSource(base, file), revisionSource(head, file)];
   } else throw new Error("usage: pr-modes.mjs <base> [head] | --stdin");
   const r = planPr(paths, source, readSources);
+  // CI checks out GitHub's merge of head into base, so the checkout's registry also has modes the base added after the
+  // fork. Union them (never fewer): a head-only registry would skip those modes for tagged-source changes (PR #22 review).
+  if (source !== undefined) {
+    const merged = readFileSync(path.join(root, "scripts/dev/test-local.sh"), "utf8");
+    if (merged !== source) r.modes = [...new Set([...r.modes, ...planPr(paths, merged, readSources).modes])];
+  }
   // Compatibility is with the old CLI, not merely planPr(rawPaths): Git's
   // quoted Unicode/tab names used to count as UI, and trim() could select smoke.
   // Never feed these display spellings into source lookup. The legacy CLI used
