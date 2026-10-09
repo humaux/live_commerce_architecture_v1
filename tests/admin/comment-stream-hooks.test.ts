@@ -428,9 +428,11 @@ test("PR18 R2 templates read 404 denies the composer", async t => {
   const h=env.mount(()=>CommentReply({store,session:sid,comment:row,locale:"en",platform:"facebook",capabilities:{facebook:{private_reply:{state:"ok",reason:"ok",evidence:"MOCK",checked_at:null}}},onSent(){},onDenied(){denied++;}} as any));
   await h.settle();assert.equal(denied,1);
 });
-test("PR18 R2 buyer-panel read 404 expires the panel and reports unauthorized", async t => {
-  const env=environment(t);let lost=0;
-  globalThis.fetch=async input=>String(input).includes("buyer-panel?")?response({code:"not_found"},404):response({items:[]});
-  const h=env.mount(()=>BuyerPanel({store,conversationId:sid,onUnauthorized(){lost++;}} as any));
-  await h.settle();assert.equal(lost,1);assert.equal(textOf(h.output).includes("SYNTHETIC"),false);
+for(const [status,lost] of [[404,0],[403,1]] as const)test(`PR18 buyer-panel read ${status}: ${lost?"revokes the console scope":"stays local (retention-purged or gone selection), console keeps access"}`, async t => {
+  // Codex r4 4227138842: A13 answers not_found for a purged/missing bundle too, so only 401/403 revoke the parent scope;
+  // a real scope loss still reaches the A2/A8 polls within one interval.
+  const env=environment(t);let lost_=0;
+  globalThis.fetch=async input=>String(input).includes("buyer-panel?")?response({code:status===404?"not_found":"forbidden"},status):response({items:[]});
+  const h=env.mount(()=>BuyerPanel({store,conversationId:sid,onUnauthorized(){lost_++;}} as any));
+  await h.settle();assert.equal(lost_,lost);assert.equal(textOf(h.output).includes("SYNTHETIC"),false);
 });
