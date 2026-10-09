@@ -4,6 +4,7 @@
 #   2026-10-07 speed-up: a `plan` job fans the two long gates out (`--browser-click-sweep` -> N LC_SWEEP_SHARD slices, `--browser-visual-lint` -> M slices,
 #   `foundation-shards` -> the balanced groups of scripts/dev/shard-plan.json) and an `aggregate` job proves the slices together cover the full universe.
 # Depends on: scripts/dev/ci-plan.mjs (matrix), scripts/dev/shard-plan.mjs + shard-plan.json (foundation groups), scripts/dev/test-local.sh (modes),
+#   scripts/dev/ci-playwright-browsers.mjs (registry engine requirements), ci-playwright-install.sh (bounded apt retries),
 #   scripts/dev/test-focused.sh (regex runs), tests/ui/sweep-aggregate.mjs (whole-run verdict), the pinned postgres image,
 #   Playwright Chromium/WebKit for --browser-* modes (cached per Playwright version). No secrets: every gate uses MOCK/SANDBOX fixtures only.
 # Used by: the integrator (`gh workflow run gates.yml --ref <branch> -f modes='[...]'`); pushes to r3/integration run
@@ -108,35 +109,42 @@ jobs:
         run: |
           corepack enable
           pnpm install --frozen-lockfile --ignore-scripts
+      - name: Browser requirements from registry
+        id: browsers
+        run: node scripts/dev/ci-playwright-browsers.mjs "$MODE"
       - name: Playwright version (cache key)
         id: pw
-        if: startsWith(matrix.mode, '--browser') || startsWith(matrix.mode, '--stripe-browser')
+        if: steps.browsers.outputs.engines != ''
         # The version pnpm resolved from the frozen lockfile: a new Playwright (new browser revisions) is a new cache key, a lockfile change that keeps it is a hit.
         run: echo "version=$(pnpm exec playwright --version | awk '{print $NF}')" >> "$GITHUB_OUTPUT"
       - name: Writable Playwright browser dir
-        if: startsWith(matrix.mode, '--browser') || startsWith(matrix.mode, '--stripe-browser')
+        if: steps.browsers.outputs.engines != ''
         run: sudo mkdir -p "$PLAYWRIGHT_BROWSERS_PATH" && sudo chown "$(id -u):$(id -g)" "$PLAYWRIGHT_BROWSERS_PATH"
       - name: Restore Playwright browsers
         id: pwcache
-        if: startsWith(matrix.mode, '--browser') || startsWith(matrix.mode, '--stripe-browser')
+        if: steps.browsers.outputs.engines != ''
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: /opt/ms-playwright
-          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-chromium-webkit
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-${{ steps.browsers.outputs.cache }}
+          restore-keys: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-chromium-webkit
       - name: Browsers for browser modes
-        if: startsWith(matrix.mode, '--browser') || startsWith(matrix.mode, '--stripe-browser')
-        # With a cache hit the browser downloads are skipped; --with-deps still installs the system libraries and Xvfb (apt, not cacheable here).
-        # Bounded: on 2026-10-08 this apt step hung for the whole 150-min job limit on 10+ jobs at once (PR #10), holding runners of the
-        # 20-job free tier; a healthy install takes < 3 min, so a hang now fails fast and the integrator's triage reruns it as INFRA.
+        if: steps.browsers.outputs.engines != ''
+        # Always install the selected system deps; cached binaries do not imply apt packages exist.
+        # Three 240s attempts +15s kill grace each +two 10s backoffs <=785s; total step stays 15min.
         timeout-minutes: 15
-        run: pnpm exec playwright install --with-deps chromium webkit
+        env:
+          BROWSERS: ${{ steps.browsers.outputs.engines }}
+        run: |
+          read -r -a browsers <<< "$BROWSERS"
+          bash scripts/dev/ci-playwright-install.sh "${browsers[@]}"
       - name: Save Playwright browsers
         # Saved right after the install (not at job end), so a run whose gate then fails still seeds the cache. Parallel jobs racing for the same key only log a warning.
-        if: ${{ (startsWith(matrix.mode, '--browser') || startsWith(matrix.mode, '--stripe-browser')) && steps.pwcache.outputs.cache-hit != 'true' }}
+        if: ${{ steps.browsers.outputs.engines != '' && steps.pwcache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: /opt/ms-playwright
-          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-chromium-webkit
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-${{ steps.browsers.outputs.cache }}
       - name: Download pinned test image
         run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
       - name: Gate
