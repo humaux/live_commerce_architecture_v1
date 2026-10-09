@@ -1,9 +1,11 @@
 // Purpose: Enforce the product-editor mobile matrix's declared click identities and fail-closed ledger evidence.
-// Depends on: encoding/json, standard-library I/O and the synthetic PR16 real-click identity fixture; no DB or browser required.
+// Depends on: the embedded shared control table, encoding/json and synthetic real-click fixtures; no DB or browser required.
 // Used by: TestBrowserCatalogCore after product-editor Playwright, and DB-free corruption controls.
 package foundation_test
 
 import (
+	"bytes"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -22,61 +24,34 @@ type productEditorMatrixLedgerKey struct {
 
 type productEditorMatrixLedgerRow struct {
 	productEditorMatrixLedgerKey
-	Actual string `json:"actual"`
+	Expected json.RawMessage `json:"expected"`
+	Actual   string          `json:"actual"`
 }
 
-// Required identities from product-editor.acceptance.ts mobile matrix/axis-removal
-// contract: a single table, expanded across the three frozen locale copy bindings.
-// Cardinality comes from this table, never a ledger-length magic number.
-var productEditorMatrixLedgerCases = []struct{ page, row, control, action string }{
-	{"mobile matrix new", "", "axis-add/axis-name-0/axis-values-0", "click fill Enter"},
-	{"mobile matrix new", "", "axis-add/axis-name-1/axis-values-1", "click fill Enter"},
-	{"mobile matrix new", "White / S", "matrix-select-0", "check uncheck"},
-	{"mobile matrix new", "White / S", "@untracked", "check uncheck; choose mode"},
-	{"mobile matrix new", "White / S", "@price", "fill"},
-	{"mobile matrix new", "White / S", "@compare", "fill"},
-	{"mobile matrix new", "White / S", "@quantity", "fill"},
-	{"mobile matrix new", "White / S", "@code", "fill"},
-	{"mobile matrix new", "White / S", "@keyword", "fill"},
-	{"mobile matrix new", "White / S", "matrix-active-0", "uncheck check"},
-	{"mobile matrix new", "Black / S", "matrix-select-1", "check uncheck"},
-	{"mobile matrix new", "Black / S", "@untracked", "check uncheck; choose mode"},
-	{"mobile matrix new", "Black / S", "@price", "fill"},
-	{"mobile matrix new", "Black / S", "@compare", "fill"},
-	{"mobile matrix new", "Black / S", "@max", "fill"},
-	{"mobile matrix new", "Black / S", "@code", "fill"},
-	{"mobile matrix new", "Black / S", "@keyword", "fill"},
-	{"mobile matrix new", "Black / S", "matrix-active-1", "uncheck check"},
-	{"mobile matrix new", "", "saved axis-0", "UI save, editor reopen/reload"},
-	{"mobile matrix new", "", "saved axis-1", "UI save, editor reopen/reload"},
-	{"mobile matrix new", "White / S", "saved row readback", "UI save, editor reopen/reload, read visible fields"},
-	{"mobile matrix new", "Black / S", "saved row readback", "UI save, editor reopen/reload, read visible fields"},
-	{"mobile matrix new", "", "product-create", "click reload"},
-	{"mobile matrix edit", "White / S", "matrix-select-0", "check uncheck"},
-	{"mobile matrix edit", "White / S", "@untracked", "check uncheck; choose mode"},
-	{"mobile matrix edit", "White / S", "@price", "fill"},
-	{"mobile matrix edit", "White / S", "@compare", "fill"},
-	{"mobile matrix edit", "White / S", "@max", "fill"},
-	{"mobile matrix edit", "White / S", "@code", "verify existing SKU code disabled"},
-	{"mobile matrix edit", "White / S", "@keyword", "fill"},
-	{"mobile matrix edit", "White / S", "matrix-active-0", "uncheck check"},
-	{"mobile matrix edit", "Black / S", "matrix-select-1", "check uncheck"},
-	{"mobile matrix edit", "Black / S", "@untracked", "check uncheck; choose mode"},
-	{"mobile matrix edit", "Black / S", "@price", "fill"},
-	{"mobile matrix edit", "Black / S", "@compare", "fill"},
-	{"mobile matrix edit", "Black / S", "@targetQty", "fill"},
-	{"mobile matrix edit", "Black / S", "@code", "verify existing SKU code disabled"},
-	{"mobile matrix edit", "Black / S", "@keyword", "fill"},
-	{"mobile matrix edit", "Black / S", "matrix-active-1", "uncheck check"},
-	{"mobile matrix edit", "", "saved axis-0", "UI save, editor reopen/reload"},
-	{"mobile matrix edit", "", "saved axis-1", "UI save, editor reopen/reload"},
-	{"mobile matrix edit", "White / S", "saved row readback", "UI save, editor reopen/reload, read visible fields"},
-	{"mobile matrix edit", "Black / S", "saved row readback", "UI save, editor reopen/reload, read visible fields"},
-	{"mobile matrix edit", "", "product-save", "click reload"},
-	{"mobile matrix edit", "", "matrix-active-0/product-save", "uncheck White, click save, reload"},
-	{"mobile axis remove", "", ".pe-axis-remove (Color axis 1)", "real click"},
-	{"mobile axis remove", "", "product-save", "click, confirm archive, reload"},
+// One immutable table is shared with the Playwright recorder. Adding a control
+// changes the required Go set automatically instead of needing two hand-lists.
+//
+//go:embed testdata/product_editor_matrix_cases.json
+var productEditorMatrixLedgerCasesJSON []byte
+
+type productEditorMatrixLedgerCase struct {
+	Page     string `json:"page"`
+	Row      string `json:"row"`
+	Control  string `json:"control"`
+	Action   string `json:"action"`
+	Expected string `json:"expected"`
 }
+
+var productEditorMatrixLedgerCases = func() []productEditorMatrixLedgerCase {
+	var cases []productEditorMatrixLedgerCase
+	if err := json.Unmarshal(productEditorMatrixLedgerCasesJSON, &cases); err != nil {
+		panic(fmt.Sprintf("invalid shared matrix control table: %v", err))
+	}
+	if len(cases) == 0 {
+		panic("empty shared matrix control table")
+	}
+	return cases
+}()
 
 // These bindings name rendered controls; they do not define a second case set.
 var productEditorMatrixLedgerLocales = map[string]map[string]string{
@@ -85,15 +60,23 @@ var productEditorMatrixLedgerLocales = map[string]map[string]string{
 	"en":    {"@price": "Price", "@compare": "Compare-at price", "@quantity": "Quantity", "@max": "Maximum per order", "@targetQty": "Resulting on-hand", "@code": "SKU code", "@keyword": "Live keyword", "@untracked": "Do not track ∞"},
 }
 
-func productEditorMatrixLedgerExpected() map[productEditorMatrixLedgerKey]bool {
-	expected := make(map[productEditorMatrixLedgerKey]bool)
+func productEditorMatrixLedgerExpected() map[productEditorMatrixLedgerKey]string {
+	expected := make(map[productEditorMatrixLedgerKey]string)
 	for locale, labels := range productEditorMatrixLedgerLocales {
 		for _, required := range productEditorMatrixLedgerCases {
-			control := required.control
-			if label, localized := labels[control]; localized {
-				control = label
+			control, claim := required.Control, required.Expected
+			for token, label := range labels {
+				control = strings.ReplaceAll(control, token, label)
+				claim = strings.ReplaceAll(claim, token, label)
 			}
-			expected[productEditorMatrixLedgerKey{Page: required.page, Locale: locale, Width: 390, Row: required.row, Control: control, Action: required.action}] = true
+			key := productEditorMatrixLedgerKey{Page: required.Page, Locale: locale, Width: 390, Row: required.Row, Control: control, Action: required.Action}
+			if strings.TrimSpace(claim) == "" {
+				panic("matrix table requires a non-empty expected claim")
+			}
+			if _, duplicate := expected[key]; duplicate {
+				panic("duplicate shared matrix control identity")
+			}
+			expected[key] = claim
 		}
 	}
 	return expected
@@ -119,8 +102,15 @@ func validateProductEditorMatrixLedger(data []byte) error {
 		if seen[key] {
 			return fmt.Errorf("duplicate mobile matrix ledger row %d", i)
 		}
-		if !remaining[key] {
+		want, declared := remaining[key]
+		if !declared {
 			return fmt.Errorf("unexpected mobile matrix ledger identity at row %d", i)
+		}
+		// PASS is documented as completion of the exact declared expectation.
+		// Never trust a ledger-provided expectation to define its own success.
+		var claim string
+		if err := json.Unmarshal(row.Expected, &claim); err != nil || strings.TrimSpace(claim) == "" || claim != want {
+			return fmt.Errorf("mobile matrix ledger row %d has missing or altered expected claim", i)
 		}
 		if row.Actual != "PASS" {
 			return fmt.Errorf("mobile matrix ledger row %d is not PASS", i)
@@ -137,8 +127,9 @@ func validateProductEditorMatrixLedger(data []byte) error {
 // TestProductEditorMatrixLedger checks independently recorded real-click identities,
 // then corrupts fixture copies without a browser, database write or source mutation.
 func TestProductEditorMatrixLedger(t *testing.T) {
-	// Projected identity/status fields from PR16's actual 196-row evidence ledger:
-	// output/pr16-r4/evidence/green/click-ledger.json SHA256 fa17ff01531b6d80a253dfb8acdcc6c7814df4693571f35a4100fdb6a15c7116.
+	// Independent identity/expected/status projection of the canonical real run
+	// in output/matrix-ledger-enforce/browser/product-editor-click-ledger.json;
+	// never synthesize this successful fixture from the declaration or predicate.
 	data, err := os.ReadFile("testdata/product_editor_mobile_matrix_ledger.json")
 	if err != nil {
 		t.Fatal(err)
@@ -154,6 +145,26 @@ func TestProductEditorMatrixLedger(t *testing.T) {
 		name   string
 		change func([]productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow
 	}{
+		{"missing-expected", func(rows []productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow {
+			rows[0].Expected = nil
+			return rows
+		}},
+		{"altered-expected", func(rows []productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow {
+			rows[0].Expected = json.RawMessage(`"unrelated success claim"`)
+			return rows
+		}},
+		{"empty-expected", func(rows []productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow {
+			rows[0].Expected = json.RawMessage(`""`)
+			return rows
+		}},
+		{"null-expected", func(rows []productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow {
+			rows[0].Expected = json.RawMessage(`null`)
+			return rows
+		}},
+		{"wrong-type-expected", func(rows []productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow {
+			rows[0].Expected = json.RawMessage(`{"description":"unrelated success claim"}`)
+			return rows
+		}},
 		{"missing-matrix-click", func(rows []productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow { return rows[1:] }},
 		{"missing-axis-remove", func(rows []productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow {
 			for i, row := range rows {
@@ -191,7 +202,7 @@ func TestProductEditorMatrixLedger(t *testing.T) {
 			return rows
 		}},
 		{"wrong-action", func(rows []productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow {
-			rows[0].Action = "fill"
+			rows[0].Action = "unapproved-action"
 			return rows
 		}},
 		{"wrong-top-level-row", func(rows []productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow {
@@ -205,9 +216,16 @@ func TestProductEditorMatrixLedger(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			copy := append([]productEditorMatrixLedgerRow(nil), original...)
+			before, err := json.Marshal(copy)
+			if err != nil {
+				t.Fatal(err)
+			}
 			bad, err := json.Marshal(tc.change(copy))
 			if err != nil {
 				t.Fatal(err)
+			}
+			if bytes.Equal(before, bad) {
+				t.Fatal("corruption control did not change the recorded fixture")
 			}
 			if err := validateProductEditorMatrixLedger(bad); err == nil {
 				t.Fatal("corrupted ledger admitted by the Go gate")
@@ -234,5 +252,33 @@ func TestProductEditorMatrixLedger(t *testing.T) {
 	reordered, _ := json.Marshal(original)
 	if err := validateProductEditorMatrixLedger(reordered); err != nil {
 		t.Fatalf("set equality must not invent an ordering constraint: %v", err)
+	}
+}
+
+// TestProductEditorMatrixLedgerEvidence keeps delivery evidence portable and
+// verifies the same canonical ledger that reviewers receive in the checkout.
+func TestProductEditorMatrixLedgerEvidence(t *testing.T) {
+	const unit = "../../output/matrix-ledger-enforce/"
+	delivery, err := os.ReadFile(unit + "DELIVERY.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(delivery), "/Volumes/") || strings.Contains(string(delivery), "/private/tmp/") {
+		t.Error("delivery evidence must use repository-relative paths")
+	}
+	for _, name := range []string{"product-editor-click-ledger.json", "playwright.log", "browser-evidence.json"} {
+		data, err := os.ReadFile(unit + "browser/" + name)
+		if err != nil {
+			t.Errorf("canonical browser evidence %s: %v", name, err)
+			continue
+		}
+		if len(strings.TrimSpace(string(data))) == 0 {
+			t.Errorf("canonical browser evidence %s is empty", name)
+		}
+		if name == "product-editor-click-ledger.json" {
+			if err := validateProductEditorMatrixLedger(data); err != nil {
+				t.Errorf("canonical browser ledger: %v", err)
+			}
+		}
 	}
 }

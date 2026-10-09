@@ -3,7 +3,9 @@
 // Used by: test-node / product-editor matrix coverage gate; no browser, network or PostgreSQL is started.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import path from "node:path";
 import ts from "typescript-api";
 
 const specPath = "tests/admin/product-editor.acceptance.ts";
@@ -11,6 +13,29 @@ let spec = readFileSync(specPath, "utf8");
 const startMarker = "// Keep additional products after the frozen list-count checks.";
 const endMarker = "// Controlled read-only ambiguity:";
 const actions = new Set(["click", "fill", "press", "check", "uncheck", "selectOption", "accept"]);
+
+test("real Playwright ESM consumer collects the product-editor cases", () => {
+  // Match brfPlaywright's generated-config seam, without starting any server or browser.
+  const unit = "output/matrix-ledger-enforce";
+  mkdirSync(unit, { recursive: true });
+  const dir = mkdtempSync(path.join(unit, "collection-"));
+  const config = path.join(dir, "playwright.config.ts");
+  writeFileSync(config, `import { defineConfig } from "@playwright/test"; export default defineConfig({ testDir: ${JSON.stringify(path.resolve("tests/admin"))}, testMatch: ["catalog-core.spec.ts"], reporter: "list" });`);
+  try {
+    const result = spawnSync("pnpm", ["exec", "playwright", "test", "--list", "--config", config], {
+      cwd: process.cwd(), encoding: "utf8", timeout: 60000,
+      env: { ...process.env, PRODUCT_EDITOR_ACCEPTANCE: "1", LC_BROWSER_CATALOG_CORE_ACCEPTANCE: "1",
+        LC_BROWSER_PUBLIC_ORIGIN: "http://127.0.0.1:1", LC_BROWSER_EVIDENCE: dir,
+        LC_BROWSER_STORE: "11111111-1111-4111-8111-111111111111", LC_BROWSER_TAG: "MOCK-cli-collection",
+        LC_BROWSER_CONTROL: "http://127.0.0.1:1", LC_BROWSER_CONTROL_KEY: "MOCK-cli-collection-only" },
+    });
+    assert.ifError(result.error);
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.match(result.stdout, /PE12-17/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
 // Explicit source mutations let the same real-source gate demonstrate RED in a saved command log.
 if (process.env.LC_MATRIX_ACTION_MUTATION === "bare-click")
   spec = spec.replace(startMarker, `${startMarker}\nawait page.getByTestId("undeclared-control").click();\n//`);

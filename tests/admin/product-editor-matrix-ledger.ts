@@ -3,7 +3,7 @@
 // Used by: product-editor.acceptance.ts and the DB-free action-coverage gate; Go embeds the same case table.
 // actual=PASS means the callback's real action and canonical postcondition assertions passed.
 // expected is the stable declaration; observed retains the original detailed values, SKU identities and screenshots.
-import cases from "../foundation/testdata/product_editor_matrix_cases.json";
+import cases from "../foundation/testdata/product_editor_matrix_cases.json" with { type: "json" };
 import { productEditorCopy } from "../../apps/admin/lib/product-editor-copy";
 
 type Identity = { page: string; row?: string; control: string; action: string };
