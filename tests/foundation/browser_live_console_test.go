@@ -436,6 +436,20 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 					consoleJSON(w, 200, map[string]any{"armed": true})
 					return
 				}
+				if in.Scene == comments.e.session && (in.Mode == "grant_revoke" || in.Mode == "grant_restore") {
+					// TEST SETUP ONLY: mutate this synthetic principal/store's real grant. The
+					// BFF's authenticatedStores lookup must produce the scoped 404, not a mock response.
+					query := `DELETE FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission='store:read'`
+					if in.Mode == "grant_restore" {
+						query = `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'store:read') ON CONFLICT DO NOTHING`
+					}
+					if _, err := h.f.owner.Exec(r.Context(), query, h.f.tenantA, h.f.storeA1, h.actor); err != nil {
+						consoleJSON(w, 500, map[string]any{"code": "fixture_grant_failed"})
+						return
+					}
+					consoleJSON(w, 200, map[string]any{"granted": in.Mode == "grant_restore"})
+					return
+				}
 				raw, _ := json.Marshal(in)
 				r.Body = io.NopCloser(strings.NewReader(string(raw)))
 			}
