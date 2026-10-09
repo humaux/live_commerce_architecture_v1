@@ -223,12 +223,12 @@ async function assertRegistryNavigation(page: Page, locale: string, liveSelected
     (buttons) => buttons.map((button) => button.getAttribute("data-testid")),
   )).toEqual([
     "nav-group-overview", "nav-group-live",
-    ...(liveSelected ? ["nav-studio", "nav-live-console", "nav-claims"] : []),
+    ...(liveSelected ? ["nav-studio", "nav-live-console", "nav-claims", "nav-live-settings"] : []),
     "nav-orders", "nav-group-catalog",
     "nav-group-marketing", "nav-group-storefront", "nav-group-finance", "nav-group-settings",
   ]);
   if (liveSelected) {
-    // LC-U1 adds three authorized live routes; W0 opens the current group.
+    // LC-U1 and W3-U2 authorize four live routes; W0 opens the current group.
     // Keep exact inventory/permission assertions, and exercise its real toggle.
     const live = nav.getByTestId("nav-group-live");
     await expect(live).toHaveAttribute("aria-expanded", "true");
@@ -236,9 +236,9 @@ async function assertRegistryNavigation(page: Page, locale: string, liveSelected
     await live.click();
     await expect(live).toHaveAttribute("aria-expanded", "false");
     await expect(nav.locator('button[data-testid^="nav-"]')).toHaveCount(8);
-    for (const id of ["studio", "live-console", "claims"]) await expect(nav.getByTestId(`nav-${id}`)).toHaveCount(0);
+    for (const id of ["studio", "live-console", "claims", "live-settings"]) await expect(nav.getByTestId(`nav-${id}`)).toHaveCount(0);
     await live.click();
-    for (const id of ["studio", "live-console", "claims"]) await expect(nav.getByTestId(`nav-${id}`)).toBeVisible();
+    for (const id of ["studio", "live-console", "claims", "live-settings"]) await expect(nav.getByTestId(`nav-${id}`)).toBeVisible();
   }
   await nav.getByTestId("nav-group-catalog").click();
   for (const id of ["products", "collections", "inventory"]) await expect(nav.getByTestId(`nav-${id}`)).toBeVisible();
