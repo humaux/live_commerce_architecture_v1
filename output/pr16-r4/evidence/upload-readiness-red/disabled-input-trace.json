@@ -1,0 +1,38 @@
+[
+  {
+    "type": "before",
+    "callId": "call@7780",
+    "startTime": 25731.8,
+    "class": "Frame",
+    "method": "setInputFiles",
+    "params": {
+      "selector": "internal:testid=[data-testid=\"photo-input\"s]",
+      "strict": true,
+      "payloads": [
+        {
+          "name": "matrix.png",
+          "mimeType": "image/png",
+          "buffer": "<Buffer>"
+        }
+      ]
+    },
+    "stepId": "pw:api@7643"
+  },
+  {
+    "type": "log",
+    "callId": "call@7780",
+    "time": 25735.875,
+    "message": "waiting for getByTestId('photo-input')"
+  },
+  {
+    "type": "log",
+    "callId": "call@7780",
+    "time": 25738.369,
+    "message": "  locator resolved to <input multiple disabled type=\"file\" data-testid=\"photo-input\" aria-label=\"Add images: Main images\" accept=\"image/jpeg,image/png,image/webp\"/>"
+  },
+  {
+    "type": "after",
+    "callId": "call@7780",
+    "endTime": 25744.882
+  }
+]
