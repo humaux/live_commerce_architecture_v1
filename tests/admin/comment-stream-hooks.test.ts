@@ -148,6 +148,7 @@ test("real SQL UNKNOWN mark blocks public-mode switching without a local receipt
 });
 for(const state of ["unknown","queued"] as const)test(`PR18 ${state} public receipt has the correct cross-comment fence`, async (t) => {
   const env = environment(t);
+  t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-09T01:00:00Z")});
   let sends = 0;
   globalThis.fetch = async (_url, init) => {
     if (init?.method === "POST") {
@@ -200,6 +201,8 @@ for(const state of ["unknown","queued"] as const)test(`PR18 ${state} public rece
   node(h, (n) => n.type === "form").props.onSubmit({ preventDefault() {} });
   await h.settle();
   assert.equal(sends, 1);
+  const publicKey=[...stored.keys()].find(key=>key.startsWith("live-comment-public-pending:"));
+  assert.ok(publicKey,"public guard armed before losing component state");
   h.dispose();
   h = env.mount(() =>
     CommentReply({ ...props, comment: { ...row, ref: "987654" } } as any),
@@ -210,11 +213,39 @@ for(const state of ["unknown","queued"] as const)test(`PR18 ${state} public rece
     state === "unknown",
     "only UNKNOWN blocks a new comment after navigation",
   );
-  assert.equal(stored.size, state === "unknown" ? 1 : 0);
+  // R2 ruling: keep a per-comment public guard even after an acknowledged queue entry.
+  assert.equal(stored.size, state === "unknown" ? 2 : 1);
   for (const [key, value] of stored) {
-    assert.doesNotMatch(key, /123_456|987654|Synthetic/);
+    assert.doesNotMatch(key, /987654|Synthetic/);
     assert.equal(value, "1");
   }
+  // Worker may become UNKNOWN; A2 supplies only a count, not that state.
+  // Recreate the component twice (selection return and reload), retaining only storage.
+  h.dispose();h=env.mount(()=>CommentReply(props as any));await h.settle();
+  h.dispose();h=env.mount(()=>CommentReply(props as any));await h.settle();
+  t.mock.timers.tick(31000);await h.settle();
+  assert.equal(node(h,n=>n.type==="fieldset").props.disabled,true,"public non-terminal survives reload past backend dedupe window");
+  node(h,n=>n.type==="form").props.onSubmit({preventDefault(){}});await h.settle();
+  assert.equal(sends,1,"cannot create a new operation without verification");
+  Object.assign(env.window,{confirm:()=>true});
+  node(h,n=>n.props["data-testid"]==="comment-verified").props.onClick();await h.settle();
+  assert.equal(stored.size,0,"explicit verification clears both guards");
+});
+
+for(const outcome of ["sent","failed","blocked","refused"] as const)test(`PR18 public guard releases only definite ${outcome}`,async t=>{
+  const env=environment(t);
+  globalThis.fetch=async(_url,init)=>{
+    if(init?.method!=="POST")return response({items:[]});
+    assert.equal([...stored.keys()].filter(k=>k.startsWith("live-comment-public-pending:")).length,1,"armed before network dispatch");
+    return outcome==="refused"?response({code:"public_reply_forbidden_content"},422):response({send_state:outcome,operation_id:sid,outbound_id:sid});
+  };
+  const cap={state:"ok",reason:"ok",evidence:"MOCK",checked_at:null};
+  const props={store,session:sid,comment:row,locale:"en",platform:"facebook",capabilities:{facebook:{private_reply:cap,reply_public:cap}},onSent(){},onDenied(){}};
+  const h=env.mount(()=>CommentReply(props as any));await h.settle();
+  node(h,n=>n.type==="button"&&textOf(n)==="Public reply").props.onClick();h.flush();
+  node(h,n=>n.props["data-testid"]==="comment-reply-text").props.onChange({target:{value:"Synthetic terminal reply"}});h.flush();
+  node(h,n=>n.type==="form").props.onSubmit({preventDefault(){}});await h.settle();
+  assert.equal(stored.size,0);
 });
 const row = {
   ref: "123_456",

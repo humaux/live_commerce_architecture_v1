@@ -153,6 +153,31 @@ test.describe("LC-U2a REAL_PG comment stream",()=>{
     await page.bringToFront();await expect(page.getByTestId(`comment-row-${comments.latest_ref}`)).toBeVisible();await cover.close();
     } finally { await close(); }
   });
+  test("queued public reply stays fenced after worker UNKNOWN selection reload and dedupe expiry",async({page,request})=>{
+    await login(page);await page.goto(route("en",comments.session));
+    const ref=comments.reply_refs[1];
+    await page.getByTestId(`comment-select-${ref}`).click();await page.getByRole("button",{name:"Public reply",exact:true}).click();
+    await page.getByTestId("comment-reply-text").fill("Synthetic queued public case");
+    const before=(await facts(request)).comments;
+    await fault(request,comments.session,"public_graph_unknown");
+    try {
+      const ack=page.waitForResponse(r=>r.url().endsWith(`/comments/${ref}/public-reply`)&&r.request().method()==="POST",{timeout:15000});
+      await page.getByTestId("comment-send").click();expect((await (await ack).json()).send_state).toBe("queued");
+      await expect.poll(async()=>(await facts(request)).comments.public_unknown,{timeout:15000}).toBe(before.public_unknown+1);
+      await page.getByTestId(`comment-select-${comments.reply_refs[2]}`).click();
+      await page.getByRole("button",{name:"Public reply",exact:true}).click();
+      await page.getByTestId("comment-reply-text").fill("Synthetic other comment");await expect(page.getByTestId("comment-send")).toBeEnabled();
+      await page.getByTestId(`comment-select-${ref}`).click();await expect(page.getByTestId("comment-send")).toBeDisabled();
+      await page.reload();await page.getByTestId(`comment-select-${ref}`).click();
+      await page.waitForTimeout(31000); // REAL backend dedupe window elapsed; safety must not be a 30s timer.
+      await expect(page.getByTestId("comment-send")).toBeDisabled();await expect(page.getByTestId("comment-verified")).toBeVisible();
+      expect((await facts(request)).comments.public_requests).toBe(before.public_requests+1);
+      page.once("dialog",d=>d.accept());await page.getByTestId("comment-verified").click();
+      await page.getByRole("button",{name:"Public reply",exact:true}).click();
+      await page.getByTestId("comment-reply-text").fill("Synthetic verified draft");await expect(page.getByTestId("comment-send")).toBeEnabled();
+      expect((await facts(request)).comments.public_requests).toBe(before.public_requests+1);
+    } finally { await fault(request,comments.session,"public_graph_restore"); }
+  });
   test("unknown public ACK stays fenced across selection and reload",async({page,request})=>{
     await login(page);await page.goto(route("en",comments.session));await expect(page.getByTestId(`comment-row-${comments.latest_ref}`)).toBeVisible();
     await page.getByTestId(`comment-select-${comments.latest_ref}`).click();await page.getByRole("button",{name:"Public reply",exact:true}).click();
