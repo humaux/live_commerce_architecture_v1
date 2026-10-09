@@ -137,7 +137,7 @@ test("live-settings is one inert registry entry with the existing admin/PG comma
   });
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /mode=--browser-live-settings build=admin fixture=pg/);
-  assert.match(result.stdout, /LC_BROWSER_LIVE_SETTINGS_ACCEPTANCE=1 GOTOOLCHAIN=go1\.27\.1 go test -race -tags browser -count=1 -timeout=780s -run '\^TestBrowserLiveSettingsUIRealChain\$'/);
+  assert.match(result.stdout, /LC_BROWSER_LIVE_SETTINGS_ACCEPTANCE=1 GOTOOLCHAIN=go1\.27\.2 go test -race -tags browser -count=1 -timeout=780s -run '\^TestBrowserLiveSettingsUIRealChain\$'/);
   assert.match(result.stdout, /pnpm run build:admin/);
   assert.doesNotMatch(result.stdout, /pnpm run build:storefront/);
   assert.match(result.stdout, /live-settings-bff\.test\.ts tests\/admin\/live-settings-model\.test\.ts/);
