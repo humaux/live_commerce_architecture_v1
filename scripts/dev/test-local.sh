@@ -35,8 +35,9 @@ case "$test_mode" in
       LC_BROWSER_EVIDENCE_ROOT="$(cd "$LC_BROWSER_EVIDENCE_ROOT" && pwd)"
       # Fixed children (ui-click-sweep, platform-site, …) would overwrite committed evidence under a tracked root such as
       # output/: inside the repo, accept only an ignored directory with no tracked files (PR #23 review).
+      lc_repo_top="$(git rev-parse --show-toplevel 2>/dev/null || true)"
       case "$LC_BROWSER_EVIDENCE_ROOT/" in
-        "$PWD"/*)
+        "${lc_repo_top:-/nonexistent-repo}"/*)
           if [[ -n "$(git ls-files -- "$LC_BROWSER_EVIDENCE_ROOT" | head -1)" ]] || ! git check-ignore -q "$LC_BROWSER_EVIDENCE_ROOT/.lc-evidence-probe"; then
             echo "test-local: LC_BROWSER_EVIDENCE_ROOT=$LC_BROWSER_EVIDENCE_ROOT is inside the repository but is not an ignored, untracked directory (use output/playwright/…)" >&2
             exit 2

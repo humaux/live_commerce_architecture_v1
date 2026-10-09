@@ -151,12 +151,17 @@ test("visual reviewer discovers nested per-run artifact shots through its real c
     writeFileSync(path.join(d,'lint.md'),'lint report');writeFileSync(path.join(d,'index.json'),'[]');
     const partial=path.join(out,'dl','artifact-2','playwright','run.partial','ui-visual-audit','20261009T010204Z','shots','admin');
     mkdirSync(partial,{recursive:true});writeFileSync(path.join(partial,'partial.png'),'partial run screenshot');
+    const same=path.join(out,'dl','artifact-3','run.same','ui-visual-audit','20261009T010203Z');
+    mkdirSync(path.join(same,'shots'),{recursive:true});writeFileSync(path.join(same,'index.json'),'[{"page":"other-shard"}]');
     const result=spawnSync('bash',['-c','set -euo pipefail; '+source.slice(start,finish)],{env:{...process.env,OUT:out,WT:wt},encoding:'utf8',timeout:10_000});
     assert.equal(result.status,0,result.stderr);
     assert.equal(readFileSync(path.join(wt,'visual-shots','admin','en-390.png'),'utf8'),'synthetic screenshot bytes');
     assert.equal(readFileSync(path.join(wt,'visual-shots','admin','partial.png'),'utf8'),'partial run screenshot');
     assert.equal(readFileSync(path.join(wt,'visual-shots','lint.md'),'utf8'),'lint report');
-    assert.equal(readFileSync(path.join(wt,'visual-shots','index-20261009T010203Z.json'),'utf8'),'[]');
+    // One merged index keyed by artifact path: shards finishing in the same second must not overwrite each other (PR #23 review).
+    const merged=JSON.parse(readFileSync(path.join(wt,'visual-shots','index.json'),'utf8')).shards;
+    assert.deepEqual(merged.map(x=>x.shard),['artifact-1/run.local/ui-visual-audit/20261009T010203Z','artifact-3/run.same/ui-visual-audit/20261009T010203Z']);
+    assert.deepEqual(merged.map(x=>x.index),[[],[{page:'other-shard'}]]);
     passed = true;
   } finally { if(passed)rmSync(fixture,{recursive:true}); else console.error(`Retained failed reviewer fixture: ${fixture}`); }
 });
