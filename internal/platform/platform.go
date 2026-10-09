@@ -597,15 +597,42 @@ func RequirePermission(ctx context.Context, tx pgx.Tx, scope Scope, token, permi
 	case "not_found":
 		return ErrScopeNotFound
 	case "forbidden":
+		// resolve_access answered on this statement's own fresh snapshot: the principal still sees
+		// the store but lacks the permission — a genuine 403, never re-resolved away.
 		return ErrForbidden
 	case "ok":
 		if tenant == scope.TenantID && principal == scope.PrincipalID && revision == scope.Revision {
 			return nil
 		}
-		return ErrForbidden
+		// Authorization changed between the scope-open snapshot and this statement. Re-resolve once
+		// more (yet another fresh READ COMMITTED snapshot): a scope that has since vanished is the
+		// non-disclosing 404; every other outcome fails closed — a re-check never upgrades a denial.
+		return reResolveScopeLoss(ctx, tx, hash[:], scope.StoreID, permission)
 	default:
 		return errors.New("invalid access result")
 	}
+}
+
+// reResolveScopeLoss runs one more resolve_access after a mid-request authorization change or denial
+// was observed. not_found -> ErrScopeNotFound (the store is no longer visible to this principal;
+// LCN03's non-disclosing 404). Any other status — and any re-check failure — is ErrForbidden: fail
+// closed, never an upgrade.
+func reResolveScopeLoss(ctx context.Context, tx pgx.Tx, hash []byte, storeID, permission string) error {
+	if scopeLost(ctx, tx, hash, storeID, permission) {
+		return ErrScopeNotFound
+	}
+	return ErrForbidden
+}
+
+// scopeLost is one fresh resolve_access verdict: true only when the principal provably no longer sees
+// the store. querier is the scope transaction while it is still healthy (RequirePermission) or the
+// pool once fn's error has aborted it (withScopeContext); both give a fresh READ COMMITTED snapshot.
+func scopeLost(ctx context.Context, querier interface {
+	QueryRow(context.Context, string, ...any) pgx.Row
+}, hash []byte, storeID, permission string) bool {
+	var status string
+	err := querier.QueryRow(ctx, `SELECT access_status FROM identity.resolve_access($1,$2::uuid,$3)`, hash, storeID, permission).Scan(&status)
+	return err == nil && status == "not_found"
 }
 
 func withScopeContext(ctx context.Context, pool *pgxpool.Pool, token, storeID, permission string, budget time.Duration, fn func(context.Context, pgx.Tx, Scope) error) (err error) {
@@ -684,6 +711,15 @@ func withScopeContext(ctx context.Context, pool *pgxpool.Pool, token, storeID, p
 		var pgErr *pgconn.PgError
 		if support && errors.As(err, &pgErr) && pgErr.Code == "25006" { // read_only_sql_transaction
 			return ErrSupportReadOnly
+		}
+		// SCOPE-404: a mid-request revocation surfaces from a definer as PT403 (or from a Go second
+		// fence as ErrForbidden) because that statement's snapshot is newer than the scope-open one
+		// and the guard can no longer see the grant. The transaction is already aborted, so
+		// re-resolve on a fresh pooled statement: only a proven store-visibility loss becomes the
+		// non-disclosing 404 (LCN03); a genuine permission denial keeps the original 403.
+		if (errors.Is(err, ErrForbidden) || (errors.As(err, &pgErr) && pgErr.Code == "PT403")) &&
+			scopeLost(scopeCtx, pool, hash[:], storeID, permission) {
+			return ErrScopeNotFound
 		}
 		return err
 	}
