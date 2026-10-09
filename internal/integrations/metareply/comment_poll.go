@@ -46,8 +46,8 @@ const (
 	commentFields        = "id,message,from,created_time,parent,attachment"
 	maxGraphPageSize     = 100
 	defaultSweepInterval = 2 * time.Second
-	defaultPollInterval  = 3 * time.Second
-	defaultMaxBackoff    = 30 * time.Second
+	defaultPollInterval  = 2 * time.Second
+	defaultMaxBackoff    = 60 * time.Second
 	defaultLeaseTTL      = 60 * time.Second
 	defaultDemandTTL     = 10 * time.Second
 	defaultCursorTTL     = 5 * time.Minute
@@ -73,8 +73,8 @@ type ConsoleConfig struct {
 	FleetCap      int           // max polled sources fleet-wide (default 20)
 	TenantCap     int           // max polled sources per tenant (default 5)
 	SweepInterval time.Duration // default 2s
-	PollInterval  time.Duration // default 3s
-	MaxBackoff    time.Duration // default 30s
+	PollInterval  time.Duration // default 2s
+	MaxBackoff    time.Duration // default 60s
 	LeaseTTL      time.Duration // default 60s
 	DemandTTL     time.Duration // default 10s
 	CursorTTL     time.Duration // default 5m
@@ -97,6 +97,7 @@ type Console struct {
 
 	mu      sync.Mutex
 	sources map[string]*consoleSource // source_id → buffer (owned only)
+	rates   map[string]*consoleRate   // asset_id → one shared Graph pacing/backoff state
 	pin     func(context.Context, string, string, string, string) (consolePin, bool, error)
 }
 
@@ -122,25 +123,28 @@ type consoleSource struct {
 	byRef    map[string]consoleComment
 
 	// poll state machine
-	owned        bool
-	state        string // not_started|live|throttled|reauth_required|unavailable
-	reason       string
-	lastOKAt     time.Time
-	newestAt     time.Time
-	lastAfter    string // Graph after-cursor for the next forward poll
-	lastBefore   string // Graph before-cursor for older backfill
-	pollInterval time.Duration
-	nextPollAt   time.Time
-	lastPollAt   time.Time
-	lastReadAt   time.Time
-	demandUntil  time.Time
-	token        core.Secret
-	windowOpen   bool
+	owned          bool
+	state          string // not_started|live|throttled|reauth_required|unavailable
+	reason         string
+	lastOKAt       time.Time
+	newestAt       time.Time
+	lastAfter      string // Graph after-cursor for the next forward poll
+	lastBefore     string // Graph before-cursor for older backfill
+	pollInterval   time.Duration
+	nextPollAt     time.Time
+	lastPollAt     time.Time
+	lastReadAt     time.Time
+	lastDeletionAt time.Time
+	reading        bool
+	demandUntil    time.Time
+	token          core.Secret
+	windowOpen     bool
 }
 
 type consoleComment struct {
 	BridgeComment
-	seq int64
+	seq       int64
+	checkedAt time.Time // last attempted check, or first queue time for a new entry
 }
 
 type consoleCandidate struct {
@@ -357,6 +361,34 @@ func (c *Console) SweepOnce(ctx context.Context) {
 	}
 	c.mu.Unlock()
 
+	c.mu.Lock()
+	sort.Slice(toPoll, func(i, j int) bool {
+		a, b := c.deletionDue(toPoll[i], now), c.deletionDue(toPoll[j], now)
+		if a != b {
+			return a
+		}
+		if !toPoll[i].lastPollAt.Equal(toPoll[j].lastPollAt) {
+			return toPoll[i].lastPollAt.Before(toPoll[j].lastPollAt)
+		}
+		return toPoll[i].source < toPoll[j].source
+	})
+	// Forget retired assets only after their in-flight call and budget window have ended.
+	for asset, b := range c.rates {
+		if b.busy || now.Before(b.next) {
+			continue
+		}
+		used := false
+		for _, s := range c.sources {
+			if s.assetID == asset {
+				used = true
+				break
+			}
+		}
+		if !used {
+			delete(c.rates, asset)
+		}
+	}
+	c.mu.Unlock()
 	for _, s := range toPoll {
 		c.pollOne(ctx, s, now)
 	}
@@ -464,19 +496,42 @@ func (c *Console) renewLocked(ctx context.Context, s *consoleSource, now time.Ti
 // pollOne performs one forward Graph read (after-cursor) outside the mutex and commits the result.
 func (c *Console) pollOne(ctx context.Context, s *consoleSource, now time.Time) {
 	c.mu.Lock()
+	if s.reading || c.sources[s.source] != s || !s.owned {
+		c.mu.Unlock()
+		return
+	}
+	s.reading = true
+	refs := c.deletionBatch(s, now)
 	if !now.Before(s.nextPollAt) {
 		s.nextPollAt = now.Add(c.cfg.PollInterval) // move now so a slow Graph call can't double-poll
 	}
-	s.lastPollAt = now
 	tok := c.ensureTokenLocked(ctx, s)
 	objID, assetID, after := s.sourceObjectID, s.assetID, s.lastAfter
 	c.mu.Unlock()
 
-	items, newAfter, newBefore, err := c.pollGraph(ctx, objID, assetID, after, tok)
+	var items []BridgeComment
+	var newAfter, newBefore string
+	var err error
+	if len(refs) > 0 {
+		err = c.checkDeletions(ctx, s, refs, tok, now)
+	} else {
+		items, newAfter, newBefore, err = c.pollGraph(ctx, objID, assetID, after, tok, now)
+	}
 	clear(tok)
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	s.reading = false
+	if errors.Is(err, errCommentBudget) {
+		if b := c.rates[s.assetID]; b != nil {
+			s.nextPollAt = b.next
+		}
+		return
+	}
+	if c.sources[s.source] != s || !s.owned {
+		return
+	}
+	s.lastPollAt = now
 	switch {
 	case err == nil:
 		if newAfter != "" {
@@ -485,7 +540,7 @@ func (c *Console) pollOne(ctx context.Context, s *consoleSource, now time.Time) 
 		if newBefore != "" {
 			s.lastBefore = newBefore
 		}
-		c.ingest(s, items)
+		c.ingest(s, items, now)
 		c.evict(s, now)
 		s.state, s.reason = "live", ""
 		s.lastOKAt = now
@@ -520,19 +575,21 @@ var (
 )
 
 // pollGraph reads one page of the source's comments (the source_object_id is the live video / post).
-func (c *Console) pollGraph(ctx context.Context, objID, assetID, after string, tok []byte) ([]BridgeComment, string, string, error) {
+func (c *Console) pollGraph(ctx context.Context, objID, assetID, after string, tok []byte, now time.Time) ([]BridgeComment, string, string, error) {
 	ctx, cancel := context.WithTimeout(ctx, c.cfg.CallTimeout)
 	defer cancel()
 	q := url.Values{"fields": {commentFields}, "order": {"chronological"}, "limit": {strconv.Itoa(maxGraphPageSize)}}
 	if after != "" {
 		q.Set("after", after)
 	}
-	rep, err := c.graph.Do(ctx, http.MethodGet, objID+"/comments", q, tok, nil)
-	if err != nil || !rep.OK() {
+	started := time.Now()
+	rep, err := c.commentGraph(ctx, assetID, objID+"/comments", q, tok, now, false)
+	if err != nil || !rep.OK() || commentReplyCode(rep.Body) != 0 {
 		return nil, "", "", classifyGraphErr(rep, err)
 	}
 	items, newAfter, newBefore, ok := normalizeComments(rep.Body, assetID, maxGraphPageSize)
 	if !ok {
+		c.commentParseFailure(assetID, now.Add(time.Since(started)))
 		return nil, "", "", errors.New("metareply: bad comment page")
 	}
 	return items, newAfter, newBefore, nil
@@ -540,13 +597,19 @@ func (c *Console) pollGraph(ctx context.Context, objID, assetID, after string, t
 
 // classifyGraphErr maps a failed comment read to one of the fixed poll states.
 func classifyGraphErr(rep metaoauth.Reply, err error) error {
+	if errors.Is(err, errCommentBudget) {
+		return errCommentBudget
+	}
+	if errors.Is(err, errGraphReauth) {
+		return errGraphReauth
+	}
 	if err != nil {
 		return errors.New("metareply: graph unreachable")
 	}
 	if rep.Status == 404 {
 		return errGraphGone
 	}
-	if graphErrorCode(rep.Body) == 190 {
+	if commentReplyCode(rep.Body) == 190 {
 		return errGraphReauth
 	}
 	return errors.New("metareply: graph unreachable")
@@ -617,14 +680,14 @@ func normalizeComments(body []byte, assetID string, max int) ([]BridgeComment, s
 }
 
 // ingest merges a poll page into the buffer (dedupe by ref, newest first, monotonic seq).
-func (c *Console) ingest(s *consoleSource, items []BridgeComment) {
+func (c *Console) ingest(s *consoleSource, items []BridgeComment, now time.Time) {
 	fresh := make([]consoleComment, 0, len(items))
 	for _, it := range items {
 		if _, dup := s.byRef[it.Ref]; dup {
 			continue
 		}
 		s.seq++
-		cc := consoleComment{BridgeComment: it, seq: s.seq}
+		cc := consoleComment{BridgeComment: it, seq: s.seq, checkedAt: now}
 		fresh = append(fresh, cc)
 		s.byRef[it.Ref] = cc
 	}
@@ -640,7 +703,7 @@ func (c *Console) ingest(s *consoleSource, items []BridgeComment) {
 	}
 }
 
-// evict bounds the buffer: 2h age and the cap; a deleted comment leaves the buffer within one age-out.
+// evict enforces age/cap bounds. checkDeletions separately honours verified user deletions without changing seq/epoch.
 func (c *Console) evict(s *consoleSource, now time.Time) {
 	cutoff := now.Add(-c.cfg.BufferAge)
 	kept := s.comments[:0]
@@ -651,6 +714,7 @@ func (c *Console) evict(s *consoleSource, now time.Time) {
 		}
 		kept = append(kept, cc)
 	}
+	clear(s.comments[len(kept):])
 	s.comments = kept
 }
 
@@ -759,8 +823,8 @@ func (c *Console) graphOlder(ctx context.Context, objID, assetID, before string,
 	ctx, cancel := context.WithTimeout(ctx, c.cfg.CallTimeout)
 	defer cancel()
 	q := url.Values{"fields": {commentFields}, "order": {"chronological"}, "before": {before}, "limit": {strconv.Itoa(limit)}}
-	rep, err := c.graph.Do(ctx, http.MethodGet, objID+"/comments", q, tok, nil)
-	if err != nil || !rep.OK() {
+	rep, err := c.commentGraph(ctx, assetID, objID+"/comments", q, tok, time.Now(), true)
+	if err != nil || !rep.OK() || commentReplyCode(rep.Body) != 0 {
 		return nil, "", ErrBridgeUnavailable
 	}
 	items, _, nextBefore, ok := normalizeComments(rep.Body, assetID, limit)
@@ -832,14 +896,14 @@ func (c *Console) facts(ctx context.Context, s *consoleSource, ref string, now t
 	ctx, cancel := context.WithTimeout(ctx, c.cfg.CallTimeout)
 	defer cancel()
 	// Calls Graph GET /{comment_id} (live-console-v1 §2.3 / Amendment 1 A1.2 1a); token in the header only.
-	rep, err := c.graph.Do(ctx, http.MethodGet, ref, url.Values{"fields": {factsFields(object)}}, tok, nil)
+	rep, err := c.commentGraph(ctx, assetID, ref, url.Values{"fields": {factsFields(object)}}, tok, now, true)
 	if err != nil {
 		return CommentFacts{}, ErrBridgeUnavailable
 	}
-	if rep.Status == 404 {
+	if commentFactsMissing(rep, ref) {
 		return CommentFacts{Found: false}, nil
 	}
-	if !rep.OK() {
+	if !rep.OK() || commentReplyCode(rep.Body) != 0 {
 		return CommentFacts{}, ErrBridgeUnavailable
 	}
 	f, ok := parseCommentFacts(rep.Body, object, assetID, ref)
