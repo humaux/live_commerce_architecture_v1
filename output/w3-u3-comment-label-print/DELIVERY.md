@@ -1,17 +1,28 @@
-<!-- Purpose: current W3-U3 scoped UI handoff, exact gate evidence and the retained A3 backend blocker.
-Depends on: frozen brief, live-console-v1 section 7.4, PR18 trunk and approved test-only extensions.
-Used by: integrator K3/PR preparation and backend replay-receipt owner; no all-green claim. -->
+<!-- Purpose: current W3-U3 author READY handoff with pinned runtime and regression evidence.
+Depends on: frozen label brief, approved BFF scope-race fix, PR30 receipts and current trunk.
+Used by: integrator K3/PR preparation; local E3 is not independent or production acceptance. -->
 # W3-U3 comment label print — DELIVERY
 
-**Current status: LABEL_GATE_GREEN / A3_RESOLVED; overall NOT_READY pending LC-U2a scoped404 waits (task8f1bb58f).**
+**Current status: READY for integrator review (E3, tested source d8744793). No push/deploy.**
 
-## Latest post-PR30 acceptance
+## Final correction and root fix (2026-10-10)
+
+- The previous LC-U2a ownership attribution is withdrawn. Task **8f1bb58f** is canceled as **误交接**; W3-U3 owned and diagnosed the failure. Main-trunk control `b1bfbeb3` passed; integrator also supplied two passing `729afff9` controls.
+- Required unchanged serial runs on `baab02a1`: **exit 0 (23 workspace +9 labels)**, then **exit 1 (22 workspace +9 labels; private wait timeout)**. These historical reds remain in `correction-reruns/`.
+- Captured root: A13 returned **403 after its BFF admission check crossed grant revocation**. Correct child/parent privacy expiry immediately cleared the stream and canceled A2; the untouched waiter required a 404. No print request or hidden-page transition caused this failure. Evidence: `correction-reruns/hook-red/`.
+- Owner approved the narrow shared-BFF repair: only known private GET/403 is rechecked with the same server-authenticated bearer. Confirmed lost store scope becomes404; genuine permission denial, unknown/unavailable proof and writes remain unchanged. Proof is capped at500ms within a7s absolute server budget and cancels with the caller, so a known refusal cannot be delayed into the client's8s timeout/503.
+- Fix commit **58510545**; current trunk **729afff9** merged as **d8744793a03a64281d4481d2bbe90ba5f2b2e98d**. All temporary observations were removed. Both hooks and the full original workspace/label specs are byte-identical to `baab02a1`; no Go/SQL/DTO/contract change.
+- Final author gates: **live-console exit0 (23+9)**, **inbox exit0 (13)**, **Node1390/1390 exit0**, **admin tsc0**, **check-gates0**. A3 lost ACK remains same key/count **[7,7]**; final9 ledgers contain45 independently observed PASS rows and18 screenshots.
+
+**Current commands, exact source hashes, red/green evidence, CI gates and NOT_RUN: [correction-reruns/DELIVERY.md](correction-reruns/DELIVERY.md).** Independent K3/PR CI and physical printing remain pending; READY is not release approval. The older sections below are historical checkpoints, not current blockers.
+
+## Historical post-PR30 checkpoint (superseded)
 
 Merged origin `b1bfbeb3` (#30 principal-bound receipts), #23/#25 as **042758c5**. Original label/workspace specs and label component unchanged.
 Original lost-ACK case now GREEN: actual sameKey=true, counts=[7,7]. Labels9/9 and current45 observed ledger rows all PASS.
 Full `--browser-live-console` still exits **1**, solely because two existing LCU2_404 workspace waits timeout (workspace21/23).
-Owner delegated those diagnostics to LC-U2a; no test, timeout or assertion changed. Node1366/0, tsc/check-gates exit0.
-**Current commands/exits,18 screenshots,ledger and handoff: `pr30-ready/DELIVERY.md`. Do not report general READY until the full-mode failures are resolved or ruled on.**
+No test, timeout or assertion changed. Node1366/0, tsc/check-gates exit0. The former LC-U2a handoff is canceled, not an external dependency.
+**Historical commands/exits,18 screenshots and ledger: `pr30-ready/DELIVERY.md`. Superseded by the final acceptance above.**
 
 ## Historical K3 round-one P2 batch (before PR30 integration)
 

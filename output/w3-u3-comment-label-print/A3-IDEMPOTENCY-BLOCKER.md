@@ -3,7 +3,9 @@ Depends on: live-console-v1 §7.4, real signed Next/Go/PG print acceptance and e
 Used by: integrator-assigned backend task f4c26fcb and W3-U3 final gate. -->
 # A3 print facts — backend handoff (P1 / I02)
 
-**RESOLVED after PR #30:** backend `b1bfbeb3` merged into W3-U3 `042758c5`; original real-click replay now returns **[7,7]** with the same key. Current proof: `pr30-ready/DELIVERY.md`. Keep the historical red below; this is no longer the active blocker. Full wrapper has two separate LC-U2a response-wait failures, delegated as task8f1bb58f.
+**RESOLVED after PR #30:** backend `b1bfbeb3` merged into W3-U3 `042758c5`; original real-click replay now returns **[7,7]** with the same key. Current proof: `pr30-ready/DELIVERY.md`. Keep the historical red below; this is no longer the active blocker. Full-wrapper response-wait failures are owned by W3-U3; the former task8f1bb58f handoff is canceled as 误交接 under the integrator's 2026-10-10 correction. The unchanged trunk b1bfbeb3 control passed the full mode.
+
+**Final update:** the independent full-wrapper blocker is also resolved by the authorised BFF read-scope repair58510545. Frozen source d8744793 full live-console exit0 (23+9), inbox exit0 (13), same-key [7,7] unchanged. See `correction-reruns/DELIVERY.md`; neither blocker is active.
 
 Owner ruling: “交给后端单元修复，保留 UI 范围”.
 Backend coordination task: `f4c26fcb-ab2d-4a1b-9e29-0908e02406d3`, claimed by `qwen-aliyun-backend`; branch `unit/lc-a3-print-idempotency`. This UI author does not implement the backend fix.

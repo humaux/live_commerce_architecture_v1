@@ -1,0 +1,21 @@
+✔ W3U3 revoked scope after inbox/buyer-panel read admission is 404 (50.184833ms)
+✔ W3U3 revoked scope after inbox/conversations read admission is 404 (6.0155ms)
+✔ W3U3 revoked scope after message-templates read admission is 404 (3.155292ms)
+✔ W3U3 revoked scope after live-sessions/9261bd5a-4133-4bcf-897e-481d2be48f4f/comments read admission is 404 (5.553125ms)
+✔ W3U3 genuine read permission denial stays 403 (2.201709ms)
+✔ W3U3 unproven scope loss (503) preserves the denial (3.705667ms)
+✔ W3U3 unproven scope loss (401) preserves the denial (1.002791ms)
+✔ W3U3 unproven scope loss (200) preserves the denial (1.051792ms)
+✔ W3U3 write denial is not scope-reconciled or replayed (4.851ms)
+✔ W3U3 unknown upstream 403 never becomes an authoritative scope refusal (1.810125ms)
+✔ W3U3 stalled scope proof cannot delay a known denial past the privacy budget (629.0655ms)
+✔ W3U3 elapsed request budget skips scope proof rather than prolonging the denial (6.164958ms)
+✔ W3U3 request cancellation also cancels scope proof and preserves the original denial (5.863292ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 893.579791

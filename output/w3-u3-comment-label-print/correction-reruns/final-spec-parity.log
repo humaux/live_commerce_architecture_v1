@@ -1,0 +1,4 @@
+tests/admin/live-console.spec.ts: byte-identical; temporary observations removed
+tests/admin/comment-label-print.spec.ts: byte-identical; temporary observations removed
+apps/admin/src/features/live/use-comment-stream.ts: byte-identical; temporary observations removed
+apps/admin/src/features/messages/use-privacy.ts: byte-identical; temporary observations removed

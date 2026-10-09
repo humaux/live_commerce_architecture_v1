@@ -1,7 +1,9 @@
 <!-- Purpose: post-PR30 label GREEN evidence and exact remaining full-mode blocker.
 Depends on: merged principal-bound A3 receipt, unchanged W3-U3 spec, real browser/PG run and static gates.
-Used by: integrator PR decision and LC-U2a diagnostic owner; does not claim full READY. -->
+Used by: integrator PR decision and W3-U3 diagnostic owner; does not claim full READY. -->
 # W3-U3 after PR #30 — labels GREEN; full mode still blocked
+
+**Historical checkpoint, superseded:** W3-U3 subsequently captured the A13/403 scope race and fixed it in58510545. Final source d8744793 passes the original full mode and inbox regression. Current author READY: `../correction-reruns/DELIVERY.md`. The actual red results below remain historical evidence.
 
 - Tested source: **042758c517a87ec0d9fdd0bf854c1448716df9a9**, merge of origin **b1bfbeb3** (#30), #23 evidence paths and #25.
 - Label component/spec byte-identical to 43a09901; spec SHA256 `c5f1b3f7a685c1fd284cc03416f6b96cdaf509f71f114acb19bf3bf3bd12b156`. No original assertion/operation/timeout changed.
@@ -39,7 +41,7 @@ Old 7→8 RED is retained under `../resume/`. Receipt replay is principal-bound 
 - Actual columns contain measured counts/states/geometry/reload values, not expected descriptions.
 - Author viewed current zh-TW390/en1586 previews; no observed label/control overlap. This is self-QA, not independent visual review.
 
-## Remaining LC-U2a blocker — do NOT report READY
+## Remaining W3-U3 diagnostic blocker — do NOT report READY
 
 Workspace failures are only `tests/admin/live-console.spec.ts:219`:
 `LCU2_404 ... clears all view ...` and `... private view ...`.
@@ -49,9 +51,8 @@ Evidence: `browser-live-console.log`, `workspace-results.txt`, `lcu2-red/all-err
 safe existing `comment-reads-*.json`; full ignored artifact `output/playwright/run.rc9Pvz5V/live-console-1223861750/`.
 Those files do not prove which scoped read/visibility transition caused the missing event; not labelled harmless flakiness.
 
-Owner explicitly ruled **“交给 LC-U2a 单元诊断”**. Diagnostic coordination task:
-**8f1bb58f-e09d-4ac0-a0b2-2b1b66fb8e17**. This author did not add diagnostics or change any workspace test/action/assertion/timeout.
-After the LC-U2a owner resolves or rules on these failures, rerun the unchanged full mode before general READY.
+**Attribution correction (2026-10-10):** the earlier statement attributing an LC-U2a diagnostic ruling to the owner is withdrawn. Coordination task **8f1bb58f-e09d-4ac0-a0b2-2b1b66fb8e17** is canceled as **误交接**. The integrator's unchanged trunk `b1bfbeb3` full run passed both cases (exit 0), logged at `output/integrator/triage/trunk-b1bfbeb3-live-console.log` in the main checkout. These branch failures are W3-U3's responsibility, not an LC-U2a dependency.
+This author did not change any workspace test/action/assertion/timeout. W3-U3 will first run two unchanged serial full modes and diagnose any reproduction; see `../correction-reruns/` for new evidence.
 
 ## NOT_RUN / pending
 
@@ -59,4 +60,4 @@ After the LC-U2a owner resolves or rules on these failures, rerun the unchanged 
 - Full foundation/G07: NOT_RUN here; no authored migration/ACL changes.
 - Physical printer/OS dialog/paper pagination, LIVE Meta/production: NOT_RUN. Only native print invocation is intercepted.
 - Integrator-owned output/ext-agents is untouched/unstaged; runtime artifacts remain ignored/untracked, selected evidence copies only are committed.
-- **Status: LABEL_GATE_GREEN / A3_RESOLVED; overall NOT_READY, pending LC-U2a task8f1bb58f.**
+- **Checkpoint status: LABEL_GATE_GREEN / A3_RESOLVED; overall NOT_READY, W3-U3 owns the scoped404 diagnosis.**
