@@ -1,0 +1,15 @@
+=== RUN   TestParcelGroupOpenRead
+=== RUN   TestParcelGroupOpenRead/one_OPEN_group_is_listed_with_its_version_and_masked_members
+=== RUN   TestParcelGroupOpenRead/newest_first;_SHIPPED_and_DISSOLVED_groups_are_absent
+=== RUN   TestParcelGroupOpenRead/recipient_masked_equals_the_orders-list_mask,_incl._leading_ideographic_space_and_a_blank_name
+=== RUN   TestParcelGroupOpenRead/authority:_no_token_401,_fulfillment:write_alone_403,_foreign-store_member_404,_other_store_sees_none
+=== RUN   TestParcelGroupOpenRead/definer_ACL:_read_only_(no_rows_written),_EXECUTE_for_commerce_runtime_only
+--- PASS: TestParcelGroupOpenRead (12.27s)
+    --- PASS: TestParcelGroupOpenRead/one_OPEN_group_is_listed_with_its_version_and_masked_members (0.00s)
+    --- PASS: TestParcelGroupOpenRead/newest_first;_SHIPPED_and_DISSOLVED_groups_are_absent (0.01s)
+    --- PASS: TestParcelGroupOpenRead/recipient_masked_equals_the_orders-list_mask,_incl._leading_ideographic_space_and_a_blank_name (0.03s)
+    --- PASS: TestParcelGroupOpenRead/authority:_no_token_401,_fulfillment:write_alone_403,_foreign-store_member_404,_other_store_sees_none (0.02s)
+    --- PASS: TestParcelGroupOpenRead/definer_ACL:_read_only_(no_rows_written),_EXECUTE_for_commerce_runtime_only (0.01s)
+PASS
+ok  	livecommerce/tests/foundation	14.046s
+test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0

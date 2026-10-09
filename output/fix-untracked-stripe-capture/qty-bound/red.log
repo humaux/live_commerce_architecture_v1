@@ -1,0 +1,20 @@
+=== RUN   TestStripeUntrackedQuantityBoundary
+=== RUN   TestStripeUntrackedQuantityBoundary/capture
+    stripe_untracked_quantity_test.go:43: OWNER-POOL: replica-mode tamper/restore: UPDATE storefront.quotes q
+    stripe_untracked_quantity_test.go:47: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders o
+    stripe_untracked_quantity_test.go:80: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_quantity_test.go:85: OWNER-POOL: payments.provider_observations report
+    stripe_untracked_quantity_test.go:88: quantity 1000000000 capture/replay 0: ERROR: payment reservation empty (SQLSTATE PT409)
+=== RUN   TestStripeUntrackedQuantityBoundary/close
+    stripe_untracked_quantity_test.go:43: OWNER-POOL: replica-mode tamper/restore: UPDATE storefront.quotes q
+    stripe_untracked_quantity_test.go:47: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders o
+    stripe_untracked_quantity_test.go:80: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_quantity_test.go:85: OWNER-POOL: payments.provider_observations report
+    stripe_untracked_quantity_test.go:88: quantity 1000000000 close/replay 0: ERROR: payment reservation empty (SQLSTATE PT409)
+--- FAIL: TestStripeUntrackedQuantityBoundary (2.99s)
+    --- FAIL: TestStripeUntrackedQuantityBoundary/capture (2.53s)
+    --- FAIL: TestStripeUntrackedQuantityBoundary/close (0.46s)
+FAIL
+FAIL	livecommerce/tests/foundation	4.610s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

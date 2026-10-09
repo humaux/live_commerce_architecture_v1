@@ -1,0 +1,19 @@
+{
+  "cart_scope_unchanged_since_green": {
+    "tests/storefront/order-gate.mjs": true,
+    "tests/foundation/browser_order_chain_test.go": true,
+    "tests/foundation/buyer_order_evidence_test.go": true
+  },
+  "restored_runtime_files": [],
+  "new_matrix_pngs_archived_and_removed_from_old_output": [
+    "output/product-ui-v2/mobile-matrix-zh-CN-390-archived.png",
+    "output/product-ui-v2/mobile-matrix-zh-TW-390-edit.png",
+    "output/product-ui-v2/mobile-matrix-zh-CN-390-new.png",
+    "output/product-ui-v2/mobile-matrix-zh-TW-390-archived.png",
+    "output/product-ui-v2/mobile-matrix-en-390-archived.png",
+    "output/product-ui-v2/mobile-matrix-zh-CN-390-edit.png",
+    "output/product-ui-v2/mobile-matrix-en-390-edit.png",
+    "output/product-ui-v2/mobile-matrix-en-390-new.png",
+    "output/product-ui-v2/mobile-matrix-zh-TW-390-new.png"
+  ]
+}

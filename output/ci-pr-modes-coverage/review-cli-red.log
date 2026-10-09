@@ -1,0 +1,169 @@
+✔ backend-only paths run foundation-shards only (1.04025ms)
+✔ node tests of deploy scripts and of the CI planner are backend-only (they cannot change a browser) (0.323417ms)
+✔ a UI path adds the whole browser set, including click-sweep and visual-lint (1.695334ms)
+✔ docs-only and output-only diffs keep the single required check (foundation-shards) (0.298917ms)
+✔ legacy browser_* paths still select all browsers; a known untagged foundation file stays backend-only (0.150125ms)
+✔ legacy deploy prefixes remain selected and unrelated paths do not select smoke (0.703458ms)
+✔ the browser set is release-gate's browser-mode universe minus the documented exclusions (15.150583ms)
+✔ every real browser-tagged foundation file selects registry browser modes, including non-browser names (260.198292ms)
+✔ tagged runner discovery follows registry additions, command arrays and line continuations (0.246625ms)
+✔ deploy smoke is selected for its workflow, verdict/helpers and executable test inputs (0.16825ms)
+✔ new selection never drops legacy modes or deploy for any tracked path (60.870666ms)
+✔ CLI classifies merge-base and explicit head, including removed tags, deleted files and renames (419.140916ms)
+✔ CLI explicit head and stdin include tags outside the checkout and uncommitted tag removals (177.066292ms)
+✔ compound/legacy tags and unknown source are conservative; known untagged source stays backend-only (0.8025ms)
+✔ explicit-head CLI derives tagged runner modes from that head's real registry (143.550291ms)
+✖ real Git CLI preserves legacy selection: quotePath=true, "架构.md" (158.254542ms)
+✖ real Git CLI preserves legacy selection: quotePath=true, "internal/示例.go" (132.44375ms)
+✖ real Git CLI preserves legacy selection: quotePath=true, "tests/foundation/plain\tname_test.go" (139.945709ms)
+✖ real Git CLI preserves legacy selection: quotePath=true, " deploy/scripts/synthetic-smoke.sh" (129.512041ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "架构.md" (127.071583ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "internal/示例.go" (130.367541ms)
+✖ real Git CLI preserves legacy selection: quotePath=false, "tests/foundation/plain\tname_test.go" (144.986125ms)
+✖ real Git CLI preserves legacy selection: quotePath=false, " deploy/scripts/synthetic-smoke.sh" (128.0165ms)
+✖ stdin unions legacy trimming without trimming the source lookup path (80.385083ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 17
+ℹ fail 7
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2299.85725
+
+✖ failing tests:
+
+test at tests/ci/pr-modes.test.mjs:168:5
+✖ real Git CLI preserves legacy selection: quotePath=true, "架构.md" (158.254542ms)
+  AssertionError [ERR_ASSERTION]: "架构.md" lost --browser-meta-health-ui
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-pr-modes-coverage/tests/ci/pr-modes.test.mjs:178:44)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/pr-modes.test.mjs:168:5
+✖ real Git CLI preserves legacy selection: quotePath=true, "internal/示例.go" (132.44375ms)
+  AssertionError [ERR_ASSERTION]: "internal/示例.go" lost --browser-meta-health-ui
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-pr-modes-coverage/tests/ci/pr-modes.test.mjs:178:44)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/pr-modes.test.mjs:168:5
+✖ real Git CLI preserves legacy selection: quotePath=true, "tests/foundation/plain\tname_test.go" (139.945709ms)
+  AssertionError [ERR_ASSERTION]: "tests/foundation/plain\tname_test.go" lost --browser-meta-health-ui
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-pr-modes-coverage/tests/ci/pr-modes.test.mjs:178:44)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/pr-modes.test.mjs:168:5
+✖ real Git CLI preserves legacy selection: quotePath=true, " deploy/scripts/synthetic-smoke.sh" (129.512041ms)
+  AssertionError [ERR_ASSERTION]: legacy trim must retain deploy-smoke
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-pr-modes-coverage/tests/ci/pr-modes.test.mjs:179:30)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/pr-modes.test.mjs:168:5
+✖ real Git CLI preserves legacy selection: quotePath=false, "tests/foundation/plain\tname_test.go" (144.986125ms)
+  AssertionError [ERR_ASSERTION]: "tests/foundation/plain\tname_test.go" lost --browser-meta-health-ui
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-pr-modes-coverage/tests/ci/pr-modes.test.mjs:178:44)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/pr-modes.test.mjs:168:5
+✖ real Git CLI preserves legacy selection: quotePath=false, " deploy/scripts/synthetic-smoke.sh" (128.0165ms)
+  AssertionError [ERR_ASSERTION]: legacy trim must retain deploy-smoke
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-pr-modes-coverage/tests/ci/pr-modes.test.mjs:179:30)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/pr-modes.test.mjs:184:1
+✖ stdin unions legacy trimming without trimming the source lookup path (80.385083ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-pr-modes-coverage/tests/ci/pr-modes.test.mjs:190:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

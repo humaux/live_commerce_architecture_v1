@@ -1,7 +1,6 @@
 # Unit LC-B3b — inbox read gaps: A13 buyer panel, A8 session/live_comment, A14 link version, A9 binding id (backend)
 
-Status: FROZEN (integrator, 2026-10-07). Base `r3/integration` 35abffca. Migration **0165** (assigned by the integrator; 0163 settlement-resolve and
-0164 W3-U4 are in flight; the R2 upgrade pin moves +1 at merge, and the integrator takes the union). Branch `unit/lc-b3b-buyer-panel`, worktree `.worktrees/lc-b3b-buyer-panel`.
+Status: FROZEN (integrator, 2026-10-07). Base `r3/integration` 35abffca. Migration **0165** was assigned by the integrator and merged after 0163 settlement-resolve; LC-B3b pins R2 at 90. W3-U4 now follows as migration **0166**, making the PR #2 union pin 91. Branch `unit/lc-b3b-buyer-panel`, worktree `.worktrees/lc-b3b-buyer-panel`.
 Read first: `docs/delivery/AGENT-PREAMBLE.md` → `AGENTS.md` → `docs/delivery/PROCESS.md` → this file → `contracts/live-console-v1.md` §3.2, §3.6, §3.7, §11 rows A8, A9, A13 and A14, §12 → current code
 `internal/inbox/read.go` (BuyerPanel ~L262 returns empty claims/orders "until LC-B4"; LC-B4 never filled them), `internal/httpapi/inbox.go`, migrations 0119, 0128 and 0060.
 

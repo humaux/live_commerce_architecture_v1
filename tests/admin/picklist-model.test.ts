@@ -317,10 +317,8 @@ test("MOU keeps native headed checks runnable on a Linux CI worker without DISPL
     new URL("../../scripts/dev/test-local.sh", import.meta.url),
     "utf8",
   );
-  const body =
-    /elif \[\[ "\$test_mode" == --browser-merchant-orders-ui \]\]; then\n([\s\S]*?)\nelif /.exec(
-      script,
-    )?.[1];
+  const { modeEntries } = await import("../../scripts/dev/pr-modes.mjs");
+  const body = modeEntries(script).find((entry) => entry.name === "--browser-merchant-orders-ui")?.run;
   assert.ok(body);
   const run = (os: "Linux" | "Darwin", display: string) =>
     execFileSync(
@@ -340,4 +338,22 @@ test("MOU keeps native headed checks runnable on a Linux CI worker without DISPL
   );
   assert.match(run("Linux", ":99"), /GO test -race -tags browser/);
   assert.match(run("Darwin", ""), /GO test -race -tags browser/);
+});
+
+test("pick fixture serves the scoped parcel reads required by the orders page", async () => {
+  const { pickFixture, storeID } = await import("./picklist-fixture.mjs");
+  const { parseMergeSuggestions, parseOpenParcelGroups } = await import("../../apps/admin/lib/parcels-model.ts");
+  const fixture = await pickFixture();
+  try {
+    for (const [path, parse] of [["orders/merge-suggestions", parseMergeSuggestions], ["parcel-groups", parseOpenParcelGroups]] as const) {
+      const url = `${fixture.origin}/v1/admin/stores/${storeID}/${path}`;
+      const headers = { Authorization: `Bearer ${fixture.token}` };
+      const allowed = await fetch(url, { headers });
+      assert.equal(allowed.status, 200, `${path}: an authorized empty collection is not a scope denial`);
+      assert.deepEqual(parse(await allowed.json()), []);
+      assert.equal((await fetch(url)).status, 401, "fixture still requires the real test session");
+      assert.equal((await fetch(url.replace(storeID, "99999999-9999-4999-8999-999999999999"), { headers })).status, 404);
+      assert.equal((await fetch(url, { method: "POST", headers })).status, 404, "no fabricated parcel write support");
+    }
+  } finally { await fixture.close(); }
 });

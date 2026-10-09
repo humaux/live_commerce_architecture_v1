@@ -1,0 +1,32 @@
+# Purpose: preserve final local real-seam command output after this prologue.
+# Depends on: DELIVERY commands and original main raw SHA256=ccc75e4b4332bfe00b2f5827353f9ef9084b216d5ae440d8bf25c8ccceb4aee7.
+# Used by: integrator; runtime acceptance remains pending.
+# Evidence normalization: trailing whitespace/blank EOF only; original raw bytes and SHA256 retained in main checkout/provenance above.
+✔ real localError no-store coded 401/403/413/415/422/409 reaches client without retry_later replacement (26.530792ms)
+✔ preflight missing CSRF is definite and sends nothing; actual route CSRF and session refusals stay definite (1.161375ms)
+✔ actual route uses real cookies/store membership and method/error envelopes, no helper substitutions (2.871833ms)
+✔ actual client/route preserves original Blob bytes, trusted transport and privacy projection on200/409 (1.412083ms)
+✔ success or stale preview must remain private; malformed/unknown/mismatched coded errors are uncertain after commit (2.991708ms)
+✔ lost/unreadable/session-changed dispatched commit remains UNKNOWN; no automatic retry (1.940709ms)
+✔ actual failed-only result route strips IDs and real final session/cancel fence exposes no download (3.917333ms)
+✔ actual route refuses unknown resource/query and duplicate session cookies before any upstream call (0.332166ms)
+✔ actual route incoming cancellation aborts one dispatched transport and preserves client UNKNOWN (0.618084ms)
+✔ real coded error cache may not be public, and closed payload may not acquire data-bearing fields (1.428958ms)
+✔ copy still exposes specific merchant field reasons across three locales (6.356333ms)
+✔ reads quoted/BOM header only, without decoding malformed bytes from data rows (1.710459ms)
+✔ guess only unique metadata aliases with explicit unmapped values (0.66525ms)
+✔ shared dynamic leaf admits only exact import methods/actions and bounded mapping/count (12.021458ms)
+✔ failed CSV emits only row/outcome/code, refusing any unexpected identifier or raw cell (0.442125ms)
+✔ raw-byte cap does not decode/rebuild uploads and cancels oversized chunks (4.842208ms)
+✔ backend privacy projection strips all source IDs on successful and failed rows (1.916417ms)
+✔ closed preview parser refuses data-bearing rows, unknown keys and inconsistent counts (3.115ms)
+✔ order preview counts units while first CSV record numbers can exceed rows_total (0.104458ms)
+✔ commit receipt has exactly five keys and no extra customer cells (0.116125ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 387.769583

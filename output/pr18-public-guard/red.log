@@ -1,0 +1,46 @@
+✖ PR18 unknown public receipt has the correct cross-comment fence (23.449084ms)
+✖ PR18 queued public receipt has the correct cross-comment fence (2.23375ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 331.849167
+
+✖ failing tests:
+
+test at tests/admin/comment-stream-hooks.test.ts:149:50
+✖ PR18 unknown public receipt has the correct cross-comment fence (23.449084ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 2
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/comment-stream-hooks.test.ts:215:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 2,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:149:50
+✖ PR18 queued public receipt has the correct cross-comment fence (2.23375ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/comment-stream-hooks.test.ts:215:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

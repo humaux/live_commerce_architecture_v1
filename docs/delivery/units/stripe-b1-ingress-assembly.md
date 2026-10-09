@@ -109,8 +109,8 @@ buyerhttp, `cmd/api/buyer*.go`, tests/foundation, go.mod.
 
 ## Verify
 ```sh
-GOTOOLCHAIN=go1.27.1 go test -race -count=1 ./internal/payments/... ./internal/integrations/psp/stripe/... ./cmd/...
-GOTOOLCHAIN=go1.27.1 go vet ./internal/payments/... ./cmd/... && gofmt -l internal cmd
+GOTOOLCHAIN=go1.27.2 go test -race -count=1 ./internal/payments/... ./internal/integrations/psp/stripe/... ./cmd/...
+GOTOOLCHAIN=go1.27.2 go vet ./internal/payments/... ./cmd/... && gofmt -l internal cmd
 bash scripts/dev/test-focused.sh '^Test(BuyerPaymentWorker|MetaRuntime|StripeSP(06|11|13)|StripeAuthority)'  # serialized
 ```
 

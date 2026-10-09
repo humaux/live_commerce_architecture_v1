@@ -1,0 +1,5 @@
+{
+  "path": "apps/admin/components/ProductDocument.css",
+  "before_sha256": "a53c30a189266514919cbc759ad0ae81f14efc85da4582d13cef9df7c1562976",
+  "mutation": "mobile row label display:none only for RED; desktop untouched"
+}

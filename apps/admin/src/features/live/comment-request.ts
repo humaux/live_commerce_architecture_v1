@@ -13,6 +13,20 @@ export const commentResource = (path: string) =>
 /** The A2 read and A3-A5 commands are deliberately separate. */
 export const commentRoute = (method: string, path: string) =>
   method === "GET" ? read.test(path) : method === "POST" && write.test(path);
+/** A2 cursor errors have a recovery contract distinct from generic request/body errors. */
+export function invalidCommentCursor(request: Request, path: string): boolean {
+  if (request.method !== "GET" || !read.test(path)) return false;
+  const q = new URL(request.url).searchParams;
+  if (q.has("after_epoch") !== q.has("after_seq") || (q.has("before_cursor") && q.has("after_epoch"))) return true;
+  for (const key of ["after_epoch", "after_seq", "before_cursor"]) {
+    if (!q.has(key)) continue;
+    const value = q.get(key)!;
+    if (q.getAll(key).length !== 1) return true;
+    if (key === "before_cursor") { if (!/^[A-Za-z0-9_.-]{1,1024}$/.test(value)) return true; }
+    else if (!/^(0|[1-9][0-9]*)$/.test(value) || !Number.isSafeInteger(Number(value))) return true;
+  }
+  return false;
+}
 /** Rejects unknown/private query keys, duplicate cursors and read-side idempotency keys. */
 export function validCommentRequest(request: Request, path: string): boolean {
   if (
@@ -60,6 +74,11 @@ export function validCommentRequest(request: Request, path: string): boolean {
     !(q.has("before_cursor") && q.has("after_epoch"))
   );
 }
+/** Mirror Go checkText's control-character rule: only LF is permitted among C0/C1 controls. */
+export function validCommentText(text: unknown): text is string {
+  return typeof text === "string" && text.trim().length > 0 && text.length <= 8000 &&
+    !/[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/.test(text);
+}
 /** Text/template exclusivity and explicit private-only automatic-reply preemption. */
 export function validCommentBody(path: string, raw: string): boolean {
   if (!write.test(path)) return false;
@@ -79,13 +98,7 @@ export function validCommentBody(path: string, raw: string): boolean {
   )
     return false;
   const fields = keys.filter((k) => k !== "confirm_preempt_auto");
-  if (fields.length === 1 && fields[0] === "text")
-    return (
-      typeof b.text === "string" &&
-      b.text.trim().length > 0 &&
-      b.text.length <= 8000 &&
-      !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(b.text)
-    );
+  if (fields.length === 1 && fields[0] === "text") return validCommentText(b.text);
   return (
     fields.length === 2 &&
     fields.includes("template_id") &&
@@ -120,6 +133,7 @@ const errors: Record<number, readonly string[]> = {
   ],
   415: ["json_required"],
   422: [
+    "invalid_ref",
     "invalid_request",
     "invalid_text",
     "public_reply_forbidden_content",

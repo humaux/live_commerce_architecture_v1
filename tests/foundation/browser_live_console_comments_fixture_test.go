@@ -218,5 +218,10 @@ func (x *consoleCommentsFixture) facts(ctx context.Context) (map[string]any, err
 	var count int
 	err := x.e.h.f.owner.QueryRow(ctx, `SELECT count(*) FROM integration.operations WHERE tenant_id=$1 AND store_id=$2 AND action='meta.private_reply' AND request->>'session_id'=$3 AND request->>'message_type'='manual_private_reply'`, x.e.h.f.tenantA, x.e.h.f.storeA1, x.e.session).Scan(&count)
 	out["private_operations"], out["graph_sends"] = count, x.e.g.count()
+	if err == nil {
+		var unknown int
+		err = x.e.h.f.owner.QueryRow(ctx, `SELECT count(*) FROM integration.operations WHERE tenant_id=$1 AND store_id=$2 AND action='meta.public_reply' AND request->>'session_id'=$3 AND state='UNKNOWN'`, x.e.h.f.tenantA, x.e.h.f.storeA1, x.e.session).Scan(&unknown)
+		out["public_unknown"] = unknown
+	}
 	return out, err
 }

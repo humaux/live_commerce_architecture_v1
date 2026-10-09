@@ -14,6 +14,8 @@ const en = {
   retry: "Retry the same request",
   loading: "Loading order details…",
   linked: "Manually linked customer",
+  restricted: "This buyer is on the restricted list. You can still create an order manually; this does not remove the restriction.",
+  restrictionUnavailable: "The restriction status could not be checked. Review the buyer's status before creating an order.",
   liveWarning:
     "Live pricing does not apply to this order. Send the claim link instead.",
   quote:
@@ -61,6 +63,8 @@ const tw: Copy = {
   retry: "重試同一請求",
   loading: "正在載入訂單資料…",
   linked: "已手動連結",
+  restricted: "此買家已在限制名單中。仍可手動建立訂單，這不會解除限制。",
+  restrictionUnavailable: "無法確認限制名單狀態。建立訂單前請留意買家的狀態。",
   liveWarning: "直播價不適用代建訂單，請改傳認領連結",
   quote: "目錄單價僅供參考。訂單總額與適用的直播價由伺服器確認。",
   permission: "需要讀取訂單及預留庫存權限。",
@@ -100,6 +104,8 @@ const cn: Copy = {
   retry: "重试同一请求",
   loading: "正在加载订单资料…",
   linked: "已手动关联",
+  restricted: "此买家已在限制名单中。仍可手动创建订单，这不会解除限制。",
+  restrictionUnavailable: "无法确认限制名单状态。创建订单前请留意买家的状态。",
   liveWarning: "直播价不适用代建订单，请改传认领链接",
   quote: "目录单价仅供参考。订单总额与适用的直播价由服务器确认。",
   permission: "需要读取订单及预留库存权限。",

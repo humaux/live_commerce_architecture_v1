@@ -88,6 +88,53 @@ test("RPUI calibration-sensitive response: genuine products read renders data", 
   } finally { await context.close(); }
 });
 
+test("RPUI tables contain overflow at desktop and mobile widths", async ({ browser }) => {
+  const failures: string[] = [], measurements: unknown[] = [];
+  // Capture both breakpoints before asserting, so a desktop failure cannot hide the mobile evidence.
+  for (const width of [1440, 390]) {
+    const { context, page } = await signed(browser, "en", width);
+    try {
+      for (const tab of ["products", "channels", "manual-orders"]) {
+        await step(page, `layout ${width}/${tab}`, "real report tab loads for geometry measurement", async () => {
+          await page.getByTestId(`reports-tab-${tab}`).click();
+          await expect(page.locator(`[role="tabpanel"]:visible .reports-table`).first()).toBeVisible();
+        });
+        const geometry = await page.evaluate(() => {
+          const viewport = innerWidth;
+          return {
+            viewport, document: document.documentElement.scrollWidth,
+            tables: [...document.querySelectorAll<HTMLElement>('[role="tabpanel"]:not([hidden]) .reports-table')].map(table => {
+              const region = table.closest<HTMLElement>(".reports-scroll")!;
+              const box = region.getBoundingClientRect();
+              return { layout: getComputedStyle(table).tableLayout, left: box.left, right: box.right,
+                client: region.clientWidth, scroll: region.scrollWidth,
+                overflowingCells: [...table.querySelectorAll<HTMLElement>("th,td")].filter(cell => cell.scrollWidth > cell.clientWidth + 1).map(cell => cell.textContent) };
+            }),
+          };
+        });
+        measurements.push({ width, tab, ...geometry });
+        await page.screenshot({ path: path.join(evidence, `reports-layout-${tab}-${width}.png`), fullPage: true });
+        if (geometry.document > width + 1) failures.push(`${width}/${tab}: page scrollWidth=${geometry.document}`);
+        for (const [index, table] of geometry.tables.entries()) {
+          if (table.scroll > table.client + 1 && table.right <= width + 1) {
+            const region = page.locator('[role="tabpanel"]:visible .reports-scroll').nth(index);
+            const pageX = await page.evaluate(() => scrollX);
+            await region.focus();
+            await region.press("ArrowRight");
+            await expect.poll(() => region.evaluate(element => element.scrollLeft), { message: "keyboard scroll stays inside the report" }).toBeGreaterThan(0);
+            expect(await page.evaluate(() => scrollX)).toBe(pageX);
+          }
+          if (table.layout !== "auto") failures.push(`${width}/${tab}/${index}: product-table layout leaked (${table.layout})`);
+          if (table.left < -1 || table.right > width + 1) failures.push(`${width}/${tab}/${index}: scroll region escapes viewport (${table.left}..${table.right})`);
+          if (table.overflowingCells.length) failures.push(`${width}/${tab}/${index}: content escapes table cells: ${table.overflowingCells.join(" | ")}`);
+        }
+      }
+    } finally { await context.close(); }
+  }
+  await writeFile(path.join(evidence, "reports-layout.json"), JSON.stringify(measurements, null, 2));
+  expect(failures, "report geometry: scroll must be inside the table, without product column constraints").toEqual([]);
+});
+
 for (const locale of ["en", "zh-TW"] as const) for (const width of [1440, 390]) {
   test(`RPUI all report controls, CSV and persistence ${locale}/${width}`, async ({ browser }) => {
     const { context, page } = await signed(browser, locale, width), c = reportsCopy[locale];

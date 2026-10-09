@@ -1,0 +1,33 @@
+{
+  "note": "Only committed text views are whitespace-normalized. Original raw bytes remain in primary archive and lossless gzip. archive-hashes.json refers to the original primary archive snapshot.",
+  "files": [
+    {
+      "view": "studio-baseline.log",
+      "original_main_archive": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/round973/studio-baseline.log",
+      "raw_sha256": "fc2aa7eea2e621c2692fc6045f9d181fd57b098685722fe2e621cf753c59045c",
+      "view_sha256": "6891d5f7e92380026ad13904e25c652beb4a2938d0663e171465702aa8e07147",
+      "raw_gzip": "studio-baseline.log.raw.gz"
+    },
+    {
+      "view": "cvs-green.log",
+      "original_main_archive": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/round973/cvs-green.log",
+      "raw_sha256": "1476acf9e7ff8ab92ab9929923df45fefdfc292912877733394a5ee294cbb938",
+      "view_sha256": "be70a2fe418c7b8b92c806b2b86ddf554d85478af430aed8f970a31872d0983d",
+      "raw_gzip": "cvs-green.log.raw.gz"
+    },
+    {
+      "view": "pick-fixture-red.log",
+      "original_main_archive": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/round973/pick-fixture-red.log",
+      "raw_sha256": "2907bc6ffcb173cec1d84dc4b4cf8bc4149db43a1982ecb95eaeac62521ef0b1",
+      "view_sha256": "e9b7d7a8a1996632f9c99891df8edf40fd38c5a4eafb298229b7fe2f8e063b3d",
+      "raw_gzip": "pick-fixture-red.log.raw.gz"
+    },
+    {
+      "view": "test-typecheck.log",
+      "original_main_archive": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/round973/test-typecheck.log",
+      "raw_sha256": "3467f7d7ed94468576bfb4e53d7bfca4b60d0c21c81bc0eb9c51cef8574f5604",
+      "view_sha256": "bb69d379f8c8e8833ca1a139de5b9f1c6759f7a79303ddc50804c6a5d60fd6a7",
+      "raw_gzip": "test-typecheck.log.raw.gz"
+    }
+  ]
+}

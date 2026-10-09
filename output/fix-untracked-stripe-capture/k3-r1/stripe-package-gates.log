@@ -1,0 +1,544 @@
+=== RUN   TestStripeSP02Currency
+--- PASS: TestStripeSP02Currency (0.00s)
+=== RUN   TestStripeSP03CreateBody
+=== RUN   TestStripeSP03CreateBody/key_set_and_values
+=== RUN   TestStripeSP03CreateBody/headers_and_resend
+    body_test.go:200: golden create_body_sha256=5e815f37d8e841ec3bdea248cf03e3e713d00ee63a45f814611439fbc9051cca
+--- PASS: TestStripeSP03CreateBody (0.00s)
+    --- PASS: TestStripeSP03CreateBody/key_set_and_values (0.00s)
+    --- PASS: TestStripeSP03CreateBody/headers_and_resend (0.00s)
+=== RUN   TestStripeSP03PlatformKeys
+--- PASS: TestStripeSP03PlatformKeys (0.00s)
+=== RUN   TestStripeSP04Classify
+=== RUN   TestStripeSP04Classify/200_create
+=== RUN   TestStripeSP04Classify/200_retrieve
+=== RUN   TestStripeSP04Classify/200_expire
+=== RUN   TestStripeSP04Classify/400_invalid_create
+=== RUN   TestStripeSP04Classify/404_create
+=== RUN   TestStripeSP04Classify/404_retrieve
+=== RUN   TestStripeSP04Classify/400_retrieve
+=== RUN   TestStripeSP04Classify/400_expire_not_open
+=== RUN   TestStripeSP04Classify/400_idempotency_create
+=== RUN   TestStripeSP04Classify/400_unknown_type_create
+=== RUN   TestStripeSP04Classify/400_unparseable_create
+=== RUN   TestStripeSP04Classify/401_create
+=== RUN   TestStripeSP04Classify/403_retrieve
+=== RUN   TestStripeSP04Classify/409_create
+=== RUN   TestStripeSP04Classify/429_create
+=== RUN   TestStripeSP04Classify/500_replayed_create
+=== RUN   TestStripeSP04Classify/503_expire
+=== RUN   TestStripeSP04Classify/302_redirect
+=== RUN   TestStripeSP04Classify/418_unknown
+=== RUN   TestStripeSP04Classify/oversize
+=== RUN   TestStripeSP04Classify/duplicate_key
+=== RUN   TestStripeSP04Classify/malformed_json
+=== RUN   TestStripeSP04Classify/trailing_data
+=== RUN   TestStripeSP04Classify/wrong_object
+=== RUN   TestStripeSP04Classify/livemode_mismatch
+=== RUN   TestStripeSP04Classify/missing_status
+=== RUN   TestStripeSP04Classify/unknown_status
+=== RUN   TestStripeSP04Classify/negative_amount
+=== RUN   TestStripeSP04Classify/fractional_amount
+=== RUN   TestStripeSP04Classify/id_mismatch_retrieve
+=== RUN   TestStripeSP04Classify/create_for_other_attempt
+=== RUN   TestStripeSP04Classify/expire_request_shape
+=== RUN   TestStripeSP04Classify/retrieve_request_shape_and_PI_projection
+=== RUN   TestStripeSP04Classify/cookies_are_never_stored_or_sent
+=== RUN   TestStripeSP04Classify/context_cancel
+=== RUN   TestStripeSP04Classify/TLS_policy
+2026/10/09 03:56:10 http: TLS handshake error from 127.0.0.1:63564: remote error: tls: bad certificate
+=== RUN   TestStripeSP04Classify/VerifyAccount
+=== RUN   TestStripeSP04Classify/FindCheckoutSessions
+=== RUN   TestStripeSP04Classify/FindCheckoutSessions_page_cap_is_uncertain
+=== RUN   TestStripeSP04Classify/observation_projection
+--- PASS: TestStripeSP04Classify (0.24s)
+    --- PASS: TestStripeSP04Classify/200_create (0.01s)
+    --- PASS: TestStripeSP04Classify/200_retrieve (0.01s)
+    --- PASS: TestStripeSP04Classify/200_expire (0.01s)
+    --- PASS: TestStripeSP04Classify/400_invalid_create (0.01s)
+    --- PASS: TestStripeSP04Classify/404_create (0.01s)
+    --- PASS: TestStripeSP04Classify/404_retrieve (0.01s)
+    --- PASS: TestStripeSP04Classify/400_retrieve (0.01s)
+    --- PASS: TestStripeSP04Classify/400_expire_not_open (0.01s)
+    --- PASS: TestStripeSP04Classify/400_idempotency_create (0.01s)
+    --- PASS: TestStripeSP04Classify/400_unknown_type_create (0.01s)
+    --- PASS: TestStripeSP04Classify/400_unparseable_create (0.00s)
+    --- PASS: TestStripeSP04Classify/401_create (0.00s)
+    --- PASS: TestStripeSP04Classify/403_retrieve (0.00s)
+    --- PASS: TestStripeSP04Classify/409_create (0.00s)
+    --- PASS: TestStripeSP04Classify/429_create (0.00s)
+    --- PASS: TestStripeSP04Classify/500_replayed_create (0.00s)
+    --- PASS: TestStripeSP04Classify/503_expire (0.00s)
+    --- PASS: TestStripeSP04Classify/302_redirect (0.00s)
+    --- PASS: TestStripeSP04Classify/418_unknown (0.00s)
+    --- PASS: TestStripeSP04Classify/oversize (0.01s)
+    --- PASS: TestStripeSP04Classify/duplicate_key (0.00s)
+    --- PASS: TestStripeSP04Classify/malformed_json (0.00s)
+    --- PASS: TestStripeSP04Classify/trailing_data (0.00s)
+    --- PASS: TestStripeSP04Classify/wrong_object (0.00s)
+    --- PASS: TestStripeSP04Classify/livemode_mismatch (0.00s)
+    --- PASS: TestStripeSP04Classify/missing_status (0.00s)
+    --- PASS: TestStripeSP04Classify/unknown_status (0.00s)
+    --- PASS: TestStripeSP04Classify/negative_amount (0.00s)
+    --- PASS: TestStripeSP04Classify/fractional_amount (0.00s)
+    --- PASS: TestStripeSP04Classify/id_mismatch_retrieve (0.00s)
+    --- PASS: TestStripeSP04Classify/create_for_other_attempt (0.00s)
+    --- PASS: TestStripeSP04Classify/expire_request_shape (0.00s)
+    --- PASS: TestStripeSP04Classify/retrieve_request_shape_and_PI_projection (0.00s)
+    --- PASS: TestStripeSP04Classify/cookies_are_never_stored_or_sent (0.00s)
+    --- PASS: TestStripeSP04Classify/context_cancel (0.00s)
+    --- PASS: TestStripeSP04Classify/TLS_policy (0.01s)
+    --- PASS: TestStripeSP04Classify/VerifyAccount (0.02s)
+    --- PASS: TestStripeSP04Classify/FindCheckoutSessions (0.02s)
+    --- PASS: TestStripeSP04Classify/FindCheckoutSessions_page_cap_is_uncertain (0.01s)
+    --- PASS: TestStripeSP04Classify/observation_projection (0.00s)
+=== RUN   TestStripeSP01Config
+=== RUN   TestStripeSP01Config/sk_test_sandbox
+=== RUN   TestStripeSP01Config/rk_test_sandbox
+=== RUN   TestStripeSP01Config/sk_test_sandbox_mock
+=== RUN   TestStripeSP01Config/live_key_in_SANDBOX
+=== RUN   TestStripeSP01Config/live_key_on_mock_even_when_approved
+=== RUN   TestStripeSP01Config/test_key_in_LIVE
+=== RUN   TestStripeSP01Config/test_key_with_live_flag
+=== RUN   TestStripeSP01Config/test_key_with_approval_ref
+=== RUN   TestStripeSP01Config/live_key_LIVE_no_approval
+=== RUN   TestStripeSP01Config/live_key_LIVE_flag_without_ref
+=== RUN   TestStripeSP01Config/live_key_LIVE_ref_without_flag
+=== RUN   TestStripeSP01Config/live_key_LIVE_short_ref
+=== RUN   TestStripeSP01Config/live_key_LIVE_bad_ref_chars
+=== RUN   TestStripeSP01Config/live_key_LIVE_approved
+=== RUN   TestStripeSP01Config/sk_live_LIVE_approved_refused
+=== RUN   TestStripeSP01Config/PROVIDER_MOCK_env_name
+=== RUN   TestStripeSP01Config/lowercase_env
+=== RUN   TestStripeSP01Config/empty_key
+=== RUN   TestStripeSP01Config/publishable_key
+=== RUN   TestStripeSP01Config/key_with_whitespace
+=== RUN   TestStripeSP01Config/key_trailing_newline
+=== RUN   TestStripeSP01Config/key_too_short
+=== RUN   TestStripeSP01Config/key_bad_chars
+=== RUN   TestStripeSP01Config/bad_account
+=== RUN   TestStripeSP01Config/account_not_acct
+=== RUN   TestStripeSP01Config/WebhookConfig_bounds
+=== RUN   TestStripeSP01Config/redaction
+--- PASS: TestStripeSP01Config (0.00s)
+    --- PASS: TestStripeSP01Config/sk_test_sandbox (0.00s)
+    --- PASS: TestStripeSP01Config/rk_test_sandbox (0.00s)
+    --- PASS: TestStripeSP01Config/sk_test_sandbox_mock (0.00s)
+    --- PASS: TestStripeSP01Config/live_key_in_SANDBOX (0.00s)
+    --- PASS: TestStripeSP01Config/live_key_on_mock_even_when_approved (0.00s)
+    --- PASS: TestStripeSP01Config/test_key_in_LIVE (0.00s)
+    --- PASS: TestStripeSP01Config/test_key_with_live_flag (0.00s)
+    --- PASS: TestStripeSP01Config/test_key_with_approval_ref (0.00s)
+    --- PASS: TestStripeSP01Config/live_key_LIVE_no_approval (0.00s)
+    --- PASS: TestStripeSP01Config/live_key_LIVE_flag_without_ref (0.00s)
+    --- PASS: TestStripeSP01Config/live_key_LIVE_ref_without_flag (0.00s)
+    --- PASS: TestStripeSP01Config/live_key_LIVE_short_ref (0.00s)
+    --- PASS: TestStripeSP01Config/live_key_LIVE_bad_ref_chars (0.00s)
+    --- PASS: TestStripeSP01Config/live_key_LIVE_approved (0.00s)
+    --- PASS: TestStripeSP01Config/sk_live_LIVE_approved_refused (0.00s)
+    --- PASS: TestStripeSP01Config/PROVIDER_MOCK_env_name (0.00s)
+    --- PASS: TestStripeSP01Config/lowercase_env (0.00s)
+    --- PASS: TestStripeSP01Config/empty_key (0.00s)
+    --- PASS: TestStripeSP01Config/publishable_key (0.00s)
+    --- PASS: TestStripeSP01Config/key_with_whitespace (0.00s)
+    --- PASS: TestStripeSP01Config/key_trailing_newline (0.00s)
+    --- PASS: TestStripeSP01Config/key_too_short (0.00s)
+    --- PASS: TestStripeSP01Config/key_bad_chars (0.00s)
+    --- PASS: TestStripeSP01Config/bad_account (0.00s)
+    --- PASS: TestStripeSP01Config/account_not_acct (0.00s)
+    --- PASS: TestStripeSP01Config/WebhookConfig_bounds (0.00s)
+    --- PASS: TestStripeSP01Config/redaction (0.00s)
+=== RUN   TestStripeSP19LiveRefusal
+--- PASS: TestStripeSP19LiveRefusal (0.00s)
+=== RUN   TestStripeSL01LiveConfig
+=== RUN   TestStripeSL01LiveConfig/admission_matrix
+=== RUN   TestStripeSL01LiveConfig/admission_matrix/rk_live_LIVE_approved
+=== RUN   TestStripeSL01LiveConfig/admission_matrix/sk_live_LIVE_approved
+=== RUN   TestStripeSL01LiveConfig/admission_matrix/sk_live_LIVE_no_pair
+=== RUN   TestStripeSL01LiveConfig/admission_matrix/rk_live_LIVE_no_pair
+=== RUN   TestStripeSL01LiveConfig/admission_matrix/rk_live_LIVE_flag_without_ref
+=== RUN   TestStripeSL01LiveConfig/admission_matrix/rk_live_LIVE_ref_without_flag
+=== RUN   TestStripeSL01LiveConfig/admission_matrix/rk_live_LIVE_short_ref
+=== RUN   TestStripeSL01LiveConfig/admission_matrix/rk_live_in_SANDBOX
+=== RUN   TestStripeSL01LiveConfig/admission_matrix/rk_live_on_mock
+=== RUN   TestStripeSL01LiveConfig/admission_matrix/sk_live_on_mock
+=== RUN   TestStripeSL01LiveConfig/admission_matrix/sk_test_in_LIVE_with_pair
+=== RUN   TestStripeSL01LiveConfig/admission_matrix/rk_test_in_LIVE_with_pair
+=== RUN   TestStripeSL01LiveConfig/admission_matrix/sk_test_with_live_flag
+=== RUN   TestStripeSL01LiveConfig/admission_matrix/rk_test_with_approval_ref
+=== RUN   TestStripeSL01LiveConfig/admission_matrix/rk_test_SANDBOX
+=== RUN   TestStripeSL01LiveConfig/live_probe
+=== RUN   TestStripeSL01LiveConfig/readiness_projection
+=== RUN   TestStripeSL01LiveConfig/readiness_projection/charges_enabled_false_is_false,_not_nil
+=== RUN   TestStripeSL01LiveConfig/readiness_projection/charges_enabled_null_is_nil
+=== RUN   TestStripeSL01LiveConfig/readiness_projection/charges_enabled_absent_is_nil
+=== RUN   TestStripeSL01LiveConfig/readiness_projection/payouts_enabled_absent_is_nil
+=== RUN   TestStripeSL01LiveConfig/readiness_projection/details_submitted_null_is_nil
+=== RUN   TestStripeSL01LiveConfig/readiness_projection/requirements_absent_->_due_count_nil
+=== RUN   TestStripeSL01LiveConfig/readiness_projection/requirements_null_->_due_count_nil
+=== RUN   TestStripeSL01LiveConfig/readiness_projection/currently_due_null_->_nil
+=== RUN   TestStripeSL01LiveConfig/readiness_projection/currently_due_2_items_->_2
+=== RUN   TestStripeSL01LiveConfig/readiness_projection/descriptor_null_->_nil
+=== RUN   TestStripeSL01LiveConfig/readiness_projection/descriptor_counts_runes
+=== RUN   TestStripeSL01LiveConfig/readiness_projection/settings.payments_absent_->_descriptor_nil
+=== RUN   TestStripeSL01LiveConfig/readiness_projection/prefix_null_in_present_card_payments_->_0
+=== RUN   TestStripeSL01LiveConfig/readiness_projection/prefix_empty_in_present_card_payments_->_0
+=== RUN   TestStripeSL01LiveConfig/readiness_projection/prefix_key_absent_in_present_card_payments_->_0
+=== RUN   TestStripeSL01LiveConfig/readiness_projection/card_payments_absent_->_prefix_and_decline_on_nil
+=== RUN   TestStripeSL01LiveConfig/readiness_projection/settings_absent_->_all_settings_nil
+=== RUN   TestStripeSL01LiveConfig/readiness_projection/decline_on_absent_->_rules_nil
+=== RUN   TestStripeSL01LiveConfig/readiness_projection/avs_failure_null_->_nil
+--- PASS: TestStripeSL01LiveConfig (0.01s)
+    --- PASS: TestStripeSL01LiveConfig/admission_matrix (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/admission_matrix/rk_live_LIVE_approved (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/admission_matrix/sk_live_LIVE_approved (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/admission_matrix/sk_live_LIVE_no_pair (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/admission_matrix/rk_live_LIVE_no_pair (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/admission_matrix/rk_live_LIVE_flag_without_ref (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/admission_matrix/rk_live_LIVE_ref_without_flag (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/admission_matrix/rk_live_LIVE_short_ref (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/admission_matrix/rk_live_in_SANDBOX (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/admission_matrix/rk_live_on_mock (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/admission_matrix/sk_live_on_mock (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/admission_matrix/sk_test_in_LIVE_with_pair (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/admission_matrix/rk_test_in_LIVE_with_pair (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/admission_matrix/sk_test_with_live_flag (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/admission_matrix/rk_test_with_approval_ref (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/admission_matrix/rk_test_SANDBOX (0.00s)
+    --- PASS: TestStripeSL01LiveConfig/live_probe (0.00s)
+    --- PASS: TestStripeSL01LiveConfig/readiness_projection (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/readiness_projection/charges_enabled_false_is_false,_not_nil (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/readiness_projection/charges_enabled_null_is_nil (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/readiness_projection/charges_enabled_absent_is_nil (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/readiness_projection/payouts_enabled_absent_is_nil (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/readiness_projection/details_submitted_null_is_nil (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/readiness_projection/requirements_absent_->_due_count_nil (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/readiness_projection/requirements_null_->_due_count_nil (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/readiness_projection/currently_due_null_->_nil (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/readiness_projection/currently_due_2_items_->_2 (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/readiness_projection/descriptor_null_->_nil (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/readiness_projection/descriptor_counts_runes (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/readiness_projection/settings.payments_absent_->_descriptor_nil (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/readiness_projection/prefix_null_in_present_card_payments_->_0 (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/readiness_projection/prefix_empty_in_present_card_payments_->_0 (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/readiness_projection/prefix_key_absent_in_present_card_payments_->_0 (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/readiness_projection/card_payments_absent_->_prefix_and_decline_on_nil (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/readiness_projection/settings_absent_->_all_settings_nil (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/readiness_projection/decline_on_absent_->_rules_nil (0.00s)
+        --- PASS: TestStripeSL01LiveConfig/readiness_projection/avs_failure_null_->_nil (0.00s)
+=== RUN   TestRefundAmountOKMatchesTheSQLTable
+--- PASS: TestRefundAmountOKMatchesTheSQLTable (0.00s)
+=== RUN   TestRefundBodyIsCanonicalAndClosed
+--- PASS: TestRefundBodyIsCanonicalAndClosed (0.00s)
+=== RUN   TestCreateRefundSendsOneKeyAndValidatesIdentity
+--- PASS: TestCreateRefundSendsOneKeyAndValidatesIdentity (0.01s)
+=== RUN   TestRefundCallsClassifyPerSection56
+=== RUN   TestRefundCallsClassifyPerSection56/create_400_rejected
+=== RUN   TestRefundCallsClassifyPerSection56/create_idempotency
+=== RUN   TestRefundCallsClassifyPerSection56/create_401
+=== RUN   TestRefundCallsClassifyPerSection56/create_409
+=== RUN   TestRefundCallsClassifyPerSection56/create_429
+=== RUN   TestRefundCallsClassifyPerSection56/create_cached_500
+=== RUN   TestRefundCallsClassifyPerSection56/retrieve_404_is_not_absence
+=== RUN   TestRefundCallsClassifyPerSection56/retrieve_400_is_uncertain
+=== RUN   TestRefundCallsClassifyPerSection56/payment_intent_404
+--- PASS: TestRefundCallsClassifyPerSection56 (0.04s)
+    --- PASS: TestRefundCallsClassifyPerSection56/create_400_rejected (0.00s)
+    --- PASS: TestRefundCallsClassifyPerSection56/create_idempotency (0.00s)
+    --- PASS: TestRefundCallsClassifyPerSection56/create_401 (0.00s)
+    --- PASS: TestRefundCallsClassifyPerSection56/create_409 (0.00s)
+    --- PASS: TestRefundCallsClassifyPerSection56/create_429 (0.00s)
+    --- PASS: TestRefundCallsClassifyPerSection56/create_cached_500 (0.00s)
+    --- PASS: TestRefundCallsClassifyPerSection56/retrieve_404_is_not_absence (0.00s)
+    --- PASS: TestRefundCallsClassifyPerSection56/retrieve_400_is_uncertain (0.00s)
+    --- PASS: TestRefundCallsClassifyPerSection56/payment_intent_404 (0.00s)
+=== RUN   TestRetrieveRefundRejectsWrongObjectsAndMode
+=== RUN   TestRetrieveRefundRejectsWrongObjectsAndMode/bad_reason
+=== RUN   TestRetrieveRefundRejectsWrongObjectsAndMode/other_id
+=== RUN   TestRetrieveRefundRejectsWrongObjectsAndMode/unknown_status
+=== RUN   TestRetrieveRefundRejectsWrongObjectsAndMode/live_mode
+=== RUN   TestRetrieveRefundRejectsWrongObjectsAndMode/not_a_refund
+=== RUN   TestRetrieveRefundRejectsWrongObjectsAndMode/duplicate_key
+=== RUN   TestRetrieveRefundRejectsWrongObjectsAndMode/negative_amount
+--- PASS: TestRetrieveRefundRejectsWrongObjectsAndMode (0.04s)
+    --- PASS: TestRetrieveRefundRejectsWrongObjectsAndMode/bad_reason (0.00s)
+    --- PASS: TestRetrieveRefundRejectsWrongObjectsAndMode/other_id (0.00s)
+    --- PASS: TestRetrieveRefundRejectsWrongObjectsAndMode/unknown_status (0.00s)
+    --- PASS: TestRetrieveRefundRejectsWrongObjectsAndMode/live_mode (0.00s)
+    --- PASS: TestRetrieveRefundRejectsWrongObjectsAndMode/not_a_refund (0.00s)
+    --- PASS: TestRetrieveRefundRejectsWrongObjectsAndMode/duplicate_key (0.00s)
+    --- PASS: TestRetrieveRefundRejectsWrongObjectsAndMode/negative_amount (0.00s)
+=== RUN   TestListRefundsPagesAndCapsAtTenPages
+--- PASS: TestListRefundsPagesAndCapsAtTenPages (0.02s)
+=== RUN   TestRefundObservationsHaveExactKeysAndNoSensitiveData
+--- PASS: TestRefundObservationsHaveExactKeysAndNoSensitiveData (0.00s)
+=== RUN   TestRefundValuesAreRedactedInEveryFormat
+--- PASS: TestRefundValuesAreRedactedInEveryFormat (0.00s)
+=== RUN   TestStripeSP16Sandbox
+    sandbox_test.go:62: NOT_RUN: SP16 requires STRIPE_SANDBOX=1 with a Stripe test key
+--- SKIP: TestStripeSP16Sandbox (0.00s)
+=== RUN   TestStripeSP05Webhook
+=== RUN   TestStripeSP05Webhook/valid_single_v1
+=== RUN   TestStripeSP05Webhook/v0_and_unknown_scheme_ignored
+=== RUN   TestStripeSP05Webhook/roll_multi_v1_second_matches
+=== RUN   TestStripeSP05Webhook/second_secret_matches
+=== RUN   TestStripeSP05Webhook/unknown_secret
+=== RUN   TestStripeSP05Webhook/missing_t
+=== RUN   TestStripeSP05Webhook/duplicate_t
+=== RUN   TestStripeSP05Webhook/only_v0
+=== RUN   TestStripeSP05Webhook/uppercase_hex
+=== RUN   TestStripeSP05Webhook/short_hex
+=== RUN   TestStripeSP05Webhook/long_hex
+=== RUN   TestStripeSP05Webhook/bad_v1_among_good
+=== RUN   TestStripeSP05Webhook/t_zero
+=== RUN   TestStripeSP05Webhook/t_leading_zero
+=== RUN   TestStripeSP05Webhook/t_over_2_40
+=== RUN   TestStripeSP05Webhook/t_not_decimal
+=== RUN   TestStripeSP05Webhook/now_plus_300_ok
+=== RUN   TestStripeSP05Webhook/now_plus_301_reject
+=== RUN   TestStripeSP05Webhook/now_minus_300_ok
+=== RUN   TestStripeSP05Webhook/now_minus_301_reject
+=== RUN   TestStripeSP05Webhook/body_byte_flip
+=== RUN   TestStripeSP05Webhook/trailing_newline_added
+=== RUN   TestStripeSP05Webhook/space_after_comma
+=== RUN   TestStripeSP05Webhook/element_without_equals
+=== RUN   TestStripeSP05Webhook/empty_key_element
+=== RUN   TestStripeSP05Webhook/sixteen_elements_ok
+=== RUN   TestStripeSP05Webhook/seventeen_elements_reject
+=== RUN   TestStripeSP05Webhook/header_over_2048
+=== RUN   TestStripeSP05Webhook/empty_header
+=== RUN   TestStripeSP05Webhook/malformed_truncated_json
+=== RUN   TestStripeSP05Webhook/malformed_duplicate_key_root
+=== RUN   TestStripeSP05Webhook/malformed_duplicate_key_nested
+=== RUN   TestStripeSP05Webhook/malformed_trailing_data
+=== RUN   TestStripeSP05Webhook/malformed_invalid_utf8
+=== RUN   TestStripeSP05Webhook/malformed_not_event_object
+=== RUN   TestStripeSP05Webhook/malformed_missing_livemode
+=== RUN   TestStripeSP05Webhook/malformed_depth_65
+=== RUN   TestStripeSP05Webhook/malformed_created_string
+=== RUN   TestStripeSP05Webhook/malformed_root_array
+=== RUN   TestStripeSP05Webhook/malformed_empty_body
+=== RUN   TestStripeSP05Webhook/connect_event_account_present
+=== RUN   TestStripeSP05Webhook/probe_session
+=== RUN   TestStripeSP05Webhook/livemode_true_projected_not_decided
+=== RUN   TestStripeSP05Webhook/refund_updated_projects_payment_intent_and_lc_refund
+=== RUN   TestStripeSP05Webhook/refund_failed_projects_same_fields
+=== RUN   TestStripeSP05Webhook/refund_created_dashboard_has_no_lc_refund
+=== RUN   TestStripeSP05Webhook/refund_null_payment_intent_projects_empty
+=== RUN   TestStripeSP05Webhook/charge_refunded_projects_payment_intent
+=== RUN   TestStripeSP05Webhook/refund_livemode_true_projected_not_decided
+=== RUN   TestStripeSP05Webhook/checkout_session_projection_unchanged
+=== RUN   TestStripeSP05Webhook/refund_bad_signature_body_flip
+=== RUN   TestStripeSP05Webhook/refund_signature_over_other_body
+=== RUN   TestStripeSP05Webhook/malformed_refund_lc_refund_not_string
+=== RUN   TestStripeSP05Webhook/malformed_refund_payment_intent_not_string
+=== RUN   TestStripeSP05Webhook/malformed_refund_duplicate_lc_refund_key
+=== RUN   TestStripeSP05Webhook/fresh_Go-signed_cases
+=== RUN   TestStripeSP05Webhook/hmac.Equal_source_guard
+=== RUN   TestStripeSP05Webhook/node_cross-check
+    webhook_test.go:160: stripe-webhook-check: 55 vectors agree (ok=17 malformed=14 signature=24)
+--- PASS: TestStripeSP05Webhook (0.09s)
+    --- PASS: TestStripeSP05Webhook/valid_single_v1 (0.00s)
+    --- PASS: TestStripeSP05Webhook/v0_and_unknown_scheme_ignored (0.00s)
+    --- PASS: TestStripeSP05Webhook/roll_multi_v1_second_matches (0.00s)
+    --- PASS: TestStripeSP05Webhook/second_secret_matches (0.00s)
+    --- PASS: TestStripeSP05Webhook/unknown_secret (0.00s)
+    --- PASS: TestStripeSP05Webhook/missing_t (0.00s)
+    --- PASS: TestStripeSP05Webhook/duplicate_t (0.00s)
+    --- PASS: TestStripeSP05Webhook/only_v0 (0.00s)
+    --- PASS: TestStripeSP05Webhook/uppercase_hex (0.00s)
+    --- PASS: TestStripeSP05Webhook/short_hex (0.00s)
+    --- PASS: TestStripeSP05Webhook/long_hex (0.00s)
+    --- PASS: TestStripeSP05Webhook/bad_v1_among_good (0.00s)
+    --- PASS: TestStripeSP05Webhook/t_zero (0.00s)
+    --- PASS: TestStripeSP05Webhook/t_leading_zero (0.00s)
+    --- PASS: TestStripeSP05Webhook/t_over_2_40 (0.00s)
+    --- PASS: TestStripeSP05Webhook/t_not_decimal (0.00s)
+    --- PASS: TestStripeSP05Webhook/now_plus_300_ok (0.00s)
+    --- PASS: TestStripeSP05Webhook/now_plus_301_reject (0.00s)
+    --- PASS: TestStripeSP05Webhook/now_minus_300_ok (0.00s)
+    --- PASS: TestStripeSP05Webhook/now_minus_301_reject (0.00s)
+    --- PASS: TestStripeSP05Webhook/body_byte_flip (0.00s)
+    --- PASS: TestStripeSP05Webhook/trailing_newline_added (0.00s)
+    --- PASS: TestStripeSP05Webhook/space_after_comma (0.00s)
+    --- PASS: TestStripeSP05Webhook/element_without_equals (0.00s)
+    --- PASS: TestStripeSP05Webhook/empty_key_element (0.00s)
+    --- PASS: TestStripeSP05Webhook/sixteen_elements_ok (0.00s)
+    --- PASS: TestStripeSP05Webhook/seventeen_elements_reject (0.00s)
+    --- PASS: TestStripeSP05Webhook/header_over_2048 (0.00s)
+    --- PASS: TestStripeSP05Webhook/empty_header (0.00s)
+    --- PASS: TestStripeSP05Webhook/malformed_truncated_json (0.00s)
+    --- PASS: TestStripeSP05Webhook/malformed_duplicate_key_root (0.00s)
+    --- PASS: TestStripeSP05Webhook/malformed_duplicate_key_nested (0.00s)
+    --- PASS: TestStripeSP05Webhook/malformed_trailing_data (0.00s)
+    --- PASS: TestStripeSP05Webhook/malformed_invalid_utf8 (0.00s)
+    --- PASS: TestStripeSP05Webhook/malformed_not_event_object (0.00s)
+    --- PASS: TestStripeSP05Webhook/malformed_missing_livemode (0.00s)
+    --- PASS: TestStripeSP05Webhook/malformed_depth_65 (0.00s)
+    --- PASS: TestStripeSP05Webhook/malformed_created_string (0.00s)
+    --- PASS: TestStripeSP05Webhook/malformed_root_array (0.00s)
+    --- PASS: TestStripeSP05Webhook/malformed_empty_body (0.00s)
+    --- PASS: TestStripeSP05Webhook/connect_event_account_present (0.00s)
+    --- PASS: TestStripeSP05Webhook/probe_session (0.00s)
+    --- PASS: TestStripeSP05Webhook/livemode_true_projected_not_decided (0.00s)
+    --- PASS: TestStripeSP05Webhook/refund_updated_projects_payment_intent_and_lc_refund (0.00s)
+    --- PASS: TestStripeSP05Webhook/refund_failed_projects_same_fields (0.00s)
+    --- PASS: TestStripeSP05Webhook/refund_created_dashboard_has_no_lc_refund (0.00s)
+    --- PASS: TestStripeSP05Webhook/refund_null_payment_intent_projects_empty (0.00s)
+    --- PASS: TestStripeSP05Webhook/charge_refunded_projects_payment_intent (0.00s)
+    --- PASS: TestStripeSP05Webhook/refund_livemode_true_projected_not_decided (0.00s)
+    --- PASS: TestStripeSP05Webhook/checkout_session_projection_unchanged (0.00s)
+    --- PASS: TestStripeSP05Webhook/refund_bad_signature_body_flip (0.00s)
+    --- PASS: TestStripeSP05Webhook/refund_signature_over_other_body (0.00s)
+    --- PASS: TestStripeSP05Webhook/malformed_refund_lc_refund_not_string (0.00s)
+    --- PASS: TestStripeSP05Webhook/malformed_refund_payment_intent_not_string (0.00s)
+    --- PASS: TestStripeSP05Webhook/malformed_refund_duplicate_lc_refund_key (0.00s)
+    --- PASS: TestStripeSP05Webhook/fresh_Go-signed_cases (0.00s)
+    --- PASS: TestStripeSP05Webhook/hmac.Equal_source_guard (0.00s)
+    --- PASS: TestStripeSP05Webhook/node_cross-check (0.08s)
+=== RUN   TestWebhookProjectsRefundAndChargeObjects
+--- PASS: TestWebhookProjectsRefundAndChargeObjects (0.00s)
+PASS
+ok  	livecommerce/internal/integrations/psp/stripe	2.258s
+=== RUN   TestFakeRefundIdempotencyCapacityAndLifecycle
+--- PASS: TestFakeRefundIdempotencyCapacityAndLifecycle (0.01s)
+=== RUN   TestFakeRefundRejectsUnknownAndForbiddenShapes
+--- PASS: TestFakeRefundRejectsUnknownAndForbiddenShapes (0.00s)
+=== RUN   TestFakeRefundFaults
+--- PASS: TestFakeRefundFaults (0.00s)
+=== RUN   TestFakeRefundListPagingAndPaymentIntentRead
+--- PASS: TestFakeRefundListPagingAndPaymentIntentRead (0.02s)
+=== RUN   TestFakeRefundDashboardAccountIsolationAndEvents
+--- PASS: TestFakeRefundDashboardAccountIsolationAndEvents (0.00s)
+=== RUN   TestFakeRefundPaymentIntentFromPaidSession
+--- PASS: TestFakeRefundPaymentIntentFromPaidSession (0.00s)
+PASS
+ok  	livecommerce/internal/integrations/psp/stripe/stripetest	1.480s
+=== RUN   TestRefundLoaderEnvironmentMustEqualProfileEnvironment
+--- PASS: TestRefundLoaderEnvironmentMustEqualProfileEnvironment (0.00s)
+=== RUN   TestStripeSL04LiveShape
+--- PASS: TestStripeSL04LiveShape (0.00s)
+=== RUN   TestRefundArgsAndOperationFamily
+--- PASS: TestRefundArgsAndOperationFamily (0.00s)
+=== RUN   TestRefundSnapshotRejectsScopeAndMoneyDrift
+--- PASS: TestRefundSnapshotRejectsScopeAndMoneyDrift (0.00s)
+=== RUN   TestRefundBackoffPollAndSuppressionReason
+--- PASS: TestRefundBackoffPollAndSuppressionReason (0.00s)
+=== RUN   TestRefundWorkerRejectsInvalidConfigurationBeforeDatabase
+--- PASS: TestRefundWorkerRejectsInvalidConfigurationBeforeDatabase (0.00s)
+PASS
+ok  	livecommerce/internal/payments	1.495s
+?   	livecommerce/internal/payments/platformstripe	[no test files]
+testing: warning: no tests to run
+PASS
+ok  	livecommerce/internal/payments/settlement	1.424s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	livecommerce/internal/payments/stripeadmin	1.477s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	livecommerce/internal/payments/stripewebhook	1.463s [no tests to run]
+=== RUN   TestProjectionInvariantsRefundAndShipment
+=== RUN   TestProjectionInvariantsRefundAndShipment/accept_shipped_order_with_head
+=== RUN   TestProjectionInvariantsRefundAndShipment/accept_refunded_and_shipped
+=== RUN   TestProjectionInvariantsRefundAndShipment/accept_refunded_late_payment
+=== RUN   TestProjectionInvariantsRefundAndShipment/accept_shipped,_url_and_name_set
+=== RUN   TestProjectionInvariantsRefundAndShipment/accept_partial_refund
+=== RUN   TestProjectionInvariantsRefundAndShipment/accept_full_refund
+=== RUN   TestProjectionInvariantsRefundAndShipment/accept_refund_in_flight_keeps_CAPTURED
+=== RUN   TestProjectionInvariantsRefundAndShipment/accept_READY_work_with_a_post-capture_review
+=== RUN   TestProjectionInvariantsRefundAndShipment/accept_merchant-cancelled_order_after_a_full_refund_keeps_READY_work
+=== RUN   TestProjectionInvariantsRefundAndShipment/accept_cancelled_order_whose_refund_failed_(cancel-refund_gap)_keeps_READY_work
+=== RUN   TestProjectionInvariantsRefundAndShipment/reject_shipped_without_head
+=== RUN   TestProjectionInvariantsRefundAndShipment/reject_head_without_shipped_state
+=== RUN   TestProjectionInvariantsRefundAndShipment/reject_voided_head_shown
+=== RUN   TestProjectionInvariantsRefundAndShipment/reject_shipment_bad_carrier
+=== RUN   TestProjectionInvariantsRefundAndShipment/reject_shipment_http_url
+=== RUN   TestProjectionInvariantsRefundAndShipment/reject_missing_refund_key
+=== RUN   TestProjectionInvariantsRefundAndShipment/reject_refund_above_total
+=== RUN   TestProjectionInvariantsRefundAndShipment/reject_READY_on_cancelled_fulfilment
+=== RUN   TestProjectionInvariantsRefundAndShipment/reject_shipment_null_tracking
+=== RUN   TestProjectionInvariantsRefundAndShipment/reject_shipment_missing_key_in_detail
+=== RUN   TestProjectionInvariantsRefundAndShipment/reject_partially_refunded_at_total
+=== RUN   TestProjectionInvariantsRefundAndShipment/reject_refunded_below_total
+=== RUN   TestProjectionInvariantsRefundAndShipment/reject_pending_without_capture
+=== RUN   TestProjectionInvariantsRefundAndShipment/reject_shipped_needs_READY_work
+=== RUN   TestProjectionInvariantsRefundAndShipment/reject_shipment_missing_key
+=== RUN   TestProjectionInvariantsRefundAndShipment/reject_shipment_extra_key
+=== RUN   TestProjectionInvariantsRefundAndShipment/reject_other_without_name
+=== RUN   TestProjectionInvariantsRefundAndShipment/reject_captured_with_refunded_amount
+=== RUN   TestProjectionInvariantsRefundAndShipment/reject_null_refund
+=== RUN   TestProjectionInvariantsRefundAndShipment/reject_READY_on_a_cancelled_order_with_live_fulfilment
+=== RUN   TestProjectionInvariantsRefundAndShipment/reject_READY_on_a_cancelled_order_that_never_captured
+=== RUN   TestProjectionInvariantsRefundAndShipment/reject_confirmed_without_capture_state
+--- PASS: TestProjectionInvariantsRefundAndShipment (0.02s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/accept_shipped_order_with_head (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/accept_refunded_and_shipped (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/accept_refunded_late_payment (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/accept_shipped,_url_and_name_set (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/accept_partial_refund (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/accept_full_refund (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/accept_refund_in_flight_keeps_CAPTURED (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/accept_READY_work_with_a_post-capture_review (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/accept_merchant-cancelled_order_after_a_full_refund_keeps_READY_work (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/accept_cancelled_order_whose_refund_failed_(cancel-refund_gap)_keeps_READY_work (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/reject_shipped_without_head (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/reject_head_without_shipped_state (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/reject_voided_head_shown (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/reject_shipment_bad_carrier (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/reject_shipment_http_url (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/reject_missing_refund_key (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/reject_refund_above_total (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/reject_READY_on_cancelled_fulfilment (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/reject_shipment_null_tracking (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/reject_shipment_missing_key_in_detail (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/reject_partially_refunded_at_total (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/reject_refunded_below_total (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/reject_pending_without_capture (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/reject_shipped_needs_READY_work (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/reject_shipment_missing_key (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/reject_shipment_extra_key (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/reject_other_without_name (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/reject_captured_with_refunded_amount (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/reject_null_refund (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/reject_READY_on_a_cancelled_order_with_live_fulfilment (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/reject_READY_on_a_cancelled_order_that_never_captured (0.00s)
+    --- PASS: TestProjectionInvariantsRefundAndShipment/reject_confirmed_without_capture_state (0.00s)
+=== RUN   TestRequestRefundInEnvironmentGuard
+=== RUN   TestRequestRefundInEnvironmentGuard/SANDBOX_attempt_in_a_LIVE_deployment
+=== RUN   TestRequestRefundInEnvironmentGuard/LIVE_attempt_in_a_SANDBOX_deployment
+=== RUN   TestRequestRefundInEnvironmentGuard/order_without_an_attempt_(NULL)
+=== RUN   TestRequestRefundInEnvironmentGuard/NULL_in_a_SANDBOX_deployment
+=== RUN   TestRequestRefundInEnvironmentGuard/LIVE_attempt_in_a_LIVE_deployment
+=== RUN   TestRequestRefundInEnvironmentGuard/SANDBOX_attempt_in_a_SANDBOX_deployment
+--- PASS: TestRequestRefundInEnvironmentGuard (0.00s)
+    --- PASS: TestRequestRefundInEnvironmentGuard/SANDBOX_attempt_in_a_LIVE_deployment (0.00s)
+    --- PASS: TestRequestRefundInEnvironmentGuard/LIVE_attempt_in_a_SANDBOX_deployment (0.00s)
+    --- PASS: TestRequestRefundInEnvironmentGuard/order_without_an_attempt_(NULL) (0.00s)
+    --- PASS: TestRequestRefundInEnvironmentGuard/NULL_in_a_SANDBOX_deployment (0.00s)
+    --- PASS: TestRequestRefundInEnvironmentGuard/LIVE_attempt_in_a_LIVE_deployment (0.00s)
+    --- PASS: TestRequestRefundInEnvironmentGuard/SANDBOX_attempt_in_a_SANDBOX_deployment (0.00s)
+=== RUN   TestRequestRefundInMapsGuardAuthorityErrorsAndValidatesEnvironment
+--- PASS: TestRequestRefundInMapsGuardAuthorityErrorsAndValidatesEnvironment (0.00s)
+=== RUN   TestRefreshRefundInEnvironmentGuard
+=== RUN   TestRefreshRefundInEnvironmentGuard/SANDBOX_attempt_in_a_LIVE_deployment
+=== RUN   TestRefreshRefundInEnvironmentGuard/LIVE_attempt_in_a_SANDBOX_deployment
+=== RUN   TestRefreshRefundInEnvironmentGuard/order_without_an_attempt_(NULL)
+=== RUN   TestRefreshRefundInEnvironmentGuard/LIVE_attempt_in_a_LIVE_deployment
+=== RUN   TestRefreshRefundInEnvironmentGuard/SANDBOX_attempt_in_a_SANDBOX_deployment
+--- PASS: TestRefreshRefundInEnvironmentGuard (0.00s)
+    --- PASS: TestRefreshRefundInEnvironmentGuard/SANDBOX_attempt_in_a_LIVE_deployment (0.00s)
+    --- PASS: TestRefreshRefundInEnvironmentGuard/LIVE_attempt_in_a_SANDBOX_deployment (0.00s)
+    --- PASS: TestRefreshRefundInEnvironmentGuard/order_without_an_attempt_(NULL) (0.00s)
+    --- PASS: TestRefreshRefundInEnvironmentGuard/LIVE_attempt_in_a_LIVE_deployment (0.00s)
+    --- PASS: TestRefreshRefundInEnvironmentGuard/SANDBOX_attempt_in_a_SANDBOX_deployment (0.00s)
+=== RUN   TestDecodeRefundListAcceptsTheSQLShapeAndChecksTotals
+--- PASS: TestDecodeRefundListAcceptsTheSQLShapeAndChecksTotals (0.01s)
+=== RUN   TestDecodeRefundResultIsExact
+--- PASS: TestDecodeRefundResultIsExact (0.00s)
+=== RUN   TestMapRefundErrorUsesOnlyStateAndFixedMessages
+--- PASS: TestMapRefundErrorUsesOnlyStateAndFixedMessages (0.00s)
+=== RUN   TestRefundServiceRejectsInvalidInputBeforeDatabase
+--- PASS: TestRefundServiceRejectsInvalidInputBeforeDatabase (0.00s)
+PASS
+ok  	livecommerce/internal/merchantorders	1.486s

@@ -148,8 +148,8 @@ Forbidden: `internal/httpapi/handler.go`, `internal/buyerhttp/handler.go`, `inte
 
 ## Verify (unit tests only; names must not start with `TestCustomersBillingCB`)
 ```sh
-GOTOOLCHAIN=go1.27.1 go vet ./... && gofmt -l internal cmd && bash scripts/dev/check-pkgdocs.sh
-GOTOOLCHAIN=go1.27.1 go test -race -count=1 ./internal/customers/... ./internal/reporting/... ./internal/httpapi ./internal/buyerhttp
+GOTOOLCHAIN=go1.27.2 go vet ./... && gofmt -l internal cmd && bash scripts/dev/check-pkgdocs.sh
+GOTOOLCHAIN=go1.27.2 go test -race -count=1 ./internal/customers/... ./internal/reporting/... ./internal/httpapi ./internal/buyerhttp
 LC_FOCUSED_TIMEOUT=1800s bash scripts/dev/test-focused.sh '^Test(T0[46]|Buyer(Capability|Checkout|OrderHistory|Retirement)|MerchantOrders|Identity|OwnerProvisioning|Migration|LiveClaims)'
 python3 scripts/check_packet.py
 ```

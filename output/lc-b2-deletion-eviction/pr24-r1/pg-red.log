@@ -1,0 +1,12 @@
+=== RUN   TestLiveConsoleLCN01SequentialClockBudget
+=== RUN   TestLiveConsoleLCN01SequentialClockBudget/429
+    live_console_rate_clock_test.go:102: later asset did not reopen at its actual completion deadline
+=== RUN   TestLiveConsoleLCN01SequentialClockBudget/usage80
+    live_console_rate_clock_test.go:102: later asset did not reopen at its actual completion deadline
+--- FAIL: TestLiveConsoleLCN01SequentialClockBudget (2.28s)
+    --- FAIL: TestLiveConsoleLCN01SequentialClockBudget/429 (2.06s)
+    --- FAIL: TestLiveConsoleLCN01SequentialClockBudget/usage80 (0.22s)
+FAIL
+FAIL	livecommerce/tests/foundation	5.248s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

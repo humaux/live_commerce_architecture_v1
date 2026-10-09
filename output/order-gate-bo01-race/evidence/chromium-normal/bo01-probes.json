@@ -1,0 +1,34 @@
+[
+  {
+    "device": "desktop",
+    "iteration": 1,
+    "sourcePath": "/zh-TW/checkout",
+    "ownerMatched": true,
+    "before": {
+      "top": 2633.28125,
+      "height": 44,
+      "documentHeight": 2705
+    },
+    "after": {
+      "top": 2633.28125,
+      "height": 44,
+      "documentHeight": 2705
+    }
+  },
+  {
+    "device": "mobile",
+    "iteration": 1,
+    "sourcePath": "/zh-TW/checkout",
+    "ownerMatched": true,
+    "before": {
+      "top": 3017.828125,
+      "height": 44,
+      "documentHeight": 3124
+    },
+    "after": {
+      "top": 3017.828125,
+      "height": 44,
+      "documentHeight": 3124
+    }
+  }
+]

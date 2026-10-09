@@ -24,6 +24,7 @@ import {
 } from "@/lib/merchant-tools-client";
 import {
   readOrderPrefill,
+  readOrderRestricted,
   createForBuyerOrder,
   CreateOrderError,
 } from "@/lib/create-order-client";
@@ -81,11 +82,13 @@ export function CreateOrderDrawer({
   store,
   conversationId,
   bundleId,
+  sessionId,
   onClose,
   onUnauthorized,
 }: DrawerTarget & {
   locale: Locale;
   store: Store;
+  sessionId?: string;
   onClose: () => void;
   onUnauthorized?: () => void;
 }) {
@@ -113,6 +116,7 @@ export function CreateOrderDrawer({
     [cap, setCap] = useState({ allowed: false, review: false, closed: false });
   const [copyState, setCopyState] = useState(""),
     [copyBusy, setCopyBusy] = useState(false);
+  const [restriction, setRestriction] = useState<"restricted" | "clear" | "unavailable">("unavailable");
   const attempt = useRef(new OrderAttempt()),
     guard = useRef<OrderGuard | null>(null),
     privateLink = useRef<string | null>(null);
@@ -140,6 +144,7 @@ export function CreateOrderDrawer({
     setCap({ allowed: false, review: false, closed: false });
     setCopyState("");
     setCopyBusy(false);
+    setRestriction("unavailable");
   }, []);
   const privacy = useInboxPrivacy(clear);
   const deniedCallback = useRef(onUnauthorized);
@@ -182,6 +187,12 @@ export function CreateOrderDrawer({
           !privacy.fence.current(ticket)
         )
           return;
+        let warning: "restricted" | "clear" | "unavailable" = "unavailable";
+        if (sessionId && data.bundles.length && permitted(store, "live:read")) {
+          try { warning = await readOrderRestricted(store.id, sessionId, data.bundles, ticket.signal) ? "restricted" : "clear"; }
+          catch (cause) { if (denied(cause)) throw cause; }
+        }
+        if (!privacy.fence.current(ticket) || (await checkedBoundary(scope)) !== scope || !privacy.fence.current(ticket)) return;
         let receipt: OrderGuard;
         try {
           receipt = new OrderGuard(window.sessionStorage, store.id, scope);
@@ -193,6 +204,7 @@ export function CreateOrderDrawer({
         setGuarded(receipt.blocked());
         setBoundary(scope);
         setPrefill(data);
+        setRestriction(warning);
         setAvailable(options);
         setValues(prefillForm(data, locale, store.currency));
       })
@@ -268,6 +280,7 @@ export function CreateOrderDrawer({
     store,
     conversationId,
     bundleId,
+    sessionId,
     locale,
     canCreate,
     privacy.visible,
@@ -519,6 +532,7 @@ export function CreateOrderDrawer({
         !guarded &&
         !duplicate && (
           <form data-testid="drawer-form" onSubmit={submit}>
+            {restriction !== "clear" && <p role="status" data-testid="drawer-blocklist-warning">{restriction === "restricted" ? c.restricted : c.restrictionUnavailable}</p>}
             {prefill.customer && (
               <p data-testid="drawer-linked-customer">{c.linked}</p>
             )}

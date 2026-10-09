@@ -187,3 +187,50 @@ test("logout during response.json discards private reads and successful write re
   }
   cookie = "A".repeat(43);
 });
+
+test("blocklist warning uses real session fences, closed booleans and every known bundle", async () => {
+  cookie = "A".repeat(43);
+  const { readOrderRestricted } = await import("../../apps/admin/lib/create-order-client.ts");
+  const other = "22222222-2222-4222-8222-222222222222";
+  const calls: string[] = [];
+  globalThis.fetch = async (url, init) => { calls.push(String(url)); assert.equal(init?.method, "GET"); assert.equal(init?.cache, "no-store"); assert.equal(init?.referrerPolicy, "no-referrer"); return reply({ restricted: String(url).endsWith(other) }); };
+  assert.equal(await readOrderRestricted(id, id, [id, other]), true);
+  assert.equal(calls.length, 2);
+  assert.ok(calls.every(u => u.startsWith(`/api/stores/${id}/live-sessions/${id}/claims/blocklist/check?bundle_id=`)));
+  for (const value of [{ restricted: "false" }, { restricted: false, note: "PRIVATE_NOTE" }, null]) {
+    globalThis.fetch = async () => reply(value);
+    await assert.rejects(readOrderRestricted(id, id, [id]), /unavailable/);
+  }
+  globalThis.fetch = async () => reply({ restricted: false });
+  assert.equal(await readOrderRestricted(id, id, [id]), false);
+  globalThis.fetch = async () => new Response('{"restricted":true}', { status: 200, headers: { "cache-control": "no-store", "content-type": "application/json" } });
+  const responseFetch = globalThis.fetch;
+  globalThis.fetch = async (...args) => { const r = await responseFetch(...args); cookie = "B".repeat(43); return r; };
+  await assert.rejects(readOrderRestricted(id, id, [id]), /unauthorized/);
+  cookie = "A".repeat(43);
+  // A prior restricted result cannot preserve private UI after any later permission failure.
+  for (const status of [401, 403]) {
+    globalThis.fetch = async (url) => reply({ restricted: true }, String(url).endsWith(other) ? status : 200);
+    await assert.rejects(readOrderRestricted(id, id, [id, other]), /unauthorized/);
+  }
+  globalThis.fetch = async (url) => reply({ restricted: true }, String(url).endsWith(other) ? 503 : 200);
+  assert.equal(await readOrderRestricted(id, id, [id, other]), true);
+  globalThis.fetch = async (url) => reply({ restricted: false }, String(url).endsWith(other) ? 503 : 200);
+  await assert.rejects(readOrderRestricted(id, id, [id, other]), /unavailable/);
+  for (const revoke of ["cookie", "abort"]) {
+    const duringParse = new AbortController();
+    globalThis.fetch = async () => {
+      const response = reply({ restricted: true });
+      response.json = async () => {
+        if (revoke === "cookie") cookie = "B".repeat(43);
+        else duringParse.abort();
+        return { restricted: true };
+      };
+      return response;
+    };
+    await assert.rejects(readOrderRestricted(id, id, [id], duringParse.signal));
+    cookie = "A".repeat(43);
+  }
+  const abort = new AbortController(); abort.abort();
+  await assert.rejects(readOrderRestricted(id, id, [id], abort.signal));
+});

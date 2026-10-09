@@ -4,10 +4,16 @@ Used by: check-gates.sh, unit authors and integrator. -->
 # Gates: what runs, what it proves, how to run it
 
 Status: hand-kept, mechanically checked by `bash scripts/dev/check-gates.sh` (CI). The script fails when a
-mode in the usage line of `scripts/dev/test-local.sh` has no row here, when a row names a mode that no
+mode in the registry of `scripts/dev/test-local.sh` has no row here, when a row names a mode that no
 longer exists, when any tracked `*.spec.*|*.test.*` file (whole repo) is run by no gate, or when CI stops invoking `scripts/dev/test-node.sh`. Nothing may exist that
 no gate runs (PROCESS.md, unit maintainability). Evidence labels follow `AGENTS.md` (DESIGN, MODEL_ONLY,
 MOCK, SANDBOX, LIVE, NOT_RUN): a pass here is only ever as strong as the label in its "proves" cell.
+
+## Mode registration
+
+`test-local.sh` owns one native Bash case registry. Add one entry defining `lc_build`, `lc_fixture`, `lc_prepare()` and `lc_run()`; usage, admission, build selection and dispatch follow that entry. Keep command bodies in the entry and the shared task-owned PostgreSQL lifecycle in `test-local-runtime.sh`. The selector reads this registry as data, including at an explicit Git revision; malformed, duplicate or unsupported case arms fail closed.
+
+`bash scripts/dev/test-local.sh --list` lists the modes, including the default `foundation`. `bash scripts/dev/test-local.sh --dry-run MODE` prints the selected shell phases with their command/environment expressions without executing builds, tests or fixtures. Dry-run is not a runtime acceptance gate. The existing `LC_SWEEP_SHARD=1/10 bash scripts/dev/test-local.sh --browser-click-sweep` invocation is the CI equivalent of `--browser-click-sweep@1/10`.
 
 ## Tiers
 
@@ -378,5 +384,9 @@ Stripe login fails its privilege validation); see `output/promotions/tests/DEFEC
 | `--browser-reports` | W6-U1 four report tabs, 92-day range, currency/environment/offline splits, sort and audited CSV; real scoped Go/PG, signed MOCK IdP; zh-TW/en, 1440/390 | MOCK (BROWSER) | `bash scripts/dev/test-local.sh --browser-reports` (GitHub only) |
 | `tests/admin/reports.spec.ts` | `--browser-reports` |
 | `tests/admin/customer-tags.spec.ts` | `--browser-customers-billing` |
+| `tests/admin/import-readiness.test.mjs` | `test-node.sh`: execute the actual spec login helper with minimal Node browser facilities; visible store selector readiness, zh-TW390/en1440 and Secure/httpOnly cookie assertions. Hidden sign-out regression RED→GREEN; native browser timing remains GitHub. |
 | `tests/admin/w6-route-seam.test.mjs` | `test-node.sh`: actual routes/shared auth/cookies/CSRF; bare/encoded tag query 422, valid tag and legacy list parity, report JSON/CSV private headers with `Vary: Cookie`, no Cookie/CSRF forwarding. Network-only MOCK; named P2 pre-fix red to green, browser acceptance remains GitHub. |
+
+| `--browser-migration-import` | W5-U1 signed HTTPS customer/history CSV real clicks, private row verdicts, original byte/mapping replay, stale/UNKNOWN, consent/tombstone/city warnings and read-only paged archive; real scoped Go/PG, MOCK IdP; zh-TW/en1440/390 | MOCK (BROWSER) | `bash scripts/dev/test-local.sh --browser-migration-import` (GitHub only) |
+| `tests/admin/import-wizard.spec.ts` | `--browser-migration-import` |
 LC-U2b: run `--browser-inbox` on a GitHub runner, then repeat with `LC_INBOX_CALIBRATION=retain-thread`. The injected real hidden-thread defect must fail `INU05 hidden thread retains private DM`; a generic failure does not calibrate the gate. Keep both run IDs and artifacts tied to the same SHA. INU09 must issue the flagged bundle link through the real BFF, compare the native clipboard credential hash with PG and preserve a token-free command receipt; its credential-bearing scenario keeps trace/video off. Locale coverage is zh-TW, zh-CN and en at 1440 and 390 per the integrator correction; deferred backend projections/link version remain honest unavailable states until LC-B3b.

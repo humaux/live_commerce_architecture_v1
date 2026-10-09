@@ -1,6 +1,10 @@
+// Purpose: Product edit payload contract and presence-aware SKU regression tests.
+// Depends on: real product-document serializer and catalog-v2-model; catalog-inventory-v1 §g.
+// Used by: scripts/dev/test-node.sh; browser product-editor supplies real HTTP/PG acceptance.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  createDocument,
   draftFromDetail,
   editDocument,
   newRow,
@@ -60,7 +64,6 @@ test("PE14 new edit SKU carries its own shipping and clears no existing fields",
   assert.equal(patch.weight_grams, undefined);
   assert.deepEqual((patch.skus as Record<string, unknown>[])[0], {
     option_values: [],
-    code: "NEW",
     keyword: "",
     active: true,
     price_minor: 8000,
@@ -151,4 +154,16 @@ test("PE14 no-op has no command fields and changed axes explicitly archive omitt
     expected_version: 4,
     skus: [{ id: detail.skus[0].id, active: false }],
   });
+});
+
+test("PE14 replacement SKU edit excludes create-only code from the strict patch grammar", () => {
+  const draft = draftFromDetail(detail);
+  draft.axes = [{ name: "Size", values: ["S"] }];
+  draft.rows = [{ ...newRow(["S"]), price: "95", quantity: "9", code: "invalid stale code!" }];
+  const patch = editDocument(draft, detail, "TWD");
+  const rows = patch.skus as Record<string, unknown>[];
+  assert.equal(Object.hasOwn(rows[0], "code"), false);
+  assert.throws(() => createDocument(draft, "TWD"), /code/);
+  assert.deepEqual(rows[0].stock, { mode: "tracked", opening_qty: 9 });
+  assert.deepEqual(rows[1], { id: detail.skus[0].id, active: false });
 });

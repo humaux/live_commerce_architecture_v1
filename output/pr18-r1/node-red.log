@@ -1,0 +1,274 @@
+✖ PR18 A8 clears names synchronously and keeps loaded older pages through a head poll (14.700667ms)
+✖ PR18 A8 hides clear before effects even without pagination (1.747917ms)
+✖ PR18 quiet A2 stream refreshes delayed claim marks without a new sequence or user refresh (2.263625ms)
+✖ K3 A8 private polls every 10s, backs off, resets, pauses hidden and stops off-filter (3.576333ms)
+✖ K3 A8 unreplied polls every 10s, backs off, resets, pauses hidden and stops off-filter (2.190167ms)
+✔ K3 pasted tab is refused with invalid_text copy before any reply POST (1.453667ms)
+✔ real SQL UNKNOWN mark blocks public-mode switching without a local receipt (0.568125ms)
+✔ PR18 unknown public receipt has the correct cross-comment fence (1.408708ms)
+✖ PR18 queued public receipt has the correct cross-comment fence (1.006208ms)
+✔ actual A2 hook fake clock: 3/6/12/24/30 backoff, success reset, hide clears and stops, 403 locks (3.694208ms)
+✔ actual reset clears selected buyer and rereads without the old epoch cursor (1.030208ms)
+✔ reply hints, coded error, UNKNOWN and capability state execute the actual composer (1.072625ms)
+✖ PR18 A3 invalid_ref remains a definite 422 refusal (0.7155ms)
+✖ PR18 a full history buffer stops paging without discarding rows or advancing its cursor (1.282916ms)
+✔ K3 reply text rejects every C0/C1 control except newline (0.314292ms)
+✔ SQL operation marks map to every merchant-visible delivery state (0.062625ms)
+✔ real bridge sealCursor uses payload.signature rather than plain base64url (8.871708ms)
+✔ A2 grammar refuses private/duplicate/ambiguous cursors and keys on reads (0.831042ms)
+✔ A3-A5 exact comment ref and bodies; explicit preemption private only (0.144625ms)
+✔ A4/A5 preserve frozen refusal codes, never provider/debug text (0.062792ms)
+✔ reset invalidates old buffers and cursor before reread; older page cannot advance live cursor (0.110083ms)
+✔ filter resources have only authorised opaque ids; backoff is capped and success resets (0.095458ms)
+✖ PR18 real BFF preserves invalid_ref and cursor errors without upstream retry (15.352959ms)
+✖ PR18 valid A2 Unicode/escaped pages exceed 1 MiB but A8 cap stays unchanged (7.528583ms)
+✔ K3 comment-only no_source cannot widen the existing inbox error seam (4.055958ms)
+✖ LC-U2a real BFF seam A2-A5 exact grammar, privacy, denial and no diagnostic reflection (5.503667ms)
+✔ A8/A9/A13 and published templates: exact reads forward once with no-store (3.322916ms)
+✔ real streamed POST bodies: A10-A14 exact keys reach upstream (6.866125ms)
+✔ query, read headers, methods and body allowlists refuse before upstream (4.785292ms)
+✔ session, CSRF and store authority precede content forwarding (1.105292ms)
+✔ A12 fixed codes preserved; arbitrary upstream diagnostics stripped (5.049959ms)
+✔ client preserves codes and receipt; changed/aborted session cannot publish private response (5.886042ms)
+✔ A9 admits a full page of valid Unicode replies while bounding private response bytes (3.363709ms)
+✔ non-JSON upstream 401 still expires both authentication cookies without diagnostic leakage (0.623666ms)
+✔ real M7 response keeps no-referrer after matching Next production header rules (17.777083ms)
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/apps/admin/lib/studio-client.ts:20
+  // 4xx answer, for callers that word specific refusals; never set for an unknown result.
+  constructor(readonly code: StudioErrorCode, readonly api = "", readonly retryAfterMs = 0, readonly status = 0) { super(code); }
+                       ^^^^^^^^^^^^^^^^^^^^^
+}
+
+SyntaxError [ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX]: TypeScript parameter property is not supported in strip-only mode
+    at parseTypeScript (node:internal/modules/typescript:68:40)
+    at processTypeScriptCode (node:internal/modules/typescript:146:42)
+    at stripTypeScriptModuleTypes (node:internal/modules/typescript:209:22)
+    at ModuleLoader.<anonymous> (node:internal/modules/esm/translators:641:29)
+    at #translate (node:internal/modules/esm/loader:451:20)
+    at afterLoad (node:internal/modules/esm/loader:507:29)
+    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:512:12)
+    at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:555:36)
+    at afterResolve (node:internal/modules/esm/loader:603:52)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:609:12) {
+  code: 'ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX'
+}
+
+Node.js v24.15.0
+✖ tests/admin/live-console-bff.test.ts (74.307917ms)
+ℹ tests 36
+ℹ suites 0
+ℹ pass 24
+ℹ fail 12
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 309.994291
+
+✖ failing tests:
+
+test at tests/admin/comment-stream-hooks.test.ts:32:1
+✖ PR18 A8 clears names synchronously and keeps loaded older pages through a head poll (14.700667ms)
+  AssertionError [ERR_ASSERTION]: background head must not discard loaded tail
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/comment-stream-hooks.test.ts:41:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:48:1
+✖ PR18 A8 hides clear before effects even without pagination (1.747917ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/comment-stream-hooks.test.ts:54:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:56:1
+✖ PR18 quiet A2 stream refreshes delayed claim marks without a new sequence or user refresh (2.263625ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + undefined
+  - '22222222-2222-4222-8222-222222222222'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/comment-stream-hooks.test.ts:63:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: '22222222-2222-4222-8222-222222222222',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:68:45
+✖ K3 A8 private polls every 10s, backs off, resets, pauses hidden and stops off-filter (3.576333ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  4 !== 3
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/comment-stream-hooks.test.ts:82:128)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 4,
+    expected: 3,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:68:45
+✖ K3 A8 unreplied polls every 10s, backs off, resets, pauses hidden and stops off-filter (2.190167ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  4 !== 3
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/comment-stream-hooks.test.ts:82:128)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 4,
+    expected: 3,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:102:50
+✖ PR18 queued public receipt has the correct cross-comment fence (1.006208ms)
+  AssertionError [ERR_ASSERTION]: only UNKNOWN blocks a new comment after navigation
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/comment-stream-hooks.test.ts:161:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream.test.ts:23:1
+✖ PR18 A3 invalid_ref remains a definite 422 refusal (0.7155ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + null
+  - 'invalid_ref'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/comment-stream.test.ts:24:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: null,
+    expected: 'invalid_ref',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream.test.ts:26:1
+✖ PR18 a full history buffer stops paging without discarding rows or advancing its cursor (1.282916ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'skipped'
+  - 'original'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/comment-stream.test.ts:30:51)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'skipped',
+    expected: 'original',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-bff.test.ts:146:1
+✖ PR18 real BFF preserves invalid_ref and cursor errors without upstream retry (15.352959ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  503 !== 422
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/inbox-bff.test.ts:150:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 503,
+    expected: 422,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-bff.test.ts:155:1
+✖ PR18 valid A2 Unicode/escaped pages exceed 1 MiB but A8 cap stays unchanged (7.528583ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  503 !== 200
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/inbox-bff.test.ts:161:86)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 503,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-bff.test.ts:173:1
+✖ LC-U2a real BFF seam A2-A5 exact grammar, privacy, denial and no diagnostic reflection (5.503667ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  422 !== 400
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/inbox-bff.test.ts:185:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 422,
+    expected: 400,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-console-bff.test.ts:1:1
+✖ tests/admin/live-console-bff.test.ts (74.307917ms)
+  'test failed'

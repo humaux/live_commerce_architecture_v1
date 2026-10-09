@@ -1,0 +1,31 @@
+=== RUN   TestLiveConsoleLCN02IGFactsBridgeGraphBranch
+--- PASS: TestLiveConsoleLCN02IGFactsBridgeGraphBranch (13.75s)
+=== RUN   TestLiveConsoleLCN02IGFactsFallbackAndUnavailable
+    live_console_comments_facts_test.go:237: webhook facts reply {Found:false CreatedAt:0001-01-01 00:00:00 +0000 UTC IsPage:false IsReply:false} err=FATAL: terminating connection due to idle-in-transaction timeout (SQLSTATE 25P03)
+--- FAIL: TestLiveConsoleLCN02IGFactsFallbackAndUnavailable (9.39s)
+=== RUN   TestLiveConsoleLCN01LeaseAndTokenFence
+--- PASS: TestLiveConsoleLCN01LeaseAndTokenFence (0.26s)
+=== RUN   TestLiveConsoleLCN01CapsAndNoPoll
+--- PASS: TestLiveConsoleLCN01CapsAndNoPoll (0.25s)
+=== RUN   TestLiveConsoleLCN01BufferCapAgeAndCursor
+=== RUN   TestLiveConsoleLCN01BufferCapAgeAndCursor/ring-cap
+=== RUN   TestLiveConsoleLCN01BufferCapAgeAndCursor/age-out
+=== RUN   TestLiveConsoleLCN01BufferCapAgeAndCursor/idle-drop-reset
+=== RUN   TestLiveConsoleLCN01BufferCapAgeAndCursor/cursor-tamper-and-paging-next
+--- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor (7.39s)
+    --- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor/ring-cap (0.19s)
+    --- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor/age-out (0.24s)
+    --- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor/idle-drop-reset (3.71s)
+    --- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor/cursor-tamper-and-paging-next (3.25s)
+=== RUN   TestLiveConsoleLCN02BridgeStatusesAndFacts
+--- PASS: TestLiveConsoleLCN02BridgeStatusesAndFacts (3.24s)
+=== RUN   TestLiveConsoleLCN04NoCommentTextPersisted
+--- PASS: TestLiveConsoleLCN04NoCommentTextPersisted (0.55s)
+=== RUN   TestLiveConsoleLCN05PrintAndMarks
+--- PASS: TestLiveConsoleLCN05PrintAndMarks (0.18s)
+=== RUN   TestLiveConsoleLCN01DeletionEviction
+--- PASS: TestLiveConsoleLCN01DeletionEviction (2.25s)
+FAIL
+FAIL	livecommerce/tests/foundation	38.022s
+FAIL
+test-focused: top-level PASS=8 FAIL=1 SKIP=0 exit=1

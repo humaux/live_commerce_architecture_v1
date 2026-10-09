@@ -1,0 +1,11 @@
+=== RUN   TestCommentDeletionDelayedFailureBackoffStartsAfterResponse
+=== RUN   TestCommentDeletionDelayedFailureBackoffStartsAfterResponse/429
+    comment_deletion_test.go:294: another source called 2 times before response-completion + backoff
+=== RUN   TestCommentDeletionDelayedFailureBackoffStartsAfterResponse/200
+    comment_deletion_test.go:294: another source called 2 times before response-completion + backoff
+--- FAIL: TestCommentDeletionDelayedFailureBackoffStartsAfterResponse (0.09s)
+    --- FAIL: TestCommentDeletionDelayedFailureBackoffStartsAfterResponse/429 (0.04s)
+    --- FAIL: TestCommentDeletionDelayedFailureBackoffStartsAfterResponse/200 (0.04s)
+FAIL
+FAIL	livecommerce/internal/integrations/metareply	1.264s
+FAIL

@@ -1,6 +1,6 @@
 module livecommerce
 
-go 1.27.1
+go 1.27.2
 
 require (
 	github.com/coreos/go-oidc/v3 v3.21.0
@@ -10,7 +10,7 @@ require (
 	github.com/riverqueue/river/rivertype v0.40.0
 	golang.org/x/crypto v0.57.0
 	golang.org/x/image v0.46.0
-	golang.org/x/net v0.59.0
+	golang.org/x/net v0.60.0
 	golang.org/x/oauth2 v0.37.0
 	golang.org/x/text v0.42.0
 )

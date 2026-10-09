@@ -1,0 +1,18 @@
+{
+  "_header": {
+    "Purpose": "pin K3 current command/hash evidence",
+    "Depends on": "actual source and original main raw SHA256=abd4cfc6caf217452009eed2c3116c71b3a8d70b4cb71e66ee5fcd119488d34b",
+    "Used by": "integrator CI normal/calibration"
+  },
+  "Purpose": "pre-fix real form/CSV acceptance red",
+  "command": [
+    "node",
+    "--test",
+    "--experimental-strip-types",
+    "tests/admin/import-view.test.ts",
+    "tests/admin/import-coordinator.test.mjs"
+  ],
+  "state": "finished",
+  "exit_code": 1,
+  "at": "2026-10-07T12:59:12.637576+00:00"
+}

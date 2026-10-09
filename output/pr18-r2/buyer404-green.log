@@ -1,0 +1,10 @@
+✔ PR18 buyer-panel read 404: stays local (retention-purged or gone selection), console keeps access (12.71425ms)
+✔ PR18 buyer-panel read 403: revokes the console scope (1.148292ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 283.370583

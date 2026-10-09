@@ -187,6 +187,10 @@ try {
    remaining=prefill.items.find(item=>item.sku_id===sku)?.live_quantity_remaining;
    assert.equal(remaining,2,"fresh claim A15 remaining quantity is exactly two");
   });
+  await expect(drawer.getByTestId("drawer-blocklist-warning")).toBeVisible();
+  const restrictedCopy={en:"This buyer is on the restricted list.","zh-TW":"此買家已在限制名單中。","zh-CN":"此买家已在限制名单中。"};
+  await expect(drawer.getByTestId("drawer-blocklist-warning")).toContainText(restrictedCopy[locale]);
+  record("blocklist warning","open by real BuyerPanel click","restricted boolean warning visible");
   await expect(drawer.getByTestId("drawer-linked-customer")).toBeVisible();
   await expect(drawer.getByTestId("drawer-name")).toHaveValue("王小明");
   await expect(drawer.getByTestId("drawer-phone")).toHaveValue("0912-345-678");
@@ -201,6 +205,8 @@ try {
   await expect(drawer.getByTestId(`drawer-quantity-${sku}`)).toHaveValue("2");
   await drawer.getByTestId("drawer-mode-bank_transfer").check();
   await drawer.getByTestId("drawer-send-payment-link").check();
+  // The valid payment choice and Quote finish after A15; restriction must not disable that ready form.
+  await expect(drawer.getByTestId("drawer-submit")).toBeEnabled();
   const linkedReply=await submit(page,drawer);assert.equal(linkedReply.status(),201);
   const linked=await linkedReply.json();
   assert.equal(linked.send.state,"not_sent");assert.equal(linked.send.reason,"window_closed");

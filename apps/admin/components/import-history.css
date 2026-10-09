@@ -1,0 +1,18 @@
+/* Purpose: constrained responsive historical-order table and navigation, including 390px customer detail.
+ * Depends on: shared TableFrame scrolling and admin theme tokens.
+ * Used by: CustomerHistoricalOrders; no live-order affordances. */
+.import-history { min-width: 0; max-width: 100%; margin-block-start: var(--ui-space-6); }
+.import-history-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--ui-space-2); }
+.import-history-heading h2 { margin-block: var(--ui-space-2); }
+.import-history-frame { max-width: 100%; min-width: 0; }
+.import-history-scroll { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+.import-history table { border-collapse: collapse; width: 100%; min-width: 42rem; }
+.import-history th, .import-history td { border-block-end: 1px solid var(--line); text-align: start; padding: var(--ui-space-3) var(--ui-space-2); vertical-align: top; overflow-wrap: anywhere; }
+.import-history td:first-child { max-width: 12rem; }
+.import-history td:nth-child(5) { max-width: 22rem; white-space: pre-wrap; }
+.import-history-money { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.import-history-pages { display: flex; align-items: center; flex-wrap: wrap; gap: var(--ui-space-3); margin-block-start: var(--ui-space-3); }
+.import-history button { min-height: var(--ui-target); padding: var(--ui-space-2) var(--ui-space-3); cursor: pointer; }
+.import-history button:disabled { cursor: default; opacity: .6; }
+.import-history :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+@media (max-width: 480px) { .import-history th, .import-history td { padding: var(--ui-space-2); } }

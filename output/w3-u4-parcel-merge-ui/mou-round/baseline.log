@@ -1,0 +1,184 @@
+✔ COD collect projection admits the server amount and rejects inconsistent money (6.449417ms)
+✔ MOU parser accepts exact frozen DTO and rejects malformed identity, money and state (1.425458ms)
+✔ MOU detail parser rejects spoofed recipient, pickup and mismatched money (0.321209ms)
+✔ summary admits the refunded and shipped states with the amended invariants (0.081333ms)
+✔ summary rejects the shipped/refunded combinations the contract forbids (0.1725ms)
+✔ order filter values and detail shipment stay in step with MERCHANT_SHIPPED (0.56075ms)
+✔ tracking url rules: https only, dotted host, no userinfo, port, fragment or control characters (0.068583ms)
+✔ shipment history carries merchant-only fields and stays consistent (0.1745ms)
+✔ refund list parser checks capacity arithmetic, closed enums and optional failure_reason (0.302958ms)
+✔ order-actions is exactly three booleans (0.832125ms)
+✔ refund amount entry converts exactly and enforces the TWD whole-dollar step as a hint (25.506542ms)
+✔ CVSA01 pay-at-pickup summary: CONFIRMED without payment is valid only in that mode (0.340916ms)
+✔ CVSA02 detail: pickup_source must agree with the pickup verification kind; new chains and kinds parse (0.371792ms)
+✔ CVSA03 the cvs_pending list filter exists beside the older filters (0.047375ms)
+✔ BTA01 bank-transfer summary: valid states, and every card or pickup invariant it must not borrow (0.212583ms)
+✔ READY work is valid on a merchant-cancelled captured order, still refused when never captured or not cancelled (0.067167ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 135.628875
+✔ XFM01 settings parse: exact keys, ranges and the enabled-needs-details rule (0.8595ms)
+✔ XFM02 settings body builder: whole hours 6..168, trimmed fields, the exact frozen keys (0.298708ms)
+✔ XFM03 order transfer detail: closed shape and the state/field agreement (0.275ms)
+✔ XFM04 decisions: which button each state offers, and the reject body (0.116042ms)
+✔ XFM05 copy: the three locales carry every key, state and refusal text (0.160834ms)
+✔ XFM06 finance rows: the 11-key shape parses, and a transfer pair without the pickup pair is refused (0.459167ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 77.725792
+✔ parses never-published, published and bound states (0.598375ms)
+✔ rejects anything outside the closed shape (0.933875ms)
+✔ parses the domain list and the one-time request instructions (0.208417ms)
+✔ rejects domain shapes outside the closed contract (0.178875ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 64.145833
+✔ merge suggestions accept the frozen shape (server-masked recipient) and reject drift (0.948166ms)
+✔ created group requires the OPEN state and its members (0.100125ms)
+✔ dissolved group is exactly id/state/version (0.064416ms)
+✔ group shipment carries one SHIPPED version per member (1.04675ms)
+✔ open groups (GET parcel-groups) accept the frozen shape and fail closed on drift (1.399292ms)
+✔ reconcile: a reload rebuilds OPEN panels, a vanished OPEN group is dropped, history and live versions are kept (0.206791ms)
+✔ three locales cover the same keys and every refusal code (0.206875ms)
+✔ the owner-ruling sentence is exact in all three locales (0.042917ms)
+✔ the in_parcel_group copy is the same sentence in parcels-copy (blocked + errors) and orders-copy, in every locale (0.070625ms)
+✔ groupOfOrder prefers the OPEN group over retained SHIPPED/DISSOLVED history (0.105833ms)
+✔ parcelOrderNumber is the canonical LC-<32 uppercase hex> order number and matches the open-group parser (0.090583ms)
+✔ parcel refresh generation: bumped by every successful poll, whatever the cursor (0.034583ms)
+✔ parcel refresh generation: an in_parcel_group refusal bumps it, other refusals do not (0.046041ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 73.861917
+✔ bodyless dissolve DELETE (empty body stream, no content-length) reaches Go with the CAS query, no body, no key (13.636792ms)
+✔ every parcel DELETE must carry exactly one expected_version >= 1 (never forwarded without it) (1.686541ms)
+✔ a DELETE that declares a body or chunked framing is refused (0.284958ms)
+✔ DELETE needs the session, origin and CSRF like every command; other DELETEs stay unsupported (0.659791ms)
+✔ GET parcel-groups (open groups read) and merge-suggestions pass with no query; a query or key is refused (4.713834ms)
+✔ exactly the five W3-07B resources route (0.450125ms)
+✔ dissolve carries exactly ?expected_version=N (N >= 1) (0.091417ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 239.512792
+
+> live-commerce-workspace@ build:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 144ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1626ms
+  Running TypeScript ...
+  Finished TypeScript in 314ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/15) ...
+  Generating static pages using 9 workers (3/15)
+  Generating static pages using 9 workers (7/15)
+  Generating static pages using 9 workers (11/15)
+✓ Generating static pages using 9 workers (15/15) in 54ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/ads
+├ ƒ /[locale]/ads/attribution
+├ ƒ /[locale]/billing
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/customers
+├ ƒ /[locale]/customers/[customer]
+├ ƒ /[locale]/design
+├ ƒ /[locale]/finance
+├ ƒ /[locale]/finance/reports
+├ ƒ /[locale]/inventory
+├ ƒ /[locale]/invite/[token]
+├ ƒ /[locale]/messages
+├ ƒ /[locale]/orders
+├ ƒ /[locale]/orders/cvs-print
+├ ƒ /[locale]/orders/new
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[product]
+├ ƒ /[locale]/products/import
+├ ƒ /[locale]/promotions
+├ ƒ /[locale]/reset
+├ ƒ /[locale]/returns
+├ ƒ /[locale]/settings
+├ ƒ /[locale]/settings/operations
+├ ƒ /[locale]/settings/payments/card
+├ ƒ /[locale]/settings/settlements
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/studio
+├ ƒ /[locale]/studio/claims
+├ ƒ /[locale]/team
+├ ƒ /api/ads/meta/callback
+├ ƒ /api/ads/meta/connect
+├ ƒ /api/auth/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/password/login
+├ ƒ /api/auth/password/reset
+├ ƒ /api/auth/password/signup
+├ ƒ /api/auth/password/verify
+├ ƒ /api/meta/callback
+├ ƒ /api/meta/connect
+├ ƒ /api/onboarding/initial-store
+├ ƒ /api/stores
+├ ƒ /api/stores/[store]/[...resource]
+├ ƒ /api/stores/[store]/customers
+├ ƒ /api/stores/[store]/customers/[customer]/notes
+├ ƒ /api/stores/[store]/customers/[customer]/notes/[note]
+├ ƒ /api/stores/[store]/customers/[customer]/tags
+├ ƒ /api/stores/[store]/customers/tags
+├ ƒ /api/stores/[store]/customers/tags/[tag]
+├ ƒ /api/stores/[store]/orders/export
+├ ƒ /api/stores/[store]/orders/pick-list
+├ ƒ /api/stores/[store]/reports/[report]
+├ ƒ /api/stores/[store]/shipments/cvs-batch
+├ ƒ /api/stores/[store]/tools/[...resource]
+├ ƒ /api/team/[action]
+├ ƒ /site/[locale]/[page]
+├ ƒ /site/robots.txt
+└ ƒ /site/sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packaged standalone admin server and static assets.
+=== RUN   TestBrowserMerchantOrdersUIRealChain
+    browser_merchant_orders_ui_test.go:515: MOU real-chain browser cases, trusted native visibility, PG read-only facts and W3-07B parcel-merge clicks checked; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui/output/playwright/merchant-orders-c-browser/20261008T093555.272733000
+--- PASS: TestBrowserMerchantOrdersUIRealChain (85.53s)
+PASS
+ok  	livecommerce/tests/foundation	87.729s
+PASS: isolated merchant C order UI + W3-07B parcel-merge UI; signed MOCK IdP and local payment fixtures, not production/provider acceptance.

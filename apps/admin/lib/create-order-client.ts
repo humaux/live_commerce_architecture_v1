@@ -4,6 +4,7 @@
 // Invariants: I01/I02/I05/I08/I09; no storage, logging, automatic retry or client price inputs.
 import { csrfCookie, sessionBoundary } from "./settings-client";
 import { canonicalUUID } from "./orders-model.ts";
+import { validClaimRestriction } from "./claims-request.ts";
 import {
   forBuyerError,
   parseOrderPrefill,
@@ -50,6 +51,38 @@ function privateJSON(response: Response): boolean {
     response.headers.get("content-type")?.split(";", 1)[0] ===
       "application/json"
   );
+}
+/** Read the warning for server-known bundle references; never changes restrictions or order eligibility. */
+export async function readOrderRestricted(store: string, session: string, bundles: readonly string[], signal?: AbortSignal): Promise<boolean> {
+  if (!canonicalUUID.test(store) || !canonicalUUID.test(session) || !bundles.length || bundles.length > 50 || bundles.some(id => !canonicalUUID.test(id)))
+    throw new CreateOrderError("invalid_request", 422);
+  const csrf = csrfCookie(), boundary = await fence(csrf), budget = timeout(signal);
+  let restricted = false, failed = false;
+  for (const bundle of new Set(bundles)) {
+    budget.throwIfAborted();
+    try {
+      const response = await fetch(`/api/stores/${store}/live-sessions/${session}/claims/blocklist/check?bundle_id=${bundle}`, {
+        method: "GET", credentials: "same-origin", cache: "no-store", redirect: "error", referrerPolicy: "no-referrer", signal: budget,
+      });
+      if (response.status === 401 || response.status === 403) throw new CreateOrderError("unauthorized", response.status);
+      if (response.status !== 200 || !privateJSON(response)) throw new CreateOrderError("unavailable", 503);
+      const value: unknown = await response.json();
+      await fence(csrf, boundary);
+      budget.throwIfAborted();
+      if (!validClaimRestriction(value)) throw new CreateOrderError("unavailable", 503);
+      restricted ||= value.restricted;
+    } catch (cause) {
+      await fence(csrf, boundary);
+      budget.throwIfAborted();
+      if (cause instanceof CreateOrderError && [401, 403].includes(cause.status)) throw cause;
+      failed = true;
+    }
+  }
+  await fence(csrf, boundary);
+  budget.throwIfAborted();
+  if (restricted) return true;
+  if (failed) throw new CreateOrderError("unavailable", 503);
+  return false;
 }
 /** Read the authorized prefill; abort and discard on drawer/store/session change. */
 export async function readOrderPrefill(

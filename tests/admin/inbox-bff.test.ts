@@ -143,6 +143,33 @@ async function call(path: string, over: Options = {}) {
   };
 }
 const base = `inbox/conversations/${cid}`;
+test("PR18 real BFF preserves invalid_ref and cursor errors without upstream retry", async t=>{
+  t.after(()=>{answer={status:200,body:JSON.stringify({items:[],next_cursor:"",unread_total:0})};});
+  answer={status:422,body:JSON.stringify({code:"invalid_ref"})};
+  const denied=await call(`live-sessions/${cid}/comments/123/print`,{method:"POST",body:{}});
+  assert.equal(denied.status,422);assert.equal(denied.body.code,"invalid_ref");assert.equal(denied.body.retryable,false);
+  const before=seen.length;
+  const cursor=await call(`live-sessions/${cid}/comments`,{query:"?after_epoch=1&after_seq=-1"});
+  assert.equal(cursor.status,400);assert.equal(cursor.body.code,"invalid_cursor");assert.equal(seen.length,before);
+});
+test("PR18 valid A2 Unicode/escaped pages exceed 1 MiB but A8 cap stays unchanged",async t=>{
+  t.after(()=>{answer={status:200,body:JSON.stringify({items:[],next_cursor:"",unread_total:0})};});
+  for(const text of ["漢".repeat(8000),"<".repeat(8000)]) {
+    // Network-edge Go encoding: HTML-sensitive runes escape as six ASCII bytes each.
+    answer={status:200,body:JSON.stringify({items:Array.from({length:100},(_,i)=>({ref:String(i+1),text,author_name:"名".repeat(255)}))}).replaceAll("<","\\u003c")};
+    assert.ok(Buffer.byteLength(answer.body)>1<<20);
+    const a2=await call(`live-sessions/${cid}/comments`,{query:"?limit=100"});assert.equal(a2.status,200);assert.equal(a2.body.items.length,100);
+    const a8=await call("inbox/conversations");assert.equal(a8.status,503);assert.equal(a8.body.code,"retry_later");
+  }
+});
+test("K3 comment-only no_source cannot widen the existing inbox error seam",async t=>{
+  t.after(()=>{answer={status:200,body:JSON.stringify({items:[],next_cursor:"",unread_total:0})};});
+  answer={status:409,body:JSON.stringify({code:"no_source",debug:"DO_NOT_FORWARD"})};
+  const inbox=await call("inbox/conversations",{query:`?filter=live_comment&session_id=${cid}`});
+  assert.equal(inbox.status,503);assert.equal(inbox.body.code,"retry_later");assert.equal(JSON.stringify(inbox.body).includes("DO_NOT_FORWARD"),false);
+  const comments=await call(`live-sessions/${cid}/comments`);
+  assert.equal(comments.status,409);assert.equal(comments.body.code,"no_source");
+});
 test("LC-U2a real BFF seam A2-A5 exact grammar, privacy, denial and no diagnostic reflection", async () => {
   const root=`live-sessions/${cid}/comments`;
   answer={status:200,body:JSON.stringify({items:[]})};
@@ -154,7 +181,8 @@ test("LC-U2a real BFF seam A2-A5 exact grammar, privacy, denial and no diagnosti
     assert.equal(seen.at(-1)?.headers.cookie,undefined);
   }
   const before=seen.length;
-  for(const opts of [{query:"?text=private"},{query:"?after_seq=2"},{headers:{"idempotency-key":"forbidden-read"}}])assert.equal((await call(root,opts)).status,422);
+  for(const opts of [{query:"?text=private"},{headers:{"idempotency-key":"forbidden-read"}}])assert.equal((await call(root,opts)).status,422);
+  assert.equal((await call(root,{query:"?after_seq=2"})).status,400); // PR18 frozen invalid_cursor contract.
   assert.equal((await call(`${root}/123/private-reply`,{method:"POST",body:{text:"x",tenant_id:store}})).status,422);
   assert.equal((await call(`${root}/123/private-reply`,{method:"POST",body:{text:"x"},headers:{"x-csrf-token":"wrong"}})).status,403);
   assert.equal(seen.length,before);

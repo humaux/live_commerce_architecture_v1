@@ -5,7 +5,7 @@
 // Used by: every admin client module under apps/admin/lib (browser fetch -> this route -> Go /v1/admin/stores/...);
 //   health responses are closed and private/no-store.
 import { validMediaQuery } from "@/lib/product-media-model";
-import { inboxResource, inboxRoute, validInboxRequest, validInboxBody, inboxErrorCode } from "@/lib/inbox-bff";
+import { inboxResource, inboxRoute, validInboxRequest, validInboxBody, inboxErrorCode, invalidCommentCursor, inboxResponseLimit } from "@/lib/inbox-bff";
 import { callBackend, fixtureSession } from "@/lib/backend";
 import { consoleAny, consolePaths, consoleRoutes, validConsoleBody, validConsoleQuery } from "@/src/features/live/console-request";
 import { parseConsole, parseCopyResult, parseLifecycleResult, parseRecommendResult, parseSessionResults } from "@/src/features/live/console-model";
@@ -19,11 +19,13 @@ import { promotionsRoute } from "@/lib/promotions-request";
 import { validStudioInputToken, validStudioQuery } from "@/lib/studio-request";
 import {
   claimLinkRoute, claimsCollection, claimsRoutes, claimsSubpath, validClaimLink,
+  claimBlocklistCheck, validClaimBlocklistQuery, validClaimRestriction,
 } from "@/lib/claims-request";
 import {
   DESIGN_MAX_JSON, designDetails, designGetPaths, designPostPaths, designPutPaths, isDesignImageBytes, isDesignJsonPut, isDesignPath, isDesignUpload, validDesignRequest,
 } from "@/lib/design-request";
 import { metaHealthRoute, validMetaHealthRequest, validRecheckBody } from "@/lib/meta-health-request";
+import { parcelRoute, validParcelDeleteQuery } from "@/lib/parcels-request";
 import { parseMetaHealth, parseRecheck } from "@/lib/meta-health-model";
 import { metaConnectAny, metaConnectRoutes, validMetaConnectRequest } from "@/lib/meta-connect-request";
 import { adsAny, adsBodyless, adsKeyless, adsRoutes, validAdsQuery, validIfMatch, validAdsUnbindBody } from "@/lib/ads-request";
@@ -122,6 +124,7 @@ async function route(request: Request, context: Context) {
   if (inbox && !authConfig) return error(404, "not_found");
   if (inbox && !inboxRoute(request.method, path)) return error(405, "method_not_allowed", path.endsWith("/messages") ? "GET, POST" : inboxRoute("GET", path) ? "GET" : "POST");
   if (inbox && !validInboxRequest(request, path)) {
+    if (invalidCommentCursor(request, path)) return error(400, "invalid_cursor");
     const filters = new URL(request.url).searchParams.getAll("filter");
     if (path === "inbox/conversations" && filters.length === 1 && filters[0] && !["all", "unreplied", "messenger", "instagram", "live_comment"].includes(filters[0])) return error(400, "invalid_filter");
     return error(path === "inbox/buyer-panel" && request.method === "GET" ? 400 : 422, "invalid_request");
@@ -139,6 +142,9 @@ async function route(request: Request, context: Context) {
   // taiwan-cvs-logistics-v1 §8/§16.5: GET|PUT logistics/ecpay, POST logistics/ecpay/enabled, GET|PUT logistics/cvs-settings.
   // storefront-v2 §F (unit promotions): GET|POST promotions, POST promotions/{id} share the logistics exact-resource policy (no query, keyed JSON).
   const logistic = logisticsRoute(request.method, path) ?? promotionsRoute(request.method, path);
+  // W3-07B parcel groups (lib/parcels-request.ts grammar): GET orders/merge-suggestions, GET parcel-groups (open groups, W3-U4),
+  // POST parcel-groups, DELETE parcel-groups/{id}?expected_version=N (keyless/bodyless), PUT parcel-groups/{id}/shipment -> Go parcels.go.
+  const parcel = parcelRoute(request.method, path);
   // A2-A5 use the exact inbox privacy/grammar seam, not Studio's general-purpose payload path.
   const studio = path.startsWith("live-sessions") && !inbox;
   if (studio && !authConfig) return error(404, "not_found");
@@ -148,7 +154,7 @@ async function route(request: Request, context: Context) {
   if (input && !authConfig?.publicOrigin.startsWith("https://")) return error(404, "not_found");
   if (exactStore.test(store) && studio && studioAny.test(path) && !routes[request.method]?.test(path))
     return error(405, "method_not_allowed", "GET, POST, PATCH, PUT");
-  if (!exactStore.test(store) || (!routes[request.method]?.test(path) && !action && !customers && !cardPayments && !logistic && !health && !inbox && !operation))
+  if (!exactStore.test(store) || (!routes[request.method]?.test(path) && !action && !customers && !cardPayments && !logistic && !health && !parcel && !inbox && !operation))
     return error(404, "not_found");
   const order = request.method === "GET" && orderRoute.test(path);
   const orderSearch = request.method === "POST" && path === "orders/search";
@@ -162,7 +168,7 @@ async function route(request: Request, context: Context) {
   // Merchant Page/Instagram connect (meta-connect-request.ts): exact resources, no query; a read carries no body or key.
   if (metaConnectAny.test(path) && !validMetaConnectRequest(request)) return error(422, "invalid_request");
   // New setup routes require actual session/store authority, never a shared fixture.
-  if ((operation || health || studio || order || orderSearch || action || customers || cardPayments || logistic || accountRoute || ads || discoveryRoute.test(path)) && !authConfig)
+  if ((parcel || operation || health || studio || order || orderSearch || action || customers || cardPayments || logistic || accountRoute || ads || discoveryRoute.test(path)) && !authConfig)
     return error(404, "not_found");
   // Query grammar, Idempotency-Key presence and empty/JSON body declaration (keyless: billing POSTs; bodyless: export, portal).
   if (customers && !validCustomersRequest(customers, request)) return error(422, "invalid_request");
@@ -173,9 +179,20 @@ async function route(request: Request, context: Context) {
   if ((action || logistic) && request.url.includes("?") &&
     !(request.method === "GET" && path === "returns" && validReturnsQuery(request.url)))
     return error(422, "invalid_request");
+  // W3-07B: exact resources; the dissolve DELETE MUST carry exactly one CAS expected_version and every other parcel route no query
+  // at all (validParcelDeleteQuery inspects the raw URL before Next.js drops a bare '?').
+  if (parcel === "delete" ? !validParcelDeleteQuery(request.url) : parcel && request.url.includes("?"))
+    return error(422, "invalid_request");
   // Reads and the keyless refresh carry no body and no key; only commands do.
   // (keyless-command = print-form: a JSON body but no Idempotency-Key.)
   if (action && action !== "command" && action !== "keyless-command" && !validKeylessRequest(action, request))
+    return error(422, "invalid_request");
+  // W3-07B: the parcel reads and the dissolve DELETE are keyless and bodyless (Go refuses a key on DELETE). Only a GET can be
+  // judged by `request.body === null`: Next 16 gives EVERY non-GET request a (usually empty) body stream, so the DELETE is fenced
+  // by its framing headers alone and its body is never forwarded (init below carries none).
+  if ((parcel === "get" || parcel === "delete") &&
+    ((parcel === "get" && request.body !== null) || request.headers.has("transfer-encoding") || request.headers.has("idempotency-key") ||
+      (request.headers.has("content-length") && request.headers.get("content-length") !== "0")))
     return error(422, "invalid_request");
   if (action === "keyless-command" && !validKeylessCommandRequest(request)) return error(422, "invalid_request");
   // Logistics reads carry no body/key/transfer-encoding, like every other exact BFF read.
@@ -238,7 +255,7 @@ async function route(request: Request, context: Context) {
   }
   if (imageUpload && Number(request.headers.get("content-length") ?? "0") > MAX_UPLOAD) return error(413, "invalid_request");
   if (studio) {
-    if (!(consoleAny.test(path) ? validConsoleQuery(request.url, path) : validStudioQuery(request.url, request.method === "GET" && (path === "live-sessions" || claimsCollection(path)))))
+    if (!(claimBlocklistCheck(path) ? validClaimBlocklistQuery(request.url) : consoleAny.test(path) ? validConsoleQuery(request.url, path) : validStudioQuery(request.url, request.method === "GET" && (path === "live-sessions" || claimsCollection(path)))))
       return error(422, "invalid_request");
     if (
       request.method === "GET" &&
@@ -309,7 +326,8 @@ async function route(request: Request, context: Context) {
       return error(403, "forbidden");
   }
   const init: RequestInit = { method: request.method };
-  if (request.method !== "GET" && action !== "refresh") {
+  // W3-07B: the dissolve DELETE is bodyless by contract — skip the JSON body branch for it.
+  if (request.method !== "GET" && action !== "refresh" && parcel !== "delete") {
     if (!authConfig) {
       const host = request.headers.get("host");
       if (request.headers.get("origin") !== `http://${host}`)
@@ -397,10 +415,10 @@ async function route(request: Request, context: Context) {
     let body: string;
     let value: unknown;
     // A9 permits 50 Unicode messages; a 256 KiB ceiling rejects valid 2000-rune pages.
-    try { body = await readBody(response, "application/json", 1 << 20); value = JSON.parse(body); }
+    try { body = await readBody(response, "application/json", inboxResponseLimit(request.method, path)); value = JSON.parse(body); }
     catch { return error(503, "retry_later"); }
     if (!response.ok) {
-      const code = inboxErrorCode(response.status, value);
+      const code = inboxErrorCode(response.status, value, path);
       const denied = error(code ? response.status : 503, code ?? "retry_later");
       if (response.status === 401) clearAuthCookies(denied.headers);
       const backoff = response.headers.get("retry-after") ?? "";
@@ -417,7 +435,7 @@ async function route(request: Request, context: Context) {
       const claimLink = claimLinkRoute(path);
       // A1 includes up to 200 offers; legal Unicode names/variants can exceed the normal Studio 256 KiB cap.
       const consoleRead = request.method === "GET" && consoleRoutes.GET.test(path) && path.endsWith("/console");
-      body = await readBody(response, "application/json", tokenResponse || inputRead || claimLink ? 8192 : consoleRead ? 512 << 10 : 256 << 10);
+      body = await readBody(response, "application/json", tokenResponse || inputRead || claimLink || claimBlocklistCheck(path) ? 8192 : consoleRead ? 512 << 10 : 256 << 10);
       const parsed: unknown = JSON.parse(body);
       if (consoleAny.test(path) && response.ok) {
         const session = resource[1];
@@ -430,6 +448,7 @@ async function route(request: Request, context: Context) {
       if (tokenResponse && response.ok && !validStudioInputToken(parsed)) return error(503, "retry_later");
       // The claim link token leaves the BFF only in this closed shape (§7.1 M7).
       if (claimLink && response.ok && !validClaimLink(parsed)) return error(503, "retry_later");
+      if (claimBlocklistCheck(path) && response.ok && (response.status !== 200 || !validClaimRestriction(parsed))) return error(503, "retry_later");
       if (inputRead && response.ok) {
         if (path.endsWith("/prepared")) parseStudioInputPrepared(parsed);
         else parseStudioInput(parsed);
@@ -547,7 +566,7 @@ async function route(request: Request, context: Context) {
     status: response.status,
     headers: {
       "Content-Type": "application/json",
-      "Cache-Control": order || orderSearch || action || customers || cardPayments || logistic || storefront || metaConnectAny.test(path) ? "private, no-store" : "no-store",
+      "Cache-Control": order || orderSearch || action || customers || cardPayments || logistic || storefront || parcel || metaConnectAny.test(path) ? "private, no-store" : "no-store",
       "X-Request-ID": response.headers.get("x-request-id") ?? "",
     },
   });
@@ -557,7 +576,7 @@ async function proxy(request: Request, context: Context) {
   const response = await route(request, context);
   if (path.startsWith("live-sessions") || path.startsWith("inbox/") || path === "message-templates" || path.startsWith("operations") || path === "ads/catalog-feed" || path === "ads/meta/unbind") response.headers.set("Cache-Control", "private, no-store");
   // Every M7 answer (success or not) forbids a Referer, like the Go route (§7.1).
-  if (claimLinkRoute(path) || inboxResource(path)) response.headers.set("Referrer-Policy", "no-referrer");
+  if (claimLinkRoute(path) || claimBlocklistCheck(path) || inboxResource(path)) response.headers.set("Referrer-Policy", "no-referrer");
   return response;
 }
 export const GET = proxy;
@@ -577,6 +596,11 @@ const unsupported = async (_request: Request, context: Context) => {
   if (claimLinkRoute(path)) response.headers.set("Referrer-Policy", "no-referrer");
   return response;
 };
-export const DELETE = unsupported;
+// W3-07B: DELETE exists only for parcel-groups/{id} (the CAS dissolve); every other DELETE stays unsupported (405/404).
+const proxyDelete = async (request: Request, context: Context) => {
+  const path = (await context.params).resource.join("/");
+  return parcelRoute("DELETE", path) ? proxy(request, context) : unsupported(request, context);
+};
+export const DELETE = proxyDelete;
 export const OPTIONS = unsupported;
 export const HEAD = unsupported;

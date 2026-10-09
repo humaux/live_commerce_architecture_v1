@@ -44,6 +44,7 @@ export function BuyerPanel({
   const [busy, setBusy] = useState(false);
   const [revision, setRevision] = useState(0);
   const [orderOpen, setOrderOpen] = useState(false);
+  const [orderSession, setOrderSession] = useState<string | undefined>();
   const callbacks = useRef({ onUnauthorized, onLinked });
   callbacks.current = { onUnauthorized, onLinked };
   const clear = useCallback(() => {
@@ -52,6 +53,7 @@ export function BuyerPanel({
     setCustomer("");
     setBusy(false);
     setOrderOpen(false);
+    setOrderSession(undefined);
   }, []);
   const privacy = useInboxPrivacy(clear);
   const data = value?.scope === scope && privacy.visible ? value.data : null;
@@ -80,10 +82,12 @@ export function BuyerPanel({
       })
       .catch((cause) => {
         if (!privacy.fence.current(ticket)) return;
+        // 401/403 revoke the parent scope. A 404 stays local: A13 also answers not_found for a retention-purged or missing
+        // selection, and a real scope loss reaches the A2/A8 polls within one interval (PR #18 r4).
         if (cause instanceof InboxError && [401, 403].includes(cause.status)) {
           privacy.expire();
           callbacks.current.onUnauthorized?.();
-        }
+        } else if (cause instanceof InboxError && cause.status === 404) clear();
         setError(cause instanceof InboxError ? cause.code : "unavailable");
       })
       .finally(() => {
@@ -161,9 +165,9 @@ export function BuyerPanel({
   return (
     <aside className={styles.panel} data-testid="buyer-panel" aria-busy={busy}>
       <h2>{c.buyer}</h2>
-      {data && <button type="button" data-testid="buyer-create-order" disabled={!permitted(store, "inventory:reserve") || !permitted(store, "orders:read")} onClick={() => setOrderOpen(true)}>{createOrderCopy[locale as Locale].title}</button>}
+      {data && <button type="button" data-testid="buyer-create-order" disabled={!permitted(store, "inventory:reserve") || !permitted(store, "orders:read")} onClick={() => { setOrderSession(data.claims[0]?.session_id); setOrderOpen(true); }}>{createOrderCopy[locale as Locale].title}</button>}
       {data && (!permitted(store, "inventory:reserve") || !permitted(store, "orders:read")) && <p>{createOrderCopy[locale as Locale].permission}</p>}
-      {orderOpen && data && <CreateOrderDrawer key={scope} locale={locale as Locale} store={store} conversationId={conversationId} bundleId={bundleId} onUnauthorized={privacy.expire} onClose={() => setOrderOpen(false)} />}
+      {orderOpen && data && <CreateOrderDrawer key={scope} locale={locale as Locale} store={store} sessionId={orderSession} conversationId={conversationId} bundleId={bundleId} onUnauthorized={privacy.expire} onClose={() => setOrderOpen(false)} />}
       {!privacy.visible && (
         <p className={styles.notice}>
           {privacy.blocked.current ? c.signedOut : c.hidden}

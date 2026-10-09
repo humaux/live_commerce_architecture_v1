@@ -1,0 +1,5 @@
+# Purpose: preserve actual history real-helper local evidence after this prologue.
+# Depends on: sourceafefed5e and original main raw SHA256=a5dd239cc7ea6ce8ebbe6e49707b0d9cb46f8eb25aa09b4db69764c963fa6d0b.
+# Used by: integrator; runtime browser acceptance pending.
+# Evidence normalization: trailing whitespace/blank EOF only; original raw bytes and SHA256 retained in main checkout/provenance above.
+check-headers: OK (base ef75877f8f25010ac21058f795ec3cd560d9a899)

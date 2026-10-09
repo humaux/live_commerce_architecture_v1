@@ -142,16 +142,65 @@ test.describe("LC-U2a REAL_PG comment stream",()=>{
   test("native hidden tab stops A2 and clears private selections",async({request})=>{
     const {page,close}=await nativePage(evidence,"console-native-");
     try {
+    // READ/MEASURE only: preserve native fetch arguments/results and count starts synchronously
+    // inside the document, so an aborted pre-hide read cannot masquerade as a hidden poll.
+    await page.addInitScript(()=>{
+      const original=window.fetch.bind(window);
+      const counts={visible:0,hidden:0,visibility:[] as {state:string;trusted:boolean}[]};
+      (window as unknown as {a2Starts:typeof counts}).a2Starts=counts;
+      document.addEventListener("visibilitychange",event=>counts.visibility.push({state:document.visibilityState,trusted:event.isTrusted}));
+      window.fetch=(...args:Parameters<typeof fetch>)=>{
+        const input=args[0],url=new URL(input instanceof Request?input.url:String(input),location.href);
+        if(url.pathname.endsWith("/comments"))counts[document.visibilityState==="hidden"?"hidden":"visible"]++;
+        return original(...args);
+      };
+    });
     await login(page);await page.goto(route("en",comments.session));await expect(page.getByTestId(`comment-row-${comments.latest_ref}`)).toBeVisible();
     await page.getByTestId(`comment-select-${comments.claim_ref}`).click();await expect(page.getByTestId("buyer-panel")).toBeVisible();
-    const cover=await page.context().newPage();await cover.goto("about:blank");await cover.bringToFront();
+    // A visible DOM may retain the last result while a poll is in flight. Establish actual
+    // network readiness before hiding, rather than comparing a server-arrival counter mid-read.
+    await page.waitForLoadState("networkidle",{timeout:10000});
+    // Match the passing INU05 native fixture: a real app cover remains the active tab.
+    const cover=await page.context().newPage();await cover.goto(`${origin}/en/settings`);await cover.bringToFront();
     await expect.poll(()=>page.evaluate(()=>document.visibilityState)).toBe("hidden");
     await expect(page.getByTestId("comment-rows")).toHaveCount(0);await expect(page.getByTestId("buyer-panel")).toHaveCount(0);
+    const visibilityStart=await page.evaluate(()=>(window as unknown as {a2Starts:{visibility:unknown[]}}).a2Starts.visibility.length);
     const before=(await facts(request)).comments.requests;
     await cover.waitForTimeout(6500); // two real 3s intervals; absence of requests is the assertion.
-    expect((await facts(request)).comments.requests).toBe(before);
+    const after=(await facts(request)).comments.requests;
+    const starts=await page.evaluate(()=>(window as unknown as {a2Starts:{visible:number;hidden:number;visibility:{state:string;trusted:boolean}[]}}).a2Starts);
+    await writeFile(`${evidence}/native-hidden-read-counts.json`,JSON.stringify({class:"REAL_PG",...starts,serverReadsBefore:before,serverReadsAfter:after,documentVisibility:await page.evaluate(()=>document.visibilityState)}));
+    expect(await page.evaluate(()=>document.visibilityState)).toBe("hidden");
+    expect(starts.visibility.slice(visibilityStart).every(event=>event.state==="hidden"&&event.trusted)).toBe(true);
+    expect(after).toBe(before);
+    expect(starts.visible).toBeGreaterThan(0);expect(starts.hidden).toBe(0);
     await page.bringToFront();await expect(page.getByTestId(`comment-row-${comments.latest_ref}`)).toBeVisible();await cover.close();
     } finally { await close(); }
+  });
+  test("queued public reply stays fenced after worker UNKNOWN selection reload and dedupe expiry",async({page,request})=>{
+    await login(page);await page.goto(route("en",comments.session));
+    const ref=comments.reply_refs[1];
+    await page.getByTestId(`comment-select-${ref}`).click();await page.getByRole("button",{name:"Public reply",exact:true}).click();
+    await page.getByTestId("comment-reply-text").fill("Synthetic queued public case");
+    const before=(await facts(request)).comments;
+    await fault(request,comments.session,"public_graph_unknown");
+    try {
+      const ack=page.waitForResponse(r=>r.url().endsWith(`/comments/${ref}/public-reply`)&&r.request().method()==="POST",{timeout:15000});
+      await page.getByTestId("comment-send").click();expect((await (await ack).json()).send_state).toBe("queued");
+      await expect.poll(async()=>(await facts(request)).comments.public_unknown,{timeout:15000}).toBe(before.public_unknown+1);
+      await page.getByTestId(`comment-select-${comments.reply_refs[2]}`).click();
+      await page.getByRole("button",{name:"Public reply",exact:true}).click();
+      await page.getByTestId("comment-reply-text").fill("Synthetic other comment");await expect(page.getByTestId("comment-send")).toBeEnabled();
+      await page.getByTestId(`comment-select-${ref}`).click();await expect(page.getByTestId("comment-send")).toBeDisabled();
+      await page.reload();await page.getByTestId(`comment-select-${ref}`).click();
+      await page.waitForTimeout(31000); // REAL backend dedupe window elapsed; safety must not be a 30s timer.
+      await expect(page.getByTestId("comment-send")).toBeDisabled();await expect(page.getByTestId("comment-verified")).toBeVisible();
+      expect((await facts(request)).comments.public_requests).toBe(before.public_requests+1);
+      page.once("dialog",d=>d.accept());await page.getByTestId("comment-verified").click();
+      await page.getByRole("button",{name:"Public reply",exact:true}).click();
+      await page.getByTestId("comment-reply-text").fill("Synthetic verified draft");await expect(page.getByTestId("comment-send")).toBeEnabled();
+      expect((await facts(request)).comments.public_requests).toBe(before.public_requests+1);
+    } finally { await fault(request,comments.session,"public_graph_restore"); }
   });
   test("unknown public ACK stays fenced across selection and reload",async({page,request})=>{
     await login(page);await page.goto(route("en",comments.session));await expect(page.getByTestId(`comment-row-${comments.latest_ref}`)).toBeVisible();
@@ -166,6 +215,41 @@ test.describe("LC-U2a REAL_PG comment stream",()=>{
     expect((await facts(request)).comments.public_requests).toBe(before+1);
     const flags=await page.evaluate(()=>Object.entries(sessionStorage).filter(([key])=>key.startsWith("live-comment-unresolved:")));
     expect(flags).toHaveLength(1);expect(flags[0][1]).toBe("1");expect(flags[0][0]).not.toContain(comments.latest_ref);
+  });
+  for(const view of ["all","private"] as const)test(`LCU2_404 real store grant revoked clears ${view} view and selected buyer`,async({page,request})=>{
+    await login(page);await page.goto(route("en",comments.session));
+    await expect(page.getByTestId(`comment-row-${comments.latest_ref}`)).toBeVisible();
+    if(view==="private") {
+      await page.getByTestId("comment-filter-private").click();
+      await page.getByTestId("comment-conversations").getByRole("button").first().click();
+    } else await page.getByTestId(`comment-select-${comments.claim_ref}`).click();
+    await expect(page.getByTestId("buyer-panel")).toBeVisible();
+    const beforeSession=(await authorityCookies(page.context())).find(c=>c.name==="__Host-commerce_session")?.value;
+    let reads=0;
+    page.on("request",r=>{const path=new URL(r.url()).pathname;if(path.endsWith("/comments")||path.endsWith("/inbox/conversations"))reads++;});
+    try {
+      const denied=page.waitForResponse(r=>{
+        const path=new URL(r.url()).pathname;
+        // Any scoped read may observe the loss first (an in-flight buyer-panel or template read now expires like the A2/A8 polls);
+        // the assertions below still require every private view cleared, the login kept and zero reads afterwards.
+        return r.status()===404&&(path.endsWith("/comments")||path.endsWith("/inbox/conversations")||path.endsWith("/inbox/buyer-panel")||path.endsWith("/message-templates"));
+      },{timeout:15000});
+      // FIXTURE/SETUP: only this synthetic store/principal grant is deleted in PG; no response interception.
+      await fault(request,comments.session,"grant_revoke");await denied;
+      await expect(page.getByTestId("comment-refresh")).toBeDisabled();
+      await expect(page.getByTestId("comment-rows")).toHaveCount(0);
+      await expect(page.getByTestId("comment-conversations")).toHaveCount(0);
+      await expect(page.getByTestId("buyer-panel")).toHaveCount(0);
+      await expect(page.locator("[data-private=comment-author],[data-private=comment-text]")).toHaveCount(0);
+      const afterSession=(await authorityCookies(page.context())).find(c=>c.name==="__Host-commerce_session")?.value;
+      expect(!!beforeSession&&afterSession===beforeSession,"scope loss must be exercised with a still-valid login").toBe(true);
+      await fault(request,comments.session,"grant_restore");
+      const stopped=reads;
+      await page.waitForTimeout(6500); // Two healthy A2 intervals: assert absence, not a readiness sleep.
+      expect(reads).toBe(stopped);await expect(page.getByTestId("comment-refresh")).toBeDisabled();
+      await writeFile(`${evidence}/grant-revocation-${view}.json`,JSON.stringify({class:"REAL_PG",view,status:404,privateRows:0,buyerPanel:0,sessionRetained:true,postLossReads:reads-stopped}));
+      await page.reload();await expect(page.getByTestId(`comment-row-${comments.latest_ref}`)).toBeVisible();
+    } finally { await fault(request,comments.session,"grant_restore"); }
   });
   test("LCU2_RESET epoch replacement clears every old comment before reread",async({page,request})=>{
     await login(page);await page.goto(route("en",comments.session));await expect(page.getByTestId(`comment-row-${comments.latest_ref}`)).toBeVisible();

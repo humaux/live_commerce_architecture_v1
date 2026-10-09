@@ -1,0 +1,13 @@
+{
+  "comparison_trunk": "18f82636",
+  "pr_head": "973ed2d0",
+  "identical_files_sha256": {
+    "apps/admin/components/Studio.tsx": "d62339987e24072f861e62820c03640e89b9178a6f1518927c3b6ba0d7b3e370",
+    "apps/admin/app/globals.css": "42a5159aa1e28676f7cc4f4fd8c20f5ec7454fee9020d529532173ca4bf5974f",
+    "apps/admin/components/OperationalForms.module.css": "c2f72e07a80e281fdfc751d3846027d3333ebd42848d891782c5173764412751",
+    "apps/admin/components/orders.css": "43e73be1220b7ec5d578cad74a51251cff550fd2cca9f0ea864f01eb3a802b83",
+    "apps/admin/components/order-actions.css": "4d92455b609b6b7a12981e8ef1310cdd0021145707d1ffc3bc9ee1bf097c9b53",
+    "tests/admin/studio-ui.spec.ts": "c403cd2dad45cde8317033d6d95e40fbdae53b5a9aba60f7b7371105b6eddfef",
+    "tests/foundation/browser_studio_ui_test.go": "42984a455b83b87bae801280762ccbb95b0f0c3388d498761353d83c6b161f76"
+  }
+}

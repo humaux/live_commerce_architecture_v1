@@ -23,12 +23,16 @@ import (
 	"testing"
 	"time"
 
+	"livecommerce/internal/claims"
+	"livecommerce/internal/claimsintake"
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/identity"
 	"livecommerce/internal/identityhttp"
 	"livecommerce/internal/inbox"
+	"livecommerce/internal/integrations/meta"
 	"livecommerce/internal/metaconnect"
 	"livecommerce/internal/oidclogin"
+	"livecommerce/internal/platform"
 )
 
 type drawerFixture struct{ Linked, Unlinked, Bundle string }
@@ -95,9 +99,84 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	if err := e.p.f.owner.QueryRow(ctx, `SELECT owner_id::text FROM checkout.orders WHERE id=$1`, lbuStr(seed, "order_id")).Scan(&customer); err != nil {
 		t.Fatal(err)
 	}
+	// Reuse the signed Meta ingress/consumer/intake harness in this same trade store.
+	// Manual claims cannot be restricted: blocklist identity is Facebook/Instagram only (W3-05B).
+	e.grantCreator("integration:execute")
+	metaClaims := &mciEnv{t: t, h: e.h, page: e2eMetaSetup(t, e.p.f), pageAsset: pageID, pageBinding: bindingID, stopConsumer: mciNoop, consumerWorkers: 1}
+	metaClaims.actor, err = meta.NewClaimsActorKey(randomBytes(32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	metaClaims.link, err = claims.NewReplyLinkKey(randomBytes(32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	miRoute(t, metaClaims.page, pageID, e.tenant(), e.store(), bindingID)
+	var metaSessions []string
+	// Only our six session sources, intake rows and restrictions are owned by this fixture.
+	t.Cleanup(func() {
+		for _, session := range metaSessions {
+			for _, query := range []string{
+				`DELETE FROM claims.blocked_actors WHERE tenant_id=$1 AND store_id=$2 AND source_bundle_id IN (SELECT id FROM claims.bundles WHERE tenant_id=$1 AND store_id=$2 AND session_id=$3)`,
+				`DELETE FROM claims.meta_intake WHERE tenant_id=$1 AND store_id=$2 AND session_id=$3`,
+				`DELETE FROM live.claim_sources WHERE tenant_id=$1 AND store_id=$2 AND session_id=$3`,
+				`DELETE FROM live.claim_window_intervals WHERE tenant_id=$1 AND store_id=$2 AND session_id=$3`,
+			} {
+				if _, err := e.p.f.owner.Exec(context.Background(), query, e.tenant(), e.store(), session); err != nil {
+					t.Errorf("drawer Meta fixture cleanup: %v", err)
+				}
+			}
+		}
+	})
+	metaClaims.intakePool, err = platform.OpenClaimsIntakePool(ctx, miRole(t, e.p.f, "commerce_claims_intake"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(metaClaims.intakePool.Close)
+	metaClaims.poller, err = claimsintake.New(ctx, metaClaims.intakePool, metaClaims.link, claimsintake.Config{Workers: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	metaClaims.startConsumer(t)
+	t.Cleanup(func() { metaClaims.stopConsumer() })
 	fixtures := []drawerFixture{}
 	for i := 0; i < 6; i++ {
-		_, _, bundle, conv := e.scenario()
+		session, _ := e.session("A1", ltgLive, 5)
+		metaSessions = append(metaSessions, session)
+		metaClaims.session, metaClaims.postID = session, pageID+"_"+mciDigits(10)
+		metaClaims.mustSource(t, "page", pageID, metaClaims.postID, false)
+		comment := metaClaims.postFBTo(t, metaClaims.postID, "", "", "A1+2", mciAt(3*time.Second), nil, false)
+		// Keep the original consumer deadline; safe job facts diagnose a fixture failure without payloads.
+		t.Cleanup(func() {
+			if !t.Failed() {
+				return
+			}
+			var state, reason, errorsJSON string
+			if err := e.p.f.owner.QueryRow(context.Background(), `SELECT j.state,coalesce(ev.terminal_reason,''),coalesce(j.errors::text,'[]') FROM river_meta.river_job j JOIN meta_inbox.events ev ON ev.job_id=j.id WHERE ev.id=$1`, comment.ev.id).Scan(&state, &reason, &errorsJSON); err != nil {
+				t.Log("drawer consumer diagnostic unavailable")
+				return
+			}
+			if state == "completed" && reason == "processed" {
+				return
+			}
+			codes := regexp.MustCompile(`SQLSTATE [0-9A-Z]{5}`).FindAllString(errorsJSON, -1)
+			kinds := []string{}
+			for _, kind := range []string{"permission denied", "too many clients", "decrypt", "key", "invalid", "stage_claim_intake", "retryable"} {
+				if strings.Contains(errorsJSON, kind) {
+					kinds = append(kinds, kind)
+				}
+			}
+			t.Logf("drawer consumer fixture state=%s reason=%s SQLSTATE=%v categories=%v", state, reason, codes, kinds)
+		})
+		mcAwait(t, metaClaims.page, comment.ev)
+		metaClaims.apply(t)
+		claim := metaClaims.refresh(t, mciReply{s: comment, provider: "facebook", asset: pageID})
+		if claim.intake.State != "APPLIED" || claim.ev.outcome != claims.OutcomeAccepted || claim.ev.platform != "facebook" || claim.ev.quantity != 2 || claim.bundleID == "" {
+			t.Fatal("drawer Meta claim must be accepted")
+		}
+		bundle, conv := claim.bundleID, lcConversation(t, e.p.f, e.tenant(), e.store(), "page")
+		e.linkPeer(bundle, conv)
+		e.h.closeWindow(t, session)
 		mustExec(t, e.p.f.owner, `UPDATE social.conversations SET asset_id=$2 WHERE id=$1`, conv, pageID)
 		mustExec(t, e.p.f.owner, `UPDATE inbox.bundle_peers SET asset_id=$2 WHERE bundle_id=$1`, bundle, pageID)
 		unlinked := lcConversation(t, e.p.f, e.tenant(), e.store(), "page")
@@ -108,8 +187,16 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 		if reply.Code != 200 {
 			t.Fatalf("drawer A14 fixture status=%d", reply.Code)
 		}
+		// Prepare a restriction through the real command; existing bundles/orders remain permitted by W3-05B.
+		blockedBody, _ := json.Marshal(map[string]any{"bundle_id": bundle})
+		blocked := e.admin(e.token()).call("POST", "/live-sessions/"+session+"/claims/blocklist", t04Key("drawer-restrict"), "application/json", blockedBody)
+		if blocked.Code != 200 {
+			t.Fatalf("drawer blocklist fixture status=%d", blocked.Code)
+		}
 		fixtures = append(fixtures, drawerFixture{conv, unlinked, bundle})
 	}
+	// The second harness has its own payload key; it must exclusively own the shared consumer queue.
+	metaClaims.stopConsumer()
 	// The existing signed-ingress/real-poller fixture proves the direct CommentStream trigger over real A2.
 	comments := newConsoleCommentsFixture(t)
 	cf := comments.e.h.f
@@ -201,8 +288,9 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	evidence := filepath.Join(root, "output/lc-u3-create-order-drawer/browser", time.Now().UTC().Format("20060102T150405.000000000"))
-	if err := os.MkdirAll(evidence, 0700); err != nil {
+	// Follow the existing manual-order harness: new runs stay in ignored output/playwright.
+	evidence, err := os.MkdirTemp(filepath.Join(root, "output/playwright"), "create-order-drawer-")
+	if err != nil {
 		t.Fatal(err)
 	}
 	raw, _ := json.Marshal(fixtures)

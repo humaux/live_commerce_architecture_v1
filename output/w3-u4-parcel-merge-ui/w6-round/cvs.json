@@ -1,0 +1,13 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-cvs"
+  ],
+  "sha": "5ca3b82cede63d2e691b3b3b88e0da80c945ed20",
+  "changed_file": "tests/admin/customer-tags.spec.ts",
+  "file_sha256": "100557a7df9255e42efad7b56d767bbf9172cf43fe53b309dbd067bee4b60e52",
+  "source_unchanged": true,
+  "exit_code": 0,
+  "seconds": 95.29
+}

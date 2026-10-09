@@ -11,19 +11,31 @@ const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
 // Relative to `live-sessions/{session_id}/`: every claims sub-resource, plus the Meta
 // comment source (claim-source: GET read, PUT bind; claim-source-v1 frozen HTTP interface).
-export const claimsSubpath = `(?:claims(?:/(?:window|offers(?:/${uuid})?|offer-import|library(?:/${uuid})?|manual|bundles(?:/${uuid}/link)?))?|claim-source)`;
+export const claimsSubpath = `(?:claims(?:/(?:window|offers(?:/${uuid})?|offer-import|library(?:/${uuid})?|manual|bundles(?:/${uuid}/link)?|blocklist/check))?|claim-source)`;
 // Relative to `stores/{store_id}/`, per method (M1/M6/source/library GET, M2/M3/M5/M7/offer-import POST, M4 PATCH,
 // source and library-row PUT; Live tools R4, amendment in the claims contract). The BFF forwards each path unchanged to /v1/admin/stores/{store_id}/<path>.
 export const claimsRoutes = {
-  GET: `live-sessions/${uuid}/(?:claims(?:/bundles|/library)?|claim-source)`,
+  GET: `live-sessions/${uuid}/(?:claims(?:/bundles|/library|/blocklist/check)?|claim-source)`,
   POST: `live-sessions/${uuid}/claims/(?:window|offers|offer-import|manual|bundles/${uuid}/link)`,
   PATCH: `live-sessions/${uuid}/claims/offers/${uuid}`,
   PUT: `live-sessions/${uuid}/(?:claim-source|claims/library/${uuid})`,
 } as const;
 const bundlesCollection = new RegExp(`^live-sessions/${uuid}/claims/bundles$`);
 const linkRoute = new RegExp(`^live-sessions/${uuid}/claims/bundles/${uuid}/link$`);
+const blocklistCheck = new RegExp(`^live-sessions/${uuid}/claims/blocklist/check$`);
+const blocklistQuery = new RegExp(`^\\?bundle_id=${uuid}$`);
 
-/** M6 is the only claims route with a query (limit/cursor, checked by validStudioQuery). */
+/** The warning reads only one server-known bundle; no actor key or blocklist write is accepted. */
+export function claimBlocklistCheck(path: string): boolean { return blocklistCheck.test(path); }
+/** Preserve the exact raw query grammar before and after Next routing, including encoding rejection. */
+export function validClaimBlocklistQuery(url: string): boolean { return blocklistQuery.test(new URL(url).search); }
+/** W3-05B exposes only the boolean restriction state, never a note or actor identifier. */
+export function validClaimRestriction(value: unknown): value is { restricted: boolean } {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    && Object.keys(value).length === 1 && typeof (value as { restricted?: unknown }).restricted === "boolean";
+}
+
+/** M6 uses the Studio limit/cursor query; blocklist/check has its separate exact bundle query. */
 export function claimsCollection(path: string) {
   return bundlesCollection.test(path);
 }

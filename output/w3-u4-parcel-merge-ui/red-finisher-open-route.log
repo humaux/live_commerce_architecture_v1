@@ -1,0 +1,8 @@
+--- FAIL: TestParcelRoutesTransportRules (0.00s)
+        parcels_test.go:66: status=405 want=401 body={"code":"method_not_allowed","message":"Method not allowed.","request_id":"9855ca6b21daa703c79d7d51dc092f0b","retryable":false,"details":{}}
+        parcels_test.go:66: status=405 want=422 body={"code":"method_not_allowed","message":"Method not allowed.","request_id":"1e7d3d050b860607561413c7f9d53071","retryable":false,"details":{}}
+        parcels_test.go:66: status=405 want=422 body={"code":"method_not_allowed","message":"Method not allowed.","request_id":"a5d8be5c3d932a187c6457284f1c9269","retryable":false,"details":{}}
+        parcels_test.go:66: status=405 want=422 body={"code":"method_not_allowed","message":"Method not allowed.","request_id":"bdca7fa83487f963983eb5fcb2bbf962","retryable":false,"details":{}}
+FAIL
+FAIL	livecommerce/internal/httpapi	0.442s
+FAIL

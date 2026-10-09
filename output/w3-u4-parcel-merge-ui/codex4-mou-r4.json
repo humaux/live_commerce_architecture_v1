@@ -1,0 +1,9 @@
+{
+  "command": "bash scripts/dev/test-local.sh --browser-merchant-orders-ui",
+  "source_sha": "e27728c59170667f863a024b65ed387ba82ffc91",
+  "file_hashes": {
+    "tests/admin/parcel-merge.spec.ts": "6a00cac5f539e4792ce84dc89c312e125fa8fa7c5b173c945a44a1b6123fbd0e"
+  },
+  "exit_code": 0,
+  "elapsed_seconds": 102.36
+}

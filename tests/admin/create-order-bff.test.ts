@@ -105,8 +105,10 @@ const route = await import(
     adminRoot + "app/api/stores/[store]/tools/[...resource]/route.ts",
   ).href
 );
+const rootRoute = await import(pathToFileURL(adminRoot + "app/api/stores/[store]/[...resource]/route.ts").href);
 test.after(() => upstream.close());
 type Options = {
+  root?: boolean;
   method?: string;
   query?: string;
   body?: unknown;
@@ -131,7 +133,7 @@ async function call(path: string, over: Options = {}) {
       headers.set("idempotency-key", "synthetic-receipt");
   }
   const request = new Request(
-    `${origin}/api/stores/${over.storeId ?? store}/tools/${path}${over.query ?? ""}`,
+    `${origin}/api/stores/${over.storeId ?? store}/${over.root ? "" : "tools/"}${path}${over.query ?? ""}`,
     {
       method,
       headers,
@@ -140,7 +142,7 @@ async function call(path: string, over: Options = {}) {
         : {}),
     },
   );
-  const response = await route[method](request, {
+  const response = await (over.root ? rootRoute : route)[method](request, {
     params: Promise.resolve({
       store: over.storeId ?? store,
       resource: path.split("/"),
@@ -345,4 +347,28 @@ test("A16 actual CSRF origin exact body/key, replay null-link and safe conflict 
   });
   assert.equal(unknown.status, 503);
   assert.equal(unknown.body.code, "retry_later");
+});
+
+test("drawer blocklist check exact real BFF GET and boolean-only private response", async () => {
+  const resource = `live-sessions/${cid}/claims/blocklist/check`;
+  answer = { status: 200, body: JSON.stringify({ restricted: true }) };
+  const good = await call(resource, { root: true, query: `?bundle_id=${customer}` });
+  assert.equal(good.status, 200);
+  assert.deepEqual(good.body, { restricted: true });
+  assert.match(good.headers.get("cache-control") ?? "", /no-store/);
+  assert.equal(good.headers.get("referrer-policy"), "no-referrer");
+  assert.equal(seen.at(-1)?.url, `/v1/admin/stores/${store}/${resource}?bundle_id=${customer}`);
+  const before = seen.length;
+  for (const query of ["", `?bundle_id=${customer}&bundle_id=${customer}`, `?bundle_id=${customer}&actor_key=x`, `?%62undle_id=${customer}`, `?bundle_id=${customer.replaceAll("-", "%2D")}`])
+    assert.equal((await call(resource, { root: true, query })).status, 422);
+  assert.equal((await call(resource, { root: true, method: "POST", query: `?bundle_id=${customer}` })).status, 405);
+  assert.equal(seen.length, before);
+  answer = { status: 201, body: JSON.stringify({ restricted: true }) };
+  assert.equal((await call(resource, { root: true, query: `?bundle_id=${customer}` })).status, 503);
+  for (const body of [{ restricted: "true" }, { restricted: true, note: "PRIVATE_BLOCK_NOTE" }, { actor_key: "PRIVATE_ACTOR" }, null]) {
+    answer = { status: 200, body: JSON.stringify(body) };
+    const bad = await call(resource, { root: true, query: `?bundle_id=${customer}` });
+    assert.equal(bad.status, 503);
+    assert.ok(!JSON.stringify(bad.body).includes("PRIVATE_"));
+  }
 });

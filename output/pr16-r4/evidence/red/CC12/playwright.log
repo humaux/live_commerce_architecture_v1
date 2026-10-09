@@ -1,0 +1,54 @@
+
+Running 2 tests using 1 worker
+
+(node:90940) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 tests/admin/catalog-core.spec.ts:110:5 › CC12 desktop en › catalog v2: draft product, 2x3 matrix, prices, compare-at, stock, photo, collection, activate, shopper view, archive a variant, deactivate (desktop, en) (11.2s)
+  -  2 tests/admin/catalog-core.spec.ts:110:5 › CC12 mobile zh-TW › catalog v2: draft product, 2x3 matrix, prices, compare-at, stock, photo, collection, activate, shopper view, archive a variant, deactivate (mobile, zh-TW)
+
+
+  1) tests/admin/catalog-core.spec.ts:110:5 › CC12 desktop en › catalog v2: draft product, 2x3 matrix, prices, compare-at, stock, photo, collection, activate, shopper view, archive a variant, deactivate (desktop, en)
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  getByTestId('axis-name-2')
+    Expected: 0
+    Received: 1
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveCount" getByTestId('axis-name-2') with timeout 10000ms
+      - waiting for getByTestId('axis-name-2')
+        24 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+       at catalog-document-driver.ts:35
+
+      33 |   await expect(page.getByTestId("axis-add")).toBeDisabled();
+      34 |   await page.locator(".product-axis").nth(2).getByRole("button").last().click();
+    > 35 |   await expect(page.getByTestId("axis-name-2")).toHaveCount(0);
+         |                                                 ^
+      36 |   const rows = page.locator('[data-testid^="matrix-row-"]');
+      37 |   await expect(rows).toHaveCount(6);
+      38 |   const titles = await rows.locator("strong").allTextContents();
+        at driveDocument (/Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups/tests/admin/catalog-document-driver.ts:35:49)
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups/tests/admin/catalog-core.spec.ts:140:81
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/catalog-core/20261009T054101.428379000/results/catalog-core-CC12-desktop--d7c24-iant-deactivate-desktop-en-/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/catalog-core/20261009T054101.428379000/results/catalog-core-CC12-desktop--d7c24-iant-deactivate-desktop-en-/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/catalog-core/20261009T054101.428379000/results/catalog-core-CC12-desktop--d7c24-iant-deactivate-desktop-en-/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/catalog-core/20261009T054101.428379000/results/catalog-core-CC12-desktop--d7c24-iant-deactivate-desktop-en-/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/admin/catalog-core.spec.ts:110:5 › CC12 desktop en › catalog v2: draft product, 2x3 matrix, prices, compare-at, stock, photo, collection, activate, shopper view, archive a variant, deactivate (desktop, en)
+  1 did not run

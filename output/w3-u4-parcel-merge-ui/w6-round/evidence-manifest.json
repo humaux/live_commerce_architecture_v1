@@ -1,0 +1,134 @@
+[
+  {
+    "source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/bff-seams.json",
+    "file": "bff-seams.json",
+    "raw_sha256": "810e2856907cdd58be6389891a881edf214d4a898116b7a8a735c78410adc789",
+    "bytes": 550
+  },
+  {
+    "source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/bff-seams.log",
+    "file": "bff-seams.log",
+    "raw_sha256": "f61044beb3abd869504178d14fdd52d8af1112e22391300a404e1660ba369e10",
+    "bytes": 4565
+  },
+  {
+    "source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/check-gates.json",
+    "file": "check-gates.json",
+    "raw_sha256": "eea56d1724c08318fe6f35786831a815ae4670817211b7988afeea7d96db40bc",
+    "bytes": 326
+  },
+  {
+    "source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/check-gates.log",
+    "file": "check-gates.log",
+    "raw_sha256": "1375c30d75dfa0b4a07b8f6294ccc90246f19d96cc60ce507a58cb1d6af70f06",
+    "bytes": 3499
+  },
+  {
+    "source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/ci-red-playwright.log",
+    "file": "ci-red-playwright.log",
+    "raw_sha256": "52e31ae7ec610525cfcd11b6022d8e2a528849c3743ed996686d20c5642845d4",
+    "bytes": 5685
+  },
+  {
+    "source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/ci-trace-facts.json",
+    "file": "ci-trace-facts.json",
+    "raw_sha256": "323f20ca2c5002238b50322b6b4804bc715c6c26068b1b04aff1afcc92f064e6",
+    "bytes": 1989
+  },
+  {
+    "source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/customers-before.json",
+    "file": "customers-before.json",
+    "raw_sha256": "6fa84b20e98b3acc342082ea695d178cd130a8681ee44c82840f1e8dbed032d9",
+    "bytes": 194
+  },
+  {
+    "source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/customers-before.log",
+    "file": "customers-before.log",
+    "raw_sha256": "6327b6a1db97043f3260004719d9216aa653c9c6dfb95ba653ab894aaacd02d6",
+    "bytes": 26869
+  },
+  {
+    "source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/customers-green.json",
+    "file": "customers-green.json",
+    "raw_sha256": "9b72c2a85b8b6c565366de63efadd23da82c564b630572fe42083a3ba2b96ccf",
+    "bytes": 361
+  },
+  {
+    "source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/customers-green.log",
+    "file": "customers-green.log",
+    "raw_sha256": "9f3f1ac9988ac2a09b2a04057c7734c48ebd676ca31968d0fa0bbe45b2874613",
+    "bytes": 25845
+  },
+  {
+    "source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/cvs.json",
+    "file": "cvs.json",
+    "raw_sha256": "97b3e461aaf74b416df38b175710b26bd56d44e7e1c5f97b8f337c927b692f1d",
+    "bytes": 347
+  },
+  {
+    "source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/cvs.log",
+    "file": "cvs.log",
+    "raw_sha256": "a57239d2d2b861d57b11ac22ccbe3938462ed7117370bf4a3f256362dab64eea",
+    "bytes": 7547
+  },
+  {
+    "source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/green-playwright.log",
+    "file": "green-playwright.log",
+    "raw_sha256": "7f0a9bf644f0673dbfe05bda300ed4c4cce28dff840271657f023043efdf9f12",
+    "bytes": 1419
+  },
+  {
+    "source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/green-w6ui-click-ledger.json",
+    "file": "green-w6ui-click-ledger.json",
+    "raw_sha256": "524786f5ec13b67e6b1163f3f7e415f4e4f9e840f9ecccca58979f681e197d4f",
+    "bytes": 26797
+  },
+  {
+    "source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/independent-review.md",
+    "file": "independent-review.md",
+    "raw_sha256": "29dc604b9a0ed3cf150ff0da0f3d69003a1290beaa0ebe4412aa8d5454ae28ae",
+    "bytes": 4115
+  },
+  {
+    "source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/node.json",
+    "file": "node.json",
+    "raw_sha256": "0452fe70951e8b726bcea6fd9135a7e6b02abdbe9c6cdf64ea5fbcc3bf163bc4",
+    "bytes": 325
+  },
+  {
+    "source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/node.log",
+    "file": "node.log",
+    "raw_sha256": "4d6af0913d0c89c156e40bb5fb02f7800544e65b7de76d599ceb11a7178f1ebe",
+    "bytes": 90280
+  },
+  {
+    "source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/picklist.json",
+    "file": "picklist.json",
+    "raw_sha256": "65680ccd7fbc03118c0fdeec5e87dd4f578efd0cfaf4fdb9fe046ae9119f5d75",
+    "bytes": 352
+  },
+  {
+    "source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/picklist.log",
+    "file": "picklist.log",
+    "raw_sha256": "ad1f6957722be5d490f6dd563a7aefc348e2258042e050409f84507f8096c96f",
+    "bytes": 213
+  },
+  {
+    "source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/source-union-proof.json",
+    "file": "source-union-proof.json",
+    "raw_sha256": "67bb4a24aafa6d0225f5e1bff7653c575cde5a2411f85747918ae28982ba12b0",
+    "bytes": 2458
+  },
+  {
+    "source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/typecheck.json",
+    "file": "typecheck.json",
+    "raw_sha256": "2d1b4579d72622e988734e50418aa3848a88ef0545b6a55291c7ea8c85d5a1f5",
+    "bytes": 374
+  },
+  {
+    "source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/typecheck.log",
+    "file": "typecheck.log",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  }
+]

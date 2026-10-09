@@ -105,7 +105,7 @@ async function transport<T>(
   }
   signal?.throwIfAborted();
   if (!response.ok) {
-    const code = inboxErrorCode(response.status, value);
+    const code = inboxErrorCode(response.status, value, resource.split("?", 1)[0]);
     const after = response.headers.get("retry-after") ?? "";
     throw new InboxError(code ?? "retry_later", code ? response.status : 503, /^[0-9]{1,4}$/.test(after) ? Math.min(3600,Number(after))*1000 : 0);
   }
