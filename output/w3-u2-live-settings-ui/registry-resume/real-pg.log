@@ -1,0 +1,57 @@
+=== RUN   TestLiveSettingsHTTPStoreScopeCASReplay
+=== RUN   TestLiveSettingsHTTPStoreScopeCASReplay/unauthorized_PUT_403
+=== RUN   TestLiveSettingsHTTPStoreScopeCASReplay/cross-store_PUT_404
+=== RUN   TestLiveSettingsHTTPStoreScopeCASReplay/cross-store_GET_404
+=== RUN   TestLiveSettingsHTTPStoreScopeCASReplay/missing_auth_401
+=== RUN   TestLiveSettingsHTTPStoreScopeCASReplay/stale_PUT_409
+=== RUN   TestLiveSettingsHTTPStoreScopeCASReplay/read_fixed_default
+=== RUN   TestLiveSettingsHTTPStoreScopeCASReplay/CAS_and_replay
+=== RUN   TestLiveSettingsHTTPStoreScopeCASReplay/published_and_fixed_template_rules
+--- PASS: TestLiveSettingsHTTPStoreScopeCASReplay (1.46s)
+    --- PASS: TestLiveSettingsHTTPStoreScopeCASReplay/unauthorized_PUT_403 (0.00s)
+    --- PASS: TestLiveSettingsHTTPStoreScopeCASReplay/cross-store_PUT_404 (0.00s)
+    --- PASS: TestLiveSettingsHTTPStoreScopeCASReplay/cross-store_GET_404 (0.00s)
+    --- PASS: TestLiveSettingsHTTPStoreScopeCASReplay/missing_auth_401 (0.00s)
+    --- PASS: TestLiveSettingsHTTPStoreScopeCASReplay/stale_PUT_409 (0.01s)
+    --- PASS: TestLiveSettingsHTTPStoreScopeCASReplay/read_fixed_default (0.00s)
+    --- PASS: TestLiveSettingsHTTPStoreScopeCASReplay/CAS_and_replay (0.02s)
+    --- PASS: TestLiveSettingsHTTPStoreScopeCASReplay/published_and_fixed_template_rules (0.02s)
+PASS
+ok  	livecommerce/tests/foundation	4.781s
+=== RUN   TestLiveSettingsHTTPFullRouterTransport
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/no_bearer
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/query
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/empty_query
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/GET_body
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/GET_key
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/HEAD
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/POST
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/missing_key
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/duplicate_key
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/unknown_field
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/null_boolean
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/top_null
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/missing_boolean
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/duplicate_field
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/negative_CAS
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/zero_template_version
+--- PASS: TestLiveSettingsHTTPFullRouterTransport (0.01s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/no_bearer (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/query (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/empty_query (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/GET_body (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/GET_key (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/HEAD (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/POST (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/missing_key (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/duplicate_key (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/unknown_field (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/null_boolean (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/top_null (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/missing_boolean (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/duplicate_field (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/negative_CAS (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/zero_template_version (0.00s)
+PASS
+ok  	livecommerce/internal/httpapi	3.840s
+test-focused: top-level PASS=2 FAIL=0 SKIP=0 exit=0
