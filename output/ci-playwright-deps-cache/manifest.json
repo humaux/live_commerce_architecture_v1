@@ -1,0 +1,22 @@
+{
+  "DELIVERY.md": "1989f40f1148cad1d4d082563ed5d7c3dff278a074c8ebad386434ca6da9b27b",
+  "evidence/base-modes.txt": "5e780dc27ce8a1089b7191e5aa0a0a800d2a9144d7aa53ef5ffe91b5bd9cfd66",
+  "evidence/coverage-green.log": "e578035624e0d54f35cafffcc1b600389c6c503974f114af76437f12aa99b818",
+  "evidence/coverage-red.log": "e359f1cc7c57917a8c42572de45f05fb6b5ba9846f0e463a149bd429338584c9",
+  "evidence/focused.log": "eff7061c28223cd43b1ec769ec8810691f85b9da62a22c0ef2c407ab4a6d2d14",
+  "evidence/gates-final.log": "d85a6bc4e69fe5f1f4927e8a53caa0263ab3411e86f282dcc89a2931893132ac",
+  "evidence/gates-final.status.json": "f8e00449d042f587035cdaf2ae3dd544764b536f3bcec1f4d9af570d6afe232d",
+  "evidence/green.log": "90010010284ea93727fc0aeefe90f293ce5629f7c83be7e968a7c68ea83fe2f1",
+  "evidence/independent-review.md": "8774ee77462aa1efe2da4dded8ab2d52b2d514c05fa28beea8d177752157f4af",
+  "evidence/install.log": "0fd31cb30acb55e116c6581e6351bb98b1244f82a2e8c4ac17748607b2a699b1",
+  "evidence/modes.txt": "5e780dc27ce8a1089b7191e5aa0a0a800d2a9144d7aa53ef5ffe91b5bd9cfd66",
+  "evidence/mutation-proof.json": "d2ed2ae2e136d9a9e905f03f1690d6e3a814869db88abfa9d93dfa61aa539bd2",
+  "evidence/node-final.log": "71ebc7a352d98e63d7d64ebf0afab4268664c93a21b77c4eea4d0799957a96a5",
+  "evidence/node-final.status.json": "38d0731a78ef1b51b6b734cff1860a9a53cd1547876908e8f21fab8b4530c216",
+  "evidence/red.log": "b75486f80e732acbc141d0368ed568a719b6fd934a390ab121d46e19842293bb",
+  "evidence/requirements.json": "a711f900012e4b38964a17f6ffe081764be73a9a92c84d9b92329881afbe3e7c",
+  "evidence/retry-green.log": "534c06e7880abd26a46d72e325279afee2bf2e7dafdc0b0ba0bdd89da2e315d6",
+  "evidence/retry-red.log": "6b70dfd2da064593fbdfd9c2c800b4b421e7d5a5fde11a22cd83d61b077c0b95",
+  "evidence/tsc-final.log": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+  "evidence/tsc-final.status.json": "d94c8ca0378633948c289f8f1e7a167d32573da90cc8b321ee943cb9a2eae88c"
+}

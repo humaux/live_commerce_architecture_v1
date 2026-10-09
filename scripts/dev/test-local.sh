@@ -2,7 +2,7 @@
 # Purpose: one declarative case registry for mode discovery, preparation, builds and execution.
 # Depends on: Bash3.2+, test-local-runtime.sh, Docker/Go/Node and each mode's declared tools.
 # Used by: developers, CI, pr-modes.mjs, check-gates.sh and release-gate.sh.
-# Add a mode in ONE case entry below; no parallel usage/build/dispatch lists.
+# Add a mode in ONE case entry below; browser arms declare lc_browsers for CI dependency selection.
 set -euo pipefail
 # Keep the runtime guard before cd, exactly as in the original runner; metadata paths are inert.
 if [[ "${1:-}" != --list && "${1:-}" != --dry-run ]]; then
@@ -15,6 +15,7 @@ case "$1" in
   --browser-inbox)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/foundation/browser_inbox_ui_test.go
   test -f tests/admin/inbox-ui.spec.ts
@@ -34,6 +35,7 @@ case "$1" in
   --browser-meta-health-ui)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   :
     }
@@ -45,6 +47,7 @@ case "$1" in
   --browser-tracking-backfill)
     lc_build=admin
     lc_fixture=none
+    lc_browsers=chromium
     lc_prepare() {
   :
     }
@@ -58,6 +61,7 @@ case "$1" in
   --browser-platform-site)
     lc_build=none
     lc_fixture=none
+    lc_browsers=chromium
     lc_prepare() {
   :
     }
@@ -97,6 +101,7 @@ case "$1" in
   --browser-admin-shell)
     lc_build=none
     lc_fixture=none
+    lc_browsers=chromium
     lc_prepare() {
   :
     }
@@ -112,6 +117,7 @@ case "$1" in
   --browser-click-sweep)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # G-UI8 (BROWSER, MOCK): the real-click sweep over every admin registry route and every storefront route. Refuse a no-test success before any build.
   test -f tests/foundation/browser_click_sweep_test.go
@@ -144,6 +150,7 @@ case "$1" in
   --browser-visual-lint)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # G-UI9 (BROWSER, MOCK): screenshot corpus + deterministic layout lint on the click-sweep stack. Refuse a no-test success before any build, and prove the
   # lint can observe a failure (canary: a known-bad page trips every rule, a known-good page trips none) before it is allowed to say a page is clean.
@@ -185,6 +192,7 @@ case "$1" in
   --browser-identity)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   :
     }
@@ -196,6 +204,7 @@ case "$1" in
   --browser-buyer-comms)
     lc_build=storefront
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # buyer-comms browser gate (independent R4 tests): refuse a no-test success before any build.
   test -f tests/foundation/browser_buyer_comms_test.go
@@ -210,6 +219,7 @@ case "$1" in
   --browser-checkout-offline)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # COB (BROWSER, MOCK: no PSP on this path): refuse a no-test success before any build.
   test -f tests/foundation/browser_checkout_offline_test.go
@@ -226,6 +236,7 @@ case "$1" in
   --browser-home-cod)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # home-cod R5 (BROWSER, MOCK: no PSP and no carrier API on this path): refuse a no-test success before any build.
   test -f tests/foundation/browser_home_cod_test.go
@@ -242,6 +253,7 @@ case "$1" in
   --browser-promotions)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # promotions browser gate (independent R4 tests): refuse a no-test success before any build.
   test -f tests/foundation/browser_promotions_test.go
@@ -257,6 +269,7 @@ case "$1" in
   --browser-password-auth)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # PA11: refuse a no-test success (merchant-password-auth-v1 §9).
   test -f tests/admin/password-auth.spec.ts
@@ -278,6 +291,7 @@ case "$1" in
   --browser-admin-legacy)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # Orphan-spec gate (ledger/production/visual-states + identity-mock + entry-mock): refuse a no-test success.
   test -f tests/foundation/browser_admin_legacy_test.go
@@ -294,6 +308,7 @@ case "$1" in
   --browser-buyer)
     lc_build=storefront
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   :
     }
@@ -305,6 +320,7 @@ case "$1" in
   --browser-merchant-buyer)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # Do not report a pass from an exact Go test selector matching no test.
   test -f tests/foundation/browser_merchant_buyer_chain_test.go
@@ -317,6 +333,7 @@ case "$1" in
   --browser-manual-order)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/foundation/browser_manual_order_link_test.go
   test -f tests/storefront/manual-order-link-gate.mjs
@@ -330,6 +347,7 @@ case "$1" in
   --browser-merchant-orders-bff)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/foundation/browser_merchant_orders_bff_test.go
   test -f tests/admin/orders-bff.spec.ts
@@ -351,6 +369,7 @@ case "$1" in
   --browser-merchant-orders-ui)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/foundation/browser_merchant_orders_ui_test.go
   test -f tests/admin/orders-ui.spec.ts
@@ -382,6 +401,7 @@ case "$1" in
   --browser-input-delivery)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/foundation/browser_input_delivery_test.go
   test -f tests/admin/input-delivery.spec.ts
@@ -400,6 +420,7 @@ case "$1" in
   --browser-studio-bff)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/admin/studio-request.test.ts
   test -f tests/admin/studio-bff.spec.ts
@@ -416,6 +437,7 @@ case "$1" in
   --browser-studio-ui)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/admin/studio-ui.spec.ts
   test -f tests/foundation/browser_studio_ui_test.go
@@ -430,6 +452,7 @@ case "$1" in
   --browser-live-console)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/admin/live-console.spec.ts
   test -f tests/admin/comment-label-print.spec.ts
@@ -445,6 +468,7 @@ case "$1" in
   --browser-claim-checkout)
     lc_build=storefront
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/storefront/claim-checkout.mjs
   test -f tests/foundation/browser_claim_checkout_test.go
@@ -458,6 +482,7 @@ case "$1" in
   --browser-live-claims)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # KC16: refuse a no-test success, and run the pure claims BFF/copy contracts first.
   test -f tests/admin/claims-ui.spec.ts
@@ -474,6 +499,7 @@ case "$1" in
   --browser-order)
     lc_build=storefront
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/foundation/browser_order_chain_test.go
     }
@@ -485,6 +511,7 @@ case "$1" in
   --browser-payment)
     lc_build=storefront
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/foundation/browser_payment_chain_test.go
     }
@@ -496,6 +523,7 @@ case "$1" in
   --stripe-browser)
     lc_build=storefront
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # SP18 / SU05-SU09 (contracts/stripe-buyer-ui-v1.md §9). Steps can be narrowed with
   # LC_STRIPE_BROWSER_STEPS (default: all); only sp18/su07/su09 need the SANDBOX variables.
@@ -578,6 +606,7 @@ case "$1" in
   --browser-refund-fulfilment)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # MF07 + RF11 (BROWSER, MOCK Stripe): refuse a no-test success and run the pure BFF model gate first.
   test -f tests/foundation/browser_refund_fulfilment_test.go
@@ -598,6 +627,7 @@ case "$1" in
   --browser-customers-billing)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # CB11 (BROWSER, MOCK Stripe): refuse a no-test success and run the pure BFF fence/decoder gate first.
   test -f tests/foundation/browser_customers_billing_test.go
@@ -619,6 +649,7 @@ case "$1" in
   --browser-card-payments)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # W4-U1 (BROWSER, MOCK Stripe): refuse a no-test success and run the pure parser / BFF-fence / copy / wire-fixture / state-machine gates first.
   test -f tests/foundation/browser_card_payments_test.go
@@ -639,6 +670,7 @@ case "$1" in
   --browser-meta-ads)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # MA09a (BROWSER, Meta = MOCK): refuse a no-test success and run the pure model/request gates first.
   test -f tests/foundation/browser_meta_ads_test.go
@@ -660,6 +692,7 @@ case "$1" in
   --browser-ads-attribution)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/foundation/browser_ads_attribution_test.go
   grep -q '^func TestBrowserAdsAttribution' tests/foundation/browser_ads_attribution_test.go
@@ -676,6 +709,7 @@ case "$1" in
   --browser-cvs)
     lc_build=both
     lc_fixture=pg
+    lc_browsers="chromium webkit"
     lc_prepare() {
   # TCV08 (BROWSER, MOCK ECPay map/Create + signed status posts): refuse a no-test success before any build.
   test -f tests/foundation/browser_taiwan_cvs_test.go
@@ -694,6 +728,7 @@ case "$1" in
   --browser-catalog-media)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # catalog-media browser gate (independent R3 tests): refuse a no-test success before any build.
   test -f tests/foundation/browser_catalog_media_test.go
@@ -709,6 +744,7 @@ case "$1" in
   --browser-storefront-publish)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # R3 storefront-publish KEY gate (BROWSER, MOCK edge): refuse a no-test success and run the pure card-model gate first.
   test -f tests/foundation/browser_storefront_publish_test.go
@@ -726,6 +762,7 @@ case "$1" in
   --browser-store-domains)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # R5 store-domains KEY gate (BROWSER, MOCK edge + MOCK DNS/TLS): refuse a no-test success and run the pure domain-model gate first.
   test -f tests/foundation/browser_store_domains_test.go
@@ -742,6 +779,7 @@ case "$1" in
   --browser-storefront)
     lc_build=storefront
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # Real stack (unit storefront-integration): the pure logic tests first (the MOCK fake only feeds node tests/the LC_SHOP_MOCK variant), then PG + Go + Next.
   test -f tests/foundation/browser_storefront_test.go
@@ -782,6 +820,7 @@ case "$1" in
   --browser-webkit)
     lc_build=both
     lc_fixture=pg
+    lc_browsers="chromium webkit"
     lc_prepare() {
   # WebKit/iPhone Safari coverage of the buyer-critical flows (MOCK tier; docs/delivery/GATES.md). Refuse before any build when the WebKit
   # browser is absent: that is NOT_RUN (exit 2), never a green run on Chromium.
@@ -830,6 +869,7 @@ case "$1" in
   --browser-e2e)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # T12: refuse a no-test success; the whole deal loop is one Go test driving one Playwright spec.
   test -f tests/foundation/browser_e2e_test.go
@@ -1216,6 +1256,7 @@ case "$1" in
   --browser-design)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # R3 storefront-publish KEY gate (BROWSER, MOCK edge): refuse a no-test success and run the pure card-model gate first.
   test -f tests/foundation/browser_storefront_publish_test.go
@@ -1236,6 +1277,7 @@ case "$1" in
   --browser-ops-polish)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # ops-polish independent gates (OP1 buyer half, OP2, OP3 UI half, OP4): refuse a no-test success before any build.
   test -f tests/foundation/browser_ops_polish_test.go
@@ -1255,6 +1297,7 @@ case "$1" in
   --browser-meta-connect)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # meta-connect (BROWSER, Meta = MOCK fake Graph): refuse a no-test success and run the pure model/request gates first.
   test -f tests/foundation/browser_meta_connect_test.go
@@ -1274,6 +1317,7 @@ case "$1" in
   --browser-product-editor)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # CC12 (BROWSER + REAL_PG): refuse a no-test success before any build; the admin Next build is the only web build this gate needs.
   test -f tests/foundation/browser_catalog_core_test.go
@@ -1293,6 +1337,7 @@ case "$1" in
   --browser-catalog-core)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # CC12 (BROWSER + REAL_PG): refuse a no-test success before any build; the admin Next build is the only web build this gate needs.
   test -f tests/foundation/browser_catalog_core_test.go
@@ -1325,6 +1370,7 @@ case "$1" in
   --browser-returns-ui)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # W3-U5 (BROWSER): refuse a no-test success and run the pure returns model/BFF-grammar gate first.
   test -f tests/foundation/browser_returns_ui_test.go
@@ -1341,6 +1387,7 @@ case "$1" in
   --browser-picklist)
     lc_build=none
     lc_fixture=none
+    lc_browsers=chromium
     lc_prepare() {
   :
     }
@@ -1357,6 +1404,7 @@ case "$1" in
   --browser-operations-ads)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/foundation/browser_operations_ads_test.go
   grep -q "^func TestBrowserOperationsAds" tests/foundation/browser_operations_ads_test.go
@@ -1371,6 +1419,7 @@ case "$1" in
   --browser-product-media-v2)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/foundation/browser_product_media_v2_test.go
   test -f tests/foundation/browser_product_media_v2_fixture_test.go
@@ -1386,6 +1435,7 @@ case "$1" in
   --browser-reports)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # W6-U1: four actual reports and audited CSVs; signed HTTPS and real scoped Go/PG fixtures.
   test -f tests/foundation/browser_w6_customers_reports_test.go
@@ -1403,6 +1453,7 @@ case "$1" in
   --browser-migration-import)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # W5-U1: actual signed HTTPS UI and scoped Go/PG, original CSV bytes and no invented status endpoint.
   test -f tests/foundation/browser_migration_import_ui_test.go
@@ -1487,7 +1538,7 @@ lc_mode_names() {
     declaration="${declaration%"${declaration##*[![:space:]]}"}"
     case "$declaration" in
       ''|'#'*|'lc_select_mode() {'|'case "$1" in'|'fi'|';;'|'esac'|'}'|'*) return 1 ;;') continue ;;
-      lc_build=*|lc_fixture=*|'if [['*']]; then') continue ;;
+      lc_build=*|lc_fixture=*|lc_browsers=chromium|'lc_browsers="chromium webkit"'|'if [['*']]; then') continue ;;
     esac
     if [[ ! "$line" =~ $valid ]]; then printf 'invalid mode registry declaration\n' >&2; return 2; fi
     mode="${BASH_REMATCH[1]}"
