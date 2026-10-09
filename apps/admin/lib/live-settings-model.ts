@@ -91,6 +91,8 @@ export function settingsPermissions(kind: SettingsKind, method: string) {
 }
 /** Admit only bounded pagination/opaque references; never allow note/text/name in a URL. */
 export function settingsQuery(kind: SettingsKind, method: string, url: URL) {
+  // A bare "?" leaves url.search empty but survives in href; Go answers any query (even empty) with 422.
+  if (url.href.includes("?") && !url.search) return false;
   const q = url.searchParams;
   if (method !== "GET") return !url.search;
   if (kind === "check")

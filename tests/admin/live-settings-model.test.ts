@@ -30,6 +30,9 @@ test("only frozen session-scoped manual operations are available", () => {
     settingsQuery("blocklist", "GET", new URL("https://x/?note=PRIVATE")),
     false,
   );
+  // PR31 Codex 4231867175: a bare "?" normalises to an empty URL.search but Go answers any query with 422.
+  for (const [kind, method] of [["settings", "PUT"], ["blocklist", "GET"], ["blocklist", "POST"]] as const)
+    assert.equal(settingsQuery(kind, method, new URL("https://x/a?")), false, `${kind} ${method} bare ?`);
   assert.equal(
     settingsQuery(
       "check",
