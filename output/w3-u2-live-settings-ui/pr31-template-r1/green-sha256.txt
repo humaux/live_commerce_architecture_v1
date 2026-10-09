@@ -1,0 +1,4 @@
+47233569c51ab7cd3cc2518a65b04ec6fc06d88fd0a60dcee85f49f2eca7c824  apps/admin/lib/live-settings-model.ts
+1ea5be0d92581b36dab5a811d07f0433db774c8cdc03a786e114052dd5ca0662  tests/admin/live-settings-bff.test.ts
+724d57f597d6bdb6a4ff9402037187b516ed39ab527525ec20f59931c4f5cbe4  apps/admin/lib/live-settings-proxy.ts
+75bd4768e72998f23adcad784665f35ca509902596ac9c0fe036a0c6f2762eda  apps/admin/app/api/stores/[store]/message-templates/route.ts

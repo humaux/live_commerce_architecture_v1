@@ -169,7 +169,7 @@ export function settingsBody(kind: SettingsKind, raw: string): boolean {
       return (
         exact(v, ["template_id", "name", "body", "kinds", "public_safe"]) &&
         merchantTemplate(str(v.template_id, 64)) &&
-        !!str(v.name, 100).trim() &&
+        !!str(v.name, 120).trim() &&
         validSoldOutText(str(v.body, 280)) &&
         JSON.stringify(v.kinds) === '["private_reply"]' &&
         v.public_safe === false
@@ -234,11 +234,12 @@ export function settingsData(
     return method === "POST"
       ? template(v)
       : {
-          items: list(v.items, 500).map((x) => {
+          // The proxy's 1 MiB response byte limit bounds this unpaginated upstream list.
+          items: list(v.items, Infinity).map((x) => {
             const t = obj(x);
             return {
               ...template(t),
-              name: str(t.name, 100),
+              name: str(t.name, 120),
               created_at: time(t.created_at),
             };
           }),

@@ -335,6 +335,78 @@ test("real template publication rejects unknown fields and auth failures clear c
   assert.ok(!JSON.stringify(r.body).includes("PRIVATE"));
 });
 
+// Exercise the shared exact Next route used by Inbox, with Go's Unicode-rune name contract.
+const compatibleTemplate = {
+  template_id: "merchant-compatible",
+  version: 1,
+  kinds: ["private_reply"],
+  public_safe: false,
+  name: "Synthetic reply",
+  created_at: "2026-10-09T00:00:00Z",
+};
+for (const [label, rune] of [["BMP", "名"], ["astral", "😀"]]) {
+  test(`template compatibility GET preserves a legal 120-rune ${label} name`, async () => {
+    const item = { ...compatibleTemplate, name: rune.repeat(120) };
+    reply({ items: [item], actor_key: "NEVER-PROJECT" });
+    const result = await call("message-templates");
+    assert.equal(result.status, 200);
+    assert.deepEqual(result.body, { items: [item] });
+    assert.match(result.headers.get("cache-control")!, /private.*no-store/);
+  });
+  test(`template compatibility POST forwards a legal 120-rune ${label} name`, async () => {
+    const { template_id, version, kinds, public_safe } = compatibleTemplate;
+    reply({ template_id, version, kinds, public_safe });
+    const data = { template_id, name: rune.repeat(120), body: "Sold out", kinds, public_safe };
+    const result = await call("message-templates", "POST", data);
+    assert.equal(result.status, 200);
+    assert.deepEqual(result.body, { template_id, version, kinds, public_safe });
+    assert.deepEqual(JSON.parse(seen.at(-1)!.body), data);
+  });
+}
+for (const count of [501, 5001]) {
+  test(`template compatibility GET preserves all ${count} legal templates under the byte bound`, async () => {
+    const items = Array.from({ length: count }, (_, n) => ({
+      ...compatibleTemplate,
+      template_id: `merchant-${n}`,
+    }));
+    assert.ok(Buffer.byteLength(JSON.stringify({ items })) < 1024 * 1024);
+    reply({ items });
+    const result = await call("message-templates");
+    assert.equal(result.status, 200);
+    assert.deepEqual(result.body, { items });
+  });
+}
+test("template compatibility rejects 121-rune names on GET and before POST forwarding", async () => {
+  for (const rune of ["名", "😀"]) {
+    reply({ items: [{ ...compatibleTemplate, name: rune.repeat(121) }] });
+    assert.equal((await call("message-templates")).status, 503);
+    const before = seen.length;
+    const { template_id, kinds, public_safe } = compatibleTemplate;
+    const result = await call("message-templates", "POST", {
+      template_id, name: rune.repeat(121), body: "Sold out", kinds, public_safe,
+    });
+    assert.equal(result.status, 422);
+    assert.equal(seen.length, before);
+  }
+});
+test("template compatibility retains the response byte bound and item shape checks", async () => {
+  const items = Array.from({ length: 8000 }, (_, n) => ({
+    ...compatibleTemplate,
+    template_id: `merchant-${n}`,
+  }));
+  assert.ok(Buffer.byteLength(JSON.stringify({ items })) > 1024 * 1024);
+  reply({ items });
+  let result = await call("message-templates");
+  assert.equal(result.status, 503);
+  assert.equal(result.body.code, "retry_later");
+  assert.equal(Object.hasOwn(result.body, "items"), false);
+  reply({ items: [{ ...compatibleTemplate, public_safe: "false" }] });
+  result = await call("message-templates");
+  assert.equal(result.status, 503);
+  assert.equal(result.body.code, "retry_later");
+  assert.equal(Object.hasOwn(result.body, "items"), false);
+});
+
 test("success receipts must describe the exact requested command, otherwise the result remains unknown", async () => {
   reply({ ...setting, enabled: true });
   assert.equal(
