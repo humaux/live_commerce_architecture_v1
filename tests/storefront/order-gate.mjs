@@ -30,7 +30,7 @@ const certDir=await mkdtemp(path.join(tmpdir(),"lc-order-edge-"));
 const review=path.join(root,"output/playwright/review/buyer-order");
 const historyReview=path.join(root,"output/playwright/review/buyer-history");
 let browser,edge,proxy,hook,sessionResets=0;
-const calls=[];
+const calls=[], bo01Warmups=new Map(), bo01Reads=[], bo01Probes=[];
 async function control(resource,method="GET") {
   const response=await fetch(`${process.env.LC_ORDER_CONTROL}/${resource}`,{method,headers:{"X-Gate-Key":process.env.LC_ORDER_CONTROL_KEY}});
   assert.equal(response.status,200,`fixture control ${resource.split("/")[0]}`);return response.json();
@@ -103,8 +103,28 @@ async function assertHistoryTimes(p,locale,response) {
     await expect(row.locator("time[datetime]")).toHaveText(displayTime(locale,item.created_at));
   }
 }
-async function quotePage(c,clock=false,p) {
+// Both calibration barriers fail locally; a lost read must not wait for Go's 180 s kill.
+async function waitBo01Warmup(promise,phase,page) {
+  let deadline;
+  try {
+    return await Promise.race([promise,new Promise((_,reject)=>{
+      deadline=setTimeout(()=>reject(new Error(`BO01 warmup ${phase} exceeded 10000ms: GET /api/buyer/destination at ${page.url()}`)),10000);
+    })]);
+  } finally {clearTimeout(deadline);}
+}
+async function quotePage(c,clock=false,p,bo01=false) {
   if(!p){p=await c.newPage();if(clock)await p.clock.install();}
+  if(bo01&&process.env.LC_BO01_EARLY_HEAD==="1") {
+    const warmup={entered:deferred(),release:deferred(),served:deferred()};bo01Warmups.set(p,warmup);
+    let waiting=true;
+    await p.route("**/api/buyer/destination",async route=>{
+      const request=route.request();
+      if(waiting&&request.method()==="GET"&&new URL(request.headers().referer||origin).pathname==="/en/checkout") {
+        waiting=false;warmup.entered.resolve();await warmup.release.promise;
+      }
+      await route.continue();
+    });
+  }
   await reachCheckout(p,origin,"en",process.env.LC_ORDER_PRODUCT); // product page -> Add to cart -> /en/checkout (also for a page that continued shopping: its cart is empty)
   await p.getByRole("button",{name:"Choose delivery",exact:true}).click();
   const pending=p.waitForResponse(r=>requestIs(r,"quotes","POST"));
@@ -112,6 +132,7 @@ async function quotePage(c,clock=false,p) {
   const response=await pending;assert.equal(response.status(),200);
   const quote=await response.json();
   await expect(p.getByTestId("address-section")).toBeVisible();
+  if(bo01Warmups.has(p))await waitBo01Warmup(bo01Warmups.get(p).entered.promise,"request interception",p);
   return {p,quote};
 }
 async function fill(p,values=pii) {for(const [key,value] of Object.entries(values))await p.locator(`input[name="${key}"]`).fill(value);}
@@ -171,13 +192,27 @@ async function captureContextState(c) {
 async function stableLocaleTarget(p,mobile=false) {
   // Causal layout gate: release the real destination-head read only after the footer link is positioned.
   // A buyer can press a language link while this read completes; removing the loading paragraph must not move it.
-  const headLoading=arm("destination",{method:"GET",after:true});
-  await switchLocale(p,"zh-TW");
+  const repeats=Number(process.env.LC_BO01_REPEAT||1);assert(Number.isInteger(repeats)&&repeats>=1&&repeats<=10);
+  for(let iteration=1;iteration<=repeats;iteration++) {
+  const cookie=(await p.context().cookies(origin))[0];assert(cookie?.httpOnly&&cookie.secure);
+  // The previous English document can still be issuing its mount/focus read.
+  // Match the real new document and observed owner cookie, not whichever GET arrives first.
+  const headLoading=arm("destination",{method:"GET",after:true,sourcePath:"/zh-TW/checkout",cookie:`${cookie.name}=${cookie.value}`});
+  const warmup=bo01Warmups.get(p);
+  if(warmup){warmup.cookie=headLoading.cookie;warmup.release.resolve();await waitBo01Warmup(warmup.served.promise,"upstream completion",p);bo01Warmups.delete(p);}
+  // Enter the probed document from a settled old form; its loading is measured below.
+  await expect(p.locator('input[name="recipient_name"]')).toBeEnabled();
+  if(mobile&&process.env.LC_BROWSER_ENGINE==="webkit") {
+    await p.locator('footer nav a[hreflang="zh-TW"]').tap();
+    await expect(p).toHaveURL(`${origin}/zh-TW/checkout`);
+    await expect(p.locator('html[lang="zh-TW"]')).toBeVisible();
+  } else await switchLocale(p,"zh-TW");
   let headDeadline;
   try {
-    await Promise.race([headLoading.result.promise, new Promise((_, reject) => {
+    const status=await Promise.race([headLoading.result.promise, new Promise((_, reject) => {
       headDeadline = setTimeout(() => reject(new Error(`BO01 ${mobile ? "mobile" : "desktop"} destination-head wait exceeded 10000ms: GET /api/buyer/destination at ${p.url()}`)), 10000);
     })]);
+    assert.equal(status,200);assert.equal(headLoading.receivedSourcePath,"/zh-TW/checkout");assert.equal(headLoading.ownerMatched,true);
   } finally { clearTimeout(headDeadline); }
   await expect(p.getByTestId("address-section")).toBeVisible();
   await expect(p.getByTestId("cart-line")).toHaveCount(1);
@@ -190,6 +225,9 @@ async function stableLocaleTarget(p,mobile=false) {
   assert.equal(afterHead.top,beforeHead.top,"loading completion must not move the footer language target");
   if(mobile&&process.env.LC_BROWSER_ENGINE==="webkit")await languageLink.tap();else await languageLink.click();await expect(p).toHaveURL(`${origin}/en/checkout`);
   await expect(p.getByTestId("address-section")).toBeVisible();
+  bo01Probes.push({device:mobile?"mobile":"desktop",iteration,sourcePath:headLoading.receivedSourcePath,ownerMatched:headLoading.ownerMatched,before:beforeHead,after:afterHead});
+  await writeFile(path.join(evidence,"bo01-probes.json"),JSON.stringify(bo01Probes,null,2));
+  }
   pass(`BO01 ${mobile?"mobile":"desktop"} delivery-head completion keeps the language target stable`);
 }
 async function capture(p,name,fullPage=true,directory=review) {
@@ -248,11 +286,17 @@ try {
     try {
       const chunks=[];for await(const x of req)chunks.push(x);const body=Buffer.concat(chunks);
       if(req.url.startsWith("/api/buyer/session/")&&req.url.includes("prepare")&&body.toString().includes('"reset"'))sessionResets++;
-      const call={path:req.url,method:req.method,key:req.headers["idempotency-key"],body:body.length?body.toString():null};
+      const call={path:req.url,method:req.method,key:req.headers["idempotency-key"],body:body.length?body.toString():null,sourcePath:new URL(req.headers.referer||origin).pathname};
       if(req.url.startsWith("/api/buyer/"))calls.push(call);
-      const active=hook&&hook.path===req.url&&(!hook.method||hook.method===req.method)?hook:null;
-      if(active){if(!active.repeat)hook=null;active.entered.resolve();if(active.before)await active.release.promise;}
+      const cookiePairs=(req.headers.cookie||"").split(/;\s*/);
+      const active=hook&&hook.path===req.url&&(!hook.method||hook.method===req.method)&&(!hook.sourcePath||hook.sourcePath===call.sourcePath)&&(!hook.cookie||cookiePairs.includes(hook.cookie))?hook:null;
+      if(active){active.receivedSourcePath=call.sourcePath;active.ownerMatched=!!active.cookie&&cookiePairs.includes(active.cookie);if(!active.repeat)hook=null;active.entered.resolve();if(active.before)await active.release.promise;}
       const out=await relay(port,req,body);call.status=out.status;
+      if(req.url==="/api/buyer/destination"&&req.method==="GET") {
+        bo01Reads.push({sourcePath:call.sourcePath,status:out.status,held:!!active?.after});
+        await writeFile(path.join(evidence,"bo01-head-reads.json"),JSON.stringify(bo01Reads,null,2));
+        for(const [page,warmup] of bo01Warmups)if(call.sourcePath==="/en/checkout"&&page.url()===origin+"/en/checkout"&&cookiePairs.includes(warmup.cookie))warmup.served.resolve();
+      }
       if(active){active.out=out;active.result.resolve(out.status);}
       call.dropped=!!active?.drop;
       if(active?.drop){res.destroy();return;}
@@ -285,7 +329,7 @@ try {
   }
 
   // BO01/BO03: native form, all locales, in-memory PII and causal lost PUT.
-  const c1=await newContext(),{p:a,quote:q1}=await quotePage(c1);await rememberCookie(c1);
+  const c1=await newContext(),{p:a,quote:q1}=await quotePage(c1,false,undefined,true);await rememberCookie(c1);
   await stableLocaleTarget(a); // Run before filling PII so the original language/unsaved-address assertions retain their input.
   for(const name of Object.keys(pii))await expect(a.locator(`input[name="${name}"]`)).toHaveCount(1);
   await expect(a.locator('input[name="phone"]')).toHaveAttribute("type","tel");
@@ -376,7 +420,7 @@ try {
   pass("BO04 actual second-tab recovery queues on Web Lock and resumes same order without second POST");
 
   // BO05: a committed checkout with no reply survives document death/reload.
-  const c4=await newContext(true),{p:lost,quote:q4}=await quotePage(c4);await stableLocaleTarget(lost,true);await fill(lost);await confirm(lost);
+  const c4=await newContext(true),{p:lost,quote:q4}=await quotePage(c4,false,undefined,true);await stableLocaleTarget(lost,true);await fill(lost);await confirm(lost);
   await capture(lost,"mobile-address.png");
   const lostStart=calls.length,dropCheckout=arm("checkout",{method:"POST",drop:true,repeat:true});
   await lost.getByTestId("create-order").click();assert.equal(await dropCheckout.result.promise,200);await expect(lost.getByTestId("recover-purchase")).toBeVisible();hook=null;

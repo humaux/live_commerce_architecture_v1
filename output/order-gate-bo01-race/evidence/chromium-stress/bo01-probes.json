@@ -1,0 +1,322 @@
+[
+  {
+    "device": "desktop",
+    "iteration": 1,
+    "sourcePath": "/zh-TW/checkout",
+    "ownerMatched": true,
+    "before": {
+      "top": 2633.28125,
+      "height": 44,
+      "documentHeight": 2705
+    },
+    "after": {
+      "top": 2633.28125,
+      "height": 44,
+      "documentHeight": 2705
+    }
+  },
+  {
+    "device": "desktop",
+    "iteration": 2,
+    "sourcePath": "/zh-TW/checkout",
+    "ownerMatched": true,
+    "before": {
+      "top": 2633.28125,
+      "height": 44,
+      "documentHeight": 2705
+    },
+    "after": {
+      "top": 2633.28125,
+      "height": 44,
+      "documentHeight": 2705
+    }
+  },
+  {
+    "device": "desktop",
+    "iteration": 3,
+    "sourcePath": "/zh-TW/checkout",
+    "ownerMatched": true,
+    "before": {
+      "top": 2633.28125,
+      "height": 44,
+      "documentHeight": 2705
+    },
+    "after": {
+      "top": 2633.28125,
+      "height": 44,
+      "documentHeight": 2705
+    }
+  },
+  {
+    "device": "desktop",
+    "iteration": 4,
+    "sourcePath": "/zh-TW/checkout",
+    "ownerMatched": true,
+    "before": {
+      "top": 2633.28125,
+      "height": 44,
+      "documentHeight": 2705
+    },
+    "after": {
+      "top": 2633.28125,
+      "height": 44,
+      "documentHeight": 2705
+    }
+  },
+  {
+    "device": "desktop",
+    "iteration": 5,
+    "sourcePath": "/zh-TW/checkout",
+    "ownerMatched": true,
+    "before": {
+      "top": 2633.28125,
+      "height": 44,
+      "documentHeight": 2705
+    },
+    "after": {
+      "top": 2633.28125,
+      "height": 44,
+      "documentHeight": 2705
+    }
+  },
+  {
+    "device": "desktop",
+    "iteration": 6,
+    "sourcePath": "/zh-TW/checkout",
+    "ownerMatched": true,
+    "before": {
+      "top": 2633.28125,
+      "height": 44,
+      "documentHeight": 2705
+    },
+    "after": {
+      "top": 2633.28125,
+      "height": 44,
+      "documentHeight": 2705
+    }
+  },
+  {
+    "device": "desktop",
+    "iteration": 7,
+    "sourcePath": "/zh-TW/checkout",
+    "ownerMatched": true,
+    "before": {
+      "top": 2633.28125,
+      "height": 44,
+      "documentHeight": 2705
+    },
+    "after": {
+      "top": 2633.28125,
+      "height": 44,
+      "documentHeight": 2705
+    }
+  },
+  {
+    "device": "desktop",
+    "iteration": 8,
+    "sourcePath": "/zh-TW/checkout",
+    "ownerMatched": true,
+    "before": {
+      "top": 2633.28125,
+      "height": 44,
+      "documentHeight": 2705
+    },
+    "after": {
+      "top": 2633.28125,
+      "height": 44,
+      "documentHeight": 2705
+    }
+  },
+  {
+    "device": "desktop",
+    "iteration": 9,
+    "sourcePath": "/zh-TW/checkout",
+    "ownerMatched": true,
+    "before": {
+      "top": 2633.28125,
+      "height": 44,
+      "documentHeight": 2705
+    },
+    "after": {
+      "top": 2633.28125,
+      "height": 44,
+      "documentHeight": 2705
+    }
+  },
+  {
+    "device": "desktop",
+    "iteration": 10,
+    "sourcePath": "/zh-TW/checkout",
+    "ownerMatched": true,
+    "before": {
+      "top": 2633.28125,
+      "height": 44,
+      "documentHeight": 2705
+    },
+    "after": {
+      "top": 2633.28125,
+      "height": 44,
+      "documentHeight": 2705
+    }
+  },
+  {
+    "device": "mobile",
+    "iteration": 1,
+    "sourcePath": "/zh-TW/checkout",
+    "ownerMatched": true,
+    "before": {
+      "top": 3017.828125,
+      "height": 44,
+      "documentHeight": 3124
+    },
+    "after": {
+      "top": 3017.828125,
+      "height": 44,
+      "documentHeight": 3124
+    }
+  },
+  {
+    "device": "mobile",
+    "iteration": 2,
+    "sourcePath": "/zh-TW/checkout",
+    "ownerMatched": true,
+    "before": {
+      "top": 3017.828125,
+      "height": 44,
+      "documentHeight": 3124
+    },
+    "after": {
+      "top": 3017.828125,
+      "height": 44,
+      "documentHeight": 3124
+    }
+  },
+  {
+    "device": "mobile",
+    "iteration": 3,
+    "sourcePath": "/zh-TW/checkout",
+    "ownerMatched": true,
+    "before": {
+      "top": 3017.828125,
+      "height": 44,
+      "documentHeight": 3124
+    },
+    "after": {
+      "top": 3017.828125,
+      "height": 44,
+      "documentHeight": 3124
+    }
+  },
+  {
+    "device": "mobile",
+    "iteration": 4,
+    "sourcePath": "/zh-TW/checkout",
+    "ownerMatched": true,
+    "before": {
+      "top": 3017.828125,
+      "height": 44,
+      "documentHeight": 3124
+    },
+    "after": {
+      "top": 3017.828125,
+      "height": 44,
+      "documentHeight": 3124
+    }
+  },
+  {
+    "device": "mobile",
+    "iteration": 5,
+    "sourcePath": "/zh-TW/checkout",
+    "ownerMatched": true,
+    "before": {
+      "top": 3017.828125,
+      "height": 44,
+      "documentHeight": 3124
+    },
+    "after": {
+      "top": 3017.828125,
+      "height": 44,
+      "documentHeight": 3124
+    }
+  },
+  {
+    "device": "mobile",
+    "iteration": 6,
+    "sourcePath": "/zh-TW/checkout",
+    "ownerMatched": true,
+    "before": {
+      "top": 3017.828125,
+      "height": 44,
+      "documentHeight": 3124
+    },
+    "after": {
+      "top": 3017.828125,
+      "height": 44,
+      "documentHeight": 3124
+    }
+  },
+  {
+    "device": "mobile",
+    "iteration": 7,
+    "sourcePath": "/zh-TW/checkout",
+    "ownerMatched": true,
+    "before": {
+      "top": 3017.828125,
+      "height": 44,
+      "documentHeight": 3124
+    },
+    "after": {
+      "top": 3017.828125,
+      "height": 44,
+      "documentHeight": 3124
+    }
+  },
+  {
+    "device": "mobile",
+    "iteration": 8,
+    "sourcePath": "/zh-TW/checkout",
+    "ownerMatched": true,
+    "before": {
+      "top": 3017.828125,
+      "height": 44,
+      "documentHeight": 3124
+    },
+    "after": {
+      "top": 3017.828125,
+      "height": 44,
+      "documentHeight": 3124
+    }
+  },
+  {
+    "device": "mobile",
+    "iteration": 9,
+    "sourcePath": "/zh-TW/checkout",
+    "ownerMatched": true,
+    "before": {
+      "top": 3017.828125,
+      "height": 44,
+      "documentHeight": 3124
+    },
+    "after": {
+      "top": 3017.828125,
+      "height": 44,
+      "documentHeight": 3124
+    }
+  },
+  {
+    "device": "mobile",
+    "iteration": 10,
+    "sourcePath": "/zh-TW/checkout",
+    "ownerMatched": true,
+    "before": {
+      "top": 3017.828125,
+      "height": 44,
+      "documentHeight": 3124
+    },
+    "after": {
+      "top": 3017.828125,
+      "height": 44,
+      "documentHeight": 3124
+    }
+  }
+]

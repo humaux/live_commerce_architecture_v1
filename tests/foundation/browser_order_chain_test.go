@@ -221,6 +221,7 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 	cmd.Env = browserEnvironment(map[string]string{
 		"COMMERCE_BUYER_WEB_ENABLED": "1", "COMMERCE_BUYER_API_ORIGIN": h.server.URL, "COMMERCE_BUYER_DEMO_LABEL": "1",
 		"COMMERCE_BUYER_BFF_KEY": h.key, "COMMERCE_BUYER_COOKIE_KEY": brToken(), "COMMERCE_BUYER_SESSION_TTL": "3600",
+		"LC_BO01_EARLY_HEAD": os.Getenv("LC_BO01_EARLY_HEAD"), "LC_BO01_REPEAT": os.Getenv("LC_BO01_REPEAT"),
 		"LC_ORDER_EVIDENCE": evidence, "LC_ORDER_PRODUCT": h.stock.product.ID, "LC_ORDER_CONTROL": control.URL, "LC_ORDER_CONTROL_KEY": controlKey,
 	})
 	log := browserLog(t, filepath.Join(evidence, "browser.log"))

@@ -1,0 +1,26 @@
+browser engine: webkit
+PASS BO01 desktop delivery-head completion keeps the language target stable
+PASS BO01 native address; three locales keep the pinned quote and carry no unsaved PII across the language switch
+PASS BO03 committed destination lost reply retries exact key and body
+PASS BO03 lost destination reply reload reads head and explicitly replaces metadata intent
+PASS BO03 reload reconfirmation, edits and concurrent/late address CAS fail closed
+PASS BO04 actual confirmed form creates authoritative DRAFT and exactly one order/hold/job/receipt
+PASS BO05 owned current-state GET renders real expiry rather than historical DRAFT receipt
+PASS BO02 expired authoritative quote fails closed with no order or hold
+PASS BO04 actual second-tab recovery queues on Web Lock and resumes same order without second POST
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+page.waitForURL: Timeout 30000ms exceeded.
+=========================== logs ===========================
+waiting for navigation to "**/zh-TW/**" until "load"
+============================================================
+    at switchLocale (/Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race/tests/storefront/shop-helpers.mjs:32:14)
+    at async stableLocaleTarget (/Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race/tests/storefront/order-gate.mjs:194:3)
+    at async file:///Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race/tests/storefront/order-gate.mjs:349:94 {
+  log: [],
+  name: 'TimeoutError'
+}
+
+Node.js v24.15.0
