@@ -1,0 +1,15 @@
+✔ ordinary and sharded browser jobs require only Chromium; default mixed modes keep WebKit (3.830958ms)
+✔ explicit WebKit calibration takes the union without dropping Chromium (1.163625ms)
+✔ every current browser arm declares requirements; unknown or missing declarations fail closed (21.532291ms)
+✔ coverage assertion derives mixed Go roots and catches a new mode reusing them (68.222041ms)
+✔ installer retries transient dependency failure at most three times under root timeouts (3548.809917ms)
+✔ persistent dependency failure stops after three attempts and never downloads browsers (1927.741541ms)
+✔ workflow keeps the overall fifteen-minute bound and partitions cache by planned engine set (0.492875ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5861.279375

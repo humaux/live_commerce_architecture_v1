@@ -1,0 +1,64 @@
+✔ ordinary and sharded browser jobs require only Chromium; default mixed modes keep WebKit (3.536542ms)
+✔ explicit WebKit calibration takes the union without dropping Chromium (0.9715ms)
+✔ every current browser arm declares requirements; unknown or missing declarations fail closed (20.120792ms)
+✔ coverage assertion derives mixed Go roots and catches a new mode reusing them (66.866208ms)
+✖ installer retries transient dependency failure at most three times under root timeouts (1769.935542ms)
+✖ persistent dependency failure stops after three attempts and never downloads browsers (1785.761959ms)
+✔ mixed engine installer preserves both dependencies and both binaries; first success needs no retry (2186.03425ms)
+✔ invalid browser set cannot invoke dependency installer or browser downloads (365.676333ms)
+✔ dependency CLI resolves from the directly declared package in the frozen pnpm installation (2223.10175ms)
+✔ workflow keeps the overall fifteen-minute bound and partitions cache by planned engine set (0.327708ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 8
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8480.537959
+
+✖ failing tests:
+
+test at tests/ci/playwright-deps.test.mjs:62:1
+✖ installer retries transient dependency failure at most three times under root timeouts (1769.935542ms)
+  AssertionError [ERR_ASSERTION]: ci-playwright-install: dependencies attempt=1 exit=17 elapsed=1s
+  ci-playwright-install: dependencies failed after 3 attempts (exit=17)
+
+
+  17 !== 0
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-playwright-deps-cache/tests/ci/playwright-deps.test.mjs:63:45)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 17,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/playwright-deps.test.mjs:70:1
+✖ persistent dependency failure stops after three attempts and never downloads browsers (1785.761959ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  1 !== 3
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-playwright-deps-cache/tests/ci/playwright-deps.test.mjs:71:80)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 3,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

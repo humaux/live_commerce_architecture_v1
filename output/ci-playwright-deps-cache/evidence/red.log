@@ -1,0 +1,308 @@
+✖ ordinary and sharded browser jobs require only Chromium; default mixed modes keep WebKit (1.194708ms)
+✖ explicit WebKit calibration takes the union without dropping Chromium (0.199708ms)
+✖ every current browser arm declares requirements; unknown or missing declarations fail closed (0.946083ms)
+✖ coverage assertion derives mixed Go roots and catches a new mode reusing them (0.085542ms)
+✖ installer retries transient dependency failure at most three times under root timeouts (648.463417ms)
+✖ persistent dependency failure stops after three attempts and never downloads browsers (345.451625ms)
+✖ workflow keeps the overall fifteen-minute bound and partitions cache by planned engine set (1.478708ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 0
+ℹ fail 7
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1187.037625
+
+✖ failing tests:
+
+test at tests/ci/playwright-deps.test.mjs:14:1
+✖ ordinary and sharded browser jobs require only Chromium; default mixed modes keep WebKit (1.194708ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+    [
+      'chromium',
+  +   'webkit'
+    ]
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-playwright-deps-cache/tests/ci/playwright-deps.test.mjs:16:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'chromium', 'webkit' ],
+    expected: [ 'chromium' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/playwright-deps.test.mjs:21:1
+✖ explicit WebKit calibration takes the union without dropping Chromium (0.199708ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception.
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-playwright-deps-cache/tests/ci/playwright-deps.test.mjs:24:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /engine|browser/i,
+    operator: 'throws',
+    diff: 'simple'
+  }
+
+test at tests/ci/playwright-deps.test.mjs:27:1
+✖ every current browser arm declares requirements; unknown or missing declarations fail closed (0.946083ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception.
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-playwright-deps-cache/tests/ci/playwright-deps.test.mjs:30:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /mode|registry/i,
+    operator: 'throws',
+    diff: 'simple'
+  }
+
+test at tests/ci/playwright-deps.test.mjs:34:1
+✖ coverage assertion derives mixed Go roots and catches a new mode reusing them (0.085542ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception.
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-playwright-deps-cache/tests/ci/playwright-deps.test.mjs:37:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /webkit/i,
+    operator: 'throws',
+    diff: 'simple'
+  }
+
+test at tests/ci/playwright-deps.test.mjs:62:1
+✖ installer retries transient dependency failure at most three times under root timeouts (648.463417ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  0 !== 3
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-playwright-deps-cache/tests/ci/playwright-deps.test.mjs:64:59)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 3,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/playwright-deps.test.mjs:69:1
+✖ persistent dependency failure stops after three attempts and never downloads browsers (345.451625ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be strictly unequal to: 0
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-playwright-deps-cache/tests/ci/playwright-deps.test.mjs:70:47)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 0,
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/playwright-deps.test.mjs:72:1
+✖ workflow keeps the overall fifteen-minute bound and partitions cache by planned engine set (1.478708ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /node scripts\/dev\/ci-playwright-browsers\.mjs/. Input:
+
+  '# Purpose: run the RAM-heavy gates (full foundation suite, browser modes, focused PG regexes) on GitHub-hosted\n' +
+    '#   runners instead of the dev Mac (owner 2026-10-06: "把所有需要高ram的，放到GitHub上去跑"). One matrix job per mode,\n' +
+    '#   each on its own 16 GB runner, so modes run in parallel instead of queueing on the local machine-wide PG lock.\n' +
+    '#   2026-10-07 speed-up: a `plan` job fans the two long gates out (`--browser-click-sweep` -> N LC_SWEEP_SHARD slices, `--browser-visual-lint` -> M slices,\n' +
+    '#   `foundation-shards` -> the balanced groups of scripts/dev/shard-plan.json) and an `aggregate` job proves the slices together cover the full universe.\n' +
+    '# Depends on: scripts/dev/ci-plan.mjs (matrix), scripts/dev/shard-plan.mjs + shard-plan.json (foundation groups), scripts/dev/test-local.sh (modes),\n' +
+    '#   scripts/dev/test-focused.sh (regex runs), tests/ui/sweep-aggregate.mjs (whole-run verdict), the pinned postgres image,\n' +
+    '#   Playwright Chromium/WebKit for --browser-* modes (cached per Playwright version). No secrets: every gate uses MOCK/SANDBOX fixtures only.\n' +
+    "# Used by: the integrator (`gh workflow run gates.yml --ref <branch> -f modes='[...]'`); pushes to r3/integration run\n" +
+    '#   the sharded foundation suite automatically; every PR into r3/integration runs the set scripts/dev/pr-modes.mjs computes from its changed paths.\n' +
+    '# Integration is by PR only (docs/delivery/PROCESS.md section 2 step 6). The required set is fixed by the repo, never chosen by the merging agent: foundation-shards always, plus every\n' +
+    '#   CI-runnable --browser-* mode when any path outside the backend-only set changed (scripts/dev/pr-modes.mjs), plus deploy-smoke when deploy/ or scripts/deploy* changed.\n' +
+    '#   STABLE REQUIRED CHECK NAME for a branch ruleset: `Gates (GitHub runners) / required` (job `required`: fails when plan, any gate leg, the sweep/visual aggregate or an expected\n' +
+    '#   deploy-smoke failed, was cancelled or was skipped). Do NOT require the individual `gate (<mode>)` names: they change with the planned set. `extra_env` is never applied on pull_request;\n' +
+    '#   calibration / fault-injection runs stay an extra workflow_dispatch. No pull_request_target, no secrets.\n' +
+    'name: Gates (GitHub runners)\n' +
+    '\n' +
+    'on:\n' +
+    '  push:\n' +
+    '    branches: [r3/integration]\n' +
+    '  pull_request:\n' +
+    '    branches: [r3/integration]\n' +
+    '    types: [opened, synchronize, reopened]\n' +
+    '  workflow_dispatch:\n' +
+    '    inputs:\n' +
+    '      modes:\n' +
+    '        description: >-\n' +
+    '          JSON array of gates. "foundation" = full suite serially (test-local.sh); "foundation-shards" = unit shard + the balanced tests/foundation groups in parallel;\n' +
+    '          "--browser-click-sweep" / "--browser-visual-lint" = the whole gate, run as parallel shards plus an aggregate verdict (a single slice: "--browser-click-sweep@3/10");\n' +
+    '          other "--browser-x" / "--inbox-send" etc. = test-local.sh mode; "focused:<go -run regex>" = test-focused.sh.\n' +
+    `        default: '["foundation-shards"]'\n` +
+    '        required: true\n' +
+    '      extra_env:\n' +
+    '        description: >-\n' +
+    '          Optional space-separated LC_*=value pairs exported for every mode (fault-injection calibration of a new gate,\n' +
+    '          e.g. LC_PM_UI_INJECT_FAULT=missing-detail or LC_INBOX_CALIBRATION=retain-thread for --browser-inbox). Empty for normal runs.\n' +
+    "        default: ''\n" +
+    '        required: false\n' +
+    '\n' +
+    'permissions:\n' +
+    '  contents: read\n' +
+    '\n' +
+    '# A superseded push to a PR frees its runners. Push and dispatch keep their own per-job groups below (unique group here = never cancelled at workflow level).\n' +
+    'concurrency:\n' +
+    "  group: ${{ github.event_name == 'pull_request' && format('gates-pr-{0}', github.event.pull_request.number) || format('gates-run-{0}', github.run_id) }}\n" +
+    "  cancel-in-progress: ${{ github.event_name == 'pull_request' }}\n" +
+    '\n' +
+    'jobs:\n' +
+    '  plan:\n' +
+    '    runs-on: ubuntu-24.04\n' +
+    '    timeout-minutes: 5\n' +
+    '    outputs:\n' +
+    '      matrix: ${{ steps.plan.outputs.matrix }}\n' +
+    '      sweep_n: ${{ steps.plan.outputs.sweep_n }}\n' +
+    '      visual_n: ${{ steps.plan.outputs.visual_n }}\n' +
+    "      deploy: ${{ steps.pr.outputs.deploy || 'false' }}\n" +
+    '    steps:\n' +
+    '      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0\n' +
+    '        with:\n' +
+    '          persist-credentials: false\n' +
+    "          fetch-depth: ${{ github.event_name == 'pull_request' && '0' || '1' }} # the PR diff needs the merge base ('0' quoted: a bare 0 is falsy in an expression, so `&& 0 || 1` always gave 1)\n" +
+    '      - id: pr\n' +
+    "        if: github.event_name == 'pull_request'\n" +
+    '        env:\n' +
+    '          BASE_SHA: ${{ github.event.pull_request.base.sha }}\n' +
+    '          HEAD_SHA: ${{ github.event.pull_request.head.sha }}\n' +
+    '        run: node scripts/dev/pr-modes.mjs "$BASE_SHA" "$HEAD_SHA" >/dev/null\n' +
+    '      - id: plan\n' +
+    '        env:\n' +
+    '          # PR: the set computed from the changed paths. Push: the sharded foundation suite (unit + groups, ~12 min wall). Dispatch: what was asked for.\n' +
+    '          MODES: ${{ github.event_name == \'pull_request\' && steps.pr.outputs.modes || github.event_name == \'workflow_dispatch\' && inputs.modes || \'["foundation-shards"]\' }}\n' +
+    '        run: node scripts/dev/ci-plan.mjs\n' +
+    '\n' +
+    '  gate:\n' +
+    '    name: gate (${{ matrix.mode }})\n' +
+    '    needs: plan\n' +
+    '    strategy:\n' +
+    '      fail-fast: false\n' +
+    '      matrix:\n' +
+    '        include: ${{ fromJSON(needs.plan.outputs.matrix) }}\n' +
+    '    runs-on: ubuntu-24.04\n' +
+    '    timeout-minutes: 150\n' +
+    '    concurrency:\n' +
+    "      group: gates-${{ github.ref }}-${{ matrix.mode }}-${{ github.event_name == 'workflow_dispatch' && inputs.extra_env || '' }}\n" +
+    '      # A push never cancels the running full suite (it would never finish under frequent merges); GitHub keeps only the newest pending run.\n' +
+    "      cancel-in-progress: ${{ github.event_name != 'push' }}\n" +
+    '    env:\n' +
+    '      GOTOOLCHAIN: go1.27.2\n' +
+    '      GOFLAGS: -mod=readonly\n' +
+    '      PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright\n' +
+    '      MODE: ${{ matrix.mode }}\n' +
+    "      # Sweep fingerprints cover a shared store; concurrent UI copies alter another page's before/after state.\n" +
+    '      LC_SWEEP_WORKERS: "1"\n' +
+    "      EXTRA_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.extra_env || '' }} # never on pull_request\n" +
+    '    steps:\n' +
+    '      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0\n' +
+    '        with:\n' +
+    '          persist-credentials: false\n' +
+    '          fetch-depth: 0 # live_media_stop_legacy_test builds a pinned pre-LMR binary from git history\n' +
+    '      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0\n' +
+    '        with:\n' +
+    '          go-version-file: go.mod\n' +
+    '          cache: false\n' +
+    '      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0\n' +
+    '        with:\n' +
+    '          node-version: "24"\n' +
+    '      - name: Node dependencies (frozen lockfile)\n' +
+    '        run: |\n' +
+    '          corepack enable\n' +
+    '          pnpm install --frozen-lockfile --ignore-scripts\n' +
+    '      - name: Playwright version (cache key)\n' +
+    '        id: pw\n' +
+    "        if: startsWith(matrix.mode, '--browser') || startsWith(matrix.mode, '--stripe-browser')\n" +
+    '        # The version pnpm resolved from the frozen lockfile: a new Playwright (new browser revisions) is a new cache key, a lockfile change that keeps it is a hit.\n' +
+    `        run: echo "version=$(pnpm exec playwright --version | awk '{print $NF}')" >> "$GITHUB_OUTPUT"\n` +
+    '      - name: Writable Playwright browser dir\n' +
+    "        if: startsWith(matrix.mode, '--browser') || startsWith(matrix.mode, '--stripe-browser')\n" +
+    '        run: sudo mkdir -p "$PLAYWRIGHT_BROWSERS_PATH" && sudo chown "$(id -u):$(id -g)" "$PLAYWRIGHT_BROWSERS_PATH"\n' +
+    '      - name: Restore Playwright browsers\n' +
+    '        id: pwcache\n' +
+    "        if: startsWith(matrix.mode, '--browser') || startsWith(matrix.mode, '--stripe-browser')\n" +
+    '        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0\n' +
+    '        with:\n' +
+    '          path: /opt/ms-playwright\n' +
+    '          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-chromium-webkit\n' +
+    '      - name: Browsers for browser modes\n' +
+    "        if: startsWith(matrix.mode, '--browser') || startsWith(matrix.mode, '--stripe-browser')\n" +
+    '        # With a cache hit the browser downloads are skipped; --with-deps still installs the system libraries and Xvfb (apt, not cacheable here).\n' +
+    '        # Bounded: on 2026-10-08 this apt step hung for the whole 150-min job limit on 10+ jobs at once (PR #10), holding runners of the\n' +
+    "        # 20-job free tier; a healthy install takes < 3 min, so a hang now fails fast and the integrator's triage reruns it as INFRA.\n" +
+    '        timeout-minutes: 15\n' +
+    '        run: pnpm exec playwright install --with-deps chromium webkit\n' +
+    '      - name: Save Playwright browsers\n' +
+    '        # Saved right after the install (not at job end), so a run whose gate then fails still seeds the cache. Parallel jobs racing for the same key only log a warning.\n' +
+    "        if: ${{ (startsWith(matrix.mode, '--browser') || startsWith(matrix.mode, '--stripe-browser')) && steps.pwcache.outputs.cache-hit != 'true' }}\n" +
+    '        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0\n' +
+    '        with:\n' +
+    '          path: /opt/ms-playwright\n' +
+    '          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-chromium-webkit\n' +
+    '      - name: Download pinned test image\n' +
+    '        run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280\n' +
+    '      - name: Gate\n' +
+    '        run: |\n' +
+    '          set -o pipefail\n' +
+    '          mkdir -p output/ci-gates\n' +
+    '          # Only LC_* names with plain values: an inject-fail run of a new gate must not be able to set arbitrary env.\n' +
+    '          for kv in $EXTRA_ENV; do\n' +
+    '            [[ "$kv" =~ ^LC_[A-Z0-9_]+=[A-Za-z0-9._:-]*$ ]] || { echo "refusing extra_env entry: $kv" >&2; exit 2; }\n' +
+    '            export "$kv"; echo "extra_env: ${kv%%=*} set"\n' +
+    '          done\n' +
+    `          log="output/ci-gates/$(printf '%s' "$MODE" | tr -c 'A-Za-z0-9_-' '_').log"\n` +
+    '          case "$MODE" in\n' +
+    '            foundation) bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;\n' +
+    `            shard:unit) LC_FOUNDATION_PKGS="$(go list ./... | grep -v '/tests/foundation$' | tr '\\n' ' ')" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;\n` +
+    '            # A balanced group of scripts/dev/shard-plan.json: an anchored explicit -run list, or (the catch-all) -sk'... 6175 more characters
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-playwright-deps-cache/tests/ci/playwright-deps.test.mjs:75:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '# Purpose: run the RAM-heavy gates (full foundation suite, browser modes, focused PG regexes) on GitHub-hosted\n#   runners instead of the dev Mac (owner 2026-10-06: "把所有需要高ram的，放到GitHub上去跑"). One matrix job per mode,\n#   each on its own 16 GB runner, so modes run in parallel instead of queueing on the local machine-wide PG lock.\n#   2026-10-07 speed-up: a `plan` job fans the two long gates out (`--browser-click-sweep` -> N LC_SWEEP_SHARD slices, `--browser-visual-lint` -> M slices,\n#   `foundation-shards` -> the balanced groups of scripts/dev/shard-plan.json) and an `aggregate` job proves the slices together cover the full universe.\n# Depends on: scripts/dev/ci-plan.mjs (matrix), scripts/dev/shard-plan.mjs + shard-plan.json (foundation groups), scripts/dev/test-local.sh (modes),\n#   scripts/dev/test-focused.sh (regex runs), tests/ui/sweep-aggregate.mjs (whole-run verdict), the pinned postgres image,\n#   Playwright Chromium/WebKit for --browser-* modes (cached per Playwright version). No secrets: every gate uses MOCK/SANDBOX fixtures only.\n# Used by: the integrator (`gh workflow run gates.yml --ref <branch> -f modes=\'[...]\'`); pushes to r3/integration run\n#   the sharded foundation suite automatically; every PR into r3/integration runs the set scripts/dev/pr-modes.mjs computes from its changed paths.\n# Integration is by PR only (docs/delivery/PROCESS.md section 2 step 6). The required set is fixed by the repo, never chosen by the merging agent: foundation-shards always, plus every\n#   CI-runnable --browser-* mode when any path outside the backend-only set changed (scripts/dev/pr-modes.mjs), plus deploy-smoke when deploy/ or scripts/deploy* changed.\n#   STABLE REQUIRED CHECK NAME for a branch ruleset: `Gates (GitHub runners) / required` (job `required`: fails when plan, any gate leg, the sweep/visual aggregate or an expected\n#   deploy-smoke failed, was cancelled or was skipped). Do NOT require the individual `gate (<mode>)` names: they change with the planned set. `extra_env` is never applied on pull_request;\n#   calibration / fault-injection runs stay an extra workflow_dispatch. No pull_request_target, no secrets.\nname: Gates (GitHub runners)\n\non:\n  push:\n    branches: [r3/integration]\n  pull_request:\n    branches: [r3/integration]\n    types: [opened, synchronize, reopened]\n  workflow_dispatch:\n    inputs:\n      modes:\n        description: >-\n          JSON array of gates. "foundation" = full suite serially (test-local.sh); "foundation-shards" = unit shard + the balanced tests/foundation groups in parallel;\n          "--browser-click-sweep" / "--browser-visual-lint" = the whole gate, run as parallel shards plus an aggregate verdict (a single slice: "--browser-click-sweep@3/10");\n          other "--browser-x" / "--inbox-send" etc. = test-local.sh mode; "focused:<go -run regex>" = test-focused.sh.\n        default: \'["foundation-shards"]\'\n        required: true\n      extra_env:\n        description: >-\n          Optional space-separated LC_*=value pairs exported for every mode (fault-injection calibration of a new gate,\n          e.g. LC_PM_UI_INJECT_FAULT=missing-detail or LC_INBOX_CALIBRATION=retain-thread for --browser-inbox). Empty for normal runs.\n        default: \'\'\n        required: false\n\npermissions:\n  contents: read\n\n# A superseded push to a PR frees its runners. Push and dispatch keep their own per-job groups below (unique group here = never cancelled at workflow level).\nconcurrency:\n  group: ${{ github.event_name == \'pull_request\' && format(\'gates-pr-{0}\', github.event.pull_request.number) || format(\'gates-run-{0}\', github.run_id) }}\n  cancel-in-progress: ${{ github.event_name == \'pull_request\' }}\n\njobs:\n  plan:\n    runs-on: ubuntu-24.04\n    timeout-minutes: 5\n    outputs:\n      matrix: ${{ steps.plan.outputs.matrix }}\n      sweep_n: ${{ steps.plan.outputs.sweep_n }}\n      visual_n: ${{ steps.plan.outputs.visual_n }}\n      deploy: ${{ steps.pr.outputs.deploy || \'false\' }}\n    steps:\n      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0\n        with:\n          persist-credentials: false\n          fetch-depth: ${{ github.event_name == \'pull_request\' && \'0\' || \'1\' }} # the PR diff needs the merge base (\'0\' quoted: a bare 0 is falsy in an expression, so `&& 0 || 1` always gave 1)\n      - id: pr\n        if: github.event_name == \'pull_request\'\n        env:\n          BASE_SHA: ${{ github.event.pull_request.base.sha }}\n          HEAD_SHA: ${{ github.event.pull_request.head.sha }}\n        run: node scripts/dev/pr-modes.mjs "$BASE_SHA" "$HEAD_SHA" >/dev/null\n      - id: plan\n        env:\n          # PR: the set computed from the changed paths. Push: the sharded foundation suite (unit + groups, ~12 min wall). Dispatch: what was asked for.\n          MODES: ${{ github.event_name == \'pull_request\' && steps.pr.outputs.modes || github.event_name == \'workflow_dispatch\' && inputs.modes || \'["foundation-shards"]\' }}\n        run: node scripts/dev/ci-plan.mjs\n\n  gate:\n    name: gate (${{ matrix.mode }})\n    needs: plan\n    strategy:\n      fail-fast: false\n      matrix:\n        include: ${{ fromJSON(needs.plan.outputs.matrix) }}\n    runs-on: ubuntu-24.04\n    timeout-minutes: 150\n    concurrency:\n      group: gates-${{ github.ref }}-${{ matrix.mode }}-${{ github.event_name == \'workflow_dispatch\' && inputs.extra_env || \'\' }}\n      # A push never cancels the running full suite (it would never finish under frequent merges); GitHub keeps only the newest pending run.\n      cancel-in-progress: ${{ github.event_name != \'push\' }}\n    env:\n      GOTOOLCHAIN: go1.27.2\n      GOFLAGS: -mod=readonly\n      PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright\n      MODE: ${{ matrix.mode }}\n      # Sweep fingerprints cover a shared store; concurrent UI copies alter another page\'s before/after state.\n      LC_SWEEP_WORKERS: "1"\n      EXTRA_ENV: ${{ github.event_name == \'workflow_dispatch\' && inputs.extra_env || \'\' }} # never on pull_request\n    steps:\n      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0\n        with:\n          persist-credentials: false\n          fetch-depth: 0 # live_media_stop_legacy_test builds a pinned pre-LMR binary from git history\n      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0\n        with:\n          go-version-file: go.mod\n          cache: false\n      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0\n        with:\n          node-version: "24"\n      - name: Node dependencies (frozen lockfile)\n        run: |\n          corepack enable\n          pnpm install --frozen-lockfile --ignore-scripts\n      - name: Playwright version (cache key)\n        id: pw\n        if: startsWith(matrix.mode, \'--browser\') || startsWith(matrix.mode, \'--stripe-browser\')\n        # The version pnpm resolved from the frozen lockfile: a new Playwright (new browser revisions) is a new cache key, a lockfile change that keeps it is a hit.\n        run: echo "version=$(pnpm exec playwright --version | awk \'{print $NF}\')" >> "$GITHUB_OUTPUT"\n      - name: Writable Playwright browser dir\n        if: startsWith(matrix.mode, \'--browser\') || startsWith(matrix.mode, \'--stripe-browser\')\n        run: sudo mkdir -p "$PLAYWRIGHT_BROWSERS_PATH" && sudo chown "$(id -u):$(id -g)" "$PLAYWRIGHT_BROWSERS_PATH"\n      - name: Restore Playwright browsers\n        id: pwcache\n        if: startsWith(matrix.mode, \'--browser\') || startsWith(matrix.mode, \'--stripe-browser\')\n        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0\n        with:\n          path: /opt/ms-playwright\n          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-chromium-webkit\n      - name: Browsers for browser modes\n        if: startsWith(matrix.mode, \'--browser\') || startsWith(matrix.mode, \'--stripe-browser\')\n        # With a cache hit the browser downloads are skipped; --with-deps still installs the system libraries and Xvfb (apt, not cacheable here).\n        # Bounded: on 2026-10-08 this apt step hung for the whole 150-min job limit on 10+ jobs at once (PR #10), holding runners of the\n        # 20-job free tier; a healthy install takes < 3 min, so a hang now fails fast and the integrator\'s triage reruns it as INFRA.\n        timeout-minutes: 15\n        run: pnpm exec playwright install --with-deps chromium webkit\n      - name: Save Playwright browsers\n        # Saved right after the install (not at job end), so a run whose gate then fails still seeds the cache. Parallel jobs racing for the same key only log a warning.\n        if: ${{ (startsWith(matrix.mode, \'--browser\') || startsWith(matrix.mode, \'--stripe-browser\')) && steps.pwcache.outputs.cache-hit != \'true\' }}\n        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0\n        with:\n          path: /opt/ms-playwright\n          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-chromium-webkit\n      - name: Download pinned test image\n        run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280\n      - name: Gate\n        run: |\n          set -o pipefail\n          mkdir -p output/ci-gates\n          # Only LC_* names with plain values: an inject-fail run of a new gate must not be able to set arbitrary env.\n          for kv in $EXTRA_ENV; do\n            [[ "$kv" =~ ^LC_[A-Z0-9_]+=[A-Za-z0-9._:-]*$ ]] || { echo "refusing extra_env entry: $kv" >&2; exit 2; }\n            export "$kv"; echo "extra_env: ${kv%%=*} set"\n          done\n          log="output/ci-gates/$(printf \'%s\' "$MODE" | tr -c \'A-Za-z0-9_-\' \'_\').log"\n          case "$MODE" in\n            foundation) bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;\n            shard:unit) LC_FOUNDATION_PKGS="$(go list ./... | grep -v \'/tests/foundation$\' | tr \'\\n\' \' \')" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;\n            # A balanced group of scripts/dev/shard-plan.json: an anchored explicit -run list, or (the catch-all) -sk'... 6175 more characters,
+    expected: /node scripts\/dev\/ci-playwright-browsers\.mjs/,
+    operator: 'match',
+    diff: 'simple'
+  }
