@@ -42,3 +42,22 @@ test("browser evidence uses unique local runs or the selected harness parent wit
     else console.error(`Retained failed browser evidence fixture: ${fixture}`);
   }
 });
+
+
+test("browser evidence rejects labels that escape the harness directory before creating files", () => {
+  const fixture = realpathSync(mkdtempSync(path.join(tmpdir(), "lc-browser-evidence-label-")));
+  let passed = false;
+  try {
+    const result = spawnSync(process.execPath, ["--input-type=module", "-e",
+      `import assert from 'node:assert/strict'; import { browserEvidenceDirectory } from ${JSON.stringify(helper)};
+       for (const label of ['..', '../outside', '/tmp/outside', 'a/b', 'a\\b', '', null])
+         assert.throws(() => browserEvidenceDirectory(label), /evidence label/, String(label));`],
+      { cwd: fixture, env: { ...process.env, LC_BROWSER_EVIDENCE: path.join(fixture, "run") }, encoding: "utf8", timeout: 10_000 });
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, 0, result.stderr);
+    passed = true;
+  } finally {
+    if (passed) rmSync(fixture, { recursive: true });
+    else console.error(`Retained failed label fixture: ${fixture}`);
+  }
+});

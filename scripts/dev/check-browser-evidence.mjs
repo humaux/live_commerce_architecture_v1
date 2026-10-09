@@ -13,16 +13,25 @@ const writers = new Map([
 ]);
 const constructors = new Set(['join','resolve','Join','Abs','Clean']);
 const body = n => ts.isParenthesizedExpression(n) || ts.isAsExpression(n) || ts.isNonNullExpression(n) ? body(n.expression) : n;
-const nameOf = n => ts.isPropertyAccessExpression(n) ? n.name.text : ts.isIdentifier(n) ? n.text : '';
+const nameOf = n => ts.isPropertyAccessExpression(n) ? n.name.text : ts.isElementAccessExpression(n) ? nameOf(n.argumentExpression) : ts.isIdentifier(n) || ts.isStringLiteralLike(n) ? n.text : '';
 const products = arrays => arrays.reduce((rows,values)=>rows.flatMap(row=>values.map(value=>[...row,value])),[[]]).slice(0,128);
 function expression(text) {return ts.createSourceFile('expression.ts',`(${text})`,ts.ScriptTarget.Latest,true).statements[0]?.expression;}
 /** Scan a producer's actual write destinations, following local path aliases and helper returns. */
 export function inspectEvidenceSource(file,source,{tracked=[]}={}) {
- const findings=[], bindings=new Map(), returns=new Map();
+ const findings=[], bindings=new Map(), returns=new Map(), aliases=new Map();
+ const canonical = name => aliases.get(name) || name;
  const add=(name,value)=>bindings.set(name,[...(bindings.get(name)||[]),value]);
  const tree=ts.createSourceFile(file,source,ts.ScriptTarget.Latest,true,file.endsWith('.tsx')?ts.ScriptKind.TSX:ts.ScriptKind.TS);
  function visit(n,callback){callback(n);ts.forEachChild(n,c=>visit(c,callback));}
  if(!file.endsWith('.go')) visit(tree,n=>{
+  if(ts.isImportDeclaration(n)&&ts.isStringLiteral(n.moduleSpecifier)&&/^(node:)?(fs|fs\/promises|path)$/.test(n.moduleSpecifier.text)){
+   const imports=n.importClause?.namedBindings;
+   if(imports&&ts.isNamedImports(imports))for(const spec of imports.elements)aliases.set(spec.name.text,(spec.propertyName||spec.name).text);
+  }
+  if(ts.isVariableDeclaration(n)&&ts.isIdentifier(n.name)&&n.initializer){
+   const target=canonical(nameOf(body(n.initializer)));
+   if(writers.has(target)||constructors.has(target))aliases.set(n.name.text,target);
+  }
   if(ts.isVariableDeclaration(n)&&ts.isIdentifier(n.name)&&n.initializer)add(n.name.text,n.initializer);
   if(ts.isBinaryExpression(n)&&n.operatorToken.kind===ts.SyntaxKind.EqualsToken&&ts.isIdentifier(n.left))add(n.left.text,n.right);
   if(ts.isFunctionDeclaration(n)&&n.name&&n.body){const values=[];visit(n.body,c=>{if(ts.isReturnStatement(c)&&c.expression)values.push(c.expression);});returns.set(n.name.text,values);}
@@ -46,7 +55,7 @@ export function inspectEvidenceSource(file,source,{tracked=[]}={}) {
    return values;
   }
   if(ts.isCallExpression(n)){
-   const name=nameOf(n.expression);
+   const name=canonical(nameOf(n.expression));
    if(name==='TempDir')return['__TEST_TEMP__'];
    if(constructors.has(name))return products(n.arguments.map(a=>{const v=evaluate(a,seen);return v.length?v:['*'];})).map(v=>path.posix.normalize(v.join('/')));
    if(['mkdtemp','mkdtempSync','MkdirTemp','CreateTemp'].includes(name))return evaluate(n.arguments[0],seen);
@@ -71,7 +80,7 @@ export function inspectEvidenceSource(file,source,{tracked=[]}={}) {
  }
  if(!file.endsWith('.go'))visit(tree,n=>{
   if(ts.isCallExpression(n)||ts.isNewExpression(n)){
-   const name=nameOf(n.expression),args=n.arguments||[];
+   const name=canonical(nameOf(n.expression)),args=n.arguments||[];
    if(writers.has(name))check(args[writers.get(name)],n.getStart(tree));
    if(['screenshot','pdf'].includes(name)&&args[0]){
     const options=body(args[0]);

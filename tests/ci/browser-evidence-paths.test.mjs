@@ -7,6 +7,11 @@ import {inspectEvidenceSource,browserProducer} from '../../scripts/dev/check-bro
 const file='tests/admin/example.spec.ts';
 const bad=source=>inspectEvidenceSource(file,source,{tracked:['.impeccable/review/hero-repro.png']});
 for(const [name,source] of [
+ ['quoted screenshot path',`await page.screenshot({'path':'output/product-ui-v2/shot.png'})`],
+ ['computed writer',`await fs['writeFile']('output/product-ui-v2/x','x')`],
+ ['renamed import',`import {writeFile as persist} from 'node:fs/promises';await persist('output/product-ui-v2/x','x')`],
+ ['local writer alias',`const persist=fs.writeFileSync;persist('output/product-ui-v2/x','x')`],
+ ['quoted reporter',`export default defineConfig({'outputDir':'output/product-ui-v2/results'})`],
  ['direct',`await writeFile('output/product-ui-v2/ledger.json','x')`],
  ['alias',`const out=path.resolve('output/product-ui-v2'); const file=path.join(out,'x.png'); await page.screenshot({path:file})`],
  ['split join',`const out=path.join(root,'output','product-ui-v2');await mkdir(out)`],
