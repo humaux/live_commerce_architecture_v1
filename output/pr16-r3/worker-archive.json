@@ -1,0 +1,12 @@
+[
+  {
+    "worker": "cart",
+    "commit": "2098d272f8005e6c426eb891f50936c3ad918b36",
+    "clean": true
+  },
+  {
+    "worker": "matrix",
+    "commit": "be5a2b4c0ae45df542e34916f468c01a4bb3bb60",
+    "clean": true
+  }
+]

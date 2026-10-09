@@ -1,0 +1,14 @@
+✔ round2 stale A session response cannot supersede newer refresh B or its lost-write Retry (42.270875ms)
+✔ round2 stale A session response cannot supersede newer mutation B or its lost-write Retry (8.601ms)
+✔ rotated buyer context clears the prior cart on read and preserves the B receipt (6.585542ms)
+✔ rotated buyer context clears the prior cart on lost-write and preserves the B receipt (6.104209ms)
+✔ rotated buyer context clears the prior cart on refresh-read and preserves the B receipt (6.421375ms)
+✔ lost first write keeps Retry alive: same context, same idempotency key, no second purchase (9.0415ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 263.324458

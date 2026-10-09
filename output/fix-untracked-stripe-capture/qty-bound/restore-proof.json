@@ -1,0 +1,6 @@
+{
+  "proof": "Revert only the two quantity predicates/comments and whole migration is byte-identical to bbb8728d; all ACL/definer/COMMENT/other behavior preserved.",
+  "base_sha256": "f14a2ad54b8ee37d209d20738c9cf52e393f99884ed7a64ed8ce86d6e507d0ae",
+  "restored_sha256": "f14a2ad54b8ee37d209d20738c9cf52e393f99884ed7a64ed8ce86d6e507d0ae",
+  "identical": true
+}

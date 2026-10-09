@@ -1,0 +1,18 @@
+{
+  "name": "axis-remove-red",
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-product-editor"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups",
+  "out": "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups/output/pr16-r4",
+  "timeout": 2400,
+  "head": "aa73e2f713b5054b84cadc29d2bb217b45994389",
+  "pid": 90047,
+  "exit_code": 1,
+  "source_sha256": "12e23ee8eff109c4123b7c0d19c034fa970f4423c3947f0248e1729dc2a62bb1",
+  "source_after": "12e23ee8eff109c4123b7c0d19c034fa970f4423c3947f0248e1729dc2a62bb1",
+  "source_unchanged": true,
+  "elapsed_seconds": 112.589
+}

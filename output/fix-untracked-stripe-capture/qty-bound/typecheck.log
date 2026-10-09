@@ -1,0 +1,3 @@
+
+> @live-commerce/admin@ typecheck /Volumes/data/live_commerce_architecture_v1/.worktrees/fix-untracked-stripe-capture/apps/admin
+> tsc --noEmit

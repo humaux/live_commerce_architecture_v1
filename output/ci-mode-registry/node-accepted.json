@@ -1,0 +1,8 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/test-node.sh"
+  ],
+  "tree": "bf053bb8b6cb9c31541eb949b9987822dea45855",
+  "exit_code": 0
+}
