@@ -1,0 +1,45 @@
+✔ browser evidence uses unique local runs or the selected harness parent without rewriting history (156.100833ms)
+✔ browser evidence rejects labels that escape the harness directory before creating files (49.636833ms)
+✔ shell isolates visual fixtures from a click ledger when caller reuses its evidence root (60.694208ms)
+✔ ops disk guard allocation isolates its log and child evidence from committed history (22.290583ms)
+✔ visual artifact upload selects lint/index/shots and excludes raw unrelated evidence (12.683208ms)
+✔ visual reviewer discovers nested per-run artifact shots through its real copy loop (82.762625ms)
+✔ explicit evidence roots inside a repository must be ignored and untracked (PR #23 review) (833.320083ms)
+✔ mode discovery has no Docker/build dependency and includes the existing universe (56.789375ms)
+✔ dry-run resolves a mode without executing dependencies and keeps its command environment (102.048792ms)
+✔ one appended case is discovered and dispatched; malformed and duplicate registry entries fail closed (88.821833ms)
+✔ registry discovery cannot silently lose indented, aliased or unrecognised Bash case arms (7.922625ms)
+✔ backend-only paths run foundation-shards only (1.090917ms)
+✔ node tests of deploy scripts and of the CI planner are backend-only (they cannot change a browser) (1.584208ms)
+✔ a UI path adds the whole browser set, including click-sweep and visual-lint (9.679208ms)
+✔ docs-only and output-only diffs keep the single required check (foundation-shards) (2.577667ms)
+✔ legacy browser_* paths still select all browsers; a known untagged foundation file stays backend-only (1.155542ms)
+✔ legacy deploy prefixes remain selected and unrelated paths do not select smoke (10.679125ms)
+✔ the browser set is release-gate's browser-mode universe minus the documented exclusions (109.085333ms)
+✔ every real browser-tagged foundation file selects registry browser modes, including non-browser names (234.526791ms)
+✔ tagged runner discovery follows registry additions, command arrays and line continuations (1.593708ms)
+✔ deploy smoke is selected for its workflow, verdict/helpers and executable test inputs (2.141083ms)
+✔ new selection never drops legacy modes or deploy for any tracked path (634.073541ms)
+✔ CLI classifies merge-base and explicit head, including removed tags, deleted files and renames (757.793125ms)
+✔ CLI selects modes the base added after divergence when the checkout is the PR merge (PR #22 review P1) (284.501875ms)
+✔ CLI reads the merge checkout's source when the base adds a browser tag after the fork (PR #22 review P1) (343.024042ms)
+✔ CLI explicit head and stdin include tags outside the checkout and uncommitted tag removals (587.2395ms)
+✔ compound/legacy tags and unknown source are conservative; known untagged source stays backend-only (9.805625ms)
+✔ explicit-head CLI derives tagged runner modes from that head's real registry (496.469334ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "架构.md" (236.365042ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "internal/示例.go" (222.713792ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "tests/foundation/plain\tname_test.go" (278.855083ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, " deploy/scripts/synthetic-smoke.sh" (305.864167ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "架构.md" (320.995792ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "internal/示例.go" (256.861375ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "tests/foundation/plain\tname_test.go" (220.624709ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, " deploy/scripts/synthetic-smoke.sh" (202.30375ms)
+✔ stdin unions legacy trimming without trimming the source lookup path (123.514666ms)
+ℹ tests 37
+ℹ suites 0
+ℹ pass 37
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5725.559708
