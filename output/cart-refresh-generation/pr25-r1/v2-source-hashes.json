@@ -1,0 +1,10 @@
+{
+  "tested_sha": "a4989bc6e55c8f813acf99f95850e98213f4d264",
+  "files": {
+    "apps/storefront/components/CartProvider.tsx": "611ad036da5345a31c313ea8a77cd8cd04181aea8b9dc21ce5445e0864f1db43",
+    "apps/storefront/tests/cart-provider-retry.test.mjs": "9812ab5b101e54d8d04d96cd11cb4c89b1726db7c7dbf8800764fd2d68955886",
+    "tests/storefront/order-gate.mjs": "b8c70bf64065ac32b65251bb5b39d61bdda6371c535673914ece6beb8068c38a",
+    "tests/foundation/browser_order_chain_test.go": "197b2adecdd166337f0461194c5d857e3298fff12abecec0764e9b9178b947b6",
+    "tests/foundation/buyer_order_evidence_test.go": "c3c86852905e3ecbe4d156383c877bcb6c5067ac8bf0cf11589cd60287cd8432"
+  }
+}
