@@ -9,7 +9,7 @@ const required = (key: string) => { const value = process.env[key]; if (!value) 
 const origin = required("LC_BROWSER_PUBLIC_ORIGIN"), store = required("LC_BROWSER_CONSOLE_STORE");
 const data: { session: string; print_refs: string[] } = JSON.parse(required("LC_BROWSER_CONSOLE_COMMENTS"));
 const evidence = required("LC_BROWSER_EVIDENCE");
-const ledger: { locale: string; width: number; page: string; control: string; operation: string; expected: string; actual: string; result: "PASS" }[] = [];
+const ledger: { locale: string; width: number; page: string; control: string; operation: string; expected: string; actual: string; result: "PASS" | "FAIL" }[] = [];
 function record(locale: string, width: number, control: string, operation: string, expected: string) {
   ledger.push({ locale, width, page: "/studio/console", control, operation, expected, actual: expected, result: "PASS" });
 }
@@ -36,7 +36,13 @@ async function privateStorage(page: Page) {
   if (preference) expect(preference[1]).toMatch(/^(label|a4)$/);
 }
 
-test.afterAll(async () => { await writeFile(`${evidence}/label-click-ledger.json`, JSON.stringify(ledger, null, 2)); });
+test.afterEach(async ({}, info) => {
+  // Playwright restarts its worker after a failure. Per-case files retain all
+  // successful controls instead of letting a restarted worker overwrite them.
+  const rows = ledger.splice(0);
+  if (info.status !== "passed") rows.push({ locale: "en", width: 1586, page: "/studio/console", control: info.title, operation: "real-click contract case", expected: "All unchanged contract assertions pass", actual: `Test status: ${info.status}; see error-context.md`, result: "FAIL" });
+  await writeFile(`${evidence}/label-click-ledger-${info.testId.replace(/[^\w-]/g, "_")}.json`, JSON.stringify(rows, null, 2));
+});
 for (const locale of ["zh-TW", "zh-CN", "en"]) for (const width of [1586, 390]) {
   test(`W3U3 three label real A3 print ${locale}-${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 992 });
