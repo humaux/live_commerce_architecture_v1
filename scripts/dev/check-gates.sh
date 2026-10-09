@@ -89,11 +89,10 @@ bash scripts/dev/check-headers.sh
 # version (2026-10-09: PR #19 bumped x/net but the register still said v0.59.0, so reviews kept citing the vulnerable one).
 # A submodule may share its parent's row when the row names it, e.g. river (+ `riverdriver/riverpgxv5`, `rivertype`).
 python3 - <<'PY'
-import re, sys
-gomod = open("go.mod").read()
-lines = [l for blk in re.findall(r"^require \(\n(.*?)^\)", gomod, re.S | re.M) for l in blk.splitlines()]
-lines += re.findall(r"^require (\S+ \S+.*)$", gomod, re.M)   # single-line form
-mods = [l.split()[:2] for l in lines if l.strip() and "// indirect" not in l]
+import json, re, subprocess, sys
+# go mod edit -json is Go's own go.mod parser: every require form, comments and the // indirect marker handled structurally.
+mods = [(r["Path"], r["Version"]) for r in json.loads(subprocess.run(["go", "mod", "edit", "-json"], check=True,
+        capture_output=True, text=True).stdout).get("Require") or [] if not r.get("Indirect")]
 if not mods:
     sys.exit("check-gates: parsed no direct requires from go.mod (fail closed)")
 rows = [(m.group(1), l) for l in open("docs/engineering/dependencies.md") if (m := re.match(r"\| `([^`]+)`", l))]
