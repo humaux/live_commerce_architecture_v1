@@ -295,9 +295,9 @@ func runCatalogCoreBrowser(t *testing.T, productEditor bool) {
 				WHERE p.tenant_id=$1 AND p.store_id=$2 AND p.name=$3 AND s.status='active'
 				AND s.option_values=ARRAY['S'] AND s.price_minor=9500 AND s.compare_at_minor=14500
 				AND s.currency='TWD' AND s.inventory_tracked AND s.max_per_order IS NULL
-				AND s.code ~ ('^M[0-9]{10}-A' || $4::text || '-S$')
+				AND s.code=p.slug AND s.code<>''
 				AND (SELECT coalesce(sum(b.on_hand),0) FROM inventory.balances b
-				  WHERE b.tenant_id=s.tenant_id AND b.store_id=s.store_id AND b.sku_id=s.id)=9`, tenant, store, name, locale.index); n != 1 {
+				  WHERE b.tenant_id=s.tenant_id AND b.store_id=s.store_id AND b.sku_id=s.id)=9`, tenant, store, name); n != 1 {
 				t.Fatalf("PE axis remove %s: exact active Size[S] replacement price/compare/stock/code readback failed (matches=%d)", locale.name, n)
 			}
 		}

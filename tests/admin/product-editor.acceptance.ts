@@ -871,7 +871,10 @@ export function registerProductEditorAcceptance() {
         await remaining.getByTestId("new-price-0").fill("95");
         await remaining.getByTestId("matrix-compare-0").fill("145");
         await remaining.getByTestId("matrix-quantity-0").fill("9");
-        await remaining.getByTestId("matrix-code-0").fill(`${mobileMatrixTag}-A${localeIndex}-S`);
+        await expect(remaining.getByTestId("matrix-code-0")).toBeDisabled();
+        await page.getByTestId("bulk-open").click();
+        await expect(page.getByTestId("bulk-field").locator('option[value="code"]')).toHaveCount(0);
+        await page.getByTestId("bulk-field").press("Escape");
         await expect(remaining.getByRole("checkbox", { name: c.untracked, exact: true })).not.toBeChecked();
         await expect(remaining.getByTestId("matrix-active-0")).toBeChecked();
         const axisSaved = page.waitForResponse((r) => r.url().includes(`/api/stores/${store}/products/`) && r.url().endsWith("/document") && r.request().method() !== "GET");
@@ -894,7 +897,11 @@ export function registerProductEditorAcceptance() {
         await expect(remaining.getByTestId("new-price-0")).toHaveValue("95");
         await expect(remaining.getByTestId("matrix-compare-0")).toHaveValue("145");
         await expect(remaining.getByTestId("matrix-quantity-0")).toHaveValue("9");
-        await expect(remaining.getByTestId("matrix-code-0")).toHaveValue(`${mobileMatrixTag}-A${localeIndex}-S`);
+        const generatedCode = await page.getByTestId("product-slug").inputValue();
+        expect(generatedCode).not.toBe("");
+        await expect(remaining.getByTestId("matrix-code-0")).toHaveValue(generatedCode);
+        await page.reload();
+        await expect(remaining.getByTestId("matrix-code-0")).toHaveValue(generatedCode);
         await expect(remaining.getByTestId("matrix-code-0")).toBeDisabled();
         await expect(remaining.getByRole("checkbox", { name: c.untracked, exact: true })).not.toBeChecked();
         await expect(remaining.getByTestId("matrix-active-0")).toBeChecked();
@@ -902,7 +909,7 @@ export function registerProductEditorAcceptance() {
         const removeCapture = `mobile-axis-remove-${locale}-390-saved`;
         await remaining.getByTestId("new-price-0").scrollIntoViewIfNeeded();
         await shot(removeCapture);
-        ledger.push({ page: "mobile axis remove", locale, width: 390, control: "product-save", action: "click, confirm archive, reload", expected: { axes: [c.size], values: ["S"], archivedSKUs: oldAxisIDs, activeSKU: newAxisID, row: "S", price: "95", compare: "145", trackedQuantity: "9", oneDocumentWrite: true }, actual: "PASS", screenshot: `${removeCapture}.png`, tier: "BROWSER+REAL_PG" });
+        ledger.push({ page: "mobile axis remove", locale, width: 390, control: "product-save", action: "click, confirm archive, reload", expected: { axes: [c.size], values: ["S"], archivedSKUs: oldAxisIDs, activeSKU: newAxisID, generatedCode, row: "S", price: "95", compare: "145", trackedQuantity: "9", oneDocumentWrite: true }, actual: "PASS", screenshot: `${removeCapture}.png`, tier: "BROWSER+REAL_PG" });
       }
       // Controlled read-only ambiguity: do not fabricate a stock quantity when the API has no single warehouse.
       await page.route(

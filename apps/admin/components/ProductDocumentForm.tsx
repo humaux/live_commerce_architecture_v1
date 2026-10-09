@@ -508,7 +508,7 @@ export function ProductDocumentForm({
                   {c.code}
                   <input
                     value={row.code}
-                    disabled={!!row.id}
+                    disabled={mode === "edit" || !!row.id}
                     maxLength={64}
                     placeholder={c.generated}
                     onChange={(e) => setRow({ code: e.target.value })}
@@ -526,6 +526,7 @@ export function ProductDocumentForm({
             setRows={(rows) => change({ rows })}
             disabled={disabled}
             inventoryDisabled={!!detail && !detail.warehouse_id}
+            codeDisabled={mode === "edit"}
             onInvalidValues={() => setAxisError(c.matrixLimit)}
           />
           {axisError && <p role="alert">{axisError}</p>}
