@@ -400,6 +400,38 @@ const page = (epoch = 1, items = [row], reset = false) => ({
     video_embeddable: true,
   },
 });
+test("PR18 P1 IG earliest50 refresh preserves100 rows selection and private draft",async t=>{
+  const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-09T00:00:00Z")});
+  const igRows=Array.from({length:100},(_,i)=>({...row,ref:String(i+1),text:`Synthetic IG ${i+1}`,created_at:new Date(Date.parse(row.created_at)+1000*i).toISOString()}));
+  const igPage=(items:typeof igRows,seq:number)=>({...page(0,items),next:{epoch:0,seq},stream:{state:"live",source_platform:"instagram",video_embeddable:false}});
+  let heads=0,sends=0;const afterSeqs:string[]=[];
+  globalThis.fetch=async(input,init)=>{
+    if(init?.method==="POST"){sends++;return response({send_state:"queued"});}
+    const url=String(input);if(url.includes("message-templates"))return response({items:[]});
+    const params=new URL(url,"https://example.invalid").searchParams;
+    if(params.has("after_seq"))afterSeqs.push(params.get("after_seq")!);
+    if(params.get("after_seq")==="50")return response(igPage(igRows.slice(50),100));
+    if(params.has("after_seq"))return response(igPage([],100));
+    heads++;return response(igPage(igRows.slice(0,50),50)); // Real IG SQL ordering: earliest, not newest.
+  };
+  const cap={state:"ok",reason:"ok",evidence:"MOCK",checked_at:null};
+  const h=env.mount(()=>CommentStream({store,session:sid,locale:"en",platform:"instagram",capabilities:{instagram:{private_reply:cap,reply_public:cap}}} as any));await h.settle();
+  t.mock.timers.tick(3000);await h.settle();
+  assert.equal(nodes(h.output).filter(n=>String(n.props["data-testid"]??"").startsWith("comment-row-")).length,100);
+  node(h,n=>n.props["data-testid"]==="comment-select-75").props.onClick();await h.settle();
+  node(h,n=>n.props["data-testid"]==="comment-reply-text").props.onChange({target:{value:"Synthetic IG unsaved draft"}});h.flush();
+  const initialHeads=heads;
+  for(let cycle=0;cycle<3;cycle++){
+    for(let tick=0;tick<4;tick++){t.mock.timers.tick(3000);await h.settle();}
+    assert.equal(nodes(h.output).filter(n=>String(n.props["data-testid"]??"").startsWith("comment-row-")).length,100,`cycle${cycle}: no earliest-page absence deletion`);
+    assert.equal(node(h,n=>n.props["data-testid"]==="comment-row-75").props["data-selected"],true);
+    assert.equal(node(h,n=>n.props["data-testid"]==="comment-reply-text").props.value,"Synthetic IG unsaved draft");
+    for(let n=51;n<=100;n++)assert.ok(nodes(h.output).some(x=>x.props["data-testid"]===`comment-row-${n}`));
+    assert.equal(afterSeqs.at(-1),"100","head never rewinds incremental continuation");
+  }
+  assert.equal(heads,initialHeads+3,"three real hook head-read cycles exercised");
+  assert.equal(sends,0,"an unsaved draft is never dispatched by a refresh");
+});
 test("PR18 final expired older cursor keeps live buffer selection and polling",async t=>{
   const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-09T00:00:00Z")});
   let olderReads=0,incrementalReads=0;

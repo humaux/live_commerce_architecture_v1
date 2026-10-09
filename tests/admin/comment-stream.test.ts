@@ -21,7 +21,16 @@ import {
 const sid = "22222222-2222-4222-8222-222222222222";
 const path = `live-sessions/${sid}/comments`;
 const deletionRows=[1,2,3,4].map(n=>({ref:String(n),created_at:new Date(n*1000).toISOString(),text:`Synthetic ${n}`}));
-const deletionPage=(items:unknown[])=>({epoch:1,reset:false,items,next:{epoch:1,seq:4},older_cursor:"history"}) as never;
+const deletionPage=(items:unknown[])=>({epoch:1,reset:false,items,next:{epoch:1,seq:4},older_cursor:"history",stream:{source_platform:"facebook"}}) as never;
+test("PR18 P1 IG earliest page and unknown authority never delete by absence",()=>{
+  const rows=Array.from({length:100},(_,i)=>({ref:String(i+1),created_at:new Date(1000*i).toISOString(),text:`Synthetic ${i+1}`}));
+  const initial={...deletionPage(rows) as any,next:{epoch:1,seq:100},stream:{source_platform:"instagram"}};
+  const old=applyCommentPage(emptyComments(),initial,false);
+  for(const platform of ["instagram",undefined]){
+    const earliest={...initial,items:rows.slice(0,50),next:{epoch:1,seq:50},stream:platform?{source_platform:platform}:undefined};
+    assert.deepEqual(applyCommentPage(old,earliest,false,true).items.map(r=>r.ref),rows.map(r=>r.ref));
+  }
+});
 test("PR18 short complete HEAD removes an absent oldest live row",()=>{
   const old=applyCommentPage(emptyComments(),deletionPage(deletionRows),false);
   const head={...deletionPage(deletionRows.slice(1)) as any,older_cursor:null};

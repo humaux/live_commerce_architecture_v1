@@ -2,7 +2,7 @@
 // Depends on: live-console-v1 CommentStream and A8 inbox DTOs; no browser storage or identity inference.
 // Used by: CommentStream hook and Node acceptance tests.
 // Invariant: deduped buffer is oldest-first by (created_at instant, ref); cap evicts only the oldest rows.
-// Deletions are inferred only from a non-empty, same-epoch periodic HEAD window, never incremental/history reads.
+// Deletions are inferred only from a non-empty, same-epoch FB newest window; IG head is earliest-first.
 import type { ConversationItem, ConversationList } from "../../../lib/inbox-types";
 /** I23 bounds both console comment and conversation memory. */
 export const COMMENT_MEMORY_CAP = 1000;
@@ -89,7 +89,9 @@ export function applyCommentPage(
   // Historical paging stops at the memory cap: never consume a cursor for an unseen page.
   if (older && old.items.length >= COMMENT_MEMORY_CAP) return old;
   let retained = old.items;
-  if (reconcileHead && !older && page.items.length > 0) {
+  // The existing server platform contract proves FB's cursorless buffer page is newest-by-seq.
+  // IG starts from seq0 (ASC), so its missing tail rows must retain merge semantics.
+  if (reconcileHead && !older && page.stream?.source_platform === "facebook" && page.items.length > 0) {
     const floor = page.items.reduce((a, b) => compareComments(a, b) <= 0 ? a : b);
     const refs = new Set(page.items.map(row => row.ref));
     // Explicit history uses the conservative floor rule. Without it, a short terminal
