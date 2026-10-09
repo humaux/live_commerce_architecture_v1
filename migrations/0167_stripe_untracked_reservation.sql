@@ -173,7 +173,9 @@ BEGIN
     OR EXISTS (SELECT 1 FROM jsonb_array_elements(ord.snapshot->'quote'->'lines') q(line)
      WHERE jsonb_typeof(q.line) IS DISTINCT FROM 'object'
       OR coalesce(q.line->>'sku_id','') !~ '^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$'
-      OR coalesce(q.line->>'quantity','') !~ '^[1-9][0-9]{0,8}$')
+      -- Match the inclusive cart/Begin quantity bound (0007/0013); CASE guards the cast on malformed input.
+      OR CASE WHEN coalesce(q.line->>'quantity','') ~ '^[1-9][0-9]{0,9}$'
+       THEN (q.line->>'quantity')::bigint NOT BETWEEN 1 AND 1000000000 ELSE true END)
     OR (SELECT count(DISTINCT q.line->>'sku_id') FROM jsonb_array_elements(ord.snapshot->'quote'->'lines') q(line))
        <>jsonb_array_length(ord.snapshot->'quote'->'lines') THEN
     RAISE EXCEPTION 'payment reservation empty' USING ERRCODE='PT409';
@@ -299,7 +301,9 @@ BEGIN
     OR EXISTS (SELECT 1 FROM jsonb_array_elements(ord.snapshot->'quote'->'lines') q(line)
      WHERE jsonb_typeof(q.line) IS DISTINCT FROM 'object'
       OR coalesce(q.line->>'sku_id','') !~ '^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$'
-      OR coalesce(q.line->>'quantity','') !~ '^[1-9][0-9]{0,8}$')
+      -- Same persisted quantity bound as capture; never cast an unvalidated JSON value.
+      OR CASE WHEN coalesce(q.line->>'quantity','') ~ '^[1-9][0-9]{0,9}$'
+       THEN (q.line->>'quantity')::bigint NOT BETWEEN 1 AND 1000000000 ELSE true END)
     OR (SELECT count(DISTINCT q.line->>'sku_id') FROM jsonb_array_elements(ord.snapshot->'quote'->'lines') q(line))
        <>jsonb_array_length(ord.snapshot->'quote'->'lines') THEN
     RAISE EXCEPTION 'payment reservation empty' USING ERRCODE='PT409';
