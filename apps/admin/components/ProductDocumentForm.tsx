@@ -37,8 +37,7 @@ import { ProductDocumentVariants } from "./ProductDocumentVariants";
 import { ProductReadiness } from "./ProductReadiness";
 import { useProductEditorLayout } from "./useProductEditorLayout";
 function initialDraft(detail: ProductDetail | null): ProductDraft {
-  if (!detail) return emptyDraft();
-  return draftFromDetail(detail);
+  return detail ? draftFromDetail(detail) : emptyDraft();
 }
 /** Edits one catalog document; save/image writes remain delegated to the existing catalog command clients. */
 export function ProductDocumentForm({
