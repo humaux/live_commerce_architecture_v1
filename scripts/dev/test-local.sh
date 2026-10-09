@@ -46,6 +46,10 @@ case "$test_mode" in
             exit 2
           fi ;;
       esac
+      # A reused root must not redirect a fixed child (ui-click-sweep, platform-site, …) through a symlink (PR #23 review).
+      for lc_child in "$LC_BROWSER_EVIDENCE_ROOT"/*; do
+        [[ -L "$lc_child" ]] && { echo "test-local: $lc_child is a symlink inside LC_BROWSER_EVIDENCE_ROOT; refusing" >&2; exit 2; }
+      done
     fi
     export LC_BROWSER_EVIDENCE_ROOT
     if [[ "$test_mode" == --ops-disk-guard ]]; then

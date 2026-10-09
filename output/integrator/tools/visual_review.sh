@@ -33,6 +33,7 @@ WT=$ROOT/.worktrees/visual-review-$RUN
 # Always a fresh worktree: a rerun must never accept a previous run's shots or verdict (PR #23 review).
 [ -d "$WT" ] && git -C $ROOT worktree remove --force "$WT"
 git -C $ROOT worktree add -q --detach "$WT" "$TRUST"
+trap 'git -C $ROOT worktree remove --force "$WT" 2>/dev/null || true' EXIT   # results stay in $OUT; never leave a checkout behind
 mkdir -p "$WT/visual-shots"
 # Download archives may preserve either output/playwright or just its run children.
 # Discover shots directly so an interrupted run without index.json is still reviewable.
