@@ -1,0 +1,43 @@
+[
+  {
+    "command": [
+      "bash",
+      "scripts/dev/test-node.sh"
+    ],
+    "exit": 0,
+    "log": "output/matrix-ledger-enforce/round1/node.log",
+    "sha256": "783267d872ef8dd399dd98b9cb7447a6ed8ce4afdc520eee39197c7735addb7f",
+    "raw_sha256": "135a25a88bde079d10e370cb4fd60adb4a03b3252392ae0597dc91fd07205c30"
+  },
+  {
+    "command": [
+      "pnpm",
+      "typecheck:admin"
+    ],
+    "exit": 0,
+    "log": "output/matrix-ledger-enforce/round1/typecheck.log",
+    "sha256": "9fae7270e7bd0370d3b117affee6e501c84616e52e6c9055f9a1b15ed4806a89",
+    "raw_sha256": "c00ff4e6ec5ce52c4b0790c7ca968c30b9b2f3478ed09bbca43c9bc416c4c0f5"
+  },
+  {
+    "command": [
+      "bash",
+      "scripts/dev/test-local.sh",
+      "--list"
+    ],
+    "exit": 0,
+    "log": "output/matrix-ledger-enforce/round1/registry-list.log",
+    "sha256": "5e780dc27ce8a1089b7191e5aa0a0a800d2a9144d7aa53ef5ffe91b5bd9cfd66",
+    "raw_sha256": "5e780dc27ce8a1089b7191e5aa0a0a800d2a9144d7aa53ef5ffe91b5bd9cfd66"
+  },
+  {
+    "command": [
+      "bash",
+      "scripts/dev/check-gates.sh"
+    ],
+    "exit": 0,
+    "log": "output/matrix-ledger-enforce/round1/check-gates.log",
+    "sha256": "eb493320d9a7ee98c89080c04b00d54a742a2e0cc8f525367406316ab4c2f80f",
+    "raw_sha256": "eb493320d9a7ee98c89080c04b00d54a742a2e0cc8f525367406316ab4c2f80f"
+  }
+]

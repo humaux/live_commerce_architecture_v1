@@ -1,0 +1,13 @@
+{
+  "command": "LC_TEST_LOCK_WAIT=300 LC_BROWSER_ENGINE=chromium bash scripts/dev/test-local.sh --browser-product-editor",
+  "timeout_seconds": 2400,
+  "started_utc": "2026-10-09T15:37:57.688304+00:00",
+  "log": "output/matrix-ledger-enforce/round1/browser-product-editor.log",
+  "head_before": "5af084d352a24267c41401991a98d55e74b6cc31",
+  "source_hashes": "output/matrix-ledger-enforce/round1/browser-source-before.json",
+  "failure_match": "FAIL|Error:|Timeout|ledger rejected",
+  "prior_collection_failure": "browser-collection-failed.json",
+  "pid": 54610,
+  "exit": 0,
+  "ended_utc": "2026-10-09T15:39:34.789458+00:00"
+}

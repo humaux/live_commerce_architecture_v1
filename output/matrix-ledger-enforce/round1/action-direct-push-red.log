@@ -1,0 +1,44 @@
+✖ every actual mobile control operation is enclosed by its recording callback (21.178708ms)
+✔ a new bare click is rejected without running a browser (13.492042ms)
+✔ a different control cannot borrow an existing action's recording callback (29.153584ms)
+✔ a direct ledger push cannot bypass canonical recording (7.375375ms)
+✔ removing the recording wrapper rejects the enclosed real action (6.778208ms)
+✔ shared table has only complete meaningful unique declarations (0.536791ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (zh-TW) (1.263834ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (zh-CN) (0.412458ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (en) (0.689292ms)
+✔ failed assertion and missing observation cannot emit a PASS or satisfy completeness (0.326458ms)
+✔ in-flight action cannot masquerade as complete or admit a concurrent duplicate (0.39625ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 10
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 309.815125
+
+✖ failing tests:
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:76:1
+✖ every actual mobile control operation is enclosed by its recording callback (21.178708ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+  + [
+  +   'mobile ledger.push bypasses the canonical recorder'
+  + ]
+  - []
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-matrix-ledger-actions/tests/ci/product-editor-matrix-ledger.test.mjs:77:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'mobile ledger.push bypasses the canonical recorder' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

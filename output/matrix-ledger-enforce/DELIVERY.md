@@ -1,36 +1,49 @@
-# matrix-ledger-enforce delivery
+# matrix-ledger-enforce PR #28 round 1 delivery
 
-- Branch: `unit/matrix-ledger-enforce`; worktree `.worktrees/matrix-ledger-enforce`. Base `a93216434bfa1cf30e849efe320d2883d1ba6256` after merging current `origin/r3/integration`; final fetch/merge exit0/no-op. Tested source **b390ee7a43e5e2c42b6607ea76d1b95bb4ddcfd9**; final commit is evidence only.
-- Author: Codex-4 (exact parent model/effort not exposed); read-only source/contract/evidence explorer GPT-6.1-sol/medium. Task `f80cfebd-aa80-4e3b-b27c-bc5933aa98cc`; single writer, no recursive delegation. Brief: `output/integrator/triage/brief-matrix-ledger-enforce.md`.
-- Scope: three test sources and independent synthetic fixture; no product Go/API/SQL/migration/dependency change. 0168 remains untouched.
+- Branch/worktree: `unit/matrix-ledger-enforce`, `.worktrees/matrix-ledger-enforce`. Base `c2665c530493527d1cf1ab4d782b4afb6d626d8f`, trunk `4ff99766`. Fresh fetch/merge before handoff exits 0 (already up to date).
+- Tested source: **`a7ba8593c2bd60d321142855229dec2d69f6446d`**; final commit adds evidence only. `round1/SOURCE.json` binds current files; the browser manifest records frozen run hashes and the unchanged Go runtime definitions.
+- Author Codex-4 (parent model/effort not exposed); isolated ui_worker GPT-6.1-sol/high; read-only explorer GPT-6.1-sol/medium. Task `55dcf44b-9378-4b31-970c-fe03b3951cc5`. Packet `output/integrator/triage/pr28-c2665c53.md`. No push.
 
-`catalog_matrix_ledger_test.go` declares one 47-template identity table, expanded with the three frozen locale copy bindings. The gate derives its required cardinality from the set and validates the full page/locale/width/top-level-row/control/action identity, exact `actual=PASS`, no duplicates/unexpected identities, and no missing identities. Scope selection precedes locale/width/status inspection, so malformed target rows cannot be filtered away. Unrelated legacy form/list rows may coexist. The fixture projects identity/status fields from actual prior PR16 evidence; it is independent of the predicate.
+## Three threads fixed
 
-`product-editor.acceptance.ts` snapshots the in-memory ledger once and writes those exact bytes to the legacy output and this run's `product-editor-click-ledger.json`. `browser_catalog_core_test.go` reads only the current run file, fails on unavailable/malformed evidence and executes the strict guard after Playwright in productEditor mode. All original PG assertions and frozen CC12 remain unchanged.
+1. **4231055430:** one JSON declaration table, embedded by Go and imported by the actual Playwright recorder, defines **77 rows per locale / 231 total**. It covers every actionable control plus existing persistence readbacks and native confirmation: name, individual axis controls, SKU fields, create/result navigation, archive selection, replacement fields and bulk open/Escape. All 35 original static operation sites (84 locator operations per locale) remain; native accept now has its own awaited record. The source AST gate rejects bare actions, removed wrappers, a second control borrowing a callback and direct ledger writes. These four injected faults are RED.
+2. **4231055440:** Go validates every exact identity and canonical `expected` string before requiring `actual=PASS`; PASS means the actual UI action and declared postcondition assertions passed. Original dynamic values/UUIDs remain in `observed`. Missing, altered, empty, null and wrong-type expected claims all have genuine RED→GREEN controls. The successful corruption fixture is an independent projection of the current actual browser run, including expected fields. Exact set, duplicate, extra, wrong locale/width/action/page/row and malformed JSON checks remain.
+3. **4231055446:** canonical current evidence is **committed** under `browser/`: [ledger](browser/product-editor-click-ledger.json), [Playwright log](browser/playwright.log), [manifest](browser/browser-evidence.json). Documentation/manifest paths are repository-relative. The manifest hashes the two raw artifacts and runtime sources; `TestProductEditorMatrixLedgerEvidence` reads this same checkout evidence. The root old browser manifest now redirects to this portable canonical manifest. Auxiliary screenshot names in the raw ledger belong to runner output; screenshots are not a delivery claim.
 
-## Commands and evidence
+The previous 47-template claim covered recorded rows and omitted real operations; it is superseded. Historical root logs/manifests describe the previous batch. Current evidence lives under `round1/` and `browser/`.
 
-Exact commands/exit codes/source/input/log hashes: `RESULTS.json`, `local-gates.json`, `calibration-results.json`, `source-hashes.json` and `review-log-hashes.json`. Raw logs and screenshots are uncompressed in `/Volumes/data/live_commerce_architecture_v1/output/matrix-ledger-enforce/`.
+## Additional seam caught and closed
 
-| Command | Exit | Evidence |
+The first mode attempt failed during collection, before executing any browser case: Node 24 rejected a JSON import without `with { type: "json" }`. A new **real Playwright generated-config `--list`** seam reproduces that TypeError RED, then passes after the one-line import correction. It starts no server/browser. The successful mode below is the only actual browser execution in this round; the unsuccessful collection attempt and raw log remain preserved.
+
+The new actual fixture begins with name fill. This caught the old corruption test's `wrong-action=fill` as a no-op. It now uses an unknown action and every corruption control asserts that it changed the serialized input. Assertions were strengthened. The Go runtime types/table init/locale bindings/validator are byte-identical to the successful browser snapshot; only this corruption test changed afterwards. The current Go reader revalidates the canonical raw ledger directly.
+
+## Exact commands / exits
+
+Plaintext evidence, command records and SHA-256 mappings: `round1/{local-gates,go-gates,browser-run,helper-typecheck,log-hashes}.json`. Relevant raw red logs are committed uncompressed; full raw Node/build logs are retained in the task archive, with hashes in `round1/log-hashes.json`.
+
+| Command | Exit | Result/evidence |
 | --- | ---: | --- |
-| `pnpm install --offline --frozen-lockfile --ignore-scripts` | 0 | `install.log`; lockfile unchanged |
-| `GOTOOLCHAIN=go1.27.2 go test -run '^TestProductEditorMatrixLedger$' -count=1 -v ./tests/foundation` before policy | 1 | `red.log`: 16 corruption controls fail against a temporary no-check TDD seam representing the previous absent Go policy; **not** a claim of an unchanged old-browser run |
-| Same focused Go command after policy | 0 | `green.log`: valid recorded data, reordered set, unrelated rows, and all corruption controls pass |
-| Same Go regex with `-tags browser` | 0 | `go-browser.log` |
-| `GOTOOLCHAIN=go1.27.2 go vet -tags browser ./...` | 0 | `vet.log` |
-| `bash scripts/dev/test-node.sh` | 0 | **1185 PASS /0 FAIL**, `node.log` |
-| `pnpm --filter @live-commerce/admin typecheck` | 0 | `typecheck.log` |
-| `bash scripts/dev/test-local.sh --list` | 0 | `registry-list.log`, original registry layout retained |
-| `bash scripts/dev/check-gates.sh` | 0 | `check-gates.log`, 82 documented modes/headers/suite assignments |
-| `LC_TEST_LOCK_WAIT=300 LC_BROWSER_ENGINE=chromium bash scripts/dev/test-local.sh --browser-product-editor` | 0 | **Run exactly once**. Go logs 141 declared unique PASS identities from PE's current run; original mobile/archive/axis-remove PG facts and mandatory frozen CC12 PASS, `browser-product-editor.log` |
+| `GOTOOLCHAIN=go1.27.2 go test -run '^TestProductEditorMatrixLedger$' -count=1 -v ./tests/foundation` before expected validation | 1 | `round1/expected-red.log`; all five expected corruptions admitted by original validator |
+| `GOTOOLCHAIN=go1.27.2 go test -run '^TestProductEditorMatrixLedgerEvidence$' -count=1 -v ./tests/foundation` before evidence packaging | 1 | `round1/evidence-red.log`; absolute reference and three missing canonical files |
+| `node --test tests/ci/product-editor-matrix-ledger.test.mjs` | 0 | **12 PASS** including actual consumer seam; `round1/esm-collection-green.log` |
+| `LC_MATRIX_ACTION_MUTATION=bare-click node --test tests/ci/product-editor-matrix-ledger.test.mjs` (also removed-wrapper, extra-control, direct-push) | 1 each | exact final commands/exits in `round1/current-action-calibration.json`; each turns the current gate RED |
+| `node --test --test-name-pattern='real Playwright ESM consumer' tests/ci/product-editor-matrix-ledger.test.mjs` before JSON attribute | 1 | `round1/esm-collection-red.log` |
+| `LC_TEST_LOCK_WAIT=300 LC_BROWSER_ENGINE=chromium bash scripts/dev/test-local.sh --browser-product-editor` | 1 → 0 | first collection failure: zero cases; then **12 PE/review cases + 2 frozen CC12 cases PASS**, `round1/browser-product-editor.log`, `round1/cc12-playwright.log` |
+| `GOTOOLCHAIN=go1.27.2 go test -run Ledger -count=1 -v ./tests/foundation` | 0 | **2 scoped tests / 21 corruption subcases PASS**; 10 unrelated PG cases SKIP because this DB-free command has no PG grant; `round1/go-ledger.log` |
+| `GOTOOLCHAIN=go1.27.2 go vet -tags browser ./...` | 0 | `round1/vet-current.log` |
+| `bash scripts/dev/test-node.sh` | 0 | **1278 PASS / 0 FAIL / 0 SKIP**, `round1/node.log` |
+| `pnpm typecheck:admin` | 0 | `round1/typecheck.log` |
+| Focused strict helper TS command | 0 | exact argv in `round1/helper-typecheck.json`; `round1/helper-typecheck.log` |
+| `bash scripts/dev/test-local.sh --list` | 0 | `round1/registry-list.log` |
+| `bash scripts/dev/check-gates.sh` | 0 | **82 modes documented**, tests assigned and headers pass; `round1/check-gates.log` |
 
-Actual browser ledger has 196 total rows, with **141 target identities**, 47 per zh-TW/zh-CN/en. Current PE evidence: `output/playwright/catalog-core/20261009T132934.505765000`; the distinct later CC12 evidence directory is not used as the ledger source. Canonical full PE artifacts and hashes: primary `output/matrix-ledger-enforce/browser/` and `browser-evidence.json`.
+The actual ledger contains **286 total rows**, including **231 required unique PASS rows**, 77 each for zh-TW/zh-CN/en at 390px. The Go harness reads the same-run bytes, not shared legacy output. Existing exact PG create/edit/archive/replacement facts and mandatory frozen CC12 remain intact. All callback assertions and waits are preserved; draft no-write checks, bulk close/focus and real native-confirm recording are added.
 
-**Actual-artifact mutation calibration:** the standard Go build overlay adds only a virtual probe test that invokes the real predicate; no tracked source, product or predicate is replaced. On copies of this real run file: delete one target row → exit1 (`missing 1 required rows`); mark one target FAIL → exit1 (`not PASS`); restore exact original bytes → exit0 (141 required unique identities). Full repeatable commands/env, overlay source/config and input hashes: `calibration-results.json`, `calibration-probe.txt`, `calibration-overlay.json`; three plaintext logs. No additional browser run was needed.
+## Evidence level / CI / NOT_RUN
 
-**E3: automated Go gate/corruption calibration + real browser/Next/Go/isolated REAL_PG**, with MOCK identity/product fixtures; no provider/production acceptance. Read-only independent source review `9599c3b8` and evidence audit `a0317635` found no P0/P1; no independent runtime rerun claimed. All owned processes/fixtures closed and build lock released. Generated legacy UI output is archived with hash verification under primary `generated-legacy/`, then restored to its prior tracked state; it is not staged in this unit.
+**E3: completed in the tested real browser/Next/BFF/Go/isolated REAL_PG environment with synthetic MOCK identity/provider fixtures.** Bound to current source/artifact hashes. Read-only independent source review `30835d99` and final source/evidence audit `639bc52a` found no confirmed P0/P1; these are E1 reviews, not independent runtime reruns or current-head K3/CI.
 
-## CI gates / NOT_RUN
+CI gates needed: foundation-shards and `--browser-product-editor`, plus the real planner's full **53-mode** selection (`round1/pr-modes.json`). Other 52 modes, full foundation, provider SANDBOX/LIVE and deployment are NOT_RUN locally. Current-head review and CI remain integrator-owned.
 
-CLI planner selects **53** modes (`pr-modes.json`). The requested product-editor mode ran locally; other52 modes/full required GitHub set, new-head integrator review and platform/production gates are NOT_RUN locally. No unresolved scoped blocker. Integrator reviews and pushes; author commits and stops, never pushes. Source hashes remain equal on the evidence-only handoff. Packaged check-gates and staged diff-check both exit0.
+No product/API/SQL/migration/dependency changes; 0168 untouched. All owned runners/fixtures completed, browser lock released. Runner-owned legacy artifacts were hash-archived and restored; shared caches and others' work untouched. No local blocker. Commit, stop; integrator pushes.

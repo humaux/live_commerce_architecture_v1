@@ -1,0 +1,121 @@
+✖ every actual mobile control operation is enclosed by its recording callback (23.116125ms)
+✖ a new bare click is rejected without running a browser (6.69325ms)
+✖ removing the recording wrapper rejects the enclosed real action (0.092375ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 0
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 232.044166
+
+✖ failing tests:
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:43:1
+✖ every actual mobile control operation is enclosed by its recording callback (23.116125ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+  + [
+  +   '662: page.getByTestId("product-name").fill(`${tag} mobile matrix ${locale}`)',
+  +   '665: page.getByTestId("axis-add").click()',
+  +   '666: page.getByTestId(`axis-name-${i}`).fill(name)',
+  +   '667: page.getByTestId(`axis-values-${i}`).fill(values)',
+  +   '668: page.getByTestId(`axis-values-${i}`).press("Enter")',
+  +   'mobile ledger.push bypasses the canonical recorder',
+  +   '701: selected.check()',
+  +   '703: selected.uncheck()',
+  +   'mobile ledger.push bypasses the canonical recorder',
+  +   '708: tracking.check()',
+  +   '710: tracking.uncheck()',
+  +   '712: tracking.check()',
+  +   'mobile ledger.push bypasses the canonical recorder',
+  +   '724: field.control.fill(field.value)',
+  +   'mobile ledger.push bypasses the canonical recorder',
+  +   '729: active.uncheck()',
+  +   '731: active.check()',
+  +   'mobile ledger.push bypasses the canonical recorder',
+  +   '742: page.getByTestId(editing ? "product-save" : "product-create").click()',
+  +   '747: result.getByRole("link", { name: c.save, exact: true }).click()',
+  +   'mobile ledger.push bypasses the canonical recorder',
+  +   'mobile ledger.push bypasses the canonical recorder',
+  +   'mobile ledger.push bypasses the canonical recorder',
+  +   '788: white.getByTestId("matrix-active-0").uncheck()',
+  +   '792: page.getByTestId("product-save").click()',
+  +   'mobile ledger.push bypasses the canonical recorder',
+  +   '822: page.getByTestId("product-name").fill(`${tag} mobile axis remove ${locale}`)',
+  +   '824: page.getByTestId("axis-add").click()',
+  +   '825: page.getByTestId(`axis-name-${i}`).fill(name)',
+  +   '826: page.getByTestId(`axis-values-${i}`).fill(values)',
+  +   '827: page.getByTestId(`axis-values-${i}`).press("Enter")',
+  +   '832: row.getByTestId(`new-price-${i}`).fill(String(90 + i))',
+  +   '833: row.getByTestId(`matrix-compare-${i}`).fill(String(130 + i))',
+  +   '834: row.getByTestId(`matrix-quantity-${i}`).fill(String(3 + i))',
+  +   '835: row.getByTestId(`matrix-code-${i}`).fill(`${mobileMatrixTag}-A${localeIndex}-${i}`)',
+  +   '839: page.getByTestId("product-create").click()',
+  +   '843: axisResult.getByRole("link", { name: c.save, exact: true }).click()',
+  +   '869: removeColor.click()',
+  +   'mobile ledger.push bypasses the canonical recorder',
+  +   '879: remaining.getByTestId("new-price-0").fill("95")',
+  +   '880: remaining.getByTestId("matrix-compare-0").fill("145")',
+  +   '881: remaining.getByTestId("matrix-quantity-0").fill("9")',
+  +   '883: page.getByTestId("bulk-open").click()',
+  +   '885: page.getByTestId("bulk-field").press("Escape")',
+  +   '890: page.getByTestId("product-save").click()',
+  +   'mobile ledger.push bypasses the canonical recorder'
+  + ]
+  - []
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-matrix-ledger-actions/tests/ci/product-editor-matrix-ledger.test.mjs:44:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ '662: page.getByTestId("product-name").fill(`${tag} mobile matrix ${locale}`)', '665: page.getByTestId("axis-add").click()', '666: page.getByTestId(`axis-name-${i}`).fill(name)', '667: page.getByTestId(`axis-values-${i}`).fill(values)', '668: page.getByTestId(`axis-values-${i}`).press("Enter")', 'mobile ledger.push bypasses the canonical recorder', '701: selected.check()', '703: selected.uncheck()', 'mobile ledger.push bypasses the canonical recorder', '708: tracking.check()', '710: tracking.uncheck()', '712: tracking.check()', 'mobile ledger.push bypasses the canonical recorder', '724: field.control.fill(field.value)', 'mobile ledger.push bypasses the canonical recorder', '729: active.uncheck()', '731: active.check()', 'mobile ledger.push bypasses the canonical recorder', '742: page.getByTestId(editing ? "product-save" : "product-create").click()', '747: result.getByRole("link", { name: c.save, exact: true }).click()', 'mobile ledger.push bypasses the canonical recorder', 'mobile ledger.push bypasses the canonical recorder', 'mobile ledger.push bypasses the canonical recorder', '788: white.getByTestId("matrix-active-0").uncheck()', '792: page.getByTestId("product-save").click()', 'mobile ledger.push bypasses the canonical recorder', '822: page.getByTestId("product-name").fill(`${tag} mobile axis remove ${locale}`)', '824: page.getByTestId("axis-add").click()', '825: page.getByTestId(`axis-name-${i}`).fill(name)', '826: page.getByTestId(`axis-values-${i}`).fill(values)', '827: page.getByTestId(`axis-values-${i}`).press("Enter")', '832: row.getByTestId(`new-price-${i}`).fill(String(90 + i))', '833: row.getByTestId(`matrix-compare-${i}`).fill(String(130 + i))', '834: row.getByTestId(`matrix-quantity-${i}`).fill(String(3 + i))', '835: row.getByTestId(`matrix-code-${i}`).fill(`${mobileMatrixTag}-A${localeIndex}-${i}`)', '839: page.getByTestId("product-create").click()', '843: axisResult.getByRole("link", { name: c.save, exact: true }).click()', '869: removeColor.click()', 'mobile ledger.push bypasses the canonical recorder', '879: remaining.getByTestId("new-price-0").fill("95")', '880: remaining.getByTestId("matrix-compare-0").fill("145")', '881: remaining.getByTestId("matrix-quantity-0").fill("9")', '883: page.getByTestId("bulk-open").click()', '885: page.getByTestId("bulk-field").press("Escape")', '890: page.getByTestId("product-save").click()', 'mobile ledger.push bypasses the canonical recorder' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:47:1
+✖ a new bare click is rejected without running a browser (6.69325ms)
+  AssertionError [ERR_ASSERTION]: the real spec must parse
+
+  1 !== 0
+
+      at uncoveredActions (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-matrix-ledger-actions/tests/ci/product-editor-matrix-ledger.test.mjs:19:10)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-matrix-ledger-actions/tests/ci/product-editor-matrix-ledger.test.mjs:49:13)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:52:1
+✖ removing the recording wrapper rejects the enclosed real action (0.092375ms)
+  AssertionError [ERR_ASSERTION]: mutation targets a real action wrapper
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-matrix-ledger-actions/tests/ci/product-editor-matrix-ledger.test.mjs:53:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

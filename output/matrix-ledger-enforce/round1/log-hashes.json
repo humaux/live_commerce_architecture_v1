@@ -1,0 +1,152 @@
+[
+  {
+    "log": "output/matrix-ledger-enforce/round1/action-bare-click-red.log",
+    "raw_sha256": "9e3e63175255781470253402efb315ab8dbe86c8379c9874e38625b8dc0e499d",
+    "review_sha256": "8561585e5c6c7ef5f677d791349f3028229cd69164cd8a7d73bbab599f16b3be",
+    "raw_location": "Retained in task archive; committed review logs contain relevant original lines."
+  },
+  {
+    "log": "output/matrix-ledger-enforce/round1/action-coverage-green.log",
+    "raw_sha256": "79b56bc7efe09f3c5c0d1e6accea0ab6e05fa48a0e66c89e3a57a62b0ace7ce8",
+    "review_sha256": "79b56bc7efe09f3c5c0d1e6accea0ab6e05fa48a0e66c89e3a57a62b0ace7ce8",
+    "raw_location": "Retained in task archive; committed review logs contain relevant original lines."
+  },
+  {
+    "log": "output/matrix-ledger-enforce/round1/action-coverage-red.log",
+    "raw_sha256": "0960ccc5bf8177c66c46bbc6657db14201e3c751c5510e9985375370c4226e09",
+    "review_sha256": "37697877f6ebdacd6469f56b58e6519d52d1bf18e9264c0e68389b29a6051140",
+    "raw_location": "Retained in task archive; committed review logs contain relevant original lines."
+  },
+  {
+    "log": "output/matrix-ledger-enforce/round1/action-direct-push-red.log",
+    "raw_sha256": "ea12f1c2f834a13eb08fdb5e27a684af64fdfd4d938fdb3839c6b27349f3ebce",
+    "review_sha256": "f3d1059bbfdb8ff9df0f7338b36000e9b66d502eb142959dd4527e150a3b0df0",
+    "raw_location": "Retained in task archive; committed review logs contain relevant original lines."
+  },
+  {
+    "log": "output/matrix-ledger-enforce/round1/action-extra-control-red.log",
+    "raw_sha256": "879a6b04fc906dc524adbec9a44be0972d7b8442aaa3877e5156f09c0f61e0de",
+    "review_sha256": "4142ce4b4df8f408950a455fbf821b143bc8bb83af0c941c746f207f79aab90a",
+    "raw_location": "Retained in task archive; committed review logs contain relevant original lines."
+  },
+  {
+    "log": "output/matrix-ledger-enforce/round1/action-removed-wrapper-red.log",
+    "raw_sha256": "2762a4442065b54a67f723e2f54377f3f712de61b35fe18b18c3962873eb8846",
+    "review_sha256": "342a4fb272b8a3be84d4d1d5ffd1d69eebc54938fd2a6956802da0de32d3544e",
+    "raw_location": "Retained in task archive; committed review logs contain relevant original lines."
+  },
+  {
+    "log": "output/matrix-ledger-enforce/round1/action-typecheck-green.log",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "review_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "raw_location": "Retained in task archive; committed review logs contain relevant original lines."
+  },
+  {
+    "log": "output/matrix-ledger-enforce/round1/action-typecheck.log",
+    "raw_sha256": "8e90d071cbcf63d71f564f25f92ac6b73388e466fa3cd001b9bc1c79c533b110",
+    "review_sha256": "8e90d071cbcf63d71f564f25f92ac6b73388e466fa3cd001b9bc1c79c533b110",
+    "raw_location": "Retained in task archive; committed review logs contain relevant original lines."
+  },
+  {
+    "log": "output/matrix-ledger-enforce/round1/browser-collection-failed.log",
+    "raw_sha256": "fbb3141b7a1953692557293b6434f610951ad477b8fd8cb9a1793c7b5ce10ecc",
+    "review_sha256": "57406e70ee43002da56166ce057c509e162d8bfadc8f7978d567365e29e6015e",
+    "raw_location": "Retained in task archive; committed review logs contain relevant original lines."
+  },
+  {
+    "log": "output/matrix-ledger-enforce/round1/browser-product-editor.log",
+    "raw_sha256": "51c6959130063e23ac4daa439443475c2a9f804cd75ac9f1a89c4427c585aff1",
+    "review_sha256": "8aaf1e137ec81d717f35d32777d8418459adcdae31267d5a113a56c1ab6de1c4",
+    "raw_location": "Retained in task archive; committed review logs contain relevant original lines."
+  },
+  {
+    "log": "output/matrix-ledger-enforce/round1/cc12-playwright.log",
+    "raw_sha256": "b6835aba603b5ed96309cdfa93a8172c5a3e2c737bf1df54c70e2a4f2eb1a82a",
+    "review_sha256": "b6835aba603b5ed96309cdfa93a8172c5a3e2c737bf1df54c70e2a4f2eb1a82a",
+    "raw_location": "Retained in task archive; committed review logs contain relevant original lines."
+  },
+  {
+    "log": "output/matrix-ledger-enforce/round1/check-gates.log",
+    "raw_sha256": "eb493320d9a7ee98c89080c04b00d54a742a2e0cc8f525367406316ab4c2f80f",
+    "review_sha256": "eb493320d9a7ee98c89080c04b00d54a742a2e0cc8f525367406316ab4c2f80f",
+    "raw_location": "Retained in task archive; committed review logs contain relevant original lines."
+  },
+  {
+    "log": "output/matrix-ledger-enforce/round1/collection-failed-playwright.log",
+    "raw_sha256": "17ea02c19857b3bb228c8077c079b30fb1cf3bf690eb18b0ec71691d06879263",
+    "review_sha256": "9d0abdf6c3729014e64958c2560a832f663cec53773264e75f342908ce18926f",
+    "raw_location": "Retained in task archive; committed review logs contain relevant original lines."
+  },
+  {
+    "log": "output/matrix-ledger-enforce/round1/esm-collection-green.log",
+    "raw_sha256": "3b8482c4b8fd77235a0f7a89517e0e0973edce4f8cf0f7db6afcfb22b965cd43",
+    "review_sha256": "3b8482c4b8fd77235a0f7a89517e0e0973edce4f8cf0f7db6afcfb22b965cd43",
+    "raw_location": "Retained in task archive; committed review logs contain relevant original lines."
+  },
+  {
+    "log": "output/matrix-ledger-enforce/round1/esm-collection-red.log",
+    "raw_sha256": "98c6bd170a4aa59529be6009a2657a7cf512a85ad8e15845dd73b13c3910e89b",
+    "review_sha256": "4ce357b1f8ea7f775523a2a430f5db92b4f31fd3c32b0a69509cf89931dec011",
+    "raw_location": "Retained in task archive; committed review logs contain relevant original lines."
+  },
+  {
+    "log": "output/matrix-ledger-enforce/round1/evidence-red.log",
+    "raw_sha256": "b7e1c31f55cc1d419096765a78242ce0344805dd796b60cbc3094d4695ed2a43",
+    "review_sha256": "b7e1c31f55cc1d419096765a78242ce0344805dd796b60cbc3094d4695ed2a43",
+    "raw_location": "Retained in task archive; committed review logs contain relevant original lines."
+  },
+  {
+    "log": "output/matrix-ledger-enforce/round1/expected-red.log",
+    "raw_sha256": "b9628c98a0ea570d55fa3a409d5597dbf0a88809e7984f48d6b14f42d2b45af3",
+    "review_sha256": "b9628c98a0ea570d55fa3a409d5597dbf0a88809e7984f48d6b14f42d2b45af3",
+    "raw_location": "Retained in task archive; committed review logs contain relevant original lines."
+  },
+  {
+    "log": "output/matrix-ledger-enforce/round1/go-fixture-action-red.log",
+    "raw_sha256": "5f2075e7f7a3b1e5e6a67525406ef96b86ab09e5399c4bd806f65fcd7b0170b8",
+    "review_sha256": "5f2075e7f7a3b1e5e6a67525406ef96b86ab09e5399c4bd806f65fcd7b0170b8",
+    "raw_location": "Retained in task archive; committed review logs contain relevant original lines."
+  },
+  {
+    "log": "output/matrix-ledger-enforce/round1/go-ledger.log",
+    "raw_sha256": "7208da97dba7cba2f083002802f0dccd8ef2c669822dbdf6da426c741020df91",
+    "review_sha256": "7208da97dba7cba2f083002802f0dccd8ef2c669822dbdf6da426c741020df91",
+    "raw_location": "Retained in task archive; committed review logs contain relevant original lines."
+  },
+  {
+    "log": "output/matrix-ledger-enforce/round1/helper-typecheck.log",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "review_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "raw_location": "Retained in task archive; committed review logs contain relevant original lines."
+  },
+  {
+    "log": "output/matrix-ledger-enforce/round1/node.log",
+    "raw_sha256": "135a25a88bde079d10e370cb4fd60adb4a03b3252392ae0597dc91fd07205c30",
+    "review_sha256": "783267d872ef8dd399dd98b9cb7447a6ed8ce4afdc520eee39197c7735addb7f",
+    "raw_location": "Retained in task archive; committed review logs contain relevant original lines."
+  },
+  {
+    "log": "output/matrix-ledger-enforce/round1/registry-list.log",
+    "raw_sha256": "5e780dc27ce8a1089b7191e5aa0a0a800d2a9144d7aa53ef5ffe91b5bd9cfd66",
+    "review_sha256": "5e780dc27ce8a1089b7191e5aa0a0a800d2a9144d7aa53ef5ffe91b5bd9cfd66",
+    "raw_location": "Retained in task archive; committed review logs contain relevant original lines."
+  },
+  {
+    "log": "output/matrix-ledger-enforce/round1/typecheck.log",
+    "raw_sha256": "c00ff4e6ec5ce52c4b0790c7ca968c30b9b2f3478ed09bbca43c9bc416c4c0f5",
+    "review_sha256": "9fae7270e7bd0370d3b117affee6e501c84616e52e6c9055f9a1b15ed4806a89",
+    "raw_location": "Retained in task archive; committed review logs contain relevant original lines."
+  },
+  {
+    "log": "output/matrix-ledger-enforce/round1/vet-current.log",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "review_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "raw_location": "Retained in task archive; committed review logs contain relevant original lines."
+  },
+  {
+    "log": "output/matrix-ledger-enforce/round1/vet.log",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "review_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "raw_location": "Retained in task archive; committed review logs contain relevant original lines."
+  }
+]

@@ -1,0 +1,3971 @@
+[
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 1366,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 1586,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n圖片",
+    "action": "click missing item",
+    "expected": "visible field focus in media",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n商品名稱",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n售價",
+    "action": "click missing item",
+    "expected": "visible field focus in pricing",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n庫存",
+    "action": "click missing item",
+    "expected": "visible field focus in pricing",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n至少 3 張圖片",
+    "action": "click missing item",
+    "expected": "visible field focus in media",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n描述",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n分類",
+    "action": "click missing item",
+    "expected": "visible field focus in collections",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n直播關鍵字",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n搜尋引擎最佳化",
+    "action": "click missing item",
+    "expected": "visible field focus in seo",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness toggle",
+    "action": "click expand, missing items, click collapse",
+    "expected": "aria-expanded false→true→false; missing list visible then hidden; entries navigate",
+    "actual": "PASS",
+    "persistence": "view state only"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 375,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 1366,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 1586,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n图片",
+    "action": "click missing item",
+    "expected": "visible field focus in media",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n商品名称",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n售价",
+    "action": "click missing item",
+    "expected": "visible field focus in pricing",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n库存",
+    "action": "click missing item",
+    "expected": "visible field focus in pricing",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n至少 3 张图片",
+    "action": "click missing item",
+    "expected": "visible field focus in media",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n描述",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n分类",
+    "action": "click missing item",
+    "expected": "visible field focus in collections",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n直播关键字",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n搜索引擎优化",
+    "action": "click missing item",
+    "expected": "visible field focus in seo",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness toggle",
+    "action": "click expand, missing items, click collapse",
+    "expected": "aria-expanded false→true→false; missing list visible then hidden; entries navigate",
+    "actual": "PASS",
+    "persistence": "view state only"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 375,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 1366,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 1586,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nImages",
+    "action": "click missing item",
+    "expected": "visible field focus in media",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nProduct name",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nPrice",
+    "action": "click missing item",
+    "expected": "visible field focus in pricing",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nInventory",
+    "action": "click missing item",
+    "expected": "visible field focus in pricing",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nAt least 3 images",
+    "action": "click missing item",
+    "expected": "visible field focus in media",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nDescription",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nCollections",
+    "action": "click missing item",
+    "expected": "visible field focus in collections",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nLive keyword",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nSearch engine listing",
+    "action": "click missing item",
+    "expected": "visible field focus in seo",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness toggle",
+    "action": "click expand, missing items, click collapse",
+    "expected": "aria-expanded false→true→false; missing list visible then hidden; entries navigate",
+    "actual": "PASS",
+    "persistence": "view state only"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 375,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "editor",
+    "control": "shell and page leave guard",
+    "action": "click + dismiss",
+    "expected": "one confirmation per navigation; draft retained",
+    "actual": "PASS"
+  },
+  {
+    "page": "create",
+    "control": "3 file inputs/reorder/publish double click",
+    "action": "setInputFiles click dblclick reload",
+    "expected": "one document,3 uploads,one order; persisted NT$60 and untracked cap3",
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG; buyer HTTP readback"
+  },
+  {
+    "page": "matrix",
+    "control": "axes/bulk only empty/stock/save",
+    "action": "click fill Enter reload",
+    "expected": "12 local rows, preserved first price60, others80; persisted",
+    "actual": "PASS"
+  },
+  {
+    "page": "list",
+    "control": "copy/select all/unpublish",
+    "action": "click check reload",
+    "expected": "copy persisted;3 results;all3draft",
+    "actual": "PASS"
+  },
+  {
+    "page": "inventory",
+    "control": "product inspector",
+    "action": "click",
+    "expected": "read-only price, no name/price/image editor; link to product editor",
+    "actual": "PASS"
+  },
+  {
+    "page": "edit",
+    "locale": "en",
+    "width": 375,
+    "control": "readiness toggle",
+    "action": "click expand, click collapse",
+    "expected": "aria-expanded false→true→false; checklist visible then hidden",
+    "actual": "PASS",
+    "persistence": "view state only"
+  },
+  {
+    "page": "edit",
+    "control": "price and save",
+    "action": "fill click reload",
+    "expected": "one minimal patch; cap and images preserved",
+    "actual": "PASS"
+  },
+  {
+    "page": "list",
+    "control": "single/multi SKU pencils, inventory delta and zero",
+    "action": "click fill Enter Escape reload",
+    "expected": "one patch per save, stock0 persists, twelve-SKU popover and focus return",
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "pecc7b0bf10ce548 mobile matrix zh-TW"
+    },
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "product-name",
+    "action": "fill",
+    "expected": "Product name accepts the tagged locale-specific mobile matrix name locally",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "axes": 1
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "axis-add-0",
+    "action": "click",
+    "expected": "Axis add creates local axis 1 without a document write",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "顏色"
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "axis-name-0",
+    "action": "fill",
+    "expected": "Axis name accepts localized Color locally",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "顏色",
+      "values": "White, Black"
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "axis-values-0",
+    "action": "fill Enter",
+    "expected": "Axis values commit White and Black chips locally without a document write",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "axes": 2
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "axis-add-1",
+    "action": "click",
+    "expected": "Axis add creates local axis 2 without a document write",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "尺寸"
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "axis-name-1",
+    "action": "fill",
+    "expected": "Axis name accepts localized Size locally",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "尺寸",
+      "values": "S"
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "axis-values-1",
+    "action": "fill Enter",
+    "expected": "Axis values commit S chip locally without a document write",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": "selected true→false",
+    "persistence": "selection is view state",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "matrix-select-0",
+    "action": "check uncheck",
+    "expected": "Row selection changes true to false without a document write",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "untracked": false
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "不追蹤 ∞",
+    "action": "check uncheck; choose mode",
+    "expected": "Tracking changes untracked to tracked; final mode is tracked with visible 不追蹤 ∞ label",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "售價",
+      "value": "60"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "售價",
+    "action": "fill",
+    "expected": "Visible 售價 accepts 60 locally and reads back the same value",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "原價",
+      "value": "100"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "原價",
+    "action": "fill",
+    "expected": "Visible 原價 accepts 100 locally and reads back the same value",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "數量",
+      "value": "5"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "數量",
+    "action": "fill",
+    "expected": "Visible 數量 accepts 5 locally and reads back the same value",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "貨號",
+      "value": "M1560329915-0-0"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "貨號",
+    "action": "fill",
+    "expected": "Visible 貨號 retains its SKU code and accepts the new SKU code locally",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "直播關鍵字",
+      "value": "M15603299150C0"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "直播關鍵字",
+    "action": "fill",
+    "expected": "Visible 直播關鍵字 accepts the distinct live keyword locally",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "啟用",
+      "enabled": true
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "matrix-active-0",
+    "action": "uncheck check",
+    "expected": "Active changes false to true; active label remains visible",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": "selected true→false",
+    "persistence": "selection is view state",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "matrix-select-1",
+    "action": "check uncheck",
+    "expected": "Row selection changes true to false without a document write",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "untracked": true
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "不追蹤 ∞",
+    "action": "check uncheck; choose mode",
+    "expected": "Tracking changes untracked to tracked; final mode is untracked with visible 不追蹤 ∞ label",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "售價",
+      "value": "61"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "售價",
+    "action": "fill",
+    "expected": "Visible 售價 accepts 61 locally and reads back the same value",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "原價",
+      "value": "101"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "原價",
+    "action": "fill",
+    "expected": "Visible 原價 accepts 101 locally and reads back the same value",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "單次購買上限",
+      "value": "6"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "單次購買上限",
+    "action": "fill",
+    "expected": "Visible 單次購買上限 accepts 6 locally and reads back the same value",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "貨號",
+      "value": "M1560329915-0-1"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "貨號",
+    "action": "fill",
+    "expected": "Visible 貨號 retains its SKU code and accepts the new SKU code locally",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "直播關鍵字",
+      "value": "M15603299150C1"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "直播關鍵字",
+    "action": "fill",
+    "expected": "Visible 直播關鍵字 accepts the distinct live keyword locally",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "啟用",
+      "enabled": true
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "matrix-active-1",
+    "action": "uncheck check",
+    "expected": "Active changes false to true; active label remains visible",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "editor": "http://127.0.0.1:59975/zh-TW/products/a1719278-349e-48ea-8473-368fa8852d4a?store=0ad01685-6031-49cf-b939-7e59e7538885",
+      "visibleRows": 2
+    },
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "product-save-result/link",
+    "action": "click",
+    "expected": "Save result link opens the existing product editor with save enabled and both matrix rows present",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "顏色",
+      "values": [
+        "White",
+        "Black"
+      ]
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "saved axis-0",
+    "action": "UI save, editor reopen/reload",
+    "expected": "Saved axis Color with White and Black persists after reopening and reload",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "尺寸",
+      "values": [
+        "S"
+      ]
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "saved axis-1",
+    "action": "UI save, editor reopen/reload",
+    "expected": "Saved axis Size with S persists after reopening and reload",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "White / S",
+      "price": "60",
+      "compare": "100",
+      "quantity": "5",
+      "untracked": false,
+      "code": "M1560329915-0-0",
+      "keyword": "M15603299150C0"
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "saved row readback",
+    "action": "UI save, editor reopen/reload, read visible fields",
+    "expected": "White / S persists with price 60, compare 100, quantity 5, tracked, active and immutable SKU code; live keyword persists",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "Black / S",
+      "price": "61",
+      "compare": "101",
+      "quantity": "6",
+      "untracked": true,
+      "code": "M1560329915-0-1",
+      "keyword": "M15603299150C1"
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "saved row readback",
+    "action": "UI save, editor reopen/reload, read visible fields",
+    "expected": "Black / S persists with price 61, compare 101, quantity 6, untracked, active and immutable SKU code; live keyword persists",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": "one document write; both matrix rows persist",
+    "screenshot": "mobile-matrix-zh-TW-390-new.png",
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "product-create",
+    "action": "click reload",
+    "expected": "One document write succeeds; both matrix rows and saved axes persist after reload",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": "selected true→false",
+    "persistence": "selection is view state",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "matrix-select-0",
+    "action": "check uncheck",
+    "expected": "Row selection changes true to false without a document write",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "untracked": true
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "不追蹤 ∞",
+    "action": "check uncheck; choose mode",
+    "expected": "Tracking changes untracked to tracked; final mode is untracked with visible 不追蹤 ∞ label",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "售價",
+      "value": "80"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "售價",
+    "action": "fill",
+    "expected": "Visible 售價 accepts 80 locally and reads back the same value",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "原價",
+      "value": "120"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "原價",
+    "action": "fill",
+    "expected": "Visible 原價 accepts 120 locally and reads back the same value",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "單次購買上限",
+      "value": "7"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "單次購買上限",
+    "action": "fill",
+    "expected": "Visible 單次購買上限 accepts 7 locally and reads back the same value",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "貨號",
+      "value": "M1560329915-0-0"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "貨號",
+    "action": "verify existing SKU code disabled",
+    "expected": "Visible 貨號 retains its SKU code and is disabled for the existing SKU",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "直播關鍵字",
+      "value": "M15603299150E0"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "直播關鍵字",
+    "action": "fill",
+    "expected": "Visible 直播關鍵字 accepts the distinct live keyword locally",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "啟用",
+      "enabled": true
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "matrix-active-0",
+    "action": "uncheck check",
+    "expected": "Active changes false to true; active label remains visible",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": "selected true→false",
+    "persistence": "selection is view state",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "matrix-select-1",
+    "action": "check uncheck",
+    "expected": "Row selection changes true to false without a document write",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "untracked": false
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "不追蹤 ∞",
+    "action": "check uncheck; choose mode",
+    "expected": "Tracking changes untracked to tracked; final mode is tracked with visible 不追蹤 ∞ label",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "售價",
+      "value": "81"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "售價",
+    "action": "fill",
+    "expected": "Visible 售價 accepts 81 locally and reads back the same value",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "原價",
+      "value": "121"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "原價",
+    "action": "fill",
+    "expected": "Visible 原價 accepts 121 locally and reads back the same value",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "改後庫存",
+      "value": "8"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "改後庫存",
+    "action": "fill",
+    "expected": "Visible 改後庫存 accepts 8 locally and reads back the same value",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "貨號",
+      "value": "M1560329915-0-1"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "貨號",
+    "action": "verify existing SKU code disabled",
+    "expected": "Visible 貨號 retains its SKU code and is disabled for the existing SKU",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "直播關鍵字",
+      "value": "M15603299150E1"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "直播關鍵字",
+    "action": "fill",
+    "expected": "Visible 直播關鍵字 accepts the distinct live keyword locally",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "啟用",
+      "enabled": true
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "matrix-active-1",
+    "action": "uncheck check",
+    "expected": "Active changes false to true; active label remains visible",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "顏色",
+      "values": [
+        "White",
+        "Black"
+      ]
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix edit",
+    "row": "",
+    "control": "saved axis-0",
+    "action": "UI save, editor reopen/reload",
+    "expected": "Saved axis Color with White and Black persists after reopening and reload",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "尺寸",
+      "values": [
+        "S"
+      ]
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix edit",
+    "row": "",
+    "control": "saved axis-1",
+    "action": "UI save, editor reopen/reload",
+    "expected": "Saved axis Size with S persists after reopening and reload",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "White / S",
+      "price": "80",
+      "compare": "120",
+      "quantity": "7",
+      "untracked": true,
+      "code": "M1560329915-0-0",
+      "keyword": "M15603299150E0"
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "saved row readback",
+    "action": "UI save, editor reopen/reload, read visible fields",
+    "expected": "White / S persists with price 80, compare 120, quantity 7, untracked, active and immutable SKU code; live keyword persists",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "Black / S",
+      "price": "81",
+      "compare": "121",
+      "quantity": "8",
+      "untracked": false,
+      "code": "M1560329915-0-1",
+      "keyword": "M15603299150E1"
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "saved row readback",
+    "action": "UI save, editor reopen/reload, read visible fields",
+    "expected": "Black / S persists with price 81, compare 121, quantity 8, tracked, active and immutable SKU code; live keyword persists",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": "one document write; both matrix rows persist",
+    "screenshot": "mobile-matrix-zh-TW-390-edit.png",
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix edit",
+    "row": "",
+    "control": "product-save",
+    "action": "click reload",
+    "expected": "One document write succeeds; both matrix rows and saved axes persist after reload",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "enabled": false
+    },
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "matrix-active-0",
+    "action": "uncheck",
+    "expected": "White active becomes false locally without a document write",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "archivedSKU": "8023b0db-2e0d-46b2-a291-609b1c290a76",
+      "white": "absent from active-only matrix by SKU ID and name",
+      "visibleRows": 1,
+      "black": {
+        "id": "56bdb41b-42ae-49ca-9062-7447cc47c3a2",
+        "price": "81",
+        "compare": "121",
+        "trackedQuantity": "8",
+        "active": true
+      }
+    },
+    "screenshot": "mobile-matrix-zh-TW-390-archived.png",
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix edit",
+    "row": "",
+    "control": "product-save",
+    "action": "uncheck White, click save, reload",
+    "expected": "One document write archives White by SKU identity; only original Black remains active with price 81, compare 121, tracked quantity 8 and immutable code and live keyword",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "pecc7b0bf10ce548 mobile axis remove zh-TW"
+    },
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "product-name",
+    "action": "fill",
+    "expected": "Product name accepts the tagged locale-specific axis removal name locally",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "axes": 1
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "axis-add-0",
+    "action": "click",
+    "expected": "Axis add creates local axis 1 without a document write",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "顏色"
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "axis-name-0",
+    "action": "fill",
+    "expected": "Axis name accepts localized Color locally",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "顏色",
+      "values": "White, Black"
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "axis-values-0",
+    "action": "fill Enter",
+    "expected": "Axis values commit White and Black chips locally without a document write",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "axes": 2
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "axis-add-1",
+    "action": "click",
+    "expected": "Axis add creates local axis 2 without a document write",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "尺寸"
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "axis-name-1",
+    "action": "fill",
+    "expected": "Axis name accepts localized Size locally",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "尺寸",
+      "values": "S"
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "axis-values-1",
+    "action": "fill Enter",
+    "expected": "Axis values commit S chip locally without a document write",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "90"
+    },
+    "page": "mobile axis remove",
+    "row": "White / S",
+    "control": "new-price-0",
+    "action": "fill",
+    "expected": "Initial White / S new-price accepts 90 locally and reads back the same value",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "130"
+    },
+    "page": "mobile axis remove",
+    "row": "White / S",
+    "control": "matrix-compare-0",
+    "action": "fill",
+    "expected": "Initial White / S matrix-compare accepts 130 locally and reads back the same value",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "3"
+    },
+    "page": "mobile axis remove",
+    "row": "White / S",
+    "control": "matrix-quantity-0",
+    "action": "fill",
+    "expected": "Initial White / S matrix-quantity accepts 3 locally and reads back the same value",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "M1560329915-A0-0"
+    },
+    "page": "mobile axis remove",
+    "row": "White / S",
+    "control": "matrix-code-0",
+    "action": "fill",
+    "expected": "Initial White / S SKU code accepts its distinct axis-flow code locally",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "91"
+    },
+    "page": "mobile axis remove",
+    "row": "Black / S",
+    "control": "new-price-1",
+    "action": "fill",
+    "expected": "Initial Black / S new-price accepts 91 locally and reads back the same value",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "131"
+    },
+    "page": "mobile axis remove",
+    "row": "Black / S",
+    "control": "matrix-compare-1",
+    "action": "fill",
+    "expected": "Initial Black / S matrix-compare accepts 131 locally and reads back the same value",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "4"
+    },
+    "page": "mobile axis remove",
+    "row": "Black / S",
+    "control": "matrix-quantity-1",
+    "action": "fill",
+    "expected": "Initial Black / S matrix-quantity accepts 4 locally and reads back the same value",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "M1560329915-A0-1"
+    },
+    "page": "mobile axis remove",
+    "row": "Black / S",
+    "control": "matrix-code-1",
+    "action": "fill",
+    "expected": "Initial Black / S SKU code accepts its distinct axis-flow code locally",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "editor": "http://127.0.0.1:59975/zh-TW/products/393a11fb-da59-4ad6-9f27-d98f57ded68d?store=0ad01685-6031-49cf-b939-7e59e7538885",
+      "visibleRows": 2
+    },
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "product-save-result/link",
+    "action": "click",
+    "expected": "Save result link opens the existing product editor with save enabled and both matrix rows present",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "oldAxisIDs": [
+        "22371557-4e3d-45f7-931d-8748208df501",
+        "5a08c386-a521-4e43-b66f-184594ea6cd3"
+      ],
+      "visibleRows": 2,
+      "oneDocumentWrite": true
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "product-create",
+    "action": "click reload",
+    "expected": "One create document write succeeds; both distinct persisted SKUs retain their entered prices, compare prices, quantities and codes",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "axes": [
+        "尺寸"
+      ],
+      "values": [
+        "S"
+      ],
+      "visibleRows": "2→1",
+      "row": "S"
+    },
+    "persistence": "local draft until UI save below",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": ".pe-axis-remove (Color axis 1)",
+    "action": "real click",
+    "expected": "Color axis is removed locally; only Size S remains; matrix changes from two rows to one S row without a document write",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "95"
+    },
+    "page": "mobile axis remove",
+    "row": "S",
+    "control": "new-price-0",
+    "action": "fill",
+    "expected": "Replacement S new-price accepts 95 locally and reads back the same value",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "145"
+    },
+    "page": "mobile axis remove",
+    "row": "S",
+    "control": "matrix-compare-0",
+    "action": "fill",
+    "expected": "Replacement S matrix-compare accepts 145 locally and reads back the same value",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "9"
+    },
+    "page": "mobile axis remove",
+    "row": "S",
+    "control": "matrix-quantity-0",
+    "action": "fill",
+    "expected": "Replacement S matrix-quantity accepts 9 locally and reads back the same value",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "codeOption": "absent"
+    },
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "bulk-open",
+    "action": "click",
+    "expected": "Bulk edit dialog opens; existing SKU code is unavailable as a bulk field",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "closed": true,
+      "focus": "bulk-open",
+      "documentWrites": 0
+    },
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "bulk-field",
+    "action": "Escape",
+    "expected": "Escape closes the bulk edit dialog and returns focus to bulk open without a document write",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "message": "即將封存的規格",
+      "accepted": true
+    },
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "native archive confirmation",
+    "action": "accept",
+    "expected": "Native archive confirmation displays the localized archive warning and is accepted before the single document write",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "axes": [
+        "尺寸"
+      ],
+      "values": [
+        "S"
+      ],
+      "archivedSKUs": [
+        "22371557-4e3d-45f7-931d-8748208df501",
+        "5a08c386-a521-4e43-b66f-184594ea6cd3"
+      ],
+      "activeSKU": "704f6496-dbc1-4463-8182-24a9c849d1f2",
+      "generatedCode": "pecc7b0bf10ce548-mobile-axis-remove-zh-tw",
+      "row": "S",
+      "price": "95",
+      "compare": "145",
+      "trackedQuantity": "9",
+      "oneDocumentWrite": true
+    },
+    "screenshot": "mobile-axis-remove-zh-TW-390-saved.png",
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "product-save",
+    "action": "click, confirm archive, reload",
+    "expected": "One confirmed document write archives both old SKUs; replacement S has new identity, price 95, compare 145, tracked quantity 9, active and generated immutable code stable across two reloads",
+    "locale": "zh-TW",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "pecc7b0bf10ce548 mobile matrix zh-CN"
+    },
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "product-name",
+    "action": "fill",
+    "expected": "Product name accepts the tagged locale-specific mobile matrix name locally",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "axes": 1
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "axis-add-0",
+    "action": "click",
+    "expected": "Axis add creates local axis 1 without a document write",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "颜色"
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "axis-name-0",
+    "action": "fill",
+    "expected": "Axis name accepts localized Color locally",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "颜色",
+      "values": "White, Black"
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "axis-values-0",
+    "action": "fill Enter",
+    "expected": "Axis values commit White and Black chips locally without a document write",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "axes": 2
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "axis-add-1",
+    "action": "click",
+    "expected": "Axis add creates local axis 2 without a document write",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "尺寸"
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "axis-name-1",
+    "action": "fill",
+    "expected": "Axis name accepts localized Size locally",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "尺寸",
+      "values": "S"
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "axis-values-1",
+    "action": "fill Enter",
+    "expected": "Axis values commit S chip locally without a document write",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": "selected true→false",
+    "persistence": "selection is view state",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "matrix-select-0",
+    "action": "check uncheck",
+    "expected": "Row selection changes true to false without a document write",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "untracked": false
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "不追踪 ∞",
+    "action": "check uncheck; choose mode",
+    "expected": "Tracking changes untracked to tracked; final mode is tracked with visible 不追踪 ∞ label",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "售价",
+      "value": "60"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "售价",
+    "action": "fill",
+    "expected": "Visible 售价 accepts 60 locally and reads back the same value",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "原价",
+      "value": "100"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "原价",
+    "action": "fill",
+    "expected": "Visible 原价 accepts 100 locally and reads back the same value",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "数量",
+      "value": "5"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "数量",
+    "action": "fill",
+    "expected": "Visible 数量 accepts 5 locally and reads back the same value",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "货号",
+      "value": "M1560329915-1-0"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "货号",
+    "action": "fill",
+    "expected": "Visible 货号 retains its SKU code and accepts the new SKU code locally",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "直播关键字",
+      "value": "M15603299151C0"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "直播关键字",
+    "action": "fill",
+    "expected": "Visible 直播关键字 accepts the distinct live keyword locally",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "启用",
+      "enabled": true
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "matrix-active-0",
+    "action": "uncheck check",
+    "expected": "Active changes false to true; active label remains visible",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": "selected true→false",
+    "persistence": "selection is view state",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "matrix-select-1",
+    "action": "check uncheck",
+    "expected": "Row selection changes true to false without a document write",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "untracked": true
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "不追踪 ∞",
+    "action": "check uncheck; choose mode",
+    "expected": "Tracking changes untracked to tracked; final mode is untracked with visible 不追踪 ∞ label",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "售价",
+      "value": "61"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "售价",
+    "action": "fill",
+    "expected": "Visible 售价 accepts 61 locally and reads back the same value",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "原价",
+      "value": "101"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "原价",
+    "action": "fill",
+    "expected": "Visible 原价 accepts 101 locally and reads back the same value",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "单次购买上限",
+      "value": "6"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "单次购买上限",
+    "action": "fill",
+    "expected": "Visible 单次购买上限 accepts 6 locally and reads back the same value",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "货号",
+      "value": "M1560329915-1-1"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "货号",
+    "action": "fill",
+    "expected": "Visible 货号 retains its SKU code and accepts the new SKU code locally",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "直播关键字",
+      "value": "M15603299151C1"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "直播关键字",
+    "action": "fill",
+    "expected": "Visible 直播关键字 accepts the distinct live keyword locally",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "启用",
+      "enabled": true
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "matrix-active-1",
+    "action": "uncheck check",
+    "expected": "Active changes false to true; active label remains visible",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "editor": "http://127.0.0.1:59975/zh-CN/products/af62c484-df4a-4a9e-892e-7c347a43fa13?store=0ad01685-6031-49cf-b939-7e59e7538885",
+      "visibleRows": 2
+    },
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "product-save-result/link",
+    "action": "click",
+    "expected": "Save result link opens the existing product editor with save enabled and both matrix rows present",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "颜色",
+      "values": [
+        "White",
+        "Black"
+      ]
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "saved axis-0",
+    "action": "UI save, editor reopen/reload",
+    "expected": "Saved axis Color with White and Black persists after reopening and reload",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "尺寸",
+      "values": [
+        "S"
+      ]
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "saved axis-1",
+    "action": "UI save, editor reopen/reload",
+    "expected": "Saved axis Size with S persists after reopening and reload",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "White / S",
+      "price": "60",
+      "compare": "100",
+      "quantity": "5",
+      "untracked": false,
+      "code": "M1560329915-1-0",
+      "keyword": "M15603299151C0"
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "saved row readback",
+    "action": "UI save, editor reopen/reload, read visible fields",
+    "expected": "White / S persists with price 60, compare 100, quantity 5, tracked, active and immutable SKU code; live keyword persists",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "Black / S",
+      "price": "61",
+      "compare": "101",
+      "quantity": "6",
+      "untracked": true,
+      "code": "M1560329915-1-1",
+      "keyword": "M15603299151C1"
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "saved row readback",
+    "action": "UI save, editor reopen/reload, read visible fields",
+    "expected": "Black / S persists with price 61, compare 101, quantity 6, untracked, active and immutable SKU code; live keyword persists",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": "one document write; both matrix rows persist",
+    "screenshot": "mobile-matrix-zh-CN-390-new.png",
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "product-create",
+    "action": "click reload",
+    "expected": "One document write succeeds; both matrix rows and saved axes persist after reload",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": "selected true→false",
+    "persistence": "selection is view state",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "matrix-select-0",
+    "action": "check uncheck",
+    "expected": "Row selection changes true to false without a document write",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "untracked": true
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "不追踪 ∞",
+    "action": "check uncheck; choose mode",
+    "expected": "Tracking changes untracked to tracked; final mode is untracked with visible 不追踪 ∞ label",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "售价",
+      "value": "80"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "售价",
+    "action": "fill",
+    "expected": "Visible 售价 accepts 80 locally and reads back the same value",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "原价",
+      "value": "120"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "原价",
+    "action": "fill",
+    "expected": "Visible 原价 accepts 120 locally and reads back the same value",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "单次购买上限",
+      "value": "7"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "单次购买上限",
+    "action": "fill",
+    "expected": "Visible 单次购买上限 accepts 7 locally and reads back the same value",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "货号",
+      "value": "M1560329915-1-0"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "货号",
+    "action": "verify existing SKU code disabled",
+    "expected": "Visible 货号 retains its SKU code and is disabled for the existing SKU",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "直播关键字",
+      "value": "M15603299151E0"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "直播关键字",
+    "action": "fill",
+    "expected": "Visible 直播关键字 accepts the distinct live keyword locally",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "启用",
+      "enabled": true
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "matrix-active-0",
+    "action": "uncheck check",
+    "expected": "Active changes false to true; active label remains visible",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": "selected true→false",
+    "persistence": "selection is view state",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "matrix-select-1",
+    "action": "check uncheck",
+    "expected": "Row selection changes true to false without a document write",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "untracked": false
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "不追踪 ∞",
+    "action": "check uncheck; choose mode",
+    "expected": "Tracking changes untracked to tracked; final mode is tracked with visible 不追踪 ∞ label",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "售价",
+      "value": "81"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "售价",
+    "action": "fill",
+    "expected": "Visible 售价 accepts 81 locally and reads back the same value",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "原价",
+      "value": "121"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "原价",
+    "action": "fill",
+    "expected": "Visible 原价 accepts 121 locally and reads back the same value",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "改后库存",
+      "value": "8"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "改后库存",
+    "action": "fill",
+    "expected": "Visible 改后库存 accepts 8 locally and reads back the same value",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "货号",
+      "value": "M1560329915-1-1"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "货号",
+    "action": "verify existing SKU code disabled",
+    "expected": "Visible 货号 retains its SKU code and is disabled for the existing SKU",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "直播关键字",
+      "value": "M15603299151E1"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "直播关键字",
+    "action": "fill",
+    "expected": "Visible 直播关键字 accepts the distinct live keyword locally",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "启用",
+      "enabled": true
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "matrix-active-1",
+    "action": "uncheck check",
+    "expected": "Active changes false to true; active label remains visible",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "颜色",
+      "values": [
+        "White",
+        "Black"
+      ]
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix edit",
+    "row": "",
+    "control": "saved axis-0",
+    "action": "UI save, editor reopen/reload",
+    "expected": "Saved axis Color with White and Black persists after reopening and reload",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "尺寸",
+      "values": [
+        "S"
+      ]
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix edit",
+    "row": "",
+    "control": "saved axis-1",
+    "action": "UI save, editor reopen/reload",
+    "expected": "Saved axis Size with S persists after reopening and reload",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "White / S",
+      "price": "80",
+      "compare": "120",
+      "quantity": "7",
+      "untracked": true,
+      "code": "M1560329915-1-0",
+      "keyword": "M15603299151E0"
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "saved row readback",
+    "action": "UI save, editor reopen/reload, read visible fields",
+    "expected": "White / S persists with price 80, compare 120, quantity 7, untracked, active and immutable SKU code; live keyword persists",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "Black / S",
+      "price": "81",
+      "compare": "121",
+      "quantity": "8",
+      "untracked": false,
+      "code": "M1560329915-1-1",
+      "keyword": "M15603299151E1"
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "saved row readback",
+    "action": "UI save, editor reopen/reload, read visible fields",
+    "expected": "Black / S persists with price 81, compare 121, quantity 8, tracked, active and immutable SKU code; live keyword persists",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": "one document write; both matrix rows persist",
+    "screenshot": "mobile-matrix-zh-CN-390-edit.png",
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix edit",
+    "row": "",
+    "control": "product-save",
+    "action": "click reload",
+    "expected": "One document write succeeds; both matrix rows and saved axes persist after reload",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "enabled": false
+    },
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "matrix-active-0",
+    "action": "uncheck",
+    "expected": "White active becomes false locally without a document write",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "archivedSKU": "450a7060-c20a-4171-86ec-5f94fbadaee4",
+      "white": "absent from active-only matrix by SKU ID and name",
+      "visibleRows": 1,
+      "black": {
+        "id": "c8d7052c-eb88-496c-b14e-ce6276e37988",
+        "price": "81",
+        "compare": "121",
+        "trackedQuantity": "8",
+        "active": true
+      }
+    },
+    "screenshot": "mobile-matrix-zh-CN-390-archived.png",
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix edit",
+    "row": "",
+    "control": "product-save",
+    "action": "uncheck White, click save, reload",
+    "expected": "One document write archives White by SKU identity; only original Black remains active with price 81, compare 121, tracked quantity 8 and immutable code and live keyword",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "pecc7b0bf10ce548 mobile axis remove zh-CN"
+    },
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "product-name",
+    "action": "fill",
+    "expected": "Product name accepts the tagged locale-specific axis removal name locally",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "axes": 1
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "axis-add-0",
+    "action": "click",
+    "expected": "Axis add creates local axis 1 without a document write",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "颜色"
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "axis-name-0",
+    "action": "fill",
+    "expected": "Axis name accepts localized Color locally",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "颜色",
+      "values": "White, Black"
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "axis-values-0",
+    "action": "fill Enter",
+    "expected": "Axis values commit White and Black chips locally without a document write",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "axes": 2
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "axis-add-1",
+    "action": "click",
+    "expected": "Axis add creates local axis 2 without a document write",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "尺寸"
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "axis-name-1",
+    "action": "fill",
+    "expected": "Axis name accepts localized Size locally",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "尺寸",
+      "values": "S"
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "axis-values-1",
+    "action": "fill Enter",
+    "expected": "Axis values commit S chip locally without a document write",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "90"
+    },
+    "page": "mobile axis remove",
+    "row": "White / S",
+    "control": "new-price-0",
+    "action": "fill",
+    "expected": "Initial White / S new-price accepts 90 locally and reads back the same value",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "130"
+    },
+    "page": "mobile axis remove",
+    "row": "White / S",
+    "control": "matrix-compare-0",
+    "action": "fill",
+    "expected": "Initial White / S matrix-compare accepts 130 locally and reads back the same value",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "3"
+    },
+    "page": "mobile axis remove",
+    "row": "White / S",
+    "control": "matrix-quantity-0",
+    "action": "fill",
+    "expected": "Initial White / S matrix-quantity accepts 3 locally and reads back the same value",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "M1560329915-A1-0"
+    },
+    "page": "mobile axis remove",
+    "row": "White / S",
+    "control": "matrix-code-0",
+    "action": "fill",
+    "expected": "Initial White / S SKU code accepts its distinct axis-flow code locally",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "91"
+    },
+    "page": "mobile axis remove",
+    "row": "Black / S",
+    "control": "new-price-1",
+    "action": "fill",
+    "expected": "Initial Black / S new-price accepts 91 locally and reads back the same value",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "131"
+    },
+    "page": "mobile axis remove",
+    "row": "Black / S",
+    "control": "matrix-compare-1",
+    "action": "fill",
+    "expected": "Initial Black / S matrix-compare accepts 131 locally and reads back the same value",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "4"
+    },
+    "page": "mobile axis remove",
+    "row": "Black / S",
+    "control": "matrix-quantity-1",
+    "action": "fill",
+    "expected": "Initial Black / S matrix-quantity accepts 4 locally and reads back the same value",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "M1560329915-A1-1"
+    },
+    "page": "mobile axis remove",
+    "row": "Black / S",
+    "control": "matrix-code-1",
+    "action": "fill",
+    "expected": "Initial Black / S SKU code accepts its distinct axis-flow code locally",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "editor": "http://127.0.0.1:59975/zh-CN/products/cd2d80af-aa26-4e3e-acc7-c29d488c3e21?store=0ad01685-6031-49cf-b939-7e59e7538885",
+      "visibleRows": 2
+    },
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "product-save-result/link",
+    "action": "click",
+    "expected": "Save result link opens the existing product editor with save enabled and both matrix rows present",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "oldAxisIDs": [
+        "88480eaa-8572-4351-9fbe-722fd57504b2",
+        "b1776de5-6e57-4b82-b2c6-958ec3437d12"
+      ],
+      "visibleRows": 2,
+      "oneDocumentWrite": true
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "product-create",
+    "action": "click reload",
+    "expected": "One create document write succeeds; both distinct persisted SKUs retain their entered prices, compare prices, quantities and codes",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "axes": [
+        "尺寸"
+      ],
+      "values": [
+        "S"
+      ],
+      "visibleRows": "2→1",
+      "row": "S"
+    },
+    "persistence": "local draft until UI save below",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": ".pe-axis-remove (Color axis 1)",
+    "action": "real click",
+    "expected": "Color axis is removed locally; only Size S remains; matrix changes from two rows to one S row without a document write",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "95"
+    },
+    "page": "mobile axis remove",
+    "row": "S",
+    "control": "new-price-0",
+    "action": "fill",
+    "expected": "Replacement S new-price accepts 95 locally and reads back the same value",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "145"
+    },
+    "page": "mobile axis remove",
+    "row": "S",
+    "control": "matrix-compare-0",
+    "action": "fill",
+    "expected": "Replacement S matrix-compare accepts 145 locally and reads back the same value",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "9"
+    },
+    "page": "mobile axis remove",
+    "row": "S",
+    "control": "matrix-quantity-0",
+    "action": "fill",
+    "expected": "Replacement S matrix-quantity accepts 9 locally and reads back the same value",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "codeOption": "absent"
+    },
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "bulk-open",
+    "action": "click",
+    "expected": "Bulk edit dialog opens; existing SKU code is unavailable as a bulk field",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "closed": true,
+      "focus": "bulk-open",
+      "documentWrites": 0
+    },
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "bulk-field",
+    "action": "Escape",
+    "expected": "Escape closes the bulk edit dialog and returns focus to bulk open without a document write",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "message": "即将封存的规格",
+      "accepted": true
+    },
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "native archive confirmation",
+    "action": "accept",
+    "expected": "Native archive confirmation displays the localized archive warning and is accepted before the single document write",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "axes": [
+        "尺寸"
+      ],
+      "values": [
+        "S"
+      ],
+      "archivedSKUs": [
+        "88480eaa-8572-4351-9fbe-722fd57504b2",
+        "b1776de5-6e57-4b82-b2c6-958ec3437d12"
+      ],
+      "activeSKU": "667282ac-68f2-4a59-98b8-ad7c7bd758d9",
+      "generatedCode": "pecc7b0bf10ce548-mobile-axis-remove-zh-cn",
+      "row": "S",
+      "price": "95",
+      "compare": "145",
+      "trackedQuantity": "9",
+      "oneDocumentWrite": true
+    },
+    "screenshot": "mobile-axis-remove-zh-CN-390-saved.png",
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "product-save",
+    "action": "click, confirm archive, reload",
+    "expected": "One confirmed document write archives both old SKUs; replacement S has new identity, price 95, compare 145, tracked quantity 9, active and generated immutable code stable across two reloads",
+    "locale": "zh-CN",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "pecc7b0bf10ce548 mobile matrix en"
+    },
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "product-name",
+    "action": "fill",
+    "expected": "Product name accepts the tagged locale-specific mobile matrix name locally",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "axes": 1
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "axis-add-0",
+    "action": "click",
+    "expected": "Axis add creates local axis 1 without a document write",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "Color"
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "axis-name-0",
+    "action": "fill",
+    "expected": "Axis name accepts localized Color locally",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "Color",
+      "values": "White, Black"
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "axis-values-0",
+    "action": "fill Enter",
+    "expected": "Axis values commit White and Black chips locally without a document write",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "axes": 2
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "axis-add-1",
+    "action": "click",
+    "expected": "Axis add creates local axis 2 without a document write",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "Size"
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "axis-name-1",
+    "action": "fill",
+    "expected": "Axis name accepts localized Size locally",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "Size",
+      "values": "S"
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "axis-values-1",
+    "action": "fill Enter",
+    "expected": "Axis values commit S chip locally without a document write",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": "selected true→false",
+    "persistence": "selection is view state",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "matrix-select-0",
+    "action": "check uncheck",
+    "expected": "Row selection changes true to false without a document write",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "untracked": false
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "Do not track ∞",
+    "action": "check uncheck; choose mode",
+    "expected": "Tracking changes untracked to tracked; final mode is tracked with visible Do not track ∞ label",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "Price",
+      "value": "60"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "Price",
+    "action": "fill",
+    "expected": "Visible Price accepts 60 locally and reads back the same value",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "Compare-at price",
+      "value": "100"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "Compare-at price",
+    "action": "fill",
+    "expected": "Visible Compare-at price accepts 100 locally and reads back the same value",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "Quantity",
+      "value": "5"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "Quantity",
+    "action": "fill",
+    "expected": "Visible Quantity accepts 5 locally and reads back the same value",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "SKU code",
+      "value": "M1560329915-2-0"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "SKU code",
+    "action": "fill",
+    "expected": "Visible SKU code retains its SKU code and accepts the new SKU code locally",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "Live keyword",
+      "value": "M15603299152C0"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "Live keyword",
+    "action": "fill",
+    "expected": "Visible Live keyword accepts the distinct live keyword locally",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "Enabled",
+      "enabled": true
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "matrix-active-0",
+    "action": "uncheck check",
+    "expected": "Active changes false to true; active label remains visible",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": "selected true→false",
+    "persistence": "selection is view state",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "matrix-select-1",
+    "action": "check uncheck",
+    "expected": "Row selection changes true to false without a document write",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "untracked": true
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "Do not track ∞",
+    "action": "check uncheck; choose mode",
+    "expected": "Tracking changes untracked to tracked; final mode is untracked with visible Do not track ∞ label",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "Price",
+      "value": "61"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "Price",
+    "action": "fill",
+    "expected": "Visible Price accepts 61 locally and reads back the same value",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "Compare-at price",
+      "value": "101"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "Compare-at price",
+    "action": "fill",
+    "expected": "Visible Compare-at price accepts 101 locally and reads back the same value",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "Maximum per order",
+      "value": "6"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "Maximum per order",
+    "action": "fill",
+    "expected": "Visible Maximum per order accepts 6 locally and reads back the same value",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "SKU code",
+      "value": "M1560329915-2-1"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "SKU code",
+    "action": "fill",
+    "expected": "Visible SKU code retains its SKU code and accepts the new SKU code locally",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "Live keyword",
+      "value": "M15603299152C1"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "Live keyword",
+    "action": "fill",
+    "expected": "Visible Live keyword accepts the distinct live keyword locally",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "Enabled",
+      "enabled": true
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "matrix-active-1",
+    "action": "uncheck check",
+    "expected": "Active changes false to true; active label remains visible",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "editor": "http://127.0.0.1:59975/en/products/c2146569-ffe3-43a9-a99e-be51e2017673?store=0ad01685-6031-49cf-b939-7e59e7538885",
+      "visibleRows": 2
+    },
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "product-save-result/link",
+    "action": "click",
+    "expected": "Save result link opens the existing product editor with save enabled and both matrix rows present",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "Color",
+      "values": [
+        "White",
+        "Black"
+      ]
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "saved axis-0",
+    "action": "UI save, editor reopen/reload",
+    "expected": "Saved axis Color with White and Black persists after reopening and reload",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "Size",
+      "values": [
+        "S"
+      ]
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "saved axis-1",
+    "action": "UI save, editor reopen/reload",
+    "expected": "Saved axis Size with S persists after reopening and reload",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "White / S",
+      "price": "60",
+      "compare": "100",
+      "quantity": "5",
+      "untracked": false,
+      "code": "M1560329915-2-0",
+      "keyword": "M15603299152C0"
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix new",
+    "row": "White / S",
+    "control": "saved row readback",
+    "action": "UI save, editor reopen/reload, read visible fields",
+    "expected": "White / S persists with price 60, compare 100, quantity 5, tracked, active and immutable SKU code; live keyword persists",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "Black / S",
+      "price": "61",
+      "compare": "101",
+      "quantity": "6",
+      "untracked": true,
+      "code": "M1560329915-2-1",
+      "keyword": "M15603299152C1"
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix new",
+    "row": "Black / S",
+    "control": "saved row readback",
+    "action": "UI save, editor reopen/reload, read visible fields",
+    "expected": "Black / S persists with price 61, compare 101, quantity 6, untracked, active and immutable SKU code; live keyword persists",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": "one document write; both matrix rows persist",
+    "screenshot": "mobile-matrix-en-390-new.png",
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix new",
+    "row": "",
+    "control": "product-create",
+    "action": "click reload",
+    "expected": "One document write succeeds; both matrix rows and saved axes persist after reload",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": "selected true→false",
+    "persistence": "selection is view state",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "matrix-select-0",
+    "action": "check uncheck",
+    "expected": "Row selection changes true to false without a document write",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "untracked": true
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "Do not track ∞",
+    "action": "check uncheck; choose mode",
+    "expected": "Tracking changes untracked to tracked; final mode is untracked with visible Do not track ∞ label",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "Price",
+      "value": "80"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "Price",
+    "action": "fill",
+    "expected": "Visible Price accepts 80 locally and reads back the same value",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "Compare-at price",
+      "value": "120"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "Compare-at price",
+    "action": "fill",
+    "expected": "Visible Compare-at price accepts 120 locally and reads back the same value",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "Maximum per order",
+      "value": "7"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "Maximum per order",
+    "action": "fill",
+    "expected": "Visible Maximum per order accepts 7 locally and reads back the same value",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "SKU code",
+      "value": "M1560329915-2-0"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "SKU code",
+    "action": "verify existing SKU code disabled",
+    "expected": "Visible SKU code retains its SKU code and is disabled for the existing SKU",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "Live keyword",
+      "value": "M15603299152E0"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "Live keyword",
+    "action": "fill",
+    "expected": "Visible Live keyword accepts the distinct live keyword locally",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "Enabled",
+      "enabled": true
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "matrix-active-0",
+    "action": "uncheck check",
+    "expected": "Active changes false to true; active label remains visible",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": "selected true→false",
+    "persistence": "selection is view state",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "matrix-select-1",
+    "action": "check uncheck",
+    "expected": "Row selection changes true to false without a document write",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "untracked": false
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "Do not track ∞",
+    "action": "check uncheck; choose mode",
+    "expected": "Tracking changes untracked to tracked; final mode is tracked with visible Do not track ∞ label",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "Price",
+      "value": "81"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "Price",
+    "action": "fill",
+    "expected": "Visible Price accepts 81 locally and reads back the same value",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "Compare-at price",
+      "value": "121"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "Compare-at price",
+    "action": "fill",
+    "expected": "Visible Compare-at price accepts 121 locally and reads back the same value",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "Resulting on-hand",
+      "value": "8"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "Resulting on-hand",
+    "action": "fill",
+    "expected": "Visible Resulting on-hand accepts 8 locally and reads back the same value",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "SKU code",
+      "value": "M1560329915-2-1"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "SKU code",
+    "action": "verify existing SKU code disabled",
+    "expected": "Visible SKU code retains its SKU code and is disabled for the existing SKU",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "Live keyword",
+      "value": "M15603299152E1"
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "Live keyword",
+    "action": "fill",
+    "expected": "Visible Live keyword accepts the distinct live keyword locally",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "visibleLabel": "Enabled",
+      "enabled": true
+    },
+    "persistence": "verified after UI save below",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "matrix-active-1",
+    "action": "uncheck check",
+    "expected": "Active changes false to true; active label remains visible",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "Color",
+      "values": [
+        "White",
+        "Black"
+      ]
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix edit",
+    "row": "",
+    "control": "saved axis-0",
+    "action": "UI save, editor reopen/reload",
+    "expected": "Saved axis Color with White and Black persists after reopening and reload",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "Size",
+      "values": [
+        "S"
+      ]
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix edit",
+    "row": "",
+    "control": "saved axis-1",
+    "action": "UI save, editor reopen/reload",
+    "expected": "Saved axis Size with S persists after reopening and reload",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "White / S",
+      "price": "80",
+      "compare": "120",
+      "quantity": "7",
+      "untracked": true,
+      "code": "M1560329915-2-0",
+      "keyword": "M15603299152E0"
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "saved row readback",
+    "action": "UI save, editor reopen/reload, read visible fields",
+    "expected": "White / S persists with price 80, compare 120, quantity 7, untracked, active and immutable SKU code; live keyword persists",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "Black / S",
+      "price": "81",
+      "compare": "121",
+      "quantity": "8",
+      "untracked": false,
+      "code": "M1560329915-2-1",
+      "keyword": "M15603299152E1"
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix edit",
+    "row": "Black / S",
+    "control": "saved row readback",
+    "action": "UI save, editor reopen/reload, read visible fields",
+    "expected": "Black / S persists with price 81, compare 121, quantity 8, tracked, active and immutable SKU code; live keyword persists",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": "one document write; both matrix rows persist",
+    "screenshot": "mobile-matrix-en-390-edit.png",
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix edit",
+    "row": "",
+    "control": "product-save",
+    "action": "click reload",
+    "expected": "One document write succeeds; both matrix rows and saved axes persist after reload",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "enabled": false
+    },
+    "page": "mobile matrix edit",
+    "row": "White / S",
+    "control": "matrix-active-0",
+    "action": "uncheck",
+    "expected": "White active becomes false locally without a document write",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "archivedSKU": "a97526c9-4986-43f2-93e3-00a115959836",
+      "white": "absent from active-only matrix by SKU ID and name",
+      "visibleRows": 1,
+      "black": {
+        "id": "71f2b4d2-35e3-44b0-9051-af2d8c3ee572",
+        "price": "81",
+        "compare": "121",
+        "trackedQuantity": "8",
+        "active": true
+      }
+    },
+    "screenshot": "mobile-matrix-en-390-archived.png",
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile matrix edit",
+    "row": "",
+    "control": "product-save",
+    "action": "uncheck White, click save, reload",
+    "expected": "One document write archives White by SKU identity; only original Black remains active with price 81, compare 121, tracked quantity 8 and immutable code and live keyword",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "pecc7b0bf10ce548 mobile axis remove en"
+    },
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "product-name",
+    "action": "fill",
+    "expected": "Product name accepts the tagged locale-specific axis removal name locally",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "axes": 1
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "axis-add-0",
+    "action": "click",
+    "expected": "Axis add creates local axis 1 without a document write",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "Color"
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "axis-name-0",
+    "action": "fill",
+    "expected": "Axis name accepts localized Color locally",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "Color",
+      "values": "White, Black"
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "axis-values-0",
+    "action": "fill Enter",
+    "expected": "Axis values commit White and Black chips locally without a document write",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "axes": 2
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "axis-add-1",
+    "action": "click",
+    "expected": "Axis add creates local axis 2 without a document write",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "Size"
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "axis-name-1",
+    "action": "fill",
+    "expected": "Axis name accepts localized Size locally",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "name": "Size",
+      "values": "S"
+    },
+    "persistence": "local draft until UI save",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "axis-values-1",
+    "action": "fill Enter",
+    "expected": "Axis values commit S chip locally without a document write",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "90"
+    },
+    "page": "mobile axis remove",
+    "row": "White / S",
+    "control": "new-price-0",
+    "action": "fill",
+    "expected": "Initial White / S new-price accepts 90 locally and reads back the same value",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "130"
+    },
+    "page": "mobile axis remove",
+    "row": "White / S",
+    "control": "matrix-compare-0",
+    "action": "fill",
+    "expected": "Initial White / S matrix-compare accepts 130 locally and reads back the same value",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "3"
+    },
+    "page": "mobile axis remove",
+    "row": "White / S",
+    "control": "matrix-quantity-0",
+    "action": "fill",
+    "expected": "Initial White / S matrix-quantity accepts 3 locally and reads back the same value",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "M1560329915-A2-0"
+    },
+    "page": "mobile axis remove",
+    "row": "White / S",
+    "control": "matrix-code-0",
+    "action": "fill",
+    "expected": "Initial White / S SKU code accepts its distinct axis-flow code locally",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "91"
+    },
+    "page": "mobile axis remove",
+    "row": "Black / S",
+    "control": "new-price-1",
+    "action": "fill",
+    "expected": "Initial Black / S new-price accepts 91 locally and reads back the same value",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "131"
+    },
+    "page": "mobile axis remove",
+    "row": "Black / S",
+    "control": "matrix-compare-1",
+    "action": "fill",
+    "expected": "Initial Black / S matrix-compare accepts 131 locally and reads back the same value",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "4"
+    },
+    "page": "mobile axis remove",
+    "row": "Black / S",
+    "control": "matrix-quantity-1",
+    "action": "fill",
+    "expected": "Initial Black / S matrix-quantity accepts 4 locally and reads back the same value",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "M1560329915-A2-1"
+    },
+    "page": "mobile axis remove",
+    "row": "Black / S",
+    "control": "matrix-code-1",
+    "action": "fill",
+    "expected": "Initial Black / S SKU code accepts its distinct axis-flow code locally",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "editor": "http://127.0.0.1:59975/en/products/315c2896-9923-4eb1-89b8-c4e78fa85bbc?store=0ad01685-6031-49cf-b939-7e59e7538885",
+      "visibleRows": 2
+    },
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "product-save-result/link",
+    "action": "click",
+    "expected": "Save result link opens the existing product editor with save enabled and both matrix rows present",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "oldAxisIDs": [
+        "3a0317eb-360d-4e98-98fb-7a2d226a90c5",
+        "5b0fe730-0c9c-45a3-ba29-4e5405eb9533"
+      ],
+      "visibleRows": 2,
+      "oneDocumentWrite": true
+    },
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "product-create",
+    "action": "click reload",
+    "expected": "One create document write succeeds; both distinct persisted SKUs retain their entered prices, compare prices, quantities and codes",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "axes": [
+        "Size"
+      ],
+      "values": [
+        "S"
+      ],
+      "visibleRows": "2→1",
+      "row": "S"
+    },
+    "persistence": "local draft until UI save below",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": ".pe-axis-remove (Color axis 1)",
+    "action": "real click",
+    "expected": "Color axis is removed locally; only Size S remains; matrix changes from two rows to one S row without a document write",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "95"
+    },
+    "page": "mobile axis remove",
+    "row": "S",
+    "control": "new-price-0",
+    "action": "fill",
+    "expected": "Replacement S new-price accepts 95 locally and reads back the same value",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "145"
+    },
+    "page": "mobile axis remove",
+    "row": "S",
+    "control": "matrix-compare-0",
+    "action": "fill",
+    "expected": "Replacement S matrix-compare accepts 145 locally and reads back the same value",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "value": "9"
+    },
+    "page": "mobile axis remove",
+    "row": "S",
+    "control": "matrix-quantity-0",
+    "action": "fill",
+    "expected": "Replacement S matrix-quantity accepts 9 locally and reads back the same value",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "codeOption": "absent"
+    },
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "bulk-open",
+    "action": "click",
+    "expected": "Bulk edit dialog opens; existing SKU code is unavailable as a bulk field",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "closed": true,
+      "focus": "bulk-open",
+      "documentWrites": 0
+    },
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "bulk-field",
+    "action": "Escape",
+    "expected": "Escape closes the bulk edit dialog and returns focus to bulk open without a document write",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "message": "Existing variants to archive",
+      "accepted": true
+    },
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "native archive confirmation",
+    "action": "accept",
+    "expected": "Native archive confirmation displays the localized archive warning and is accepted before the single document write",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "observed": {
+      "axes": [
+        "Size"
+      ],
+      "values": [
+        "S"
+      ],
+      "archivedSKUs": [
+        "3a0317eb-360d-4e98-98fb-7a2d226a90c5",
+        "5b0fe730-0c9c-45a3-ba29-4e5405eb9533"
+      ],
+      "activeSKU": "64d239cb-d22b-4bda-8ea0-75724bb7ea81",
+      "generatedCode": "pecc7b0bf10ce548-mobile-axis-remove-en",
+      "row": "S",
+      "price": "95",
+      "compare": "145",
+      "trackedQuantity": "9",
+      "oneDocumentWrite": true
+    },
+    "screenshot": "mobile-axis-remove-en-390-saved.png",
+    "tier": "BROWSER+REAL_PG",
+    "page": "mobile axis remove",
+    "row": "",
+    "control": "product-save",
+    "action": "click, confirm archive, reload",
+    "expected": "One confirmed document write archives both old SKUs; replacement S has new identity, price 95, compare 145, tracked quantity 9, active and generated immutable code stable across two reloads",
+    "locale": "en",
+    "width": 390,
+    "actual": "PASS"
+  },
+  {
+    "page": "edit",
+    "control": "ambiguous warehouse",
+    "action": "read-only response MOCK + visible disabled field",
+    "expected": "no available fallback, disabled target and inventory link",
+    "actual": "PASS (MOCK read contract)"
+  },
+  {
+    "page": "edit",
+    "locale": "zh-TW",
+    "control": "live-window keyword refusal",
+    "action": "click + MOCK 409",
+    "expected": "explicit translated safety refusal",
+    "actual": "PASS (MOCK response; real rule covered by PG PE21)"
+  },
+  {
+    "page": "edit",
+    "locale": "zh-CN",
+    "control": "live-window keyword refusal",
+    "action": "click + MOCK 409",
+    "expected": "explicit translated safety refusal",
+    "actual": "PASS (MOCK response; real rule covered by PG PE21)"
+  },
+  {
+    "page": "edit",
+    "locale": "en",
+    "control": "live-window keyword refusal",
+    "action": "click + MOCK 409",
+    "expected": "explicit translated safety refusal",
+    "actual": "PASS (MOCK response; real rule covered by PG PE21)"
+  },
+  {
+    "page": "list",
+    "control": "copy response loss/reload",
+    "action": "click then injected lost response, reload",
+    "expected": "one committed command; recovery fence blocks duplicate",
+    "actual": "PASS",
+    "tier": "FAULT_INJECTED+REAL_PG"
+  }
+]

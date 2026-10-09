@@ -1,0 +1,8 @@
+[
+  {
+    "command": "GOTOOLCHAIN=go1.27.2 go test -run Ledger -count=1 -v ./tests/foundation",
+    "exit": 1,
+    "log": "output/matrix-ledger-enforce/round1/go-ledger.log",
+    "sha256": "5f2075e7f7a3b1e5e6a67525406ef96b86ab09e5399c4bd806f65fcd7b0170b8"
+  }
+]

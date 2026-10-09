@@ -1,0 +1,6 @@
+{
+  "source": "c2665c53",
+  "command": "GOTOOLCHAIN=go1.27.2 go test -run '^TestProductEditorMatrixLedger$' -count=1 -v ./tests/foundation",
+  "exit": 1,
+  "test_sha256": "571a58cbe77f49e4c42967884e0769c39a84a14ed2fbe84a87a31524d4054440"
+}

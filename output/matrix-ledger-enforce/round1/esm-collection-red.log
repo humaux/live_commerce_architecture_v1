@@ -1,0 +1,37 @@
+✖ real Playwright ESM consumer collects the product-editor cases (895.752958ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1145.591917
+
+✖ failing tests:
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:17:1
+✖ real Playwright ESM consumer collects the product-editor cases (895.752958ms)
+  AssertionError [ERR_ASSERTION]: Listing tests:
+  Total: 0 tests in 0 files
+
+  TypeError: Module "file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/tests/foundation/testdata/product_editor_matrix_cases.json" needs an import attribute of "type: json"
+      at eval (<anonymous>:1:1)
+
+  Error: No tests found
+
+
+  1 !== 0
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/tests/ci/product-editor-matrix-ledger.test.mjs:33:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

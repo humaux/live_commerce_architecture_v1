@@ -1,0 +1,39 @@
+{
+  "evidence_class": "BROWSER + REAL_PG, synthetic MOCK identity/provider fixtures",
+  "source_files_sha256": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "244523a7b3c93af8e71e14f317ff9d05c306be50e777f263e5c30dbcd2c55f76",
+    "tests/foundation/browser_catalog_core_test.go": "677c2903574f91f4b61445bb1a743ecd17404a196b92ad72a9e313b56b44ad45",
+    "tests/admin/product-editor.acceptance.ts": "9d14a9fe89407a1b2c3a8f4fd59754335eb5e6fd2f0f45a8539a65c833fed84a",
+    "tests/admin/product-editor-matrix-ledger.ts": "bca2b1bed9cc9810cf7225b8f67b42efb9fd7453c979909df6c802cb3d827f1d",
+    "tests/foundation/testdata/product_editor_matrix_cases.json": "17ac97d4e2b3146cb5775a6cc0d1352c7806516ba96d74c1b8b610d53d339855",
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "14e629bebbf9f1b6d2f1d1c80a2ba3d5b1fbbbdf1809ebcf8970cbd03bbc1f71",
+    "scripts/dev/test-node.sh": "aa910da13767dd6594f581e81ac0a53ffa9535ea581d45210856af2d75db13c9"
+  },
+  "source_snapshot": "round1/browser-source-before.json",
+  "command": "LC_TEST_LOCK_WAIT=300 LC_BROWSER_ENGINE=chromium bash scripts/dev/test-local.sh --browser-product-editor",
+  "exit": 0,
+  "run_directory": "output/playwright/catalog-core/20261009T153816.380635000",
+  "ledger_rows": 286,
+  "required_rows": 231,
+  "rows_per_locale": {
+    "zh-TW": 77,
+    "zh-CN": 77,
+    "en": 77
+  },
+  "pass_semantics": "actual PASS records successful real action and assertions for the exact declared canonical expected; observed preserves dynamic readback",
+  "provider_live": "NOT_RUN",
+  "files": {
+    "playwright.log": "c0537b4efb89a88422417ccdc6e9c42c38913f0f23a0e4b78517603b8ddb14c5",
+    "product-editor-click-ledger.json": "83b58e3775f2389bb43409ba4beabc2a9f0912252b3ed8dbc6b27f077e7b485d"
+  },
+  "fixture": "tests/foundation/testdata/product_editor_mobile_matrix_ledger.json",
+  "fixture_sha256": "c3af74c89f8d9ea8b30299a3a5281eb0a3b41b8d47892f1a235e0affbf9dcc23",
+  "prior_attempt": "round1/browser-collection-failed.json (no tests executed)",
+  "current_go_source_sha256": "a3be2d3102f59cc6888389ff5b157558507a7bb89c4ac78003193d11da128a37",
+  "go_runtime_types_table_bindings_validator_sha256": "7a0b7a2796ebe3a295079205460c3356cf1d26e4df7ac4b82dc6efc90055206f",
+  "post_browser_change": "Only corruption test: unapproved-action ensures a real mutation of the new first row; each corruption now must change bytes. Runtime types/init/locale map/validator are byte-identical to the browser snapshot.",
+  "current_reader_revalidates_canonical_ledger": "TestProductEditorMatrixLedgerEvidence via round1/go-ledger.log",
+  "verified_source_commit": "a7ba8593c2bd60d321142855229dec2d69f6446d",
+  "launch_had_uncommitted_source": true,
+  "auxiliary_screenshots": "NOT_INCLUDED; screenshot names in the raw ledger refer to auxiliary runner output, not a screenshot delivery claim."
+}
