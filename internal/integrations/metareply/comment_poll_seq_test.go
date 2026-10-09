@@ -15,8 +15,8 @@ func TestConsoleCommentItemSeqWire(t *testing.T) {
 	s := &consoleSource{pollEpoch: 7, byRef: map[string]consoleComment{}, state: "live"}
 	now := time.Now().UTC()
 	// Timestamp order differs from arrival order; the latter is the authoritative buffer seq.
-	c.ingest(s, []BridgeComment{{Ref: "101", CreatedAt: now}, {Ref: "102", CreatedAt: now.Add(-time.Hour)}})
-	c.ingest(s, []BridgeComment{{Ref: "101", CreatedAt: now}}) // duplicates must not renumber
+	c.ingest(s, []BridgeComment{{Ref: "101", CreatedAt: now}, {Ref: "102", CreatedAt: now.Add(-time.Hour)}}, now)
+	c.ingest(s, []BridgeComment{{Ref: "101", CreatedAt: now}}, now) // duplicates must not renumber
 	page := c.pageLocked(s, BridgePageRequest{Limit: 100}, now)
 	if page.NextSeq != 1 {
 		t.Fatalf("fixture cursor=%d want 1", page.NextSeq)
@@ -40,7 +40,7 @@ func TestConsoleCommentItemSeqWire(t *testing.T) {
 		}
 	}
 	// Each serialization owns a stable number; a later ingestion cannot mutate an earlier page.
-	c.ingest(s, []BridgeComment{{Ref: "103", CreatedAt: now}})
+	c.ingest(s, []BridgeComment{{Ref: "103", CreatedAt: now}}, now)
 	again, err := json.Marshal(page)
 	if err != nil || string(again) != string(raw) {
 		t.Fatal("later ingestion mutated an existing page")
