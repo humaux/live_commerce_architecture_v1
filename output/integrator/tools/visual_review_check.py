@@ -14,6 +14,8 @@ pages = {(c["app"], c["id"]) for i in idx for c in i.get("shots", [])}
 not_run = {tuple(n["unit"].split("|")[:2]) for i in idx for n in i.get("notRun", [])}
 if not pages: sys.exit("no captured pages in the index")
 if not re.match(r"VERDICT: (PASS|FIX)\b", findings): sys.exit("first line is not a VERDICT")
+# The rubric's rule: any P1 means FIX. An inconsistent "PASS with P1" must never be recorded as accepted (PR #23 review).
+if findings.startswith("VERDICT: PASS") and re.search(r"^\s*- \[P1\]", findings, re.M): sys.exit("VERDICT: PASS but the report lists P1 findings")
 seen = {}
 for app, pid in re.findall(r"^## (\S+) (\S+): (?:PASS|FIX)\b", findings, re.M):
     seen[(app, pid)] = seen.get((app, pid), 0) + 1
