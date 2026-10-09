@@ -147,7 +147,7 @@ func gitChanges(root, base string) (changes, error) {
 
 func apiSourceFile(name string) bool {
 	ext := filepath.Ext(name)
-	return name == "go.mod" || (strings.HasPrefix(name, "internal/") || strings.HasPrefix(name, "cmd/api/")) && ext == ".go" || strings.HasPrefix(name, "apps/") && (ext == ".ts" || ext == ".tsx" || ext == ".js" || ext == ".jsx" || ext == ".mjs") || strings.HasPrefix(name, "contracts/") && (ext == ".md" || strings.HasSuffix(name, "-openapi.json"))
+	return name == "go.mod" || (strings.HasPrefix(name, "internal/") || strings.HasPrefix(name, "cmd/api/")) && ext == ".go" || (strings.HasPrefix(name, "apps/") || strings.HasPrefix(name, "packages/")) && (ext == ".ts" || ext == ".tsx" || ext == ".js" || ext == ".jsx" || ext == ".mjs" || strings.HasSuffix(name, "/package.json")) || strings.HasPrefix(name, "contracts/") && (ext == ".md" || strings.HasSuffix(name, "-openapi.json"))
 }
 
 func previousLine(line int, edits []lineEdit) (int, bool) {

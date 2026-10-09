@@ -24,7 +24,7 @@ func mergeBaseFindings(root, sha string) ([]finding, error) {
 }
 
 func mergeBaseInventories(root, sha string) (sourceInventories, error) {
-	dirs, err := gitRead(root, "ls-tree", "--name-only", sha, "--", "internal", "cmd", "apps", "contracts", "go.mod")
+	dirs, err := gitRead(root, "ls-tree", "--name-only", sha, "--", "internal", "cmd", "apps", "packages", "contracts", "go.mod")
 	if err != nil {
 		return sourceInventories{}, err
 	}
