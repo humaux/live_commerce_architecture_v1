@@ -3,7 +3,7 @@ Depends on: frozen LC-U2b2 no-Go scope, current signed browser_inbox_ui_test.go 
 Used by: integrator scope ruling or dedicated test-fixture author; this document does not authorize a Go edit. -->
 # LC-U2b2 remaining browser fixture
 
-Status: BLOCKED pending the scope question already sent: allow only Go **test** fixture changes, or have the integrator provide them. No backend implementation, migration or OpenAPI change is requested.
+Status: APPROVED by integrator on 2026-10-08: the no-Go rule covers PRODUCT code only. Test fixture implementation is present and compiles; real PG/browser acceptance is currently environment-blocked. The request below is retained as historical context; no further scope approval is pending.
 
 The frozen brief says **“Scope (UI and BFF only; no Go, migration or OpenAPI changes)”**. The existing normal inbox runner passes, but it cannot prove the new positive link cases:
 
@@ -27,4 +27,4 @@ Then extend the existing inbox spec at zh-TW/zh-CN/en × 1440/390:
 - The existing live_operator sees disabled controls with the localized reason (already added and passed in all six locale/width combinations).
 - Keep absent-orders coverage and the existing privacy/UNKNOWN tests. The retained-thread calibration must still fail exactly INU05, not fixture setup.
 
-Existing source-only recipes for real A13 setup are in `tests/foundation/live_console_buyer_panel_test.go` and its review/origin tests. The test author should reuse their SQL/API ownership and migration-0165 invariants, not invent a second projection.
+Implemented in `tests/foundation/browser_inbox_customer_link_fixture_test.go` using real signed intake/private-reply Finish and A16/confirm/cancel handlers, with scoped projection assertions. Direct replica-based order helpers were deliberately not reused. See DELIVERY.md for current evidence and runtime blockers.

@@ -3,7 +3,7 @@ Depends on: base abe4714f, frozen live-console-v1 A9/A13/A14 and LC-B3b, current
 Used by: integrator scope ruling, K3 review and later complete acceptance; not a declaration that all unit gates passed. -->
 # LC-U2b2 customer link / BuyerPanel checkpoint
 
-**Full unit acceptance remains BLOCKED** by the no-Go test-fixture boundary in [FIXTURE-REQUEST.md](FIXTURE-REQUEST.md). The pending scope question is required before altering the Go browser fixture. No Go, SQL, migration or OpenAPI file was changed.
+**2026-10-08 update: test-fixture scope is APPROVED.** The new test-only extension below is uncommitted and E1/structure-ready. Full acceptance is still BLOCKED by this session’s runtime permissions (Git metadata read-only, loopback listen EPERM, Docker socket denied). No product Go, SQL, migration or OpenAPI changed. Historical green results below apply only to their recorded earlier source.
 
 - Branch: `unit/lc-u2b2-customer-link`; base `abe4714fb2026df609590a57da6862a0ff6e5b24`.
 - Green implementation commit: `21fce0f4`; tested browser source: `9edb011e765446dea2f90d66aa724fa819880bc3`.
@@ -41,7 +41,43 @@ Failure records are preserved: the first BFF test oracle expected a code-only er
 
 ## Remaining / CI gates
 
-- REQUIRED and BLOCKED: real signed qualified actor + full A13 dataset, then link→reload, real two-page CAS→explicit retry, unlink, complete A13 rendering across all six variants. See FIXTURE-REQUEST; the async scope question remains unanswered. No fake successful browser response or skipped positive case was introduced.
+- New real signed actor/full A13 test fixture and six positive browser variants are implemented but runtime NOT_RUN; see the current fixture extension below. Scope approval is resolved, environment permissions remain blocked.
 - CI: rerun `--browser-inbox` normal + `LC_INBOX_CALIBRATION=retain-thread`; click-sweep and visual-lint per frozen brief. Cross-family K3 review, GitHub CI, full foundation, provider SANDBOX/LIVE and production: NOT_RUN for this checkpoint.
 - Before every commit: fresh fetch; own `origin/unit/lc-u2b2-customer-link` absent at observed checks, so no remote merge is falsely claimed. Work is commit-only; no push, PR, force-push, deployment, real message or money action.
-- All owned local processes finish before handoff; shared PG remains runner-managed. Unit is held for fixture scope resolution, not marked complete.
+- All owned local processes finish before handoff; shared PG remains runner-managed. Unit is held for runtime acceptance and a permitted commit, not marked complete.
+
+## Approved fixture extension — current uncommitted work
+
+Parent owns the harness/Graph adapter, suite registration and browser spec; test_worker owns the new `tests/foundation/browser_inbox_customer_link_fixture_test.go` (same worktree, disjoint write paths). Independent read-only privacy reviewer checked CAS/auth/calibration isolation. Exact deployed model identifiers unavailable. No recursive delegation or product backend edits.
+
+- Qualified actor signs in through actual MOCK OIDC; the original live_operator still supplies the denied-customer-read matrix. Test-only bounded actor selection requires a random header credential; it does not fabricate sessions.
+- Two signed comment intakes and successful real private-reply Finish commands establish the shared peer link. Actual A16 bank-transfer orders are confirmed/cancelled through production handlers. Customers/A13 are asserted under scoped runtime RLS before browser startup. No replica mode or fabricated order/projection rows. Existing inherited store currency is USD; A13 has no currency field and the frozen UI explicitly displays its supplied claim minor value as TWD.
+- Six INU10 cases use two independently signed real pages: B links/reloads; stale A receives 409, keeps its choice and shows the winner; only an explicit click retries, then reload/unlink/reload. Claims B2 quantities 2+1, session, TWD21, confirmed/cancelled orders, ordinal1 and sent auto-reply have independent literal assertions.
+- Existing exact two-send Graph assertion now measures the browser delta after the two fixture-only private replies. New spec is in the inbox registry, diagnostic filename allowlist and GATES.md. INU05 is unchanged and remains mandatory in the same mode.
+- Privacy review P2 was folded in: request URLs are captured in memory across reloads and checked raw/decoded, without writing URL history to artifacts; the Go log scan includes the new synthetic customer names. Source-only review; runtime mutant validation NOT_RUN.
+
+| Current command | Actual exit | Evidence / boundary |
+|---|---:|---|
+| Playwright `test --list` (inert collection-only env) | 0 | `fixture-spec-list.log`: 19 tests / 3 files, all six INU10 variants registered; no browser launched |
+| `go test -tags browser ./tests/foundation -run '^$'` | 0 | `fixture-go-compile.log`; compile only, no DB assertions ran |
+| `pnpm --filter @live-commerce/admin typecheck` | 0 | `fixture-admin-types.log` |
+| Strict tsc on all three inbox specs | 0 | `fixture-spec-types.status.json` contains full args |
+| `bash scripts/dev/check-gates.sh` | 0 | `fixture-gates.log`; registration/header checks |
+| `bash scripts/dev/test-node.sh` | 1 | `fixture-node.log`: first batch 410 pass/3 failures. team-bff listen EPERM; two deploy-prep Docker socket failures. Script stops there; later batches NOT_RUN |
+| Focused six inbox Node files | 1 | `fixture-focused-node.log`: 64 pass/1 failure; inbox-bff loopback listener EPERM |
+| `git fetch origin` | 255 | `fixture-fetch.log`: `.git/worktrees/.../FETCH_HEAD` Operation not permitted |
+| `docker info --format '{{.ServerVersion}}'` | 1 | `fixture-docker.log`: Docker socket permission denied |
+
+The new normal browser/real-PG seed, product-red baseline, normal-green and exact-INU05 calibration are **NOT_RUN**, not PASS and not a valid red. The known denied loopback/Docker permissions prevent them, and fresh remote merge is itself blocked. No permission bypass, fake response, weakened threshold or substituted fixture was used. Old 9edb browser evidence is preserved and cannot validate this changed source.
+
+CI gates after remote synchronization/commit in a capable environment: normal `bash scripts/dev/test-local.sh --browser-inbox`; then `LC_INBOX_CALIBRATION=retain-thread bash scripts/dev/test-local.sh --browser-inbox` serially, requiring exactly INU05 and the other 18 browser cases green. Also the frozen brief's click-sweep and visual-lint, full Node and K3 review remain pending. Do not push without the integrator batch review.
+
+No new commit exists: last committed checkpoint is `3440ef6c96eb9b90908873daceff584f1ea7d2f1`. Fresh fetch/own-remote merge must succeed before `git add -A && git commit`; the runtime's read-only Git metadata forbids that step here. The uncommitted diff plus untracked files are preserved; current hashes/status live in main output `fixture-source-manifest.json`. This is E1 source delivery, not full unit completion.
+
+## 2026-10-09 WIP status check
+
+Decision: KEEP all seven tracked modifications and both untracked test files as a coherent WIP. The exact fixture requested in FIXTURE-REQUEST is implemented and wired; no additional scope approval or external fixture author is needed. Independent source audit found no definite missing stub that prevents a WIP checkpoint. This does not assert the seed or browser cases pass. The inherited USD fixture remains only UI TWD-format evidence, not a real TWD transaction fixture.
+
+Current HEAD is still `3440ef6c`. All nine file hashes matched the previous source manifest before this status note. Fresh `git fetch origin` exited 255 (`FETCH_HEAD: Operation not permitted`), so mandatory own-remote/trunk synchronization and the WIP commit could not run. The current runtime still denies Docker socket access (exit1) and loopback listening (EPERM, exit1). Evidence: main output `status-20261009.json` and its three logs. Normal19 browser cases, real-PG seed, product-red/green and exactly-INU05 calibration remain NOT_RUN.
+
+Preserve the two untracked files in any later checkpoint: `tests/admin/inbox-customer-ui.spec.ts` and `tests/foundation/browser_inbox_customer_link_fixture_test.go`. In a capable environment first fetch/merge own remote if present and merge `origin/r3/integration` (including Go/tooling and registry changes), resolve the inbox registry as a union, then commit the WIP. Do not substitute old13-case evidence for current acceptance. No push or other unit work was performed.
