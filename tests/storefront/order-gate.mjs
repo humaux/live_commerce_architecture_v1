@@ -243,7 +243,12 @@ async function measureCart(p,surface) {
       if(empty)state.empty++;
       if(state.seen_line&&!lines.length)state.line_loss++;
       if(lines.length)state.seen_line=true;
-      const row={title:title||null,lines:lines.length,qty:host.querySelector('[data-testid="cart-line-qty"]')?.textContent||null};
+      // CartLines renders this specific visible status while actual cartDetails hydrates.
+      // A blank cart grid is never interchangeable with that explicit loading state.
+      const detailsStatus=host.querySelector('.sf-cartpage__grid > p.sf-muted[role="status"]');
+      const box=detailsStatus?.getBoundingClientRect();
+      const detailLoading=detailsStatus&&box.width>0&&box.height>0&&getComputedStyle(detailsStatus).visibility==="visible"&&detailsStatus.textContent==="Loading…"?detailsStatus.textContent:null;
+      const row={title:title||null,lines:lines.length,qty:host.querySelector('[data-testid="cart-line-qty"]')?.textContent||null,detail_loading:detailLoading};
       if(JSON.stringify(row)!==JSON.stringify(state.samples.at(-1)))state.samples.push(row);
     };
     window.addEventListener("focus",e=>state.focus.push({type:"focus",trusted:e.isTrusted}));

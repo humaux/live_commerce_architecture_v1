@@ -1,7 +1,7 @@
 //go:build browser
 
 // Purpose: real buyer order browser acceptance with exact completed-case and PostgreSQL fact checks.
-// Depends on: the production storefront, buyer HTTP fixture, Playwright order-gate.mjs and disposable PostgreSQL.
+// Depends on: production storefront, buyer HTTP fixture, Playwright order-gate.mjs, disposable PG and pure buyer_order_evidence_test.go facts/sample checks.
 // Used by: --browser-order and the order step of --browser-webkit.
 
 package foundation_test
@@ -21,59 +21,6 @@ import (
 	"testing"
 	"time"
 )
-
-type browserOrderCartFact struct {
-	ID             string          `json:"id"`
-	Version        int64           `json:"version"`
-	Writes         int             `json:"writes"`
-	Receipts       int             `json:"receipts"`
-	ReceiptVersion int64           `json:"receipt_version"`
-	RequestHash    string          `json:"request_hash"`
-	Items          json.RawMessage `json:"items"`
-}
-
-// Node evidence indentation and PostgreSQL jsonb formatting are not cart facts. Every
-// scalar and the complete semantic items object still must match the independent read.
-func browserOrderCartFactsEqual(a, b browserOrderCartFact) bool {
-	var left, right any
-	return a.ID == b.ID && a.Version == b.Version && a.Writes == b.Writes && a.Receipts == b.Receipts && a.ReceiptVersion == b.ReceiptVersion && a.RequestHash == b.RequestHash && json.Unmarshal(a.Items, &left) == nil && json.Unmarshal(b.Items, &right) == nil && reflect.DeepEqual(left, right)
-}
-
-func TestBuyerOrderRefreshFactComparison(t *testing.T) {
-	pg := browserOrderCartFact{ID: "cart", Version: 1, Writes: 1, Receipts: 1, ReceiptVersion: 1, RequestHash: "exact-request-hash", Items: json.RawMessage(`[{"sku_id": "sku", "quantity": 1}]`)}
-	node := pg
-	node.Items = json.RawMessage(`[
-  {"quantity": 1, "sku_id": "sku"}
-]`)
-	if reflect.DeepEqual(pg, node) || !browserOrderCartFactsEqual(pg, node) {
-		t.Fatal("must accept semantic JSON equality while reproducing the former RawMessage byte-comparison failure")
-	}
-	for name, change := range map[string]func(*browserOrderCartFact){
-		"id":              func(f *browserOrderCartFact) { f.ID = "other" },
-		"version":         func(f *browserOrderCartFact) { f.Version++ },
-		"writes":          func(f *browserOrderCartFact) { f.Writes++ },
-		"receipts":        func(f *browserOrderCartFact) { f.Receipts++ },
-		"receipt_version": func(f *browserOrderCartFact) { f.ReceiptVersion++ },
-		"request_hash":    func(f *browserOrderCartFact) { f.RequestHash = "different" },
-		"quantity":        func(f *browserOrderCartFact) { f.Items = json.RawMessage(`[{"sku_id":"sku","quantity":2}]`) },
-		"sku":             func(f *browserOrderCartFact) { f.Items = json.RawMessage(`[{"sku_id":"other","quantity":1}]`) },
-		"extra_line": func(f *browserOrderCartFact) {
-			f.Items = json.RawMessage(`[{"sku_id":"sku","quantity":1},{"sku_id":"other","quantity":1}]`)
-		},
-		"extra_field": func(f *browserOrderCartFact) {
-			f.Items = json.RawMessage(`[{"sku_id":"sku","quantity":1,"unexpected":true}]`)
-		},
-		"invalid_json": func(f *browserOrderCartFact) { f.Items = json.RawMessage(`[`) },
-	} {
-		t.Run(name, func(t *testing.T) {
-			changed := node
-			change(&changed)
-			if browserOrderCartFactsEqual(pg, changed) {
-				t.Fatal("different persisted fact incorrectly accepted")
-			}
-		})
-	}
-}
 
 // Actual form -> production Next -> Go -> isolated PG. Only the hostname/TLS
 // edge and merchant/buyer data are synthetic; no business route is mocked.
@@ -345,11 +292,7 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 						Type    string `json:"type"`
 						Trusted bool   `json:"trusted"`
 					} `json:"focus"`
-					Samples []struct {
-						Title *string `json:"title"`
-						Lines int     `json:"lines"`
-						Qty   *string `json:"qty"`
-					} `json:"samples"`
+					Samples []browserOrderCartSample `json:"samples"`
 				} `json:"measurement"`
 			} `json:"phases"`
 		} `json:"cart_refreshes"`
@@ -495,17 +438,8 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 				t.Fatal("race was not triggered by the expected new native trusted focus events")
 			}
 		}
-		for j, sample := range m.Samples {
-			if i == 1 && j == 0 {
-				if sample.Title == nil || *sample.Title != "Loading…" || sample.Lines != 0 {
-					t.Fatal("fresh Provider mount never observed the held initial-read loading state")
-				}
-			} else if sample.Lines != 1 || sample.Qty == nil || *sample.Qty != "1" {
-				t.Fatal("visible cart line disappeared or changed during held-read/failure/release")
-			}
-		}
-		if i == 1 && len(m.Samples) < 2 {
-			t.Fatal("fresh mount lacks loading-to-line publication proof after release")
+		if !browserOrderCartSamplesValid(phase.Surface, m.Samples) {
+			t.Fatal("cart samples lack explicit visible loading before first publication or exact line continuity afterward")
 		}
 	}
 
