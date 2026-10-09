@@ -1,0 +1,29 @@
+✔ PR31 soldout badge en SUCCEEDED reflects confirmed delivery (12.424625ms)
+✔ PR31 soldout badge en ACKNOWLEDGED reflects confirmed delivery (1.006125ms)
+✔ PR31 soldout badge en READY reflects confirmed delivery (0.839ms)
+✔ PR31 soldout badge en DISPATCHING reflects confirmed delivery (0.707333ms)
+✔ PR31 soldout badge en FAILED_FINAL reflects confirmed delivery (0.671083ms)
+✔ PR31 soldout badge en BLOCKED_POLICY reflects confirmed delivery (0.619708ms)
+✔ PR31 soldout badge en UNKNOWN reflects confirmed delivery (0.567083ms)
+✔ PR31 soldout badge zh-TW SUCCEEDED reflects confirmed delivery (2.244666ms)
+✔ PR31 soldout badge zh-TW ACKNOWLEDGED reflects confirmed delivery (0.647083ms)
+✔ PR31 soldout badge zh-TW READY reflects confirmed delivery (0.603375ms)
+✔ PR31 soldout badge zh-TW DISPATCHING reflects confirmed delivery (0.508083ms)
+✔ PR31 soldout badge zh-TW FAILED_FINAL reflects confirmed delivery (0.480625ms)
+✔ PR31 soldout badge zh-TW BLOCKED_POLICY reflects confirmed delivery (0.527583ms)
+✔ PR31 soldout badge zh-TW UNKNOWN reflects confirmed delivery (0.512667ms)
+✔ PR31 soldout badge zh-CN SUCCEEDED reflects confirmed delivery (0.576834ms)
+✔ PR31 soldout badge zh-CN ACKNOWLEDGED reflects confirmed delivery (0.504292ms)
+✔ PR31 soldout badge zh-CN READY reflects confirmed delivery (0.448583ms)
+✔ PR31 soldout badge zh-CN DISPATCHING reflects confirmed delivery (0.434125ms)
+✔ PR31 soldout badge zh-CN FAILED_FINAL reflects confirmed delivery (0.48275ms)
+✔ PR31 soldout badge zh-CN BLOCKED_POLICY reflects confirmed delivery (0.425792ms)
+✔ PR31 soldout badge zh-CN UNKNOWN reflects confirmed delivery (0.3945ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 324.640583

@@ -1,0 +1,24 @@
+{
+  "head": "0ff7ca92fea1e31607c16099ea5429b6dd882a7b",
+  "review": "pr31_extra_security E1 SOURCE_ONLY no concrete P0/P1/privacyP2 in inspected diff",
+  "runtime_repetition_pending": false,
+  "review_memory": "NOT_AVAILABLE: reviewer ALL_TOOLS lacks Humaux; parent persists equivalent",
+  "original_assertions": "LCU2 postwaitclear/login/no reads15000/6500 untouched; newexactpathGETarmonly; OP4toEqual8/11retained",
+  "artifact_review": "pr31_extra_security E1 source and artifact audit; own Humaux queued",
+  "verified_sources": 26,
+  "verified_manifest_references": 171,
+  "scope_metadata_rows": 197,
+  "scope_metadata_fields": [
+    "category",
+    "method",
+    "path",
+    "status"
+  ],
+  "grant_records": {
+    "count": 4,
+    "privateRows": 0,
+    "buyerPanel": 0,
+    "sessionRetained": true,
+    "postLossReads": 0
+  }
+}

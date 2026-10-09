@@ -1,0 +1,13 @@
+{
+  "source": "539f1cb8138975e27ef75cdaf0563f154117c698",
+  "command": [
+    "node",
+    "--test",
+    "--experimental-strip-types",
+    "--test-name-pattern=PR31",
+    "tests/admin/live-settings-hooks.test.ts"
+  ],
+  "exit": 1,
+  "controller_sha256": "cc829f7269a24a319213f204e9df5914720f602d4f51b54dafdd28fe9ed17b02",
+  "new_tests_sha256": "d6ce113c8aee66e35d4d2471e40fb2b075e03ce57987462c6c801921f9c9c7f0"
+}

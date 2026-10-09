@@ -1,54 +1,62 @@
-# W3-U2 live settings delivery
+# W3-U2 PR #31 review batch delivery
 
-- Branch/worktree: `unit/w3-u2-live-settings-ui`, `.worktrees/w3-u2-live-settings-ui`; author Codex-4 (parent model/effort not exposed).
-- Tested source: **`9fbe930193e1fd194e63e395155f78abe37e1e80`**. Base/current trunk: `4ff99766e1a4b9f7b7f6931444f8f71dacc7ea09`. Final commit packages evidence only; `trunk-resume/SOURCE.json` binds changed source hashes.
-- Coordination task: `18975431-ecb4-4188-9ad1-04f8054b3fa8`. K3 PASS at original `b06df828` is historical; the integrator reviews this updated batch. No push.
+- Branch/worktree: `unit/w3-u2-live-settings-ui`, `.worktrees/w3-u2-live-settings-ui`; base `539f1cb8` includes integrator changes, both suites, registry and #23 evidence paths. Frozen tested source: **`0ff7ca92fea1e31607c16099ea5429b6dd882a7b`**. Final commit packages evidence only; `pr31-r1/extra/SOURCE.json` and browser manifest bind all current runtime/test files.
+- Author Codex-4 (parent model/effort unexposed); isolated UI/test workers GPT-6.1-sol/high or medium and read-only source/security review. Task `e0cab99c-5ed3-4d22-a3cd-88700fb57c71`. No push; CI priority #29/#33, then integrator pushes this batch.
+- Original K3 PASS at `b06df828` and old `trunk-resume/`, `browser-before-extra/`, `pr31-r1/extra/before-extra/` results are historical, not current-head independent review.
 
-## Result and interface
+## Seven review items
 
-`LiveSettings.tsx` provides manual reminder trigger/report/copy, merchant template publication followed by sold-out CAS save, and blocklist pagination/confirmed removal. zh-TW/zh-CN/en preserve required 24-hour and one-private-reply copy. Restricted follow-up rows have no copy action; blocklist uses platform/note/source bundle/time, with no invented display name. BuyerPanel restriction add/check/badge and CommentStream sold-out marks use frozen fields.
+1. Reminder POST retains the safe aggregate receipt. No report GET without inbox:read; real permission loss still clears private state.
+2. Same-address navigation preserves privacy lifetime, including resolved default-store URLs. Other scene/store/locale departure clears synchronously and late reads cannot repaint.
+3. Scene selector consumes next_cursor and uses authoritative detail/title for a deep-linked scene beyond page 20. Real fixture has 21 scenes.
+4. Shared templates accept 120 Unicode runes and 501/5001 legal rows under the unchanged 1MiB response bound. 121 runes, malformed rows and oversized bodies remain refused through actual Request/route tests.
+5. Sold-out sent badge requires commentSendState(sent), verified for success/queued/failed/blocked/UNKNOWN in zh-TW/zh-CN/en at 1440/390. No packages/i18n change.
+6. Optional reminder 404 is local only after exact Go plain404 plus fresh signed store/method authority. Store not_found and 401/403 clear private data; upstream JSON cannot forge the internal absence marker. Healthy sold-out/list controls and known POST receipts remain.
+7. Selected-scene placeholder is disabled. Explicit useId/htmlFor association retains its name/native option state and the same grid layout; browser assertions/waits unchanged.
 
-BFF leaves use real signed-session/Origin/CSRF/store helpers and closed method/body/query/response grammars. The Next proxy admits these routes without removing trunk's host/comment/Studio guards. The authorized thin Go GET/PUT `/v1/admin/stores/{store_id}/live-settings/sold-out-reply` adapter uses live:read/live:manage, published merchant template ID/version, CAS and transactional idempotency. PUT is exactly `{enabled,template_id,template_version,expected_version}` plus Idempotency-Key; response adds current `version`. Fixed templates remain immutable. Existing null/field validation semantics remain.
+Captured run/save/copy/page/more callbacks retain their render's privacy generation. Hide/reveal cannot lend new authority to discarded work; visible focus preserves the fence and UNKNOWN exact-key retry. Actual six negative counterexamples were RED, then GREEN. Uncompressed logs and corrected Node24 navigator fixture diagnostic remain under pr31-r1.
 
-Private state clears on hide/departure/unmount; stale callbacks cannot dispatch or repaint. UNKNOWN admits only the retained exact receipt. Restriction-check 404 revokes the containing console; ordinary A13 BuyerPanel 404 remains local as trunk requires. RULINGS.md authorizes the adapter and browser registration; automatic reminders/delay inputs/drawer warning remain outside scope.
+## Additional actual CI failures
 
-## Current trunk merge and red → green
+**OP4:** exact toEqual navigation list and both live-group inventories include nav-live-settings after nav-claims in all three locales. Counts 8/11 remain; no contains-style weakening. Actual consumer AST went RED, then 6/6 GREEN. Full ops mode passes twice.
 
-- **`f538a96df5a7f4e52ab059fe8b85f97212f5478a`** merges trunk after LC-U2a/PR22 landed. Sixteen conflicts resolve as a union. Eight dependency files and three selector files are byte-identical to trunk. CommentStream keeps trunk plus three W3 additions; BuyerPanel keeps trunk A13 semantics plus existing W3 restriction controls. The proxy retains both grammars. `trunk-resume/merge-proof.json` records comparisons; independent read-only source audits found no merge-specific issue.
-- Registry uses one `--browser-live-settings` lc_prepare/lc_run/lc_build/lc_fixture block. All 83 previous entries retain their commands; only the W3 entry is added (84 entries including foundation). The new block follows trunk's Go 1.27.2 pin. **`2d28bce7431d405170db586840147c588efca517`** updates the exact-command test's one toolchain literal after its RED; every command/env/timeout assertion remains.
-- First post-merge browser run had six manual-flow failures and six passes. Trunk's A2 parser now requires row `seq` and page `scan_exhausted`; the old W3 MOCK response omitted both, so no comment controls rendered. **`9fbe930193e1fd194e63e395155f78abe37e1e80`** first adds an actual Request/handler regression (RED), then adds only `seq: 1` and `scan_exhausted: true` to the complete fixture page (GREEN). Production parser/UI, browser waits and assertions are unchanged.
-- Fresh `git fetch origin` and `git merge origin/r3/integration` before packaging both exit 0; merge says already up to date.
+**LCU2_404:** the newly mounted restriction check can observe grant loss before A2/A8, then expire the containing console and stop those polls. The actual emitted GET drives the original browser waiter in Node. Its added arm uses the exact current store/session check path, GET and 404; all four original arms and every later clear/cookie/login/zero-read assertion, 15s waiter and 6.5s observation budget remain.
 
-Earlier adapter/UI commits and evidence remain: adapter `123b9ff0`; separate OpenAPI `20d8b0c77eb175aced89f003e4d96563b0b8febf` (`contracts/live-settings-openapi.json`, integrator owns final merge); browser `8a2493d1`/`53b924bf`; UI/BFF `25a16b99`; proxy `bf96e1f4`; privacy `9c00233e`/`115bd202`. No new migration/ACL/dependency change in this resume.
+Backend bundle missing/purged also yields PT404. The BFF separately proves store_scope_lost from fresh signed authority; upstream cannot forge it. Ordinary missing bundle clears the selected buyer and local fence without revoking the console. True store loss clears everything immediately. A queued A2 timer before passive cleanup genuinely issued one extra read RED; the effect-generation/blocked admission guard prevents it and borrowing a new fence.
 
-## Exact current gates
+Both full console repetitions pass the two grant-revocation cases. Current real response ledgers show **buyer-panel** and **restriction check** as first 404 observers. Canonical records are `pr31-r1/extra/console-{1,2}-observers.json` and `browser-current/console-{1,2}/scope-reads-*.json`. They contain only pathname/category/method/status, without query, header, body, buyer name or message text.
 
-Review logs are plaintext under `trunk-resume/`; `LOGS.json` maps them to full uncompressed raw logs and both SHA-256 hashes. Full raw logs are at `/Volumes/data/live_commerce_architecture_v1/output/w3-u2-live-settings-ui/trunk-resume/logs/`. `local-gates-current.json` binds all four local gates to tested source 9fbe9301.
+## Interface and evidence
 
-| Command | Exit | Evidence/result |
+Review-batch production changes are TS/BFF only. New fixed internal BFF codes reminders_unavailable/store_scope_lost distinguish positively proven conditions; Go routes, permissions, OpenAPI, SQL, migrations and lockfiles are unchanged. The existing authorized thin sold-out GET/PUT adapter remains CAS/idempotent; the final REAL_PG handler tests prove scope, replay and refusal behavior.
+
+Current canonical browser evidence is **committed** under `pr31-r1/extra/browser-current/`: both console ledgers/logs, both ops admin/storefront results, 22 live-settings per-test ledgers plus native aggregate and 12 synthetic screenshots, and live-claims result/ledger/log/screens. Comment-author/body screenshot masks remain. Screens use synthetic fixtures; no real buyer PII is asserted. Hash manifests and `browser-evidence.json` bind each file and frozen source. The unchanged KC16 harness allocates its own fresh ignored output/playwright/live-claims-* directory; its exact actual path is recorded, not assumed from the caller root.
+
+## Commands / exit codes
+
+Full exact argv/environment, exits and log hashes: `pr31-r1/extra/{final-local-gates,final-http-real-pg,browser-runs}.json`. Browser commands below use `LC_TEST_LOCK_WAIT=1800 LC_BROWSER_ENGINE=chromium` and a unique `LC_BROWSER_EVIDENCE_ROOT` under output/playwright; exact values are in each run record. Queue waiting changes no product/test timeout.
+
+| Command | Exit | Result/evidence |
 | --- | ---: | --- |
-| `bash scripts/dev/test-node.sh` before toolchain assertion alignment | 1 | `node-toolchain-red.log`; exactly one obsolete command-pin assertion |
-| `node --test --experimental-strip-types tests/admin/live-settings-model.test.ts` | 0 | `toolchain-green.log`; command assertion retained |
-| `GOTOOLCHAIN=go1.27.2 go test -tags browser -run '^TestBrowserLiveSettingsMockCommentsContract$' -count=1 -v ./tests/foundation` before fixture change | 1 | `fixture-comments-red.log`; missing seq and scan_exhausted |
-| `GOTOOLCHAIN=go1.27.2 go test -tags browser -run '^TestBrowserLiveSettingsMock' -count=1 -v ./tests/foundation` | 0 | `fixture-comments-green.log`; both fixture contract tests pass |
-| `bash scripts/dev/test-node.sh` | 0 | `node-current.log`; **1282 PASS / 0 FAIL / 0 SKIP** |
-| `pnpm typecheck:admin` | 0 | `typecheck-current.log`; strict TS |
-| `bash scripts/dev/test-local.sh --list` | 0 | `registry-list-current.log`; new registry mode listed |
-| `bash scripts/dev/check-gates.sh` | 0 | `check-gates-current.log`; **83 documented modes**, all tracked tests run, headers green |
-| `LC_TEST_LOCK_WAIT=600 bash scripts/dev/test-local.sh --browser-live-settings` | 1 → 0 | `browser-live-settings.log` / `browser-live-settings-green.log`; **6/12 → 12/12** |
-| `bash scripts/dev/test-focused.sh 'TestLiveSettingsHTTP' ./tests/foundation ./internal/httpapi` | 0 | `http-focused.log`; **2 top-level, 24 subcases, 0 skips**, REAL_PG handler/403/404/409/CAS/replay/template rules |
+| `bash scripts/dev/test-node.sh` | 0 | **1401 PASS / 0 FAIL**; `pr31-r1/extra/final-node.log` |
+| `pnpm typecheck:admin` | 0 | `pr31-r1/extra/final-typecheck.log` |
+| `bash scripts/dev/test-local.sh --list` | 0 | `pr31-r1/extra/final-registry-list.log` |
+| `bash scripts/dev/check-gates.sh` | 0 | **83 modes all documented**, every tracked test run and header ratchet green; `pr31-r1/extra/final-check-gates.log` |
+| `LC_TEST_LOCK_WAIT=1800 bash scripts/dev/test-focused.sh 'TestLiveSettingsHTTP' ./tests/foundation ./internal/httpapi` | 0 | **2 top-level / 24 subcases / 0 skips**, REAL_PG scope/CAS/replay and full router; `pr31-r1/extra/final-http-real-pg.log` |
+| `bash scripts/dev/test-local.sh --browser-live-console` #1 | 0 | `pr31-r1/extra/browser-live-console-1.log` |
+| `bash scripts/dev/test-local.sh --browser-live-console` #2 | 0 | `pr31-r1/extra/browser-live-console-2.log` |
+| `bash scripts/dev/test-local.sh --browser-ops-polish` #1 | 0 | `pr31-r1/extra/browser-ops-polish-1.log` |
+| `bash scripts/dev/test-local.sh --browser-ops-polish` #2 | 0 | `pr31-r1/extra/browser-ops-polish-2.log` |
+| `bash scripts/dev/test-local.sh --browser-live-settings` #1 | 0 | `pr31-r1/extra/browser-live-settings-1.log` |
+| `bash scripts/dev/test-local.sh --browser-live-claims` #1 | 0 | `pr31-r1/extra/browser-live-claims-1.log` |
+| `node scripts/dev/pr-modes.mjs origin/r3/integration` | 0 | **54 modes** selected; `pr31-r1/extra/pr-modes.json` |
 
-Browser run `20261009T145356.100204000Z` uses the production Next/BFF, real PG signed authorization and MOCK business upstream. It executes three locales at 1440/390: manual operations, clipboard, readonly, hidden/store/CSRF boundaries, CAS and UNKNOWN. `trunk-resume/browser-evidence.json` hashes 12 passing per-test ledgers plus a separate native aggregate; the aggregate is not a thirteenth test. Six screenshots mask private rows/drafts/panel. Full uncompressed evidence:
+Focused parent current Node 132/132 and BFF 38/38 pass; worker cards retain their actual RED commands and raw logs. Current live-settings is **22/22**, KC16 result **21 cases / 3 locales**; both console and ops full repetitions exit 0. The original live-settings 5b run was 20/22: a wrapping label redirected Playwright's option state check to the enabled select. Explicit label association fixed it, with a new actual view RED→GREEN counterexample and no browser assertion change. Earlier claims attempt exit 2 was **NOT_RUN** due another owner's PG lock, not a browser failure. Both records remain preserved.
 
-- GREEN: `/Volumes/data/live_commerce_architecture_v1/output/w3-u2-live-settings-ui/trunk-resume/browser-green/`.
-- RED: `/Volumes/data/live_commerce_architecture_v1/output/w3-u2-live-settings-ui/trunk-resume/browser-red/`.
+## Evidence class / remaining gates
 
-Earlier valid red logs remain under this unit: BFF, receipt, proxy, restriction404, UNKNOWN, departure, actual HTTP and original browser cases. Old `registry-resume/` is historical evidence, superseded for current gate counts/source by `trunk-resume/`.
+**E3: complete in the tested BROWSER + MOCK business + REAL_PG signed-authority/adapter environment**, bound to the current frozen source and file hashes. Read-only audits are E1; current-head independent K3/CI remains pending with the integrator. No new K3 PASS or production/provider acceptance claim.
 
-## Evidence class / CI gates / NOT_RUN
+CI gates needed: foundation-shards and the planner's 54-mode set. Four relevant modes were run here (console/ops twice, settings/claims once); other 50 modes, full foundation, provider SANDBOX/LIVE and deployment are NOT_RUN locally. The integrator prioritizes #29/#33, then pushes this batch. No local blocker remains.
 
-**E3: completed in the tested MOCK + REAL_PG environment**, bound to 9fbe9301 and source hashes. Browser business handlers are MOCK; the separate actual adapter REAL_PG test proves persistence. No provider LIVE or deployment claim. Read-only explorer audits are E1 source/evidence reviews, not an independent runtime rerun or new K3 PASS.
-
-CI gates needed: the real `node scripts/dev/pr-modes.mjs origin/r3/integration` exits 0 and selects 54 modes including foundation-shards and `--browser-live-settings`; exact selection is in `trunk-resume/pr-modes.json`. Shared-component coverage includes live-console/inbox/live-claims/admin-shell/click-sweep. GitHub CI and independent review on this updated head are integrator-owned and pending. Other browser modes, full foundation, provider SANDBOX/LIVE and deployment are NOT_RUN locally in this resume. The requested local browser gate is explicitly authorized by the owner/RULINGS.
-
-No local acceptance blocker remains. READINESS.md is historical and superseded by RULINGS.md. Owned runners/PG/Next/browser processes completed and cleaned up; shared caches and other agents' processes were untouched. Commit, stop, no push. IG seq-tie 0168 remains queued until its brief arrives.
+Owned browser/PG/Next runners finished, mutex released; other agents' processes, fixtures and shared caches untouched. RULINGS supersede old READINESS questions. Commit only, stop; no push.

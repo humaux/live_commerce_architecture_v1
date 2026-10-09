@@ -1,0 +1,11 @@
+✔ W3-U2 restriction check 404 first expires all console views and rejects late A8 (19.100333ms)
+✔ PR31 actual restriction GET is accepted by the LCU2_404 observer with strict scope negatives (8.735834ms)
+ℹ {"path":"/api/stores/10000000-0000-4000-8000-000000000001/live-sessions/22222222-2222-4222-8222-222222222222/claims/blocklist/check","category":"restriction","method":"GET","status":404}
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 356.374375

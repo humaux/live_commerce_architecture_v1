@@ -1,0 +1,8 @@
+
+DevTools listening on ws://127.0.0.1:55903/devtools/browser/5184c53a-e087-485f-be0e-7362749673af
+[75072:51944918:1010/030032.050586:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[75072:51944918:1010/030032.055706:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[75072:51944918:1010/030032.241896:ERROR:google_apis/gcm/engine/mcs_client.cc:702]   Error code: 401  Error message: Authentication Failed: wrong_secret
+[75072:51944918:1010/030032.241974:ERROR:google_apis/gcm/engine/mcs_client.cc:704] Failed to log in to GCM, resetting connection.
+[75505:51947615:1010/030052.921716:ERROR:base/apple/mach_port_rendezvous_mac.cc:256] bootstrap_look_up com.google.chrome.for.testing.MachPortRendezvousServer.1: Permission denied (1100)
+[75505:51947615:1010/030052.922337:ERROR:base/memory/shared_memory_switch.cc:261] No rendezvous client, terminating process (parent died?)

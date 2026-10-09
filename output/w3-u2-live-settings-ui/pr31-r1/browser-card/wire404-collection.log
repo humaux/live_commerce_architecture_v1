@@ -1,0 +1,25 @@
+Listing tests:
+  [live-settings] › live-settings.spec.ts:101:3 › manual reminders template and restriction real clicks zh-TW-1440
+  [live-settings] › live-settings.spec.ts:101:3 › manual reminders template and restriction real clicks zh-TW-390
+  [live-settings] › live-settings.spec.ts:101:3 › manual reminders template and restriction real clicks zh-CN-1440
+  [live-settings] › live-settings.spec.ts:101:3 › manual reminders template and restriction real clicks zh-CN-390
+  [live-settings] › live-settings.spec.ts:101:3 › manual reminders template and restriction real clicks en-1440
+  [live-settings] › live-settings.spec.ts:101:3 › manual reminders template and restriction real clicks en-390
+  [live-settings] › live-settings.spec.ts:187:1 › scene selector real click when scene absent
+  [live-settings] › live-settings.spec.ts:211:1 › 409 is visible and never auto overwrites newer settings
+  [live-settings] › live-settings.spec.ts:230:1 › UNKNOWN retry keeps exact key and body, effect once
+  [live-settings] › live-settings.spec.ts:245:1 › store selector discards private old-store rows
+  [live-settings] › live-settings.spec.ts:253:1 › native hidden page clears private rows and rejects late response
+  [live-settings] › live-settings.spec.ts:270:1 › read-only signed merchant cannot write; CSRF denies owner command
+  [live-settings] › live-settings.spec.ts:310:1 › split signed staff sees reminder result without report read and local send404
+  [live-settings] › live-settings.spec.ts:337:1 › scene picker loads page21 and targets reminders and blocklist
+  [live-settings] › live-settings.spec.ts:362:1 › scene21 direct link shows authoritative title and selectable option
+  [live-settings] › live-settings.spec.ts:375:1 › unmounted reminder report stays local while settings and blocklist work
+  [live-settings] › live-settings.spec.ts:404:3 › five sold-out delivery states real clicks and masked badges zh-TW-1440
+  [live-settings] › live-settings.spec.ts:404:3 › five sold-out delivery states real clicks and masked badges zh-TW-390
+  [live-settings] › live-settings.spec.ts:404:3 › five sold-out delivery states real clicks and masked badges zh-CN-1440
+  [live-settings] › live-settings.spec.ts:404:3 › five sold-out delivery states real clicks and masked badges zh-CN-390
+  [live-settings] › live-settings.spec.ts:404:3 › five sold-out delivery states real clicks and masked badges en-1440
+  [live-settings] › live-settings.spec.ts:404:3 › five sold-out delivery states real clicks and masked badges en-390
+Total: 22 tests in 1 file
+exit_code=0

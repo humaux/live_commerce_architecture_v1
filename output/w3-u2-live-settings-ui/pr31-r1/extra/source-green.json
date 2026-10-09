@@ -1,0 +1,30 @@
+{
+  "before_commit": "2c4d2f5320d9172e6f0094341bb81f7c9ccb1093",
+  "current_commit": "0ff7ca92fea1e31607c16099ea5429b6dd882a7b",
+  "node_green": {
+    "argv": [
+      "node",
+      "--test",
+      "--test-reporter=spec",
+      "--experimental-strip-types",
+      "tests/admin/comment-stream-hooks.test.ts",
+      "tests/admin/live-console-render.test.ts",
+      "tests/admin/live-settings-bff.test.ts",
+      "tests/admin/live-settings-hooks.test.ts"
+    ],
+    "exit": 0,
+    "pass": 132,
+    "fail": 0,
+    "log": "output/w3-u2-live-settings-ui/pr31-r1/extra/observer-product-green.log"
+  },
+  "BFF_scope": {
+    "red_exit": 1,
+    "red_fail": 3,
+    "protective_pass": 1,
+    "green_exit": 0,
+    "green_pass": 38
+  },
+  "scope_protocol": "store_scope_lost is BFF-only membership proof; not_found with current grant only clears buyer data",
+  "browser_waiter": "strict current store/session GETcheck 404; old4arms+allpostasserts+timeouts unchanged",
+  "A2_fix": "effectlifetime ticket checked synchronously beforequeued timer doesanyrequest"
+}

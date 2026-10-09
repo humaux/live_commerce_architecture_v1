@@ -1,0 +1,15 @@
+✔ PR31 reminder scope 404 clears already loaded private sections (35.615583ms)
+✔ PR31 old run callback cannot borrow a revealed page's new fence (2.460833ms)
+✔ PR31 old save callback cannot borrow a revealed page's new fence (1.411959ms)
+✔ PR31 old copy callback cannot borrow a revealed page's new fence (1.173125ms)
+✔ PR31 old page callback cannot borrow a revealed page's new fence (1.146417ms)
+✔ PR31 old loadMoreSessions callback cannot borrow a revealed page's new fence (1.168667ms)
+✔ PR31 normal visible focus preserves captured command admission and UNKNOWN receipt (2.343917ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 410.618375

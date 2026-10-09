@@ -1,0 +1,75 @@
+✖ PR31 split permissions actual reminder click retains queued receipt without unauthorized report GET (39.246292ms)
+✖ PR31 optional reminder GET 404 preserves healthy settings and blocklist (2.2395ms)
+✔ PR31 actual authorized reminder read 403 still tears down all private state (1.065375ms)
+✖ PR31 same settings destination preserves the actual scene selector (5003.007208ms)
+✔ PR31 actual navigation synchronously clears old private state: /en/studio/settings?store=10000000-0000-4000-8000-000000000001&scene=00000000-0000-4000-8000-000000000021 (9.135291ms)
+✔ PR31 actual navigation synchronously clears old private state: /en/studio/settings?store=00000000-0000-4000-8000-000000000021 (4.280042ms)
+✔ PR31 actual navigation synchronously clears old private state: /zh-CN/studio/settings?store=10000000-0000-4000-8000-000000000001 (2.880708ms)
+✖ PR31 more than twenty scenes load through the actual selector and selected scene transport (5001.304208ms)
+✖ PR31 deep linked later scene is a real titled option and empty placeholder cannot be selected (5002.469166ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 4
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 15514.179667
+
+✖ failing tests:
+
+test at tests/admin/live-settings-hooks.test.ts:32:1
+✖ PR31 split permissions actual reminder click retains queued receipt without unauthorized report GET (39.246292ms)
+  AssertionError [ERR_ASSERTION]: actual component VNode found
+      at node (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/inbox-review-host.test.ts:303:10)
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-hooks.test.ts:39:23
+      at inspect (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/inbox-review-host.test.ts:123:15)
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/inbox-review-host.test.ts:108:51
+      at node:internal/process/task_queues:150:7
+      at AsyncResource.runInAsyncScope (node:async_hooks:227:14)
+      at AsyncResource.runMicrotask (node:internal/process/task_queues:147:8) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-hooks.test.ts:47:1
+✖ PR31 optional reminder GET 404 preserves healthy settings and blocklist (2.2395ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  undefined !== 3
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-hooks.test.ts:50:9)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: 3,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-hooks.test.ts:60:1
+✖ PR31 same settings destination preserves the actual scene selector (5003.007208ms)
+  Error: Timed out waiting for scene selector ready
+      at Timeout.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/inbox-review-host.test.ts:126:45)
+      at listOnTimeout (node:internal/timers:605:17)
+      at process.processTimers (node:internal/timers:541:7)
+
+test at tests/admin/live-settings-hooks.test.ts:77:1
+✖ PR31 more than twenty scenes load through the actual selector and selected scene transport (5001.304208ms)
+  Error: Timed out waiting for first page loaded
+      at Timeout.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/inbox-review-host.test.ts:126:45)
+      at listOnTimeout (node:internal/timers:605:17)
+      at process.processTimers (node:internal/timers:541:7)
+
+test at tests/admin/live-settings-hooks.test.ts:92:1
+✖ PR31 deep linked later scene is a real titled option and empty placeholder cannot be selected (5002.469166ms)
+  Error: Timed out waiting for deep linked scene loaded
+      at Timeout.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/inbox-review-host.test.ts:126:45)
+      at listOnTimeout (node:internal/timers:605:17)
+      at process.processTimers (node:internal/timers:541:7)
