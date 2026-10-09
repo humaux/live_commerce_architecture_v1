@@ -1,0 +1,41 @@
+✔ CLI monotonicity: empty (0.832084ms)
+✔ CLI monotonicity: docs (0.086167ms)
+✔ CLI monotonicity: output (0.042917ms)
+✔ CLI monotonicity: backend-go (0.044959ms)
+✔ CLI monotonicity: cmd-go (0.043625ms)
+✔ CLI monotonicity: go-module (0.03075ms)
+✔ CLI monotonicity: migration (0.042875ms)
+✔ CLI monotonicity: contract (0.029959ms)
+✔ CLI monotonicity: untagged-foundation (0.047958ms)
+✔ CLI monotonicity: tagged-account (0.10725ms)
+✔ CLI monotonicity: tagged-studio (0.044208ms)
+✔ CLI monotonicity: browser-foundation (0.031417ms)
+✔ CLI monotonicity: admin-ui (0.032875ms)
+✔ CLI monotonicity: storefront-ui (0.021709ms)
+✔ CLI monotonicity: ui-package (0.03675ms)
+✔ CLI monotonicity: github-gates (0.029708ms)
+✔ CLI monotonicity: deploy-workflow (0.023417ms)
+✔ CLI monotonicity: deploy-verdict (0.01725ms)
+✔ CLI monotonicity: deploy-script (0.016959ms)
+✔ CLI monotonicity: deploy-r3-script (0.016ms)
+✔ CLI monotonicity: deploy-config (0.015708ms)
+✔ CLI monotonicity: deploy-node-tests (0.015375ms)
+✔ CLI monotonicity: general-script (0.015ms)
+✔ CLI monotonicity: legacy-deploy-script (0.0175ms)
+✔ CLI monotonicity: ci-test (0.014875ms)
+✔ CLI monotonicity: app-readme (0.014625ms)
+✔ CLI monotonicity: dockerignore (0.053042ms)
+✔ CLI monotonicity: mixed-backend-ui (0.038958ms)
+✔ CLI monotonicity: mixed-tagged-deploy (0.014375ms)
+✔ CLI monotonicity: unicode-doc (0.016ms)
+✔ CLI monotonicity: unicode-backend (0.014833ms)
+✔ CLI monotonicity: tab-untagged-foundation (0.013458ms)
+✔ CLI monotonicity: space-deploy-prefix (0.0135ms)
+ℹ tests 33
+ℹ suites 0
+ℹ pass 33
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 83.529584

@@ -3,6 +3,8 @@
 // Used by: test-node.sh and --browser-live-settings's preflight; no backend stand-ins.
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import {
   settingsBody,
   settingsData,
@@ -11,7 +13,7 @@ import {
   validSoldOutText,
 } from "../../apps/admin/lib/live-settings-model.ts";
 import { liveSettingsCopy } from "../../apps/admin/lib/live-settings-copy.ts";
-import { planPr } from "../../scripts/dev/pr-modes.mjs";
+import { modeEntries, planPr } from "../../scripts/dev/pr-modes.mjs";
 const sid = "a1111111-1111-4111-8111-111111111111";
 test("only frozen session-scoped manual operations are available", () => {
   assert.deepEqual(settingsResource(`live-sessions/${sid}/reminders`), {
@@ -125,4 +127,18 @@ test("three admin locales preserve the mandatory policy copy and real PR planner
       "--browser-live-settings",
     ),
   );
+});
+
+test("live-settings is one inert registry entry with the existing admin/PG command", () => {
+  const source = readFileSync("scripts/dev/test-local.sh", "utf8");
+  assert.equal(modeEntries(source).filter(e => e.name === "--browser-live-settings").length, 1);
+  const result = spawnSync("/bin/bash", ["scripts/dev/test-local.sh", "--dry-run", "--browser-live-settings"], {
+    encoding: "utf8", env: {PATH: "/usr/bin:/bin"},
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /mode=--browser-live-settings build=admin fixture=pg/);
+  assert.match(result.stdout, /LC_BROWSER_LIVE_SETTINGS_ACCEPTANCE=1 GOTOOLCHAIN=go1\.27\.1 go test -race -tags browser -count=1 -timeout=780s -run '\^TestBrowserLiveSettingsUIRealChain\$'/);
+  assert.match(result.stdout, /pnpm run build:admin/);
+  assert.doesNotMatch(result.stdout, /pnpm run build:storefront/);
+  assert.match(result.stdout, /live-settings-bff\.test\.ts tests\/admin\/live-settings-model\.test\.ts/);
 });

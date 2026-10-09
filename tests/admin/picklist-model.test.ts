@@ -317,10 +317,8 @@ test("MOU keeps native headed checks runnable on a Linux CI worker without DISPL
     new URL("../../scripts/dev/test-local.sh", import.meta.url),
     "utf8",
   );
-  const body =
-    /elif \[\[ "\$test_mode" == --browser-merchant-orders-ui \]\]; then\n([\s\S]*?)\nelif /.exec(
-      script,
-    )?.[1];
+  const { modeEntries } = await import("../../scripts/dev/pr-modes.mjs");
+  const body = modeEntries(script).find((entry) => entry.name === "--browser-merchant-orders-ui")?.run;
   assert.ok(body);
   const run = (os: "Linux" | "Darwin", display: string) =>
     execFileSync(
