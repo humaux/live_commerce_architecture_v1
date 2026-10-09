@@ -1,5 +1,8 @@
 //go:build browser
 
+// Purpose: Verify persisted catalog facts after the real admin catalog/product-editor browser workflow.
+// Depends on: isolated PostgreSQL foundation fixture, production Next/Go stack and Playwright merchant clicks.
+// Used by: --browser-catalog-core and --browser-product-editor gates; all fixture writes remain caller-owned.
 package foundation_test
 
 // CC12 (contracts/storefront-v2.md section A acceptance CC12): the catalog v2 admin pages in real Chromium, desktop and 390 px, zh-TW and en.
@@ -208,8 +211,13 @@ func runCatalogCoreBrowser(t *testing.T, productEditor bool) {
 	brfPlaywright(t, ctx, stack, []string{"catalog-core.spec.ts"}, env)
 	if productEditor {
 		prefix := "pe" + tag
-		if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND name LIKE $3`, tenant, store, prefix+"%"); n != 4 {
+		// Preserve the original exact four-product fence. Exclude only the
+		// three explicitly named mobile matrices, each validated below.
+		if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND name LIKE $3 AND name NOT IN ($4,$5,$6)`, tenant, store, prefix+"%", prefix+" mobile matrix zh-TW", prefix+" mobile matrix zh-CN", prefix+" mobile matrix en"); n != 4 {
 			t.Fatalf("PE: expected 4 products including the single committed lost-response copy, got %d", n)
+		}
+		if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND name LIKE $3`, tenant, store, prefix+"%"); n != 7 {
+			t.Fatalf("PE: expected original 4 plus exactly 3 mobile matrices, got %d products", n)
 		}
 		if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.skus s JOIN catalog.products p ON p.id=s.product_id WHERE p.tenant_id=$1 AND p.store_id=$2 AND p.name=$3 AND s.price_minor=8000 AND s.currency='TWD' AND s.inventory_tracked`, tenant, store, prefix+" single"); n != 1 {
 			t.Fatal("PE: exact TWD single SKU readback failed")
@@ -217,7 +225,40 @@ func runCatalogCoreBrowser(t *testing.T, productEditor bool) {
 		if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.skus s JOIN catalog.products p ON p.id=s.product_id WHERE p.tenant_id=$1 AND p.store_id=$2 AND p.name=$3`, tenant, store, prefix+" matrix"); n != 12 {
 			t.Fatal("PE: matrix does not have 12 persisted SKUs")
 		}
-		t.Logf("PASS PE12-17: TWD tenant, exact product/SKU readback; evidence=%s", evidence)
+		for _, locale := range []struct{ name, index string }{{"zh-TW", "0"}, {"zh-CN", "1"}, {"en", "2"}} {
+			name := prefix + " mobile matrix " + locale.name
+			if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND name=$3`, tenant, store, name); n != 1 {
+				t.Fatalf("PE mobile %s: expected exactly one persisted product, got %d", locale.name, n)
+			}
+			if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.skus s JOIN catalog.products p ON p.id=s.product_id WHERE p.tenant_id=$1 AND p.store_id=$2 AND p.name=$3`, tenant, store, name); n != 2 {
+				t.Fatalf("PE mobile %s: expected exactly two persisted SKUs, got %d", locale.name, n)
+			}
+			for _, row := range []struct {
+				option, index  string
+				price, compare int64
+				tracked        bool
+			}{{"White", "0", 8000, 12000, false}, {"Black", "1", 8100, 12100, true}} {
+				if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.skus s
+					JOIN catalog.products p ON p.id=s.product_id AND p.tenant_id=s.tenant_id AND p.store_id=s.store_id
+					WHERE p.tenant_id=$1 AND p.store_id=$2 AND p.name=$3 AND p.status='draft'
+					AND s.option_values=ARRAY[$4::text,'S'] AND s.price_minor=$5 AND s.compare_at_minor=$6
+					AND s.currency='TWD' AND s.status=CASE WHEN $7::boolean THEN 'active' ELSE 'archived' END AND s.inventory_tracked=$7
+					AND (($7::boolean AND s.max_per_order IS NULL AND
+					  (SELECT coalesce(sum(b.on_hand),0) FROM inventory.balances b
+					   WHERE b.tenant_id=s.tenant_id AND b.store_id=s.store_id AND b.sku_id=s.id)=8)
+					 OR (NOT $7::boolean AND s.max_per_order=7))
+					AND s.code ~ ('^M[0-9]{10}-' || $8::text || '-' || $9::text || '$')
+					AND (($7::boolean AND EXISTS (SELECT 1 FROM live.keyword_library k
+					  WHERE k.tenant_id=s.tenant_id AND k.store_id=s.store_id AND k.sku_id=s.id
+					  AND k.keyword=split_part(s.code,'-',1) || $8::text || 'E' || $9::text))
+					 OR (NOT $7::boolean AND NOT EXISTS (SELECT 1 FROM live.keyword_library k
+					  WHERE k.tenant_id=s.tenant_id AND k.store_id=s.store_id AND k.sku_id=s.id)))`,
+					tenant, store, name, row.option, row.price, row.compare, row.tracked, locale.index, row.index); n != 1 {
+					t.Fatalf("PE mobile %s %s/S: exact edited price/compare/stock/code/keyword/active readback failed (matches=%d)", locale.name, row.option, n)
+				}
+			}
+		}
+		t.Logf("PASS PE12-17: TWD tenant, original 4 products plus 3 mobile matrices with exact edited SKU readback; evidence=%s", evidence)
 		return
 	}
 
