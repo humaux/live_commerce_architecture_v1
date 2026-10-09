@@ -262,18 +262,18 @@ func (s *bffScanner) admit(m *bffModule, name, prefix string, refs ...location) 
 				s.evalEmit(m, frag[j+2:j+3], method, prefix, refs...)
 				knownPredicate = true
 			}
-			if frag[j].kind == "regex" {
+			if frag[j].kind == "regex" && bffTestsWholePath(frag, j) {
 				s.evalEmit(m, frag[j:j+1], method, prefix, refs...)
 				knownPredicate = true
 			}
 			if frag[j].text == "new" && j+2 < len(frag) && frag[j+1].text == "RegExp" && frag[j+2].text == "(" {
 				k := bffClose(frag, j+2)
-				if k >= 0 {
+				if k >= 0 && bffTestsWholePath(frag, k) {
 					s.evalEmit(m, frag[j:k+1], method, prefix, refs...)
 					knownPredicate = true
 				}
 			}
-			if j+2 < len(frag) && frag[j+1].text == "." && frag[j+2].text == "test" && frag[j].kind == "ident" {
+			if bffTestsWholePath(frag, j) && frag[j].kind == "ident" {
 				knownPredicate = true
 				_, local := m.defs[frag[j].text]
 				_, imported := m.imports[frag[j].text]
@@ -315,6 +315,12 @@ func (s *bffScanner) admit(m *bffModule, name, prefix string, refs ...location) 
 	if len(s.out.Routes) == count {
 		addUnresolved(&s.out, f.ref, "unsupported admission helper "+name)
 	}
+}
+
+// Admission regexes must consume the complete resource path. A UUID/country/
+// provider-code test of one parameter constrains a segment; it is not a route.
+func bffTestsWholePath(tokens []bffToken, end int) bool {
+	return end+5 < len(tokens) && tokens[end+1].text == "." && tokens[end+2].text == "test" && tokens[end+3].text == "(" && tokens[end+4].text == "path" && tokens[end+5].text == ")"
 }
 func (s *bffScanner) table(m *bffModule, v bffValue, prefix string, refs ...location) {
 	refs = append(refs, v.refs...)

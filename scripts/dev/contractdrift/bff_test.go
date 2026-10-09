@@ -87,6 +87,12 @@ func TestBFFRealFamilies(t *testing.T) {
 	if bffHas(inv, "POST", "/v1/buyer/session/prepare") {
 		t.Fatal("local mint invented upstream")
 	}
+	if bffHas(inv, "GET", "/v1/admin/stores/{}/{}") {
+		t.Fatal("parameter UUID validation invented a whole-resource route")
+	}
+	if !bffHas(inv, "GET", "/v1/admin/stores/{}/imports/{}/results.csv") {
+		t.Fatal("closed import results GET was dropped")
+	}
 	t.Logf("routes=%d unresolved=%d", len(inv.Routes), len(inv.Unresolved))
 	for _, u := range inv.Unresolved {
 		t.Logf("unresolved %+v", u)
@@ -270,5 +276,28 @@ func TestBFFNestedTemplatesAndConcat(t *testing.T) {
 		if !bffHas(inv, "GET", bffStorePrefix+"reports/"+suffix) {
 			t.Fatalf("nested template disturbed following declaration: %+v", inv)
 		}
+	}
+}
+
+func TestBFFParameterValidationDoesNotProduceRoute(t *testing.T) {
+	root := t.TempDir()
+	leaf := "apps/admin/app/api/stores/[store]/[...resource]/route.ts"
+	bffWrite(t, root, leaf, `import { paramRoute } from "@/lib/params";
+const routes={GET:/^safe$/};
+async function route(request,store,path){if(!routes[request.method]?.test(path)&&!paramRoute(request.method,path))return null;return fetch(`+"`https://go.invalid/v1/admin/stores/${store}/${path}`"+`,{method:request.method})};export const GET=route;`)
+	bffWrite(t, root, "apps/admin/lib/params.ts", `const uuid=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
+export function paramRoute(method,path){const id=path.split("/")[1];if(method==="GET"&&uuid.test(id))return "detail";return null;}`)
+	inv, e := scanBFF(root)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if bffHas(inv, "GET", bffStorePrefix+"{}") {
+		t.Fatal("segment validation became a whole-resource route")
+	}
+	if len(inv.Unresolved) == 0 {
+		t.Fatal("unsupported dynamic resource admission was silently omitted")
+	}
+	if !bffHas(inv, "GET", bffStorePrefix+"safe") {
+		t.Fatal("known closed route was lost")
 	}
 }
