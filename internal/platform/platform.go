@@ -624,6 +624,10 @@ func reResolveScopeLoss(ctx context.Context, tx pgx.Tx, hash []byte, storeID, pe
 	return ErrForbidden
 }
 
+// scopeRecheckBudget bounds the post-denial re-resolve: a denial is already known, so a slow identity lookup must
+// never hold the caller; on timeout the original denial stands.
+const scopeRecheckBudget = 500 * time.Millisecond
+
 // scopeLost is one fresh resolve_access verdict: true only when the principal provably no longer sees
 // the store. querier is the scope transaction while it is still healthy (RequirePermission) or the
 // pool once fn's error has aborted it (withScopeContext); both give a fresh READ COMMITTED snapshot.
@@ -717,9 +721,17 @@ func withScopeContext(ctx context.Context, pool *pgxpool.Pool, token, storeID, p
 		// and the guard can no longer see the grant. The transaction is already aborted, so
 		// re-resolve on a fresh pooled statement: only a proven store-visibility loss becomes the
 		// non-disclosing 404 (LCN03); a genuine permission denial keeps the original 403.
-		if (errors.Is(err, ErrForbidden) || (errors.As(err, &pgErr) && pgErr.Code == "PT403")) &&
-			scopeLost(scopeCtx, pool, hash[:], storeID, permission) {
-			return ErrScopeNotFound
+		if errors.Is(err, ErrForbidden) || (errors.As(err, &pgErr) && pgErr.Code == "PT403") {
+			// Release the aborted transaction's connection first, so the re-check never holds two pool
+			// connections (long WithScopeBudget callers would otherwise pin one per denial). The deferred
+			// rollback then sees a closed tx and is a no-op. A failed or slow re-check keeps the denial.
+			rollback(transaction)
+			recheckCtx, cancelRecheck := context.WithTimeout(scopeCtx, scopeRecheckBudget)
+			lost := scopeLost(recheckCtx, pool, hash[:], storeID, permission)
+			cancelRecheck()
+			if lost {
+				return ErrScopeNotFound
+			}
 		}
 		return err
 	}

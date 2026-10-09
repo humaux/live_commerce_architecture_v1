@@ -147,3 +147,11 @@ the store outside the principal's visibility, so 404 is the frozen answer and 40
 review's objection to the BFF patch is honoured: BuyerPanel revocation semantics are unchanged in SQL
 (the definer still raises PT403 for a genuine permission loss — preserved as 403), and no second,
 differently-lagged opinion is consulted.
+
+## Round 1 (Qwen READONLY review PASS; three P2s; Kimi quota-blocked, so the integrator made these changes)
+
+- **Browser runs are no longer BLOCKED.** The NOT_RUN statement above is superseded. The integrator ran `bash scripts/dev/test-local.sh --browser-live-console` twice on cac97d3f with no BFF patch. `TestBrowserLiveConsoleRealChain` passed both times (335.28 s and 329.54 s), including LCU2_404 all/private (`browser-live-console-1.log`, `browser-live-console-2.log`). The integrator also reproduced red by putting trunk's `platform.go` back: PT403, exit 1 (`red-integrator.log`).
+- **Pool pressure.** `withScopeContext` now rolls back the aborted scope transaction before the re-check, which releases its connection; the deferred rollback becomes a no-op on the closed tx. The re-check is bounded by `scopeRecheckBudget = 500ms`, and a timeout or error keeps the original denial.
+- **Fail-closed tests.**
+  - `internal/platform/scope_recheck_test.go` `TestScopeRecheckFailureKeepsDenial`: a re-check whose row scan fails never reports scope loss. Mutation red: `err != nil || …` fails the test; green after reverting.
+  - `TestScopeSupportGrantRevokedMidTransactionBecomesScopeNotFound` (REAL_PG): a 0153 support grant revoked inside the scope, followed by a denial, gives `ErrScopeNotFound`, the same as the between-request answer. Red on trunk `platform.go` (`forbidden`, `r1-red-support-revoke.log`); green on the fix (`r1-green-support-revoke.log`).

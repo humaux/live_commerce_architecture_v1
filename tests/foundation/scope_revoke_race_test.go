@@ -103,3 +103,24 @@ func TestScopeOpenWithoutAnyGrantIsScopeNotFound(t *testing.T) {
 		t.Fatalf("grantless scope error = %v, want ErrScopeNotFound", err)
 	}
 }
+
+// A 0153 support grant revoked mid-request: any denial raised after the revoke (a definer PT403 or a Go
+// fence) must re-resolve to the LCN03 404, matching the between-request answer — never stay 403.
+func TestScopeSupportGrantRevokedMidTransactionBecomesScopeNotFound(t *testing.T) {
+	s := sgrSetup(t)
+	s.registerSupport(s.support)
+	s.must(s.grant(s.store, s.support, 1, nil))
+	if err := s.access(s.supportTok, s.store, "store:read"); err != nil {
+		t.Fatalf("support access before revoke = %v, want nil", err)
+	}
+	err := platform.WithScope(context.Background(), s.b.runtime, s.supportTok, s.store, "store:read", func(pgx.Tx, platform.Scope) error {
+		s.must(s.revokePair(s.store, s.support))
+		return platform.ErrForbidden // the denial any guard raises once the grant is gone
+	})
+	if !errors.Is(err, platform.ErrScopeNotFound) {
+		t.Fatalf("mid-request support revoke error = %v, want ErrScopeNotFound (LCN03 404)", err)
+	}
+	if err := s.access(s.supportTok, s.store, "store:read"); !errors.Is(err, platform.ErrScopeNotFound) {
+		t.Fatalf("support access after revoke = %v, want ErrScopeNotFound", err)
+	}
+}
