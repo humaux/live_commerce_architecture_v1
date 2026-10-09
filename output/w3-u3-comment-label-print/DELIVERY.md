@@ -3,9 +3,23 @@ Depends on: frozen label brief, approved BFF scope-race fix, PR30 receipts and c
 Used by: integrator K3/PR preparation; local E3 is not independent or production acceptance. -->
 # W3-U3 comment label print — DELIVERY
 
-**Current status: READY for integrator review (E3, tested source d8744793). No push/deploy.**
+**Current status: WAITING_SCOPE404 — BFF candidate reverted as e4e48ec5; not current full-mode READY. No push/deploy.**
 
-## Final correction and root fix (2026-10-10)
+## Latest integrator ruling (2026-10-10)
+
+K3 passed the implementation of58510545, but the integrator rejected shipping the BFF second-opinion classification:
+LCN03 belongs to Go, covers every domain, and stale views can turn a genuine403 into404 and alter BuyerPanel revocation.
+**Exact revert e4e48ec581c8be7309521f20dc4497bee9ca08cc** restores auth.ts, the store catchall and inbox-bff.test.ts to
+58510545's parent. The original14 BFF re-proof cases/helper design is preserved in `scope404-revert/inbox-bff-test-design.patch`;
+it is not silently skipped or kept as an active, rejected contract. The print/label/P2 files and original browser spec are unchanged.
+
+On e4e48ec5: **test-node1376/1376 exit0, admin tsc0, check-gates0**. Current two original full browser runs are **NOT_RUN**,
+waiting for the separate **SCOPE-404** Go unit to merge into trunk. W3-U3 will not duplicate that Go fix or revive BFF re-proof.
+After confirmed merge: merge origin/r3/integration, freeze a source SHA and run `--browser-live-console` twice serially,
+unchanged waiters/assertions/timeouts. Quiet thread follow-up is registered; details: `scope404-revert/DELIVERY.md`.
+Previously reported3952ed32/d8744793 full-mode greens below are historical candidate evidence, not current acceptance.
+
+## Historical candidate correction and BFF fix (superseded)
 
 - The previous LC-U2a ownership attribution is withdrawn. Task **8f1bb58f** is canceled as **误交接**; W3-U3 owned and diagnosed the failure. Main-trunk control `b1bfbeb3` passed; integrator also supplied two passing `729afff9` controls.
 - Required unchanged serial runs on `baab02a1`: **exit 0 (23 workspace +9 labels)**, then **exit 1 (22 workspace +9 labels; private wait timeout)**. These historical reds remain in `correction-reruns/`.

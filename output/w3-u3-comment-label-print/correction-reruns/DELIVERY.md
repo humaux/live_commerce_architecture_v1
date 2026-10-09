@@ -3,6 +3,10 @@ Depends on: source58510545 merged with trunk729afff9 asd8744793, real Request/au
 Used by: integrator K3 and PR preparation; local E3 is not production or independent acceptance. -->
 # W3-U3 — READY (author E3)
 
+**SUPERSEDED, not current READY:** integrator's 2026-10-10 LCN03 ruling moves the fix to Go SCOPE-404.
+58510545 was exactly reverted in e4e48ec5. These logs/hashes remain historical candidate evidence;
+current status and retained test design are in `../scope404-revert/DELIVERY.md`.
+
 Branch `unit/w3-u3-comment-label-print`; tested source **d8744793a03a64281d4481d2bbe90ba5f2b2e98d**.
 Fix **58510545**, trunk **729afff93aaedda81faf1d1badf44ac3bea9cd85**. Evidence-only delivery commit follows this source.
 No push, merge into release, deployment, provider mutation, secrets or real customer data.
