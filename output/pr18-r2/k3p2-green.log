@@ -1,0 +1,10 @@
+✔ PR18 R2 templates read 404 denies the composer (10.963209ms)
+✔ PR18 R2 buyer-panel read 404 expires the panel and reports unauthorized (1.543542ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 249.983625

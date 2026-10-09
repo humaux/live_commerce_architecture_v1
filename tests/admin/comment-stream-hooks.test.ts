@@ -19,6 +19,7 @@ import {
   nodes,
   node,
   textOf,
+  BuyerPanel,
 } from "./inbox-review-host.test.ts";
 const { useCommentStream } =
   await import("../../apps/admin/src/features/live/use-comment-stream.ts");
@@ -378,4 +379,19 @@ test("reply hints, coded error, UNKNOWN and capability state execute the actual 
     nodes(h.output).find((n) => n.type === "fieldset")?.props.disabled,
     true,
   );
+});
+
+// K3 PR18 r2 P2 (privacy, folded in): scope-only reads treat 404 as lost scope, like Inbox.tsx. The send POST is deliberately
+// excluded: its 404 can also mean a stale offer, and the A2 poll (3 s) expires a real scope loss anyway.
+test("PR18 R2 templates read 404 denies the composer", async t => {
+  const env=environment(t);let denied=0;
+  globalThis.fetch=async input=>String(input).includes("message-templates")?response({code:"not_found"},404):response({items:[]});
+  const h=env.mount(()=>CommentReply({store,session:sid,comment:row,locale:"en",platform:"facebook",capabilities:{facebook:{private_reply:{state:"ok",reason:"ok",evidence:"MOCK",checked_at:null}}},onSent(){},onDenied(){denied++;}} as any));
+  await h.settle();assert.equal(denied,1);
+});
+test("PR18 R2 buyer-panel read 404 expires the panel and reports unauthorized", async t => {
+  const env=environment(t);let lost=0;
+  globalThis.fetch=async input=>String(input).includes("buyer-panel?")?response({code:"not_found"},404):response({items:[]});
+  const h=env.mount(()=>BuyerPanel({store,conversationId:sid,onUnauthorized(){lost++;}} as any));
+  await h.settle();assert.equal(lost,1);assert.equal(textOf(h.output).includes("SYNTHETIC"),false);
 });

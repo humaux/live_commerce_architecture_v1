@@ -66,7 +66,8 @@ export function CommentReply({
   const terminalUnknown =
     receiptBlocked ||
     state === "unknown" ||
-    (!!comment.marks.private_reply && commentSendState(comment.marks.private_reply.state) === "unknown");
+    (!!comment.marks.private_reply &&
+      commentSendState(comment.marks.private_reply.state) === "unknown");
   useEffect(() => {
     let alive = true;
     void sessionBoundary()
@@ -138,7 +139,8 @@ export function CommentReply({
         if (
           fence.current.current(ticket) &&
           e instanceof InboxError &&
-          [401, 403].includes(e.status)
+          // template list: 404 can only mean lost scope; the send POST keeps 401/403 (its 404 may be a stale offer)
+          [401, 403, 404].includes(e.status)
         )
           callbacks.current.onDenied();
       });
@@ -158,7 +160,10 @@ export function CommentReply({
       (rule && !(canPreempt && preempt))
     )
       return;
-    if (!selected && !validCommentText(text)) { setError("invalid_text"); return; }
+    if (!selected && !validCommentText(text)) {
+      setError("invalid_text");
+      return;
+    }
     if (!receipt.current?.arm()) {
       setReceiptBlocked(true);
       return;

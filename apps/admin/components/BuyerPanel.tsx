@@ -75,7 +75,11 @@ export function BuyerPanel({
       })
       .catch((cause) => {
         if (!privacy.fence.current(ticket)) return;
-        if (cause instanceof InboxError && [401, 403].includes(cause.status)) {
+        // A 404 on this read = scope lost (scoped definers answer cross-scope with 404), same rule as Inbox.tsx.
+        if (
+          cause instanceof InboxError &&
+          [401, 403, 404].includes(cause.status)
+        ) {
           privacy.expire();
           callbacks.current.onUnauthorized?.();
         }
