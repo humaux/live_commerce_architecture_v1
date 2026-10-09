@@ -1,5 +1,5 @@
 // Purpose: independently fetch and render one scoped buyer panel with permission-gated orders/linking.
-// Depends on: React, next/navigation, @live-commerce/format, frozen A13/A14 and private request/session lifetime.
+// Depends on: React, next/navigation, @live-commerce/format, A13/A14 and live-settings BFF blocklist check/add -> Go blocklist.go; private session lifetime.
 // Used by: Inbox now and the later live console; no dependency on console or inbox selection state.
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -7,6 +7,13 @@ import { useParams } from "next/navigation";
 import type { Store } from "@/lib/model";
 import { displayTime, money } from "@live-commerce/format";
 import type { BuyerData } from "@/lib/inbox-types";
+import {
+  readLiveSettings,
+  writeLiveSettings,
+  LiveSettingsError,
+} from "@/lib/live-settings-client";
+import { liveSettingsCopy, liveSettingsError } from "@/lib/live-settings-copy";
+import { settingsUUID, type SettingsReceipt } from "@/lib/live-settings-model";
 import { inboxRead, inboxWrite, InboxError } from "@/lib/inbox-client";
 import { inboxCopy, inboxError } from "@/src/features/messages/copy";
 import { permitted } from "@/src/features/messages/privacy";
@@ -21,6 +28,7 @@ export function BuyerPanel({
   onUnauthorized,
   onOrder,
   onLinked,
+  sessionId,
 }: {
   store: Store;
   conversationId?: string;
@@ -28,6 +36,7 @@ export function BuyerPanel({
   onUnauthorized?: () => void;
   onOrder?: (orderId: string) => void;
   onLinked?: () => void;
+  sessionId?: string;
 }) {
   const params = useParams<{ locale: string }>(),
     locale = params?.locale ?? "zh-TW",
@@ -194,6 +203,24 @@ export function BuyerPanel({
                 : (c[data.auto_reply.send_state as "queued"] ?? c.unknown)}
             </p>
           )}
+          {bundleId && (sessionId || data.claims[0]?.session_id) && (
+            <BuyerRestriction
+              key={`${store.id}:${bundleId}:${sessionId ?? data.claims[0]?.session_id}`}
+              locale={locale}
+              store={store}
+              bundle={bundleId}
+              session={sessionId ?? data.claims[0]!.session_id}
+              onMissing={() => {
+                privacy.fence.invalidate(true);
+                clear();
+                setError("not_found");
+              }}
+              onDenied={() => {
+                privacy.expire();
+                callbacks.current.onUnauthorized?.();
+              }}
+            />
+          )}
           <h3>{c.claims}</h3>
           {data.claims.length ? (
             <ul>
@@ -277,5 +304,195 @@ export function BuyerPanel({
         </>
       )}
     </aside>
+  );
+}
+
+/** Independently lifetime-bound BuyerPanel entry; never infers a social identity or persists the internal note. */
+function BuyerRestriction({
+  locale,
+  store,
+  session,
+  bundle,
+  onDenied,
+  onMissing,
+}: {
+  locale: string;
+  store: Store;
+  session: string;
+  bundle: string;
+  onDenied?: () => void;
+  onMissing?: () => void;
+}) {
+  const c = liveSettingsCopy(locale),
+    [restricted, setRestricted] = useState<boolean | null>(null),
+    [note, setNote] = useState(""),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState(""),
+    [unknown, setUnknown] = useState(false);
+  const pending = useRef<SettingsReceipt | null>(null),
+    inFlight = useRef(false),
+    callback = useRef(onDenied);
+  callback.current = onDenied;
+  const missing = useRef(onMissing);
+  missing.current = onMissing;
+  const clear = useCallback(() => {
+    setRestricted(null);
+    setNote("");
+    setBusy(false);
+    setError("");
+    setUnknown(false);
+    pending.current = null;
+    inFlight.current = false;
+  }, []);
+  const privacy = useInboxPrivacy(clear),
+    canRead = permitted(store, "live:read"),
+    canManage = permitted(store, "live:manage"),
+    valid = Array.from(note).length <= 200 && !/\p{Cc}/u.test(note);
+  const fail = useCallback(
+    (e: unknown) => {
+      if (e instanceof LiveSettingsError && [401, 403].includes(e.status)) {
+        privacy.expire();
+        callback.current?.();
+        return;
+      }
+      if (e instanceof LiveSettingsError && e.status === 404) {
+        privacy.fence.invalidate(true);
+        clear();
+        missing.current?.();
+      }
+      setError(e instanceof LiveSettingsError ? e.code : "unavailable");
+    },
+    [privacy.expire, clear],
+  );
+  useEffect(() => {
+    clear();
+    if (
+      !privacy.visible ||
+      privacy.blocked.current ||
+      !canRead ||
+      !settingsUUID.test(session) ||
+      !settingsUUID.test(bundle)
+    )
+      return;
+    privacy.fence.invalidate(true);
+    const ticket = privacy.fence.begin();
+    void readLiveSettings<{ restricted: boolean }>(
+      store.id,
+      `live-sessions/${session}/claims/blocklist/check?bundle_id=${bundle}`,
+      ticket.signal,
+    )
+      .then((v) => {
+        if (privacy.fence.current(ticket)) setRestricted(v.restricted);
+      })
+      .catch((e) => {
+        if (privacy.fence.current(ticket)) fail(e);
+      });
+    return () => privacy.fence.invalidate(false);
+  }, [
+    store.id,
+    session,
+    bundle,
+    canRead,
+    privacy.visible,
+    privacy.revision,
+    privacy.blocked,
+    privacy.fence,
+    clear,
+    fail,
+  ]);
+  async function add() {
+    if (
+      !canManage ||
+      !privacy.visible ||
+      privacy.blocked.current ||
+      inFlight.current ||
+      (!pending.current && (!valid || restricted !== false))
+    )
+      return;
+    const ticket = privacy.fence.begin();
+    const action = pending.current ?? {
+      key: crypto.randomUUID(),
+      method: "POST" as const,
+      resource: `live-sessions/${session}/claims/blocklist`,
+      body: JSON.stringify({ bundle_id: bundle, ...(note ? { note } : {}) }),
+    };
+    pending.current = action;
+    inFlight.current = true;
+    setBusy(true);
+    setUnknown(false);
+    setError("");
+    try {
+      await writeLiveSettings(store.id, action, ticket.signal);
+      if (privacy.fence.current(ticket)) {
+        pending.current = null;
+        setNote("");
+        setRestricted(true);
+      }
+    } catch (e) {
+      if (!privacy.fence.current(ticket)) return;
+      if (e instanceof LiveSettingsError && e.status >= 500) setUnknown(true);
+      else {
+        pending.current = null;
+        fail(e);
+      }
+    } finally {
+      if (privacy.fence.current(ticket)) {
+        inFlight.current = false;
+        setBusy(false);
+      }
+    }
+  }
+  if (!privacy.visible) return null;
+  return (
+    <section className={styles.composer} aria-label={c.list}>
+      {restricted === true ? (
+        <strong data-testid="buyer-restricted">{c.blocked}</strong>
+      ) : (
+        <>
+          <label>
+            {c.note}
+            <textarea
+              data-testid="buyer-block-note"
+              maxLength={400}
+              value={note}
+              disabled={busy || unknown || !canManage || restricted === null}
+              onChange={(e) => setNote(e.target.value)}
+              aria-invalid={!valid}
+            />
+          </label>
+          {(!valid || error) && (
+            <p role="alert" data-testid="buyer-block-error">
+              {!valid ? c.noteLong : liveSettingsError(locale, error)}
+            </p>
+          )}
+          <button
+            type="button"
+            className={styles.button}
+            data-testid="buyer-block-add"
+            disabled={
+              busy || unknown || !valid || !canManage || restricted !== false
+            }
+            onClick={() => void add()}
+          >
+            {c.block}
+          </button>
+        </>
+      )}
+      {unknown && (
+        <div role="alert">
+          <p>{c.unknown}</p>
+          <button
+            type="button"
+            className={styles.button}
+            data-testid="buyer-block-retry"
+            disabled={busy}
+            onClick={() => void add()}
+          >
+            {c.retry}
+          </button>
+        </div>
+      )}
+      <p className="live-helper">{c.blockHint}</p>
+    </section>
   );
 }

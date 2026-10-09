@@ -22,11 +22,12 @@ export const liveRoutes = [
     id: "claims",
     path: "/studio/claims",
     group: "live",
-    labelKey: "liveSettings",
+    labelKey: "claims",
     icon: "chat",
     permission: "live:read",
     template: "workspace",
     nav: true,
     spec: "tests/admin/claims-ui.spec.ts",
   },
+  {id:"live-settings",path:"/studio/settings",group:"live",labelKey:"liveSettings",icon:"chat",permission:"live:read",template:"workspace",nav:true,spec:"tests/admin/live-settings.spec.ts"},
 ] satisfies RouteEntry[];
