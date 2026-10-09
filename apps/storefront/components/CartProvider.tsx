@@ -61,6 +61,8 @@ export default function CartProvider({ children }: { children: ReactNode }) {
   const working = useRef(false);
   const currentContext = useRef("");
   const generation = useRef(0);
+  // A successful session observation or command/unmount fence supersedes older reads; a failed read does not.
+  const observedGeneration = useRef(0);
   const adoptContext = useCallback((next: string) => {
     // Another tab may rotate the buyer. Never publish B with A's items/order,
     // even when B's read fails or its write acknowledgement is lost.
@@ -74,17 +76,18 @@ export default function CartProvider({ children }: { children: ReactNode }) {
 
   // Same-context read failures retain the last cart; a newly observed context starts empty.
   const refresh = useCallback(async () => {
-    // Reads cannot supersede an in-flight command/its recovery context. Among reads,
-    // request order (not response arrival order) decides who may publish session/cart state.
+    // Reads cannot supersede an in-flight command/its recovery context. Among successful
+    // session observations, request order decides who may publish; starting a read is not authority.
     if (working.current) return;
     const ticket = ++generation.current;
     try {
       const session = await readBuyerSession();
-      if (ticket !== generation.current) return;
+      if (ticket < observedGeneration.current || working.current) return;
+      observedGeneration.current = ticket;
       if (session.state === "active" && session.context) {
         adoptContext(session.context);
         const current = await readPurchase("cart", session.context, validCart);
-        if (ticket !== generation.current || currentContext.current !== session.context) return;
+        if (ticket !== observedGeneration.current || working.current || currentContext.current !== session.context) return;
         setCart(current);
         setOrderID(knownOrderID(session.context));
       } else {
@@ -95,7 +98,7 @@ export default function CartProvider({ children }: { children: ReactNode }) {
     } catch {
       /* count stays as it was */
     } finally {
-      if (ticket === generation.current) setReady(true);
+      if (ticket >= observedGeneration.current && !working.current) setReady(true);
     }
   }, [adoptContext]);
 
@@ -111,7 +114,7 @@ export default function CartProvider({ children }: { children: ReactNode }) {
     window.addEventListener("focus", onFocus);
     window.addEventListener("storage", onStorage);
     return () => {
-      generation.current++;
+      observedGeneration.current = ++generation.current;
       window.removeEventListener("focus", onFocus);
       window.removeEventListener("storage", onStorage);
     };
@@ -123,6 +126,7 @@ export default function CartProvider({ children }: { children: ReactNode }) {
       if (working.current) return false;
       working.current = true;
       const ticket = ++generation.current;
+      observedGeneration.current = ticket;
       setBusy(true);
       setProblem(null);
       try {
@@ -180,6 +184,7 @@ export default function CartProvider({ children }: { children: ReactNode }) {
     if (working.current || !ctx) return;
     working.current = true;
     const ticket = ++generation.current;
+    observedGeneration.current = ticket;
     setBusy(true);
     try {
       const result = await writePurchase(ctx);
@@ -199,6 +204,7 @@ export default function CartProvider({ children }: { children: ReactNode }) {
     if (working.current || !context || !orderID) return;
     working.current = true;
     const ticket = ++generation.current;
+    observedGeneration.current = ticket;
     setBusy(true);
     try {
       const next = await continueShopping(context, orderID);
