@@ -13,6 +13,7 @@ node_modules
 test-results/
 playwright-report/
 output/playwright/
+output/visual-review/
 # Agent-tool isolated worktrees (Claude Code workflows); never repository content.
 .claude/worktrees/
 output/ui-click-sweep/platform-runner.pass
