@@ -112,7 +112,12 @@ export function BuyerPanel({ store, conversationId, bundleId, onUnauthorized, on
     if (inFlight.current || !privacy.visible || privacy.blocked.current || goneScope.current === scope) return;
     inFlight.current = true; setBusy(true); setError(null); setVersion(null);
     const ticket = privacy.fence.begin();
-    try { await Promise.all([facts(ticket), canLink ? customerPage("", ticket) : null]); }
+    try {
+      // Settle both: a customer-list failure must not mask an A13 401/403, which revokes the console scope.
+      const lost = (await Promise.allSettled([facts(ticket), canLink ? customerPage("", ticket) : null]))
+        .flatMap(r => r.status === "rejected" ? [r.reason] : []);
+      if (lost.length) throw lost.find(e => e instanceof InboxError && [401, 403].includes(e.status)) ?? lost[0];
+    }
     catch (cause) { fail(cause, ticket); }
     finally { if (privacy.fence.current(ticket)) { inFlight.current = false; setBusy(false); } }
   }, [scope, privacy.visible, privacy.blocked, privacy.fence, facts, customerPage, canLink, fail]);
