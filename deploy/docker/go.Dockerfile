@@ -26,7 +26,7 @@
 
 # golang 1.27.2 (matches go.mod `go 1.27.2`), Debian 13; resolved 2026-10-09 (GO-2026-6613/6617 fix release).
 ARG GO_IMAGE=golang:1.27.2-trixie@sha256:e58d6f83b3416618d8bcac2b3dde1b7f7e3c4a77d25e88637f8bbae81536c48d
-# distroless static nonroot (UID 65532): CA certs for OIDC/PAYUNi TLS + tzdata, no shell; resolved 2026-10-09 (GO-2026-6613/6617 fix release).
+# distroless static nonroot (UID 65532): CA certs for OIDC/PAYUNi TLS + tzdata, no shell; resolved 2026-09-28.
 ARG RUNTIME_IMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:e2e927ec666bae08560abb3c55d0659eceabb657f56b6782ab500a9fc7f555e3
 
 FROM ${GO_IMAGE} AS build
