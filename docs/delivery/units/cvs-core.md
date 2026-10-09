@@ -150,8 +150,8 @@ every UNKNOWN/retry branch says why no retry; every new SQL object `COMMENT ON`.
 
 ## Verify
 ```sh
-GOTOOLCHAIN=go1.27.1 go vet ./... && gofmt -l internal cmd
-GOTOOLCHAIN=go1.27.1 go test -race -count=1 ./internal/fulfillment/... ./internal/checkout ./internal/storefront ./internal/merchantorders ./internal/httpapi ./internal/buyerhttp ./cmd/api
+GOTOOLCHAIN=go1.27.2 go vet ./... && gofmt -l internal cmd
+GOTOOLCHAIN=go1.27.2 go test -race -count=1 ./internal/fulfillment/... ./internal/checkout ./internal/storefront ./internal/merchantorders ./internal/httpapi ./internal/buyerhttp ./cmd/api
 LC_FOCUSED_TIMEOUT=2400s bash scripts/dev/test-focused.sh '^Test(T0[46]|ManualFulfilmentMF0[2-68]|StripeRF0[3-9]|StripeSP|BuyerPayment|MerchantOrders|Checkout|Migration|OwnerProvisioning|Pool)'
 python3 scripts/check_packet.py && bash scripts/dev/depmap.sh
 ```

@@ -85,7 +85,7 @@ jobs:
       # A push never cancels the running full suite (it would never finish under frequent merges); GitHub keeps only the newest pending run.
       cancel-in-progress: ${{ github.event_name != 'push' }}
     env:
-      GOTOOLCHAIN: go1.27.1
+      GOTOOLCHAIN: go1.27.2
       GOFLAGS: -mod=readonly
       PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
       MODE: ${{ matrix.mode }}

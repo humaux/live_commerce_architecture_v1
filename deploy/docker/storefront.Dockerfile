@@ -22,7 +22,7 @@
 #   (bigger image, same tested layout) and record which variant the evidence used.
 # Change rules: keep the CMD identical to tests/storefront/browser-gate.mjs launch (127.0.0.1).
 
-ARG GO_IMAGE=golang:1.27.1-trixie@sha256:433790e515d27dc6003e847e644cc0af956985cf315c1c58a3b73ee2dd305183
+ARG GO_IMAGE=golang:1.27.2-trixie@sha256:e58d6f83b3416618d8bcac2b3dde1b7f7e3c4a77d25e88637f8bbae81536c48d
 ARG NODE_IMAGE=node:24.15.0-trixie-slim@sha256:291be77873bc04731968cacf82f0fcef17cee8cf200c6b6951e2bcab41560eb7
 
 FROM ${GO_IMAGE} AS lcentry
