@@ -89,8 +89,8 @@ Nothing else (not the cores' unit tests, not `apps/**`, not contracts).
 
 ## Verify
 ```sh
-GOTOOLCHAIN=go1.27.1 go vet ./tests/foundation ./internal/integrations/psp/stripe/...
-GOTOOLCHAIN=go1.27.1 go test -count=1 ./internal/integrations/psp/stripe/... && node scripts/dev/stripe-webhook-check.mjs
+GOTOOLCHAIN=go1.27.2 go vet ./tests/foundation ./internal/integrations/psp/stripe/...
+GOTOOLCHAIN=go1.27.2 go test -count=1 ./internal/integrations/psp/stripe/... && node scripts/dev/stripe-webhook-check.mjs
 LC_FOCUSED_TIMEOUT=2400s bash scripts/dev/test-focused.sh '^Test(StripeRF(0[1-9]|12)|ManualFulfilmentMF0[1-68]|OwnerProvisioningOP01)'
 bash scripts/dev/test-local.sh --browser-refund-fulfilment        # MF07 + RF11 MOCK
 STRIPE_SANDBOX=1 bash scripts/dev/test-focused.sh '^TestStripeRF10'   # owner test key only; else NOT_RUN

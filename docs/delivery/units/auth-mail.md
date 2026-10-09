@@ -102,9 +102,9 @@ RFC 5321 §4.2/§4.5.3, RFC 2047, retrieved <date>). No hand-written "used by" l
 
 ## Verify
 ```sh
-GOTOOLCHAIN=go1.27.1 go vet ./internal/mail/... && gofmt -l internal/mail
-GOTOOLCHAIN=go1.27.1 go test -race -count=1 ./internal/mail/...          # incl. TestMailPA02SMTP
-GOTOOLCHAIN=go1.27.1 go test -race -count=1 -run '^TestMailPA02SMTP$' -v ./internal/mail > output/auth-mail/pa02-green.log
+GOTOOLCHAIN=go1.27.2 go vet ./internal/mail/... && gofmt -l internal/mail
+GOTOOLCHAIN=go1.27.2 go test -race -count=1 ./internal/mail/...          # incl. TestMailPA02SMTP
+GOTOOLCHAIN=go1.27.2 go test -race -count=1 -run '^TestMailPA02SMTP$' -v ./internal/mail > output/auth-mail/pa02-green.log
 python3 scripts/check_packet.py
 ```
 Logs → `/Volumes/data/live_commerce_architecture_v1/output/auth-mail/` (main checkout path, PROCESS §4)
