@@ -693,6 +693,14 @@ Package migrations owns applying the embedded, forward-only, checksummed busines
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river/riverdriver/riverpgxv5`, `github.com/riverqueue/river/rivermigrate`
 - Used by: `cmd/admin-fixture`, `cmd/migrate`
 
+## `scripts/dev/contractdrift`
+
+Purpose: enumerate BFF forwarding routes from TypeScript source, independently of Go routes.
+
+- Depends on (internal): —
+- Depends on (third-party): —
+- Used by: — (entry point or unused)
+
 ## `tests/ads/fakegraph`
 
 Package fakegraph owns a MOCK of the parts of Meta's Graph / Marketing API that meta-ads-v1 (§1 F-table, §3) relies on, written by the independent ads-tests author from the contract and from Meta's public documentation only, never from the adapter under test.
