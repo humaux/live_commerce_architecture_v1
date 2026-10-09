@@ -65,7 +65,7 @@ func goUnion(a, b goValue) goValue {
 	if reflect.DeepEqual(a, b) {
 		return a
 	}
-	out := goValue{Unknown: a.Unknown || b.Unknown, Sequence: a.Sequence || b.Sequence, Refs: goRefs(a.Refs, b.Refs)}
+	out := goValue{Unknown: a.Unknown || b.Unknown, Sequence: a.Sequence || b.Sequence, Registrar: a.Registrar || b.Registrar, Mux: a.Mux || b.Mux, Refs: goRefs(a.Refs, b.Refs)}
 	seen := map[string]bool{}
 	for _, text := range append(append([]string{}, a.Text...), b.Text...) {
 		if !seen[text] {
@@ -95,7 +95,7 @@ func goValueKey(v goValue) string {
 		fields = append(fields, k)
 	}
 	sort.Strings(fields)
-	key := fmt.Sprintf("%t:%t:%q", v.Unknown, v.Sequence, v.Text)
+	key := fmt.Sprintf("%t:%t:%t:%t:%q", v.Unknown, v.Sequence, v.Registrar, v.Mux, v.Text)
 	for _, k := range fields {
 		key += "|" + k + "=" + goValueKey(v.Fields[k])
 	}
@@ -177,6 +177,11 @@ func (s *goScanner) expr(expr ast.Expr, e goEnv) goValue {
 			}
 		}
 	case *ast.Ident:
+		if _, bound := e.lookup(x.Name); !bound {
+			if fn := s.Package.Named[x.Name]; fn != nil {
+				return goValue{Unknown: true, Refs: []location{s.loc(fn.AST)}}
+			}
+		}
 		return e.get(x.Name)
 	case *ast.ParenExpr:
 		return s.expr(x.X, e)
@@ -193,6 +198,9 @@ func (s *goScanner) expr(expr ast.Expr, e goEnv) goValue {
 		if field, ok := v.Fields[x.Sel.Name]; ok {
 			field.Refs = goRefs(v.Refs, field.Refs)
 			return field
+		}
+		if v.Mux && goRegistrarSelector(x) {
+			return goValue{Unknown: true, Registrar: true, Refs: goRefs(v.Refs, []location{s.loc(x)})}
 		}
 		if id, ok := x.X.(*ast.Ident); ok {
 			if ref, imported := s.File.ImportRefs[id.Name]; imported {
@@ -216,6 +224,13 @@ func (s *goScanner) expr(expr ast.Expr, e goEnv) goValue {
 	case *ast.CompositeLit:
 		return s.composite(x, x.Type, e)
 	case *ast.CallExpr:
+		if sel, ok := x.Fun.(*ast.SelectorExpr); ok && sel.Sel.Name == "NewServeMux" && len(x.Args) == 0 {
+			if id, ok := sel.X.(*ast.Ident); ok && id.Name == s.File.HTTP && s.File.HTTP != "" {
+				if _, shadowed := e.lookup(id.Name); !shadowed {
+					return goValue{Unknown: true, Mux: true, Refs: goRefs([]location{s.loc(x)}, []location{s.File.ImportRefs[id.Name]})}
+				}
+			}
+		}
 		if goCallName(x.Fun) == "append" && len(x.Args) > 1 {
 			v := s.expr(x.Args[0], e)
 			for _, arg := range x.Args[1:] {
@@ -229,6 +244,11 @@ func (s *goScanner) expr(expr ast.Expr, e goEnv) goValue {
 			}
 			return v
 		}
+		refs := goRefs([]location{s.loc(x)}, s.expr(x.Fun, e).Refs)
+		for _, arg := range x.Args {
+			refs = goRefs(refs, s.expr(arg, e).Refs)
+		}
+		return goValue{Unknown: true, Refs: refs}
 	}
 	return goValue{Unknown: true, Refs: []location{s.loc(expr)}}
 }

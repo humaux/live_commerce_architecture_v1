@@ -33,11 +33,18 @@ type inventory struct {
 	Producers map[string][]route
 }
 
-var param = regexp.MustCompile(`\{[^/{}]+\}|\[\[?[^/\]]+\]\]?|:[A-Za-z_][A-Za-z_0-9]*`)
+var param = regexp.MustCompile(`\{[^/{}]+\}|\[\[?[^/\]]+\]\]?`)
+var colonParam = regexp.MustCompile(`^:[A-Za-z_][A-Za-z_0-9]*$`)
 
 func normalizePath(path string) string {
 	path = strings.SplitN(path, "?", 2)[0]
-	return param.ReplaceAllString(path, "{}")
+	segments := strings.Split(param.ReplaceAllString(path, "{}"), "/")
+	for i, segment := range segments {
+		if colonParam.MatchString(segment) {
+			segments[i] = "{}"
+		}
+	}
+	return strings.Join(segments, "/")
 }
 func addRoute(out *inventory, method, path string, refs ...location) {
 	out.Routes = append(out.Routes, route{strings.ToUpper(method), normalizePath(path), refs})

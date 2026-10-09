@@ -110,8 +110,13 @@ func wrapper(mux *http.ServeMux, base string) {
 			t.Errorf("missing wrapper caller: %+v", r)
 		}
 	}
-	if len(inv.Routes) != 5 || len(inv.Unresolved) != 0 || len(inv.Notes) != 3 {
-		t.Errorf("fallbacks are notes, not business routes: %+v", inv)
+	for _, method := range []string{"POST", "PUT"} {
+		if _, ok := keys[method+" /v1/admin/stores/{}/results"]; !ok {
+			t.Errorf("suffix-only constructor concealed %s business route: %+v", method, keys)
+		}
+	}
+	if len(inv.Routes) != 7 || len(inv.Unresolved) != 1 || len(inv.Notes) != 1 {
+		t.Errorf("unproved constructor must retain business and methodless coverage: %+v", inv)
 	}
 }
 func TestGoProducerDiscoveryMountsAndOpaqueDispatch(t *testing.T) {
@@ -136,8 +141,14 @@ func TestRoutes() { mux.HandleFunc("GET /fake",nil) }
 	if _, ok := keys["POST /v1/identity/staff/list"]; !ok {
 		t.Errorf("missing identity binding: %+v", keys)
 	}
-	if len(inv.Unresolved) != 1 || inv.Unresolved[0].Method != "EXACT" || inv.Unresolved[0].Path != "/internal/custom" || !strings.Contains(inv.Unresolved[0].Detail, "opaque") {
-		t.Errorf("opaque dispatch absent: %+v", inv.Unresolved)
+	markers := map[string]finding{}
+	for _, u := range inv.Unresolved {
+		markers[u.Method+" "+u.Path] = u
+	}
+	for _, want := range []string{"EXACT /internal/custom", "MOUNT /v1/identity/", "MOUNT /"} {
+		if u, ok := markers[want]; !ok || !strings.Contains(u.Detail, "opaque") {
+			t.Errorf("opaque dispatch or real Handle mount absent: %s %+v", want, inv.Unresolved)
+		}
 	}
 	if len(inv.Unresolved) > 0 && inv.Unresolved[0].Locations[0].End <= inv.Unresolved[0].Locations[0].Line {
 		t.Log("single-line dispatch has naturally single-line span")

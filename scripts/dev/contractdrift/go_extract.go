@@ -18,18 +18,21 @@ import (
 )
 
 type goValue struct {
-	Text     []string
-	Items    []goValue
-	Fields   map[string]goValue
-	Refs     []location
-	Unknown  bool
-	Sequence bool
+	Text      []string
+	Items     []goValue
+	Fields    map[string]goValue
+	Refs      []location
+	Unknown   bool
+	Sequence  bool
+	Registrar bool // Method values remain opaque even when their aliases are statically known.
+	Mux       bool // Static ServeMux type only, never proof of a particular child mux or its routes.
 }
 type goEnv []map[string]goValue
 type goFile struct {
-	ImportRefs map[string]location
-	AST        *ast.File
-	HTTP       string
+	ImportRefs  map[string]location
+	ImportPaths map[string]string
+	AST         *ast.File
+	HTTP        string
 }
 type goFunc struct {
 	AST  *ast.FuncDecl
@@ -48,14 +51,15 @@ type goPackage struct {
 	Routes  map[string]bool
 }
 type goScanner struct {
-	Seen    map[token.Pos]bool
-	Root    string
-	Set     *token.FileSet
-	Out     inventory
-	Package *goPackage
-	File    *goFile
-	Stack   map[string]bool
-	Callers []location
+	Packages map[string]*goPackage
+	Seen     map[token.Pos]bool
+	Root     string
+	Set      *token.FileSet
+	Out      inventory
+	Package  *goPackage
+	File     *goFile
+	Stack    map[string]bool
+	Callers  []location
 }
 
 func scanGo(root string) (inventory, error) {
@@ -89,7 +93,7 @@ func scanGo(root string) (inventory, error) {
 				p = &goPackage{Named: map[string]*goFunc{}, ByName: map[string][]*goFunc{}, Path: filepath.ToSlash(filepath.Dir(path)), Types: map[string][]string{}, Globals: goEnv{{}}, Routes: map[string]bool{}}
 				packages[key] = p
 			}
-			file := &goFile{AST: f, ImportRefs: map[string]location{}}
+			file := &goFile{AST: f, ImportRefs: map[string]location{}, ImportPaths: map[string]string{}}
 			for _, im := range f.Imports {
 				v, _ := strconv.Unquote(im.Path.Value)
 				alias := filepath.Base(v)
@@ -97,6 +101,7 @@ func scanGo(root string) (inventory, error) {
 					alias = im.Name.Name
 				}
 				file.ImportRefs[alias] = s.loc(im)
+				file.ImportPaths[alias] = v
 				if v == "net/http" {
 					file.HTTP = "http"
 					if im.Name != nil {
@@ -137,8 +142,21 @@ func scanGo(root string) (inventory, error) {
 		}
 	}
 	keys := make([]string, 0, len(packages))
+	s.Packages = map[string]*goPackage{}
+	module := ""
+	if data, err := os.ReadFile(filepath.Join(root, "go.mod")); err == nil {
+		for _, line := range strings.Split(string(data), "\n") {
+			if fields := strings.Fields(line); len(fields) == 2 && fields[0] == "module" {
+				module = fields[1]
+			}
+		}
+	}
 	for key := range packages {
 		keys = append(keys, key)
+		if module != "" {
+			rel, _ := filepath.Rel(root, packages[key].Path)
+			s.Packages[module+"/"+filepath.ToSlash(rel)] = packages[key]
+		}
 	}
 	sort.Strings(keys)
 	reachable := goAPIReachable(root, packages)
@@ -161,7 +179,10 @@ func scanGo(root string) (inventory, error) {
 		}
 		for _, fn := range p.Funcs {
 			ast.Inspect(fn.AST.Body, func(n ast.Node) bool {
-				if call, ok := n.(*ast.CallExpr); ok && goRegistration(call) {
+				if expr, ok := n.(ast.Expr); ok && goRegistrarSelector(expr) {
+					p.Routes[fn.Key] = true
+				}
+				if call, ok := n.(*ast.CallExpr); ok && p.Globals.get(goCallName(call.Fun)).Registrar {
 					p.Routes[fn.Key] = true
 				}
 				return true

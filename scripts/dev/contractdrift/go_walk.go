@@ -12,8 +12,12 @@ import (
 )
 
 func goRegistration(c *ast.CallExpr) bool {
-	sel, ok := c.Fun.(*ast.SelectorExpr)
-	return ok && (sel.Sel.Name == "HandleFunc" || sel.Sel.Name == "Handle") && len(c.Args) >= 2
+	return goRegistrarSelector(c.Fun) && len(c.Args) >= 2
+}
+
+func goRegistrarSelector(expr ast.Expr) bool {
+	sel, ok := expr.(*ast.SelectorExpr)
+	return ok && (sel.Sel.Name == "HandleFunc" || sel.Sel.Name == "Handle")
 }
 
 func (s *goScanner) function(fn *goFunc, args []goValue, caller *location) {
@@ -38,6 +42,14 @@ func (s *goScanner) function(fn *goFunc, args []goValue, caller *location) {
 			if i < len(args) {
 				v = args[i]
 				v.Refs = goRefs(v.Refs, []location{s.loc(param)})
+			}
+			if pointer, ok := param.Type.(*ast.StarExpr); ok {
+				if typ, ok := pointer.X.(*ast.SelectorExpr); ok && typ.Sel.Name == "ServeMux" {
+					if pkg, ok := typ.X.(*ast.Ident); ok && pkg.Name == s.File.HTTP && s.File.HTTP != "" {
+						v.Mux = true
+						v.Refs = goRefs(v.Refs, []location{s.File.ImportRefs[pkg.Name]})
+					}
+				}
 			}
 			e.set(name.Name, v, true)
 			i++
@@ -228,10 +240,38 @@ func (s *goScanner) calls(expr ast.Expr, e goEnv) {
 			s.registration(c, e)
 			return false
 		}
-		if fn := s.Package.Named[goCallName(c.Fun)]; fn != nil && s.Package.Routes[fn.Key] {
+		callee := s.expr(c.Fun, e)
+		if callee.Registrar {
+			refs := goRefs([]location{s.loc(c)}, callee.Refs, s.Callers)
+			var pattern goValue
+			for i, arg := range c.Args {
+				value := s.expr(arg, e)
+				refs = goRefs(refs, value.Refs)
+				if i == 0 {
+					pattern = value
+				}
+			}
+			f := finding{Kind: "UNRESOLVED", Detail: "opaque Go registration through a method value", Locations: refs}
+			if len(pattern.Text) == 1 {
+				fields := strings.Fields(pattern.Text[0])
+				if len(fields) == 2 {
+					f.Method, f.Path = fields[0], normalizePath(fields[1])
+				} else if len(fields) == 1 && strings.HasPrefix(fields[0], "/") {
+					f.Method, f.Path = "MOUNT", normalizePath(fields[0])
+				}
+			}
+			s.Out.Unresolved = append(s.Out.Unresolved, f)
+			return false
+		}
+		if fn := s.Package.Named[goCallName(c.Fun)]; fn != nil {
 			args := make([]goValue, len(c.Args))
+			registration := s.Package.Routes[fn.Key]
 			for i, arg := range c.Args {
 				args[i] = s.expr(arg, e)
+				registration = registration || args[i].Registrar
+			}
+			if !registration {
+				return true
 			}
 			ref := s.loc(c)
 			s.function(fn, args, &ref)
@@ -241,16 +281,20 @@ func (s *goScanner) calls(expr ast.Expr, e goEnv) {
 	})
 }
 
-func (s *goScanner) fallback(expr ast.Expr) bool {
-	if goFallback(expr) {
-		return true
+func (s *goScanner) fallback(expr ast.Expr, e goEnv) (bool, []location) {
+	if s.goFallback(expr, e) {
+		return true, s.expr(expr, e).Refs
 	}
 	call, ok := expr.(*ast.CallExpr)
-	if !ok || len(call.Args) != 1 {
-		return false
+	if !ok {
+		return false, nil
 	}
 	fn := s.Package.Named[goCallName(call.Fun)]
-	return fn != nil && goHeaderDecorator(fn.AST) && s.fallback(call.Args[0])
+	if len(call.Args) == 1 && fn != nil && goHeaderDecorator(fn.AST) {
+		proof, refs := s.fallback(call.Args[0], e)
+		return proof, goRefs(refs, []location{s.loc(fn.AST)})
+	}
+	return s.factory405(call, e)
 }
 
 // A syntactically transparent header-only decorator preserves its child's 405.
@@ -296,8 +340,20 @@ func goHeaderDecorator(fn *ast.FuncDecl) bool {
 	return false
 }
 
-func goFallback(expr ast.Expr) bool {
+func (s *goScanner) goFallback(expr ast.Expr, e goEnv) bool {
 	if fn, ok := expr.(*ast.FuncLit); ok && len(fn.Body.List) == 1 {
+		if fn.Type.Params == nil || len(fn.Type.Params.List) == 0 || len(fn.Type.Params.List[0].Names) != 1 {
+			return false
+		}
+		writer := fn.Type.Params.List[0]
+		typ, ok := writer.Type.(*ast.SelectorExpr)
+		if !ok || typ.Sel.Name != "ResponseWriter" {
+			return false
+		}
+		pkg, ok := typ.X.(*ast.Ident)
+		if !ok || pkg.Name != s.File.HTTP || s.File.HTTP == "" {
+			return false
+		}
 		stmt, ok := fn.Body.List[0].(*ast.ExprStmt)
 		if !ok {
 			return false
@@ -310,18 +366,30 @@ func goFallback(expr ast.Expr) bool {
 		if !ok || sel.Sel.Name != "WriteHeader" || len(call.Args) != 1 {
 			return false
 		}
-		status, ok := call.Args[0].(*ast.SelectorExpr)
-		return ok && status.Sel.Name == "StatusMethodNotAllowed"
-	}
-	call, ok := expr.(*ast.CallExpr)
-	if !ok {
-		return false
-	}
-	name := goCallName(call.Fun)
-	if len(call.Args) > 0 && strings.HasSuffix(strings.ToLower(name), "route") {
-		if lit, ok := call.Args[0].(*ast.BasicLit); ok {
-			v, _ := strconv.Unquote(lit.Value)
-			return v == ""
+		receiver, ok := sel.X.(*ast.Ident)
+		if !ok || receiver.Name != writer.Names[0].Name {
+			return false
+		}
+		if status, ok := call.Args[0].(*ast.SelectorExpr); ok {
+			alias, ok := status.X.(*ast.Ident)
+			if !ok || alias.Name != s.File.HTTP || status.Sel.Name != "StatusMethodNotAllowed" {
+				return false
+			}
+			if _, shadowed := e.lookup(alias.Name); shadowed {
+				return false
+			}
+			for _, param := range fn.Type.Params.List {
+				for _, name := range param.Names {
+					if name.Name == alias.Name {
+						return false
+					}
+				}
+			}
+			return true
+		}
+		if status, ok := call.Args[0].(*ast.BasicLit); ok && status.Kind == token.INT {
+			value, err := strconv.ParseInt(status.Value, 0, 64)
+			return err == nil && value == 405
 		}
 	}
 	return false
@@ -339,22 +407,31 @@ func (s *goScanner) registration(c *ast.CallExpr, e goEnv) {
 	}
 	for _, pattern := range value.Text {
 		fields := strings.Fields(pattern)
+		fallback, proofRefs := s.fallback(c.Args[1], e)
+		patternRefs := goRefs(refs, proofRefs)
 		if len(fields) == 1 && strings.HasPrefix(fields[0], "/") {
-			s.Out.Notes = append(s.Out.Notes, finding{Kind: "GO_MOUNT_OR_FALLBACK", Path: normalizePath(fields[0]), Detail: "methodless registration; child paths remain absolute unless StripPrefix is explicit", Locations: refs})
-			if sel, ok := c.Fun.(*ast.SelectorExpr); ok && sel.Sel.Name == "HandleFunc" && !s.fallback(c.Args[1]) {
-				method := "EXACT"
-				if strings.HasSuffix(fields[0], "/") {
-					method = "PREFIX"
+			// ponytail: no mux identity is tracked; a constructor name or sibling routes cannot prove this child.
+			mountRefs := goRefs(patternRefs, s.expr(c.Args[1], e).Refs)
+			s.Out.Notes = append(s.Out.Notes, finding{Kind: "GO_MOUNT_OR_FALLBACK", Path: normalizePath(fields[0]), Detail: "methodless registration; child paths remain absolute unless StripPrefix is explicit", Locations: mountRefs})
+			if sel, ok := c.Fun.(*ast.SelectorExpr); ok && (sel.Sel.Name == "Handle" || !fallback) {
+				method, detail := "MOUNT", "opaque Go methodless mount; child route identity is unproven"
+				// MOUNT cannot justify child coverage in compare: even '/' may be an empty/404 handler.
+				// Existing explicit custom guards and HandleFunc paths keep their EXACT/PREFIX evidence.
+				if sel.Sel.Name == "HandleFunc" {
+					method, detail = "EXACT", "opaque Go methodless handler; business methods unknown"
+					if strings.HasSuffix(fields[0], "/") {
+						method = "PREFIX"
+					}
 				}
-				s.Out.Unresolved = append(s.Out.Unresolved, finding{Kind: "UNRESOLVED", Method: method, Path: normalizePath(fields[0]), Detail: "opaque Go methodless handler; business methods unknown", Locations: refs})
+				s.Out.Unresolved = append(s.Out.Unresolved, finding{Kind: "UNRESOLVED", Method: method, Path: normalizePath(fields[0]), Detail: detail, Locations: mountRefs})
 			}
 			continue
 		}
 		if len(fields) == 2 && strings.HasPrefix(fields[1], "/") {
-			if s.fallback(c.Args[1]) {
-				s.Out.Notes = append(s.Out.Notes, finding{Kind: "GO_405_FALLBACK", Method: fields[0], Path: normalizePath(fields[1]), Detail: "explicit wrong-method fallback", Locations: refs})
+			if fallback {
+				s.Out.Notes = append(s.Out.Notes, finding{Kind: "GO_405_FALLBACK", Method: fields[0], Path: normalizePath(fields[1]), Detail: "explicit wrong-method fallback", Locations: patternRefs})
 			} else {
-				addRoute(&s.Out, fields[0], fields[1], refs...)
+				addRoute(&s.Out, fields[0], fields[1], patternRefs...)
 			}
 			continue
 		}
