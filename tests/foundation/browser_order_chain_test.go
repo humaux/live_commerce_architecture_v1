@@ -266,7 +266,28 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 				HeldStatus      int    `json:"held_status"`
 				SessionStatus   int    `json:"session_status"`
 				SessionFailures int    `json:"session_failures"`
-				HeldCart        struct {
+				Settlement      struct {
+					FetchCount int `json:"fetch_count"`
+					LockCount  int `json:"lock_count"`
+					Fetch      struct {
+						Status   int    `json:"status"`
+						State    string `json:"settlement"`
+						Sequence int    `json:"sequence"`
+					} `json:"fetch"`
+					Lock struct {
+						Name     string `json:"name"`
+						State    string `json:"settlement"`
+						Code     string `json:"code"`
+						Status   int    `json:"status"`
+						Sequence int    `json:"sequence"`
+					} `json:"lock"`
+					Barrier struct {
+						Name     string `json:"name"`
+						Acquired int    `json:"acquired_sequence"`
+						Settled  int    `json:"settled_sequence"`
+					} `json:"barrier"`
+				} `json:"settlement"`
+				HeldCart struct {
 					ID      string     `json:"id"`
 					Version int64      `json:"version"`
 					Items   []cartItem `json:"items"`
@@ -407,6 +428,10 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 			wantSurface, wantFocus = "mount", 1
 		}
 		m := phase.Measurement
+		s := phase.Settlement
+		if s.FetchCount != 1 || s.LockCount != 1 || s.Fetch.Status != 503 || s.Fetch.State != "resolved" || s.Lock.Name != "commerce-buyer-session-v1" || s.Lock.State != "rejected" || s.Lock.Code != "request_failed" || s.Lock.Status != 503 || s.Barrier.Name != s.Lock.Name || s.Fetch.Sequence < 1 || s.Fetch.Sequence >= s.Lock.Sequence || s.Lock.Sequence >= s.Barrier.Acquired || s.Barrier.Acquired >= s.Barrier.Settled {
+			t.Fatal("failed actual session fetch/native lock rejection did not finish before the queued native release barrier and DOM sample")
+		}
 		if phase.Surface != wantSurface || phase.HeldStatus != 200 || phase.SessionStatus != 503 || phase.SessionFailures != 1 || phase.HeldCart.ID != current.ID || phase.HeldCart.Version != current.Version || !reflect.DeepEqual(phase.HeldCart.Items, currentItems) || m.Empty != 0 || m.LineLoss != 0 || !m.SeenLine || len(m.Focus) != wantFocus*2 || len(m.Samples) == 0 {
 			t.Fatal("native-focus held-response/continuity evidence is incomplete or failed")
 		}

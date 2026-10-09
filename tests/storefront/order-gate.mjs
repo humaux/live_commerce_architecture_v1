@@ -203,10 +203,37 @@ async function cartClick(p,caseID,control,locator,expected,verify) {
   catch(error){row.actual=String(error.message).slice(0,1000);row.status="FAIL";throw error;}
   finally {await writeFile(path.join(evidence,"cart-click-ledger.json"),JSON.stringify(clickLedger,null,2),{mode:0o600});}
 }
-// BC02 instruments DOM/focus only. It never changes app state, request bodies or cart replies.
+// BC02 measures DOM/focus and native promise settlement. It never changes app state, locks, requests or replies.
 async function measureCart(p,surface) {
   await p.evaluate(surface=>{
-    const state=window.__cartRace={focus:[],samples:[],empty:0,line_loss:0,seen_line:false};
+    const state=window.__cartRace={focus:[],samples:[],empty:0,line_loss:0,seen_line:false,sequence:0,fetches:[],locks:[]};
+    // Return the exact native Promise and pass every argument/callback unchanged. Passive observers
+    // complete normally, leaving the original rejected Promise/error for the production caller.
+    const nativeFetch=window.fetch;
+    window.fetch=function(...args){
+      const result=Reflect.apply(nativeFetch,this,args);
+      if(args[0]==="/api/buyer/session"&&(args[1]?.method||"GET")==="GET")result.then(
+        response=>state.fetches.push({status:response.status,settlement:"resolved",sequence:++state.sequence}),
+        ()=>state.fetches.push({status:0,settlement:"rejected",sequence:++state.sequence})
+      );
+      return result;
+    };
+    const manager=navigator.locks,nativeRequest=manager.request,lockName="commerce-buyer-session-v1";
+    manager.request=function(...args){
+      const result=Reflect.apply(nativeRequest,this,args);
+      if(args[0]===lockName)result.then(
+        ()=>state.locks.push({name:lockName,settlement:"resolved",sequence:++state.sequence}),
+        error=>state.locks.push({name:lockName,settlement:"rejected",code:error?.code,status:error?.status,sequence:++state.sequence})
+      );
+      return result;
+    };
+    // A real queued native grant/release proves the failed session lock is free. No app callback
+    // is wrapped or simulated; this no-op uses the public API and the original native request.
+    window.__cartRaceBarrier=async()=>{
+      let acquired;
+      await Reflect.apply(nativeRequest,manager,[lockName,{mode:"exclusive"},()=>{acquired=++state.sequence;}]);
+      return {name:lockName,acquired_sequence:acquired,settled_sequence:++state.sequence};
+    };
     const sample=()=>{
       const host=document.querySelector(`[data-testid="${surface}"]`);
       if(!host||!host.getClientRects().length)return;
@@ -285,7 +312,20 @@ async function cartRefreshRace() {
       await nativeFocus(p,caseID,`${surface} failed`,surface==="drawer"?p.getByTestId("cart-drawer").getByTestId("cart-line-qty"):p.getByTestId("cart-empty").locator(".sf-empty__title"));await reply;
       phase.session_status=await failed.result.promise;
       phase.session_failures=calls.slice(failedStart).filter(x=>x.path==="/api/buyer/session"&&x.method==="GET"&&x.status===503).length;
-      // Browser response receipt precedes React's rejection/finally; allow two actual rendering frames.
+      // Headers/edge completion are insufficient: wait for the actual native fetch AND native
+      // session-lock rejection. The native lock request settles only after its callback releases.
+      await expect.poll(()=>p.evaluate(()=>({
+        fetches:window.__cartRace.fetches.filter(x=>x.status===503&&x.settlement==="resolved").length,
+        locks:window.__cartRace.locks.filter(x=>x.status===503&&x.code==="request_failed"&&x.settlement==="rejected").length
+      })),{message:"actual failed session fetch and native lock rejection must settle before releasing cart"}).toEqual({fetches:1,locks:1});
+      phase.settlement=await p.evaluate(async()=>{
+        const fetches=window.__cartRace.fetches.filter(x=>x.status===503&&x.settlement==="resolved");
+        const locks=window.__cartRace.locks.filter(x=>x.status===503&&x.code==="request_failed"&&x.settlement==="rejected");
+        const barrier=await window.__cartRaceBarrier();
+        return {fetch:fetches[0],lock:locks[0],fetch_count:fetches.length,lock_count:locks.length,barrier};
+      });
+      assert(phase.settlement.fetch.sequence<phase.settlement.lock.sequence&&phase.settlement.lock.sequence<phase.settlement.barrier.acquired_sequence&&phase.settlement.barrier.acquired_sequence<phase.settlement.barrier.settled_sequence,"actual 503 fetch, native session lock rejection, and queued native lock grant/release finish in order");
+      // Request/lock completion is already proven; frames now serve only as a DOM render checkpoint.
       await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
       phase.measurement=await p.evaluate(()=>window.__cartRace);
       await writeFile(path.join(evidence,"cart-refresh-race-facts.json"),JSON.stringify({case_id:caseID,cart_id:actual.id,key:write.key,before,phases},null,2),{mode:0o600});
