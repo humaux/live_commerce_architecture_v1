@@ -1,7 +1,7 @@
 // Purpose: Exercises settings controls and client-storage disclosures against the supplied real harness origin.
 // Depends on: @playwright/test; harness env: LC_BROWSER_PUBLIC_ORIGIN
 // Used by: tests/foundation/browser_identity_chain_test.go
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type Route } from "@playwright/test";
 
 const origin = process.env.LC_BROWSER_PUBLIC_ORIGIN;
 if (!origin || new URL(origin).origin !== origin)
@@ -455,7 +455,37 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   const policyForm = page.getByTestId("settings-policy-form");
+  // Network scheduling only: use the REAL PG replies, but hold the read baseline
+  // and PUT receipt independently. A fast merchant can otherwise save before a
+  // baseline arrives, or a PUT callback can overwrite a newer sibling read.
+  function heldResponse() {
+    let release!: () => void;
+    const released = new Promise<void>((resolve) => { release = resolve; });
+    let arrived = false;
+    return {
+      release,
+      arrived: () => arrived,
+      deliver: async (route: Route) => {
+        const response = await route.fetch();
+        arrived = true;
+        await released;
+        await route.fulfill({ response });
+      },
+    };
+  }
+  const policyRead = heldResponse(), serviceRead = heldResponse(), policyWrite = heldResponse();
+  const policyURL = /\/delivery-services\/home\/policy$/;
+  const serviceURL = /\/delivery-services\/home$/;
+  await page.route(policyURL, (route) =>
+    (route.request().method() === "GET" ? policyRead : policyWrite).deliver(route));
+  await page.route(serviceURL, (route) => route.request().method() === "GET"
+    ? serviceRead.deliver(route) : route.continue());
+  const savePolicy = policyForm.getByRole("button", { name: "Save pricing policy", exact: true });
   await page.getByLabel("Stable service code", { exact: true }).fill("home");
+  await expect.poll(policyRead.arrived).toBe(true);
+  await expect.soft(savePolicy, "a pending version read is not a saveable baseline").toBeDisabled();
+  policyRead.release();
+  await expect(savePolicy).toBeEnabled();
   // stop-bleed D02: NT$ amounts are whole dollars; a decimal is refused locally with its own sentence and nothing is sent
   let policyWrites = 0;
   page.on("request", (r) => {
@@ -484,6 +514,16 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
   await policyForm
     .getByRole("button", { name: "Save pricing policy", exact: true })
     .click();
+  await expect.poll(policyWrite.arrived).toBe(true);
+  serviceRead.release();
+  // READ/MEASURE only: prove the service GET has been applied while the policy
+  // PUT receipt is held, not merely that its HTTP response arrived. No DOM or
+  // storage mutation; only the synthetic draft's numeric version is returned.
+  await expect.poll(() => page.evaluate(() => {
+    const key = Object.keys(sessionStorage).find((item) => item.startsWith("commerce-settings-draft:"));
+    return key ? JSON.parse(sessionStorage.getItem(key)!).draft.serviceObservation?.version : null;
+  })).toBe(0);
+  policyWrite.release();
   const serviceForm = page.getByTestId("settings-service-form");
   await serviceForm
     .getByLabel("Simplified Chinese name", { exact: true })
@@ -498,6 +538,8 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
     .getByRole("button", { name: "Save delivery service", exact: true })
     .click();
   await expect(page.getByTestId("settings-status")).toBeVisible();
+  await page.unroute(policyURL);
+  await page.unroute(serviceURL);
   await page.reload();
   await expect(page.getByTestId("settings-status")).toContainText("home");
 

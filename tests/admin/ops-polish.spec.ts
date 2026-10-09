@@ -1,9 +1,6 @@
 // Purpose: ops-polish independent gates OP2/OP3/OP4, including the authorized current-route expanded navigation contract.
-// Depends on: Playwright, native-device, signed MOCK IdP, actual admin Next -> Go API -> isolated PG.
+// Depends on: Playwright, native-device, signed MOCK IdP, actual orders list/detail and finance BFF -> Go API -> isolated PG.
 // Used by: browser_ops_polish_test.go and test-local.sh --browser-ops-polish.
-// ops-polish independent gates (docs/delivery/units/ops-polish.md OP2, OP3 UI half, OP4), real admin Next build -> private Go API -> isolated PG,
-// signed MOCK IdP. Driven by tests/foundation/browser_ops_polish_test.go (TestBrowserOpsPolishAdmin), written from the brief, not the implementation.
-// BFF routes exercised: GET /api/stores/{store}/orders (list poll), /orders/{id} (detail), /finance/summary(.csv) -> Go internal/httpapi.
 // OP2 uses Playwright's fake clock (page.clock): the 20 s cadence is proven by advancing fake time, never by waiting. New orders are placed by the Go
 // test through the real buyer path on demand (LC_OPP_PLACE_URL), so the real list route is what returns them. Locators avoid implementation test ids
 // except the two the baseline already had (order-expand-{id}, state-filter) and the page roots.
