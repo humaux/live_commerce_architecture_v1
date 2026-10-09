@@ -85,7 +85,8 @@ export async function liveSettingsProxy(
     const listed = await authenticatedStores(token);
     const required = settingsPermissions(route.kind, request.method);
     const refused = scopeRefusal(listed, store, required);
-    if (refused) return refused;
+    if (refused) return route.kind === "check" && refused.status === 404
+      ? denied(404, "store_scope_lost") : refused;
     let body: string | undefined;
     const bodyless =
       read || route.kind === "remove" || route.kind === "reminders";
@@ -138,6 +139,12 @@ export async function liveSettingsProxy(
     );
     if (response.status === 401) return denied(401, "unauthorized");
     if (response.status === 403) return denied(403, "forbidden");
+    if (route.kind === "check" && response.status === 404) {
+      // The bundle can be purged while the store remains authorized. Re-read
+      // current scope before treating this new observer as a console-wide loss.
+      const fresh = scopeRefusal(await authenticatedStores(token), store, required, true);
+      if (fresh) return fresh.status === 404 ? denied(404, "store_scope_lost") : fresh;
+    }
     if (
       route.kind === "reminders" && response.status === 404 &&
       response.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase() === "text/plain"
@@ -164,7 +171,7 @@ export async function liveSettingsProxy(
           : null;
       return denied(
         response.status,
-        typeof code === "string" && code !== "reminders_unavailable" && settingsCodes.has(code)
+        typeof code === "string" && code !== "reminders_unavailable" && code !== "store_scope_lost" && settingsCodes.has(code)
           ? code
           : "retry_later",
       );

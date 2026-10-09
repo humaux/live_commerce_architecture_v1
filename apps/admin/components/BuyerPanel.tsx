@@ -216,6 +216,13 @@ export function BuyerPanel({
                 privacy.expire();
                 callbacks.current.onUnauthorized?.();
               }}
+              onUnavailable={() => {
+                // A purged bundle does not revoke the store. Clear this buyer's
+                // data and obsolete reads while keeping the console scope live.
+                privacy.fence.invalidate(true);
+                clear();
+                setError("not_found");
+              }}
             />
           )}
           <h3>{c.claims}</h3>
@@ -311,12 +318,14 @@ function BuyerRestriction({
   session,
   bundle,
   onDenied,
+  onUnavailable,
 }: {
   locale: string;
   store: Store;
   session: string;
   bundle: string;
   onDenied?: () => void;
+  onUnavailable?: () => void;
 }) {
   const c = liveSettingsCopy(locale),
     [restricted, setRestricted] = useState<boolean | null>(null),
@@ -326,8 +335,10 @@ function BuyerRestriction({
     [unknown, setUnknown] = useState(false);
   const pending = useRef<SettingsReceipt | null>(null),
     inFlight = useRef(false),
-    callback = useRef(onDenied);
+    callback = useRef(onDenied),
+    missing = useRef(onUnavailable);
   callback.current = onDenied;
+  missing.current = onUnavailable;
   const clear = useCallback(() => {
     setRestricted(null);
     setNote("");
@@ -343,9 +354,17 @@ function BuyerRestriction({
     valid = Array.from(note).length <= 200 && !/\p{Cc}/u.test(note);
   const fail = useCallback(
     (e: unknown) => {
-      if (e instanceof LiveSettingsError && [401, 403, 404].includes(e.status)) {
+      if (e instanceof LiveSettingsError && ([401, 403].includes(e.status) ||
+          (e.status === 404 && e.code === "store_scope_lost"))) {
         privacy.expire();
         callback.current?.();
+        return;
+      }
+      if (e instanceof LiveSettingsError && e.status === 404) {
+        privacy.fence.invalidate(true);
+        clear();
+        setError("not_found");
+        missing.current?.();
         return;
       }
       setError(e instanceof LiveSettingsError ? e.code : "unavailable");

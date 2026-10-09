@@ -330,6 +330,8 @@ export const settingsCodes = new Set([
   "not_found",
   // Internal BFF-only proof of an absent optional route; never accepted directly from upstream JSON.
   "reminders_unavailable",
+  // Internal BFF proof that the selected store's grant disappeared, distinct from a purged bundle.
+  "store_scope_lost",
   "conflict",
   "version_conflict",
   "idempotency_conflict",

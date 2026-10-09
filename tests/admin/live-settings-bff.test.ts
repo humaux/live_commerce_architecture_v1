@@ -190,6 +190,28 @@ const input = {
 function reply(body: unknown, status = 200) {
   answer = { status, body: JSON.stringify(body) };
 }
+
+for(const phase of ["before read","during read"] as const)test(`restriction scope proof distinguishes store loss ${phase} from a missing bundle`,async()=>{
+ const visible=storeVisible;
+ try {
+  reply({code:"not_found"},404);
+  if(phase==="before read")storeVisible=false;
+  else afterResource=()=>{storeVisible=false;};
+  const r=await call(`${roots}/claims/blocklist/check?bundle_id=${bundle}`);
+  assert.equal(r.status,404);assert.equal(r.body.code,"store_scope_lost");
+  assert.equal(r.headers.get("set-cookie"),null,"a scoped loss preserves the signed login");
+ } finally {storeVisible=visible;afterResource=undefined;}
+});
+test("restriction missing bundle retains local not_found only after fresh live-read proof",async()=>{
+ reply({code:"not_found"},404);const before=storesCalls;
+ const r=await call(`${roots}/claims/blocklist/check?bundle_id=${bundle}`);
+ assert.equal(r.status,404);assert.equal(r.body.code,"not_found");assert.equal(storesCalls,before+2);
+});
+test("restriction upstream cannot forge the BFF-only store scope loss code",async()=>{
+ reply({code:"store_scope_lost"},404);
+ const r=await call(`${roots}/claims/blocklist/check?bundle_id=${bundle}`);
+ assert.equal(r.status,404);assert.equal(r.body.code,"retry_later");
+});
 test.after(() => upstream.close());
 for (const method of ["GET", "POST"]) {
   test(`reminder route absence ${method} is local only after fresh store and permission proof`, async () => {
