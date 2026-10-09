@@ -7,6 +7,7 @@ import {
   localizedPath,
   resolveLocale,
 } from "@live-commerce/i18n";
+import { settingsResource, settingsQuery } from "./lib/live-settings-model";
 import { validOrdersQuery } from "./lib/orders-request";
 import { validStudioQuery } from "./lib/studio-request";
 import { claimsCollection, claimsSubpath } from "./lib/claims-request";
@@ -75,6 +76,16 @@ export function proxy(request: NextRequest) {
           },
         );
       }
+    }
+    const settingsPath = decoded.replace(storePrefix, "");
+    const settings = storePrefix.test(decoded) && settingsResource(settingsPath);
+    if (settings) {
+      // W3-U2 shares the closed route grammar with its BFF; Studio's older grammar must not reject these leaves.
+      const status = path !== decoded ? 404 : !settings.methods.includes(request.method) ? 405
+        : !settingsQuery(settings.kind, request.method, new URL(request.url)) ? 422 : 0;
+      if (status) return NextResponse.json({code: status === 404 ? "not_found" : status === 405 ? "method_not_allowed" : "invalid_request"},
+        {status, headers:{"Cache-Control":"private, no-store", "Referrer-Policy":"no-referrer"}});
+      return NextResponse.next();
     }
     const relativeCommentPath=decoded.replace(storePrefix, "");
     if (studioPrefix.test(decoded) && path===decoded && commentResource(relativeCommentPath)) {

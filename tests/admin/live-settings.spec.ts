@@ -25,9 +25,12 @@ type Receipt = {action:string;key_hash:string;body_hash:string;status:number;eff
 type Facts = {class:"MOCK";receipts:Receipt[];enabled:boolean;version:number;template_id:string;template_version:number;blocked:boolean;removed:boolean;bad_authority:number;reads:number;held:boolean};
 type Ledger = {control:string;operation:string;expected:string;actual:string;result:"PASS"|"FAIL"}[];
 const ledgers = new WeakMap<Page,Ledger>();
+const responseFacts = new WeakMap<Page, {resource:string;status:number}[]>();
 const leakFlags = new WeakMap<Page,{console:boolean;url:boolean}>();
 function privateMonitors(page:Page) {
   const flags={console:false,url:false};leakFlags.set(page,flags);
+  const responses:{resource:string;status:number}[]=[];responseFacts.set(page,responses);
+  page.on("response",response=>{const path=new URL(response.url()).pathname;const resource=["sold-out-reply","reminders","blocklist","live-sessions","session"].find(x=>path.endsWith(`/${x}`));if(resource)responses.push({resource,status:response.status()});});
   page.on("console",message=>{if(privateText.test(message.text()))flags.console=true;});
   page.on("request",request=>{if(privateText.test(request.url()))flags.url=true;});
 }
@@ -89,7 +92,8 @@ test.beforeEach(async({page,request})=>{
 test.afterEach(async({page,request},info)=>{
   const rows=ledgers.get(page) ?? [];
   const caseID=info.testId.replace(/[^a-zA-Z0-9_-]/g,"");
-  await writeFile(`${evidence}/click-ledger-${caseID}.json`,JSON.stringify({page:"/[locale]/studio/settings",status:info.status,rows}));
+  const errors=info.errors.map(error=>({locations:[...(error.stack??"").matchAll(/live-settings\.spec\.ts:[0-9]+:[0-9]+/g)].map(x=>x[0]), matcher:(error as {matcherResult?:{name?:string}}).matcherResult?.name}));
+  await writeFile(`${evidence}/click-ledger-${caseID}.json`,JSON.stringify({page:"/[locale]/studio/settings",status:info.status,rows,errors,responses:responseFacts.get(page)}));
   await writeFile(`${evidence}/mock-receipts-${caseID}.json`,JSON.stringify(await fixture(request,"facts")));
 });
 

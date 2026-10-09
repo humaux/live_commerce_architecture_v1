@@ -13,6 +13,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const adminRoot = fileURLToPath(new URL("../../apps/admin/", import.meta.url));
 registerHooks({
   resolve(specifier, context, next) {
+    if (specifier === "next/server") return next("next/server.js", context);
     if (specifier === "next/constants")
       return {
         // Next's CJS constants need a named-export bridge under Node strip-types; values remain the installed module's.
@@ -358,4 +359,22 @@ test("success receipts must describe the exact requested command, otherwise the 
     ).status,
     503,
   );
+});
+
+// Real middleware must admit the same exact resources before the route auth boundary.
+test("W3-U2 Next proxy admits settings routes without weakening Studio raw-path guards", async () => {
+  const {NextRequest}=await import("../../apps/admin/node_modules/next/server.js");
+  const {proxy}=await import("../../apps/admin/proxy.ts");
+  const root=`live-sessions/${cid}`;
+  const invoke=(path:string,method="GET",query="")=>proxy(new NextRequest(`${origin}/api/stores/${store}/${path}${query}`,{method}));
+  for(const [path,method,query] of [[`${root}/reminders`,"GET",""],[`${root}/reminders`,"POST",""],[`${root}/claims/blocklist`,"GET","?limit=20&cursor=opaque"],[`${root}/claims/blocklist`,"POST",""],[`${root}/claims/blocklist/check`,"GET",`?bundle_id=${customer}`],[`${root}/claims/blocklist/entries/${customer}`,"DELETE",""],["live-settings/sold-out-reply","PUT",""],["message-templates","POST",""]]) {
+    const response=invoke(path,method,query);
+    assert.equal(response.status,200,`${method} ${path}`);
+    assert.equal(response.headers.get("x-middleware-next"),"1");
+  }
+  assert.equal(invoke(`${root}/reminders`,"PUT").status,405);
+  assert.equal(invoke(`${root}/reminders`,"GET","?note=forbidden").status,422);
+  assert.equal(invoke(`${root}/claims/blocklist`,"GET","?limit=51").status,422);
+  assert.equal(invoke(`${root}/claims/blocklist/check`).status,422);
+  for(const path of [`${root}/%72eminders`,`${root}/reminders/extra`,`${root}/claims/blocklist/unknown`]) assert.equal(invoke(path).status,404);
 });
