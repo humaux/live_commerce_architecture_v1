@@ -1,0 +1,16 @@
+✔ PR18 deletion HEAD clears selected comment composer but keeps history and public guard (126.674625ms)
+✔ PR18 short complete HEAD clears a covered selected comment and composer (18.050166ms)
+✔ PR18 P1 IG earliest50 refresh preserves100 rows selection and private draft (337.86075ms)
+✔ PR18 P1 IG earliest page and unknown authority never delete by absence (3.541375ms)
+✔ PR18 short complete HEAD never expands numeric coverage to an absent oldest row (0.252125ms)
+✔ PR18 deletion HEAD removes absent refs inside its window (0.403542ms)
+✔ PR18 deletion HEAD keeps paged history below its oldest tuple (0.071791ms)
+✔ PR18 approved seq DTO parser accepts safe numbers and explicit history null (0.609041ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1579.047166

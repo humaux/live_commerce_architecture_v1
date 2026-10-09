@@ -1,0 +1,32 @@
+✖ real SQL UNKNOWN mark blocks public-mode switching without a local receipt (17.273ms)
+✔ UNKNOWN and queued public receipt survive selection remount without storing private identifiers (3.277708ms)
+✔ actual A2 hook fake clock: 3/6/12/24/30 backoff, success reset, hide clears and stops, 403 locks (5.292916ms)
+✔ actual reset clears selected buyer and rereads without the old epoch cursor (1.934334ms)
+✔ reply hints, coded error, UNKNOWN and capability state execute the actual composer (1.402625ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 4
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 354.09725
+
+✖ failing tests:
+
+test at tests/admin/comment-stream-hooks.test.ts:30:1
+✖ real SQL UNKNOWN mark blocks public-mode switching without a local receipt (17.273ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(textOf(h.output).includes(commentCopy("en").verify))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/comment-stream-hooks.test.ts:33:27)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

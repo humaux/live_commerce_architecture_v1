@@ -2,11 +2,14 @@
 // Depends on: @playwright/test, node:fs/promises, node:crypto; signed OIDC/Next/PG harness env LC_BROWSER_CONSOLE_*.
 // Used by: browser_live_console_test.go and test-local.sh --browser-live-console.
 // Invariants: I01/I02/I06/I10/I11/I14/I18; Console upstream/receipts are explicitly MOCK, never SQL/provider acceptance.
-import { test, expect, type Page, type APIRequestContext, type BrowserContext } from "@playwright/test";
+import { expect, type Page, type APIRequestContext, type BrowserContext } from "@playwright/test";
+import { test } from "./inbox-private-evidence";
 import { writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { workspaceCopy } from "../../apps/admin/src/features/live/workspace-copy";
 import { money } from "../../packages/format/src/index";
+import { commentCopy } from "../../apps/admin/src/features/live/comment-copy";
+import { nativePage } from "./fixtures/native-device";
 
 const required = (name: string): string => {
   const value = process.env[name];
@@ -25,15 +28,17 @@ const control = required("LC_BROWSER_CONSOLE_CONTROL");
 const narrowToken = required("LC_BROWSER_CONSOLE_NARROW_TOKEN");
 const readToken = required("LC_BROWSER_CONSOLE_READ_TOKEN");
 const scenes: string[] = JSON.parse(required("LC_BROWSER_CONSOLE_SCENES"));
+const comments: {session:string;bundle:string;claim_ref:string;latest_ref:string;old_ref:string;reset_ref:string;reply_refs:string[]}=JSON.parse(required("LC_BROWSER_CONSOLE_COMMENTS"));
 if (scenes.length !== 6 || new Set(scenes).size !== 6) throw new Error("six independent Console scenes required");
 const locales = ["en", "zh-TW", "zh-CN"] as const;
 const sizes = [{ width: 1586, height: 992 }, { width: 390, height: 844 }];
+const streamSizes = [{width:1440,height:992},{width:390,height:844}];
 type Receipt = { scene: string; action: string; key_hash: string; body_hash: string; status: number; effect: boolean; input: Record<string, unknown> };
 type Scene = { ID: string; Title: string; Phase: string; Offer: string; SKU: string; Warehouse: string; Active: boolean; Stock: number; StockVersion: number; OfferVersion: number; Reads: number[] | null; Recommended: unknown; Copied: boolean };
-type Facts = { class: "MOCK"; scenes: Record<string, Scene>; receipts: Receipt[]; bad_authority: number };
+type Facts = { class: "MOCK"; scenes: Record<string, Scene>; receipts: Receipt[]; bad_authority: number;comments:{requests:number;older_requests:number;private_requests:number;public_requests:number;private_operations:number;graph_sends:number} };
 
 // Trace records credential headers; page-only screenshots and redacted receipts are the evidence.
-test.use({ baseURL: origin, trace: "off", screenshot: "only-on-failure" });
+test.use({ baseURL: origin, trace: "off", screenshot: "off", video:"off" });
 test.setTimeout(110_000);
 
 async function facts(request: APIRequestContext): Promise<Facts> {
@@ -81,6 +86,179 @@ const route = (locale: string, scene: string, selectedStore = store) => `${origi
 async function phase(page: Page, value: string) {
   await expect(page.getByTestId("live-phase")).toHaveAttribute("data-phase", value);
 }
+
+test.describe("LC-U2a REAL_PG comment stream",()=>{
+  // Comment text/name/PSIDs may not enter automatic failure artifacts, even in synthetic fixtures.
+  const reads=new WeakMap<Page,Record<string,unknown>[]>();
+  test.beforeEach(async({page})=>{
+    const rows:Record<string,unknown>[]=[];reads.set(page,rows);
+    page.on("response",async r=>{
+      if(!new URL(r.url()).pathname.endsWith("/comments"))return;
+      let value:any;try{value=await r.json();}catch{value={};}
+      rows.push({status:r.status(),count:Array.isArray(value.items)?value.items.length:null,epoch:typeof value.epoch==="number"?value.epoch:null,reset:value.reset===true,
+        code:["not_found","no_source","forbidden","stream_unavailable","invalid_request","invalid_cursor"].includes(value.code)?value.code:null});
+    });
+  });
+  test.afterEach(async({page},info)=>{await writeFile(`${evidence}/comment-reads-${info.testId.replace(/[^a-zA-Z0-9_-]/g,"")}.json`,JSON.stringify(reads.get(page)??[]));});
+  for(const [li,locale] of locales.entries())for(const [wi,size] of streamSizes.entries()) {
+    test(`pagination filters buyer and one-shot replies ${locale}-${size.width}`,async({page,request})=>{
+      const c=commentCopy(locale);await page.setViewportSize(size);await login(page);await page.goto(route(locale,comments.session));
+      await expect(page.getByTestId("comment-rows").locator("li")).toHaveCount(50);
+      const before=(await facts(request)).comments;
+      await page.getByTestId("comment-older").click();
+      await expect(page.getByTestId("comment-rows").locator("li")).toHaveCount(60);
+      expect((await facts(request)).comments.older_requests).toBe(before.older_requests+1);
+      await page.getByTestId("comment-filter-keyword").click();await expect(page.getByTestId("comment-rows").locator("li")).toHaveCount(1);
+      await page.getByTestId(`comment-select-${comments.claim_ref}`).click();
+      await expect(page.getByTestId("buyer-panel")).toBeVisible();await expect(page.getByTestId("buyer-panel")).toContainText("A1");
+      await page.getByTestId("comment-filter-private").click();await expect(page.getByTestId("comment-conversations").locator("li")).toHaveCount(1);
+      await page.getByTestId("comment-filter-unreplied").click();await expect(page.getByTestId("comment-conversations").locator("li")).toHaveCount(1);
+      await page.getByTestId("comment-filter-all").click();
+      await page.getByTestId(`comment-select-${comments.reply_refs[li*2+wi]}`).click();
+      await expect(page.getByTestId("comment-reply")).toContainText(c.one);await expect(page.getByTestId("comment-reply")).toContainText(c.window);
+      await page.getByTestId("comment-reply-text").fill(`Synthetic thanks ${li}-${wi}`);
+      const sent=page.waitForResponse(r=>r.url().endsWith("/private-reply")&&r.request().method()==="POST",{timeout:15000});
+      await page.getByTestId("comment-send").click();expect((await sent).status()).toBe(200);
+      await expect(page.getByTestId("comment-rule")).toHaveText(c.used);
+      await expect(page.getByTestId("comment-send")).toBeDisabled();
+      expect((await facts(request)).comments.private_operations).toBe(before.private_operations+1);
+      // Explicit merchant verification unlocks only future sends; queued is not a final delivery fact.
+      if(await page.getByTestId("comment-verified").isVisible()) {
+        page.once("dialog",dialog=>dialog.accept());await page.getByTestId("comment-verified").click();
+        expect((await facts(request)).comments.private_operations).toBe(before.private_operations+1);
+      }
+      await page.getByTestId("comment-reply").getByRole("button",{name:c.publicReply,exact:true}).click();
+      await expect(page.getByTestId("comment-reply")).toContainText(c.publicRule);
+      await page.getByTestId("comment-reply-text").fill("https://checkout.stripe.com/pay/synthetic");
+      const denied=page.waitForResponse(r=>r.url().endsWith("/public-reply")&&r.request().method()==="POST",{timeout:15000});
+      await page.getByTestId("comment-send").click();expect((await denied).status()).toBe(422);
+      await expect(page.getByTestId("comment-reply-error")).toHaveText(c.public_reply_forbidden_content);
+      expect((await facts(request)).comments.private_operations).toBe(before.private_operations+1);
+      expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+      // Mask the bounded scrolling region: masking offscreen children projects rectangles outside their clipped ancestor.
+      await page.screenshot({path:`${evidence}/comments-${locale}-${size.width}.png`,fullPage:true,animations:"disabled",mask:[page.getByTestId("comment-rows"),page.getByTestId("buyer-panel"),page.getByTestId("comment-reply-text")]});
+    });
+  }
+  test("native hidden tab stops A2 and clears private selections",async({request})=>{
+    const {page,close}=await nativePage(evidence,"console-native-");
+    try {
+    // READ/MEASURE only: preserve native fetch arguments/results and count starts synchronously
+    // inside the document, so an aborted pre-hide read cannot masquerade as a hidden poll.
+    await page.addInitScript(()=>{
+      const original=window.fetch.bind(window);
+      const counts={visible:0,hidden:0,visibility:[] as {state:string;trusted:boolean}[]};
+      (window as unknown as {a2Starts:typeof counts}).a2Starts=counts;
+      document.addEventListener("visibilitychange",event=>counts.visibility.push({state:document.visibilityState,trusted:event.isTrusted}));
+      window.fetch=(...args:Parameters<typeof fetch>)=>{
+        const input=args[0],url=new URL(input instanceof Request?input.url:String(input),location.href);
+        if(url.pathname.endsWith("/comments"))counts[document.visibilityState==="hidden"?"hidden":"visible"]++;
+        return original(...args);
+      };
+    });
+    await login(page);await page.goto(route("en",comments.session));await expect(page.getByTestId(`comment-row-${comments.latest_ref}`)).toBeVisible();
+    await page.getByTestId(`comment-select-${comments.claim_ref}`).click();await expect(page.getByTestId("buyer-panel")).toBeVisible();
+    // A visible DOM may retain the last result while a poll is in flight. Establish actual
+    // network readiness before hiding, rather than comparing a server-arrival counter mid-read.
+    await page.waitForLoadState("networkidle",{timeout:10000});
+    // Match the passing INU05 native fixture: a real app cover remains the active tab.
+    const cover=await page.context().newPage();await cover.goto(`${origin}/en/settings`);await cover.bringToFront();
+    await expect.poll(()=>page.evaluate(()=>document.visibilityState)).toBe("hidden");
+    await expect(page.getByTestId("comment-rows")).toHaveCount(0);await expect(page.getByTestId("buyer-panel")).toHaveCount(0);
+    const visibilityStart=await page.evaluate(()=>(window as unknown as {a2Starts:{visibility:unknown[]}}).a2Starts.visibility.length);
+    const before=(await facts(request)).comments.requests;
+    await cover.waitForTimeout(6500); // two real 3s intervals; absence of requests is the assertion.
+    const after=(await facts(request)).comments.requests;
+    const starts=await page.evaluate(()=>(window as unknown as {a2Starts:{visible:number;hidden:number;visibility:{state:string;trusted:boolean}[]}}).a2Starts);
+    await writeFile(`${evidence}/native-hidden-read-counts.json`,JSON.stringify({class:"REAL_PG",...starts,serverReadsBefore:before,serverReadsAfter:after,documentVisibility:await page.evaluate(()=>document.visibilityState)}));
+    expect(await page.evaluate(()=>document.visibilityState)).toBe("hidden");
+    expect(starts.visibility.slice(visibilityStart).every(event=>event.state==="hidden"&&event.trusted)).toBe(true);
+    expect(after).toBe(before);
+    expect(starts.visible).toBeGreaterThan(0);expect(starts.hidden).toBe(0);
+    await page.bringToFront();await expect(page.getByTestId(`comment-row-${comments.latest_ref}`)).toBeVisible();await cover.close();
+    } finally { await close(); }
+  });
+  test("queued public reply stays fenced after worker UNKNOWN selection reload and dedupe expiry",async({page,request})=>{
+    await login(page);await page.goto(route("en",comments.session));
+    const ref=comments.reply_refs[1];
+    await page.getByTestId(`comment-select-${ref}`).click();await page.getByRole("button",{name:"Public reply",exact:true}).click();
+    await page.getByTestId("comment-reply-text").fill("Synthetic queued public case");
+    const before=(await facts(request)).comments;
+    await fault(request,comments.session,"public_graph_unknown");
+    try {
+      const ack=page.waitForResponse(r=>r.url().endsWith(`/comments/${ref}/public-reply`)&&r.request().method()==="POST",{timeout:15000});
+      await page.getByTestId("comment-send").click();expect((await (await ack).json()).send_state).toBe("queued");
+      await expect.poll(async()=>(await facts(request)).comments.public_unknown,{timeout:15000}).toBe(before.public_unknown+1);
+      await page.getByTestId(`comment-select-${comments.reply_refs[2]}`).click();
+      await page.getByRole("button",{name:"Public reply",exact:true}).click();
+      await page.getByTestId("comment-reply-text").fill("Synthetic other comment");await expect(page.getByTestId("comment-send")).toBeEnabled();
+      await page.getByTestId(`comment-select-${ref}`).click();await expect(page.getByTestId("comment-send")).toBeDisabled();
+      await page.reload();await page.getByTestId(`comment-select-${ref}`).click();
+      await page.waitForTimeout(31000); // REAL backend dedupe window elapsed; safety must not be a 30s timer.
+      await expect(page.getByTestId("comment-send")).toBeDisabled();await expect(page.getByTestId("comment-verified")).toBeVisible();
+      expect((await facts(request)).comments.public_requests).toBe(before.public_requests+1);
+      page.once("dialog",d=>d.accept());await page.getByTestId("comment-verified").click();
+      await page.getByRole("button",{name:"Public reply",exact:true}).click();
+      await page.getByTestId("comment-reply-text").fill("Synthetic verified draft");await expect(page.getByTestId("comment-send")).toBeEnabled();
+      expect((await facts(request)).comments.public_requests).toBe(before.public_requests+1);
+    } finally { await fault(request,comments.session,"public_graph_restore"); }
+  });
+  test("unknown public ACK stays fenced across selection and reload",async({page,request})=>{
+    await login(page);await page.goto(route("en",comments.session));await expect(page.getByTestId(`comment-row-${comments.latest_ref}`)).toBeVisible();
+    await page.getByTestId(`comment-select-${comments.latest_ref}`).click();await page.getByRole("button",{name:"Public reply",exact:true}).click();
+    await page.getByTestId("comment-reply-text").fill("Synthetic public ACK case");
+    // FAULT INJECTION: the command reaches real Go/PG; only its acknowledgement is dropped.
+    await page.route(`**/comments/${comments.latest_ref}/public-reply`,async r=>{const real=await r.fetch();expect(real.status()).toBe(200);await r.abort("connectionreset");},{times:1});
+    const before=(await facts(request)).comments.public_requests;
+    await page.getByTestId("comment-send").click();await expect(page.getByTestId("comment-unknown")).toBeVisible();
+    await page.getByTestId(`comment-select-${comments.reply_refs[0]}`).click();await expect(page.getByTestId("comment-send")).toBeDisabled();
+    await page.reload();await page.getByTestId(`comment-select-${comments.latest_ref}`).click();await expect(page.getByTestId("comment-send")).toBeDisabled();
+    expect((await facts(request)).comments.public_requests).toBe(before+1);
+    const flags=await page.evaluate(()=>Object.entries(sessionStorage).filter(([key])=>key.startsWith("live-comment-unresolved:")));
+    expect(flags).toHaveLength(1);expect(flags[0][1]).toBe("1");expect(flags[0][0]).not.toContain(comments.latest_ref);
+  });
+  for(const view of ["all","private"] as const)test(`LCU2_404 real store grant revoked clears ${view} view and selected buyer`,async({page,request})=>{
+    await login(page);await page.goto(route("en",comments.session));
+    await expect(page.getByTestId(`comment-row-${comments.latest_ref}`)).toBeVisible();
+    if(view==="private") {
+      await page.getByTestId("comment-filter-private").click();
+      await page.getByTestId("comment-conversations").getByRole("button").first().click();
+    } else await page.getByTestId(`comment-select-${comments.claim_ref}`).click();
+    await expect(page.getByTestId("buyer-panel")).toBeVisible();
+    const beforeSession=(await authorityCookies(page.context())).find(c=>c.name==="__Host-commerce_session")?.value;
+    let reads=0;
+    page.on("request",r=>{const path=new URL(r.url()).pathname;if(path.endsWith("/comments")||path.endsWith("/inbox/conversations"))reads++;});
+    try {
+      const denied=page.waitForResponse(r=>{
+        const path=new URL(r.url()).pathname;
+        // Any scoped read may observe the loss first (an in-flight buyer-panel or template read now expires like the A2/A8 polls);
+        // the assertions below still require every private view cleared, the login kept and zero reads afterwards.
+        return r.status()===404&&(path.endsWith("/comments")||path.endsWith("/inbox/conversations")||path.endsWith("/inbox/buyer-panel")||path.endsWith("/message-templates"));
+      },{timeout:15000});
+      // FIXTURE/SETUP: only this synthetic store/principal grant is deleted in PG; no response interception.
+      await fault(request,comments.session,"grant_revoke");await denied;
+      await expect(page.getByTestId("comment-refresh")).toBeDisabled();
+      await expect(page.getByTestId("comment-rows")).toHaveCount(0);
+      await expect(page.getByTestId("comment-conversations")).toHaveCount(0);
+      await expect(page.getByTestId("buyer-panel")).toHaveCount(0);
+      await expect(page.locator("[data-private=comment-author],[data-private=comment-text]")).toHaveCount(0);
+      const afterSession=(await authorityCookies(page.context())).find(c=>c.name==="__Host-commerce_session")?.value;
+      expect(!!beforeSession&&afterSession===beforeSession,"scope loss must be exercised with a still-valid login").toBe(true);
+      await fault(request,comments.session,"grant_restore");
+      const stopped=reads;
+      await page.waitForTimeout(6500); // Two healthy A2 intervals: assert absence, not a readiness sleep.
+      expect(reads).toBe(stopped);await expect(page.getByTestId("comment-refresh")).toBeDisabled();
+      await writeFile(`${evidence}/grant-revocation-${view}.json`,JSON.stringify({class:"REAL_PG",view,status:404,privateRows:0,buyerPanel:0,sessionRetained:true,postLossReads:reads-stopped}));
+      await page.reload();await expect(page.getByTestId(`comment-row-${comments.latest_ref}`)).toBeVisible();
+    } finally { await fault(request,comments.session,"grant_restore"); }
+  });
+  test("LCU2_RESET epoch replacement clears every old comment before reread",async({page,request})=>{
+    await login(page);await page.goto(route("en",comments.session));await expect(page.getByTestId(`comment-row-${comments.latest_ref}`)).toBeVisible();
+    await fault(request,comments.session,"comments_reset");
+    await expect(page.getByTestId(`comment-row-${comments.reset_ref}`)).toBeVisible();
+    await expect(page.getByTestId(`comment-row-${comments.latest_ref}`),"LCU2_RESET old epoch retained").toHaveCount(0);
+    await expect(page.getByTestId("comment-rows").locator("li")).toHaveCount(1);
+  });
+});
 async function screenshot(page: Page, name: string) {
   // G-UI8 audit [READ/MEASURE]: layout and storage reads do not change product state.
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);

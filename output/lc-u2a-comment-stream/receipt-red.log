@@ -1,0 +1,31 @@
+✖ UNKNOWN and queued public receipt survive selection remount without storing private identifiers (13.038875ms)
+✔ actual A2 hook fake clock: 3/6/12/24/30 backoff, success reset, hide clears and stops, 403 locks (5.830417ms)
+✔ actual reset clears selected buyer and rereads without the old epoch cursor (1.325083ms)
+✔ reply hints, coded error, UNKNOWN and capability state execute the actual composer (2.514167ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 3
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 280.5475
+
+✖ failing tests:
+
+test at tests/admin/comment-stream-hooks.test.ts:24:1
+✖ UNKNOWN and queued public receipt survive selection remount without storing private identifiers (13.038875ms)
+  AssertionError [ERR_ASSERTION]: queued receipt blocks new replies after navigation until verified
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/comment-stream-hooks.test.ts:32:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

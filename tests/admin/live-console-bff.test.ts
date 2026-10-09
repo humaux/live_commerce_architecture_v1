@@ -88,6 +88,12 @@ test("console BFF admits exactly A1/A7/A6 and A5 read/copy methods", () => {
 test("Next proxy admits the exact console family and results query before the BFF", async () => {
   const { NextRequest } = await import("../../apps/admin/node_modules/next/server.js");
   const { proxy } = await import("../../apps/admin/proxy.ts");
+  const commentRead = new NextRequest(`https://admin.example.test/api/stores/${store}/${root}/comments?after_epoch=0&after_seq=2&limit=50`);
+  assert.equal(proxy(commentRead).headers.get("x-middleware-next"),"1","A2 must reach the BFF before Go");
+  for(const suffix of ["print","private-reply","public-reply"]) {
+    const request=new NextRequest(`https://admin.example.test/api/stores/${store}/${root}/comments/123_456/${suffix}`,{method:"POST",headers:{"Idempotency-Key":"synthetic-key"}});
+    assert.equal(proxy(request).headers.get("x-middleware-next"),"1");
+  }
   const invoke = (path: string, method = "GET", query = "") => {
     const raw = `https://admin.example.test/api/stores/${store}/${path}${query}`;
     const request = new NextRequest(raw, { method });
@@ -108,6 +114,17 @@ test("Next proxy admits the exact console family and results query before the BF
     ["live-sessions/results", ""], ["live-sessions/results", `?session_id=${sid}&session_id=${sid}`],
     ["live-sessions/results", `?session_id=${sid}&limit=1`]])
     assert.equal(invoke(path, "GET", query).status, 422, path + query);
+});
+
+test("PR18 proxy preserves malformed A2 cursor as 400 invalid_cursor", async () => {
+  const { NextRequest } = await import("../../apps/admin/node_modules/next/server.js");
+  const { proxy } = await import("../../apps/admin/proxy.ts");
+  for(const query of ["after_epoch=1&after_seq=-1","after_epoch=1&after_seq=1.5","after_epoch=1&after_seq=1&after_seq=2","after_epoch=1&after_seq=2&before_cursor=abc","before_cursor=a/b","after_seq=2"]) {
+    const result=proxy(new NextRequest(`https://admin.example.test/api/stores/${store}/${root}/comments?${query}`));
+    assert.equal(result.status,400,query);assert.equal((await result.json()).code,"invalid_cursor");
+  }
+  const unknown=proxy(new NextRequest(`https://admin.example.test/api/stores/${store}/${root}/comments?text=private`));
+  assert.equal(unknown.status,422);
 });
 
 test("results query is canonical repeated session_id 1..50, everything else queryless", () => {

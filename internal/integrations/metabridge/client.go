@@ -53,8 +53,10 @@ type Cursor struct {
 
 // BridgeComment is one buffered comment (§2.6 minus marks). Text/author_name exist only in memory
 // and in this response; from.id is never returned (is_page is the collapsed fact).
+// Seq is the buffer-local item position; direct Graph history has no such position and emits null.
 type BridgeComment struct {
 	Ref           string    `json:"ref"`
+	Seq           *int64    `json:"seq"`
 	ParentRef     *string   `json:"parent_ref"`
 	CreatedAt     time.Time `json:"created_at"`
 	AuthorName    *string   `json:"author_name"`

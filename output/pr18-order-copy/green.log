@@ -1,0 +1,14 @@
+✔ PR18 facts_unavailable mark uses actionable copy zh-TW (12.454292ms)
+✔ PR18 facts_unavailable mark uses actionable copy zh-CN (1.496542ms)
+✔ PR18 facts_unavailable mark uses actionable copy en (1.261166ms)
+✔ PR18 mixed FB and IG page orders normalize chronologically after dedupe (1.013291ms)
+✔ PR18 cap keeps newest1000 with mixed page order older=false (4.504375ms)
+✔ PR18 cap keeps newest1000 with mixed page order older=true (5.0585ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 376.343791

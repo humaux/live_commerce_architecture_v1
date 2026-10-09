@@ -1,0 +1,23 @@
+✖ PR18 approved seq DTO parser accepts safe numbers and explicit history null (0.598708ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 155.87425
+
+✖ failing tests:
+
+test at tests/admin/comment-stream.test.ts:120:1
+✖ PR18 approved seq DTO parser accepts safe numbers and explicit history null (0.598708ms)
+  Error: invalid_comment_response
+      at fail (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/apps/admin/src/features/live/comment-model.ts:140:11)
+      at exact (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/apps/admin/src/features/live/comment-model.ts:156:7)
+      at parseCommentPage (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/apps/admin/src/features/live/comment-model.ts:187:17)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/comment-stream.test.ts:124:18)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)

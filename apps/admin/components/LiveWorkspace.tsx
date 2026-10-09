@@ -15,8 +15,8 @@ import { LiveConsole } from "./LiveConsole";
 import "@/src/features/live/workspace.css";
 
 /** Renders the current store's scene picker; a shell store change remounts all scene-owned data. */
-export function LiveWorkspace({ locale, store, scene, initialError }: {
-  locale: Locale; store: Store | null; scene: string; initialError: StudioErrorCode | null;
+export function LiveWorkspace({ locale, store, scene, initialError, commentCalibration=false }: {
+  locale: Locale; store: Store | null; scene: string; initialError: StudioErrorCode | null; commentCalibration?:boolean;
 }) {
   const router = useRouter(), c = workspaceCopy[locale], storeID = store?.id ?? "";
   const beforeLeave = useRef<() => boolean>(() => true);
@@ -42,7 +42,7 @@ export function LiveWorkspace({ locale, store, scene, initialError }: {
           <a data-testid="live-session-results" href={`/${locale}/studio?store=${storeID}${selected ? `&scene=${selected}` : ""}`} onClick={(event) => { if (!beforeLeave.current()) event.preventDefault(); }}>{c.sessions}</a>
           {selected && <a href={`/${locale}/studio/claims?store=${storeID}&scene=${selected}`} onClick={(event) => { if (!beforeLeave.current()) event.preventDefault(); }}>{c.source}</a>}
         </div>
-        {selected && store ? <LiveConsole key={`${storeID}:${selected}`} locale={locale} store={store} sessionID={selected} navigationGuard={beforeLeave} onRefreshList={view.refresh} /> : <p role="status">{view.data ? c.empty : c.loading}</p>}
+        {selected && store ? <LiveConsole key={`${storeID}:${selected}`} locale={locale} store={store} sessionID={selected} navigationGuard={beforeLeave} onRefreshList={view.refresh} commentCalibration={commentCalibration} /> : <p role="status">{view.data ? c.empty : c.loading}</p>}
       </>}
     </div>
   </WorkspaceFrame>;
