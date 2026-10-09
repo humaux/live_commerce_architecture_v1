@@ -1,0 +1,16 @@
+{
+  "pe_run": "/Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/output/playwright/catalog-core/20261009T132934.505765000",
+  "primary": "/Volumes/data/live_commerce_architecture_v1/output/matrix-ledger-enforce/browser",
+  "source": "b390ee7a43e5e2c42b6607ea76d1b95bb4ddcfd9",
+  "command": "LC_TEST_LOCK_WAIT=300 LC_BROWSER_ENGINE=chromium bash scripts/dev/test-local.sh --browser-product-editor",
+  "exit": 0,
+  "matrix_rows": 141,
+  "files": {
+    "next.log": "8a29c641f20133a95fb83ff7a11ab84e720df364cf6d5ebc9454a75740209858",
+    "playwright.rf.config.ts": "cda38d9e450b87cf009991f8347b4860702fc23c3baf90d849fb4d5b96576f78",
+    "playwright.log": "d74ba3497717f96530f7a224d269df417587da6c41794f5a1a98cba1da6c2c6c",
+    "product-editor-click-ledger.json": "318783bc44206c121892847f9cd3b3c7bfd0d5ee4838a09bd80df23ecd10a26f",
+    "product-ui-output.txt": "1a27287a1473ba610951bdae1cb30f0370997fdb787bd43fc880545bfe5c3d05",
+    "results/.last-run.json": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+  }
+}

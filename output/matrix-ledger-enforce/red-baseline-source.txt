@@ -1,0 +1,133 @@
+// Purpose: Enforce the product-editor mobile matrix's declared click identities and fail-closed ledger evidence.
+// Depends on: encoding/json, standard-library I/O and the synthetic PR16 real-click identity fixture; no DB or browser required.
+// Used by: TestBrowserCatalogCore after product-editor Playwright, and DB-free corruption controls.
+package foundation_test
+
+import (
+	"encoding/json"
+	"os"
+	"testing"
+)
+
+type productEditorMatrixLedgerKey struct {
+	Page    string `json:"page"`
+	Locale  string `json:"locale"`
+	Width   int    `json:"width"`
+	Row     string `json:"row"`
+	Control string `json:"control"`
+	Action  string `json:"action"`
+}
+
+type productEditorMatrixLedgerRow struct {
+	productEditorMatrixLedgerKey
+	Actual string `json:"actual"`
+}
+
+// TDD baseline: the former harness had no Go-side ledger policy. The corruption
+// cases must go RED before this no-check behavior is replaced by enforcement.
+func validateProductEditorMatrixLedger(data []byte) error {
+	return nil
+}
+
+// TestProductEditorMatrixLedger checks independently recorded real-click identities,
+// then corrupts fixture copies without a browser, database write or source mutation.
+func TestProductEditorMatrixLedger(t *testing.T) {
+	// Projected identity/status fields from PR16's actual 196-row evidence ledger:
+	// output/pr16-r4/evidence/green/click-ledger.json SHA256 fa17ff01531b6d80a253dfb8acdcc6c7814df4693571f35a4100fdb6a15c7116.
+	data, err := os.ReadFile("testdata/product_editor_mobile_matrix_ledger.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var original []productEditorMatrixLedgerRow
+	if err := json.Unmarshal(data, &original); err != nil {
+		t.Fatal(err)
+	}
+	if err := validateProductEditorMatrixLedger(data); err != nil {
+		t.Fatalf("recorded complete ledger: %v", err)
+	}
+	for _, tc := range []struct {
+		name   string
+		change func([]productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow
+	}{
+		{"missing-matrix-click", func(rows []productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow { return rows[1:] }},
+		{"missing-axis-remove", func(rows []productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow {
+			for i, row := range rows {
+				if row.Page == "mobile axis remove" {
+					return append(rows[:i], rows[i+1:]...)
+				}
+			}
+			t.Fatal("fixture lacks axis removal")
+			return rows
+		}},
+		{"failed-row", func(rows []productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow {
+			rows[0].Actual = "FAIL"
+			return rows
+		}},
+		{"missing-PASS", func(rows []productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow {
+			rows[0].Actual = ""
+			return rows
+		}},
+		{"PASS-prefix-is-not-PASS", func(rows []productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow {
+			rows[0].Actual = "PASS (MOCK)"
+			return rows
+		}},
+		{"duplicate", func(rows []productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow { return append(rows, rows[0]) }},
+		{"unexpected-extra-control", func(rows []productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow {
+			extra := rows[0]
+			extra.Control = "unapproved-control"
+			return append(rows, extra)
+		}},
+		{"wrong-locale", func(rows []productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow {
+			rows[0].Locale = "ja"
+			return rows
+		}},
+		{"wrong-width", func(rows []productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow {
+			rows[0].Width = 1440
+			return rows
+		}},
+		{"wrong-action", func(rows []productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow {
+			rows[0].Action = "fill"
+			return rows
+		}},
+		{"wrong-top-level-row", func(rows []productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow {
+			rows[0].Row = "White / S"
+			return rows
+		}},
+		{"unknown-target-page", func(rows []productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow {
+			rows[0].Page = "mobile matrix unknown"
+			return rows
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			copy := append([]productEditorMatrixLedgerRow(nil), original...)
+			bad, err := json.Marshal(tc.change(copy))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := validateProductEditorMatrixLedger(bad); err == nil {
+				t.Fatal("corrupted ledger admitted by the Go gate")
+			}
+		})
+	}
+	for name, bad := range map[string][]byte{"empty": []byte("[]"), "null": []byte("null"), "invalid-json": []byte("["), "object-instead-of-ledger": []byte("{}")} {
+		t.Run(name, func(t *testing.T) {
+			if validateProductEditorMatrixLedger(bad) == nil {
+				t.Fatal("malformed/empty ledger admitted")
+			}
+		})
+	}
+	// Real product-editor ledgers also contain generic form/list clicks. Those are
+	// outside this matrix contract, including their distinct MOCK result labels.
+	other := append(append([]productEditorMatrixLedgerRow(nil), original...), productEditorMatrixLedgerRow{productEditorMatrixLedgerKey: productEditorMatrixLedgerKey{Page: "list", Locale: "en", Width: 390, Control: "unrelated", Action: "click"}, Actual: "PASS (MOCK read contract)"})
+	mixed, _ := json.Marshal(other)
+	if err := validateProductEditorMatrixLedger(mixed); err != nil {
+		t.Fatalf("unrelated legitimate ledger row: %v", err)
+	}
+	for i, j := 0, len(original)-1; i < j; i, j = i+1, j-1 {
+		original[i], original[j] = original[j], original[i]
+	}
+	reordered, _ := json.Marshal(original)
+	if err := validateProductEditorMatrixLedger(reordered); err != nil {
+		t.Fatalf("set equality must not invent an ordering constraint: %v", err)
+	}
+}

@@ -1,0 +1,9 @@
+{
+  "tested_source": "b390ee7a43e5e2c42b6607ea76d1b95bb4ddcfd9",
+  "files": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "747ab903ef3bb3fe9a10be7b60c30820868fdad00c84165b97b0c519442bf1be",
+    "tests/foundation/browser_catalog_core_test.go": "677c2903574f91f4b61445bb1a743ecd17404a196b92ad72a9e313b56b44ad45",
+    "tests/admin/product-editor.acceptance.ts": "8b880de2eb880f5674c309b34b6350f84e0c5972203215128d1c40a7f2380d9a",
+    "tests/foundation/testdata/product_editor_mobile_matrix_ledger.json": "25b3e4be6f0d7f421f7fe26dde35bc5274798459d500180ee05d29f46d2e9b59"
+  }
+}

@@ -1,0 +1,100 @@
+[
+  {
+    "review_log": "output/matrix-ledger-enforce/calibration-failed.log",
+    "review_sha256": "ba07620f9b7677cd1142cb5899a07e24f580e1df13723c181a711be9d34638b4",
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/output/matrix-ledger-enforce/calibration-failed.log",
+    "raw_sha256": "ba07620f9b7677cd1142cb5899a07e24f580e1df13723c181a711be9d34638b4",
+    "normalization": "trailing whitespace only; raw exact and uncompressed"
+  },
+  {
+    "review_log": "output/matrix-ledger-enforce/vet.log",
+    "review_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/output/matrix-ledger-enforce/vet.log",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "normalization": "trailing whitespace only; raw exact and uncompressed"
+  },
+  {
+    "review_log": "output/matrix-ledger-enforce/red.log",
+    "review_sha256": "8e4baa10199a9e8f4d711bf48ecaf404987da3c99ff7c9da4c90e32d60ab4135",
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/output/matrix-ledger-enforce/red.log",
+    "raw_sha256": "8e4baa10199a9e8f4d711bf48ecaf404987da3c99ff7c9da4c90e32d60ab4135",
+    "normalization": "trailing whitespace only; raw exact and uncompressed"
+  },
+  {
+    "review_log": "output/matrix-ledger-enforce/node.log",
+    "review_sha256": "ad6f282cb7b6883ea84f611a6af45a1a47ad51ba203d72fd4413c1718a4385be",
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/output/matrix-ledger-enforce/node.log",
+    "raw_sha256": "ad6f282cb7b6883ea84f611a6af45a1a47ad51ba203d72fd4413c1718a4385be",
+    "normalization": "trailing whitespace only; raw exact and uncompressed"
+  },
+  {
+    "review_log": "output/matrix-ledger-enforce/green.log",
+    "review_sha256": "11e37bf2e22d323ea1b06430d1878a1bd85a799f45ffe7bfdd182098fbedaa7b",
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/output/matrix-ledger-enforce/green.log",
+    "raw_sha256": "11e37bf2e22d323ea1b06430d1878a1bd85a799f45ffe7bfdd182098fbedaa7b",
+    "normalization": "trailing whitespace only; raw exact and uncompressed"
+  },
+  {
+    "review_log": "output/matrix-ledger-enforce/typecheck.log",
+    "review_sha256": "242cd9afc1edec2ef4ffeea9525888dfa035ce26042ca7abaa1bf19550bf36a8",
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/output/matrix-ledger-enforce/typecheck.log",
+    "raw_sha256": "cf9f71cac65bd70eb8b31d05c6ac5a8f83f2a0a2a0ca3e687314c034cd2184e8",
+    "normalization": "trailing whitespace only; raw exact and uncompressed"
+  },
+  {
+    "review_log": "output/matrix-ledger-enforce/calibration-missing.log",
+    "review_sha256": "e7bbad8b00e86a4a50f1bf366c29c84bb1273577eef443f97315dd03964d723d",
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/output/matrix-ledger-enforce/calibration-missing.log",
+    "raw_sha256": "e7bbad8b00e86a4a50f1bf366c29c84bb1273577eef443f97315dd03964d723d",
+    "normalization": "trailing whitespace only; raw exact and uncompressed"
+  },
+  {
+    "review_log": "output/matrix-ledger-enforce/registry-list.log",
+    "review_sha256": "5e780dc27ce8a1089b7191e5aa0a0a800d2a9144d7aa53ef5ffe91b5bd9cfd66",
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/output/matrix-ledger-enforce/registry-list.log",
+    "raw_sha256": "5e780dc27ce8a1089b7191e5aa0a0a800d2a9144d7aa53ef5ffe91b5bd9cfd66",
+    "normalization": "trailing whitespace only; raw exact and uncompressed"
+  },
+  {
+    "review_log": "output/matrix-ledger-enforce/browser-product-editor.log",
+    "review_sha256": "6e0a18820dbdf9c9bce4419cf93656521c5d665f10eb38f9a12ee1c336797862",
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/output/matrix-ledger-enforce/browser-product-editor.log",
+    "raw_sha256": "d61a293ea531817485dbd3ac60034a300d1e19a6ab9ec04281f2c0c7facaf6da",
+    "normalization": "trailing whitespace only; raw exact and uncompressed"
+  },
+  {
+    "review_log": "output/matrix-ledger-enforce/go-browser.log",
+    "review_sha256": "954cb9a8d59f6e75ae38a2151ac2f49034cb16435c3216d647ca74348229e1f1",
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/output/matrix-ledger-enforce/go-browser.log",
+    "raw_sha256": "954cb9a8d59f6e75ae38a2151ac2f49034cb16435c3216d647ca74348229e1f1",
+    "normalization": "trailing whitespace only; raw exact and uncompressed"
+  },
+  {
+    "review_log": "output/matrix-ledger-enforce/calibration-valid.log",
+    "review_sha256": "6c8695be279e568cd37391d97e6920fc688db7342a8dbdf4a3981f8ea8b3517a",
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/output/matrix-ledger-enforce/calibration-valid.log",
+    "raw_sha256": "6c8695be279e568cd37391d97e6920fc688db7342a8dbdf4a3981f8ea8b3517a",
+    "normalization": "trailing whitespace only; raw exact and uncompressed"
+  },
+  {
+    "review_log": "output/matrix-ledger-enforce/check-gates.log",
+    "review_sha256": "610a526f92a15212507fdb8a5d766615d10418400fc1ed3693f43f2dbe8aa688",
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/output/matrix-ledger-enforce/check-gates.log",
+    "raw_sha256": "610a526f92a15212507fdb8a5d766615d10418400fc1ed3693f43f2dbe8aa688",
+    "normalization": "trailing whitespace only; raw exact and uncompressed"
+  },
+  {
+    "review_log": "output/matrix-ledger-enforce/install.log",
+    "review_sha256": "0fd31cb30acb55e116c6581e6351bb98b1244f82a2e8c4ac17748607b2a699b1",
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/output/matrix-ledger-enforce/install.log",
+    "raw_sha256": "0fd31cb30acb55e116c6581e6351bb98b1244f82a2e8c4ac17748607b2a699b1",
+    "normalization": "trailing whitespace only; raw exact and uncompressed"
+  },
+  {
+    "review_log": "output/matrix-ledger-enforce/packaged-gates.log",
+    "review_sha256": "df0919135fead4e1f03e7d60c2f77fda3ce8d49c6a593f60f618e237ab06b191",
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/output/matrix-ledger-enforce/packaged-gates.log",
+    "raw_sha256": "df0919135fead4e1f03e7d60c2f77fda3ce8d49c6a593f60f618e237ab06b191",
+    "normalization": "trailing whitespace only"
+  }
+]

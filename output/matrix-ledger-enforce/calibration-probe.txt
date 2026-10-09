@@ -1,0 +1,13 @@
+// Purpose: Run the real matrix ledger predicate against a copied run artifact.
+// Depends on: os, testing and the existing foundation_test predicate via a Go build overlay.
+// Used by: matrix-ledger-enforce artifact mutation calibration only; never a production or fixture stub.
+package foundation_test
+import("os"; "testing")
+// TestMatrixLedgerEvidenceProbe fails when the real predicate refuses the supplied evidence.
+func TestMatrixLedgerEvidenceProbe(t *testing.T) {
+ path := os.Getenv("LC_MATRIX_LEDGER_PROBE_FILE")
+ if path == "" { t.Fatal("explicit probe file required") }
+ data, err := os.ReadFile(path); if err != nil { t.Fatal(err) }
+ if err := validateProductEditorMatrixLedger(data); err != nil { t.Fatal(err) }
+ t.Logf("PASS real predicate: %d required unique identities",len(productEditorMatrixLedgerExpected()))
+}
