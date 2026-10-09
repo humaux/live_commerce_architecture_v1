@@ -1,16 +1,26 @@
 #!/usr/bin/env node
 // Purpose: the deterministic gate set of a pull request into r3/integration, computed from the PR's changed paths (owner decision: the repo fixes the required checks, the merging
-//   agent never picks modes). Always `foundation-shards`; any path outside the backend-only set adds every CI-runnable `--browser-*` mode of the test-local.sh mode registry.
+//   agent never picks modes). Always `foundation-shards`; any UI path adds every CI-runnable `--browser-*` mode of the test-local.sh mode registry; internal/, cmd/ and
+//   migrations/ changes select browser modes from the registry's lc_covers data (CI-SELECT, see the block below).
 //   Browser-tagged foundation inputs additionally select every real registry branch that compiles that tag (including non-browser-named modes).
 //   Deploy runtime, smoke workflow/helpers and deploy-test edits select deploy-smoke. Unknown/missing foundation Go sources conservatively select tagged runners.
 //   CLI unions legacy quoted/trimmed path classification; only raw paths are used for source lookup.
-// Depends on: test-local.sh case registry (historical usage/dispatch fallback), Go build-constraint headers, git merge-base/head sources and NUL-delimited changed paths; env GITHUB_OUTPUT (modes, deploy).
-// Used by: .github/workflows/gates.yml (plan job, pull_request only; the output feeds scripts/dev/ci-plan.mjs), tests/ci/pr-modes.test.mjs.
+// Depends on: test-local.sh case registry (lc_covers declarations; historical usage/dispatch fallback), Go build-constraint headers, git merge-base/head sources and NUL-delimited changed paths; env GITHUB_OUTPUT (modes, deploy).
+// Used by: .github/workflows/gates.yml (plan job: pull_request diffs plus the schedule/workflow_dispatch full-browser-universe runs; the output feeds scripts/dev/ci-plan.mjs), tests/ci/pr-modes.test.mjs, tests/ci/backend-coverage.test.mjs.
 // Invariants: foundation-shards is ALWAYS present (so the one `required` check exists for docs-only PRs too); a mode is only ever dropped through EXCLUDED_MODES below.
 //
-// Backend-only set (changes here alone cannot alter a browser): internal/ cmd/ migrations/ contracts/ docs/ deploy/ output/ go.mod go.sum, tests/foundation/ except
+// Backend-only set (changes here alone cannot alter a browser): contracts/ docs/ deploy/ output/ go.mod go.sum, tests/foundation/ except
 //   tests/foundation/browser_* or browser-tagged Go sources, tests/deploy/ and tests/ci/ (node tests of shell scripts / this planner; scripts/ itself stays UI), and *.md anywhere. Everything else (apps/ packages/ tests/admin/ tests/e2e/ tests/ui/ scripts/ .github/ playwright.config.ts, package files...) is a UI path.
-// Docs-only (docs/, output/, *.md) is a subset of backend-only: it runs foundation-shards (cheap, keeps the single required check) and no browser mode.
+// Docs-only (docs/, output/, *.md, contracts/) is a subset of backend-only: it runs foundation-shards (cheap, keeps the single required check) and no browser mode.
+//
+// CI-SELECT (owner-approved 2026-10-10): internal/, cmd/ and migrations/ are NOT backend-only — every Go-seeded browser mode runs the real Go API on the real migrated PG, so
+//   e.g. an internal/live/stream.go change alters what --browser-live-console exercises (verified root cause of PR #30/#24: both changed internal/ server code and merged
+//   without any browser mode; push runs on r3/integration re-verified no trunk browser health either — see the schedule trigger in gates.yml). Their selection is registry
+//   DATA, never a planner hand-list: each browser mode declares the internal packages its tests/foundation harness wires in its `lc_covers="..."` line, derived from the real
+//   harness closure (direct imports, transitive internal import graph of what it constructs, and the cmd/ binaries it builds/runs) by
+//   output/ci-select-backend-browser/tools/derive-covers.mjs. Rules: a changed internal/<pkg>/** selects every mode whose lc_covers contains that package (prefix match);
+//   cmd/**, migrations/**, the SHARED_BACKEND_PACKAGES below, and any package no mode declares select every lc_fixture=pg browser mode (conservative);
+//   BACKEND_ONLY_PACKAGES-listed packages select none. scripts/dev/check-backend-coverage.mjs (check-gates) fails until a new internal package is lc_covers-covered or listed.
 //
 // Excluded browser modes (EXCLUDED_MODES): modes of release-gate's browser universe that cannot run on a GitHub runner. Currently only `--stripe-browser`: its SP18 step needs a Stripe
 //   test-mode key (STRIPE_SECRET_KEY in secrets.env + STRIPE_BROWSER=1 STRIPE_SANDBOX=1), gates.yml has no secrets by design, so it would end NOT_RUN. It stays an integrator-run
@@ -35,10 +45,13 @@ export function modeEntries(source) {
   const entries = [...registry.matchAll(/^[ \t]+(--[a-z0-9-]+|foundation)\)[ \t]*\n([\s\S]*?)(?=^[ \t]+(?:--[a-z0-9-]+|foundation|\*)\)|^esac$)/gm)].map((m) => {
     const body = m[2], build = /^    lc_build=(none|admin|storefront|both)$/m.exec(body)?.[1];
     const fixture = /^    lc_fixture=(none|pg)$/m.exec(body)?.[1];
+    // CI-SELECT registry data (optional declaration): the internal packages the mode's harness wires. [] when the arm
+    // declares lc_covers="" (node-only harness); null when the arm has no lc_covers line (probes, historical entries).
+    const coversLine = /^    lc_covers="([^"]*)"$/m.exec(body);
     const prepare = /^    lc_prepare\(\) \{\n([\s\S]*?)^    \}$/m.exec(body)?.[1];
     const run = /^    lc_run\(\) \{\n([\s\S]*?)^    \}$/m.exec(body)?.[1];
     if (!build || !fixture || prepare === undefined || run === undefined) throw new Error(`invalid mode entry ${m[1]}`);
-    return { name: m[1], build, fixture, prepare, run, body };
+    return { name: m[1], build, fixture, prepare, run, body, covers: coversLine ? coversLine[1].split(/[ \t]+/).filter(Boolean) : null };
   });
   if (!entries.length || new Set(entries.map((entry) => entry.name)).size !== entries.length) throw new Error("empty or duplicate mode registry");
   // Strip command functions before checking every case arm. A legal-but-unsupported
@@ -48,7 +61,7 @@ export function modeEntries(source) {
   const arms = [];
   for (const line of declarations.split("\n").map((line) => line.trim())) {
     if (!line || line.startsWith("#") || ["lc_select_mode() {", 'case "$1" in', "fi", ";;", "esac", "}", "*) return 1 ;;"].includes(line)) continue;
-    if (/^lc_(?:build|fixture)=[a-z]+$/.test(line) || /^if \[\[ .* \]\]; then$/.test(line)) continue;
+    if (/^lc_(?:build|fixture)=[a-z]+$/.test(line) || /^lc_covers="[A-Za-z0-9_./ -]*"$/.test(line) || /^if \[\[ .* \]\]; then$/.test(line)) continue;
     const arm = /^(--[a-z0-9-]+|foundation)\)$/.exec(line);
     if (!arm) throw new Error("unsupported mode registry declaration");
     arms.push(arm[1]);
@@ -111,6 +124,58 @@ function hasBrowserTag(source) {
   return /^\s*\/\/(?:go:build|\s*\+build)\b[^\n]*\bbrowser\b/m.test(source);
 }
 
+/**
+ * Explicit classification list (CI-SELECT): internal packages that no browser harness wires, so a change under them
+ * selects no browser mode. Every entry needs a one-line reason, and scripts/dev/check-backend-coverage.mjs fails the
+ * gate when an internal package is neither lc_covers-covered nor listed here. EMPTY by the 2026-10-10 derivation
+ * (output/ci-select-backend-browser/tools/): all 70 internal package dirs are wired by the Go-seeded browser harnesses —
+ * the shared httpapi.NewHandler constructs every service internally, the harness closure imports 54–57 packages
+ * directly, and the process tests build/run the real cmd/* binaries (this is how internal/tlsask, mounted only by
+ * cmd/api, is still exercised by --browser-identity). A new entry must come from that derivation, not from a guess.
+ */
+export const BACKEND_ONLY_PACKAGES = {};
+
+/**
+ * Shared platform packages every PG-fixture browser mode mounts (CI-SELECT task rule): a change under any of them
+ * selects all of them. They are also lc_covers-covered individually; this list keeps the conservative rule explicit
+ * for refactors that move code between them.
+ */
+export const SHARED_BACKEND_PACKAGES = {
+  "internal/platform": "runtime configuration/service container every browser harness and cmd binary constructs",
+  "internal/httpapi": "the monolithic handler the browser harnesses mount; it constructs its services internally",
+  "internal/command": "the command bus every service dispatches through",
+};
+
+/**
+ * Browser modes selected by backend paths alone (internal/, cmd/, migrations/) — CI-SELECT. Selection is registry DATA:
+ * lc_covers prefix match first; conservative every-lc_fixture=pg-browser-mode fallback for cmd/, migrations/, shared
+ * platform packages and packages no mode declares (a new package selects everything until check-backend-coverage
+ * classifies it); none for BACKEND_ONLY_PACKAGES. Historical sources without the native registry carry no lc_covers
+ * data, so they fall back to the whole browser universe rather than silently selecting nothing.
+ */
+export function backendBrowserModes(paths, source, backendOnly = BACKEND_ONLY_PACKAGES) {
+  const hits = paths.filter((p) => p.startsWith("internal/") || p.startsWith("cmd/") || p.startsWith("migrations/"));
+  if (!hits.length) return [];
+  if (!source.includes("# BEGIN MODE REGISTRY")) return browserModes(source);
+  const entries = modeEntries(source);
+  const universe = new Set(browserModes(source));
+  const pg = entries.filter((e) => universe.has(e.name) && e.fixture === "pg").map((e) => e.name);
+  const under = (dir, pkg) => dir === pkg || dir.startsWith(pkg + "/");
+  const selected = new Set();
+  for (const p of hits) {
+    const dir = path.posix.dirname(p);
+    if (p.startsWith("cmd/") || p.startsWith("migrations/") || Object.keys(SHARED_BACKEND_PACKAGES).some((s) => under(dir, s))) {
+      for (const m of pg) selected.add(m);
+      continue;
+    }
+    const covering = entries.filter((e) => (e.covers ?? []).some((c) => under(dir, c))).map((e) => e.name);
+    if (covering.length) { for (const m of covering) selected.add(m); continue; }
+    if (Object.keys(backendOnly).some((b) => under(dir, b))) continue;
+    for (const m of pg) selected.add(m); // undeclared package: conservative until check-backend-coverage classifies it
+  }
+  return [...selected].filter((m) => !(m in EXCLUDED_MODES));
+}
+
 const BACKEND_PREFIXES = ["internal/", "cmd/", "migrations/", "contracts/", "docs/", "deploy/", "output/", "tests/foundation/", "tests/deploy/", "tests/ci/"];
 const isBackendOnly = (p) =>
   p.endsWith(".md") || p === "go.mod" || p === "go.sum" ||
@@ -126,7 +191,8 @@ export function planPr(paths, source = readFileSync(path.join(root, "scripts/dev
     return !sources.length || sources.some(hasBrowserTag);
   });
   const needsBrowsers = tagged || paths.some((p) => !isBackendOnly(p));
-  return { modes: [...new Set(["foundation-shards", ...(needsBrowsers ? browserModes(source) : []), ...(tagged ? taggedFoundationModes(source) : [])])], deploy: paths.some(isDeploy) };
+  // Backend-driven selections are always a subset of the full browser set, so UI-path plans keep their exact order.
+  return { modes: [...new Set(["foundation-shards", ...(needsBrowsers ? browserModes(source) : []), ...backendBrowserModes(paths, source), ...(tagged ? taggedFoundationModes(source) : [])])], deploy: paths.some(isDeploy) };
 }
 
 /** CLI: `<base> [head=HEAD]` compares merge-base/head; `--stdin` reads worktree plus HEAD for uncommitted tag removals. */

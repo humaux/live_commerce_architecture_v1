@@ -6,10 +6,12 @@
 # Depends on: scripts/dev/ci-plan.mjs (matrix), scripts/dev/shard-plan.mjs + shard-plan.json (foundation groups), scripts/dev/test-local.sh (modes),
 #   scripts/dev/test-focused.sh (regex runs), tests/ui/sweep-aggregate.mjs (whole-run verdict), the pinned postgres image,
 #   Playwright Chromium/WebKit for --browser-* modes (cached per Playwright version). No secrets: every gate uses MOCK/SANDBOX fixtures only.
-# Used by: the integrator (`gh workflow run gates.yml --ref <branch> -f modes='[...]'`); pushes to r3/integration run
-#   the sharded foundation suite automatically; every PR into r3/integration runs the set scripts/dev/pr-modes.mjs computes from its changed paths.
+# Used by: the integrator (`gh workflow run gates.yml --ref <branch> -f modes='[...]'`, or `-f full_browser_universe=true` for the nightly set on demand);
+#   pushes to r3/integration run the sharded foundation suite automatically; every PR into r3/integration runs the set scripts/dev/pr-modes.mjs computes from its
+#   changed paths; the nightly schedule re-verifies trunk browser health with the FULL browser universe (CI-SELECT: push runs select no browser job).
 # Integration is by PR only (docs/delivery/PROCESS.md section 2 step 6). The required set is fixed by the repo, never chosen by the merging agent: foundation-shards always, plus every
-#   CI-runnable --browser-* mode when any path outside the backend-only set changed (scripts/dev/pr-modes.mjs), plus deploy-smoke when deploy/ or scripts/deploy* changed.
+#   CI-runnable --browser-* mode when any UI path changed, plus the browser modes wired by changed internal//cmd//migrations/ paths via the registry's lc_covers data
+#   (scripts/dev/pr-modes.mjs, CI-SELECT), plus deploy-smoke when deploy/ or scripts/deploy* changed.
 #   STABLE REQUIRED CHECK NAME for a branch ruleset: `Gates (GitHub runners) / required` (job `required`: fails when plan, any gate leg, the sweep/visual aggregate or an expected
 #   deploy-smoke failed, was cancelled or was skipped). Do NOT require the individual `gate (<mode>)` names: they change with the planned set. `extra_env` is never applied on pull_request;
 #   calibration / fault-injection runs stay an extra workflow_dispatch. No pull_request_target, no secrets.
@@ -21,6 +23,11 @@ on:
   pull_request:
     branches: [r3/integration]
     types: [opened, synchronize, reopened]
+  schedule:
+    # CI-SELECT nightly trunk re-verification (off-peak UTC, non-:00 minute): push runs select no browser job, so r3/integration's
+    # browser health was never re-checked after merges. This run selects the FULL browser universe on the default-branch HEAD;
+    # a failure shows up in the same `required` aggregate as any other leg.
+    - cron: '43 21 * * *'
   workflow_dispatch:
     inputs:
       modes:
@@ -28,8 +35,15 @@ on:
           JSON array of gates. "foundation" = full suite serially (test-local.sh); "foundation-shards" = unit shard + the balanced tests/foundation groups in parallel;
           "--browser-click-sweep" / "--browser-visual-lint" = the whole gate, run as parallel shards plus an aggregate verdict (a single slice: "--browser-click-sweep@3/10");
           other "--browser-x" / "--inbox-send" etc. = test-local.sh mode; "focused:<go -run regex>" = test-focused.sh.
+          Ignored when full_browser_universe is "true".
         default: '["foundation-shards"]'
         required: true
+      full_browser_universe:
+        description: >-
+          "true" = run the nightly full browser universe (exactly the set a UI-path PR gets from scripts/dev/pr-modes.mjs)
+          on the current HEAD; any other value = use `modes`.
+        default: 'false'
+        required: false
       extra_env:
         description: >-
           Optional space-separated LC_*=value pairs exported for every mode (fault-injection calibration of a new gate,
@@ -65,10 +79,16 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: node scripts/dev/pr-modes.mjs "$BASE_SHA" "$HEAD_SHA" >/dev/null
+      - id: nightly
+        # CI-SELECT: feed one tracked UI-side path through the SAME planner so the schedule/dispatch full-universe set is
+        # exactly what a UI-path PR gets — never a second hand-kept list. (gates.yml itself is such a path.)
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.full_browser_universe == 'true')
+        run: printf '.github/workflows/gates.yml\n' | node scripts/dev/pr-modes.mjs --stdin >/dev/null
       - id: plan
         env:
-          # PR: the set computed from the changed paths. Push: the sharded foundation suite (unit + groups, ~12 min wall). Dispatch: what was asked for.
-          MODES: ${{ github.event_name == 'pull_request' && steps.pr.outputs.modes || github.event_name == 'workflow_dispatch' && inputs.modes || '["foundation-shards"]' }}
+          # PR: the set computed from the changed paths. Schedule / dispatch full_browser_universe: the full browser universe via the same planner.
+          # Push: the sharded foundation suite (unit + groups, ~12 min wall). Dispatch: what was asked for.
+          MODES: ${{ github.event_name == 'pull_request' && steps.pr.outputs.modes || github.event_name == 'schedule' && steps.nightly.outputs.modes || github.event_name == 'workflow_dispatch' && (inputs.full_browser_universe == 'true' && steps.nightly.outputs.modes || inputs.modes) || '["foundation-shards"]' }}
         run: node scripts/dev/ci-plan.mjs
 
   gate:

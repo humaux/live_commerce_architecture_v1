@@ -11,7 +11,7 @@ MOCK, SANDBOX, LIVE, NOT_RUN): a pass here is only ever as strong as the label i
 
 ## Mode registration
 
-`test-local.sh` owns one native Bash case registry. Add one entry defining `lc_build`, `lc_fixture`, `lc_prepare()` and `lc_run()`; usage, admission, build selection and dispatch follow that entry. Keep command bodies in the entry and the shared task-owned PostgreSQL lifecycle in `test-local-runtime.sh`. The selector reads this registry as data, including at an explicit Git revision; malformed, duplicate or unsupported case arms fail closed.
+`test-local.sh` owns one native Bash case registry. Add one entry defining `lc_build`, `lc_fixture`, `lc_prepare()` and `lc_run()`; usage, admission, build selection and dispatch follow that entry. Keep command bodies in the entry and the shared task-owned PostgreSQL lifecycle in `test-local-runtime.sh`. The selector reads this registry as data, including at an explicit Git revision; malformed, duplicate or unsupported case arms fail closed. Browser modes additionally declare one `lc_covers="internal/<pkg> …"` line (CI-SELECT): the internal packages the mode's `tests/foundation` harness actually wires, which the PR planner uses to decide which backend changes must re-run the mode; `lc_covers=""` means a node-only harness. The value is derived data, never a hand guess — regenerate with `output/ci-select-backend-browser/tools/derive-covers.mjs` and review the diff. `scripts/dev/check-backend-coverage.mjs` (run by check-gates.sh) fails when a browser mode lacks the line, when a Go-running mode declares it empty, when a covers entry matches no internal package dir, or when any internal package dir is neither covered by some mode nor listed in `BACKEND_ONLY_PACKAGES` (`pr-modes.mjs`, one-line reason required): a new backend package fails the gate until it is classified.
 
 `bash scripts/dev/test-local.sh --list` lists the modes, including the default `foundation`. `bash scripts/dev/test-local.sh --dry-run MODE` prints the selected shell phases with their command/environment expressions without executing builds, tests or fixtures. Dry-run is not a runtime acceptance gate. The existing `LC_SWEEP_SHARD=1/10 bash scripts/dev/test-local.sh --browser-click-sweep` invocation is the CI equivalent of `--browser-click-sweep@1/10`.
 
@@ -248,17 +248,25 @@ The two long gates and the foundation suite run as parallel slices; nothing is r
 
 Shard counts live in `scripts/dev/ci-plan.mjs` (`SWEEP_SHARDS`, `VISUAL_SHARDS`); the click-sweep unit costs used only for balancing are `tests/ui/click-sweep-weights.json` (a missing key gets a default, so a new route is still covered). Refresh the foundation plan after a trunk run: `gh run download <run> -D d; node scripts/dev/shard-plan.mjs --ingest d/*/ci-gates/shard_g*.log; node scripts/dev/shard-plan.mjs --write`. `go vet ./...` runs once per full run (the unit shard / the serial run), not in every foundation group. Playwright browsers are cached per Playwright version (`/opt/ms-playwright`).
 
-## Pull-request gates (`.github/workflows/gates.yml`, unit ci-pr-gates)
+## Pull-request gates (`.github/workflows/gates.yml`, units ci-pr-gates + ci-select-backend-browser)
 
 Integration is by PR only. A PR into `r3/integration` runs a set the repo computes, never one the merging agent picks: `node scripts/dev/pr-modes.mjs <base> <head>` maps the changed paths to modes, `ci-plan.mjs` fans them out, and ONE job ends the run.
 
+CI-SELECT (owner-approved 2026-10-10): `internal/`, `cmd/` and `migrations/` are NOT backend-only. The browser modes run the real Go API on the real migrated PG, yet the planner used to treat those trees as backend-only, so PR #30 (`internal/live/stream.go` — serves the A2/A3 comment stream `--browser-live-console` clicks) and PR #24 (`internal/integrations/metareply`) merged without ever running the modes that exercise them. Selection is registry DATA (the `lc_covers` lines, see Mode registration), never a planner hand-list:
+
 | Changed paths | Modes run |
 | --- | --- |
-| only `internal/ cmd/ migrations/ contracts/ docs/ deploy/ output/ go.mod go.sum tests/foundation/` (not `browser_*`) or `*.md` (docs-only included) | `foundation-shards` (11 jobs) |
+| only `contracts/ docs/ deploy/ output/ go.mod go.sum tests/foundation/` (not `browser_*`, not browser-tagged) `tests/deploy/ tests/ci/` or `*.md` (docs-only included) | `foundation-shards` (11 jobs) |
+| `internal/<pkg>/**` | `foundation-shards` + every browser mode whose `lc_covers` declares `<pkg>` (prefix match). Today every Go-seeded harness wires all 70 internal packages, so in practice this is all 48 Go-seeded browser modes. A package no mode declares falls to the conservative row below until `check-backend-coverage.mjs` classifies it; a `BACKEND_ONLY_PACKAGES`-listed package selects none |
+| `cmd/**`, `migrations/**`, the shared platform packages (`internal/platform`, `internal/httpapi`, `internal/command`), or an internal package no mode declares | `foundation-shards` + every `lc_fixture=pg` browser mode (47; conservative — the modes run the binaries `cmd/` builds on the schema `migrations/` wrote) |
 | anything else (`apps/ packages/ tests/admin/ tests/e2e/ tests/ui/ tests/foundation/browser_* scripts/ .github/ playwright.config.ts`, package files, unknown paths) | `foundation-shards` + every `--browser-*` mode of the test-local.sh usage line (derived like `release-gate.sh`, never a second list), click-sweep x10 and visual-lint x4 included (about 70 jobs) |
 | `deploy/` or `scripts/deploy*` (on top of the above) | also `deploy-smoke.yml`, called as a reusable workflow so the required check waits for it |
 
+The node-only browser modes (`--browser-platform-site`, `--browser-admin-shell`, `--browser-picklist`, `lc_covers=""`) are selected by UI paths only, never by backend paths.
+
 Excluded from the PR browser set (EXCLUDED_MODES in `pr-modes.mjs`): `--stripe-browser` (needs a Stripe test key; gates.yml has no secrets). It stays an integrator SANDBOX run.
+
+**Nightly trunk re-verification (CI-SELECT).** Pushes to `r3/integration` select no browser job, so trunk browser health was never re-verified after a merge. The `schedule` trigger (`cron '43 21 * * *'`, UTC off-peak) runs the FULL browser universe on the default-branch HEAD, and `workflow_dispatch` with `full_browser_universe=true` runs the same set on demand. Both pipe one tracked UI-side path through the same `pr-modes.mjs --stdin`, so the nightly set is exactly what a UI-path PR gets — never a second hand-kept list. Failures surface through the same `required` job as any other run.
 
 - **Required check (for the owner's branch ruleset): `Gates (GitHub runners) / required`.** It is red when plan, any gate leg, the sweep/visual aggregate or an expected deploy-smoke failed, was cancelled or was skipped. Individual `gate (<mode>)` names change with the plan: never require them.
 - `extra_env` is ignored on pull_request. Calibration and fault-injection runs stay a separate `workflow_dispatch`.

@@ -1,5 +1,6 @@
-// Purpose: unit tests of the pull-request gate planner (scripts/dev/pr-modes.mjs): backend-only and docs-only diffs run foundation-shards only, any other path adds the full browser
-//   set, deploy implementation changes select smoke; actual Git CLI quoting/whitespace must not reduce legacy selections.
+// Purpose: unit tests of the pull-request gate planner (scripts/dev/pr-modes.mjs): docs/contracts/deploy/node-test diffs run foundation-shards only; internal/, cmd/ and
+//   migrations/ select browser modes from the registry's lc_covers data (CI-SELECT: the browser modes run the real Go API on the real migrated PG); any other path adds the
+//   full browser set; deploy implementation changes select smoke; actual Git CLI quoting/whitespace must not reduce legacy selections.
 // Depends on: scripts/dev/pr-modes.mjs, scripts/dev/test-local.sh, scripts/dev/release-gate.sh, bash and isolated local Git fixture repos.
 // Used by: scripts/dev/test-node.sh, CI.
 import assert from "node:assert/strict";
@@ -8,20 +9,24 @@ import { readFileSync, readdirSync, mkdirSync, mkdtempSync, writeFileSync, rmSyn
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { EXCLUDED_MODES, browserModes, planPr } from "../../scripts/dev/pr-modes.mjs";
+import { EXCLUDED_MODES, browserModes, modeEntries, planPr } from "../../scripts/dev/pr-modes.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const usage = readFileSync(path.join(root, "scripts/dev/test-local.sh"), "utf8");
 const FOUNDATION = ["foundation-shards"];
 const full = browserModes(usage);
+// CI-SELECT oracle, computed independently of the planner's own helpers: the browser universe with lc_fixture=pg, read
+// from the same registry data. Backend changes that must reach every PG-backed browser mode are asserted against this.
+const pgFull = modeEntries(usage).filter((e) => full.includes(e.name) && e.fixture === "pg").map((e) => e.name);
 
 
-// Append exactly one native registry entry; mode position/usage spelling is irrelevant.
-function appendMode(source, name, command) {
+// Append exactly one native registry entry; mode position/usage spelling is irrelevant. covers !== null adds the
+// lc_covers declaration line (CI-SELECT registry data: the internal packages the mode's harness wires).
+function appendMode(source, name, command, covers = null) {
   const entry = `  ${name})
     lc_build=none
     lc_fixture=pg
-    lc_prepare() {
+${covers === null ? "" : `    lc_covers="${covers}"\n`}    lc_prepare() {
   :
     }
     lc_run() {
@@ -33,14 +38,23 @@ ${command}
   return source.replace("  # APPEND MODES HERE", entry + "  # APPEND MODES HERE");
 }
 
-test("backend-only paths run foundation-shards only", () => {
-  const r = planPr(["internal/orders/x.go", "cmd/api/main.go", "migrations/0130_x.sql", "contracts/invariants.json", "go.mod", "go.sum", "tests/foundation/orders_test.go", "deploy/compose.yml", "README.md", "apps/admin/NOTES.md"], usage, () => ["package foundation_test\n"]);
+// CI-SELECT split of the old "backend-only paths" test: its docs/contracts/deploy/node-test half genuinely cannot alter
+// a browser and still runs foundation-shards only. Its internal/, cmd/ and migrations/ half moved to the tests below —
+// those paths run INSIDE the browser modes (real Go API + real PG fixture), the verified root cause of PR #30/#24.
+test("docs, contracts, deploy files and node-test dirs run foundation-shards only", () => {
+  const r = planPr(["contracts/invariants.json", "go.mod", "go.sum", "tests/foundation/orders_test.go", "deploy/compose.yml", "README.md", "apps/admin/NOTES.md", "tests/deploy/deploy-prep-r3.test.mjs", "tests/ci/pr-modes.test.mjs", "output/x/DELIVERY.md"], usage, () => ["package foundation_test\n"]);
   assert.deepEqual(r.modes, FOUNDATION);
 });
 
 test("node tests of deploy scripts and of the CI planner are backend-only (they cannot change a browser)", () => {
-  assert.deepEqual(planPr(["internal/a.go", "tests/deploy/deploy-prep-r3.test.mjs", "tests/ci/pr-modes.test.mjs"]).modes, FOUNDATION);
-  assert.deepEqual(planPr(["tests/deploy/x.test.mjs", "scripts/dev/pr-modes.mjs"]).modes.length > 1, true); // the planner itself still counts as UI
+  assert.deepEqual(planPr(["tests/deploy/deploy-prep-r3.test.mjs", "tests/ci/pr-modes.test.mjs"], usage).modes, FOUNDATION);
+  assert.deepEqual(planPr(["tests/deploy/x.test.mjs", "scripts/dev/pr-modes.mjs"], usage).modes.length > 1, true); // the planner itself still counts as UI
+});
+
+test("internal/ is NOT backend-only any more: a package no mode declares falls to the conservative PG rule (CI-SELECT)", () => {
+  const modes = planPr(["internal/a.go"], usage).modes;
+  assert.ok(modes.length > FOUNDATION.length, "internal/a.go must select browser modes");
+  for (const m of pgFull) assert.ok(modes.includes(m), `internal/a.go did not select ${m}`);
 });
 
 test("a UI path adds the whole browser set, including click-sweep and visual-lint", () => {
@@ -54,6 +68,87 @@ test("a UI path adds the whole browser set, including click-sweep and visual-lin
 test("docs-only and output-only diffs keep the single required check (foundation-shards)", () => {
   assert.deepEqual(planPr(["docs/delivery/GATES.md", "output/x/DELIVERY.md", "CHANGELOG.md"]).modes, FOUNDATION);
   assert.deepEqual(planPr([]).modes, FOUNDATION, "an empty diff still yields the one required check");
+});
+
+// ---- CI-SELECT (owner-approved 2026-10-10): internal/, cmd/ and migrations/ are NOT backend-only. ----
+// Verified root cause: the browser modes run the real Go API on the real PG fixture, but the planner treated internal/,
+// cmd/ and migrations/ as backend-only, so PR #30 (internal/live/stream.go — serves the A2/A3 comment stream that
+// --browser-live-console clicks) and PR #24 (internal/integrations/metareply) never ran --browser-live-console, and push
+// runs on r3/integration re-verified no trunk browser health at all. The fix is registry DATA: every browser mode
+// declares the internal packages its tests/foundation harness wires in its `lc_covers="..."` line (derived from the real
+// harness closure by output/ci-select-backend-browser/tools/derive-covers.mjs), and the planner selects from that data.
+
+test("internal/live/stream.go selects --browser-live-console (PR #30 root cause)", () => {
+  assert.ok(planPr(["internal/live/stream.go"], usage).modes.includes("--browser-live-console"));
+});
+
+test("internal/integrations/metareply/x.go selects --browser-live-console (PR #24 root cause)", () => {
+  assert.ok(planPr(["internal/integrations/metareply/x.go"], usage).modes.includes("--browser-live-console"));
+});
+
+test("a new migration selects every PG-fixture browser mode (the modes run on the migrated schema)", () => {
+  assert.ok(pgFull.length > 20, "the registry moved; update the oracle with it");
+  const modes = planPr(["migrations/0169_x.sql"], usage).modes;
+  for (const m of pgFull) assert.ok(modes.includes(m), `migrations/0169_x.sql did not select ${m}`);
+});
+
+test("docs-only and contracts-only diffs still select no browser mode", () => {
+  assert.deepEqual(planPr(["docs/delivery/GATES.md", "contracts/invariants.json", "架构.md"], usage).modes, FOUNDATION);
+});
+
+test("cmd/ changes select every PG-fixture browser mode (the modes drive the binaries cmd/ builds)", () => {
+  const modes = planPr(["cmd/api/main.go"], usage).modes;
+  for (const m of pgFull) assert.ok(modes.includes(m), `cmd/api/main.go did not select ${m}`);
+});
+
+test("shared platform packages select every PG-fixture browser mode", async () => {
+  const { SHARED_BACKEND_PACKAGES } = await import("../../scripts/dev/pr-modes.mjs");
+  for (const pkg of ["internal/platform", "internal/httpapi", "internal/command"]) {
+    assert.ok(pkg in SHARED_BACKEND_PACKAGES, `${pkg} must be a declared shared platform package`);
+    const modes = planPr([`${pkg}/x.go`], usage).modes;
+    for (const m of pgFull) assert.ok(modes.includes(m), `${pkg}/x.go did not select ${m}`);
+  }
+});
+
+test("an internal package no mode declares selects every PG-fixture browser mode until the gate classifies it", () => {
+  const modes = planPr(["internal/brandnewpkg/x.go"], usage).modes;
+  for (const m of pgFull) assert.ok(modes.includes(m), `internal/brandnewpkg/x.go did not select ${m}`);
+});
+
+test("lc_covers is registry DATA: declaring modes are selected by prefix match, non-declaring modes are not", () => {
+  const source = appendMode(usage, "--probe-covers", "  go test ./tests/foundation", "internal/probepkg");
+  assert.deepEqual(planPr(["internal/probepkg/x.go"], source).modes, [...FOUNDATION, "--probe-covers"]);
+  assert.deepEqual(planPr(["internal/probepkg/sub/deep.go"], source).modes, [...FOUNDATION, "--probe-covers"], "a nested package is covered by its parent's entry");
+  const modes = planPr(["internal/other/x.go"], source).modes; // nothing declares internal/other -> conservative PG rule
+  for (const m of pgFull) assert.ok(modes.includes(m), m);
+  assert.ok(!modes.includes("--probe-covers"), "the probe declares no other package");
+});
+
+test("backend changes never select the node-only browser modes (no Go harness, no PG fixture)", () => {
+  const nodeOnly = ["--browser-platform-site", "--browser-admin-shell", "--browser-picklist"];
+  for (const p of ["internal/live/stream.go", "cmd/api/main.go", "migrations/0169_x.sql", "internal/brandnewpkg/x.go"]) {
+    const modes = planPr([p], usage).modes;
+    for (const m of nodeOnly) assert.ok(!modes.includes(m), `${p} must not select ${m}`);
+  }
+});
+
+test("BACKEND_ONLY_PACKAGES is explicit classified data; listed packages select no browser mode (mechanism, synthetic list)", async () => {
+  const { BACKEND_ONLY_PACKAGES, backendBrowserModes } = await import("../../scripts/dev/pr-modes.mjs");
+  for (const [pkg, why] of Object.entries(BACKEND_ONLY_PACKAGES)) {
+    assert.ok(pkg.startsWith("internal/"), `${pkg}: only internal packages may be backend-only`);
+    assert.ok(typeof why === "string" && why.length > 10, `${pkg}: needs a one-line reason`);
+  }
+  // The 2026-10-10 derivation classified all 70 internal dirs as harness-wired (BACKEND_ONLY stays empty); the
+  // mechanism must still work for a future classification, proved here with a synthetic list.
+  assert.deepEqual(backendBrowserModes(["internal/classified/x.go"], usage, { "internal/classified": "synthetic: mechanism test" }), []);
+  assert.ok(backendBrowserModes(["internal/classified/x.go"], usage).length >= pgFull.length, "an undeclared package stays conservative until classified");
+});
+
+test("a registry without lc_covers data (historical source) stays maximally conservative", async () => {
+  const { backendBrowserModes } = await import("../../scripts/dev/pr-modes.mjs");
+  // Shape of a historical test-local.sh: usage line + dispatch branch, no BEGIN MODE REGISTRY (pre-T02 refs the CLI can meet).
+  const legacy = "printf 'Usage: bash scripts/dev/test-local.sh [foundation|--browser-x]\\n'\nif [[ $test_mode == --browser-x ]]; then\n  go test ./tests/foundation\nfi\n";
+  assert.deepEqual(backendBrowserModes(["internal/live/stream.go"], legacy), ["--browser-x"]);
 });
 
 test("legacy browser_* paths still select all browsers; a known untagged foundation file stays backend-only", () => {

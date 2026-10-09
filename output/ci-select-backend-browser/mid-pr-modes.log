@@ -1,0 +1,46 @@
+✔ docs, contracts, deploy files and node-test dirs run foundation-shards only (2.707917ms)
+✔ node tests of deploy scripts and of the CI planner are backend-only (they cannot change a browser) (1.8185ms)
+✔ internal/ is NOT backend-only any more: a package no mode declares falls to the conservative PG rule (CI-SELECT) (9.154333ms)
+✔ a UI path adds the whole browser set, including click-sweep and visual-lint (56.875666ms)
+✔ docs-only and output-only diffs keep the single required check (foundation-shards) (1.654041ms)
+✔ internal/live/stream.go selects --browser-live-console (PR #30 root cause) (3.082583ms)
+✔ internal/integrations/metareply/x.go selects --browser-live-console (PR #24 root cause) (2.585292ms)
+✔ a new migration selects every PG-fixture browser mode (the modes run on the migrated schema) (1.940709ms)
+✔ docs-only and contracts-only diffs still select no browser mode (0.1395ms)
+✔ cmd/ changes select every PG-fixture browser mode (the modes drive the binaries cmd/ builds) (2.34925ms)
+✔ shared platform packages select every PG-fixture browser mode (12.17ms)
+✔ an internal package no mode declares selects every PG-fixture browser mode until the gate classifies it (3.697625ms)
+✔ lc_covers is registry DATA: declaring modes are selected by prefix match, non-declaring modes are not (10.19075ms)
+✔ backend changes never select the node-only browser modes (no Go harness, no PG fixture) (10.810708ms)
+✔ BACKEND_ONLY_PACKAGES is explicit classified data; listed packages select no browser mode (mechanism, synthetic list) (5.177291ms)
+✔ a registry without lc_covers data (historical source) stays maximally conservative (0.672667ms)
+✔ legacy browser_* paths still select all browsers; a known untagged foundation file stays backend-only (1.287042ms)
+✔ legacy deploy prefixes remain selected and unrelated paths do not select smoke (6.060417ms)
+✔ the browser set is release-gate's browser-mode universe minus the documented exclusions (97.559708ms)
+✔ every real browser-tagged foundation file selects registry browser modes, including non-browser names (276.004875ms)
+✔ tagged runner discovery follows registry additions, command arrays and line continuations (4.157709ms)
+✔ deploy smoke is selected for its workflow, verdict/helpers and executable test inputs (4.766791ms)
+✔ new selection never drops legacy modes or deploy for any tracked path (2715.230625ms)
+✔ CLI classifies merge-base and explicit head, including removed tags, deleted files and renames (521.102375ms)
+✔ CLI selects modes the base added after divergence when the checkout is the PR merge (PR #22 review P1) (532.4295ms)
+✔ CLI reads the merge checkout's source when the base adds a browser tag after the fork (PR #22 review P1) (416.384083ms)
+✔ CLI explicit head and stdin include tags outside the checkout and uncommitted tag removals (280.854375ms)
+✔ compound/legacy tags and unknown source are conservative; known untagged source stays backend-only (7.049208ms)
+✔ explicit-head CLI derives tagged runner modes from that head's real registry (232.3945ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "架构.md" (174.84375ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "internal/示例.go" (172.796417ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "tests/foundation/plain\tname_test.go" (219.949ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, " deploy/scripts/synthetic-smoke.sh" (211.530833ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "架构.md" (211.934625ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "internal/示例.go" (184.71225ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "tests/foundation/plain\tname_test.go" (189.467541ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, " deploy/scripts/synthetic-smoke.sh" (168.258709ms)
+✔ stdin unions legacy trimming without trimming the source lookup path (104.575125ms)
+ℹ tests 38
+ℹ suites 0
+ℹ pass 38
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7000.5915

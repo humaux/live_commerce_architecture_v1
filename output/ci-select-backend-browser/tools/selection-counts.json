@@ -1,0 +1,64 @@
+{
+ "universe": {
+  "browser_modes": 51,
+  "pg_fixture_browser_modes": 47,
+  "go_seeded_covers_nonempty": 48,
+  "backend_only_packages": 0
+ },
+ "cases": {
+  "pr-30 b1bfbeb3 (internal/live/stream.go + internal/httpapi/live_stream.go)": {
+   "files": 11,
+   "modes": 49,
+   "browser_modes": 48,
+   "backend_driven_browser_modes": 48,
+   "selects_browser_live_console": true,
+   "browser_tagged_foundation_files": [],
+   "old_planner_browser_modes": 0
+  },
+  "pr-24 3034c407 (internal/integrations/metareply + meta/oauth)": {
+   "files": 68,
+   "modes": 49,
+   "browser_modes": 48,
+   "backend_driven_browser_modes": 48,
+   "selects_browser_live_console": true,
+   "browser_tagged_foundation_files": [],
+   "old_planner_browser_modes": 0
+  },
+  "internal/live/stream.go (mandated case 1)": {
+   "files": 1,
+   "modes": 49,
+   "browser_modes": 48,
+   "backend_driven_browser_modes": 48,
+   "selects_browser_live_console": true,
+   "browser_tagged_foundation_files": [],
+   "old_planner_browser_modes": 0
+  },
+  "internal/integrations/metareply/x.go (mandated case 2)": {
+   "files": 1,
+   "modes": 49,
+   "browser_modes": 48,
+   "backend_driven_browser_modes": 48,
+   "selects_browser_live_console": true,
+   "browser_tagged_foundation_files": [],
+   "old_planner_browser_modes": 0
+  },
+  "migrations/0169_x.sql (mandated case 3)": {
+   "files": 1,
+   "modes": 48,
+   "browser_modes": 47,
+   "backend_driven_browser_modes": 47,
+   "selects_browser_live_console": true,
+   "browser_tagged_foundation_files": [],
+   "old_planner_browser_modes": 0
+  },
+  "docs+contracts only (mandated case 4)": {
+   "files": 2,
+   "modes": 1,
+   "browser_modes": 0,
+   "backend_driven_browser_modes": 0,
+   "selects_browser_live_console": false,
+   "browser_tagged_foundation_files": [],
+   "old_planner_browser_modes": 0
+  }
+ }
+}

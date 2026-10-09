@@ -1,0 +1,110 @@
+commit 729afff93aaedda81faf1d1badf44ac3bea9cd85
+Author: humaux <luogangan7@gmail.com>
+Date:   Sat Oct 10 02:01:01 2026 +0800
+
+    ci: install only the Playwright engines each browser mode needs; bounded apt retries (#27)
+    
+    * ci: derive Playwright engines and bound apt dependency retries
+    
+    * docs(ci): deliver mode-specific Playwright deps and retry calibration
+    
+    * test(ci): create the untracked output/playwright parent before mkdtemp (PR #27 review)
+    
+    On a fresh checkout output/playwright does not exist, so five installer tests threw ENOENT and the
+    foundation Node gate failed. Red (dir absent): 5 pass/5 fail; green: 10/10.
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+    
+    * fix(auth): resend countdown reads the clock once (WebKit showed 61 s)
+    
+    sendStep1 called Date.now() twice (setNow, then setResendAt). When the two reads straddled a
+    millisecond, ceil((resendAt-now)/1000) rendered 'Send a new code in 61 s', so the reset
+    enumeration-parity test (known vs unknown address must render identical text) failed on the
+    slower WebKit engine in PR #27 CI run (password-auth step). Not an enumeration leak: the
+    cooldown is a client constant for both. Test unchanged.
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+    
+    ---------
+    
+    Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+
+diff --git a/.github/workflows/gates.yml b/.github/workflows/gates.yml
+index 32ce640f..b960efc2 100644
+--- a/.github/workflows/gates.yml
++++ b/.github/workflows/gates.yml
+@@ -4,6 +4,7 @@
+ #   2026-10-07 speed-up: a `plan` job fans the two long gates out (`--browser-click-sweep` -> N LC_SWEEP_SHARD slices, `--browser-visual-lint` -> M slices,
+ #   `foundation-shards` -> the balanced groups of scripts/dev/shard-plan.json) and an `aggregate` job proves the slices together cover the full universe.
+ # Depends on: scripts/dev/ci-plan.mjs (matrix), scripts/dev/shard-plan.mjs + shard-plan.json (foundation groups), scripts/dev/test-local.sh (modes),
++#   scripts/dev/ci-playwright-browsers.mjs (registry engine requirements), ci-playwright-install.sh (bounded apt retries),
+ #   scripts/dev/test-focused.sh (regex runs), tests/ui/sweep-aggregate.mjs (whole-run verdict), the pinned postgres image,
+ #   Playwright Chromium/WebKit for --browser-* modes (cached per Playwright version). No secrets: every gate uses MOCK/SANDBOX fixtures only.
+ # Used by: the integrator (`gh workflow run gates.yml --ref <branch> -f modes='[...]'`); pushes to r3/integration run
+@@ -108,35 +109,42 @@ jobs:
+         run: |
+           corepack enable
+           pnpm install --frozen-lockfile --ignore-scripts
++      - name: Browser requirements from registry
++        id: browsers
++        run: node scripts/dev/ci-playwright-browsers.mjs "$MODE"
+       - name: Playwright version (cache key)
+         id: pw
+-        if: startsWith(matrix.mode, '--browser') || startsWith(matrix.mode, '--stripe-browser')
++        if: steps.browsers.outputs.engines != ''
+         # The version pnpm resolved from the frozen lockfile: a new Playwright (new browser revisions) is a new cache key, a lockfile change that keeps it is a hit.
+         run: echo "version=$(pnpm exec playwright --version | awk '{print $NF}')" >> "$GITHUB_OUTPUT"
+       - name: Writable Playwright browser dir
+-        if: startsWith(matrix.mode, '--browser') || startsWith(matrix.mode, '--stripe-browser')
++        if: steps.browsers.outputs.engines != ''
+         run: sudo mkdir -p "$PLAYWRIGHT_BROWSERS_PATH" && sudo chown "$(id -u):$(id -g)" "$PLAYWRIGHT_BROWSERS_PATH"
+       - name: Restore Playwright browsers
+         id: pwcache
+-        if: startsWith(matrix.mode, '--browser') || startsWith(matrix.mode, '--stripe-browser')
++        if: steps.browsers.outputs.engines != ''
+         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+         with:
+           path: /opt/ms-playwright
+-          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-chromium-webkit
++          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-${{ steps.browsers.outputs.cache }}
++          restore-keys: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-chromium-webkit
+       - name: Browsers for browser modes
+-        if: startsWith(matrix.mode, '--browser') || startsWith(matrix.mode, '--stripe-browser')
+-        # With a cache hit the browser downloads are skipped; --with-deps still installs the system libraries and Xvfb (apt, not cacheable here).
+-        # Bounded: on 2026-10-08 this apt step hung for the whole 150-min job limit on 10+ jobs at once (PR #10), holding runners of the
+-        # 20-job free tier; a healthy install takes < 3 min, so a hang now fails fast and the integrator's triage reruns it as INFRA.
++        if: steps.browsers.outputs.engines != ''
++        # Always install the selected system deps; cached binaries do not imply apt packages exist.
++        # Three 240s attempts +15s kill grace each +two 10s backoffs <=785s; total step stays 15min.
+         timeout-minutes: 15
+-        run: pnpm exec playwright install --with-deps chromium webkit
++        env:
++          BROWSERS: ${{ steps.browsers.outputs.engines }}
++        run: |
++          read -r -a browsers <<< "$BROWSERS"
++          bash scripts/dev/ci-playwright-install.sh "${browsers[@]}"
+       - name: Save Playwright browsers
+         # Saved right after the install (not at job end), so a run whose gate then fails still seeds the cache. Parallel jobs racing for the same key only log a warning.
+-        if: ${{ (startsWith(matrix.mode, '--browser') || startsWith(matrix.mode, '--stripe-browser')) && steps.pwcache.outputs.cache-hit != 'true' }}
++        if: ${{ steps.browsers.outputs.engines != '' && steps.pwcache.outputs.cache-hit != 'true' }}
+         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+         with:
+           path: /opt/ms-playwright
+-          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-chromium-webkit
++          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-${{ steps.browsers.outputs.cache }}
+       - name: Download pinned test image
+         run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+       - name: Gate
+diff --git a/scripts/dev/test-node.sh b/scripts/dev/test-node.sh
+index dae583a8..81d8c5ec 100755
+--- a/scripts/dev/test-node.sh
++++ b/scripts/dev/test-node.sh
+@@ -59,7 +59,7 @@ node --test --experimental-strip-types tests/admin/import-wire-model.test.ts tes
+ 
+ # CI speed-up (2026-10-07): LC_SWEEP_SHARD partition + whole-run aggregate (click sweep, visual lint), the foundation shard plan and the gates.yml matrix planner. No browser, no PG.
+ node --test --experimental-strip-types tests/ui/sweep-shard-lib.test.mjs
+-node --test tests/ci/shard-plan.test.mjs tests/ci/ci-plan.test.mjs tests/ci/pr-modes.test.mjs tests/ci/mode-registry.test.mjs
++node --test tests/ci/shard-plan.test.mjs tests/ci/ci-plan.test.mjs tests/ci/pr-modes.test.mjs tests/ci/mode-registry.test.mjs tests/ci/playwright-deps.test.mjs
+ 
+ # LC-U2b browser registration (DB-free); the real UI spec is CI-only and must select its own authority suite.
+ node --test --experimental-strip-types tests/admin/inbox-privacy.test.ts tests/admin/inbox-copy.test.ts tests/admin/inbox-bff.test.ts
