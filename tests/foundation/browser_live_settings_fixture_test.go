@@ -25,6 +25,33 @@ type blsReceipt struct {
 	Effect   bool   `json:"effect"`
 }
 
+// TestBrowserLiveSettingsMockCommentsContract checks the actual fixture handler
+// against A2's seq/coverage envelope required by the merged comment-page parser.
+func TestBrowserLiveSettingsMockCommentsContract(t *testing.T) {
+	m := &blsMock{store: randomUUID(), scene: randomUUID(), bundle: randomUUID(), entry: randomUUID(), comment: "700_800"}
+	m.reset()
+	request := httptest.NewRequest(http.MethodGet, "/v1/admin/stores/"+m.store+"/live-sessions/"+m.scene+"/comments", nil)
+	response := httptest.NewRecorder()
+	if !m.serve(response, request, m.store) || response.Code != http.StatusOK {
+		t.Fatal("fixture A2 route unavailable")
+	}
+	var page map[string]any
+	if err := json.Unmarshal(response.Body.Bytes(), &page); err != nil {
+		t.Fatal("fixture A2 JSON invalid")
+	}
+	if exhausted, ok := page["scan_exhausted"].(bool); !ok || !exhausted {
+		t.Error("fixture's complete one-row page needs explicit A2 scan_exhausted=true")
+	}
+	rows, ok := page["items"].([]any)
+	if !ok || len(rows) != 1 {
+		t.Fatal("fixture one-row projection missing")
+	}
+	row, ok := rows[0].(map[string]any)
+	if !ok || row["seq"] != float64(1) {
+		t.Error("fixture's live comment needs A2 seq=1, matching the cursor")
+	}
+}
+
 // TestBrowserLiveSettingsMockRequiresMerchantTemplate guards the test backend against accepting a fixed template PUT.
 func TestBrowserLiveSettingsMockRequiresMerchantTemplate(t *testing.T) {
 	m := &blsMock{store: randomUUID(), scene: randomUUID()}
@@ -194,9 +221,9 @@ func (m *blsMock) serve(w http.ResponseWriter, r *http.Request, store string) bo
 			consoleJSON(w, 200, s.read())
 			return true
 		case base + "/comments":
-			row := map[string]any{"ref": m.comment, "parent_ref": nil, "created_at": "2030-01-01T00:00:00Z", "author_name": "PRIVATE_BUYER_SENTINEL", "text": "PRIVATE_COMMENT_SENTINEL", "is_page": false, "has_attachment": false,
+			row := map[string]any{"ref": m.comment, "seq": 1, "parent_ref": nil, "created_at": "2030-01-01T00:00:00Z", "author_name": "PRIVATE_BUYER_SENTINEL", "text": "PRIVATE_COMMENT_SENTINEL", "is_page": false, "has_attachment": false,
 				"marks": map[string]any{"intake": nil, "claim": map[string]any{"status": "ACCEPTED", "reason": nil, "offer_id": m.entry, "keyword": "A1", "quantity": 1, "bundle_id": m.bundle}, "private_reply": nil, "printed": nil, "public_replies": 0, "private_reply_available": false, "private_reply_unavailable_reason": "no_source"}}
-			consoleJSON(w, 200, map[string]any{"epoch": 1, "reset": false, "items": []any{row}, "next": map[string]any{"epoch": 1, "seq": 1}, "older_cursor": nil, "stream": map[string]any{"state": "live", "source_platform": "facebook", "video_embeddable": false}})
+			consoleJSON(w, 200, map[string]any{"epoch": 1, "reset": false, "scan_exhausted": true, "items": []any{row}, "next": map[string]any{"epoch": 1, "seq": 1}, "older_cursor": nil, "stream": map[string]any{"state": "live", "source_platform": "facebook", "video_embeddable": false}})
 			return true
 		}
 		return false
