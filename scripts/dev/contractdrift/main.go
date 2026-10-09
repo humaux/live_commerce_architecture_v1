@@ -71,10 +71,13 @@ func run(args []string, out, errOut io.Writer) int {
 	}
 	legacy, prior := baselineMap(b), baselineMap(old)
 	// Baseline positions describe seeding, not necessarily today's base: parse the immutable base for deletion provenance.
-	baseFindings, err := mergeBaseFindings(root, changes.Base)
+	baseSource, err := mergeBaseInventories(root, changes.Base)
 	if err != nil {
 		return fail(err)
 	}
+	baseFindings := compare(baseSource.Go, baseSource.Contracts, baseSource.BFF)
+	regressions := bffRegressions(baseSource, sourceInventories{goInv, docInv, bffInv})
+	findings = append(findings, regressions...)
 	baseFacts := baseline{Version: 1, Entries: baseFindings}
 	baseIssues := map[string]finding{}
 	for _, f := range baseFindings {
@@ -108,6 +111,9 @@ func run(args []string, out, errOut io.Writer) int {
 		}
 	}
 	if *write {
+		if len(regressions) > 0 {
+			return fail(fmt.Errorf("BFF_REMOVED cannot be grandfathered: %s", regressions[0].Detail))
+		}
 		seed := baseline{Version: 1, Seed: changes.Base, Entries: []finding{}}
 		for _, f := range findings {
 			if !mismatchKinds[f.Kind] {
@@ -154,7 +160,9 @@ func run(args []string, out, errOut io.Writer) int {
 	for _, f := range findings {
 		counts[f.Kind]++
 		level, reason := "INFO", ""
-		if mismatchKinds[f.Kind] {
+		if f.Kind == "BFF_REMOVED" {
+			level, reason = "ERROR", "merge-base regression"
+		} else if mismatchKinds[f.Kind] {
 			if _, ok := legacy[findingKey(f)]; !ok {
 				level, reason = "ERROR", "NEW"
 			} else if touched(f, baseFacts, changes) || !oldExists && touched(f, b, changes) {

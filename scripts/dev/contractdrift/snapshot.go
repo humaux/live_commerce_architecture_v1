@@ -13,27 +13,37 @@ import (
 	"strings"
 )
 
+type sourceInventories struct{ Go, Contracts, BFF inventory }
+
 func mergeBaseFindings(root, sha string) ([]finding, error) {
-	dirs, err := gitRead(root, "ls-tree", "--name-only", sha, "--", "internal", "cmd", "apps", "contracts", "go.mod")
+	base, err := mergeBaseInventories(root, sha)
 	if err != nil {
 		return nil, err
 	}
+	return compare(base.Go, base.Contracts, base.BFF), nil
+}
+
+func mergeBaseInventories(root, sha string) (sourceInventories, error) {
+	dirs, err := gitRead(root, "ls-tree", "--name-only", sha, "--", "internal", "cmd", "apps", "contracts", "go.mod")
+	if err != nil {
+		return sourceInventories{}, err
+	}
 	names := strings.Fields(string(dirs))
 	if len(names) == 0 {
-		return nil, fmt.Errorf("merge base has no API source trees")
+		return sourceInventories{}, fmt.Errorf("merge base has no API source trees")
 	}
 	args := append([]string{"archive", sha, "--"}, names...)
 	data, err := gitRead(root, args...)
 	if err != nil {
-		return nil, err
+		return sourceInventories{}, err
 	}
 	parent := filepath.Join(root, "output", "playwright", "ci-contract-drift")
 	if err := os.MkdirAll(parent, 0700); err != nil {
-		return nil, err
+		return sourceInventories{}, err
 	}
 	tmp, err := os.MkdirTemp(parent, "base-source-")
 	if err != nil {
-		return nil, err
+		return sourceInventories{}, err
 	}
 	defer os.RemoveAll(tmp)
 	tr := tar.NewReader(bytes.NewReader(data))
@@ -43,7 +53,7 @@ func mergeBaseFindings(root, sha string) ([]finding, error) {
 			break
 		}
 		if err != nil {
-			return nil, err
+			return sourceInventories{}, err
 		}
 		if h.Typeflag != tar.TypeReg {
 			continue
@@ -54,36 +64,36 @@ func mergeBaseFindings(root, sha string) ([]finding, error) {
 		}
 		clean := filepath.Clean(h.Name)
 		if filepath.IsAbs(clean) || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
-			return nil, fmt.Errorf("unsafe source archive entry")
+			return sourceInventories{}, fmt.Errorf("unsafe source archive entry")
 		}
 		dst := filepath.Join(tmp, clean)
 		if err := os.MkdirAll(filepath.Dir(dst), 0700); err != nil {
-			return nil, err
+			return sourceInventories{}, err
 		}
 		f, err := os.OpenFile(dst, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 		if err != nil {
-			return nil, err
+			return sourceInventories{}, err
 		}
 		_, copyErr := io.Copy(f, tr)
 		closeErr := f.Close()
 		if copyErr != nil {
-			return nil, copyErr
+			return sourceInventories{}, copyErr
 		}
 		if closeErr != nil {
-			return nil, closeErr
+			return sourceInventories{}, closeErr
 		}
 	}
 	g, err := scanGo(tmp)
 	if err != nil {
-		return nil, err
+		return sourceInventories{}, err
 	}
 	d, err := scanContracts(tmp)
 	if err != nil {
-		return nil, err
+		return sourceInventories{}, err
 	}
 	b, err := scanBFF(tmp)
 	if err != nil {
-		return nil, err
+		return sourceInventories{}, err
 	}
-	return compare(g, d, b), nil
+	return sourceInventories{g, d, b}, nil
 }

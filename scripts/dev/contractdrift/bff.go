@@ -36,7 +36,7 @@ type bffScanner struct {
 const bffStorePrefix = "/v1/admin/stores/{}/"
 
 func scanBFF(root string) (inventory, error) {
-	s := &bffScanner{reader: &bffReader{root: root, modules: map[string]*bffModule{}}, seen: map[string]bool{}}
+	s := &bffScanner{reader: &bffReader{root: root, modules: map[string]*bffModule{}}, seen: map[string]bool{}, out: inventory{Producers: map[string][]route{}}}
 	err := filepath.WalkDir(filepath.Join(root, "apps"), func(p string, d fs.DirEntry, e error) error {
 		if e != nil {
 			if p == filepath.Join(root, "apps") {
@@ -57,7 +57,7 @@ func scanBFF(root string) (inventory, error) {
 			if e != nil {
 				return e
 			}
-			s.leaf(m)
+			s.producer(name, func() { s.leaf(m) })
 		}
 		return nil
 	})
@@ -65,18 +65,26 @@ func scanBFF(root string) (inventory, error) {
 		return s.out, err
 	}
 	if m, e := s.reader.load("apps/storefront/proxy.ts"); e == nil {
-		s.primaryOrigin(m)
+		s.producer(m.name, func() { s.primaryOrigin(m) })
 	}
 	if m, e := s.reader.load("apps/admin/proxy.ts"); e == nil {
 		for _, sink := range []string{"fetch", "callBackend", "privateIdentity", "merchantBackend"} {
 			if len(bffCalls(m, m.tokens, sink)) > 0 {
-				s.directSinks(m, bffExports(m), bffLeafRefs(m)...)
+				s.producer(m.name, func() { s.directSinks(m, bffExports(m), bffLeafRefs(m)...) })
 				break
 			}
 		}
 	}
 	s.dedupe()
 	return s.out, nil
+}
+
+// Capture each forwarding root before aggregate dedupe. Shared admissions must be evaluated for every producer.
+func (s *bffScanner) producer(name string, scan func()) {
+	s.seen = map[string]bool{}
+	start := len(s.out.Routes)
+	scan()
+	s.out.Producers[name] = append([]route(nil), s.out.Routes[start:]...)
 }
 func (s *bffScanner) dedupe() {
 	routes := map[string]route{}

@@ -146,6 +146,36 @@ func compare(goInv, contracts, bff inventory) []finding {
 	})
 	return out
 }
+
+// Previously exposed BFF mappings cannot disappear behind aggregate backend-only INFO or another producer.
+// Complete retirement requires deleting the formerly present Go route and contract in the same PR.
+func bffRegressions(base, now sourceInventories) []finding {
+	oldGo, oldDocs := routeMap(base.Go), routeMap(base.Contracts)
+	goRoutes, docRoutes := routeMap(now.Go), routeMap(now.Contracts)
+	out := []finding{}
+	for producer, routes := range base.BFF.Producers {
+		current := routeMap(inventory{Routes: now.BFF.Producers[producer]})
+		for key, before := range routeMap(inventory{Routes: routes}) {
+			if _, ok := current[key]; ok {
+				continue
+			}
+			_, wasGo := oldGo[key]
+			_, wasDoc := oldDocs[key]
+			_, stillGo := goRoutes[key]
+			_, stillDoc := docRoutes[key]
+			if wasGo && wasDoc && !stillGo && !stillDoc {
+				continue
+			}
+			refs := append([]location(nil), before.Locations...)
+			for _, after := range current {
+				refs = append(refs, after.Locations...)
+			}
+			out = append(out, finding{Kind: "BFF_REMOVED", Method: before.Method, Path: before.Path,
+				Detail: "merge-base forwarding mapping removed or retargeted: " + producer, Locations: locations(refs)})
+		}
+	}
+	return out
+}
 func decodeBaseline(data []byte) (baseline, error) {
 	var b baseline
 	d := json.NewDecoder(strings.NewReader(string(data)))

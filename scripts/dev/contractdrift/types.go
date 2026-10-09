@@ -29,6 +29,8 @@ type inventory struct {
 	Routes     []route
 	Unresolved []finding
 	Notes      []finding
+	// BFF origin is the actual scanned forwarding root, never guessed from dependency locations.
+	Producers map[string][]route
 }
 
 var param = regexp.MustCompile(`\{[^/{}]+\}|\[\[?[^/\]]+\]\]?|:[A-Za-z_][A-Za-z_0-9]*`)

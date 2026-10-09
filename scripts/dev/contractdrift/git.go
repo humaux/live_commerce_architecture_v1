@@ -37,17 +37,25 @@ func diffPath(raw string) string {
 }
 func parseDiff(data []byte, c *changes) {
 	old, newPath := "", ""
+	inHunk := false
 	for _, line := range strings.Split(string(data), "\n") {
-		if strings.HasPrefix(line, "--- ") {
+		if strings.HasPrefix(line, "diff --git ") {
+			old, newPath, inHunk = "", "", false
+			continue
+		}
+		// A removed '-- ' or added '++ ' source line looks like a file header inside a hunk.
+		// Only the header block of a new diff --git section can set file ownership.
+		if !inHunk && strings.HasPrefix(line, "--- ") {
 			old = diffPath(line[4:])
 		}
-		if strings.HasPrefix(line, "+++ ") {
+		if !inHunk && strings.HasPrefix(line, "+++ ") {
 			newPath = diffPath(line[4:])
 		}
 		m := diffHunk.FindStringSubmatch(line)
 		if m == nil {
 			continue
 		}
+		inHunk = true
 		for i, dst := range []map[string][]lineRange{c.Previous, c.Current} {
 			start, _ := strconv.Atoi(m[1+i*2])
 			count := 1
