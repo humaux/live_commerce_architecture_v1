@@ -237,6 +237,8 @@ func (s *goScanner) expr(expr ast.Expr, e goEnv) goValue {
 				a := s.expr(arg, e)
 				if x.Ellipsis.IsValid() {
 					v.Items = append(v.Items, a.Items...)
+					// A finite prefix does not prove that an opaque expanded tail is empty.
+					v.Unknown = v.Unknown || a.Unknown
 				} else {
 					v.Items = append(v.Items, a)
 				}

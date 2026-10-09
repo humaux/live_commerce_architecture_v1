@@ -35,6 +35,39 @@ func goRouteKeys(inv inventory) map[string]route {
 	}
 	return out
 }
+
+func TestGoUnknownRangeTailRetainsKnownRoutesAndProvenance(t *testing.T) {
+	for _, setup := range []string{
+		`paths := append([]string{"/known"}, dynamicPaths()...)`,
+		`paths := []string{}; if enabled { paths = []string{"/known"} } else { paths = dynamicPaths() }`,
+	} {
+		inv := goFixture(t, map[string]string{"internal/httpapi/routes.go": `package httpapi
+import "net/http"
+func register(mux *http.ServeMux, enabled bool) {
+ ` + setup + `
+ for _, p := range paths { mux.HandleFunc("GET "+p, handler) }
+}
+func dynamicPaths() []string { return []string{"/unknown"} }
+func handler(w http.ResponseWriter, r *http.Request) {}
+`})
+		if _, ok := goRouteKeys(inv)["GET /known"]; !ok {
+			t.Fatalf("lost known alternative: %+v", inv)
+		}
+		if len(inv.Unresolved) != 1 {
+			t.Fatalf("lost unknown alternative: %+v", inv)
+		}
+		lines := map[int]bool{}
+		for _, ref := range inv.Unresolved[0].Locations {
+			lines[ref.Line] = true
+		}
+		for _, line := range []int{4, 5, 7} {
+			if !lines[line] {
+				t.Errorf("unknown must retain assignment, registration and dynamic producer line %d: %+v", line, inv.Unresolved[0])
+			}
+		}
+	}
+}
+
 func TestGoLexicalAliasesAndReassignment(t *testing.T) {
 	inv := goFixture(t, map[string]string{"internal/httpapi/routes.go": `package httpapi
 import h "net/http"

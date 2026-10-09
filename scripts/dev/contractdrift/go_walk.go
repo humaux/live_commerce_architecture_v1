@@ -143,8 +143,9 @@ func (s *goScanner) stmt(stmt ast.Stmt, e goEnv) {
 			return
 		}
 		before := goClone(e)
-		if len(items) == 0 {
-			items = []goValue{{Unknown: true, Refs: seq.Refs}}
+		if seq.Unknown || len(items) == 0 {
+			// Scan unknown alternatives even when a branch/append also supplied known items.
+			items = append(append([]goValue{}, items...), goValue{Unknown: true, Refs: goRefs(seq.Refs, []location{s.loc(x.X)})})
 		}
 		for _, item := range items {
 			scope := append(e, map[string]goValue{})
@@ -289,6 +290,17 @@ func (s *goScanner) fallback(expr ast.Expr, e goEnv) (bool, []location) {
 	if !ok {
 		return false, nil
 	}
+	// Only the unshadowed net/http conversion is transparent; constructor names prove nothing.
+	if sel, ok := call.Fun.(*ast.SelectorExpr); ok && sel.Sel.Name == "HandlerFunc" && len(call.Args) == 1 {
+		if id, ok := sel.X.(*ast.Ident); ok && id.Name == s.File.HTTP && s.File.HTTP != "" {
+			if _, shadowed := e.lookup(id.Name); !shadowed {
+				if _, literal := call.Args[0].(*ast.FuncLit); literal {
+					proof, refs := s.fallback(call.Args[0], e)
+					return proof, goRefs(refs, []location{s.loc(call), s.File.ImportRefs[id.Name]})
+				}
+			}
+		}
+	}
 	fn := s.Package.Named[goCallName(call.Fun)]
 	if _, shadowed := e.lookup(goCallName(call.Fun)); shadowed {
 		fn = nil
@@ -415,7 +427,7 @@ func (s *goScanner) registration(c *ast.CallExpr, e goEnv) {
 			// ponytail: no mux identity is tracked; a constructor name or sibling routes cannot prove this child.
 			mountRefs := goRefs(patternRefs, s.expr(c.Args[1], e).Refs)
 			s.Out.Notes = append(s.Out.Notes, finding{Kind: "GO_MOUNT_OR_FALLBACK", Path: normalizePath(fields[0]), Detail: "methodless registration; child paths remain absolute unless StripPrefix is explicit", Locations: mountRefs})
-			if sel, ok := c.Fun.(*ast.SelectorExpr); ok && (sel.Sel.Name == "Handle" || !fallback) {
+			if sel, ok := c.Fun.(*ast.SelectorExpr); ok && !fallback {
 				method, detail := "MOUNT", "opaque Go methodless mount; child route identity is unproven"
 				// MOUNT cannot justify child coverage in compare: even '/' may be an empty/404 handler.
 				// Existing explicit custom guards and HandleFunc paths keep their EXACT/PREFIX evidence.
