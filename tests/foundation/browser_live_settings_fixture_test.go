@@ -68,6 +68,9 @@ func TestBrowserLiveSettingsMockPR31Sources(t *testing.T) {
 					t.Fatal("regression source route unavailable")
 				}
 				var body map[string]any
+				if scenario == "missing-reminders" && strings.HasSuffix(resource, "/reminders") && response.Code == http.StatusNotFound && response.Header().Get("Content-Type") == "text/plain; charset=utf-8" {
+					return response.Code, body
+				}
 				if json.Unmarshal(response.Body.Bytes(), &body) != nil {
 					t.Fatal("regression source invalid JSON")
 				}
@@ -138,6 +141,37 @@ func TestBrowserLiveSettingsMockPR31Sources(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// The BFF distinguishes an unmounted Go route from a JSON404 scope-loss response.
+// This wire assertion prevents an optional-service fixture from weakening that privacy boundary.
+func TestBrowserLiveSettingsMockUnmountedReminderWire(t *testing.T) {
+	m := &blsMock{store: randomUUID(), scene: randomUUID()}
+	m.reset()
+	m.fault = "missing-reminders"
+	for _, method := range []string{http.MethodGet, http.MethodPost} {
+		t.Run(method, func(t *testing.T) {
+			response := httptest.NewRecorder()
+			request := httptest.NewRequest(method, "/v1/admin/stores/"+m.store+"/live-sessions/"+m.scene+"/reminders", nil)
+			request.Header.Set("Idempotency-Key", "fixture-unmounted-wire")
+			if !m.serve(response, request, m.store) {
+				t.Fatal("unmounted route fixture was not handled")
+			}
+			if response.Code != http.StatusNotFound || response.Header().Get("Content-Type") != "text/plain; charset=utf-8" || response.Body.String() != "404 page not found\n" {
+				t.Fatal("unmounted route must reproduce Go http.NotFound status, content type and exact plain body")
+			}
+			if m.triggered || len(m.receipts) != 0 {
+				t.Fatal("unmounted reminder route recorded a command effect")
+			}
+		})
+	}
+	// A missing scoped resource stays JSON not_found; it must never be mistaken for an unmounted service.
+	response := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/v1/admin/stores/"+m.store+"/live-sessions/"+randomUUID()+"/reminders", nil)
+	m.serve(response, request, m.store)
+	if response.Code != http.StatusNotFound || response.Header().Get("Content-Type") != "application/json" || !strings.Contains(response.Body.String(), `"code":"not_found"`) {
+		t.Fatal("scope/resource absence must retain JSON404 not_found")
 	}
 }
 
@@ -288,7 +322,7 @@ func (m *blsMock) serve(w http.ResponseWriter, r *http.Request, store string) bo
 	}
 	// Fault represents an unmounted optional read/send service, before receipt/effect handling.
 	if path == base+"/reminders" && m.fault == "missing-reminders" {
-		consoleJSON(w, 404, map[string]any{"code": "not_found"})
+		http.NotFound(w, r)
 		return true
 	}
 	if r.Method == "GET" {
