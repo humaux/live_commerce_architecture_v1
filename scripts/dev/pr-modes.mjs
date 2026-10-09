@@ -13,14 +13,19 @@
 //   tests/foundation/browser_* or browser-tagged Go sources, tests/deploy/ and tests/ci/ (node tests of shell scripts / this planner; scripts/ itself stays UI), and *.md anywhere. Everything else (apps/ packages/ tests/admin/ tests/e2e/ tests/ui/ scripts/ .github/ playwright.config.ts, package files...) is a UI path.
 // Docs-only (docs/, output/, *.md, contracts/) is a subset of backend-only: it runs foundation-shards (cheap, keeps the single required check) and no browser mode.
 //
-// CI-SELECT (owner-approved 2026-10-10): internal/, cmd/ and migrations/ are NOT backend-only — every Go-seeded browser mode runs the real Go API on the real migrated PG, so
-//   e.g. an internal/live/stream.go change alters what --browser-live-console exercises (verified root cause of PR #30/#24: both changed internal/ server code and merged
-//   without any browser mode; push runs on r3/integration re-verified no trunk browser health either — see the schedule trigger in gates.yml). Their selection is registry
-//   DATA, never a planner hand-list: each browser mode declares the internal packages its tests/foundation harness wires in its `lc_covers="..."` line, derived from the real
-//   harness closure (direct imports, transitive internal import graph of what it constructs, and the cmd/ binaries it builds/runs) by
-//   output/ci-select-backend-browser/tools/derive-covers.mjs. Rules: a changed internal/<pkg>/** selects every mode whose lc_covers contains that package (prefix match);
-//   cmd/**, migrations/**, the SHARED_BACKEND_PACKAGES below, and any package no mode declares select every lc_fixture=pg browser mode (conservative);
-//   BACKEND_ONLY_PACKAGES-listed packages select none. scripts/dev/check-backend-coverage.mjs (check-gates) fails until a new internal package is lc_covers-covered or listed.
+// CI-SELECT (owner-approved 2026-10-10; round 2 "Narrow per domain + nightly"): internal/, cmd/ and migrations/ are NOT backend-only — every Go-seeded browser mode runs the
+//   real Go API on the real migrated PG, so e.g. an internal/live/stream.go change alters what --browser-live-console exercises (verified root cause of PR #30/#24: both
+//   changed internal/ server code and merged without any browser mode; push runs on r3/integration re-verified no trunk browser health either — see the schedule trigger in
+//   gates.yml). Round 1 derived lc_covers from the harness import CLOSURE, which gave 48/51 modes all 70 packages (every harness boots the full httpapi.NewHandler), making
+//   any backend PR as heavy as a UI PR. Round 2 replaces each mode's covers with the DOMAIN packages it actually EXERCISES, derived evidence-first by
+//   output/ci-select-backend-browser/tools/derive-narrow-covers.mjs: (a) path evidence — the API URLs its Playwright specs / node runners / Go harness call, mapped through
+//   the admin+storefront BFF pass-through rules and route-file literals onto the real registrations in internal/{httpapi,identityhttp,buyerhttp}, each registration
+//   attributed to the service packages its handler statement references; (b) narrow Go fixture evidence — the direct internal imports of the mode's OWN harness files and
+//   the consumer-import rule for packages no mode names directly (recorded per mode in output/ci-select-backend-browser/covers-derivation.json). Deliberately NOT the
+//   transitive closure below the called handlers: deeper service coupling is the nightly full-matrix's job (the owner's chosen safety net). Rules: a changed
+//   internal/<pkg>/** selects every mode whose lc_covers contains that package (prefix match); cmd/**, migrations/**, the SHARED_BACKEND_PACKAGES below, and any package
+//   no mode declares select every lc_fixture=pg browser mode (conservative); BACKEND_ONLY_PACKAGES-listed packages select none.
+//   scripts/dev/check-backend-coverage.mjs (check-gates) fails until a new internal package is lc_covers-covered, SHARED, or BACKEND_ONLY-listed.
 //
 // Excluded browser modes (EXCLUDED_MODES): modes of release-gate's browser universe that cannot run on a GitHub runner. Currently only `--stripe-browser`: its SP18 step needs a Stripe
 //   test-mode key (STRIPE_SECRET_KEY in secrets.env + STRIPE_BROWSER=1 STRIPE_SANDBOX=1), gates.yml has no secrets by design, so it would end NOT_RUN. It stays an integrator-run
@@ -126,33 +131,54 @@ function hasBrowserTag(source) {
 }
 
 /**
- * Explicit classification list (CI-SELECT): internal packages that no browser harness wires, so a change under them
- * selects no browser mode. Every entry needs a one-line reason, and scripts/dev/check-backend-coverage.mjs fails the
- * gate when an internal package is neither lc_covers-covered nor listed here. EMPTY by the 2026-10-10 derivation
- * (output/ci-select-backend-browser/tools/): all 70 internal package dirs are wired by the Go-seeded browser harnesses —
- * the shared httpapi.NewHandler constructs every service internally, the harness closure imports 54–57 packages
- * directly, and the process tests build/run the real cmd/* binaries (this is how internal/tlsask, mounted only by
- * cmd/api, is still exercised by --browser-identity). A new entry must come from that derivation, not from a guess.
+ * Explicit classification list (CI-SELECT): internal packages no CI-runnable browser mode exercises, so a change
+ * under them selects no browser mode (the nightly full matrix and foundation-shards still run). Every entry needs a
+ * one-line reason, and scripts/dev/check-backend-coverage.mjs fails the gate when an internal package is neither
+ * lc_covers-covered, SHARED, nor listed here. Round-2 entries come from the 2026-10-10 narrow derivation
+ * (output/ci-select-backend-browser/tools/r2-diagnostics.txt: uncovered-package importer listings) — a new entry must
+ * come from that derivation's evidence, not from a guess. Round 1's list was empty because the import CLOSURE made
+ * every package "wired"; round 2 asks what the specs/harnesses actually EXERCISE.
  */
-export const BACKEND_ONLY_PACKAGES = {};
-
-/**
- * Shared platform packages every PG-fixture browser mode mounts (CI-SELECT task rule): a change under any of them
- * selects all of them. They are also lc_covers-covered individually; this list keeps the conservative rule explicit
- * for refactors that move code between them.
- */
-export const SHARED_BACKEND_PACKAGES = {
-  "internal/platform": "runtime configuration/service container every browser harness and cmd binary constructs",
-  "internal/httpapi": "the monolithic handler the browser harnesses mount; it constructs its services internally",
-  "internal/command": "the command bus every service dispatches through",
+export const BACKEND_ONLY_PACKAGES = {
+  "internal/tlsask": "TLS-ask listener middleware wired only by cmd/api main (cmd/api/tlsask.go); browser harnesses serve plain HTTP in-process and never construct it — a cmd/api change still selects all Go-booting browser modes via the cmd/** rule",
+  "internal/retention": "retention sweeps run only in cmd/claims-worker and cmd/retention-admin; no browser harness starts a worker, and browser fixtures are always newer than any retention horizon",
+  "internal/integrations/shipping/ecpay/ecpayroute": "CVS routing table consumed only by cmd/claims-worker and the non-browser taiwan-cvs foundation tests; --browser-cvs drives the ecpaytest fake (lc_covers), not worker routing",
 };
 
 /**
- * Browser modes selected by backend paths alone (internal/, cmd/, migrations/) — CI-SELECT. Selection is registry DATA:
- * lc_covers prefix match first; conservative every-lc_fixture=pg-browser-mode fallback for cmd/, migrations/, shared
- * platform packages and packages no mode declares (a new package selects everything until check-backend-coverage
- * classifies it); none for BACKEND_ONLY_PACKAGES. Historical sources without the native registry carry no lc_covers
- * data, so they fall back to the whole browser universe rather than silently selecting nothing.
+ * Shared cross-cutting packages (CI-SELECT task rule): a change under any of them selects every Go-booting browser
+ * mode, conservatively — they sit on the boot path or in the request grammar of every harness, so narrowing them per
+ * domain would under-select on refactors. The Go-booting set is the 47 lc_fixture=pg modes plus
+ * --browser-tracking-backfill (lc_fixture=none, but it boots the real Go API against the real PG through
+ * scripts/dev/test-focused.sh); the three node-only modes boot no Go and stay out. Round-2 membership is decided from
+ * the derivation's per-package mode counts (r2-diagnostics.txt): each entry below is exercised by 30+ of the 48
+ * Go-seeded modes or is constructed at API boot. They are subtracted from the lc_covers lines (a covers entry would be
+ * redundant with this rule).
+ */
+export const SHARED_BACKEND_PACKAGES = {
+  "internal/platform": "runtime configuration/service container every browser harness and cmd binary constructs (evidence: 45/48 Go-seeded modes)",
+  "internal/httpapi": "the monolithic handler the browser harnesses mount; it constructs its services internally (45/48)",
+  "internal/command": "the command bus every service dispatches through (43/48)",
+  "internal/httperror": "response/error grammar every handler of all three HTTP surfaces answers through (44/48)",
+  "internal/pagination": "shared page/request grammar of every paginated admin and buyer list route (35/48)",
+  "internal/identity": "auth/session/identity service: every admin browser mode completes login and session checks through it (34/48)",
+  "internal/identityhttp": "identity HTTP surface (login/session/staff/password) mounted at every harness boot (34/48)",
+  "internal/oidclogin": "OIDC login flow every authenticated admin browser mode walks through (31/48)",
+  "internal/integrations/psp/stripe": "Stripe PSP adapter the internal/platform runtime constructs at API boot (internal/platform/stripe_runtime.go) — boot path of every harness",
+};
+
+/**
+ * Browser modes selected by backend paths alone (internal/, cmd/, migrations/) — CI-SELECT. Selection is registry DATA,
+ * resolved most-specific first: cmd/, migrations/ and SHARED_BACKEND_PACKAGES prefixes select every Go-booting browser
+ * mode (lc_fixture=pg plus any mode with non-empty lc_covers — the gate forces a Go-running mode to declare covers, so
+ * this is exactly the set that boots the real Go API, including --browser-tracking-backfill which uses real PG without
+ * the shared fixture script); BACKEND_ONLY_PACKAGES select none EVEN under a covered ancestor prefix (an explicit
+ * per-package classification beats a general one — e.g. ecpayroute inside the covered ecpay prefix); then lc_covers
+ * prefix match selects the declaring modes; anything else falls back to every Go-booting mode until
+ * check-backend-coverage classifies it. check-backend-coverage fails contradictory data (a covers entry inside
+ * BACKEND_ONLY, a package both SHARED and BACKEND_ONLY), so this precedence can never silently hide a classification.
+ * Historical sources without the native registry carry no lc_covers data, so they fall back to the whole browser
+ * universe rather than silently selecting nothing.
  */
 export function backendBrowserModes(paths, source, backendOnly = BACKEND_ONLY_PACKAGES) {
   const hits = paths.filter((p) => p.startsWith("internal/") || p.startsWith("cmd/") || p.startsWith("migrations/"));
@@ -160,19 +186,19 @@ export function backendBrowserModes(paths, source, backendOnly = BACKEND_ONLY_PA
   if (!source.includes("# BEGIN MODE REGISTRY")) return browserModes(source);
   const entries = modeEntries(source);
   const universe = new Set(browserModes(source));
-  const pg = entries.filter((e) => universe.has(e.name) && e.fixture === "pg").map((e) => e.name);
+  const goBoot = entries.filter((e) => universe.has(e.name) && (e.fixture === "pg" || (e.covers ?? []).length > 0)).map((e) => e.name);
   const under = (dir, pkg) => dir === pkg || dir.startsWith(pkg + "/");
   const selected = new Set();
   for (const p of hits) {
     const dir = path.posix.dirname(p);
     if (p.startsWith("cmd/") || p.startsWith("migrations/") || Object.keys(SHARED_BACKEND_PACKAGES).some((s) => under(dir, s))) {
-      for (const m of pg) selected.add(m);
+      for (const m of goBoot) selected.add(m);
       continue;
     }
+    if (Object.keys(backendOnly).some((b) => under(dir, b))) continue;
     const covering = entries.filter((e) => (e.covers ?? []).some((c) => under(dir, c))).map((e) => e.name);
     if (covering.length) { for (const m of covering) selected.add(m); continue; }
-    if (Object.keys(backendOnly).some((b) => under(dir, b))) continue;
-    for (const m of pg) selected.add(m); // undeclared package: conservative until check-backend-coverage classifies it
+    for (const m of goBoot) selected.add(m); // undeclared package: conservative until check-backend-coverage classifies it
   }
   return [...selected].filter((m) => !(m in EXCLUDED_MODES));
 }

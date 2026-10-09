@@ -1,8 +1,10 @@
 // Purpose: red→green tests of the CI-SELECT classification gate (scripts/dev/check-backend-coverage.mjs): every directory under
-//   internal/ must be wired by at least one browser mode's lc_covers registry data or be explicitly listed in BACKEND_ONLY_PACKAGES
-//   with a one-line reason, so a new backend package fails the gate until someone classifies it; a browser mode whose body runs Go
-//   must not carry empty lc_covers (that would silently deselect it for every backend change), and every covers entry must match a
-//   real internal package directory (stale entries select nothing).
+//   internal/ must be classified by a browser mode's lc_covers registry data (round 2: the NARROW domain packages the mode's
+//   harness actually exercises), by SHARED_BACKEND_PACKAGES (cross-cutting boot/auth packages that select all PG browser modes)
+//   or by BACKEND_ONLY_PACKAGES (cmd/worker-only packages) — the latter two with a one-line reason — so a new backend package
+//   fails the gate until someone classifies it; a browser mode whose body runs Go must not carry empty lc_covers (that would
+//   silently deselect it for every backend change), and every covers entry must match a real internal package directory
+//   (stale entries select nothing).
 // Depends on: scripts/dev/check-backend-coverage.mjs, scripts/dev/pr-modes.mjs, scripts/dev/test-local.sh, git ls-files.
 // Used by: scripts/dev/test-node.sh, CI.
 import assert from "node:assert/strict";
@@ -89,4 +91,57 @@ test("covers entries must match a real internal package directory; parent prefix
   // A parent prefix legally covers every directory below it (kept explicit: it must NOT silently pass as stale-free).
   const parent = appendBrowserMode(usage, "--browser-probe-parent", "  go test ./tests/foundation", "internal/integrations");
   assert.deepEqual(classifyBackendCoverage(parent, dirs), []);
+});
+
+// ---- CI-SELECT round 2: three-way classification (lc_covers domain data, SHARED_BACKEND_PACKAGES, BACKEND_ONLY_PACKAGES). ----
+
+// Hermetic one-arm registry so the explicit-list tests never trip the stale-entry check on real covers data.
+const miniBase = [
+  "# BEGIN MODE REGISTRY",
+  "lc_select_mode() {",
+  'case "$1" in',
+  "  # APPEND MODES HERE",
+  "esac",
+  "}",
+  "# END MODE REGISTRY",
+].join("\n") + "\n";
+const mini = appendBrowserMode(miniBase, "--browser-probe-shared", "  go test ./tests/foundation", "internal/probepkg");
+
+test("round 2: a package no lc_covers entry reaches fails until SHARED or BACKEND_ONLY classifies it (mechanism, synthetic lists)", async () => {
+  const { classifyBackendCoverage } = await import("../../scripts/dev/check-backend-coverage.mjs");
+  const dirs = ["internal/probepkg", "internal/brandnewpkg"];
+  const errors = classifyBackendCoverage(mini, dirs, {}, {});
+  assert.equal(errors.length, 1, JSON.stringify(errors));
+  assert.match(errors[0], /internal\/brandnewpkg/);
+  assert.match(errors[0], /SHARED_BACKEND_PACKAGES/);
+  // The injectable SHARED list classifies the package AND its subpackages — the same under() prefix semantics the
+  // planner uses, so gate and selection can never drift apart.
+  const shared = { "internal/brandnewpkg": "synthetic: shared mechanism test" };
+  assert.deepEqual(classifyBackendCoverage(mini, dirs, {}, shared), []);
+  assert.deepEqual(classifyBackendCoverage(mini, ["internal/probepkg", "internal/brandnewpkg/sub/deep"], {}, shared), []);
+});
+
+test("round 2 precedence: a covers entry inside BACKEND_ONLY, or a package both SHARED and BACKEND_ONLY, is a contradiction the gate must fail", async () => {
+  const { classifyBackendCoverage } = await import("../../scripts/dev/check-backend-coverage.mjs");
+  // The planner resolves BACKEND_ONLY before lc_covers (most specific wins), so this covers entry would be dead data.
+  const dead = appendBrowserMode(miniBase, "--browser-probe-dead", "  go test ./tests/foundation", "internal/brandnewpkg/sub");
+  const deadErrors = classifyBackendCoverage(dead, ["internal/brandnewpkg/sub"], { "internal/brandnewpkg": "synthetic: precedence test" }, {});
+  assert.equal(deadErrors.length, 1, JSON.stringify(deadErrors));
+  assert.match(deadErrors[0], /BACKEND_ONLY_PACKAGES/);
+  // Same package classified both ways: SHARED selects all PG modes, BACKEND_ONLY selects none — refuse to guess.
+  const bothErrors = classifyBackendCoverage(mini, ["internal/probepkg"], { "internal/probepkg": "synthetic: both lists" }, { "internal/probepkg": "synthetic: both lists" });
+  assert.ok(bothErrors.some((e) => e.includes("both BACKEND_ONLY_PACKAGES and SHARED_BACKEND_PACKAGES")), JSON.stringify(bothErrors));
+  // A covers entry that is an ANCESTOR of a BACKEND_ONLY entry is legal (the ecpay / ecpayroute shape): the ancestor
+  // selects its own modes; only files inside the backend-only package resolve to none.
+  const ancestor = appendBrowserMode(miniBase, "--browser-probe-ancestor", "  go test ./tests/foundation", "internal/probepkg");
+  assert.deepEqual(classifyBackendCoverage(ancestor, ["internal/probepkg", "internal/probepkg/worker"], { "internal/probepkg/worker": "synthetic: nested backend-only" }, {}), []);
+});
+
+test("round 2: the real SHARED and BACKEND_ONLY entries classify with no lc_covers entry anywhere (explicit lists suffice)", async () => {
+  const { classifyBackendCoverage } = await import("../../scripts/dev/check-backend-coverage.mjs");
+  const { SHARED_BACKEND_PACKAGES, BACKEND_ONLY_PACKAGES } = await import("../../scripts/dev/pr-modes.mjs");
+  assert.ok(Object.keys(SHARED_BACKEND_PACKAGES).length >= 9, "round 2 classified 9 shared packages");
+  assert.ok(Object.keys(BACKEND_ONLY_PACKAGES).length >= 3, "round 2 classified 3 backend-only packages");
+  const dirs = ["internal/probepkg", ...Object.keys(SHARED_BACKEND_PACKAGES), ...Object.keys(BACKEND_ONLY_PACKAGES)];
+  assert.deepEqual(classifyBackendCoverage(mini, dirs), []);
 });

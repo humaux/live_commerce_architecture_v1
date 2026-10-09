@@ -75,8 +75,13 @@ test("docs-only and output-only diffs keep the single required check (foundation
 // cmd/ and migrations/ as backend-only, so PR #30 (internal/live/stream.go — serves the A2/A3 comment stream that
 // --browser-live-console clicks) and PR #24 (internal/integrations/metareply) never ran --browser-live-console, and push
 // runs on r3/integration re-verified no trunk browser health at all. The fix is registry DATA: every browser mode
-// declares the internal packages its tests/foundation harness wires in its `lc_covers="..."` line (derived from the real
-// harness closure by output/ci-select-backend-browser/tools/derive-covers.mjs), and the planner selects from that data.
+// declares the internal packages its harness exercises in its `lc_covers="..."` line, and the planner selects from that
+// data. Round 2 (owner decision 2026-10-10 "narrow per domain + nightly") replaced round 1's import-closure covers —
+// every harness boots the full API, so the closure gave 48 of 51 modes all 70 packages and any backend PR selected 48
+// modes — with per-mode DOMAIN evidence: the API paths each mode's Playwright spec and Go harness actually call, mapped
+// through the httpapi/identityhttp/buyerhttp route tables to the serving package. Derived by
+// output/ci-select-backend-browser/tools/derive-narrow-covers.mjs, recorded per mode (path, handler file:line, package)
+// in output/ci-select-backend-browser/covers-derivation.json; the nightly full browser matrix is the safety net.
 
 test("internal/live/stream.go selects --browser-live-console (PR #30 root cause)", () => {
   assert.ok(planPr(["internal/live/stream.go"], usage).modes.includes("--browser-live-console"));
@@ -84,6 +89,66 @@ test("internal/live/stream.go selects --browser-live-console (PR #30 root cause)
 
 test("internal/integrations/metareply/x.go selects --browser-live-console (PR #24 root cause)", () => {
   assert.ok(planPr(["internal/integrations/metareply/x.go"], usage).modes.includes("--browser-live-console"));
+});
+
+// ---- CI-SELECT round 2: narrow per-domain covers. The two root-cause tests above must STAY fixed while unrelated
+// domains stop being selected. Thresholds below encode the derived data (see r2-diagnostics.txt): live 18 modes,
+// inbox 14, metareply 2; the nightly matrix catches anything the per-domain evidence missed.
+
+test("round 2 narrowness: internal/live/stream.go does NOT select unrelated domains such as --browser-cvs", () => {
+  const modes = planPr(["internal/live/stream.go"], usage).modes;
+  assert.ok(modes.includes("--browser-live-console"), "PR #30 root cause must stay fixed");
+  assert.ok(!modes.includes("--browser-cvs"), "the CVS-shipping harness exercises no internal/live route (covers-derivation.json)");
+  assert.ok(modes.length <= 25, `a single-domain live change selected ${modes.length} modes; round 2 derives 18 + foundation (nightly is the safety net)`);
+});
+
+test("round 2 evidence: a metareply change selects exactly the modes whose harnesses drive MetaReply (live console + e2e)", () => {
+  // internal/inbox does not import metareply and the inbox specs never call a metareply-served route — the evidence
+  // selects --browser-live-console (comment fixtures) and --browser-e2e only; guessing more would re-widen round 1.
+  assert.deepEqual(planPr(["internal/integrations/metareply/reply.go"], usage).modes, [...FOUNDATION, "--browser-live-console", "--browser-e2e"]);
+});
+
+test("round 2 narrowness: an inbox change selects the inbox modes but not the live console", () => {
+  const modes = planPr(["internal/inbox/inbox.go"], usage).modes;
+  assert.ok(modes.includes("--browser-inbox"));
+  assert.ok(!modes.includes("--browser-live-console"), "the live-console harness never touches internal/inbox (no import, no exercised route)");
+  assert.ok(modes.length <= 20, `inbox is one domain; selected ${modes.length} modes (derived: 14 + foundation)`);
+});
+
+test("round 2 SHARED_BACKEND_PACKAGES: every entry carries a reason and selects all PG browser modes", async () => {
+  const { SHARED_BACKEND_PACKAGES } = await import("../../scripts/dev/pr-modes.mjs");
+  assert.ok(Object.keys(SHARED_BACKEND_PACKAGES).length >= 9, "round 2 classified 9 shared packages; this is a floor, not a ceiling");
+  for (const [pkg, why] of Object.entries(SHARED_BACKEND_PACKAGES)) {
+    assert.ok(pkg.startsWith("internal/"), `${pkg}: only internal packages may be shared`);
+    assert.ok(typeof why === "string" && why.length > 10, `${pkg}: needs a one-line reason`);
+    const modes = planPr([`${pkg}/x.go`], usage).modes;
+    for (const m of pgFull) assert.ok(modes.includes(m), `${pkg}/x.go did not select ${m}`);
+  }
+});
+
+test("round 2 data invariant: SHARED packages are subtracted from lc_covers (they select all PG modes anyway)", async () => {
+  const { SHARED_BACKEND_PACKAGES } = await import("../../scripts/dev/pr-modes.mjs");
+  for (const e of modeEntries(usage))
+    for (const c of e.covers ?? [])
+      assert.ok(!(c in SHARED_BACKEND_PACKAGES), `${e.name} still lists shared package ${c} in lc_covers; re-run insert-narrow-covers.mjs`);
+});
+
+test("round 2 BACKEND_ONLY_PACKAGES: the real cmd/worker-only entries select no browser mode", async () => {
+  const { BACKEND_ONLY_PACKAGES, backendBrowserModes } = await import("../../scripts/dev/pr-modes.mjs");
+  assert.ok(Object.keys(BACKEND_ONLY_PACKAGES).length >= 3, "round 2 classified tlsask, retention and ecpayroute");
+  for (const pkg of Object.keys(BACKEND_ONLY_PACKAGES))
+    assert.deepEqual(backendBrowserModes([`${pkg}/x.go`], usage), [], `${pkg} must select nothing (a cmd/** change still selects all Go-booting modes via the cmd rule)`);
+});
+
+test("round 2: the conservative rules reach the Go-booting 48th mode (--browser-tracking-backfill)", () => {
+  // lc_fixture=none, but it boots the real Go API against the real PG through scripts/dev/test-focused.sh — the
+  // fixture marker describes the shared fixture script, not whether the mode runs Go. The Go-booting set is
+  // lc_fixture=pg ∪ non-empty lc_covers (the gate forces a Go-running mode to declare covers; node-only modes
+  // declare "" and stay out).
+  for (const p of ["cmd/api/main.go", "migrations/0169_x.sql", "internal/platform/x.go", "internal/httperror/x.go", "internal/brandnewpkg/x.go"]) {
+    const modes = planPr([p], usage).modes;
+    assert.ok(modes.includes("--browser-tracking-backfill"), `${p} must select --browser-tracking-backfill (real Go + real PG)`);
+  }
 });
 
 test("a new migration selects every PG-fixture browser mode (the modes run on the migrated schema)", () => {
@@ -138,8 +203,8 @@ test("BACKEND_ONLY_PACKAGES is explicit classified data; listed packages select 
     assert.ok(pkg.startsWith("internal/"), `${pkg}: only internal packages may be backend-only`);
     assert.ok(typeof why === "string" && why.length > 10, `${pkg}: needs a one-line reason`);
   }
-  // The 2026-10-10 derivation classified all 70 internal dirs as harness-wired (BACKEND_ONLY stays empty); the
-  // mechanism must still work for a future classification, proved here with a synthetic list.
+  // Round 1 left BACKEND_ONLY empty; round 2 (2026-10-10) classified tlsask/retention/ecpayroute (asserted above).
+  // The mechanism must keep working for any future classification, proved here with a synthetic list.
   assert.deepEqual(backendBrowserModes(["internal/classified/x.go"], usage, { "internal/classified": "synthetic: mechanism test" }), []);
   assert.ok(backendBrowserModes(["internal/classified/x.go"], usage).length >= pgFull.length, "an undeclared package stays conservative until classified");
 });

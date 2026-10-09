@@ -108,3 +108,82 @@ Stale evidence (pre-#27 base, kept for history): `registry-diff.txt`, `mid-*.log
 ## 8. Cleanup
 
 No lingering processes (every command ran to completion); no containers/ports used; test fixtures self-removed. All evidence lives under `output/ci-select-backend-browser/` (tracked). Commit-message scratch file is in `/tmp` (outside the repo). No other task directories touched.
+
+---
+
+# Round 2 — narrow per domain + nightly (owner decision 2026-10-10)
+
+Sections 1–8 above are round-1 history and stay valid except where this section supersedes them (§9–§10 replace the covers DATA and classification; §11 replaces §3's counts; §15 replaces §4's logs). Round-1 problem, restated with the measured number: the import-closure derivation gave 48 of 51 browser modes `lc_covers` = all 70 internal packages (3360 covers entries — every harness boots the full API), so any `internal/` PR selected 48 modes, as heavy as a UI PR. Round 2 replaces that data with per-mode DOMAIN evidence; the nightly full-matrix run (round 1, unchanged) is the safety net.
+
+## 9. Round-2 derivation (evidence, not guesses)
+
+Tool: `tools/derive-narrow-covers.mjs` (plain node script, runs via `node --test`; deterministic — re-run after the registry rewrite produced a byte-identical `covers-narrow.json` and `uncovered=0`). Three evidence sources per mode:
+
+1. **Path evidence** — every URL literal in the mode's Playwright specs, node runners and OWN Go harness files, staged: (tier 1) direct `/v1/…` calls; (tier 2) BFF pass-through suffix rules (`/api/stores/<s>/REST` → `/v1/admin/stores/<s>/REST`, `/api/buyer/REST` → `/v1/buyer/REST`); (tier 3) most-specific non-catch-all BFF route-file literals via depth-2 import closure; (tier 4) catch-all literals with trailing-`{*}` drops. URLs are matched against the REAL route tables — 329 `HandleFunc`/`Handle` routes in `internal/httpapi` + `internal/identityhttp` and 53 `buyerhttp` kind routes — with full Go expression resolution: string concatenation, func-local/package-scope consts, string function params resolved via call sites (incl. the generic `route[T any]` helper), `range` over inline/named string and struct slices incl. `append` growth, method-variable ranges. Each matched route is attributed at STATEMENT level to the package whose identifier appears in the registration statement (deliberately not func-wide: `NewHandler` constructs every service, and func-wide receiver attribution re-created round 1's explosion on the routes registered in its own body). 0 unresolved-route diagnostics; 4 unmapped URLs, all explained (§12).
+2. **Narrow Go fixture evidence** — the mode's OWN Go files' DIRECT `internal/` imports only (OWN = the `-run` seed test-name definers ∪ registry-named `.go` ∪ "Used by:" header files). Deliberately NOT the transitive closure (that is round 1's mistake); `cmd/` binary imports are recorded as INFO diagnostics only, never as covers.
+3. **Consumer-import join** — a package with zero direct evidence is joined into every mode covering one of its production importers (one level, shallow-first): csvguard→18 modes, jobqueue→28, mail→36, storehandles→13, twcity→20, payuni→32, ecpay→32. This is what keeps leaf/helper packages selectable without widening domains.
+
+Outputs (all tracked): `covers-derivation.json` — per mode `[{path, handler file:line, package, via}]`, the task-mandated record; `tools/covers-narrow.json` — final per-mode lists; `tools/r2-diagnostics.txt` — full audit trail (per-mode counts, INFO cmd lines, joins, per-package totals, uncovered check). Result: **788 covers entries, mean 15.5/mode** (round 1: 3360, mean 70 across 48); max 41 (`--browser-customers-billing`, full-store billing acceptance); the 3 node-only modes stay `lc_covers=""`. Writer: `tools/insert-narrow-covers.mjs` — mechanical rewrite of the 48 `lc_covers` lines; asserts arm order, `lc_build`/`lc_fixture`, `lc_prepare`/`lc_run` bodies and every non-covers line byte-identical before writing; post-checks with the real `modeEntries` parser; idempotent (`rewritten=48 unchanged=3`, re-run rewrites nothing).
+
+## 10. Classification (scripts/dev/pr-modes.mjs — every entry carries a one-line reason)
+
+- **SHARED_BACKEND_PACKAGES (9)** — `internal/platform`, `internal/httpapi`, `internal/command`, `internal/httperror`, `internal/pagination`, `internal/identity`, `internal/identityhttp`, `internal/oidclogin`, `internal/integrations/psp/stripe`. Boot-path/request-grammar packages, each evidenced in 31–45 of the 48 Go-seeded modes (counts in the reasons) or constructed at API boot. A change under any selects **every Go-booting browser mode**; they are subtracted from all `lc_covers` lines (gate-tested invariant).
+- **BACKEND_ONLY_PACKAGES (3)** — `internal/tlsask` (wired only by `cmd/api` main), `internal/retention` (claims-worker/retention-admin only), `internal/integrations/shipping/ecpay/ecpayroute` (worker + non-browser tests; `--browser-cvs` drives the `ecpaytest` fake). Select **no** browser mode. Resolved BEFORE covers (most-specific classification wins — `ecpayroute` sits inside the covered `ecpay` prefix); `check-backend-coverage.mjs` reds the contradiction (a covers entry inside BACKEND_ONLY, or a package both SHARED and BACKEND_ONLY) so the precedence can never silently hide a classification.
+- **Go-booting set (planner widening)** — the conservative fallback set (cmd/, migrations/, SHARED, undeclared packages) is now `lc_fixture=pg` (47) ∪ non-empty `lc_covers` = **48 modes**, including `--browser-tracking-backfill`: `lc_fixture=none` only means it skips the shared fixture script — it boots the real Go harness against the real PG via `scripts/dev/test-focused.sh '^TestBrowserTrackingBackfill$'`, so migrations/cmd/shared changes reach it. The 3 node-only modes (`lc_covers=""`) remain unreachable from backend paths.
+- **Gate (scripts/dev/check-backend-coverage.mjs)** — classification is three-way (covers ∪ SHARED ∪ BACKEND_ONLY, same `under()` prefix semantics as the planner) and stays complete: `check-backend-coverage: ok (70 internal package dirs classified; 51 browser modes declare lc_covers)`.
+
+## 11. Selection counts (task item 5 — `tools/selection-counts-r2.json`, log `r2-counts-run.log`)
+
+| case | files | round 2 browser modes (total checks) | round 1 |
+|---|---|---|---|
+| PR #30 `b1bfbeb3` | 11 | **48** (49) | 48 |
+| PR #24 `3034c407` | 68 | **6** (7) | 48 |
+| orders/payments example (`internal/merchantorders` + `internal/payments`) | 2 | **17** (18) | 48 |
+| catalog example (`internal/catalog`) | 1 | **18** (19) | 48 |
+| migrations example (`migrations/0169_x.sql`) | 1 | **48** (49) | 47 |
+| `internal/live/stream.go` (mandated) | 1 | **18** (19) — live-console ✓, **not** `--browser-cvs` ✓ | 48 |
+| `internal/integrations/metareply/x.go` (mandated) | 1 | **2** (3) — exactly live-console + e2e | 48 |
+| `internal/platform/x.go` (mandated SHARED) | 1 | **48** (49) | 48 |
+| docs+contracts only (mandated) | 2 | **0** (1) | 0 |
+
+Exceptions to the ≤10 target, explained:
+- **PR #30 stays at 48** because its diff includes `internal/httpapi/live_stream.go` — `internal/httpapi` is the monolithic handler mounted by every harness (SHARED by evidence, 45/48). A PR editing shared route registration IS cross-cutting; the same PR restricted to `internal/live/stream.go` selects 18. The root-cause fix stands: `--browser-live-console` selected.
+- **migrations/SHARED/cmd/undeclared = 48** by the conservative rule (round 1: 47 — the +1 is `--browser-tracking-backfill`, real PG).
+- **merchantorders 17 / catalog 18 / live 18 / claims 38** exceed 10 because that many acceptance modes genuinely click those domains (each row evidence-linked in `covers-derivation.json`), plus modes that sweep every page (`--browser-click-sweep`, `--browser-visual-lint`, `--browser-webkit`, `--browser-e2e`). Truly narrow domains hit the target: metareply 2, metabridge 2, meta_ads 2, `meta/oauth` 4, claimsintake 1, livekit 1, `payments/stripeadmin` 1, `payments/settlement` 10, attribution 11, billing 13, inbox 14.
+- **PR #24 (68 files!) drops 48 → 6**: metareply/oauth/bridge evidence plus the sweep modes — the round-1 pathology (heavy backend PR ≈ UI PR) is gone.
+
+## 12. Unmapped URLs (4 — all explained, no coverage hole)
+
+1. `--browser-customers-billing` → `/v1/platform/stripe/webhook`: mounted by `cmd/api` only; the harness delivers it in-process (httptest). `internal/billing` is covered by that harness's direct imports.
+2. `--browser-customers-billing` → `/v1/checkout/sessions` and 3. → `/v1/billing_portal/sessions`: paths of the FAKE Stripe server asserted via `fake.CallsTo`, not system routes.
+4. `--browser-store-domains` → `/api/onboarding/handle-suggest`: a frontend request-listener assertion; no `route.ts` exists in the tree (nothing serves it).
+
+## 13. metareply → live console, NOT inbox (task item 4 wording)
+
+The task expected "the live console / inbox modes". The evidence: `internal/inbox` does not import `internal/integrations/metareply`; no inbox harness file or spec calls a metareply-served route. The only harnesses that drive MetaReply are `--browser-live-console` (A2/A3 comment fixtures) and `--browser-e2e` (comment flow), so the selection is exactly those two (asserted with `deepEqual` in `tests/ci/pr-modes.test.mjs`). Selecting `--browser-inbox` for metareply changes would be a guess — precisely what round 2 forbids; the nightly full matrix is the owner-approved safety net for such residual risk.
+
+## 14. Tests (RED → GREEN; nothing weakened)
+
+- **RED** (`r2-red-tests-ci.log`, round-2 planner lists + round-1 full-covers registry): exactly the 5 new selection-behavior tests fail — live narrowness (`--browser-cvs` selected: "the CVS-shipping harness exercises no internal/live route"), metareply exactness, inbox narrowness, SHARED-subtraction invariant, real BACKEND_ONLY entries → none. All 46 pre-existing tests in the two suites pass (only two stale COMMENTS were updated; no assertion touched).
+- **GREEN** (`r2-green-tests-ci.log`): `node --test tests/ci/*.mjs` → **109 pass / 0 fail** (10 new round-2 tests: 7 in pr-modes, 3 in backend-coverage incl. the precedence-contradiction mechanism on a hermetic mini-registry and the tracking-backfill Go-boot rule).
+- New invariants now gate-tested: SHARED entries carry reasons + select all Go-booting modes; SHARED subtracted from every `lc_covers`; BACKEND_ONLY real entries select none; BACKEND_ONLY-before-covers precedence with contradiction red; node-only trio never selected; undeclared package still falls conservative (48).
+
+## 15. Commands and exit codes (round 2 — all SANDBOX/local on this worktree)
+
+| command | exit | evidence |
+|---|---|---|
+| `node --test tests/ci/*.mjs` | 0 | `r2-green-tests-ci.log` (109/109) |
+| `bash scripts/dev/test-node.sh` | 0 | `r2-green-test-node.log` (every suite fail 0; round 1's env-only failures gone — `node_modules` now exists) |
+| `bash scripts/dev/check-gates.sh` | 0 | `r2-green-check-gates.log` (shard-plan ok 1256 tests/10 groups; check-backend-coverage ok 70 dirs; 82 modes documented; check-headers OK) |
+| `bash scripts/dev/test-local.sh --list` | 0 | `r2-green-test-local-list.log` (83 lines: 82 modes + foundation) |
+| `node --test tools/derive-narrow-covers.mjs` | 0 | `r2-derive-after-insert.log` ("51 modes; uncovered=0"; idempotent) |
+| `node --test tools/insert-narrow-covers.mjs` | 0 | `r2-insert-run.log` (rewritten=48 unchanged=3; post-parser checks) |
+| `node --test tools/selection-counts-r2.mjs` | 0 | `r2-counts-run.log`, `selection-counts-r2.json` |
+
+Evidence tiers: derivation/selection/gate results above are SANDBOX (local node + real repo data). Real `--browser-*` mode executions, the nightly schedule firing, and `go test -race ./...` remain NOT_RUN (unchanged from §6 items 4–6; they run in CI/T02+). No push (task instruction).
+
+## 16. Round-2 risks and cleanup
+
+- Under-selection is bounded four ways: consumer-import join for zero-evidence packages, undeclared-package fallback (new package → all 48 until the gate classifies it), contradiction gate, nightly full matrix. Residual: a spec that builds URLs in a shape the extractor misses would show up as an UNMAPPED diagnostic (currently 4, all explained) — re-run the derive tool after adding specs/routes and check `r2-diagnostics.txt`.
+- `lc_covers` lines are derived data; hand-editing them is gate-checked (stale entries red, SHARED duplicates red, BACKEND_ONLY contradictions red).
+- Cleanup: no lingering processes (every command ran to completion); the temporary `covers-narrow.prev.json` idempotence snapshot was removed after the diff; no containers/ports; no other task directories touched. Round-1 tools (`derive-covers.mjs`, `insert-covers.mjs`, `covers.json`, `selection-counts.mjs`) are kept as history, superseded by the `-r2`/`-narrow` versions.

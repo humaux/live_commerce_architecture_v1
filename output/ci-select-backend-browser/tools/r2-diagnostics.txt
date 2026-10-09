@@ -1,0 +1,197 @@
+--browser-inbox: own=1 specs=2 urls=12 covers=12
+--browser-meta-health-ui: own=1 specs=0 urls=0 covers=6
+--browser-tracking-backfill: own=1 specs=0 urls=0 covers=6
+--browser-platform-site: node-only (no Go harness file; lc_fixture=none) — covers=[] by definition
+--browser-admin-shell: node-only (no Go harness file; lc_fixture=none) — covers=[] by definition
+--browser-click-sweep: own=2 specs=6 urls=7 covers=24
+--browser-visual-lint: own=2 specs=7 urls=6 covers=24
+--browser-identity: INFO builds/runs cmd/api (direct internal imports: internal/ads, internal/attribution, internal/billing, internal/buyer, internal/buyerhttp, internal/checkout, internal/claims, internal/fulfillment, internal/httpapi, internal/httperror, internal/identity, internal/identityhttp, internal/inbox, internal/integrations/accounts, internal/integrations/core, internal/integrations/meta, internal/integrations/meta/oauth, internal/integrations/meta/pagetoken, internal/integrations/meta_ads, internal/integrations/metabridge, internal/integrations/psp/stripe, internal/integrations/shipping/ecpay, internal/live, internal/mail, internal/merchanttools, internal/metaconnect, internal/msgtemplates, internal/oidclogin, internal/payments, internal/payments/stripewebhook, internal/platform, internal/tlsask)
+--browser-identity: own=2 specs=1 urls=4 covers=9
+--browser-buyer-comms: own=2 specs=1 urls=28 covers=18
+--browser-checkout-offline: own=1 specs=2 urls=7 covers=22
+--browser-home-cod: own=2 specs=2 urls=13 covers=24
+--browser-promotions: own=1 specs=1 urls=4 covers=16
+--browser-password-auth: own=2 specs=3 urls=19 covers=11
+--browser-admin-legacy: INFO builds/runs cmd/admin-fixture (direct internal imports: internal/catalog, internal/httpapi, internal/inventory, internal/platform)
+--browser-admin-legacy: own=1 specs=0 urls=2 covers=8
+--browser-buyer: own=2 specs=2 urls=12 covers=16
+--browser-merchant-buyer: own=1 specs=1 urls=8 covers=12
+--browser-manual-order: own=1 specs=3 urls=9 covers=16
+--browser-merchant-orders-bff: own=1 specs=4 urls=16 covers=36
+--browser-merchant-orders-ui: own=1 specs=8 urls=14 covers=40
+--browser-input-delivery: own=1 specs=4 urls=7 covers=11
+--browser-studio-bff: own=1 specs=3 urls=12 covers=35
+--browser-studio-ui: INFO builds/runs cmd/media-worker (direct internal imports: internal/integrations/livekit, internal/jobqueue, internal/live, internal/platform)
+--browser-studio-ui: own=1 specs=1 urls=7 covers=9
+--browser-live-console: own=3 specs=1 urls=9 covers=13
+--browser-claim-checkout: own=1 specs=1 urls=7 covers=7
+--browser-live-claims: own=1 specs=5 urls=10 covers=21
+--browser-order: own=2 specs=1 urls=8 covers=16
+--browser-payment: own=1 specs=1 urls=7 covers=16
+--browser-refund-fulfilment: own=1 specs=5 urls=10 covers=15
+--browser-customers-billing: UNMAPPED /v1/platform/stripe/webhook (from tests/foundation/browser_customers_billing_test.go)
+--browser-customers-billing: UNMAPPED /v1/checkout/sessions (from tests/foundation/browser_customers_billing_test.go)
+--browser-customers-billing: UNMAPPED /v1/billing_portal/sessions (from tests/foundation/browser_customers_billing_test.go)
+--browser-customers-billing: own=2 specs=13 urls=15 covers=42
+--browser-card-payments: own=2 specs=8 urls=7 covers=37
+--browser-meta-ads: own=1 specs=6 urls=10 covers=41
+--browser-ads-attribution: own=1 specs=4 urls=4 covers=18
+--browser-cvs: own=1 specs=4 urls=8 covers=12
+--browser-catalog-media: own=1 specs=1 urls=5 covers=37
+--browser-storefront-publish: INFO builds/runs cmd/store-admin (direct internal imports: internal/command, internal/domains, internal/platform, internal/storefrontadmin, internal/storehandles)
+--browser-storefront-publish: own=1 specs=5 urls=9 covers=15
+--browser-store-domains: UNMAPPED /api/onboarding/handle-suggest (from tests/storefront/store-domains-gate.mjs)
+--browser-store-domains: own=1 specs=2 urls=11 covers=37
+--browser-storefront: INFO builds/runs cmd/store-admin (direct internal imports: internal/command, internal/domains, internal/platform, internal/storefrontadmin, internal/storehandles)
+--browser-storefront: own=3 specs=3 urls=10 covers=18
+--browser-webkit: own=8 specs=8 urls=30 covers=24
+--browser-e2e: own=2 specs=2 urls=8 covers=27
+--live-browser-input: own=6 specs=0 urls=1 covers=5
+--browser-design: INFO builds/runs cmd/store-admin (direct internal imports: internal/command, internal/domains, internal/platform, internal/storefrontadmin, internal/storehandles)
+--browser-design: own=3 specs=5 urls=13 covers=16
+--browser-ops-polish: own=1 specs=3 urls=3 covers=4
+--browser-meta-connect: own=2 specs=4 urls=3 covers=36
+--browser-product-editor: own=1 specs=1 urls=10 covers=13
+--browser-catalog-core: own=1 specs=1 urls=10 covers=13
+--browser-returns-ui: own=1 specs=3 urls=2 covers=15
+--browser-picklist: node-only (no Go harness file; lc_fixture=none) — covers=[] by definition
+--browser-operations-ads: own=1 specs=1 urls=0 covers=6
+--browser-product-media-v2: own=2 specs=1 urls=7 covers=10
+--browser-reports: own=1 specs=3 urls=7 covers=35
+--browser-migration-import: own=1 specs=8 urls=9 covers=19
+internal/csvguard: consumer-import join into 18 mode(s) via internal/merchantorders, internal/migrationimport, internal/payments/settlement, internal/reporting
+internal/jobqueue: consumer-import join into 28 mode(s) via internal/checkout, internal/payments, internal/payments/stripewebhook
+internal/mail: consumer-import join into 36 mode(s) via internal/identity, internal/notify
+internal/storehandles: consumer-import join into 13 mode(s) via internal/storefrontadmin
+internal/twcity: consumer-import join into 20 mode(s) via internal/customers, internal/migrationimport
+internal/integrations/psp/payuni: consumer-import join into 32 mode(s) via internal/checkout, internal/integrations/accounts, internal/payments
+internal/integrations/shipping/ecpay: consumer-import join into 32 mode(s) via internal/checkout, internal/fulfillment
+
+SHARED_BACKEND_PACKAGES (subtracted from covers-narrow): internal/platform, internal/httpapi, internal/command, internal/httperror, internal/pagination, internal/identity, internal/identityhttp, internal/oidclogin, internal/integrations/psp/stripe
+route table: httpapi/identityhttp HandleFunc=329, buyerhttp kinds=53; route diag: 0
+
+per-package mode counts (raw evidence, 70 internal dirs):
+  internal/platform: 48
+  internal/httpapi: 45
+  internal/httperror: 44
+  internal/command: 43
+  internal/claims: 38
+  internal/mail: 36
+  internal/pagination: 35
+  internal/identity: 34
+  internal/identityhttp: 34
+  internal/buyerhttp: 32
+  internal/integrations/psp/payuni: 32
+  internal/integrations/shipping/ecpay: 32
+  internal/oidclogin: 31
+  internal/buyer: 30
+  internal/jobqueue: 28
+  internal/fulfillment: 26
+  internal/storefront: 26
+  internal/design: 23
+  internal/promotions: 23
+  internal/checkout: 21
+  internal/customers: 20
+  internal/twcity: 20
+  internal/ads: 19
+  internal/domains: 19
+  internal/metaconnect: 19
+  internal/storefrontdomains: 19
+  internal/catalog: 18
+  internal/csvguard: 18
+  internal/integrations/accounts: 18
+  internal/live: 18
+  internal/integrations/core: 17
+  internal/inventory: 17
+  internal/merchantorders: 17
+  internal/inbox: 14
+  internal/returns: 14
+  internal/billing: 13
+  internal/merchanttools: 13
+  internal/msgtemplates: 13
+  internal/storefrontadmin: 13
+  internal/storehandles: 13
+  internal/payments: 12
+  internal/pricing: 12
+  internal/reporting: 12
+  internal/attribution: 11
+  internal/migrationimport: 11
+  internal/notify: 11
+  internal/payments/platformstripe: 10
+  internal/payments/settlement: 10
+  internal/integrations/meta/oauth: 4
+  internal/billing/billingtest: 3
+  internal/integrations/meta_ads: 2
+  internal/integrations/metabridge: 2
+  internal/integrations/metareply: 2
+  internal/integrations/shipping/ecpay/ecpaytest: 2
+  internal/claimsintake: 1
+  internal/integrations/livekit: 1
+  internal/integrations/meta: 1
+  internal/integrations/meta/pagetoken: 1
+  internal/payments/stripeadmin: 1
+  internal/attribution/capiroute: 0
+  internal/claims/grammar: 0
+  internal/integrations/meta/pagetoken/pageopen: 0
+  internal/integrations/meta_ads/tokenopen: 0
+  internal/integrations/psp/stripe: 0
+  internal/integrations/psp/stripe/stripetest: 0
+  internal/integrations/shipping/ecpay/ecpayroute: 0
+  internal/mail/mailtest: 0
+  internal/payments/stripewebhook: 0
+  internal/retention: 0
+  internal/tlsask: 0
+
+uncovered by any browser mode evidence: 0
+
+--browser-inbox: 13 pkgs -> internal/ads internal/claims internal/command internal/httpapi internal/httperror internal/identity internal/identityhttp internal/inbox internal/mail internal/metaconnect internal/oidclogin internal/pagination internal/platform
+--browser-meta-health-ui: 6 pkgs -> internal/claims internal/httpapi internal/integrations/meta/oauth internal/live internal/metaconnect internal/platform
+--browser-tracking-backfill: 6 pkgs -> internal/claims internal/command internal/httpapi internal/httperror internal/merchanttools internal/platform
+--browser-platform-site: 0 pkgs -> 
+--browser-admin-shell: 0 pkgs -> 
+--browser-click-sweep: 27 pkgs -> internal/ads internal/billing internal/billing/billingtest internal/buyerhttp internal/claims internal/command internal/design internal/fulfillment internal/httpapi internal/httperror internal/identity internal/identityhttp internal/inbox internal/integrations/accounts internal/integrations/core internal/integrations/meta/oauth internal/integrations/meta_ads internal/integrations/metabridge internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/inventory internal/live internal/mail internal/metaconnect internal/msgtemplates internal/oidclogin internal/platform
+--browser-visual-lint: 27 pkgs -> internal/ads internal/billing internal/billing/billingtest internal/buyerhttp internal/claims internal/command internal/design internal/fulfillment internal/httpapi internal/httperror internal/identity internal/identityhttp internal/inbox internal/integrations/accounts internal/integrations/core internal/integrations/meta/oauth internal/integrations/meta_ads internal/integrations/metabridge internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/inventory internal/live internal/mail internal/metaconnect internal/msgtemplates internal/oidclogin internal/platform
+--browser-identity: 11 pkgs -> internal/httpapi internal/httperror internal/identity internal/identityhttp internal/integrations/accounts internal/integrations/core internal/integrations/psp/payuni internal/mail internal/oidclogin internal/pagination internal/platform
+--browser-buyer-comms: 24 pkgs -> internal/attribution internal/buyer internal/buyerhttp internal/checkout internal/claims internal/command internal/csvguard internal/customers internal/domains internal/fulfillment internal/httpapi internal/httperror internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/jobqueue internal/mail internal/merchantorders internal/notify internal/pagination internal/platform internal/promotions internal/returns internal/storefront internal/twcity
+--browser-checkout-offline: 27 pkgs -> internal/attribution internal/buyer internal/buyerhttp internal/checkout internal/claims internal/command internal/customers internal/design internal/domains internal/fulfillment internal/httpapi internal/httperror internal/identity internal/identityhttp internal/integrations/accounts internal/integrations/core internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/jobqueue internal/mail internal/oidclogin internal/pagination internal/platform internal/promotions internal/storefront internal/storefrontdomains internal/twcity
+--browser-home-cod: 30 pkgs -> internal/attribution internal/buyer internal/buyerhttp internal/catalog internal/checkout internal/claims internal/command internal/csvguard internal/customers internal/design internal/domains internal/fulfillment internal/httpapi internal/httperror internal/identity internal/identityhttp internal/integrations/accounts internal/integrations/core internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/jobqueue internal/mail internal/oidclogin internal/pagination internal/platform internal/promotions internal/reporting internal/storefront internal/storefrontdomains internal/twcity
+--browser-promotions: 20 pkgs -> internal/buyer internal/buyerhttp internal/catalog internal/claims internal/command internal/csvguard internal/fulfillment internal/httpapi internal/httperror internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/inventory internal/jobqueue internal/merchantorders internal/pagination internal/payments internal/platform internal/pricing internal/promotions internal/storefront
+--browser-password-auth: 14 pkgs -> internal/billing internal/claims internal/command internal/csvguard internal/httpapi internal/httperror internal/identity internal/identityhttp internal/integrations/accounts internal/integrations/core internal/integrations/psp/payuni internal/mail internal/merchantorders internal/platform
+--browser-admin-legacy: 9 pkgs -> internal/catalog internal/command internal/httpapi internal/httperror internal/identity internal/identityhttp internal/mail internal/pagination internal/platform
+--browser-buyer: 20 pkgs -> internal/attribution internal/buyer internal/buyerhttp internal/checkout internal/claims internal/command internal/customers internal/design internal/domains internal/fulfillment internal/httperror internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/jobqueue internal/pagination internal/platform internal/promotions internal/storefront internal/storefrontdomains internal/twcity
+--browser-merchant-buyer: 13 pkgs -> internal/buyer internal/buyerhttp internal/catalog internal/command internal/httpapi internal/httperror internal/identity internal/identityhttp internal/mail internal/oidclogin internal/pagination internal/platform internal/storefront
+--browser-manual-order: 20 pkgs -> internal/ads internal/buyer internal/buyerhttp internal/checkout internal/claims internal/command internal/domains internal/httpapi internal/httperror internal/identity internal/identityhttp internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/jobqueue internal/mail internal/metaconnect internal/oidclogin internal/pagination internal/platform internal/storefront
+--browser-merchant-orders-bff: 43 pkgs -> internal/ads internal/billing internal/catalog internal/claims internal/command internal/csvguard internal/customers internal/design internal/fulfillment internal/httpapi internal/httperror internal/identity internal/identityhttp internal/inbox internal/integrations/accounts internal/integrations/core internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/inventory internal/jobqueue internal/live internal/mail internal/merchantorders internal/merchanttools internal/metaconnect internal/migrationimport internal/msgtemplates internal/notify internal/oidclogin internal/pagination internal/payments internal/payments/platformstripe internal/payments/settlement internal/platform internal/pricing internal/promotions internal/reporting internal/returns internal/storefront internal/storefrontadmin internal/storefrontdomains internal/storehandles internal/twcity
+--browser-merchant-orders-ui: 47 pkgs -> internal/ads internal/billing internal/buyer internal/buyerhttp internal/catalog internal/checkout internal/claims internal/command internal/csvguard internal/customers internal/design internal/domains internal/fulfillment internal/httpapi internal/httperror internal/identity internal/identityhttp internal/inbox internal/integrations/accounts internal/integrations/core internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/inventory internal/jobqueue internal/live internal/mail internal/merchantorders internal/merchanttools internal/metaconnect internal/migrationimport internal/msgtemplates internal/notify internal/oidclogin internal/pagination internal/payments internal/payments/platformstripe internal/payments/settlement internal/platform internal/pricing internal/promotions internal/reporting internal/returns internal/storefront internal/storefrontadmin internal/storefrontdomains internal/storehandles internal/twcity
+--browser-input-delivery: 12 pkgs -> internal/claims internal/command internal/httpapi internal/httperror internal/identity internal/identityhttp internal/inbox internal/live internal/mail internal/oidclogin internal/pagination internal/platform
+--browser-studio-bff: 42 pkgs -> internal/ads internal/billing internal/catalog internal/claims internal/command internal/csvguard internal/customers internal/design internal/fulfillment internal/httpapi internal/httperror internal/identity internal/identityhttp internal/inbox internal/integrations/accounts internal/integrations/core internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/inventory internal/jobqueue internal/live internal/mail internal/merchantorders internal/merchanttools internal/metaconnect internal/migrationimport internal/msgtemplates internal/notify internal/oidclogin internal/pagination internal/payments internal/payments/platformstripe internal/payments/settlement internal/platform internal/pricing internal/promotions internal/reporting internal/returns internal/storefrontadmin internal/storefrontdomains internal/storehandles internal/twcity
+--browser-studio-ui: 10 pkgs -> internal/command internal/httpapi internal/httperror internal/identity internal/identityhttp internal/live internal/mail internal/oidclogin internal/pagination internal/platform
+--browser-live-console: 14 pkgs -> internal/command internal/httpapi internal/httperror internal/identity internal/identityhttp internal/integrations/metareply internal/inventory internal/live internal/mail internal/metaconnect internal/msgtemplates internal/oidclogin internal/pagination internal/platform
+--browser-claim-checkout: 10 pkgs -> internal/buyer internal/buyerhttp internal/checkout internal/claims internal/httpapi internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/jobqueue internal/platform internal/storefront
+--browser-live-claims: 26 pkgs -> internal/attribution internal/buyer internal/buyerhttp internal/checkout internal/claims internal/command internal/customers internal/design internal/domains internal/fulfillment internal/httpapi internal/httperror internal/identity internal/identityhttp internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/jobqueue internal/live internal/mail internal/oidclogin internal/pagination internal/platform internal/promotions internal/storefront internal/storefrontdomains internal/twcity
+--browser-order: 20 pkgs -> internal/attribution internal/buyer internal/buyerhttp internal/checkout internal/claims internal/command internal/customers internal/design internal/domains internal/fulfillment internal/httperror internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/jobqueue internal/pagination internal/platform internal/promotions internal/storefront internal/storefrontdomains internal/twcity
+--browser-payment: 20 pkgs -> internal/attribution internal/buyer internal/buyerhttp internal/checkout internal/claims internal/command internal/customers internal/design internal/domains internal/fulfillment internal/httperror internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/jobqueue internal/pagination internal/platform internal/promotions internal/storefront internal/storefrontdomains internal/twcity
+--browser-refund-fulfilment: 20 pkgs -> internal/buyer internal/buyerhttp internal/checkout internal/claims internal/command internal/csvguard internal/domains internal/httpapi internal/httperror internal/identity internal/identityhttp internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/jobqueue internal/mail internal/merchantorders internal/oidclogin internal/pagination internal/platform internal/storefront
+--browser-customers-billing: 49 pkgs -> internal/ads internal/attribution internal/billing internal/billing/billingtest internal/buyer internal/buyerhttp internal/catalog internal/checkout internal/claims internal/command internal/csvguard internal/customers internal/design internal/domains internal/fulfillment internal/httpapi internal/httperror internal/identity internal/identityhttp internal/inbox internal/integrations/accounts internal/integrations/core internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/inventory internal/jobqueue internal/live internal/mail internal/merchantorders internal/merchanttools internal/metaconnect internal/migrationimport internal/msgtemplates internal/notify internal/oidclogin internal/pagination internal/payments internal/payments/platformstripe internal/payments/settlement internal/platform internal/pricing internal/promotions internal/reporting internal/returns internal/storefront internal/storefrontadmin internal/storefrontdomains internal/storehandles internal/twcity
+--browser-card-payments: 44 pkgs -> internal/ads internal/billing internal/buyer internal/buyerhttp internal/catalog internal/checkout internal/claims internal/command internal/csvguard internal/customers internal/design internal/domains internal/fulfillment internal/httpapi internal/httperror internal/inbox internal/integrations/accounts internal/integrations/core internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/inventory internal/jobqueue internal/live internal/mail internal/merchantorders internal/merchanttools internal/metaconnect internal/migrationimport internal/msgtemplates internal/notify internal/pagination internal/payments internal/payments/platformstripe internal/payments/settlement internal/platform internal/pricing internal/promotions internal/reporting internal/returns internal/storefront internal/storefrontadmin internal/storefrontdomains internal/storehandles internal/twcity
+--browser-meta-ads: 48 pkgs -> internal/ads internal/attribution internal/billing internal/buyer internal/buyerhttp internal/catalog internal/checkout internal/claims internal/command internal/csvguard internal/customers internal/design internal/domains internal/fulfillment internal/httpapi internal/httperror internal/identity internal/identityhttp internal/inbox internal/integrations/accounts internal/integrations/core internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/inventory internal/jobqueue internal/live internal/mail internal/merchantorders internal/merchanttools internal/metaconnect internal/migrationimport internal/msgtemplates internal/notify internal/oidclogin internal/pagination internal/payments internal/payments/platformstripe internal/payments/settlement internal/platform internal/pricing internal/promotions internal/reporting internal/returns internal/storefront internal/storefrontadmin internal/storefrontdomains internal/storehandles internal/twcity
+--browser-ads-attribution: 22 pkgs -> internal/ads internal/attribution internal/buyer internal/buyerhttp internal/checkout internal/claims internal/command internal/customers internal/design internal/domains internal/fulfillment internal/httpapi internal/httperror internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/jobqueue internal/pagination internal/platform internal/promotions internal/storefront internal/storefrontdomains internal/twcity
+--browser-cvs: 14 pkgs -> internal/buyer internal/buyerhttp internal/claims internal/command internal/fulfillment internal/httpapi internal/httperror internal/identity internal/identityhttp internal/integrations/shipping/ecpay internal/integrations/shipping/ecpay/ecpaytest internal/mail internal/oidclogin internal/platform
+--browser-catalog-media: 44 pkgs -> internal/ads internal/billing internal/buyer internal/buyerhttp internal/catalog internal/claims internal/command internal/csvguard internal/customers internal/design internal/fulfillment internal/httpapi internal/httperror internal/identity internal/identityhttp internal/inbox internal/integrations/accounts internal/integrations/core internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/inventory internal/jobqueue internal/live internal/mail internal/merchantorders internal/merchanttools internal/metaconnect internal/migrationimport internal/msgtemplates internal/notify internal/oidclogin internal/pagination internal/payments internal/payments/platformstripe internal/payments/settlement internal/platform internal/pricing internal/promotions internal/reporting internal/returns internal/storefrontadmin internal/storefrontdomains internal/storehandles internal/twcity
+--browser-storefront-publish: 17 pkgs -> internal/ads internal/buyer internal/buyerhttp internal/claims internal/command internal/design internal/httpapi internal/httperror internal/identity internal/identityhttp internal/mail internal/metaconnect internal/oidclogin internal/platform internal/storefront internal/storefrontadmin internal/storehandles
+--browser-store-domains: 44 pkgs -> internal/ads internal/billing internal/buyer internal/buyerhttp internal/catalog internal/claims internal/command internal/csvguard internal/customers internal/design internal/fulfillment internal/httpapi internal/httperror internal/identity internal/identityhttp internal/inbox internal/integrations/accounts internal/integrations/core internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/inventory internal/jobqueue internal/live internal/mail internal/merchantorders internal/merchanttools internal/metaconnect internal/migrationimport internal/msgtemplates internal/notify internal/oidclogin internal/pagination internal/payments internal/payments/platformstripe internal/payments/settlement internal/platform internal/pricing internal/promotions internal/reporting internal/returns internal/storefrontadmin internal/storefrontdomains internal/storehandles internal/twcity
+--browser-storefront: 23 pkgs -> internal/buyer internal/buyerhttp internal/catalog internal/checkout internal/claims internal/command internal/design internal/httpapi internal/httperror internal/identity internal/identityhttp internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/inventory internal/jobqueue internal/mail internal/merchanttools internal/oidclogin internal/pagination internal/platform internal/storefront internal/storefrontadmin internal/storehandles
+--browser-webkit: 29 pkgs -> internal/attribution internal/buyer internal/buyerhttp internal/catalog internal/checkout internal/claims internal/command internal/customers internal/design internal/domains internal/fulfillment internal/httpapi internal/httperror internal/identity internal/identityhttp internal/integrations/accounts internal/integrations/core internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/integrations/shipping/ecpay/ecpaytest internal/jobqueue internal/mail internal/oidclogin internal/pagination internal/platform internal/promotions internal/storefront internal/storefrontdomains internal/twcity
+--browser-e2e: 32 pkgs -> internal/buyer internal/buyerhttp internal/catalog internal/checkout internal/claims internal/claimsintake internal/command internal/csvguard internal/domains internal/fulfillment internal/httpapi internal/httperror internal/identity internal/identityhttp internal/integrations/accounts internal/integrations/meta internal/integrations/metareply internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/inventory internal/jobqueue internal/mail internal/merchantorders internal/oidclogin internal/pagination internal/payments internal/payments/stripeadmin internal/platform internal/pricing internal/promotions internal/returns internal/storefront
+--live-browser-input: 5 pkgs -> internal/command internal/httpapi internal/integrations/livekit internal/live internal/platform
+--browser-design: 18 pkgs -> internal/ads internal/buyer internal/buyerhttp internal/claims internal/command internal/design internal/httpapi internal/httperror internal/identity internal/identityhttp internal/mail internal/metaconnect internal/oidclogin internal/platform internal/storefront internal/storefrontadmin internal/storefrontdomains internal/storehandles
+--browser-ops-polish: 4 pkgs -> internal/buyer internal/buyerhttp internal/httpapi internal/platform
+--browser-meta-connect: 43 pkgs -> internal/ads internal/billing internal/catalog internal/claims internal/command internal/csvguard internal/customers internal/design internal/fulfillment internal/httpapi internal/httperror internal/identity internal/identityhttp internal/inbox internal/integrations/accounts internal/integrations/core internal/integrations/meta/oauth internal/integrations/meta/pagetoken internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/inventory internal/jobqueue internal/live internal/mail internal/merchantorders internal/merchanttools internal/metaconnect internal/migrationimport internal/msgtemplates internal/notify internal/pagination internal/payments internal/payments/platformstripe internal/payments/settlement internal/platform internal/pricing internal/promotions internal/reporting internal/returns internal/storefrontadmin internal/storefrontdomains internal/storehandles internal/twcity
+--browser-product-editor: 17 pkgs -> internal/buyer internal/buyerhttp internal/checkout internal/command internal/domains internal/httpapi internal/httperror internal/identity internal/identityhttp internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/jobqueue internal/mail internal/oidclogin internal/pagination internal/platform internal/storefront
+--browser-catalog-core: 17 pkgs -> internal/buyer internal/buyerhttp internal/checkout internal/command internal/domains internal/httpapi internal/httperror internal/identity internal/identityhttp internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/jobqueue internal/mail internal/oidclogin internal/pagination internal/platform internal/storefront
+--browser-returns-ui: 19 pkgs -> internal/buyer internal/buyerhttp internal/checkout internal/claims internal/command internal/csvguard internal/domains internal/fulfillment internal/httpapi internal/httperror internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/jobqueue internal/merchantorders internal/pagination internal/platform internal/promotions internal/returns internal/storefront
+--browser-picklist: 0 pkgs -> 
+--browser-operations-ads: 6 pkgs -> internal/ads internal/claims internal/command internal/httpapi internal/httperror internal/platform
+--browser-product-media-v2: 11 pkgs -> internal/buyer internal/buyerhttp internal/catalog internal/httpapi internal/httperror internal/identity internal/identityhttp internal/inventory internal/mail internal/oidclogin internal/platform
+--browser-reports: 42 pkgs -> internal/ads internal/billing internal/catalog internal/claims internal/command internal/csvguard internal/customers internal/design internal/fulfillment internal/httpapi internal/httperror internal/identity internal/identityhttp internal/inbox internal/integrations/accounts internal/integrations/core internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/inventory internal/jobqueue internal/live internal/mail internal/merchantorders internal/merchanttools internal/metaconnect internal/migrationimport internal/msgtemplates internal/notify internal/oidclogin internal/pagination internal/payments internal/payments/platformstripe internal/payments/settlement internal/platform internal/pricing internal/promotions internal/reporting internal/returns internal/storefrontadmin internal/storefrontdomains internal/storehandles internal/twcity
+--browser-migration-import: 23 pkgs -> internal/ads internal/claims internal/command internal/csvguard internal/customers internal/fulfillment internal/httpapi internal/httperror internal/identity internal/identityhttp internal/integrations/shipping/ecpay internal/mail internal/merchantorders internal/merchanttools internal/metaconnect internal/migrationimport internal/oidclogin internal/pagination internal/platform internal/promotions internal/reporting internal/returns internal/twcity
