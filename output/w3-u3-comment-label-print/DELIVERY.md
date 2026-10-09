@@ -3,7 +3,7 @@ Depends on: frozen brief, live-console-v1 section 7.4, PR18 trunk and approved t
 Used by: integrator K3/PR preparation and backend replay-receipt owner; no all-green claim. -->
 # W3-U3 comment label print — DELIVERY
 
-**Status: BLOCKED_BACKEND (A3 same-key replay). UI changes committed; do not call this unit all green.**
+**Status: UI_DELIVERED; lost-ACK same-key case = BLOCKED(backend f4c26fcb). Full unit acceptance is not all green.**
 
 ## Source and scope
 
@@ -45,7 +45,8 @@ All test-local/PG runs strictly serial with the current heartbeat lock. The last
 - Actual A3 scoped 404: pre-fix label count **1**, expected **0**; `resume/privacy-red.log` / `privacy-red-error.txt`. Filtered workspace had zero matching tests, not PASS. The same unchanged privacy regression passes in both subsequent full runs.
 - Same-key UNKNOWN counterexample is deliberately **still red**: real first transaction commits, ACK is dropped, next real click sends identical key/body; count **7 → 8**. Key equality passes. Evidence: `resume/idempotency-final-error.txt`, labels artifact below.
 - Root: `internal/httpapi/live_stream.go:53–62` bypasses command receipts; `PrintComment` takes no key; SQL `live.comment_print` increments every call. Contract §7.4 requires per-key idempotency.
-- Owner explicitly ruled **backend unit fixes this, UI scope retained**. Backend task **f4c26fcb-ab2d-4a1b-9e29-0908e02406d3** submitted for assignment, not claimed/implemented here.
+- Integrator confirmed **PrintComment bypasses command.Run** and explicitly accepts this UI delivery with only that case recorded as **BLOCKED(backend f4c26fcb)**.
+- Backend task **f4c26fcb-ab2d-4a1b-9e29-0908e02406d3** is now claimed by **qwen-aliyun-backend**, branch **unit/lc-a3-print-idempotency**. Its fix is a `command.Run` receipt keyed by `Idempotency-Key`, with Go red→green tests. No backend implementation is performed here.
 - Details / required backend replay negatives: `A3-IDEMPOTENCY-BLOCKER.md`. No assertion deleted, relaxed, retried or converted to an expected failure.
 - Prior feature/host red→green logs and c012 evidence remain historical under the existing directories, not current all-green proof.
 
@@ -71,5 +72,7 @@ Integrator GitHub gates (standing RAM-heavy rule):
 New K3/required PR CI, physical printer/OS print dialog/paper pagination, LIVE Meta and production: **NOT_RUN**.
 No migrations/GRANT/checkout runtime were changed, so no local full G07 was run. Native `window.print` was intercepted only to count invocation; A3/A2/PG and print CSS stayed real.
 
-Evidence class: **MOCK Graph + REAL_PG browser E3 for tested paths; backend P1 keeps whole unit BLOCKED**.
-All owned runs/servers/fixtures ended; shared caches untouched. No push/deploy/production/provider mutation. Commit and stop for integrator review; backend handoff remains open.
+Evidence class: **MOCK Graph + REAL_PG browser E3 for tested paths; backend P1 keeps full acceptance BLOCKED**.
+The same-key test is retained **as-is**, with no skip, weakened assertion or expected-failure conversion. Its file SHA256 remains `c9e211695289fa765dc271daa0bcd7d78db075ce52d844c468077d39f72cef19`.
+After the backend PR merges, merge `origin/r3/integration` (keep the registry layout) and rerun `LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-live-console`. Record the unchanged case turning green before closing this blocker; do not reclassify the existing red log as PASS.
+All owned runs/servers/fixtures ended; shared caches untouched. No push/deploy/production/provider mutation. UI delivery committed; stop for integrator K3 review and backend merge.

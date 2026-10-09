@@ -4,7 +4,8 @@ Used by: integrator-assigned backend task f4c26fcb and W3-U3 final gate. -->
 # A3 print facts — backend handoff (P1 / I02)
 
 Owner ruling: “交给后端单元修复，保留 UI 范围”.
-Backend coordination task: `f4c26fcb-ab2d-4a1b-9e29-0908e02406d3` (submitted for assignment, not claimed by this UI author).
+Backend coordination task: `f4c26fcb-ab2d-4a1b-9e29-0908e02406d3`, claimed by `qwen-aliyun-backend`; branch `unit/lc-a3-print-idempotency`. This UI author does not implement the backend fix.
+UI handoff accepts only this case as **BLOCKED(backend f4c26fcb)**; the existing test still fails normally and is not skipped.
 
 ## Reproduction (E3, source 7877c4ef; first seen on 26d665f2)
 
@@ -26,7 +27,7 @@ first **7**, replay **8**, expected **7**. There is no synthetic response replac
 `migrations/0123_live_console_comments.sql:449–479` says “no idempotency replay beyond the row itself” and increments
 the count on every call. Row upsert is not command-key replay. This conflicts with §7.4 “idempotent per key”.
 
-Backend owner chooses the scoped command-receipt implementation. Preserve body exactly `{}`, rechecked
+Integrator assigned `command.Run` receipt replay keyed by `Idempotency-Key`, with Go red tests. Preserve body exactly `{}`, rechecked
 `live:manage`, server tenant/store scope and no label content persistence. Prove same-key replay does not increment,
 new-key print does increment, and wrong scope/authority cannot replay another store's receipt.
 
@@ -34,4 +35,5 @@ The UI now checks current management authority across awaits, expires on A3 scop
 for an explicit retry. It does **not** automatically retry. Browser native printing remains available after a
 non-authority network failure, without claiming a new confirmed badge.
 
+After the backend PR merges, rerun the **unchanged** real-click lost-ACK case via the full `--browser-live-console` mode and append green evidence. Until then retain the red counterexample.
 No product Go/SQL/DTO/contract changes were made in this UI unit. No push or deployment.
