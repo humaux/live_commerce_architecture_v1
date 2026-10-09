@@ -1,0 +1,9 @@
+{"Time":"2026-10-09T17:25:49.619844+08:00","Action":"start","Package":"livecommerce/tests/foundation"}
+{"Time":"2026-10-09T17:25:50.374059+08:00","Action":"run","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerOrderUI"}
+{"Time":"2026-10-09T17:25:50.374143+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerOrderUI","Output":"=== RUN   TestBrowserBuyerOrderUI\n","OutputType":"frame"}
+{"Time":"2026-10-09T17:27:01.039174+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerOrderUI","Output":"    browser_order_chain_test.go:187: buyer order browser gate failed; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race/output/playwright/buyer-order-1262005656\n","OutputType":"error"}
+{"Time":"2026-10-09T17:27:01.073401+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerOrderUI","Output":"--- FAIL: TestBrowserBuyerOrderUI (70.70s)\n","OutputType":"frame"}
+{"Time":"2026-10-09T17:27:01.073472+08:00","Action":"fail","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerOrderUI","Elapsed":70.7}
+{"Time":"2026-10-09T17:27:01.079646+08:00","Action":"output","Package":"livecommerce/tests/foundation","Output":"FAIL\n","OutputType":"frame"}
+{"Time":"2026-10-09T17:27:01.09006+08:00","Action":"output","Package":"livecommerce/tests/foundation","Output":"FAIL\tlivecommerce/tests/foundation\t71.468s\n","OutputType":"frame"}
+{"Time":"2026-10-09T17:27:01.090213+08:00","Action":"fail","Package":"livecommerce/tests/foundation","Elapsed":71.47}
