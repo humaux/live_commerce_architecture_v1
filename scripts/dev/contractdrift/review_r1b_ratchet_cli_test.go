@@ -112,3 +112,27 @@ func TestReviewR1BDeletionFixLeavesUnrelatedUnknownCLI(t *testing.T) {
 		}
 	}
 }
+
+func TestReviewR1BDeletionCreatesSecondUnknownCLI(t *testing.T) {
+	root := fixture(t, "aligned")
+	p := filepath.Join(root, "contracts/duplicate-unknown.md")
+	baseLine := "Route base: /v1/admin/stores/{store_id}\n"
+	original := "`GET .../widgets/{id}`\n" + strings.Repeat("non-route text\n", 20) + baseLine + "`GET .../widgets/{id}`\n"
+	mustWrite(t, p, original)
+	git(t, root, "add", ".")
+	git(t, root, "commit", "-qm", "legacy unknown plus resolved duplicate")
+	git(t, root, "tag", "-f", "trunk")
+	if code, out := cli(root, "-write-baseline"); code != 0 {
+		t.Fatal(code, out)
+	}
+	git(t, root, "add", ".")
+	git(t, root, "commit", "-qm", "baseline")
+	git(t, root, "tag", "-f", "trunk")
+	mustWrite(t, p, strings.Replace(original, baseLine, "", 1))
+	call := reviewCLI(t)
+	for _, args := range [][]string{nil, {"-write-baseline"}} {
+		if code, out := call(root, args...); code != 1 || !strings.Contains(out, "UNRESOLVED") {
+			t.Fatalf("unrelated legacy unknown hid deletion-created unknown: %d %s", code, out)
+		}
+	}
+}

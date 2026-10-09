@@ -186,10 +186,6 @@ func unresolvedTouched(f finding, base baseline, c changes) bool {
 		if ref.File != current.File {
 			continue
 		}
-		equivalent = true
-		if !intersects(old.Locations, c.Previous) {
-			continue
-		}
 		last := ref.End
 		if last < ref.Line {
 			last = ref.Line
@@ -197,7 +193,12 @@ func unresolvedTouched(f finding, base baseline, c changes) bool {
 		for line := ref.Line; line <= last; line++ {
 			mapped, ok := previousLine(line, c.Edits[ref.File])
 			if ok && mapped >= current.Line && mapped <= end {
-				return true
+				// Same file/signature is insufficient: an unrelated old unknown must not hide a newly opaque region.
+				equivalent = true
+				if intersects(old.Locations, c.Previous) {
+					return true
+				}
+				break
 			}
 		}
 	}
