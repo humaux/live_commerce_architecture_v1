@@ -1,0 +1,23 @@
+=== RUN   TestCommentSequentialAssetsUseActualCallClock
+=== RUN   TestCommentSequentialAssetsUseActualCallClock/429
+    comment_rate_test.go:81: B called 2 times before full completion + 2s wait
+=== RUN   TestCommentSequentialAssetsUseActualCallClock/usage50
+    comment_rate_test.go:81: B called 2 times before full completion + 5s wait
+=== RUN   TestCommentSequentialAssetsUseActualCallClock/usage80
+    comment_rate_test.go:81: B called 2 times before full completion + 15s wait
+=== RUN   TestCommentSequentialAssetsUseActualCallClock/bad-forward
+    comment_rate_test.go:81: B called 2 times before full completion + 2s wait
+=== RUN   TestCommentSequentialAssetsUseActualCallClock/bad-deletion
+    comment_rate_test.go:81: B called 2 times before full completion + 2s wait
+--- FAIL: TestCommentSequentialAssetsUseActualCallClock (0.00s)
+    --- FAIL: TestCommentSequentialAssetsUseActualCallClock/429 (0.00s)
+    --- FAIL: TestCommentSequentialAssetsUseActualCallClock/usage50 (0.00s)
+    --- FAIL: TestCommentSequentialAssetsUseActualCallClock/usage80 (0.00s)
+    --- FAIL: TestCommentSequentialAssetsUseActualCallClock/bad-forward (0.00s)
+    --- FAIL: TestCommentSequentialAssetsUseActualCallClock/bad-deletion (0.00s)
+=== RUN   TestCommentAdmissionIgnoresCallerSchedulingClock
+    comment_rate_test.go:105: a future scheduling snapshot bypassed the real slot deadline
+--- FAIL: TestCommentAdmissionIgnoresCallerSchedulingClock (0.00s)
+FAIL
+FAIL	livecommerce/internal/integrations/metareply	1.770s
+FAIL
