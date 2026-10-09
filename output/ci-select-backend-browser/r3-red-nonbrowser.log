@@ -1,0 +1,56 @@
+TAP version 13
+# Subtest: round 3: foundation-only file coverage does not classify a transport file
+not ok 1 - round 3: foundation-only file coverage does not classify a transport file
+  ---
+  duration_ms: 25.690291
+  type: 'test'
+  location: '/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/tests/ci/backend-coverage.test.mjs:48:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The expression evaluated to a falsy value:
+    
+      assert.ok(classifyBackendFiles(onlyUnit, [...files, file]).some((e) => e.includes(`${file} is classified by nobody`)))
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/tests/ci/backend-coverage.test.mjs:53:10)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+# Subtest: round 3: a nonbrowser exact-file declaration cannot replace browser acceptance
+not ok 2 - round 3: a nonbrowser exact-file declaration cannot replace browser acceptance
+  ---
+  duration_ms: 5.650542
+  type: 'test'
+  location: '/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/tests/ci/pr-modes.test.mjs:119:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The expression evaluated to a falsy value:
+    
+      assert.ok(modes.includes(mode))
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/tests/ci/pr-modes.test.mjs:122:37)
+    Test.runInAsyncScope (node:async_hooks:227:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 0
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 71.990334

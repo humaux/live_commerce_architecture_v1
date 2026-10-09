@@ -1,4 +1,11 @@
+<!-- Purpose: CI-SELECT delivery, current round-3 acceptance plus retained round-1/2 history.
+Depends on: source f0a5d35d, real registry/Git inventories, recorded DB-free gates and generated coverage data.
+Used by: integrator independent review and PR creation; not production/browser acceptance. -->
 # CI-SELECT delivery — backend paths select the browser modes that run them + nightly trunk browser re-verification
+
+**CURRENT: round 3 READY (author E3, source `f0a5d35d1892db4d0c33f04bfb27270fa976559a`).**
+Sections 1–16 below are history; §§17–20 replace their httpapi classification, counts and current gate status.
+No push. Independent K3/PR CI, actual browsers and the first nightly execution remain NOT_RUN.
 
 - Unit: ci-select-backend-browser. Branch: `unit/ci-select-backend-browser`. Base: `origin/r3/integration` (b1bfbeb3 at start; trunk advanced to 729afff9 (#27) mid-unit and to 9b738e0a (#29) during final verification — see §5).
 - Owner approval: 2026-10-10. Commit only; **no push performed**.
@@ -187,3 +194,60 @@ Evidence tiers: derivation/selection/gate results above are SANDBOX (local node 
 - Under-selection is bounded four ways: consumer-import join for zero-evidence packages, undeclared-package fallback (new package → all 48 until the gate classifies it), contradiction gate, nightly full matrix. Residual: a spec that builds URLs in a shape the extractor misses would show up as an UNMAPPED diagnostic (currently 4, all explained) — re-run the derive tool after adding specs/routes and check `r2-diagnostics.txt`.
 - `lc_covers` lines are derived data; hand-editing them is gate-checked (stale entries red, SHARED duplicates red, BACKEND_ONLY contradictions red).
 - Cleanup: no lingering processes (every command ran to completion); the temporary `covers-narrow.prev.json` idempotence snapshot was removed after the diff; no containers/ports; no other task directories touched. Round-1 tools (`derive-covers.mjs`, `insert-covers.mjs`, `covers.json`, `selection-counts.mjs`) are kept as history, superseded by the `-r2`/`-narrow` versions.
+
+## 17. Round 3 — file-level httpapi classification
+
+- Base: `773bc379ec40e1ffd8609d52b3a02b83fcbbaa12`; branch/worktree `unit/ci-select-backend-browser` / `.worktrees/ci-select-backend-browser`.
+- Source: `de8227db` (selector/gate/data), `14c1c14b` (tool headers), **`f0a5d35d`** (untracked Git inventory guard). Author: Codex; exact parent model ID not exposed by host. Read-only explorer: `gpt-6.1-sol`, medium; E1 assistance, not independent acceptance.
+- Write paths: `scripts/dev/{pr-modes,check-backend-coverage}.mjs`, `scripts/dev/{test-local,check-gates}.sh`, two existing `tests/ci/*.mjs` suites, existing derivation/count tools and evidence. No product Go/SQL/UI, dependencies, migration, DTO, credentials or deploy changes.
+
+Root cause: a whole-package SHARED declaration for `internal/httpapi` widened any domain route edit to 48 browsers.
+It is replaced by **9 exact shared files**, each with a reason: handler/mux/error plumbing and its tests; claims/studio/settings cross-domain helpers; cross-domain error and purchase-entry contract tests. The other 8 genuinely shared package declarations stay unchanged. `handler.go` remains all 48 Go-booting modes.
+
+The other **77 files** (production + adapter tests) have exact registry entries. `file-coverage.json` records service imports with file:line, helper callers and test ownership. We preserve every round-2 package cover, joining transport files conservatively to the existing modes exercising those domain services, then propagating same-package helper references (including passed function values). This is **not** a claim that every selected mode directly calls every endpoint in the file. The old raw route evidence's dynamic wildcard URLs are unsafe for that claim and are not used for file attribution. The 22-mode ceiling for `live_stream.go` includes helper consumers; it is conservative, not an exact one-mode hand list. No package or file is declared BACKEND_ONLY merely because URL extraction missed a dynamic call.
+
+`FILE_CLASSIFIED_PACKAGES` currently contains httpapi only. Other SHARED packages retain boot/auth/error/session/scope reasons: their narrower function-consumer coverage is not established by the existing route evidence. `check-backend-coverage` requires all **86 Go files** in the split package, including `_test.go`, to have a file declaration. New unstaged files are included via real `git ls-files --cached --others --exclude-standard -z`. Unknown files select all Go-booting modes until classified, while the gate fails; stale files and ancestor declarations for a split package fail. Nonbrowser declarations cannot satisfy file coverage. No route implementation is modified.
+
+Registry parity (`r3-parity.log`, exit 0): all **83** modes' order/build/fixture/prepare/run, non-covers lines and existing package covers are byte-identical to the base. Nightly workflow and raw round-2 `covers-derivation.json` are byte-identical too. Only exact file data is added. Generator rerun is idempotent (`r3-insert.log`: rewritten=0, unchanged=51). There are no `*.test.mjs` files under output.
+
+## 18. Current selection counts
+
+Reproducible command: `node output/ci-select-backend-browser/tools/selection-counts-r2.mjs selection-counts-r3.json` → exit 0. Data: `tools/selection-counts-r3.json`; log `r3-counts.log`. Browser universe=51, PG-fixture=47, Go-booting=48. Counts are selector results, **not measured CI wall time**.
+
+| case | files | round 2 browsers | round 3 browsers | total checks |
+|---|---:|---:|---:|---:|
+| Real PR #30 `b1bfbeb3` |11|48|**22**, live-console included|23|
+| Real PR #24 `3034c407` |68|6|6|7|
+| orders/payments |2|17|17|18|
+| catalog |1|18|18|19|
+| migrations |1|48|48|49|
+| `internal/live/stream.go` |1|18|18|19|
+| `internal/httpapi/live_stream.go` |1|48|**22**, live-console included, CVS excluded|23|
+| metareply |1|2|2|3|
+| platform |1|48|48|49|
+| `internal/httpapi/handler.go` |1|48|**48**|49|
+| docs + contracts |2|0|0|1|
+
+## 19. Red → green and final gates
+
+- `r3-red.log`: unchanged round-2 implementation fails 6 new file-selection/gate cases; existing tests stay green. Focused follow-up `r3-green-focused.log`: 62/62 (before the final inventory case).
+- `r3-red-nonbrowser.log` → `r3-green-nonbrowser.log`: actual guard mutation fails exactly 2 tests, then 2/2 green after restoring browser qualification.
+- `r3-red-git-inventory.log` → `r3-green-git-inventory.log`: real isolated Git fixture proves both staged and unstaged/test files are inventoried, 1 red → 1 green; fixture cleaned.
+- `r3-parity-first.log`: diagnostic-only null-vs-undefined mistake in an ad-hoc comparison, corrected without changing the registry; final parity exit 0. Earlier source gate logs retained, not substituted for final evidence.
+
+All required final runs below use **f0a5d35d**, with no source edits during execution:
+
+| command | exit | actual result / evidence |
+|---|---:|---|
+| `node --test --test-reporter=tap tests/ci/*.mjs` |0|**119/119**, 0 fail/skip; `r3-ready-tests-ci.log` |
+| `bash scripts/dev/test-node.sh` |0|**1360/1360**, 26 summaries, 0 fail/skip/cancel; `r3-ready-test-node.log`, `r3-ready-node-counts.log` |
+| `bash scripts/dev/check-gates.sh` |0|70 dirs + 86 split files, 51 browser declarations; 82 documented modes, 1256 Go inventory; `r3-ready-check-gates.log` |
+| `bash scripts/dev/test-local.sh --list` |0|83 entries including foundation; `r3-ready-list.log` |
+
+Evidence: **E3, DB-free selector/inventory/gate environment only** (real Git CLI + synthetic inventory fixtures). Existing storefront length warnings and catch-all shard notes remain warnings, not failures.
+
+## 20. Handoff / NOT_RUN / cleanup
+
+**READY for independent integrator review**, not merge/production approval. No push or PR created by author. Integrator: review conservative file-domain/helper joins, then push/open PR and run the required GitHub gates. Actual browser/PG/full-foundation executions, nightly triggering, independent K3/current PR CI and LIVE remain **NOT_RUN**; this unit runs no Docker, no browser, no production action. No TypeScript/product route changed.
+
+All owned local gate sessions ended; synthetic Git fixture cleaned, no containers/ports or processes remain. Red evidence is retained. W3-U3 is a separate pending task and still waits for SCOPE-404 merge; this delivery neither resumes it early nor reports it READY.
