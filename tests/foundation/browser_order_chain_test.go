@@ -22,6 +22,59 @@ import (
 	"time"
 )
 
+type browserOrderCartFact struct {
+	ID             string          `json:"id"`
+	Version        int64           `json:"version"`
+	Writes         int             `json:"writes"`
+	Receipts       int             `json:"receipts"`
+	ReceiptVersion int64           `json:"receipt_version"`
+	RequestHash    string          `json:"request_hash"`
+	Items          json.RawMessage `json:"items"`
+}
+
+// Node evidence indentation and PostgreSQL jsonb formatting are not cart facts. Every
+// scalar and the complete semantic items object still must match the independent read.
+func browserOrderCartFactsEqual(a, b browserOrderCartFact) bool {
+	var left, right any
+	return a.ID == b.ID && a.Version == b.Version && a.Writes == b.Writes && a.Receipts == b.Receipts && a.ReceiptVersion == b.ReceiptVersion && a.RequestHash == b.RequestHash && json.Unmarshal(a.Items, &left) == nil && json.Unmarshal(b.Items, &right) == nil && reflect.DeepEqual(left, right)
+}
+
+func TestBuyerOrderRefreshFactComparison(t *testing.T) {
+	pg := browserOrderCartFact{ID: "cart", Version: 1, Writes: 1, Receipts: 1, ReceiptVersion: 1, RequestHash: "exact-request-hash", Items: json.RawMessage(`[{"sku_id": "sku", "quantity": 1}]`)}
+	node := pg
+	node.Items = json.RawMessage(`[
+  {"quantity": 1, "sku_id": "sku"}
+]`)
+	if reflect.DeepEqual(pg, node) || !browserOrderCartFactsEqual(pg, node) {
+		t.Fatal("must accept semantic JSON equality while reproducing the former RawMessage byte-comparison failure")
+	}
+	for name, change := range map[string]func(*browserOrderCartFact){
+		"id":              func(f *browserOrderCartFact) { f.ID = "other" },
+		"version":         func(f *browserOrderCartFact) { f.Version++ },
+		"writes":          func(f *browserOrderCartFact) { f.Writes++ },
+		"receipts":        func(f *browserOrderCartFact) { f.Receipts++ },
+		"receipt_version": func(f *browserOrderCartFact) { f.ReceiptVersion++ },
+		"request_hash":    func(f *browserOrderCartFact) { f.RequestHash = "different" },
+		"quantity":        func(f *browserOrderCartFact) { f.Items = json.RawMessage(`[{"sku_id":"sku","quantity":2}]`) },
+		"sku":             func(f *browserOrderCartFact) { f.Items = json.RawMessage(`[{"sku_id":"other","quantity":1}]`) },
+		"extra_line": func(f *browserOrderCartFact) {
+			f.Items = json.RawMessage(`[{"sku_id":"sku","quantity":1},{"sku_id":"other","quantity":1}]`)
+		},
+		"extra_field": func(f *browserOrderCartFact) {
+			f.Items = json.RawMessage(`[{"sku_id":"sku","quantity":1,"unexpected":true}]`)
+		},
+		"invalid_json": func(f *browserOrderCartFact) { f.Items = json.RawMessage(`[`) },
+	} {
+		t.Run(name, func(t *testing.T) {
+			changed := node
+			change(&changed)
+			if browserOrderCartFactsEqual(pg, changed) {
+				t.Fatal("different persisted fact incorrectly accepted")
+			}
+		})
+	}
+}
+
 // Actual form -> production Next -> Go -> isolated PG. Only the hostname/TLS
 // edge and merchant/buyer data are synthetic; no business route is mocked.
 func TestBrowserBuyerOrderUI(t *testing.T) {
@@ -84,15 +137,7 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 		SKUID    string `json:"sku_id"`
 		Quantity int64  `json:"quantity"`
 	}
-	type cartFact struct {
-		ID             string          `json:"id"`
-		Version        int64           `json:"version"`
-		Writes         int             `json:"writes"`
-		Receipts       int             `json:"receipts"`
-		ReceiptVersion int64           `json:"receipt_version"`
-		RequestHash    string          `json:"request_hash"`
-		Items          json.RawMessage `json:"items"`
-	}
+	type cartFact = browserOrderCartFact
 	// Scope the receipt to the initiating cart's owner/session and exact key; cart.updated
 	// is inserted only by the real cart writer transaction, so replay must add none.
 	cartFacts := func(ctx context.Context, cartID, key string) (cartFact, error) {
@@ -419,7 +464,13 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 	current, e := cartFacts(context.Background(), r.CartID, r.Key)
 	var currentItems []cartItem
 	itemsError := json.Unmarshal(current.Items, &currentItems)
-	if e != nil || !reflect.DeepEqual(current, r.Before) || !reflect.DeepEqual(current, r.After) || current.ID != r.CartID || current.Version != 1 || current.Writes != 1 || current.Receipts != 1 || current.ReceiptVersion != 1 || !regexp.MustCompile(`^[a-f0-9]{64}$`).MatchString(current.RequestHash) || itemsError != nil || len(currentItems) != 1 || currentItems[0].SKUID != r.SKUID || currentItems[0].Quantity != 1 {
+	if e == nil {
+		data, marshalError := json.MarshalIndent(current, "", "  ")
+		if marshalError != nil || os.WriteFile(filepath.Join(evidence, "cart-refresh-final-pg-facts.json"), data, 0o600) != nil {
+			t.Fatal("cannot preserve independent native-focus race PG facts")
+		}
+	}
+	if e != nil || !browserOrderCartFactsEqual(current, r.Before) || !browserOrderCartFactsEqual(current, r.After) || current.ID != r.CartID || current.Version != 1 || current.Writes != 1 || current.Receipts != 1 || current.ReceiptVersion != 1 || !regexp.MustCompile(`^[a-f0-9]{64}$`).MatchString(current.RequestHash) || itemsError != nil || len(currentItems) != 1 || currentItems[0].SKUID != r.SKUID || currentItems[0].Quantity != 1 {
 		t.Fatal("independent PostgreSQL re-read disagrees with the retained/reloaded cart or found an extra write")
 	}
 	for i, phase := range r.Phases {
@@ -457,9 +508,7 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 			t.Fatal("fresh mount lacks loading-to-line publication proof after release")
 		}
 	}
-	if data, e := json.MarshalIndent(current, "", "  "); e != nil || os.WriteFile(filepath.Join(evidence, "cart-refresh-final-pg-facts.json"), data, 0o600) != nil {
-		t.Fatal("cannot preserve independent native-focus race PG facts")
-	}
+
 	if data, e := json.MarshalIndent(finalCartFacts, "", "  "); e != nil || os.WriteFile(filepath.Join(evidence, "cart-final-pg-facts.json"), data, 0o600) != nil {
 		t.Fatal("cannot preserve independent final cart facts")
 	}
