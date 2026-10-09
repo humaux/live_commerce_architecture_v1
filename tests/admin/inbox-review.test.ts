@@ -1,5 +1,5 @@
 // Purpose: retain independent PR8 privacy and authority-loss regression assertions.
-// Depends on: actual-component MOCK hook-host driver and real production refs/client.
+// Depends on: actual-component MOCK hook-host driver, real production refs/client and Node child_process isolation.
 // Used by: LC-U2b focused Node gate; BROWSER is separate and NOT_RUN here.
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -445,3 +445,34 @@ for (const shape of ["omitted", "empty", "populated"] as const) {
     assert.equal(writes, 0);
   });
 }
+
+// Isolate the process-wide WebCrypto wrapper: override only its native boundary before importing the real host.
+for (const mode of ["sync-throw", "never-settles"] as const) test(`PR18 host digest hardening ${mode}`, async () => {
+  const { execFileSync } = await import("node:child_process");
+  const hostURL = new URL("./inbox-review-host.test.ts", import.meta.url).href;
+  execFileSync(process.execPath, ["--experimental-strip-types", "--input-type=module", "-e", `
+    import assert from "node:assert/strict";
+    const mode = ${JSON.stringify(mode)};
+    const sentinel = new Error("synthetic synchronous digest failure");
+    let release;
+    crypto.subtle.digest = mode === "sync-throw"
+      ? () => { throw sentinel; }
+      : () => new Promise(resolve => { release = resolve; });
+    const { Host } = await import(${JSON.stringify(hostURL)});
+    const host = new Host(() => null);
+    if (mode === "sync-throw") {
+      assert.throws(() => crypto.subtle.digest("SHA-256", new Uint8Array()), error => error === sentinel);
+      await host.settle();
+    } else {
+      const pending = crypto.subtle.digest("SHA-256", new Uint8Array());
+      try {
+        await assert.rejects(host.settle(), {code:"ERR_ASSERTION",actual:1,expected:0,message:/digests quiesced within bounded rounds/});
+      } finally {
+        release(new ArrayBuffer(32));
+        await pending;
+      }
+      await host.settle();
+    }
+    host.dispose();
+  `], { timeout: 10000, stdio: "pipe", encoding: "utf8" });
+});

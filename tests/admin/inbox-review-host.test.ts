@@ -20,7 +20,12 @@ let pendingDigests = 0;
 const realDigest = crypto.subtle.digest.bind(crypto.subtle);
 crypto.subtle.digest = ((...args: Parameters<SubtleCrypto["digest"]>) => {
   pendingDigests++;
-  return realDigest(...args).finally(() => pendingDigests--);
+  try {
+    return realDigest(...args).finally(() => pendingDigests--);
+  } catch (error) {
+    pendingDigests--;
+    throw error;
+  }
 }) as SubtleCrypto["digest"];
 const same = (a?: unknown[], b?: unknown[]) =>
   !!a && !!b && a.length === b.length && a.every((v, i) => Object.is(v, b[i]));
@@ -91,6 +96,7 @@ class Host {
       if (pendingDigests === 0) break;
       for (let i = 0; i < 2000 && pendingDigests > 0; i++) await new Promise<void>((done) => setImmediate(done));
     }
+    assert.equal(pendingDigests, 0, "digests quiesced within bounded rounds");
     this.flush();
   }
   // Batch the same JS turn: send.finally briefly clears busy before starting its authority reload.
