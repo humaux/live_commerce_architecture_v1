@@ -1,0 +1,70 @@
+✔ Host subset: nested Provider and React19 context shadow defaults without sibling leakage (11.357125ms)
+✔ Host subset: provider updates reach stable children and separate roots keep their own values (0.222208ms)
+✔ Host subset: render errors restore context and hook ownership (0.254959ms)
+✔ Host subset: portal children inherit logical context and retain handlers/state (0.34775ms)
+✔ Host subset: portal target/key changes remount children and removal runs cleanup (0.147209ms)
+✔ Host subset: createPortal rejects invalid DOM targets rather than swallowing children (0.097667ms)
+✖ W3U3 denied 401 resets busy and running without remount (13.339333ms)
+✖ W3U3 denied 403 resets busy and running without remount (1.288667ms)
+✖ W3U3 denied 404 resets busy and running without remount (0.865833ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 6
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 274.9505
+
+✖ failing tests:
+
+test at tests/admin/comment-label-print.test.ts:10:39
+✖ W3U3 denied 401 resets busy and running without remount (13.339333ms)
+  AssertionError [ERR_ASSERTION]: denial cannot leave busy set
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u3-comment-label-print/tests/admin/comment-label-print.test.ts:37:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-label-print.test.ts:10:39
+✖ W3U3 denied 403 resets busy and running without remount (1.288667ms)
+  AssertionError [ERR_ASSERTION]: denial cannot leave busy set
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u3-comment-label-print/tests/admin/comment-label-print.test.ts:37:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-label-print.test.ts:10:39
+✖ W3U3 denied 404 resets busy and running without remount (0.865833ms)
+  AssertionError [ERR_ASSERTION]: denial cannot leave busy set
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u3-comment-label-print/tests/admin/comment-label-print.test.ts:37:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

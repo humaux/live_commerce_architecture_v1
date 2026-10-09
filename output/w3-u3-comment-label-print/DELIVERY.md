@@ -5,6 +5,16 @@ Used by: integrator K3/PR preparation and backend replay-receipt owner; no all-g
 
 **Status: UI_DELIVERED; lost-ACK same-key case = BLOCKED(backend f4c26fcb). Full unit acceptance is not all green.**
 
+## Latest K3 round-one P2 batch
+
+- Current tested source **b245fef897837aaebefcd56ac90a1b475cd195bc**. Two requested P2 fixes are implemented; current full browser acceptance remains **NOT_RUN / NOT_READY**.
+- Ledger actual now records observed DOM/API counts, states, dimensions and reload values, with outcomes derived from those values. It never copies expected; failures retain safe actual state. Names/text/ref/key are not written to the ledger.
+- Label 401/403/404 resets busy/running locally before onDenied, independently of remounting.
+- Red→green: 3 same-mounted component denials plus 2 actual-source recorder cases. New tests are registered in test-node. Full Node **1319/0**, admin tsc **0**, check-gates **0**; spec tsc **0** with existing admin Node types. Browser collection is 9 cases, not acceptance.
+- Original browser expect-call sequence **53→53, identical**; lost-ACK key/count assertions and network transaction/drop logic are retained.
+- Evidence, commands/exits and limitations: **`k3-p2/DELIVERY.md`**. Previous browser shots and copied-expected ledgers below are **historical**, not current observation evidence.
+- Read-only origin at **7975160e** still has the pre-fix PrintComment signature. PR **#30 / unit/lc-a3-print-idempotency /34587db4** is not integrated into this branch. Rerun after backend PR merge before reporting READY.
+
 ## Source and scope
 
 - Branch `unit/w3-u3-comment-label-print`, own worktree only.
@@ -22,7 +32,7 @@ Current keyword rows can be checked/un-checked or printed singly. Preview shows 
 
 A3 sends exactly `{}` with one UUID key per ref through the existing CSRF/session transport. Badges use only confirmed counts and survive a real A2 reload. Network failures still permit native printing without claiming a new record; UNKNOWN retains the same key for an explicit retry, never an automatic retry. Scoped 401/403/**404** expires private state. Latest management permission is checked before/after awaits; the portal also gates on current authority.
 
-## Current results and exit codes
+## Historical initial acceptance (7877, before the K3 P2 changes)
 
 | Command / tested input | Exit | Counts / evidence |
 |---|---:|---|
@@ -50,7 +60,7 @@ All test-local/PG runs strictly serial with the current heartbeat lock. The last
 - Details / required backend replay negatives: `A3-IDEMPOTENCY-BLOCKER.md`. No assertion deleted, relaxed, retried or converted to an expected failure.
 - Prior feature/host red→green logs and c012 evidence remain historical under the existing directories, not current all-green proof.
 
-## Current screenshots / click ledger
+## Historical initial screenshots / click ledger
 
 - Workspace artifact: `output/playwright/live-console-843701277/` (23 passed).
 - Labels artifact: `output/playwright/live-console-2056379755/` (8 passed, 1 failed).
@@ -73,6 +83,6 @@ New K3/required PR CI, physical printer/OS print dialog/paper pagination, LIVE M
 No migrations/GRANT/checkout runtime were changed, so no local full G07 was run. Native `window.print` was intercepted only to count invocation; A3/A2/PG and print CSS stayed real.
 
 Evidence class: **MOCK Graph + REAL_PG browser E3 for tested paths; backend P1 keeps full acceptance BLOCKED**.
-The same-key test is retained **as-is**, with no skip, weakened assertion or expected-failure conversion. Its file SHA256 remains `c9e211695289fa765dc271daa0bcd7d78db075ce52d844c468077d39f72cef19`.
+The same-key assertions and real ACK-loss operations are retained, with no skip, weakened assertion or expected-failure conversion. The confirmed `c9e211695289fa765dc271daa0bcd7d78db075ce52d844c468077d39f72cef19` is the historical 992cff85 spec hash; K3-requested ledger instrumentation changes the current hash to `c5f1b3f7a685c1fd284cc03416f6b96cdaf509f71f114acb19bf3bf3bd12b156`.
 After the backend PR merges, merge `origin/r3/integration` (keep the registry layout) and rerun `LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-live-console`. Record the unchanged case turning green before closing this blocker; do not reclassify the existing red log as PASS.
 All owned runs/servers/fixtures ended; shared caches untouched. No push/deploy/production/provider mutation. UI delivery committed; stop for integrator K3 review and backend merge.
