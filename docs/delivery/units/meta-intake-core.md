@@ -114,8 +114,8 @@ only), `output/meta-intake-core/**`. Not: contracts, `internal/integrations/core
 
 ## Verify
 ```sh
-GOTOOLCHAIN=go1.27.1 go test -race -count=1 ./internal/claims/... ./internal/integrations/meta ./internal/platform ./cmd/meta-worker
-GOTOOLCHAIN=go1.27.1 go vet ./... && gofmt -l internal cmd && python3 scripts/check_packet.py
+GOTOOLCHAIN=go1.27.2 go test -race -count=1 ./internal/claims/... ./internal/integrations/meta ./internal/platform ./cmd/meta-worker
+GOTOOLCHAIN=go1.27.2 go vet ./... && gofmt -l internal cmd && python3 scripts/check_packet.py
 bash scripts/dev/test-focused.sh '^Test(LiveClaims|MetaConsumer|MetaInbox|MetaIsolation|MetaRuntime|T06)'
 ```
 Logs → main checkout `output/meta-intake-core/`. MCI gates belong to `meta-intake-tests`.
