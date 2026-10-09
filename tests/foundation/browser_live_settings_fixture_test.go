@@ -10,8 +10,10 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"sync"
+	"testing"
 	"unicode/utf8"
 )
 
@@ -22,6 +24,28 @@ type blsReceipt struct {
 	Status   int    `json:"status"`
 	Effect   bool   `json:"effect"`
 }
+
+// TestBrowserLiveSettingsMockRequiresMerchantTemplate guards the test backend against accepting a fixed template PUT.
+func TestBrowserLiveSettingsMockRequiresMerchantTemplate(t *testing.T) {
+	m := &blsMock{store: randomUUID(), scene: randomUUID()}
+	m.reset()
+	request := httptest.NewRequest(http.MethodPut, "/v1/admin/stores/"+m.store+"/live-settings/sold-out-reply", strings.NewReader(`{"enabled":false,"template_id":"sold-out-reply/v1","template_version":1,"expected_version":3}`))
+	request.Header.Set("Idempotency-Key", "fixture-fixed-template-negative")
+	response := httptest.NewRecorder()
+	if !m.serve(response, request, m.store) {
+		t.Fatal("fixture route not handled")
+	}
+	if response.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("fixed template status=%d want422", response.Code)
+	}
+	if m.version != 3 || !m.enabled || m.templateID != "sold-out-reply/v1" {
+		t.Fatal("rejected fixed template changed settings")
+	}
+	if len(m.receipts) != 1 || m.receipts[0].Effect {
+		t.Fatal("fixed-template refusal recorded an effect")
+	}
+}
+
 type blsMock struct {
 	mu                                                                                        sync.Mutex
 	store, otherStore, scene, otherScene, bundle, restrictedBundle, entry, nextEntry, comment string
@@ -248,7 +272,8 @@ func (m *blsMock) serve(w http.ResponseWriter, r *http.Request, store string) bo
 		enabled, ok := b["enabled"].(bool)
 		id, _ := b["template_id"].(string)
 		v, okv := b["template_version"].(float64)
-		if !blsExact(b, "enabled", "template_id", "template_version", "expected_version") || !ok || !okv || (id == "sold-out-reply/v1" && v != 1) || (id != "sold-out-reply/v1" && (id != m.publishedID || v != 7)) {
+		// The production adapter resolves a merchant-published receipt and rejects every Fixed template.
+		if !blsExact(b, "enabled", "template_id", "template_version", "expected_version") || !ok || !okv || !strings.HasPrefix(id, "merchant-sold-out-") || id != m.publishedID || v != 7 {
 			status = 422
 			break
 		}

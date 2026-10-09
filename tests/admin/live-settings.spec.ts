@@ -189,10 +189,19 @@ test("scene selector real click when scene absent",async({page})=>{
 test("409 is visible and never auto overwrites newer settings",async({page,request})=>{
   await login(page);await page.goto(settings("zh-TW"));await expect(page.getByTestId("sold-out-enabled")).toBeChecked();
   await fixture(request,"fault",{mode:"conflict"});await page.getByTestId("sold-out-enabled").click();
+  await step(page,"sold-out-template","fill","valid new merchant draft before CAS conflict",async()=>{
+    await page.getByTestId("sold-out-template").fill("MOCK conflict {{product.name}} has sold out");
+    await expect(page.getByTestId("sold-out-preview")).toContainText("MOCK conflict");
+  });
   await step(page,"sold-out-save","click","409 exposed with authoritative settings unchanged",async()=>{
+    const published=page.waitForResponse(r=>new URL(r.url()).pathname.endsWith("/message-templates")&&r.request().method()==="POST");
     const response=await waitWrite(page,"/live-settings/sold-out-reply","PUT",()=>page.getByTestId("sold-out-save").click());expect(response.status()).toBe(409);
+    const publication=await published;expect(publication.status()).toBe(200);const receipt=await publication.json();
+    expect(receipt.template_id).toMatch(/^merchant-sold-out-/);expect(receipt.version).toBe(7);
+    expect(response.request().postDataJSON()).toEqual({enabled:false,template_id:receipt.template_id,template_version:receipt.version,expected_version:3});
     await expect(page.getByTestId("sold-out-conflict")).toBeVisible();
     const after=await facts(request);expect(after.enabled).toBe(true);expect(after.version).toBe(4);expect(after.receipts.filter(r=>r.action==="sold-out")).toHaveLength(1);
+    expect(after.template_id).toBe("sold-out-reply/v1");expect(after.receipts.filter(r=>r.action==="publish"&&r.effect)).toHaveLength(1);
     await page.reload();await expect(page.getByTestId("sold-out-enabled")).toBeChecked();expect((await facts(request)).receipts.filter(r=>r.action==="sold-out")).toHaveLength(1);
   });
 });
