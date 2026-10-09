@@ -771,8 +771,8 @@ export function registerProductEditorAcceptance() {
           ledger.push({ page: `mobile matrix ${phase}`, locale, width: 390, control: editing ? "product-save" : "product-create", action: "click reload", expected: "one document write; both matrix rows persist", actual: "PASS", screenshot: `${capture}.png`, tier: "BROWSER+REAL_PG" });
         }
         // Enabled=false archives an existing SKU; the detail contract returns
-        // active SKUs only. After reload the missing axis combination is a
-        // visibly blank new-row placeholder, not a reversible disabled SKU.
+        // active SKUs only. After reload only Black remains visible; White's
+        // archived data is verified separately by the Go PG readback.
         const white = page.getByTestId("matrix-row-0"), black = page.getByTestId("matrix-row-1");
         const whiteID = await white.getAttribute("data-sku-id"), blackID = await black.getAttribute("data-sku-id");
         expect(whiteID).toMatch(/^[0-9a-f-]{36}$/);
@@ -785,30 +785,28 @@ export function registerProductEditorAcceptance() {
         expect((await archivedResponse).ok()).toBe(true);
         await expect(page.getByTestId("product-save")).toBeEnabled();
         await page.reload();
-        await expect(page.locator('[data-testid^="matrix-row-"]')).toHaveCount(2);
-        await expect(white.locator("strong")).toHaveText("White / S");
-        await expect(white).not.toHaveAttribute("data-sku-id");
-        const blankPrice = white.getByTestId("new-price-0");
-        await blankPrice.scrollIntoViewIfNeeded();
-        await expect(blankPrice).toBeVisible();
-        await expect(blankPrice).toBeInViewport({ ratio: 0.99 });
-        await expect(blankPrice).toHaveValue("");
-        await expect(white.getByTestId("matrix-compare-0")).toHaveValue("");
-        await expect(white.getByTestId("matrix-code-0")).toHaveValue("");
-        await expect(white.getByTestId("matrix-code-0")).toBeEnabled();
-        await expect(black).toHaveAttribute("data-sku-id", blackID!);
-        await expect(black.locator("strong")).toHaveText("Black / S");
-        await expect(black.getByTestId("new-price-1")).toHaveValue("81");
-        await expect(black.getByTestId("matrix-compare-1")).toHaveValue("121");
-        await expect(black.getByTestId("matrix-quantity-1")).toHaveValue("8");
-        await expect(black.getByRole("checkbox", { name: c.untracked, exact: true })).not.toBeChecked();
-        await expect(black.getByTestId("matrix-code-1")).toHaveValue(`${mobileMatrixTag}-${localeIndex}-1`);
-        await expect(black.getByRole("textbox", { name: `${c.keyword} 2`, exact: true })).toHaveValue(`${mobileMatrixTag}${localeIndex}E1`);
-        await expect(black.getByTestId("matrix-active-1")).toBeChecked();
+        const savedMatrix = page.getByTestId("variant-matrix");
+        await expect(savedMatrix.locator('[data-testid^="matrix-row-"]')).toHaveCount(1);
+        await expect(savedMatrix.locator(`[data-sku-id="${whiteID}"]`)).toHaveCount(0);
+        await expect(savedMatrix.locator("strong")).toHaveText(["Black / S"]);
+        const savedBlack = savedMatrix.locator(`[data-sku-id="${blackID}"]`);
+        await expect(savedBlack).toHaveCount(1);
+        const savedPrice = savedBlack.getByTestId("new-price-0");
+        await savedPrice.scrollIntoViewIfNeeded();
+        await expect(savedPrice).toBeVisible();
+        await expect(savedPrice).toBeInViewport({ ratio: 0.99 });
+        await expect(savedPrice).toHaveValue("81");
+        await expect(savedBlack.getByTestId("matrix-compare-0")).toHaveValue("121");
+        await expect(savedBlack.getByTestId("matrix-quantity-0")).toHaveValue("8");
+        await expect(savedBlack.getByRole("checkbox", { name: c.untracked, exact: true })).not.toBeChecked();
+        await expect(savedBlack.getByTestId("matrix-code-0")).toHaveValue(`${mobileMatrixTag}-${localeIndex}-1`);
+        await expect(savedBlack.getByTestId("matrix-code-0")).toBeDisabled();
+        await expect(savedBlack.getByRole("textbox", { name: `${c.keyword} 1`, exact: true })).toHaveValue(`${mobileMatrixTag}${localeIndex}E1`);
+        await expect(savedBlack.getByTestId("matrix-active-0")).toBeChecked();
         expect(writes.slice(archiveStart).filter((r) => r.path.endsWith("/document"))).toHaveLength(1);
         const archiveCapture = `mobile-matrix-${locale}-390-archived`;
         await shot(archiveCapture);
-        ledger.push({ page: "mobile matrix edit", locale, width: 390, control: "matrix-active-0/product-save", action: "uncheck White, click save, reload", expected: { archivedSKU: whiteID, white: "visible blank new-row placeholder", black: { id: blackID, price: "81", compare: "121", trackedQuantity: "8", active: true } }, actual: "PASS", screenshot: `${archiveCapture}.png`, tier: "BROWSER+REAL_PG" });
+        ledger.push({ page: "mobile matrix edit", locale, width: 390, control: "matrix-active-0/product-save", action: "uncheck White, click save, reload", expected: { archivedSKU: whiteID, white: "absent from active-only matrix by SKU ID and name", visibleRows: 1, black: { id: blackID, price: "81", compare: "121", trackedQuantity: "8", active: true } }, actual: "PASS", screenshot: `${archiveCapture}.png`, tier: "BROWSER+REAL_PG" });
       }
       // Controlled read-only ambiguity: do not fabricate a stock quantity when the API has no single warehouse.
       await page.route(
