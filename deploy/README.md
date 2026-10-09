@@ -240,7 +240,7 @@ The media worker is **not deployed**, because it is MOCK-only (`worker_env.go:17
 | Docker Engine | ≥ 25 (verified 29.3.1) | host | BuildKit cache mounts, `init`, sysctls |
 | Docker Compose plugin | ≥ 2.24 (verified v5.1.1) | host | `depends_on.required: false`, profiles |
 | bash, coreutils, openssl, curl, python3 | distro | `deploy/scripts/*` | Key generation, JSON/format checks, secret scan |
-| golang | `1.27.1-trixie@sha256:4337…5183` | build stages | go.mod `go 1.27.1` |
+| golang | `1.27.2-trixie@sha256:e58d…c48d` | build stages | go.mod `go 1.27.2` |
 | distroless static | `debian13:nonroot@sha256:e2e9…55e3` | `lc-go` runtime | CA certs + tzdata, UID 65532, no shell |
 | node | `24.15.0-trixie-slim@sha256:291b…0eb7` | `lc-admin`, `lc-storefront` | Ledger-tested Node (O6: 24.21.0 bump candidate) |
 | pnpm | 10.33.0 via corepack | Node builds | root `packageManager` |

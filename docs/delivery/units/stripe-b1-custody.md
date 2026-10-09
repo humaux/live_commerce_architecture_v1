@@ -67,8 +67,8 @@ one/two distinct signing secrets; all formatting/JSON redaction; no plaintext in
 ciphertext. Preserve existing PAYUNi tests. Run:
 
 ```sh
-GOTOOLCHAIN=go1.27.1 go test -race -count=1 ./internal/integrations/accounts ./internal/integrations/psp/stripe
-GOTOOLCHAIN=go1.27.1 go vet ./internal/integrations/accounts
+GOTOOLCHAIN=go1.27.2 go test -race -count=1 ./internal/integrations/accounts ./internal/integrations/psp/stripe
+GOTOOLCHAIN=go1.27.2 go vet ./internal/integrations/accounts
 ```
 
 This is UNIT evidence, not SQL, SANDBOX or LIVE. Return exact commit, model/reasoning,

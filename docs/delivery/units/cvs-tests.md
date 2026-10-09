@@ -82,11 +82,11 @@ comments say which owner-pool write and why; wire constants in the fake carry do
 
 ## Verify
 ```sh
-GOTOOLCHAIN=go1.27.1 go vet ./tests/... ./internal/integrations/shipping/...
-GOTOOLCHAIN=go1.27.1 go test -count=1 ./internal/integrations/shipping/ecpay/ecpaytest ./tests/integrations/ecpay   # TCV01
+GOTOOLCHAIN=go1.27.2 go vet ./tests/... ./internal/integrations/shipping/...
+GOTOOLCHAIN=go1.27.2 go test -count=1 ./internal/integrations/shipping/ecpay/ecpaytest ./tests/integrations/ecpay   # TCV01
 LC_FOCUSED_TIMEOUT=2400s bash scripts/dev/test-focused.sh '^Test(TaiwanCvsSchema|Cvs(SelectionFlow|BeginGuards|ShipmentLifecycle|StatusIngress|Options|BuyerEnteredStore|PayAtPickupBegin|CollectionStatus|PayAtPickupRelease|NoIframeAndPrivacy))$'
 bash scripts/dev/test-local.sh --browser-cvs                                            # TCV08 MOCK
-ECPAY_LOGISTICS_SANDBOX=1 GOTOOLCHAIN=go1.27.1 go test -tags sandbox -count=1 ./tests/integrations/ecpay   # TCV07/TCV10; else NOT_RUN
+ECPAY_LOGISTICS_SANDBOX=1 GOTOOLCHAIN=go1.27.2 go test -tags sandbox -count=1 ./tests/integrations/ecpay   # TCV07/TCV10; else NOT_RUN
 ```
 Red proof per gate (PROCESS §2.4): after merge, one targeted mutation of the merged candidate in a scratch copy
 (reverted) per gate → `output/cvs-tests/red-<gate>.log`, then the green log. Compile failure is not a red run;

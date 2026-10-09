@@ -109,9 +109,9 @@ tag reconcile, host guard, redaction, OAuth fake. Independent (ads-tests): MA01,
 
 ## Verify
 ```sh
-GOTOOLCHAIN=go1.27.1 go vet ./... && gofmt -l internal cmd
-GOTOOLCHAIN=go1.27.1 go test -race -count=1 ./internal/integrations/meta_ads/... ./cmd/ads-worker ./cmd/api
-GOTOOLCHAIN=go1.27.1 go list -deps ./cmd/api | grep -c meta_ads/tokenopen   # must print 0
+GOTOOLCHAIN=go1.27.2 go vet ./... && gofmt -l internal cmd
+GOTOOLCHAIN=go1.27.2 go test -race -count=1 ./internal/integrations/meta_ads/... ./cmd/ads-worker ./cmd/api
+GOTOOLCHAIN=go1.27.2 go list -deps ./cmd/api | grep -c meta_ads/tokenopen   # must print 0
 bash scripts/dev/depmap.sh && python3 scripts/check_packet.py
 ```
 Logs → `/Volumes/data/live_commerce_architecture_v1/output/ads-graph/`.
