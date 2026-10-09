@@ -39,6 +39,7 @@ export function LiveSettings({
     draft,
     setDraft,
     report,
+    remindersUnavailable,
     result,
     blocked,
     history,
@@ -46,6 +47,7 @@ export function LiveSettings({
     setRemove,
     busy,
     loading,
+    sessionsLoading,
     error,
     notice,
     unknown,
@@ -57,6 +59,7 @@ export function LiveSettings({
     setRevision,
     run,
     page,
+    loadMoreSessions,
     save,
     copy,
     unavailable,
@@ -67,7 +70,13 @@ export function LiveSettings({
       locale={locale}
       storeName={store?.name ?? ""}
       active="live"
-      onBeforeNavigate={() => {
+      onBeforeNavigate={(destination) => {
+        // Same page keys do not remount this component, so terminal teardown
+        // would strand it forever. Other destinations still clear synchronously.
+        if (destination) {
+          const target = new URL(destination, "https://local.invalid");
+          if (target.origin === "https://local.invalid" && target.pathname === `/${locale}/studio/settings` && target.searchParams.get("store") === storeID && (target.searchParams.get("scene") ?? "") === scene) return true;
+        }
         privacy.suspend();
         return true;
       }}
@@ -106,7 +115,7 @@ export function LiveSettings({
                     }
                   }}
                 >
-                  <option value="">{c.choose}</option>
+                  <option value="" disabled={!!scene}>{c.choose}</option>
                   {sessions?.items.map((item) => (
                     <option key={item.session_id} value={item.session_id}>
                       {item.title}
@@ -114,6 +123,7 @@ export function LiveSettings({
                   ))}
                 </select>
               </label>
+              {sessions?.next_cursor && <button type="button" data-testid="scene-more" disabled={locked || sessionsLoading} onClick={() => loadMoreSessions()}>{sessionsLoading ? c.loading : c.next}</button>}
               <button
                 type="button"
                 data-testid="live-settings-refresh"
@@ -163,7 +173,7 @@ export function LiveSettings({
                 type="button"
                 className="primary"
                 data-testid="reminder-trigger"
-                disabled={locked || !scene || !canRemind}
+                disabled={locked || !scene || !canRemind || remindersUnavailable}
                 onClick={() =>
                   void run({
                     key: crypto.randomUUID(),
@@ -176,6 +186,9 @@ export function LiveSettings({
               </button>
               {!scene && <p>{c.chooseFirst}</p>}
               {!canRemind && <p>{c.noReply}</p>}
+              {result && <p role="status" data-testid="reminder-result">{c.result}: {c.queued} {result.queued} · {c.already} {result.already_reminded} · {c.failed} {result.refused}</p>}
+              {result?.truncated && <p role="status">{c.more}</p>}
+              {remindersUnavailable && <p role="status" data-testid="reminders-unavailable">{c.unavailable}</p>}
               {canReport ? (
                 report && (
                   <div data-testid="reminder-report">
@@ -191,13 +204,6 @@ export function LiveSettings({
                       · {c.sent} {report.sent.length} · {c.failed}{" "}
                       {report.failed.length}
                     </p>
-                    {result && (
-                      <p role="status">
-                        {c.result}: {c.queued} {result.queued} · {c.already}{" "}
-                        {result.already_reminded} · {c.failed} {result.refused}
-                      </p>
-                    )}
-                    {result?.truncated && <p role="status">{c.more}</p>}
                     {report.followup.length ? (
                       <ul className="comment-rows">
                         {report.followup.map((row) => (

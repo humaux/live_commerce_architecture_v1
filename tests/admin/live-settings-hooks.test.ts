@@ -4,12 +4,104 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
-import {environment,store,response} from "./inbox-review-host.test.ts";
+import {environment,store,response,node,textOf} from "./inbox-review-host.test.ts";
 registerHooks({resolve(specifier,context,next){
-  if(specifier==="next/navigation")return {url:"data:text/javascript,export function useRouter(){return {push(){}}}",shortCircuit:true};
+  // Presentation useId is renderer plumbing; keep all privacy/controller hooks real.
+  if(specifier==="react")return {url:"data:text/javascript,const r=globalThis.__inboxReviewRuntime;export const {useState,useRef,useCallback,useEffect}=r;export const useId=()=>r.useRef('mock-live-settings-id').current;",shortCircuit:true};
+  if(specifier==="next/navigation")return {url:"data:text/javascript,export function useRouter(){return globalThis.__liveSettingsRouter??{push(){}}}export const usePathname=()=>'/en/studio/settings';export const useSearchParams=()=>new URLSearchParams();export const useParams=()=>({locale:'en'});",shortCircuit:true};
   return next(specifier,context);
 }});
 const {useLiveSettingsController}=await import("../../apps/admin/lib/live-settings-controller.ts");
+const {LiveSettings}=await import("../../apps/admin/components/LiveSettings.tsx");
+
+const sid="00000000-0000-4000-8000-000000000001";
+const drafts=Array.from({length:21},(_,i)=>({session_id:`00000000-0000-4000-8000-${String(i+1).padStart(12,"0")}`,program_id:store.id,title:`MOCK scene ${i+1}`,scheduled_at:null,aspect_ratio:"16:9",state:"DRAFT",version:1,created_at:"2030-01-01T00:00:00Z",updated_at:"2030-01-01T00:00:00Z"}));
+const allStore={...store,permissions:["live:read","live:manage","inbox:read","inbox:reply"]};
+const noReportStore={...allStore,role:"staff",permissions:["live:read","live:manage","inbox:reply"]};
+const report={sent:[],queued:0,failed:[],followup:[],link:null};
+const queued={queued:2,already_reminded:1,refused:0,followup:0,restricted:0,truncated:false};
+function reads(input:RequestInfo|URL) {
+ const url=String(input);
+ if(url.includes("sold-out-reply"))return response({enabled:true,template_id:"merchant-reply",template_version:1,version:3});
+ if(url.includes("claims/blocklist"))return response({items:[],next_cursor:""});
+ if(url.includes("/reminders"))return response(report);
+ const studio=(value:unknown)=>{const r=response(value);r.headers.set("Cache-Control","private, no-store");return r;};
+ if(url.endsWith(drafts[20].session_id))return studio({draft:drafts[20],prepared:null,attempt:null,can_manage:true,media_enabled:false});
+ return studio({items:url.includes("cursor=")?[drafts[20]]:drafts.slice(0,20),next_cursor:url.includes("cursor=")?"":"page-two"});
+}
+
+test("PR31 split permissions actual reminder click retains queued receipt without unauthorized report GET",async t=>{
+ const env=environment(t);let posts=0,gets=0;
+ globalThis.fetch=async(input,init)=>{
+  if(String(input).includes("/reminders")){if(init?.method==="POST"){posts++;return response(queued);}gets++;return response({code:"forbidden"},403);}
+  return reads(input);
+ };
+ const h=env.mount(()=>LiveSettings({store:noReportStore,locale:"en",scene:sid,initialError:null}));
+ await h.waitFor(()=>!node(h,n=>n.props["data-testid"]==="reminder-trigger").props.disabled,"actual reminder control ready");
+ node(h,n=>n.props["data-testid"]==="reminder-trigger").props.onClick();
+ await h.waitFor(()=>posts===1&&(gets>0||textOf(h.output).includes("This request")),"exact successful reminder completion or unauthorized follow-up read");
+ assert.equal(gets,0,"report permission must be checked before transport");
+ const text=textOf(h.output).replace(/\s+/g," ");assert.match(text,/Queued 2/);assert.match(text,/Already reminded 1/);
+ assert.ok(node(h,n=>n.props["data-testid"]==="scene-select"));
+});
+
+test("PR31 optional reminder GET 404 preserves healthy settings and blocklist",async t=>{
+ const env=environment(t);globalThis.fetch=async input=>String(input).includes("/reminders")?response({code:"not_found"},404):reads(input);
+ const h=env.mount(()=>useLiveSettingsController({store:allStore,locale:"en",scene:sid,initialError:null}));await h.settle();
+ assert.equal(h.output.settings?.version,3);assert.deepEqual(h.output.blocked?.items,[]);
+ assert.equal(h.output.remindersUnavailable,true);assert.equal(h.output.privacy.visible,true);assert.equal(h.output.privacy.blocked.current,false);
+});
+
+test("PR31 actual authorized reminder read 403 still tears down all private state",async t=>{
+ const env=environment(t);globalThis.fetch=async input=>String(input).includes("/reminders")?response({code:"forbidden"},403):reads(input);
+ const h=env.mount(()=>useLiveSettingsController({store:allStore,locale:"en",scene:sid,initialError:null}));await h.settle();
+ assert.equal(h.output.privacy.blocked.current,true);assert.equal(h.output.settings,null);assert.equal(h.output.blocked,null);assert.equal(h.output.result,null);
+});
+
+test("PR31 same settings destination preserves the actual scene selector",async t=>{
+ const env=environment(t);globalThis.fetch=async input=>reads(input);
+ const h=env.mount(()=>LiveSettings({store:allStore,locale:"en",scene:"",initialError:null}));await h.waitFor(()=>!node(h,n=>n.props["data-testid"]==="scene-select").props.disabled,"scene selector ready");
+ assert.equal(h.raw.props.onBeforeNavigate(`/en/studio/settings?store=${store.id}`),true);
+ h.flush();assert.equal(node(h,n=>n.props["data-testid"]==="scene-select").props.disabled,false,"no replacement means privacy remains live");
+});
+
+for(const destination of [`/en/studio/settings?store=${store.id}&scene=${drafts[20].session_id}`,`/en/studio/settings?store=${drafts[20].session_id}`,`/zh-CN/studio/settings?store=${store.id}`])test(`PR31 actual navigation synchronously clears old private state: ${destination}`,async t=>{
+ const env=environment(t);let release!:(r:Response)=>void;const held=new Promise<Response>(resolve=>release=resolve);let started=false;
+ globalThis.fetch=async input=>{if(String(input).includes("/reminders")){started=true;return held;}return reads(input);};
+ const h=env.mount(()=>LiveSettings({store:allStore,locale:"en",scene:sid,initialError:null}));await h.waitFor(()=>started,"report read held");
+ h.raw.props.onBeforeNavigate(destination);h.flush();assert.equal(textOf(h.output).includes("PRIVATE_LATE_REPORT"),false);
+ release(response({...report,followup:[{bundle_id:store.id,display_name:"PRIVATE_LATE_REPORT",reminder_state:"followup",reason:"window_closed",link_copy_allowed:false}]}));await held;await h.settle();
+ assert.equal(textOf(h.output).includes("PRIVATE_LATE_REPORT"),false);assert.equal(h.output.props?.children?.includes?.("PRIVATE_LATE_REPORT")??false,false);
+ assert.match(textOf(h.output),/Private data was cleared|hidden/);
+});
+
+test("PR31 more than twenty scenes load through the actual selector and selected scene transport",async t=>{
+ const env=environment(t);const paths:string[]=[],pushed:string[]=[];(globalThis as any).__liveSettingsRouter={push:(url:string)=>pushed.push(url)};t.after(()=>delete(globalThis as any).__liveSettingsRouter);
+ globalThis.fetch=async(input,init)=>{paths.push(String(input));if(init?.method==="POST")return response(queued);return reads(input);};
+ let scene="";const h=env.mount(()=>LiveSettings({store:allStore,locale:"en",scene,initialError:null}));await h.waitFor(()=>!node(h,n=>n.props["data-testid"]==="scene-select").props.disabled,"first page loaded");
+ await node(h,n=>n.props["data-testid"]==="scene-more").props.onClick();
+ await h.waitFor(()=>textOf(h.output).includes("MOCK scene 21"),"second page scene visible");
+ node(h,n=>n.props["data-testid"]==="scene-select").props.onChange({target:{value:drafts[20].session_id}});
+ assert.equal(pushed.at(-1),`/en/studio/settings?store=${store.id}&scene=${drafts[20].session_id}`);
+ assert.ok(paths.some(x=>x.includes("cursor=page-two")));
+ h.dispose();scene=drafts[20].session_id;
+ const selected=env.mount(()=>LiveSettings({store:allStore,locale:"en",scene,initialError:null}));await selected.waitFor(()=>!node(selected,n=>n.props["data-testid"]==="reminder-trigger").props.disabled,"explicit scene loaded");
+ assert.ok(paths.some(x=>x.includes(`/live-sessions/${scene}/claims/blocklist`)));assert.ok(paths.some(x=>x.includes(`/live-sessions/${scene}/reminders`)));
+ node(selected,n=>n.props["data-testid"]==="reminder-trigger").props.onClick();await selected.waitFor(()=>textOf(selected.output).includes("This request"),"second scene receipt");
+});
+
+test("PR31 deep linked later scene is a real titled option and empty placeholder cannot be selected",async t=>{
+ const env=environment(t);globalThis.fetch=async input=>reads(input);
+ const h=env.mount(()=>LiveSettings({store:allStore,locale:"en",scene:drafts[20].session_id,initialError:null}));await h.waitFor(()=>!node(h,n=>n.props["data-testid"]==="scene-select").props.disabled,"deep linked scene loaded");
+ assert.equal(node(h,n=>n.type==="option"&&n.props.value===drafts[20].session_id).props.children,"MOCK scene 21");
+ assert.equal(node(h,n=>n.type==="option"&&n.props.value==="").props.disabled,true,"selected scene placeholder must be disabled rather than a no-op");
+});
+
+test("PR31 selected first-page scene disables the empty no-op option",async t=>{
+ const env=environment(t);globalThis.fetch=async input=>reads(input);
+ const h=env.mount(()=>LiveSettings({store:allStore,locale:"en",scene:sid,initialError:null}));await h.waitFor(()=>!node(h,n=>n.props["data-testid"]==="scene-select").props.disabled,"existing selected scene ready");
+ assert.equal(node(h,n=>n.type==="option"&&n.props.value==="").props.disabled,true);
+});
 
 test("W3-U2 UNKNOWN rejects a stale fresh command and admits only exact receipt retry",async t=>{
  const env=environment(t), writes:{key:string|null;body:unknown}[]=[];

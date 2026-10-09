@@ -8,6 +8,7 @@ import type { Locale } from "@live-commerce/i18n";
 import type { Store } from "./model";
 import {
   readStudioPage,
+  readStudioDetail,
   StudioError,
   type StudioErrorCode,
 } from "./studio-client";
@@ -73,12 +74,14 @@ export function useLiveSettingsController({
     [enabled, setEnabled] = useState(false),
     [draft, setDraft] = useState("");
   const [report, setReport] = useState<ReminderReport | null>(null),
+    [remindersUnavailable, setRemindersUnavailable] = useState(false),
     [result, setResult] = useState<ReminderResult | null>(null),
     [blocked, setBlocked] = useState<RestrictedPage | null>(null);
   const [cursor, setCursor] = useState(""),
     [history, setHistory] = useState<string[]>([]),
     [remove, setRemove] = useState<string | null>(null);
   const [busy, setBusy] = useState(false),
+    [sessionsLoading, setSessionsLoading] = useState(false),
     [loading, setLoading] = useState(true),
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
@@ -87,13 +90,16 @@ export function useLiveSettingsController({
     [unknown, setUnknown] = useState(false);
   const receipt = useRef<SettingsReceipt | null>(null),
     inFlight = useRef(false),
-    pageLoad = useRef(0);
+    pageLoad = useRef(0),
+    sessionLoad = useRef(0);
   const clear = useCallback(() => {
     setSessions(null);
     setSettings(null);
     setEnabled(false);
     setDraft("");
     setReport(null);
+    setRemindersUnavailable(false);
+    setSessionsLoading(false);
     setResult(null);
     setBlocked(null);
     setRemove(null);
@@ -106,6 +112,7 @@ export function useLiveSettingsController({
     receipt.current = null;
     inFlight.current = false;
     pageLoad.current++;
+    sessionLoad.current++;
   }, []);
   const privacy = useInboxPrivacy(clear),
     canRead = permitted(store, "live:read"),
@@ -126,6 +133,14 @@ export function useLiveSettingsController({
     },
     [clear, privacy.expire],
   );
+  // Missing send-side dependencies leave this optional route unmounted. A
+  // report 404 is local; actual session/permission refusals still revoke all data.
+  const reportFailure = useCallback((cause: unknown) => {
+    if (cause instanceof LiveSettingsError && cause.status === 404) {
+      setReport(null);
+      setRemindersUnavailable(true);
+    } else fail(cause);
+  }, [fail]);
   useEffect(() => {
     clear();
     if (
@@ -140,18 +155,24 @@ export function useLiveSettingsController({
     const ticket = privacy.fence.begin();
     setLoading(true);
     const current = () => privacy.fence.current(ticket);
-    const accept = <T>(work: Promise<T>, set: (value: T) => void) =>
+    const accept = <T>(work: Promise<T>, set: (value: T) => void, failure = fail) =>
       work
         .then((v) => {
           if (current()) set(v);
         })
         .catch((e) => {
-          if (current()) fail(e);
+          if (current()) failure(e);
         });
     const sessionRead = async () => {
       const cookie = csrfCookie(),
         stamp = await sessionStamp(cookie);
       const value = await readStudioPage(storeID, "", ticket.signal);
+      // A deep-linked session may be beyond the first page. Read its actual
+      // scoped title rather than fabricating an option or silently truncating it.
+      if (scene && !value.items.some((item) => item.session_id === scene)) {
+        const selected = await readStudioDetail(storeID, scene, ticket.signal);
+        value.items = [...value.items, selected.draft];
+      }
       if ((await sessionStamp(cookie)) !== stamp)
         throw new LiveSettingsError("unauthorized", 401);
       return value;
@@ -179,7 +200,8 @@ export function useLiveSettingsController({
               `live-sessions/${scene}/reminders`,
               ticket.signal,
             ),
-            setReport,
+            (v) => { setReport(v); setRemindersUnavailable(false); },
+            reportFailure,
           ),
         );
       work.push(
@@ -213,8 +235,30 @@ export function useLiveSettingsController({
     privacy.fence,
     clear,
     fail,
+    reportFailure,
     revision,
   ]);
+  async function loadMoreSessions() {
+    if (!sessions?.next_cursor || sessionsLoading || inFlight.current || receipt.current || !privacy.visible || privacy.blocked.current) return;
+    const ticket = privacy.fence.begin();
+    if (!privacy.fence.current(ticket)) return;
+    const sequence = ++sessionLoad.current;
+    setSessionsLoading(true);
+    try {
+      const cookie = csrfCookie(), stamp = await sessionStamp(cookie);
+      const value = await readStudioPage(storeID, sessions.next_cursor, ticket.signal);
+      if ((await sessionStamp(cookie)) !== stamp) throw new LiveSettingsError("unauthorized", 401);
+      if (sequence !== sessionLoad.current || !privacy.fence.current(ticket)) return;
+      setSessions((old) => old ? {
+        items: [...new Map([...old.items, ...value.items].map((item) => [item.session_id, item])).values()],
+        next_cursor: value.next_cursor,
+      } : old);
+    } catch (cause) {
+      if (sequence === sessionLoad.current && privacy.fence.current(ticket)) fail(cause);
+    } finally {
+      if (sequence === sessionLoad.current && privacy.fence.current(ticket)) setSessionsLoading(false);
+    }
+  }
   async function page(next: string, previous = false) {
     if (!scene || inFlight.current || receipt.current || !privacy.visible)
       return;
@@ -293,15 +337,15 @@ export function useLiveSettingsController({
           setNotice(c.saved);
         } else if (action.resource.endsWith("/reminders")) {
           setResult(value as ReminderResult);
-          try {
+          if (canReport) try {
             const fresh = await readLiveSettings<ReminderReport>(
               storeID,
               `live-sessions/${scene}/reminders`,
               ticket.signal,
             );
-            if (privacy.fence.current(ticket)) setReport(fresh);
+            if (privacy.fence.current(ticket)) { setReport(fresh); setRemindersUnavailable(false); }
           } catch (e) {
-            if (privacy.fence.current(ticket)) fail(e);
+            if (privacy.fence.current(ticket)) reportFailure(e);
           }
         } else {
           setBlocked((old) =>
@@ -404,6 +448,7 @@ export function useLiveSettingsController({
     draft,
     setDraft,
     report,
+    remindersUnavailable,
     result,
     blocked,
     history,
@@ -411,6 +456,7 @@ export function useLiveSettingsController({
     setRemove,
     busy,
     loading,
+    sessionsLoading,
     error,
     notice,
     unknown,
@@ -422,6 +468,7 @@ export function useLiveSettingsController({
     setRevision,
     run,
     page,
+    loadMoreSessions,
     save,
     copy,
     unavailable,
