@@ -183,3 +183,59 @@ func TestMalformedJSONIsUnresolved(t *testing.T) {
 		t.Fatal("trailing baseline JSON accepted")
 	}
 }
+
+func TestSnapshotKeepsModuleScope(t *testing.T) {
+	root := fixture(t, "aligned")
+	mustWrite(t, filepath.Join(root, "go.mod"), "module example\n\ngo 1.22\n")
+	if err := os.MkdirAll(filepath.Join(root, "cmd/api"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	mustWrite(t, filepath.Join(root, "cmd/api/main.go"), "package main\nimport _ \"example/internal/httpapi\"\nfunc main(){}\n")
+	p := filepath.Join(root, "internal/httpapi/routes.go")
+	original := readText(t, p)
+	mustWrite(t, p, strings.Replace(original, "base := rootPrefix", "base := rootPrefix\n mux.HandleFunc(\"GET /v1/a\",handler)", 1))
+	if err := os.MkdirAll(filepath.Join(root, "internal/workerbridge"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	worker := filepath.Join(root, "internal/workerbridge/worker.go")
+	w := "package workerbridge\nimport \"net/http\"\nfunc bridge(mux *http.ServeMux){mux.HandleFunc(\"GET /v1/a\",func(http.ResponseWriter,*http.Request){})}\n"
+	mustWrite(t, worker, w)
+	git(t, root, "add", ".")
+	git(t, root, "commit", "-qm", "modular source with unreferenced worker")
+	git(t, root, "tag", "-f", "trunk")
+	code, out := cli(root, "-write-baseline")
+	if code != 0 {
+		t.Fatalf("seed %d %s", code, out)
+	}
+	git(t, root, "add", ".")
+	git(t, root, "commit", "-qm", "baseline")
+	git(t, root, "tag", "-f", "trunk")
+	mustWrite(t, worker, strings.Replace(w, "})}", "})} // worker only", 1))
+	code, out = cli(root)
+	if code != 0 {
+		t.Fatalf("unreferenced worker touched API legacy: %d %s", code, out)
+	}
+}
+func TestMultilineUnresolvedJSONValueIsTouched(t *testing.T) {
+	for _, body := range []string{"{\n\"paths\": {\n\"/v1/unresolved\": {\n\"$ref\":\n\"#/components/X\"\n}\n}\n}\n", "{\n\"paths\":\nnull\n}\n"} {
+		root := fixture(t, "aligned")
+		p := filepath.Join(root, "contracts/test-openapi.json")
+		mustWrite(t, p, body)
+		git(t, root, "add", ".")
+		git(t, root, "commit", "-qm", "legacy unresolved JSON")
+		git(t, root, "tag", "-f", "trunk")
+		code, out := cli(root)
+		if code != 0 {
+			t.Fatalf("legacy unresolved %d %s", code, out)
+		}
+		changed := strings.Replace(body, "#/components/X", "#/components/Y", 1)
+		if changed == body {
+			changed = strings.Replace(body, "null", "42", 1)
+		}
+		mustWrite(t, p, changed)
+		code, out = cli(root)
+		if code != 1 || !strings.Contains(out, "TOUCHED") || !strings.Contains(out, "UNRESOLVED") {
+			t.Fatalf("changed value not fenced: %d %s", code, out)
+		}
+	}
+}

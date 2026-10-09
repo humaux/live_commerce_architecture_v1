@@ -695,7 +695,7 @@ Package migrations owns applying the embedded, forward-only, checksummed busines
 
 ## `scripts/dev/contractdrift`
 
-Purpose: enumerate BFF forwarding routes from TypeScript source, independently of Go routes.
+Used by: CI-DRIFT source inventory and actual CLI tests.
 
 - Depends on (internal): —
 - Depends on (third-party): —

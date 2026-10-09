@@ -1,3 +1,4 @@
+// Used by: CI-DRIFT source inventory and actual CLI tests.
 // Purpose: expand finite anchored BFF grammars after normalizing known parameter languages.
 // Depends on: Go regexp/syntax and finite product helper; used by the source extractor.
 // Invariant: unbounded character classes, unsupported regex flags and unanchored grammars stay unresolved.

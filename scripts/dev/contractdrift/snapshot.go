@@ -14,7 +14,7 @@ import (
 )
 
 func mergeBaseFindings(root, sha string) ([]finding, error) {
-	dirs, err := gitRead(root, "ls-tree", "-d", "--name-only", sha, "--", "internal", "cmd", "apps", "contracts")
+	dirs, err := gitRead(root, "ls-tree", "--name-only", sha, "--", "internal", "cmd", "apps", "contracts", "go.mod")
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func mergeBaseFindings(root, sha string) ([]finding, error) {
 			continue
 		}
 		ext := filepath.Ext(h.Name)
-		if ext != ".go" && ext != ".ts" && ext != ".tsx" && ext != ".js" && ext != ".mjs" && ext != ".json" && ext != ".md" {
+		if h.Name != "go.mod" && ext != ".go" && ext != ".ts" && ext != ".tsx" && ext != ".js" && ext != ".mjs" && ext != ".json" && ext != ".md" {
 			continue
 		}
 		clean := filepath.Clean(h.Name)

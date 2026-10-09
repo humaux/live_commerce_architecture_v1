@@ -1,3 +1,4 @@
+// Used by: CI-DRIFT source inventory and actual CLI tests.
 // Purpose: enumerate BFF forwarding routes from TypeScript source, independently of Go routes.
 // Depends on: bff_ts.go finite lexer/resolver and shared inventory types; used by CI-DRIFT CLI.
 // Invariant: guard-only proxies and local handlers are not route producers. Unsupported

@@ -17,6 +17,7 @@ import (
 type jsonNode struct {
 	Value  any
 	Pos    int
+	End    int
 	Fields map[string]*jsonNode
 }
 
@@ -69,10 +70,20 @@ func jsonTree(d *json.Decoder, b []byte) (*jsonNode, error) {
 			return nil, err
 		}
 	}
+	n.End = int(d.InputOffset())
 	return n, nil
 }
 func contractLoc(file string, b []byte, pos int) location {
 	return location{File: file, Line: 1 + bytes.Count(b[:pos], []byte{'\n'})}
+}
+
+func contractNodeLoc(file string, b []byte, n *jsonNode) location {
+	ref := contractLoc(file, b, n.Pos)
+	end := n.End
+	if end > 0 {
+		ref.End = 1 + bytes.Count(b[:end], []byte{'\n'})
+	}
+	return ref
 }
 
 var mdBase = regexp.MustCompile("^\\s*(?:`)?Route base:\\s*([^`\\s]+)")
@@ -113,7 +124,7 @@ func scanContracts(root string) (inventory, error) {
 			}
 			paths := tree.Fields["paths"]
 			if paths == nil || paths.Fields == nil {
-				addUnresolved(&out, location{File: file, Line: 1}, "OpenAPI has no paths object")
+				addUnresolved(&out, location{File: file, Line: 1, End: 1 + bytes.Count(b, []byte{'\n'})}, "OpenAPI has no paths object")
 				continue
 			}
 			for path, node := range paths.Fields {
@@ -122,11 +133,11 @@ func scanContracts(root string) (inventory, error) {
 					continue
 				}
 				if node.Fields == nil {
-					addUnresolved(&out, contractLoc(file, b, node.Pos), "OpenAPI path item must be an object")
+					addUnresolved(&out, contractNodeLoc(file, b, node), "OpenAPI path item must be an object")
 					continue
 				}
 				if ref := node.Fields["$ref"]; ref != nil {
-					addUnresolved(&out, contractLoc(file, b, ref.Pos), "OpenAPI path-item reference is not resolved")
+					addUnresolved(&out, contractNodeLoc(file, b, ref), "OpenAPI path-item reference is not resolved")
 					continue
 				}
 				for method, operation := range node.Fields {
@@ -134,7 +145,7 @@ func scanContracts(root string) (inventory, error) {
 						continue
 					}
 					if operation.Fields == nil {
-						addUnresolved(&out, contractLoc(file, b, operation.Pos), "OpenAPI operation must be an object")
+						addUnresolved(&out, contractNodeLoc(file, b, operation), "OpenAPI operation must be an object")
 						continue
 					}
 					addRoute(&out, method, path, contractLoc(file, b, node.Pos), contractLoc(file, b, operation.Pos))

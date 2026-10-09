@@ -1,3 +1,4 @@
+// Used by: CI-DRIFT source inventory and actual CLI tests.
 // Purpose: finite TypeScript source reader for BFF admission grammars.
 // Depends on: Go stdlib only; used by bff.go, never executes TypeScript.
 // Invariant: unsupported expressions fail explicitly; source spans follow every dependency.
