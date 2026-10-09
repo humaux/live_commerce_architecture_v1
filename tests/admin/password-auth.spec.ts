@@ -10,6 +10,7 @@
 // Evidence written to LC_BROWSER_EVIDENCE_DIR: screens/*.png, screenshots.jsonl (name, locale, viewport, sha256),
 // canaries.txt (every password, emailed code and address used; the Go side scans server logs for them).
 import { createHash, randomBytes } from "node:crypto";
+import { responseBodyForSecretScan } from "./password-response-canaries.ts";
 import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -295,7 +296,7 @@ test("BFF contract: Origin, query, client IP, strict keys, cookie clearing on 20
   const api = async (ctx: APIRequestContext, path: string, init: { data?: unknown; headers?: Record<string, string>; method?: string } = {}) => {
     const res = await (init.method === "GET" ? ctx.get(path, { headers: init.headers }) : ctx.post(path, { data: init.data, headers: init.headers }));
     const text = await res.text();
-    bodies.push(text);
+    bodies.push(responseBodyForSecretScan(text));
     return { res, text, json: () => (text ? JSON.parse(text) : null), setCookies: res.headersArray().filter((h) => h.name.toLowerCase() === "set-cookie").map((h) => h.value) };
   };
   const ok = (ip = source()) => ({ origin: publicOrigin, "x-forwarded-for": ip });
@@ -551,8 +552,12 @@ test("matrix: locale copy differs per locale and the reset wording is the same f
   expect(texts.every(Boolean)).toBe(true);
   expect(new Set(texts).size).toBe(3);
   // reset: a known and an unknown address produce the same visible code-step text (modulo the masked address)
+  // Compare at one browser instant: a ticking resend countdown must not make the two snapshots differ.
+  // The separate cooldown test above still advances real time and checks re-enabling.
+  const comparisonTime = Date.now();
   await page.setViewportSize({ width: 1586, height: 992 });
   const visible = async (email: string) => {
+    await page.clock.setFixedTime(comparisonTime);
     await useSource(context, source());
     await page.context().clearCookies({ name: challengeName });
     await page.goto("/en/reset");

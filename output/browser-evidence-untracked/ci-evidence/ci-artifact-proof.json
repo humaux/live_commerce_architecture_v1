@@ -1,0 +1,10 @@
+{
+  "run_id": 37914575717,
+  "job_id": 113768939718,
+  "artifact_id": 11611285073,
+  "artifact_sha256": "40cebb5475dacc4c35cdbc49d927414943a62bf810137f2e02f3eff9e9dddaa8",
+  "jsonl_sha256": "29dd1cca4e77be97ab42d02df6f46f319cb5b0847db68139016bb9fa03add449",
+  "playwright_log_sha256": "9ebd7522f91f8223cd580f0fe37ba851c9bcb584389ded37bddf98c4517747a4",
+  "actual_parser_stdout": "pass=0 fail=1 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0 VERDICT=1",
+  "reason": "parser decoded actualfailedGoTest; originalfullresetcopy assertion 61vs60"
+}

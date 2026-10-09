@@ -1,0 +1,36 @@
+{
+  "source_commit": "3b3350f8aaf7a4d586229cf492558bc59c6432a3",
+  "worktree_evidence": "/Volumes/data/live_commerce_architecture_v1/.worktrees/cart-refresh-generation/output/playwright/buyer-real-2495246019",
+  "canonical_evidence": "/Volumes/data/live_commerce_architecture_v1/output/cart-refresh-generation/browser/buyer/buyer-real-2495246019",
+  "files": {
+    "browser.log": {
+      "sha256": "96d7615b6d9542586ed51722ef72cb4c39b1dcf081b7d38784ee016951258f04",
+      "bytes": 1251
+    },
+    "result.json": {
+      "sha256": "809bbac0a20e76b7d8a022e29349ff4e32765cb50b092288ca1594ef07b01e0d",
+      "bytes": 151
+    },
+    "buyer-mobile.png": {
+      "sha256": "3d932a6cd1b2eb81e7809922507bdf425ee7d8b9b163ac85be3dcaf89e864f8e",
+      "bytes": 151853
+    },
+    "next-1-1791541591502.log": {
+      "sha256": "97b0cb7043e412d5b36d930abe9f72788cff16a95ccdb653ce106b9250ec334e",
+      "bytes": 154
+    },
+    "buyer-desktop.png": {
+      "sha256": "e89989f53639eada23da8d4054343cb748f35a770e4715ccc3935bd5bd97aeb0",
+      "bytes": 548740
+    },
+    "next-0-1791541591003.log": {
+      "sha256": "95e4d057d5961d4c90158d1ad3a138603659dded26157a50896d9b066ddf9870",
+      "bytes": 156
+    },
+    "next-0-1791541592678.log": {
+      "sha256": "50e6e12f3e997dfcbdab54778b417aa1378e3b591a7b50ef4db2c8b4049770f6",
+      "bytes": 154
+    }
+  },
+  "verified_go_summary": "browser_buyer_chain_test.go:89: PASS: real browser/Next/Go/PG; cases=13; one order/hold; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/cart-refresh-generation/output/playwright/buyer-real-2495246019"
+}

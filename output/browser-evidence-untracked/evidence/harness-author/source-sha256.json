@@ -1,0 +1,15 @@
+{
+  ".github/workflows/gates.yml": "bae935cf1f02e095b9a11e9d50b4ed7ea63e190e9b998f01516b86ac248ab783",
+  "scripts/dev/test-local.sh": "eb9dba34174fb053c1c421b6ea9c2ff5763d2a35d586d6844766a5548fb1294e",
+  "tests/foundation/browser_admin_legacy_test.go": "de625de16d26d7176c88456096390980ef27036c8e84b5db157aa87102da0511",
+  "tests/foundation/browser_claim_checkout_test.go": "d0b7d2eb285373130f715ae81cca5e5b2bdd718bc6fc6569ea8235dc9c941605",
+  "tests/foundation/browser_click_sweep_test.go": "24b7432950bbc556edc37337c35fc1afd1aaca8cbbe2d76e71d18878f012ea9d",
+  "tests/foundation/browser_evidence_paths_test.go": "65109e53f089ee43574dd25582648f8e0f12b465ff9569fc7eff8e92ce896a29",
+  "tests/foundation/browser_live_console_test.go": "fdeb5ae3a701edb1555057e47e3eca4d1acd312304ebb0ad44752540cc47f348",
+  "tests/foundation/browser_refund_fulfilment_test.go": "60293a012df0b5e4e25d3a60cfb846b453bba5cf57e4746d6ca27bf483eceea6",
+  "tests/foundation/browser_storefront_test.go": "c8db149815af7f53a9348eb1e2e806fdb3900d2091137ce979c300a4a02ca2e7",
+  "tests/foundation/browser_stripe_test.go": "d6a6898b41257a570fb0101c84af438f56f96e02ae0f79bb55f60447be206391",
+  "tests/foundation/browser_tracking_backfill_test.go": "493ac4b89cc66211ead961a16ff421e6678ddcdbfe6fd693a7bc95a032c1b3f4",
+  "tests/ui/sweep-aggregate.mjs": "96b17bae5f7ed4cc3df60671b12b7a42bb23ebca24c473eb0c819924720d9c3a",
+  "tests/ui/sweep-shard-lib.test.mjs": "1588b2ed09a0611e1c87bf8d64b2299e3ea679e95b4391de7320e915478cc6d0"
+}

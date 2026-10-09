@@ -1,9 +1,13 @@
 // Purpose: Checks inventory ledger interactions and responsive tables using the isolated identity fixture.
 // Depends on: ./fixtures/ledger-identity, node:fs/promises, ../../apps/admin/src/shell-copy; harness env: COMMERCE_FIXTURE_STORE_ID, COMMERCE_FIXTURE_TOKEN, UI_SHOT_PHASE
 // Used by: apps/admin/src/features/catalog/routes.ts, tests/foundation/browser_admin_legacy_test.go
+import { browserEvidenceDirectory } from "../browser-evidence.mjs";
 import { test, expect } from "./fixtures/ledger-identity";
 import { mkdir } from "node:fs/promises";
 import { shellCopy } from "../../apps/admin/src/shell-copy";
+
+const reviewEvidence = browserEvidenceDirectory("ledger-review");
+const fixesEvidence = browserEvidenceDirectory("admin-ui-fixes");
 
 test.describe.configure({ mode: "serial" });
 
@@ -19,13 +23,13 @@ test("approved ledger reproduction and mobile table remain usable", async ({
   await page
     .getByRole("radio", { name: "选择 AC-002-BK", exact: true })
     .check();
-  await mkdir("output/playwright/ledger-review", { recursive: true });
+  await mkdir(reviewEvidence, { recursive: true });
   await page.screenshot({
-    path: "output/playwright/ledger-review/hero-repro.png",
+    path: `${reviewEvidence}/hero-repro.png`,
     animations: "disabled",
   });
   await page.screenshot({
-    path: "output/playwright/ledger-review/desktop.png",
+    path: `${reviewEvidence}/desktop.png`,
     animations: "disabled",
   });
   await page.setViewportSize({ width: 390, height: 844 });
@@ -37,7 +41,7 @@ test("approved ledger reproduction and mobile table remain usable", async ({
     ),
   ).toBe(true);
   await page.screenshot({
-    path: "output/playwright/ledger-review/mobile.png",
+    path: `${reviewEvidence}/mobile.png`,
     fullPage: true,
     animations: "disabled",
   });
@@ -466,7 +470,7 @@ test("purchase controls recheck current state before copying or opening", async 
 // The tray used to carry product editing, price edit, photos and archive in one flex row that overflowed above 1280px
 // (REPORT-admin-vqa D01). It now keeps stock info, the explicit stock adjustment (reason required), the read-only price and a link
 // to the product page. Geometry is asserted on every visible atom of the tray at the owner/report sizes; screenshots go to
-// output/admin-ui-fixes/ (UI_SHOT_PHASE=before|after, default after).
+// <run evidence>/admin-ui-fixes/ (UI_SHOT_PHASE=before|after, default after).
 const shotPhase = process.env.UI_SHOT_PHASE ?? "after"; // "before" only captures screenshots on the pre-fix code
 
 for (const [width, height] of [
@@ -482,9 +486,9 @@ for (const [width, height] of [
     await page.goto("/en/inventory");
     const tray = page.locator("section.inspector");
     await expect(tray).toBeVisible(); // the fixture pre-selects a row
-    await mkdir("output/admin-ui-fixes", { recursive: true });
+    await mkdir(fixesEvidence, { recursive: true });
     await page.screenshot({
-      path: `output/admin-ui-fixes/${shotPhase}-d01-inventory-${width}.png`,
+      path: `${fixesEvidence}/${shotPhase}-d01-inventory-${width}.png`,
       fullPage: true,
       animations: "disabled",
     });
@@ -583,8 +587,8 @@ test("rail has no hard-coded channel status and scrolls to Settings and Sign out
   await page.getByTestId("nav-inventory").evaluate((el) => el.scrollIntoView({ block: "center", inline: "nearest" }));
   await expect(page.getByTestId("nav-inventory")).toBeInViewport({ ratio: 1 });
   await page.setViewportSize({ width: 1366, height: 768 });
-  await mkdir("output/admin-ui-fixes", { recursive: true });
-  await page.screenshot({ path: `output/admin-ui-fixes/${shotPhase}-d04-rail-top-1366x768.png`, animations: "disabled" });
+  await mkdir(fixesEvidence, { recursive: true });
+  await page.screenshot({ path: `${fixesEvidence}/${shotPhase}-d04-rail-top-1366x768.png`, animations: "disabled" });
   await page.locator("summary").filter({ hasText: /^Account$/ }).click();
   for (const [name, button] of [["Settings", page.getByTestId("nav-group-settings")], ["Sign out", page.getByTestId("workspace-sign-out")]] as const) {
     await button.scrollIntoViewIfNeeded();
@@ -597,7 +601,7 @@ test("rail has no hard-coded channel status and scrolls to Settings and Sign out
     });
     expect(hit, `${name} is reachable (nothing covers it)`).toBe(true);
   }
-  await page.screenshot({ path: `output/admin-ui-fixes/${shotPhase}-d04-rail-bottom-1366x768.png`, animations: "disabled" });
+  await page.screenshot({ path: `${fixesEvidence}/${shotPhase}-d04-rail-bottom-1366x768.png`, animations: "disabled" });
   await page.locator("summary").filter({ hasText: /^Account$/ }).click();
   // Settings stays in the drawer; Sign out lives in the reachable top-bar menu.
   await page.setViewportSize({ width: 375, height: 667 });

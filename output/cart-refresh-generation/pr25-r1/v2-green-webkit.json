@@ -1,0 +1,27 @@
+{
+  "source_sha": "a4989bc6e55c8f813acf99f95850e98213f4d264",
+  "engine": "webkit",
+  "exit": 0,
+  "command": "LC_BROWSER_ENGINE=webkit LC_TEST_LOCK_WAIT=300 bash scripts/dev/test-local.sh --browser-order",
+  "evidence": "/Volumes/data/live_commerce_architecture_v1/output/cart-refresh-generation/pr25-r1/v2-green-webkit",
+  "cases": 33,
+  "clicks": 30,
+  "files": {
+    "desktop-order.png": "9e3938719af3ec538dfe1b0e1370838260f28d4e28ce5818431f5e4e9d44cc97",
+    "browser.log": "20579e04cdbba70e3ebd83c9d123fe67f08bf10f072577894d694cee4c102787",
+    "next.log": "5c27095ec6e733e0e7494cec1a67cf6222947af63f801d52f2de528dfbc26a3c",
+    "mobile-address.png": "9a5b0d921acb8a69b503a08a5b6001dc5c4f9ff99a4c7fd21c5f0e8f9ec07364",
+    "result.json": "c9624b980d21ccc4ea672e6d4614bb8efe497086a1f95ebcb650fd68731c49b1",
+    "mobile-order.png": "ccb5c2884918a3205fb6813f89bf815e71db166615bf15dd8bfcd869bba0dc22",
+    "cart-click-ledger.json": "542be7adb0a8f8116390cd1e1e087aac5062fdb822b421db3bbbacc996c2bee6",
+    "desktop-address.png": "0733777d70a6cc2fd3f0ce0f818a6b555db4f800536c2bee7dbb123413f2bf28",
+    "desktop-history.png": "56e2801a9101152c899e3e67698d8f04122e5eb6d4d8aeaf1877c7965be63c35",
+    "cart-final-pg-facts.json": "79b2053fa40f6afcbcd0398cbf48d739785af268eb2bbd1ee927ea7916c4bd5d",
+    "cart-refresh-race-facts.json": "550c512c1920b1b09ff2c0cc0763f1531e658c744cd8178c0eb3252d80b32f60",
+    "cart-retry-facts.json": "acb910d41bd6cc399fcdb3a3cc69590591be4c619f95a09f6c6c1b43cb85b045",
+    "mobile-history.png": "b3d21c5d6efcdcf72dd0c2a3a98de3ca8c170035a00a9caa42844edc44974794",
+    "cart-refresh-final-pg-facts.json": "81290ae837e59814e2effd92d0b9b684fea0e9a13a906b620dd8251a5428bf8c",
+    "gate.log": "7aacd88b35543b085151cff3b9e0edcd97cae6f3471e575bdabe99ba8d10df2a",
+    "desktop-address-viewport.png": "0cd3607ae4dca31589cd93b3d0060af77c730dbc351b790b009ed53941555f0b"
+  }
+}

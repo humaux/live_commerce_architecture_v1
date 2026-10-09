@@ -1,0 +1,28 @@
+{
+  "patterns": [
+    "output/playwright/**/ci-gates/*.log",
+    "output/playwright/**/ui-visual-audit/**/lint.*",
+    "output/playwright/**/ui-visual-audit/**/index.json",
+    "output/playwright/**/ui-visual-audit/**/shots/**"
+  ],
+  "selected": [
+    "output/playwright/run.fixture/ci-gates/visual.log",
+    "output/playwright/run.fixture/ui-visual-audit/20261009T010203Z/index.json",
+    "output/playwright/run.fixture/ui-visual-audit/20261009T010203Z/lint.json",
+    "output/playwright/run.fixture/ui-visual-audit/20261009T010203Z/lint.md",
+    "output/playwright/run.fixture/ui-visual-audit/20261009T010203Z/shots/admin/home/en-390x844.png"
+  ],
+  "download_root": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/evidence-p2-validation/visual-dry-run/dl/local-artifact",
+  "review_root": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/evidence-p2-validation/visual-dry-run/review",
+  "actual_source_png": "output/playwright/run.lMXjdxbQ/ui-w0-shell/drawer-en-390x844.png",
+  "source_sha256": "6d407f3ccb6d62fb16e1c9316e0e3b797e86c537adc5c270f7e2cbb08986a4b7",
+  "recovered_sha256": "6d407f3ccb6d62fb16e1c9316e0e3b797e86c537adc5c270f7e2cbb08986a4b7",
+  "excluded": [
+    "crops",
+    "trace.zip",
+    "facts.json"
+  ],
+  "review_copy_exit": 0,
+  "scope": "local layout dry-run with a real previous browser screenshot; not CI or vision acceptance",
+  "final_tool_sha256": "3a95c37a6881035742d2b072f49f558ab44b841011ed8e098de7cd8114ef7959"
+}

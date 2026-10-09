@@ -1,0 +1,14 @@
+{
+  "head": "ff9a770d4db1c39bd7595f6918d8a1716df885c8",
+  "script_sha256": "674d2beba2f8b16e90cf7ccbbd1c38deab3350fc28953062d182a1627dea2766",
+  "source_unchanged": true,
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-meta-health-ui"
+  ],
+  "exit_code": 1,
+  "elapsed_seconds": 48.237,
+  "timeout_seconds": 1200,
+  "condition": "PR23 self-copy path in merged registry"
+}

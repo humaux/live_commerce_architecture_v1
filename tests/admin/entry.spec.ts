@@ -1,10 +1,13 @@
 // Purpose: Exercises entry/authentication UI with a local MOCK API server; writes browser evidence.
 // Depends on: @playwright/test, node:http, node:fs/promises, ../../apps/admin/src/shell-copy
 // Used by: tests/foundation/browser_admin_legacy_test.go
+import { browserEvidenceDirectory } from "../browser-evidence.mjs";
 import { expect, test } from "@playwright/test";
 import { createServer, type IncomingMessage } from "node:http";
 import { mkdir, writeFile } from "node:fs/promises";
 import { shellCopy } from "../../apps/admin/src/shell-copy";
+
+const reviewEvidence = browserEvidenceDirectory("ledger-review");
 
 const apiOrigin = "http://127.0.0.1:19111";
 const publicOrigin = "http://127.0.0.1:3100";
@@ -217,19 +220,19 @@ test("approved wizard step two matches desktop and mobile compositions", async (
   await page.getByLabel("Transaction currency").selectOption("TWD");
   await page.getByLabel("Language", { exact: true }).selectOption("zh-CN");
   await expect(page.getByLabel("店铺名称")).toHaveValue("南岛选物");
-  await mkdir("output/playwright/ledger-review", { recursive: true });
+  await mkdir(reviewEvidence, { recursive: true });
   await page.setViewportSize({ width: 1585, height: 992 });
   await page.screenshot({
-    path: "output/playwright/ledger-review/t03-entry-desktop.png",
+    path: `${reviewEvidence}/t03-entry-desktop.png`,
     animations: "disabled",
   });
   await page.screenshot({
-    path: "output/playwright/ledger-review/t03-hero-repro.png",
+    path: `${reviewEvidence}/t03-hero-repro.png`,
     animations: "disabled",
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({
-    path: "output/playwright/ledger-review/t03-entry-mobile.png",
+    path: `${reviewEvidence}/t03-entry-mobile.png`,
     fullPage: true,
     animations: "disabled",
   });
@@ -299,7 +302,7 @@ test("three-locale mobile long names and normal text meet the finish gate", asyn
         .evaluate((node) => node.scrollWidth <= node.clientWidth),
     ).toBe(true);
     await page.screenshot({
-      path: `output/playwright/ledger-review/t03-entry-long-name-${locale}.png`,
+      path: `${reviewEvidence}/t03-entry-long-name-${locale}.png`,
       fullPage: true,
       animations: "disabled",
     });
@@ -353,7 +356,7 @@ test("three-locale mobile long names and normal text meet the finish gate", asyn
   for (const sample of ratios)
     expect(sample.ratio, sample.selector).toBeGreaterThanOrEqual(4.5);
   await writeFile(
-    "output/playwright/ledger-review/t03-entry-contrast.json",
+    `${reviewEvidence}/t03-entry-contrast.json`,
     JSON.stringify(ratios, null, 2),
   );
   expect(

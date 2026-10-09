@@ -1,0 +1,9 @@
+{"Time":"2026-10-09T19:57:08.942237+08:00","Action":"start","Package":"livecommerce/tests/foundation"}
+{"Time":"2026-10-09T19:57:10.252473+08:00","Action":"run","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerPaymentUI"}
+{"Time":"2026-10-09T19:57:10.253651+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerPaymentUI","Output":"=== RUN   TestBrowserBuyerPaymentUI\n","OutputType":"frame"}
+{"Time":"2026-10-09T19:57:45.99743+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerPaymentUI","Output":"    browser_payment_chain_test.go:157: PASS: actual Next-Go-PG payment UI, two native mock PSP posts, exact persisted form digests; cases=11 evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/buyer-payment-3279511089\n"}
+{"Time":"2026-10-09T19:57:46.028705+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerPaymentUI","Output":"--- PASS: TestBrowserBuyerPaymentUI (35.78s)\n","OutputType":"frame"}
+{"Time":"2026-10-09T19:57:46.028786+08:00","Action":"pass","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerPaymentUI","Elapsed":35.78}
+{"Time":"2026-10-09T19:57:46.032174+08:00","Action":"output","Package":"livecommerce/tests/foundation","Output":"PASS\n","OutputType":"frame"}
+{"Time":"2026-10-09T19:57:47.042551+08:00","Action":"output","Package":"livecommerce/tests/foundation","Output":"ok  \tlivecommerce/tests/foundation\t38.097s\n"}
+{"Time":"2026-10-09T19:57:47.042669+08:00","Action":"pass","Package":"livecommerce/tests/foundation","Elapsed":38.1}

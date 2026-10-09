@@ -1,0 +1,3 @@
+
+> @live-commerce/storefront@ typecheck /Volumes/data/live_commerce_architecture_v1/.worktrees/cart-refresh-generation/apps/storefront
+> tsc --noEmit
