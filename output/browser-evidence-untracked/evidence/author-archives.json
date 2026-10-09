@@ -1,0 +1,10 @@
+{
+  "harness-author.tar.gz": {
+    "sha256": "69080bd647e0e6197e8f2bd94672e1d14216fcff92d40b58dfad846e5ee8b283",
+    "bytes": 9932
+  },
+  "spec-author.tar.gz": {
+    "sha256": "ae4bd9f26e0f81e25ab60227c131d13d4ca83916e964c0af734fa08c6d5264f1",
+    "bytes": 3710
+  }
+}

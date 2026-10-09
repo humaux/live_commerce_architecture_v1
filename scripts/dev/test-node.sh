@@ -71,3 +71,5 @@ node --input-type=module -e 'import assert from "node:assert/strict"; import {re
 # LC-U3 exact A15/A16 seams, immutable retries and localized money-path guidance.
 node --test --experimental-strip-types tests/admin/create-order-model.test.ts tests/admin/create-order-client.test.ts tests/admin/create-order-bff.test.ts tests/admin/create-order-copy.test.ts
 node --test --experimental-transform-types tests/admin/create-order-attempt.test.ts
+# Browser-run artifact isolation and regression write-root counterexamples.
+node --test tests/admin/browser-evidence.test.mjs tests/ci/browser-evidence-paths.test.mjs

@@ -3,8 +3,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { routes as adminRoutes } from "../../apps/admin/src/routes.ts";
-import { verifyClick, verifyVisual } from "./sweep-aggregate.mjs";
-import { readdirSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readdirSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { discover, verifyClick, verifyVisual } from "./sweep-aggregate.mjs";
 import { CLICK_VARIANTS, JOURNEY_PAGES, STOREFRONT_ROUTES, VISUAL_LOCALES, VISUAL_VIEWPORTS, assignShards, loadWeights, parseShard, planClick, routeId, shardReport } from "./sweep-shard-lib.mjs";
 
 const weights = await loadWeights();
@@ -131,4 +133,25 @@ test("aggregate visual: honest shards pass; a missing shard, a missing shot, a b
   bad(() => {}, /registry route \/brand-new-route/, [...adminRoutes, { path: "/brand-new-route" }]);
   const notRun = visualShards(2); const u = notRun[0].report.units.pop(); notRun[0].report.units.push({ ...u, shot: "", notRun: "NOT_RUN: external host" });
   assert.deepEqual(verifyVisual({ shards: notRun, adminRoutes }).problems, [], "an explicit NOT_RUN is a stated gap, as in the unsharded run");
+});
+
+// Artifact uploads now preserve output/playwright/<run>/; directory depth must
+// not hide a shard or make historical visual baselines count as current evidence.
+test("artifact discovery finds nested run evidence and retains platform marker refusal", (t) => {
+  const dir = mkdtempSync(path.join(tmpdir(), "lc-sweep-discovery-"));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const run = path.join(dir, "gate-browser-click-sweep_1_2", "playwright", "run.abcdefgh");
+  const click = path.join(run, "ui-click-sweep");
+  const visual = path.join(run, "ui-visual-audit", "20261009T120000Z");
+  const baseline = path.join(run, "ui-visual-audit", "baseline-reference");
+  for (const folder of [click, visual, baseline]) mkdirSync(folder, { recursive: true });
+  writeFileSync(path.join(click, "ledger.json"), JSON.stringify({ summary: { shard: { index: 1, of: 2 } }, rows: [] }));
+  writeFileSync(path.join(visual, "lint.json"), JSON.stringify({ marker: "current" }));
+  writeFileSync(path.join(baseline, "lint.json"), JSON.stringify({ marker: "historical" }));
+  assert.equal(discover("click", dir).length, 1);
+  assert.equal(discover("click", dir)[0].platformPass, false);
+  writeFileSync(path.join(click, "platform-runner.pass"), "fixture-sha\n");
+  assert.equal(discover("click", dir)[0].platformPass, true);
+  assert.deepEqual(discover("visual", dir).map((item) => item.report.marker), ["current"]);
+  assert.deepEqual(discover("click", path.join(dir, "missing")), []);
 });

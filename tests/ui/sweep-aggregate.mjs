@@ -115,7 +115,7 @@ export function discover(kind, dir) {
       source: path.relative(dir, f), report: JSON.parse(readFileSync(f, "utf8")), platformPass: existsSync(path.join(path.dirname(f), "platform-runner.pass")),
     }));
   }
-  // the timestamped output dirs only: output/ui-visual-audit/baseline-* are tracked reference runs, not evidence of this one
+  // Match timestamped ui-visual-audit children at any run depth; baseline-* references are excluded.
   return files.filter((f) => path.basename(f) === "lint.json" && /[\\/]ui-visual-audit[\\/]\d{8}T\d{6}Z[\\/]lint\.json$/.test(f)).map((f) => ({ source: path.relative(dir, f), report: JSON.parse(readFileSync(f, "utf8")) }));
 }
 
@@ -129,8 +129,9 @@ export async function main(argv) {
     : verifyVisual({ shards, adminRoutes });
   const ok = result.problems.length === 0;
   const text = [`# ${kind === "click" ? "G-UI8 click sweep" : "G-UI9 visual lint"} aggregate: ${ok ? "PASS" : "FAIL"}`, "", ...result.lines, "", ...result.problems.map((p) => `- ${p}`), ""].join("\n");
-  mkdirSync("output/ci-aggregate", { recursive: true });
-  writeFileSync(`output/ci-aggregate/${kind}.md`, text);
+  const output = path.join(process.env.LC_BROWSER_EVIDENCE_ROOT || "output/playwright", "ci-aggregate");
+  mkdirSync(output, { recursive: true });
+  writeFileSync(path.join(output, `${kind}.md`), text);
   console.log(text);
   return ok ? 0 : 1;
 }

@@ -107,7 +107,7 @@ const rowBase = (unit, scope, c, extra) => ({ app: unit.app ?? "", page: unit.ro
 async function shot(page, row) {
   const file = `screenshots/${row.id}.png`;
   await page.screenshot({ path: path.join(outDir, file), fullPage: false, animations: "disabled" }).catch(() => {});
-  row.screenshot = `output/ui-click-sweep/${file}`;
+  row.screenshot = path.relative(process.cwd(), path.join(outDir, file));
 }
 const sample = (items, n) => {
   if (items.length <= n) return items;
