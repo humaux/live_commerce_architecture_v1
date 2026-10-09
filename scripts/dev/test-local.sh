@@ -1456,6 +1456,21 @@ case "$1" in
   printf 'PASS: isolated real PostgreSQL foundation tests; fixture removed at exit.\n'
     }
     ;;
+  --browser-live-settings)
+    lc_build=admin
+    lc_fixture=pg
+    lc_prepare() {
+  test -f tests/admin/live-settings.spec.ts
+  test -f tests/foundation/browser_live_settings_test.go
+  grep -q '^func TestBrowserLiveSettingsUIRealChain' tests/foundation/browser_live_settings_test.go
+  node --test --experimental-strip-types tests/admin/live-settings-bff.test.ts tests/admin/live-settings-model.test.ts
+  mkdir -p output/playwright
+    }
+    lc_run() {
+  LC_BROWSER_LIVE_SETTINGS_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.2 go test -race -tags browser -count=1 -timeout=780s -run '^TestBrowserLiveSettingsUIRealChain$' -v ./tests/foundation
+  printf 'PASS: W3-U2 signed-session production Next/BFF clicks; MOCK business upstream, separate REAL_PG adapter gate required.\n'
+    }
+    ;;
   # APPEND MODES HERE
   *) return 1 ;;
 esac

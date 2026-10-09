@@ -1,0 +1,30 @@
+(node:66541) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ offer controls read authoritative limits without parsing unrelated KEYWORD_QTY_CONTAINS window/stats (13.098208ms)
+✔ offer controls accept 101 through the backend cap of 200 distinct offers, reject 201 (2.033208ms)
+✔ offer toggle preserves exactly the authoritative maximum in the real M4 payload (2.509959ms)
+✔ console BFF admits exactly A1/A7/A6 and A5 read/copy methods (0.437833ms)
+✔ Next proxy admits the exact console family and results query before the BFF (24.984916ms)
+✔ PR18 proxy preserves malformed A2 cursor as 400 invalid_cursor (0.499542ms)
+✔ results query is canonical repeated session_id 1..50, everything else queryless (0.083291ms)
+✔ real BFF route forwards only exact resources, authenticates scope and returns private scrubbed errors (36.041292ms)
+✔ new commands reject unknown keys and preserve frozen copy/lifecycle/recommend body (0.146416ms)
+✔ browser commands reuse Studio fences, exact no-comment recommend body and backend refusal codes (1.304292ms)
+✔ results client preserves canonical ids/order and rejects invalid list before fetch (0.258375ms)
+✔ stock client reuses catalog transport/key/parser and fences a changed login without retries (0.981833ms)
+✔ journal replay sends the exact original method/path/body/key for all five commands (2.266042ms)
+(node:66542) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ settings actual route permits only auth-scoped live reads/writes and keeps CAS receipt (30.9735ms)
+✔ bodyless reminder/DELETE, private blocklist projection and restricted followup copy are exact (7.521833ms)
+✔ real template publication rejects unknown fields and auth failures clear cookies even without JSON (2.581208ms)
+✔ success receipts must describe the exact requested command, otherwise the result remains unknown (1.460084ms)
+✔ W3-U2 Next proxy admits settings routes without weakening Studio raw-path guards (32.549416ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 201.715541

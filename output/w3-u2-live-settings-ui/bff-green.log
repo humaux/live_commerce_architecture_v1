@@ -1,0 +1,11 @@
+✔ settings actual route permits only auth-scoped live reads/writes and keeps CAS receipt (28.150167ms)
+✔ bodyless reminder/DELETE, private blocklist projection and restricted followup copy are exact (7.285958ms)
+✔ real template publication rejects unknown fields and auth failures clear cookies even without JSON (2.434333ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 124.851125

@@ -1,0 +1,64 @@
+=== RUN   TestLiveSettingsHTTPStoreScopeCASReplay
+=== RUN   TestLiveSettingsHTTPStoreScopeCASReplay/unauthorized_PUT_403
+=== NAME  TestLiveSettingsHTTPStoreScopeCASReplay
+    live_settings_http_test.go:83: PUT want 403 got 404: {"code":"not_found","message":"Resource not found.","request_id":"7f2fe67001d772670e3266f719f65f24","retryable":false,"details":{}}
+=== NAME  TestLiveSettingsHTTPStoreScopeCASReplay/unauthorized_PUT_403
+    testing.go:2062: test executed panic(nil) or runtime.Goexit: subtest may have called FailNow on a parent test
+--- FAIL: TestLiveSettingsHTTPStoreScopeCASReplay (4.24s)
+    --- FAIL: TestLiveSettingsHTTPStoreScopeCASReplay/unauthorized_PUT_403 (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	6.166s
+=== RUN   TestLiveSettingsHTTPFullRouterTransport
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/no_bearer
+    sold_out_settings_test.go:42: want 401 got 404 {"code":"not_found","message":"Resource not found.","request_id":"95f041309323a2ef95f261f15ed8ec3b","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/query
+    sold_out_settings_test.go:42: want 422 got 404 {"code":"not_found","message":"Resource not found.","request_id":"27f15c5f15e50ec5bd0f91c49267d7d6","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/empty_query
+    sold_out_settings_test.go:42: want 422 got 404 {"code":"not_found","message":"Resource not found.","request_id":"f9ba016946bf864cae75f94218397217","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/GET_body
+    sold_out_settings_test.go:42: want 422 got 404 {"code":"not_found","message":"Resource not found.","request_id":"0be86e6cd546f58f97e4d09d99e4821f","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/GET_key
+    sold_out_settings_test.go:42: want 422 got 404 {"code":"not_found","message":"Resource not found.","request_id":"3dfc2b8c8bd8b610ffa969e9a3db1bcc","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/HEAD
+    sold_out_settings_test.go:42: want 405 got 404 {"code":"not_found","message":"Resource not found.","request_id":"56c232c161e2e0b27aeb8106a9d407a7","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/POST
+    sold_out_settings_test.go:42: want 405 got 404 {"code":"not_found","message":"Resource not found.","request_id":"f5781e440a99067b389402478c8c75b5","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/missing_key
+    sold_out_settings_test.go:42: want 422 got 404 {"code":"not_found","message":"Resource not found.","request_id":"d1f0e7b246907e5b0b98d480b5b805ee","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/duplicate_key
+    sold_out_settings_test.go:42: want 422 got 404 {"code":"not_found","message":"Resource not found.","request_id":"a4cfc8f5c2e69d8bb30a9efc3bad3737","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/unknown_field
+    sold_out_settings_test.go:42: want 400 got 404 {"code":"not_found","message":"Resource not found.","request_id":"5998b1170f9375b2401a36db94b5dc91","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/null_boolean
+    sold_out_settings_test.go:42: want 400 got 404 {"code":"not_found","message":"Resource not found.","request_id":"5e91f18eb6dcf87ed794464eb30b5ce2","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/top_null
+    sold_out_settings_test.go:42: want 400 got 404 {"code":"not_found","message":"Resource not found.","request_id":"5342ce0ad94b650e1fd19f917a11c354","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/missing_boolean
+    sold_out_settings_test.go:42: want 422 got 404 {"code":"not_found","message":"Resource not found.","request_id":"66a80f5663081b83bb5220194ff3c718","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/duplicate_field
+    sold_out_settings_test.go:42: want 400 got 404 {"code":"not_found","message":"Resource not found.","request_id":"b3c8ddb24a499170d4b6314fc42a3179","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/negative_CAS
+    sold_out_settings_test.go:42: want 422 got 404 {"code":"not_found","message":"Resource not found.","request_id":"095be61fc35ea0e74ba7c67d20f0aefc","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/zero_template_version
+    sold_out_settings_test.go:42: want 422 got 404 {"code":"not_found","message":"Resource not found.","request_id":"487dd95d1405ccf9d97267e287b940a6","retryable":false,"details":{}}
+--- FAIL: TestLiveSettingsHTTPFullRouterTransport (0.01s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/no_bearer (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/query (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/empty_query (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/GET_body (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/GET_key (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/HEAD (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/POST (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/missing_key (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/duplicate_key (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/unknown_field (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/null_boolean (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/top_null (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/missing_boolean (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/duplicate_field (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/negative_CAS (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/zero_template_version (0.00s)
+FAIL
+FAIL	livecommerce/internal/httpapi	0.813s
+FAIL
+test-focused: top-level PASS=0 FAIL=2 SKIP=0 exit=1

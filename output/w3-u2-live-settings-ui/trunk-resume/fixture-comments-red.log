@@ -1,0 +1,7 @@
+=== RUN   TestBrowserLiveSettingsMockCommentsContract
+    browser_live_settings_fixture_test.go:43: fixture's complete one-row page needs explicit A2 scan_exhausted=true
+    browser_live_settings_fixture_test.go:51: fixture's live comment needs A2 seq=1, matching the cursor
+--- FAIL: TestBrowserLiveSettingsMockCommentsContract (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	0.947s
+FAIL

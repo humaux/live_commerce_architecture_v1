@@ -1,0 +1,16 @@
+✔ settings actual route permits only auth-scoped live reads/writes and keeps CAS receipt (23.578125ms)
+✔ bodyless reminder/DELETE, private blocklist projection and restricted followup copy are exact (6.512333ms)
+✔ real template publication rejects unknown fields and auth failures clear cookies even without JSON (2.217458ms)
+✔ success receipts must describe the exact requested command, otherwise the result remains unknown (1.402667ms)
+✔ only frozen session-scoped manual operations are available (1.005833ms)
+✔ private notes and sold-out drafts respect rune limits and closed placeholders (0.260833ms)
+✔ restricted rows can never advertise copying, and checkout links cannot carry bearer data (0.221791ms)
+✔ three admin locales preserve the mandatory policy copy and real PR planner includes this new mode (1.387417ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 107.831792

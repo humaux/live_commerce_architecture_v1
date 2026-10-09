@@ -1,3 +1,6 @@
+// Purpose: merchant keyword claims and store sold-out settings transport adapters.
+// Depends on: claims domain services, platform scoped transactions and strict Studio transport helpers.
+// Used by: NewHandler when cmd/api enables COMMERCE_CLAIMS_ENABLED.
 // claims.go owns the merchant keyword-claims HTTP adapter M1–M7 (contract
 // contracts/live-keyword-claims-v1.md §7.1): the Studio › Claims routes under
 // /v1/admin/stores/{store_id}/live-sessions/{session_id}/claims.
@@ -55,6 +58,7 @@ func registerClaimRoutes(mux *http.ServeMux, pool *pgxpool.Pool, labels *claims.
 	if labels == nil {
 		return
 	}
+	registerSoldOutSettingsRoutes(mux, pool)
 	const base = "/v1/admin/stores/{store_id}/live-sessions/{session_id}/claims"
 	// M1 board: window, offers and per-reason stats of the current window generation.
 	mux.HandleFunc("GET "+base, claimsRoute(http.MethodGet, false, claimsScoped(pool, "live:read",

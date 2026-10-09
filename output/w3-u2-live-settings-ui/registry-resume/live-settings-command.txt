@@ -1,0 +1,131 @@
+# mode=--browser-live-settings build=admin fixture=pg
+lc_environment () 
+{ 
+    export LC_PLATFORM_HOST=platform.example.invalid LC_ADMIN_HOST=admin.example.invalid LC_COMPANY_CONTACT_EMAIL=contact@example.invalid
+}
+lc_environment
+lc_prepare () 
+{ 
+    test -f tests/admin/live-settings.spec.ts;
+    test -f tests/foundation/browser_live_settings_test.go;
+    grep -q '^func TestBrowserLiveSettingsUIRealChain' tests/foundation/browser_live_settings_test.go;
+    node --test --experimental-strip-types tests/admin/live-settings-bff.test.ts tests/admin/live-settings-model.test.ts;
+    mkdir -p output/playwright
+}
+lc_prepare
+lc_build_admin () 
+{ 
+    command -v pnpm > /dev/null;
+    command -v node > /dev/null;
+    COMMERCE_IDENTITY_ENABLED=0 COMMERCE_FIXTURE_ENABLED=0 pnpm run build:admin
+}
+lc_build_admin
+#!/usr/bin/env bash
+# Purpose: provision and clean the task-owned PostgreSQL fixture shared by registered modes.
+# Depends on: Docker, OpenSSL, test-lock.sh and the calling runner environment.
+# Used by: test-local.sh; source only after mode preparation and builds. Never uses a developer database.
+test_container="lc-foundation-test-$$"
+test_owned=0
+stripe_lock=""
+cleanup() {
+  if [[ -n "$stripe_lock" ]]; then lc_lock_release; fi
+  if [[ "$test_owned" == 1 ]] && [[ "$(docker inspect -f '{{index .Config.Labels "livecommerce.fixture"}}' "$test_container" 2>/dev/null || true)" == "$test_container" ]]; then
+    docker rm -f "$test_container" >/dev/null
+  fi
+}
+trap cleanup EXIT INT TERM
+# One PG-holding run at a time machine-wide, for EVERY mode (2026-10-06: modes that skipped the lock shared the Docker VM
+# with test-focused.sh runs — flaky full-suite reds). Heartbeat-based lock shared with test-focused.sh (scripts/dev/test-lock.sh).
+# Bounded wait (LC_TEST_LOCK_WAIT, default 7200 s); on timeout the run STOPS as NOT_RUN (exit 2) instead of running unexclusive.
+source scripts/dev/test-lock.sh  # cwd is the repo root (line 6)
+if ! lc_lock_acquire "${LC_TEST_LOCK_WAIT:-7200}"; then
+  printf 'NOT_RUN: PG test lock %s still held by pid %s after %ss\n' "$lc_lock_dir" "$(cat "$lc_lock_dir/pid" 2>/dev/null || echo '?')" "${LC_TEST_LOCK_WAIT:-7200}" >&2
+  exit 2
+fi
+stripe_lock=1
+export POSTGRES_PASSWORD
+POSTGRES_PASSWORD="$(openssl rand -hex 24)"
+# Memory: on Linux cgroup v2 the 256 MiB tmpfs data directory is charged to the
+# same memcg as the server processes, so 512m OOM-killed postgres mid-suite on
+# Linux hosts/CI (observed 2026-09-28: memcg OOM -> "database system is in
+# recovery mode"). 1g keeps the same tmpfs/shared_buffers/max_connections gate.
+# Disk: the whole foundation suite shares this one data directory. PostgreSQL's default max_wal_size (1GB) lets pg_wal outgrow the
+# tmpfs during bulk fixtures (R4 gate: "No space left on device" cascaded ~240 G07 failures), so WAL is capped at 96MB (checkpoints
+# recycle it) and the tmpfs is 640 MiB (2026-10-06: the ~1060-test suite outgrew 320 MiB → "No space left on device" → recovery-mode
+# cascade); memory 1536m keeps tmpfs + server inside the memcg. One test PG at a time (scripts/dev/test-lock.sh) on the 8 GB Docker VM.
+docker run -d --pull=never --name "$test_container" \
+  --label "livecommerce.fixture=$test_container" --memory=1536m --cpus=1 --pids-limit=128 \
+  --tmpfs /var/lib/postgresql:rw,size=671088640 \
+  -e POSTGRES_PASSWORD -e POSTGRES_DB=lc_foundation_test \
+  -p 127.0.0.1::5432 \
+  postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 \
+  -c shared_buffers=32MB -c max_connections=60 -c max_wal_size=96MB -c min_wal_size=32MB >/dev/null
+test_owned=1
+# The image starts a socket-only temporary server during initdb, then stops it.
+# TCP readiness must wait for the final server; socket pg_isready can race createdb.
+for ((attempt=0; attempt<40; attempt++)); do
+  if docker exec "$test_container" pg_isready -h 127.0.0.1 -U postgres -d lc_foundation_test >/dev/null 2>&1; then break; fi
+  sleep 0.5
+done
+docker exec "$test_container" pg_isready -h 127.0.0.1 -U postgres -d lc_foundation_test >/dev/null
+# The fixture safety guard needs a distinct, explicitly disposable database.
+# Reuse this owned cluster, not a developer's running UI fixture or credentials.
+docker exec "$test_container" createdb -U postgres lc_admin_fixture
+test_port="$(docker port "$test_container" 5432/tcp)"
+[[ "$test_port" == 127.0.0.1:* ]]
+export LC_TEST_DATABASE_URL="postgres://postgres:${POSTGRES_PASSWORD}@${test_port}/lc_foundation_test?sslmode=disable"
+export LC_TEST_DATABASE_ALLOWED=1
+export COMMERCE_FIXTURE_ALLOWED=1
+export LC_ADMIN_GUARD_DSN="postgres://postgres:${POSTGRES_PASSWORD}@${test_port}/lc_admin_fixture?sslmode=disable"
+# fresh_pg: recreate the task-owned PG container (same pinned image, limits and loopback binding as above) and re-export the two DSNs.
+# Every go test process needs a FRESH cluster: the foundation fixture creates cluster-scoped roles (foundation_api, ...) and refuses a
+# cluster that already has them. Used by --stripe-browser and --browser-webkit, one step per go test process.
+fresh_pg() {
+  if [[ "$(docker inspect -f '{{index .Config.Labels "livecommerce.fixture"}}' "$test_container" 2>/dev/null || true)" == "$test_container" ]]; then
+    docker rm -f "$test_container" >/dev/null
+  fi
+  docker run -d --pull=never --name "$test_container" \
+    --label "livecommerce.fixture=$test_container" --memory=1536m --cpus=1 --pids-limit=128 \
+    --tmpfs /var/lib/postgresql:rw,size=671088640 \
+    -e POSTGRES_PASSWORD -e POSTGRES_DB=lc_foundation_test \
+    -p 127.0.0.1::5432 \
+    postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 \
+    -c shared_buffers=32MB -c max_connections=60 -c max_wal_size=96MB -c min_wal_size=32MB >/dev/null
+  for ((attempt=0; attempt<40; attempt++)); do
+    if docker exec "$test_container" pg_isready -h 127.0.0.1 -U postgres -d lc_foundation_test >/dev/null 2>&1; then break; fi
+    sleep 0.5
+  done
+  docker exec "$test_container" pg_isready -h 127.0.0.1 -U postgres -d lc_foundation_test >/dev/null
+  docker exec "$test_container" createdb -U postgres lc_admin_fixture
+  test_port="$(docker port "$test_container" 5432/tcp)"
+  [[ "$test_port" == 127.0.0.1:* ]]
+  export LC_TEST_DATABASE_URL="postgres://postgres:${POSTGRES_PASSWORD}@${test_port}/lc_foundation_test?sslmode=disable"
+  export LC_ADMIN_GUARD_DSN="postgres://postgres:${POSTGRES_PASSWORD}@${test_port}/lc_admin_fixture?sslmode=disable"
+}
+# go_json_counts <go test -json log> <min leaf cases>: prints "pass=.. fail=.. skip=.. leaf_pass=.. leaf_fail=.. leaf_skip=.. VERDICT=0|1".
+# Contract stripe-psp-v1 §14 parsing rule: any SKIP, any FAIL, fewer leaf cases than expected, zero passing tests or a missing log is VERDICT=1.
+go_json_counts() {
+python3 - "$1" "$2" <<'PY'
+import json,sys
+t={"pass":0,"fail":0,"skip":0};leaf=dict(t)
+try:
+    lines=open(sys.argv[1]).read().splitlines()
+except OSError:
+    print("missing-log VERDICT=1");sys.exit(0)
+for line in lines:
+    try: e=json.loads(line)
+    except ValueError: continue
+    a=e.get("Action");n=e.get("Test")
+    if n and a in t:
+        t[a]+=1
+        if "/" in n: leaf[a]+=1
+ok=t["fail"]==0 and t["skip"]==0 and t["pass"]>0 and leaf["pass"]>=int(sys.argv[2])
+print("pass=%d fail=%d skip=%d leaf_pass=%d leaf_fail=%d leaf_skip=%d VERDICT=%d"%(t["pass"],t["fail"],t["skip"],leaf["pass"],leaf["fail"],leaf["skip"],0 if ok else 1))
+PY
+}
+lc_run () 
+{ 
+    LC_BROWSER_LIVE_SETTINGS_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=780s -run '^TestBrowserLiveSettingsUIRealChain$' -v ./tests/foundation;
+    printf 'PASS: W3-U2 signed-session production Next/BFF clicks; MOCK business upstream, separate REAL_PG adapter gate required.\n'
+}
+lc_run

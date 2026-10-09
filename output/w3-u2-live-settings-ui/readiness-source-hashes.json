@@ -1,0 +1,11 @@
+{
+  "docs/delivery/units/w3-u2-live-settings-ui.md": "6bcba63b81f463d08f11cb1fef0bf0765b37e91bfb1281da721a3ed178a0335a",
+  "contracts/live-console-v1.md": "d3a4b994a65f9b5f3afa69ef73133933e52a6e59c15aa69cd62e887175c98c4b",
+  "contracts/live-keyword-claims-v1.md": "3b05315799129e28c598a7aea9b011e0f97db5358ca1a5d644b0ff45a0e2ac1b",
+  "internal/httpapi/reminders.go": "56b656ea4f6af3739722280c16e0bf76a919b1c39a2bc6070c9fd05db9f44892",
+  "internal/httpapi/blocklist.go": "7904f211ef5fafc80551aea4196e06ea36c31cfaae5e602a39cbf3428d2bf39e",
+  "internal/httpapi/templates.go": "839855692b58927ab05fb8ef788d49f1ee9c7849ba832b50e3df68bb114bb419",
+  "internal/claims/sold_out_reply.go": "efa3ce1d7de3924cf9446e9a73dc4513687308e04571ca0823b39b06cfc34c41",
+  "internal/claims/blocklist.go": "1c22b4b9a741c9e4613792e7b20dd180770e2c0ac2a1ab60f822e09a7959e760",
+  "apps/admin/components/CommentStream.tsx": "71d7217466b5aa3518525ac71192daab6e2a6645c78828d17f88269d275d1ac4"
+}
