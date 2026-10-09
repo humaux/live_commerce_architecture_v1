@@ -1,0 +1,64 @@
+
+> live-commerce-workspace@ build:storefront /Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups
+> pnpm --filter @live-commerce/storefront build
+
+
+> @live-commerce/storefront@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups/apps/storefront
+> next build
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 148ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1045ms
+  Running TypeScript ...
+  Finished TypeScript in 402ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/2) ...
+✓ Generating static pages using 9 workers (2/2) in 42ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/cart
+├ ƒ /[locale]/checkout
+├ ƒ /[locale]/claim
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/collections/[slug]
+├ ƒ /[locale]/data-deletion
+├ ƒ /[locale]/legal/[slug]
+├ ƒ /[locale]/legal/anti-fraud
+├ ƒ /[locale]/order-link
+├ ƒ /[locale]/orders/[orderID]
+├ ƒ /[locale]/orders/lookup
+├ ƒ /[locale]/pages/[slug]
+├ ƒ /[locale]/privacy
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[slug]
+├ ƒ /[locale]/search
+├ ƒ /api/buyer/[...path]
+├ ƒ /api/shop/product/[key]
+├ ƒ /api/shop/products
+├ ƒ /feeds/meta.csv
+├ ƒ /media/c/[collectionID]/[imageID]
+├ ƒ /media/p/[productID]/[imageID]
+├ ƒ /media/s/[imageID]
+├ ƒ /payment/return
+├ ƒ /products/[productID]
+├ ƒ /robots.txt
+└ ƒ /sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+=== RUN   TestBrowserBuyerOrderUI
+    browser_order_chain_test.go:229: buyer order browser gate failed; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups/output/playwright/buyer-order-1199777258
+--- FAIL: TestBrowserBuyerOrderUI (10.96s)
+FAIL
+FAIL	livecommerce/tests/foundation	12.017s
+FAIL

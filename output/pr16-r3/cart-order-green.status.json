@@ -1,0 +1,18 @@
+{
+  "name": "cart-order-green",
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-order"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups",
+  "out": "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups/output/pr16-r3",
+  "timeout": 2400,
+  "head": "16878ecd85a4be08e889020f0e44328396171d23",
+  "pid": 80727,
+  "exit_code": 0,
+  "source_sha256": "d6dcd0662bf14126e4a20a8a4dc15dbb37d2781a796c1621985eff4757a780e1",
+  "source_after": "d6dcd0662bf14126e4a20a8a4dc15dbb37d2781a796c1621985eff4757a780e1",
+  "source_unchanged": true,
+  "elapsed_seconds": 270.198
+}
