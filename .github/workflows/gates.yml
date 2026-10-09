@@ -70,7 +70,7 @@ jobs:
       visual_n: ${{ steps.plan.outputs.visual_n }}
       deploy: ${{ steps.pr.outputs.deploy || 'false' }}
     steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
           fetch-depth: ${{ github.event_name == 'pull_request' && '0' || '1' }} # the PR diff needs the merge base ('0' quoted: a bare 0 is falsy in an expression, so `&& 0 || 1` always gave 1)
@@ -114,17 +114,18 @@ jobs:
       LC_SWEEP_WORKERS: "1"
       EXTRA_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.extra_env || '' }} # never on pull_request
     steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
           fetch-depth: 0 # live_media_stop_legacy_test builds a pinned pre-LMR binary from git history
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: go.mod
           cache: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: "24"
+          package-manager-cache: false # v5 auto-caches from package.json packageManager before pnpm exists; keep v4 behaviour
       - name: Node dependencies (frozen lockfile)
         run: |
           corepack enable
@@ -143,7 +144,7 @@ jobs:
       - name: Restore Playwright browsers
         id: pwcache
         if: steps.browsers.outputs.engines != ''
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: /opt/ms-playwright
           key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-${{ steps.browsers.outputs.cache }}
@@ -161,7 +162,7 @@ jobs:
       - name: Save Playwright browsers
         # Saved right after the install (not at job end), so a run whose gate then fails still seeds the cache. Parallel jobs racing for the same key only log a warning.
         if: ${{ steps.browsers.outputs.engines != '' && steps.pwcache.outputs.cache-hit != 'true' }}
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: /opt/ms-playwright
           key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-${{ steps.browsers.outputs.cache }}
@@ -204,7 +205,7 @@ jobs:
       - name: Failure summary
         if: always()
         run: grep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log | head -200 || true
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: always() && !startsWith(matrix.mode, '--browser-visual-lint')
         with:
           name: ${{ matrix.art }}
@@ -214,7 +215,7 @@ jobs:
           retention-days: 14
           if-no-files-found: ignore
       - name: Upload visual lint evidence
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: always() && startsWith(matrix.mode, '--browser-visual-lint')
         with:
           name: ${{ matrix.art }}
@@ -234,19 +235,20 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: "24" # tests/ui/sweep-aggregate.mjs imports apps/admin/src/routes.ts (type stripping); no pnpm install needed
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+          package-manager-cache: false # v5 auto-caches from package.json packageManager before pnpm exists; keep v4 behaviour
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         if: ${{ always() && needs.plan.outputs.sweep_n != '0' }}
         continue-on-error: true # no artifact at all is reported by the aggregate itself ("no shard evidence"), not as a download error
         with:
           pattern: gate-browser-click-sweep_*
           path: evidence/click
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         if: ${{ always() && needs.plan.outputs.visual_n != '0' }}
         continue-on-error: true
         with:
@@ -258,7 +260,7 @@ jobs:
       - name: Visual lint covers every shot
         if: ${{ always() && needs.plan.outputs.visual_n != '0' }}
         run: node tests/ui/sweep-aggregate.mjs visual evidence/visual
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: always()
         with:
           name: aggregate

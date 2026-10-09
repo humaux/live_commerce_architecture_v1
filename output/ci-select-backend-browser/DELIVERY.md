@@ -1,6 +1,6 @@
 # CI-SELECT delivery — backend paths select the browser modes that run them + nightly trunk browser re-verification
 
-- Unit: ci-select-backend-browser. Branch: `unit/ci-select-backend-browser`. Base: `origin/r3/integration` (b1bfbeb3 at start; trunk advanced to 729afff9 mid-unit — see "Trunk #27 manual content merge").
+- Unit: ci-select-backend-browser. Branch: `unit/ci-select-backend-browser`. Base: `origin/r3/integration` (b1bfbeb3 at start; trunk advanced to 729afff9 (#27) mid-unit and to 9b738e0a (#29) during final verification — see §5).
 - Owner approval: 2026-10-10. Commit only; **no push performed**.
 - Evidence tiers (AGENTS.md): every local run below is SANDBOX (node-only planner tests, no PG, no browser, no live platform). Real `--browser-*` executions are CI-only: NOT_RUN locally. The nightly schedule is DESIGN-verified (planner output proven by tests) until it first fires on GitHub: NOT_RUN.
 
@@ -67,7 +67,7 @@ Universe: 51 browser modes (48 Go-seeded with full 70-package covers + 3 node-on
 | `bash scripts/dev/check-gates.sh` | 1 | stops at its pre-existing line 33 `check-browser-evidence.mjs` → `typescript-api` (same env cause, present on base). Steps after it: see NOT_RUN-3 for per-step equivalents. `green2-check-gates.log` |
 | `node --test output/.../tools/counts-wrapper.test.mjs` | 0 | counts identical to pre-merge (§3). `tools/counts-run2.log` |
 
-## 5. Trunk #27 (729afff9) manual content merge
+## 5. Trunk #27 (729afff9) + #29 (9b738e0a) manual content merge
 
 Mid-unit, trunk advanced to 729afff9 ("ci-playwright-deps-cache"), which touches **all four** of my modified files and adds `lc_browsers=` declarations in every browser arm — exactly where my `lc_covers=` lines go (51-arm naive-merge conflict). The sandbox denied every history-mutating git operation (`git merge`, `git rebase` ×2 forms, `git checkout --`, `git restore`) and `git ls-tree`, while allowing `git show <ref>:<path> > <path>` redirects. Resolution (manual content merge; same resulting tree as a resolved merge):
 
@@ -76,7 +76,9 @@ Mid-unit, trunk advanced to 729afff9 ("ci-playwright-deps-cache"), which touches
 3. Re-applied 4 mechanical merge edits: pr-modes.mjs declarations loop accepts **both** `lc_covers="..."` and `lc_browsers=...`; `test-node.sh` line 62 lists **both** new suites; bash parser arm accepts **both** declarations; my 3 gates.yml blocks re-applied onto trunk content.
 4. Re-ran `insert-covers` (lands between `lc_fixture` and `lc_browsers`) and the full GREEN2 battery above.
 
-Consequence: the branch tip is **not a git-descendant merge** of 729afff9, but its tree equals the resolved merge for every touched path. The 21 `output/ci-playwright-deps-cache/**` files #27 adds were intentionally NOT extracted (trunk-only additions, cannot conflict; they come from the trunk side at integration). If GitHub still reports conflicts when the PR is created, take the unit-branch side for these files — it contains #27's content verbatim.
+**#29 (9b738e0a) arrived during final verification**: it only repins GitHub actions (checkout v5.1.0, setup-go v6.5.0, setup-node v5.0.0 + `package-manager-cache: false`, cache v5.1.0, upload/download-artifact v6/v7) in `deploy-smoke.yml`, `foundation.yml` and `gates.yml`. `deploy-smoke.yml`/`foundation.yml` stay untouched by this branch (trunk-only changes — the PR merge adopts the trunk side; no conflict possible). `gates.yml` was re-extracted from current trunk and the three CI-SELECT blocks re-applied; `git diff origin/r3/integration -- .github/workflows/gates.yml` verified to contain **only** the CI-SELECT additions/replacements (25 added, 5 replaced lines) with every #29 pin intact.
+
+Consequence: the branch tip is **not a git-descendant merge** of 729afff9/9b738e0a, but its tree equals the resolved merge for every path this unit touches. The 21 `output/ci-playwright-deps-cache/**` files #27 adds were intentionally NOT extracted (trunk-only additions, cannot conflict; they come from the trunk side at integration). If GitHub still reports conflicts when the PR is created, take the unit-branch side for the four overlapping files — it contains #27's and #29's gates.yml content verbatim.
 
 Stale evidence (pre-#27 base, kept for history): `registry-diff.txt`, `mid-*.log`, `green-tests-ci.log`, `tools/insert-run.log`, `tools/counts-run.log`. The `green2-*` / `*-run2` logs are the merged-state truth. RED logs are pre-fix by definition and remain valid.
 
