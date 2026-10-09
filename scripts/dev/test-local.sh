@@ -37,6 +37,10 @@ case "$test_mode" in
     export LC_BROWSER_EVIDENCE_ROOT
     export LC_PLATFORM_EVIDENCE="$LC_BROWSER_EVIDENCE_ROOT/platform-site"
     export LC_SWEEP_OUT="$LC_BROWSER_EVIDENCE_ROOT/ui-click-sweep"
+    # A caller may reuse its run root: visual empty fixtures must not overwrite click evidence.
+    if [[ "$test_mode" == --browser-visual-lint ]]; then
+      export LC_SWEEP_OUT="$LC_BROWSER_EVIDENCE_ROOT/ui-visual-sweep"
+    fi
     ;;
 esac
 

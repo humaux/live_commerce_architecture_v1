@@ -4,7 +4,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -59,5 +59,35 @@ test("browser evidence rejects labels that escape the harness directory before c
   } finally {
     if (passed) rmSync(fixture, { recursive: true });
     else console.error(`Retained failed label fixture: ${fixture}`);
+  }
+});
+
+
+test("shell isolates visual fixtures from a click ledger when caller reuses its evidence root", () => {
+  const source = readFileSync(new URL("../../scripts/dev/test-local.sh", import.meta.url), "utf8");
+  const start = source.indexOf('# Allocate once before any browser build/log write.');
+  const finish = source.indexOf('\nesac', start);
+  assert.ok(start >= 0 && finish > start, "real shell allocation entry must exist");
+  const allocation = source.slice(start, finish + "\nesac".length);
+  const fixture = realpathSync(mkdtempSync(path.join(tmpdir(), "lc-shell-evidence-")));
+  let passed = false;
+  try {
+    const allocate = mode => {
+      const result = spawnSync("bash", ["-c", `set -euo pipefail; test_mode="$1"; ${allocation}; printf '%s' "$LC_SWEEP_OUT"`, "evidence-test", mode],
+        { cwd: fixture, env: { ...process.env, LC_BROWSER_EVIDENCE_ROOT: fixture }, encoding: "utf8", timeout: 10_000 });
+      assert.equal(result.status, 0, result.stderr);
+      return result.stdout;
+    };
+    const click = allocate("--browser-click-sweep"), visual = allocate("--browser-visual-lint");
+    assert.notEqual(click, visual, "visual empty journeys must not share click journey evidence");
+    const clickFile = path.join(click, "journeys.json");
+    mkdirSync(click, { recursive: true }); mkdirSync(visual, { recursive: true });
+    writeFileSync(clickFile, '{"orders":7}\n');
+    writeFileSync(path.join(visual, "journeys.json"), '{}\n');
+    assert.equal(readFileSync(clickFile, "utf8"), '{"orders":7}\n');
+    passed = true;
+  } finally {
+    if (passed) rmSync(fixture, { recursive: true });
+    else console.error(`Retained failed shell fixture: ${fixture}`);
   }
 });
