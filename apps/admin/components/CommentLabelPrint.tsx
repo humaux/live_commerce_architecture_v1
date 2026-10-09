@@ -70,7 +70,10 @@ export function CommentLabelPrint({ locale, store, session, rows, allowed, activ
       } catch (e) {
         failure = true;
         // A scoped 404 is authority loss too, not a recoverable print-record failure.
-        if (e instanceof InboxError && [401, 403, 404].includes(e.status)) { onDenied(); return; }
+        if (e instanceof InboxError && [401, 403, 404].includes(e.status)) {
+          // Release local command state even when the owner handles denial without remounting.
+          running.current = false; setBusy(false); onDenied(); return;
+        }
         // A lost ACK retains its key in memory. A later explicit print never blindly repeats that fact.
         if (e instanceof InboxError && e.status >= 400 && e.status < 500) pending.current.delete(ref);
       }
