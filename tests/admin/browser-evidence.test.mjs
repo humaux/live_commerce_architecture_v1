@@ -194,13 +194,16 @@ test("visual review refuses an incomplete report: every captured page needs exac
   try {
     const index = path.join(dir, "index.json"), report = path.join(dir, "findings.md");
     writeFileSync(index, JSON.stringify({ shards: [
-      { shard: "a/ui-visual-audit/1", index: { captured: [{ app: "admin", id: "orders" }, { app: "admin", id: "orders" }] } },
-      { shard: "b/ui-visual-audit/1", index: { captured: [{ app: "storefront", id: "cart" }] } }] }));
+      // Real tests/ui/visual-audit.mjs shape: page objects under "shots", counts under captured/expected, "missing" list.
+      { shard: "a/ui-visual-audit/1", index: { expected: 2, captured: 2, missing: [], shots: [{ app: "admin", id: "orders", locale: "en" }, { app: "admin", id: "orders", locale: "zh-TW" }] } },
+      { shard: "b/ui-visual-audit/1", index: { expected: 1, captured: 1, missing: [], shots: [{ app: "storefront", id: "cart", locale: "en" }] } }] }));
     const check = (text) => { writeFileSync(report, text); return spawnSync("python3", [new URL("../../output/integrator/tools/visual_review_check.py", import.meta.url).pathname, index, report], { encoding: "utf8" }).status; };
     assert.equal(check("VERDICT: PASS\n## admin orders: PASS\n## storefront cart: FIX\n- [P2] en-390: x\n"), 0, "complete report accepted");
     assert.notEqual(check("VERDICT: PASS\n"), 0, "verdict-only report refused");
     assert.notEqual(check("VERDICT: PASS\n## admin orders: PASS\n"), 0, "missing page refused");
     assert.notEqual(check("VERDICT: PASS\n## admin orders: PASS\n## admin orders: FIX\n## storefront cart: PASS\n"), 0, "duplicate section refused");
     assert.notEqual(check("## admin orders: PASS\n## storefront cart: PASS\n"), 0, "missing VERDICT refused");
+    writeFileSync(index, JSON.stringify({ shards: [{ shard: "c", index: { expected: 2, captured: 1, missing: ["storefront/cart/en"], shots: [{ app: "admin", id: "orders" }] } }] }));
+    assert.notEqual(check("VERDICT: PASS\n## admin orders: PASS\n"), 0, "a shard with missing shots is refused");
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
