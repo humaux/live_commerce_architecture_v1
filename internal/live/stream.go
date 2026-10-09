@@ -173,7 +173,7 @@ func (cs *CommentStream) Comments(ctx context.Context, tx pgx.Tx, scope platform
 // PrintComment records one label print (A3): the browser renders the label from the comment it already
 // holds; only the fact is stored (live.comment_print), wrapped in the command.Run receipt so the route is
 // idempotent per Idempotency-Key (§7.4): a same-key replay returns the stored {print_count,last_printed_at}
-// without a new increment, and the same key with a different canonical request {session_id,comment_ref}
+// without a new increment, and the same key with a different canonical request {principal_id,session_id,comment_ref}
 // conflicts. live:manage re-checked by the definer; a foreign/cross-store session id raises 23503 → 404.
 func (cs *CommentStream) PrintComment(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, sessionID, commentRef string) (CommentPrint, error) {
 	if !command.ValidID(sessionID) || !consoleRef.MatchString(commentRef) {
@@ -182,10 +182,11 @@ func (cs *CommentStream) PrintComment(ctx context.Context, tx pgx.Tx, scope plat
 	if err := authorize(ctx, tx, scope, token, managePermission); err != nil {
 		return CommentPrint{}, err
 	}
-	request := struct {
-		SessionID  string `json:"session_id"`
-		CommentRef string `json:"comment_ref"`
-	}{sessionID, commentRef}
+	request := struct { // principal bound like live.draft.*: another principal's same key conflicts, never replays
+		PrincipalID string `json:"principal_id"`
+		SessionID   string `json:"session_id"`
+		CommentRef  string `json:"comment_ref"`
+	}{scope.PrincipalID, sessionID, commentRef}
 	var out CommentPrint
 	err := command.Run(ctx, tx, scope, "live.comment.print", key, request, &out, func() error {
 		err := tx.QueryRow(ctx, `SELECT print_count,last_printed_at FROM live.comment_print($1::uuid,$2::text,$3::uuid)`,

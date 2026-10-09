@@ -1,0 +1,8 @@
+=== RUN   TestLiveConsoleLCN05PrintIdempotencyKey
+    live_console_print_idempotency_test.go:190: same key + other principal: status=200 body={"print_count":1,"last_printed_at":"2026-10-09T23:43:07.048128+08:00"}
+        , want 409 conflict
+--- FAIL: TestLiveConsoleLCN05PrintIdempotencyKey (1.74s)
+FAIL
+FAIL	livecommerce/tests/foundation	3.000s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

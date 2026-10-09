@@ -59,6 +59,9 @@ func TestLiveConsoleLCN05PrintIdempotencyKey(t *testing.T) {
 	}
 	api := httpapi.NewHandler(e.f.runtime, httpapi.Options{CommentStream: stream})
 
+	t.Cleanup(func() { // receipts are not purged by lcPurgeSessions; siblings delete theirs by principal+operation
+		mustExec(t, e.f.owner, `DELETE FROM ops.command_results WHERE principal_id=$1 AND operation='live.comment.print'`, e.h.actor)
+	})
 	a3 := func(store, session, r, key string) (int, string, live.CommentPrint) {
 		t.Helper()
 		w := adminRequest(api, http.MethodPost,
@@ -173,6 +176,21 @@ func TestLiveConsoleLCN05PrintIdempotencyKey(t *testing.T) {
 	}
 	if n := fact(e.f.storeA1, e.session, ref); n != 2 {
 		t.Errorf("cross-store attempt moved the store-A1 print fact to %d, want 2", n)
+	}
+
+	// Same key + same request from another principal with live:manage on the store: 409, never a replay
+	// of the first principal's receipt (the request hash binds principal_id, like live.draft.*; K3 PR30).
+	other, otherToken := lcPrincipal(t, e.f, e.f.tenantA, []string{e.f.storeA1}, "store:read", "live:read", "live:manage")
+	t.Cleanup(func() {
+		mustExec(t, e.f.owner, `DELETE FROM ops.command_results WHERE principal_id=$1 AND operation='live.comment.print'`, other)
+	})
+	wOther := adminRequest(api, http.MethodPost, "/v1/admin/stores/"+e.f.storeA1+"/live-sessions/"+e.session+"/comments/"+ref+"/print",
+		otherToken, []byte("{}"), "application/json", map[string]string{"Idempotency-Key": key1})
+	if wOther.Code != http.StatusConflict || errCode(wOther.Body.String()) != "conflict" {
+		t.Errorf("same key + other principal: status=%d body=%s, want 409 conflict", wOther.Code, wOther.Body.String())
+	}
+	if n := fact(e.f.storeA1, e.session, ref); n != 2 {
+		t.Errorf("other-principal attempt moved the print fact to %d, want 2", n)
 	}
 
 	// After every negative the store-A1 receipt still replays byte-identically.
