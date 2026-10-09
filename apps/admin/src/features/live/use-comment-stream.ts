@@ -63,7 +63,7 @@ export function useCommentStream(
     const load = async (older = false) => {
       if (!alive || inFlight.current || document.visibilityState !== "visible")
         return;
-      if (older && current.current.items.length >= COMMENT_MEMORY_CAP) return;
+      if (older && (!current.current.older || current.current.items.length >= COMMENT_MEMORY_CAP)) return;
       if (!older && deadline.current > Date.now()) {
         timer = setTimeout(() => void load(), deadline.current - Date.now());
         return;
@@ -131,9 +131,11 @@ export function useCommentStream(
           return;
         }
         if (code === "invalid_cursor") {
-          current.current = emptyComments();
+          // Expired Graph/history cursors say nothing about the valid live stream.
+          // Lose only pagination authority; an invalid incremental cursor still resets.
+          current.current = older ? { ...current.current, older: null } : emptyComments();
           setBuffer(current.current);
-          select(null);
+          if (!older) select(null);
         }
         delay = Math.max(
           commentDelay(++failCount.current),

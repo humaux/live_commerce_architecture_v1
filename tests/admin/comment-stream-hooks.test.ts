@@ -29,7 +29,24 @@ const { CommentStream } =
   await import("../../apps/admin/components/CommentStream.tsx");
 const { commentCopy } =
   await import("../../apps/admin/src/features/live/comment-copy.ts");
+const { CommentReceipt } =
+  await import("../../apps/admin/src/features/live/comment-receipt.ts");
 const sid = "22222222-2222-4222-8222-222222222222";
+test("PR18 final public unresolved receipt survives relogin but coarse fence stays session-bound",()=>{
+  const saved=new Map<string,string>();
+  const storage={getItem:(key:string)=>saved.get(key)??null,setItem:(key:string,value:string)=>saved.set(key,value),removeItem:(key:string)=>saved.delete(key)};
+  const publicBefore=new CommentReceipt(storage,"store-a",sid,"boundary-a","123_456");
+  assert.equal(publicBefore.arm(),true);
+  const publicAfter=new CommentReceipt(storage,"store-a",sid,"boundary-b","123_456");
+  assert.equal(publicAfter.blocked(),true,"relogin must not turn UNKNOWN into permission to resend");
+  assert.equal(publicAfter.arm(),false);
+  for(const [shop,session,ref] of [["store-b",sid,"123_456"],["store-a","other-session","123_456"],["store-a",sid,"123_457"]])
+    assert.equal(new CommentReceipt(storage,shop,session,"boundary-b",ref).blocked(),false,"public guards stay scope/ref isolated");
+  assert.equal(new CommentReceipt(storage,"store-a",sid,"boundary-a").arm(),true);
+  assert.equal(new CommentReceipt(storage,"store-a",sid,"boundary-b").blocked(),false,"coarse session semantics unchanged");
+  assert.equal(publicAfter.clear(),true);
+  assert.equal(publicBefore.blocked(),false,"terminal/verified clears the shared ref guard");
+});
 test("PR18 enabled downgrade gates hook output before passive cleanup",async t=>{
   const env=environment(t);let enabled=true;
   globalThis.fetch=async()=>response(page());
@@ -382,6 +399,26 @@ const page = (epoch = 1, items = [row], reset = false) => ({
     source_platform: "facebook",
     video_embeddable: true,
   },
+});
+test("PR18 final expired older cursor keeps live buffer selection and polling",async t=>{
+  const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-09T00:00:00Z")});
+  let olderReads=0,incrementalReads=0;
+  globalThis.fetch=async input=>{
+    const url=String(input);
+    if(url.includes("before_cursor=")){olderReads++;return response({code:"invalid_cursor"},400);}
+    if(url.includes("after_seq=")){incrementalReads++;return response(page(1,[]));}
+    return response({...page(),older_cursor:"expired-history"});
+  };
+  const h=env.mount(()=>useCommentStream(store.id,sid,true));await h.settle();
+  h.output.select({ref:row.ref});h.flush();const next={...h.output.buffer.next};
+  h.output.older();await h.settle();assert.equal(olderReads,1);
+  assert.deepEqual(h.output.buffer.items.map((r:any)=>r.ref),[row.ref]);
+  assert.deepEqual(h.output.selection,{ref:row.ref});
+  assert.deepEqual(h.output.buffer.next,next,"older failure does not rewind live cursor");
+  assert.equal(h.output.buffer.older,null);assert.equal(h.output.error,"invalid_cursor");
+  h.output.older();await h.settle();assert.equal(olderReads,1,"expired pagination is not retried");
+  t.mock.timers.tick(3000);await h.settle();
+  assert.equal(incrementalReads,1);assert.equal(h.output.selection.ref,row.ref);
 });
 test("actual A2 hook fake clock: 3/6/12/24/30 backoff, success reset, hide clears and stops, 403 locks", async (t) => {
   const env = environment(t);
