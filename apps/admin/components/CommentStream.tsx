@@ -262,9 +262,14 @@ export function CommentStream({
                   {row.marks.claim?.reason === "restricted" && (
                     <p className="comment-mark">{c.restricted}</p>
                   )}
-                  {row.marks.private_reply?.kind === "out_of_stock" && <p className="comment-mark">{liveSettingsCopy(locale).replied}</p>}
+                  {row.marks.private_reply?.kind === "out_of_stock" &&
+                    commentSendState(row.marks.private_reply.state) === "sent" && (
+                      <p className="comment-mark" data-testid={`comment-soldout-sent-${row.ref}`}>
+                        {liveSettingsCopy(locale).replied}
+                      </p>
+                    )}
                   {row.marks.private_reply && (
-                    <p className="live-helper">
+                    <p className="live-helper" data-testid={`comment-send-state-${row.ref}`}>
                       {commentReason(locale, commentSendState(row.marks.private_reply.state))}
                     </p>
                   )}

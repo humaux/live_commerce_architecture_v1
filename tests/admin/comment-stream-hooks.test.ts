@@ -404,6 +404,23 @@ const page = (epoch = 1, items = [row], reset = false) => ({
     video_embeddable: true,
   },
 });
+// PR31: delivery wording is checked on the actual rendered component, not a duplicate mapping.
+for(const [locale,replied,states] of [
+  ["en","Sold-out reply sent",["Sent","Queued","Failed","Blocked","Delivery uncertain"]],
+  ["zh-TW","沒貨已回覆",["已傳送","排隊中","傳送失敗","已阻擋","結果未確認"]],
+  ["zh-CN","没货已回复",["已发送","排队中","发送失败","已阻止","结果未确认"]],
+] as const)for(const [state,index] of [
+  ["SUCCEEDED",0],["ACKNOWLEDGED",0],["READY",1],["DISPATCHING",1],
+  ["FAILED_FINAL",2],["BLOCKED_POLICY",3],["UNKNOWN",4],
+] as const)test(`PR31 soldout badge ${locale} ${state} reflects confirmed delivery`,async t=>{
+  const env=environment(t);
+  const item={...row,marks:{...row.marks,private_reply:{kind:"out_of_stock",state,blocked_reason:null},private_reply_available:false}};
+  globalThis.fetch=async()=>response(page(1,[item] as any));
+  const h=env.mount(()=>CommentStream({store,session:sid,locale,platform:"facebook",capabilities:{}} as any));await h.settle();
+  const rendered=node(h,n=>n.props["data-testid"]===`comment-row-${row.ref}`);
+  assert.equal(nodes(rendered).filter(n=>n.type==="p"&&textOf(n)===replied).length,index===0?1:0,`${state} must not claim delivery before a confirmed success`);
+  assert.ok(nodes(rendered).some(n=>n.type==="p"&&n.props.className==="live-helper"&&textOf(n)===states[index]),"the existing delivery-state warning remains visible");
+});
 test("PR18 P1 IG earliest50 refresh preserves100 rows selection and private draft",async t=>{
   const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-09T00:00:00Z")});
   const igRows=Array.from({length:100},(_,i)=>({...row,ref:String(i+1),seq:i+1,text:`Synthetic IG ${i+1}`,created_at:new Date(Date.parse(row.created_at)+1000*i).toISOString()}));
