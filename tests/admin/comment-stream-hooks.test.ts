@@ -19,6 +19,7 @@ import {
   nodes,
   node,
   textOf,
+  BuyerPanel,
 } from "./inbox-review-host.test.ts";
 const { useCommentStream } =
   await import("../../apps/admin/src/features/live/use-comment-stream.ts");
@@ -29,6 +30,37 @@ const { CommentStream } =
 const { commentCopy } =
   await import("../../apps/admin/src/features/live/comment-copy.ts");
 const sid = "22222222-2222-4222-8222-222222222222";
+for (const deniedPath of ["a2", "a8", "older"] as const) test(`PR18 R2 scoped404 ${deniedPath} clears both private views and stops recovery reads`, async t => {
+  const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-09T01:00:00Z")});
+  let revoked=false, reads=0;
+  const claim={status:"ACCEPTED",reason:null,offer_id:sid,keyword:"A1",quantity:1,bundle_id:sid};
+  globalThis.fetch=async input=>{
+    const url=String(input);
+    if(url.includes("buyer-panel?"))return response({display_name:"SYNTHETIC_PANEL",platform:"facebook",purchase_ordinal:1,claims:[],claim_total_minor:0,orders:[],link_pending_manual:false});
+    if(url.includes("message-templates"))return response({items:[]});
+    reads++;
+    const a8=url.includes("inbox/conversations");
+    if(revoked && ((deniedPath==="a2"&&!a8)||(deniedPath==="a8"&&a8)||(deniedPath==="older"&&url.includes("cursor="))))return response({code:"not_found"},404);
+    if(a8)return response({items:[{conversation_id:sid,bundle_id:sid,platform:"facebook",display_name:"SYNTHETIC_A8_NAME",last_at:"2026-10-09T01:00:00Z",unreplied:true}],next_cursor:"more",unread_total:1});
+    return response(page(1,[{...row,author_name:"SYNTHETIC_A2_NAME",marks:{...row.marks,claim}}]));
+  };
+  const h=env.mount(()=>CommentStream({store,session:sid,locale:"en",platform:"facebook",capabilities:{}} as any));await h.settle();
+  assert.ok(textOf(h.output).includes("SYNTHETIC_COMMENT"));
+  node(h,n=>n.props["data-testid"]==="comment-filter-private").props.onClick();await h.settle();
+  node(h,n=>n.type==="button"&&textOf(n).includes("SYNTHETIC_A8_NAME")).props.onClick();await h.settle();
+  assert.ok(textOf(h.output).includes("SYNTHETIC_PANEL"));
+  revoked=true;
+  if(deniedPath==="older")node(h,n=>n.type==="button"&&textOf(n)===commentCopy("en").older).props.onClick();
+  else t.mock.timers.tick(deniedPath==="a2"?3000:10000);
+  await h.settle();
+  assert.equal(node(h,n=>n.props["data-testid"]==="comment-refresh").props.disabled,true);
+  assert.equal(nodes(h.output).some(n=>n.props["data-testid"]==="buyer-panel"),false);
+  assert.equal(/SYNTHETIC_(PANEL|A8_NAME|A2_NAME|COMMENT)/.test(textOf(h.output)),false);
+  assert.equal(h.slots.some(s=>[...(s.value?.items??[]),...(s.value?.current?.items??[])].some((r:any)=>r.text||r.display_name||r.author_name)),false,"private A2/A8 state is cleared, not merely hidden");
+  const stopped=reads;
+  env.window.dispatchEvent(new Event("focus"));t.mock.timers.tick(90000);await h.settle();
+  assert.equal(reads,stopped,"terminal loss cannot resume polling on focus or timers");
+});
 test("PR18 A8 clears names synchronously and keeps loaded older pages through a head poll",async t=>{
   const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-08T01:00:00Z")});
   const item=(id:string,name:string)=>({conversation_id:id,bundle_id:null,display_name:name,platform:"facebook",last_at:"2026-10-08T01:00:00Z",unreplied:true});
@@ -108,6 +140,14 @@ test("K3 pasted tab is refused with invalid_text copy before any reply POST",asy
   node(h,n=>n.props["data-testid"]==="comment-reply-text").props.onChange({target:{value:"Synthetic\treply"}});h.flush();node(h,n=>n.type==="form").props.onSubmit({preventDefault(){}});await h.settle();
   assert.equal(sends,0);assert.equal(stored.size,0,"invalid text must not arm an uncertain-send receipt");assert.ok(textOf(h.output).includes(commentCopy("en").invalid_text));
 });
+for(const locale of ["zh-TW","zh-CN","en"])test(`PR18 facts_unavailable mark uses actionable copy ${locale}`,async t=>{
+  const env=environment(t);globalThis.fetch=async()=>response({items:[]});
+  const cap={state:"ok",reason:"ok",evidence:"MOCK",checked_at:null};
+  const h=env.mount(()=>CommentReply({store,session:sid,comment:{...row,marks:{...row.marks,private_reply_available:false,private_reply_unavailable_reason:"facts_unavailable"}},locale,platform:"facebook",capabilities:{facebook:{private_reply:cap,reply_public:cap}},onSent(){},onDenied(){}} as any));
+  await h.settle();
+  assert.equal(textOf(node(h,n=>n.props["data-testid"]==="comment-rule")),commentCopy(locale).comment_facts_unavailable);
+  assert.equal(node(h,n=>n.type==="fieldset").props.disabled,true);
+});
 test("real SQL UNKNOWN mark blocks public-mode switching without a local receipt",async t=>{
   const env=environment(t);globalThis.fetch=async()=>response({items:[]});
   const h=env.mount(()=>CommentReply({store,session:sid,comment:{...row,marks:{...row.marks,private_reply:{kind:"manual",state:"UNKNOWN",blocked_reason:null},private_reply_available:false,private_reply_unavailable_reason:"auto_pending"}},locale:"en",platform:"facebook",capabilities:{facebook:{private_reply:{state:"ok",reason:"ok",evidence:"MOCK",checked_at:null},reply_public:{state:"ok",reason:"ok",evidence:"MOCK",checked_at:null}}},onSent(){},onDenied(){}} as any));
@@ -116,6 +156,7 @@ test("real SQL UNKNOWN mark blocks public-mode switching without a local receipt
 });
 for(const state of ["unknown","queued"] as const)test(`PR18 ${state} public receipt has the correct cross-comment fence`, async (t) => {
   const env = environment(t);
+  t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-09T01:00:00Z")});
   let sends = 0;
   globalThis.fetch = async (_url, init) => {
     if (init?.method === "POST") {
@@ -168,6 +209,8 @@ for(const state of ["unknown","queued"] as const)test(`PR18 ${state} public rece
   node(h, (n) => n.type === "form").props.onSubmit({ preventDefault() {} });
   await h.settle();
   assert.equal(sends, 1);
+  const publicKey=[...stored.keys()].find(key=>key.startsWith("live-comment-public-pending:"));
+  assert.ok(publicKey,"public guard armed before losing component state");
   h.dispose();
   h = env.mount(() =>
     CommentReply({ ...props, comment: { ...row, ref: "987654" } } as any),
@@ -178,11 +221,39 @@ for(const state of ["unknown","queued"] as const)test(`PR18 ${state} public rece
     state === "unknown",
     "only UNKNOWN blocks a new comment after navigation",
   );
-  assert.equal(stored.size, state === "unknown" ? 1 : 0);
+  // R2 ruling: keep a per-comment public guard even after an acknowledged queue entry.
+  assert.equal(stored.size, state === "unknown" ? 2 : 1);
   for (const [key, value] of stored) {
-    assert.doesNotMatch(key, /123_456|987654|Synthetic/);
+    assert.doesNotMatch(key, /987654|Synthetic/);
     assert.equal(value, "1");
   }
+  // Worker may become UNKNOWN; A2 supplies only a count, not that state.
+  // Recreate the component twice (selection return and reload), retaining only storage.
+  h.dispose();h=env.mount(()=>CommentReply(props as any));await h.settle();
+  h.dispose();h=env.mount(()=>CommentReply(props as any));await h.settle();
+  t.mock.timers.tick(31000);await h.settle();
+  assert.equal(node(h,n=>n.type==="fieldset").props.disabled,true,"public non-terminal survives reload past backend dedupe window");
+  node(h,n=>n.type==="form").props.onSubmit({preventDefault(){}});await h.settle();
+  assert.equal(sends,1,"cannot create a new operation without verification");
+  Object.assign(env.window,{confirm:()=>true});
+  node(h,n=>n.props["data-testid"]==="comment-verified").props.onClick();await h.settle();
+  assert.equal(stored.size,0,"explicit verification clears both guards");
+});
+
+for(const outcome of ["sent","failed","blocked","refused"] as const)test(`PR18 public guard releases only definite ${outcome}`,async t=>{
+  const env=environment(t);
+  globalThis.fetch=async(_url,init)=>{
+    if(init?.method!=="POST")return response({items:[]});
+    assert.equal([...stored.keys()].filter(k=>k.startsWith("live-comment-public-pending:")).length,1,"armed before network dispatch");
+    return outcome==="refused"?response({code:"public_reply_forbidden_content"},422):response({send_state:outcome,operation_id:sid,outbound_id:sid});
+  };
+  const cap={state:"ok",reason:"ok",evidence:"MOCK",checked_at:null};
+  const props={store,session:sid,comment:row,locale:"en",platform:"facebook",capabilities:{facebook:{private_reply:cap,reply_public:cap}},onSent(){},onDenied(){}};
+  const h=env.mount(()=>CommentReply(props as any));await h.settle();
+  node(h,n=>n.type==="button"&&textOf(n)==="Public reply").props.onClick();h.flush();
+  node(h,n=>n.props["data-testid"]==="comment-reply-text").props.onChange({target:{value:"Synthetic terminal reply"}});h.flush();
+  node(h,n=>n.type==="form").props.onSubmit({preventDefault(){}});await h.settle();
+  assert.equal(stored.size,0);
 });
 const row = {
   ref: "123_456",
@@ -347,4 +418,21 @@ test("reply hints, coded error, UNKNOWN and capability state execute the actual 
     nodes(h.output).find((n) => n.type === "fieldset")?.props.disabled,
     true,
   );
+});
+
+// K3 PR18 r2 P2 (privacy, folded in): scope-only reads treat 404 as lost scope, like Inbox.tsx. The send POST is deliberately
+// excluded: its 404 can also mean a stale offer, and the A2 poll (3 s) expires a real scope loss anyway.
+test("PR18 R2 templates read 404 denies the composer", async t => {
+  const env=environment(t);let denied=0;
+  globalThis.fetch=async input=>String(input).includes("message-templates")?response({code:"not_found"},404):response({items:[]});
+  const h=env.mount(()=>CommentReply({store,session:sid,comment:row,locale:"en",platform:"facebook",capabilities:{facebook:{private_reply:{state:"ok",reason:"ok",evidence:"MOCK",checked_at:null}}},onSent(){},onDenied(){denied++;}} as any));
+  await h.settle();assert.equal(denied,1);
+});
+for(const [status,lost] of [[404,0],[403,1]] as const)test(`PR18 buyer-panel read ${status}: ${lost?"revokes the console scope":"stays local (retention-purged or gone selection), console keeps access"}`, async t => {
+  // Codex r4 4227138842: A13 answers not_found for a purged/missing bundle too, so only 401/403 revoke the parent scope;
+  // a real scope loss still reaches the A2/A8 polls within one interval.
+  const env=environment(t);let lost_=0;
+  globalThis.fetch=async input=>String(input).includes("buyer-panel?")?response({code:status===404?"not_found":"forbidden"},status):response({items:[]});
+  const h=env.mount(()=>BuyerPanel({store,conversationId:sid,onUnauthorized(){lost_++;}} as any));
+  await h.settle();assert.equal(lost_,lost);assert.equal(textOf(h.output).includes("SYNTHETIC"),false);
 });

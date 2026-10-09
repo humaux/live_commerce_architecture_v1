@@ -1,6 +1,7 @@
 // Purpose: transient A2 stream parsing, epoch reconciliation and filter/cadence policy.
 // Depends on: live-console-v1 CommentStream DTO; no browser storage or identity inference.
 // Used by: CommentStream hook and Node acceptance tests.
+// Invariant: deduped buffer is oldest-first by (created_at instant, ref); cap evicts only the oldest rows.
 export type CommentFilter = "all" | "keyword" | "private" | "unreplied";
 /** A2 SQL marks carry operation enums; render the same five delivery states as Go inbox.sendState. */
 export function commentSendState(state:string):"queued"|"sent"|"failed"|"blocked"|"unknown" {
@@ -84,7 +85,10 @@ export function applyCommentPage(
   );
   return {
     epoch: page.epoch,
-    items: older ? [...map.values()].slice(0, 1000) : [...map.values()].slice(-1000),
+    // FB bridge and IG fallback arrive in opposite orders. Never use arrival order for retention.
+    items: [...map.values()].sort((a, b) =>
+      Date.parse(a.created_at) - Date.parse(b.created_at) || (a.ref < b.ref ? -1 : a.ref > b.ref ? 1 : 0),
+    ).slice(-1000),
     next: older ? old.next : page.next,
     older: older || !old.epoch ? page.older_cursor : old.older,
     reset: false,

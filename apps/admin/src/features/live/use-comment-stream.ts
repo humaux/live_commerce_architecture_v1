@@ -119,7 +119,9 @@ export function useCommentStream(
       } catch (e) {
         if (!alive || !fence.current(ticket)) return;
         const code = e instanceof InboxError ? e.code : "stream_unavailable";
-        if (e instanceof InboxError && [401, 403].includes(e.status)) {
+        // A scoped 404 also means the store/resource is no longer authorised. Retaining
+        // cached comments on that path would expose private data after grant revocation.
+        if (e instanceof InboxError && [401, 403, 404].includes(e.status)) {
           expire();
           setError(code);
           return;

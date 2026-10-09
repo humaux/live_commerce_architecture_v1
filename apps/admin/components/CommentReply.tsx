@@ -53,6 +53,8 @@ export function CommentReply({
   const [restrictionChecked, setRestrictionChecked] = useState(false);
   const restricted = comment.marks.claim?.reason === "restricted";
   const receipt = useRef<CommentReceipt | null>(null);
+  const publicReceipt = useRef<CommentReceipt | null>(null);
+  const [publicBlocked, setPublicBlocked] = useState(true);
   const fence = useRef(new InboxFence()),
     active = useRef(false),
     callbacks = useRef({ onSent, onDenied });
@@ -65,8 +67,10 @@ export function CommentReply({
   const capable = !!cap && ["ok", "review_required"].includes(cap.state);
   const terminalUnknown =
     receiptBlocked ||
+    publicBlocked ||
     state === "unknown" ||
-    (!!comment.marks.private_reply && commentSendState(comment.marks.private_reply.state) === "unknown");
+    (!!comment.marks.private_reply &&
+      commentSendState(comment.marks.private_reply.state) === "unknown");
   useEffect(() => {
     let alive = true;
     void sessionBoundary()
@@ -80,6 +84,8 @@ export function CommentReply({
             boundary,
           );
           setReceiptBlocked(receipt.current.blocked());
+          publicReceipt.current = new CommentReceipt(sessionStorage, store.id, session, boundary, comment.ref);
+          setPublicBlocked(publicReceipt.current.blocked());
         } catch {
           setReceiptBlocked(true);
         }
@@ -91,11 +97,14 @@ export function CommentReply({
     return () => {
       alive = false;
       receipt.current = null;
+      publicReceipt.current = null;
     };
-  }, [store.id, session]);
+  }, [store.id, session, comment.ref]);
   const privateReason =
     mode === "private" && !comment.marks.private_reply_available
-      ? (comment.marks.private_reply_unavailable_reason ?? "used")
+      ? (comment.marks.private_reply_unavailable_reason === "facts_unavailable"
+          ? "comment_facts_unavailable"
+          : (comment.marks.private_reply_unavailable_reason ?? "used"))
       : "";
   const canPreempt =
     privateReason === "auto_pending_confirm" ||
@@ -138,7 +147,8 @@ export function CommentReply({
         if (
           fence.current.current(ticket) &&
           e instanceof InboxError &&
-          [401, 403].includes(e.status)
+          // template list: 404 can only mean lost scope; the send POST keeps 401/403 (its 404 may be a stale offer)
+          [401, 403, 404].includes(e.status)
         )
           callbacks.current.onDenied();
       });
@@ -158,9 +168,18 @@ export function CommentReply({
       (rule && !(canPreempt && preempt))
     )
       return;
-    if (!selected && !validCommentText(text)) { setError("invalid_text"); return; }
+    if (!selected && !validCommentText(text)) {
+      setError("invalid_text");
+      return;
+    }
     if (!receipt.current?.arm()) {
       setReceiptBlocked(true);
+      return;
+    }
+    // Persist before dispatch: A2 exposes only public counts, so it cannot recover queued/UNKNOWN after reload.
+    if (mode === "public" && !publicReceipt.current?.arm()) {
+      setPublicBlocked(true);
+      setReceiptBlocked(!receipt.current.clear());
       return;
     }
     active.current = true;
@@ -195,8 +214,11 @@ export function CommentReply({
       )
         throw new InboxError("retry_later", 503);
       setState(value.send_state);
-      // queued is an acknowledged operation, not an unknown transport result. Its per-comment
-      // state stays visible; only UNKNOWN may fence every comment in the session across reloads.
+      // queued releases the session fence, never the per-comment fence: the worker is not terminal yet.
+      if (mode === "public") setPublicBlocked(
+        ["sent", "failed", "blocked"].includes(value.send_state)
+          ? !publicReceipt.current?.clear() : true,
+      );
       if (value.send_state !== "unknown")
         setReceiptBlocked(!receipt.current?.clear());
       else setReceiptBlocked(true);
@@ -210,7 +232,11 @@ export function CommentReply({
       if (!(e instanceof InboxError) || e.status >= 500) {
         setState("unknown");
         setReceiptBlocked(true);
-      } else setReceiptBlocked(!receipt.current?.clear());
+      } else {
+        setReceiptBlocked(!receipt.current?.clear());
+        // A definite command refusal did not queue an external send.
+        if (mode === "public") setPublicBlocked(!publicReceipt.current?.clear());
+      }
       if (e instanceof InboxError && [401, 403].includes(e.status))
         callbacks.current.onDenied();
       if (code === "auto_pending_confirm") setConfirm(true);
@@ -293,13 +319,14 @@ export function CommentReply({
           {c.verify}
         </p>
       )}
-      {receiptReady && receiptBlocked && !busy && (
+      {receiptReady && (receiptBlocked || publicBlocked) && !busy && (
         <button
           type="button"
           data-testid="comment-verified"
           onClick={() => {
-            if (window.confirm(c.confirmVerified) && receipt.current?.clear()) {
+            if (window.confirm(c.confirmVerified) && receipt.current?.clear() && publicReceipt.current?.clear()) {
               setReceiptBlocked(false);
+              setPublicBlocked(false);
               setState(null);
               setError("");
               setText("");
