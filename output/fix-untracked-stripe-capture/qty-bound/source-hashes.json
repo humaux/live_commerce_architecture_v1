@@ -1,0 +1,7 @@
+{
+  "source_commit": "7499dfc78bfe7a856f9c8ea945d2be5ca93bed26",
+  "files": {
+    "migrations/0167_stripe_untracked_reservation.sql": "04b41fa6ddc68ebb91c418a985558904d62d6f2a64c8511fb99ba9f5bb2b4694",
+    "tests/foundation/stripe_untracked_quantity_test.go": "446aad4dd27978c4dbdd9b8c0ea63bec0b9a3a36628dc366f12befbe46020f3a"
+  }
+}

@@ -1,4 +1,28 @@
-# PR20 round 1 — Stripe unreserved quote lines
+# PR20 — K3 quantity-bound follow-up
+
+- Branch/worktree: `unit/fix-untracked-stripe-capture`, `.worktrees/fix-untracked-stripe-capture`.
+- Base: `bbb8728dbf79672fa2a157d574afbe9d6f2be95a`; tested source: `7499dfc78bfe7a856f9c8ea945d2be5ca93bed26`.
+- Codex-4 / GPT-6 family; exact runtime model/effort not exposed. Coordination task `483c5aa5-8f65-43ea-8d90-95cf8a0cc81a`.
+- K3 PASSed the preceding batch with one round-one P2: the two nine-digit quantity regexes excluded the inclusive SQL CHECK upper bound. Both capture and close now validate ten-digit syntax, then use a CASE-guarded bigint range `1..1000000000`. Malformed/overflow values fail closed as PT409. No interface, ACL, definer attributes, migration number/count or dependencies changed.
+- New REAL_PG `TestStripeUntrackedQuantityBoundary` tests capture and close/replay, one terminal fact, correct order/reservation states, no stock movement or review. Seven invalid quote quantities fail atomically on both paths; a real INSERT accepts `1000000000` and rejects `1000000001` with CHECK 23514.
+- Fixture limit: modern untracked Begin enforces max-per-order 999. This test explicitly seeds a **synthetic historical** quantity on a zero-price untracked line, after real Begin, with original quote and order snapshot kept equal and all monetary totals unchanged. Replica mode disables immutable-row triggers for that disclosed fixture only; the actual INSERT CHECK remains enabled. This does not claim a present-day checkout can buy a billion units.
+
+## Current evidence
+
+Exact commands, exit codes and log/source hashes: `qty-bound/results.json`, `qty-bound/source-hashes.json`.
+
+| Command | Exit | Result |
+| --- | --- | --- |
+| `bash scripts/dev/test-focused.sh '^TestStripeUntrackedQuantityBoundary$' ./tests/foundation` on old SQL | 1 | RED: capture and close both PT409; `qty-bound/red.log` |
+| Same focused command on fixed SQL | 0 | 1 PASS /0 FAIL /0 SKIP; `qty-bound/green.log` |
+| `LC_FOCUSED_TIMEOUT=1800s bash scripts/dev/test-focused.sh '^TestStripe(SP\|SL\|RF\|Untracked)' ./tests/foundation` | 0 | **46 PASS /0 FAIL /2 SKIP**,623.159s; `qty-bound/stripe-regression.log` |
+| `bash scripts/dev/test-node.sh` | 0 | 1148 PASS /0 FAIL; `qty-bound/node.log` |
+| `pnpm --filter @live-commerce/admin typecheck` | 0 | `qty-bound/typecheck.log` |
+| `bash scripts/dev/check-gates.sh` | 0 | 82 documented modes; `qty-bound/check-gates.log` |
+
+**E3: tested REAL_PG + MOCK environment**, source7499dfc7. Plaintext RED evidence is uncompressed. K3/CI on the new head, SANDBOX credential probes, browser/full foundation and LIVE/production are NOT_RUN here. Commit only; integrator pushes. Return to LC-B2-DEL after this batch; W3-U2 stays awaiting K3. Bounded independent source/log review PASS with no new P0/P1/P2; no independent runtime rerun. Reverting only the two new predicates/comments restores the complete migration byte-for-byte to bbb8728d (`qty-bound/restore-proof.json`). Harnesses completed and removed their task-owned PG fixture; no active runner remains.
+
+## Previous round-one evidence (historical bbb8728d)
 
 - Branch/worktree: `unit/fix-untracked-stripe-capture`, `.worktrees/fix-untracked-stripe-capture`.
 - Base: `66f9976122074c74138bdeae19c2b1dd0a61eeb8`; tested source: **`2b8089a9baa27e6d679018cea3e551c837bb2029`**. Final commit adds evidence only; `pr20-r1/source-hashes.json` binds current source and RF12 restore proof.
