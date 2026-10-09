@@ -30,7 +30,7 @@ const certDir=await mkdtemp(path.join(tmpdir(),"lc-order-edge-"));
 const review=path.join(root,"output/playwright/review/buyer-order");
 const historyReview=path.join(root,"output/playwright/review/buyer-history");
 let browser,edge,proxy,hook,sessionResets=0;
-const calls=[], bo01Warmups=new Map(), bo01Reads=[];
+const calls=[], bo01Warmups=new Map(), bo01Reads=[], bo01Probes=[];
 async function control(resource,method="GET") {
   const response=await fetch(`${process.env.LC_ORDER_CONTROL}/${resource}`,{method,headers:{"X-Gate-Key":process.env.LC_ORDER_CONTROL_KEY}});
   assert.equal(response.status,200,`fixture control ${resource.split("/")[0]}`);return response.json();
@@ -183,18 +183,24 @@ async function captureContextState(c) {
 async function stableLocaleTarget(p,mobile=false) {
   // Causal layout gate: release the real destination-head read only after the footer link is positioned.
   // A buyer can press a language link while this read completes; removing the loading paragraph must not move it.
-  const headLoading=arm("destination",{method:"GET",after:true});
+  const repeats=Number(process.env.LC_BO01_REPEAT||1);assert(Number.isInteger(repeats)&&repeats>=1&&repeats<=10);
+  for(let iteration=1;iteration<=repeats;iteration++) {
+  const cookie=(await p.context().cookies(origin))[0];assert(cookie?.httpOnly&&cookie.secure);
+  // The previous English document can still be issuing its mount/focus read.
+  // Match the real new document and observed owner cookie, not whichever GET arrives first.
+  const headLoading=arm("destination",{method:"GET",after:true,sourcePath:"/zh-TW/checkout",cookie:`${cookie.name}=${cookie.value}`});
   const warmup=bo01Warmups.get(p);
   if(warmup){warmup.release.resolve();await warmup.served.promise;bo01Warmups.delete(p);}
   await switchLocale(p,"zh-TW");
   let headDeadline;
   try {
-    await Promise.race([headLoading.result.promise, new Promise((_, reject) => {
+    const status=await Promise.race([headLoading.result.promise, new Promise((_, reject) => {
       headDeadline = setTimeout(() => reject(new Error(`BO01 ${mobile ? "mobile" : "desktop"} destination-head wait exceeded 10000ms: GET /api/buyer/destination at ${p.url()}`)), 10000);
     })]);
+    assert.equal(status,200);assert.equal(headLoading.receivedSourcePath,"/zh-TW/checkout");assert.equal(headLoading.ownerMatched,true);
   } finally { clearTimeout(headDeadline); }
   // Calibration makes the unheld target head finish before observing loading, as the CI artifact did.
-  if(warmup&&headLoading.sourcePath==="/en/checkout")await expect(p.locator('input[name="recipient_name"]')).toBeEnabled();
+  if(warmup&&headLoading.receivedSourcePath==="/en/checkout")await expect(p.locator('input[name="recipient_name"]')).toBeEnabled();
   await expect(p.getByTestId("address-section")).toBeVisible();
   await expect(p.getByTestId("cart-line")).toHaveCount(1);
   await expect(p.getByRole("status").filter({hasText:"正在載入收件資訊…"})).toBeVisible();
@@ -206,6 +212,9 @@ async function stableLocaleTarget(p,mobile=false) {
   assert.equal(afterHead.top,beforeHead.top,"loading completion must not move the footer language target");
   if(mobile&&process.env.LC_BROWSER_ENGINE==="webkit")await languageLink.tap();else await languageLink.click();await expect(p).toHaveURL(`${origin}/en/checkout`);
   await expect(p.getByTestId("address-section")).toBeVisible();
+  bo01Probes.push({device:mobile?"mobile":"desktop",iteration,sourcePath:headLoading.receivedSourcePath,ownerMatched:headLoading.ownerMatched,before:beforeHead,after:afterHead});
+  await writeFile(path.join(evidence,"bo01-probes.json"),JSON.stringify(bo01Probes,null,2));
+  }
   pass(`BO01 ${mobile?"mobile":"desktop"} delivery-head completion keeps the language target stable`);
 }
 async function capture(p,name,fullPage=true,directory=review) {
@@ -221,8 +230,9 @@ try {
       if(req.url.startsWith("/api/buyer/session/")&&req.url.includes("prepare")&&body.toString().includes('"reset"'))sessionResets++;
       const call={path:req.url,method:req.method,key:req.headers["idempotency-key"],body:body.length?body.toString():null,sourcePath:new URL(req.headers.referer||origin).pathname};
       if(req.url.startsWith("/api/buyer/"))calls.push(call);
-      const active=hook&&hook.path===req.url&&(!hook.method||hook.method===req.method)?hook:null;
-      if(active){active.sourcePath=call.sourcePath;if(!active.repeat)hook=null;active.entered.resolve();if(active.before)await active.release.promise;}
+      const cookiePairs=(req.headers.cookie||"").split(/;\s*/);
+      const active=hook&&hook.path===req.url&&(!hook.method||hook.method===req.method)&&(!hook.sourcePath||hook.sourcePath===call.sourcePath)&&(!hook.cookie||cookiePairs.includes(hook.cookie))?hook:null;
+      if(active){active.receivedSourcePath=call.sourcePath;active.ownerMatched=!!active.cookie&&cookiePairs.includes(active.cookie);if(!active.repeat)hook=null;active.entered.resolve();if(active.before)await active.release.promise;}
       const out=await relay(port,req,body);call.status=out.status;
       if(req.url==="/api/buyer/destination"&&req.method==="GET") {
         bo01Reads.push({sourcePath:call.sourcePath,status:out.status,held:!!active?.after});

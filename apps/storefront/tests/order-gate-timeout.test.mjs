@@ -13,14 +13,15 @@ assert.ok(start >= 0 && end > start, "actual locale probe is present");
 function probe(promise) {
   const timers = [], cleared = [];
   const run = runInNewContext(`(${source.slice(start, end).trim()})`, {
-    arm: () => ({ result: { promise } }), switchLocale: async () => {},
+    arm: () => ({ result: { promise }, receivedSourcePath: "/zh-TW/checkout", ownerMatched: true }), switchLocale: async () => {},
+    assert, origin: "https://buyer.example", process: {env:{}}, bo01Warmups: new Map(),
     setTimeout: (callback, delay) => { const timer = { callback, delay }; timers.push(timer); return timer; },
     clearTimeout: timer => cleared.push(timer),
     expect: () => { throw new Error("HEAD arrived: continue real UI assertions"); },
   });
   return { run, timers, cleared };
 }
-const page = { url: () => "https://buyer.example/zh-TW/checkout", getByTestId: () => ({}) };
+const page = { context: () => ({cookies: async () => [{name:"synthetic",value:"canary",httpOnly:true,secure:true}]}), url: () => "https://buyer.example/zh-TW/checkout", getByTestId: () => ({}) };
 
 test("locale probe bounds a missing destination head with a route/device diagnostic", async () => {
   const p = probe(new Promise(() => {}));
