@@ -19,6 +19,7 @@ export function useCommentStream(
   session: string,
   enabled: boolean,
   retainOnReset = false,
+  clearRelated?: () => void,
 ) {
   const [buffer, setBuffer] = useState<CommentBuffer>(emptyComments),
     [error, setError] = useState(""),
@@ -32,12 +33,15 @@ export function useCommentStream(
     inFlight = useRef(false),
     failCount = useRef(0),
     deadline = useRef(0);
+  const related = useRef(clearRelated), marksReadAt = useRef(0);
+  related.current = clearRelated;
   const clear = useCallback(() => {
     current.current = emptyComments();
     setBuffer(current.current);
     select(null);
     setError("");
     setBusy(false);
+    related.current?.();
   }, []);
   const privacy = useInboxPrivacy(clear),
     { fence, visible, expire } = privacy;
@@ -57,6 +61,7 @@ export function useCommentStream(
     const load = async (older = false) => {
       if (!alive || inFlight.current || document.visibilityState !== "visible")
         return;
+      if (older && current.current.items.length >= 1000) return;
       if (!older && deadline.current > Date.now()) {
         timer = setTimeout(() => void load(), deadline.current - Date.now());
         return;
@@ -79,6 +84,18 @@ export function useCommentStream(
         );
         if (!alive || !fence.current(ticket)) return;
         let next = applyCommentPage(current.current, page, older);
+        // A2 attaches marks only to returned refs. Reconcile at most one recent 50-row window
+        // per 10 seconds, preserving the incremental cursor and the merchant's history cursor.
+        if (!older && !next.reset) {
+          if (!current.current.next) marksReadAt.current = Date.now();
+          else if (Date.now() - marksReadAt.current >= 10000) {
+            const head = parseCommentPage(await inboxRead<unknown>(store, `${root}?limit=50`, ticket.signal));
+            if (!alive || !fence.current(ticket)) return;
+            const refreshed = applyCommentPage(next, head, false);
+            next = refreshed.reset ? refreshed : { ...refreshed, next: next.next, older: next.older };
+            marksReadAt.current = Date.now();
+          }
+        }
         if (next.reset) {
           // Test-only fault is admitted by a loopback server prop. Production always discards the old epoch.
           const retained = retainOnReset ? current.current.items : [];

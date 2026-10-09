@@ -116,6 +116,17 @@ test("Next proxy admits the exact console family and results query before the BF
     assert.equal(invoke(path, "GET", query).status, 422, path + query);
 });
 
+test("PR18 proxy preserves malformed A2 cursor as 400 invalid_cursor", async () => {
+  const { NextRequest } = await import("../../apps/admin/node_modules/next/server.js");
+  const { proxy } = await import("../../apps/admin/proxy.ts");
+  for(const query of ["after_epoch=1&after_seq=-1","after_epoch=1&after_seq=1.5","after_epoch=1&after_seq=1&after_seq=2","after_epoch=1&after_seq=2&before_cursor=abc","before_cursor=a/b","after_seq=2"]) {
+    const result=proxy(new NextRequest(`https://admin.example.test/api/stores/${store}/${root}/comments?${query}`));
+    assert.equal(result.status,400,query);assert.equal((await result.json()).code,"invalid_cursor");
+  }
+  const unknown=proxy(new NextRequest(`https://admin.example.test/api/stores/${store}/${root}/comments?text=private`));
+  assert.equal(unknown.status,422);
+});
+
 test("results query is canonical repeated session_id 1..50, everything else queryless", () => {
   const url = "http://127.0.0.1/live-sessions/results";
   assert.equal(validConsoleQuery(`${url}?session_id=${sid}&session_id=${oid}`, "live-sessions/results"), true);

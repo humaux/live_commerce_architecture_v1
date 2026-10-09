@@ -1,0 +1,19 @@
+{
+  "purpose": "Read-only numeric CI scroll timeline, no network/auth/private payloads",
+  "run": "37831840615",
+  "job": "113499043533",
+  "trace_sha256": "d9ce9c382fd59d345c1e85ebd4a52edeea9c19c2c441af0d33ea65678c8f4854",
+  "source": "1-trace.trace tableFrame snapshots and native press calls",
+  "events": [
+    { "kind": "focus assertion", "start_ms": 15018.813, "end_ms": 15028.209 },
+    { "kind": "ArrowRight", "start_ms": 15032.659, "end_ms": 15048.319 },
+    { "kind": "region snapshot", "at_ms": 15180.111, "scrollLeft": 38 },
+    { "kind": "ArrowLeft", "start_ms": 15194.555, "end_ms": 15211.022 },
+    { "kind": "region snapshot", "at_ms": 15200.121, "scrollLeft": 40 },
+    { "kind": "region snapshot", "at_ms": 15209.066, "scrollLeft": 40 },
+    { "kind": "region snapshot", "at_ms": 15220.838, "scrollLeft": 40 },
+    { "kind": "failed polling snapshot", "at_ms": 20176.823, "scrollLeft": 40 }
+  ],
+  "limit": "Trace lacks a separate native keydown/scrollend event; do not claim a more precise internal animation ordering.",
+  "fix": "Observe native scrollend before the opposite real keypress; preserve focus, positive displacement and exact zero. No product CSS change."
+}

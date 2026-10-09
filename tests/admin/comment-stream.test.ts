@@ -20,6 +20,15 @@ import {
 
 const sid = "22222222-2222-4222-8222-222222222222";
 const path = `live-sessions/${sid}/comments`;
+test("PR18 A3 invalid_ref remains a definite 422 refusal", () => {
+  assert.equal(commentErrorCode(422, { code: "invalid_ref" }), "invalid_ref");
+});
+test("PR18 a full history buffer stops paging without discarding rows or advancing its cursor", () => {
+  const old = { ...emptyComments(), epoch: 1, items: Array.from({length:1000}, (_,i)=>({ref:String(i+100)})), next:{epoch:1,seq:1200}, older:"original" };
+  const incoming = { epoch:1,reset:false,items:[{ref:"98"},{ref:"99"}],next:{epoch:1,seq:99},older_cursor:"skipped" };
+  const result=applyCommentPage(old as never,incoming as never,true);
+  assert.deepEqual(result.items,old.items);assert.equal(result.older,"original");assert.deepEqual(result.next,old.next);
+});
 test("K3 reply text rejects every C0/C1 control except newline",()=>{
   const p=`${path}/123/private-reply`;
   for(const n of [...Array(32).keys(),...Array.from({length:33},(_,i)=>127+i)]) {
