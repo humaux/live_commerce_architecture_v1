@@ -3,8 +3,8 @@
 // Used by: test-node; any failed filesystem fixture is retained for review.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
-import { globSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+import { existsSync, globSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -164,4 +164,25 @@ test("visual reviewer discovers nested per-run artifact shots through its real c
     assert.deepEqual(merged.map(x=>x.index),[[],[{page:'other-shard'}]]);
     passed = true;
   } finally { if(passed)rmSync(fixture,{recursive:true}); else console.error(`Retained failed reviewer fixture: ${fixture}`); }
+});
+
+test("explicit evidence roots inside a repository must be ignored and untracked (PR #23 review)", () => {
+  const source = readFileSync(new URL("../../scripts/dev/test-local.sh", import.meta.url), "utf8");
+  const start = source.indexOf("      lc_root_existed=0;");
+  const finish = source.indexOf("\n      esac", start);
+  assert.ok(start >= 0 && finish > start, "real explicit-root guard must exist");
+  const guard = source.slice(start, finish + "\n      esac".length);
+  const repo = realpathSync(mkdtempSync(path.join(tmpdir(), "lc-evidence-root-")));
+  try {
+    const git = (...args) => execFileSync("git", args, { cwd: repo, stdio: "ignore" });
+    git("init", "-q"); writeFileSync(path.join(repo, ".gitignore"), "ignored/\n");
+    mkdirSync(path.join(repo, "tracked")); writeFileSync(path.join(repo, "tracked", "x"), "x"); git("add", "-A");
+    mkdirSync(path.join(repo, "plain"));
+    const run = (root) => spawnSync("bash", ["-c", `set -euo pipefail; LC_BROWSER_EVIDENCE_ROOT="$1"; ${guard}; echo ok`, "guard", root],
+      { cwd: repo, encoding: "utf8", timeout: 10_000 });
+    for (const root of ["tracked", "plain", "."]) assert.equal(run(root).status, 2, `${root} must be refused`);
+    assert.equal(run("fresh-refused").status, 2); assert.equal(existsSync(path.join(repo, "fresh-refused")), false, "a refused root it created is removed");
+    assert.equal(run("ignored/run.1").status, 0, "an ignored untracked root is accepted");
+    assert.equal(run(realpathSync(tmpdir())).status, 0, "a root outside the repository is accepted");
+  } finally { rmSync(repo, { recursive: true, force: true }); }
 });

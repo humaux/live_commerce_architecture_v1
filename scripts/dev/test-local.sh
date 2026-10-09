@@ -31,15 +31,18 @@ case "$test_mode" in
       mkdir -p output/playwright
       LC_BROWSER_EVIDENCE_ROOT="$(mktemp -d "$PWD/output/playwright/run.XXXXXXXX")"
     else
+      lc_root_existed=0; [[ -d "$LC_BROWSER_EVIDENCE_ROOT" ]] && lc_root_existed=1
       mkdir -p "$LC_BROWSER_EVIDENCE_ROOT"
-      LC_BROWSER_EVIDENCE_ROOT="$(cd "$LC_BROWSER_EVIDENCE_ROOT" && pwd)"
+      LC_BROWSER_EVIDENCE_ROOT="$(cd "$LC_BROWSER_EVIDENCE_ROOT" && pwd -P)"
       # Fixed children (ui-click-sweep, platform-site, …) would overwrite committed evidence under a tracked root such as
       # output/: inside the repo, accept only an ignored directory with no tracked files (PR #23 review).
       lc_repo_top="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+      [[ -n "$lc_repo_top" ]] && lc_repo_top="$(cd "$lc_repo_top" && pwd -P)"   # physical on both sides: symlinked paths cannot bypass
       case "$LC_BROWSER_EVIDENCE_ROOT/" in
         "${lc_repo_top:-/nonexistent-repo}"/*)
           if [[ -n "$(git ls-files -- "$LC_BROWSER_EVIDENCE_ROOT" | head -1)" ]] || ! git check-ignore -q "$LC_BROWSER_EVIDENCE_ROOT/.lc-evidence-probe"; then
             echo "test-local: LC_BROWSER_EVIDENCE_ROOT=$LC_BROWSER_EVIDENCE_ROOT is inside the repository but is not an ignored, untracked directory (use output/playwright/…)" >&2
+            (( lc_root_existed )) || rmdir "$LC_BROWSER_EVIDENCE_ROOT" 2>/dev/null || true   # leave no refused root behind
             exit 2
           fi ;;
       esac
