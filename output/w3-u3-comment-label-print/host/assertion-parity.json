@@ -1,0 +1,18 @@
+[
+  {
+    "file": "tests/admin/inbox-review.test.ts",
+    "sourceUnchanged": true,
+    "assertionsBefore": 78,
+    "assertionsAfter": 78,
+    "orderUnchanged": true,
+    "orderedAssertionSHA256": "9d6157a0ea464f72104ab8ed58d67e17fbc4929fd7e368afc7aedc917f48a116"
+  },
+  {
+    "file": "tests/admin/inbox-review-recovery.test.ts",
+    "sourceUnchanged": true,
+    "assertionsBefore": 68,
+    "assertionsAfter": 68,
+    "orderUnchanged": true,
+    "orderedAssertionSHA256": "f418debb08dea5d5119b00e0b5d3152f94f2a1c096d375476ff9d8ac931097f8"
+  }
+]

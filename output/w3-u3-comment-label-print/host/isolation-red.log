@@ -1,0 +1,102 @@
+✖ Host subset: nested Provider and React19 context shadow defaults without sibling leakage (0.301291ms)
+✖ Host subset: provider updates reach stable children and separate roots keep their own values (0.073459ms)
+✖ Host subset: render errors restore context and hook ownership (0.052125ms)
+✖ Host subset: portal children inherit logical context and retain handlers/state (0.057625ms)
+✖ Host subset: portal target/key changes remount children and removal runs cleanup (0.377167ms)
+✖ Host subset: createPortal rejects invalid DOM targets rather than swallowing children (0.683792ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 0
+ℹ fail 6
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 277.620875
+
+✖ failing tests:
+
+test at tests/admin/inbox-review-host.test.ts:408:1
+✖ Host subset: nested Provider and React19 context shadow defaults without sibling leakage (0.301291ms)
+  TypeError: react.createContext is not a function
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u3-comment-label-print/tests/admin/inbox-review-host.test.ts:409:25)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+
+test at tests/admin/inbox-review-host.test.ts:419:1
+✖ Host subset: provider updates reach stable children and separate roots keep their own values (0.073459ms)
+  TypeError: react.createContext is not a function
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u3-comment-label-print/tests/admin/inbox-review-host.test.ts:420:25)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+
+test at tests/admin/inbox-review-host.test.ts:431:1
+✖ Host subset: render errors restore context and hook ownership (0.052125ms)
+  TypeError: react.createContext is not a function
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u3-comment-label-print/tests/admin/inbox-review-host.test.ts:432:25)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+
+test at tests/admin/inbox-review-host.test.ts:440:1
+✖ Host subset: portal children inherit logical context and retain handlers/state (0.057625ms)
+  TypeError: react.createContext is not a function
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u3-comment-label-print/tests/admin/inbox-review-host.test.ts:441:25)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+
+test at tests/admin/inbox-review-host.test.ts:450:1
+✖ Host subset: portal target/key changes remount children and removal runs cleanup (0.377167ms)
+  ReferenceError: createPortal is not defined
+      at Host.render (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u3-comment-label-print/tests/admin/inbox-review-host.test.ts:453:54)
+      at Host.flush (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u3-comment-label-print/tests/admin/inbox-review-host.test.ts:43:23)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u3-comment-label-print/tests/admin/inbox-review-host.test.ts:455:27)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+
+test at tests/admin/inbox-review-host.test.ts:461:1
+✖ Host subset: createPortal rejects invalid DOM targets rather than swallowing children (0.683792ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Target container/. Input:
+  
+  'ReferenceError: createPortal is not defined'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u3-comment-label-print/tests/admin/inbox-review-host.test.ts:462:70)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: ReferenceError: createPortal is not defined
+        at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u3-comment-label-print/tests/admin/inbox-review-host.test.ts:462:81
+        at getActual (node:assert:611:5)
+        at strict.throws (node:assert:759:24)
+        at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u3-comment-label-print/tests/admin/inbox-review-host.test.ts:462:70)
+        at Test.runInAsyncScope (node:async_hooks:227:14)
+        at Test.run (node:internal/test_runner/test:1201:25)
+        at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+        at Test.postRun (node:internal/test_runner/test:1330:19)
+        at Test.run (node:internal/test_runner/test:1258:12)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:831:7),
+    expected: /Target container/,
+    operator: 'throws',
+    diff: 'simple'
+  }

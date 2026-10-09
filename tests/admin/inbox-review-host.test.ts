@@ -13,6 +13,10 @@ const ts = require("typescript-api");
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 type VNode = { type: unknown; props: Record<string, any> };
 type Slot = { value?: any; deps?: unknown[]; cleanup?: () => void };
+const CONTEXT = Symbol.for("react.context"), PORTAL = Symbol.for("react.portal");
+type ContextValue = { $$typeof: symbol; defaultValue: unknown; Provider: ContextValue };
+type Contexts = Map<ContextValue, unknown>;
+const sameContexts = (a: Contexts, b: Contexts) => a.size === b.size && [...a].every(([key,value]) => b.has(key) && Object.is(value,b.get(key)));
 let active: Host;
 const same = (a?: unknown[], b?: unknown[]) =>
   !!a && !!b && a.length === b.length && a.every((v, i) => Object.is(v, b[i]));
@@ -27,6 +31,9 @@ class Host {
   effects: (() => void)[] = [];
   output: any;
   render: () => any;
+  contexts: Contexts = new Map();
+  private portalIds = new WeakMap<object, number>();
+  private nextPortalId = 0;
   private observers = new Set<() => void>();
   private commitQueued = false;
   private disposed = false;
@@ -39,15 +46,29 @@ class Host {
       assert.ok(++renders < 50, "hook host render loop");
       this.dirty = false;
       this.cursor = 0;
+      const previous = active;
       active = this;
-      this.raw = this.render();
+      try { this.raw = this.render(); } finally { active = previous; }
       const effects = this.effects.splice(0);
       for (const effect of effects) effect();
     }
     const seen = new Set<string>();
-    const expand = (value: any, path: string): any => {
-      if (Array.isArray(value)) return value.map((item, i) => expand(item, `${path}.${i}`));
+    const expand = (value: any, path: string, contexts: Contexts): any => {
+      if (Array.isArray(value)) return value.map((item, i) => expand(item, `${path}.${i}`, contexts));
+      if (value?.$$typeof === PORTAL) {
+        let target = this.portalIds.get(value.containerInfo);
+        if (target === undefined) { target = ++this.nextPortalId; this.portalIds.set(value.containerInfo,target); }
+        // Portals change physical ownership, not logical context. Target/key changes remount
+        // children; the browser gate, not this VNode host, owns DOM layout/event bubbling.
+        const children = expand(value.children, `${path}.portal:${JSON.stringify([target,value.key])}`, contexts);
+        return { ...value, type: PORTAL, props: { children } };
+      }
       if (!value || typeof value !== "object" || !value.props) return value;
+      if (value.type?.$$typeof === CONTEXT) {
+        // Per-subtree maps preserve nested shadowing, explicit undefined and sibling/root isolation.
+        const nested = new Map(contexts); nested.set(value.type,value.props.value);
+        return expand(value.props.children, `${path}.provider`, nested);
+      }
       if (typeof value.type === "function") {
         const key = `${path}:${value.type.name}:${value.props.key ?? ""}`;
         seen.add(key);
@@ -60,11 +81,15 @@ class Host {
           child.host.render = () => value.type(value.props);
           child.host.dirty = true;
         }
+        if (!sameContexts(child.host.contexts, contexts)) {
+          child.host.contexts = new Map(contexts);
+          child.host.dirty = true;
+        }
         return child.host.flush();
       }
-      return { ...value, props: { ...value.props, children: expand(value.props.children, `${path}.c`) } };
+      return { ...value, props: { ...value.props, children: expand(value.props.children, `${path}.c`, contexts) } };
     };
-    this.output = expand(this.raw, "root");
+    this.output = expand(this.raw, "root", this.contexts);
     for (const [key, child] of this.children)
       if (!seen.has(key)) {
         child.host.dispose();
@@ -122,6 +147,16 @@ class Host {
   }
 }
 const react = {
+  createContext(defaultValue: unknown): ContextValue {
+    const context = { $$typeof: CONTEXT, defaultValue } as ContextValue;
+    context.Provider = context; // React19's context provider and legacy .Provider are equivalent.
+    return context;
+  },
+  useContext(context: ContextValue) {
+    if (!active) throw new Error("useContext requires an active render");
+    if (context?.$$typeof !== CONTEXT) throw new Error("useContext requires a context");
+    return active.contexts.has(context) ? active.contexts.get(context) : context.defaultValue;
+  },
   useState(initial: any) {
     const host = active,
       index = host.cursor++;
@@ -163,6 +198,11 @@ const react = {
     });
   },
 };
+/** Model React's portal descriptor and target validation; rendering stays in its logical Host tree. */
+function createPortal(children: any, containerInfo: any, key: unknown = null) {
+  if (!containerInfo || ![1,9,11].includes(containerInfo.nodeType)) throw new Error("Target container is not a DOM element");
+  return { $$typeof: PORTAL, children, containerInfo, key: key == null ? null : "" + (key as string) };
+}
 const defaultHealth = {
   pages: [
     { capabilities: [{ binding_id: "MOCK_BINDING", provider: "facebook", capability: "dm_session", state: "ok" }] },
@@ -170,6 +210,7 @@ const defaultHealth = {
 };
 const runtime = {
   ...react,
+  createPortal,
   health: defaultHealth,
   jsx: (type: unknown, props: any, key?: string): VNode => ({ type, props: { ...props, key } }),
   Fragment: Symbol("fragment"),
@@ -181,11 +222,11 @@ export function setHealth(health: any) {
 (globalThis as any).__inboxReviewRuntime = runtime;
 const mock = (code: string) => `data:text/javascript,${encodeURIComponent(code)}`;
 const runtimeURL = mock(`const r=globalThis.__inboxReviewRuntime;
-export const {useState,useRef,useCallback,useEffect,jsx,Fragment}=r;export const jsxs=jsx;`);
+export const {createContext,useContext,useState,useRef,useCallback,useEffect,jsx,Fragment}=r;export const jsxs=jsx;`);
 const adapters: Record<string, string> = {
   react: runtimeURL,
   "react/jsx-runtime": runtimeURL,
-  "react-dom": mock("export const flushSync=callback=>callback();"),
+  "react-dom": mock("export const flushSync=callback=>callback(); export const createPortal=(...args)=>globalThis.__inboxReviewRuntime.createPortal(...args);"),
   "next/navigation": mock('export const useParams=()=>({locale:"en"});'),
   "@live-commerce/format": mock(
     "export const displayTime=(_,value)=>value; export const money=(_,currency,value)=>`${currency} ${value}`;",
@@ -402,3 +443,65 @@ export {
   react,
 };
 export type { VNode };
+
+// Isolation gates live with the imported host so every existing test-node caller exercises
+// its semantics too; no registry change or stand-in product component is needed.
+test("Host subset: nested Provider and React19 context shadow defaults without sibling leakage", () => {
+  const context = react.createContext("default");
+  const Read = () => runtime.jsx("span", { children: String(react.useContext(context)) });
+  const h = new Host(() => runtime.jsx("div", { children: [
+    runtime.jsx(context.Provider, { value: "outer", children: [runtime.jsx(Read, {}), runtime.jsx(context, { value: "inner", children: runtime.jsx(Read, {}) }), runtime.jsx(Read, {})] }),
+    runtime.jsx(Read, {}), runtime.jsx(context.Provider, { value: undefined, children: runtime.jsx(Read, {}) }),
+    runtime.jsx(context.Provider, { value: null, children: runtime.jsx(Read, {}) }),
+  ] }));
+  try { assert.deepEqual(nodes(h.flush()).filter(n=>n.type==="span").map(textOf), ["outer","inner","outer","default","undefined","null"]); }
+  finally { h.dispose(); }
+});
+test("Host subset: provider updates reach stable children and separate roots keep their own values", () => {
+  const context = react.createContext("default"); let value = "first", reads = 0;
+  const Read = () => { reads++; const [left] = react.useState("L"), v = react.useContext(context), [right] = react.useState("R"); return runtime.jsx("span", { children: `${left}:${v}:${right}` }); };
+  const stable = runtime.jsx(Read, {}), a = new Host(() => runtime.jsx(context.Provider, { value, children: stable })), b = new Host(() => runtime.jsx(context, { value:"other", children: stable }));
+  try {
+    assert.equal(textOf(a.flush()), "L:first:R"); assert.equal(textOf(b.flush()), "L:other:R");
+    const before = reads; value = "updated"; a.dirty = true;
+    assert.equal(textOf(a.flush()), "L:updated:R"); assert.equal(reads,before+1);
+    assert.equal(textOf(b.flush()), "L:other:R");
+    a.dirty = true; a.flush(); assert.equal(reads,before+1,"same Object.is value and stable child need no rerender");
+  } finally { a.dispose(); b.dispose(); }
+});
+test("Host subset: render errors restore context and hook ownership", () => {
+  const context = react.createContext("default");
+  const Bad = () => { assert.equal(react.useContext(context),"private"); throw new Error("synthetic render failure"); };
+  const bad = new Host(() => runtime.jsx(context.Provider,{value:"private",children:runtime.jsx(Bad,{})}));
+  assert.throws(()=>bad.flush(),/synthetic render failure/);
+  assert.throws(()=>react.useContext(context),/render/);
+  const good = new Host(()=>runtime.jsx("span",{children:react.useContext(context)}));
+  try { assert.equal(textOf(good.flush()),"default"); } finally { bad.dispose();good.dispose(); }
+});
+test("Host subset: portal children inherit logical context and retain handlers/state", () => {
+  const context = react.createContext("default"), target = {nodeType:1}; let value = "outer";
+  const Child = () => { const v=react.useContext(context), [count,setCount]=react.useState(0); return runtime.jsx("button",{onClick:()=>setCount((n:number)=>n+1),children:`${v}:${count}`}); };
+  const stable = runtime.jsx(Child,{}), h = new Host(()=>runtime.jsx(context.Provider,{value,children:createPortal(stable,target,"preview")}));
+  try {
+    assert.equal(textOf(h.flush()),"outer:0"); assert.equal(h.output.containerInfo,target); assert.equal(h.output.key,"preview");
+    node(h,n=>n.type==="button").props.onClick();assert.equal(textOf(h.flush()),"outer:1");
+    value="updated";h.dirty=true;assert.equal(textOf(h.flush()),"updated:1");
+  } finally { h.dispose(); }
+});
+test("Host subset: portal target/key changes remount children and removal runs cleanup", () => {
+  let target={nodeType:1}, key="one", visible=true, mounts=0, cleanups=0;
+  const Child=()=>{const [id]=react.useState(()=>++mounts);react.useEffect(()=>()=>{cleanups++;},[]);return runtime.jsx("span",{children:id});};
+  const stable=runtime.jsx(Child,{}), h=new Host(()=>visible?createPortal(stable,target,key):null);
+  try {
+    assert.equal(textOf(h.flush()),"1");h.dirty=true;assert.equal(textOf(h.flush()),"1");assert.equal(cleanups,0);
+    key="two";h.dirty=true;assert.equal(textOf(h.flush()),"2");assert.equal(cleanups,1);
+    target={nodeType:1};h.dirty=true;assert.equal(textOf(h.flush()),"3");assert.equal(cleanups,2);
+    visible=false;h.dirty=true;assert.equal(h.flush(),null);assert.equal(cleanups,3);
+  } finally { h.dispose(); }
+});
+test("Host subset: createPortal rejects invalid DOM targets rather than swallowing children", () => {
+  for(const target of [null,undefined,{},"body",{nodeType:3}])assert.throws(()=>createPortal("text",target),/Target container/);
+  for(const nodeType of [1,9,11])assert.equal(createPortal("text",{nodeType}).children,"text");
+  assert.equal(createPortal("text",{nodeType:1},0).key,"0");
+  assert.throws(()=>createPortal("text",{nodeType:1},Symbol("unsupported")),TypeError);
+});

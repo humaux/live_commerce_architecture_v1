@@ -1,0 +1,250 @@
+TAP version 13
+# Subtest: review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard
+ok 1 - review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard
+  ---
+  duration_ms: 30.313083
+  type: 'test'
+  ...
+# Subtest: review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST
+ok 2 - review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST
+  ---
+  duration_ms: 7.874959
+  type: 'test'
+  ...
+# Subtest: review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key
+ok 3 - review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key
+  ---
+  duration_ms: 1.83125
+  type: 'test'
+  ...
+# Subtest: review2 P1 missing CSRF before cached recopy cannot copy or issue again
+ok 4 - review2 P1 missing CSRF before cached recopy cannot copy or issue again
+  ---
+  duration_ms: 1.221125
+  type: 'test'
+  ...
+# Subtest: review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch
+ok 5 - review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch
+  ---
+  duration_ms: 1.163083
+  type: 'test'
+  ...
+# Subtest: review2 P1 late issued-link completion after hide cannot write clipboard
+ok 6 - review2 P1 late issued-link completion after hide cannot write clipboard
+  ---
+  duration_ms: 2.646375
+  type: 'test'
+  ...
+# Subtest: review2 P1 late issued-link completion after selection cannot write clipboard
+ok 7 - review2 P1 late issued-link completion after selection cannot write clipboard
+  ---
+  duration_ms: 1.349375
+  type: 'test'
+  ...
+# Subtest: review2 P1 late issued-link completion after unmount cannot write clipboard
+ok 8 - review2 P1 late issued-link completion after unmount cannot write clipboard
+  ---
+  duration_ms: 0.901417
+  type: 'test'
+  ...
+# Subtest: review2 P1 late issued-link completion after logout cannot write clipboard
+ok 9 - review2 P1 late issued-link completion after logout cannot write clipboard
+  ---
+  duration_ms: 0.912459
+  type: 'test'
+  ...
+# Subtest: review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read)
+ok 10 - review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read)
+  ---
+  duration_ms: 0.592333
+  type: 'test'
+  ...
+# Subtest: review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage)
+ok 11 - review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage)
+  ---
+  duration_ms: 0.5415
+  type: 'test'
+  ...
+# Subtest: review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true}
+ok 12 - review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true}
+  ---
+  duration_ms: 0.550625
+  type: 'test'
+  ...
+# Subtest: review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true}
+ok 13 - review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true}
+  ---
+  duration_ms: 0.594416
+  type: 'test'
+  ...
+# Subtest: review2 P2 exactly one matching binding uses named DM hard gate ok
+ok 14 - review2 P2 exactly one matching binding uses named DM hard gate ok
+  ---
+  duration_ms: 6.021333
+  type: 'test'
+  ...
+# Subtest: review2 P2 exactly one matching binding uses named DM hard gate review_required
+ok 15 - review2 P2 exactly one matching binding uses named DM hard gate review_required
+  ---
+  duration_ms: 0.685459
+  type: 'test'
+  ...
+# Subtest: review2 P2 exactly one matching binding uses named DM hard gate missing_permission
+ok 16 - review2 P2 exactly one matching binding uses named DM hard gate missing_permission
+  ---
+  duration_ms: 0.512
+  type: 'test'
+  ...
+# Subtest: review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission)
+ok 17 - review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission)
+  ---
+  duration_ms: 0.503167
+  type: 'test'
+  ...
+# Subtest: review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required)
+ok 18 - review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required)
+  ---
+  duration_ms: 0.468375
+  type: 'test'
+  ...
+# Subtest: review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission)
+ok 19 - review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission)
+  ---
+  duration_ms: 0.509667
+  type: 'test'
+  ...
+# Subtest: review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok)
+ok 20 - review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok)
+  ---
+  duration_ms: 0.428625
+  type: 'test'
+  ...
+# Subtest: review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit
+ok 21 - review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit
+  ---
+  duration_ms: 1.2415
+  type: 'test'
+  ...
+# Subtest: review2 P2 missing health and single binding without named DM remain disabled
+ok 22 - review2 P2 missing health and single binding without named DM remain disabled
+  ---
+  duration_ms: 0.466375
+  type: 'test'
+  ...
+# Subtest: review2 P2 expired cached issued link cannot be recopied or silently reissued
+ok 23 - review2 P2 expired cached issued link cannot be recopied or silently reissued
+  ---
+  duration_ms: 1.052708
+  type: 'test'
+  ...
+# Subtest: P1-1 actual visible focus preserves pending ticket, selection, revision and real retry receipt
+ok 24 - P1-1 actual visible focus preserves pending ticket, selection, revision and real retry receipt
+  ---
+  duration_ms: 1.640084
+  type: 'test'
+  ...
+# Subtest: P1-1 actual unchanged-session pageshow checks without clearing; changed-session focus expires
+ok 25 - P1-1 actual unchanged-session pageshow checks without clearing; changed-session focus expires
+  ---
+  duration_ms: 0.302917
+  type: 'test'
+  ...
+# Subtest: P1-1 actual hide/reveal clears and requests fresh revision, never accepts obsolete completion
+ok 26 - P1-1 actual hide/reveal clears and requests fresh revision, never accepts obsolete completion
+  ---
+  duration_ms: 0.275958
+  type: 'test'
+  ...
+# Subtest: P1-1 changed-session visible focus expires even with a pending request
+ok 27 - P1-1 changed-session visible focus expires even with a pending request
+  ---
+  duration_ms: 0.1695
+  type: 'test'
+  ...
+# Subtest: P1-2 actual A9 refresh 404 removes rendered DM and unsent draft
+ok 28 - P1-2 actual A9 refresh 404 removes rendered DM and unsent draft
+  ---
+  duration_ms: 14.296834
+  type: 'test'
+  ...
+# Subtest: P1-2 actual send-finally A9 404 removes DM, draft and uncertain immutable receipt
+ok 29 - P1-2 actual send-finally A9 404 removes DM, draft and uncertain immutable receipt
+  ---
+  duration_ms: 1.8455
+  type: 'test'
+  ...
+# Subtest: actual uncertain send still retains exact receipt when A9 authority remains (0ms post-send A9)
+ok 30 - actual uncertain send still retains exact receipt when A9 authority remains (0ms post-send A9)
+  ---
+  duration_ms: 1.867834
+  type: 'test'
+  ...
+# Subtest: actual uncertain send still retains exact receipt when A9 authority remains (50ms post-send A9)
+ok 31 - actual uncertain send still retains exact receipt when A9 authority remains (50ms post-send A9)
+  ---
+  duration_ms: 107.181708
+  type: 'test'
+  ...
+# Subtest: actual A9 stale held completion cannot paint after component cleanup
+ok 32 - actual A9 stale held completion cannot paint after component cleanup
+  ---
+  duration_ms: 1.125541
+  type: 'test'
+  ...
+# Subtest: P2 actual A14 404 clears buyer facts and customer draft (explicit future-version MOCK)
+ok 33 - P2 actual A14 404 clears buyer facts and customer draft (explicit future-version MOCK)
+  ---
+  duration_ms: 1.479084
+  type: 'test'
+  ...
+# Subtest: safe authority errors remain the actual InboxError transport class
+ok 34 - safe authority errors remain the actual InboxError transport class
+  ---
+  duration_ms: 0.05875
+  type: 'test'
+  ...
+# Subtest: actual current A13 without version keeps A14 disabled; future MOCK grants no backend claim
+ok 35 - actual current A13 without version keeps A14 disabled; future MOCK grants no backend claim
+  ---
+  duration_ms: 0.754625
+  type: 'test'
+  ...
+# Subtest: P1-2 actual A11 takeover write 404 clears private state despite failing follow-up A9
+ok 36 - P1-2 actual A11 takeover write 404 clears private state despite failing follow-up A9
+  ---
+  duration_ms: 1.577084
+  type: 'test'
+  ...
+# Subtest: P1-2 actual A12 send write 404 clears private state despite failing follow-up A9
+ok 37 - P1-2 actual A12 send write 404 clears private state despite failing follow-up A9
+  ---
+  duration_ms: 1.130375
+  type: 'test'
+  ...
+# Subtest: A13 server orders omission remains distinct from authorized omitted data
+ok 38 - A13 server orders omission remains distinct from authorized omitted data
+  ---
+  duration_ms: 0.802542
+  type: 'test'
+  ...
+# Subtest: A13 server orders omission remains distinct from authorized empty data
+ok 39 - A13 server orders omission remains distinct from authorized empty data
+  ---
+  duration_ms: 0.444917
+  type: 'test'
+  ...
+# Subtest: A13 server orders omission remains distinct from authorized populated data
+ok 40 - A13 server orders omission remains distinct from authorized populated data
+  ---
+  duration_ms: 0.445084
+  type: 'test'
+  ...
+1..40
+# tests 40
+# suites 0
+# pass 40
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 764.995084
