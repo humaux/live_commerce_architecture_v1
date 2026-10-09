@@ -94,4 +94,5 @@ jobs:
             deploy/.evidence/*/result.json
             deploy/.evidence/*/cases.tsv
             deploy/.evidence/*/commands.tsv
+          include-hidden-files: true # .evidence is a hidden dir; upload-artifact >=4.4 skips it by default
           retention-days: 14
