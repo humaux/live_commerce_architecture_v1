@@ -67,6 +67,9 @@ for (const failure of ["transport", "503"]) {
       assert.equal(h.api().cart, null); assert.equal(h.api().ready, false);
       failNext = true;
       await h.api().refresh(); // The same refresh invoked by focus/storage; await its actual completion.
+      h.render();
+      assert.equal(h.api().ready, false, "a failed later refresh cannot finish the pending authoritative observation");
+      assert.equal(h.api().cart, null);
       release.resolve();
       await earlier; h.render();
       assert.equal(h.api().context, ctx);
