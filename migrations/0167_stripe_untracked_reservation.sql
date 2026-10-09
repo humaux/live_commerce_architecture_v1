@@ -2,9 +2,9 @@
 -- Depends on: 0062 apply_stripe_observation, 0109 catalog.skus.inventory_tracked, immutable order snapshot,
 --   scoped reservation and RESERVE ledger facts; existing checkout-writer SELECT/RLS from 0013.
 -- Used by: payments.apply_capture from the payment reconcile worker; no new callable surface or network path.
--- Invariants: nonempty reservations keep their existing sorted locks and ledger transitions; missing tracked
---   stock never qualifies for the zero-line exception, including after a tracked-to-untracked catalogue edit.
--- Only the two zero-iteration guards change. Existing owner, ACL, SECURITY DEFINER, search_path and comment stay exact.
+-- Invariants: every unreserved quote line needs immutable Begin/RESERVE proof, including mixed plans.
+--   Missing tracked stock never qualifies; unpaid closure uses original evidence, paid catalogue drift creates review.
+-- Proof runs before first-capture review returns. Existing owner, ACL, SECURITY DEFINER, search_path and comment stay exact.
 -- Paid catalogue drift fails closed to the existing durable review path; it never authorizes fulfillment.
 
 CREATE OR REPLACE FUNCTION payments.apply_stripe_observation(p_attempt uuid,p_report_hash bytea)
@@ -157,6 +157,56 @@ BEGIN
     VALUES(a.tenant_id,a.store_id,a.id,'PAID_ALLOCATION_FAILED',obs.report_hash)
     ON CONFLICT DO NOTHING;
   END IF;
+  -- A6 capture per-line proof.
+  -- Only the first valid capture checks allocation eligibility. Later reviews cannot rewrite settled order/work state (§4.4).
+  IF v_new_capture AND NOT v_closed_before AND res.state='PAYMENT_PENDING' AND ord.commercial_state='AWAITING_PAYMENT'
+   AND a.generation=ord.generation AND res.generation=ord.generation THEN
+   -- Begin matched this immutable quote to tracked demand and atomically wrote its RESERVE plan.
+   -- A SKU absent from both the current plan and its original RESERVE history was untracked at Begin.
+   IF jsonb_typeof(ord.snapshot->'quote'->'lines') IS DISTINCT FROM 'array' THEN
+    RAISE EXCEPTION 'payment reservation empty' USING ERRCODE='PT409';
+   END IF;
+   IF jsonb_array_length(ord.snapshot->'quote'->'lines') NOT BETWEEN 1 AND 50
+    OR NOT EXISTS (SELECT 1 FROM storefront.quotes q
+     WHERE q.tenant_id=a.tenant_id AND q.store_id=a.store_id AND q.owner_id=a.owner_id
+      AND q.id=ord.quote_id AND q.snapshot=ord.snapshot->'quote')
+    OR EXISTS (SELECT 1 FROM jsonb_array_elements(ord.snapshot->'quote'->'lines') q(line)
+     WHERE jsonb_typeof(q.line) IS DISTINCT FROM 'object'
+      OR coalesce(q.line->>'sku_id','') !~ '^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$'
+      OR coalesce(q.line->>'quantity','') !~ '^[1-9][0-9]{0,8}$')
+    OR (SELECT count(DISTINCT q.line->>'sku_id') FROM jsonb_array_elements(ord.snapshot->'quote'->'lines') q(line))
+       <>jsonb_array_length(ord.snapshot->'quote'->'lines') THEN
+    RAISE EXCEPTION 'payment reservation empty' USING ERRCODE='PT409';
+   END IF;
+   IF EXISTS (SELECT 1 FROM jsonb_array_elements(ord.snapshot->'quote'->'lines') q(line)
+    WHERE (EXISTS (SELECT 1 FROM inventory.reservation_lines l WHERE l.tenant_id=a.tenant_id
+       AND l.store_id=a.store_id AND l.reservation_id=ord.id AND l.sku_id::text=q.line->>'sku_id')
+      AND (SELECT sum(l.quantity) FROM inventory.reservation_lines l WHERE l.tenant_id=a.tenant_id
+       AND l.store_id=a.store_id AND l.reservation_id=ord.id AND l.sku_id::text=q.line->>'sku_id')
+       IS DISTINCT FROM (q.line->>'quantity')::bigint)
+     OR (NOT EXISTS (SELECT 1 FROM inventory.reservation_lines l WHERE l.tenant_id=a.tenant_id
+       AND l.store_id=a.store_id AND l.reservation_id=ord.id AND l.sku_id::text=q.line->>'sku_id')
+      AND EXISTS (SELECT 1 FROM inventory.ledger l WHERE l.tenant_id=a.tenant_id AND l.store_id=a.store_id
+       AND l.kind='RESERVE' AND l.sku_id::text=q.line->>'sku_id'
+       AND (l.reservation_id=ord.id OR l.checkout_id=ord.id))))
+    OR EXISTS (SELECT 1 FROM inventory.reservation_lines l WHERE l.tenant_id=a.tenant_id AND l.store_id=a.store_id
+      AND l.reservation_id=ord.id AND NOT EXISTS (SELECT 1 FROM jsonb_array_elements(ord.snapshot->'quote'->'lines') q(line)
+       WHERE q.line->>'sku_id'=l.sku_id::text)) THEN
+    RAISE EXCEPTION 'payment reservation empty' USING ERRCODE='PT409';
+   END IF;
+   IF EXISTS (SELECT 1 FROM jsonb_array_elements(ord.snapshot->'quote'->'lines') q(line)
+    WHERE NOT EXISTS (SELECT 1 FROM inventory.reservation_lines l WHERE l.tenant_id=a.tenant_id
+      AND l.store_id=a.store_id AND l.reservation_id=ord.id AND l.sku_id::text=q.line->>'sku_id')
+     AND NOT EXISTS (SELECT 1 FROM catalog.skus s WHERE s.tenant_id=a.tenant_id AND s.store_id=a.store_id
+      AND s.id::text=q.line->>'sku_id' AND NOT s.inventory_tracked)) THEN
+    -- Persist both money and allocation failure before a presentment review can return early.
+    INSERT INTO payments.review_cases(tenant_id,store_id,attempt_id,reason,source_report_hash)
+     VALUES(a.tenant_id,a.store_id,a.id,'PAID_ALLOCATION_FAILED',obs.report_hash) ON CONFLICT DO NOTHING;
+    UPDATE checkout.orders SET fulfillment_state='PAID_ALLOCATION_FAILED',updated_at=clock_timestamp()
+     WHERE tenant_id=a.tenant_id AND store_id=a.store_id AND owner_id=a.owner_id AND id=ord.id;
+   END IF;
+  END IF;
+  -- End A6 capture per-line proof.
   SELECT EXISTS(SELECT 1 FROM payments.review_cases c WHERE c.tenant_id=a.tenant_id
    AND c.store_id=a.store_id AND c.attempt_id=a.id) INTO v_review;
   -- stripe-refund-v1 §4.4 (A1): the ONLY delta against 0061. A review inserted after the capture (every
@@ -180,45 +230,8 @@ BEGIN
    ORDER BY l.warehouse_id,l.sku_id LOOP
    PERFORM 1 FROM inventory.lock_balance(ln.warehouse_id,ln.sku_id);
   END LOOP;
-  -- A6 empty-reservation proof: current catalog flags alone cannot erase an old tracked hold.
-  IF NOT FOUND THEN
-   IF jsonb_typeof(ord.snapshot->'quote'->'lines') IS DISTINCT FROM 'array' THEN
-    RAISE EXCEPTION 'payment reservation empty' USING ERRCODE='PT409';
-   END IF;
-   IF jsonb_array_length(ord.snapshot->'quote'->'lines') NOT BETWEEN 1 AND 50
-    OR EXISTS (
-     SELECT 1 FROM jsonb_array_elements(ord.snapshot->'quote'->'lines') q(line)
-     WHERE jsonb_typeof(q.line) IS DISTINCT FROM 'object'
-      OR coalesce(q.line->>'quantity','') !~ '^[1-9][0-9]{0,8}$')
-    OR EXISTS (SELECT 1 FROM inventory.ledger l
-     WHERE l.tenant_id=a.tenant_id AND l.store_id=a.store_id AND l.kind='RESERVE'
-      AND (l.reservation_id=ord.id OR l.checkout_id=ord.id)) THEN
-    RAISE EXCEPTION 'payment reservation empty' USING ERRCODE='PT409';
-   END IF;
-   IF EXISTS (
-    SELECT 1 FROM jsonb_array_elements(ord.snapshot->'quote'->'lines') q(line)
-    WHERE NOT EXISTS (SELECT 1 FROM catalog.skus s
-     WHERE s.tenant_id=a.tenant_id AND s.store_id=a.store_id
-      AND s.id::text=q.line->>'sku_id' AND NOT s.inventory_tracked)) THEN
-    -- Begin verified this immutable quote before accepting an empty plan (post_river/0021).
-    -- A changed/deleted catalogue row cannot authorize settlement; a forged snapshot is still refused.
-    IF NOT EXISTS (SELECT 1 FROM storefront.quotes q
-     WHERE q.tenant_id=a.tenant_id AND q.store_id=a.store_id AND q.owner_id=a.owner_id
-      AND q.id=ord.quote_id AND q.snapshot=ord.snapshot->'quote') THEN
-     RAISE EXCEPTION 'payment reservation empty' USING ERRCODE='PT409';
-    END IF;
-    -- Preserve the observed CAPTURED money fact, but use the existing compensation/review queue.
-    -- Returning commits this evidence; the query worker sees captured=true and stops polling.
-    INSERT INTO payments.review_cases(tenant_id,store_id,attempt_id,reason,source_report_hash)
-     VALUES(a.tenant_id,a.store_id,a.id,'PAID_ALLOCATION_FAILED',obs.report_hash)
-     ON CONFLICT DO NOTHING;
-    INSERT INTO fulfillment.payment_work_items(tenant_id,store_id,owner_id,order_id,attempt_id,state)
-     VALUES(a.tenant_id,a.store_id,a.owner_id,ord.id,a.id,'REVIEW_REQUIRED')
-     ON CONFLICT(tenant_id,store_id,order_id) DO UPDATE SET state='REVIEW_REQUIRED';
-    RETURN;
-   END IF;
-  END IF;
-  -- End A6 empty-reservation proof.
+  -- A6 capture empty-plan admission: the earlier per-line proof already validated the plan.
+  -- End A6 capture empty-plan admission.
   FOR ln IN SELECT l.warehouse_id,l.sku_id,l.quantity FROM inventory.reservation_lines l
    WHERE l.tenant_id=a.tenant_id AND l.store_id=a.store_id AND l.reservation_id=ord.id
    ORDER BY l.warehouse_id,l.sku_id LOOP
@@ -273,26 +286,41 @@ BEGIN
     ORDER BY l.warehouse_id,l.sku_id LOOP
     PERFORM 1 FROM inventory.lock_balance(ln.warehouse_id,ln.sku_id);
    END LOOP;
-   -- A6 empty-reservation proof: current catalog flags alone cannot erase an old tracked hold.
-  IF NOT FOUND THEN
+   -- A6 close per-line proof.
+   -- Begin matched this immutable quote to tracked demand and atomically wrote its RESERVE plan.
+   -- A SKU absent from both the current plan and its original RESERVE history was untracked at Begin.
    IF jsonb_typeof(ord.snapshot->'quote'->'lines') IS DISTINCT FROM 'array' THEN
     RAISE EXCEPTION 'payment reservation empty' USING ERRCODE='PT409';
    END IF;
    IF jsonb_array_length(ord.snapshot->'quote'->'lines') NOT BETWEEN 1 AND 50
-    OR EXISTS (
-     SELECT 1 FROM jsonb_array_elements(ord.snapshot->'quote'->'lines') q(line)
+    OR NOT EXISTS (SELECT 1 FROM storefront.quotes q
+     WHERE q.tenant_id=a.tenant_id AND q.store_id=a.store_id AND q.owner_id=a.owner_id
+      AND q.id=ord.quote_id AND q.snapshot=ord.snapshot->'quote')
+    OR EXISTS (SELECT 1 FROM jsonb_array_elements(ord.snapshot->'quote'->'lines') q(line)
      WHERE jsonb_typeof(q.line) IS DISTINCT FROM 'object'
-      OR coalesce(q.line->>'quantity','') !~ '^[1-9][0-9]{0,8}$'
-      OR NOT EXISTS (SELECT 1 FROM catalog.skus s
-       WHERE s.tenant_id=a.tenant_id AND s.store_id=a.store_id
-        AND s.id::text=q.line->>'sku_id' AND NOT s.inventory_tracked))
-    OR EXISTS (SELECT 1 FROM inventory.ledger l
-     WHERE l.tenant_id=a.tenant_id AND l.store_id=a.store_id AND l.kind='RESERVE'
-      AND (l.reservation_id=ord.id OR l.checkout_id=ord.id)) THEN
+      OR coalesce(q.line->>'sku_id','') !~ '^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$'
+      OR coalesce(q.line->>'quantity','') !~ '^[1-9][0-9]{0,8}$')
+    OR (SELECT count(DISTINCT q.line->>'sku_id') FROM jsonb_array_elements(ord.snapshot->'quote'->'lines') q(line))
+       <>jsonb_array_length(ord.snapshot->'quote'->'lines') THEN
     RAISE EXCEPTION 'payment reservation empty' USING ERRCODE='PT409';
    END IF;
-  END IF;
-  -- End A6 empty-reservation proof.
+   IF EXISTS (SELECT 1 FROM jsonb_array_elements(ord.snapshot->'quote'->'lines') q(line)
+    WHERE (EXISTS (SELECT 1 FROM inventory.reservation_lines l WHERE l.tenant_id=a.tenant_id
+       AND l.store_id=a.store_id AND l.reservation_id=ord.id AND l.sku_id::text=q.line->>'sku_id')
+      AND (SELECT sum(l.quantity) FROM inventory.reservation_lines l WHERE l.tenant_id=a.tenant_id
+       AND l.store_id=a.store_id AND l.reservation_id=ord.id AND l.sku_id::text=q.line->>'sku_id')
+       IS DISTINCT FROM (q.line->>'quantity')::bigint)
+     OR (NOT EXISTS (SELECT 1 FROM inventory.reservation_lines l WHERE l.tenant_id=a.tenant_id
+       AND l.store_id=a.store_id AND l.reservation_id=ord.id AND l.sku_id::text=q.line->>'sku_id')
+      AND EXISTS (SELECT 1 FROM inventory.ledger l WHERE l.tenant_id=a.tenant_id AND l.store_id=a.store_id
+       AND l.kind='RESERVE' AND l.sku_id::text=q.line->>'sku_id'
+       AND (l.reservation_id=ord.id OR l.checkout_id=ord.id))))
+    OR EXISTS (SELECT 1 FROM inventory.reservation_lines l WHERE l.tenant_id=a.tenant_id AND l.store_id=a.store_id
+      AND l.reservation_id=ord.id AND NOT EXISTS (SELECT 1 FROM jsonb_array_elements(ord.snapshot->'quote'->'lines') q(line)
+       WHERE q.line->>'sku_id'=l.sku_id::text)) THEN
+    RAISE EXCEPTION 'payment reservation empty' USING ERRCODE='PT409';
+   END IF;
+  -- End A6 close per-line proof.
    FOR ln IN SELECT l.warehouse_id,l.sku_id,l.quantity FROM inventory.reservation_lines l
     WHERE l.tenant_id=a.tenant_id AND l.store_id=a.store_id AND l.reservation_id=ord.id
     ORDER BY l.warehouse_id,l.sku_id LOOP

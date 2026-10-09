@@ -243,16 +243,23 @@ func TestStripeRF12Guards(t *testing.T) {
 			}
 			switch x.name {
 			case "apply_stripe_observation":
-				// 0167 adds only a zero-line proof at each stock transition. Compare the rest
-				// byte-for-byte with 0062 before retaining the original refund review assertion.
-				proof := regexp.MustCompile(`(?s)-- A6 empty-reservation proof:.*?-- End A6 empty-reservation proof\.`)
-				if len(proof.FindAllString(newBody, -1)) != 2 {
-					t.Fatal("0167 must contain exactly two empty-reservation proof blocks")
+				// 0167 moves per-line proof before first-capture review, then replaces only the two empty-plan guards.
+				// Restore all three declared seams and compare the COMPLETE remaining body with 0062.
+				captureProof := regexp.MustCompile(`(?s)  -- A6 capture per-line proof\.\n.*?  -- End A6 capture per-line proof\.\n`)
+				captureEmpty := regexp.MustCompile(`(?s)-- A6 capture empty-plan admission:.*?-- End A6 capture empty-plan admission\.`)
+				closeProof := regexp.MustCompile(`(?s)-- A6 close per-line proof\..*?-- End A6 close per-line proof\.`)
+				for name, seam := range map[string]*regexp.Regexp{"capture proof": captureProof, "capture empty guard": captureEmpty, "close proof": closeProof} {
+					if len(seam.FindAllString(newBody, -1)) != 1 {
+						t.Fatalf("0167 requires exactly one %s seam", name)
+					}
 				}
 				beforeA6, _ := srgOldUntil(t, qualified, func(base string, post bool) bool { return post || base >= "0167_" })
-				restored := proof.ReplaceAllString(newBody, "IF NOT FOUND THEN RAISE EXCEPTION 'payment reservation empty' USING ERRCODE='PT409'; END IF;")
+				restored := captureProof.ReplaceAllString(newBody, "")
+				oldEmpty := "IF NOT FOUND THEN RAISE EXCEPTION 'payment reservation empty' USING ERRCODE='PT409'; END IF;"
+				restored = captureEmpty.ReplaceAllString(restored, oldEmpty)
+				restored = closeProof.ReplaceAllString(restored, oldEmpty)
 				if restored != beforeA6 {
-					t.Fatal("0167 changed behavior outside the two empty-reservation guards")
+					t.Fatal("0167 changed behavior outside the per-line proof and two empty-plan guards")
 				}
 				removed, added, unified = srgDiff(srgLines(oldBody), srgLines(beforeA6))
 				// §4.4: ONE change, the post-capture review branch runs only when v_new_capture OR v_closed_before.
