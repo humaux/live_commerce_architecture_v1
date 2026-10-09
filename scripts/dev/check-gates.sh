@@ -85,6 +85,26 @@ print(f"check-gates: ok ({len(modes)} modes, all documented; every tracked test 
 PY
 # Documentation ratchet (owner 2026-10-05): files added/changed since the base carry Purpose / Depends on / Used by headers.
 bash scripts/dev/check-headers.sh
+# Dependency register (PROCESS.md §5): every direct go.mod require has a docs/engineering/dependencies.md row at the same
+# version (2026-10-09: PR #19 bumped x/net but the register still said v0.59.0, so reviews kept citing the vulnerable one).
+# A submodule may share its parent's row when the row names it, e.g. river (+ `riverdriver/riverpgxv5`, `rivertype`).
+python3 - <<'PY'
+import re, sys
+mods = [l.split()[:2] for l in re.findall(r"^require \(\n(.*?)^\)", open("go.mod").read(), re.S | re.M)[0].splitlines()
+        if l.strip() and "// indirect" not in l]
+rows = [l for l in open("docs/engineering/dependencies.md") if l.startswith("| `")]
+bad = []
+for mod, ver in mods:
+    row = next((r for r in rows if f"`{mod}`" in r), None) or next(
+        (r for r in rows for p in re.findall(r"^\| `([^`]+)`", r) if mod.startswith(p + "/") and f"`{mod[len(p)+1:]}`" in r), None)
+    if row is None:
+        bad.append(f"{mod} has no row in docs/engineering/dependencies.md")
+    elif ver not in row.split("|")[2]:
+        bad.append(f"{mod} is {ver} in go.mod but the register row says{row.split('|')[2].rstrip()}")
+if bad:
+    print("\n".join("check-gates: " + b for b in bad), file=sys.stderr)
+    sys.exit(1)
+PY
 # Go formatting (2026-10-06: an unformatted test file only surfaced as a CRP10 failure deep in the full PG suite).
 unformatted="$(gofmt -l cmd internal tests migrations 2>/dev/null || true)"
 if [[ -n "$unformatted" ]]; then printf 'check-gates: gofmt needed:\n%s\n' "$unformatted" >&2; exit 1; fi
