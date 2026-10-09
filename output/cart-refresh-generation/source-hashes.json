@@ -1,5 +1,5 @@
 {
-  "source_commit": "3b3350f8aaf7a4d586229cf492558bc59c6432a3",
+  "source_commit": "ae17bc99fcb78ef573b4eaa48f475fc2d8fae562",
   "base_commit": "ddba31c90b1b19e5865b54929a6e4416bfab3c67",
   "sha256": {
     "apps/storefront/components/CartProvider.tsx": "f710037b23d513e504fa81291df6fef8e6cc031b37de4658a52415e9e7008b6d",
@@ -7,5 +7,6 @@
   },
   "tracked_generated_unchanged": {
     "apps/storefront/next-env.d.ts": "1862ac4bbbc5192d4bf562161df66ea547ed3e67173100656ab606ae9797db2b"
-  }
+  },
+  "prior_tested_source": "3b3350f8aaf7a4d586229cf492558bc59c6432a3"
 }

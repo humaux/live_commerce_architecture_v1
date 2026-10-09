@@ -1,5 +1,8 @@
 # cart-refresh-generation delivery
 
+PR22 follow-up: merged current trunk conflict-free as **ae17bc99fcb78ef573b4eaa48f475fc2d8fae562**. The native mode registry is retained; `bash scripts/dev/test-local.sh --list`, check-gates, Node and storefront typecheck all exit0 after merge. Current Node total **1189 PASS /0 FAIL**. Exact post-merge evidence: `pr22-merge/results.json`. No diff in apps/internal/migrations/tests/foundation; previous browser32+13 evidence remains bound to identical runtime/source bytes. No browser rerun claimed. Previous source/gate rows below describe the original84465513 handoff.
+
+
 - Branch/worktree: `unit/cart-refresh-generation`, `.worktrees/cart-refresh-generation`; base **ddba31c9** (trunk after #16). `git fetch origin && git merge origin/r3/integration` → exit0, no-op before RED.
 - Tested source: **3b3350f8aaf7a4d586229cf492558bc59c6432a3**, bound by `source-hashes.json`. Final commit adds evidence only.
 - Author: Codex-4 / GPT-6 family; exact runtime model/effort not exposed. Single writer of the two source/test files; read-only state reviewer and browser-prep collaborator, no recursive delegation. Taskee53009c-a14b-4d47-a611-1d43915c3f4a.
