@@ -1,0 +1,6 @@
+=== RUN   TestCommentDeletionFacts404DoesNotManufactureBackoff
+    comment_deletion_test.go:326: normal pacing slot wrongly converted absence to transport failure: metabridge: bridge unavailable
+--- FAIL: TestCommentDeletionFacts404DoesNotManufactureBackoff (0.30s)
+FAIL
+FAIL	livecommerce/internal/integrations/metareply	1.061s
+FAIL

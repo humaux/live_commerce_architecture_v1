@@ -1,6 +1,6 @@
 // live_console_comments_test.go — LC-B2 (live-console comment read-through) real-PG foundation gates
 // LCN01/02/04/05, written by the independent test_worker from contracts/live-console-v1.md §2 (poller, leases,
-// caps, bridge incl. comment-facts, cursors, deletion eviction), §2.5 (marks), §7.4 (prints) and the A2/A3 routes.
+// caps, bridge incl. comment-facts, cursors; deletion coverage is in live_console_deletion_test.go), §2.5 (marks), §7.4 (prints) and the A2/A3 routes.
 //
 // Owns: the real-PG console-comment gates. The poller (internal/integrations/metareply.Console) runs against a
 // fake Graph served on 127.0.0.1 (the only loopback origin metareply.Config accepts), reading through the real
@@ -75,6 +75,22 @@ func (g *lcnGraph) setRef(ref string, c map[string]any) {
 	g.refs[ref] = c
 }
 
+// deleteRef is a MOCK Graph deletion: fresh list and batched id reads both omit the synthetic comment.
+func (g *lcnGraph) deleteRef(ref string) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	delete(g.refs, ref)
+	for object, rows := range g.comments {
+		kept := make([]map[string]any, 0, len(rows))
+		for _, row := range rows {
+			if row["id"] != ref {
+				kept = append(kept, row)
+			}
+		}
+		g.comments[object] = kept
+	}
+}
+
 func (g *lcnGraph) setNext(next string) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -105,6 +121,27 @@ func (g *lcnGraph) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	version, rest, ok := strings.Cut(p, "/")
 	if !ok || version != "v99.0" {
 		http.NotFound(w, r)
+		return
+	}
+	if rest == "" && r.URL.Query().Has("ids") {
+		g.mu.Lock()
+		out := map[string]any{}
+		for _, ref := range strings.Split(r.URL.Query().Get("ids"), ",") {
+			_, found := g.refs[ref]
+			for _, rows := range g.comments {
+				for _, row := range rows {
+					if row["id"] == ref {
+						found = true
+					}
+				}
+			}
+			if found {
+				out[ref] = map[string]string{"id": ref}
+			}
+		}
+		g.mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(out)
 		return
 	}
 	if strings.HasSuffix(rest, "/comments") {

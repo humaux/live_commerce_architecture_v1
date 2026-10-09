@@ -1,0 +1,146 @@
+{
+  "source_commit": "7872cabfad6863697a75215006447f48dbb12fe4",
+  "merge_commit": "bd34d6d114bdabfc2e4a334261d6a8199eda9b5c",
+  "evidence_class": "E3 MOCK + actual SweepOnce REAL_PG",
+  "commands": [
+    {
+      "command": "GOTOOLCHAIN=go1.27.2 go test -race -count=1 -timeout=30s -v -run '^TestComment(SequentialAssetsUseActualCallClock|AdmissionIgnoresCallerSchedulingClock)$' ./internal/integrations/metareply",
+      "exit": 1,
+      "log": "pr24-r1/unit-red.log",
+      "sha256": "ca02b961d7311bfb4d21172b20d68bdf001609596568de22152e056270eab8b6",
+      "go_pass": 0,
+      "go_fail": 2,
+      "go_skip": 0,
+      "node_pass": 0,
+      "node_fail": 0
+    },
+    {
+      "command": "bash scripts/dev/test-focused.sh '^TestLiveConsoleLCN01SequentialClockBudget$' ./tests/foundation",
+      "exit": 1,
+      "log": "pr24-r1/pg-red.log",
+      "sha256": "1146aec4b748123efe25415c5463c83eb72d1efc78a827c32a6f09a1f6eb7377",
+      "go_pass": 0,
+      "go_fail": 1,
+      "go_skip": 0,
+      "node_pass": 0,
+      "node_fail": 0
+    },
+    {
+      "command": "GOTOOLCHAIN=go1.27.2 go test -race -count=1 -timeout=30s -v -run '^TestComment' ./internal/integrations/metareply",
+      "exit": 0,
+      "log": "pr24-r1/unit-green.log",
+      "sha256": "87c2be28ba2c244acdb6f88b150f32cd1482f3bb0658a4f1f78f3a6ae1a314a8",
+      "go_pass": 16,
+      "go_fail": 0,
+      "go_skip": 0,
+      "node_pass": 0,
+      "node_fail": 0
+    },
+    {
+      "command": "bash scripts/dev/test-focused.sh '^TestLiveConsoleLCN01SequentialClockBudget$' ./tests/foundation",
+      "exit": 0,
+      "log": "pr24-r1/pg-green.log",
+      "sha256": "ca82d7586c5148d3da0907d54accb44259ce65af3297e301dc36f805be62b2e2",
+      "go_pass": 1,
+      "go_fail": 0,
+      "go_skip": 0,
+      "node_pass": 0,
+      "node_fail": 0
+    },
+    {
+      "command": "GOTOOLCHAIN=go1.27.2 go test -race -count=1 -timeout=120s -v ./internal/integrations/metareply ./internal/integrations/meta/oauth",
+      "exit": 0,
+      "log": "pr24-r1/package.log",
+      "sha256": "e0d73cb3846be0757636248d8050767464b8cab7950b19e5fcdc20f519a2994e",
+      "go_pass": 61,
+      "go_fail": 0,
+      "go_skip": 0,
+      "node_pass": 0,
+      "node_fail": 0
+    },
+    {
+      "command": "bash scripts/dev/test-focused.sh '^TestLiveConsoleLCN(01|02|04|05)' ./tests/foundation",
+      "exit": 0,
+      "log": "pr24-r1/pg-regression.log",
+      "sha256": "12f77bfc54ddeeabc1f2c32eb908115bbec45be467ee62a8fda36a295ae2326a",
+      "go_pass": 10,
+      "go_fail": 0,
+      "go_skip": 0,
+      "node_pass": 0,
+      "node_fail": 0
+    },
+    {
+      "command": "bash scripts/dev/test-node.sh",
+      "exit": 0,
+      "log": "pr24-r1/node.log",
+      "sha256": "ebd338757830f17e201b6a107f0b16e215930b11a9d85b715b8132e0bd0e4f89",
+      "go_pass": 0,
+      "go_fail": 0,
+      "go_skip": 0,
+      "node_pass": 1181,
+      "node_fail": 0
+    },
+    {
+      "command": "pnpm --filter @live-commerce/admin typecheck",
+      "exit": 0,
+      "log": "pr24-r1/typecheck.log",
+      "raw_stdout_sha256": "a1e67e3654a27d2fb5c405ac8db166c9aec20d9dd1b72e70f8be73f0697a2b04",
+      "raw_stdout_path": "/Volumes/data/live_commerce_architecture_v1/output/lc-b2-deletion-eviction/pr24-r1/typecheck.log",
+      "normalization": "Final blank EOF line only trimmed in committed review copy.",
+      "sha256": "23e008b9c7dead4bfd4e1c57f9dca304dfa7a082b07c24544bbd49dc1080a36a",
+      "go_pass": 0,
+      "go_fail": 0,
+      "go_skip": 0,
+      "node_pass": 0,
+      "node_fail": 0
+    },
+    {
+      "command": "GOTOOLCHAIN=go1.27.2 go vet ./internal/integrations/metareply ./internal/integrations/meta/oauth ./cmd/claims-worker",
+      "exit": 0,
+      "log": "pr24-r1/vet.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "go_pass": 0,
+      "go_fail": 0,
+      "go_skip": 0,
+      "node_pass": 0,
+      "node_fail": 0
+    },
+    {
+      "command": "bash scripts/dev/test-local.sh --list",
+      "exit": 0,
+      "log": "pr24-r1/registry-list.log",
+      "sha256": "5e780dc27ce8a1089b7191e5aa0a0a800d2a9144d7aa53ef5ffe91b5bd9cfd66",
+      "go_pass": 0,
+      "go_fail": 0,
+      "go_skip": 0,
+      "node_pass": 0,
+      "node_fail": 0
+    },
+    {
+      "command": "bash scripts/dev/check-gates.sh",
+      "exit": 0,
+      "log": "pr24-r1/check-gates.log",
+      "sha256": "58de0c8c0f4193ad202365e92b6f2f382b65143f8e215b800602648243e1beff",
+      "go_pass": 0,
+      "go_fail": 0,
+      "go_skip": 0,
+      "node_pass": 13,
+      "node_fail": 0
+    },
+    {
+      "command": "bash scripts/dev/check-gates.sh (evidence staged)",
+      "exit": 0,
+      "log": "pr24-r1/check-gates-packaged.log",
+      "sha256": "e79611cb0eb194f3e50b611713f083ec405eecfca17a29f4a2a5663000d947ca"
+    }
+  ],
+  "red_precision": "Unit red: early B calls; actual SweepOnce red: did not reopen at logical completion deadline. Now seam present but unused before implementation.",
+  "diagnostics": [
+    "pg-fixture-red.log: missing real page demand, setup corrected without weakening assertions",
+    "unit-fixture-green-failed.log: unknown forward envelope normalized empty; changed malformed fixture to data object to exercise parse failure"
+  ],
+  "independent_source_review": {
+    "verdict": "PASS bounded source/log; runtime NOT_RUN",
+    "memory_id": "07df7ac6-301e-4b00-b3a7-2aa22746ca4c"
+  }
+}

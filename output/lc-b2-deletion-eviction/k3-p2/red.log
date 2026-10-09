@@ -1,0 +1,11 @@
+=== RUN   TestCommentDeletionLateBatchReportsCustodyFence
+=== RUN   TestCommentDeletionLateBatchReportsCustodyFence/source_replaced
+    comment_deletion_test.go:422: custody fence must have its own error, not rate throttling: metareply: comment rate budget unavailable
+=== RUN   TestCommentDeletionLateBatchReportsCustodyFence/lease_lost
+    comment_deletion_test.go:422: custody fence must have its own error, not rate throttling: metareply: comment rate budget unavailable
+--- FAIL: TestCommentDeletionLateBatchReportsCustodyFence (0.00s)
+    --- FAIL: TestCommentDeletionLateBatchReportsCustodyFence/source_replaced (0.00s)
+    --- FAIL: TestCommentDeletionLateBatchReportsCustodyFence/lease_lost (0.00s)
+FAIL
+FAIL	livecommerce/internal/integrations/metareply	0.731s
+FAIL

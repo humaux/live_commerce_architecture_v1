@@ -1,0 +1,12 @@
+=== RUN   TestLiveConsoleLCN01SequentialClockBudget
+=== RUN   TestLiveConsoleLCN01SequentialClockBudget/429
+    live_console_rate_clock_test.go:76: two real sequential source polls not exercised
+=== RUN   TestLiveConsoleLCN01SequentialClockBudget/usage80
+    live_console_rate_clock_test.go:76: two real sequential source polls not exercised
+--- FAIL: TestLiveConsoleLCN01SequentialClockBudget (1.76s)
+    --- FAIL: TestLiveConsoleLCN01SequentialClockBudget/429 (1.58s)
+    --- FAIL: TestLiveConsoleLCN01SequentialClockBudget/usage80 (0.18s)
+FAIL
+FAIL	livecommerce/tests/foundation	2.530s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
