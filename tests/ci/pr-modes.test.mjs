@@ -157,6 +157,17 @@ test("CLI selects modes the base added after divergence when the checkout is the
   assert.ok(r.cli([base, head]).modes.includes("--browser-synthetic-new"), "a mode the merge adds must be selected for a tagged-source change");
 });
 
+test("CLI reads the merge checkout's source when the base adds a browser tag after the fork (PR #22 review P1)", (t) => {
+  const r = repository(t), file = "tests/foundation/synthetic_merge_test.go";
+  r.put(file, "package foundation_test\n\nfunc a() {}\n"); const fork = r.commit();
+  r.put(file, "package foundation_test\n\nfunc a() {}\n\nfunc headEdit() {}\n"); const head = r.commit();
+  r.git("checkout", "--quiet", "-b", "base-tagged", fork);
+  r.put(file, "//go:build browser\n\npackage foundation_test\n\nfunc a() {}\n"); const base = r.commit();
+  // GitHub's conflict-free merge has the tag (from base) and the head edit; neither merge-base nor head has the tag.
+  r.git("merge", "--quiet", "--no-edit", head);
+  assert.ok(r.cli([base, head]).modes.includes("--studio-backend"), "the merged file is browser-tagged, so tagged runners must be selected");
+});
+
 test("CLI explicit head and stdin include tags outside the checkout and uncommitted tag removals", (t) => {
   const r = repository(t), file = "tests/foundation/synthetic_process_test.go";
   r.put(file, "package foundation_test\n"); const base = r.commit();
