@@ -1,8 +1,8 @@
-// Purpose: coarse unresolved-send safety flag across console unmount/reload without private message identifiers.
-// Depends on: caller-provided session boundary and sessionStorage; never receives comment refs or reply bodies.
-// Used by: CommentReply; boolean flag blocks all replies in the session until explicit external verification.
+// Purpose: unresolved-send flags across console unmount/reload; public non-terminal sends also fence their comment.
+// Depends on: caller-provided scope, optional public comment ref and sessionStorage; never receives reply bodies.
+// Used by: CommentReply; boolean flags survive until definite outcome or explicit external verification.
 type StoragePort = Pick<Storage, "getItem" | "setItem" | "removeItem">;
-/** Keep only an opaque boolean for a store/live-session/auth scope, not an enumerable buyer/comment hash. */
+/** Persist only a boolean; optional public ref narrows queued-send fencing without blocking other comments. */
 export class CommentReceipt {
   private key: string;
   constructor(
@@ -10,8 +10,13 @@ export class CommentReceipt {
     store: string,
     session: string,
     boundary: string,
+    publicRef?: string,
   ) {
-    this.key = `live-comment-unresolved:${store}:${session}:${boundary}`;
+    this.key = publicRef === undefined
+      ? `live-comment-unresolved:${store}:${session}:${boundary}`
+      // Public UNKNOWN/queued remains unresolved after re-login in this tab. Only
+      // the coarse session fence follows the CSRF boundary; this ref guard must not.
+      : `live-comment-public-pending:${store}:${session}:${encodeURIComponent(publicRef)}`;
   }
   /** Missing storage authority fails closed rather than losing an uncertain-send guard. */
   blocked(): boolean {

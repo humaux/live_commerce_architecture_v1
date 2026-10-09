@@ -1,0 +1,3 @@
+Source: output/playwright/live-console-2514376323/playwright.log
+23 passed
+Deletion-specific browser case: NOT_RUN (real ring fixture cannot evict a recent single ref from MOCK Graph omission).

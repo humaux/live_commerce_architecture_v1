@@ -1,0 +1,8 @@
+{
+  "migrations/0167_stripe_untracked_reservation.sql": "e83b4caa6f0542990ab190dd10a6fc555ca8736a7a793157d67651af32d29823",
+  "tests/foundation/stripe_untracked_capture_test.go": "daaf716d1c4f1cd5e4ffef6b256b40ce875a2e7a8bd2ce225cd5bbded0bb60f8",
+  "tests/foundation/stripe_untracked_review_test.go": "9724b14666da86b6903f10a2cf1fd2c1afc6da7a677bb28fee033a9136e5904c",
+  "tests/foundation/stripe_refund_guards_test.go": "2ced8aec3621b6bbfcc4a15a3627edfbb3ab60c76965181f0a3194b28d4ab76d",
+  "tests/foundation/r2_integration_upgrade_test.go": "3f4a68b59f03e7108ef5062f6de6289e2a723d27377d7b603328c62d6976f32f",
+  "tests/foundation/claims_retention_test.go": "aa37e2994159ddc465f6aa6d0d3b53f519c9015e133c73fb1ca990104e657a65"
+}

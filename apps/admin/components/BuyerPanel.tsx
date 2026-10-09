@@ -84,14 +84,12 @@ export function BuyerPanel({
       })
       .catch((cause) => {
         if (!privacy.fence.current(ticket)) return;
-        // A 404 on this read = scope lost (scoped definers answer cross-scope with 404), same rule as Inbox.tsx.
-        if (
-          cause instanceof InboxError &&
-          [401, 403, 404].includes(cause.status)
-        ) {
+        // 401/403 revoke the parent scope. A 404 stays local: A13 also answers not_found for a retention-purged or missing
+        // selection, and a real scope loss reaches the A2/A8 polls within one interval (PR #18 r4).
+        if (cause instanceof InboxError && [401, 403].includes(cause.status)) {
           privacy.expire();
           callbacks.current.onUnauthorized?.();
-        }
+        } else if (cause instanceof InboxError && cause.status === 404) clear();
         setError(cause instanceof InboxError ? cause.code : "unavailable");
       })
       .finally(() => {

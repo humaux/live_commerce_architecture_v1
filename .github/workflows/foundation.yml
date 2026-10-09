@@ -24,7 +24,7 @@ jobs:
     # without cutting a green one.
     timeout-minutes: 90
     env:
-      GOTOOLCHAIN: go1.27.1
+      GOTOOLCHAIN: go1.27.2
       GOFLAGS: -mod=readonly
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
@@ -85,7 +85,7 @@ jobs:
         run: bash scripts/dev/test-local.sh
       - name: Reachable vulnerability scan
         # v1.1.4 bundles golang.org/x/tools v0.29.0, whose SSA builder panicked
-        # ("unexpected expr: *ast.KeyValueExpr") on this Go 1.27.1 module in CI
+        # ("unexpected expr: *ast.KeyValueExpr") on this module (then Go 1.27.1) in CI
         # job 108912135515 after all 725 tests passed. v1.8.0 is current.
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
 

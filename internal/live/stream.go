@@ -61,12 +61,13 @@ type ConsolePageQuery struct {
 
 // ConsoleStreamPage is the A2 response envelope (§2.6).
 type ConsoleStreamPage struct {
-	Epoch       int64              `json:"epoch"`
-	Reset       bool               `json:"reset"`
-	Items       []ConsoleComment   `json:"items"`
-	Next        ConsoleCursor      `json:"next"`
-	OlderCursor *string            `json:"older_cursor"`
-	Stream      ConsoleStreamState `json:"stream"`
+	Epoch         int64              `json:"epoch"`
+	Reset         bool               `json:"reset"`
+	ScanExhausted bool               `json:"scan_exhausted"` // §2.6: false means the producer has no EOF proof.
+	Items         []ConsoleComment   `json:"items"`
+	Next          ConsoleCursor      `json:"next"`
+	OlderCursor   *string            `json:"older_cursor"`
+	Stream        ConsoleStreamState `json:"stream"`
 }
 
 type ConsoleCursor struct {
@@ -86,8 +87,10 @@ type ConsoleStreamState struct {
 }
 
 // ConsoleComment is §2.6's Comment plus marks; text/author_name exist only in memory and this response.
+// Seq is the FB buffer or IG webhook-envelope item position; direct Graph history emits null.
 type ConsoleComment struct {
 	Ref           string       `json:"ref"`
+	Seq           *int64       `json:"seq"`
 	ParentRef     *string      `json:"parent_ref"`
 	CreatedAt     time.Time    `json:"created_at"`
 	AuthorName    *string      `json:"author_name"`
@@ -228,7 +231,7 @@ func (cs *CommentStream) facebookPage(ctx context.Context, tx pgx.Tx, scope plat
 	}
 	items := make([]ConsoleComment, len(page.Items))
 	for i, it := range page.Items {
-		items[i] = ConsoleComment{Ref: it.Ref, ParentRef: it.ParentRef, CreatedAt: it.CreatedAt,
+		items[i] = ConsoleComment{Ref: it.Ref, Seq: it.Seq, ParentRef: it.ParentRef, CreatedAt: it.CreatedAt,
 			AuthorName: it.AuthorName, Text: it.Text, IsPage: it.IsPage, HasAttachment: it.HasAttachment}
 	}
 	items, err = cs.attachMarks(ctx, tx, scope, token, sessionID, items)
@@ -271,6 +274,7 @@ func (cs *CommentStream) instagramPage(ctx context.Context, tx pgx.Tx, scope pla
 	defer rows.Close()
 	comments := make([]ConsoleComment, 0, q.Limit)
 	lastSeq := afterSeq
+	scanned := 0
 	var newest time.Time
 	for rows.Next() {
 		var env meta.CommentEnvelope
@@ -278,6 +282,11 @@ func (cs *CommentStream) instagramPage(ctx context.Context, tx pgx.Tx, scope pla
 			&env.Ciphertext, &env.AppID, &env.Object, &env.AssetID, &env.EventKey, &env.PayloadHash,
 			&env.RouteID, &env.RouteEpoch, &env.Seq); err != nil {
 			return ConsoleStreamPage{}, ErrStreamUnavailable
+		}
+		// §2.6: raw query progress survives decryption/media filtering; visible length cannot prove EOF.
+		scanned++
+		if env.Seq > lastSeq {
+			lastSeq = env.Seq
 		}
 		cr, err := cs.payload.OpenComment(scope.TenantID, scope.StoreID, env)
 		if err != nil || cr.MediaID != src.SourceObjectID {
@@ -293,13 +302,11 @@ func (cs *CommentStream) instagramPage(ctx context.Context, tx pgx.Tx, scope pla
 			n := cr.AuthorName
 			name = &n
 		}
+		seq := env.Seq // §2.6: preserve this decrypted envelope's position, not the page's last sequence.
 		comments = append(comments, ConsoleComment{
-			Ref: cr.Ref, ParentRef: parent, CreatedAt: cr.CreatedAt, AuthorName: name,
+			Ref: cr.Ref, Seq: &seq, ParentRef: parent, CreatedAt: cr.CreatedAt, AuthorName: name,
 			Text: cr.Text, IsPage: cr.IsPage, HasAttachment: cr.HasAttachment,
 		})
-		if env.Seq > lastSeq {
-			lastSeq = env.Seq
-		}
 		if cr.CreatedAt.After(newest) {
 			newest = cr.CreatedAt
 		}
@@ -318,10 +325,11 @@ func (cs *CommentStream) instagramPage(ctx context.Context, tx pgx.Tx, scope pla
 		lag = &l
 	}
 	return ConsoleStreamPage{
-		Epoch: 0,
-		Reset: q.AfterEpoch != nil && *q.AfterEpoch != 0,
-		Items: items,
-		Next:  ConsoleCursor{Epoch: 0, Seq: lastSeq},
+		Epoch:         0,
+		Reset:         q.AfterEpoch != nil && *q.AfterEpoch != 0,
+		ScanExhausted: scanned < q.Limit,
+		Items:         items,
+		Next:          ConsoleCursor{Epoch: 0, Seq: lastSeq},
 		Stream: ConsoleStreamState{
 			State: "live", PollIntervalMs: 3000, LastOKAt: &now, LagMs: lag,
 			SourcePlatform: "instagram", VideoEmbeddable: false,

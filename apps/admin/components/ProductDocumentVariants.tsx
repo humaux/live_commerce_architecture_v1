@@ -8,6 +8,7 @@ import type { OptionAxis } from "@/lib/catalog-v2-model";
 import type { ProductEditorCopy } from "@/lib/product-editor-copy";
 import { ProductBulkFill } from "./ProductBulkFill";
 
+// ProductDocumentVariants edits local option/SKU drafts; edit codes are server-owned.
 export function ProductDocumentVariants({
   axes,
   rows,
@@ -17,6 +18,7 @@ export function ProductDocumentVariants({
   c,
   sign,
   inventoryDisabled = false,
+  codeDisabled = false,
   onInvalidValues,
 }: {
   axes: OptionAxis[];
@@ -27,6 +29,7 @@ export function ProductDocumentVariants({
   c: ProductEditorCopy;
   sign: string;
   inventoryDisabled?: boolean;
+  codeDisabled?: boolean;
   onInvalidValues: () => void;
 }) {
   const [bulk, setBulk] = useState(false),
@@ -126,6 +129,7 @@ export function ProductDocumentVariants({
                 <ProductBulkFill
                   c={c}
                   inventoryDisabled={inventoryDisabled}
+                  codeDisabled={codeDisabled}
                   selectedCount={
                     rows.filter((r) => selected.includes(rowKey(r))).length
                   }
@@ -281,7 +285,7 @@ export function ProductDocumentVariants({
                     aria-label={`${c.code} ${i + 1}`}
                     data-testid={`matrix-code-${i}`}
                     value={row.code}
-                    disabled={disabled || !!row.id}
+                    disabled={disabled || codeDisabled || !!row.id}
                     maxLength={64}
                     placeholder={c.generated}
                     onChange={(e) => changeRow(i, { code: e.target.value })}

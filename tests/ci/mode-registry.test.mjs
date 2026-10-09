@@ -16,7 +16,7 @@ test('mode discovery has no Docker/build dependency and includes the existing un
 test('dry-run resolves a mode without executing dependencies and keeps its command environment', () => {
   const result = spawnSync('/bin/bash', [runner, '--dry-run', '--browser-live-console'], { encoding: 'utf8', env: { PATH: '/usr/bin:/bin' } });
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /LC_BROWSER_LIVE_CONSOLE_ACCEPTANCE=1 GOTOOLCHAIN=go1\.27\.1 go test/);
+  assert.match(result.stdout, /LC_BROWSER_LIVE_CONSOLE_ACCEPTANCE=1 GOTOOLCHAIN=go1\.27\.2 go test/);
   assert.match(result.stdout, /pnpm run build:admin/);
   assert.match(result.stdout, /TestBrowserLiveConsoleRealChain/);
   assert.equal(spawnSync('/bin/bash', [runner, '--dry-run', '--not-a-mode'], { encoding: 'utf8' }).status, 2);

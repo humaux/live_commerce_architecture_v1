@@ -14,6 +14,8 @@ import { commentCopy, commentReason } from "@/src/features/live/comment-copy";
 import {
   commentViewResource,
   commentSendState,
+  COMMENT_MEMORY_CAP,
+  mergeConversationPage,
   type CommentFilter,
 } from "@/src/features/live/comment-model";
 import { useCommentStream } from "@/src/features/live/use-comment-stream";
@@ -79,10 +81,7 @@ export function CommentStream({
         if (generation !== request.current || !privacy.fence.current(ticket)) return;
         if (!Array.isArray(data.items)) throw new InboxError("unavailable", 503);
         setConversations((old) => {
-          if (!old || !paginated.current) return data;
-          const identity = (row: ConversationItem) => row.conversation_id ?? row.bundle_id;
-          const head = new Set(data.items.map(identity));
-          return { ...data, items: [...data.items, ...old.items.filter((row) => !head.has(identity(row)))], next_cursor: old.next_cursor };
+          return mergeConversationPage(paginated.current ? old : null, data, paginated.current);
         }); setListError(""); failures = 0;
       } catch (e) {
         if (generation !== request.current || !privacy.fence.current(ticket)) return;
@@ -122,7 +121,7 @@ export function CommentStream({
     select(item.bundle_id ? { bundle: item.bundle_id } : null);
   };
   const loadConversations = async () => {
-    if (!resource || !conversations?.next_cursor || paging.current) return;
+    if (!resource || !conversations?.next_cursor || conversations.items.length >= COMMENT_MEMORY_CAP || paging.current) return;
     paging.current = true;
     const generation = request.current,
       ticket = privacy.fence.begin();
@@ -135,7 +134,7 @@ export function CommentStream({
       if (generation === request.current && privacy.fence.current(ticket)) {
         paginated.current = true;
         setConversations((old) =>
-          old ? { ...data, items: [...new Map([...old.items, ...data.items].map((row) => [row.conversation_id ?? row.bundle_id, row])).values()] } : data,
+          mergeConversationPage(old, data),
         );
       }
     } catch (e) {
@@ -158,7 +157,7 @@ export function CommentStream({
           <button
             type="button"
             data-testid="comment-refresh"
-            onClick={stream.refresh}
+            onClick={() => stream.refresh(true)}
             disabled={privacy.blocked.current || !privacy.visible}
           >
             {c.refresh}
@@ -188,7 +187,7 @@ export function CommentStream({
           </p>
         )}
         {!privacy.visible ? (
-          <p>{privacy.blocked.current ? c.forbidden : c.hidden}</p>
+          <p>{privacy.blocked.current || !permitted(store, "live:read") ? c.forbidden : c.hidden}</p>
         ) : resource ? (
           <>
             {!permitted(store, "inbox:read") ? (
@@ -219,7 +218,7 @@ export function CommentStream({
                       </li>
                     ))}
                 </ul>
-                {conversations.next_cursor && (
+                {conversations.next_cursor && conversations.items.length < COMMENT_MEMORY_CAP && (
                   <button
                     type="button"
                     onClick={() => void loadConversations()}
@@ -283,7 +282,7 @@ export function CommentStream({
               <button
                 type="button"
                 data-testid="comment-older"
-                disabled={stream.busy || stream.buffer.items.length >= 1000}
+                disabled={stream.busy || stream.buffer.items.length >= COMMENT_MEMORY_CAP}
                 onClick={stream.older}
               >
                 {c.older}

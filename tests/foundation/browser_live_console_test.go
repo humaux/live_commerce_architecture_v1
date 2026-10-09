@@ -436,6 +436,16 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 					consoleJSON(w, 200, map[string]any{"armed": true})
 					return
 				}
+				if in.Scene == comments.e.session && (in.Mode == "public_graph_unknown" || in.Mode == "public_graph_restore") {
+					// TEST-ONLY network fault: the real operation worker receives a MOCK Graph 5xx.
+					mode := "5xx"
+					if in.Mode == "public_graph_restore" {
+						mode = "ok"
+					}
+					comments.e.g.setMode(mode)
+					consoleJSON(w, 200, map[string]any{"armed": true})
+					return
+				}
 				if in.Scene == comments.e.session && (in.Mode == "grant_revoke" || in.Mode == "grant_restore") {
 					// TEST SETUP ONLY: mutate this synthetic principal/store's real grant. The
 					// BFF's authenticatedStores lookup must produce the scoped 404, not a mock response.

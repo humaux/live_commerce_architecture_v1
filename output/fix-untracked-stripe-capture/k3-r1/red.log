@@ -1,0 +1,17 @@
+=== RUN   TestStripeUntrackedDriftReview
+=== RUN   TestStripeUntrackedDriftReview/became_tracked
+    stripe_untracked_review_test.go:36: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_review_test.go:65: OWNER-POOL: payments.provider_observations report
+    stripe_untracked_review_test.go:76: durable paid review/replay 0: JobCancelError: payment_capture_invalid_job
+=== RUN   TestStripeUntrackedDriftReview/sku_deleted
+    stripe_untracked_review_test.go:36: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_review_test.go:60: OWNER-POOL: replica-mode tamper/restore: DELETE FROM catalog.skus
+    stripe_untracked_review_test.go:65: OWNER-POOL: payments.provider_observations report
+    stripe_untracked_review_test.go:76: durable paid review/replay 0: JobCancelError: payment_capture_invalid_job
+--- FAIL: TestStripeUntrackedDriftReview (6.87s)
+    --- FAIL: TestStripeUntrackedDriftReview/became_tracked (3.70s)
+    --- FAIL: TestStripeUntrackedDriftReview/sku_deleted (3.17s)
+FAIL
+FAIL	livecommerce/tests/foundation	7.888s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

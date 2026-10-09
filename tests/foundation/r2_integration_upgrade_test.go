@@ -1,3 +1,6 @@
+// Purpose: compare the complete migration set as fresh install and release-head upgrade.
+// Depends on: migrations.Apply, disposable PostgreSQL and immutable migration checksums.
+// Used by: R2 upgrade and foundation gates.
 package foundation_test
 
 import (
@@ -75,8 +78,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0163 (S2-OPEN-1 settlement-resolve: append-only resolutions of unmapped_source rows + the in-place close patch) adds one more: 88 -> 89.
 	// 0165 (LC-B3b buyer panel read model: A13 claims/orders/ordinal, A8 session filter + live_comment rows, A9 link_version/binding_id) adds one more: 89 -> 90.
 	// 0166 (W3-U4 open parcel-group read + server-masked merge suggestions) follows merged 0165: 90 -> 91.
-	if len(r2) != 91 {
-		t.Fatalf("R2 migration set = %d files %v, want 91", len(r2), r2)
+	// 0167 (Stripe A6 terminal observations) adds one: 91 -> 92.
+	if len(r2) != 92 {
+		t.Fatalf("R2 migration set = %d files %v, want 92", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

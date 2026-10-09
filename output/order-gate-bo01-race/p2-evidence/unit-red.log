@@ -1,0 +1,86 @@
+✔ locale probe bounds a missing destination head with a route/device diagnostic (3.491875ms)
+✔ locale probe clears its deadline when the real head promise completes (0.332917ms)
+✖ warmup request interception has a precise local deadline and clears its timer (0.426458ms)
+✖ warmup upstream completion has a precise local deadline and clears its timer (0.063417ms)
+✖ warmup timer is cleared on upstream success and upstream rejection (0.078791ms)
+✖ EARLY_HEAD route continues a missing-Referer request without resolving the English barrier (0.981375ms)
+ℹ Error: Test "warmup timer is cleared on upstream success and upstream rejection" at apps/storefront/tests/order-gate-timeout.test.mjs:66:1 generated asynchronous activity after the test ended. This activity created the error "Error: relay failed" and would have caused the test to fail, but instead triggered an unhandledRejection event.
+ℹ tests 6
+ℹ suites 0
+ℹ pass 2
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 65.454541
+
+✖ failing tests:
+
+test at apps/storefront/tests/order-gate-timeout.test.mjs:59:3
+✖ warmup request interception has a precise local deadline and clears its timer (0.426458ms)
+  AssertionError [ERR_ASSERTION]: actual bounded warmup helper must exist
+      at warmupProbe (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race/apps/storefront/tests/order-gate-timeout.test.mjs:50:10)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race/apps/storefront/tests/order-gate-timeout.test.mjs:60:13)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at apps/storefront/tests/order-gate-timeout.test.mjs:59:3
+✖ warmup upstream completion has a precise local deadline and clears its timer (0.063417ms)
+  AssertionError [ERR_ASSERTION]: actual bounded warmup helper must exist
+      at warmupProbe (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race/apps/storefront/tests/order-gate-timeout.test.mjs:50:10)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race/apps/storefront/tests/order-gate-timeout.test.mjs:60:13)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at apps/storefront/tests/order-gate-timeout.test.mjs:66:1
+✖ warmup timer is cleared on upstream success and upstream rejection (0.078791ms)
+  AssertionError [ERR_ASSERTION]: actual bounded warmup helper must exist
+      at warmupProbe (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race/apps/storefront/tests/order-gate-timeout.test.mjs:50:10)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race/apps/storefront/tests/order-gate-timeout.test.mjs:68:13)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at apps/storefront/tests/order-gate-timeout.test.mjs:73:1
+✖ EARLY_HEAD route continues a missing-Referer request without resolving the English barrier (0.981375ms)
+  TypeError: Invalid URL
+      at new URL (node:internal/url:819:25)
+      at Array.<anonymous> (evalmachine.<anonymous>:8:45)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race/apps/storefront/tests/order-gate-timeout.test.mjs:83:21)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    code: 'ERR_INVALID_URL',
+    input: 'undefined'
+  }

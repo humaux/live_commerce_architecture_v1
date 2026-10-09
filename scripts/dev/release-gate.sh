@@ -31,7 +31,7 @@
 # Reads env: STRIPE_BROWSER=1 and STRIPE_SANDBOX=1 (opt in to SANDBOX modes), LC_SECRETS_FILE
 #   (default ~/.config/livecommerce/secrets.env; only the presence and the sk_test_/rk_test_ prefix
 #   of STRIPE_SECRET_KEY are checked, in a subshell, never printed), LC_RELEASE_GATE_OUT (evidence
-#   dir), LC_RELEASE_GATE_SMOKE_FULL, GOTOOLCHAIN (default go1.27.1).
+#   dir), LC_RELEASE_GATE_SMOKE_FULL, GOTOOLCHAIN (default go1.27.2).
 # Reads secrets: none printed. Logs may hold what the tests print; the secret grep (G04) and the CI
 #   rule keep key-shaped literals out of the repo, and no command here echoes an environment.
 # Used by: the integrator before merging a release branch; docs/delivery/PROCESS.md §1 R1-8.
@@ -68,7 +68,7 @@ done
 
 cd "$(dirname "$0")/../.." || exit 2
 ROOT=$(pwd)
-export GOTOOLCHAIN="${GOTOOLCHAIN:-go1.27.1}"
+export GOTOOLCHAIN="${GOTOOLCHAIN:-go1.27.2}"
 sha=$(git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 dirty=$(git status --porcelain 2>/dev/null | grep -v '^?? output/' | wc -l | tr -d ' ')
 MAIN=$(cd "$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)/.." 2>/dev/null && pwd || echo "$ROOT")

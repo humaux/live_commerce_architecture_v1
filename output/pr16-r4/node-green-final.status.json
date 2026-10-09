@@ -1,0 +1,17 @@
+{
+  "name": "node-green-final",
+  "command": [
+    "bash",
+    "scripts/dev/test-node.sh"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups",
+  "out": "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups/output/pr16-r4",
+  "timeout": 300,
+  "head": "d3d65c21767dabe65a6068cfe0fc6abaf254e52d",
+  "pid": 38962,
+  "exit_code": 0,
+  "source_sha256": "ba95d498a420927cb129e060b6fd930a616d833526524d823acb7c2cc223c821",
+  "source_after": "ba95d498a420927cb129e060b6fd930a616d833526524d823acb7c2cc223c821",
+  "source_unchanged": true,
+  "elapsed_seconds": 41.864
+}

@@ -1,0 +1,23 @@
+✖ PR18 scan exhaustion parser requires a trusted explicit boolean (0.71525ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 92.6
+
+✖ failing tests:
+
+test at tests/admin/comment-stream.test.ts:156:1
+✖ PR18 scan exhaustion parser requires a trusted explicit boolean (0.71525ms)
+  Error: invalid_comment_response
+      at fail (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/apps/admin/src/features/live/comment-model.ts:151:11)
+      at exact (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/apps/admin/src/features/live/comment-model.ts:167:7)
+      at parseCommentPage (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/apps/admin/src/features/live/comment-model.ts:170:13)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/comment-stream.test.ts:158:57)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)

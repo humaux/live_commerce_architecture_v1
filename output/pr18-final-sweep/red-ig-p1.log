@@ -1,0 +1,129 @@
+✖ PR18 P1 IG earliest50 refresh preserves100 rows selection and private draft (27.91475ms)
+✖ PR18 P1 IG earliest page and unknown authority never delete by absence (1.90025ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 332.14025
+
+✖ failing tests:
+
+test at tests/admin/comment-stream-hooks.test.ts:403:1
+✖ PR18 P1 IG earliest50 refresh preserves100 rows selection and private draft (27.91475ms)
+  AssertionError [ERR_ASSERTION]: cycle0: no earliest-page absence deletion
+  
+  50 !== 100
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/comment-stream-hooks.test.ts:424:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 50,
+    expected: 100,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream.test.ts:25:1
+✖ PR18 P1 IG earliest page and unknown authority never delete by absence (1.90025ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  ... Skipped lines
+  
+    [
+      '1',
+      '2',
+      '3',
+      '4',
+  ...
+      '50',
+  -   '51',
+  -   '52',
+  -   '53',
+  -   '54',
+  -   '55',
+  -   '56',
+  -   '57',
+  -   '58',
+  -   '59',
+  -   '60',
+  -   '61',
+  -   '62',
+  -   '63',
+  -   '64',
+  -   '65',
+  -   '66',
+  -   '67',
+  -   '68',
+  -   '69',
+  -   '70',
+  -   '71',
+  -   '72',
+  -   '73',
+  -   '74',
+  -   '75',
+  -   '76',
+  -   '77',
+  -   '78',
+  -   '79',
+  -   '80',
+  -   '81',
+  -   '82',
+  -   '83',
+  -   '84',
+  -   '85',
+  -   '86',
+  -   '87',
+  -   '88',
+  -   '89',
+  -   '90',
+  -   '91',
+  -   '92',
+  -   '93',
+  -   '94',
+  -   '95',
+  -   '96',
+  -   '97',
+  -   '98',
+  -   '99',
+  -   '100'
+    ]
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/comment-stream.test.ts:31:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [
+      '1',  '2',  '3',  '4',  '5',  '6',  '7',
+      '8',  '9',  '10', '11', '12', '13', '14',
+      '15', '16', '17', '18', '19', '20', '21',
+      '22', '23', '24', '25', '26', '27', '28',
+      '29', '30', '31', '32', '33', '34', '35',
+      '36', '37', '38', '39', '40', '41', '42',
+      '43', '44', '45', '46', '47', '48', '49',
+      '50'
+    ],
+    expected: [
+      '1',   '2',  '3',  '4',  '5',  '6',  '7',  '8',  '9',
+      '10',  '11', '12', '13', '14', '15', '16', '17', '18',
+      '19',  '20', '21', '22', '23', '24', '25', '26', '27',
+      '28',  '29', '30', '31', '32', '33', '34', '35', '36',
+      '37',  '38', '39', '40', '41', '42', '43', '44', '45',
+      '46',  '47', '48', '49', '50', '51', '52', '53', '54',
+      '55',  '56', '57', '58', '59', '60', '61', '62', '63',
+      '64',  '65', '66', '67', '68', '69', '70', '71', '72',
+      '73',  '74', '75', '76', '77', '78', '79', '80', '81',
+      '82',  '83', '84', '85', '86', '87', '88', '89', '90',
+      '91',  '92', '93', '94', '95', '96', '97', '98', '99',
+      '100'
+    ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
