@@ -1,0 +1,12 @@
+✔ rotated buyer context clears the prior cart on read and preserves the B receipt (39.126ms)
+✔ rotated buyer context clears the prior cart on lost-write and preserves the B receipt (9.0535ms)
+✔ rotated buyer context clears the prior cart on refresh-read and preserves the B receipt (6.310041ms)
+✔ lost first write keeps Retry alive: same context, same idempotency key, no second purchase (9.495ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 252.069667

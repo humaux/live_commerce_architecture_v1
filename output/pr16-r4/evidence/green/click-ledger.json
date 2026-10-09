@@ -1,0 +1,2558 @@
+[
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 1366,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 1586,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n圖片",
+    "action": "click missing item",
+    "expected": "visible field focus in media",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n商品名稱",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n售價",
+    "action": "click missing item",
+    "expected": "visible field focus in pricing",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n庫存",
+    "action": "click missing item",
+    "expected": "visible field focus in pricing",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n至少 3 張圖片",
+    "action": "click missing item",
+    "expected": "visible field focus in media",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n描述",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n分類",
+    "action": "click missing item",
+    "expected": "visible field focus in collections",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n直播關鍵字",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n搜尋引擎最佳化",
+    "action": "click missing item",
+    "expected": "visible field focus in seo",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness toggle",
+    "action": "click expand, missing items, click collapse",
+    "expected": "aria-expanded false→true→false; missing list visible then hidden; entries navigate",
+    "actual": "PASS",
+    "persistence": "view state only"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 375,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 1366,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 1586,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n图片",
+    "action": "click missing item",
+    "expected": "visible field focus in media",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n商品名称",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n售价",
+    "action": "click missing item",
+    "expected": "visible field focus in pricing",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n库存",
+    "action": "click missing item",
+    "expected": "visible field focus in pricing",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n至少 3 张图片",
+    "action": "click missing item",
+    "expected": "visible field focus in media",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n描述",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n分类",
+    "action": "click missing item",
+    "expected": "visible field focus in collections",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n直播关键字",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n搜索引擎优化",
+    "action": "click missing item",
+    "expected": "visible field focus in seo",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness toggle",
+    "action": "click expand, missing items, click collapse",
+    "expected": "aria-expanded false→true→false; missing list visible then hidden; entries navigate",
+    "actual": "PASS",
+    "persistence": "view state only"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 375,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 1366,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 1586,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nImages",
+    "action": "click missing item",
+    "expected": "visible field focus in media",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nProduct name",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nPrice",
+    "action": "click missing item",
+    "expected": "visible field focus in pricing",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nInventory",
+    "action": "click missing item",
+    "expected": "visible field focus in pricing",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nAt least 3 images",
+    "action": "click missing item",
+    "expected": "visible field focus in media",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nDescription",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nCollections",
+    "action": "click missing item",
+    "expected": "visible field focus in collections",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nLive keyword",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nSearch engine listing",
+    "action": "click missing item",
+    "expected": "visible field focus in seo",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness toggle",
+    "action": "click expand, missing items, click collapse",
+    "expected": "aria-expanded false→true→false; missing list visible then hidden; entries navigate",
+    "actual": "PASS",
+    "persistence": "view state only"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 375,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "editor",
+    "control": "shell and page leave guard",
+    "action": "click + dismiss",
+    "expected": "one confirmation per navigation; draft retained",
+    "actual": "PASS"
+  },
+  {
+    "page": "create",
+    "control": "3 file inputs/reorder/publish double click",
+    "action": "setInputFiles click dblclick reload",
+    "expected": "one document,3 uploads,one order; persisted NT$60 and untracked cap3",
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG; buyer HTTP readback"
+  },
+  {
+    "page": "matrix",
+    "control": "axes/bulk only empty/stock/save",
+    "action": "click fill Enter reload",
+    "expected": "12 local rows, preserved first price60, others80; persisted",
+    "actual": "PASS"
+  },
+  {
+    "page": "list",
+    "control": "copy/select all/unpublish",
+    "action": "click check reload",
+    "expected": "copy persisted;3 results;all3draft",
+    "actual": "PASS"
+  },
+  {
+    "page": "inventory",
+    "control": "product inspector",
+    "action": "click",
+    "expected": "read-only price, no name/price/image editor; link to product editor",
+    "actual": "PASS"
+  },
+  {
+    "page": "edit",
+    "locale": "en",
+    "width": 375,
+    "control": "readiness toggle",
+    "action": "click expand, click collapse",
+    "expected": "aria-expanded false→true→false; checklist visible then hidden",
+    "actual": "PASS",
+    "persistence": "view state only"
+  },
+  {
+    "page": "edit",
+    "control": "price and save",
+    "action": "fill click reload",
+    "expected": "one minimal patch; cap and images preserved",
+    "actual": "PASS"
+  },
+  {
+    "page": "list",
+    "control": "single/multi SKU pencils, inventory delta and zero",
+    "action": "click fill Enter Escape reload",
+    "expected": "one patch per save, stock0 persists, twelve-SKU popover and focus return",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "axis-add/axis-name-0/axis-values-0",
+    "action": "click fill Enter",
+    "expected": {
+      "name": "顏色",
+      "values": "White, Black"
+    },
+    "actual": "PASS",
+    "persistence": "local draft until UI save"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "axis-add/axis-name-1/axis-values-1",
+    "action": "click fill Enter",
+    "expected": {
+      "name": "尺寸",
+      "values": "S"
+    },
+    "actual": "PASS",
+    "persistence": "local draft until UI save"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "White / S",
+    "control": "matrix-select-0",
+    "action": "check uncheck",
+    "expected": "selected true→false",
+    "actual": "PASS",
+    "persistence": "selection is view state"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "White / S",
+    "control": "不追蹤 ∞",
+    "action": "check uncheck; choose mode",
+    "expected": {
+      "untracked": false
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "White / S",
+    "control": "售價",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "售價",
+      "value": "60"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "White / S",
+    "control": "原價",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "原價",
+      "value": "100"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "White / S",
+    "control": "數量",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "數量",
+      "value": "5"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "White / S",
+    "control": "貨號",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "貨號",
+      "value": "M1525665847-0-0"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "White / S",
+    "control": "直播關鍵字",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "直播關鍵字",
+      "value": "M15256658470C0"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "White / S",
+    "control": "matrix-active-0",
+    "action": "uncheck check",
+    "expected": {
+      "visibleLabel": "啟用",
+      "enabled": true
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "Black / S",
+    "control": "matrix-select-1",
+    "action": "check uncheck",
+    "expected": "selected true→false",
+    "actual": "PASS",
+    "persistence": "selection is view state"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "Black / S",
+    "control": "不追蹤 ∞",
+    "action": "check uncheck; choose mode",
+    "expected": {
+      "untracked": true
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "Black / S",
+    "control": "售價",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "售價",
+      "value": "61"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "Black / S",
+    "control": "原價",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "原價",
+      "value": "101"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "Black / S",
+    "control": "單次購買上限",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "單次購買上限",
+      "value": "6"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "Black / S",
+    "control": "貨號",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "貨號",
+      "value": "M1525665847-0-1"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "Black / S",
+    "control": "直播關鍵字",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "直播關鍵字",
+      "value": "M15256658470C1"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "Black / S",
+    "control": "matrix-active-1",
+    "action": "uncheck check",
+    "expected": {
+      "visibleLabel": "啟用",
+      "enabled": true
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "saved axis-0",
+    "action": "UI save, editor reopen/reload",
+    "expected": {
+      "name": "顏色",
+      "values": [
+        "White",
+        "Black"
+      ]
+    },
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "saved axis-1",
+    "action": "UI save, editor reopen/reload",
+    "expected": {
+      "name": "尺寸",
+      "values": [
+        "S"
+      ]
+    },
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "White / S",
+    "control": "saved row readback",
+    "action": "UI save, editor reopen/reload, read visible fields",
+    "expected": {
+      "name": "White / S",
+      "price": "60",
+      "compare": "100",
+      "quantity": "5",
+      "untracked": false,
+      "code": "M1525665847-0-0",
+      "keyword": "M15256658470C0"
+    },
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "Black / S",
+    "control": "saved row readback",
+    "action": "UI save, editor reopen/reload, read visible fields",
+    "expected": {
+      "name": "Black / S",
+      "price": "61",
+      "compare": "101",
+      "quantity": "6",
+      "untracked": true,
+      "code": "M1525665847-0-1",
+      "keyword": "M15256658470C1"
+    },
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "product-create",
+    "action": "click reload",
+    "expected": "one document write; both matrix rows persist",
+    "actual": "PASS",
+    "screenshot": "mobile-matrix-zh-TW-390-new.png",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "White / S",
+    "control": "matrix-select-0",
+    "action": "check uncheck",
+    "expected": "selected true→false",
+    "actual": "PASS",
+    "persistence": "selection is view state"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "White / S",
+    "control": "不追蹤 ∞",
+    "action": "check uncheck; choose mode",
+    "expected": {
+      "untracked": true
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "White / S",
+    "control": "售價",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "售價",
+      "value": "80"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "White / S",
+    "control": "原價",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "原價",
+      "value": "120"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "White / S",
+    "control": "單次購買上限",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "單次購買上限",
+      "value": "7"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "White / S",
+    "control": "貨號",
+    "action": "verify existing SKU code disabled",
+    "expected": {
+      "visibleLabel": "貨號",
+      "value": "M1525665847-0-0"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "White / S",
+    "control": "直播關鍵字",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "直播關鍵字",
+      "value": "M15256658470E0"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "White / S",
+    "control": "matrix-active-0",
+    "action": "uncheck check",
+    "expected": {
+      "visibleLabel": "啟用",
+      "enabled": true
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "Black / S",
+    "control": "matrix-select-1",
+    "action": "check uncheck",
+    "expected": "selected true→false",
+    "actual": "PASS",
+    "persistence": "selection is view state"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "Black / S",
+    "control": "不追蹤 ∞",
+    "action": "check uncheck; choose mode",
+    "expected": {
+      "untracked": false
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "Black / S",
+    "control": "售價",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "售價",
+      "value": "81"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "Black / S",
+    "control": "原價",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "原價",
+      "value": "121"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "Black / S",
+    "control": "改後庫存",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "改後庫存",
+      "value": "8"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "Black / S",
+    "control": "貨號",
+    "action": "verify existing SKU code disabled",
+    "expected": {
+      "visibleLabel": "貨號",
+      "value": "M1525665847-0-1"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "Black / S",
+    "control": "直播關鍵字",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "直播關鍵字",
+      "value": "M15256658470E1"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "Black / S",
+    "control": "matrix-active-1",
+    "action": "uncheck check",
+    "expected": {
+      "visibleLabel": "啟用",
+      "enabled": true
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "saved axis-0",
+    "action": "UI save, editor reopen/reload",
+    "expected": {
+      "name": "顏色",
+      "values": [
+        "White",
+        "Black"
+      ]
+    },
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "saved axis-1",
+    "action": "UI save, editor reopen/reload",
+    "expected": {
+      "name": "尺寸",
+      "values": [
+        "S"
+      ]
+    },
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "White / S",
+    "control": "saved row readback",
+    "action": "UI save, editor reopen/reload, read visible fields",
+    "expected": {
+      "name": "White / S",
+      "price": "80",
+      "compare": "120",
+      "quantity": "7",
+      "untracked": true,
+      "code": "M1525665847-0-0",
+      "keyword": "M15256658470E0"
+    },
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "Black / S",
+    "control": "saved row readback",
+    "action": "UI save, editor reopen/reload, read visible fields",
+    "expected": {
+      "name": "Black / S",
+      "price": "81",
+      "compare": "121",
+      "quantity": "8",
+      "untracked": false,
+      "code": "M1525665847-0-1",
+      "keyword": "M15256658470E1"
+    },
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "product-save",
+    "action": "click reload",
+    "expected": "one document write; both matrix rows persist",
+    "actual": "PASS",
+    "screenshot": "mobile-matrix-zh-TW-390-edit.png",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "matrix-active-0/product-save",
+    "action": "uncheck White, click save, reload",
+    "expected": {
+      "archivedSKU": "87eb3910-7c9c-496a-9f9e-1157221f0c16",
+      "white": "absent from active-only matrix by SKU ID and name",
+      "visibleRows": 1,
+      "black": {
+        "id": "05d800fe-3652-4aa8-a7e4-e87d60eb224b",
+        "price": "81",
+        "compare": "121",
+        "trackedQuantity": "8",
+        "active": true
+      }
+    },
+    "actual": "PASS",
+    "screenshot": "mobile-matrix-zh-TW-390-archived.png",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile axis remove",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": ".pe-axis-remove (Color axis 1)",
+    "action": "real click",
+    "expected": {
+      "axes": [
+        "尺寸"
+      ],
+      "values": [
+        "S"
+      ],
+      "visibleRows": "2→1",
+      "row": "S"
+    },
+    "actual": "PASS",
+    "persistence": "local draft until UI save below"
+  },
+  {
+    "page": "mobile axis remove",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "product-save",
+    "action": "click, confirm archive, reload",
+    "expected": {
+      "axes": [
+        "尺寸"
+      ],
+      "values": [
+        "S"
+      ],
+      "archivedSKUs": [
+        "c7f2f852-e2b8-4d43-b446-0829b49693b9",
+        "08a51306-2336-4e9b-b2eb-803f6d15f049"
+      ],
+      "activeSKU": "f5766011-e946-4936-a100-b05acf4c876c",
+      "generatedCode": "pecc328f856bb2b3-mobile-axis-remove-zh-tw",
+      "row": "S",
+      "price": "95",
+      "compare": "145",
+      "trackedQuantity": "9",
+      "oneDocumentWrite": true
+    },
+    "actual": "PASS",
+    "screenshot": "mobile-axis-remove-zh-TW-390-saved.png",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "axis-add/axis-name-0/axis-values-0",
+    "action": "click fill Enter",
+    "expected": {
+      "name": "颜色",
+      "values": "White, Black"
+    },
+    "actual": "PASS",
+    "persistence": "local draft until UI save"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "axis-add/axis-name-1/axis-values-1",
+    "action": "click fill Enter",
+    "expected": {
+      "name": "尺寸",
+      "values": "S"
+    },
+    "actual": "PASS",
+    "persistence": "local draft until UI save"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "White / S",
+    "control": "matrix-select-0",
+    "action": "check uncheck",
+    "expected": "selected true→false",
+    "actual": "PASS",
+    "persistence": "selection is view state"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "White / S",
+    "control": "不追踪 ∞",
+    "action": "check uncheck; choose mode",
+    "expected": {
+      "untracked": false
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "White / S",
+    "control": "售价",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "售价",
+      "value": "60"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "White / S",
+    "control": "原价",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "原价",
+      "value": "100"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "White / S",
+    "control": "数量",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "数量",
+      "value": "5"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "White / S",
+    "control": "货号",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "货号",
+      "value": "M1525665847-1-0"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "White / S",
+    "control": "直播关键字",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "直播关键字",
+      "value": "M15256658471C0"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "White / S",
+    "control": "matrix-active-0",
+    "action": "uncheck check",
+    "expected": {
+      "visibleLabel": "启用",
+      "enabled": true
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "Black / S",
+    "control": "matrix-select-1",
+    "action": "check uncheck",
+    "expected": "selected true→false",
+    "actual": "PASS",
+    "persistence": "selection is view state"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "Black / S",
+    "control": "不追踪 ∞",
+    "action": "check uncheck; choose mode",
+    "expected": {
+      "untracked": true
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "Black / S",
+    "control": "售价",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "售价",
+      "value": "61"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "Black / S",
+    "control": "原价",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "原价",
+      "value": "101"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "Black / S",
+    "control": "单次购买上限",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "单次购买上限",
+      "value": "6"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "Black / S",
+    "control": "货号",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "货号",
+      "value": "M1525665847-1-1"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "Black / S",
+    "control": "直播关键字",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "直播关键字",
+      "value": "M15256658471C1"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "Black / S",
+    "control": "matrix-active-1",
+    "action": "uncheck check",
+    "expected": {
+      "visibleLabel": "启用",
+      "enabled": true
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "saved axis-0",
+    "action": "UI save, editor reopen/reload",
+    "expected": {
+      "name": "颜色",
+      "values": [
+        "White",
+        "Black"
+      ]
+    },
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "saved axis-1",
+    "action": "UI save, editor reopen/reload",
+    "expected": {
+      "name": "尺寸",
+      "values": [
+        "S"
+      ]
+    },
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "White / S",
+    "control": "saved row readback",
+    "action": "UI save, editor reopen/reload, read visible fields",
+    "expected": {
+      "name": "White / S",
+      "price": "60",
+      "compare": "100",
+      "quantity": "5",
+      "untracked": false,
+      "code": "M1525665847-1-0",
+      "keyword": "M15256658471C0"
+    },
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "Black / S",
+    "control": "saved row readback",
+    "action": "UI save, editor reopen/reload, read visible fields",
+    "expected": {
+      "name": "Black / S",
+      "price": "61",
+      "compare": "101",
+      "quantity": "6",
+      "untracked": true,
+      "code": "M1525665847-1-1",
+      "keyword": "M15256658471C1"
+    },
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "product-create",
+    "action": "click reload",
+    "expected": "one document write; both matrix rows persist",
+    "actual": "PASS",
+    "screenshot": "mobile-matrix-zh-CN-390-new.png",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "White / S",
+    "control": "matrix-select-0",
+    "action": "check uncheck",
+    "expected": "selected true→false",
+    "actual": "PASS",
+    "persistence": "selection is view state"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "White / S",
+    "control": "不追踪 ∞",
+    "action": "check uncheck; choose mode",
+    "expected": {
+      "untracked": true
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "White / S",
+    "control": "售价",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "售价",
+      "value": "80"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "White / S",
+    "control": "原价",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "原价",
+      "value": "120"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "White / S",
+    "control": "单次购买上限",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "单次购买上限",
+      "value": "7"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "White / S",
+    "control": "货号",
+    "action": "verify existing SKU code disabled",
+    "expected": {
+      "visibleLabel": "货号",
+      "value": "M1525665847-1-0"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "White / S",
+    "control": "直播关键字",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "直播关键字",
+      "value": "M15256658471E0"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "White / S",
+    "control": "matrix-active-0",
+    "action": "uncheck check",
+    "expected": {
+      "visibleLabel": "启用",
+      "enabled": true
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "Black / S",
+    "control": "matrix-select-1",
+    "action": "check uncheck",
+    "expected": "selected true→false",
+    "actual": "PASS",
+    "persistence": "selection is view state"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "Black / S",
+    "control": "不追踪 ∞",
+    "action": "check uncheck; choose mode",
+    "expected": {
+      "untracked": false
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "Black / S",
+    "control": "售价",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "售价",
+      "value": "81"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "Black / S",
+    "control": "原价",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "原价",
+      "value": "121"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "Black / S",
+    "control": "改后库存",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "改后库存",
+      "value": "8"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "Black / S",
+    "control": "货号",
+    "action": "verify existing SKU code disabled",
+    "expected": {
+      "visibleLabel": "货号",
+      "value": "M1525665847-1-1"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "Black / S",
+    "control": "直播关键字",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "直播关键字",
+      "value": "M15256658471E1"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "Black / S",
+    "control": "matrix-active-1",
+    "action": "uncheck check",
+    "expected": {
+      "visibleLabel": "启用",
+      "enabled": true
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "saved axis-0",
+    "action": "UI save, editor reopen/reload",
+    "expected": {
+      "name": "颜色",
+      "values": [
+        "White",
+        "Black"
+      ]
+    },
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "saved axis-1",
+    "action": "UI save, editor reopen/reload",
+    "expected": {
+      "name": "尺寸",
+      "values": [
+        "S"
+      ]
+    },
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "White / S",
+    "control": "saved row readback",
+    "action": "UI save, editor reopen/reload, read visible fields",
+    "expected": {
+      "name": "White / S",
+      "price": "80",
+      "compare": "120",
+      "quantity": "7",
+      "untracked": true,
+      "code": "M1525665847-1-0",
+      "keyword": "M15256658471E0"
+    },
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "Black / S",
+    "control": "saved row readback",
+    "action": "UI save, editor reopen/reload, read visible fields",
+    "expected": {
+      "name": "Black / S",
+      "price": "81",
+      "compare": "121",
+      "quantity": "8",
+      "untracked": false,
+      "code": "M1525665847-1-1",
+      "keyword": "M15256658471E1"
+    },
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "product-save",
+    "action": "click reload",
+    "expected": "one document write; both matrix rows persist",
+    "actual": "PASS",
+    "screenshot": "mobile-matrix-zh-CN-390-edit.png",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "matrix-active-0/product-save",
+    "action": "uncheck White, click save, reload",
+    "expected": {
+      "archivedSKU": "bf7ed4c7-a1e2-47a7-8831-42f1b769a97b",
+      "white": "absent from active-only matrix by SKU ID and name",
+      "visibleRows": 1,
+      "black": {
+        "id": "1b281b70-2c6e-4858-9e81-84bd0d7b3447",
+        "price": "81",
+        "compare": "121",
+        "trackedQuantity": "8",
+        "active": true
+      }
+    },
+    "actual": "PASS",
+    "screenshot": "mobile-matrix-zh-CN-390-archived.png",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile axis remove",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": ".pe-axis-remove (Color axis 1)",
+    "action": "real click",
+    "expected": {
+      "axes": [
+        "尺寸"
+      ],
+      "values": [
+        "S"
+      ],
+      "visibleRows": "2→1",
+      "row": "S"
+    },
+    "actual": "PASS",
+    "persistence": "local draft until UI save below"
+  },
+  {
+    "page": "mobile axis remove",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "product-save",
+    "action": "click, confirm archive, reload",
+    "expected": {
+      "axes": [
+        "尺寸"
+      ],
+      "values": [
+        "S"
+      ],
+      "archivedSKUs": [
+        "04954e8e-8a8a-4693-8dd2-0693f3716e74",
+        "c17320f2-fa07-4d9e-bdb2-97d0a716577d"
+      ],
+      "activeSKU": "878c053f-f70e-40f4-a118-94198044450a",
+      "generatedCode": "pecc328f856bb2b3-mobile-axis-remove-zh-cn",
+      "row": "S",
+      "price": "95",
+      "compare": "145",
+      "trackedQuantity": "9",
+      "oneDocumentWrite": true
+    },
+    "actual": "PASS",
+    "screenshot": "mobile-axis-remove-zh-CN-390-saved.png",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "en",
+    "width": 390,
+    "control": "axis-add/axis-name-0/axis-values-0",
+    "action": "click fill Enter",
+    "expected": {
+      "name": "Color",
+      "values": "White, Black"
+    },
+    "actual": "PASS",
+    "persistence": "local draft until UI save"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "en",
+    "width": 390,
+    "control": "axis-add/axis-name-1/axis-values-1",
+    "action": "click fill Enter",
+    "expected": {
+      "name": "Size",
+      "values": "S"
+    },
+    "actual": "PASS",
+    "persistence": "local draft until UI save"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "en",
+    "width": 390,
+    "row": "White / S",
+    "control": "matrix-select-0",
+    "action": "check uncheck",
+    "expected": "selected true→false",
+    "actual": "PASS",
+    "persistence": "selection is view state"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "en",
+    "width": 390,
+    "row": "White / S",
+    "control": "Do not track ∞",
+    "action": "check uncheck; choose mode",
+    "expected": {
+      "untracked": false
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "en",
+    "width": 390,
+    "row": "White / S",
+    "control": "Price",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "Price",
+      "value": "60"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "en",
+    "width": 390,
+    "row": "White / S",
+    "control": "Compare-at price",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "Compare-at price",
+      "value": "100"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "en",
+    "width": 390,
+    "row": "White / S",
+    "control": "Quantity",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "Quantity",
+      "value": "5"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "en",
+    "width": 390,
+    "row": "White / S",
+    "control": "SKU code",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "SKU code",
+      "value": "M1525665847-2-0"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "en",
+    "width": 390,
+    "row": "White / S",
+    "control": "Live keyword",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "Live keyword",
+      "value": "M15256658472C0"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "en",
+    "width": 390,
+    "row": "White / S",
+    "control": "matrix-active-0",
+    "action": "uncheck check",
+    "expected": {
+      "visibleLabel": "Enabled",
+      "enabled": true
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "en",
+    "width": 390,
+    "row": "Black / S",
+    "control": "matrix-select-1",
+    "action": "check uncheck",
+    "expected": "selected true→false",
+    "actual": "PASS",
+    "persistence": "selection is view state"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "en",
+    "width": 390,
+    "row": "Black / S",
+    "control": "Do not track ∞",
+    "action": "check uncheck; choose mode",
+    "expected": {
+      "untracked": true
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "en",
+    "width": 390,
+    "row": "Black / S",
+    "control": "Price",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "Price",
+      "value": "61"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "en",
+    "width": 390,
+    "row": "Black / S",
+    "control": "Compare-at price",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "Compare-at price",
+      "value": "101"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "en",
+    "width": 390,
+    "row": "Black / S",
+    "control": "Maximum per order",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "Maximum per order",
+      "value": "6"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "en",
+    "width": 390,
+    "row": "Black / S",
+    "control": "SKU code",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "SKU code",
+      "value": "M1525665847-2-1"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "en",
+    "width": 390,
+    "row": "Black / S",
+    "control": "Live keyword",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "Live keyword",
+      "value": "M15256658472C1"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "en",
+    "width": 390,
+    "row": "Black / S",
+    "control": "matrix-active-1",
+    "action": "uncheck check",
+    "expected": {
+      "visibleLabel": "Enabled",
+      "enabled": true
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "en",
+    "width": 390,
+    "control": "saved axis-0",
+    "action": "UI save, editor reopen/reload",
+    "expected": {
+      "name": "Color",
+      "values": [
+        "White",
+        "Black"
+      ]
+    },
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "en",
+    "width": 390,
+    "control": "saved axis-1",
+    "action": "UI save, editor reopen/reload",
+    "expected": {
+      "name": "Size",
+      "values": [
+        "S"
+      ]
+    },
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "en",
+    "width": 390,
+    "row": "White / S",
+    "control": "saved row readback",
+    "action": "UI save, editor reopen/reload, read visible fields",
+    "expected": {
+      "name": "White / S",
+      "price": "60",
+      "compare": "100",
+      "quantity": "5",
+      "untracked": false,
+      "code": "M1525665847-2-0",
+      "keyword": "M15256658472C0"
+    },
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "en",
+    "width": 390,
+    "row": "Black / S",
+    "control": "saved row readback",
+    "action": "UI save, editor reopen/reload, read visible fields",
+    "expected": {
+      "name": "Black / S",
+      "price": "61",
+      "compare": "101",
+      "quantity": "6",
+      "untracked": true,
+      "code": "M1525665847-2-1",
+      "keyword": "M15256658472C1"
+    },
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix new",
+    "locale": "en",
+    "width": 390,
+    "control": "product-create",
+    "action": "click reload",
+    "expected": "one document write; both matrix rows persist",
+    "actual": "PASS",
+    "screenshot": "mobile-matrix-en-390-new.png",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "en",
+    "width": 390,
+    "row": "White / S",
+    "control": "matrix-select-0",
+    "action": "check uncheck",
+    "expected": "selected true→false",
+    "actual": "PASS",
+    "persistence": "selection is view state"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "en",
+    "width": 390,
+    "row": "White / S",
+    "control": "Do not track ∞",
+    "action": "check uncheck; choose mode",
+    "expected": {
+      "untracked": true
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "en",
+    "width": 390,
+    "row": "White / S",
+    "control": "Price",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "Price",
+      "value": "80"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "en",
+    "width": 390,
+    "row": "White / S",
+    "control": "Compare-at price",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "Compare-at price",
+      "value": "120"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "en",
+    "width": 390,
+    "row": "White / S",
+    "control": "Maximum per order",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "Maximum per order",
+      "value": "7"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "en",
+    "width": 390,
+    "row": "White / S",
+    "control": "SKU code",
+    "action": "verify existing SKU code disabled",
+    "expected": {
+      "visibleLabel": "SKU code",
+      "value": "M1525665847-2-0"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "en",
+    "width": 390,
+    "row": "White / S",
+    "control": "Live keyword",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "Live keyword",
+      "value": "M15256658472E0"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "en",
+    "width": 390,
+    "row": "White / S",
+    "control": "matrix-active-0",
+    "action": "uncheck check",
+    "expected": {
+      "visibleLabel": "Enabled",
+      "enabled": true
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "en",
+    "width": 390,
+    "row": "Black / S",
+    "control": "matrix-select-1",
+    "action": "check uncheck",
+    "expected": "selected true→false",
+    "actual": "PASS",
+    "persistence": "selection is view state"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "en",
+    "width": 390,
+    "row": "Black / S",
+    "control": "Do not track ∞",
+    "action": "check uncheck; choose mode",
+    "expected": {
+      "untracked": false
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "en",
+    "width": 390,
+    "row": "Black / S",
+    "control": "Price",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "Price",
+      "value": "81"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "en",
+    "width": 390,
+    "row": "Black / S",
+    "control": "Compare-at price",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "Compare-at price",
+      "value": "121"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "en",
+    "width": 390,
+    "row": "Black / S",
+    "control": "Resulting on-hand",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "Resulting on-hand",
+      "value": "8"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "en",
+    "width": 390,
+    "row": "Black / S",
+    "control": "SKU code",
+    "action": "verify existing SKU code disabled",
+    "expected": {
+      "visibleLabel": "SKU code",
+      "value": "M1525665847-2-1"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "en",
+    "width": 390,
+    "row": "Black / S",
+    "control": "Live keyword",
+    "action": "fill",
+    "expected": {
+      "visibleLabel": "Live keyword",
+      "value": "M15256658472E1"
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "en",
+    "width": 390,
+    "row": "Black / S",
+    "control": "matrix-active-1",
+    "action": "uncheck check",
+    "expected": {
+      "visibleLabel": "Enabled",
+      "enabled": true
+    },
+    "actual": "PASS",
+    "persistence": "verified after UI save below"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "en",
+    "width": 390,
+    "control": "saved axis-0",
+    "action": "UI save, editor reopen/reload",
+    "expected": {
+      "name": "Color",
+      "values": [
+        "White",
+        "Black"
+      ]
+    },
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "en",
+    "width": 390,
+    "control": "saved axis-1",
+    "action": "UI save, editor reopen/reload",
+    "expected": {
+      "name": "Size",
+      "values": [
+        "S"
+      ]
+    },
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "en",
+    "width": 390,
+    "row": "White / S",
+    "control": "saved row readback",
+    "action": "UI save, editor reopen/reload, read visible fields",
+    "expected": {
+      "name": "White / S",
+      "price": "80",
+      "compare": "120",
+      "quantity": "7",
+      "untracked": true,
+      "code": "M1525665847-2-0",
+      "keyword": "M15256658472E0"
+    },
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "en",
+    "width": 390,
+    "row": "Black / S",
+    "control": "saved row readback",
+    "action": "UI save, editor reopen/reload, read visible fields",
+    "expected": {
+      "name": "Black / S",
+      "price": "81",
+      "compare": "121",
+      "quantity": "8",
+      "untracked": false,
+      "code": "M1525665847-2-1",
+      "keyword": "M15256658472E1"
+    },
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "en",
+    "width": 390,
+    "control": "product-save",
+    "action": "click reload",
+    "expected": "one document write; both matrix rows persist",
+    "actual": "PASS",
+    "screenshot": "mobile-matrix-en-390-edit.png",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile matrix edit",
+    "locale": "en",
+    "width": 390,
+    "control": "matrix-active-0/product-save",
+    "action": "uncheck White, click save, reload",
+    "expected": {
+      "archivedSKU": "aee13f8f-f8d1-4c93-bee6-564be4262fd8",
+      "white": "absent from active-only matrix by SKU ID and name",
+      "visibleRows": 1,
+      "black": {
+        "id": "0efa6d39-3e46-45ce-b9ab-669d444abc91",
+        "price": "81",
+        "compare": "121",
+        "trackedQuantity": "8",
+        "active": true
+      }
+    },
+    "actual": "PASS",
+    "screenshot": "mobile-matrix-en-390-archived.png",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile axis remove",
+    "locale": "en",
+    "width": 390,
+    "control": ".pe-axis-remove (Color axis 1)",
+    "action": "real click",
+    "expected": {
+      "axes": [
+        "Size"
+      ],
+      "values": [
+        "S"
+      ],
+      "visibleRows": "2→1",
+      "row": "S"
+    },
+    "actual": "PASS",
+    "persistence": "local draft until UI save below"
+  },
+  {
+    "page": "mobile axis remove",
+    "locale": "en",
+    "width": 390,
+    "control": "product-save",
+    "action": "click, confirm archive, reload",
+    "expected": {
+      "axes": [
+        "Size"
+      ],
+      "values": [
+        "S"
+      ],
+      "archivedSKUs": [
+        "150165f4-3525-4dbe-b0de-ab1ca5e94b4c",
+        "ebb14c44-2a88-42e0-a6ca-c9752a462e12"
+      ],
+      "activeSKU": "02322612-2a85-42c2-916c-958b48ecac4d",
+      "generatedCode": "pecc328f856bb2b3-mobile-axis-remove-en",
+      "row": "S",
+      "price": "95",
+      "compare": "145",
+      "trackedQuantity": "9",
+      "oneDocumentWrite": true
+    },
+    "actual": "PASS",
+    "screenshot": "mobile-axis-remove-en-390-saved.png",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "edit",
+    "control": "ambiguous warehouse",
+    "action": "read-only response MOCK + visible disabled field",
+    "expected": "no available fallback, disabled target and inventory link",
+    "actual": "PASS (MOCK read contract)"
+  },
+  {
+    "page": "edit",
+    "locale": "zh-TW",
+    "control": "live-window keyword refusal",
+    "action": "click + MOCK 409",
+    "expected": "explicit translated safety refusal",
+    "actual": "PASS (MOCK response; real rule covered by PG PE21)"
+  },
+  {
+    "page": "edit",
+    "locale": "zh-CN",
+    "control": "live-window keyword refusal",
+    "action": "click + MOCK 409",
+    "expected": "explicit translated safety refusal",
+    "actual": "PASS (MOCK response; real rule covered by PG PE21)"
+  },
+  {
+    "page": "edit",
+    "locale": "en",
+    "control": "live-window keyword refusal",
+    "action": "click + MOCK 409",
+    "expected": "explicit translated safety refusal",
+    "actual": "PASS (MOCK response; real rule covered by PG PE21)"
+  },
+  {
+    "page": "list",
+    "control": "copy response loss/reload",
+    "action": "click then injected lost response, reload",
+    "expected": "one committed command; recovery fence blocks duplicate",
+    "actual": "PASS",
+    "tier": "FAULT_INJECTED+REAL_PG"
+  }
+]
