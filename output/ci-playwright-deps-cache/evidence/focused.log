@@ -1,0 +1,64 @@
+ci-plan: 10 job(s); click-sweep x10 (aggregate)
+  --browser-click-sweep@1/10  -> artifact gate-browser-click-sweep_1_10
+  --browser-click-sweep@2/10  -> artifact gate-browser-click-sweep_2_10
+  --browser-click-sweep@3/10  -> artifact gate-browser-click-sweep_3_10
+  --browser-click-sweep@4/10  -> artifact gate-browser-click-sweep_4_10
+  --browser-click-sweep@5/10  -> artifact gate-browser-click-sweep_5_10
+  --browser-click-sweep@6/10  -> artifact gate-browser-click-sweep_6_10
+  --browser-click-sweep@7/10  -> artifact gate-browser-click-sweep_7_10
+  --browser-click-sweep@8/10  -> artifact gate-browser-click-sweep_8_10
+  --browser-click-sweep@9/10  -> artifact gate-browser-click-sweep_9_10
+  --browser-click-sweep@10/10  -> artifact gate-browser-click-sweep_10_10
+✔ the full sweep and the full visual lint fan out into every shard and ask for the aggregate (2.271958ms)
+✔ foundation-shards = the unit shard + every plan group; the serial `foundation` mode is untouched (5.543ms)
+✔ an explicit shard re-run (or a partial list) never claims the whole-run aggregate (0.147958ms)
+✔ duplicates collapse, artifact names are safe and unique, bad input is refused (0.505084ms)
+✔ main writes matrix / sweep_n / visual_n to GITHUB_OUTPUT (3.266667ms)
+✔ mode discovery has no Docker/build dependency and includes the existing universe (54.97425ms)
+✔ dry-run resolves a mode without executing dependencies and keeps its command environment (99.54175ms)
+✔ one appended case is discovered and dispatched; malformed and duplicate registry entries fail closed (56.499375ms)
+✔ registry discovery cannot silently lose indented, aliased or unrecognised Bash case arms (4.687333ms)
+✔ ordinary and sharded browser jobs require only Chromium; default mixed modes keep WebKit (4.58425ms)
+✔ explicit WebKit calibration takes the union without dropping Chromium (1.10925ms)
+✔ every current browser arm declares requirements; unknown or missing declarations fail closed (23.109ms)
+✔ coverage assertion derives mixed Go roots and catches a new mode reusing them (87.942208ms)
+✔ installer retries transient dependency failure at most three times under root timeouts (2357.693291ms)
+✔ persistent dependency failure stops after three attempts and never downloads browsers (2004.62875ms)
+✔ mixed engine installer preserves both dependencies and both binaries; first success needs no retry (1772.064625ms)
+✔ invalid browser set cannot invoke dependency installer or browser downloads (348.6125ms)
+✔ dependency CLI resolves from the directly declared package in the frozen pnpm installation (1851.192125ms)
+✔ workflow keeps the overall fifteen-minute bound and partitions cache by planned engine set (1.059667ms)
+✔ backend-only paths run foundation-shards only (1.035333ms)
+✔ node tests of deploy scripts and of the CI planner are backend-only (they cannot change a browser) (3.035792ms)
+✔ a UI path adds the whole browser set, including click-sweep and visual-lint (10.142375ms)
+✔ docs-only and output-only diffs keep the single required check (foundation-shards) (1.48325ms)
+✔ legacy browser_* paths still select all browsers; a known untagged foundation file stays backend-only (1.06925ms)
+✔ legacy deploy prefixes remain selected and unrelated paths do not select smoke (3.705333ms)
+✔ the browser set is release-gate's browser-mode universe minus the documented exclusions (99.918417ms)
+✔ every real browser-tagged foundation file selects registry browser modes, including non-browser names (147.388459ms)
+✔ tagged runner discovery follows registry additions, command arrays and line continuations (1.156083ms)
+✔ deploy smoke is selected for its workflow, verdict/helpers and executable test inputs (2.461292ms)
+✔ new selection never drops legacy modes or deploy for any tracked path (536.178959ms)
+✔ CLI classifies merge-base and explicit head, including removed tags, deleted files and renames (847.307125ms)
+✔ CLI selects modes the base added after divergence when the checkout is the PR merge (PR #22 review P1) (384.796375ms)
+✔ CLI reads the merge checkout's source when the base adds a browser tag after the fork (PR #22 review P1) (290.532583ms)
+✔ CLI explicit head and stdin include tags outside the checkout and uncommitted tag removals (302.862417ms)
+✔ compound/legacy tags and unknown source are conservative; known untagged source stays backend-only (4.443208ms)
+✔ explicit-head CLI derives tagged runner modes from that head's real registry (246.827542ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "架构.md" (205.764625ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "internal/示例.go" (272.719042ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "tests/foundation/plain\tname_test.go" (319.749ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, " deploy/scripts/synthetic-smoke.sh" (249.2055ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "架构.md" (207.698542ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "internal/示例.go" (238.376875ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "tests/foundation/plain\tname_test.go" (258.964833ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, " deploy/scripts/synthetic-smoke.sh" (258.117209ms)
+✔ stdin unions legacy trimming without trimming the source lookup path (169.791916ms)
+ℹ tests 45
+ℹ suites 0
+ℹ pass 45
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8827.969125

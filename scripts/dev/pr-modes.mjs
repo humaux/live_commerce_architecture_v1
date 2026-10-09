@@ -49,6 +49,7 @@ export function modeEntries(source) {
   for (const line of declarations.split("\n").map((line) => line.trim())) {
     if (!line || line.startsWith("#") || ["lc_select_mode() {", 'case "$1" in', "fi", ";;", "esac", "}", "*) return 1 ;;"].includes(line)) continue;
     if (/^lc_(?:build|fixture)=[a-z]+$/.test(line) || /^if \[\[ .* \]\]; then$/.test(line)) continue;
+    if (/^lc_browsers=(?:chromium|"chromium webkit")$/.test(line)) continue;
     const arm = /^(--[a-z0-9-]+|foundation)\)$/.exec(line);
     if (!arm) throw new Error("unsupported mode registry declaration");
     arms.push(arm[1]);

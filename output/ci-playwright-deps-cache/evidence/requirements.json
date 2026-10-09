@@ -1,0 +1,310 @@
+[
+  {
+    "mode": "--browser-inbox",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-meta-health-ui",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-tracking-backfill",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-platform-site",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-admin-shell",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-click-sweep",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-visual-lint",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-identity",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-buyer-comms",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-checkout-offline",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-home-cod",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-promotions",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-password-auth",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-admin-legacy",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-buyer",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-merchant-buyer",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-manual-order",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-merchant-orders-bff",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-merchant-orders-ui",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-input-delivery",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-studio-bff",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-studio-ui",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-live-console",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-claim-checkout",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-live-claims",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-order",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-payment",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--stripe-browser",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-refund-fulfilment",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-customers-billing",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-card-payments",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-meta-ads",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-ads-attribution",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-cvs",
+    "browsers": [
+      "chromium",
+      "webkit"
+    ]
+  },
+  {
+    "mode": "--browser-catalog-media",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-storefront-publish",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-store-domains",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-storefront",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-webkit",
+    "browsers": [
+      "chromium",
+      "webkit"
+    ]
+  },
+  {
+    "mode": "--browser-e2e",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-design",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-ops-polish",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-meta-connect",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-product-editor",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-catalog-core",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-returns-ui",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-picklist",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-operations-ads",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-product-media-v2",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-reports",
+    "browsers": [
+      "chromium"
+    ]
+  },
+  {
+    "mode": "--browser-migration-import",
+    "browsers": [
+      "chromium"
+    ]
+  }
+]

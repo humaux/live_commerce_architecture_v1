@@ -50,8 +50,9 @@ func registerLiveStreamRoutes(mux *http.ServeMux, pool *pgxpool.Pool, cs *live.C
 		})(w, r)
 	}))
 
-	// A3: idempotent print fact. Body is exactly {} (the label is rendered client-side, §7.4); the
-	// comment_ref shape is re-checked in the service (ErrInvalidRef → 422 invalid_ref).
+	// A3: idempotent-per-key print fact (the required Idempotency-Key becomes the command.Run receipt key,
+	// §7.4). Body is exactly {} (the label is rendered client-side); the comment_ref shape is re-checked in
+	// the service (ErrInvalidRef → 422 invalid_ref).
 	mux.HandleFunc("POST "+base+"/{session_id}/comments/{comment_ref}/print", claimsRoute(http.MethodPost, false, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("Referrer-Policy", "no-referrer")
@@ -59,7 +60,7 @@ func registerLiveStreamRoutes(mux *http.ServeMux, pool *pgxpool.Pool, cs *live.C
 			return
 		}
 		liveStreamScoped(pool, "live:manage", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
-			return cs.PrintComment(ctx, tx, s, bearerToken(r), r.PathValue("session_id"), r.PathValue("comment_ref"))
+			return cs.PrintComment(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), r.PathValue("session_id"), r.PathValue("comment_ref"))
 		})(w, r)
 	}))
 
