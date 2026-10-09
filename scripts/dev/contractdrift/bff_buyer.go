@@ -21,15 +21,70 @@ func (s *bffScanner) buyer(leaf *bffModule, refs ...location) {
 		return
 	}
 	refs = append(refs, f.ref)
-	if transport, ok := m.funcs["upstream"]; ok {
-		for _, call := range bffCalls(m, transport.tokens, "fetch") {
-			refs = append(refs, m.ref(call))
-			args := bffSplit(call, ",")
-			if len(args) == 0 || len(args[0]) != 1 || !strings.Contains(args[0][0].text, "/v1/buyer/${path}") {
-				addUnresolved(&s.out, m.ref(call), "buyer upstream prefix shape changed")
+	s.sinkContext(m, f.tokens)
+	transport, ok := m.funcs["upstream"]
+	if !ok {
+		addUnresolved(&s.out, m.ref(m.tokens), "missing buyer upstream transport")
+		return
+	}
+	s.sinkContext(m, transport.tokens)
+	// Admission methods are valid only when the actual sixth transport parameter
+	// reaches fetch. A fixed override (including fetch's default GET) replaces them.
+	pass := ""
+	for i, t := range m.tokens {
+		if t.text == "function" && i+2 < len(m.tokens) && m.tokens[i+1].text == "upstream" && m.tokens[i+2].text == "(" {
+			end := bffClose(m.tokens, i+2)
+			if end > i {
+				params := bffSplit(m.tokens[i+3:end], ",")
+				if len(params) > 5 && len(params[5]) > 0 {
+					pass = params[5][0].text
+				}
 			}
+			break
 		}
 	}
+	if pass == "" {
+		addUnresolved(&s.out, transport.ref, "buyer upstream method parameter missing")
+		return
+	}
+	for i, t := range transport.tokens {
+		if t.text == pass && i+1 < len(transport.tokens) && transport.tokens[i+1].text == "=" {
+			addUnresolved(&s.out, transport.ref, "buyer upstream method parameter reassigned")
+			return
+		}
+	}
+	fixed, count := "", 0
+	for _, call := range bffCalls(m, transport.tokens, "fetch") {
+		args := bffSplit(call, ",")
+		if len(args) == 0 || len(args[0]) != 1 || args[0][0].kind != "template" || !strings.HasSuffix(args[0][0].text, "/v1/buyer/${path}`") {
+			continue
+		}
+		count++
+		s.consumeSink(m, call)
+		var options []bffToken
+		if len(args) > 1 {
+			options = args[1]
+		}
+		method, more, err := s.requestMethod(m, options, pass, 0)
+		if err != nil {
+			addUnresolved(&s.out, m.ref(call), err.Error())
+			return
+		}
+		fixed = method
+		refs = append(append(refs, m.ref(call)), more...)
+	}
+	if count != 1 {
+		addUnresolved(&s.out, transport.ref, "buyer upstream requires one proven fetch sink")
+		return
+	}
+	start := len(s.out.Routes)
+	defer func() {
+		if fixed != "" {
+			for i := start; i < len(s.out.Routes); i++ {
+				s.out.Routes[i].Method = fixed
+			}
+		}
+	}()
 	for _, call := range bffCalls(m, m.tokens, "upstream") {
 		args := bffSplit(call, ",")
 		if len(args) > 5 && bffText(args[4]) == "target . privatePath + query " && bffText(args[5]) == "request . method " {
@@ -157,64 +212,6 @@ func bffLeafRefs(m *bffModule) []location {
 	return refs
 }
 
-// Extra forwarding cannot hide behind the existing admission table.
-func (s *bffScanner) extraSinks(m *bffModule, refs ...location) {
-	for _, sink := range []string{"callBackend", "fetch", "merchantBackend", "privateIdentity"} {
-		for _, call := range bffCalls(m, m.tokens, sink) {
-			args := bffSplit(call, ",")
-			if len(args) == 0 {
-				continue
-			}
-			arg := bffText(args[0])
-			if sink == "callBackend" && arg == "path + url . search " {
-				continue
-			}
-			if sink == "fetch" && len(args[0]) == 1 && args[0][0].kind == "template" && strings.HasSuffix(args[0][0].text, "/${path}`") {
-				continue
-			}
-			method := ""
-			if len(args) > 1 {
-				for i := 0; i+2 < len(args[1]); i++ {
-					if args[1][i].text == "method" && args[1][i+1].text == ":" && args[1][i+2].kind == "string" {
-						method = bffLiteral(args[1][i+2])
-					}
-				}
-			}
-			if method == "" {
-				addUnresolved(&s.out, m.ref(call), "extra forwarding sink without finite method")
-				continue
-			}
-			v, e := s.dynamicPath(m, args[0])
-			if e != nil {
-				addUnresolved(&s.out, m.ref(call), e.Error())
-				continue
-			}
-			prefix := bffStorePrefix
-			if sink == "privateIdentity" {
-				prefix = "/v1/identity/"
-				method = "POST"
-			}
-			if sink == "fetch" {
-				prefix = ""
-				valid := true
-				for i, p := range v.texts {
-					at := strings.Index(p, "/v1/")
-					if at < 0 {
-						valid = false
-						break
-					}
-					v.texts[i] = p[at:]
-				}
-				if !valid {
-					addUnresolved(&s.out, m.ref(call), "extra fetch URL has no fixed API path")
-					continue
-				}
-			}
-			s.emit(method, prefix, v, append(refs, m.ref(call))...)
-		}
-	}
-}
-
 // Resolve the method and provenance of the identity transport itself. The browser
 // callback's GET must not replace the actual POST, and a transport edit is touched.
 func (s *bffScanner) identitySink(m *bffModule) (string, []location, error) {
@@ -227,9 +224,10 @@ func (s *bffScanner) identitySink(m *bffModule) (string, []location, error) {
 		if len(args) < 2 {
 			continue
 		}
-		if len(args[0]) != 1 || !strings.Contains(args[0][0].text, "/v1/identity/${path}") {
-			return "", nil, fmt.Errorf("identity upstream prefix shape changed")
+		if len(args[0]) != 1 || !strings.HasSuffix(args[0][0].text, "/v1/identity/${path}`") {
+			continue
 		}
+		s.consumeSink(owner, call)
 		for i := 0; i+2 < len(args[1]); i++ {
 			if args[1][i].text == "method" && args[1][i+1].text == ":" && args[1][i+2].kind == "string" && bffHTTP(bffLiteral(args[1][i+2])) {
 				return bffLiteral(args[1][i+2]), []location{m.importRefs["privateIdentity"], owner.ref(call)}, nil
@@ -244,13 +242,25 @@ func (s *bffScanner) backendRefs(m *bffModule) []location {
 		return nil
 	}
 	refs := []location{m.importRefs["callBackend"]}
+	consumedBackend := false
 	for _, call := range bffCalls(owner, f.tokens, "merchantBackend") {
 		refs = append(refs, owner.ref(call))
 		if len(call) > 0 {
 			args := bffSplit(call, ",")
 			if len(args[0]) != 1 || !strings.Contains(args[0][0].text, "/v1/admin/stores/${storeID}/${resource}") {
 				addUnresolved(&s.out, owner.ref(call), "backend store prefix shape changed")
+			} else if !consumedBackend {
+				s.consumeSink(owner, call)
+				consumedBackend = true
 			}
+		}
+	}
+	consumedFetch := false
+	for _, call := range bffCalls(owner, f.tokens, "fetch") {
+		args := bffSplit(call, ",")
+		if !consumedFetch && len(args) > 1 && len(args[0]) == 1 && strings.HasSuffix(args[0][0].text, "/v1/admin/stores/${session.storeID}/${resource}`") {
+			s.consumeSink(owner, call)
+			consumedFetch = true
 		}
 	}
 	return refs
@@ -316,6 +326,7 @@ func (s *bffScanner) filterMethods(m *bffModule, start int) {
 // Method tables describe browser admission. A fixed transport method overrides the
 // admitted method; the usual request.method seam passes it through unchanged.
 func (s *bffScanner) forwardingMethod(m *bffModule, start int) {
+	consumed := false
 	for _, sink := range []string{"fetch", "callBackend", "transport"} {
 		for _, call := range bffCalls(m, m.tokens, sink) {
 			args := bffSplit(call, ",")
@@ -323,42 +334,22 @@ func (s *bffScanner) forwardingMethod(m *bffModule, start int) {
 				continue
 			}
 			path := bffText(args[0])
-			generic := sink == "callBackend" && path == "path + url . search " || sink == "fetch" && (path == "origin " || strings.Contains(path, "${path}") || strings.Contains(path, "${report}")) || sink == "transport" && strings.Contains(path, "/imports/${param}/${action}")
+			generic := sink == "callBackend" && path == "path + url . search " ||
+				sink == "fetch" && (path == "origin " || len(args[0]) == 1 && (strings.HasSuffix(args[0][0].text, "/v1/admin/stores/${store}/${path}`") || strings.HasSuffix(args[0][0].text, "/v1/admin/stores/${store}/reports/${report}${url.search}`"))) ||
+				sink == "transport" && len(args[0]) == 1 && strings.HasSuffix(args[0][0].text, "/v1/admin/stores/${store}/imports/${param}/${action}${new URL(request.url).search}`")
 			if !generic {
 				continue
 			}
-			options := args[1]
-			refs := []location{m.ref(call)}
-			if len(options) == 1 && options[0].kind == "ident" {
-				if d, ok := m.defs[options[0].text]; ok {
-					options = d.tokens
-					refs = append(refs, d.ref)
-				}
+			if consumed {
+				addUnresolved(&s.out, m.ref(call), "multiple admission forwarding sinks")
+				continue
 			}
-			method := ""
-			resolved := false
-			for i := 0; i+2 < len(options); i++ {
-				if options[i].text == "..." && options[i+1].text == "init" {
-					if d, ok := m.defs["init"]; ok {
-						options = append(append([]bffToken{}, options...), d.tokens...)
-						refs = append(refs, d.ref)
-					}
-				}
-				if options[i].text != "method" || options[i+1].text != ":" {
-					continue
-				}
-				if options[i+2].kind == "string" && bffHTTP(bffLiteral(options[i+2])) {
-					method = bffLiteral(options[i+2])
-					resolved = true
-				} else if i+4 < len(options) && options[i+2].text == "request" && options[i+3].text == "." && options[i+4].text == "method" {
-					resolved = true
-				} else {
-					addUnresolved(&s.out, m.ref(options[i:i+3]), "unsupported forwarding method expression")
-				}
-				break
-			}
-			if !resolved {
-				addUnresolved(&s.out, m.ref(call), "forwarding method not resolved")
+			consumed = true
+			s.consumeSink(m, call)
+			method, refs, err := s.requestMethod(m, args[1], "request . method", 0)
+			refs = append(refs, m.ref(call))
+			if err != nil {
+				addUnresolved(&s.out, m.ref(call), err.Error())
 				continue
 			}
 			for i := start; i < len(s.out.Routes); i++ {

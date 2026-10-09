@@ -23,7 +23,6 @@ func (s *bffScanner) leaf(m *bffModule) {
 			addUnresolved(&s.out, refs[0], "catchall lacks a reachable forwarding sink")
 			return
 		}
-		s.extraSinks(m, refs...)
 		if d, ok := m.defs["routes"]; ok {
 			v, e := s.reader.eval(m, d.tokens, nil, 0)
 			if e != nil {
@@ -68,6 +67,21 @@ func (s *bffScanner) leaf(m *bffModule) {
 			addUnresolved(&s.out, refs[0], e.Error())
 		} else {
 			s.admit(helper, "importRoute", bffStorePrefix, append(refs, helper.ref(helper.tokens))...)
+			s.sinkContext(helper, helper.funcs["importReply"].tokens)
+			s.forwardingMethod(helper, before)
+			// The adapter supplies native fetch in this one verified parameter slot.
+			for _, call := range bffCalls(m, m.tokens, "importProxy") {
+				args := bffSplit(call, ",")
+				if len(args) == 5 && len(args[4]) == 1 && args[4][0].text == "fetch" {
+					s.consumeValue(m, args[4][0])
+				}
+			}
+			for _, call := range bffCalls(helper, helper.funcs["importProxy"].tokens, "importReply") {
+				args := bffSplit(call, ",")
+				if len(args) == 5 && len(args[4]) == 1 && args[4][0].text == "transport" {
+					s.consumeValue(helper, args[4][0])
+				}
+			}
 		}
 		return
 	}
@@ -76,10 +90,23 @@ func (s *bffScanner) leaf(m *bffModule) {
 		return
 	}
 	if calls := bffCalls(m, m.tokens, "customerTagsBFF"); len(calls) > 0 {
-		owner, _, e := s.bindingFunc(m, "customerTagsBFF")
+		owner, adapter, e := s.bindingFunc(m, "customerTagsBFF")
 		if e != nil {
 			addUnresolved(&s.out, refs[0], e.Error())
 			return
+		}
+		// Consume exactly the frozen adapter's forward slot, not every occurrence
+		// of callBackend in the helper or any other object named forward.
+		for _, call := range bffCalls(owner, adapter.tokens, "proxyCustomerTags") {
+			args := bffSplit(call, ",")
+			if len(args) != 4 || len(args[3]) < 2 || args[3][0].text != "{" {
+				continue
+			}
+			for _, field := range bffSplit(args[3][1:len(args[3])-1], ",") {
+				if len(field) == 3 && field[0].text == "forward" && field[1].text == ":" && field[2].text == "callBackend" {
+					s.consumeValue(owner, field[2])
+				}
+			}
 		}
 		gram, e := s.reader.load("apps/admin/lib/customer-tags-request.ts")
 		if e != nil {
@@ -137,11 +164,18 @@ func (s *bffScanner) leaf(m *bffModule) {
 			if e != nil {
 				addUnresolved(&s.out, d.ref, e.Error())
 			} else {
+				s.sinkContext(helper, helper.funcs["picklistProxy"].tokens)
+				consumedPath := false
 				for _, sink := range bffCalls(helper, helper.funcs["picklistProxy"].tokens, "callBackend") {
 					args := bffSplit(sink, ",")
 					if len(args) < 2 {
 						continue
 					}
+					if consumedPath || len(args[0]) != 1 || args[0][0].text != "path" {
+						continue
+					}
+					consumedPath = true
+					s.consumeSink(helper, sink)
 					method, e := bffStaticMethod(args[1])
 					if e != nil {
 						addUnresolved(&s.out, helper.ref(sink), e.Error())
@@ -196,6 +230,7 @@ func (s *bffScanner) dynamicPath(m *bffModule, t []bffToken) (bffValue, error) {
 func (s *bffScanner) directSinks(m *bffModule, exports map[string]bool, refs ...location) {
 	for _, sink := range []string{"privateIdentity", "callBackend", "merchantBackend", "fetch"} {
 		for _, call := range bffCalls(m, m.tokens, sink) {
+			s.consumeSink(m, call)
 			args := bffSplit(call, ",")
 			if len(args) == 0 {
 				continue
@@ -279,14 +314,19 @@ func (s *bffScanner) authenticatedStores(m *bffModule, refs ...location) {
 		addUnresolved(&s.out, m.ref(m.tokens), "unknown stores list helper")
 		return
 	}
-	for _, x := range f.tokens {
-		if (x.kind == "template" || x.kind == "string") && strings.Contains(x.text, "/v1/admin/stores") {
-			raw := x.text
-			at := strings.Index(raw, "/v1/")
-			end := len(raw) - 1
-			s.emit("GET", "", bffValue{texts: []string{raw[at:end]}}, append(refs, f.ref)...)
+	for _, call := range bffCalls(m, f.tokens, "merchantBackend") {
+		args := bffSplit(call, ",")
+		if len(args) < 3 || len(args[0]) != 1 || bffLiteral(args[0][0]) != "/v1/admin/stores" {
+			continue
+		}
+		s.consumeSink(m, call)
+		method, more, err := s.requestMethod(m, args[2], "", 0)
+		if err != nil {
+			addUnresolved(&s.out, m.ref(call), err.Error())
 			return
 		}
+		s.emit(method, "", bffValue{texts: []string{"/v1/admin/stores"}}, append(append(refs, f.ref), more...)...)
+		return
 	}
 	addUnresolved(&s.out, f.ref, "stores list upstream path changed")
 }
@@ -309,6 +349,7 @@ func (s *bffScanner) password(m *bffModule, refs ...location) {
 				continue
 			}
 			for _, sink := range bffCalls(helper, f.tokens, "privateIdentity") {
+				s.consumeSink(helper, sink)
 				args := bffSplit(sink, ",")
 				v, e := s.reader.eval(helper, args[0], map[string]bffValue{"purpose": purpose}, 0)
 				if e != nil {
@@ -331,6 +372,7 @@ func (s *bffScanner) password(m *bffModule, refs ...location) {
 		return
 	}
 	for _, sink := range bffCalls(helper, f.tokens, "privateIdentity") {
+		s.consumeSink(helper, sink)
 		args := bffSplit(sink, ",")
 		method, transportRefs, e := s.identitySink(helper)
 		if e != nil {
@@ -357,7 +399,14 @@ func (s *bffScanner) shop(m *bffModule, refs ...location) {
 		}
 		method := ""
 		transportRefs := []location{m.importRefs[name]}
+		s.sinkContext(helper, helper.funcs["getJSON"].tokens)
+		consumedPath := false
 		for _, sink := range bffCalls(helper, helper.funcs["getJSON"].tokens, "fetch") {
+			if consumedPath || len(sink) == 0 || !strings.HasSuffix(sink[0].text, "/v1/buyer/${path}`") {
+				continue
+			}
+			consumedPath = true
+			s.consumeSink(helper, sink)
 			args := bffSplit(sink, ",")
 			if len(args) < 2 {
 				continue
@@ -416,6 +465,7 @@ func (s *bffScanner) primaryOrigin(m *bffModule) {
 		return
 	}
 	for _, call := range bffCalls(helper, helper.tokens, "fetcher") {
+		s.consumeSink(helper, call)
 		args := bffSplit(call, ",")
 		if len(args) == 0 || len(args[0]) != 1 {
 			addUnresolved(&s.out, helper.ref(call), "unknown primary-origin upstream")

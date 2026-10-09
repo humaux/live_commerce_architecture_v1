@@ -28,9 +28,12 @@ import (
 )
 
 type bffScanner struct {
-	reader *bffReader
-	out    inventory
-	seen   map[string]bool
+	reader         *bffReader
+	out            inventory
+	seen           map[string]bool
+	consumed       map[string]bool
+	contexts       map[string]bffSinkContext
+	consumedValues map[string]bool
 }
 
 const bffStorePrefix = "/v1/admin/stores/{}/"
@@ -82,8 +85,18 @@ func scanBFF(root string) (inventory, error) {
 // Capture each forwarding root before aggregate dedupe. Shared admissions must be evaluated for every producer.
 func (s *bffScanner) producer(name string, scan func()) {
 	s.seen = map[string]bool{}
+	s.consumed = map[string]bool{}
+	s.contexts = map[string]bffSinkContext{}
+	s.consumedValues = map[string]bool{}
+	if m := s.reader.modules[name]; m != nil {
+		s.sinkContext(m, m.tokens)
+	}
 	start := len(s.out.Routes)
 	scan()
+	// This runs after every adapter's early return and admission-method filter.
+	// Extra upstream verbs are independent of the browser's exported verb.
+	s.remainingSinks()
+	s.unaccountedSinkValues(name)
 	s.out.Producers[name] = append([]route(nil), s.out.Routes[start:]...)
 }
 func (s *bffScanner) dedupe() {
@@ -188,7 +201,12 @@ func bffCalls(m *bffModule, t []bffToken, name string) [][]bffToken {
 		if t[i].text == name && t[i+1].text == "(" && (i == 0 || t[i-1].text != "function") {
 			j := bffClose(t, i+1)
 			if j >= 0 {
-				out = append(out, t[i+2:j])
+				if j == i+2 {
+					// Unsupported empty sinks still need their changed-line provenance.
+					out = append(out, []bffToken{{kind: "empty", start: t[i].start, end: t[j].end}})
+				} else {
+					out = append(out, t[i+2:j])
+				}
 			}
 		}
 	}
@@ -196,11 +214,13 @@ func bffCalls(m *bffModule, t []bffToken, name string) [][]bffToken {
 }
 func (s *bffScanner) bindingFunc(m *bffModule, name string) (*bffModule, bffExpr, error) {
 	if f, ok := m.funcs[name]; ok {
+		s.sinkContext(m, f.tokens)
 		return m, f, nil
 	}
 	if d, ok := m.defs[name]; ok {
 		for i, t := range d.tokens {
 			if t.text == "=>" {
+				s.sinkContext(m, d.tokens[i+1:])
 				return m, bffExpr{d.tokens[i+1:], d.ref}, nil
 			}
 		}
