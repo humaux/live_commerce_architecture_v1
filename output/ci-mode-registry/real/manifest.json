@@ -1,0 +1,56 @@
+[
+  {
+    "file": "buyer-http.json",
+    "primary_path": "/Volumes/data/live_commerce_architecture_v1/output/ci-mode-registry/real/buyer-http.json",
+    "raw_sha256": "33f5c39d3b718e2df7901bf783e9195d65e857d429413f6eab30dd3beea51142",
+    "view_sha256": "33f5c39d3b718e2df7901bf783e9195d65e857d429413f6eab30dd3beea51142"
+  },
+  {
+    "file": "buyer-http.log",
+    "primary_path": "/Volumes/data/live_commerce_architecture_v1/output/ci-mode-registry/real/buyer-http.log",
+    "raw_sha256": "00b08f844bdc0310eb85d7763d6193811d55e17eae529b5f9ee002d573386d8c",
+    "view_sha256": "00b08f844bdc0310eb85d7763d6193811d55e17eae529b5f9ee002d573386d8c"
+  },
+  {
+    "file": "click-browser.log",
+    "primary_path": "/Volumes/data/live_commerce_architecture_v1/output/ci-mode-registry/real/click-browser.log",
+    "raw_sha256": "7866094660a892b27167e897506e854e86bc5e77693633d88e832b6c6cb52a7c",
+    "view_sha256": "7866094660a892b27167e897506e854e86bc5e77693633d88e832b6c6cb52a7c"
+  },
+  {
+    "file": "click-journeys.json",
+    "primary_path": "/Volumes/data/live_commerce_architecture_v1/output/ci-mode-registry/real/click-journeys.json",
+    "raw_sha256": "8e79df2bdb28134a9c102f9f9a99735ab68b6cc0d794217ff69181376926fc44",
+    "view_sha256": "8e79df2bdb28134a9c102f9f9a99735ab68b6cc0d794217ff69181376926fc44"
+  },
+  {
+    "file": "click-ledger.json",
+    "primary_path": "/Volumes/data/live_commerce_architecture_v1/output/ci-mode-registry/real/click-ledger.json",
+    "raw_sha256": "8cc311ca592a48e8d1383c27f4f2caa98ffad768cd0d71b66e643a420f40b1a9",
+    "view_sha256": "8cc311ca592a48e8d1383c27f4f2caa98ffad768cd0d71b66e643a420f40b1a9"
+  },
+  {
+    "file": "click-shard-1-of-10.json",
+    "primary_path": "/Volumes/data/live_commerce_architecture_v1/output/ci-mode-registry/real/click-shard-1-of-10.json",
+    "raw_sha256": "70f4c27b5e7e4da015033a07f51ec9bf971300417221f191b75765a13a150120",
+    "view_sha256": "70f4c27b5e7e4da015033a07f51ec9bf971300417221f191b75765a13a150120"
+  },
+  {
+    "file": "click-shard-1-of-10.log",
+    "primary_path": "/Volumes/data/live_commerce_architecture_v1/output/ci-mode-registry/real/click-shard-1-of-10.log",
+    "raw_sha256": "561696d26ac6671f4a56eddd7c21cd00f5592e916784e893f88613c52b18fe09",
+    "view_sha256": "aeb3ab6dac8afa81e02c01ad8c73580ff44fe4c6ea4b701194f83796adcfcd68"
+  },
+  {
+    "file": "picklist.json",
+    "primary_path": "/Volumes/data/live_commerce_architecture_v1/output/ci-mode-registry/real/picklist.json",
+    "raw_sha256": "9c111605ef2f139d9b4a3d966c9248f1c7332bb965ff11100688c0c641e3ec99",
+    "view_sha256": "9c111605ef2f139d9b4a3d966c9248f1c7332bb965ff11100688c0c641e3ec99"
+  },
+  {
+    "file": "picklist.log",
+    "primary_path": "/Volumes/data/live_commerce_architecture_v1/output/ci-mode-registry/real/picklist.log",
+    "raw_sha256": "96bfe058e06895d1e3f85f1ea812e63810e4440866a056063b3f3f5aa191050f",
+    "view_sha256": "96bfe058e06895d1e3f85f1ea812e63810e4440866a056063b3f3f5aa191050f"
+  }
+]
