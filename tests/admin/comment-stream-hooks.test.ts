@@ -395,3 +395,29 @@ test("PR18 R2 buyer-panel read 404 expires the panel and reports unauthorized", 
   const h=env.mount(()=>BuyerPanel({store,conversationId:sid,onUnauthorized(){lost++;}} as any));
   await h.settle();assert.equal(lost,1);assert.equal(textOf(h.output).includes("SYNTHETIC"),false);
 });
+
+// W3-U2 adds a private scope read below A13; its first 404 must also revoke the containing console.
+test("W3-U2 restriction check 404 first expires all console views and rejects late A8", async t => {
+  const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-09T01:00:00Z")});
+  let deny!:(value:Response)=>void, late!:(value:Response)=>void, reads=0, hold=false;
+  const claim={status:"ACCEPTED",reason:null,offer_id:sid,keyword:"A1",quantity:1,bundle_id:sid};
+  const a8=()=>response({items:[{conversation_id:sid,bundle_id:sid,platform:"facebook",display_name:"SYNTHETIC_A8_NAME",last_at:"2026-10-09T01:00:00Z",unreplied:true}],next_cursor:"",unread_total:1});
+  globalThis.fetch=async input=>{
+    const url=String(input);reads++;
+    if(url.includes("blocklist/check"))return new Promise<Response>(resolve=>{deny=resolve;});
+    if(url.includes("buyer-panel?"))return response({display_name:"SYNTHETIC_PANEL",platform:"facebook",purchase_ordinal:1,claims:[],claim_total_minor:0,orders:[],link_pending_manual:false});
+    if(url.includes("message-templates"))return response({items:[]});
+    if(url.includes("inbox/conversations"))return hold?new Promise<Response>(resolve=>{late=resolve;}):a8();
+    return response(page(1,[{...row,author_name:"SYNTHETIC_A2_NAME",marks:{...row.marks,claim}}]));
+  };
+  const h=env.mount(()=>CommentStream({store,session:sid,locale:"en",platform:"facebook",capabilities:{}} as any));await h.settle();
+  node(h,n=>n.props["data-testid"]==="comment-filter-private").props.onClick();await h.settle();
+  node(h,n=>n.type==="button"&&textOf(n).includes("SYNTHETIC_A8_NAME")).props.onClick();await h.settle();
+  assert.ok(textOf(h.output).includes("SYNTHETIC_PANEL"));assert.equal(typeof deny,"function");
+  hold=true;t.mock.timers.tick(10000);await h.settle();assert.equal(typeof late,"function");
+  deny(response({code:"not_found"},404));await h.settle();
+  assert.equal(node(h,n=>n.props["data-testid"]==="comment-refresh").props.disabled,true);
+  assert.equal(/SYNTHETIC_(PANEL|A8_NAME|A2_NAME|COMMENT)/.test(textOf(h.output)),false);
+  const stopped=reads;late(a8());await h.settle();env.window.dispatchEvent(new Event("focus"));t.mock.timers.tick(90000);await h.settle();
+  assert.equal(reads,stopped);assert.equal(/SYNTHETIC_(PANEL|A8_NAME|A2_NAME|COMMENT)/.test(textOf(h.output)),false);
+});

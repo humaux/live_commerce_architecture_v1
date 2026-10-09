@@ -243,7 +243,8 @@ export function useLiveSettingsController({
     }
   }
   async function run(first: SettingsReceipt) {
-    if (inFlight.current || !privacy.visible || privacy.blocked.current) return;
+    // Disabled controls cannot revoke already captured callbacks: UNKNOWN admits only its retained receipt.
+    if (inFlight.current || (receipt.current && receipt.current !== first) || !privacy.visible || privacy.blocked.current) return;
     inFlight.current = true;
     receipt.current = first;
     setPending(first);

@@ -214,11 +214,6 @@ export function BuyerPanel({
               store={store}
               bundle={bundleId}
               session={sessionId ?? data.claims[0]!.session_id}
-              onMissing={() => {
-                privacy.fence.invalidate(true);
-                clear();
-                setError("not_found");
-              }}
               onDenied={() => {
                 privacy.expire();
                 callbacks.current.onUnauthorized?.();
@@ -318,14 +313,12 @@ function BuyerRestriction({
   session,
   bundle,
   onDenied,
-  onMissing,
 }: {
   locale: string;
   store: Store;
   session: string;
   bundle: string;
   onDenied?: () => void;
-  onMissing?: () => void;
 }) {
   const c = liveSettingsCopy(locale),
     [restricted, setRestricted] = useState<boolean | null>(null),
@@ -337,8 +330,6 @@ function BuyerRestriction({
     inFlight = useRef(false),
     callback = useRef(onDenied);
   callback.current = onDenied;
-  const missing = useRef(onMissing);
-  missing.current = onMissing;
   const clear = useCallback(() => {
     setRestricted(null);
     setNote("");
@@ -354,15 +345,10 @@ function BuyerRestriction({
     valid = Array.from(note).length <= 200 && !/\p{Cc}/u.test(note);
   const fail = useCallback(
     (e: unknown) => {
-      if (e instanceof LiveSettingsError && [401, 403].includes(e.status)) {
+      if (e instanceof LiveSettingsError && [401, 403, 404].includes(e.status)) {
         privacy.expire();
         callback.current?.();
         return;
-      }
-      if (e instanceof LiveSettingsError && e.status === 404) {
-        privacy.fence.invalidate(true);
-        clear();
-        missing.current?.();
       }
       setError(e instanceof LiveSettingsError ? e.code : "unavailable");
     },
