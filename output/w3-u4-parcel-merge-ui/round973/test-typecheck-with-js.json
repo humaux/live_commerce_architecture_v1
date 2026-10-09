@@ -1,0 +1,10 @@
+{
+  "argv": [
+    "node",
+    "--input-type=module",
+    "-e",
+    "import ts from \"typescript-api\";const parsed=ts.parseJsonConfigFileContent(ts.readConfigFile(\"apps/admin/tsconfig.json\",ts.sys.readFile).config,ts.sys,\"apps/admin\");parsed.options.incremental=false;parsed.options.allowJs=true;parsed.options.types=[\"node\",\"react\"];parsed.options.typeRoots=[\"apps/admin/node_modules/@types\"];const program=ts.createProgram([\"tests/admin/picklist-model.test.ts\",\"apps/admin/next-env.d.ts\"],parsed.options);const errors=ts.getPreEmitDiagnostics(program);console.log(ts.formatDiagnosticsWithColorAndContext(errors,{getCurrentDirectory:ts.sys.getCurrentDirectory,getCanonicalFileName:f=>f,getNewLine:()=>\"\\n\"}));process.exit(errors.length?1:0);"
+  ],
+  "exit": 0,
+  "elapsed_seconds": 0.936
+}

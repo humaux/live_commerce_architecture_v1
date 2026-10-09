@@ -1,0 +1,10 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/check-gates.sh"
+  ],
+  "base_sha": "28a154bff04944eca03b19040202faadea1b3f68",
+  "source_hash_manifest": "codex4-migration-integrity.json",
+  "exit_code": 0,
+  "elapsed_seconds": 8.025
+}

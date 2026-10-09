@@ -1,0 +1,38 @@
+
+Running 3 tests using 1 worker
+
+(node:24851) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 tests/admin/live-console.spec.ts:86:3 › LC-U1 MOCK contract real clicks en-1586 (17.6s)
+(node:25130) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  2 tests/admin/live-console.spec.ts:269:1 › LC-U1 unknown receipt stays fenced after real logout and reauthentication (702ms)
+  ✓  3 tests/admin/live-console.spec.ts:324:3 › LC-U1 en: bounded live_adjust works, no-stock permission stays disabled, missing A1 is graceful (729ms)
+
+
+  1) tests/admin/live-console.spec.ts:86:3 › LC-U1 MOCK contract real clicks en-1586 ───────────────
+
+    Error: expect(received).toHaveLength(expected)
+
+    Expected length: 2
+    Received length: 1
+    Received array:  [{"action": "6d59b8ae-bfb4-4abc-8f8e-e8a26609a014", "body_hash": "5d0272013854dc430995d0582093a91505f1905772e43794b383b093c542fc32", "effect": true, "input": {"active": true, "expected_version": 5, "max_quantity_per_claim": 10}, "key_hash": "a04602047006fafa435bf9515535715b253e77f9cf2a27fa444e5375b3b2339f", "scene": "c864e7b3-6f0d-4238-b76f-ef84935e5af8", "status": 503}]
+
+      194 |     await expect(page.getByTestId("live-command-retry")).toHaveCount(0);
+      195 |     const retries = (await facts(request)).receipts.filter((receipt) => receipt.key_hash === unknown.key_hash);
+    > 196 |     expect(retries).toHaveLength(2);
+          |                     ^
+      197 |     expect(retries.map((receipt) => receipt.body_hash)).toEqual([unknown.body_hash, unknown.body_hash]);
+      198 |     expect(retries.filter((receipt) => receipt.effect)).toHaveLength(1);
+      199 |
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/live-console.spec.ts:196:21
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/lc-u1-shell/ci4-console-green/live-console-98481330/results/live-console-LC-U1-MOCK-contract-real-clicks-en-1586/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/lc-u1-shell/ci4-console-green/live-console-98481330/results/live-console-LC-U1-MOCK-contract-real-clicks-en-1586/error-context.md
+
+  1 failed
+    tests/admin/live-console.spec.ts:86:3 › LC-U1 MOCK contract real clicks en-1586 ────────────────
+  2 passed (20.0s)

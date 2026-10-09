@@ -1,0 +1,7 @@
+Source: output/playwright/live-console-4154192057/playwright.log
+1 failed
+22 passed
+failed live-console.spec.ts:195:48
+
+Failure: LCU2_404 real store grant revoked clears private view and selected buyer
+TimeoutError: page.waitForResponse: Timeout 15000ms exceeded while waiting for event "response"

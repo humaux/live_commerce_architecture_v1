@@ -1,0 +1,16 @@
+
+Running 9 tests using 1 worker
+
+(node:44805) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/admin/customer-tags.spec.ts:54:1 › CTUI calibration-sensitive note create uses real mutation response (714ms)
+  ✓  2 tests/admin/customer-tags.spec.ts:68:3 › CTUI catalogue, notes and passive-refresh draft preservation en/1440 (2.4s)
+  ✓  3 tests/admin/customer-tags.spec.ts:68:3 › CTUI catalogue, notes and passive-refresh draft preservation en/390 (2.2s)
+  ✓  4 tests/admin/customer-tags.spec.ts:68:3 › CTUI catalogue, notes and passive-refresh draft preservation zh-TW/1440 (2.3s)
+  ✓  5 tests/admin/customer-tags.spec.ts:68:3 › CTUI catalogue, notes and passive-refresh draft preservation zh-TW/390 (2.1s)
+  ✓  6 tests/admin/customer-tags.spec.ts:140:1 › CTUI catalogue duplicate/length, tag filter clear and persistence, notes pagination and cap (2.3s)
+  ✓  7 tests/admin/customer-tags.spec.ts:196:1 › CTUI real CAS conflicts, refresh discards only explicit user intent (914ms)
+  ✓  8 tests/admin/customer-tags.spec.ts:222:1 › CTUI UNKNOWN explicit same-key retry commits once, revoked session cannot replay (1.3s)
+  ✓  9 tests/admin/customer-tags.spec.ts:253:1 › CTUI signed reader and non-privacy writer show conservative note permissions (1.1s)
+
+  9 passed (15.8s)

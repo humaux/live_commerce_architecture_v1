@@ -1,0 +1,561 @@
+{
+  "cases": 32,
+  "orders": [
+    "4323dbf5-9c1d-4354-9ea2-a2a3d4c72f80",
+    "c1d36cc0-9415-4d6b-93d3-79c1a374c857",
+    "fd21c1c1-61e2-4cd1-98b3-461dc8e3706c",
+    "796092cf-b7af-4789-a109-09ee5bfb1883",
+    "e64389e7-a9c3-40dc-8ec8-b0d3e544b587",
+    "b58cac13-6cba-4832-8942-340d1b2078ec",
+    "ccaf15a4-cef1-4055-8db3-b3233b6b66a7"
+  ],
+  "repeated_orders": [
+    "4323dbf5-9c1d-4354-9ea2-a2a3d4c72f80",
+    "ccaf15a4-cef1-4055-8db3-b3233b6b66a7"
+  ],
+  "observations": [
+    "BC01 en drawer visible cart Retry preserves key/body and one committed write after reload",
+    "BC01 en cart-page visible cart Retry preserves key/body and one committed write after reload",
+    "BC01 zh-CN drawer visible cart Retry preserves key/body and one committed write after reload",
+    "BC01 zh-CN cart-page visible cart Retry preserves key/body and one committed write after reload",
+    "BC01 zh-TW drawer visible cart Retry preserves key/body and one committed write after reload",
+    "BC01 zh-TW cart-page visible cart Retry preserves key/body and one committed write after reload",
+    "BO01 desktop delivery-head completion keeps the language target stable",
+    "BO01 native address; three locales keep the pinned quote and carry no unsaved PII across the language switch",
+    "BO03 committed destination lost reply retries exact key and body",
+    "BO03 lost destination reply reload reads head and explicitly replaces metadata intent",
+    "BO03 reload reconfirmation, edits and concurrent/late address CAS fail closed",
+    "BO04 actual confirmed form creates authoritative DRAFT and exactly one order/hold/job/receipt",
+    "BO05 owned current-state GET renders real expiry rather than historical DRAFT receipt",
+    "BO02 expired authoritative quote fails closed with no order or hold",
+    "BO04 actual second-tab recovery queues on Web Lock and resumes same order without second POST",
+    "BO01 mobile delivery-head completion keeps the language target stable",
+    "BO05 lost checkout reply reload replays exact five-field intent and original key on mobile",
+    "BO05 locator storage failure retains and reloads same checkout without duplicate hold",
+    "BO05 later publication revocation preserves uncertain committed order and never resets owner",
+    "BO03 delayed real options cannot replace edited confirmed address or order snapshot",
+    "BO03 expired pending address retains recovery; quote-less new tab explicitly repairs shared intent",
+    "BH01 lost next-cart reply reload keeps original key/body and exactly one cart receipt",
+    "BH02 delayed initial owned GET cannot restore the old order after another tab continues",
+    "BH03 same buyer creates distinct B with two exact order facts and unchanged A snapshot/key replay",
+    "BH04 owned history renders each server created_at in Taipei across locales under Los Angeles browser time",
+    "BH05 authoritative Taipei history survives reload and noncredential locator loss without repinning an old order",
+    "BH05 same owned history renders Taipei times in UTC browser context",
+    "BH06 explicit continuation preserves a newer authoritative cart without issuing a clearing PUT",
+    "BH07 failed quote removal preserves continuation recovery and original key across reload",
+    "BH08 foreign buyer history is empty and foreign or malformed cursors are denied",
+    "BO02 service revision drift rejects a previously confirmed quotation without an order",
+    "BO06 all attempted local/session writes, URLs and console exclude PII/bearer; other owner denied"
+  ],
+  "cart_retries": [
+    {
+      "case_id": "BC01 en drawer visible cart Retry preserves key/body and one committed write after reload",
+      "locale": "en",
+      "surface": "drawer",
+      "key": "e9a88285-b76b-4901-bacc-d5d7d94e0bd6",
+      "request_body": "{\"expected_version\":0,\"items\":[{\"sku_id\":\"c53c418a-000b-4def-b859-438a159a98a2\",\"quantity\":1}]}",
+      "cart_id": "8cafd393-9505-41f1-84c2-83c91780e61f",
+      "sku_id": "c53c418a-000b-4def-b859-438a159a98a2",
+      "quantity": 1,
+      "before": {
+        "id": "8cafd393-9505-41f1-84c2-83c91780e61f",
+        "version": 1,
+        "writes": 1,
+        "receipts": 1,
+        "receipt_version": 1,
+        "request_hash": "ec8c03bdbd300000336cde9935f05b198968c5b0b1a1cee89c0978c4ff4b961c",
+        "items": [
+          {
+            "sku_id": "c53c418a-000b-4def-b859-438a159a98a2",
+            "quantity": 1
+          }
+        ]
+      },
+      "after": {
+        "id": "8cafd393-9505-41f1-84c2-83c91780e61f",
+        "version": 1,
+        "writes": 1,
+        "receipts": 1,
+        "receipt_version": 1,
+        "request_hash": "ec8c03bdbd300000336cde9935f05b198968c5b0b1a1cee89c0978c4ff4b961c",
+        "items": [
+          {
+            "sku_id": "c53c418a-000b-4def-b859-438a159a98a2",
+            "quantity": 1
+          }
+        ]
+      },
+      "reloaded": {
+        "id": "8cafd393-9505-41f1-84c2-83c91780e61f",
+        "version": 1,
+        "writes": 1,
+        "receipts": 1,
+        "receipt_version": 1,
+        "request_hash": "ec8c03bdbd300000336cde9935f05b198968c5b0b1a1cee89c0978c4ff4b961c",
+        "items": [
+          {
+            "sku_id": "c53c418a-000b-4def-b859-438a159a98a2",
+            "quantity": 1
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "BC01 en cart-page visible cart Retry preserves key/body and one committed write after reload",
+      "locale": "en",
+      "surface": "cart-page",
+      "key": "cd053d76-d973-4ecc-b253-4c096d966464",
+      "request_body": "{\"expected_version\":1,\"items\":[{\"sku_id\":\"c53c418a-000b-4def-b859-438a159a98a2\",\"quantity\":2}]}",
+      "cart_id": "8cafd393-9505-41f1-84c2-83c91780e61f",
+      "sku_id": "c53c418a-000b-4def-b859-438a159a98a2",
+      "quantity": 2,
+      "before": {
+        "id": "8cafd393-9505-41f1-84c2-83c91780e61f",
+        "version": 2,
+        "writes": 2,
+        "receipts": 1,
+        "receipt_version": 2,
+        "request_hash": "e53c9ea48851c5c7d4ed453f0754e943f0597406a41df0a9c0f7b8197c0eab7d",
+        "items": [
+          {
+            "sku_id": "c53c418a-000b-4def-b859-438a159a98a2",
+            "quantity": 2
+          }
+        ]
+      },
+      "after": {
+        "id": "8cafd393-9505-41f1-84c2-83c91780e61f",
+        "version": 2,
+        "writes": 2,
+        "receipts": 1,
+        "receipt_version": 2,
+        "request_hash": "e53c9ea48851c5c7d4ed453f0754e943f0597406a41df0a9c0f7b8197c0eab7d",
+        "items": [
+          {
+            "sku_id": "c53c418a-000b-4def-b859-438a159a98a2",
+            "quantity": 2
+          }
+        ]
+      },
+      "reloaded": {
+        "id": "8cafd393-9505-41f1-84c2-83c91780e61f",
+        "version": 2,
+        "writes": 2,
+        "receipts": 1,
+        "receipt_version": 2,
+        "request_hash": "e53c9ea48851c5c7d4ed453f0754e943f0597406a41df0a9c0f7b8197c0eab7d",
+        "items": [
+          {
+            "sku_id": "c53c418a-000b-4def-b859-438a159a98a2",
+            "quantity": 2
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "BC01 zh-CN drawer visible cart Retry preserves key/body and one committed write after reload",
+      "locale": "zh-CN",
+      "surface": "drawer",
+      "key": "e3106d83-b658-49e8-9d6d-8fc6c7a13116",
+      "request_body": "{\"expected_version\":0,\"items\":[{\"sku_id\":\"c53c418a-000b-4def-b859-438a159a98a2\",\"quantity\":1}]}",
+      "cart_id": "c4562e22-38a5-4975-af54-3f177a3ef2c9",
+      "sku_id": "c53c418a-000b-4def-b859-438a159a98a2",
+      "quantity": 1,
+      "before": {
+        "id": "c4562e22-38a5-4975-af54-3f177a3ef2c9",
+        "version": 1,
+        "writes": 1,
+        "receipts": 1,
+        "receipt_version": 1,
+        "request_hash": "ec8c03bdbd300000336cde9935f05b198968c5b0b1a1cee89c0978c4ff4b961c",
+        "items": [
+          {
+            "sku_id": "c53c418a-000b-4def-b859-438a159a98a2",
+            "quantity": 1
+          }
+        ]
+      },
+      "after": {
+        "id": "c4562e22-38a5-4975-af54-3f177a3ef2c9",
+        "version": 1,
+        "writes": 1,
+        "receipts": 1,
+        "receipt_version": 1,
+        "request_hash": "ec8c03bdbd300000336cde9935f05b198968c5b0b1a1cee89c0978c4ff4b961c",
+        "items": [
+          {
+            "sku_id": "c53c418a-000b-4def-b859-438a159a98a2",
+            "quantity": 1
+          }
+        ]
+      },
+      "reloaded": {
+        "id": "c4562e22-38a5-4975-af54-3f177a3ef2c9",
+        "version": 1,
+        "writes": 1,
+        "receipts": 1,
+        "receipt_version": 1,
+        "request_hash": "ec8c03bdbd300000336cde9935f05b198968c5b0b1a1cee89c0978c4ff4b961c",
+        "items": [
+          {
+            "sku_id": "c53c418a-000b-4def-b859-438a159a98a2",
+            "quantity": 1
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "BC01 zh-CN cart-page visible cart Retry preserves key/body and one committed write after reload",
+      "locale": "zh-CN",
+      "surface": "cart-page",
+      "key": "9ce73bda-7ac6-4dea-b776-ea25269d9805",
+      "request_body": "{\"expected_version\":1,\"items\":[{\"sku_id\":\"c53c418a-000b-4def-b859-438a159a98a2\",\"quantity\":2}]}",
+      "cart_id": "c4562e22-38a5-4975-af54-3f177a3ef2c9",
+      "sku_id": "c53c418a-000b-4def-b859-438a159a98a2",
+      "quantity": 2,
+      "before": {
+        "id": "c4562e22-38a5-4975-af54-3f177a3ef2c9",
+        "version": 2,
+        "writes": 2,
+        "receipts": 1,
+        "receipt_version": 2,
+        "request_hash": "e53c9ea48851c5c7d4ed453f0754e943f0597406a41df0a9c0f7b8197c0eab7d",
+        "items": [
+          {
+            "sku_id": "c53c418a-000b-4def-b859-438a159a98a2",
+            "quantity": 2
+          }
+        ]
+      },
+      "after": {
+        "id": "c4562e22-38a5-4975-af54-3f177a3ef2c9",
+        "version": 2,
+        "writes": 2,
+        "receipts": 1,
+        "receipt_version": 2,
+        "request_hash": "e53c9ea48851c5c7d4ed453f0754e943f0597406a41df0a9c0f7b8197c0eab7d",
+        "items": [
+          {
+            "sku_id": "c53c418a-000b-4def-b859-438a159a98a2",
+            "quantity": 2
+          }
+        ]
+      },
+      "reloaded": {
+        "id": "c4562e22-38a5-4975-af54-3f177a3ef2c9",
+        "version": 2,
+        "writes": 2,
+        "receipts": 1,
+        "receipt_version": 2,
+        "request_hash": "e53c9ea48851c5c7d4ed453f0754e943f0597406a41df0a9c0f7b8197c0eab7d",
+        "items": [
+          {
+            "sku_id": "c53c418a-000b-4def-b859-438a159a98a2",
+            "quantity": 2
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "BC01 zh-TW drawer visible cart Retry preserves key/body and one committed write after reload",
+      "locale": "zh-TW",
+      "surface": "drawer",
+      "key": "5085e9aa-b021-4111-a278-f3794795d3db",
+      "request_body": "{\"expected_version\":0,\"items\":[{\"sku_id\":\"c53c418a-000b-4def-b859-438a159a98a2\",\"quantity\":1}]}",
+      "cart_id": "94fa2da8-c817-4e80-9c64-d971da641f8b",
+      "sku_id": "c53c418a-000b-4def-b859-438a159a98a2",
+      "quantity": 1,
+      "before": {
+        "id": "94fa2da8-c817-4e80-9c64-d971da641f8b",
+        "version": 1,
+        "writes": 1,
+        "receipts": 1,
+        "receipt_version": 1,
+        "request_hash": "ec8c03bdbd300000336cde9935f05b198968c5b0b1a1cee89c0978c4ff4b961c",
+        "items": [
+          {
+            "sku_id": "c53c418a-000b-4def-b859-438a159a98a2",
+            "quantity": 1
+          }
+        ]
+      },
+      "after": {
+        "id": "94fa2da8-c817-4e80-9c64-d971da641f8b",
+        "version": 1,
+        "writes": 1,
+        "receipts": 1,
+        "receipt_version": 1,
+        "request_hash": "ec8c03bdbd300000336cde9935f05b198968c5b0b1a1cee89c0978c4ff4b961c",
+        "items": [
+          {
+            "sku_id": "c53c418a-000b-4def-b859-438a159a98a2",
+            "quantity": 1
+          }
+        ]
+      },
+      "reloaded": {
+        "id": "94fa2da8-c817-4e80-9c64-d971da641f8b",
+        "version": 1,
+        "writes": 1,
+        "receipts": 1,
+        "receipt_version": 1,
+        "request_hash": "ec8c03bdbd300000336cde9935f05b198968c5b0b1a1cee89c0978c4ff4b961c",
+        "items": [
+          {
+            "sku_id": "c53c418a-000b-4def-b859-438a159a98a2",
+            "quantity": 1
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "BC01 zh-TW cart-page visible cart Retry preserves key/body and one committed write after reload",
+      "locale": "zh-TW",
+      "surface": "cart-page",
+      "key": "ba7ed5b1-4374-4858-827e-4066cc94a6be",
+      "request_body": "{\"expected_version\":1,\"items\":[{\"sku_id\":\"c53c418a-000b-4def-b859-438a159a98a2\",\"quantity\":2}]}",
+      "cart_id": "94fa2da8-c817-4e80-9c64-d971da641f8b",
+      "sku_id": "c53c418a-000b-4def-b859-438a159a98a2",
+      "quantity": 2,
+      "before": {
+        "id": "94fa2da8-c817-4e80-9c64-d971da641f8b",
+        "version": 2,
+        "writes": 2,
+        "receipts": 1,
+        "receipt_version": 2,
+        "request_hash": "e53c9ea48851c5c7d4ed453f0754e943f0597406a41df0a9c0f7b8197c0eab7d",
+        "items": [
+          {
+            "sku_id": "c53c418a-000b-4def-b859-438a159a98a2",
+            "quantity": 2
+          }
+        ]
+      },
+      "after": {
+        "id": "94fa2da8-c817-4e80-9c64-d971da641f8b",
+        "version": 2,
+        "writes": 2,
+        "receipts": 1,
+        "receipt_version": 2,
+        "request_hash": "e53c9ea48851c5c7d4ed453f0754e943f0597406a41df0a9c0f7b8197c0eab7d",
+        "items": [
+          {
+            "sku_id": "c53c418a-000b-4def-b859-438a159a98a2",
+            "quantity": 2
+          }
+        ]
+      },
+      "reloaded": {
+        "id": "94fa2da8-c817-4e80-9c64-d971da641f8b",
+        "version": 2,
+        "writes": 2,
+        "receipts": 1,
+        "receipt_version": 2,
+        "request_hash": "e53c9ea48851c5c7d4ed453f0754e943f0597406a41df0a9c0f7b8197c0eab7d",
+        "items": [
+          {
+            "sku_id": "c53c418a-000b-4def-b859-438a159a98a2",
+            "quantity": 2
+          }
+        ]
+      }
+    }
+  ],
+  "click_ledger": [
+    {
+      "case_id": "BC01 en drawer visible cart Retry preserves key/body and one committed write after reload",
+      "page": "https://buyer.example/en/products/t04-2aef1512a5eb",
+      "control": "add-to-cart",
+      "action": "click",
+      "expected": "first cart write settles as uncertain",
+      "actual": "first cart write settles as uncertain",
+      "status": "PASS"
+    },
+    {
+      "case_id": "BC01 en drawer visible cart Retry preserves key/body and one committed write after reload",
+      "page": "https://buyer.example/en/products/t04-2aef1512a5eb",
+      "control": "header-cart",
+      "action": "click",
+      "expected": "uncertain cart notice is visible",
+      "actual": "uncertain cart notice is visible",
+      "status": "PASS"
+    },
+    {
+      "case_id": "BC01 en drawer visible cart Retry preserves key/body and one committed write after reload",
+      "page": "https://buyer.example/en/products/t04-2aef1512a5eb",
+      "control": "cart-problem > Retry",
+      "action": "click",
+      "expected": "uncertainty clears and committed quantity appears",
+      "actual": "uncertainty clears and committed quantity appears",
+      "status": "PASS"
+    },
+    {
+      "case_id": "BC01 en drawer visible cart Retry preserves key/body and one committed write after reload",
+      "page": "https://buyer.example/en/products/t04-2aef1512a5eb",
+      "control": "header-cart after reload",
+      "action": "click",
+      "expected": "persisted cart drawer opens with the committed quantity",
+      "actual": "persisted cart drawer opens with the committed quantity",
+      "status": "PASS"
+    },
+    {
+      "case_id": "BC01 en cart-page visible cart Retry preserves key/body and one committed write after reload",
+      "page": "https://buyer.example/en/products/t04-2aef1512a5eb",
+      "control": "View cart",
+      "action": "click",
+      "expected": "cart page shows the retained first item",
+      "actual": "cart page shows the retained first item",
+      "status": "PASS"
+    },
+    {
+      "case_id": "BC01 en cart-page visible cart Retry preserves key/body and one committed write after reload",
+      "page": "https://buyer.example/en/cart",
+      "control": "Increase quantity",
+      "action": "click",
+      "expected": "cart page shows uncertain committed edit",
+      "actual": "cart page shows uncertain committed edit",
+      "status": "PASS"
+    },
+    {
+      "case_id": "BC01 en cart-page visible cart Retry preserves key/body and one committed write after reload",
+      "page": "https://buyer.example/en/cart",
+      "control": "cart-problem > Retry",
+      "action": "click",
+      "expected": "uncertainty clears and committed quantity appears",
+      "actual": "uncertainty clears and committed quantity appears",
+      "status": "PASS"
+    },
+    {
+      "case_id": "BC01 zh-CN drawer visible cart Retry preserves key/body and one committed write after reload",
+      "page": "https://buyer.example/zh-CN/products/t04-2aef1512a5eb",
+      "control": "add-to-cart",
+      "action": "click",
+      "expected": "first cart write settles as uncertain",
+      "actual": "first cart write settles as uncertain",
+      "status": "PASS"
+    },
+    {
+      "case_id": "BC01 zh-CN drawer visible cart Retry preserves key/body and one committed write after reload",
+      "page": "https://buyer.example/zh-CN/products/t04-2aef1512a5eb",
+      "control": "header-cart",
+      "action": "click",
+      "expected": "uncertain cart notice is visible",
+      "actual": "uncertain cart notice is visible",
+      "status": "PASS"
+    },
+    {
+      "case_id": "BC01 zh-CN drawer visible cart Retry preserves key/body and one committed write after reload",
+      "page": "https://buyer.example/zh-CN/products/t04-2aef1512a5eb",
+      "control": "cart-problem > Retry",
+      "action": "click",
+      "expected": "uncertainty clears and committed quantity appears",
+      "actual": "uncertainty clears and committed quantity appears",
+      "status": "PASS"
+    },
+    {
+      "case_id": "BC01 zh-CN drawer visible cart Retry preserves key/body and one committed write after reload",
+      "page": "https://buyer.example/zh-CN/products/t04-2aef1512a5eb",
+      "control": "header-cart after reload",
+      "action": "click",
+      "expected": "persisted cart drawer opens with the committed quantity",
+      "actual": "persisted cart drawer opens with the committed quantity",
+      "status": "PASS"
+    },
+    {
+      "case_id": "BC01 zh-CN cart-page visible cart Retry preserves key/body and one committed write after reload",
+      "page": "https://buyer.example/zh-CN/products/t04-2aef1512a5eb",
+      "control": "View cart",
+      "action": "click",
+      "expected": "cart page shows the retained first item",
+      "actual": "cart page shows the retained first item",
+      "status": "PASS"
+    },
+    {
+      "case_id": "BC01 zh-CN cart-page visible cart Retry preserves key/body and one committed write after reload",
+      "page": "https://buyer.example/zh-CN/cart",
+      "control": "Increase quantity",
+      "action": "click",
+      "expected": "cart page shows uncertain committed edit",
+      "actual": "cart page shows uncertain committed edit",
+      "status": "PASS"
+    },
+    {
+      "case_id": "BC01 zh-CN cart-page visible cart Retry preserves key/body and one committed write after reload",
+      "page": "https://buyer.example/zh-CN/cart",
+      "control": "cart-problem > Retry",
+      "action": "click",
+      "expected": "uncertainty clears and committed quantity appears",
+      "actual": "uncertainty clears and committed quantity appears",
+      "status": "PASS"
+    },
+    {
+      "case_id": "BC01 zh-TW drawer visible cart Retry preserves key/body and one committed write after reload",
+      "page": "https://buyer.example/zh-TW/products/t04-2aef1512a5eb",
+      "control": "add-to-cart",
+      "action": "click",
+      "expected": "first cart write settles as uncertain",
+      "actual": "first cart write settles as uncertain",
+      "status": "PASS"
+    },
+    {
+      "case_id": "BC01 zh-TW drawer visible cart Retry preserves key/body and one committed write after reload",
+      "page": "https://buyer.example/zh-TW/products/t04-2aef1512a5eb",
+      "control": "header-cart",
+      "action": "click",
+      "expected": "uncertain cart notice is visible",
+      "actual": "uncertain cart notice is visible",
+      "status": "PASS"
+    },
+    {
+      "case_id": "BC01 zh-TW drawer visible cart Retry preserves key/body and one committed write after reload",
+      "page": "https://buyer.example/zh-TW/products/t04-2aef1512a5eb",
+      "control": "cart-problem > Retry",
+      "action": "click",
+      "expected": "uncertainty clears and committed quantity appears",
+      "actual": "uncertainty clears and committed quantity appears",
+      "status": "PASS"
+    },
+    {
+      "case_id": "BC01 zh-TW drawer visible cart Retry preserves key/body and one committed write after reload",
+      "page": "https://buyer.example/zh-TW/products/t04-2aef1512a5eb",
+      "control": "header-cart after reload",
+      "action": "click",
+      "expected": "persisted cart drawer opens with the committed quantity",
+      "actual": "persisted cart drawer opens with the committed quantity",
+      "status": "PASS"
+    },
+    {
+      "case_id": "BC01 zh-TW cart-page visible cart Retry preserves key/body and one committed write after reload",
+      "page": "https://buyer.example/zh-TW/products/t04-2aef1512a5eb",
+      "control": "View cart",
+      "action": "click",
+      "expected": "cart page shows the retained first item",
+      "actual": "cart page shows the retained first item",
+      "status": "PASS"
+    },
+    {
+      "case_id": "BC01 zh-TW cart-page visible cart Retry preserves key/body and one committed write after reload",
+      "page": "https://buyer.example/zh-TW/cart",
+      "control": "Increase quantity",
+      "action": "click",
+      "expected": "cart page shows uncertain committed edit",
+      "actual": "cart page shows uncertain committed edit",
+      "status": "PASS"
+    },
+    {
+      "case_id": "BC01 zh-TW cart-page visible cart Retry preserves key/body and one committed write after reload",
+      "page": "https://buyer.example/zh-TW/cart",
+      "control": "cart-problem > Retry",
+      "action": "click",
+      "expected": "uncertainty clears and committed quantity appears",
+      "actual": "uncertainty clears and committed quantity appears",
+      "status": "PASS"
+    }
+  ],
+  "storage_write_attempts": 86,
+  "scope": "actual UI/Next/Go/isolated PG; synthetic TLS and buyer data; no PSP/production",
+  "not_run": [
+    "full foundation/race/vet and existing browser regression are separate root gates",
+    "independent visual review"
+  ]
+}

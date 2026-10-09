@@ -1,0 +1,49 @@
+✔ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (392.571542ms)
+✔ G-UI3/G-UI5 negatives: new formatter, component fetch, >800 lines and wider allowance fail (0.655208ms)
+✔ Readiness jump controls expose the actual active section, not a click flag (0.68225ms)
+✔ Integrator P2: legal CN comment ordering and a distinct three-image recommendation (0.190041ms)
+✔ ADM04 and ADM06 explain unavailable SKUs and keep collection vocabulary consistent (0.248291ms)
+✔ ADM06 create/detail titles share the route vocabulary without adding a phantom Next page (0.3245ms)
+✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (3.233042ms)
+✔ G-UI1 copy key parity: no missing or extra key in any locale (0.290625ms)
+✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.55125ms)
+✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (121.066459ms)
+✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.367334ms)
+✔ Every browser spec clicks nav-orders: the orders group stays a singleton, so returns/new/print routes are nav: false (0.497334ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 687.310583
+WARN G-UI5 apps/admin/app/api/stores/[store]/[...resource]/route.ts: >500 lines
+WARN G-UI5 apps/admin/components/Ads.tsx: >500 lines
+WARN G-UI5 apps/admin/components/AdsDraft.tsx: >500 lines
+WARN G-UI5 apps/admin/components/AttributionPanels.tsx: >500 lines
+WARN G-UI5 apps/admin/components/CollectionManager.tsx: >500 lines
+WARN G-UI5 apps/admin/components/Design.tsx: >500 lines
+WARN G-UI5 apps/admin/components/Entry.tsx: >500 lines
+WARN G-UI5 apps/admin/components/Ledger.tsx: >500 lines
+WARN G-UI5 apps/admin/components/OrderReturns.tsx: >500 lines
+WARN G-UI5 apps/admin/components/ProductDocumentForm.tsx: >500 lines
+WARN G-UI5 apps/admin/components/ProductList.tsx: >500 lines
+WARN G-UI5 apps/admin/components/ProductMediaManager.tsx: >500 lines
+WARN G-UI5 apps/admin/components/StorefrontSettings.tsx: >500 lines
+WARN G-UI5 apps/admin/components/Studio.tsx: >500 lines
+WARN G-UI5 apps/admin/components/StudioClaims.tsx: >500 lines
+WARN G-UI5 apps/admin/lib/ads-copy.ts: >500 lines
+WARN G-UI5 apps/admin/lib/ads-model.ts: >500 lines
+WARN G-UI5 apps/admin/lib/auth.ts: >500 lines
+WARN G-UI5 apps/admin/lib/catalog-v2-copy.ts: >500 lines
+WARN G-UI5 apps/admin/lib/product-editor-copy.ts: >500 lines
+WARN G-UI5 apps/storefront/components/CheckoutFlow.tsx: >500 lines
+WARN G-UI5 apps/storefront/components/CvsPickup.tsx: >500 lines
+WARN G-UI5 apps/storefront/components/OrderPayment.tsx: >500 lines
+WARN G-UI5 apps/storefront/lib/order-payment.ts: >500 lines
+PASS G-UI3/G-UI5
+shard-plan: note: 3 test(s) are in no list and run in the catch-all g06: TestMerchantCancelClosesWorkItem, TestParcelGroupMergeSuggestionsMasked, TestParcelGroupOpenRead
+shard-plan: ok (1220 top-level tests, each in exactly one of 10 groups)
+check-gates: ok (77 modes, all documented; every tracked test file is run)
+check-headers: OK (base 0813424a5638d3afd76603633268fd084e89da7e)

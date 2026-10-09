@@ -1,0 +1,16 @@
+✔ actual A2 hook fake clock: 3/6/12/24/30 backoff, success reset, hide clears and stops, 403 locks (15.693209ms)
+✔ actual reset clears selected buyer and rereads without the old epoch cursor (1.585209ms)
+✔ reply hints, coded error, UNKNOWN and capability state execute the actual composer (2.011625ms)
+✔ A2 grammar refuses private/duplicate/ambiguous cursors and keys on reads (12.822875ms)
+✔ A3-A5 exact comment ref and bodies; explicit preemption private only (0.258875ms)
+✔ A4/A5 preserve frozen refusal codes, never provider/debug text (0.070916ms)
+✔ reset invalidates old buffers and cursor before reread; older page cannot advance live cursor (0.33625ms)
+✔ filter resources have only authorised opaque ids; backoff is capped and success resets (0.066083ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 282.658417

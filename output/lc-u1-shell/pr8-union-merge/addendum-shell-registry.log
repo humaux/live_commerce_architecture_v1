@@ -1,0 +1,19 @@
+✔ Readiness jump controls expose the actual active section, not a click flag (1.82075ms)
+✔ Integrator P2: legal CN comment ordering and a distinct three-image recommendation (0.232583ms)
+✔ ADM04 and ADM06 explain unavailable SKUs and keep collection vocabulary consistent (2.553084ms)
+✔ ADM06 create/detail titles share the route vocabulary without adding a phantom Next page (0.32125ms)
+✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (1.896083ms)
+✔ G-UI1 copy key parity: no missing or extra key in any locale (0.066375ms)
+✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.139959ms)
+✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (320.279375ms)
+✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.222958ms)
+✔ W6-U2 ledger is a settings in-page route, preserving existing navigation (0.113333ms)
+✔ Every browser spec clicks nav-orders: the orders group stays a singleton, so returns/new/print routes are nav: false (0.178666ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 443.972167

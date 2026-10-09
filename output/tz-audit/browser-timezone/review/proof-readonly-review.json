@@ -1,0 +1,67 @@
+{
+  "task_id": "5a3751be-c0ad-4668-b941-036a6feaf8ce-sub-review",
+  "base_commit": "5176e490f79a820fb28d36f6ac5095141eaa28c5",
+  "date": "2026-10-08",
+  "source_hashes": [
+    {
+      "file": "tests/admin/ads.spec.ts",
+      "expected": "17aeedc521e87f2f97cd8cb3429c648a49e7c0d0c0f2166edeff89a196f8b391",
+      "actual": "17aeedc521e87f2f97cd8cb3429c648a49e7c0d0c0f2166edeff89a196f8b391",
+      "matches": true
+    },
+    {
+      "file": "tests/admin/design.spec.ts",
+      "expected": "81e6a55fc66f5ae283a9ee7d26c89da425f6d33e41a1bff4ec83bea3ea61130c",
+      "actual": "81e6a55fc66f5ae283a9ee7d26c89da425f6d33e41a1bff4ec83bea3ea61130c",
+      "matches": true
+    },
+    {
+      "file": "tests/storefront/claim-checkout.mjs",
+      "expected": "d341b20235b0f4622d65e489adc3b772b4422c09ceec79aa0e6e21d9009831de",
+      "actual": "d341b20235b0f4622d65e489adc3b772b4422c09ceec79aa0e6e21d9009831de",
+      "matches": true
+    },
+    {
+      "file": "tests/storefront/manual-order-link-gate.mjs",
+      "expected": "299da9b02e09dd4d66ef5b3d400cdcc6c05b58f60a80d08606ad78a501bf69c6",
+      "actual": "299da9b02e09dd4d66ef5b3d400cdcc6c05b58f60a80d08606ad78a501bf69c6",
+      "matches": true
+    },
+    {
+      "file": "tests/storefront/offline-buyer.mjs",
+      "expected": "fe54c2d9597b60a218bafb974810fc93e883a24a568336629c9e57b5e2455d96",
+      "actual": "fe54c2d9597b60a218bafb974810fc93e883a24a568336629c9e57b5e2455d96",
+      "matches": true
+    },
+    {
+      "file": "tests/storefront/order-gate.mjs",
+      "expected": "8d9f9c694cb39dc7dfe79ec1540e286db45df57003d78c6a38a49a2b8b7cf9da",
+      "actual": "8d9f9c694cb39dc7dfe79ec1540e286db45df57003d78c6a38a49a2b8b7cf9da",
+      "matches": true
+    }
+  ],
+  "archived_trace_mutation": [
+    "(() => {\n    const Native = Intl.DateTimeFormat;\n    Intl.DateTimeFormat = new Proxy(Native, {\n      construct(target, args) {\n        const [locales, supplied] = args;\n        const options = {\n          ...(supplied !== null && supplied !== void 0 ? supplied : {})\n        };\n        delete options.timeZone;\n        return new target(locales, options);\n      }\n    });\n  })(undefined)"
+  ],
+  "publish_click_seen": true,
+  "actual_versions_response": [
+    {
+      "version": 1,
+      "published_at": "2026-10-08T00:03:48.29855+08:00"
+    }
+  ],
+  "artifact_hashes": {
+    "output/tz-audit/browser-timezone/real-red-proof.json": "3274e3116f5ed3c6484915d3d548e70f1b87ff88f9140e420adf5db46ec6f2f9",
+    "output/tz-audit/browser-timezone/proof-red-run.status.json": "55eeadab86a980c7b0219b34e55f88167476c4ea995b9db4af36d8790c968d06",
+    "output/tz-audit/browser-timezone/proof-green.status.json": "4c683c99796f774d0b6810799dacbbcff5a6aaae32c972c8229fff12fdf4fe52",
+    "output/tz-audit/browser-timezone/proof-green-not-run.json": "6dbe755d7ee723c402dad6b405b1822cda63067106e62c98c7eac40e12e17bf2",
+    "output/tz-audit/browser-timezone/red-browser-evidence/playwright.log": "c64ac4c3cf239a331c3537b83f1648da2b48a7f79052eb012338d5a5c4c2de46",
+    "output/tz-audit/browser-timezone/red-browser-evidence/results/design-SDB01-merchant-jour-d2e5f-t-publish-v2-rollback-to-v1/trace.zip": "e2feaf83c4151eddb6a161afbbf5c5c107c0a1c135efdfe4e26255b0485bfff0"
+  },
+  "red_exit": 1,
+  "green_exit": -15,
+  "green_browser": "NOT_RUN",
+  "review_commands": "readonly Python SHA256/zip JSON and rg/head/tail log inspection; exit 0; no tests",
+  "restored_spec_matches": true,
+  "format_helper_matches": true
+}

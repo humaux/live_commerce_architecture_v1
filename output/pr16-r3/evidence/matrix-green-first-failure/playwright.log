@@ -1,0 +1,76 @@
+
+Running 12 tests using 1 worker
+
+(node:94121) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"zh-TW","width":1366,"navLeft":244,"navRight":428,"navTargets":[{"label":"商品圖片","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"基本資訊","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"價格與庫存","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"規格","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"分類","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"物流","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"搜尋引擎最佳化","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"zh-TW","width":1586,"navLeft":244,"navRight":428,"navTargets":[{"label":"商品圖片","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"基本資訊","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"價格與庫存","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"規格","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"分類","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"物流","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"搜尋引擎最佳化","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"zh-TW","width":390,"navLeft":16,"navRight":374,"navTargets":[{"label":"商品圖片","rawLeft":29,"rawRight":105,"visibleLeft":29,"visibleRight":105},{"label":"基本資訊","rawLeft":109,"rawRight":185,"visibleLeft":109,"visibleRight":185},{"label":"價格與庫存","rawLeft":189,"rawRight":279,"visibleLeft":189,"visibleRight":279},{"label":"規格","rawLeft":283,"rawRight":331,"visibleLeft":283,"visibleRight":331},{"label":"分類","rawLeft":335,"rawRight":383,"visibleLeft":335,"visibleRight":374}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"zh-TW","width":375,"navLeft":16,"navRight":359,"navTargets":[{"label":"商品圖片","rawLeft":29,"rawRight":105,"visibleLeft":29,"visibleRight":105},{"label":"基本資訊","rawLeft":109,"rawRight":185,"visibleLeft":109,"visibleRight":185},{"label":"價格與庫存","rawLeft":189,"rawRight":279,"visibleLeft":189,"visibleRight":279},{"label":"規格","rawLeft":283,"rawRight":331,"visibleLeft":283,"visibleRight":331},{"label":"分類","rawLeft":335,"rawRight":383,"visibleLeft":335,"visibleRight":359}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"zh-CN","width":1366,"navLeft":244,"navRight":428,"navTargets":[{"label":"商品图片","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"基本信息","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"价格与库存","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"规格","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"分类","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"物流","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"搜索引擎优化","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"zh-CN","width":1586,"navLeft":244,"navRight":428,"navTargets":[{"label":"商品图片","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"基本信息","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"价格与库存","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"规格","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"分类","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"物流","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"搜索引擎优化","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"zh-CN","width":390,"navLeft":16,"navRight":374,"navTargets":[{"label":"商品图片","rawLeft":29,"rawRight":105,"visibleLeft":29,"visibleRight":105},{"label":"基本信息","rawLeft":109,"rawRight":185,"visibleLeft":109,"visibleRight":185},{"label":"价格与库存","rawLeft":189,"rawRight":279,"visibleLeft":189,"visibleRight":279},{"label":"规格","rawLeft":283,"rawRight":331,"visibleLeft":283,"visibleRight":331},{"label":"分类","rawLeft":335,"rawRight":383,"visibleLeft":335,"visibleRight":374}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"zh-CN","width":375,"navLeft":16,"navRight":359,"navTargets":[{"label":"商品图片","rawLeft":29,"rawRight":105,"visibleLeft":29,"visibleRight":105},{"label":"基本信息","rawLeft":109,"rawRight":185,"visibleLeft":109,"visibleRight":185},{"label":"价格与库存","rawLeft":189,"rawRight":279,"visibleLeft":189,"visibleRight":279},{"label":"规格","rawLeft":283,"rawRight":331,"visibleLeft":283,"visibleRight":331},{"label":"分类","rawLeft":335,"rawRight":383,"visibleLeft":335,"visibleRight":359}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"en","width":1366,"navLeft":244,"navRight":428,"navTargets":[{"label":"Product images","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Basic information","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Price & inventory","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Variants","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Collections","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Shipping","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Search engine listing","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"en","width":1586,"navLeft":244,"navRight":428,"navTargets":[{"label":"Product images","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Basic information","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Price & inventory","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Variants","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Collections","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Shipping","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Search engine listing","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"en","width":390,"navLeft":16,"navRight":374,"navTargets":[{"label":"Product images","rawLeft":29,"rawRight":154.03125,"visibleLeft":29,"visibleRight":154.03125},{"label":"Basic information","rawLeft":158.03125,"rawRight":296.28125,"visibleLeft":158.03125,"visibleRight":296.28125},{"label":"Price & inventory","rawLeft":300.28125,"rawRight":435.4375,"visibleLeft":300.28125,"visibleRight":374}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"en","width":375,"navLeft":16,"navRight":359,"navTargets":[{"label":"Product images","rawLeft":29,"rawRight":154.03125,"visibleLeft":29,"visibleRight":154.03125},{"label":"Basic information","rawLeft":158.03125,"rawRight":296.28125,"visibleLeft":158.03125,"visibleRight":296.28125},{"label":"Price & inventory","rawLeft":300.28125,"rawRight":435.4375,"visibleLeft":300.28125,"visibleRight":359}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"en","width":1586,"navLeft":244,"navRight":428,"navTargets":[{"label":"Product images","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Basic information","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Variants","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Collections","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Shipping","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Search engine listing","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415}],"rawTails":[{"id":"bulk-open","rawBottom":944.078125,"paneBottom":907,"barTop":923,"clippedTailHittable":false}]}
+  ✘   1 tests/admin/product-editor.acceptance.ts:16:3 › PE12-17 document workflow, matrix, list actions and click ledger (40.7s)
+  -   2 tests/admin/product-review.acceptance.ts:49:3 › review: bulk price 80 plus archive sends exclusive archive entry and persists
+  -   3 tests/admin/product-review.acceptance.ts:125:5 › review: create UNKNOWN then client preserves receipt fence after reload
+  -   4 tests/admin/product-review.acceptance.ts:125:5 › review: create UNKNOWN then 401 preserves receipt fence after reload
+  -   5 tests/admin/product-review.acceptance.ts:125:5 › review: create UNKNOWN then 403 preserves receipt fence after reload
+  -   6 tests/admin/product-review.acceptance.ts:125:5 › review: copy UNKNOWN then client preserves receipt fence after reload
+  -   7 tests/admin/product-review.acceptance.ts:125:5 › review: copy UNKNOWN then 401 preserves receipt fence after reload
+  -   8 tests/admin/product-review.acceptance.ts:125:5 › review: copy UNKNOWN then 403 preserves receipt fence after reload
+  -   9 tests/admin/product-review.acceptance.ts:125:5 › review: order UNKNOWN then 403 preserves receipt fence after reload
+  -  10 tests/admin/product-review.acceptance.ts:125:5 › review: publish UNKNOWN then 403 preserves receipt fence after reload
+  -  11 tests/admin/product-feedback.acceptance.ts:15:5 › feedback: identical image-required validation reveals again at 1586px
+  -  12 tests/admin/product-feedback.acceptance.ts:15:5 › feedback: identical image-required validation reveals again at 390px
+
+
+  1) tests/admin/product-editor.acceptance.ts:16:3 › PE12-17 document workflow, matrix, list actions and click ledger 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('[data-testid^="matrix-row-"]')
+    Expected: 2
+    Received: 1
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('[data-testid^="matrix-row-"]') with timeout 10000ms
+      - waiting for locator('[data-testid^="matrix-row-"]')
+        - locator resolved to 0 elements
+        - unexpected value "0"
+        23 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      786 |         await expect(page.getByTestId("product-save")).toBeEnabled();
+      787 |         await page.reload();
+    > 788 |         await expect(page.locator('[data-testid^="matrix-row-"]')).toHaveCount(2);
+          |                                                                    ^
+      789 |         await expect(white.locator("strong")).toHaveText("White / S");
+      790 |         await expect(white).not.toHaveAttribute("data-sku-id");
+      791 |         const blankPrice = white.getByTestId("new-price-0");
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups/tests/admin/product-editor.acceptance.ts:788:68
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/catalog-core/20261009T043143.000792000/results/catalog-core-PE12-17-docum-0e9d3-st-actions-and-click-ledger/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/catalog-core/20261009T043143.000792000/results/catalog-core-PE12-17-docum-0e9d3-st-actions-and-click-ledger/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/catalog-core/20261009T043143.000792000/results/catalog-core-PE12-17-docum-0e9d3-st-actions-and-click-ledger/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/catalog-core/20261009T043143.000792000/results/catalog-core-PE12-17-docum-0e9d3-st-actions-and-click-ledger/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/admin/product-editor.acceptance.ts:16:3 › PE12-17 document workflow, matrix, list actions and click ledger 
+  11 did not run

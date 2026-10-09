@@ -1,0 +1,31 @@
+=== RUN   TestLiveConsoleLCN02IGFactsBridgeGraphBranch
+--- PASS: TestLiveConsoleLCN02IGFactsBridgeGraphBranch (14.18s)
+=== RUN   TestLiveConsoleLCN02IGFactsFallbackAndUnavailable
+    live_console_comments_facts_test.go:267: unknown: err=live console stream unavailable want ErrFactsUnavailable
+--- FAIL: TestLiveConsoleLCN02IGFactsFallbackAndUnavailable (6.57s)
+=== RUN   TestLiveConsoleLCN01LeaseAndTokenFence
+--- PASS: TestLiveConsoleLCN01LeaseAndTokenFence (0.20s)
+=== RUN   TestLiveConsoleLCN01CapsAndNoPoll
+--- PASS: TestLiveConsoleLCN01CapsAndNoPoll (0.24s)
+=== RUN   TestLiveConsoleLCN01BufferCapAgeAndCursor
+=== RUN   TestLiveConsoleLCN01BufferCapAgeAndCursor/ring-cap
+=== RUN   TestLiveConsoleLCN01BufferCapAgeAndCursor/age-out
+=== RUN   TestLiveConsoleLCN01BufferCapAgeAndCursor/idle-drop-reset
+=== RUN   TestLiveConsoleLCN01BufferCapAgeAndCursor/cursor-tamper-and-paging-next
+--- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor (7.43s)
+    --- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor/ring-cap (0.19s)
+    --- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor/age-out (0.21s)
+    --- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor/idle-drop-reset (3.71s)
+    --- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor/cursor-tamper-and-paging-next (3.32s)
+=== RUN   TestLiveConsoleLCN02BridgeStatusesAndFacts
+--- PASS: TestLiveConsoleLCN02BridgeStatusesAndFacts (3.26s)
+=== RUN   TestLiveConsoleLCN04NoCommentTextPersisted
+--- PASS: TestLiveConsoleLCN04NoCommentTextPersisted (0.62s)
+=== RUN   TestLiveConsoleLCN05PrintAndMarks
+--- PASS: TestLiveConsoleLCN05PrintAndMarks (0.22s)
+=== RUN   TestLiveConsoleLCN01DeletionEviction
+--- PASS: TestLiveConsoleLCN01DeletionEviction (2.26s)
+FAIL
+FAIL	livecommerce/tests/foundation	36.399s
+FAIL
+test-focused: top-level PASS=8 FAIL=1 SKIP=0 exit=1

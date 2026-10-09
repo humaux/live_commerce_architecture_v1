@@ -1,0 +1,15 @@
+# Purpose: preserve green-integration.log local evidence; raw original command output follows this prologue.
+# Depends on: commands/status recorded in DELIVERY.md; original main-checkout log SHA256=4acfe44ad191d31bf5ac10a29181178ec46333564bd9268647b5aab9ee5ba15e.
+# Used by: integrator source handoff; does not certify real browser acceptance.
+# Evidence normalization: trailing whitespace/blank EOF only; original raw bytes and SHA256 retained in main checkout/provenance above.
+✔ the static import subpage wins over customer detail and leaves the single customers nav intact (0.471375ms)
+✔ the actual list offers import only to privacy holders and carries the current authorized store (46.749084ms)
+✔ the actual detail mounts archive only for an active imported customer and passes its fenced identity (14.504583ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 306.939416

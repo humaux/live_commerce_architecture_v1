@@ -1,0 +1,14 @@
+✔ PR18 unknown public receipt has the correct cross-comment fence (15.29475ms)
+✔ PR18 queued public receipt has the correct cross-comment fence (2.747416ms)
+✔ PR18 public guard releases only definite sent (1.112625ms)
+✔ PR18 public guard releases only definite failed (0.934667ms)
+✔ PR18 public guard releases only definite blocked (0.876625ms)
+✔ PR18 public guard releases only definite refused (0.896458ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 280.754542

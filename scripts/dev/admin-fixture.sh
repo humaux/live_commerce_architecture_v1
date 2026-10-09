@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Purpose: start a throwaway local admin fixture (a disposable labelled PG container plus the cmd/admin-fixture server)
+#   for manual admin-UI work, and remove exactly what this invocation created on exit.
+# Depends on: docker, go (GOTOOLCHAIN pinned to the go.mod version), cmd/admin-fixture; writes only a mktemp dir (0600 session env).
+# Used by: developers by hand (docs/delivery/GATES.md); never by CI or production.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 command -v docker >/dev/null
@@ -39,7 +43,7 @@ done
 docker exec "$fixture_name" pg_isready -h 127.0.0.1 -U postgres -d lc_admin_fixture >/dev/null
 fixture_host="$(docker port "$fixture_name" 5432/tcp)"
 [[ "$fixture_host" == 127.0.0.1:* ]]
-GOTOOLCHAIN=go1.27.1 go build -o "$fixture_dir/server" ./cmd/admin-fixture
+GOTOOLCHAIN=go1.27.2 go build -o "$fixture_dir/server" ./cmd/admin-fixture
 fixture_password="$POSTGRES_PASSWORD"
 unset POSTGRES_PASSWORD
 # macOS may expose exec-time environment even after Go Unsetenv. Pass only a

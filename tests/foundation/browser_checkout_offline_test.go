@@ -1,5 +1,9 @@
 //go:build browser
 
+// Purpose: real bank-transfer buyer/merchant chain with exact financial and proof-edit facts.
+// Depends on: production Next/Go, isolated PostgreSQL, offline-buyer and admin Playwright phases.
+// Used by: --browser-checkout-offline; no external PSP or production data.
+
 package foundation_test
 
 // COB (contracts/storefront-v2.md §C, unit checkout-offline; R4 independent browser gate): `TestBrowserCheckoutOffline`, prefix `bco`. Run through
@@ -166,6 +170,11 @@ func TestBrowserCheckoutOffline(t *testing.T) {
 	if err := json.Unmarshal(raw, &orders); err != nil || len(orders) != 5 {
 		t.Fatalf("orders.json: %v %s", err, raw)
 	}
+	// C submits once, edits in three locales, then edits once in a Taipei context; rejected historical DST dates cannot add proof facts.
+	if n := e.count(`SELECT count(*) FROM checkout.bank_transfers WHERE order_id=$1 AND state='SUBMITTED' AND proof_count=5`, orders["C"].ID); n != 1 {
+		t.Fatal("buyer C did not persist exactly five valid timezone proof submissions")
+	}
+
 	ordersEnv, _ := json.Marshal(orders)
 	// PG facts after the buyer placed five orders through the UI: free shipping at the boundary, snapshot rows, stock only RESERVED
 	total := unit * orderQty

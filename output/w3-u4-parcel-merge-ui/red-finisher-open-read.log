@@ -1,0 +1,9 @@
+=== RUN   TestParcelGroupOpenRead
+    parcel_groups_open_test.go:52: empty store: 503 {"code":"unavailable","message":"Temporarily unavailable.","request_id":"6c661eace51b4a34bb3d2a462994eb59","retryable":true,"details":{}}
+        , want 200 with items []
+--- FAIL: TestParcelGroupOpenRead (4.53s)
+FAIL
+FAIL	livecommerce/tests/foundation	7.229s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
+exit 1

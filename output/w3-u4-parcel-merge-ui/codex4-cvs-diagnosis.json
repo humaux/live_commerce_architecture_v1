@@ -1,0 +1,14 @@
+{
+  "ci_run": "37654972345",
+  "source": "b4495ba280527bb692227e12c6230be9e47e8ef9",
+  "retained_trace": "/Volumes/data/live_commerce_architecture_v1/output/playwright/pr2-ci-37654972345/trace.zip",
+  "trace_sha256": "d80323bd050c5687807367ef84468f796cef0b4a21bcafb76efccc9141b7c13e",
+  "actual_pending_step": "taiwan-cvs.spec.ts:159 await tab.close()",
+  "close_start_ms": 9086.042,
+  "close_end_ms": 181509.396,
+  "next_goto_start_ms": 181511.351,
+  "next_goto_end_ms": 181518.409,
+  "local_original_baseline": "codex4-cvs-baseline.json",
+  "classification": "UNKNOWN: no evidenced product load/render-loop cause; integrator adjudication requested",
+  "scope": "No CVS test wait, print code or protocol changed."
+}

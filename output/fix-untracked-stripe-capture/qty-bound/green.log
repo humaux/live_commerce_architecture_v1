@@ -1,0 +1,49 @@
+=== RUN   TestStripeUntrackedQuantityBoundary
+=== RUN   TestStripeUntrackedQuantityBoundary/capture
+    stripe_untracked_quantity_test.go:44: OWNER-POOL: replica-mode tamper/restore: UPDATE storefront.quotes q
+    stripe_untracked_quantity_test.go:48: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders o
+    stripe_untracked_quantity_test.go:83: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_quantity_test.go:88: OWNER-POOL: payments.provider_observations report
+    stripe_untracked_quantity_test.go:44: OWNER-POOL: replica-mode tamper/restore: UPDATE storefront.quotes q
+    stripe_untracked_quantity_test.go:48: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders o
+    stripe_untracked_quantity_test.go:44: OWNER-POOL: replica-mode tamper/restore: UPDATE storefront.quotes q
+    stripe_untracked_quantity_test.go:48: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders o
+    stripe_untracked_quantity_test.go:44: OWNER-POOL: replica-mode tamper/restore: UPDATE storefront.quotes q
+    stripe_untracked_quantity_test.go:48: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders o
+    stripe_untracked_quantity_test.go:44: OWNER-POOL: replica-mode tamper/restore: UPDATE storefront.quotes q
+    stripe_untracked_quantity_test.go:48: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders o
+    stripe_untracked_quantity_test.go:44: OWNER-POOL: replica-mode tamper/restore: UPDATE storefront.quotes q
+    stripe_untracked_quantity_test.go:48: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders o
+    stripe_untracked_quantity_test.go:44: OWNER-POOL: replica-mode tamper/restore: UPDATE storefront.quotes q
+    stripe_untracked_quantity_test.go:48: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders o
+    stripe_untracked_quantity_test.go:44: OWNER-POOL: replica-mode tamper/restore: UPDATE storefront.quotes q
+    stripe_untracked_quantity_test.go:48: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders o
+    stripe_untracked_quantity_test.go:44: OWNER-POOL: replica-mode tamper/restore: UPDATE storefront.quotes q
+    stripe_untracked_quantity_test.go:48: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders o
+=== RUN   TestStripeUntrackedQuantityBoundary/close
+    stripe_untracked_quantity_test.go:44: OWNER-POOL: replica-mode tamper/restore: UPDATE storefront.quotes q
+    stripe_untracked_quantity_test.go:48: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders o
+    stripe_untracked_quantity_test.go:83: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_quantity_test.go:88: OWNER-POOL: payments.provider_observations report
+    stripe_untracked_quantity_test.go:44: OWNER-POOL: replica-mode tamper/restore: UPDATE storefront.quotes q
+    stripe_untracked_quantity_test.go:48: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders o
+    stripe_untracked_quantity_test.go:44: OWNER-POOL: replica-mode tamper/restore: UPDATE storefront.quotes q
+    stripe_untracked_quantity_test.go:48: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders o
+    stripe_untracked_quantity_test.go:44: OWNER-POOL: replica-mode tamper/restore: UPDATE storefront.quotes q
+    stripe_untracked_quantity_test.go:48: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders o
+    stripe_untracked_quantity_test.go:44: OWNER-POOL: replica-mode tamper/restore: UPDATE storefront.quotes q
+    stripe_untracked_quantity_test.go:48: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders o
+    stripe_untracked_quantity_test.go:44: OWNER-POOL: replica-mode tamper/restore: UPDATE storefront.quotes q
+    stripe_untracked_quantity_test.go:48: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders o
+    stripe_untracked_quantity_test.go:44: OWNER-POOL: replica-mode tamper/restore: UPDATE storefront.quotes q
+    stripe_untracked_quantity_test.go:48: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders o
+    stripe_untracked_quantity_test.go:44: OWNER-POOL: replica-mode tamper/restore: UPDATE storefront.quotes q
+    stripe_untracked_quantity_test.go:48: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders o
+    stripe_untracked_quantity_test.go:44: OWNER-POOL: replica-mode tamper/restore: UPDATE storefront.quotes q
+    stripe_untracked_quantity_test.go:48: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders o
+--- PASS: TestStripeUntrackedQuantityBoundary (2.80s)
+    --- PASS: TestStripeUntrackedQuantityBoundary/capture (2.22s)
+    --- PASS: TestStripeUntrackedQuantityBoundary/close (0.58s)
+PASS
+ok  	livecommerce/tests/foundation	4.859s
+test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0

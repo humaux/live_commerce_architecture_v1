@@ -1,0 +1,24 @@
+commit=f7b75a8fd787987c47b58760bb48da1a7ac88c09
+parents=2709ceafcb6feadeca1885705314d67197f451a0 1aad42d0cb837b1dbfde0d9045fdc42c0112ec32
+
+ancestry checks
+parent1_ancestor_exit=0
+parent2_ancestor_exit=0
+
+K3P2 source hash equality (manifest vs merge)
+apps/storefront/components/BankTransfer.tsx expected=1fb495c9d40be4aa56f4db7a2a0881115694bb5c1609d1f775d4c05a1304a8ce actual=1fb495c9d40be4aa56f4db7a2a0881115694bb5c1609d1f775d4c05a1304a8ce match=True
+apps/storefront/lib/bank-transfer-copy.ts expected=c0cff5076be81f7643766d78dc06867b109c70ae1ca2e3281f5706be5c3a1ce3 actual=c0cff5076be81f7643766d78dc06867b109c70ae1ca2e3281f5706be5c3a1ce3 match=True
+apps/storefront/tests/timezone.test.mjs expected=d2f833b6301ee4917c56a1a40d5049ddddb89f74b14dc2c005b20ac01103705c actual=d2f833b6301ee4917c56a1a40d5049ddddb89f74b14dc2c005b20ac01103705c match=True
+tests/admin/timezone-ui.test.mjs expected=b04ada50b52f2808ae98e0dae6b4c06bb393745588263fc31dc97245109a582f actual=b04ada50b52f2808ae98e0dae6b4c06bb393745588263fc31dc97245109a582f match=True
+
+Six package docs present in merge
+present internal/migrationimport/doc.go
+present internal/msgtemplates/doc.go
+present internal/payments/settlement/doc.go
+present internal/twcity/doc.go
+present tests/claims/doc.go
+
+PNG changes from parent2
+
+Diff whitespace check
+diff_check_exit=0

@@ -1,0 +1,5 @@
+--- FAIL: TestClickSweepFixtureLeaseBudget (0.00s)
+    click_sweep_budget_test.go:35: fixture authority/domain expire inside the allowed sweep budget
+FAIL
+FAIL	command-line-arguments	1.012s
+FAIL

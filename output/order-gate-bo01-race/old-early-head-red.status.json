@@ -1,0 +1,18 @@
+{
+  "name": "old-early-head-red",
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-order"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race",
+  "out": "/Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race/output/playwright/bo01-validation",
+  "timeout": 1800,
+  "head": "318a5516f0bdb688ffa6143d548c8276cd8041a5",
+  "pid": 28506,
+  "exit_code": 1,
+  "source_sha256": "0b357170c796daeab4f7aa855b248246aa62cf4e20c3e783e33b4fb1f3c4abfc",
+  "source_after": "0b357170c796daeab4f7aa855b248246aa62cf4e20c3e783e33b4fb1f3c4abfc",
+  "source_unchanged": true,
+  "elapsed_seconds": 0.91
+}

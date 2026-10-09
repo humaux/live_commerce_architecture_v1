@@ -1,0 +1,11 @@
+{
+  "base_sha": "5176e490f79a820fb28d36f6ac5095141eaa28c5",
+  "worktree": "/Volumes/data/live_commerce_architecture_v1/.worktrees/tz-browser-admin",
+  "changed_files": [
+    "tests/admin/ads.spec.ts",
+    "tests/admin/design.spec.ts",
+    "tests/storefront/manual-order-link-gate.mjs"
+  ],
+  "raw_patch_sha256": "9e15503e5531b6f8b9473d15707805e8cfd4a70a2cd21710f7f2de892a3b21fd",
+  "archived_patch": "output/tz-audit/browser-timezone/worktree-archives/tz-browser-admin.patch.gz"
+}

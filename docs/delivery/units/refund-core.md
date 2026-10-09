@@ -115,8 +115,8 @@ copies (repo pattern); InsertTx on queue `default` (deferred `route_payment_queu
 
 ## Verify
 ```sh
-GOTOOLCHAIN=go1.27.1 go vet ./... && gofmt -l internal cmd
-GOTOOLCHAIN=go1.27.1 go test -race -count=1 ./internal/integrations/psp/stripe/... ./internal/payments/... ./internal/merchantorders ./internal/checkout ./internal/httpapi ./cmd/api
+GOTOOLCHAIN=go1.27.2 go vet ./... && gofmt -l internal cmd
+GOTOOLCHAIN=go1.27.2 go test -race -count=1 ./internal/integrations/psp/stripe/... ./internal/payments/... ./internal/merchantorders ./internal/checkout ./internal/httpapi ./cmd/api
 LC_FOCUSED_TIMEOUT=1800s bash scripts/dev/test-focused.sh '^Test(T06|StripeSP|StripeAuthority|BuyerPayment|MerchantOrders|PaymentCapture|Pool)'
 python3 scripts/check_packet.py
 ```

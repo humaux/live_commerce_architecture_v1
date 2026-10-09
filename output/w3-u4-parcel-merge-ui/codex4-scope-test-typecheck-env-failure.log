@@ -1,0 +1,7 @@
+status: SETUP_FAILURE only; missing own app workspace dependencies, not an acceptance RED
+command argv: ["node", "--input-type=module", "-e", "import ts from \"typescript-api\";const parsed=ts.parseJsonConfigFileContent(ts.readConfigFile(\"apps/admin/tsconfig.json\",ts.sys.readFile).config,ts.sys,\"apps/admin\");parsed.options.incremental=false;parsed.options.types=[\"node\",\"react\"];parsed.options.typeRoots=[\"/Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui/apps/admin/node_modules/@types\"];const program=ts.createProgram([\"tests/admin/parcels-scope.test.ts\",\"tests/admin/parcel-merge.spec.ts\",\"apps/admin/next-env.d.ts\"],parsed.options);const errors=ts.getPreEmitDiagnostics(program);console.log(ts.formatDiagnosticsWithColorAndContext(errors,{getCurrentDirectory:ts.sys.getCurrentDirectory,getCanonicalFileName:f=>f,getNewLine:()=>\"\\n\"}));process.exit(errors.length?1:0);"]
+exit_code: 1
+[96mapps/admin/lib/parcels-copy.ts[0m:[93m7[0m:[93m29[0m - [91merror[0m[90m TS2307: [0mCannot find module '@live-commerce/i18n' or its corresponding type declarations.
+
+[7m7[0m import type { Locale } from "@live-commerce/i18n";
+[7m [0m [91m                            ~~~~~~~~~~~~~~~~~~~~~[0m

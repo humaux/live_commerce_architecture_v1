@@ -1,0 +1,56 @@
+=== RUN   TestStripeUntrackedMixedDrift
+=== RUN   TestStripeUntrackedMixedDrift/tracked
+    stripe_untracked_round1_test.go:60: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_round1_test.go:62: OWNER-POOL: payments.provider_observations report
+    stripe_untracked_round1_test.go:67: allocation review states=CONFIRMED/MANUAL_UNASSIGNED/COMMITTED/READY err=<nil>
+=== RUN   TestStripeUntrackedMixedDrift/deleted
+    stripe_untracked_round1_test.go:60: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_round1_test.go:61: OWNER-POOL: replica-mode tamper/restore: DELETE FROM catalog.skus
+    stripe_untracked_round1_test.go:62: OWNER-POOL: payments.provider_observations report
+    stripe_untracked_round1_test.go:67: allocation review states=CONFIRMED/MANUAL_UNASSIGNED/COMMITTED/READY err=<nil>
+--- FAIL: TestStripeUntrackedMixedDrift (2.53s)
+    --- FAIL: TestStripeUntrackedMixedDrift/tracked (2.01s)
+    --- FAIL: TestStripeUntrackedMixedDrift/deleted (0.52s)
+=== RUN   TestStripeUntrackedFulfillmentState
+    stripe_untracked_round1_test.go:73: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_round1_test.go:75: OWNER-POOL: payments.provider_observations report
+    stripe_untracked_round1_test.go:79: allocation review states=AWAITING_PAYMENT/MANUAL_UNASSIGNED/PAYMENT_PENDING/REVIEW_REQUIRED err=<nil>
+--- FAIL: TestStripeUntrackedFulfillmentState (0.54s)
+=== RUN   TestStripeUntrackedCloseAfterDrift
+=== RUN   TestStripeUntrackedCloseAfterDrift/tracked
+    stripe_untracked_round1_test.go:89: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_round1_test.go:91: OWNER-POOL: payments.provider_observations report
+    stripe_untracked_round1_test.go:98: close reconcile did not complete: JobCancelError: payment_capture_invalid_job
+=== RUN   TestStripeUntrackedCloseAfterDrift/deleted
+    stripe_untracked_round1_test.go:89: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_round1_test.go:90: OWNER-POOL: replica-mode tamper/restore: DELETE FROM catalog.skus
+    stripe_untracked_round1_test.go:91: OWNER-POOL: payments.provider_observations report
+    stripe_untracked_round1_test.go:98: close reconcile did not complete: JobCancelError: payment_capture_invalid_job
+=== RUN   TestStripeUntrackedCloseAfterDrift/mixed_tracked
+    stripe_untracked_round1_test.go:89: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_round1_test.go:91: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedCloseAfterDrift/mixed_deleted
+    stripe_untracked_round1_test.go:89: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_round1_test.go:90: OWNER-POOL: replica-mode tamper/restore: DELETE FROM catalog.skus
+    stripe_untracked_round1_test.go:91: OWNER-POOL: payments.provider_observations report
+--- FAIL: TestStripeUntrackedCloseAfterDrift (12.91s)
+    --- FAIL: TestStripeUntrackedCloseAfterDrift/tracked (3.35s)
+    --- FAIL: TestStripeUntrackedCloseAfterDrift/deleted (2.96s)
+    --- PASS: TestStripeUntrackedCloseAfterDrift/mixed_tracked (3.29s)
+    --- PASS: TestStripeUntrackedCloseAfterDrift/mixed_deleted (3.31s)
+=== RUN   TestStripeUntrackedPresentmentDriftRefund
+=== RUN   TestStripeUntrackedPresentmentDriftRefund/all_untracked
+    stripe_untracked_round1_test.go:135: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_round1_test.go:140: OWNER-POOL: payments.provider_observations report
+    stripe_untracked_round1_test.go:145: both reviews must coexist before an early return
+=== RUN   TestStripeUntrackedPresentmentDriftRefund/mixed
+    stripe_untracked_round1_test.go:135: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_round1_test.go:140: OWNER-POOL: payments.provider_observations report
+    stripe_untracked_round1_test.go:145: both reviews must coexist before an early return
+--- FAIL: TestStripeUntrackedPresentmentDriftRefund (0.96s)
+    --- FAIL: TestStripeUntrackedPresentmentDriftRefund/all_untracked (0.51s)
+    --- FAIL: TestStripeUntrackedPresentmentDriftRefund/mixed (0.45s)
+FAIL
+FAIL	livecommerce/tests/foundation	18.510s
+FAIL
+test-focused: top-level PASS=0 FAIL=4 SKIP=0 exit=1

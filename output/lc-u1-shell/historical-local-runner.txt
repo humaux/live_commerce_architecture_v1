@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Purpose: Run one existing LC-U1 browser gate serially and retain source, exit and interruption receipts.
+# Depends on: git, date, scripts/dev/test-local.sh and the current integration heartbeat lock.
+# Used by: LC-U1 local acceptance only; never changes assertions or starts a parallel PG mode.
+set -u
+unit_root=/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell
+worktree=${1:?worktree required}
+phase=${2:?phase required}
+mode=${3:?mode required}
+case "$worktree" in "$unit_root"|/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-browser) ;; *) exit 2;; esac
+[[ "$phase" =~ ^[a-z][a-z0-9-]*$ ]] || exit 2
+case "$mode" in --browser-live-console|--browser-studio-ui|--browser-live-claims|--browser-visual-lint) ;; *) exit 2;; esac
+cd "$worktree" || exit 2
+stamp=$(date -u +%Y%m%dT%H%M%SZ)
+destination="$unit_root/output/lc-u1-shell/$phase-$stamp"
+mkdir -p "$destination"
+git merge --no-edit r3/integration > "$destination/merge.log" 2>&1 || exit 2
+source_commit=$(git rev-parse HEAD)
+status=2
+started=$SECONDS
+finish() { printf 'source\tmode\texit\tseconds\n%s\t%s\t%s\t%s\n' "$source_commit" "$mode" "$status" "$((SECONDS-started))" > "$destination/result.tsv"; }
+trap finish EXIT
+trap 'status=130; exit 130' INT
+trap 'status=143; exit 143' TERM HUP
+printf 'source=%s mode=%s output=%s\n' "$source_commit" "$mode" "$destination"
+export LC_TEST_LOCK_WAIT=14400 LC_SWEEP_WORKERS=1
+export LC_BROWSER_EVIDENCE_ROOT="$destination/browser"
+bash scripts/dev/test-local.sh "$mode" > "$destination/run.log" 2>&1
+status=$?
+printf 'mode=%s exit=%s seconds=%s output=%s\n' "$mode" "$status" "$((SECONDS-started))" "$destination"
+exit "$status"

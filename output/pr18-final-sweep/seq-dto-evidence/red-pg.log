@@ -1,0 +1,5 @@
+invalid value "900" for flag -timeout: parse error
+usage: go test [build/test flags] [packages] [build/test flags & test binary flags]
+Run 'go help test' and 'go help testflag' for details.
+test-focused: top-level PASS=0 FAIL=0 SKIP=0 exit=2
+exit=2

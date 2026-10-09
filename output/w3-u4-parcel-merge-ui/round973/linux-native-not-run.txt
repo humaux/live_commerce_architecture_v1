@@ -1,0 +1,1 @@
+Linux amd64 under ARM Rosetta stopped before Node/Chromium started: docker top after >3 minutes showed only xvfb-run shell and Xvfb waiting for readiness. Diagnostic NOT_RUN, not a Studio failure. Removed only owned label-matching container. Next bounded attempt will use native Linux arm64; it cannot represent GitHub amd64 hardware.

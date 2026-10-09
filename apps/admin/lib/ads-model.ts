@@ -8,7 +8,7 @@
 // trip; Go re-runs every rule (§5.2) and its code wins. An unknown enum is a parse error, never guessed.
 // Depends only on packages/format (relative .ts import, like promotions-model) so `node --test --experimental-strip-types` can import it (tests/admin/ads-model.test.ts).
 
-import { instantToTaipei } from "../../../packages/format/src/index.ts";
+import { instantToTaipei, taipeiToInstant } from "../../../packages/format/src/index.ts";
 
 export class AdsParseError extends Error {
   constructor(what: string) {
@@ -420,20 +420,16 @@ const storeDay = (ms: number) => instantToTaipei(new Date(ms).toISOString()).sli
 export function defaultReportWindow(nowMs: number): { from: string; to: string } {
   return { from: storeDay(nowMs - 6 * dayMs), to: storeDay(nowMs) };
 }
-/** `<input type="datetime-local">` value (local wall time, minute precision) -> epoch ms, or null. */
+/** Taipei campaign wall time to epoch milliseconds; rejects normalized calendar dates. */
 export function localToEpoch(value: string): number | null {
-  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value);
-  if (!m) return null;
-  const [y, mo, d, h, mi] = m.slice(1).map(Number);
-  const t = new Date(y, mo - 1, d, h, mi, 0, 0);
-  const ok = t.getFullYear() === y && t.getMonth() === mo - 1 && t.getDate() === d && t.getHours() === h && t.getMinutes() === mi;
-  return ok ? t.getTime() : null;
+  const instant = taipeiToInstant(value);
+  if (!instant || instantToTaipei(instant) !== value) return null;
+  return Date.parse(instant);
 }
 export const isoSeconds = (ms: number) => new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z");
+/** Campaign schedule input in Asia/Taipei, independent of the browser's zone. */
 export function epochToLocal(ms: number): string {
-  const d = new Date(ms);
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+  return instantToTaipei(new Date(ms).toISOString());
 }
 
 // ---------- draft form (U4) ----------

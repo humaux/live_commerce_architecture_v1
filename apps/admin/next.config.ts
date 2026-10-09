@@ -1,6 +1,6 @@
-// Purpose: configure the admin build and response security headers.
-// Depends on: Next configuration phases and deliberate operator company configuration.
-// Used by: Next build/start; sensitive route overrides must follow the global header defaults.
+// Purpose: Next packaging/security headers; the console uses external links, never embedded frames.
+// Depends on: Next build phases, companyConfig and NODE_ENV; no provider credentials.
+// Used by: admin build/server and header tests; sensitive route overrides must follow global defaults.
 import type { NextConfig } from "next";
 import { PHASE_PRODUCTION_BUILD } from "next/constants";
 import { companyConfig } from "./lib/company";
@@ -11,6 +11,7 @@ const scriptSrc =
   process.env.NODE_ENV === "development"
     ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
     : "script-src 'self' 'unsafe-inline'";
+const contentPolicy = `default-src 'self'; ${scriptSrc}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'`;
 
 const config: NextConfig = {
   agentRules: false, // The repository owns its instruction hierarchy.
@@ -36,11 +37,15 @@ const config: NextConfig = {
           {
             key: "Content-Security-Policy",
             // R4S-04: same-origin sources only (no form-action: OAuth starts redirect off-site); nonce script-src is post-pilot.
-            value: `default-src 'self'; ${scriptSrc}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'`,
+            value: contentPolicy,
           },
         ],
       },
       // M7 returns a one-time claim credential. Preserve the BFF's policy through Next's global header layer.
+      {
+        source: "/api/stores/:store/live-sessions/:session/comments/:path*",
+        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
+      },
       {
         source: "/api/stores/:store/live-sessions/:session/claims/bundles/:bundle/link",
         headers: [{ key: "Referrer-Policy", value: "no-referrer" }],

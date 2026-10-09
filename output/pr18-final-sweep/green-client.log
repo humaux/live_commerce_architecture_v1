@@ -1,0 +1,10 @@
+✔ PR18 final public unresolved receipt survives relogin but coarse fence stays session-bound (0.636167ms)
+✔ PR18 final expired older cursor keeps live buffer selection and polling (13.543042ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 334.940834

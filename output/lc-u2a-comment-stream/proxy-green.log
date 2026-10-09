@@ -1,0 +1,22 @@
+(node:65723) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ offer controls read authoritative limits without parsing unrelated KEYWORD_QTY_CONTAINS window/stats (11.077917ms)
+✔ offer controls accept 101 through the backend cap of 200 distinct offers, reject 201 (1.738ms)
+✔ offer toggle preserves exactly the authoritative maximum in the real M4 payload (2.552958ms)
+✔ console BFF admits exactly A1/A7/A6 and A5 read/copy methods (0.327292ms)
+✔ Next proxy admits the exact console family and results query before the BFF (21.555208ms)
+✔ results query is canonical repeated session_id 1..50, everything else queryless (0.094917ms)
+✔ real BFF route forwards only exact resources, authenticates scope and returns private scrubbed errors (33.747541ms)
+✔ new commands reject unknown keys and preserve frozen copy/lifecycle/recommend body (0.140458ms)
+✔ browser commands reuse Studio fences, exact no-comment recommend body and backend refusal codes (1.272167ms)
+✔ results client preserves canonical ids/order and rejects invalid list before fetch (0.236917ms)
+✔ stock client reuses catalog transport/key/parser and fences a changed login without retries (1.002ms)
+✔ journal replay sends the exact original method/path/body/key for all five commands (1.862834ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 186.722542

@@ -88,8 +88,8 @@ feed CSV escaping. Independent (ads-tests phase B): **MA03, MA08**, MA02 billing
 
 ## Verify
 ```sh
-GOTOOLCHAIN=go1.27.1 go vet ./... && gofmt -l internal
-GOTOOLCHAIN=go1.27.1 go test -race -count=1 ./internal/attribution/...
+GOTOOLCHAIN=go1.27.2 go vet ./... && gofmt -l internal
+GOTOOLCHAIN=go1.27.2 go test -race -count=1 ./internal/attribution/...
 LC_FOCUSED_TIMEOUT=1800s bash scripts/dev/test-focused.sh '^Test(T06|Customers|Billing)'   # regression of the merged 0078/0079 suites
 pnpm typecheck:storefront && bash scripts/dev/depmap.sh && python3 scripts/check_packet.py
 ```

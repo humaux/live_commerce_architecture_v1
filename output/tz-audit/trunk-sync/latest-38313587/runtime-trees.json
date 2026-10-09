@@ -1,0 +1,24 @@
+{
+  "tested_sha": "3831358737df1d819afa5755bd7d362c024ae930",
+  "source_trees": {
+    "apps": "6c90f2f5e254e1643ae79e821bafb2632dff46ac",
+    "packages": "713a1c5650d39a7f556a350c8a6804689ce6e9f9",
+    "scripts": "d291627efe2f1d0353b0eaaedb9b057e3d3d3e5b",
+    "internal": "636e08ca3d30351a0a0b1b348c0ff657bfdb66b8",
+    "migrations": "f5d322b009d27330d8a9dd33074f145f59affc17",
+    "contracts": "55cce1547a1eb19f311c0048af0faa1f1fb7ba77",
+    "tests": "0951d5ac6a55cb412849fa7d77f4428ab6bd4953",
+    "docs/engineering": "0c8f0da54a187d802c6653191a2a61af7cf4482e",
+    ".github": "1a9dfa20355e8e2b8850789daea12688f8cc2f7b",
+    "deploy": "658ff560584b4916729488a8960270a9c26754e0"
+  },
+  "node_tests": 725,
+  "root_blobs": {
+    "go.mod": "a7939a4857e74b8f1eb8b1ebab0d0e49878d13ef",
+    "go.sum": "0a1cba68473ad090d79b01a47a61c221ef88f63d",
+    "package.json": "424a326586acad50e6571fd8c479e08a391cfd2a",
+    "pnpm-lock.yaml": "5e78bec59ec2deadb2bd83c141bc2ba8651bc87d",
+    ".gitignore": "d239c395f3660153f57c09d04e570a5ad9f1d20e",
+    "AGENTS.md": "f0a6fd9bccdff7f2c14d2193437070a423e70d1a"
+  }
+}

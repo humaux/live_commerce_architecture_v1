@@ -24,7 +24,7 @@ jobs:
     # without cutting a green one.
     timeout-minutes: 90
     env:
-      GOTOOLCHAIN: go1.27.1
+      GOTOOLCHAIN: go1.27.2
       GOFLAGS: -mod=readonly
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
@@ -73,8 +73,9 @@ jobs:
         # reported NOT_RUN here (never PASS); see docs/delivery/GATES.md "Node unit suites".
         run: bash scripts/dev/test-node.sh
       # PRs into r3/integration: the SAME suite (scripts/dev/test-local.sh, same -race/vet flags) already runs as the required
-      # `Gates (GitHub runners) / required` check, split into shard:unit + the shard-plan.json groups whose union the aggregate proves
-      # is the whole test universe. Running it here serially as well duplicated ~80 min per PR and hit the 4500 s go timeout on a slow
+      # `Gates (GitHub runners) / required` check, split into shard:unit + the shard-plan.json groups. That the groups cover the whole
+      # test universe exactly once is proven by check-gates.sh -> shard-plan.mjs --check (above), and every selected matrix shard must pass
+      # for `required`; the gates `aggregate` job only consumes click-sweep / visual-lint evidence (PR #10 review 4212513251). Running it here serially as well duplicated ~80 min per PR and hit the 4500 s go timeout on a slow
       # runner (2026-10-07, PR #5 run 37634482705: timed out 10 s into TestStripeRF08Webhook, no assertion failed). Other events keep it.
       - name: Download pinned test image
         if: ${{ !(github.event_name == 'pull_request' && github.base_ref == 'r3/integration') }}
@@ -84,7 +85,7 @@ jobs:
         run: bash scripts/dev/test-local.sh
       - name: Reachable vulnerability scan
         # v1.1.4 bundles golang.org/x/tools v0.29.0, whose SSA builder panicked
-        # ("unexpected expr: *ast.KeyValueExpr") on this Go 1.27.1 module in CI
+        # ("unexpected expr: *ast.KeyValueExpr") on this module (then Go 1.27.1) in CI
         # job 108912135515 after all 725 tests passed. v1.8.0 is current.
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
 

@@ -1,0 +1,8 @@
+components/LiveConsole.tsx(12,23): error TS2305: Module '"@/src/features/live/console-client"' has no exported member 'readOfferControls'.
+components/LiveConsole.tsx(87,33): error TS7006: Parameter 'offer' implicitly has an 'any' type.
+components/LiveConsole.tsx(88,70): error TS7006: Parameter 'o' implicitly has an 'any' type.
+components/LiveConsole.tsx(89,73): error TS7006: Parameter 'o' implicitly has an 'any' type.
+components/LiveConsole.tsx(89,340): error TS2554: Expected 7 arguments, but got 8.
+undefined
+/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/apps/admin:
+ ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 1: tsc --noEmit

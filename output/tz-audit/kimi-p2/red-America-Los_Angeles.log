@@ -1,0 +1,82 @@
+✖ BankTransfer proof echo labels store time in en (9.429166ms)
+✖ BankTransfer proof echo labels store time in zh-TW (1.690459ms)
+✖ BankTransfer proof echo labels store time in zh-CN (1.3155ms)
+✖ TSX seam refuses an unlisted import (1.632875ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 0
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 109.643458
+
+✖ failing tests:
+
+test at apps/storefront/tests/timezone.test.mjs:89:3
+✖ BankTransfer proof echo labels store time in en (9.429166ms)
+  AssertionError [ERR_ASSERTION]: the paid_at echo identifies Store time (UTC+8)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit/apps/storefront/tests/timezone.test.mjs:100:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at apps/storefront/tests/timezone.test.mjs:89:3
+✖ BankTransfer proof echo labels store time in zh-TW (1.690459ms)
+  AssertionError [ERR_ASSERTION]: the paid_at echo identifies 店鋪時間（UTC+8）
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit/apps/storefront/tests/timezone.test.mjs:100:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at apps/storefront/tests/timezone.test.mjs:89:3
+✖ BankTransfer proof echo labels store time in zh-CN (1.3155ms)
+  AssertionError [ERR_ASSERTION]: the paid_at echo identifies 店铺时间（UTC+8）
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit/apps/storefront/tests/timezone.test.mjs:100:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/timezone-ui.test.mjs:52:1
+✖ TSX seam refuses an unlisted import (1.632875ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception.
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit/tests/admin/timezone-ui.test.mjs:53:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /unlisted dependency @\/lib\/unlisted-timezone-probe/,
+    operator: 'throws',
+    diff: 'simple'
+  }

@@ -1,0 +1,19 @@
+✔ fragment grammar accepts only one canonical token (0.479208ms)
+✔ claim projections are closed (0.241167ms)
+✔ claim token rides only its header on B1/B2 and is never echoed (24.290584ms)
+✔ claim-priced cart edits send only SKU and quantity, keeping server price authority (9.798292ms)
+✔ direct-checkout sold-out projection is mandatory, boolean and closed (0.141417ms)
+✔ claim redeem shares the purchase lock, guards recovery and never persists the token (1.823833ms)
+✔ ClaimLink removal projects live-priced survivors on ready and conflict pages (17.311375ms)
+✔ ClaimLink revisit checks out applied A while pending B is sold out or unavailable (4.459375ms)
+✔ ClaimLink refreshes a nothing result after a second tab applied the claim (2.6645ms)
+✔ ClaimLink does not navigate when a buyable claim target is absent or has changed quantity (3.2035ms)
+✔ ClaimLink optional prior-order notice tolerates unreadable storage without bypassing recovery (4.847084ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 161.90875

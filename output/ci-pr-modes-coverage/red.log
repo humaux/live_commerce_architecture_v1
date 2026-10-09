@@ -1,0 +1,116 @@
+✔ backend-only paths run foundation-shards only (1.4815ms)
+✔ node tests of deploy scripts and of the CI planner are backend-only (they cannot change a browser) (0.288792ms)
+✔ a UI path adds the whole browser set, including click-sweep and visual-lint (1.473459ms)
+✔ docs-only and output-only diffs keep the single required check (foundation-shards) (0.232125ms)
+✔ tests/foundation/browser_* is a browser path, other tests/foundation files are not (0.296875ms)
+✔ deploy flag: deploy/ and scripts/deploy* only (1.309333ms)
+✔ the browser set is release-gate's browser-mode universe minus the documented exclusions (12.190334ms)
+✖ every real browser-tagged foundation file selects registry browser modes, including non-browser names (206.3435ms)
+✖ tagged runner discovery follows registry additions, command arrays and line continuations (0.128125ms)
+✖ deploy smoke is selected for its workflow, verdict/helpers and executable test inputs (0.306584ms)
+✔ new selection never drops legacy modes or deploy for any tracked path (33.900334ms)
+✖ CLI classifies merge-base and explicit head, including removed tags, deleted files and renames (118.320375ms)
+✖ CLI explicit head and stdin include tags outside the checkout and uncommitted tag removals (115.66975ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 8
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 577.719958
+
+✖ failing tests:
+
+test at tests/ci/pr-modes.test.mjs:64:1
+✖ every real browser-tagged foundation file selects registry browser modes, including non-browser names (206.3435ms)
+  AssertionError [ERR_ASSERTION]: account_process_test.go omitted --browser-meta-health-ui
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-pr-modes-coverage/tests/ci/pr-modes.test.mjs:69:37)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/pr-modes.test.mjs:75:1
+✖ tagged runner discovery follows registry additions, command arrays and line continuations (0.128125ms)
+  AssertionError [ERR_ASSERTION]: registry additions must not need a planner hand-list
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-pr-modes-coverage/tests/ci/pr-modes.test.mjs:79:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/pr-modes.test.mjs:83:1
+✖ deploy smoke is selected for its workflow, verdict/helpers and executable test inputs (0.306584ms)
+  AssertionError [ERR_ASSERTION]: .github/workflows/deploy-smoke.yml
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-pr-modes-coverage/tests/ci/pr-modes.test.mjs:85:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/pr-modes.test.mjs:114:1
+✖ CLI classifies merge-base and explicit head, including removed tags, deleted files and renames (118.320375ms)
+  AssertionError [ERR_ASSERTION]: removed tag is still a browser-affecting edit
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-pr-modes-coverage/tests/ci/pr-modes.test.mjs:118:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/pr-modes.test.mjs:129:1
+✖ CLI explicit head and stdin include tags outside the checkout and uncommitted tag removals (115.66975ms)
+  AssertionError [ERR_ASSERTION]: read supplied head instead of current checkout
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-pr-modes-coverage/tests/ci/pr-modes.test.mjs:134:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

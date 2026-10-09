@@ -1,0 +1,11 @@
+✔ PR18 command refresh keeps epoch evidence while cursorless initial=0 (15.638333ms)
+✔ PR18 command refresh keeps epoch evidence while cursorless initial=1 (2.654791ms)
+✔ PR18 protected null history reserves capacity and never becomes numeric on overlap (16.823709ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 655.9385

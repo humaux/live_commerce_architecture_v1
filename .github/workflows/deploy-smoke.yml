@@ -27,7 +27,7 @@ jobs:
     # Cold image builds (lc-go, admin, storefront, caddy) dominate; the cases themselves take ~5 min.
     timeout-minutes: 50
     env:
-      GOTOOLCHAIN: go1.27.1
+      GOTOOLCHAIN: go1.27.2
       GOFLAGS: -mod=readonly
       PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
     steps:

@@ -742,7 +742,10 @@
     grid-template-rows: auto minmax(0, 1fr) auto;
   }
   .pe-index {
-    overflow: visible;
+    /* Expanded readiness must not consume the reserved fields row. Its entries
+       scroll inside the index while their target controls remain usable. */
+    max-height: min(300px, 42dvh);
+    overflow-y: auto;
   }
   .pe-index nav {
     display: flex;
@@ -755,8 +758,46 @@
     flex: none;
     white-space: nowrap;
   }
-  .pe-index section {
-    display: none;
+  /* Matrix header text scrolls out of view at this width, so the per-row labels it replaces on
+     desktop must be visible here (PR #1 review comment 4212540344). Desktop rule is untouched;
+     the inputs keep their aria-labels either way. */
+  .pe-matrix-row label > span {
+    display: block;
+    margin-bottom: 2px;
+    font-size: 11px;
+    color: var(--pe-muted);
+  }
+  /* The pre-publish missing-items list collapses behind a real toggle button (only rendered at
+     this width by ProductDocumentForm) instead of being removed (PR #1 review 4212540352). */
+  .pe-readiness-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid var(--pe-rule);
+    border-radius: 8px;
+    background: white;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+  }
+  .pe-readiness-toggle::after {
+    content: "";
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid var(--pe-muted);
+    border-bottom: 2px solid var(--pe-muted);
+    transform: rotate(45deg) translate(-2px, -2px);
+    transition: transform 120ms ease;
+  }
+  .pe-readiness-toggle[aria-expanded="true"]::after {
+    transform: rotate(225deg) translate(-2px, -2px);
   }
 }
 @media (max-width: 680px) {

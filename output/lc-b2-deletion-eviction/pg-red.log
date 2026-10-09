@@ -1,0 +1,7 @@
+=== RUN   TestLiveConsoleLCN01DeletionEviction
+    live_console_deletion_test.go:80: deleted buyer comment remained in actual A2 after one60s check
+--- FAIL: TestLiveConsoleLCN01DeletionEviction (70.01s)
+FAIL
+FAIL	livecommerce/tests/foundation	71.114s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

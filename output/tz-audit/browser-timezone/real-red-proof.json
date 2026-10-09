@@ -1,0 +1,11 @@
+{
+  "mutation": "browser addInitScript drops Intl.DateTimeFormat timeZone only; Node shared-helper oracle unmodified",
+  "result": "real productionNext/Go/PG existingclickflow RED",
+  "assertion": "design version published_at timestamp cell",
+  "expected_example": "10/08/2026, 00:03",
+  "received_example": "10/07/2026, 09:03",
+  "playwright_fail": 4,
+  "playwright_pass": 4,
+  "main_spec_sha256": "81e6a55fc66f5ae283a9ee7d26c89da425f6d33e41a1bff4ec83bea3ea61130c",
+  "restored_proof_spec_sha256": "81e6a55fc66f5ae283a9ee7d26c89da425f6d33e41a1bff4ec83bea3ea61130c"
+}

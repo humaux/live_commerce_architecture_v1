@@ -1,0 +1,65 @@
+
+Running 1 test using 1 worker
+
+(node:38756) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Settings rendered contrast: {"color":"rgb(95, 112, 131)","background":"rgb(245, 246, 248)","fontSize":"14px","contrast":4.699983002725201}
+  ✘  1 tests/admin/settings-real.spec.ts:28:1 › REAL_PG A wizard creates unseeded configuration and preserves safe uncertainty (24.5s)
+
+
+  1) tests/admin/settings-real.spec.ts:28:1 › REAL_PG A wizard creates unseeded configuration and preserves safe uncertainty 
+
+    Error: a pending version read is not a saveable baseline
+
+    expect(locator).toBeDisabled() failed
+
+    Locator:  getByTestId('settings-policy-form').getByRole('button', { name: 'Save pricing policy', exact: true })
+    Expected: disabled
+    Received: enabled
+    Timeout:  10000ms
+
+    Call log:
+      - a pending version read is not a saveable baseline getByTestId('settings-policy-form').getByRole('button', { name: 'Save pricing policy', exact: true }) with timeout 10000ms
+      - waiting for getByTestId('settings-policy-form').getByRole('button', { name: 'Save pricing policy', exact: true })
+        24 × locator resolved to <button type="submit" class="primary">Save pricing policy</button>
+           - unexpected value "enabled"
+
+
+      484 |   await page.getByLabel("Stable service code", { exact: true }).fill("home");
+      485 |   await expect.poll(policyRead.arrived).toBe(true);
+    > 486 |   await expect.soft(savePolicy, "a pending version read is not a saveable baseline").toBeDisabled();
+          |                                                                                      ^
+      487 |   policyRead.release();
+      488 |   await expect(savePolicy).toBeEnabled();
+      489 |   // stop-bleed D02: NT$ amounts are whole dollars; a decimal is refused locally with its own sentence and nothing is sent
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/fix-settings-real-flake/tests/admin/settings-real.spec.ts:486:86
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('settings-status')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('settings-status') with timeout 10000ms
+      - waiting for getByTestId('settings-status')
+
+
+      538 |     .getByRole("button", { name: "Save delivery service", exact: true })
+      539 |     .click();
+    > 540 |   await expect(page.getByTestId("settings-status")).toBeVisible();
+          |                                                     ^
+      541 |   await page.unroute(policyURL);
+      542 |   await page.unroute(serviceURL);
+      543 |   await page.reload();
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/fix-settings-real-flake/tests/admin/settings-real.spec.ts:540:53
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/settings-real-20261007T184640.607111000/results/settings-real-REAL-PG-A-wi-f3300--preserves-safe-uncertainty/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/settings-real-20261007T184640.607111000/results/settings-real-REAL-PG-A-wi-f3300--preserves-safe-uncertainty/error-context.md
+
+  1 failed
+    tests/admin/settings-real.spec.ts:28:1 › REAL_PG A wizard creates unseeded configuration and preserves safe uncertainty 

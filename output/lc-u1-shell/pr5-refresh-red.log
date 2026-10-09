@@ -1,0 +1,79 @@
+✔ secondary failures preserve A1; only A1 is periodic; IG notice follows the platform/embeddability observation (232.585125ms)
+✖ the existing console refresh also explicitly refreshes its parent list; no automatic list read (7.467958ms)
+✖ parent forwards only an explicit refresh callback and retains the scene when list is unavailable (6.891667ms)
+✖ every explicit browser response/event/navigation waiter has a finite sub-test budget (10.538208ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 1
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 555.273584
+
+✖ failing tests:
+
+test at tests/admin/live-console-render.test.ts:63:1
+✖ the existing console refresh also explicitly refreshes its parent list; no automatic list read (7.467958ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/live-console-render.test.ts:67:58)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-console-render.test.ts:70:1
+✖ parent forwards only an explicit refresh callback and retains the scene when list is unavailable (6.891667ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/live-console-render.test.ts:85:40)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-console-render.test.ts:89:1
+✖ every explicit browser response/event/navigation waiter has a finite sub-test budget (10.538208ms)
+  AssertionError [ERR_ASSERTION]: waitForEvent needs explicit options
+      at walk (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/live-console-render.test.ts:95:14)
+      at visitNode2 (/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript/lib/typescript.js:32551:18)
+      at forEachChildInVariableDeclaration (/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript/lib/typescript.js:32613:123)
+      at Object.forEachChild (/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript/lib/typescript.js:33072:35)
+      at walk (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/live-console-render.test.ts:100:8)
+      at visitNodes (/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript/lib/typescript.js:32559:22)
+      at forEachChildInVariableDeclarationList (/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript/lib/typescript.js:32778:12)
+      at Object.forEachChild (/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript/lib/typescript.js:33072:35)
+      at walk (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/live-console-render.test.ts:100:8)
+      at visitNode2 (/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript/lib/typescript.js:32551:18) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

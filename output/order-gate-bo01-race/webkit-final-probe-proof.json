@@ -1,0 +1,9 @@
+{
+  "source": "75d4917baec2",
+  "driver_evidence": "/Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race/output/playwright/buyer-order-1355587086",
+  "engine": "webkit",
+  "desktop": 10,
+  "mobile": 10,
+  "all_scope_owner_footer_checks": true,
+  "subset": "order"
+}

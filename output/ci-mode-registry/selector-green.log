@@ -1,0 +1,35 @@
+✔ mode discovery has no Docker/build dependency and includes the existing universe (12.998042ms)
+✔ dry-run resolves a mode without executing dependencies and keeps its command environment (22.063209ms)
+✔ one appended case is discovered and dispatched; malformed and duplicate registry entries fail closed (34.851583ms)
+✔ backend-only paths run foundation-shards only (1.255125ms)
+✔ node tests of deploy scripts and of the CI planner are backend-only (they cannot change a browser) (0.625833ms)
+✔ a UI path adds the whole browser set, including click-sweep and visual-lint (4.723542ms)
+✔ docs-only and output-only diffs keep the single required check (foundation-shards) (0.59825ms)
+✔ legacy browser_* paths still select all browsers; a known untagged foundation file stays backend-only (0.42525ms)
+✔ legacy deploy prefixes remain selected and unrelated paths do not select smoke (1.537583ms)
+✔ the browser set is release-gate's browser-mode universe minus the documented exclusions (18.505ms)
+✔ every real browser-tagged foundation file selects registry browser modes, including non-browser names (184.198791ms)
+✔ tagged runner discovery follows registry additions, command arrays and line continuations (0.649708ms)
+✔ deploy smoke is selected for its workflow, verdict/helpers and executable test inputs (0.959625ms)
+✔ new selection never drops legacy modes or deploy for any tracked path (321.588125ms)
+✔ CLI classifies merge-base and explicit head, including removed tags, deleted files and renames (524.0145ms)
+✔ CLI explicit head and stdin include tags outside the checkout and uncommitted tag removals (203.552125ms)
+✔ compound/legacy tags and unknown source are conservative; known untagged source stays backend-only (2.020958ms)
+✔ explicit-head CLI derives tagged runner modes from that head's real registry (172.374875ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "架构.md" (152.962708ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "internal/示例.go" (169.66625ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "tests/foundation/plain\tname_test.go" (177.165292ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, " deploy/scripts/synthetic-smoke.sh" (159.786625ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "架构.md" (153.653833ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "internal/示例.go" (182.465667ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "tests/foundation/plain\tname_test.go" (179.849458ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, " deploy/scripts/synthetic-smoke.sh" (163.7395ms)
+✔ stdin unions legacy trimming without trimming the source lookup path (98.55ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 27
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2938.056375

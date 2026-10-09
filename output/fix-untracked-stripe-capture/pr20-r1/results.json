@@ -1,0 +1,123 @@
+{
+  "source_commit": "2b8089a9baa27e6d679018cea3e551c837bb2029",
+  "base_commit": "66f9976122074c74138bdeae19c2b1dd0a61eeb8",
+  "evidence_class": "REAL_PG + MOCK",
+  "commands": [
+    {
+      "command": "bash scripts/dev/test-focused.sh 'TestStripeUntracked(MixedDrift|FulfillmentState|CloseAfterDrift|PresentmentDriftRefund)' ./tests/foundation",
+      "exit": 1,
+      "log": "red.log",
+      "sha256": "5c63d2ed2cd76df5b6085b4384e2e7bedd7b4b96d8ff71a50c65534365e134ce",
+      "top_pass": 0,
+      "top_fail": 4,
+      "top_skip": 0,
+      "node_pass": 0,
+      "not_run": []
+    },
+    {
+      "command": "bash scripts/dev/test-focused.sh 'TestStripeUntracked|TestStripeRF12Guards|TestStripeSP06' ./tests/foundation",
+      "exit": 0,
+      "log": "green.log",
+      "sha256": "56d10d6bbe0d47613bc04e1a3858ae6a4af36a97d2cf66fe73133e2929997771",
+      "top_pass": 11,
+      "top_fail": 0,
+      "top_skip": 0,
+      "node_pass": 0,
+      "not_run": []
+    },
+    {
+      "command": "bash scripts/dev/test-focused.sh 'TestStripeUntrackedPostCaptureDriftImmutable' ./tests/foundation",
+      "exit": 0,
+      "log": "post-capture.log",
+      "sha256": "84b748233449ffafd24693bb317af71b2f01fc5327419ecfad73982adf01982b",
+      "top_pass": 1,
+      "top_fail": 0,
+      "top_skip": 0,
+      "node_pass": 0,
+      "not_run": []
+    },
+    {
+      "command": "LC_FOCUSED_TIMEOUT=1800s bash scripts/dev/test-focused.sh '^TestStripe(SP|SL|RF|Untracked)' ./tests/foundation",
+      "exit": 0,
+      "log": "stripe-regression.log",
+      "sha256": "df9ab445f3c1b2db5d5752637792d9385f1f0230b299c27e15c6bb06174827a3",
+      "top_pass": 45,
+      "top_fail": 0,
+      "top_skip": 2,
+      "node_pass": 0,
+      "not_run": [
+        "stripe_live_rak_test.go:99: NOT_RUN: SL08 needs STRIPE_SANDBOX=1 and the owner's rk_test_ restricted test key (STRIPE_RESTRICTED_TEST_KEY); SANDBOX only, LIVE is refused",
+        "stripe_refund_sandbox_test.go:85: NOT_RUN: RF10 requires STRIPE_SANDBOX=1 with a Stripe test key (owner-provided; SANDBOX only, LIVE refused)",
+        "stripe_refund_schema_test.go:794: NOT_RUN: migrations.Apply has no partial-apply hook; a database frozen at 0061 with rows cannot be built without re-implementing the migrator",
+        "stripe_registrar_test.go:403: NOT_RUN: set STRIPE_SANDBOX=1 with a test STRIPE_SECRET_KEY and STRIPE_ACCOUNT_ID to probe the real sandbox (creates and expires one test session, no charge)"
+      ]
+    },
+    {
+      "command": "GOTOOLCHAIN=go1.27.1 go test -race -p 1 -count=1 -timeout=600s -run '^TestStripe(SP|SL|RF)|Refund' -v ./internal/integrations/psp/stripe/... ./internal/payments/... ./internal/merchantorders",
+      "exit": 0,
+      "log": "stripe-package-gates.log",
+      "sha256": "450ea4540f6e78ef4f68edd6da47af3a2c2cc064f7f550153f6c919473085f91",
+      "top_pass": 37,
+      "top_fail": 0,
+      "top_skip": 1,
+      "node_pass": 0,
+      "not_run": [
+        "sandbox_test.go:62: NOT_RUN: SP16 requires STRIPE_SANDBOX=1 with a Stripe test key"
+      ]
+    },
+    {
+      "command": "bash scripts/dev/test-node.sh",
+      "exit": 0,
+      "log": "node.log",
+      "sha256": "b29eb79adbdba10ef228488abba0cc0c3ebcea8391b696306c23b864cfd178aa",
+      "top_pass": 0,
+      "top_fail": 0,
+      "top_skip": 0,
+      "node_pass": 1148,
+      "not_run": [
+        "NOT_RUN: tests/media/r04-input-runner.test.mjs (COMMERCE_R04_LIVEKIT_BINARY unset)"
+      ]
+    },
+    {
+      "command": "pnpm --filter @live-commerce/admin typecheck",
+      "exit": 0,
+      "log": "typecheck.log",
+      "sha256": "5160d2d0b6672ecb686948110025718973afa5c3ba34bd794394cc9d8a60f68f",
+      "top_pass": 0,
+      "top_fail": 0,
+      "top_skip": 0,
+      "node_pass": 0,
+      "not_run": [],
+      "raw_stdout_sha256": "18888e037704a2c0b8d6922a994f8d496bf85a37ae37595625c7da915bb0a0be",
+      "raw_stdout_path": "/Volumes/data/live_commerce_architecture_v1/output/fix-untracked-stripe-capture/pr20-r1/typecheck.log",
+      "normalization": "Only final blank EOF line trimmed in committed review copy; raw uncompressed stdout retained at canonical path."
+    },
+    {
+      "command": "bash scripts/dev/check-gates.sh",
+      "exit": 0,
+      "log": "check-gates.log",
+      "sha256": "ea0f0ebac5730a48edb847268211af3482bbed1724d6b53f3df90fe1dcda7556",
+      "top_pass": 0,
+      "top_fail": 0,
+      "top_skip": 0,
+      "node_pass": 13,
+      "not_run": []
+    },
+    {
+      "command": "bash scripts/dev/test-focused.sh '^TestR2IntegrationUpgradeFromReleaseHead$|^TestLiveClaimsKC03|^TestClaimsRetentionCRP02' ./tests/foundation",
+      "exit": 0,
+      "log": "upgrade.log",
+      "sha256": "1a2871b22df8f54b56fab6b6b9b806c2422d9a9ba1b23d8bdf8935b0c891a35b",
+      "top_pass": 3,
+      "top_fail": 0,
+      "top_skip": 0
+    },
+    {
+      "command": "bash scripts/dev/check-gates.sh (with delivery evidence staged)",
+      "exit": 0,
+      "log": "check-gates-packaged.log",
+      "sha256": "70444ad0bb35b231d01a6678659dfdb147a91f0abf55a6c47a193f1c2edfc0c4"
+    }
+  ],
+  "pending": []
+}

@@ -1,0 +1,146 @@
+[
+  {
+    "page": "mobile axis remove",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": ".pe-axis-remove (Color axis 1)",
+    "action": "real click",
+    "expected": {
+      "axes": [
+        "尺寸"
+      ],
+      "values": [
+        "S"
+      ],
+      "visibleRows": "2→1",
+      "row": "S"
+    },
+    "actual": "PASS",
+    "persistence": "local draft until UI save below"
+  },
+  {
+    "page": "mobile axis remove",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "product-save",
+    "action": "click, confirm archive, reload",
+    "expected": {
+      "axes": [
+        "尺寸"
+      ],
+      "values": [
+        "S"
+      ],
+      "archivedSKUs": [
+        "c7f2f852-e2b8-4d43-b446-0829b49693b9",
+        "08a51306-2336-4e9b-b2eb-803f6d15f049"
+      ],
+      "activeSKU": "f5766011-e946-4936-a100-b05acf4c876c",
+      "generatedCode": "pecc328f856bb2b3-mobile-axis-remove-zh-tw",
+      "row": "S",
+      "price": "95",
+      "compare": "145",
+      "trackedQuantity": "9",
+      "oneDocumentWrite": true
+    },
+    "actual": "PASS",
+    "screenshot": "mobile-axis-remove-zh-TW-390-saved.png",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile axis remove",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": ".pe-axis-remove (Color axis 1)",
+    "action": "real click",
+    "expected": {
+      "axes": [
+        "尺寸"
+      ],
+      "values": [
+        "S"
+      ],
+      "visibleRows": "2→1",
+      "row": "S"
+    },
+    "actual": "PASS",
+    "persistence": "local draft until UI save below"
+  },
+  {
+    "page": "mobile axis remove",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "product-save",
+    "action": "click, confirm archive, reload",
+    "expected": {
+      "axes": [
+        "尺寸"
+      ],
+      "values": [
+        "S"
+      ],
+      "archivedSKUs": [
+        "04954e8e-8a8a-4693-8dd2-0693f3716e74",
+        "c17320f2-fa07-4d9e-bdb2-97d0a716577d"
+      ],
+      "activeSKU": "878c053f-f70e-40f4-a118-94198044450a",
+      "generatedCode": "pecc328f856bb2b3-mobile-axis-remove-zh-cn",
+      "row": "S",
+      "price": "95",
+      "compare": "145",
+      "trackedQuantity": "9",
+      "oneDocumentWrite": true
+    },
+    "actual": "PASS",
+    "screenshot": "mobile-axis-remove-zh-CN-390-saved.png",
+    "tier": "BROWSER+REAL_PG"
+  },
+  {
+    "page": "mobile axis remove",
+    "locale": "en",
+    "width": 390,
+    "control": ".pe-axis-remove (Color axis 1)",
+    "action": "real click",
+    "expected": {
+      "axes": [
+        "Size"
+      ],
+      "values": [
+        "S"
+      ],
+      "visibleRows": "2→1",
+      "row": "S"
+    },
+    "actual": "PASS",
+    "persistence": "local draft until UI save below"
+  },
+  {
+    "page": "mobile axis remove",
+    "locale": "en",
+    "width": 390,
+    "control": "product-save",
+    "action": "click, confirm archive, reload",
+    "expected": {
+      "axes": [
+        "Size"
+      ],
+      "values": [
+        "S"
+      ],
+      "archivedSKUs": [
+        "150165f4-3525-4dbe-b0de-ab1ca5e94b4c",
+        "ebb14c44-2a88-42e0-a6ca-c9752a462e12"
+      ],
+      "activeSKU": "02322612-2a85-42c2-916c-958b48ecac4d",
+      "generatedCode": "pecc328f856bb2b3-mobile-axis-remove-en",
+      "row": "S",
+      "price": "95",
+      "compare": "145",
+      "trackedQuantity": "9",
+      "oneDocumentWrite": true
+    },
+    "actual": "PASS",
+    "screenshot": "mobile-axis-remove-en-390-saved.png",
+    "tier": "BROWSER+REAL_PG"
+  }
+]

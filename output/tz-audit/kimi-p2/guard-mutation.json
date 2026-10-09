@@ -1,0 +1,8 @@
+{
+  "mutation": "remove only Object.hasOwn assert in a temporary copy of the actual test seam",
+  "exit_code": 1,
+  "original_sha256": "b04ada50b52f2808ae98e0dae6b4c06bb393745588263fc31dc97245109a582f",
+  "mutant_sha256": "b66c909c874bd92e66ed0ad4dc154f2599e3bb742977eac1345fe4c1c695717c",
+  "source_unchanged": true,
+  "temp_cleaned": true
+}

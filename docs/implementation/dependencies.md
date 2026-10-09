@@ -217,7 +217,7 @@ PG/race/vet 通过；[BFF证据](2026-09-27-studio-bff-acceptance.md) 单列真�
 
 |依赖|固定版本|许可证|实际调用者|用途|升级测试|
 |---|---|---|---|---|---|
-|Go toolchain|1.27.1|BSD-3-Clause|全部 Go 包|编译、标准库、测试|`go test -race ./...`、`go vet ./...`、govulncheck；记录实际 toolchain|
+|Go toolchain|1.27.2|BSD-3-Clause|全部 Go 包|编译、标准库、测试|`go test -race ./...`、`go vet ./...`、govulncheck；记录实际 toolchain。2026-10-09 由 1.27.1 升至 1.27.2（同时 golang.org/x/net v0.60.0），清除可达漏洞 GO-2026-6612/6613/6617|
 |`github.com/jackc/pgx/v5`|v5.11.0|MIT|`internal/platform/platform.go`；`migrations/migrate.go`；`tests/foundation/*`|PG 协议、显式事务、连接池、事务类型|真实 PG18 基础 gate：RLS、scope 回收、超时、回滚、池上限、HTTP；再跑 unit/race/vet|
 |`github.com/riverqueue/river`|v0.40.0|MPL-2.0|`migrations/migrate.go`；`internal/integrations/core/{service,dispatcher}.go`；`tests/foundation/{foundation_integration,external_operation,external_operation_authority,dispatcher}_test.go`|同库事务入队、受限真实 worker、幂等执行/只读对账、生命周期与 JobRescuer|迁移/权限、五事实原子回滚、busy snooze/terminal replay、真实 SIGKILL/JobRescuer、StopAndCancel、预算完成失败不取消、无原始敏感错误泄露|
 |`river/riverdriver/riverpgxv5`|v0.40.0|MPL-2.0|同上|River 的 pgx driver|同 River gate；确认 schema 与权限不漂移|

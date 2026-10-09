@@ -105,8 +105,8 @@ No SQL, contracts, `apps/**`, `cmd/api/main.go`, `tests/foundation/**`, go.mod.
 
 ## Verify
 ```sh
-GOTOOLCHAIN=go1.27.1 go test -race -count=1 ./internal/checkout ./internal/buyerhttp ./cmd/api
-GOTOOLCHAIN=go1.27.1 go vet ./internal/checkout ./internal/buyerhttp ./cmd/api && gofmt -l internal cmd
+GOTOOLCHAIN=go1.27.2 go test -race -count=1 ./internal/checkout ./internal/buyerhttp ./cmd/api
+GOTOOLCHAIN=go1.27.2 go vet ./internal/checkout ./internal/buyerhttp ./cmd/api && gofmt -l internal cmd
 bash scripts/dev/test-focused.sh '^Test(BuyerPayment|BuyerHTTP|StripeSP21Pinned)'   # regression; serialized machine-wide
 ```
 Logs → `output/stripe-b1-start-http/`. SP07/SP14 are brief 3's gates: do not claim them.

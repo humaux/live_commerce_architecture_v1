@@ -1,0 +1,70 @@
+✔ PR18 host digest hardening sync-throw (1686.971917ms)
+✖ PR18 host digest hardening never-settles (1465.936166ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 1
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3485.977209
+
+✖ failing tests:
+
+test at tests/admin/inbox-review.test.ts:27:62
+✖ PR18 host digest hardening never-settles (1465.936166ms)
+  Error: Command failed: /opt/homebrew/lib/python3.14/site-packages/nodejs_wheel/bin/node --experimental-strip-types --input-type=module -e 
+      import assert from "node:assert/strict";
+      const mode = "never-settles";
+      const sentinel = new Error("synthetic synchronous digest failure");
+      let release;
+      crypto.subtle.digest = mode === "sync-throw"
+        ? () => { throw sentinel; }
+        : () => new Promise(resolve => { release = resolve; });
+      const { Host } = await import("file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/inbox-review-host.test.ts");
+      const host = new Host(() => null);
+      if (mode === "sync-throw") {
+        assert.throws(() => crypto.subtle.digest("SHA-256", new Uint8Array()), error => error === sentinel);
+        await host.settle();
+      } else {
+        const pending = crypto.subtle.digest("SHA-256", new Uint8Array());
+        try {
+          await assert.rejects(host.settle(), {message:"digests quiesced within bounded rounds"});
+        } finally {
+          release(new ArrayBuffer(32));
+          await pending;
+        }
+        await host.settle();
+      }
+      host.dispose();
+    
+  node:internal/modules/run_main:107
+      triggerUncaughtException(
+      ^
+  
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/[eval1]:17:9 {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: { message: 'digests quiesced within bounded rounds' },
+    operator: 'rejects',
+    diff: 'simple'
+  }
+  
+  Node.js v24.15.0
+  
+      at genericNodeError (node:internal/errors:985:15)
+      at wrappedFn (node:internal/errors:539:14)
+      at checkExecSyncError (node:child_process:925:11)
+      at execFileSync (node:child_process:961:15)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/inbox-review.test.ts:30:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    status: 1,
+    signal: null,
+    output: [ null, <Buffer >, <Buffer 6e 6f 64 65 3a 69 6e 74 65 72 6e 61 6c 2f 6d 6f 64 75 6c 65 73 2f 72 75 6e 5f 6d 61 69 6e 3a 31 30 37 0a 20 20 20 20 74 72 69 67 67 65 72 55 6e 63 61 ... 394 more bytes> ],
+    pid: 76543,
+    stdout: <Buffer >,
+    stderr: <Buffer 6e 6f 64 65 3a 69 6e 74 65 72 6e 61 6c 2f 6d 6f 64 75 6c 65 73 2f 72 75 6e 5f 6d 61 69 6e 3a 31 30 37 0a 20 20 20 20 74 72 69 67 67 65 72 55 6e 63 61 ... 394 more bytes>
+  }

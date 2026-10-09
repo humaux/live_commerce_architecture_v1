@@ -1,0 +1,50 @@
+{
+  "cases": 26,
+  "orders": [
+    "6568cf85-59f6-4ad0-b777-81affdb0a682",
+    "27067f81-54d1-4703-b783-74f8519acc91",
+    "6421814e-c480-4ad4-a49d-e5fc993f8897",
+    "074bb1fd-5248-4f0f-95a2-2c3a09866cf1",
+    "393ca345-b42c-4dfd-8d90-acc02535601d",
+    "efc1c9da-4b77-46a2-8ae8-0851b7b1de20",
+    "f31492d5-f31e-4849-8eba-be3e4aa232b1"
+  ],
+  "repeated_orders": [
+    "6568cf85-59f6-4ad0-b777-81affdb0a682",
+    "f31492d5-f31e-4849-8eba-be3e4aa232b1"
+  ],
+  "observations": [
+    "BO01 desktop delivery-head completion keeps the language target stable",
+    "BO01 native address; three locales keep the pinned quote and carry no unsaved PII across the language switch",
+    "BO03 committed destination lost reply retries exact key and body",
+    "BO03 lost destination reply reload reads head and explicitly replaces metadata intent",
+    "BO03 reload reconfirmation, edits and concurrent/late address CAS fail closed",
+    "BO04 actual confirmed form creates authoritative DRAFT and exactly one order/hold/job/receipt",
+    "BO05 owned current-state GET renders real expiry rather than historical DRAFT receipt",
+    "BO02 expired authoritative quote fails closed with no order or hold",
+    "BO04 actual second-tab recovery queues on Web Lock and resumes same order without second POST",
+    "BO01 mobile delivery-head completion keeps the language target stable",
+    "BO05 lost checkout reply reload replays exact five-field intent and original key on mobile",
+    "BO05 locator storage failure retains and reloads same checkout without duplicate hold",
+    "BO05 later publication revocation preserves uncertain committed order and never resets owner",
+    "BO03 delayed real options cannot replace edited confirmed address or order snapshot",
+    "BO03 expired pending address retains recovery; quote-less new tab explicitly repairs shared intent",
+    "BH01 lost next-cart reply reload keeps original key/body and exactly one cart receipt",
+    "BH02 delayed initial owned GET cannot restore the old order after another tab continues",
+    "BH03 same buyer creates distinct B with two exact order facts and unchanged A snapshot/key replay",
+    "BH04 owned history renders each server created_at in Taipei across locales under Los Angeles browser time",
+    "BH05 authoritative Taipei history survives reload and noncredential locator loss without repinning an old order",
+    "BH05 same owned history renders Taipei times in UTC browser context",
+    "BH06 explicit continuation preserves a newer authoritative cart without issuing a clearing PUT",
+    "BH07 failed quote removal preserves continuation recovery and original key across reload",
+    "BH08 foreign buyer history is empty and foreign or malformed cursors are denied",
+    "BO02 service revision drift rejects a previously confirmed quotation without an order",
+    "BO06 all attempted local/session writes, URLs and console exclude PII/bearer; other owner denied"
+  ],
+  "storage_write_attempts": 78,
+  "scope": "actual UI/Next/Go/isolated PG; synthetic TLS and buyer data; no PSP/production",
+  "not_run": [
+    "full foundation/race/vet and existing browser regression are separate root gates",
+    "independent visual review"
+  ]
+}

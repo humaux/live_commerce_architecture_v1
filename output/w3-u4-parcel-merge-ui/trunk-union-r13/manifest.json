@@ -1,0 +1,62 @@
+[
+  {
+    "file": "check-gates.json",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/trunk-union-r13/check-gates.json",
+    "raw_sha256": "4108c42d4f3affe8b9a4fab69697dccaa5bebc7a2f3de8e5f237c433b892c948",
+    "view_sha256": "4108c42d4f3affe8b9a4fab69697dccaa5bebc7a2f3de8e5f237c433b892c948"
+  },
+  {
+    "file": "check-gates.log",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/trunk-union-r13/check-gates.log",
+    "raw_sha256": "882947d02b6ceb0b31a075e48bef583ca3912e378e0f8e02e6b88bf59801a4d5",
+    "view_sha256": "882947d02b6ceb0b31a075e48bef583ca3912e378e0f8e02e6b88bf59801a4d5"
+  },
+  {
+    "file": "incoming-index-whitespace.json",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/trunk-union-r13/incoming-index-whitespace.json",
+    "raw_sha256": "0b8a751aab0a86b2e64f15c9ddf0bb14bcada3a131b417444696a984297da38a",
+    "view_sha256": "0b8a751aab0a86b2e64f15c9ddf0bb14bcada3a131b417444696a984297da38a"
+  },
+  {
+    "file": "incoming-index-whitespace.log",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/trunk-union-r13/incoming-index-whitespace.log",
+    "raw_sha256": "39b6bd89c3b83d556bfb911ac156c64d54a619963e1480eeb8dab05a372ecaa4",
+    "view_sha256": "18715e82e815485f752e0e5d19a44c1ad8eaa57989d17b4996ab419a599215f1"
+  },
+  {
+    "file": "mode-counts.json",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/trunk-union-r13/mode-counts.json",
+    "raw_sha256": "23acde79c1ec2b4a37f8b35d7de44a163a12e6de0d185399e8e05a9ed07fbeb2",
+    "view_sha256": "23acde79c1ec2b4a37f8b35d7de44a163a12e6de0d185399e8e05a9ed07fbeb2"
+  },
+  {
+    "file": "mode-roles.json",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/trunk-union-r13/mode-roles.json",
+    "raw_sha256": "f2b7c8a8fe3972af364e59285bfb575d4e57b3b56e7b40a46105986efa52c91a",
+    "view_sha256": "f2b7c8a8fe3972af364e59285bfb575d4e57b3b56e7b40a46105986efa52c91a"
+  },
+  {
+    "file": "node.json",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/trunk-union-r13/node.json",
+    "raw_sha256": "2551dcbf48d2f09ab1e4779375d02863fe66d780249930a26b777f0a05288743",
+    "view_sha256": "2551dcbf48d2f09ab1e4779375d02863fe66d780249930a26b777f0a05288743"
+  },
+  {
+    "file": "node.log",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/trunk-union-r13/node.log",
+    "raw_sha256": "54296abfc771819d9c391a5a4255be5d7cef76cfa07a3e0dedf30b5f6184f9be",
+    "view_sha256": "54296abfc771819d9c391a5a4255be5d7cef76cfa07a3e0dedf30b5f6184f9be"
+  },
+  {
+    "file": "typecheck.json",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/trunk-union-r13/typecheck.json",
+    "raw_sha256": "0816c2e9c786482f89338eee9d88c130c9e17688588c0e2a54f76ea62eb587c0",
+    "view_sha256": "0816c2e9c786482f89338eee9d88c130c9e17688588c0e2a54f76ea62eb587c0"
+  },
+  {
+    "file": "typecheck.log",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/trunk-union-r13/typecheck.log",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "view_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+]

@@ -1,0 +1,13 @@
+✔ bodyless dissolve DELETE (empty body stream, no content-length) reaches Go with the CAS query, no body, no key (12.611666ms)
+✔ every parcel DELETE must carry exactly one expected_version >= 1 (never forwarded without it) (1.55125ms)
+✔ a DELETE that declares a body or chunked framing is refused (0.289208ms)
+✔ DELETE needs the session, origin and CSRF like every command; other DELETEs stay unsupported (0.631042ms)
+✔ GET parcel-groups (open groups read) and merge-suggestions pass with no query; a query or key is refused (5.12075ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 126.304334

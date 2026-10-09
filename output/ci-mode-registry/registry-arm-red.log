@@ -1,0 +1,28 @@
+✔ mode discovery has no Docker/build dependency and includes the existing universe (31.636125ms)
+✔ dry-run resolves a mode without executing dependencies and keeps its command environment (54.217125ms)
+✔ one appended case is discovered and dispatched; malformed and duplicate registry entries fail closed (40.603625ms)
+✖ registry discovery cannot silently lose indented, aliased or unrecognised Bash case arms (2.535667ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 3
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 166.851666
+
+✖ failing tests:
+
+test at tests/ci/mode-registry.test.mjs:47:1
+✖ registry discovery cannot silently lose indented, aliased or unrecognised Bash case arms (2.535667ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception.
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-pr-modes-coverage/tests/ci/mode-registry.test.mjs:54:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /registry|entry|arm/,
+    operator: 'throws',
+    diff: 'simple'
+  }

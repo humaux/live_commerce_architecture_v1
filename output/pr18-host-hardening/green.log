@@ -1,0 +1,10 @@
+✔ PR18 host digest hardening sync-throw (215.979667ms)
+✔ PR18 host digest hardening never-settles (1446.898208ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1901.359666

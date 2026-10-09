@@ -1,0 +1,17 @@
+{
+  "name": "gates",
+  "command": [
+    "bash",
+    "scripts/dev/check-gates.sh"
+  ],
+  "timeout": 300,
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race",
+  "out": "/Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race/output/playwright/bo01-validation",
+  "head": "d9914b38ce70df39570b0ef0dfaf40f28ef261bf",
+  "pid": 46582,
+  "exit_code": 0,
+  "source_sha256": "f244c4ff0509030d981664c0bd199f9f278694ec9dedb2a0ba01a0b3b871de3c",
+  "source_after": "f244c4ff0509030d981664c0bd199f9f278694ec9dedb2a0ba01a0b3b871de3c",
+  "source_unchanged": true,
+  "elapsed_seconds": 31.766
+}

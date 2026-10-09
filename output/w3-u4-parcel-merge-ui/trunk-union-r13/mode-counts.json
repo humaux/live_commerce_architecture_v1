@@ -1,0 +1,584 @@
+{
+  "parents": {
+    "HEAD": "032029f5c3d5c4b3005ef3597159d3814b60e21e",
+    "MERGE_HEAD": "83c7f7e0b8e14ad9f570b51b0c92d67e9f6ef46e"
+  },
+  "rows": [
+    {
+      "mode": "--browser-admin-legacy",
+      "ours": 5,
+      "trunk": 5,
+      "merged": 5,
+      "expected": 5
+    },
+    {
+      "mode": "--browser-admin-shell",
+      "ours": 3,
+      "trunk": 3,
+      "merged": 3,
+      "expected": 3
+    },
+    {
+      "mode": "--browser-ads-attribution",
+      "ours": 6,
+      "trunk": 6,
+      "merged": 6,
+      "expected": 6
+    },
+    {
+      "mode": "--browser-buyer",
+      "ours": 4,
+      "trunk": 4,
+      "merged": 4,
+      "expected": 4
+    },
+    {
+      "mode": "--browser-buyer-comms",
+      "ours": 5,
+      "trunk": 5,
+      "merged": 5,
+      "expected": 5
+    },
+    {
+      "mode": "--browser-card-payments",
+      "ours": 6,
+      "trunk": 6,
+      "merged": 6,
+      "expected": 6
+    },
+    {
+      "mode": "--browser-catalog-core",
+      "ours": 5,
+      "trunk": 5,
+      "merged": 5,
+      "expected": 5
+    },
+    {
+      "mode": "--browser-catalog-media",
+      "ours": 6,
+      "trunk": 6,
+      "merged": 6,
+      "expected": 6
+    },
+    {
+      "mode": "--browser-checkout-offline",
+      "ours": 6,
+      "trunk": 6,
+      "merged": 6,
+      "expected": 6
+    },
+    {
+      "mode": "--browser-claim-checkout",
+      "ours": 5,
+      "trunk": 5,
+      "merged": 5,
+      "expected": 5
+    },
+    {
+      "mode": "--browser-click-sweep",
+      "ours": 6,
+      "trunk": 6,
+      "merged": 6,
+      "expected": 6
+    },
+    {
+      "mode": "--browser-customers-billing",
+      "ours": 6,
+      "trunk": 6,
+      "merged": 6,
+      "expected": 6
+    },
+    {
+      "mode": "--browser-cvs",
+      "ours": 6,
+      "trunk": 6,
+      "merged": 6,
+      "expected": 6
+    },
+    {
+      "mode": "--browser-design",
+      "ours": 6,
+      "trunk": 6,
+      "merged": 6,
+      "expected": 6
+    },
+    {
+      "mode": "--browser-e2e",
+      "ours": 6,
+      "trunk": 6,
+      "merged": 6,
+      "expected": 6
+    },
+    {
+      "mode": "--browser-home-cod",
+      "ours": 6,
+      "trunk": 6,
+      "merged": 6,
+      "expected": 6
+    },
+    {
+      "mode": "--browser-identity",
+      "ours": 4,
+      "trunk": 4,
+      "merged": 4,
+      "expected": 4
+    },
+    {
+      "mode": "--browser-inbox",
+      "ours": 5,
+      "trunk": 5,
+      "merged": 5,
+      "expected": 5
+    },
+    {
+      "mode": "--browser-input-delivery",
+      "ours": 5,
+      "trunk": 5,
+      "merged": 5,
+      "expected": 5
+    },
+    {
+      "mode": "--browser-live-claims",
+      "ours": 6,
+      "trunk": 6,
+      "merged": 6,
+      "expected": 6
+    },
+    {
+      "mode": "--browser-live-console",
+      "ours": 0,
+      "trunk": 5,
+      "merged": 5,
+      "expected": 5
+    },
+    {
+      "mode": "--browser-manual-order",
+      "ours": 6,
+      "trunk": 6,
+      "merged": 6,
+      "expected": 6
+    },
+    {
+      "mode": "--browser-merchant-buyer",
+      "ours": 6,
+      "trunk": 6,
+      "merged": 6,
+      "expected": 6
+    },
+    {
+      "mode": "--browser-merchant-orders-bff",
+      "ours": 6,
+      "trunk": 5,
+      "merged": 6,
+      "expected": 6
+    },
+    {
+      "mode": "--browser-merchant-orders-ui",
+      "ours": 5,
+      "trunk": 5,
+      "merged": 5,
+      "expected": 5
+    },
+    {
+      "mode": "--browser-meta-ads",
+      "ours": 6,
+      "trunk": 6,
+      "merged": 6,
+      "expected": 6
+    },
+    {
+      "mode": "--browser-meta-connect",
+      "ours": 5,
+      "trunk": 5,
+      "merged": 5,
+      "expected": 5
+    },
+    {
+      "mode": "--browser-meta-health-ui",
+      "ours": 4,
+      "trunk": 4,
+      "merged": 4,
+      "expected": 4
+    },
+    {
+      "mode": "--browser-migration-import",
+      "ours": 0,
+      "trunk": 5,
+      "merged": 5,
+      "expected": 5
+    },
+    {
+      "mode": "--browser-operations-ads",
+      "ours": 5,
+      "trunk": 5,
+      "merged": 5,
+      "expected": 5
+    },
+    {
+      "mode": "--browser-ops-polish",
+      "ours": 6,
+      "trunk": 6,
+      "merged": 6,
+      "expected": 6
+    },
+    {
+      "mode": "--browser-order",
+      "ours": 5,
+      "trunk": 5,
+      "merged": 5,
+      "expected": 5
+    },
+    {
+      "mode": "--browser-password-auth",
+      "ours": 5,
+      "trunk": 5,
+      "merged": 5,
+      "expected": 5
+    },
+    {
+      "mode": "--browser-payment",
+      "ours": 5,
+      "trunk": 5,
+      "merged": 5,
+      "expected": 5
+    },
+    {
+      "mode": "--browser-picklist",
+      "ours": 3,
+      "trunk": 3,
+      "merged": 3,
+      "expected": 3
+    },
+    {
+      "mode": "--browser-platform-site",
+      "ours": 3,
+      "trunk": 3,
+      "merged": 3,
+      "expected": 3
+    },
+    {
+      "mode": "--browser-product-editor",
+      "ours": 6,
+      "trunk": 6,
+      "merged": 6,
+      "expected": 6
+    },
+    {
+      "mode": "--browser-product-media-v2",
+      "ours": 6,
+      "trunk": 6,
+      "merged": 6,
+      "expected": 6
+    },
+    {
+      "mode": "--browser-promotions",
+      "ours": 6,
+      "trunk": 6,
+      "merged": 6,
+      "expected": 6
+    },
+    {
+      "mode": "--browser-refund-fulfilment",
+      "ours": 6,
+      "trunk": 6,
+      "merged": 6,
+      "expected": 6
+    },
+    {
+      "mode": "--browser-reports",
+      "ours": 5,
+      "trunk": 5,
+      "merged": 5,
+      "expected": 5
+    },
+    {
+      "mode": "--browser-returns-ui",
+      "ours": 6,
+      "trunk": 6,
+      "merged": 6,
+      "expected": 6
+    },
+    {
+      "mode": "--browser-store-domains",
+      "ours": 6,
+      "trunk": 6,
+      "merged": 6,
+      "expected": 6
+    },
+    {
+      "mode": "--browser-storefront",
+      "ours": 8,
+      "trunk": 8,
+      "merged": 8,
+      "expected": 8
+    },
+    {
+      "mode": "--browser-storefront-publish",
+      "ours": 6,
+      "trunk": 6,
+      "merged": 6,
+      "expected": 6
+    },
+    {
+      "mode": "--browser-studio-bff",
+      "ours": 5,
+      "trunk": 5,
+      "merged": 5,
+      "expected": 5
+    },
+    {
+      "mode": "--browser-studio-ui",
+      "ours": 5,
+      "trunk": 5,
+      "merged": 5,
+      "expected": 5
+    },
+    {
+      "mode": "--browser-tracking-backfill",
+      "ours": 4,
+      "trunk": 4,
+      "merged": 4,
+      "expected": 4
+    },
+    {
+      "mode": "--browser-visual-lint",
+      "ours": 6,
+      "trunk": 6,
+      "merged": 6,
+      "expected": 6
+    },
+    {
+      "mode": "--browser-webkit",
+      "ours": 9,
+      "trunk": 9,
+      "merged": 9,
+      "expected": 9
+    },
+    {
+      "mode": "--buyer-http",
+      "ours": 3,
+      "trunk": 3,
+      "merged": 3,
+      "expected": 3
+    },
+    {
+      "mode": "--checkout",
+      "ours": 3,
+      "trunk": 3,
+      "merged": 3,
+      "expected": 3
+    },
+    {
+      "mode": "--expiry-worker",
+      "ours": 3,
+      "trunk": 3,
+      "merged": 3,
+      "expected": 3
+    },
+    {
+      "mode": "--inbox",
+      "ours": 3,
+      "trunk": 3,
+      "merged": 3,
+      "expected": 3
+    },
+    {
+      "mode": "--inbox-send",
+      "ours": 3,
+      "trunk": 3,
+      "merged": 3,
+      "expected": 3
+    },
+    {
+      "mode": "--legacy-isolation",
+      "ours": 3,
+      "trunk": 3,
+      "merged": 3,
+      "expected": 3
+    },
+    {
+      "mode": "--live-authority",
+      "ours": 4,
+      "trunk": 4,
+      "merged": 4,
+      "expected": 4
+    },
+    {
+      "mode": "--live-browser-input",
+      "ours": 4,
+      "trunk": 4,
+      "merged": 4,
+      "expected": 4
+    },
+    {
+      "mode": "--live-console",
+      "ours": 3,
+      "trunk": 3,
+      "merged": 3,
+      "expected": 3
+    },
+    {
+      "mode": "--live-media-crash",
+      "ours": 4,
+      "trunk": 4,
+      "merged": 4,
+      "expected": 4
+    },
+    {
+      "mode": "--live-media-execution",
+      "ours": 4,
+      "trunk": 4,
+      "merged": 4,
+      "expected": 4
+    },
+    {
+      "mode": "--live-media-input",
+      "ours": 4,
+      "trunk": 4,
+      "merged": 4,
+      "expected": 4
+    },
+    {
+      "mode": "--live-media-plan",
+      "ours": 4,
+      "trunk": 4,
+      "merged": 4,
+      "expected": 4
+    },
+    {
+      "mode": "--live-media-recovery",
+      "ours": 4,
+      "trunk": 4,
+      "merged": 4,
+      "expected": 4
+    },
+    {
+      "mode": "--live-media-runtime",
+      "ours": 4,
+      "trunk": 4,
+      "merged": 4,
+      "expected": 4
+    },
+    {
+      "mode": "--live-media-stop",
+      "ours": 4,
+      "trunk": 4,
+      "merged": 4,
+      "expected": 4
+    },
+    {
+      "mode": "--live-planning",
+      "ours": 3,
+      "trunk": 3,
+      "merged": 3,
+      "expected": 3
+    },
+    {
+      "mode": "--local-recovery",
+      "ours": 3,
+      "trunk": 3,
+      "merged": 3,
+      "expected": 3
+    },
+    {
+      "mode": "--merchant-orders",
+      "ours": 3,
+      "trunk": 3,
+      "merged": 3,
+      "expected": 3
+    },
+    {
+      "mode": "--meta-consumer",
+      "ours": 3,
+      "trunk": 3,
+      "merged": 3,
+      "expected": 3
+    },
+    {
+      "mode": "--meta-health",
+      "ours": 3,
+      "trunk": 3,
+      "merged": 3,
+      "expected": 3
+    },
+    {
+      "mode": "--meta-inbox",
+      "ours": 3,
+      "trunk": 3,
+      "merged": 3,
+      "expected": 3
+    },
+    {
+      "mode": "--meta-runtime",
+      "ours": 3,
+      "trunk": 3,
+      "merged": 3,
+      "expected": 3
+    },
+    {
+      "mode": "--msg-templates",
+      "ours": 3,
+      "trunk": 3,
+      "merged": 3,
+      "expected": 3
+    },
+    {
+      "mode": "--operations-queue",
+      "ours": 3,
+      "trunk": 3,
+      "merged": 3,
+      "expected": 3
+    },
+    {
+      "mode": "--ops-disk-guard",
+      "ours": 3,
+      "trunk": 3,
+      "merged": 3,
+      "expected": 3
+    },
+    {
+      "mode": "--payment",
+      "ours": 3,
+      "trunk": 3,
+      "merged": 3,
+      "expected": 3
+    },
+    {
+      "mode": "--payment-worker",
+      "ours": 3,
+      "trunk": 3,
+      "merged": 3,
+      "expected": 3
+    },
+    {
+      "mode": "--purchase-entry",
+      "ours": 3,
+      "trunk": 3,
+      "merged": 3,
+      "expected": 3
+    },
+    {
+      "mode": "--storefront-resolver",
+      "ours": 3,
+      "trunk": 3,
+      "merged": 3,
+      "expected": 3
+    },
+    {
+      "mode": "--stripe-browser",
+      "ours": 8,
+      "trunk": 8,
+      "merged": 8,
+      "expected": 8
+    },
+    {
+      "mode": "--studio-backend",
+      "ours": 4,
+      "trunk": 4,
+      "merged": 4,
+      "expected": 4
+    }
+  ],
+  "mismatches": [],
+  "script_sha256": "ada14d9d15d101cabe2aece1b00483a882cdf3eb89114a05e193de2810879c09"
+}

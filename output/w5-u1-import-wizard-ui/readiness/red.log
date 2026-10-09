@@ -1,0 +1,25 @@
+# Purpose: preserve W5 visible readiness command output after this prologue.
+# Depends on: original main raw SHA256=19056e9e338207d96e61dac965fd5d73224c4f5d2f3d1227f5f60aee65427e6f.
+# Used by: integrator normal/calibration CI.
+# Evidence normalization: trailing whitespace/blank EOF only; main raw retained.
+✖ MIUI-READY-VISIBLE-STORE actual signed helper waits on the visible selector and retains cookie/wizard assertions (51.107292ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 232.480125
+
+✖ failing tests:
+
+test at tests/admin/import-readiness.test.mjs:42:1
+✖ MIUI-READY-VISIBLE-STORE actual signed helper waits on the visible selector and retains cookie/wizard assertions (51.107292ms)
+  Error: MIUI-READY-VISIBLE-STORE: sign-out is inside a closed details menu
+      at Object.waitFor (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-readiness-tests/tests/admin/import-readiness.test.mjs:34:46)
+      at evalmachine.<anonymous>:12:54
+      at async Object.signed (evalmachine.<anonymous>:10:5)
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-readiness-tests/tests/admin/import-readiness.test.mjs:45:20)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)

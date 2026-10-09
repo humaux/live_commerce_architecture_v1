@@ -1,0 +1,4 @@
+components/CommentStream.tsx(261,14): error TS2552: Cannot find name 'row'. Did you mean 'rows'?
+undefined
+/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/apps/admin:
+ ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 1: tsc --noEmit

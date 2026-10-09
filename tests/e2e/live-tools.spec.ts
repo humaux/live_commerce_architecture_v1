@@ -16,7 +16,7 @@ import { expect, test, type BrowserContext, type Locator, type Page } from "@pla
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { claimsCopy } from "../../apps/admin/lib/claims-copy";
+import { claimsCopy, hostPrompt } from "../../apps/admin/lib/claims-copy";
 import { studioCopy } from "../../apps/admin/lib/studio-copy";
 import { claimCopy } from "../../apps/storefront/lib/claim-copy";
 import { cvsCopy } from "../../apps/storefront/lib/cvs-copy";
@@ -178,12 +178,31 @@ for (const cell of cells) {
       await shot(merchant, "merchant-offers-live-price", locale, viewport);
 
       // 3. open the window and bind the post (private reply on, in the buyer's language)
+      const quantityRule = merchant.getByLabel(claims.mode, { exact: true });
+      await expect(quantityRule.locator("option")).toHaveCount(3);
+      await expect(quantityRule).toBeEnabled();
+      await quantityRule.selectOption("KEYWORD_QTY_CONTAINS");
       await merchant.getByRole("button", { name: claims.openWindow }).click();
       await expect(merchant.getByTestId("claims-window-state")).toHaveText(claims.open);
+      await expect(quantityRule).toHaveValue("KEYWORD_QTY_CONTAINS");
+      await expect(quantityRule).toBeDisabled();
+      await merchant.reload();
+      await expect(merchant.getByLabel(claims.mode, { exact: true })).toHaveValue("KEYWORD_QTY_CONTAINS");
+      await expect(merchant.getByLabel(claims.mode, { exact: true })).toBeDisabled();
+      await merchant.locator("#claims-prompt-keyword").selectOption(kw);
+      await merchant.context().grantPermissions(["clipboard-read", "clipboard-write"], { origin: admin });
+      for (const promptLocale of ["zh-TW", "zh-CN", "en"] as const) {
+        await merchant.locator("#claims-prompt-language").selectOption(promptLocale);
+        const expectedPrompt = hostPrompt(promptLocale, "KEYWORD_QTY_CONTAINS", kw);
+        await expect(merchant.getByTestId("host-prompt")).toHaveText(expectedPrompt);
+        await merchant.getByRole("button", { name: claims.copyPrompt, exact: true }).click();
+        await expect.poll(() => merchant.evaluate(() => navigator.clipboard.readText())).toBe(expectedPrompt);
+      }
       const post = await act("new-post");
       const source = merchant.getByTestId("claims-source");
       await source.getByLabel(claims.sourceInput, { exact: true }).fill(post.post_url);
       await source.getByLabel(claims.sourceReplyLocale, { exact: true }).selectOption(locale);
+      await expect(source.getByLabel(claims.sourceReplyLocale, { exact: true }).locator('option[value="ja"]')).toHaveCount(0);
       await source.getByLabel(claims.sourcePrivateReply).check();
       await source.getByRole("button", { name: claims.sourceSave }).click();
       await expect(source.getByTestId("claims-source-object")).toHaveText(post.object);

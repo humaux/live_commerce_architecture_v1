@@ -1,0 +1,37 @@
+{
+  "_header": {
+    "Purpose": "pin current K3 local evidence",
+    "Depends on": "actualsource/run and original raw SHA256=40ee1eaba856ea2fc258c5c7c3fad9b134a33084f3341395faac3d702c90e797",
+    "Used by": "integrator normal/calibration"
+  },
+  "run_id": "w5-k3-browser-spec-tsc",
+  "pid": 64095,
+  "command": [
+    "pnpm",
+    "exec",
+    "tsc",
+    "--noEmit",
+    "--strict",
+    "--skipLibCheck",
+    "--target",
+    "ES2023",
+    "--module",
+    "esnext",
+    "--moduleResolution",
+    "bundler",
+    "--esModuleInterop",
+    "--allowImportingTsExtensions",
+    "--typeRoots",
+    "apps/admin/node_modules/@types",
+    "--types",
+    "node",
+    "tests/admin/import-wizard.spec.ts"
+  ],
+  "log": "/Volumes/data/live_commerce_architecture_v1/output/w5-u1-import-wizard-ui/k3-browser/spec-tsc.log",
+  "timeout_seconds": 120,
+  "started_at": 1791377926.2153192,
+  "state": "finished",
+  "wake": "child monitors then final automatically notifies parent root",
+  "exit_code": 0,
+  "finished_at": 1791377928.3177102
+}

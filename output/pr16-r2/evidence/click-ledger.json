@@ -1,0 +1,494 @@
+[
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 1366,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 1586,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n圖片",
+    "action": "click missing item",
+    "expected": "visible field focus in media",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n商品名稱",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n售價",
+    "action": "click missing item",
+    "expected": "visible field focus in pricing",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n庫存",
+    "action": "click missing item",
+    "expected": "visible field focus in pricing",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n至少 3 張圖片",
+    "action": "click missing item",
+    "expected": "visible field focus in media",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n描述",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n分類",
+    "action": "click missing item",
+    "expected": "visible field focus in collections",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n直播關鍵字",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness/待填寫\n搜尋引擎最佳化",
+    "action": "click missing item",
+    "expected": "visible field focus in seo",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "readiness toggle",
+    "action": "click expand, missing items, click collapse",
+    "expected": "aria-expanded false→true→false; missing list visible then hidden; entries navigate",
+    "actual": "PASS",
+    "persistence": "view state only"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 390,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 375,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 1366,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 1586,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n图片",
+    "action": "click missing item",
+    "expected": "visible field focus in media",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n商品名称",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n售价",
+    "action": "click missing item",
+    "expected": "visible field focus in pricing",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n库存",
+    "action": "click missing item",
+    "expected": "visible field focus in pricing",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n至少 3 张图片",
+    "action": "click missing item",
+    "expected": "visible field focus in media",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n描述",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n分类",
+    "action": "click missing item",
+    "expected": "visible field focus in collections",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n直播关键字",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness/待填写\n搜索引擎优化",
+    "action": "click missing item",
+    "expected": "visible field focus in seo",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "readiness toggle",
+    "action": "click expand, missing items, click collapse",
+    "expected": "aria-expanded false→true→false; missing list visible then hidden; entries navigate",
+    "actual": "PASS",
+    "persistence": "view state only"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 390,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 375,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 1366,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 1586,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nImages",
+    "action": "click missing item",
+    "expected": "visible field focus in media",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nProduct name",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nPrice",
+    "action": "click missing item",
+    "expected": "visible field focus in pricing",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nInventory",
+    "action": "click missing item",
+    "expected": "visible field focus in pricing",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nAt least 3 images",
+    "action": "click missing item",
+    "expected": "visible field focus in media",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nDescription",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nCollections",
+    "action": "click missing item",
+    "expected": "visible field focus in collections",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nLive keyword",
+    "action": "click missing item",
+    "expected": "visible field focus in basics",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness/To do\nSearch engine listing",
+    "action": "click missing item",
+    "expected": "visible field focus in seo",
+    "actual": "PASS"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "readiness toggle",
+    "action": "click expand, missing items, click collapse",
+    "expected": "aria-expanded false→true→false; missing list visible then hidden; entries navigate",
+    "actual": "PASS",
+    "persistence": "view state only"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 390,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 375,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "editor",
+    "control": "shell and page leave guard",
+    "action": "click + dismiss",
+    "expected": "one confirmation per navigation; draft retained",
+    "actual": "PASS"
+  },
+  {
+    "page": "create",
+    "control": "3 file inputs/reorder/publish double click",
+    "action": "setInputFiles click dblclick reload",
+    "expected": "one document,3 uploads,one order; persisted NT$60 and untracked cap3",
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG; buyer HTTP readback"
+  },
+  {
+    "page": "matrix",
+    "control": "axes/bulk only empty/stock/save",
+    "action": "click fill Enter reload",
+    "expected": "12 local rows, preserved first price60, others80; persisted",
+    "actual": "PASS"
+  },
+  {
+    "page": "list",
+    "control": "copy/select all/unpublish",
+    "action": "click check reload",
+    "expected": "copy persisted;3 results;all3draft",
+    "actual": "PASS"
+  },
+  {
+    "page": "inventory",
+    "control": "product inspector",
+    "action": "click",
+    "expected": "read-only price, no name/price/image editor; link to product editor",
+    "actual": "PASS"
+  },
+  {
+    "page": "edit",
+    "locale": "en",
+    "width": 375,
+    "control": "readiness toggle",
+    "action": "click expand, click collapse",
+    "expected": "aria-expanded false→true→false; checklist visible then hidden",
+    "actual": "PASS",
+    "persistence": "view state only"
+  },
+  {
+    "page": "edit",
+    "control": "price and save",
+    "action": "fill click reload",
+    "expected": "one minimal patch; cap and images preserved",
+    "actual": "PASS"
+  },
+  {
+    "page": "list",
+    "control": "single/multi SKU pencils, inventory delta and zero",
+    "action": "click fill Enter Escape reload",
+    "expected": "one patch per save, stock0 persists, twelve-SKU popover and focus return",
+    "actual": "PASS"
+  },
+  {
+    "page": "edit",
+    "control": "ambiguous warehouse",
+    "action": "read-only response MOCK + visible disabled field",
+    "expected": "no available fallback, disabled target and inventory link",
+    "actual": "PASS (MOCK read contract)"
+  },
+  {
+    "page": "edit",
+    "locale": "zh-TW",
+    "control": "live-window keyword refusal",
+    "action": "click + MOCK 409",
+    "expected": "explicit translated safety refusal",
+    "actual": "PASS (MOCK response; real rule covered by PG PE21)"
+  },
+  {
+    "page": "edit",
+    "locale": "zh-CN",
+    "control": "live-window keyword refusal",
+    "action": "click + MOCK 409",
+    "expected": "explicit translated safety refusal",
+    "actual": "PASS (MOCK response; real rule covered by PG PE21)"
+  },
+  {
+    "page": "edit",
+    "locale": "en",
+    "control": "live-window keyword refusal",
+    "action": "click + MOCK 409",
+    "expected": "explicit translated safety refusal",
+    "actual": "PASS (MOCK response; real rule covered by PG PE21)"
+  },
+  {
+    "page": "list",
+    "control": "copy response loss/reload",
+    "action": "click then injected lost response, reload",
+    "expected": "one committed command; recovery fence blocks duplicate",
+    "actual": "PASS",
+    "tier": "FAULT_INJECTED+REAL_PG"
+  }
+]

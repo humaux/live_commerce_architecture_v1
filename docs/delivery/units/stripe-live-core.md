@@ -168,8 +168,8 @@ SL02–SL06, SL08, SL09. Integrator: SL07 regression. Owner: SL-LIVE01/02.
 
 ## Verify
 ```sh
-GOTOOLCHAIN=go1.27.1 go vet ./... && gofmt -l internal cmd
-GOTOOLCHAIN=go1.27.1 go test -race -count=1 ./internal/integrations/psp/stripe/... ./internal/integrations/accounts ./internal/payments/... ./internal/checkout ./internal/merchantorders ./internal/httpapi ./cmd/stripe-admin ./cmd/payment-worker ./cmd/api
+GOTOOLCHAIN=go1.27.2 go vet ./... && gofmt -l internal cmd
+GOTOOLCHAIN=go1.27.2 go test -race -count=1 ./internal/integrations/psp/stripe/... ./internal/integrations/accounts ./internal/payments/... ./internal/checkout ./internal/merchantorders ./internal/httpapi ./cmd/stripe-admin ./cmd/payment-worker ./cmd/api
 LC_FOCUSED_TIMEOUT=2400s bash scripts/dev/test-focused.sh '^Test(T06|StripeSP|StripeRF|StripeAuthority|BuyerPayment|MerchantOrders|PaymentCapture|Pool)'
 python3 scripts/check_packet.py && bash scripts/dev/check-pkgdocs.sh
 ```

@@ -1,0 +1,12 @@
+✔ OrderHistory renders server order instant in Taipei (10.381208ms)
+✔ ClaimLink renders claim expiry in Taipei (4.100834ms)
+✔ BankTransfer renders deadline and proof instant in Taipei (2.210417ms)
+✔ ShopFooter uses Taipei year across UTC year boundary (2.868583ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 128.730458

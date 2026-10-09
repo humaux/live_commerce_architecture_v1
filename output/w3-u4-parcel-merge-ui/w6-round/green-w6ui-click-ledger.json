@@ -1,0 +1,810 @@
+[
+  {
+    "page": "/en",
+    "control": "Sign in with identity service",
+    "operation": "click",
+    "expected": "signed callback opens the merchant workspace",
+    "actual": "signed callback opens the merchant workspace",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Add note",
+    "operation": "fill",
+    "expected": "typed draft is visible",
+    "actual": "typed draft is visible",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Add note",
+    "operation": "click",
+    "expected": "CTUI-RED-NOTE-CONFIRMED: committed create is visibly confirmed",
+    "actual": "CTUI-RED-NOTE-CONFIRMED: committed create is visibly confirmed",
+    "result": "pass"
+  },
+  {
+    "page": "/en",
+    "control": "Sign in with identity service",
+    "operation": "click",
+    "expected": "signed callback opens the merchant workspace",
+    "actual": "signed callback opens the merchant workspace",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "New tag",
+    "operation": "click",
+    "expected": "detail tag creation form opens",
+    "actual": "detail tag creation form opens",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Name",
+    "operation": "fill",
+    "expected": "typed draft is visible",
+    "actual": "typed draft is visible",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Colour",
+    "operation": "selectOption",
+    "expected": "new tag uses purple",
+    "actual": "new tag uses purple",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Create tag",
+    "operation": "click",
+    "expected": "catalogue contains the created tag",
+    "actual": "catalogue contains the created tag",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "select tag and Save tags",
+    "operation": "click",
+    "expected": "whole selection persists after refresh",
+    "actual": "whole selection persists after refresh",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Add note",
+    "operation": "fill",
+    "expected": "typed draft is visible",
+    "actual": "typed draft is visible",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Add note",
+    "operation": "click",
+    "expected": "new note persists and shows staff/time without raw principal ID",
+    "actual": "new note persists and shows staff/time without raw principal ID",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Edit note",
+    "operation": "click",
+    "expected": "edit form starts with saved body",
+    "actual": "edit form starts with saved body",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "unsaved edit draft",
+    "operation": "fill",
+    "expected": "typed draft is visible",
+    "actual": "typed draft is visible",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Save tags while note draft is open",
+    "operation": "click",
+    "expected": "passive detail.notes refresh preserves body and edit intent",
+    "actual": "passive detail.notes refresh preserves body and edit intent",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Save note",
+    "operation": "click",
+    "expected": "the existing note changes once; no accidental new note",
+    "actual": "the existing note changes once; no accidental new note",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Edit then Cancel",
+    "operation": "click",
+    "expected": "cancel restores saved body without mutation",
+    "actual": "cancel restores saved body without mutation",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Delete note cancel/confirm",
+    "operation": "click",
+    "expected": "cancel keeps note; confirm removes it and reload stays removed",
+    "actual": "cancel keeps note; confirm removes it and reload stays removed",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers",
+    "control": "Manage tags",
+    "operation": "click",
+    "expected": "catalogue modal opens",
+    "actual": "catalogue modal opens",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers",
+    "control": "Rename/recolour",
+    "operation": "click",
+    "expected": "saved name and green colour persist in catalogue",
+    "actual": "saved name and green colour persist in catalogue",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers",
+    "control": "Delete tag cancel/confirm",
+    "operation": "click",
+    "expected": "cancel retains catalogue tag; confirm removes it",
+    "actual": "cancel retains catalogue tag; confirm removes it",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers",
+    "control": "Close tag manager",
+    "operation": "click",
+    "expected": "modal closes and invocation remains usable",
+    "actual": "modal closes and invocation remains usable",
+    "result": "pass"
+  },
+  {
+    "page": "/en",
+    "control": "Sign in with identity service",
+    "operation": "click",
+    "expected": "signed callback opens the merchant workspace",
+    "actual": "signed callback opens the merchant workspace",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "New tag",
+    "operation": "click",
+    "expected": "detail tag creation form opens",
+    "actual": "detail tag creation form opens",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Name",
+    "operation": "fill",
+    "expected": "typed draft is visible",
+    "actual": "typed draft is visible",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Colour",
+    "operation": "selectOption",
+    "expected": "new tag uses purple",
+    "actual": "new tag uses purple",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Create tag",
+    "operation": "click",
+    "expected": "catalogue contains the created tag",
+    "actual": "catalogue contains the created tag",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "select tag and Save tags",
+    "operation": "click",
+    "expected": "whole selection persists after refresh",
+    "actual": "whole selection persists after refresh",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Add note",
+    "operation": "fill",
+    "expected": "typed draft is visible",
+    "actual": "typed draft is visible",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Add note",
+    "operation": "click",
+    "expected": "new note persists and shows staff/time without raw principal ID",
+    "actual": "new note persists and shows staff/time without raw principal ID",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Edit note",
+    "operation": "click",
+    "expected": "edit form starts with saved body",
+    "actual": "edit form starts with saved body",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "unsaved edit draft",
+    "operation": "fill",
+    "expected": "typed draft is visible",
+    "actual": "typed draft is visible",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Save tags while note draft is open",
+    "operation": "click",
+    "expected": "passive detail.notes refresh preserves body and edit intent",
+    "actual": "passive detail.notes refresh preserves body and edit intent",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Save note",
+    "operation": "click",
+    "expected": "the existing note changes once; no accidental new note",
+    "actual": "the existing note changes once; no accidental new note",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Edit then Cancel",
+    "operation": "click",
+    "expected": "cancel restores saved body without mutation",
+    "actual": "cancel restores saved body without mutation",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Delete note cancel/confirm",
+    "operation": "click",
+    "expected": "cancel keeps note; confirm removes it and reload stays removed",
+    "actual": "cancel keeps note; confirm removes it and reload stays removed",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers",
+    "control": "Manage tags",
+    "operation": "click",
+    "expected": "catalogue modal opens",
+    "actual": "catalogue modal opens",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers",
+    "control": "Rename/recolour",
+    "operation": "click",
+    "expected": "saved name and green colour persist in catalogue",
+    "actual": "saved name and green colour persist in catalogue",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers",
+    "control": "Delete tag cancel/confirm",
+    "operation": "click",
+    "expected": "cancel retains catalogue tag; confirm removes it",
+    "actual": "cancel retains catalogue tag; confirm removes it",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers",
+    "control": "Close tag manager",
+    "operation": "click",
+    "expected": "modal closes and invocation remains usable",
+    "actual": "modal closes and invocation remains usable",
+    "result": "pass"
+  },
+  {
+    "page": "/en",
+    "control": "Sign in with identity service",
+    "operation": "click",
+    "expected": "signed callback opens the merchant workspace",
+    "actual": "signed callback opens the merchant workspace",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "New tag",
+    "operation": "click",
+    "expected": "detail tag creation form opens",
+    "actual": "detail tag creation form opens",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "名稱",
+    "operation": "fill",
+    "expected": "typed draft is visible",
+    "actual": "typed draft is visible",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Colour",
+    "operation": "selectOption",
+    "expected": "new tag uses purple",
+    "actual": "new tag uses purple",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Create tag",
+    "operation": "click",
+    "expected": "catalogue contains the created tag",
+    "actual": "catalogue contains the created tag",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "select tag and Save tags",
+    "operation": "click",
+    "expected": "whole selection persists after refresh",
+    "actual": "whole selection persists after refresh",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "新增備註",
+    "operation": "fill",
+    "expected": "typed draft is visible",
+    "actual": "typed draft is visible",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Add note",
+    "operation": "click",
+    "expected": "new note persists and shows staff/time without raw principal ID",
+    "actual": "new note persists and shows staff/time without raw principal ID",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Edit note",
+    "operation": "click",
+    "expected": "edit form starts with saved body",
+    "actual": "edit form starts with saved body",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "unsaved edit draft",
+    "operation": "fill",
+    "expected": "typed draft is visible",
+    "actual": "typed draft is visible",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Save tags while note draft is open",
+    "operation": "click",
+    "expected": "passive detail.notes refresh preserves body and edit intent",
+    "actual": "passive detail.notes refresh preserves body and edit intent",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Save note",
+    "operation": "click",
+    "expected": "the existing note changes once; no accidental new note",
+    "actual": "the existing note changes once; no accidental new note",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Edit then Cancel",
+    "operation": "click",
+    "expected": "cancel restores saved body without mutation",
+    "actual": "cancel restores saved body without mutation",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Delete note cancel/confirm",
+    "operation": "click",
+    "expected": "cancel keeps note; confirm removes it and reload stays removed",
+    "actual": "cancel keeps note; confirm removes it and reload stays removed",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers",
+    "control": "Manage tags",
+    "operation": "click",
+    "expected": "catalogue modal opens",
+    "actual": "catalogue modal opens",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers",
+    "control": "Rename/recolour",
+    "operation": "click",
+    "expected": "saved name and green colour persist in catalogue",
+    "actual": "saved name and green colour persist in catalogue",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers",
+    "control": "Delete tag cancel/confirm",
+    "operation": "click",
+    "expected": "cancel retains catalogue tag; confirm removes it",
+    "actual": "cancel retains catalogue tag; confirm removes it",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers",
+    "control": "Close tag manager",
+    "operation": "click",
+    "expected": "modal closes and invocation remains usable",
+    "actual": "modal closes and invocation remains usable",
+    "result": "pass"
+  },
+  {
+    "page": "/en",
+    "control": "Sign in with identity service",
+    "operation": "click",
+    "expected": "signed callback opens the merchant workspace",
+    "actual": "signed callback opens the merchant workspace",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "New tag",
+    "operation": "click",
+    "expected": "detail tag creation form opens",
+    "actual": "detail tag creation form opens",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "名稱",
+    "operation": "fill",
+    "expected": "typed draft is visible",
+    "actual": "typed draft is visible",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Colour",
+    "operation": "selectOption",
+    "expected": "new tag uses purple",
+    "actual": "new tag uses purple",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Create tag",
+    "operation": "click",
+    "expected": "catalogue contains the created tag",
+    "actual": "catalogue contains the created tag",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "select tag and Save tags",
+    "operation": "click",
+    "expected": "whole selection persists after refresh",
+    "actual": "whole selection persists after refresh",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "新增備註",
+    "operation": "fill",
+    "expected": "typed draft is visible",
+    "actual": "typed draft is visible",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Add note",
+    "operation": "click",
+    "expected": "new note persists and shows staff/time without raw principal ID",
+    "actual": "new note persists and shows staff/time without raw principal ID",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Edit note",
+    "operation": "click",
+    "expected": "edit form starts with saved body",
+    "actual": "edit form starts with saved body",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "unsaved edit draft",
+    "operation": "fill",
+    "expected": "typed draft is visible",
+    "actual": "typed draft is visible",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Save tags while note draft is open",
+    "operation": "click",
+    "expected": "passive detail.notes refresh preserves body and edit intent",
+    "actual": "passive detail.notes refresh preserves body and edit intent",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Save note",
+    "operation": "click",
+    "expected": "the existing note changes once; no accidental new note",
+    "actual": "the existing note changes once; no accidental new note",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Edit then Cancel",
+    "operation": "click",
+    "expected": "cancel restores saved body without mutation",
+    "actual": "cancel restores saved body without mutation",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Delete note cancel/confirm",
+    "operation": "click",
+    "expected": "cancel keeps note; confirm removes it and reload stays removed",
+    "actual": "cancel keeps note; confirm removes it and reload stays removed",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers",
+    "control": "Manage tags",
+    "operation": "click",
+    "expected": "catalogue modal opens",
+    "actual": "catalogue modal opens",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers",
+    "control": "Rename/recolour",
+    "operation": "click",
+    "expected": "saved name and green colour persist in catalogue",
+    "actual": "saved name and green colour persist in catalogue",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers",
+    "control": "Delete tag cancel/confirm",
+    "operation": "click",
+    "expected": "cancel retains catalogue tag; confirm removes it",
+    "actual": "cancel retains catalogue tag; confirm removes it",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-TW/customers",
+    "control": "Close tag manager",
+    "operation": "click",
+    "expected": "modal closes and invocation remains usable",
+    "actual": "modal closes and invocation remains usable",
+    "result": "pass"
+  },
+  {
+    "page": "/en",
+    "control": "Sign in with identity service",
+    "operation": "click",
+    "expected": "signed callback opens the merchant workspace",
+    "actual": "signed callback opens the merchant workspace",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "tag-read-503 Retry",
+    "operation": "click",
+    "expected": "failed genuine read is visible and Retry restores controls/notes",
+    "actual": "failed genuine read is visible and Retry restores controls/notes",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "notes-read-503 Retry",
+    "operation": "click",
+    "expected": "failed genuine read is visible and Retry restores controls/notes",
+    "actual": "failed genuine read is visible and Retry restores controls/notes",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Load more notes",
+    "operation": "click",
+    "expected": "older notes append without duplicates",
+    "actual": "older notes append without duplicates",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "20-tag checkbox cap",
+    "operation": "click",
+    "expected": "exactly 20 can be selected, remaining unchecked boxes are disabled",
+    "actual": "exactly 20 can be selected, remaining unchecked boxes are disabled",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "1001-character note",
+    "operation": "fill",
+    "expected": "typed draft is visible",
+    "actual": "typed draft is visible",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "1000-character note",
+    "operation": "fill",
+    "expected": "typed draft is visible",
+    "actual": "typed draft is visible",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "clear draft",
+    "operation": "fill",
+    "expected": "typed draft is visible",
+    "actual": "typed draft is visible",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers",
+    "control": "Filter by tag",
+    "operation": "selectOption",
+    "expected": "matching first customer only and URL persists",
+    "actual": "matching first customer only and URL persists",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers",
+    "control": "customer detail link and browser Back",
+    "operation": "click",
+    "expected": "real customer link opens detail and Back restores list",
+    "actual": "real customer link opens detail and Back restores list",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers",
+    "control": "21-character name",
+    "operation": "fill",
+    "expected": "typed draft is visible",
+    "actual": "typed draft is visible",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers",
+    "control": "case-normalized duplicate",
+    "operation": "fill",
+    "expected": "typed draft is visible",
+    "actual": "typed draft is visible",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers",
+    "control": "Create duplicate",
+    "operation": "click",
+    "expected": "actual backend 409 tag_exists is visible without duplicate",
+    "actual": "actual backend 409 tag_exists is visible without duplicate",
+    "result": "pass"
+  },
+  {
+    "page": "/en",
+    "control": "Sign in with identity service",
+    "operation": "click",
+    "expected": "signed callback opens the merchant workspace",
+    "actual": "signed callback opens the merchant workspace",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "stale Save tags",
+    "operation": "click",
+    "expected": "actual 409 keeps winning tag set and offers explicit Refresh",
+    "actual": "actual 409 keeps winning tag set and offers explicit Refresh",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "old note version draft",
+    "operation": "fill",
+    "expected": "typed draft is visible",
+    "actual": "typed draft is visible",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "stale Save note",
+    "operation": "click",
+    "expected": "409 refuses silent version rebase; draft survives until explicit Refresh",
+    "actual": "409 refuses silent version rebase; draft survives until explicit Refresh",
+    "result": "pass"
+  },
+  {
+    "page": "/en",
+    "control": "Sign in with identity service",
+    "operation": "click",
+    "expected": "signed callback opens the merchant workspace",
+    "actual": "signed callback opens the merchant workspace",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Add note",
+    "operation": "fill",
+    "expected": "typed draft is visible",
+    "actual": "typed draft is visible",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "unknown Add note / Retry",
+    "operation": "click",
+    "expected": "unknown locks controls, no automatic retry, explicit retry keeps exact key",
+    "actual": "unknown locks controls, no automatic retry, explicit retry keeps exact key",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Add note",
+    "operation": "fill",
+    "expected": "typed draft is visible",
+    "actual": "typed draft is visible",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Retry after session revocation",
+    "operation": "click",
+    "expected": "server refuses the same-key retry without another backend write and clears private UI",
+    "actual": "server refuses the same-key retry without another backend write and clears private UI",
+    "result": "pass"
+  },
+  {
+    "page": "/en",
+    "control": "Sign in with identity service",
+    "operation": "click",
+    "expected": "signed callback opens the merchant workspace",
+    "actual": "signed callback opens the merchant workspace",
+    "result": "pass"
+  },
+  {
+    "page": "/en",
+    "control": "Sign in with identity service",
+    "operation": "click",
+    "expected": "signed callback opens the merchant workspace",
+    "actual": "signed callback opens the merchant workspace",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "Add note",
+    "operation": "fill",
+    "expected": "typed draft is visible",
+    "actual": "typed draft is visible",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/40d4a49f-afc4-4c18-b909-fc7d7dd860d1",
+    "control": "writer creates/edits own note",
+    "operation": "click",
+    "expected": "write-only staff may edit their own note",
+    "actual": "write-only staff may edit their own note",
+    "result": "pass"
+  }
+]

@@ -1,0 +1,159 @@
+browser engine: chromium
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+ExpectError: expect(locator).toBeVisible() failed
+
+Locator: getByRole('status').filter({ hasText: '正在載入收件資訊…' })
+Expected: visible
+Timeout: 5000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toBeVisible" getByRole('status').filter({ hasText: '正在載入收件資訊…' }) with timeout 5000ms
+  - waiting for getByRole('status').filter({ hasText: '正在載入收件資訊…' })
+
+    at captureRawStack (/Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race/node_modules/.pnpm/playwright-core@1.63.0/node_modules/playwright-core/lib/coreBundle.js:8588:17)
+    at callMatcherAsStep (/Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race/node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/matchers/expect.js:13310:57)
+    at Object.toBeVisible (/Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race/node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/matchers/expect.js:13302:23)
+    at stableLocaleTarget (/Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race/tests/storefront/order-gate.mjs:200:69)
+    at async file:///Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race/tests/storefront/order-gate.mjs:249:3 {
+  matcherResult: {
+    message: 'expect(locator).toBeVisible() failed\n' +
+      '\n' +
+      "Locator: getByRole('status').filter({ hasText: '正在載入收件資訊…' })\n" +
+      'Expected: visible\n' +
+      'Timeout: 5000ms\n' +
+      'Error: element(s) not found\n' +
+      '\n' +
+      'Call log:\n' +
+      `  - Expect "toBeVisible" getByRole('status').filter({ hasText: '正在載入收件資訊…' }) with timeout 5000ms\n` +
+      "  - waiting for getByRole('status').filter({ hasText: '正在載入收件資訊…' })\n",
+    pass: false,
+    actual: undefined,
+    name: 'toBeVisible',
+    expected: 'visible',
+    log: [
+      `  - Expect "toBeVisible" getByRole('status').filter({ hasText: '正在載入收件資訊…' }) with timeout 5000ms`,
+      "  - waiting for getByRole('status').filter({ hasText: '正在載入收件資訊…' })"
+    ],
+    timeout: 5000,
+    ariaSnapshot: '- link "跳到主要內容":\n' +
+      '  - /url: "#main"\n' +
+      '- banner:\n' +
+      '  - link "fixture-store-a1":\n' +
+      '    - /url: /zh-TW\n' +
+      '  - navigation "主選單":\n' +
+      '    - list\n' +
+      '  - search:\n' +
+      '    - text: 搜尋\n' +
+      '    - searchbox "搜尋"\n' +
+      '    - button "搜尋"\n' +
+      '  - button "購物車，1 件商品"\n' +
+      '- paragraph: 示意資料 · 測試環境\n' +
+      '- main:\n' +
+      '  - navigation "我的訂單":\n' +
+      '    - button "我的訂單"\n' +
+      '  - region "結帳":\n' +
+      '    - heading "結帳" [level=1]\n' +
+      '    - list:\n' +
+      '      - listitem:\n' +
+      '        - img "無圖片"\n' +
+      '        - link "Synthetic browser order product":\n' +
+      '          - /url: /zh-TW/products/t04-692fa35ac4a7\n' +
+      '        - text: US$12.50\n' +
+      '        - paragraph: T04-692fa35ac4a7-0\n' +
+      '        - paragraph: × 1\n' +
+      '    - link "返回購物車":\n' +
+      '      - /url: /zh-TW/cart\n' +
+      '  - region "本次報價商品":\n' +
+      '    - heading "本次報價商品" [level=2]\n' +
+      '    - list:\n' +
+      '      - listitem: Synthetic browser order product · T04-692fa35ac4a7-0 × 1 US$12.50\n' +
+      '    - term: 運費\n' +
+      '    - definition: US$0.50\n' +
+      '    - term: 稅額\n' +
+      '    - definition: US$0.66\n' +
+      '    - term: 優惠\n' +
+      '    - definition: US$0\n' +
+      '    - term: 訂單金額\n' +
+      '    - definition: US$13.66\n' +
+      '    - paragraph: 報價有效期限 2026/10/09 17:14 · 台北時間（UTC+8）\n' +
+      '    - paragraph: 尚未收款。請在下方確認收件資訊，再建立未付款訂單。\n' +
+      '    - text: 優惠碼\n' +
+      '    - textbox "優惠碼":\n' +
+      '      - /placeholder: 輸入優惠碼\n' +
+      '    - button "使用" [disabled]\n' +
+      '    - text: 優惠碼只減商品金額，不減運費。每張訂單限用一個。\n' +
+      '    - button "重新選擇配送"\n' +
+      '  - region "收件地址":\n' +
+      '    - heading "收件地址" [level=2]\n' +
+      '    - paragraph: 請核對收件地址與報價總額，再建立訂單。\n' +
+      '    - paragraph:\n' +
+      '      - text: "訂單金額:"\n' +
+      '      - strong: US$13.66\n' +
+      '      - text: "· 國家／地區: TW"\n' +
+      '    - group "收件地址":\n' +
+      '      - text: 收件地址 收件人\n' +
+      '      - textbox "收件人"\n' +
+      '      - text: 手機號碼\n' +
+      '      - textbox "手機號碼"\n' +
+      '      - text: 縣市／地區（選填）\n' +
+      '      - textbox "縣市／地區（選填）"\n' +
+      '      - text: 鄉鎮市區\n' +
+      '      - textbox "鄉鎮市區"\n' +
+      '      - text: 郵遞區號（選填）\n' +
+      '      - textbox "郵遞區號（選填）"\n' +
+      '      - text: 詳細地址\n' +
+      '      - textbox "詳細地址"\n' +
+      '      - text: 補充地址（選填）\n' +
+      '      - textbox "補充地址（選填）"\n' +
+      '      - button "確認收件資訊"\n' +
+      '    - text: 電子郵件（選填）\n' +
+      '    - textbox "電子郵件（選填） 僅用於此訂單的通知。"\n' +
+      '    - text: 僅用於此訂單的通知。\n' +
+      '    - group "選填的訊息與廣告":\n' +
+      '      - text: 選填的訊息與廣告\n' +
+      '      - paragraph: 以下皆為選填，不影響你的訂單，你隨時可以在隱私頁面更改。\n' +
+      '      - checkbox "允許店鋪透過 Messenger 或 Instagram 私訊向我發送行銷訊息。"\n' +
+      '      - text: 允許店鋪透過 Messenger 或 Instagram 私訊向我發送行銷訊息。\n' +
+      '      - checkbox "使用我的購買紀錄為我個人化 Meta 廣告。"\n' +
+      '      - text: 使用我的購買紀錄為我個人化 Meta 廣告。\n' +
+      '      - paragraph: 勾選後，本訂單的購買事件（訂單金額與幣別，並關聯你的瀏覽器訊號）會傳送給 Meta，用於衡量和個人化廣告。已傳送的事件無法撤回。\n' +
+      '      - paragraph:\n' +
+      '        - link "隱私聲明":\n' +
+      '          - /url: /zh-TW/privacy?notice=lc-2026-10\n' +
+      '        - text: (版本 lc-2026-10)\n' +
+      '    - paragraph: 請先確認上方收件資訊，才能建立訂單。\n' +
+      '    - button "建立未付款訂單" [disabled]\n' +
+      '    - paragraph: 此頁面暫未開放付款。建立訂單不會扣款。\n' +
+      '- contentinfo:\n' +
+      '  - text: 訂單金額\n' +
+      '  - strong: US$13.66\n' +
+      '  - text: 尚未付款\n' +
+      '  - button "查看報價"\n' +
+      '- contentinfo:\n' +
+      '  - region "fixture-store-a1":\n' +
+      '    - paragraph: fixture-store-a1\n' +
+      '  - navigation "Legal":\n' +
+      '    - list:\n' +
+      '      - listitem:\n' +
+      '        - link "防詐騙提醒":\n' +
+      '          - /url: /zh-TW/legal/anti-fraud\n' +
+      '      - listitem:\n' +
+      '        - link "資料刪除":\n' +
+      '          - /url: /zh-TW/data-deletion\n' +
+      '  - navigation "語言":\n' +
+      '    - link "简体中文":\n' +
+      '      - /url: /zh-CN/checkout\n' +
+      '    - link "繁體中文":\n' +
+      '      - /url: /zh-TW/checkout\n' +
+      '    - link "English":\n' +
+      '      - /url: /en/checkout\n' +
+      '  - paragraph: © 2026 fixture-store-a1\n' +
+      '- alert'
+  }
+}
+
+Node.js v24.15.0

@@ -1,0 +1,5 @@
+# Purpose: preserve final local static command output after this prologue.
+# Depends on: ['bash', 'scripts/dev/check-headers.sh', 'origin/r3/integration']; original main log SHA256=a20d5dab30c31f951a20d110bbdedbec2e51e713462ed6a6fdd9542c50ede508.
+# Used by: integrator; browser acceptance remains pending.
+# Evidence normalization: trailing whitespace/blank EOF only; original raw bytes and SHA256 retained in main checkout/provenance above.
+check-headers: OK (base origin/r3/integration)

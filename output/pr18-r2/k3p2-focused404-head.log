@@ -1,0 +1,8 @@
+=== RUN   TestBrowserLiveConsoleRealChain
+    browser_live_console_test.go:603: FOCUSED_SPEC_ONLY: live-console grep="LCU2_404"; full-mode acceptance remains NOT_RUN
+    browser_live_console_test.go:628: LC-U1/U2a browser failed: exit status 1; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/output/playwright/live-console-2613146305
+--- FAIL: TestBrowserLiveConsoleRealChain (36.12s)
+FAIL
+FAIL	livecommerce/tests/foundation	37.928s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

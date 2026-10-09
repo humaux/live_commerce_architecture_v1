@@ -1,0 +1,18 @@
+{
+  "name": "matrix-labels-red",
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-product-editor"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups",
+  "out": "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups/output/pr16-r3",
+  "timeout": 2400,
+  "head": "1c0da6c1d3375ca05ac4086cfbd4fafcf74966e5",
+  "pid": 73710,
+  "exit_code": 1,
+  "source_sha256": "fb866b386cd6d8ef4ba96a22aab93a52b9cb435ba870bb5c199549d97f400284",
+  "source_after": "fb866b386cd6d8ef4ba96a22aab93a52b9cb435ba870bb5c199549d97f400284",
+  "source_unchanged": true,
+  "elapsed_seconds": 69.709
+}

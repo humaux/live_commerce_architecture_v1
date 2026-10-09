@@ -1,0 +1,17 @@
+{
+  "head": "9c82aaf9c613816fe3975c0502a648f85c14c4c1",
+  "file": "tests/admin/customer-tags.spec.ts",
+  "sha256": "5298e1505fb5ebd0f378f2f1ff0db2c7d23cb506540d201cb2ba9fabc6b8bcf8",
+  "trunk_executable_ast_identical": true,
+  "previous_plain_expect_statements": 16,
+  "merged_plain_expect_statements": 17,
+  "previous_plain_expect_statements_retained_in_order": true,
+  "checker_exit_code": 0,
+  "initial_checker_attempt": {
+    "exit_code": 1,
+    "reason": "typescript7 has no createPrinter; corrected to existing typescript-api dependency"
+  },
+  "previous_all_expect_chains": 101,
+  "merged_all_expect_chains": 103,
+  "all_previous_expect_chains_preserved_in_order": true
+}

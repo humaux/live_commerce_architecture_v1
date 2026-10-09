@@ -1,0 +1,26 @@
+{
+  "_header": {
+    "Purpose": "pin fixedstack command/source/exit",
+    "Depends on": "actualcurrentrun",
+    "Used by": "integratorthreegates"
+  },
+  "Purpose": "after fixedcfe W6 stack dependency checks",
+  "Depends on": "currentbase/source/command",
+  "Used by": "integrator W5threeCI requests",
+  "run_id": "post-stack-types-7926",
+  "pid": 7926,
+  "command": [
+    "pnpm",
+    "--filter",
+    "@live-commerce/admin",
+    "typecheck"
+  ],
+  "state": "finished",
+  "timeout_seconds": 120,
+  "at": "2026-10-07T13:36:46.634596+00:00",
+  "wake": "root activeforeground completionawait",
+  "failure_match": "nonzero ornomatchedtests",
+  "base": "b2b1ede70b4da71ea2bb9a737e250280aa58396f",
+  "exit_code": 0,
+  "ended_at": "2026-10-07T13:36:50.621821+00:00"
+}

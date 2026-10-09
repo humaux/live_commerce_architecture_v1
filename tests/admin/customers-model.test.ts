@@ -1,3 +1,6 @@
+// Purpose: validate customer/finance projections and Taipei business-day defaults.
+// Depends on: node:test/assert and the real customers-model module.
+// Used by: customer billing gates and the TZ-cycled node regression gate.
 // customers-billing-ui: strict parsers for the frozen customers/finance DTOs (apps/admin/lib/customers-model.ts).
 // Fixtures are synthetic (no real buyer data). The real Go shapes are proved by customers-billing-tests (CB09/CB11).
 import assert from "node:assert/strict";
@@ -115,6 +118,19 @@ test("financeDay is the UTC+8 day", () => {
   assert.equal(financeDay(new Date("2026-09-29T16:30:00Z")), "2026-09-30");
   assert.equal(financeDay(new Date("2026-09-29T15:30:00Z")), "2026-09-29");
   assert.equal(financeDay(new Date("2026-09-29T15:30:00Z"), -30), "2026-08-30");
+});
+
+test("finance defaults keep Taipei dates across midnight, leap day and year end", () => {
+  for (const [instant, today, from] of [
+    ["2026-12-31T16:00:00Z", "2027-01-01", "2026-12-03"],
+    ["2024-02-28T16:00:00Z", "2024-02-29", "2024-01-31"],
+    ["2026-10-06T15:59:59Z", "2026-10-06", "2026-09-07"],
+    ["2026-10-06T16:00:00Z", "2026-10-07", "2026-09-08"],
+  ]) {
+    const now = new Date(instant);
+    assert.equal(financeDay(now), today, `${instant} under ${process.env.TZ}`);
+    assert.equal(financeDay(now, -29), from, `${instant} 30-day window under ${process.env.TZ}`);
+  }
 });
 
 // W6-01B: the backend now always sends `tags` on rows and `tags_revision` + `notes` on the detail.

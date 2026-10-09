@@ -1,0 +1,174 @@
+=== RUN   TestStripeRF12Guards
+=== RUN   TestStripeRF12Guards/replaced_B1_functions_differ_from_their_last_definition_only_by_the_stated_delta
+=== RUN   TestStripeRF12Guards/only_internal/integrations/psp/stripe_dials_Stripe
+=== RUN   TestStripeRF12Guards/COMMENT_ON_for_every_0062_object_and_column
+=== RUN   TestStripeRF12Guards/package_comments_(PROCESS_§5)
+    stripe_refund_guards_test.go:420: DATA internal/httpapi: package comment lacks [owns] (pre-existing; reviewer decision)
+=== RUN   TestStripeRF12Guards/logs_and_rows_carry_no_key,_whsec,_body_or_ARN_after_a_full_MOCK_refund_run
+--- PASS: TestStripeRF12Guards (15.82s)
+    --- PASS: TestStripeRF12Guards/replaced_B1_functions_differ_from_their_last_definition_only_by_the_stated_delta (9.85s)
+    --- PASS: TestStripeRF12Guards/only_internal/integrations/psp/stripe_dials_Stripe (0.24s)
+    --- PASS: TestStripeRF12Guards/COMMENT_ON_for_every_0062_object_and_column (0.02s)
+    --- PASS: TestStripeRF12Guards/package_comments_(PROCESS_§5) (0.01s)
+    --- PASS: TestStripeRF12Guards/logs_and_rows_carry_no_key,_whsec,_body_or_ARN_after_a_full_MOCK_refund_run (5.70s)
+=== RUN   TestStripeSP06Schema
+=== RUN   TestStripeSP06Schema/negative/integration.merchant_accounts
+=== RUN   TestStripeSP06Schema/negative/integration.account_credentials
+=== RUN   TestStripeSP06Schema/negative/payments.account_qualifications
+=== RUN   TestStripeSP06Schema/negative/payments.facts
+=== RUN   TestStripeSP06Schema/negative/payments.review_cases
+=== RUN   TestStripeSP06Schema/deadline/expires_at_40_minutes
+=== RUN   TestStripeSP06Schema/deadline/send_deadline_7_minutes
+=== RUN   TestStripeSP06Schema/deadline/handoff_cutoff_5_minutes
+--- PASS: TestStripeSP06Schema (0.19s)
+    --- PASS: TestStripeSP06Schema/negative/integration.merchant_accounts (0.02s)
+    --- PASS: TestStripeSP06Schema/negative/integration.account_credentials (0.01s)
+    --- PASS: TestStripeSP06Schema/negative/payments.account_qualifications (0.01s)
+    --- PASS: TestStripeSP06Schema/negative/payments.facts (0.01s)
+    --- PASS: TestStripeSP06Schema/negative/payments.review_cases (0.01s)
+    --- PASS: TestStripeSP06Schema/deadline/expires_at_40_minutes (0.01s)
+    --- PASS: TestStripeSP06Schema/deadline/send_deadline_7_minutes (0.01s)
+    --- PASS: TestStripeSP06Schema/deadline/handoff_cutoff_5_minutes (0.01s)
+=== RUN   TestStripeSP06RegistrarIsolation
+=== RUN   TestStripeSP06RegistrarIsolation/second_account_same_store
+=== RUN   TestStripeSP06RegistrarIsolation/same_account_other_store
+=== RUN   TestStripeSP06RegistrarIsolation/foreign_principal
+=== RUN   TestStripeSP06RegistrarIsolation/foreign_tenant_store_pair
+--- PASS: TestStripeSP06RegistrarIsolation (0.23s)
+    --- PASS: TestStripeSP06RegistrarIsolation/second_account_same_store (0.00s)
+    --- PASS: TestStripeSP06RegistrarIsolation/same_account_other_store (0.00s)
+    --- PASS: TestStripeSP06RegistrarIsolation/foreign_principal (0.00s)
+    --- PASS: TestStripeSP06RegistrarIsolation/foreign_tenant_store_pair (0.00s)
+=== RUN   TestStripeSP06EndpointCustodyAndRLS
+--- PASS: TestStripeSP06EndpointCustodyAndRLS (0.19s)
+=== RUN   TestStripeUntrackedCaptureAndClose
+=== RUN   TestStripeUntrackedCaptureAndClose/all_untracked/capture
+    stripe_untracked_capture_test.go:64: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:79: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedCaptureAndClose/all_untracked/close
+    stripe_untracked_capture_test.go:64: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:79: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedCaptureAndClose/mixed/capture
+    stripe_untracked_capture_test.go:64: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:79: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedCaptureAndClose/mixed/close
+    stripe_untracked_capture_test.go:64: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:79: OWNER-POOL: payments.provider_observations report
+--- PASS: TestStripeUntrackedCaptureAndClose (2.47s)
+    --- PASS: TestStripeUntrackedCaptureAndClose/all_untracked/capture (0.52s)
+    --- PASS: TestStripeUntrackedCaptureAndClose/all_untracked/close (0.42s)
+    --- PASS: TestStripeUntrackedCaptureAndClose/mixed/capture (0.44s)
+    --- PASS: TestStripeUntrackedCaptureAndClose/mixed/close (1.09s)
+=== RUN   TestStripeUntrackedReservationRefusals
+=== RUN   TestStripeUntrackedReservationRefusals/capture/missing_tracked_lines
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:126: OWNER-POOL: replica-mode tamper/restore: DELETE FROM inventory.reservation_lines
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/capture/empty_quote
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:132: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders SET
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/capture/foreign_sku
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:144: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders SET
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/capture/missing_reservation
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:146: OWNER-POOL: replica-mode tamper/restore: DELETE FROM inventory.reservations
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/capture/tracked_flipped_with_missing_lines
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:126: OWNER-POOL: replica-mode tamper/restore: DELETE FROM inventory.reservation_lines
+    stripe_untracked_capture_test.go:128: OWNER-POOL: catalog tracking changed after a tracked hold; its RESERVE history must remain authoritative
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/close/missing_tracked_lines
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:126: OWNER-POOL: replica-mode tamper/restore: DELETE FROM inventory.reservation_lines
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/close/empty_quote
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:132: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders SET
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/close/foreign_sku
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:144: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders SET
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/close/missing_reservation
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:146: OWNER-POOL: replica-mode tamper/restore: DELETE FROM inventory.reservations
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/close/tracked_flipped_with_missing_lines
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:126: OWNER-POOL: replica-mode tamper/restore: DELETE FROM inventory.reservation_lines
+    stripe_untracked_capture_test.go:128: OWNER-POOL: catalog tracking changed after a tracked hold; its RESERVE history must remain authoritative
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+--- PASS: TestStripeUntrackedReservationRefusals (5.06s)
+    --- PASS: TestStripeUntrackedReservationRefusals/capture/missing_tracked_lines (0.43s)
+    --- PASS: TestStripeUntrackedReservationRefusals/capture/empty_quote (0.59s)
+    --- PASS: TestStripeUntrackedReservationRefusals/capture/foreign_sku (0.71s)
+    --- PASS: TestStripeUntrackedReservationRefusals/capture/missing_reservation (0.44s)
+    --- PASS: TestStripeUntrackedReservationRefusals/capture/tracked_flipped_with_missing_lines (0.42s)
+    --- PASS: TestStripeUntrackedReservationRefusals/close/missing_tracked_lines (0.43s)
+    --- PASS: TestStripeUntrackedReservationRefusals/close/empty_quote (0.41s)
+    --- PASS: TestStripeUntrackedReservationRefusals/close/foreign_sku (0.71s)
+    --- PASS: TestStripeUntrackedReservationRefusals/close/missing_reservation (0.42s)
+    --- PASS: TestStripeUntrackedReservationRefusals/close/tracked_flipped_with_missing_lines (0.50s)
+=== RUN   TestStripeUntrackedDriftReview
+=== RUN   TestStripeUntrackedDriftReview/became_tracked
+    stripe_untracked_review_test.go:36: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_review_test.go:65: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedDriftReview/sku_deleted
+    stripe_untracked_review_test.go:36: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_review_test.go:60: OWNER-POOL: replica-mode tamper/restore: DELETE FROM catalog.skus
+    stripe_untracked_review_test.go:65: OWNER-POOL: payments.provider_observations report
+--- PASS: TestStripeUntrackedDriftReview (9.67s)
+    --- PASS: TestStripeUntrackedDriftReview/became_tracked (5.32s)
+    --- PASS: TestStripeUntrackedDriftReview/sku_deleted (4.35s)
+=== RUN   TestStripeUntrackedMixedDrift
+=== RUN   TestStripeUntrackedMixedDrift/tracked
+    stripe_untracked_round1_test.go:59: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_round1_test.go:61: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedMixedDrift/deleted
+    stripe_untracked_round1_test.go:59: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_round1_test.go:60: OWNER-POOL: replica-mode tamper/restore: DELETE FROM catalog.skus
+    stripe_untracked_round1_test.go:61: OWNER-POOL: payments.provider_observations report
+--- PASS: TestStripeUntrackedMixedDrift (1.06s)
+    --- PASS: TestStripeUntrackedMixedDrift/tracked (0.62s)
+    --- PASS: TestStripeUntrackedMixedDrift/deleted (0.43s)
+=== RUN   TestStripeUntrackedFulfillmentState
+    stripe_untracked_round1_test.go:72: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_round1_test.go:74: OWNER-POOL: payments.provider_observations report
+--- PASS: TestStripeUntrackedFulfillmentState (0.43s)
+=== RUN   TestStripeUntrackedCloseAfterDrift
+=== RUN   TestStripeUntrackedCloseAfterDrift/tracked
+    stripe_untracked_round1_test.go:88: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_round1_test.go:90: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedCloseAfterDrift/deleted
+    stripe_untracked_round1_test.go:88: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_round1_test.go:89: OWNER-POOL: replica-mode tamper/restore: DELETE FROM catalog.skus
+    stripe_untracked_round1_test.go:90: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedCloseAfterDrift/mixed_tracked
+    stripe_untracked_round1_test.go:88: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_round1_test.go:90: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedCloseAfterDrift/mixed_deleted
+    stripe_untracked_round1_test.go:88: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_round1_test.go:89: OWNER-POOL: replica-mode tamper/restore: DELETE FROM catalog.skus
+    stripe_untracked_round1_test.go:90: OWNER-POOL: payments.provider_observations report
+--- PASS: TestStripeUntrackedCloseAfterDrift (19.03s)
+    --- PASS: TestStripeUntrackedCloseAfterDrift/tracked (4.19s)
+    --- PASS: TestStripeUntrackedCloseAfterDrift/deleted (6.60s)
+    --- PASS: TestStripeUntrackedCloseAfterDrift/mixed_tracked (4.35s)
+    --- PASS: TestStripeUntrackedCloseAfterDrift/mixed_deleted (3.89s)
+=== RUN   TestStripeUntrackedPresentmentDriftRefund
+=== RUN   TestStripeUntrackedPresentmentDriftRefund/all_untracked
+    stripe_untracked_round1_test.go:134: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_round1_test.go:139: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedPresentmentDriftRefund/mixed
+    stripe_untracked_round1_test.go:134: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_round1_test.go:139: OWNER-POOL: payments.provider_observations report
+--- PASS: TestStripeUntrackedPresentmentDriftRefund (1.09s)
+    --- PASS: TestStripeUntrackedPresentmentDriftRefund/all_untracked (0.61s)
+    --- PASS: TestStripeUntrackedPresentmentDriftRefund/mixed (0.48s)
+PASS
+ok  	livecommerce/tests/foundation	57.758s
+test-focused: top-level PASS=11 FAIL=0 SKIP=0 exit=0

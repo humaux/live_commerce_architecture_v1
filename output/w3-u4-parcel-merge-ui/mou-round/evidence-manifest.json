@@ -1,0 +1,117 @@
+[
+  {
+    "file": "baseline.json",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/mou-round/baseline.json",
+    "raw_sha256": "0874f85ff4e1e37f461f455052f4e13ef4e2abfd85a01cdb690077642f9dec3d"
+  },
+  {
+    "file": "baseline.log",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/mou-round/baseline.log",
+    "raw_sha256": "e69c5a0fcf85c9175b7f03b1a8ca4b62b3507a0f74a29a90c20f1200b8c4f668"
+  },
+  {
+    "file": "bff-seams.json",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/mou-round/bff-seams.json",
+    "raw_sha256": "b197741838e0d36377b718c58e8833e34a988324b72cbb1ee107f940e2e9fde6"
+  },
+  {
+    "file": "bff-seams.log",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/mou-round/bff-seams.log",
+    "raw_sha256": "852925aa1a6ac178168e9bbb1ec6d9ca84a4971c4ec321a16b02ce73c37156ac"
+  },
+  {
+    "file": "check-gates.json",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/mou-round/check-gates.json",
+    "raw_sha256": "5736f1b6219a8877954c87f25e475c19d4c66366c6d4322b698687eb402d09e2"
+  },
+  {
+    "file": "check-gates.log",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/mou-round/check-gates.log",
+    "raw_sha256": "e545a68fd447760fa152bf028ea2e626a53cfbf2ff3e87b47d8a3e33742a2110"
+  },
+  {
+    "file": "ci-close-facts.json",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/mou-round/ci-close-facts.json",
+    "raw_sha256": "b7cd58a9d09f272cc0b304e98ffca020d261651ab92c4aaa87485cee0ed0d03d"
+  },
+  {
+    "file": "ci-red-playwright.log",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/mou-round/ci-red-playwright.log",
+    "raw_sha256": "b528b581304ab9d5291f4ce996f96c5fb65e3ce3b3c2a738b6c4c97c12887020"
+  },
+  {
+    "file": "customers.json",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/mou-round/customers.json",
+    "raw_sha256": "5fc969d3b2fc735a43de23e27860b4c5ab8862a52650de6d30a278e31d061cfb"
+  },
+  {
+    "file": "customers.log",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/mou-round/customers.log",
+    "raw_sha256": "8abe28632fcf33d9f564c8748a405c8914b5f1de64c2796e613cc34cd5715d06"
+  },
+  {
+    "file": "cvs.json",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/mou-round/cvs.json",
+    "raw_sha256": "67d33f3bd736c03e75e09fb4f0fd0c92b54d21d007d69b2752aa08e3d9698b96"
+  },
+  {
+    "file": "cvs.log",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/mou-round/cvs.log",
+    "raw_sha256": "4438951c097ac31d0f03203f16fb4ddcbd220075bad3721da67482832716e290"
+  },
+  {
+    "file": "local-playwright-parcel.log",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/mou-round/local-playwright-parcel.log",
+    "raw_sha256": "85346420b24e79f12a2a9b4d66451bbf17fe961a50f2b1732b836fbaae97ff9a"
+  },
+  {
+    "file": "local-playwright.log",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/mou-round/local-playwright.log",
+    "raw_sha256": "f001dec65bbf7804070830e01496b9acab2d0fcffd1933cb83fc0779731024e0"
+  },
+  {
+    "file": "node.json",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/mou-round/node.json",
+    "raw_sha256": "19f52dc81053a5deb8e8c83abd25c3fefc644755008847b76c22d0bd2852ca6c"
+  },
+  {
+    "file": "node.log",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/mou-round/node.log",
+    "raw_sha256": "82a65327e6807b29da37c41fc241a9b63f6ef8abf472b476364595fa5434a936"
+  },
+  {
+    "file": "picklist.json",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/mou-round/picklist.json",
+    "raw_sha256": "ce35f353c2a89a23030b3f06cffa4706668986a145e17644b619b90e97d40637"
+  },
+  {
+    "file": "picklist.log",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/mou-round/picklist.log",
+    "raw_sha256": "2e72d827a7b5846d6a132378d376a63c1d2a6c3d8927c92ed799824eb4bd3d94"
+  },
+  {
+    "file": "product-review.md",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/mou-round/product-review.md",
+    "raw_sha256": "8685c0f1bcccaaaa5b3413db9842a3b614d1a774e8dc7d7df014ae6b30f9753c"
+  },
+  {
+    "file": "source-binding.json",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/mou-round/source-binding.json",
+    "raw_sha256": "910b5e6dcdde7ba1e1874b485fa4f61c7aaf33f3d318e4f9084a527608881fce"
+  },
+  {
+    "file": "trace-review.md",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/mou-round/trace-review.md",
+    "raw_sha256": "3e332c4a5e225496909eb0179507f3848e1394c13be74a8dcb538c1e07b974cb"
+  },
+  {
+    "file": "typecheck.json",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/mou-round/typecheck.json",
+    "raw_sha256": "e1ae360104dcb333ce88943157fce91311135d2139f68ec87586683ca82eb905"
+  },
+  {
+    "file": "typecheck.log",
+    "raw_source": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/mou-round/typecheck.log",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+]

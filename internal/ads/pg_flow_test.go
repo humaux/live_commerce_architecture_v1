@@ -357,6 +357,12 @@ func TestAdsCoreRealPGDraftLifecycle(t *testing.T) {
 	// store-day boundary a deterministic part of this test at every wall-clock time.
 	tp := now.In(time.FixedZone("Asia/Taipei", 8*3600)) // no DST: the D9 store-local zone
 	nextMidnight := time.Date(tp.Year(), tp.Month(), tp.Day()+1, 0, 1, 0, 0, tp.Location())
+	// In the last minLeadTime (10 min) before Taipei midnight the next 00:01 is too soon and CreateDraft correctly refuses
+	// starts_too_soon (CI run 37802874532 at 23:41+ Taipei, 2026-10-08). Use the following night's 00:01 then: it still
+	// starts just after a store-day boundary, which is what this test pins, and EndsAt (now+49h) stays after it.
+	if nextMidnight.Before(now.Add(minLeadTime + time.Minute)) {
+		nextMidnight = nextMidnight.Add(24 * time.Hour)
+	}
 	in := DraftInput{AdBindingID: f.adBinding, IdentityBindingID: fbBinding, Template: "BOOST_POST", SourceRef: "111_222", Currency: "TWD",
 		LifetimeBudgetMinor: 300000, StartsAt: nextMidnight, EndsAt: now.Add(49 * time.Hour), Countries: []string{"TW", "HK"}, AgeMin: 18, AgeMax: 65}
 	if err := ValidateInput(DraftInput{LifetimeBudgetMinor: 12345}, "", now); err == nil {

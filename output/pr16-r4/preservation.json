@@ -1,0 +1,22 @@
+{
+  "preexisting_untracked_count": 290,
+  "all_preexisting_hashes_restored": true,
+  "untracked_set_restored_outside_delivery": true,
+  "tracked_evidence_restored": true,
+  "generated_extra_archived_then_removed": [
+    "output/product-ui-v2/mobile-axis-remove-en-390-saved.png",
+    "output/product-ui-v2/mobile-axis-remove-zh-CN-390-saved.png",
+    "output/product-ui-v2/mobile-axis-remove-zh-TW-390-saved.png",
+    "output/product-ui-v2/mobile-matrix-en-390-archived.png",
+    "output/product-ui-v2/mobile-matrix-en-390-edit.png",
+    "output/product-ui-v2/mobile-matrix-en-390-new.png",
+    "output/product-ui-v2/mobile-matrix-zh-CN-390-archived.png",
+    "output/product-ui-v2/mobile-matrix-zh-CN-390-edit.png",
+    "output/product-ui-v2/mobile-matrix-zh-CN-390-new.png",
+    "output/product-ui-v2/mobile-matrix-zh-TW-390-archived.png",
+    "output/product-ui-v2/mobile-matrix-zh-TW-390-edit.png",
+    "output/product-ui-v2/mobile-matrix-zh-TW-390-new.png"
+  ],
+  "generated_archive": "/Volumes/data/live_commerce_architecture_v1/output/pr16-r4-codex3/r4-generated-output.tar.gz",
+  "base_hashes": "/Volumes/data/live_commerce_architecture_v1/output/pr16-r4-codex3/preexisting-hashes.json"
+}

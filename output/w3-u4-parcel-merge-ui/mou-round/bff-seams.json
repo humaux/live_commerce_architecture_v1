@@ -1,0 +1,15 @@
+{
+  "command": [
+    "node",
+    "--test",
+    "--experimental-strip-types",
+    "tests/admin/parcels-bff.test.ts",
+    "tests/admin/inbox-bff.test.ts",
+    "tests/admin/customer-tags-bff.test.ts",
+    "tests/admin/customer-tags-proxy.test.ts",
+    "tests/admin/w6-route-seam.test.mjs"
+  ],
+  "sha": "fbdf8ebb0d1e091230fae7a646ce5405b84b2c50",
+  "exit_code": 0,
+  "seconds": 0.6307551860809326
+}

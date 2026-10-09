@@ -1,0 +1,7 @@
+# Purpose: normalized local reconciliation check evidence; raw log is preserved in main output.
+# Depends on: unchanged import-only candidate and exact command status JSON.
+# Used by: integrator local evidence review; no browser/CI claim.
+# Raw SHA256: 120be7f0905c1265a688c961f853640d1a14e70817402fae8e079846975974fa
+
+> @live-commerce/admin@ typecheck /Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-import-wizard-ui/apps/admin
+> tsc --noEmit

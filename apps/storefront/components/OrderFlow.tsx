@@ -1,5 +1,8 @@
 "use client";
 
+// Purpose: confirmed-address checkout and current order details, with stable layout while delivery facts load.
+// Depends on: purchase.ts CAS/recovery, buyer BFF destination/options/orders routes, payment and fulfilment components.
+// Used by: the storefront checkout route's purchase controller; no persistent address cache or client-owned transaction rules.
 // Local extension of approved B: native address form after the real quotation;
 // no new wizard, payment claim or persistent address cache. Transport/CAS and
 // receipt recovery live in purchase.ts, not in this rendering component.
@@ -354,15 +357,13 @@ export default function OrderFlow({
         )}
         {copy.country}: {country}
       </p>
-      {notice && (
-        <p
-          role={
-            notice === "failed" || notice === "invalid" ? "alert" : "status"
-          }
-        >
-          {copy[notice]}
-        </p>
-      )}
+      {/* Keep the loading line's space: collapsing it can move a Safari pointer target between down/up. */}
+      <p
+        role={notice ? (notice === "failed" || notice === "invalid" ? "alert" : "status") : undefined}
+        aria-hidden={notice === null}
+      >
+        {notice ? copy[notice] : "\u00a0"}
+      </p>
       {quote && expired && <p role="alert">{copy.expired}</p>}
       {(notice === "failed" || expired) && (
         <button

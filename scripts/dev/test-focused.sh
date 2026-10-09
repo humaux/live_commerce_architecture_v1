@@ -64,7 +64,7 @@ tags=()
 [[ -n "${LC_FOCUSED_TAGS:-}" ]] && tags=(-tags "$LC_FOCUSED_TAGS")
 log="$(mktemp)"
 set +e
-GOTOOLCHAIN=go1.27.1 go test -race -count=1 ${tags[@]+"${tags[@]}"} -timeout="${LC_FOCUSED_TIMEOUT:-900s}" \
+GOTOOLCHAIN=go1.27.2 go test -race -count=1 ${tags[@]+"${tags[@]}"} -timeout="${LC_FOCUSED_TIMEOUT:-900s}" \
   -run "$run_regex" -v "${packages[@]}" 2>&1 | tee "$log"
 status=${PIPESTATUS[0]}
 set -e

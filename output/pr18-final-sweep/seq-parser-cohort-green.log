@@ -1,0 +1,13 @@
+✔ PR18 final public unresolved receipt survives relogin but coarse fence stays session-bound (1.943834ms)
+✔ PR18 P1 IG earliest50 refresh preserves100 rows selection and private draft (84.997875ms)
+✔ PR18 final expired older cursor keeps live buffer selection and polling (2.867417ms)
+✔ PR18 P1 IG earliest page and unknown authority never delete by absence (3.215459ms)
+✔ PR18 approved seq DTO parser accepts safe numbers and explicit history null (0.608917ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 652.813708

@@ -1,0 +1,23 @@
+/* Purpose: compact accessible import wizard layout and safe verdict tables at 390px.
+ * Depends on: existing admin orders/control styles and shell tokens.
+ * Used by: ImportWizard and ImportWizardSteps; no fixed viewport width or new design tokens. */
+.import-wizard { min-width: 0; }
+.import-wizard button, .import-wizard input, .import-wizard select { max-width: 100%; }
+.import-wizard button { min-height: var(--ui-target); padding: var(--ui-space-3) var(--ui-space-4); }
+.import-wizard select { min-height: var(--ui-target); padding: var(--ui-space-2); }
+.import-wizard input[type=file] { width: 100%; min-width: 0; padding: var(--ui-space-3); }
+.import-stages { display: flex; flex-wrap: wrap; gap: var(--ui-space-2) var(--ui-space-4); padding-inline-start: var(--ui-space-6); margin: var(--ui-space-4) 0; color: var(--orders-muted); }
+.import-stages [aria-current=step] { color: var(--ink); font-weight: 700; }
+.import-type, .import-actions { display: flex; flex-wrap: wrap; gap: var(--ui-space-3); align-items: center; margin: var(--ui-space-4) 0; }
+.import-type button[aria-pressed=true] { border-color: currentColor; font-weight: 700; }
+.import-panel { border-top: 1px solid var(--line); padding: calc(var(--ui-space-3) + var(--ui-space-2)) 0; }
+.import-mapping { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ui-space-4); margin: var(--ui-space-4) 0; padding: var(--ui-space-4); min-width: 0; }
+.import-mapping label { display: flex; flex-direction: column; gap: var(--ui-space-2); min-width: 0; }
+.import-mapping select { width: 100%; min-width: 0; }
+.import-counts { display: flex; flex-wrap: wrap; gap: var(--ui-space-4) calc(2 * var(--ui-space-4)); }
+.import-counts dd { margin: var(--ui-space-2) 0 0; font-size: inherit; font-weight: bold; font-variant-numeric: tabular-nums; }
+.import-verdicts { min-width: 0; width: 100%; }
+.import-verdicts td { white-space: normal; overflow-wrap: anywhere; }
+.import-verdict-note { display: block; margin-top: var(--ui-space-2); }
+.import-wizard [role=alert], .import-wizard [role=status] { overflow-wrap: anywhere; }
+@media (max-width: 600px) { .import-mapping { grid-template-columns: minmax(0, 1fr); } }

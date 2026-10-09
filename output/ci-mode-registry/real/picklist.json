@@ -1,0 +1,17 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-picklist"
+  ],
+  "env": {},
+  "sha": "fd5566d61b1d5b047bddd95fc53111fffe941b92",
+  "source_hashes": {
+    "scripts/dev/test-local.sh": "04d788579912289ddbd3be444a988448da8119ca2ac67c37be4428454a31eacf",
+    "scripts/dev/test-local-runtime.sh": "95cdf57a14cae8a213b4224df9f456fe00fdd9dc59067494c4c7f731cb546687",
+    "scripts/dev/pr-modes.mjs": "05064ca72d93f6769ab1b1621bc9561afbfe45d2d591fb6b8b4d470435242b97"
+  },
+  "source_unchanged": true,
+  "exit_code": 0,
+  "seconds": 30.3
+}

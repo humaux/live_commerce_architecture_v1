@@ -1,0 +1,11 @@
+{
+  "command": [
+    "docker",
+    "pull",
+    "--platform",
+    "linux/arm64",
+    "mcr.microsoft.com/playwright@sha256:a0f4498920a5dbac63196d9140ed738ef00470f27e2e74029abd8850b7bd5717"
+  ],
+  "exit": 0,
+  "elapsed_seconds": 115.028
+}

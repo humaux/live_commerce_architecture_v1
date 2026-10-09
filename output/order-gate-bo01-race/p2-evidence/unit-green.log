@@ -1,0 +1,14 @@
+✔ locale probe bounds a missing destination head with a route/device diagnostic (2.086125ms)
+✔ locale probe clears its deadline when the real head promise completes (0.362334ms)
+✔ warmup request interception has a precise local deadline and clears its timer (1.233958ms)
+✔ warmup upstream completion has a precise local deadline and clears its timer (0.538625ms)
+✔ warmup timer is cleared on upstream success and upstream rejection (0.700125ms)
+✔ EARLY_HEAD route continues a missing-Referer request without resolving the English barrier (0.973959ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 42.476667

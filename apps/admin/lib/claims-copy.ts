@@ -9,7 +9,7 @@
 // the reason names mirror the Go claims.Reason values only for display.
 // Depends on: @live-commerce/i18n (Locale) and claims-model.ts (reason and mode types).
 
-import type { Locale } from "@live-commerce/i18n";
+import { locales, localeNames, type Locale } from "@live-commerce/i18n";
 import type { MatchMode, Reason } from "./claims-model";
 
 const en = {
@@ -24,6 +24,8 @@ const en = {
   window: "Claim window", open: "Open", closed: "Closed", round: "Round", openedAt: "Opened (Taipei time)",
   openWindow: "Open claim window", closeWindow: "Close claim window",
   mode: "Quantity rule", modeExact: "Keyword = 1 · keyword+N = N", modeQty: "Keyword+N only",
+  modeContains: "Comment contains keyword+quantity",
+  modeContainsHint: "Keep keyword+quantity as the only ASCII fragment. Comments with '?' or '不', multiple pairs, or joined text such as A1+2B are not counted.",
   modeLocked: "Close the window to change the quantity rule.",
   stats: "This round", accepted: "Recorded",
   scrollHint: "Scroll horizontally to see every column and action.", sourceUnchanged: "No changes to save.", importEmpty: "Add keywords to the library before importing them.",
@@ -161,6 +163,7 @@ export const claimsCopy: Record<Locale, ClaimsCopy> = {
     window: "登记窗口", open: "开放中", closed: "已关闭", round: "轮次", openedAt: "开放时间（台北时间）",
     openWindow: "开放登记窗口", closeWindow: "关闭登记窗口",
     mode: "数量规则", modeExact: "口令 = 1 件 · 口令+N = N 件", modeQty: "只接受口令+数量",
+    modeContains: "评论中含口令+数量", modeContainsHint: "一条评论只写一个口令+数量。含“不”、问号、两组口令+数量或粘连英数字（如 A1+2B）不会登记。",
     modeLocked: "关闭窗口后才能修改数量规则。",
     stats: "本轮", accepted: "已登记",
     scrollHint: "横向滚动以查看全部列和操作。", sourceUnchanged: "没有待保存的更改。", importEmpty: "请先在口令库中添加口令，再导入。",
@@ -293,6 +296,7 @@ export const claimsCopy: Record<Locale, ClaimsCopy> = {
     window: "登記窗口", open: "開放中", closed: "已關閉", round: "輪次", openedAt: "開放時間（台北時間）",
     openWindow: "開放登記窗口", closeWindow: "關閉登記窗口",
     mode: "數量規則", modeExact: "關鍵字 = 1 件 · 關鍵字+N = N 件", modeQty: "只接受關鍵字+數量",
+    modeContains: "留言中含關鍵字+數量", modeContainsHint: "一則留言只寫一個關鍵字+數量。含「不」、問號、兩組關鍵字+數量或黏連英數字（如 A1+2B）不會登記。",
     modeLocked: "關閉窗口後才能修改數量規則。",
     stats: "本輪", accepted: "已登記",
     scrollHint: "橫向捲動以查看全部欄位和操作。", sourceUnchanged: "沒有待儲存的變更。", importEmpty: "請先在關鍵字庫中新增關鍵字，再匯入。",
@@ -416,6 +420,10 @@ export const claimsCopy: Record<Locale, ClaimsCopy> = {
     },
   },
 };
+
+export const hostPromptLanguages = locales;
+export type HostPromptLanguage = Locale;
+export const hostPromptLanguageNames = localeNames;
 
 // FROZEN host prompt copy (contract §11.1), verbatim; {KW} is an active offer keyword.
 export const hostPromptExact: Record<Locale, string> = {

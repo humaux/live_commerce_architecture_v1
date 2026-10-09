@@ -1,5 +1,5 @@
 // Purpose: Exercises design draft, media, preview and publication controls through the browser harness.
-// Depends on: @playwright/test, node:crypto, node:fs/promises, node:path, ../../apps/admin/lib/design-copy, ../../apps/admin/src/shell-copy; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_API_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_DESIGN_STORES, LC_BROWSER_BFF_STORE, LC_BROWSER_READONLY_STORE, LC_BROWSER_FOREIGN_STORES
+// Depends on: @playwright/test, node:crypto, node:fs/promises, node:path, design-copy, shell-copy, shared Taipei displayTime; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_API_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_DESIGN_STORES, LC_BROWSER_BFF_STORE, LC_BROWSER_READONLY_STORE, LC_BROWSER_FOREIGN_STORES
 // Used by: apps/admin/src/features/storefront/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_store_design_test.go
 // SDB admin gate of unit store-design (contracts/storefront-v2.md section B; independent test author, evidence label BROWSER, IdP = MOCK).
 // BFF routes exercised through the UI: GET|PUT /api/stores/{store}/design/draft, POST design/publish|rollback|preview-token,
@@ -14,6 +14,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { designCopy, fill } from "../../apps/admin/lib/design-copy";
 import { shellCopy } from "../../apps/admin/src/shell-copy";
+import { displayTime } from "../../packages/format/src/index.ts";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -29,7 +30,7 @@ const bffStore = required("LC_BROWSER_BFF_STORE");
 const readonlyStore = required("LC_BROWSER_READONLY_STORE");
 const foreignStores = required("LC_BROWSER_FOREIGN_STORES").split(",");
 
-test.use({ baseURL: origin, trace: "retain-on-failure", screenshot: "only-on-failure" });
+test.use({ baseURL: origin, timezoneId: "America/Los_Angeles", trace: "retain-on-failure", screenshot: "only-on-failure" });
 // Tests are independent (own stores, or the BFF-probe store with a self-made baseline) so one red test never hides the others.
 
 // a real 1x1 PNG (valid for Go's image.DecodeConfig sniff)
@@ -97,6 +98,7 @@ for (const j of journeys) {
     const errors = watchErrors(page);
     const dlg = dialogs(page);
     await signedLogin(page);
+    expect(await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone)).toBe("America/Los_Angeles");
     await page.goto(`/${j.locale}/design?store=${j.id}`);
     const status = page.getByTestId("design-status");
     const note = page.getByTestId("design-note");
@@ -265,10 +267,15 @@ for (const j of journeys) {
     // ---- publish v1 ----
     const publish = page.getByTestId("design-publish");
     await expect(publish).toBeEnabled();
-    const [pub1] = await Promise.all([
+    const [pub1, versionsReply] = await Promise.all([
       page.waitForRequest((r) => r.method() === "POST" && /\/design\/publish$/.test(r.url())),
+      page.waitForResponse((r) => r.request().method() === "GET" && /\/design\/versions$/.test(new URL(r.url()).pathname)),
       publish.click(),
     ]);
+    expect(versionsReply.status()).toBe(200);
+    const publishedVersions = await versionsReply.json() as { items: { version: number; published_at: string }[] };
+    const publishedAt = publishedVersions.items.find((v) => v.version === 1)?.published_at;
+    expect(publishedAt).toBeTruthy();
     expect(pub1.postDataJSON()).toEqual({ expected_draft_version: 1 });
     await expect(note).toHaveText(fill(c.okPublished, { n: 1 }));
     expect(dlg.seen.at(-1)?.message).toBe(fill(c.publishConfirm, { n: 1 }));
@@ -278,6 +285,26 @@ for (const j of journeys) {
     await expect(rows).toHaveCount(1);
     await expect(rows.first()).toContainText("v1");
     await expect(rows.first()).toContainText(c.versions.live);
+    await expect(rows.first().locator("td").nth(2)).toHaveText(displayTime(j.locale, publishedAt!));
+    if (j.locale === "en" && j.viewport === "desktop") {
+      // The already published store is read in a UTC mobile context; no second fixture or publish.
+      const utcContext = await page.context().browser()!.newContext({
+        baseURL: origin, storageState: await page.context().storageState(), timezoneId: "UTC",
+        viewport: { width: 390, height: 844 },
+      });
+      try {
+        const utcPage = await utcContext.newPage();
+        expect(await utcPage.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone)).toBe("UTC");
+        await utcPage.goto(`/${j.locale}/design?store=${j.id}`);
+        await utcPage.getByTestId("design-tab-versions").click();
+        await expect(utcPage.getByTestId("design-version-row").first().locator("td").nth(2)).toHaveText(displayTime(j.locale, publishedAt!));
+        await utcPage.reload();
+        await utcPage.getByTestId("design-tab-versions").click();
+        await expect(utcPage.getByTestId("design-version-row").first().locator("td").nth(2)).toHaveText(displayTime(j.locale, publishedAt!));
+      } finally {
+        await utcContext.close();
+      }
+    }
     await expect(rows.first().getByTestId("design-rollback")).toHaveCount(0);
     await shot(page, "versions-v1", j);
 
@@ -319,12 +346,18 @@ for (const j of journeys) {
     await shot(page, "versions-v3", j);
 
     // ---- everything survives a reload; the draft still has the v2 edit ----
+    const reloadedVersions = page.waitForResponse((r) => r.request().method() === "GET" && /\/design\/versions$/.test(new URL(r.url()).pathname));
     await page.reload();
+    const reloadedReply = await reloadedVersions;
+    expect(reloadedReply.status()).toBe(200);
+    const reloadedList = await reloadedReply.json() as { items: { version: number; published_at: string }[] };
+    expect(reloadedList.items.find((v) => v.version === 1)?.published_at).toBe(publishedAt);
     await expect(status).toContainText(fill(c.draftVersion, { n: 2 }));
     await expect(status).toContainText(fill(c.liveVersion, { n: 3 }));
     await expect(page.getByTestId("design-name")).toHaveValue(`${name} two`);
     await page.getByTestId("design-tab-versions").click();
     await expect(rows).toHaveCount(3);
+    await expect(rows.nth(2).locator("td").nth(2)).toHaveText(displayTime(j.locale, publishedAt!));
     expect(dlg.seen.filter((d) => d.type === "beforeunload").length).toBe(0);
     expect(errors).toEqual([]);
   });
@@ -483,7 +516,7 @@ test("SDB03 read-only member: the page opens, every write is refused by the serv
 
 test("SDB04 stale write: a second tab that saved first makes this tab's save a conflict with a reload path", async ({ browser }) => {
   const c = designCopy.en;
-  const ctx = await browser.newContext({ viewport: { width: 1586, height: 992 } });
+  const ctx = await browser.newContext({ viewport: { width: 1586, height: 992 }, timezoneId: "America/Los_Angeles" });
   const a = await ctx.newPage();
   a.on("dialog", (d) => void d.accept());
   await signedLogin(a);

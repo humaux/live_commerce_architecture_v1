@@ -1,0 +1,311 @@
+{
+  "base_commit": "88d3ba1369de0b13c4a9d4ba8051c1540ca9cfd6",
+  "groups": {
+    "Linux DISPLAY/xvfb": {
+      "cases": [
+        {
+          "argv": [
+            "--browser-inbox"
+          ],
+          "expected_exit": 0,
+          "id": "browser-inbox-linux-headless"
+        },
+        {
+          "argv": [
+            "--browser-inbox"
+          ],
+          "expected_exit": 0,
+          "id": "browser-inbox-linux-display"
+        },
+        {
+          "argv": [
+            "--browser-inbox"
+          ],
+          "expected_exit": 2,
+          "id": "browser-inbox-linux-no-xvfb"
+        },
+        {
+          "argv": [
+            "--browser-merchant-orders-ui"
+          ],
+          "expected_exit": 0,
+          "id": "browser-merchant-orders-ui-linux-headless"
+        },
+        {
+          "argv": [
+            "--browser-merchant-orders-ui"
+          ],
+          "expected_exit": 0,
+          "id": "browser-merchant-orders-ui-linux-display"
+        },
+        {
+          "argv": [
+            "--browser-merchant-orders-ui"
+          ],
+          "expected_exit": 2,
+          "id": "browser-merchant-orders-ui-linux-no-xvfb"
+        }
+      ],
+      "count": 6
+    },
+    "PG readiness, Go failure and lock refusal": {
+      "cases": [
+        {
+          "argv": [
+            "--checkout"
+          ],
+          "expected_exit": 0,
+          "id": "pg-retry-once"
+        },
+        {
+          "argv": [
+            "--checkout"
+          ],
+          "expected_exit": 1,
+          "id": "ordinary-go-failure"
+        },
+        {
+          "argv": [
+            "--checkout"
+          ],
+          "expected_exit": 2,
+          "id": "lock-busy-checkout"
+        },
+        {
+          "argv": [
+            "--browser-platform-site"
+          ],
+          "expected_exit": 2,
+          "id": "lock-busy-browser-platform-site"
+        },
+        {
+          "argv": [
+            "--browser-picklist"
+          ],
+          "expected_exit": 2,
+          "id": "lock-busy-browser-picklist"
+        }
+      ],
+      "count": 5
+    },
+    "Stripe guarded synthetic/subset/split/failures": {
+      "cases": [
+        {
+          "argv": [
+            "--stripe-browser"
+          ],
+          "expected_exit": 0,
+          "id": "stripe-node-only"
+        },
+        {
+          "argv": [
+            "--stripe-browser"
+          ],
+          "expected_exit": 0,
+          "id": "stripe-synthetic-sandbox"
+        },
+        {
+          "argv": [
+            "--stripe-browser"
+          ],
+          "expected_exit": 0,
+          "id": "stripe-synthetic-split"
+        },
+        {
+          "argv": [
+            "--stripe-browser"
+          ],
+          "expected_exit": 1,
+          "id": "stripe-synthetic-go-failure"
+        },
+        {
+          "argv": [
+            "--stripe-browser"
+          ],
+          "expected_exit": 2,
+          "id": "stripe-invalid-synthetic-key"
+        },
+        {
+          "argv": [
+            "--stripe-browser"
+          ],
+          "expected_exit": 2,
+          "id": "stripe-wrong-account"
+        }
+      ],
+      "count": 6
+    },
+    "WebKit availability/subset/failures": {
+      "cases": [
+        {
+          "argv": [
+            "--browser-webkit"
+          ],
+          "expected_exit": 2,
+          "id": "webkit-not-installed"
+        },
+        {
+          "argv": [
+            "--browser-webkit"
+          ],
+          "expected_exit": 0,
+          "id": "webkit-subset"
+        },
+        {
+          "argv": [
+            "--browser-webkit"
+          ],
+          "expected_exit": 1,
+          "id": "webkit-go-failure"
+        },
+        {
+          "argv": [
+            "--browser-webkit"
+          ],
+          "expected_exit": 1,
+          "id": "webkit-count-failure"
+        }
+      ],
+      "count": 4
+    },
+    "click-sweep shards": {
+      "cases": [
+        {
+          "argv": [
+            "--browser-click-sweep"
+          ],
+          "expected_exit": 0,
+          "id": "click-shard1"
+        },
+        {
+          "argv": [
+            "--browser-click-sweep"
+          ],
+          "expected_exit": 0,
+          "id": "click-shard2"
+        }
+      ],
+      "count": 2
+    },
+    "foundation alias and run-skip-package controls": {
+      "cases": [
+        {
+          "argv": [
+            "foundation"
+          ],
+          "expected_exit": 0,
+          "id": "explicit-foundation"
+        },
+        {
+          "argv": [],
+          "expected_exit": 0,
+          "id": "foundation-run"
+        },
+        {
+          "argv": [],
+          "expected_exit": 0,
+          "id": "foundation-skip"
+        },
+        {
+          "argv": [],
+          "expected_exit": 0,
+          "id": "foundation-shard"
+        },
+        {
+          "argv": [],
+          "expected_exit": 0,
+          "id": "foundation-packages"
+        }
+      ],
+      "count": 5
+    },
+    "invalid arguments and live-key refusal": {
+      "cases": [
+        {
+          "argv": [
+            "--not-a-mode"
+          ],
+          "expected_exit": 2,
+          "id": "invalid-mode"
+        },
+        {
+          "argv": [
+            "--checkout",
+            "extra"
+          ],
+          "expected_exit": 2,
+          "id": "two-args"
+        },
+        {
+          "argv": [],
+          "expected_exit": 2,
+          "id": "guard-synthetic-live-key"
+        }
+      ],
+      "count": 3
+    },
+    "storefront MOCK": {
+      "cases": [
+        {
+          "argv": [
+            "--browser-storefront"
+          ],
+          "expected_exit": 0,
+          "id": "storefront-mock"
+        },
+        {
+          "argv": [
+            "--browser-storefront"
+          ],
+          "expected_exit": 0,
+          "id": "storefront-mock-custom-evidence"
+        }
+      ],
+      "count": 2
+    },
+    "visual-lint artifact/verdict variants": {
+      "cases": [
+        {
+          "argv": [
+            "--browser-visual-lint"
+          ],
+          "expected_exit": 0,
+          "id": "visual-existing-journeys"
+        },
+        {
+          "argv": [
+            "--browser-visual-lint"
+          ],
+          "expected_exit": 0,
+          "id": "visual-shard2"
+        },
+        {
+          "argv": [
+            "--browser-visual-lint"
+          ],
+          "expected_exit": 1,
+          "id": "visual-no-result"
+        },
+        {
+          "argv": [
+            "--browser-visual-lint"
+          ],
+          "expected_exit": 1,
+          "id": "visual-failed-verdict"
+        }
+      ],
+      "count": 4
+    }
+  },
+  "metadata_count": 85,
+  "metadata_definition": "one --list; 82 flag dry-runs plus foundation; one storefront MOCK dry-run",
+  "normal_count": 83,
+  "normal_definition": "82 frozen flags plus no-argument foundation; explicit foundation alias is among variants",
+  "source_hashes": {
+    "test-local-runtime.sh": "95cdf57a14cae8a213b4224df9f456fe00fdd9dc59067494c4c7f731cb546687",
+    "test-local.sh": "04d788579912289ddbd3be444a988448da8119ca2ac67c37be4428454a31eacf"
+  },
+  "status": "Counts only; execution outcomes are in candidate-v4/SUMMARY.json",
+  "task_id": "6c3b7b4a-sub-mode-oracle",
+  "variants_count": 37
+}

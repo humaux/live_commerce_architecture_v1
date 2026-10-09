@@ -1,0 +1,86 @@
+[
+  {
+    "file": "selector-baseline-red.log",
+    "raw_path": "/Volumes/data/live_commerce_architecture_v1/output/ci-mode-registry/selector-baseline-red.log",
+    "raw_sha256": "acfb08685ef395951cb0d56ed858278b06a6b908c296e2ae29356b8ad46e2d2c",
+    "view_sha256": "80c13ce8f843b0b09a9bdb2a95f4b82e8fd3ea51039a1ee946af67a2d19b07bc"
+  },
+  {
+    "file": "registry-red.log",
+    "raw_path": "/Volumes/data/live_commerce_architecture_v1/output/ci-mode-registry/registry-red.log",
+    "raw_sha256": "0d0d00489999092c82dc11f75e88850bf82f8cea1a7679611219770456f9e530",
+    "view_sha256": "0745b0fb2d5119dbeddd0c28255c2df5ef321880836043739064d702f51b9442"
+  },
+  {
+    "file": "registry-spacing-red.log",
+    "raw_path": "/Volumes/data/live_commerce_architecture_v1/output/ci-mode-registry/registry-spacing-red.log",
+    "raw_sha256": "315c94722b1a9b49f732ba911b76fdf1aac034e0a00cced2b7d3423b9b00f723",
+    "view_sha256": "c855055007f742af4a9428d96366dc6abeb331f181648a9928a17c47f6af13a3"
+  },
+  {
+    "file": "registry-arm-red.log",
+    "raw_path": "/Volumes/data/live_commerce_architecture_v1/output/ci-mode-registry/registry-arm-red.log",
+    "raw_sha256": "9a8d10ad706b7eaeb21d7c2fa7190b7fc04aa4d24fe232a26de97574fb0a6791",
+    "view_sha256": "9a8d10ad706b7eaeb21d7c2fa7190b7fc04aa4d24fe232a26de97574fb0a6791"
+  },
+  {
+    "file": "registry-arm-green.log",
+    "raw_path": "/Volumes/data/live_commerce_architecture_v1/output/ci-mode-registry/registry-arm-green.log",
+    "raw_sha256": "56df84bca5951911e11b2c16f7ae1b58777e0eae1cee2260ef122cfa5ee361e6",
+    "view_sha256": "56df84bca5951911e11b2c16f7ae1b58777e0eae1cee2260ef122cfa5ee361e6"
+  },
+  {
+    "file": "selector-green.log",
+    "raw_path": "/Volumes/data/live_commerce_architecture_v1/output/ci-mode-registry/selector-green.log",
+    "raw_sha256": "4a2d6d201cfbc7905fa02af8bddd01a380560212b4dcd90ecdd7804b74b7d0a0",
+    "view_sha256": "4a2d6d201cfbc7905fa02af8bddd01a380560212b4dcd90ecdd7804b74b7d0a0"
+  },
+  {
+    "file": "consumer-tests.log",
+    "raw_path": "/Volumes/data/live_commerce_architecture_v1/output/ci-mode-registry/consumer-tests.log",
+    "raw_sha256": "036585c143925a1fff966dbd4f0a9c60f71a62a0efff1ef5b4be5ffee832087e",
+    "view_sha256": "036585c143925a1fff966dbd4f0a9c60f71a62a0efff1ef5b4be5ffee832087e"
+  },
+  {
+    "file": "node-accepted.log",
+    "raw_path": "/Volumes/data/live_commerce_architecture_v1/output/ci-mode-registry/node-accepted.log",
+    "raw_sha256": "71be9dd98e2d93f5369090b1733067e0256477a4fd7a4e6f3fe401684a722c9d",
+    "view_sha256": "71be9dd98e2d93f5369090b1733067e0256477a4fd7a4e6f3fe401684a722c9d"
+  },
+  {
+    "file": "node-accepted.json",
+    "raw_path": "/Volumes/data/live_commerce_architecture_v1/output/ci-mode-registry/node-accepted.json",
+    "raw_sha256": "e0188636b0e5e0bf2cd3f0a2e94e5438e589d85203e80ea61317ed5dbcdce8d3",
+    "view_sha256": "e0188636b0e5e0bf2cd3f0a2e94e5438e589d85203e80ea61317ed5dbcdce8d3"
+  },
+  {
+    "file": "check-gates-accepted.log",
+    "raw_path": "/Volumes/data/live_commerce_architecture_v1/output/ci-mode-registry/check-gates-accepted.log",
+    "raw_sha256": "6025f7067db1eeefa2959d333f531842ac68d03f56f4973fdac93b2308e592e1",
+    "view_sha256": "6025f7067db1eeefa2959d333f531842ac68d03f56f4973fdac93b2308e592e1"
+  },
+  {
+    "file": "check-gates-accepted.json",
+    "raw_path": "/Volumes/data/live_commerce_architecture_v1/output/ci-mode-registry/check-gates-accepted.json",
+    "raw_sha256": "48cbd77f84a86e6b47e1fbff3a01775de12d1f0dec901062362eb9e55a7db00d",
+    "view_sha256": "48cbd77f84a86e6b47e1fbff3a01775de12d1f0dec901062362eb9e55a7db00d"
+  },
+  {
+    "file": "independent-review.md",
+    "raw_path": "/Volumes/data/live_commerce_architecture_v1/output/ci-mode-registry/independent-review.md",
+    "raw_sha256": "4e5e2a4010fc616c7f556d11560c2ac1cdd706e8a48125b976356022dabc14d4",
+    "view_sha256": "4e5e2a4010fc616c7f556d11560c2ac1cdd706e8a48125b976356022dabc14d4"
+  },
+  {
+    "file": "command-equivalence.tar.gz",
+    "sha256": "29c2971d24de79d4cb2270635a6f5deb3daaa9427398a1eff6c111e5d00d4dd0"
+  },
+  {
+    "file": "RECEIPT-v4.json",
+    "sha256": "c03927812c4ebbb398b148a79bc8bce295bb631b8e218f594f8999efe1503645"
+  },
+  {
+    "file": "COVERAGE-v4.json",
+    "sha256": "1bb85211a27d6318d78a6580c1b15e4d088a107787f801f214207001653e45dd"
+  }
+]

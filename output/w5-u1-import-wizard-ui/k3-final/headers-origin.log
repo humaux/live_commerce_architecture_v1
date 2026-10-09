@@ -1,0 +1,5 @@
+# Purpose: preserve current K3 command output after this prologue.
+# Depends on: original raw SHA256=be9a8b961393085b783fc78be59f26dc8d787c2c40bca986d5bf42c4f41eabeb.
+# Used by: integrator normal/calibration CI.
+# Evidence normalization: trailing whitespace/blank EOF only; main raw retained.
+check-headers: OK (base ead6b9d51264422e2e244a077cf9df9c90ba6428)

@@ -1,0 +1,44 @@
+✔ Meta rejection wording is preserved as bounded Unicode text, never translated (3.424625ms)
+✔ frozen error codes: model list equals the frozen list, each is read from both error shapes (0.922917ms)
+✔ copy: every code, status, op state and connect error has text in all three locales (0.786625ms)
+✔ copy never calls a budget a hard stop and never offers resume (0.71675ms)
+✔ draft: every §5.1 status parses; unknown status/template/op state is an error, never guessed (1.368417ms)
+✔ draft: optional fields, remote ids and the Ads Manager link (0.473375ms)
+✔ action hints: pause whenever a remote id exists and not ENDED; a paused draft is only ever copied (X7) (0.498417ms)
+✔ money: whole units to minor with integer math; TWD must be whole (9.104417ms)
+✔ Taipei schedule: wall inputs and draft projections ignore the viewer zone (3.33425ms)
+✔ Taipei schedule: invalid calendar days are rejected and all copy names UTC+8 (0.273292ms)
+✔ draft input: exact 11-key body and every local rule (3.058834ms)
+✔ draft form round trip and X7 copy (blank schedule, no id, no revision) (0.213166ms)
+✔ settings parser: environment enum, connections, identities, capi (0.356875ms)
+✔ connect state parser: pick list kinds and id match (0.104584ms)
+✔ report: three separate blocks, orders may be null, no combined figure (0.2475ms)
+✔ default report window is the Asia/Taipei store day whatever the viewer's zone is (Taipei midnight boundary) (2.226209ms)
+✔ capi body and validation (0.16675ms)
+✔ W6-06B unbind response: exact keys, account, UUIDs and outcome semantics (0.182209ms)
+✔ W6-06B in-flight details preserve bounded items and total, reject unknown shapes (0.168208ms)
+✔ W6-06B catalog feed has exact public URL/domain pairs or published-store empty (0.166875ms)
+✔ W6-06B copy preserves unbind boundaries and feed recovery in three locales (0.059541ms)
+✔ W6-06B feed selection follows origin order, not full feed URL order (0.068333ms)
+✔ customer list accepts the frozen row and rejects unknown keys, dup ids, bad cursor, oversize (2.740084ms)
+✔ customer row invariants: nulls for bundle-only/erased, counts, money, consents (0.253417ms)
+✔ customer detail: bounded lists, order summaries reuse the orders parser, id must match (1.570833ms)
+✔ erasure summary is four counts only (0.0935ms)
+✔ finance summary: net = captured - refunded (I05), totals carry an empty day, sandbox flag (0.288458ms)
+✔ financeDay is the UTC+8 day (0.056583ms)
+✔ tags and notes are parsed strictly (W6-01B) (1.235833ms)
+✔ D02 TWD input: whole dollars only, x100 on the wire (9.8405ms)
+✔ D02 TWD edit text: whole dollars have no decimals; a legacy amount with cents is never shown as another price (0.244917ms)
+✔ D02 display: NT$ without decimals in every language, cents only when there are cents (1.04525ms)
+✔ D02 live-price input (Studio claims): TWD whole dollars, other currencies their decimals (0.153375ms)
+✔ D02 discount code amounts: TWD whole dollars, a decimal is refused before it is sent (0.248625ms)
+✔ D02 no admin copy or component says 'minor units' to the merchant (15.405291ms)
+✔ M06 time: Asia/Taipei everywhere, labelled, never UTC (5.563291ms)
+ℹ tests 36
+ℹ suites 0
+ℹ pass 36
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 128.238792

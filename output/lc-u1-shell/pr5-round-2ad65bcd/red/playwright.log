@@ -1,0 +1,41 @@
+
+Running 1 test using 1 worker
+
+(node:62194) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 tests/admin/live-console.spec.ts:94:3 › LC-U1 MOCK contract real clicks en-1586 (31.9s)
+
+
+  1) tests/admin/live-console.spec.ts:94:3 › LC-U1 MOCK contract real clicks en-1586 ───────────────
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator:  getByTestId('live-stock-6576a13e-d1e4-47e5-abba-6c938bfdb6bc')
+    Expected: "23"
+    Received: "20"
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveValue" getByTestId('live-stock-6576a13e-d1e4-47e5-abba-6c938bfdb6bc') with timeout 10000ms
+      - waiting for getByTestId('live-stock-6576a13e-d1e4-47e5-abba-6c938bfdb6bc')
+        24 × locator resolved to <input value="20" inputmode="numeric" data-testid="live-stock-6576a13e-d1e4-47e5-abba-6c938bfdb6bc"/>
+           - unexpected value "20"
+
+
+      190 |     await externalStock(2, 3);
+      191 |     await changedPoll;
+    > 192 |     await expect(stockInput).toHaveValue("23");
+          |                              ^
+      193 |     await expect(stockInput).toBeFocused();
+      194 |     const changed = page.getByTestId(`live-stock-changed-${offer}`);
+      195 |     await expect(changed).toBeVisible();
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/live-console.spec.ts:192:30
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/live-console-2051706030/results/live-console-LC-U1-MOCK-contract-real-clicks-en-1586/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/live-console-2051706030/results/live-console-LC-U1-MOCK-contract-real-clicks-en-1586/error-context.md
+
+  1 failed
+    tests/admin/live-console.spec.ts:94:3 › LC-U1 MOCK contract real clicks en-1586 ────────────────

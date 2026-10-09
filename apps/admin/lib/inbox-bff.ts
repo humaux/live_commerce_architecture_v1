@@ -1,6 +1,15 @@
 // Purpose: closed A8-A14 and read-only published-template BFF request grammar and safe refusal codes.
 // Depends on: live-console-v1 §§3/11/12; native Request/URL/JSON; Go retains scope and send authority.
 // Used by: store catchall BFF and inbox browser transport; I01/I02/I11/I14/I15.
+import { commentResource, commentRoute, validCommentRequest, validCommentBody, commentErrorCode } from "../src/features/live/comment-request.ts";
+export { invalidCommentCursor } from "../src/features/live/comment-request.ts";
+
+/** A2 admits 100 rows: 8,000 text + 255 author runes each, up to 6 bytes per Go JSON HTML escape.
+ * 100 × 8,255 × 6 = 4,953,000 bytes plus bounded refs/marks/envelope, below 8 MiB.
+ * Keep all pre-existing A8-A14 and command response caps at 1 MiB. */
+export function inboxResponseLimit(method: string, path: string): number {
+  return method === "GET" && commentRoute("GET", path) ? 8 << 20 : 1 << 20;
+}
 
 const id = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const uuid = new RegExp(`^${id}$`);
@@ -13,10 +22,11 @@ const writePath = new RegExp(
 );
 /** Identify only frozen resource paths, independently of the attempted method. */
 export function inboxResource(path: string) {
-  return readPath.test(path) || writePath.test(path);
+  return readPath.test(path) || writePath.test(path) || commentResource(path);
 }
 /** Identify allowed methods; template publish is deliberately outside this unit. */
 export function inboxRoute(method: string, path: string) {
+  if (commentResource(path)) return commentRoute(method,path);
   return method === "GET"
     ? readPath.test(path)
     : method === "POST" && writePath.test(path);
@@ -35,6 +45,7 @@ const positive = (value: string, max = Number.MAX_SAFE_INTEGER) =>
   Number(value) <= max;
 /** Reject unknown, duplicated, malformed and private query inputs before any upstream call. */
 export function validInboxRequest(request: Request, path: string): boolean {
+  if (commentResource(path)) return validCommentRequest(request,path);
   if (!inboxRoute(request.method, path)) return false;
   const marker = request.url.indexOf("?");
   const raw = marker < 0 ? "" : request.url.slice(marker + 1);
@@ -90,6 +101,7 @@ const integer = (value: unknown) =>
   typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 /** Validate exact JSON bodies; missing/null versions and text/template ambiguity are refused. */
 export function validInboxBody(path: string, raw: string): boolean {
+  if (commentResource(path)) return validCommentBody(path,raw);
   let value: unknown;
   try {
     value = JSON.parse(raw);
@@ -147,8 +159,9 @@ const errors: Record<number, Set<string>> = {
   429: new Set(["rate_limited"]),
   503: new Set(["retry_later", "unavailable"]),
 };
-/** Keep frozen codes, flatten all provider/debug strings to a fixed safe error. */
-export function inboxErrorCode(status: number, value: unknown): string | null {
+/** Keep each route family's frozen codes; never widen the pre-existing A8-A14 seam. */
+export function inboxErrorCode(status: number, value: unknown, path = ""): string | null {
+  if (commentResource(path)) return commentErrorCode(status, value);
   const code =
     value && typeof value === "object" && "code" in value ? value.code : null;
   return typeof code === "string" && errors[status]?.has(code) ? code : null;

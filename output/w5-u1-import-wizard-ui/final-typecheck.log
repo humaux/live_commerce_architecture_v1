@@ -1,0 +1,7 @@
+# Purpose: preserve final-typecheck.log local evidence; raw original command output follows this prologue.
+# Depends on: commands/status recorded in DELIVERY.md; original main-checkout log SHA256=120be7f0905c1265a688c961f853640d1a14e70817402fae8e079846975974fa.
+# Used by: integrator source handoff; does not certify real browser acceptance.
+# Evidence normalization: trailing whitespace/blank EOF only; original raw bytes and SHA256 retained in main checkout/provenance above.
+
+> @live-commerce/admin@ typecheck /Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-import-wizard-ui/apps/admin
+> tsc --noEmit

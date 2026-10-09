@@ -110,8 +110,8 @@ shipments_test.go,export.go,export_test.go,actions.go}`, `internal/httpapi/{ship
 
 ## Verify
 ```sh
-GOTOOLCHAIN=go1.27.1 go vet ./... && gofmt -l internal cmd
-GOTOOLCHAIN=go1.27.1 go test -race -count=1 ./internal/merchantorders ./internal/httpapi ./internal/checkout
+GOTOOLCHAIN=go1.27.2 go vet ./... && gofmt -l internal cmd
+GOTOOLCHAIN=go1.27.2 go test -race -count=1 ./internal/merchantorders ./internal/httpapi ./internal/checkout
 LC_FOCUSED_TIMEOUT=1800s bash scripts/dev/test-focused.sh '^Test(MerchantOrders|BuyerOrder|BuyerHTTP|BuyerCheckout|PaymentCapture|StripeSP08)'
 python3 scripts/check_packet.py
 ```

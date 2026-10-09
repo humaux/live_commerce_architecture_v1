@@ -1,0 +1,1377 @@
+{
+  "platform": "darwin",
+  "arch": "arm64",
+  "observations": [
+    {
+      "mode": "explicit",
+      "iteration": 0,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 180
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 180.70000004768372
+        },
+        {
+          "event": "showPicker",
+          "at": 213.10000002384186
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 238.60000002384186
+        },
+        {
+          "event": "change",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 262.90000009536743
+        }
+      ]
+    },
+    {
+      "mode": "explicit",
+      "iteration": 1,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 103.70000004768372
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 103.89999997615814
+        },
+        {
+          "event": "showPicker",
+          "at": 132
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 141.70000004768372
+        }
+      ]
+    },
+    {
+      "mode": "explicit",
+      "iteration": 2,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 105.80000007152557
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 105.80000007152557
+        },
+        {
+          "event": "showPicker",
+          "at": 132.10000002384186
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 141.39999997615814
+        }
+      ]
+    },
+    {
+      "mode": "explicit",
+      "iteration": 3,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 110.20000004768372
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 110.29999995231628
+        },
+        {
+          "event": "showPicker",
+          "at": 137.5
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 146.79999995231628
+        }
+      ]
+    },
+    {
+      "mode": "explicit",
+      "iteration": 4,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 107.60000002384186
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 107.80000007152557
+        },
+        {
+          "event": "showPicker",
+          "at": 135.70000004768372
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 146.10000002384186
+        }
+      ]
+    },
+    {
+      "mode": "explicit",
+      "iteration": 5,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 108.19999992847443
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 108.29999995231628
+        },
+        {
+          "event": "showPicker",
+          "at": 136.5
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 145.89999997615814
+        }
+      ]
+    },
+    {
+      "mode": "explicit",
+      "iteration": 6,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 111.20000004768372
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 111.40000009536743
+        },
+        {
+          "event": "showPicker",
+          "at": 142.20000004768372
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 151.10000002384186
+        }
+      ]
+    },
+    {
+      "mode": "explicit",
+      "iteration": 7,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 107.60000002384186
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 107.79999995231628
+        },
+        {
+          "event": "showPicker",
+          "at": 138.5
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 147.5
+        }
+      ]
+    },
+    {
+      "mode": "explicit",
+      "iteration": 8,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 107.29999995231628
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 107.39999997615814
+        },
+        {
+          "event": "showPicker",
+          "at": 133.39999997615814
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 142.39999997615814
+        }
+      ]
+    },
+    {
+      "mode": "explicit",
+      "iteration": 9,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 108.79999995231628
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 108.89999997615814
+        },
+        {
+          "event": "showPicker",
+          "at": 136.10000002384186
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 145.79999995231628
+        }
+      ]
+    },
+    {
+      "mode": "explicit",
+      "iteration": 10,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 103.30000007152557
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 103.39999997615814
+        },
+        {
+          "event": "showPicker",
+          "at": 131.30000007152557
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 140.80000007152557
+        }
+      ]
+    },
+    {
+      "mode": "explicit",
+      "iteration": 11,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 92.80000007152557
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 92.90000009536743
+        },
+        {
+          "event": "showPicker",
+          "at": 118.80000007152557
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 128.20000004768372
+        }
+      ]
+    },
+    {
+      "mode": "explicit",
+      "iteration": 12,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 106.89999997615814
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 107.10000002384186
+        },
+        {
+          "event": "showPicker",
+          "at": 134.20000004768372
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 143.10000002384186
+        }
+      ]
+    },
+    {
+      "mode": "explicit",
+      "iteration": 13,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 107.39999997615814
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 107.5
+        },
+        {
+          "event": "showPicker",
+          "at": 134.5
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 143.70000004768372
+        }
+      ]
+    },
+    {
+      "mode": "explicit",
+      "iteration": 14,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 109.29999995231628
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 109.39999997615814
+        },
+        {
+          "event": "showPicker",
+          "at": 136.60000002384186
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 145.60000002384186
+        }
+      ]
+    },
+    {
+      "mode": "prevent-default",
+      "iteration": 0,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 106.90000009536743
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 107
+        },
+        {
+          "event": "showPicker",
+          "at": 135.80000007152557
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 144.90000009536743
+        }
+      ]
+    },
+    {
+      "mode": "prevent-default",
+      "iteration": 1,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 99.80000007152557
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 99.89999997615814
+        },
+        {
+          "event": "showPicker",
+          "at": 127.60000002384186
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 136.80000007152557
+        }
+      ]
+    },
+    {
+      "mode": "prevent-default",
+      "iteration": 2,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 107.39999997615814
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 107.60000002384186
+        },
+        {
+          "event": "showPicker",
+          "at": 134.30000007152557
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 143.60000002384186
+        }
+      ]
+    },
+    {
+      "mode": "prevent-default",
+      "iteration": 3,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 91.89999997615814
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 92.09999990463257
+        },
+        {
+          "event": "showPicker",
+          "at": 118.89999997615814
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 128.19999992847443
+        }
+      ]
+    },
+    {
+      "mode": "prevent-default",
+      "iteration": 4,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 91.79999995231628
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 91.89999997615814
+        },
+        {
+          "event": "showPicker",
+          "at": 118.29999995231628
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 127.29999995231628
+        }
+      ]
+    },
+    {
+      "mode": "prevent-default",
+      "iteration": 5,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 95.10000002384186
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 95.30000007152557
+        },
+        {
+          "event": "showPicker",
+          "at": 122.70000004768372
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 131.80000007152557
+        }
+      ]
+    },
+    {
+      "mode": "prevent-default",
+      "iteration": 6,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 107.79999995231628
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 107.89999997615814
+        },
+        {
+          "event": "showPicker",
+          "at": 134.60000002384186
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 143.39999997615814
+        }
+      ]
+    },
+    {
+      "mode": "prevent-default",
+      "iteration": 7,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 109
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 109.20000004768372
+        },
+        {
+          "event": "showPicker",
+          "at": 135.70000004768372
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 144.40000009536743
+        }
+      ]
+    },
+    {
+      "mode": "prevent-default",
+      "iteration": 8,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 107.5
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 107.5
+        },
+        {
+          "event": "showPicker",
+          "at": 135.79999995231628
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 145.10000002384186
+        }
+      ]
+    },
+    {
+      "mode": "prevent-default",
+      "iteration": 9,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 105.10000002384186
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 105.20000004768372
+        },
+        {
+          "event": "showPicker",
+          "at": 132.39999997615814
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 141.80000007152557
+        }
+      ]
+    },
+    {
+      "mode": "prevent-default",
+      "iteration": 10,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 105.10000002384186
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 105.20000004768372
+        },
+        {
+          "event": "showPicker",
+          "at": 131.20000004768372
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 140.10000002384186
+        }
+      ]
+    },
+    {
+      "mode": "prevent-default",
+      "iteration": 11,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 108
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 108.10000002384186
+        },
+        {
+          "event": "showPicker",
+          "at": 137.30000007152557
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 146.70000004768372
+        }
+      ]
+    },
+    {
+      "mode": "prevent-default",
+      "iteration": 12,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 105
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 105.10000002384186
+        },
+        {
+          "event": "showPicker",
+          "at": 132
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 141.39999997615814
+        }
+      ]
+    },
+    {
+      "mode": "prevent-default",
+      "iteration": 13,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 108.29999995231628
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 108.39999997615814
+        },
+        {
+          "event": "showPicker",
+          "at": 135.39999997615814
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 145
+        }
+      ]
+    },
+    {
+      "mode": "prevent-default",
+      "iteration": 14,
+      "picked": "2030-01-02T08:00",
+      "changed": true,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 107.39999997615814
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 107.59999990463257
+        },
+        {
+          "event": "showPicker",
+          "at": 135.09999990463257
+        },
+        {
+          "event": "input",
+          "trusted": true,
+          "value": "2030-01-02T08:00",
+          "at": 145
+        }
+      ]
+    },
+    {
+      "mode": "native-only",
+      "iteration": 0,
+      "picked": "2030-01-01T08:00",
+      "changed": false,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 104.5
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 104.69999992847443
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "ArrowRight",
+          "value": "2030-01-01T08:00",
+          "at": 105.29999995231628
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "Enter",
+          "value": "2030-01-01T08:00",
+          "at": 105.79999995231628
+        }
+      ]
+    },
+    {
+      "mode": "native-only",
+      "iteration": 1,
+      "picked": "2030-01-01T08:00",
+      "changed": false,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 99.20000004768372
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 99.29999995231628
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "ArrowRight",
+          "value": "2030-01-01T08:00",
+          "at": 100.10000002384186
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "Enter",
+          "value": "2030-01-01T08:00",
+          "at": 100.60000002384186
+        }
+      ]
+    },
+    {
+      "mode": "native-only",
+      "iteration": 2,
+      "picked": "2030-01-01T08:00",
+      "changed": false,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 99.29999995231628
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 99.5
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "ArrowRight",
+          "value": "2030-01-01T08:00",
+          "at": 100.20000004768372
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "Enter",
+          "value": "2030-01-01T08:00",
+          "at": 100.70000004768372
+        }
+      ]
+    },
+    {
+      "mode": "native-only",
+      "iteration": 3,
+      "picked": "2030-01-01T08:00",
+      "changed": false,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 97.70000004768372
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 97.79999995231628
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "ArrowRight",
+          "value": "2030-01-01T08:00",
+          "at": 98.5
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "Enter",
+          "value": "2030-01-01T08:00",
+          "at": 99
+        }
+      ]
+    },
+    {
+      "mode": "native-only",
+      "iteration": 4,
+      "picked": "2030-01-01T08:00",
+      "changed": false,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 97.69999992847443
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 97.89999997615814
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "ArrowRight",
+          "value": "2030-01-01T08:00",
+          "at": 98.59999990463257
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "Enter",
+          "value": "2030-01-01T08:00",
+          "at": 99
+        }
+      ]
+    },
+    {
+      "mode": "native-only",
+      "iteration": 5,
+      "picked": "2030-01-01T08:00",
+      "changed": false,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 99.29999995231628
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 99.39999997615814
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "ArrowRight",
+          "value": "2030-01-01T08:00",
+          "at": 100.20000004768372
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "Enter",
+          "value": "2030-01-01T08:00",
+          "at": 101
+        }
+      ]
+    },
+    {
+      "mode": "native-only",
+      "iteration": 6,
+      "picked": "2030-01-01T08:00",
+      "changed": false,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 112.60000002384186
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 112.79999995231628
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "ArrowRight",
+          "value": "2030-01-01T08:00",
+          "at": 113.29999995231628
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "Enter",
+          "value": "2030-01-01T08:00",
+          "at": 113.89999997615814
+        }
+      ]
+    },
+    {
+      "mode": "native-only",
+      "iteration": 7,
+      "picked": "2030-01-01T08:00",
+      "changed": false,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 103.90000009536743
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 104
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "ArrowRight",
+          "value": "2030-01-01T08:00",
+          "at": 104.70000004768372
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "Enter",
+          "value": "2030-01-01T08:00",
+          "at": 105.20000004768372
+        }
+      ]
+    },
+    {
+      "mode": "native-only",
+      "iteration": 8,
+      "picked": "2030-01-01T08:00",
+      "changed": false,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 98.29999995231628
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 98.5
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "ArrowRight",
+          "value": "2030-01-01T08:00",
+          "at": 99.19999992847443
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "Enter",
+          "value": "2030-01-01T08:00",
+          "at": 99.69999992847443
+        }
+      ]
+    },
+    {
+      "mode": "native-only",
+      "iteration": 9,
+      "picked": "2030-01-01T08:00",
+      "changed": false,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 119.70000004768372
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 119.79999995231628
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "ArrowRight",
+          "value": "2030-01-01T08:00",
+          "at": 120.60000002384186
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "Enter",
+          "value": "2030-01-01T08:00",
+          "at": 121
+        }
+      ]
+    },
+    {
+      "mode": "native-only",
+      "iteration": 10,
+      "picked": "2030-01-01T08:00",
+      "changed": false,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 97.39999997615814
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 97.5
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "ArrowRight",
+          "value": "2030-01-01T08:00",
+          "at": 98.29999995231628
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "Enter",
+          "value": "2030-01-01T08:00",
+          "at": 98.70000004768372
+        }
+      ]
+    },
+    {
+      "mode": "native-only",
+      "iteration": 11,
+      "picked": "2030-01-01T08:00",
+      "changed": false,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 105.80000007152557
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 105.89999997615814
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "ArrowRight",
+          "value": "2030-01-01T08:00",
+          "at": 106.70000004768372
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "Enter",
+          "value": "2030-01-01T08:00",
+          "at": 107.20000004768372
+        }
+      ]
+    },
+    {
+      "mode": "native-only",
+      "iteration": 12,
+      "picked": "2030-01-01T08:00",
+      "changed": false,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 97.89999997615814
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 98
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "ArrowRight",
+          "value": "2030-01-01T08:00",
+          "at": 98.59999990463257
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "Enter",
+          "value": "2030-01-01T08:00",
+          "at": 99.19999992847443
+        }
+      ]
+    },
+    {
+      "mode": "native-only",
+      "iteration": 13,
+      "picked": "2030-01-01T08:00",
+      "changed": false,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 108.69999992847443
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 108.79999995231628
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "ArrowRight",
+          "value": "2030-01-01T08:00",
+          "at": 109.59999990463257
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "Enter",
+          "value": "2030-01-01T08:00",
+          "at": 110.19999992847443
+        }
+      ]
+    },
+    {
+      "mode": "native-only",
+      "iteration": 14,
+      "picked": "2030-01-01T08:00",
+      "changed": false,
+      "events": [
+        {
+          "event": "focus",
+          "trusted": true,
+          "value": "2030-01-01T08:00",
+          "at": 92.80000007152557
+        },
+        {
+          "event": "click",
+          "trusted": true,
+          "at": 92.80000007152557
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "ArrowRight",
+          "value": "2030-01-01T08:00",
+          "at": 93.5
+        },
+        {
+          "event": "keydown",
+          "trusted": true,
+          "key": "Enter",
+          "value": "2030-01-01T08:00",
+          "at": 94
+        }
+      ]
+    }
+  ]
+}

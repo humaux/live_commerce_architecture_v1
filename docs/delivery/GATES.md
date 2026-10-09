@@ -4,10 +4,16 @@ Used by: check-gates.sh, unit authors and integrator. -->
 # Gates: what runs, what it proves, how to run it
 
 Status: hand-kept, mechanically checked by `bash scripts/dev/check-gates.sh` (CI). The script fails when a
-mode in the usage line of `scripts/dev/test-local.sh` has no row here, when a row names a mode that no
+mode in the registry of `scripts/dev/test-local.sh` has no row here, when a row names a mode that no
 longer exists, when any tracked `*.spec.*|*.test.*` file (whole repo) is run by no gate, or when CI stops invoking `scripts/dev/test-node.sh`. Nothing may exist that
 no gate runs (PROCESS.md, unit maintainability). Evidence labels follow `AGENTS.md` (DESIGN, MODEL_ONLY,
 MOCK, SANDBOX, LIVE, NOT_RUN): a pass here is only ever as strong as the label in its "proves" cell.
+
+## Mode registration
+
+`test-local.sh` owns one native Bash case registry. Add one entry defining `lc_build`, `lc_fixture`, `lc_prepare()` and `lc_run()`; usage, admission, build selection and dispatch follow that entry. Keep command bodies in the entry and the shared task-owned PostgreSQL lifecycle in `test-local-runtime.sh`. The selector reads this registry as data, including at an explicit Git revision; malformed, duplicate or unsupported case arms fail closed.
+
+`bash scripts/dev/test-local.sh --list` lists the modes, including the default `foundation`. `bash scripts/dev/test-local.sh --dry-run MODE` prints the selected shell phases with their command/environment expressions without executing builds, tests or fixtures. Dry-run is not a runtime acceptance gate. The existing `LC_SWEEP_SHARD=1/10 bash scripts/dev/test-local.sh --browser-click-sweep` invocation is the CI equivalent of `--browser-click-sweep@1/10`.
 
 ## Tiers
 
@@ -77,6 +83,7 @@ Smoke S29m BLOCKED is accepted in the CI job (F11), not by release-gate.
 | `--browser-input-delivery` | isolated HTTPS signed browser + Next + Go + PG input token transport; not decoded SFU media, recovery or production acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-input-delivery` |
 | `--browser-studio-bff` | isolated signed OIDC + Next + Go + PG Studio BFF transport; not Studio page/UI, Cloud or provider acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-studio-bff` |
 | `--browser-studio-ui` | isolated Studio B UI with signed MOCK IdP and local MOCK Egress; not Cloud or production acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-studio-ui` |
+| `--browser-live-console` | LC-U1 three locales × 1586x992/390x844, signed MOCK OIDC, Next/BFF/session/CSRF and PG identity; Console read/write upstream/receipts explicitly MOCK. Lifecycle/copy/offer/stock/recommend, CAS, UNKNOWN same-key retry, 5 s A1 polling, store/logout clearing, KEYWORD_QTY_CONTAINS, IG count unavailable, missing A1 and bounded live_adjust preserved. LC-U2a adds REAL_PG + MOCK Graph A2/A4/A5/A8/A13 at 1440/390 × three locales: 60-comment pagination/filter/BuyerPanel, single private reply, public payment-link refusal, native hidden pause, lost-ACK guard across reload and epoch reset. `LC_CONSOLE_CALIBRATION=retain-on-reset` must fail LCU2_RESET only. No LIVE Meta/media/production acceptance | T3 browser (LC-U1 MOCK; LC-U2a REAL_PG + MOCK Graph) | `bash scripts/dev/test-local.sh --browser-live-console` |
 | `--browser-claim-checkout` | CDC04/CDC05 real-click claim → checkout → pay-at-pickup; real PG, production Next, MOCK manual claims; chosen SKU/quantity, merge/recovery, sold-out/expiry, three locales; iPhone WebKit through seventh step; no PSP/Meta/LIVE acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-claim-checkout` |
 | `--browser-live-claims` | KC16 isolated admin + storefront Next, Go and PG claims chain; signed MOCK IdP, MOCK manual ingress; no provider or deployment acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-live-claims` |
 | `--browser-order` | isolated buyer address/order UI gate; not provider payment or deployment acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-order` |
@@ -163,6 +170,7 @@ Smoke S29m BLOCKED is accepted in the CI job (F11), not by release-gate.
 | `tests/admin/input-delivery.spec.ts`, `studio-input.test.ts`, `studio-input-client.test.ts` | `--browser-input-delivery` |
 | `tests/admin/studio-bff.spec.ts`, `studio-request.test.ts` | `--browser-studio-bff` |
 | `tests/admin/studio-ui.spec.ts` | `--browser-studio-ui` |
+| `tests/admin/live-console*.spec.ts`, `tests/foundation/browser_live_console_test.go` | `--browser-live-console` (author static checks never replace independent browser execution; mock-receipts.json and locale/viewport screenshots retained) |
 | `tests/admin/orders-bff.spec.ts`, `orders-request.test.ts` | `--browser-merchant-orders-bff` |
 | `tests/admin/orders-ui.spec.ts`, `orders-model.test.ts` | `--browser-merchant-orders-ui` |
 | `tests/admin/manual-fulfilment.spec.ts`, `refund.spec.ts`, `refund-bff.test.ts` | `--browser-refund-fulfilment` |
@@ -376,7 +384,11 @@ Stripe login fails its privilege validation); see `output/promotions/tests/DEFEC
 | `--browser-reports` | W6-U1 four report tabs, 92-day range, currency/environment/offline splits, sort and audited CSV; real scoped Go/PG, signed MOCK IdP; zh-TW/en, 1440/390 | MOCK (BROWSER) | `bash scripts/dev/test-local.sh --browser-reports` (GitHub only) |
 | `tests/admin/reports.spec.ts` | `--browser-reports` |
 | `tests/admin/customer-tags.spec.ts` | `--browser-customers-billing` |
+| `tests/admin/import-readiness.test.mjs` | `test-node.sh`: execute the actual spec login helper with minimal Node browser facilities; visible store selector readiness, zh-TW390/en1440 and Secure/httpOnly cookie assertions. Hidden sign-out regression RED→GREEN; native browser timing remains GitHub. |
 | `tests/admin/w6-route-seam.test.mjs` | `test-node.sh`: actual routes/shared auth/cookies/CSRF; bare/encoded tag query 422, valid tag and legacy list parity, report JSON/CSV private headers with `Vary: Cookie`, no Cookie/CSRF forwarding. Network-only MOCK; named P2 pre-fix red to green, browser acceptance remains GitHub. |
+
+| `--browser-migration-import` | W5-U1 signed HTTPS customer/history CSV real clicks, private row verdicts, original byte/mapping replay, stale/UNKNOWN, consent/tombstone/city warnings and read-only paged archive; real scoped Go/PG, MOCK IdP; zh-TW/en1440/390 | MOCK (BROWSER) | `bash scripts/dev/test-local.sh --browser-migration-import` (GitHub only) |
+| `tests/admin/import-wizard.spec.ts` | `--browser-migration-import` |
 LC-U2b: run `--browser-inbox` on a GitHub runner, then repeat with `LC_INBOX_CALIBRATION=retain-thread`. The injected real hidden-thread defect must fail `INU05 hidden thread retains private DM`; a generic failure does not calibrate the gate. Keep both run IDs and artifacts tied to the same SHA. INU09 must issue the flagged bundle link through the real BFF, compare the native clipboard credential hash with PG and preserve a token-free command receipt; its credential-bearing scenario keeps trace/video off. Locale coverage is zh-TW, zh-CN and en at 1440 and 390 per the integrator correction; deferred backend projections/link version remain honest unavailable states until LC-B3b.
 
 LC-U2b2: `tests/admin/inbox-customer-ui.spec.ts` adds six signed real A13/A14 variants (three locales × 1440/390), link/reload, two-page CAS with explicit retry and unlink. The Go fixture uses real private-reply Finish and order lifecycle commands; the existing denied-actor cases stay enabled. `tests/admin/inbox-customer-link.test.ts` executes the actual A9/A13/A14 component/client seams for CAS choice preservation, explicit retry, 404 teardown, permission denial, omitted orders and exact binding capabilities. Run `--browser-inbox` and the existing INU05 retain-thread calibration; click-sweep and visual lint remain CI acceptance.

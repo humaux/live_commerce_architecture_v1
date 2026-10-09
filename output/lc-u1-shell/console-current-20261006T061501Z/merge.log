@@ -1,0 +1,6 @@
+Auto-merging docs/delivery/GATES.md
+Auto-merging scripts/dev/test-local.sh
+CONFLICT (content): Merge conflict in scripts/dev/test-local.sh
+Auto-merging scripts/dev/test-node.sh
+CONFLICT (content): Merge conflict in scripts/dev/test-node.sh
+Automatic merge failed; fix conflicts and then commit the result.

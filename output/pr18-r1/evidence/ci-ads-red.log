@@ -1,0 +1,48 @@
+
+Running 6 tests using 1 worker
+
+  ✘  1 tests/admin/attribution.spec.ts:646:5 › AT7/AT9 actual report clicks en 390 (23.0s)
+  -  2 tests/admin/attribution.spec.ts:646:5 › AT7/AT9 actual report clicks en 1586
+  -  3 tests/admin/attribution.spec.ts:646:5 › AT7/AT9 actual report clicks zh-TW 390
+  -  4 tests/admin/attribution.spec.ts:646:5 › AT7/AT9 actual report clicks zh-TW 1586
+  -  5 tests/admin/attribution.spec.ts:646:5 › AT7/AT9 actual report clicks zh-CN 390
+  -  6 tests/admin/attribution.spec.ts:646:5 › AT7/AT9 actual report clicks zh-CN 1586
+
+
+  1) tests/admin/attribution.spec.ts:646:5 › AT7/AT9 actual report clicks en 390 ───────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 40
+
+    Call Log:
+    - Timeout 10000ms exceeded while waiting on the predicate
+
+      607 |       .toBeGreaterThan(0);
+      608 |     await region.press("ArrowLeft");
+    > 609 |     await expect.poll(() => region.evaluate((el) => el.scrollLeft)).toBe(0);
+          |                                                                     ^
+      610 |   }
+      611 | }
+      612 |
+        at tableLayout (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/attribution.spec.ts:609:69)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/attribution.spec.ts:992:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/ads-attribution-report/20261008T193247.573804257/results/attribution-AT7-AT9-actual-report-clicks-en-390/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/ads-attribution-report/20261008T193247.573804257/results/attribution-AT7-AT9-actual-report-clicks-en-390/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/ads-attribution-report/20261008T193247.573804257/results/attribution-AT7-AT9-actual-report-clicks-en-390/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/ads-attribution-report/20261008T193247.573804257/results/attribution-AT7-AT9-actual-report-clicks-en-390/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/admin/attribution.spec.ts:646:5 › AT7/AT9 actual report clicks en 390 ────────────────────
+  5 did not run

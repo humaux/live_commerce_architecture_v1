@@ -1,0 +1,16 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/test-focused.sh",
+    "^TestParcelFixtureSameBuyerTwoOrders$"
+  ],
+  "base": "75b9de3209d4e31629aeb5bf1d9dc50cd171d5e7",
+  "file_hashes": {
+    "tests/foundation/parcel_fixture_test.go": "db3abfd5cc65b8fc9437938b018e0bc302e173958fc2a3b946b90e70ff4573aa",
+    "tests/foundation/browser_merchant_orders_ui_test.go": "28b093df85630572d6d51573820caf293b890ef3e5bdda0c0aa55e3eea851600"
+  },
+  "exit": 0,
+  "timeout": false,
+  "elapsed_seconds": 22.548,
+  "log": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/codex4-fixture-price-green.log"
+}

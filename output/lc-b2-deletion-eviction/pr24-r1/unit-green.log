@@ -1,0 +1,92 @@
+=== RUN   TestCommentDeletionEvictsOnlyMissingAndKeepsSequence
+--- PASS: TestCommentDeletionEvictsOnlyMissingAndKeepsSequence (0.00s)
+=== RUN   TestCommentDeletionUncertainResponseKeepsEveryEntry
+=== RUN   TestCommentDeletionUncertainResponseKeepsEveryEntry/429
+=== RUN   TestCommentDeletionUncertainResponseKeepsEveryEntry/5xx
+=== RUN   TestCommentDeletionUncertainResponseKeepsEveryEntry/malformed
+=== RUN   TestCommentDeletionUncertainResponseKeepsEveryEntry/partial_error
+=== RUN   TestCommentDeletionUncertainResponseKeepsEveryEntry/token
+=== RUN   TestCommentDeletionUncertainResponseKeepsEveryEntry/null
+=== RUN   TestCommentDeletionUncertainResponseKeepsEveryEntry/array
+=== RUN   TestCommentDeletionUncertainResponseKeepsEveryEntry/unknown
+=== RUN   TestCommentDeletionUncertainResponseKeepsEveryEntry/missing_id
+=== RUN   TestCommentDeletionUncertainResponseKeepsEveryEntry/wrong_id
+=== RUN   TestCommentDeletionUncertainResponseKeepsEveryEntry/extra_field
+=== RUN   TestCommentDeletionUncertainResponseKeepsEveryEntry/duplicate_key
+=== RUN   TestCommentDeletionUncertainResponseKeepsEveryEntry/duplicate_field
+=== RUN   TestCommentDeletionUncertainResponseKeepsEveryEntry/trailing
+=== RUN   TestCommentDeletionUncertainResponseKeepsEveryEntry/partial_content
+--- PASS: TestCommentDeletionUncertainResponseKeepsEveryEntry (0.01s)
+    --- PASS: TestCommentDeletionUncertainResponseKeepsEveryEntry/429 (0.00s)
+    --- PASS: TestCommentDeletionUncertainResponseKeepsEveryEntry/5xx (0.00s)
+    --- PASS: TestCommentDeletionUncertainResponseKeepsEveryEntry/malformed (0.00s)
+    --- PASS: TestCommentDeletionUncertainResponseKeepsEveryEntry/partial_error (0.00s)
+    --- PASS: TestCommentDeletionUncertainResponseKeepsEveryEntry/token (0.00s)
+    --- PASS: TestCommentDeletionUncertainResponseKeepsEveryEntry/null (0.00s)
+    --- PASS: TestCommentDeletionUncertainResponseKeepsEveryEntry/array (0.00s)
+    --- PASS: TestCommentDeletionUncertainResponseKeepsEveryEntry/unknown (0.00s)
+    --- PASS: TestCommentDeletionUncertainResponseKeepsEveryEntry/missing_id (0.00s)
+    --- PASS: TestCommentDeletionUncertainResponseKeepsEveryEntry/wrong_id (0.00s)
+    --- PASS: TestCommentDeletionUncertainResponseKeepsEveryEntry/extra_field (0.00s)
+    --- PASS: TestCommentDeletionUncertainResponseKeepsEveryEntry/duplicate_key (0.00s)
+    --- PASS: TestCommentDeletionUncertainResponseKeepsEveryEntry/duplicate_field (0.00s)
+    --- PASS: TestCommentDeletionUncertainResponseKeepsEveryEntry/trailing (0.00s)
+    --- PASS: TestCommentDeletionUncertainResponseKeepsEveryEntry/partial_content (0.00s)
+=== RUN   TestCommentDeletionSharedAssetBudgetIncludesBridgeReads
+--- PASS: TestCommentDeletionSharedAssetBudgetIncludesBridgeReads (0.00s)
+=== RUN   TestCommentDeletionSharedBackoff
+=== RUN   TestCommentDeletionSharedBackoff/4
+=== RUN   TestCommentDeletionSharedBackoff/17
+=== RUN   TestCommentDeletionSharedBackoff/32
+=== RUN   TestCommentDeletionSharedBackoff/613
+=== RUN   TestCommentDeletionSharedBackoff/190
+--- PASS: TestCommentDeletionSharedBackoff (0.00s)
+    --- PASS: TestCommentDeletionSharedBackoff/4 (0.00s)
+    --- PASS: TestCommentDeletionSharedBackoff/17 (0.00s)
+    --- PASS: TestCommentDeletionSharedBackoff/32 (0.00s)
+    --- PASS: TestCommentDeletionSharedBackoff/613 (0.00s)
+    --- PASS: TestCommentDeletionSharedBackoff/190 (0.00s)
+=== RUN   TestCommentDeletionRotatesYoungEntriesInBoundedBatches
+--- PASS: TestCommentDeletionRotatesYoungEntriesInBoundedBatches (0.01s)
+=== RUN   TestCommentDeletionUsagePacesAllSources
+--- PASS: TestCommentDeletionUsagePacesAllSources (0.00s)
+=== RUN   TestCommentDeletionTransportFailureRetainsBuffer
+--- PASS: TestCommentDeletionTransportFailureRetainsBuffer (0.00s)
+=== RUN   TestCommentDeletionDelayedFailureBackoffStartsAfterResponse
+=== RUN   TestCommentDeletionDelayedFailureBackoffStartsAfterResponse/429
+=== RUN   TestCommentDeletionDelayedFailureBackoffStartsAfterResponse/200
+--- PASS: TestCommentDeletionDelayedFailureBackoffStartsAfterResponse (0.00s)
+    --- PASS: TestCommentDeletionDelayedFailureBackoffStartsAfterResponse/429 (0.00s)
+    --- PASS: TestCommentDeletionDelayedFailureBackoffStartsAfterResponse/200 (0.00s)
+=== RUN   TestCommentDeletionFacts404DoesNotManufactureBackoff
+--- PASS: TestCommentDeletionFacts404DoesNotManufactureBackoff (0.00s)
+=== RUN   TestCommentDeletionContractDefaults
+--- PASS: TestCommentDeletionContractDefaults (0.00s)
+=== RUN   TestCommentDeletionLateBatchCannotMutateReplacementSource
+--- PASS: TestCommentDeletionLateBatchCannotMutateReplacementSource (0.00s)
+=== RUN   TestCommentDeletionClearsDiscardedBackingSlots
+--- PASS: TestCommentDeletionClearsDiscardedBackingSlots (0.00s)
+=== RUN   TestCommentDeletionLateBatchReportsCustodyFence
+=== RUN   TestCommentDeletionLateBatchReportsCustodyFence/source_replaced
+=== RUN   TestCommentDeletionLateBatchReportsCustodyFence/lease_lost
+--- PASS: TestCommentDeletionLateBatchReportsCustodyFence (0.00s)
+    --- PASS: TestCommentDeletionLateBatchReportsCustodyFence/source_replaced (0.00s)
+    --- PASS: TestCommentDeletionLateBatchReportsCustodyFence/lease_lost (0.00s)
+=== RUN   TestCommentFactsFieldsAndDerivation
+--- PASS: TestCommentFactsFieldsAndDerivation (0.00s)
+=== RUN   TestCommentSequentialAssetsUseActualCallClock
+=== RUN   TestCommentSequentialAssetsUseActualCallClock/429
+=== RUN   TestCommentSequentialAssetsUseActualCallClock/usage50
+=== RUN   TestCommentSequentialAssetsUseActualCallClock/usage80
+=== RUN   TestCommentSequentialAssetsUseActualCallClock/bad-forward
+=== RUN   TestCommentSequentialAssetsUseActualCallClock/bad-deletion
+--- PASS: TestCommentSequentialAssetsUseActualCallClock (0.00s)
+    --- PASS: TestCommentSequentialAssetsUseActualCallClock/429 (0.00s)
+    --- PASS: TestCommentSequentialAssetsUseActualCallClock/usage50 (0.00s)
+    --- PASS: TestCommentSequentialAssetsUseActualCallClock/usage80 (0.00s)
+    --- PASS: TestCommentSequentialAssetsUseActualCallClock/bad-forward (0.00s)
+    --- PASS: TestCommentSequentialAssetsUseActualCallClock/bad-deletion (0.00s)
+=== RUN   TestCommentAdmissionFollowsInjectedClock
+--- PASS: TestCommentAdmissionFollowsInjectedClock (0.00s)
+PASS
+ok  	livecommerce/internal/integrations/metareply	1.777s

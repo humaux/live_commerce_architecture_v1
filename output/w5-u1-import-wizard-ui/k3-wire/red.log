@@ -1,0 +1,124 @@
+# Purpose: preserve K3 local output after this prologue.
+# Depends on: original main raw SHA256=0141b09b2c8b60006d89c15462f9b1e64a5180b4bccfe79f08a0e0b9f28aceaa.
+# Used by: integrator normal/calibration CI.
+# Evidence normalization: trailing whitespace/blank EOF only; main raw remains.
+✖ real coded errors retain baseline classification and normalize import leaf cache to private,no-store (26.186208ms)
+✔ preflight missing CSRF is definite and sends nothing; actual route CSRF and session refusals stay definite (2.67675ms)
+✖ actual route uses real cookies/store membership and method/error envelopes, no helper substitutions (0.737ms)
+✔ actual client/route preserves original Blob bytes, trusted transport and privacy projection on200/409 (1.830625ms)
+✔ success or stale preview must remain private; malformed/unknown/mismatched coded errors are uncertain after commit (2.083583ms)
+✔ lost/unreadable/session-changed dispatched commit remains UNKNOWN; no automatic retry (0.855875ms)
+✔ actual failed-only result route strips IDs and real final session/cancel fence exposes no download (1.264875ms)
+✔ actual route refuses unknown resource/query and duplicate session cookies before any upstream call (0.309375ms)
+✔ actual route incoming cancellation aborts one dispatched transport and preserves client UNKNOWN (0.592667ms)
+✔ real coded error cache may not be public, and closed payload may not acquire data-bearing fields (1.003583ms)
+✔ copy still exposes specific merchant field reasons across three locales (3.607542ms)
+✖ all real local and upstream import refusals including HEAD/unsupported are exact private,no-store (0.275083ms)
+✖ fresh mismatched receipt stays UNKNOWN, exact manual replay mismatch becomes terminal without a third send (1.221209ms)
+✔ terminal is impossible for malformed replay receipts or matching replayed counts (0.692625ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 10
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 342.033042
+
+✖ failing tests:
+
+test at tests/admin/import-client.test.mjs:54:1
+✖ real coded errors retain baseline classification and normalize import leaf cache to private,no-store (26.186208ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+
+  + 'no-store'
+  - 'private, no-store'
+
+      at seam.upstream.json.code.code (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-wire-worker/tests/admin/import-client.test.mjs:57:78)
+      at async seam (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-wire-worker/tests/admin/import-client.test.mjs:49:6)
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-wire-worker/tests/admin/import-client.test.mjs:55:196)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'no-store',
+    expected: 'private, no-store',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/import-client.test.mjs:68:1
+✖ actual route uses real cookies/store membership and method/error envelopes, no helper substitutions (0.737ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+
+  + 'no-store'
+  - 'private, no-store'
+
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-wire-worker/tests/admin/import-client.test.mjs:71:175
+      at async seam (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-wire-worker/tests/admin/import-client.test.mjs:49:6)
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-wire-worker/tests/admin/import-client.test.mjs:69:2)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'no-store',
+    expected: 'private, no-store',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/import-client.test.mjs:138:1
+✖ all real local and upstream import refusals including HEAD/unsupported are exact private,no-store (0.275083ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+
+  + 'no-store'
+  - 'private, no-store'
+
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-wire-worker/tests/admin/import-client.test.mjs:146:105
+      at async seam (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-wire-worker/tests/admin/import-client.test.mjs:49:6)
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-wire-worker/tests/admin/import-client.test.mjs:139:2)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'no-store',
+    expected: 'private, no-store',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/import-client.test.mjs:152:1
+✖ fresh mismatched receipt stays UNKNOWN, exact manual replay mismatch becomes terminal without a third send (1.221209ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+    {
+  +   code: 'retry_later',
+  +   kind: 'error',
+  +   uncertain: true
+  -   code: 'receipt_mismatch',
+  -   kind: 'terminal',
+  -   value: {
+  -     batch_id: '11111111-1111-4111-8111-111111111111',
+  -     created: 0,
+  -     failed: 1,
+  -     replayed: true,
+  -     updated: 0
+  -   }
+    }
+
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-wire-worker/tests/admin/import-client.test.mjs:158:55
+      at async seam (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-wire-worker/tests/admin/import-client.test.mjs:49:6)
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-wire-worker/tests/admin/import-client.test.mjs:154:2)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { kind: 'error', code: 'retry_later', uncertain: true },
+    expected: { kind: 'terminal', code: 'receipt_mismatch', value: { batch_id: '11111111-1111-4111-8111-111111111111', created: 0, updated: 0, failed: 1, replayed: true } },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

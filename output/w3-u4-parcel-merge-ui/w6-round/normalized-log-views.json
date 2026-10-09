@@ -1,0 +1,30 @@
+[
+  {
+    "file": "ci-red-playwright.log",
+    "raw_path": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/ci-red-playwright.log",
+    "raw_sha256": "52e31ae7ec610525cfcd11b6022d8e2a528849c3743ed996686d20c5642845d4",
+    "raw_gzip": "ci-red-playwright.log.raw.gz",
+    "view_sha256": "c0dc9e7d7b34d337839342b58a16be29e83ec3defc8bcaa74358b3a0e1cf9fcc"
+  },
+  {
+    "file": "customers-before.log",
+    "raw_path": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/customers-before.log",
+    "raw_sha256": "6327b6a1db97043f3260004719d9216aa653c9c6dfb95ba653ab894aaacd02d6",
+    "raw_gzip": "customers-before.log.raw.gz",
+    "view_sha256": "201987274f1019f9a32ba58efa9ccada1083e0fd6c6f3b67eab4c44067cb9011"
+  },
+  {
+    "file": "customers-green.log",
+    "raw_path": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/customers-green.log",
+    "raw_sha256": "9f3f1ac9988ac2a09b2a04057c7734c48ebd676ca31968d0fa0bbe45b2874613",
+    "raw_gzip": "customers-green.log.raw.gz",
+    "view_sha256": "b05abe1f821f99b30a7b9b31715c8297a0bfe6e5f6aa99250307ec3a82dd208e"
+  },
+  {
+    "file": "cvs.log",
+    "raw_path": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/w6-round/cvs.log",
+    "raw_sha256": "a57239d2d2b861d57b11ac22ccbe3938462ed7117370bf4a3f256362dab64eea",
+    "raw_gzip": "cvs.log.raw.gz",
+    "view_sha256": "9ed5df5f8bec45c5a7a2bae0d751c35ee3964961115c3ffe6b415df81f8e0afb"
+  }
+]

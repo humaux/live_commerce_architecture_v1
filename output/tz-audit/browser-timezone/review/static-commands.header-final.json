@@ -1,0 +1,22 @@
+[
+  {
+    "command": [
+      "node",
+      "--check",
+      "tests/storefront/manual-order-link-gate.mjs"
+    ],
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": ""
+  }
+]

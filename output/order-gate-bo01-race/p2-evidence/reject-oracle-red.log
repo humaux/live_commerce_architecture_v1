@@ -1,0 +1,30 @@
+✔ locale probe bounds a missing destination head with a route/device diagnostic (2.130208ms)
+✔ locale probe clears its deadline when the real head promise completes (0.321167ms)
+✔ warmup request interception has a precise local deadline and clears its timer (1.029792ms)
+✔ warmup upstream completion has a precise local deadline and clears its timer (0.37675ms)
+✖ warmup timer is cleared on upstream success and upstream rejection (0.604083ms)
+✔ EARLY_HEAD route continues a missing-Referer request without resolving the English barrier (0.350583ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 5
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 42.099583
+
+✖ failing tests:
+
+test at apps/storefront/tests/order-gate-timeout.test.mjs:66:1
+✖ warmup timer is cleared on upstream success and upstream rejection (0.604083ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race/apps/storefront/tests/order-gate-timeout.test.mjs:69:15)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /relay failed/,
+    operator: 'rejects',
+    diff: 'simple'
+  }

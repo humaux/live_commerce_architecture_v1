@@ -1,0 +1,74 @@
+[
+  {
+    "File": "profile-en-desktop.png",
+    "Sha256": "81c62ca0192291ece79b880bfda7767dc79cf0e65acb795373a908272776bf67",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "home-en-desktop.png",
+    "Sha256": "a80731e07623dfb781964ec21df15fe8a20cc64527548569213eb96632e45c33",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "pages-en-desktop.png",
+    "Sha256": "3576720f25e464d0d4ddf6417fffe409f678f535d8b60b34aba41e1d7ed65d72",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "profile-zh-TW-desktop.png",
+    "Sha256": "80f6d96326ab8409a6c87a338c642f3ac491595de94afcacfe44bb7270432845",
+    "Locale": "zh-TW",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "home-zh-TW-desktop.png",
+    "Sha256": "f437fdfd4461153a0d2700483d9d8ab9d4302f20a358ac258d63f319e66a6b6a",
+    "Locale": "zh-TW",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "pages-zh-TW-desktop.png",
+    "Sha256": "8f89f6a25b3300fc985d9c7c749c66f0c7d0ea1caad47a0c41eedec169c559b8",
+    "Locale": "zh-TW",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "profile-en-mobile.png",
+    "Sha256": "0868a48742a58104c5241023db4f769aea2ccfa6a1e04ce438ae6b7b4c721ea6",
+    "Locale": "en",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "home-en-mobile.png",
+    "Sha256": "74d588596e78700d3401fda53493e934d5b6a644d831dfd2e3ca7b73a4666b24",
+    "Locale": "en",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "pages-en-mobile.png",
+    "Sha256": "3b238342b41ba0c535dc0f29348ce82e4df5c06b758900a1a51c0919eac173dc",
+    "Locale": "en",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "profile-zh-TW-mobile.png",
+    "Sha256": "16cf136c11bbf0eb35297726cb7a645cdbc1a8559867e4368c84cc17a077a3f5",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "home-zh-TW-mobile.png",
+    "Sha256": "70567180b5c33ad8d6d6a01111cd660b4c1e0972bad3a1e558cb085ac5887666",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "pages-zh-TW-mobile.png",
+    "Sha256": "0e01fd3226f004850c2fca5ae94d29fe0d1c7db22a62d2ab8d1e379e36ac6349",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  }
+]

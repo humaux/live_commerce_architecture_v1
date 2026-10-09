@@ -1,0 +1,17 @@
+✔ PR18 final public unresolved receipt survives relogin but coarse fence stays session-bound (0.606625ms)
+✔ PR18 deletion HEAD clears selected comment composer but keeps history and public guard (19.056542ms)
+✔ PR18 short complete HEAD clears oldest selected comment and composer (3.442541ms)
+✔ PR18 P1 IG earliest50 refresh preserves100 rows selection and private draft (33.800375ms)
+✔ PR18 final expired older cursor keeps live buffer selection and polling (1.777542ms)
+✔ PR18 P1 IG earliest page and unknown authority never delete by absence (1.362916ms)
+✔ PR18 short complete HEAD removes an absent oldest live row (0.092625ms)
+✔ PR18 deletion HEAD removes absent refs inside its window (0.057375ms)
+✔ PR18 deletion HEAD keeps paged history below its oldest tuple (0.044542ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 358.852084

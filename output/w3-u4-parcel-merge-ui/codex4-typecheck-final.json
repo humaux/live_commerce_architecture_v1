@@ -1,0 +1,6 @@
+{
+  "command": "pnpm --filter @live-commerce/admin exec tsc --noEmit",
+  "source_sha": "a6bd46d8154fb2b05f3c80adc1c1ba7ab099e7e6",
+  "exit_code": 0,
+  "elapsed_seconds": 0.74
+}

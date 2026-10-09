@@ -1,0 +1,235 @@
+✖ OrderHistory renders server order instant in Taipei (20.871541ms)
+✖ ClaimLink renders claim expiry in Taipei (7.614ms)
+✖ BankTransfer renders deadline and proof instant in Taipei (6.77575ms)
+✖ ShopFooter uses Taipei year across UTC year boundary (3.719042ms)
+✔ Meta rejection wording is preserved as bounded Unicode text, never translated (1.165125ms)
+✔ frozen error codes: model list equals the frozen list, each is read from both error shapes (0.405917ms)
+✔ copy: every code, status, op state and connect error has text in all three locales (0.273167ms)
+✔ copy never calls a budget a hard stop and never offers resume (0.25425ms)
+✔ draft: every §5.1 status parses; unknown status/template/op state is an error, never guessed (1.3915ms)
+✔ draft: optional fields, remote ids and the Ads Manager link (0.574ms)
+✔ action hints: pause whenever a remote id exists and not ENDED; a paused draft is only ever copied (X7) (0.259917ms)
+✔ money: whole units to minor with integer math; TWD must be whole (17.093208ms)
+✖ Taipei schedule: wall inputs and draft projections ignore the viewer zone (4.214458ms)
+✖ Taipei schedule: invalid calendar days are rejected and all copy names UTC+8 (1.220708ms)
+✔ draft input: exact 11-key body and every local rule (2.923208ms)
+✔ draft form round trip and X7 copy (blank schedule, no id, no revision) (0.905875ms)
+✔ settings parser: environment enum, connections, identities, capi (1.232625ms)
+✔ connect state parser: pick list kinds and id match (0.442875ms)
+✔ report: three separate blocks, orders may be null, no combined figure (0.862ms)
+✔ default report window is the Asia/Taipei store day whatever the viewer's zone is (Taipei midnight boundary) (13.511584ms)
+✔ capi body and validation (0.761334ms)
+✔ W6-06B unbind response: exact keys, account, UUIDs and outcome semantics (1.162625ms)
+✔ W6-06B in-flight details preserve bounded items and total, reject unknown shapes (0.617458ms)
+✔ W6-06B catalog feed has exact public URL/domain pairs or published-store empty (0.734958ms)
+✔ W6-06B copy preserves unbind boundaries and feed recovery in three locales (0.28875ms)
+✔ W6-06B feed selection follows origin order, not full feed URL order (0.318084ms)
+✔ customer list accepts the frozen row and rejects unknown keys, dup ids, bad cursor, oversize (14.598959ms)
+✔ customer row invariants: nulls for bundle-only/erased, counts, money, consents (1.015083ms)
+✔ customer detail: bounded lists, order summaries reuse the orders parser, id must match (6.735958ms)
+✔ erasure summary is four counts only (0.236583ms)
+✔ finance summary: net = captured - refunded (I05), totals carry an empty day, sandbox flag (0.993458ms)
+✔ financeDay is the UTC+8 day (0.091833ms)
+✔ finance defaults keep Taipei dates across midnight, leap day and year end (0.100333ms)
+✔ tags and notes are parsed strictly (W6-01B) (2.223042ms)
+✖ Ads merchant timestamp uses Taipei at the year boundary (81.474209ms)
+✖ Design version published_at cell uses Taipei at the year boundary (10.96925ms)
+✖ ManualOrder bank-transfer expiry uses Taipei at the year boundary (6.40175ms)
+ℹ tests 37
+ℹ suites 0
+ℹ pass 28
+ℹ fail 9
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 330.6075
+
+✖ failing tests:
+
+test at apps/storefront/tests/timezone.test.mjs:48:1
+✖ OrderHistory renders server order instant in Taipei (20.871541ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /01\/01\/2027|1\/1\/2027|Jan 01, 2027|Jan 1, 2027/. Input:
+
+  ' Your orders Orders available to this shopping session. Keep access to this browser; a new session cannot recover an expired one.  Dec 31, 2026, 8:30 AM Order confirmed NT$1 order-1 View order  '
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit-admin-tests/apps/storefront/tests/timezone.test.mjs:55:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: ' Your orders Orders available to this shopping session. Keep access to this browser; a new session cannot recover an expired one.  Dec 31, 2026, 8:30 AM Order confirmed NT$1 order-1 View order  ',
+    expected: /01\/01\/2027|1\/1\/2027|Jan 01, 2027|Jan 1, 2027/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at apps/storefront/tests/timezone.test.mjs:59:1
+✖ ClaimLink renders claim expiry in Taipei (7.614ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /01\/01\/2027|1\/1\/2027/. Input:
+
+  'Storefront Language 简体中文 繁體中文 English  Your claimed items      These items were recorded from your live comments. The SKU and quantity are already chosen. Continue to checkout. Your claimed items  Current price, final at checkout Claims do not reserve stock. Stock is confirmed at checkout. This link works until Dec 31, 2026, 8:30 AM.        Check out now  Your cart  Your cart is empty.'
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit-admin-tests/apps/storefront/tests/timezone.test.mjs:66:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'Storefront Language 简体中文 繁體中文 English  Your claimed items      These items were recorded from your live comments. The SKU and quantity are already chosen. Continue to checkout. Your claimed items  Current price, final at checkout Claims do not reserve stock. Stock is confirmed at checkout. This link works until Dec 31, 2026, 8:30 AM.        Check out now  Your cart  Your cart is empty.',
+    expected: /01\/01\/2027|1\/1\/2027/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at apps/storefront/tests/timezone.test.mjs:71:1
+✖ BankTransfer renders deadline and proof instant in Taipei (6.77575ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /01\/01\/2027|1\/1\/2027/. Input:
+
+  'Pay by bank transfer Check the order before transferring. Never share passwords or verification codes.   Shop safely Transfer status :  Details sent — waiting for the shop to confirm  Transfer before   12/31/26, 8:30 AM  ·   The transfer window has ended. Transfer the exact amount above, then tell us below. Your items stay reserved until the deadline; the order is confirmed only after the shop checks its account.     Your last details : ··· 12345  ·  NT$1  ·  12/31/26, 8:30 AM  Refresh status'
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit-admin-tests/apps/storefront/tests/timezone.test.mjs:78:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'Pay by bank transfer Check the order before transferring. Never share passwords or verification codes.   Shop safely Transfer status :  Details sent — waiting for the shop to confirm  Transfer before   12/31/26, 8:30 AM  ·   The transfer window has ended. Transfer the exact amount above, then tell us below. Your items stay reserved until the deadline; the order is confirmed only after the shop checks its account.     Your last details : ··· 12345  ·  NT$1  ·  12/31/26, 8:30 AM  Refresh status',
+    expected: /01\/01\/2027|1\/1\/2027/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at apps/storefront/tests/timezone.test.mjs:83:1
+✖ ShopFooter uses Taipei year across UTC year boundary (3.719042ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /©\s+2027\s+Shop/. Input:
+
+  'Shop      ©  2026   Shop'
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit-admin-tests/apps/storefront/tests/timezone.test.mjs:93:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'Shop      ©  2026   Shop',
+    expected: /©\s+2027\s+Shop/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at tests/admin/ads-model.test.ts:208:1
+✖ Taipei schedule: wall inputs and draft projections ignore the viewer zone (4.214458ms)
+  AssertionError [ERR_ASSERTION]: 2026-10-07T00:00 under America/Los_Angeles
+  + actual - expected
+
+  + 1791356400000
+  - 1791302400000
+         ^
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit-admin-tests/tests/admin/ads-model.test.ts:216:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1791356400000,
+    expected: 1791302400000,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/ads-model.test.ts:230:1
+✖ Taipei schedule: invalid calendar days are rejected and all copy names UTC+8 (1.220708ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Asia\/Taipei.*UTC\+8/. Input:
+
+  'Local time. Start at least 10 minutes from now; run at most 30 days.'
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit-admin-tests/tests/admin/ads-model.test.ts:235:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'Local time. Start at least 10 minutes from now; run at most 30 days.',
+    expected: /Asia\/Taipei.*UTC\+8/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at tests/admin/timezone-ui.test.mjs:52:1
+✖ Ads merchant timestamp uses Taipei at the year boundary (81.474209ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /2027\D+0?1\D+0?1\D+00:30/. Input:
+
+  '2026年12月31日 上午8:30'
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit-admin-tests/tests/admin/timezone-ui.test.mjs:54:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '2026年12月31日 上午8:30',
+    expected: /2027\D+0?1\D+0?1\D+00:30/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at tests/admin/timezone-ui.test.mjs:58:1
+✖ Design version published_at cell uses Taipei at the year boundary (10.96925ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /2027\D+0?1\D+0?1\D+00:30/. Input:
+
+  'help  version published at  v 1 live published  2026年12月31日 上午8:30 '
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit-admin-tests/tests/admin/timezone-ui.test.mjs:67:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'help  version published at  v 1 live published  2026年12月31日 上午8:30 ',
+    expected: /2027\D+0?1\D+0?1\D+00:30/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at tests/admin/timezone-ui.test.mjs:70:1
+✖ ManualOrder bank-transfer expiry uses Taipei at the year boundary (6.40175ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /2027\D+0?1\D+0?1\D+00:30/. Input:
+
+  '    created   order-12  NT$100  expires 2026/12/31 上午8:30:00     '
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit-admin-tests/tests/admin/timezone-ui.test.mjs:86:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '    created   order-12  NT$100  expires 2026/12/31 上午8:30:00     ',
+    expected: /2027\D+0?1\D+0?1\D+00:30/,
+    operator: 'match',
+    diff: 'simple'
+  }

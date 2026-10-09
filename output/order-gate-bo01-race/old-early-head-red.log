@@ -1,0 +1,15 @@
+
+> live-commerce-workspace@ build:storefront /Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race
+> pnpm --filter @live-commerce/storefront build
+
+
+> @live-commerce/storefront@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race/apps/storefront
+> next build
+
+sh: next: command not found
+/Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race/apps/storefront:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @live-commerce/storefront@ build: `next build`
+spawn ENOENT
+ WARN   Local package.json exists, but node_modules missing, did you mean to install?
+ ELIFECYCLE  Command failed with exit code 1.
+ WARN   Local package.json exists, but node_modules missing, did you mean to install?

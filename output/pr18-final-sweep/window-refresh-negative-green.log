@@ -1,0 +1,10 @@
+✔ PR18 bounded window refresh stalled never publishes an incomplete IG window (32.396708ms)
+✔ PR18 bounded window refresh budget never publishes an incomplete IG window (12.439708ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 650.585584

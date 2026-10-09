@@ -1,0 +1,10 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-picklist"
+  ],
+  "sha": "fbdf8ebb0d1e091230fae7a646ce5405b84b2c50",
+  "exit_code": 0,
+  "seconds": 24.99405789375305
+}

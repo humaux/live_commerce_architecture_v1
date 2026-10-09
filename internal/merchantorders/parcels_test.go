@@ -57,3 +57,15 @@ func TestMapParcelError(t *testing.T) {
 		t.Errorf("23505 -> %v, want a generic conflict (never already_in_group)", err)
 	}
 }
+
+// The open-groups read and the orders list share one mask rule: "—" or exactly one printable rune + "***"; anything else hides.
+func TestNormalizeRecipientMask(t *testing.T) {
+	for in, want := range map[string]string{
+		"王***": "王***", "A***": "A***", "—": "—",
+		"": "—", "***": "—", "王小***": "—", "王小明": "—", "王\x07***": "—", "王小明***": "—", "\xff***": "—",
+	} {
+		if got := normalizeRecipientMask(in); got != want {
+			t.Errorf("normalizeRecipientMask(%q) = %q, want %q", in, got, want)
+		}
+	}
+}

@@ -1,0 +1,19 @@
+=== RUN   TestLiveConsoleLCN02ItemSeqWire
+=== RUN   TestLiveConsoleLCN02ItemSeqWire/facebook-buffer-and-direct-history
+    live_console_comment_seq_test.go:92: ref 933071604502729_5200073468: seq omitted; must emit a number or explicit null
+    live_console_comment_seq_test.go:92: ref 833233271038489_1191898638: seq omitted; must emit a number or explicit null
+    live_console_comment_seq_test.go:95: ref 933071604502729_5200073468: seq omitted; must emit a number or explicit null
+    live_console_comment_seq_test.go:95: ref 833233271038489_1191898638: seq omitted; must emit a number or explicit null
+    live_console_comment_seq_test.go:101: ref 833233271038489_1191898638: seq omitted; must emit a number or explicit null
+    live_console_comment_seq_test.go:101: ref 933071604502729_5200073468: seq omitted; must emit a number or explicit null
+=== RUN   TestLiveConsoleLCN02ItemSeqWire/instagram-webhook-envelope
+    live_console_comment_seq_test.go:136: ref 54360424090378643: seq omitted; must emit a number or explicit null
+    live_console_comment_seq_test.go:136: ref 16594611253319275: seq omitted; must emit a number or explicit null
+--- FAIL: TestLiveConsoleLCN02ItemSeqWire (2.03s)
+    --- FAIL: TestLiveConsoleLCN02ItemSeqWire/facebook-buffer-and-direct-history (1.60s)
+    --- FAIL: TestLiveConsoleLCN02ItemSeqWire/instagram-webhook-envelope (0.42s)
+FAIL
+FAIL	livecommerce/tests/foundation	3.058s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
+exit=1

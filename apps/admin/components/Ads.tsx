@@ -1,5 +1,5 @@
 // Purpose: Owns merchant ads settings, connection and draft workflows.
-// Depends on: react, next/navigation, @live-commerce/i18n, @live-commerce/ui, ./AdminPageHeader, @/lib/model, @/lib/settings-client, @/lib/ads-client, @/lib/ads-model, @/lib/ads-copy, ./WorkspaceFrame, ./Icon, ./ads.css, ./AdsConnection, ./AdsDraft, ./AdsResults, @/lib/attribution-copy
+// Depends on: @live-commerce/format (Taipei store timestamps), react, next/navigation, @live-commerce/i18n, @live-commerce/ui, ./AdminPageHeader, @/lib/model, @/lib/settings-client, @/lib/ads-client, @/lib/ads-model, @/lib/ads-copy, ./WorkspaceFrame, ./Icon, ./ads.css, ./AdsConnection, ./AdsDraft, ./AdsResults, @/lib/attribution-copy
 // Used by: apps/admin/app/[locale]/ads/page.tsx
 "use client";
 
@@ -26,6 +26,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@live-commerce/i18n";
+import { displayTime } from "@live-commerce/format";
 import { Field, TableFrame } from "@live-commerce/ui";
 import { AdminPageHeader } from "./AdminPageHeader";
 import type { Store } from "@/lib/model";
@@ -49,10 +50,7 @@ function when(locale: Locale, iso: string | null, empty: string) {
   if (!iso) return empty;
   const t = Date.parse(iso);
   return Number.isFinite(t)
-    ? new Date(t).toLocaleString(locale, {
-        dateStyle: "medium",
-        timeStyle: "short",
-      })
+    ? displayTime(locale, iso)
     : empty;
 }
 const short = (id: string) => `${id.slice(0, 4)}…${id.slice(-4)}`;

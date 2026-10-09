@@ -1,7 +1,9 @@
 /* Purpose: scoped responsive report controls, tables and CSS/SVG charts.
  * Depends on: existing admin CSS tokens and Reports/ReportViews DOM; no remote assets.
  * Used by: Reports.tsx. */
-.reports-page { display: grid; gap: 20px; }
+/* Report content may exceed the viewport; its scroll region must not set the grid track's minimum. */
+.reports-page { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 20px; }
+.reports-page > [role="tabpanel"] { min-width: 0; }
 .reports-page p { line-height: 1.65; }
 .reports-controls { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; }
 .reports-controls label { display: grid; gap: 6px; }
@@ -13,7 +15,9 @@
 .reports-basis p { margin: 6px 0; }
 .reports-scroll { max-width: 100%; overflow: auto; }
 .reports-scroll:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.reports-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.reports-table { table-layout: auto; width: 100%; border-collapse: collapse; font-size: 14px; }
+/* The global desktop widths belong to the product inventory table, not these report columns. */
+.reports-page .reports-table thead th { width: auto; }
 .reports-table caption { text-align: start; padding: 12px 0; font-weight: 600; }
 .reports-table th, .reports-table td { text-align: start; padding: 12px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: top; }
 .reports-table th:first-child { white-space: normal; min-width: 160px; max-width: 260px; overflow-wrap: anywhere; }

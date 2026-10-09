@@ -1,7 +1,12 @@
+// Purpose: real-click manual order creation, buyer-link exchange and persisted bank deadline browser gate.
+// Depends on: production admin/storefront Next, real Go/PG, signed MOCK IdP, Playwright and shared Taipei displayTime.
+// Used by: TestBrowserManualOrderLink (--browser-manual-order), including the WebKit aggregate.
 // Causal gate (storefront-v2 G3): the merchant creates an order in the admin UI -> copies the buyer link -> a FRESH browser opens it -> the storefront
 // exchanges the fragment token for a buyer cookie, replaces history and lands on the order page -> bank details are visible -> the buyer submits the transfer
 // proof (full capability) -> the same link in another fresh browser is refused (single use). Production Next builds of admin and storefront, signed MOCK IdP,
-// real Go/PG; the only host mapping is this disposable TLS/CONNECT edge (https://buyer.example). Evidence: result.json, screenshots.
+// real Go/PG; the only host mapping is this disposable TLS/CONNECT edge (https://buyer.example). Depends on Playwright,
+// browser-engine and shared Taipei displayTime; called by the Go manual-order browser gate. The Go order expiry is the
+// timestamp authority, and the buyer bank deadline is the durable reload surface. Evidence: result.json, screenshots.
 import assert from "node:assert/strict";
 import http from "node:http";
 import https from "node:https";
@@ -14,6 +19,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { expect } from "@playwright/test";
 import { launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit
+import { displayTime } from "../../packages/format/src/index.ts";
 
 const root = process.cwd(), evidence = process.env.LC_LINK_EVIDENCE;
 const adminOrigin = process.env.COMMERCE_PUBLIC_ORIGIN, buyerOrigin = "https://buyer.example";
@@ -62,8 +68,6 @@ async function startNext(app, port) {
   }
   throw new Error(`owned ${app} readiness deadline`);
 }
-const pad = n => String(n).padStart(2, "0");
-const localInput = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 try {
   execFileSync("openssl", ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", path.join(certDir, "key.pem"), "-out", path.join(certDir, "cert.pem"), "-days", "1", "-subj", "/CN=buyer.example"], {stdio: "ignore"});
   const [, buyerPort] = await Promise.all([startNext("admin", Number(process.env.LC_LINK_ADMIN_PORT)), startNext("storefront")]);
@@ -94,8 +98,9 @@ try {
   const uiErrors = [];
 
   // ---- merchant: sign in (signed MOCK IdP), create the manual order in the admin UI, copy the link ------------------------------------
-  const merchantContext = await browser.newContext(ctxOpts({ignoreHTTPSErrors: true, viewport: {width: 1100, height: 900}}));
+  const merchantContext = await browser.newContext(ctxOpts({ignoreHTTPSErrors: true, viewport: {width: 1100, height: 900}, timezoneId: "America/Los_Angeles"}));
   const merchant = await merchantContext.newPage();
+  assert.equal(await merchant.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone), "America/Los_Angeles");
   merchant.on("pageerror", error => uiErrors.push(error.name));
   await merchant.goto(`${adminOrigin}/en`);
   await merchant.getByRole("button", {name: "Sign in with identity service", exact: true}).click();
@@ -123,7 +128,9 @@ try {
   const body = await reply.json();
   assert.equal(body.commercial_state, "AWAITING_TRANSFER");
   assert.equal(body.source, "merchant_manual");
+  assert(Number.isFinite(Date.parse(body.expires_at)), "the Go manual-order receipt supplies an order expiry instant");
   await expect(merchant.getByTestId("manual-order-result")).toBeVisible();
+  await expect(merchant.getByTestId("manual-order-result").locator(".mt-stats dd").nth(2)).toHaveText(displayTime("en", body.expires_at));
   const link = (await merchant.getByTestId("manual-order-link").innerText()).trim();
   assert.equal(link, body.buyer_link);
   const fragment = new URL(link).hash;
@@ -134,8 +141,9 @@ try {
   pass("merchant created a manual bank-transfer order in the admin UI and got the buyer link");
 
   // ---- buyer: a FRESH browser opens the link ------------------------------------------------------------------------------------------
-  const buyerContext = await browser.newContext(ctxOpts({ignoreHTTPSErrors: true, viewport: {width: 390, height: 844}}));
+  const buyerContext = await browser.newContext(ctxOpts({ignoreHTTPSErrors: true, viewport: {width: 390, height: 844}, timezoneId: "America/Los_Angeles"}));
   const buyer = await buyerContext.newPage();
+  assert.equal(await buyer.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone), "America/Los_Angeles");
   buyer.on("pageerror", error => uiErrors.push(error.name));
   const leaked = [], exchanges = [];
   buyer.on("request", request => {
@@ -161,20 +169,34 @@ try {
   await expect(buyer.getByTestId("transfer-bank")).toBeVisible();
   await expect(buyer.getByTestId("transfer-account-number")).toHaveText(process.env.LC_LINK_ACCOUNT);
   await expect(buyer.getByTestId("transfer-state")).toBeVisible();
+  await expect(buyer.getByTestId("transfer-deadline")).toContainText(displayTime("zh-TW", body.expires_at));
+  await expect(buyer.getByTestId("transfer-deadline")).toContainText("UTC+8");
+  await buyer.reload();
+  await expect(buyer.getByTestId("transfer-bank")).toBeVisible();
+  await expect(buyer.getByTestId("transfer-deadline")).toContainText(displayTime("zh-TW", body.expires_at));
+  await expect(buyer.getByTestId("transfer-deadline")).toContainText("UTC+8");
   await buyer.screenshot({path: path.join(evidence, "buyer-order-bank-details.png"), fullPage: true});
   pass("the buyer sees the order with the bank details");
   await buyer.locator('input[name="last5"]').fill("12345");
   await buyer.locator('input[name="amount"]').fill(process.env.LC_LINK_AMOUNT);
-  await buyer.locator('input[name="paid_at"]').fill(localInput(new Date(Date.now() - 60_000)));
+  const paidAtInBrowserZone = await buyer.evaluate(() => {
+    const d = new Date(Date.now() - 60_000);
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }); // read-only: the input is interpreted by the page in its own timezone
+  await buyer.locator('input[name="paid_at"]').fill(paidAtInBrowserZone);
   const proofReply = buyer.waitForResponse(r => r.request().method() === "PUT" && new URL(r.url()).pathname === `/api/buyer/orders/${body.order_id}/bank-transfer/proof`);
   await buyer.getByTestId("transfer-send").click();
   assert.equal((await proofReply).status(), 200);
   await expect(buyer.getByTestId("transfer-proof")).toBeVisible();
+  await buyer.reload();
+  await expect(buyer.getByTestId("transfer-deadline")).toContainText(displayTime("zh-TW", body.expires_at));
+  await expect(buyer.getByTestId("transfer-deadline")).toContainText("UTC+8");
   await buyer.screenshot({path: path.join(evidence, "buyer-proof-submitted.png"), fullPage: true});
   pass("the buyer submitted the transfer proof with the exchanged (full) capability");
 
   // ---- the same link in another fresh browser is the one identical refusal -----------------------------------------------------------
-  const otherContext = await browser.newContext(ctxOpts({ignoreHTTPSErrors: true, viewport: {width: 390, height: 844}}));
+  const otherContext = await browser.newContext(ctxOpts({ignoreHTTPSErrors: true, viewport: {width: 390, height: 844}, timezoneId: "America/Los_Angeles"}));
   const other = await otherContext.newPage();
   other.on("pageerror", error => uiErrors.push(error.name));
   await other.goto(link);
@@ -202,11 +224,17 @@ try {
   await other.goto(link);
   await expect(other.getByTestId("order-link-refused")).toBeVisible();
   // the NEW link opens the order in another fresh browser
-  const thirdContext = await browser.newContext(ctxOpts({ignoreHTTPSErrors: true, viewport: {width: 390, height: 844}}));
+  const thirdContext = await browser.newContext(ctxOpts({ignoreHTTPSErrors: true, viewport: {width: 390, height: 844}, timezoneId: "UTC"}));
   const third = await thirdContext.newPage();
   third.on("pageerror", error => uiErrors.push(error.name));
   await third.goto(newLink);
   await third.waitForURL(url => url.pathname === `/zh-TW/orders/${body.order_id}`);
+  assert.equal(await third.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone), "UTC");
+  await expect(third.getByTestId("transfer-deadline")).toContainText(displayTime("zh-TW", body.expires_at));
+  await expect(third.getByTestId("transfer-deadline")).toContainText("UTC+8");
+  await third.reload();
+  await expect(third.getByTestId("transfer-deadline")).toContainText(displayTime("zh-TW", body.expires_at));
+  await expect(third.getByTestId("transfer-deadline")).toContainText("UTC+8");
   await expect(third.getByTestId("transfer-bank")).toBeVisible();
   await third.screenshot({path: path.join(evidence, "buyer-regenerated-link.png"), fullPage: true});
   pass("regenerate issues a working link and the old link stays refused");
@@ -248,7 +276,7 @@ try {
   await merchant.screenshot({path: path.join(evidence, "merchant-created-cod.png"), fullPage: true});
   pass("merchant created a manual cash-on-delivery order in the admin UI (whole-NT$ fee and cap shown, cash due NT$75) and got the buyer link");
 
-  const codBuyerContext = await browser.newContext(ctxOpts({ignoreHTTPSErrors: true, viewport: {width: 390, height: 844}}));
+  const codBuyerContext = await browser.newContext(ctxOpts({ignoreHTTPSErrors: true, viewport: {width: 390, height: 844}, timezoneId: "America/Los_Angeles"}));
   const codBuyer = await codBuyerContext.newPage();
   codBuyer.on("pageerror", error => uiErrors.push(error.name));
   await codBuyer.goto(codLink);

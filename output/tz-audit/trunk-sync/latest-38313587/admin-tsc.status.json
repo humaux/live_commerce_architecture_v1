@@ -1,0 +1,1 @@
+{"sha": "3831358737df1d819afa5755bd7d362c024ae930", "state": "complete", "command": ["pnpm", "exec", "tsc", "--noEmit", "-p", "."], "exit_code": 0, "timeout_seconds": 240, "elapsed_seconds": 8.019942283630371}

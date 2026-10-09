@@ -1,5 +1,6 @@
-// Actual buyer form -> production Next -> Go -> isolated PostgreSQL.
-// Only synthetic TLS/domain routing and causal network/storage faults live here.
+// Purpose: real buyer checkout/order/history gate, including stable locale targets and complete context privacy audits.
+// Depends on: production Next/Go/PG, Playwright, shared Taipei formatting, browser-engine and shop-helpers.
+// Used by: TestBrowserBuyerOrderUI in --browser-order and the WebKit order scenario; only synthetic TLS/fixture faults.
 import assert from "node:assert/strict";
 import http from "node:http";
 import https from "node:https";
@@ -13,13 +14,14 @@ import path from "node:path";
 import { expect } from "@playwright/test";
 import { reachCheckout, switchLocale } from "./shop-helpers.mjs";
 import { isWebkitCancelledFetch, launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
+import { displayTime } from "../../packages/format/src/index.ts";
 
 const root=process.cwd(), evidence=process.env.LC_ORDER_EVIDENCE;
 assert(evidence && /^http:\/\/127\.0\.0\.1:\d+$/.test(process.env.LC_ORDER_CONTROL));
 const origin="https://buyer.example", checkoutPath="/en/checkout";
-const children=new Set(), sockets=new Set(), logs=[], contexts=[], orders=[], observations=[], storageWrites=[], consoleText=[], requestURLs=[];
+const children=new Set(), sockets=new Set(), logs=[], contexts=[], orders=[], observations=[], storageWrites=[], consoleText=[], requestURLs=[], cartRetries=[], clickLedger=[];
 const pii={recipient_name:"Synthetic Gate Recipient",phone:"+886900000091",region:"Synthetic Region",city:"Synthetic City",postal_code:"99991",line1:"Synthetic Address Ninety One",line2:"Synthetic Unit Ninety Two"};
-const secrets=[], pageErrors=[];
+const secrets=[], pageErrors=[], closedContextStates=new Map();
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return{promise,resolve};};
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 const listen=async s=>{s.listen(0,"127.0.0.1");await once(s,"listening");return s.address().port;};
@@ -28,7 +30,7 @@ const certDir=await mkdtemp(path.join(tmpdir(),"lc-order-edge-"));
 const review=path.join(root,"output/playwright/review/buyer-order");
 const historyReview=path.join(root,"output/playwright/review/buyer-history");
 let browser,edge,proxy,hook,sessionResets=0;
-const calls=[];
+const calls=[], bo01Warmups=new Map(), bo01Reads=[], bo01Probes=[];
 async function control(resource,method="GET") {
   const response=await fetch(`${process.env.LC_ORDER_CONTROL}/${resource}`,{method,headers:{"X-Gate-Key":process.env.LC_ORDER_CONTROL_KEY}});
   assert.equal(response.status,200,`fixture control ${resource.split("/")[0]}`);return response.json();
@@ -57,8 +59,16 @@ async function startNext() {
 function arm(suffix,fields={}) {
   return hook={path:`/api/buyer/${suffix}`,entered:deferred(),release:deferred(),result:deferred(),...fields};
 }
-async function newContext(mobile=false) {
-  const c=await browser.newContext(ctxOpts({ignoreHTTPSErrors:true,viewport:mobile?{width:390,height:844}:{width:1440,height:900}}));contexts.push(c);
+async function newContext(mobile=false,timezoneId="America/Los_Angeles") {
+  const c=await browser.newContext(ctxOpts({ignoreHTTPSErrors:true,viewport:mobile?{width:390,height:844}:{width:1440,height:900},timezoneId}));contexts.push(c);
+  // A short-lived context still belongs to BO06: retain its audit before Playwright disposes its pages/cookies.
+  const close=c.close.bind(c);
+  c.close=async (...args)=>{
+    if(closedContextStates.has(c))return close(...args);
+    const states=await captureContextState(c);
+    await close(...args);
+    closedContextStates.set(c,states);
+  };
   await c.exposeBinding("__gateStorageWrite",(_,value)=>storageWrites.push(value));
   await c.addInitScript(()=>{
     const native=Storage.prototype.setItem;
@@ -80,8 +90,41 @@ async function newContext(mobile=false) {
   });return c;
 }
 const requestIs=(response,suffix,method)=>new URL(response.url()).pathname===`/api/buyer/${suffix}`&&response.request().method()===method;
-async function quotePage(c,clock=false,p) {
+const historyRead=(p)=>p.waitForResponse(r=>r.status()===200&&r.request().method()==="GET"&&new URL(r.url()).pathname==="/api/buyer/orders"&&new URL(r.url()).searchParams.get("limit")==="20");
+const historyTimeZone={en:"Times are Taipei time (UTC+8).","zh-CN":"时间均为台北时间（UTC+8）。","zh-TW":"時間皆為台北時間（UTC+8）。"};
+async function assertHistoryTimes(p,locale,response) {
+  const body=await response.json();
+  assert.equal(body.items.length,2,"actual UI-triggered history GET returns both orders");
+  await expect(p.getByTestId("order-history").locator("p.order-note")).toContainText(historyTimeZone[locale]);
+  for(const item of body.items) {
+    const row=p.locator(".history-list li").filter({has:p.locator(`button[data-order-id="${item.order_id}"]`)});
+    await expect(row).toHaveCount(1);
+    await expect(row.locator("time[datetime]")).toHaveAttribute("datetime",item.created_at);
+    await expect(row.locator("time[datetime]")).toHaveText(displayTime(locale,item.created_at));
+  }
+}
+// Both calibration barriers fail locally; a lost read must not wait for Go's 180 s kill.
+async function waitBo01Warmup(promise,phase,page) {
+  let deadline;
+  try {
+    return await Promise.race([promise,new Promise((_,reject)=>{
+      deadline=setTimeout(()=>reject(new Error(`BO01 warmup ${phase} exceeded 10000ms: GET /api/buyer/destination at ${page.url()}`)),10000);
+    })]);
+  } finally {clearTimeout(deadline);}
+}
+async function quotePage(c,clock=false,p,bo01=false) {
   if(!p){p=await c.newPage();if(clock)await p.clock.install();}
+  if(bo01&&process.env.LC_BO01_EARLY_HEAD==="1") {
+    const warmup={entered:deferred(),release:deferred(),served:deferred()};bo01Warmups.set(p,warmup);
+    let waiting=true;
+    await p.route("**/api/buyer/destination",async route=>{
+      const request=route.request();
+      if(waiting&&request.method()==="GET"&&new URL(request.headers().referer||origin).pathname==="/en/checkout") {
+        waiting=false;warmup.entered.resolve();await warmup.release.promise;
+      }
+      await route.continue();
+    });
+  }
   await reachCheckout(p,origin,"en",process.env.LC_ORDER_PRODUCT); // product page -> Add to cart -> /en/checkout (also for a page that continued shopping: its cart is empty)
   await p.getByRole("button",{name:"Choose delivery",exact:true}).click();
   const pending=p.waitForResponse(r=>requestIs(r,"quotes","POST"));
@@ -89,6 +132,7 @@ async function quotePage(c,clock=false,p) {
   const response=await pending;assert.equal(response.status(),200);
   const quote=await response.json();
   await expect(p.getByTestId("address-section")).toBeVisible();
+  if(bo01Warmups.has(p))await waitBo01Warmup(bo01Warmups.get(p).entered.promise,"request interception",p);
   return {p,quote};
 }
 async function fill(p,values=pii) {for(const [key,value] of Object.entries(values))await p.locator(`input[name="${key}"]`).fill(value);}
@@ -136,9 +180,104 @@ async function rememberCookie(c) {
   const cookie=(await c.cookies(origin))[0];assert(cookie?.httpOnly&&cookie.secure&&cookie.sameSite==="Lax");
   secrets.push(cookie.value);const payload=JSON.parse(Buffer.from(cookie.value.split(".")[0],"base64url").toString());if(payload.token)secrets.push(payload.token);
 }
+async function captureContextState(c) {
+  await rememberCookie(c);
+  const states=[];
+  for(const p of c.pages()){
+    assert.equal(await p.evaluate(()=>document.cookie),"");
+    states.push(await p.evaluate(()=>JSON.stringify({local:{...localStorage},session:{...sessionStorage}})));
+  }
+  return states;
+}
+async function stableLocaleTarget(p,mobile=false) {
+  // Causal layout gate: release the real destination-head read only after the footer link is positioned.
+  // A buyer can press a language link while this read completes; removing the loading paragraph must not move it.
+  const repeats=Number(process.env.LC_BO01_REPEAT||1);assert(Number.isInteger(repeats)&&repeats>=1&&repeats<=10);
+  for(let iteration=1;iteration<=repeats;iteration++) {
+  const cookie=(await p.context().cookies(origin))[0];assert(cookie?.httpOnly&&cookie.secure);
+  // The previous English document can still be issuing its mount/focus read.
+  // Match the real new document and observed owner cookie, not whichever GET arrives first.
+  const headLoading=arm("destination",{method:"GET",after:true,sourcePath:"/zh-TW/checkout",cookie:`${cookie.name}=${cookie.value}`});
+  const warmup=bo01Warmups.get(p);
+  if(warmup){warmup.cookie=headLoading.cookie;warmup.release.resolve();await waitBo01Warmup(warmup.served.promise,"upstream completion",p);bo01Warmups.delete(p);}
+  // Enter the probed document from a settled old form; its loading is measured below.
+  await expect(p.locator('input[name="recipient_name"]')).toBeEnabled();
+  if(mobile&&process.env.LC_BROWSER_ENGINE==="webkit") {
+    await p.locator('footer nav a[hreflang="zh-TW"]').tap();
+    await expect(p).toHaveURL(`${origin}/zh-TW/checkout`);
+    await expect(p.locator('html[lang="zh-TW"]')).toBeVisible();
+  } else await switchLocale(p,"zh-TW");
+  let headDeadline;
+  try {
+    const status=await Promise.race([headLoading.result.promise, new Promise((_, reject) => {
+      headDeadline = setTimeout(() => reject(new Error(`BO01 ${mobile ? "mobile" : "desktop"} destination-head wait exceeded 10000ms: GET /api/buyer/destination at ${p.url()}`)), 10000);
+    })]);
+    assert.equal(status,200);assert.equal(headLoading.receivedSourcePath,"/zh-TW/checkout");assert.equal(headLoading.ownerMatched,true);
+  } finally { clearTimeout(headDeadline); }
+  await expect(p.getByTestId("address-section")).toBeVisible();
+  await expect(p.getByTestId("cart-line")).toHaveCount(1);
+  await expect(p.getByRole("status").filter({hasText:"正在載入收件資訊…"})).toBeVisible();
+  const languageLink=p.locator('footer nav a[hreflang="en"]');await languageLink.scrollIntoViewIfNeeded();
+  const languagePosition=()=>languageLink.evaluate(link=>({top:link.getBoundingClientRect().top+scrollY,height:link.getBoundingClientRect().height,documentHeight:document.documentElement.scrollHeight}));
+  const beforeHead=await languagePosition();headLoading.release.resolve();
+  await expect(p.locator('input[name="recipient_name"]')).toBeEnabled();
+  const afterHead=await languagePosition();
+  assert.equal(afterHead.top,beforeHead.top,"loading completion must not move the footer language target");
+  if(mobile&&process.env.LC_BROWSER_ENGINE==="webkit")await languageLink.tap();else await languageLink.click();await expect(p).toHaveURL(`${origin}/en/checkout`);
+  await expect(p.getByTestId("address-section")).toBeVisible();
+  bo01Probes.push({device:mobile?"mobile":"desktop",iteration,sourcePath:headLoading.receivedSourcePath,ownerMatched:headLoading.ownerMatched,before:beforeHead,after:afterHead});
+  await writeFile(path.join(evidence,"bo01-probes.json"),JSON.stringify(bo01Probes,null,2));
+  }
+  pass(`BO01 ${mobile?"mobile":"desktop"} delivery-head completion keeps the language target stable`);
+}
 async function capture(p,name,fullPage=true,directory=review) {
   await mkdir(directory,{recursive:true});
   await p.screenshot({path:path.join(evidence,name),fullPage});await copyFile(path.join(evidence,name),path.join(directory,name));
+}
+const cartCopy={en:{retry:"Retry",increase:"Increase quantity",view:"View cart"},"zh-CN":{retry:"重试",increase:"增加数量",view:"查看购物车"},"zh-TW":{retry:"重試",increase:"增加數量",view:"查看購物車"}};
+async function cartClick(p,caseID,control,locator,expected,verify) {
+  const row={case_id:caseID,page:p.url(),control,action:"click",expected,actual:"NOT_RUN",status:"NOT_RUN"};clickLedger.push(row);
+  try {await locator.click();await verify();row.actual=expected;row.status="PASS";}
+  catch(error){row.actual=String(error.message).slice(0,1000);row.status="FAIL";throw error;}
+  finally {await writeFile(path.join(evidence,"cart-click-ledger.json"),JSON.stringify(clickLedger,null,2),{mode:0o600});}
+}
+async function cartRetry(p,locale,surface,initiate) {
+  const caseID=`BC01 ${locale} ${surface} visible cart Retry preserves key/body and one committed write after reload`;
+  const host=()=>p.getByTestId(surface==="drawer"?"cart-drawer":"cart-page");
+  const start=calls.length,lost=arm("cart",{method:"PUT",drop:true,repeat:true});
+  // Keep dropping transparent transport retries too: the first visible recovery must be the buyer's Retry click.
+  await initiate(caseID);
+  assert.equal(await lost.result.promise,200,"lost cart reply follows a real committed Go/PG write");
+  if(surface==="drawer")await cartClick(p,caseID,"header-cart",p.getByTestId("header-cart"),"uncertain cart notice is visible",async()=>expect(host().getByTestId("cart-problem")).toBeVisible());
+  const notice=host().getByTestId("cart-problem"),retry=notice.getByRole("button",{name:cartCopy[locale].retry,exact:true});
+  await expect(notice).toBeVisible();await expect(retry).toBeVisible();await expect(retry).toBeEnabled();
+  const pending=await stored(p);assert.equal(pending.kind,"cart");
+  const committed=JSON.parse(lost.out.body.toString()),quantity=surface==="drawer"?1:2;
+  assert.equal(committed.version,quantity);assert.equal(committed.items.length,1);assert.equal(committed.items[0].quantity,quantity);
+  assert.deepEqual(pending.body,{expected_version:quantity-1,items:[{sku_id:committed.items[0].sku_id,quantity}]});
+  const factPath=`cart-facts/${committed.id}/${pending.key}`,before=await control(factPath);
+  assert.equal(before.receipts,1);assert.equal(before.receipt_version,quantity);assert.equal(before.version,quantity);assert.equal(before.writes,quantity);
+  assert.deepEqual(before.items,pending.body.items);assert.match(before.request_hash,/^[a-f0-9]{64}$/);
+  const firstCalls=calls.slice(start).filter(x=>x.path==="/api/buyer/cart"&&x.method==="PUT");
+  assert(firstCalls.length>=1);for(const call of firstCalls){assert.equal(call.key,pending.key);assert.deepEqual(JSON.parse(call.body),pending.body);assert.equal(call.status,200);assert.equal(call.dropped,true);}
+  const explicitStart=calls.length;hook=null;
+  await cartClick(p,caseID,"cart-problem > Retry",retry,"uncertainty clears and committed quantity appears",async()=>{
+    await expect(notice).toHaveCount(0);await expect(host().getByTestId("cart-line-qty")).toHaveText(String(quantity));
+    await expect.poll(()=>stored(p)).toBeNull();
+  });
+  const explicit=calls.slice(explicitStart).filter(x=>x.path==="/api/buyer/cart"&&x.method==="PUT");
+  assert.equal(explicit.length,1,"one real cart PUT is triggered by the visible Retry button");
+  assert.equal(explicit[0].status,200);assert.equal(explicit[0].key,pending.key);assert.equal(explicit[0].body,firstCalls[0].body);assert.equal(explicit[0].dropped,false);
+  const after=await control(factPath);assert.deepEqual(after,before,"Retry replays one receipt without a second cart.updated event/version");
+  const writesBeforeReload=calls.filter(x=>x.path==="/api/buyer/cart"&&x.method==="PUT").length;
+  await p.reload();
+  if(surface==="drawer")await cartClick(p,caseID,"header-cart after reload",p.getByTestId("header-cart"),"persisted cart drawer opens with the committed quantity",async()=>expect(host().getByTestId("cart-line-qty")).toHaveText(String(quantity)));
+  await expect(host().getByTestId("cart-line-qty")).toHaveText(String(quantity));await expect(host().getByTestId("cart-problem")).toHaveCount(0);
+  assert.equal(calls.filter(x=>x.path==="/api/buyer/cart"&&x.method==="PUT").length,writesBeforeReload,"reload must only read the retained cart");
+  const reloaded=await control(factPath);assert.deepEqual(reloaded,before);
+  cartRetries.push({case_id:caseID,locale,surface,key:pending.key,request_body:firstCalls[0].body,cart_id:committed.id,sku_id:committed.items[0].sku_id,quantity,before,after,reloaded});
+  await writeFile(path.join(evidence,"cart-retry-facts.json"),JSON.stringify(cartRetries,null,2),{mode:0o600});
+  pass(caseID);
 }
 try {
   execFileSync("openssl",["req","-x509","-newkey","rsa:2048","-nodes","-keyout",path.join(certDir,"key.pem"),"-out",path.join(certDir,"cert.pem"),"-days","1","-subj","/CN=buyer.example"],{stdio:"ignore"});
@@ -147,12 +286,19 @@ try {
     try {
       const chunks=[];for await(const x of req)chunks.push(x);const body=Buffer.concat(chunks);
       if(req.url.startsWith("/api/buyer/session/")&&req.url.includes("prepare")&&body.toString().includes('"reset"'))sessionResets++;
-      const call={path:req.url,method:req.method,key:req.headers["idempotency-key"],body:body.length?body.toString():null};
+      const call={path:req.url,method:req.method,key:req.headers["idempotency-key"],body:body.length?body.toString():null,sourcePath:new URL(req.headers.referer||origin).pathname};
       if(req.url.startsWith("/api/buyer/"))calls.push(call);
-      const active=hook&&hook.path===req.url&&(!hook.method||hook.method===req.method)?hook:null;
-      if(active){if(!active.repeat)hook=null;active.entered.resolve();if(active.before)await active.release.promise;}
+      const cookiePairs=(req.headers.cookie||"").split(/;\s*/);
+      const active=hook&&hook.path===req.url&&(!hook.method||hook.method===req.method)&&(!hook.sourcePath||hook.sourcePath===call.sourcePath)&&(!hook.cookie||cookiePairs.includes(hook.cookie))?hook:null;
+      if(active){active.receivedSourcePath=call.sourcePath;active.ownerMatched=!!active.cookie&&cookiePairs.includes(active.cookie);if(!active.repeat)hook=null;active.entered.resolve();if(active.before)await active.release.promise;}
       const out=await relay(port,req,body);call.status=out.status;
+      if(req.url==="/api/buyer/destination"&&req.method==="GET") {
+        bo01Reads.push({sourcePath:call.sourcePath,status:out.status,held:!!active?.after});
+        await writeFile(path.join(evidence,"bo01-head-reads.json"),JSON.stringify(bo01Reads,null,2));
+        for(const [page,warmup] of bo01Warmups)if(call.sourcePath==="/en/checkout"&&page.url()===origin+"/en/checkout"&&cookiePairs.includes(warmup.cookie))warmup.served.resolve();
+      }
       if(active){active.out=out;active.result.resolve(out.status);}
+      call.dropped=!!active?.drop;
       if(active?.drop){res.destroy();return;}
       if(active?.after)await active.release.promise;
       const headers={...out.headers};delete headers.connection;delete headers["transfer-encoding"];
@@ -167,8 +313,24 @@ try {
   });
   browser=await launch({headless:true,proxy:{server:`http://127.0.0.1:${await listen(proxy)}`}});
 
+  // BC01: first write in a fresh session (product drawer), then an edit on the cart page.
+  // All business requests run through production Next -> Go -> PG; only committed edge replies are lost.
+  for(const locale of ["en","zh-CN","zh-TW"]){
+    const context=await newContext(),p=await context.newPage();
+    await p.goto(`${origin}/${locale}/products/${process.env.LC_ORDER_PRODUCT}`);
+    await expect(p.getByTestId("add-to-cart")).toBeEnabled();assert.equal(await stored(p),null);
+    await cartRetry(p,locale,"drawer",async caseID=>cartClick(p,caseID,"add-to-cart",p.getByTestId("add-to-cart"),"first cart write settles as uncertain",async()=>expect(p.getByTestId("add-to-cart")).toBeEnabled()));
+    const routeCase=`BC01 ${locale} cart-page visible cart Retry preserves key/body and one committed write after reload`;
+    await cartClick(p,routeCase,"View cart",p.getByTestId("cart-drawer").getByRole("link",{name:cartCopy[locale].view,exact:true}),"cart page shows the retained first item",async()=>{
+      await expect(p).toHaveURL(`${origin}/${locale}/cart`);await expect(p.getByTestId("cart-page").getByTestId("cart-line-qty")).toHaveText("1");
+    });
+    await cartRetry(p,locale,"cart-page",async caseID=>cartClick(p,caseID,"Increase quantity",p.getByTestId("cart-page").getByRole("button",{name:cartCopy[locale].increase,exact:true}),"cart page shows uncertain committed edit",async()=>expect(p.getByTestId("cart-page").getByTestId("cart-problem")).toBeVisible()));
+    await context.close();
+  }
+
   // BO01/BO03: native form, all locales, in-memory PII and causal lost PUT.
-  const c1=await newContext(),{p:a,quote:q1}=await quotePage(c1);await rememberCookie(c1);
+  const c1=await newContext(),{p:a,quote:q1}=await quotePage(c1,false,undefined,true);await rememberCookie(c1);
+  await stableLocaleTarget(a); // Run before filling PII so the original language/unsaved-address assertions retain their input.
   for(const name of Object.keys(pii))await expect(a.locator(`input[name="${name}"]`)).toHaveCount(1);
   await expect(a.locator('input[name="phone"]')).toHaveAttribute("type","tel");
   await fill(a);
@@ -258,7 +420,7 @@ try {
   pass("BO04 actual second-tab recovery queues on Web Lock and resumes same order without second POST");
 
   // BO05: a committed checkout with no reply survives document death/reload.
-  const c4=await newContext(true),{p:lost,quote:q4}=await quotePage(c4);await fill(lost);await confirm(lost);
+  const c4=await newContext(true),{p:lost,quote:q4}=await quotePage(c4,false,undefined,true);await stableLocaleTarget(lost,true);await fill(lost);await confirm(lost);
   await capture(lost,"mobile-address.png");
   const lostStart=calls.length,dropCheckout=arm("checkout",{method:"POST",drop:true,repeat:true});
   await lost.getByTestId("create-order").click();assert.equal(await dropCheckout.result.promise,200);await expect(lost.getByTestId("recover-purchase")).toBeVisible();hook=null;
@@ -385,9 +547,11 @@ try {
   const summaryKeys=["order_id","created_at","cart_id","cart_version","commercial_state","fulfillment_state","currency","total_minor"].sort();
   for(const summary of [...firstHistory.body.items,...secondHistory.body.items])assert.deepEqual(Object.keys(summary).sort(),summaryKeys);
   const pointerB=await stored(a,"commerce-purchase-order-v1:"),cartB=(await api(a,"GET","cart")).body;
-  const historyLoading=arm("orders?limit=20",{method:"GET",after:true});await a.getByTestId("toggle-order-history").click();
+  assert.equal(await a.evaluate(()=>Intl.DateTimeFormat().resolvedOptions().timeZone),"America/Los_Angeles");
+  const historyLoading=arm("orders?limit=20",{method:"GET",after:true}),firstHistoryUI=historyRead(a);await a.getByTestId("toggle-order-history").click();
   assert.equal(await historyLoading.result.promise,200);await expect(a.getByTestId("order-history").getByRole("status")).toBeVisible();historyLoading.release.resolve();
   await expect(a.locator(".history-list li")).toHaveCount(2);
+  await assertHistoryTimes(a,"en",await firstHistoryUI);
   await expect(a.locator(".history-list li").first().locator("button")).toHaveAttribute("data-order-id",orderB);
   await capture(a,"desktop-history.png",true,historyReview);
   await a.setViewportSize({width:390,height:844});await capture(a,"mobile-history.png",true,historyReview);
@@ -397,22 +561,35 @@ try {
   assert.deepEqual(await stored(a,"commerce-purchase-order-v1:"),pointerB);assert.deepEqual((await api(a,"GET","cart")).body,cartB);
   await a.getByRole("button",{name:"Back to orders",exact:true}).click();
   for(const [locale,title] of [["zh-CN","我的订单"],["zh-TW","我的訂單"],["en","Your orders"]]){
-    await switchLocale(a,locale);await a.getByTestId("toggle-order-history").click(); // full navigation: the history view is reopened from the pinned order
+    await switchLocale(a,locale);const localeHistory=historyRead(a);await a.getByTestId("toggle-order-history").click(); // full navigation: the history view is reopened from the pinned order
     await expect(a.getByTestId("order-history").getByRole("heading",{name:title,exact:true})).toBeVisible();
-    await expect(a.locator(".history-list li")).toHaveCount(2);assert.deepEqual(await stored(a,"commerce-purchase-order-v1:"),pointerB);
+    await expect(a.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(a,locale,await localeHistory);assert.deepEqual(await stored(a,"commerce-purchase-order-v1:"),pointerB);
   }
   await a.getByTestId("toggle-order-history").click();await expect(a.getByTestId("order-id")).toHaveText(orderB);
-  pass("BH04 owned keyset pages and history loading/detail/locales/back preserve current B locator and cart");
+  pass("BH04 owned history renders each server created_at in Taipei across locales under Los Angeles browser time");
 
   // Lose only the convenience locator, retaining the same HttpOnly credential.
   const cookieHistory=(await c1.cookies(origin))[0].value;
   await a.evaluate(()=>{for(const key of Object.keys(localStorage))if(key.startsWith("commerce-purchase-order-v1:"))localStorage.removeItem(key);});
   await a.reload();await expect(a.getByTestId("toggle-order-history")).toBeEnabled();await expect(a.getByTestId("order-section")).toHaveCount(0);
-  await a.getByTestId("toggle-order-history").click();await expect(a.locator(".history-list li")).toHaveCount(2);
+  const reloadedHistory=historyRead(a);await a.getByTestId("toggle-order-history").click();await expect(a.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(a,"en",await reloadedHistory);
   await a.locator(`button[data-order-id="${order1}"]`).click();await expect(a.getByTestId("order-id")).toHaveText(order1);
   assert.equal(await stored(a,"commerce-purchase-order-v1:"),null);assert.equal((await c1.cookies(origin))[0].value,cookieHistory);
   await a.getByTestId("toggle-order-history").click();await expect(a.getByTestId("order-section")).toHaveCount(0);
-  pass("BH05 authoritative history survives noncredential locator loss without repinning an old order");
+  pass("BH05 authoritative Taipei history survives reload and noncredential locator loss without repinning an old order");
+
+  // Same owned session, read-only history in UTC: no extra order or fixture row.
+  const utcContext=await newContext(false,"UTC");await utcContext.addCookies(await c1.cookies(origin));
+  const utcPage=await utcContext.newPage();await utcPage.goto(origin+checkoutPath);
+  assert.equal(await utcPage.evaluate(()=>Intl.DateTimeFormat().resolvedOptions().timeZone),"UTC");
+  await expect(utcPage.getByTestId("toggle-order-history")).toBeEnabled();
+  const utcHistory=historyRead(utcPage);await utcPage.getByTestId("toggle-order-history").click();
+  await expect(utcPage.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(utcPage,"en",await utcHistory);
+  await utcPage.reload();await expect(utcPage.getByTestId("toggle-order-history")).toBeEnabled();
+  const utcReloadHistory=historyRead(utcPage);await utcPage.getByTestId("toggle-order-history").click();
+  await expect(utcPage.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(utcPage,"en",await utcReloadHistory);
+  await utcContext.close();
+  pass("BH05 same owned history renders Taipei times in UTC browser context");
 
   // Preserve an already advanced cart, including another tab's selected items.
   const previousCart=(await api(tab1,"GET","cart")).body;
@@ -449,18 +626,21 @@ try {
   await expect(foreign.locator(".purchase-error")).toContainText("changed");assert.equal((await control("facts")).length,serviceBefore);
   await expect(foreign.getByTestId("create-order")).toBeDisabled();
   pass("BO02 service revision drift rejects a previously confirmed quotation without an order");
-  for(const c of contexts){await rememberCookie(c);for(const p of c.pages()){
-    assert.equal(await p.evaluate(()=>document.cookie),"");
-    const state=await p.evaluate(()=>JSON.stringify({local:{...localStorage},session:{...sessionStorage}}));
+  // Regression: this buyer is finished, like PR7's short-lived UTC context; BO06 must still audit its state.
+  await c7.close();
+  const contextStates=[];
+  for(const c of contexts)contextStates.push(...(closedContextStates.get(c)??await captureContextState(c)));
+  // Compare every open/closed snapshot only after all contexts contributed their bearer canaries.
+  for(const state of contextStates){
     for(const value of [...Object.values(pii),"Synthetic Changed Unit","Synthetic Concurrent Address","Synthetic Confirmed New Address",...secrets])assert(!state.includes(value),"PII/bearer leaked into persistent storage");
-  }}
+  }
   const attempted=JSON.stringify(storageWrites),urls=requestURLs.join("\n"),messages=consoleText.join("\n");
   for(const value of [...Object.values(pii),"Synthetic Changed Unit","Synthetic Concurrent Address","Synthetic Confirmed New Address",...secrets]){
     assert(!attempted.includes(value),"PII/bearer attempted persistent write");assert(!urls.includes(value)&&!urls.includes(encodeURIComponent(value)),"PII/bearer URL leak");assert(!messages.includes(value),"PII/bearer console leak");
   }
   assert.deepEqual(pageErrors.filter(e=>!isWebkitCancelledFetch(e)).map(e=>e.name),[],"browser application exception"); // WebKit cancelled-fetch console noise: browser-engine.mjs
   pass("BO06 all attempted local/session writes, URLs and console exclude PII/bearer; other owner denied");
-  await writeFile(path.join(evidence,"result.json"),JSON.stringify({cases:observations.length,orders,repeated_orders:[order1,orderB],observations,storage_write_attempts:storageWrites.length,scope:"actual UI/Next/Go/isolated PG; synthetic TLS and buyer data; no PSP/production",not_run:["full foundation/race/vet and existing browser regression are separate root gates","independent visual review"]},null,2),{mode:0o600});
+  await writeFile(path.join(evidence,"result.json"),JSON.stringify({cases:observations.length,orders,repeated_orders:[order1,orderB],observations,cart_retries:cartRetries,click_ledger:clickLedger,storage_write_attempts:storageWrites.length,scope:"actual UI/Next/Go/isolated PG; synthetic TLS and buyer data; no PSP/production",not_run:["full foundation/race/vet and existing browser regression are separate root gates","independent visual review"]},null,2),{mode:0o600});
 }catch(error){
   // A failed step leaves what the buyer was looking at (screenshot + visible text of every page), so an intermittent failure is diagnosable from its own run.
   if(browser)for(const context of browser.contexts())for(const [index,page] of context.pages().entries()){

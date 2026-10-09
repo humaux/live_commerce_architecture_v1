@@ -1,0 +1,14 @@
+✔ PR18 deletion HEAD clears selected comment composer but keeps history and public guard (24.589958ms)
+✔ PR18 deletion HEAD removes absent refs inside its window (0.803583ms)
+✔ PR18 deletion HEAD keeps paged history below its oldest tuple (0.089833ms)
+✔ PR18 deletion is never inferred from incremental or older pages (0.108125ms)
+✔ PR18 empty deletion HEAD is not evidence that any ref was deleted (0.69075ms)
+✔ PR18 deletion floor compares equal timestamp refs and timezone instants (0.095167ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 294.824042

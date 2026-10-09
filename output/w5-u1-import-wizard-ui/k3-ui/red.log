@@ -1,0 +1,59 @@
+# Purpose: preserve K3 local output after this prologue.
+# Depends on: original main raw SHA256=13823171e11670510c28c0009a46c465a8da1a1a32aaae9d0ebff985ba8daee3.
+# Used by: integrator normal/calibration CI.
+# Evidence normalization: trailing whitespace/blank EOF only; main raw remains.
+✔ commit uses the original requested mapping, including an empty optional field, not resolved preview metadata (3.479541ms)
+✔ an UNKNOWN commit remains locked through a later forbidden retry and only explicit same-file success unlocks (0.995709ms)
+✔ leaving during a dispatched commit drops its payload and keeps an unconfirmed boolean without replay (0.772875ms)
+✔ a definite first preflight refusal clears pending before sign-out and does not invent an unconfirmed import (0.916708ms)
+✖ a replayed mismatched receipt ends UNKNOWN without offering another retry or unlocking historical orders (0.907209ms)
+✔ failure verdicts precede successful rows, by source row number, without mutating the input (1.120834ms)
+✖ the failure download contains only failed row metadata, with no source cell or success identifier (0.49525ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 5
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 249.201375
+
+✖ failing tests:
+
+test at tests/admin/import-coordinator.test.mjs:99:1
+✖ a replayed mismatched receipt ends UNKNOWN without offering another retry or unlocking historical orders (0.907209ms)
+  AssertionError [ERR_ASSERTION]: import-terminal-mismatch
+      at Object.control (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-import-wizard-ui/tests/admin/import-coordinator.test.mjs:48:105)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-import-wizard-ui/tests/admin/import-coordinator.test.mjs:107:18)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/import-view.test.ts:19:1
+✖ the failure download contains only failed row metadata, with no source cell or success identifier (0.49525ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+
+  + '﻿row,code,warning\r\n4,invalid_phone,\r\n9,erased,\r\n'
+  - '﻿row,outcome,code\r\n4,failed,invalid_phone\r\n9,failed,erased\r\n'
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-import-wizard-ui/tests/admin/import-view.test.ts:21:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '﻿row,code,warning\r\n4,invalid_phone,\r\n9,erased,\r\n',
+    expected: '﻿row,outcome,code\r\n4,failed,invalid_phone\r\n9,failed,erased\r\n',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

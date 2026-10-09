@@ -74,6 +74,8 @@ export function BuyerPanel({ store, conversationId, bundleId, onUnauthorized, on
   const fail = useCallback((cause: unknown, ticket: Ticket) => {
     if (!privacy.fence.current(ticket)) return;
     const problem = cause instanceof InboxError ? cause : new InboxError("unavailable", 503);
+    // 401/403 revoke the parent scope. A 404 stays local: A13 also answers not_found for a retention-purged or missing
+    // selection, and a real scope loss reaches the A2/A8 polls within one interval (PR #18 r4).
     if (problem.status === 404) {
       goneScope.current = scope;
       privacy.fence.invalidate(true); clear();

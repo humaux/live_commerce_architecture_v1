@@ -1,0 +1,6 @@
+=== RUN   TestCommentDeletionContractDefaults
+    comment_deletion_test.go:336: contract pacing/backoff defaults=3s/1m0s
+--- FAIL: TestCommentDeletionContractDefaults (0.00s)
+FAIL
+FAIL	livecommerce/internal/integrations/metareply	1.795s
+FAIL

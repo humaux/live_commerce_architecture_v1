@@ -1,0 +1,96 @@
+✔ mode discovery has no Docker/build dependency and includes the existing universe (23.95225ms)
+✔ dry-run resolves a mode without executing dependencies and keeps its command environment (38.249834ms)
+✔ one appended case is discovered and dispatched; malformed and duplicate registry entries fail closed (37.977166ms)
+✖ registry discovery cannot silently lose indented, aliased or unrecognised Bash case arms (1.5585ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 3
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 133.126375
+
+✖ failing tests:
+
+test at tests/ci/mode-registry.test.mjs:47:1
+✖ registry discovery cannot silently lose indented, aliased or unrecognised Bash case arms (1.5585ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+    [
+  -   '--browser-inbox',
+      '--browser-meta-health-ui',
+      '--browser-tracking-backfill',
+      '--browser-platform-site',
+      '--meta-health',
+      '--browser-admin-shell',
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-pr-modes-coverage/tests/ci/mode-registry.test.mjs:52:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [
+      '--browser-meta-health-ui',     '--browser-tracking-backfill', '--browser-platform-site',
+      '--meta-health',                '--browser-admin-shell',       '--browser-click-sweep',
+      '--browser-visual-lint',        '--browser-identity',          '--browser-buyer-comms',
+      '--browser-checkout-offline',   '--browser-home-cod',          '--browser-promotions',
+      '--browser-password-auth',      '--browser-admin-legacy',      '--browser-buyer',
+      '--browser-merchant-buyer',     '--browser-manual-order',      '--browser-merchant-orders-bff',
+      '--browser-merchant-orders-ui', '--browser-input-delivery',    '--browser-studio-bff',
+      '--browser-studio-ui',          '--browser-live-console',      '--browser-claim-checkout',
+      '--browser-live-claims',        '--browser-order',             '--browser-payment',
+      '--stripe-browser',             '--browser-refund-fulfilment', '--browser-customers-billing',
+      '--browser-card-payments',      '--browser-meta-ads',          '--browser-ads-attribution',
+      '--browser-cvs',                '--browser-catalog-media',     '--browser-storefront-publish',
+      '--browser-store-domains',      '--browser-storefront',        '--browser-webkit',
+      '--browser-e2e',                '--checkout',                  '--payment',
+      '--payment-worker',             '--expiry-worker',             '--storefront-resolver',
+      '--buyer-http',                 '--purchase-entry',            '--merchant-orders',
+      '--inbox',                      '--inbox-send',                '--operations-queue',
+      '--msg-templates',              '--meta-inbox',                '--meta-consumer',
+      '--meta-runtime',               '--legacy-isolation',          '--local-recovery',
+      '--live-planning',              '--live-authority',            '--live-media-plan',
+      '--live-media-execution',       '--live-browser-input',        '--live-media-input',
+      '--live-media-crash',           '--live-media-stop',           '--live-media-recovery',
+      '--live-media-runtime',         '--live-console',              '--studio-backend',
+      '--browser-design',             '--browser-ops-polish',        '--browser-meta-connect',
+      '--browser-product-editor',     '--browser-catalog-core',      '--ops-disk-guard',
+      '--browser-returns-ui',         '--browser-picklist',          '--browser-operations-ads',
+      '--browser-product-media-v2',   '--browser-reports',           '--browser-migration-import',
+      'foundation'
+    ],
+    expected: [
+      '--browser-inbox',               '--browser-meta-health-ui',     '--browser-tracking-backfill',
+      '--browser-platform-site',       '--meta-health',                '--browser-admin-shell',
+      '--browser-click-sweep',         '--browser-visual-lint',        '--browser-identity',
+      '--browser-buyer-comms',         '--browser-checkout-offline',   '--browser-home-cod',
+      '--browser-promotions',          '--browser-password-auth',      '--browser-admin-legacy',
+      '--browser-buyer',               '--browser-merchant-buyer',     '--browser-manual-order',
+      '--browser-merchant-orders-bff', '--browser-merchant-orders-ui', '--browser-input-delivery',
+      '--browser-studio-bff',          '--browser-studio-ui',          '--browser-live-console',
+      '--browser-claim-checkout',      '--browser-live-claims',        '--browser-order',
+      '--browser-payment',             '--stripe-browser',             '--browser-refund-fulfilment',
+      '--browser-customers-billing',   '--browser-card-payments',      '--browser-meta-ads',
+      '--browser-ads-attribution',     '--browser-cvs',                '--browser-catalog-media',
+      '--browser-storefront-publish',  '--browser-store-domains',      '--browser-storefront',
+      '--browser-webkit',              '--browser-e2e',                '--checkout',
+      '--payment',                     '--payment-worker',             '--expiry-worker',
+      '--storefront-resolver',         '--buyer-http',                 '--purchase-entry',
+      '--merchant-orders',             '--inbox',                      '--inbox-send',
+      '--operations-queue',            '--msg-templates',              '--meta-inbox',
+      '--meta-consumer',               '--meta-runtime',               '--legacy-isolation',
+      '--local-recovery',              '--live-planning',              '--live-authority',
+      '--live-media-plan',             '--live-media-execution',       '--live-browser-input',
+      '--live-media-input',            '--live-media-crash',           '--live-media-stop',
+      '--live-media-recovery',         '--live-media-runtime',         '--live-console',
+      '--studio-backend',              '--browser-design',             '--browser-ops-polish',
+      '--browser-meta-connect',        '--browser-product-editor',     '--browser-catalog-core',
+      '--ops-disk-guard',              '--browser-returns-ui',         '--browser-picklist',
+      '--browser-operations-ads',      '--browser-product-media-v2',   '--browser-reports',
+      '--browser-migration-import',    'foundation'
+    ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

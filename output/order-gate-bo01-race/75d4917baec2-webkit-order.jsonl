@@ -1,0 +1,9 @@
+{"Time":"2026-10-09T17:32:03.818792+08:00","Action":"start","Package":"livecommerce/tests/foundation"}
+{"Time":"2026-10-09T17:32:05.778729+08:00","Action":"run","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerOrderUI"}
+{"Time":"2026-10-09T17:32:05.779195+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerOrderUI","Output":"=== RUN   TestBrowserBuyerOrderUI\n","OutputType":"frame"}
+{"Time":"2026-10-09T17:33:14.961523+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerOrderUI","Output":"    browser_order_chain_test.go:247: PASS: actual order UI/history; cases=26; buyers=6; orders=7; exact order/hold/job/receipt/reserve counts (one buyer twice, five once); evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race/output/playwright/buyer-order-1355587086\n"}
+{"Time":"2026-10-09T17:33:14.991696+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerOrderUI","Output":"--- PASS: TestBrowserBuyerOrderUI (69.21s)\n","OutputType":"frame"}
+{"Time":"2026-10-09T17:33:14.991898+08:00","Action":"pass","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerOrderUI","Elapsed":69.21}
+{"Time":"2026-10-09T17:33:14.996454+08:00","Action":"output","Package":"livecommerce/tests/foundation","Output":"PASS\n","OutputType":"frame"}
+{"Time":"2026-10-09T17:33:16.010911+08:00","Action":"output","Package":"livecommerce/tests/foundation","Output":"ok  \tlivecommerce/tests/foundation\t72.190s\n"}
+{"Time":"2026-10-09T17:33:16.011133+08:00","Action":"pass","Package":"livecommerce/tests/foundation","Elapsed":72.192}

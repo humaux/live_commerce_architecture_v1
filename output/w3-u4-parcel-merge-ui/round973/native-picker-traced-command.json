@@ -1,0 +1,9 @@
+{
+  "command": [
+    "node",
+    "output/w3-u4-parcel-merge-ui/round973/native-picker-probe.mjs",
+    "--trace"
+  ],
+  "exit": 0,
+  "elapsed_seconds": 10.119
+}

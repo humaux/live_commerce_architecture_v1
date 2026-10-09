@@ -1,0 +1,20 @@
+=== RUN   TestLiveConsoleLCN02ScanExhausted
+=== RUN   TestLiveConsoleLCN02ScanExhausted/full-raw-page-all-filtered
+    live_console_comment_scan_test.go:92: scan_exhausted="" want explicit false (visible items=0 next.seq=0)
+    live_console_comment_scan_test.go:94: all-filtered next.seq=0 want highest scanned position 1791546794093469
+    live_console_comment_scan_test.go:97: scan_exhausted="" want explicit true (visible items=0 next.seq=1791546794093469)
+=== RUN   TestLiveConsoleLCN02ScanExhausted/deleted-final-row-100-to-99
+    live_console_comment_scan_test.go:127: scan_exhausted="" want explicit false (visible items=100 next.seq=1791546797317455)
+    live_console_comment_scan_test.go:135: scan_exhausted="" want explicit true (visible items=99 next.seq=1791546797306129)
+    live_console_comment_scan_test.go:140: scan_exhausted="" want explicit true (visible items=0 next.seq=1791546797306129)
+=== RUN   TestLiveConsoleLCN02ScanExhausted/facebook-no-eof-proof
+    live_console_comment_scan_test.go:149: scan_exhausted="" want explicit false (visible items=1 next.seq=1)
+--- FAIL: TestLiveConsoleLCN02ScanExhausted (7.75s)
+    --- FAIL: TestLiveConsoleLCN02ScanExhausted/full-raw-page-all-filtered (4.20s)
+    --- FAIL: TestLiveConsoleLCN02ScanExhausted/deleted-final-row-100-to-99 (3.24s)
+    --- FAIL: TestLiveConsoleLCN02ScanExhausted/facebook-no-eof-proof (0.30s)
+FAIL
+FAIL	livecommerce/tests/foundation	9.109s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
+exit=1

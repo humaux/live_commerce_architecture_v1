@@ -1,0 +1,46 @@
+{
+  "_header": {
+    "Purpose": "pin K3 current command/hash evidence",
+    "Depends on": "actual source and original main raw SHA256=e8a3a508a7dc80b4fcc097b13d95b5eaa6ef0cccb942f30fddf81cc286e3a37b",
+    "Used by": "integrator CI normal/calibration"
+  },
+  "task_id": "a83bad3d-2b4d-4b4a-b598-85f9e4a99cea",
+  "subtask": "codex-w5-u1-ui-sub-wire",
+  "base_commit": "c39f0aeb60017aad7824ea30d985e8d5a742f550",
+  "source_commit": "8c9beb80f050427055b49a1a46f7a4950cf39813",
+  "files": {
+    "apps/admin/lib/import-proxy.ts": "56b278c358a7aa745f6175e89b97bcd2a4425dc8c51a874205978cf22f55c966",
+    "apps/admin/lib/import-client.ts": "a719c5c7653d1a7ae1d00ed322d7b0aef27709aa1bb1ca5ebab4515417c33d0b",
+    "apps/admin/app/api/stores/[store]/imports/[param]/[action]/route.ts": "7a39640ca8fd5b6f33b6798a8108178e0ec7d83d993bf7ac6faf8e8e7158f9dd",
+    "tests/admin/import-client.test.mjs": "4428bbfeca2ab7276a007ed5341df4ad56260e7ac75eea394229a17ce47060f2"
+  },
+  "commands": [
+    {
+      "command": "node --test --experimental-strip-types tests/admin/import-client.test.mjs",
+      "exit_code": 1,
+      "evidence": "red.log",
+      "phase": "new private-cache/terminal requirements; pre-existing coded classification already correct"
+    },
+    {
+      "command": "node --test --experimental-strip-types tests/admin/import-wire-model.test.ts tests/admin/import-wire-header.test.ts tests/admin/import-client.test.mjs",
+      "exit_code": 0,
+      "evidence": "green.log",
+      "phase": "24 actual-route/shared-helper and pure tests"
+    },
+    {
+      "command": "LC_HEADERS_STRICT=1 bash scripts/dev/check-headers.sh c39f0aeb60017aad7824ea30d985e8d5a742f550",
+      "exit_code": 0,
+      "evidence": "headers.log"
+    },
+    {
+      "command": "node node_modules/typescript/bin/tsc --noEmit --incremental false -p apps/admin/tsconfig.json",
+      "exit_code": 1,
+      "evidence": "typecheck.log",
+      "phase": "ONLY root-owned ImportWizard.tsx145 new terminal consumer handling pending"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ]
+}

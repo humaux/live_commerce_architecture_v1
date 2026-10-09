@@ -1,0 +1,22 @@
+
+Running 15 tests using 1 worker
+
+(node:9603) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/admin/import-wizard.spec.ts:133:1 › MIUI calibration-sensitive genuine preview/commit (1.1s)
+  ✓   2 tests/admin/import-wizard.spec.ts:145:3 › MIUI two-file flow, mapping/back/replay/CSV/storage en/1440 (2.1s)
+  ✓   3 tests/admin/import-wizard.spec.ts:145:3 › MIUI two-file flow, mapping/back/replay/CSV/storage en/390 (1.9s)
+  ✓   4 tests/admin/import-wizard.spec.ts:145:3 › MIUI two-file flow, mapping/back/replay/CSV/storage zh-TW/1440 (1.9s)
+  ✓   5 tests/admin/import-wizard.spec.ts:145:3 › MIUI two-file flow, mapping/back/replay/CSV/storage zh-TW/390 (2.0s)
+  ✓   6 tests/admin/import-wizard.spec.ts:190:1 › MIUI all-invalid local CSV, duplicate mapping, Unicode/size/line limits and safe verdict paging (1.6s)
+  ✓   7 tests/admin/import-wizard.spec.ts:230:1 › MIUI real erasure decreases apply count: direct fresh409/no partial mutation then deliberate fresh commit (710ms)
+  ✓   8 tests/admin/import-wizard.spec.ts:244:1 › MIUI changed requested mapping on identical committed bytes is refused (874ms)
+  ✓   9 tests/admin/import-wizard.spec.ts:258:1 › MIUI order stale erasure returns zero-apply fresh preview and local failure CSV (942ms)
+  ✓  10 tests/admin/import-wizard.spec.ts:272:1 › MIUI changed-byte updates preserve unmapped fields and clear mapped empty optional fields (1.1s)
+  ✓  11 tests/admin/import-wizard.spec.ts:286:1 › MIUI UNKNOWN both kinds explicitly replay immutable bytes/map/count, no automatic retry (2.1s)
+  ✓  12 tests/admin/import-wizard.spec.ts:303:1 › MIUI history50+1 readonly paging, retry, persistence and source-safe city (1.6s)
+  ✓  13 tests/admin/import-wizard.spec.ts:323:1 › MIUI imported-only erasure removes history and tombstone blocks same source ID (1.4s)
+  ✓  14 tests/admin/import-wizard.spec.ts:350:1 › MIUI read-only identity sees history but import permission refusal (451ms)
+  ✓  15 tests/admin/import-wizard.spec.ts:360:1 › MIUI pagehide drops raw file, UNKNOWN revoked session cannot submit under new boundary (910ms)
+
+  15 passed (21.5s)

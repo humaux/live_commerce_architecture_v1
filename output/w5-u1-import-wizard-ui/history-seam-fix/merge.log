@@ -1,0 +1,5 @@
+# Purpose: preserve actual history real-helper local evidence after this prologue.
+# Depends on: sourceafefed5e and original main raw SHA256=ce86394ac1789b7448bc3b7119400a1662e259af440d8d2434ed6b8dde734569.
+# Used by: integrator; runtime browser acceptance pending.
+# Evidence normalization: trailing whitespace/blank EOF only; original raw bytes and SHA256 retained in main checkout/provenance above.
+[unit/w5-u1-history-worker a1fa2135] Merge branch 'unit/w5-u1-import-wizard-ui' into unit/w5-u1-history-worker

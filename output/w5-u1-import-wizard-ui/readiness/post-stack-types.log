@@ -1,0 +1,7 @@
+# Purpose: preserve fixed remote stack local command evidence.
+# Depends on: original main raw SHA256=120be7f0905c1265a688c961f853640d1a14e70817402fae8e079846975974fa.
+# Used by: integrator CI normal/calibration.
+# Evidence normalization: trailing whitespace/blank EOF only; rawmain retained.
+
+> @live-commerce/admin@ typecheck /Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-import-wizard-ui/apps/admin
+> tsc --noEmit

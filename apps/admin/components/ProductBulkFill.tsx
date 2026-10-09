@@ -7,15 +7,18 @@ import { useEffect, useRef, useState } from "react";
 import type { BulkField } from "@/lib/product-document";
 import type { ProductEditorCopy } from "@/lib/product-editor-copy";
 
+// ProductBulkFill applies local bulk edits only to fields accepted by the current mode.
 export function ProductBulkFill({
   c,
   inventoryDisabled,
+  codeDisabled = false,
   selectedCount,
   close,
   apply,
 }: {
   c: ProductEditorCopy;
   inventoryDisabled: boolean;
+  codeDisabled?: boolean;
   selectedCount: number;
   close: () => void;
   apply: (
@@ -35,7 +38,7 @@ export function ProductBulkFill({
   const [operation, setOperation] = useState<"set" | "add" | "subtract">("set");
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => input.current?.focus(), []);
-  const blocked = target === "selected" && !selectedCount;
+  const blocked = (target === "selected" && !selectedCount) || (field === "code" && codeDisabled);
   const submit = () => {
     if (!blocked) apply(field, value, scope, operation, target);
   };
@@ -70,7 +73,7 @@ export function ProductBulkFill({
             setOperation("set");
           }}
         >
-          {(["price", "compare", "quantity", "code", "keyword"] as const).map(
+          {(["price", "compare", "quantity", "code", "keyword"] as const).filter((field) => field !== "code" || !codeDisabled).map(
             (f) => (
               <option
                 key={f}

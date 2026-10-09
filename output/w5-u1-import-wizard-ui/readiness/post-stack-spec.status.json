@@ -1,0 +1,43 @@
+{
+  "_header": {
+    "Purpose": "pin fixedstack command/source/exit",
+    "Depends on": "actualcurrentrun",
+    "Used by": "integratorthreegates"
+  },
+  "Purpose": "after fixedcfe W6 stack dependency checks",
+  "Depends on": "currentbase/source/command",
+  "Used by": "integrator W5threeCI requests",
+  "run_id": "post-stack-spec-7927",
+  "pid": 7927,
+  "command": [
+    "pnpm",
+    "exec",
+    "tsc",
+    "--noEmit",
+    "--strict",
+    "--skipLibCheck",
+    "--target",
+    "ES2023",
+    "--module",
+    "esnext",
+    "--moduleResolution",
+    "bundler",
+    "--esModuleInterop",
+    "--allowImportingTsExtensions",
+    "--typeRoots",
+    "apps/admin/node_modules/@types",
+    "--types",
+    "node",
+    "tests/admin/import-wizard.spec.ts",
+    "tests/admin/customer-tags.spec.ts",
+    "tests/admin/reports.spec.ts"
+  ],
+  "state": "finished",
+  "timeout_seconds": 120,
+  "at": "2026-10-07T13:36:46.634590+00:00",
+  "wake": "root activeforeground completionawait",
+  "failure_match": "nonzero ornomatchedtests",
+  "base": "b2b1ede70b4da71ea2bb9a737e250280aa58396f",
+  "exit_code": 0,
+  "ended_at": "2026-10-07T13:36:50.100553+00:00"
+}

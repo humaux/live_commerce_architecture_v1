@@ -1,0 +1,20 @@
+[96mtests/admin/picklist-model.test.ts[0m:[93m43[0m:[93m34[0m - [91merror[0m[90m TS7016: [0mCould not find a declaration file for module './picklist-fixture.mjs'. '/Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui/tests/admin/picklist-fixture.mjs' implicitly has an 'any' type.
+
+[7m43[0m     const fixture = await import("./picklist-fixture.mjs");
+[7m  [0m [91m                                 ~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96mtests/admin/picklist-model.test.ts[0m:[93m46[0m:[93m20[0m - [91merror[0m[90m TS18048: [0m'edge' is possibly 'undefined'.
+
+[7m46[0m     publicOrigin = edge.origin;
+[7m  [0m [91m                   ~~~~[0m
+[96mtests/admin/picklist-model.test.ts[0m:[93m236[0m:[93m49[0m - [91merror[0m[90m TS7016: [0mCould not find a declaration file for module './picklist-fixture.mjs'. '/Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui/tests/admin/picklist-fixture.mjs' implicitly has an 'any' type.
+
+[7m236[0m   const { pickFixture, storeID } = await import("./picklist-fixture.mjs");
+[7m   [0m [91m                                                ~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96mtests/admin/picklist-model.test.ts[0m:[93m276[0m:[93m18[0m - [91merror[0m[90m TS7016: [0mCould not find a declaration file for module './picklist-fixture.mjs'. '/Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui/tests/admin/picklist-fixture.mjs' implicitly has an 'any' type.
+
+[7m276[0m     await import("./picklist-fixture.mjs");
+[7m   [0m [91m                 ~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96mtests/admin/picklist-model.test.ts[0m:[93m346[0m:[93m49[0m - [91merror[0m[90m TS7016: [0mCould not find a declaration file for module './picklist-fixture.mjs'. '/Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui/tests/admin/picklist-fixture.mjs' implicitly has an 'any' type.
+
+[7m346[0m   const { pickFixture, storeID } = await import("./picklist-fixture.mjs");
+[7m   [0m [91m                                                ~~~~~~~~~~~~~~~~~~~~~~~~[0m

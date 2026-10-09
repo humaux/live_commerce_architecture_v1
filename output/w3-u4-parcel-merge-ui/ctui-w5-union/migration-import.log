@@ -1,0 +1,379 @@
+✔ real coded errors retain baseline classification and normalize import leaf cache to private,no-store (36.362042ms)
+✔ preflight missing CSRF is definite and sends nothing; actual route CSRF and session refusals stay definite (2.73275ms)
+✔ actual route uses real cookies/store membership and method/error envelopes, no helper substitutions (2.644542ms)
+✔ actual client/route preserves original Blob bytes, trusted transport and privacy projection on200/409 (1.523458ms)
+✔ success or stale preview must remain private; malformed/unknown/mismatched coded errors are uncertain after commit (3.252875ms)
+✔ lost/unreadable/session-changed dispatched commit remains UNKNOWN; no automatic retry (1.592583ms)
+✔ actual failed-only result route strips IDs and real final session/cancel fence exposes no download (1.863417ms)
+✔ actual route refuses unknown resource/query and duplicate session cookies before any upstream call (0.325ms)
+✔ actual route incoming cancellation aborts one dispatched transport and preserves client UNKNOWN (1.938667ms)
+✔ real coded error cache may not be public, and closed payload may not acquire data-bearing fields (1.743917ms)
+✔ copy still exposes specific merchant field reasons across three locales (3.184333ms)
+✔ all real local and upstream import refusals including HEAD/unsupported are exact private,no-store (0.5875ms)
+✔ fresh mismatched receipt stays UNKNOWN, exact manual replay mismatch becomes terminal without a third send (1.151333ms)
+✔ terminal is impossible for malformed replay receipts or matching replayed counts (0.822666ms)
+✔ Big5 bytes pass unchanged to upstream and real422 import envelope surfaces encoding_not_utf8 (0.436625ms)
+✔ oversize file uses the actual header guard and specific size guidance in all locales without dispatch (7.168459ms)
+✔ commit uses the original requested mapping, including an empty optional field, not resolved preview metadata (3.317791ms)
+✔ an UNKNOWN commit remains locked through a later forbidden retry and only explicit same-file success unlocks (1.107292ms)
+✔ leaving during a dispatched commit drops its payload and keeps an unconfirmed boolean without replay (0.835375ms)
+✔ a definite first preflight refusal clears pending before sign-out and does not invent an unconfirmed import (1.197625ms)
+✔ a replayed mismatched receipt ends UNKNOWN without offering another retry or unlocking historical orders (2.16675ms)
+✔ strict archive rows decode external order text, safe minor units and public keys (3.773167ms)
+✔ PII-shaped city and extra sensitive fields never pass the safe projection (0.344375ms)
+✔ all canonical Go cities pass; malformed types/bounds/order/time/money/cursor fail (0.996334ms)
+✔ read grammar is exact limit/after, not the stale brief's cursor name (17.746458ms)
+✔ three locales retain truthful history-not-revenue basis and copy parity (0.194458ms)
+✔ the static import subpage wins over customer detail and leaves the single customers nav intact (0.362458ms)
+✔ the actual list offers import only to privacy holders and carries the current authorized store (69.215083ms)
+✔ the actual detail mounts archive only for an active imported customer and passes its fenced identity (16.332625ms)
+✔ failure verdicts precede successful rows, by source row number, without mutating the input (0.574292ms)
+✔ the failure download contains only failed row metadata, with no source cell or success identifier (0.172958ms)
+✔ reads quoted/BOM header only, without decoding malformed bytes from data rows (3.769458ms)
+✔ guess only unique metadata aliases with explicit unmapped values (0.513041ms)
+✔ shared dynamic leaf admits only exact import methods/actions and bounded mapping/count (16.340375ms)
+✔ failed CSV emits only row/outcome/code, refusing any unexpected identifier or raw cell (0.528084ms)
+✔ raw-byte cap does not decode/rebuild uploads and cancels oversized chunks (4.590833ms)
+✔ backend privacy projection strips all source IDs on successful and failed rows (0.930375ms)
+✔ closed preview parser refuses data-bearing rows, unknown keys and inconsistent counts (0.235ms)
+✔ order preview counts units while first CSV record numbers can exceed rows_total (0.071917ms)
+✔ commit receipt has exactly five keys and no extra customer cells (0.09325ms)
+ℹ tests 40
+ℹ suites 0
+ℹ pass 40
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 379.649584
+
+> live-commerce-workspace@ build:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 93ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1455ms
+  Running TypeScript ...
+  Finished TypeScript in 317ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/15) ...
+  Generating static pages using 9 workers (3/15)
+  Generating static pages using 9 workers (7/15)
+  Generating static pages using 9 workers (11/15)
+✓ Generating static pages using 9 workers (15/15) in 52ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/ads
+├ ƒ /[locale]/ads/attribution
+├ ƒ /[locale]/billing
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/customers
+├ ƒ /[locale]/customers/[customer]
+├ ƒ /[locale]/customers/import
+├ ƒ /[locale]/design
+├ ƒ /[locale]/finance
+├ ƒ /[locale]/finance/reports
+├ ƒ /[locale]/inventory
+├ ƒ /[locale]/invite/[token]
+├ ƒ /[locale]/messages
+├ ƒ /[locale]/orders
+├ ƒ /[locale]/orders/cvs-print
+├ ƒ /[locale]/orders/new
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[product]
+├ ƒ /[locale]/products/import
+├ ƒ /[locale]/promotions
+├ ƒ /[locale]/reset
+├ ƒ /[locale]/returns
+├ ƒ /[locale]/settings
+├ ƒ /[locale]/settings/operations
+├ ƒ /[locale]/settings/payments/card
+├ ƒ /[locale]/settings/settlements
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/studio
+├ ƒ /[locale]/studio/claims
+├ ƒ /[locale]/studio/console
+├ ƒ /[locale]/team
+├ ƒ /api/ads/meta/callback
+├ ƒ /api/ads/meta/connect
+├ ƒ /api/auth/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/password/login
+├ ƒ /api/auth/password/reset
+├ ƒ /api/auth/password/signup
+├ ƒ /api/auth/password/verify
+├ ƒ /api/meta/callback
+├ ƒ /api/meta/connect
+├ ƒ /api/onboarding/initial-store
+├ ƒ /api/stores
+├ ƒ /api/stores/[store]/[...resource]
+├ ƒ /api/stores/[store]/customers
+├ ƒ /api/stores/[store]/customers/[customer]/historical-orders
+├ ƒ /api/stores/[store]/customers/[customer]/notes
+├ ƒ /api/stores/[store]/customers/[customer]/notes/[note]
+├ ƒ /api/stores/[store]/customers/[customer]/tags
+├ ƒ /api/stores/[store]/customers/tags
+├ ƒ /api/stores/[store]/customers/tags/[tag]
+├ ƒ /api/stores/[store]/imports/[param]/[action]
+├ ƒ /api/stores/[store]/orders/export
+├ ƒ /api/stores/[store]/orders/pick-list
+├ ƒ /api/stores/[store]/reports/[report]
+├ ƒ /api/stores/[store]/shipments/cvs-batch
+├ ƒ /api/stores/[store]/tools/[...resource]
+├ ƒ /api/team/[action]
+├ ƒ /site/[locale]/[page]
+├ ƒ /site/robots.txt
+└ ƒ /site/sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packaged standalone admin server and static assets.
+=== RUN   TestBrowserMigrationImport
+2026/10/08 19:48:48 http: proxy error: dial tcp 127.0.0.1:52499: connect: connection refused
+2026/10/08 19:48:48 http: proxy error: dial tcp 127.0.0.1:52499: connect: connection refused
+2026/10/08 19:48:50 http: TLS handshake error from 127.0.0.1:52511: remote error: tls: unknown certificate
+2026/10/08 19:48:50 http: TLS handshake error from 127.0.0.1:52513: remote error: tls: unknown certificate
+2026/10/08 19:48:50 http: TLS handshake error from 127.0.0.1:52515: remote error: tls: unknown certificate
+2026/10/08 19:48:50 http: TLS handshake error from 127.0.0.1:52516: remote error: tls: unknown certificate
+2026/10/08 19:48:50 http: TLS handshake error from 127.0.0.1:52514: remote error: tls: unknown certificate
+2026/10/08 19:48:50 http: TLS handshake error from 127.0.0.1:52517: remote error: tls: unknown certificate
+2026/10/08 19:48:50 http: proxy error: context canceled
+2026/10/08 19:48:50 http: proxy error: context canceled
+2026/10/08 19:48:50 http: proxy error: context canceled
+2026/10/08 19:48:50 http: proxy error: context canceled
+2026/10/08 19:48:50 http: proxy error: context canceled
+2026/10/08 19:48:50 http: proxy error: context canceled
+2026/10/08 19:48:50 http: TLS handshake error from 127.0.0.1:52544: remote error: tls: unknown certificate
+2026/10/08 19:48:50 http: TLS handshake error from 127.0.0.1:52545: remote error: tls: unknown certificate
+2026/10/08 19:48:51 http: TLS handshake error from 127.0.0.1:52549: remote error: tls: unknown certificate
+2026/10/08 19:48:51 http: TLS handshake error from 127.0.0.1:52551: remote error: tls: unknown certificate
+2026/10/08 19:48:51 http: TLS handshake error from 127.0.0.1:52552: remote error: tls: unknown certificate
+2026/10/08 19:48:51 http: TLS handshake error from 127.0.0.1:52555: remote error: tls: unknown certificate
+2026/10/08 19:48:51 http: TLS handshake error from 127.0.0.1:52553: remote error: tls: unknown certificate
+2026/10/08 19:48:51 http: TLS handshake error from 127.0.0.1:52554: remote error: tls: unknown certificate
+2026/10/08 19:48:51 http: proxy error: context canceled
+2026/10/08 19:48:51 http: proxy error: context canceled
+2026/10/08 19:48:51 http: proxy error: context canceled
+2026/10/08 19:48:51 http: proxy error: context canceled
+2026/10/08 19:48:51 http: proxy error: context canceled
+2026/10/08 19:48:51 http: proxy error: context canceled
+2026/10/08 19:48:51 http: TLS handshake error from 127.0.0.1:52576: remote error: tls: unknown certificate
+2026/10/08 19:48:51 http: TLS handshake error from 127.0.0.1:52577: remote error: tls: unknown certificate
+2026/10/08 19:48:51 http: TLS handshake error from 127.0.0.1:52578: remote error: tls: unknown certificate
+2026/10/08 19:48:51 http: TLS handshake error from 127.0.0.1:52579: remote error: tls: unknown certificate
+2026/10/08 19:48:52 http: TLS handshake error from 127.0.0.1:52591: remote error: tls: unknown certificate
+2026/10/08 19:48:52 http: TLS handshake error from 127.0.0.1:52592: remote error: tls: unknown certificate
+2026/10/08 19:48:53 http: TLS handshake error from 127.0.0.1:52606: remote error: tls: unknown certificate
+2026/10/08 19:48:53 http: TLS handshake error from 127.0.0.1:52608: remote error: tls: unknown certificate
+2026/10/08 19:48:53 http: TLS handshake error from 127.0.0.1:52609: remote error: tls: unknown certificate
+2026/10/08 19:48:53 http: TLS handshake error from 127.0.0.1:52610: remote error: tls: unknown certificate
+2026/10/08 19:48:53 http: TLS handshake error from 127.0.0.1:52612: remote error: tls: unknown certificate
+2026/10/08 19:48:53 http: TLS handshake error from 127.0.0.1:52611: remote error: tls: unknown certificate
+2026/10/08 19:48:53 http: proxy error: context canceled
+2026/10/08 19:48:53 http: proxy error: context canceled
+2026/10/08 19:48:53 http: proxy error: context canceled
+2026/10/08 19:48:53 http: proxy error: context canceled
+2026/10/08 19:48:53 http: proxy error: context canceled
+2026/10/08 19:48:53 http: TLS handshake error from 127.0.0.1:52628: remote error: tls: unknown certificate
+2026/10/08 19:48:54 http: TLS handshake error from 127.0.0.1:52633: remote error: tls: unknown certificate
+2026/10/08 19:48:54 http: TLS handshake error from 127.0.0.1:52634: remote error: tls: unknown certificate
+2026/10/08 19:48:54 http: TLS handshake error from 127.0.0.1:52636: remote error: tls: unknown certificate
+2026/10/08 19:48:54 http: TLS handshake error from 127.0.0.1:52639: remote error: tls: unknown certificate
+2026/10/08 19:48:55 http: TLS handshake error from 127.0.0.1:52651: remote error: tls: unknown certificate
+2026/10/08 19:48:55 http: TLS handshake error from 127.0.0.1:52653: remote error: tls: unknown certificate
+2026/10/08 19:48:55 http: TLS handshake error from 127.0.0.1:52654: remote error: tls: unknown certificate
+2026/10/08 19:48:55 http: TLS handshake error from 127.0.0.1:52657: remote error: tls: unknown certificate
+2026/10/08 19:48:55 http: TLS handshake error from 127.0.0.1:52655: remote error: tls: unknown certificate
+2026/10/08 19:48:55 http: TLS handshake error from 127.0.0.1:52656: remote error: tls: unknown certificate
+2026/10/08 19:48:55 http: proxy error: context canceled
+2026/10/08 19:48:55 http: proxy error: context canceled
+2026/10/08 19:48:55 http: proxy error: context canceled
+2026/10/08 19:48:55 http: proxy error: context canceled
+2026/10/08 19:48:55 http: proxy error: context canceled
+2026/10/08 19:48:55 http: TLS handshake error from 127.0.0.1:52676: remote error: tls: unknown certificate
+2026/10/08 19:48:56 http: TLS handshake error from 127.0.0.1:52680: remote error: tls: unknown certificate
+2026/10/08 19:48:56 http: TLS handshake error from 127.0.0.1:52683: remote error: tls: unknown certificate
+2026/10/08 19:48:57 http: TLS handshake error from 127.0.0.1:52701: remote error: tls: unknown certificate
+2026/10/08 19:48:57 http: TLS handshake error from 127.0.0.1:52703: remote error: tls: unknown certificate
+2026/10/08 19:48:57 http: TLS handshake error from 127.0.0.1:52704: remote error: tls: unknown certificate
+2026/10/08 19:48:57 http: TLS handshake error from 127.0.0.1:52705: remote error: tls: unknown certificate
+2026/10/08 19:48:57 http: TLS handshake error from 127.0.0.1:52706: remote error: tls: unknown certificate
+2026/10/08 19:48:57 http: TLS handshake error from 127.0.0.1:52707: remote error: tls: unknown certificate
+2026/10/08 19:48:57 http: proxy error: context canceled
+2026/10/08 19:48:57 http: proxy error: context canceled
+2026/10/08 19:48:57 http: proxy error: context canceled
+2026/10/08 19:48:57 http: proxy error: context canceled
+2026/10/08 19:48:57 http: proxy error: context canceled
+2026/10/08 19:48:57 http: TLS handshake error from 127.0.0.1:52723: remote error: tls: unknown certificate
+2026/10/08 19:48:58 http: TLS handshake error from 127.0.0.1:52727: remote error: tls: unknown certificate
+2026/10/08 19:48:58 http: TLS handshake error from 127.0.0.1:52728: remote error: tls: unknown certificate
+2026/10/08 19:48:58 http: TLS handshake error from 127.0.0.1:52730: remote error: tls: unknown certificate
+2026/10/08 19:48:58 http: TLS handshake error from 127.0.0.1:52744: remote error: tls: unknown certificate
+2026/10/08 19:48:58 http: TLS handshake error from 127.0.0.1:52745: remote error: tls: unknown certificate
+2026/10/08 19:48:59 http: TLS handshake error from 127.0.0.1:52749: remote error: tls: unknown certificate
+2026/10/08 19:48:59 http: TLS handshake error from 127.0.0.1:52751: remote error: tls: unknown certificate
+2026/10/08 19:48:59 http: TLS handshake error from 127.0.0.1:52752: remote error: tls: unknown certificate
+2026/10/08 19:48:59 http: TLS handshake error from 127.0.0.1:52753: remote error: tls: unknown certificate
+2026/10/08 19:48:59 http: TLS handshake error from 127.0.0.1:52754: remote error: tls: unknown certificate
+2026/10/08 19:48:59 http: TLS handshake error from 127.0.0.1:52755: remote error: tls: unknown certificate
+2026/10/08 19:48:59 http: proxy error: context canceled
+2026/10/08 19:48:59 http: proxy error: context canceled
+2026/10/08 19:48:59 http: proxy error: context canceled
+2026/10/08 19:48:59 http: proxy error: context canceled
+2026/10/08 19:48:59 http: proxy error: context canceled
+2026/10/08 19:48:59 http: proxy error: context canceled
+2026/10/08 19:48:59 http: TLS handshake error from 127.0.0.1:52772: remote error: tls: unknown certificate
+2026/10/08 19:48:59 http: TLS handshake error from 127.0.0.1:52773: remote error: tls: unknown certificate
+2026/10/08 19:49:00 http: TLS handshake error from 127.0.0.1:52779: remote error: tls: unknown certificate
+2026/10/08 19:49:00 http: TLS handshake error from 127.0.0.1:52781: remote error: tls: unknown certificate
+2026/10/08 19:49:00 http: TLS handshake error from 127.0.0.1:52782: remote error: tls: unknown certificate
+2026/10/08 19:49:00 http: TLS handshake error from 127.0.0.1:52784: remote error: tls: unknown certificate
+2026/10/08 19:49:00 http: TLS handshake error from 127.0.0.1:52785: remote error: tls: unknown certificate
+2026/10/08 19:49:00 http: TLS handshake error from 127.0.0.1:52783: remote error: tls: unknown certificate
+2026/10/08 19:49:00 http: proxy error: context canceled
+2026/10/08 19:49:00 http: proxy error: context canceled
+2026/10/08 19:49:00 http: proxy error: context canceled
+2026/10/08 19:49:00 http: proxy error: context canceled
+2026/10/08 19:49:00 http: proxy error: context canceled
+2026/10/08 19:49:00 http: TLS handshake error from 127.0.0.1:52804: remote error: tls: unknown certificate
+2026/10/08 19:49:01 http: TLS handshake error from 127.0.0.1:52808: remote error: tls: unknown certificate
+2026/10/08 19:49:01 http: TLS handshake error from 127.0.0.1:52810: remote error: tls: unknown certificate
+2026/10/08 19:49:01 http: TLS handshake error from 127.0.0.1:52811: remote error: tls: unknown certificate
+2026/10/08 19:49:01 http: TLS handshake error from 127.0.0.1:52814: remote error: tls: unknown certificate
+2026/10/08 19:49:01 http: TLS handshake error from 127.0.0.1:52812: remote error: tls: unknown certificate
+2026/10/08 19:49:01 http: TLS handshake error from 127.0.0.1:52813: remote error: tls: unknown certificate
+2026/10/08 19:49:01 http: proxy error: context canceled
+2026/10/08 19:49:01 http: proxy error: context canceled
+2026/10/08 19:49:01 http: proxy error: context canceled
+2026/10/08 19:49:01 http: proxy error: context canceled
+2026/10/08 19:49:01 http: proxy error: context canceled
+2026/10/08 19:49:01 http: TLS handshake error from 127.0.0.1:52830: remote error: tls: unknown certificate
+2026/10/08 19:49:02 http: TLS handshake error from 127.0.0.1:52834: remote error: tls: unknown certificate
+2026/10/08 19:49:02 http: TLS handshake error from 127.0.0.1:52836: remote error: tls: unknown certificate
+2026/10/08 19:49:02 http: TLS handshake error from 127.0.0.1:52838: remote error: tls: unknown certificate
+2026/10/08 19:49:02 http: TLS handshake error from 127.0.0.1:52839: remote error: tls: unknown certificate
+2026/10/08 19:49:02 http: TLS handshake error from 127.0.0.1:52837: remote error: tls: unknown certificate
+2026/10/08 19:49:02 http: TLS handshake error from 127.0.0.1:52840: remote error: tls: unknown certificate
+2026/10/08 19:49:02 http: TLS handshake error from 127.0.0.1:52845: remote error: tls: unknown certificate
+2026/10/08 19:49:02 http: proxy error: context canceled
+2026/10/08 19:49:02 http: proxy error: context canceled
+2026/10/08 19:49:02 http: proxy error: context canceled
+2026/10/08 19:49:02 http: proxy error: context canceled
+2026/10/08 19:49:02 http: proxy error: context canceled
+2026/10/08 19:49:02 http: TLS handshake error from 127.0.0.1:52860: remote error: tls: unknown certificate
+2026/10/08 19:49:03 http: TLS handshake error from 127.0.0.1:52864: remote error: tls: unknown certificate
+2026/10/08 19:49:03 http: TLS handshake error from 127.0.0.1:52866: remote error: tls: unknown certificate
+2026/10/08 19:49:03 http: TLS handshake error from 127.0.0.1:52868: remote error: tls: unknown certificate
+2026/10/08 19:49:03 http: TLS handshake error from 127.0.0.1:52867: remote error: tls: unknown certificate
+2026/10/08 19:49:03 http: TLS handshake error from 127.0.0.1:52869: remote error: tls: unknown certificate
+2026/10/08 19:49:03 http: TLS handshake error from 127.0.0.1:52870: remote error: tls: unknown certificate
+2026/10/08 19:49:03 http: proxy error: context canceled
+2026/10/08 19:49:03 http: proxy error: context canceled
+2026/10/08 19:49:03 http: proxy error: context canceled
+2026/10/08 19:49:03 http: proxy error: context canceled
+2026/10/08 19:49:03 http: proxy error: context canceled
+2026/10/08 19:49:03 http: proxy error: context canceled
+2026/10/08 19:49:03 http: TLS handshake error from 127.0.0.1:52888: remote error: tls: unknown certificate
+2026/10/08 19:49:03 http: TLS handshake error from 127.0.0.1:52890: remote error: tls: unknown certificate
+2026/10/08 19:49:04 http: TLS handshake error from 127.0.0.1:52893: remote error: tls: unknown certificate
+2026/10/08 19:49:04 http: TLS handshake error from 127.0.0.1:52895: remote error: tls: unknown certificate
+2026/10/08 19:49:04 http: TLS handshake error from 127.0.0.1:52896: remote error: tls: unknown certificate
+2026/10/08 19:49:04 http: TLS handshake error from 127.0.0.1:52897: remote error: tls: unknown certificate
+2026/10/08 19:49:04 http: TLS handshake error from 127.0.0.1:52898: remote error: tls: unknown certificate
+2026/10/08 19:49:04 http: TLS handshake error from 127.0.0.1:52899: remote error: tls: unknown certificate
+2026/10/08 19:49:04 http: proxy error: context canceled
+2026/10/08 19:49:04 http: proxy error: context canceled
+2026/10/08 19:49:04 http: proxy error: context canceled
+2026/10/08 19:49:04 http: proxy error: context canceled
+2026/10/08 19:49:04 http: proxy error: context canceled
+2026/10/08 19:49:04 http: TLS handshake error from 127.0.0.1:52917: remote error: tls: unknown certificate
+2026/10/08 19:49:06 http: TLS handshake error from 127.0.0.1:52924: remote error: tls: unknown certificate
+2026/10/08 19:49:06 http: TLS handshake error from 127.0.0.1:52926: remote error: tls: unknown certificate
+2026/10/08 19:49:06 http: TLS handshake error from 127.0.0.1:52927: remote error: tls: unknown certificate
+2026/10/08 19:49:06 http: TLS handshake error from 127.0.0.1:52930: remote error: tls: unknown certificate
+2026/10/08 19:49:06 http: TLS handshake error from 127.0.0.1:52928: remote error: tls: unknown certificate
+2026/10/08 19:49:06 http: TLS handshake error from 127.0.0.1:52929: remote error: tls: unknown certificate
+2026/10/08 19:49:06 http: proxy error: context canceled
+2026/10/08 19:49:06 http: proxy error: context canceled
+2026/10/08 19:49:06 http: proxy error: context canceled
+2026/10/08 19:49:06 http: proxy error: context canceled
+2026/10/08 19:49:06 http: proxy error: context canceled
+2026/10/08 19:49:06 http: proxy error: context canceled
+2026/10/08 19:49:06 http: TLS handshake error from 127.0.0.1:52947: remote error: tls: unknown certificate
+2026/10/08 19:49:06 http: TLS handshake error from 127.0.0.1:52950: remote error: tls: unknown certificate
+2026/10/08 19:49:06 http: TLS handshake error from 127.0.0.1:52951: remote error: tls: unknown certificate
+2026/10/08 19:49:07 http: TLS handshake error from 127.0.0.1:52957: remote error: tls: unknown certificate
+2026/10/08 19:49:07 http: TLS handshake error from 127.0.0.1:52960: remote error: tls: unknown certificate
+2026/10/08 19:49:07 http: TLS handshake error from 127.0.0.1:52967: remote error: tls: unknown certificate
+2026/10/08 19:49:07 http: TLS handshake error from 127.0.0.1:52968: remote error: tls: unknown certificate
+2026/10/08 19:49:08 http: TLS handshake error from 127.0.0.1:52973: remote error: tls: unknown certificate
+2026/10/08 19:49:08 http: TLS handshake error from 127.0.0.1:52975: remote error: tls: unknown certificate
+2026/10/08 19:49:08 http: TLS handshake error from 127.0.0.1:52977: remote error: tls: unknown certificate
+2026/10/08 19:49:08 http: TLS handshake error from 127.0.0.1:52979: remote error: tls: unknown certificate
+2026/10/08 19:49:08 http: TLS handshake error from 127.0.0.1:52978: remote error: tls: unknown certificate
+2026/10/08 19:49:08 http: TLS handshake error from 127.0.0.1:52976: remote error: tls: unknown certificate
+2026/10/08 19:49:08 http: proxy error: context canceled
+2026/10/08 19:49:08 http: proxy error: context canceled
+2026/10/08 19:49:08 http: proxy error: context canceled
+2026/10/08 19:49:08 http: TLS handshake error from 127.0.0.1:52994: remote error: tls: unknown certificate
+2026/10/08 19:49:08 http: TLS handshake error from 127.0.0.1:52995: remote error: tls: unknown certificate
+2026/10/08 19:49:08 http: TLS handshake error from 127.0.0.1:52997: remote error: tls: unknown certificate
+2026/10/08 19:49:09 http: TLS handshake error from 127.0.0.1:53008: remote error: tls: unknown certificate
+2026/10/08 19:49:09 http: TLS handshake error from 127.0.0.1:53010: remote error: tls: unknown certificate
+2026/10/08 19:49:09 http: TLS handshake error from 127.0.0.1:53011: remote error: tls: unknown certificate
+2026/10/08 19:49:09 http: TLS handshake error from 127.0.0.1:53013: remote error: tls: unknown certificate
+2026/10/08 19:49:09 http: TLS handshake error from 127.0.0.1:53014: remote error: tls: unknown certificate
+2026/10/08 19:49:09 http: TLS handshake error from 127.0.0.1:53012: remote error: tls: unknown certificate
+2026/10/08 19:49:09 http: proxy error: context canceled
+2026/10/08 19:49:09 http: proxy error: context canceled
+2026/10/08 19:49:09 http: proxy error: context canceled
+2026/10/08 19:49:09 http: proxy error: context canceled
+2026/10/08 19:49:09 http: proxy error: context canceled
+2026/10/08 19:49:09 http: proxy error: context canceled
+2026/10/08 19:49:09 http: TLS handshake error from 127.0.0.1:53032: remote error: tls: unknown certificate
+2026/10/08 19:49:09 http: TLS handshake error from 127.0.0.1:53034: remote error: tls: unknown certificate
+2026/10/08 19:49:09 http: TLS handshake error from 127.0.0.1:53039: remote error: tls: unknown certificate
+2026/10/08 19:49:09 http: TLS handshake error from 127.0.0.1:53040: remote error: tls: unknown certificate
+2026/10/08 19:49:09 http: TLS handshake error from 127.0.0.1:53041: remote error: tls: unknown certificate
+2026/10/08 19:49:09 http: TLS handshake error from 127.0.0.1:53042: remote error: tls: unknown certificate
+2026/10/08 19:49:10 http: TLS handshake error from 127.0.0.1:53048: remote error: tls: unknown certificate
+2026/10/08 19:49:10 http: TLS handshake error from 127.0.0.1:53050: remote error: tls: unknown certificate
+2026/10/08 19:49:10 http: TLS handshake error from 127.0.0.1:53051: remote error: tls: unknown certificate
+2026/10/08 19:49:10 http: TLS handshake error from 127.0.0.1:53054: remote error: tls: unknown certificate
+2026/10/08 19:49:10 http: TLS handshake error from 127.0.0.1:53052: remote error: tls: unknown certificate
+2026/10/08 19:49:10 http: TLS handshake error from 127.0.0.1:53053: remote error: tls: unknown certificate
+2026/10/08 19:49:10 http: proxy error: context canceled
+2026/10/08 19:49:10 http: proxy error: context canceled
+2026/10/08 19:49:10 http: proxy error: context canceled
+2026/10/08 19:49:10 http: TLS handshake error from 127.0.0.1:53070: remote error: tls: unknown certificate
+2026/10/08 19:49:10 http: TLS handshake error from 127.0.0.1:53071: remote error: tls: unknown certificate
+2026/10/08 19:49:10 http: TLS handshake error from 127.0.0.1:53074: remote error: tls: unknown certificate
+2026/10/08 19:49:10 http: TLS handshake error from 127.0.0.1:53072: remote error: tls: unknown certificate
+2026/10/08 19:49:10 http: TLS handshake error from 127.0.0.1:53073: remote error: tls: unknown certificate
+2026/10/08 19:49:10 http: TLS handshake error from 127.0.0.1:53080: remote error: tls: unknown certificate
+2026/10/08 19:49:10 http: TLS handshake error from 127.0.0.1:53081: remote error: tls: unknown certificate
+2026/10/08 19:49:10 http: TLS handshake error from 127.0.0.1:53082: remote error: tls: unknown certificate
+2026/10/08 19:49:10 http: proxy error: context canceled
+2026/10/08 19:49:10 http: proxy error: context canceled
+2026/10/08 19:49:10 http: proxy error: context canceled
+2026/10/08 19:49:10 http: proxy error: context canceled
+2026/10/08 19:49:10 http: TLS handshake error from 127.0.0.1:53087: remote error: tls: unknown certificate
+    browser_migration_import_ui_test.go:119: W5 BROWSER (signed MOCK OIDC, REAL_PG synthetic CSV); evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui/output/playwright/migration-import/20261008T114848.464220000
+--- PASS: TestBrowserMigrationImport (23.92s)
+PASS
+ok  	livecommerce/tests/foundation	25.908s
+PASS: W5-U1 genuine customer/history CSV clicks, immutable file/mapping/count replay, safe row-only preview/download, UNKNOWN and stale recovery, scoped consent/erasure/city counters and readonly archive; real Go/PG with signed MOCK IdP. Not provider or production acceptance.

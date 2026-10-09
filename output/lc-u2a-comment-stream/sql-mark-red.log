@@ -1,0 +1,26 @@
+✖ real SQL UNKNOWN mark blocks public-mode switching without a local receipt (12.235ms)
+✔ UNKNOWN and queued public receipt survive selection remount without storing private identifiers (18.380583ms)
+✔ actual A2 hook fake clock: 3/6/12/24/30 backoff, success reset, hide clears and stops, 403 locks (15.670625ms)
+✔ actual reset clears selected buyer and rereads without the old epoch cursor (2.146583ms)
+✔ reply hints, coded error, UNKNOWN and capability state execute the actual composer (1.241417ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 4
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 379.857875
+
+✖ failing tests:
+
+test at tests/admin/comment-stream-hooks.test.ts:15:1
+✖ real SQL UNKNOWN mark blocks public-mode switching without a local receipt (12.235ms)
+  ReferenceError: Cannot access 'CommentReply' before initialization
+      at Host.render (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/comment-stream-hooks.test.ts:17:25)
+      at Host.flush (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/inbox-review-host.test.ts:43:23)
+      at Object.mount (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/inbox-review-host.test.ts:267:12)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/comment-stream-hooks.test.ts:17:15)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)

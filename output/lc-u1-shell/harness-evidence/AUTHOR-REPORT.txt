@@ -1,0 +1,18 @@
+# LC-U1 browser harness delivery
+
+- task_id: LC-U1-sub-browser
+- Role: test/gate harness author. Model: Codex GPT-6 family; exact model ID and reasoning setting NOT_EXPOSED.
+- Branch: codex/lc-u1-browser
+- Base: 51e738947fb1bbb4228e1d84fdeacf93aa5c2b0a
+- Head: 923caa20b39ef03f1637b2a48e67213a5a59fa39
+- Worktree: /Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-browser
+- Changed paths: tests/admin/live-console.spec.ts; tests/foundation/browser_live_console_test.go; playwright.config.ts; scripts/dev/test-local.sh; docs/delivery/GATES.md.
+- Summary: formal --browser-live-console mode and nine browser cases. Six real-click journeys span en/zh-TW/zh-CN at 1586x992 and 390x844: draft/live/ended, results, copy, offer toggle, stock, local recommend, CAS conflict, UNKNOWN same-key retry, reload command fence, real 5 s polling, store change and logout. Three cases cover missing A1 and live_operator inventory:live_adjust without inventory:write. Real OIDC/identity/PG authentication and Next session/CSRF are preserved. Console business responses and persisted in-process receipts are explicitly MOCK, serialized after execution.
+- Contract/interface changes: none. Existing Go M4 requires max_quantity_per_claim in PATCH: the mock requires 10 and tests assert it. Draft.version=1 stays separate from lifecycle version; copy must send the draft version.
+- Verification: pnpm install --offline --frozen-lockfile -> exit 0 (49 packages reused, no downloads); pnpm exec tsc --noEmit --strict --target ES2023 --module NodeNext --moduleResolution NodeNext --allowImportingTsExtensions --typeRoots apps/admin/node_modules/@types --types node tests/admin/live-console.spec.ts -> exit 0; GOTOOLCHAIN=go1.27.1 go test -tags browser -run '^$' ./tests/foundation -> exit 0, [no tests to run] (compile only, not runtime PASS); LC_HEADER_BASE=51e73894 bash scripts/dev/check-gates.sh -> exit 0 (11 tests passed, 0 failed; 71 modes documented; headers OK); gofmt -w tests/foundation/browser_live_console_test.go -> exit 0; bash -n scripts/dev/test-local.sh -> exit 0; git diff --check -> exit 0.
+- Earlier failures retained: pre-install pnpm exec tsc -> exit 254 (tsc missing); pre-install check-gates -> failed missing typescript-api; first installed check-gates -> exit 1 (gofmt required after receipt field edit). Dependencies were installed offline and the fixture formatted; final listed checks passed. These are setup/static failures, NOT the required browser red proof.
+- Evidence: this record, tool command results, tracked fixture/spec and hashes tied to 923caa20. E1 structure ready only.
+- NOT_RUN: formal --browser-live-console runtime, browser mutation/red canary, existing --browser-studio-ui / --browser-live-claims regression modes, actual LC-B1/LC-B7 SQL acceptance, Meta/provider/SANDBOX/LIVE, independent review.
+- Integrator next: run immutable branch RED before UI integration using LC_BROWSER_EVIDENCE_ROOT=/Volumes/data/live_commerce_architecture_v1/output/lc-u1-browser-red bash scripts/dev/test-local.sh --browser-live-console; integrate UI/transport only after recording RED; run green and existing Studio/Claims regression modes; preserve all failure logs/screenshots.
+- Runtime evidence: LC_BROWSER_EVIDENCE_ROOT/live-console-*/{next.log,playwright.log,mock-receipts.json,<locale>-<width>-*.png,<locale>-<width>-receipts.json,results/}. Harness stops only its owned Next process; fixture cleanup owns its principal/session/staff/OIDC rows. No PG/browser process launched by this author.
+- Unresolved: A1 upstream remains MOCK, so no backend stock/lifecycle acceptance follows from this gate; real runtime behavior remains UNKNOWN until the integrator executes it.

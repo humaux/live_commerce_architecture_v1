@@ -1,0 +1,24 @@
+{
+  "name": "webkit-order-final-10",
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-webkit"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race",
+  "out": "/Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race/output/playwright/bo01-validation",
+  "timeout": 1800,
+  "conditions": {
+    "LC_BROWSER_ENGINE": "webkit",
+    "LC_WEBKIT_STEPS": "order",
+    "LC_BO01_EARLY_HEAD": "1",
+    "LC_BO01_REPEAT": "10"
+  },
+  "head": "75d4917baec234effbcdade2b24a8346be510eda",
+  "pid": 70663,
+  "exit_code": 0,
+  "source_sha256": "f8669844023b83eb19508dbfd545a5e0736f785936901e4b19eb231c017ea496",
+  "source_after": "f8669844023b83eb19508dbfd545a5e0736f785936901e4b19eb231c017ea496",
+  "source_unchanged": true,
+  "elapsed_seconds": 94.105
+}

@@ -1,0 +1,25 @@
+browser engine: chromium
+[   1s] stack up; admin http://127.0.0.1:59761, storefront https://buyer.example (Next :59772); 32 registry routes; workers=1 sample=3
+[  10s] /studio/console desktop/zh-TW [main] 7 controls, 7 classes sampled
+[  70s] admin /studio/console desktop/zh-TW done
+[  78s] /studio/claims desktop/zh-TW [main] 15 controls, 15 classes sampled
+[ 217s] admin /studio/claims desktop/zh-TW done
+[ 225s] /products desktop/en [main] 27 controls, 27 classes sampled
+[ 483s] admin /products desktop/en done
+[ 491s] /customers mobile/zh-TW [main] 13 controls, 13 classes sampled
+[ 613s] admin /customers mobile/zh-TW done
+[ 621s] /customers/import mobile/zh-TW [main] 2 controls, 2 classes sampled
+[ 637s] admin /customers/import mobile/zh-TW done
+[ 646s] /ads/attribution desktop/en [main] 5 controls, 5 classes sampled
+[ 688s] admin /ads/attribution desktop/en done
+[ 696s] /promotions mobile/zh-TW [main] 3 controls, 3 classes sampled
+[ 720s] admin /promotions mobile/zh-TW done
+[ 729s] /settings/operations desktop/en [main] 5 controls, 5 classes sampled
+[ 771s] admin /settings/operations desktop/en done
+[ 771s] J1 catalog response 200 /api/stores/80c3554f-217b-49e1-be1f-36b529014eeb/warehouses: {"items":[{"id":"a2a14cb4-e7b3-4c57-b563-5829f0de60ab","name":"t04-361de326ed9c"}],"next_cursor":""}
+[ 771s] J1 catalog response 200 /api/stores/80c3554f-217b-49e1-be1f-36b529014eeb/products/document: {"id":"42d9b566-c65f-4395-80e9-715f6937c006","name":"Sweep Journey Tee bd9ef15ce798","description":"Synthetic click-sweep journey product","status":"draft","version":1,"slug":"sweep-journey-tee-bd9ef15ce798","seo_title":"","seo_description":"","options":[{"name":"Size","values":["S","M"]}],"skus":[{"id":"9a4b6222-35ee-4bcb-8bce-9da3ffe4964f","product_id":"42d9b566-c65f-4395-80e9-715f6937c006","code":"sweep-journey-tee-bd9ef15ce798","status":"active","currency":"TWD","price_minor":45000,"version":1,"weight_grams":0,"length_mm":0,"width_mm":0,"height_mm":0,"origin_country":"","customs_name":"","hs_candidate":"","option_values":["S"],"title":"S","compare_at_minor":null,"inventory_tracked":true},{"id":"eda11643-2ed8-4f78-b92e-1cc9bd4eba3b","product_id":"42d9b566-c65f-4395-80e9-715f6937c006","code":"sweep-journey-tee-bd9ef15ce798-2","status":"active","currency":"TWD","price_minor":48000,"version":1,"weight_grams":0,"length_mm":0,"width_mm":0,"height_mm":0,"origin_country":"","customs_name":"","hs_candidate":"","option_values":["M"],"title":"M","compare_at_minor":null,"inventory_tracked":true}]}
+[ 772s] J1 catalog response 200 /api/stores/80c3554f-217b-49e1-be1f-36b529014eeb/warehouses: null
+[ 772s] J1 catalog response 200 /api/stores/80c3554f-217b-49e1-be1f-36b529014eeb/warehouses: {"items":[{"id":"a2a14cb4-e7b3-4c57-b563-5829f0de60ab","name":"t04-361de326ed9c"}],"next_cursor":""}
+[ 772s] J1 catalog response 200 /api/stores/80c3554f-217b-49e1-be1f-36b529014eeb/warehouses: {"items":[{"id":"a2a14cb4-e7b3-4c57-b563-5829f0de60ab","name":"t04-361de326ed9c"}],"next_cursor":""}
+[ 773s] shard 1/10: 8 page/viewport/locale units opened (0 with a page-load failure), 86 control clicks (77 pass, 0 fail, 9 skip), 10 journey steps (10 pass, 0 fail); failures: known 0, new 0; stale known-defect entries 0.
+PASS G-UI8 click sweep

@@ -1,0 +1,38 @@
+✔ PE14 new edit SKU carries its own shipping and clears no existing fields (12.826292ms)
+✔ PE14 patch changes only price and preserves unmentioned fields (0.199ms)
+✔ PE14 on_hand is not available, zero target is transmitted, ambiguous warehouse refuses (0.287792ms)
+✔ PE14 explicit clears and shipping remain per SKU on an active row (0.122417ms)
+✔ PE14 archive supersedes every other edit on that SKU (b77eeb11) (0.127417ms)
+✔ PE14 no-op has no command fields and changed axes explicitly archive omitted variants (0.089ms)
+✖ PE14 replacement SKU edit excludes create-only code from the strict patch grammar (0.459084ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 6
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 97.048667
+
+✖ failing tests:
+
+test at tests/admin/product-patch.test.ts:159:1
+✖ PE14 replacement SKU edit excludes create-only code from the strict patch grammar (0.459084ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups/tests/admin/product-patch.test.ts:165:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

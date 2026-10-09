@@ -1,0 +1,6 @@
+3827a1f29051b8d88d286bba49ad91689aa9fa06ee1a91dce4329b856fc5bc48  tests/admin/ads.spec.ts
+f5a5602415c042374b498925af65ffe1647118da4293997819035d23928cc800  tests/admin/design.spec.ts
+a826acda4e6f0c68c2f51e7454819d5bb1f1afe7483ca8fb25f46f0eae563c5a  tests/storefront/claim-checkout.mjs
+fc37f9783b269ffd5f40de615617a83c7fedeb2c5671004d5f88f1fd5991bb2e  tests/storefront/manual-order-link-gate.mjs
+fe54c2d9597b60a218bafb974810fc93e883a24a568336629c9e57b5e2455d96  tests/storefront/offline-buyer.mjs
+8d9f9c694cb39dc7dfe79ec1540e286db45df57003d78c6a38a49a2b8b7cf9da  tests/storefront/order-gate.mjs

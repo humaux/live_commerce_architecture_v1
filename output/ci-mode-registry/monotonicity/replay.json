@@ -1,0 +1,21 @@
+{
+  "runs": [
+    {
+      "command": [
+        "python3",
+        "/Volumes/data/live_commerce_architecture_v1/output/ci-mode-registry/monotonicity-final/compare.py"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "node",
+        "--test",
+        "/Volumes/data/live_commerce_architecture_v1/output/ci-mode-registry/monotonicity-final/monotonicity.test.mjs"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "pathsets_unchanged": true,
+  "assertions_unchanged": true
+}

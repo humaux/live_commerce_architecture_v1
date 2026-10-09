@@ -68,7 +68,7 @@ func main() {
 	binary := filepath.Join(dir, "legacy-media-admission")
 	build := exec.CommandContext(ctx, "go", "build", "-mod=readonly", "-trimpath", "-o", binary, ".")
 	build.Dir = dir
-	build.Env = append(os.Environ(), "GOWORK=off", "GOTOOLCHAIN=go1.27.1")
+	build.Env = append(os.Environ(), "GOWORK=off", "GOTOOLCHAIN=go1.27.2")
 	if output, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("build pinned admission: %v\n%s", err, output)
 	}

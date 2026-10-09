@@ -1,0 +1,67 @@
+# Purpose: preserve red-view.log local evidence; raw original command output follows this prologue.
+# Depends on: commands/status recorded in DELIVERY.md; original main-checkout log SHA256=37a9a052eff119e1848064ac08b5775e0ba5cfd1ce90f4d34b1d8e25b79e795e.
+# Used by: integrator source handoff; does not certify real browser acceptance.
+# Evidence normalization: trailing whitespace/blank EOF only; original raw bytes and SHA256 retained in main checkout/provenance above.
+✖ failure verdicts precede successful rows, by source row number, without mutating the input (2.004916ms)
+✖ the failure download contains only failed row metadata, with no source cell or success identifier (0.221416ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 94.596375
+
+✖ failing tests:
+
+test at tests/admin/import-view.test.ts:14:1
+✖ failure verdicts precede successful rows, by source row number, without mutating the input (2.004916ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+    [
+  +   2,
+  -   4,
+      9,
+  -   2,
+      3,
+  +   4
+    ]
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-import-wizard-ui/tests/admin/import-view.test.ts:16:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 2, 9, 3, 4 ],
+    expected: [ 4, 9, 2, 3 ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/import-view.test.ts:19:1
+✖ the failure download contains only failed row metadata, with no source cell or success identifier (0.221416ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+
+  + '﻿row,code,warning\r\n'
+  - '﻿row,code,warning\r\n4,invalid_phone,\r\n9,erased,\r\n'
+                          ^
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-import-wizard-ui/tests/admin/import-view.test.ts:21:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '﻿row,code,warning\r\n',
+    expected: '﻿row,code,warning\r\n4,invalid_phone,\r\n9,erased,\r\n',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

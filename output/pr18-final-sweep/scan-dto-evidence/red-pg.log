@@ -1,0 +1,18 @@
+=== RUN   TestLiveConsoleLCN02ScanExhausted
+=== RUN   TestLiveConsoleLCN02ScanExhausted/full-raw-page-all-filtered
+    live_console_comment_scan_test.go:92: scan_exhausted="" want explicit false (visible items=0 next.seq=0)
+    live_console_comment_scan_test.go:94: all-filtered next.seq=0 want highest scanned position 1791546691978288
+    live_console_comment_scan_test.go:97: scan_exhausted="" want explicit true (visible items=0 next.seq=1791546691978288)
+=== RUN   TestLiveConsoleLCN02ScanExhausted/deleted-final-row-100-to-99
+    live_console_comment_scan_test.go:107: project IG comment: failed to connect to `user=mi_test_450df817688c4a05aee3b4ac80344f3a database=lc_foundation_test`: 127.0.0.1:62255 (127.0.0.1): server error: FATAL: remaining connection slots are reserved for roles with the SUPERUSER attribute (SQLSTATE 53300)
+=== RUN   TestLiveConsoleLCN02ScanExhausted/facebook-no-eof-proof
+    live_console_comment_scan_test.go:141: scan_exhausted="" want explicit false (visible items=1 next.seq=1)
+--- FAIL: TestLiveConsoleLCN02ScanExhausted (4.29s)
+    --- FAIL: TestLiveConsoleLCN02ScanExhausted/full-raw-page-all-filtered (1.72s)
+    --- FAIL: TestLiveConsoleLCN02ScanExhausted/deleted-final-row-100-to-99 (2.33s)
+    --- FAIL: TestLiveConsoleLCN02ScanExhausted/facebook-no-eof-proof (0.23s)
+FAIL
+FAIL	livecommerce/tests/foundation	7.241s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
+exit=1

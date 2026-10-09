@@ -1,0 +1,8 @@
+=== RUN   TestParcelGroupMergeSuggestionsMasked
+    parcel_groups_open_test.go:223: merge-suggestions leaks "王小明" to the browser: {"items":[{"recipient_name":"王小明","order_ids":["44f6da32-b3f7-42a0-82ef-acbcd3d04d0d","2695e8f7-111c-4aa8-9130-e6533c70eb1d"]},{"recipient_name":"　　王小明","order_ids":["ca44af53-c295-453f-97cc-a780d54d3a4e","f85d59b5-3327-460d-8b03-0e4f01f020cd"]},{"recipient_name":"   ","order_ids":["e4b32291-ad80-4539-9b0f-7b6b76fc22cb","f0cae56b-27cd-476e-993d-e17b7eaca133"]}]}
+--- FAIL: TestParcelGroupMergeSuggestionsMasked (13.67s)
+FAIL
+FAIL	livecommerce/tests/foundation	14.955s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
+exit 1

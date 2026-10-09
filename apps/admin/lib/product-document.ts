@@ -1,4 +1,6 @@
-// Product editor draft and Cartesian matrix. No I/O; the Go document command is authoritative.
+// Purpose: Product editor drafts, Cartesian matrix and create/edit payload serialization.
+// Depends on: catalog-v2-model; catalog-inventory-v1 §g strict edit grammar.
+// Used by: ProductDocumentForm and its Node tests; no I/O, Go commands are authoritative.
 import {
   cleanAxes,
   toMinor,
@@ -263,7 +265,7 @@ export function editDocument(
       const serialized = createDocument(
         {
           ...draft,
-          rows: [row],
+          rows: [{ ...row, code: "" }],
           weight: row.weight ?? "",
           length: row.length ?? "",
           width: row.width ?? "",
@@ -271,8 +273,10 @@ export function editDocument(
         },
         currency,
       );
+      // §g: edit SKU entries have no code field; the server generates new codes.
+      const { code: _createOnlyCode, ...skuPatch } = serialized.skus[0];
       rows.push({
-        ...serialized.skus[0],
+        ...skuPatch,
         weight_grams: serialized.weight_grams,
         length_mm: serialized.length_mm,
         width_mm: serialized.width_mm,

@@ -1,5 +1,5 @@
 // Purpose: Owns storefront design draft editing, publication and rollback controls.
-// Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/catalog-v2-copy, @/lib/model, @/lib/customers-client, @/lib/settings-client, @/lib/storefront-client, @/lib/design-client, @/lib/design-copy, @/lib/design-model, ./WorkspaceFrame, ./AdminPageHeader, ./DesignProfile, ./DesignNav, ./DesignSections, ./DesignPages, ./DesignMedia, ./orders.css, ./design.css
+// Depends on: @live-commerce/format (Taipei store timestamps), react, @live-commerce/i18n, @live-commerce/ui, @/lib/catalog-v2-copy, @/lib/model, @/lib/customers-client, @/lib/settings-client, @/lib/storefront-client, @/lib/design-client, @/lib/design-copy, @/lib/design-model, ./WorkspaceFrame, ./AdminPageHeader, ./DesignProfile, ./DesignNav, ./DesignSections, ./DesignPages, ./DesignMedia, ./orders.css, ./design.css
 // Used by: apps/admin/app/[locale]/design/page.tsx
 "use client";
 
@@ -17,6 +17,7 @@
 // write is still fenced by the session boundary.
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
+import { displayTime } from "@live-commerce/format";
 import { Badge, TabStrip, TableFrame } from "@live-commerce/ui";
 import { catalogPresentationCopy } from "@/lib/catalog-v2-copy";
 import type { Store } from "@/lib/model";
@@ -649,10 +650,6 @@ function Versions({
   locale: Locale;
   onRollback: (version: number) => void;
 }) {
-  const when = new Intl.DateTimeFormat(locale, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
   return (
     <div className="design-panel" data-testid="design-versions">
       <p className="design-muted">{c.versions.help}</p>
@@ -688,7 +685,7 @@ function Versions({
                       ? ` · ${fill(c.versions.source, { n: v.source_version })}`
                       : ""}
                   </td>
-                  <td>{when.format(new Date(v.published_at))}</td>
+                  <td>{displayTime(locale, v.published_at)}</td>
                   <td>
                     {v.version !== live && (
                       <button

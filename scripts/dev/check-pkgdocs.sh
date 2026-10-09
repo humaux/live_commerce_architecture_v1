@@ -9,7 +9,7 @@
 # Usage: bash scripts/dev/check-pkgdocs.sh
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
-export GOTOOLCHAIN="${GOTOOLCHAIN:-go1.27.1}"
+export GOTOOLCHAIN="${GOTOOLCHAIN:-go1.27.2}"
 bad=0
 while read -r pkg doc; do
   if [[ -z "$doc" ]]; then echo "no package doc: $pkg" >&2; bad=1; continue; fi

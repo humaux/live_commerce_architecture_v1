@@ -1,0 +1,48 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/apps/admin/lib/studio-client.ts:17
+  // 4xx answer, for callers that word specific refusals; never set for an unknown result.
+  constructor(readonly code: StudioErrorCode, readonly api = "") { super(code); }
+                       ^^^^^^^^^^^^^^^^^^^^^
+}
+
+SyntaxError [ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX]: TypeScript parameter property is not supported in strip-only mode
+    at parseTypeScript (node:internal/modules/typescript:68:40)
+    at processTypeScriptCode (node:internal/modules/typescript:146:42)
+    at stripTypeScriptModuleTypes (node:internal/modules/typescript:209:22)
+    at ModuleLoader.<anonymous> (node:internal/modules/esm/translators:641:29)
+    at #translate (node:internal/modules/esm/loader:451:20)
+    at afterLoad (node:internal/modules/esm/loader:507:29)
+    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:512:12)
+    at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:555:36)
+    at afterResolve (node:internal/modules/esm/loader:603:52)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:609:12) {
+  code: 'ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX'
+}
+
+Node.js v24.15.0
+✖ tests/admin/live-console-bff.test.ts (112.5965ms)
+✔ A1 strict MOCK snapshot preserves unavailable counts, capability unknown and server stock (7.439333ms)
+✔ A7 returns a separate lifecycle version and closed full CONTAINS window (0.132125ms)
+✔ A5 results retain separate environments/currencies and bind exact requested ids/order (0.159041ms)
+✔ A5 copy parses real Go envelope, copied offer prices and CONTAINS window (0.375ms)
+✔ A6 accepts optional operation UUID, never guessed send success (0.097209ms)
+✔ LC-U1 one primary action follows lifecycle, never planning or transport state (1.317542ms)
+✔ LC-U1 stock target uses sellable delta and rejects fractions, negative and over-limit changes (0.347833ms)
+✔ LC-U1 embeds only explicit public FB post identities, never arbitrary URLs or guessed videos (2.712291ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 8
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 134.305375
+
+✖ failing tests:
+
+test at tests/admin/live-console-bff.test.ts:1:1
+✖ tests/admin/live-console-bff.test.ts (112.5965ms)
+  'test failed'

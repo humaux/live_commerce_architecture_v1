@@ -45,7 +45,7 @@ import {
 } from "@/lib/claims-model";
 import { fromMinor } from "@/lib/catalog-v2-model";
 import { displayClock, displayTime } from "@/lib/orders-model";
-import { claimLinkMessage, claimsCopy, hostPrompt } from "@/lib/claims-copy";
+import { claimLinkMessage, claimsCopy, hostPrompt, hostPromptLanguages, hostPromptLanguageNames, type HostPromptLanguage } from "@/lib/claims-copy";
 import { studioCopy } from "@/lib/studio-copy";
 import { metaConnectCopy } from "@/lib/meta-connect-copy";
 import { readStatus as readMetaStatus, type ConnectStatus } from "@/lib/meta-connect-client";
@@ -101,9 +101,10 @@ export function StudioClaims({ locale, store, scene, initialError }: {
   const [manual, setManual] = useState({ bundle: "", label: "", text: "" });
   const [result, setResult] = useState<ManualResult | null>(null);
   const [modeDraft, setModeDraft] = useState<MatchMode>("EXACT");
-  const [promptLanguage, setPromptLanguage] = useState<Locale>(locale);
+  const [promptLanguage, setPromptLanguage] = useState<HostPromptLanguage>(locale);
   const [promptKeyword, setPromptKeyword] = useState("");
   const [copied, setCopied] = useState("");
+  const [copiedPromptText, setCopiedPromptText] = useState("");
   const [busy, setBusy] = useState<Action | null>(null);
   const [refreshing, setRefreshing] = useState(false); // "Refresh facts" is re-reading; refreshedAt = when the last user refresh finished (D03)
   const [refreshedAt, setRefreshedAt] = useState<number | null>(null);
@@ -440,7 +441,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
     } catch (error) { setStatus(codeOf(error)); }
   }
   async function copy(value: string, what: string) {
-    try { await navigator.clipboard.writeText(value); setCopied(what); }
+    try { await navigator.clipboard.writeText(value); if (what === "prompt") setCopiedPromptText(value); setCopied(what); }
     catch { setCopied(""); }
   }
   async function refreshFacts() {
@@ -484,10 +485,13 @@ export function StudioClaims({ locale, store, scene, initialError }: {
             </div>
             <Field id="claims-mode" label={c.mode}>
               <select id="claims-mode" value={claimWindow.state === "OPEN" ? claimWindow.match_mode : modeDraft} disabled={blocked || claimWindow.state === "OPEN"}
+                aria-describedby={(claimWindow.state === "OPEN" ? claimWindow.match_mode : modeDraft) === "KEYWORD_QTY_CONTAINS" ? "claims-contains-hint" : undefined}
                 onChange={(event) => changeMode(event.target.value as MatchMode)}>
                 <option value="EXACT">{c.modeExact}</option><option value="KEYWORD_QTY_ONLY">{c.modeQty}</option>
+                <option value="KEYWORD_QTY_CONTAINS">{c.modeContains}</option>
               </select>
             </Field>
+            {(claimWindow.state === "OPEN" ? claimWindow.match_mode : modeDraft) === "KEYWORD_QTY_CONTAINS" && <p id="claims-contains-hint" className="claims-muted">{c.modeContainsHint}</p>}
             {claimWindow.state === "OPEN" && <p className="claims-muted">{c.modeLocked}</p>}
             <button type="button" className="primary claims-window-action" disabled={blocked} onClick={toggleWindow}>
               {busy === "window" ? c.working : claimWindow.state === "OPEN" ? c.closeWindow : c.openWindow}</button>
@@ -510,14 +514,14 @@ export function StudioClaims({ locale, store, scene, initialError }: {
               {prompt ? <>
                 <div className="claims-prompt-controls">
                   <Field id="claims-prompt-language" label={c.promptLanguage}>
-                    <select id="claims-prompt-language" value={promptLanguage} onChange={(event) => setPromptLanguage(event.target.value as Locale)}>
-                      {locales.map((item) => <option key={item} value={item}>{localeNames[item]}</option>)}</select></Field>
+                    <select id="claims-prompt-language" value={promptLanguage} onChange={(event) => setPromptLanguage(event.target.value as HostPromptLanguage)}>
+                      {hostPromptLanguages.map((item) => <option key={item} value={item}>{hostPromptLanguageNames[item]}</option>)}</select></Field>
                   <Field id="claims-prompt-keyword" label={c.promptKeyword}>
                     <select id="claims-prompt-keyword" value={keywordForPrompt} onChange={(event) => setPromptKeyword(event.target.value)}>
                       {activeOffers.map((offer) => <option key={offer.offer_id} value={offer.keyword}>{offer.keyword}</option>)}</select></Field>
                 </div>
                 <p className="claims-prompt-text" data-testid="host-prompt" lang={promptLanguage}>{prompt}</p>
-                <button type="button" onClick={() => void copy(prompt, "prompt")}>{copied === "prompt" ? c.copied : c.copyPrompt}</button>
+                <button type="button" onClick={() => void copy(prompt, "prompt")}>{copied === "prompt" && copiedPromptText === prompt ? c.copied : c.copyPrompt}</button>
               </> : <p className="claims-muted">{c.promptNone}</p>}
             </section>}
           </aside>

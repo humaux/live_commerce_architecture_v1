@@ -1,7 +1,7 @@
 package httpapi
 
 // Purpose: DB-free transport and routing tests of the W3-07B parcel routes (parcels.go): the whole router builds (no pattern
-//   conflict with orders/{order_id}), the gates refuse before any database work, and every coded refusal reaches the JSON body.
+//   conflict with orders/{order_id}; GET and POST /parcel-groups coexist), the gates refuse before any database work, and every coded refusal reaches the JSON body.
 // Depends on: NewHandler(nil), shipments_test.go helpers (shipmentCall, shipBearer, shipStore, shipBodyOK), httperror.
 // Used by: go test ./internal/httpapi (check-gates).
 
@@ -36,6 +36,10 @@ func TestParcelRoutesTransportRules(t *testing.T) {
 		code                     string
 	}{
 		{"suggestions admitted", "GET", suggest, "", nil, 401, "unauthorized"},
+		{"open groups admitted", "GET", groups, "", nil, 401, "unauthorized"}, // W3-U4: GET /parcel-groups beside the POST
+		{"open groups query", "GET", groups + "?state=OPEN", "", nil, 422, "invalid_request"},
+		{"open groups bare question mark", "GET", groups + "?", "", nil, 422, "invalid_request"},
+		{"open groups key", "GET", groups, "", func(r *http.Request) { r.Header.Set("Idempotency-Key", "ship-key-0001") }, 422, "invalid_request"},
 		{"create admitted", "POST", groups, parcelBody, withKey, 401, "unauthorized"},
 		{"dissolve admitted", "DELETE", one + "?expected_version=1", "", nil, 401, "unauthorized"},
 		{"ship admitted", "PUT", ship, shipBodyOK, nil, 401, "unauthorized"},

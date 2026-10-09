@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   parseAdsUnbind, parseCatalogFeed, parseAdsInFlight, accountReady, adsCodes, adsErrorCode, adsLocalCodes, adsManagerHref, adsServerCodes, adsSessionCodes, buildDraftInput, canApprove,
-  canCopy, canEdit, canEnd, canPause, canPublish, capiBody, connectErrors, copyForm, defaultReportWindow, draftStatuses, emptyForm, epochToLocal,
+  canCopy, canEdit, canEnd, canPause, canPublish, capiBody, connectErrors, copyForm, defaultReportWindow, draftStatuses, emptyForm, epochToLocal, localToEpoch,
   formatMinor, formFromDraft, minorToWhole, opStates, parseConnectState, parseCountries, parseDraft, parseDraftList, parseReport,
   parseSettings, validCapi, validDate, validReportWindow, validSource, wholeToMinor, AdsParseError, type Draft, type DraftForm,
 } from "../../apps/admin/lib/ads-model.ts";
@@ -191,7 +191,7 @@ test("money: whole units to minor with integer math; TWD must be whole", () => {
   assert.ok(formatMinor("en", "USD", 1250).includes("12.50"));
 });
 
-const now = new Date(2026, 8, 30, 12, 0, 0).getTime(); // local wall time
+const now = Date.parse("2026-09-30T04:00:00Z"); // Taipei noon, independent of the test runner's zone.
 const min = 60_000;
 const day = 86_400_000;
 function form(over: Partial<DraftForm> = {}): DraftForm {
@@ -204,6 +204,37 @@ const codesOf = (f: DraftForm, allowance = "TWD") => {
   const r = buildDraftInput(f, now, allowance);
   return r.ok ? [] : r.codes;
 };
+
+test("Taipei schedule: wall inputs and draft projections ignore the viewer zone", () => {
+  // Literal instants are the oracle; round-tripping two equally wrong helpers would pass.
+  for (const [wall, iso] of [
+    ["2026-10-07T00:00", "2026-10-06T16:00:00Z"],
+    ["2027-01-01T00:30", "2026-12-31T16:30:00Z"],
+    ["2024-02-29T23:59", "2024-02-29T15:59:00Z"],
+    ["2026-03-08T02:30", "2026-03-07T18:30:00Z"], // valid Taipei time during LA's DST gap
+  ]) {
+    assert.equal(localToEpoch(wall), Date.parse(iso), `${wall} under ${process.env.TZ}`);
+    assert.equal(epochToLocal(Date.parse(iso)), wall, `${iso} under ${process.env.TZ}`);
+  }
+  const saved = formFromDraft(parseDraft(draftJSON({ starts_at: "2026-10-06T16:00:00Z", ends_at: "2026-10-07T16:00:00Z" })));
+  assert.equal(saved.starts_local, "2026-10-07T00:00");
+  assert.equal(saved.ends_local, "2026-10-08T00:00");
+  const result = buildDraftInput(form({ starts_local: "2026-10-07T00:00", ends_local: "2026-10-08T00:00" }), Date.parse("2026-10-06T12:00:00Z"), "TWD");
+  assert.ok(result.ok);
+  if (result.ok) {
+    assert.equal(result.input.starts_at, "2026-10-06T16:00:00Z");
+    assert.equal(result.input.ends_at, "2026-10-07T16:00:00Z");
+  }
+});
+
+test("Taipei schedule: invalid calendar days are rejected and all copy names UTC+8", () => {
+  for (const bad of ["2026-02-30T12:00", "2026-02-29T12:00", "2026-10-07T24:00", "2026-10-07T00:60", "garbage", ""]) {
+    assert.equal(localToEpoch(bad), null, bad);
+  }
+  for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
+    assert.match(adsCopy[locale].fDatesHint, /Asia\/Taipei.*UTC\+8/);
+  }
+});
 
 test("draft input: exact 11-key body and every local rule", () => {
   const r = buildDraftInput(form(), now, "TWD");

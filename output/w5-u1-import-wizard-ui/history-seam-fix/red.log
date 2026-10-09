@@ -1,0 +1,151 @@
+# Purpose: preserve actual history real-helper local evidence after this prologue.
+# Depends on: sourceafefed5e and original main raw SHA256=72e23ec8c1d1d42623fa5339a80a4bb06935f99cc5d917f075c90c75c14f8fa7.
+# Used by: integrator; runtime browser acceptance pending.
+# Evidence normalization: trailing whitespace/blank EOF only; original raw bytes and SHA256 retained in main checkout/provenance above.
+TAP version 13
+# Subtest: real cookie and CSRF helpers generate and validate the actual host-cookie pair
+ok 1 - real cookie and CSRF helpers generate and validate the actual host-cookie pair
+  ---
+  duration_ms: 1.238083
+  type: 'test'
+  ...
+# Subtest: exact route rejects methods/keys/body/query/scope before any upstream request using real localError
+ok 2 - exact route rejects methods/keys/body/query/scope before any upstream request using real localError
+  ---
+  duration_ms: 3.024208
+  type: 'test'
+  ...
+# Subtest: missing/duplicate session cookies reject and real clearAuthCookies expires session and CSRF
+ok 3 - missing/duplicate session cookies reject and real clearAuthCookies expires session and CSRF
+  ---
+  duration_ms: 0.776708
+  type: 'test'
+  ...
+# Subtest: actual authenticatedStores denies a store absent from the server projection
+ok 4 - actual authenticatedStores denies a store absent from the server projection
+  ---
+  duration_ms: 0.777375
+  type: 'test'
+  ...
+# Subtest: private success routes server cookie token and exact canonical after, never caller bearer/cookie to Go
+not ok 5 - private success routes server cookie token and exact canonical after, never caller bearer/cookie to Go
+  ---
+  duration_ms: 1.529167
+  type: 'test'
+  location: '/Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-history-worker/tests/admin/import-history-bff.test.mjs:82:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+
+      {
+    +   code: 'retry_later',
+    +   details: {},
+    +   message: 'Temporarily unavailable.',
+    +   request_id: '88bcae29303a4a498af44ca480764f93',
+    +   retryable: true
+    -   items: [
+    -     {
+    -       city: null,
+    -       currency: 'TWD',
+    -       items_summary: 'synthetic',
+    -       order_id: 'SL-SYNTHETIC',
+    -       ordered_at: '2026-10-07T00:00:00Z',
+    -       status: 'done',
+    -       total_minor: 100
+    -     }
+    -   ],
+    -   next_cursor: '',
+    -   total: 1
+      }
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    items:
+      0:
+        order_id: 'SL-SYNTHETIC'
+        ordered_at: '2026-10-07T00:00:00Z'
+        status: 'done'
+        total_minor: 100
+        currency: 'TWD'
+        items_summary: 'synthetic'
+        city: ~
+    next_cursor: ''
+    total: 1
+  actual:
+    code: 'retry_later'
+    message: 'Temporarily unavailable.'
+    request_id: '88bcae29303a4a498af44ca480764f93'
+    retryable: true
+    details:
+  operator: 'deepStrictEqual'
+  stack: |-
+    file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-history-worker/tests/admin/import-history-bff.test.mjs:84:10
+    async fixture (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-history-worker/tests/admin/import-history-bff.test.mjs:44:9)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: actual safeError/localError preserve coded status with no-store and redact upstream diagnostics
+ok 6 - actual safeError/localError preserve coded status with no-store and redact upstream diagnostics
+  ---
+  duration_ms: 1.084792
+  type: 'test'
+  ...
+# Subtest: actual readBody and strict projection refuse MIME/oversize/extra private fields/city; network loss stays private
+ok 7 - actual readBody and strict projection refuse MIME/oversize/extra private fields/city; network loss stays private
+  ---
+  duration_ms: 1.528792
+  type: 'test'
+  ...
+# Subtest: actual client issues GET50/after through real route/private successful projection
+not ok 8 - actual client issues GET50/after through real route/private successful projection
+  ---
+  duration_ms: 6.575792
+  type: 'test'
+  location: '/Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-history-worker/tests/admin/import-history-client.test.mjs:57:1'
+  failureType: 'testCodeFailure'
+  error: 'unavailable'
+  code: 'unavailable'
+  stack: |-
+    readJSON (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-history-worker/apps/admin/lib/customers-client.ts:37:15)
+    async get (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-history-worker/apps/admin/lib/customers-client.ts:47:22)
+    async readHistoricalOrders (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-history-worker/apps/admin/lib/import-history-client.ts:13:23)
+    async file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-history-worker/tests/admin/import-history-client.test.mjs:58:20
+    async fixture (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-history-worker/tests/admin/import-history-client.test.mjs:54:9)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+# Subtest: actual helper-issued browser fence rejects changed parent before dispatch
+ok 9 - actual helper-issued browser fence rejects changed parent before dispatch
+  ---
+  duration_ms: 1.009084
+  type: 'test'
+  ...
+# Subtest: private success from real route is discarded when the browser session changes during upstream read
+ok 10 - private success from real route is discarded when the browser session changes during upstream read
+  ---
+  duration_ms: 1.457292
+  type: 'test'
+  ...
+# Subtest: real localError no-store 401/403/404/503 preserves correct read category with no retry
+ok 11 - real localError no-store 401/403/404/503 preserves correct read category with no retry
+  ---
+  duration_ms: 4.028625
+  type: 'test'
+  ...
+# Subtest: malformed sensitive backend projection becomes real unavailable, never a fake BFF success
+ok 12 - malformed sensitive backend projection becomes real unavailable, never a fake BFF success
+  ---
+  duration_ms: 0.698041
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 10
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 673.032375

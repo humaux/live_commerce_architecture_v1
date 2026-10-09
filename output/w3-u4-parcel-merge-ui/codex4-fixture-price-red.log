@@ -1,0 +1,7 @@
+=== RUN   TestParcelFixtureSameBuyerTwoOrders
+    parcel_fixture_test.go:124: pf[a] start: conflicting request or version
+--- FAIL: TestParcelFixtureSameBuyerTwoOrders (1.59s)
+FAIL
+FAIL	livecommerce/tests/foundation	3.142s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

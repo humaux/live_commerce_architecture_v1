@@ -1,0 +1,17 @@
+{
+  "name": "node-verified",
+  "command": [
+    "bash",
+    "scripts/dev/test-node.sh"
+  ],
+  "timeout": 300,
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups",
+  "out": "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups/output/pr16-r4",
+  "head": "7e1ac716fc640764f4ec82bd2cc2b1254751f8f8",
+  "pid": 25195,
+  "exit_code": 0,
+  "source_sha256": "d46c6e7d35a44a8c45f1536699ff181e11940d5413d39a80a21b5f4f22f4879d",
+  "source_after": "d46c6e7d35a44a8c45f1536699ff181e11940d5413d39a80a21b5f4f22f4879d",
+  "source_unchanged": true,
+  "elapsed_seconds": 32.518
+}

@@ -1,0 +1,86 @@
+https://buyer.example/en/checkout
+Skip to content
+fixture-store-a1
+1
+
+Synthetic data · test environment
+
+Your orders
+Checkout
+Synthetic browser order product
+$12.50
+
+T04-110b279aef29-0
+
+× 1
+
+Back to cart
+Items in this quotation
+Synthetic browser order product · T04-110b279aef29-0 × 1
+$12.50
+Delivery
+$0.50
+Tax
+$0.66
+Discount
+$0
+Order total
+$13.66
+
+Quote valid until 10/09/2026, 17:27 · Taipei time (UTC+8)
+
+No payment has been taken. Confirm your address below before creating an unpaid order.
+
+Discount code
+Apply
+A code takes money off the goods, not shipping. One code per order.
+Change delivery
+Delivery address
+
+Check your delivery address and the quoted total before creating your order.
+
+Order total: $13.66 · Country: TW
+
+ 
+
+Delivery address
+Recipient name
+Phone
+Region (optional)
+City
+Postal code (optional)
+Address line 1
+Address line 2 (optional)
+Confirm address
+Email (optional)Used only for updates about this order.
+Optional messages and ads
+
+These are optional. Your order does not depend on them, and you can change them any time on the privacy page.
+
+The store may send me marketing messages on Messenger or Instagram DM.
+Use my purchase to personalize Meta ads for me.
+
+If you tick this, this order's purchase event (order value and currency, linked to your browser signals) is sent to Meta to measure and personalize ads. Events already sent cannot be recalled.
+
+Privacy notice (version lc-2026-10)
+
+Confirm your delivery address above to create the order.
+
+Create unpaid order
+
+Payment is not open on this page yet. No payment is taken by creating an order.
+
+Order total
+$13.66
+Not paid
+View quotation
+
+fixture-store-a1
+
+Shop safely
+Data deletion
+简体中文
+繁體中文
+English
+
+© 2026 fixture-store-a1

@@ -1,0 +1,35 @@
+✖ real bridge sealCursor uses payload.signature rather than plain base64url (8.481375ms)
+✔ A2 grammar refuses private/duplicate/ambiguous cursors and keys on reads (0.791959ms)
+✔ A3-A5 exact comment ref and bodies; explicit preemption private only (0.239459ms)
+✔ A4/A5 preserve frozen refusal codes, never provider/debug text (0.065375ms)
+✔ reset invalidates old buffers and cursor before reread; older page cannot advance live cursor (0.326667ms)
+✔ filter resources have only authorised opaque ids; backoff is capped and success resets (0.063625ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 5
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 84.134541
+
+✖ failing tests:
+
+test at tests/admin/comment-stream.test.ts:23:1
+✖ real bridge sealCursor uses payload.signature rather than plain base64url (8.481375ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/comment-stream.test.ts:24:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

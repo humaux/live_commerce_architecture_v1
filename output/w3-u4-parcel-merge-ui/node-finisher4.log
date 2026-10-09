@@ -1,0 +1,45 @@
+✔ COD collect projection admits the server amount and rejects inconsistent money (7.97125ms)
+✔ MOU parser accepts exact frozen DTO and rejects malformed identity, money and state (0.843792ms)
+✔ MOU detail parser rejects spoofed recipient, pickup and mismatched money (0.521875ms)
+✔ summary admits the refunded and shipped states with the amended invariants (0.095917ms)
+✔ summary rejects the shipped/refunded combinations the contract forbids (0.1685ms)
+✔ order filter values and detail shipment stay in step with MERCHANT_SHIPPED (0.5015ms)
+✔ tracking url rules: https only, dotted host, no userinfo, port, fragment or control characters (0.086125ms)
+✔ shipment history carries merchant-only fields and stays consistent (0.18425ms)
+✔ refund list parser checks capacity arithmetic, closed enums and optional failure_reason (0.313084ms)
+✔ order-actions is exactly three booleans (0.422333ms)
+✔ refund amount entry converts exactly and enforces the TWD whole-dollar step as a hint (9.521041ms)
+✔ CVSA01 pay-at-pickup summary: CONFIRMED without payment is valid only in that mode (1.228791ms)
+✔ CVSA02 detail: pickup_source must agree with the pickup verification kind; new chains and kinds parse (1.385334ms)
+✔ CVSA03 the cvs_pending list filter exists beside the older filters (0.225917ms)
+✔ BTA01 bank-transfer summary: valid states, and every card or pickup invariant it must not borrow (1.121584ms)
+✔ READY work is valid on a merchant-cancelled captured order, still refused when never captured or not cancelled (0.398541ms)
+✔ legacy display sentinels preserve a list row without admitting arbitrary or private data (6.065916ms)
+✔ orders-v2 accepts bounded filters and Taipei inclusive dates; rejects ambiguity (0.486917ms)
+✔ orders-v2 rejects client count approximations, unbounded or extra response data (0.15575ms)
+✔ all three locales label every task queue, payment and delivery mode (0.836208ms)
+✔ bodyless dissolve DELETE (empty body stream, no content-length) reaches Go with the CAS query, no body, no key (23.111958ms)
+✔ every parcel DELETE must carry exactly one expected_version >= 1 (never forwarded without it) (3.079583ms)
+✔ a DELETE that declares a body or chunked framing is refused (0.341583ms)
+✔ DELETE needs the session, origin and CSRF like every command; other DELETEs stay unsupported (2.898375ms)
+✔ GET parcel-groups (open groups read) and merge-suggestions pass with no query; a query or key is refused (8.463166ms)
+✔ merge suggestions accept the frozen shape (server-masked recipient) and reject drift (1.171791ms)
+✔ created group requires the OPEN state and its members (0.169959ms)
+✔ dissolved group is exactly id/state/version (0.077625ms)
+✔ group shipment carries one SHIPPED version per member (1.801375ms)
+✔ open groups (GET parcel-groups) accept the frozen shape and fail closed on drift (2.611125ms)
+✔ reconcile: a reload rebuilds OPEN panels, a vanished OPEN group is dropped, history and live versions are kept (0.779458ms)
+✔ three locales cover the same keys and every refusal code (1.199875ms)
+✔ the owner-ruling sentence is exact in all three locales (0.22225ms)
+✔ the in_parcel_group copy is the same sentence in parcels-copy (blocked + errors) and orders-copy, in every locale (0.260375ms)
+✔ groupOfOrder prefers the OPEN group over retained SHIPPED/DISSOLVED history (0.455292ms)
+✔ exactly the five W3-07B resources route (1.63275ms)
+✔ dissolve carries exactly ?expected_version=N (N >= 1) (0.226ms)
+ℹ tests 37
+ℹ suites 0
+ℹ pass 37
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 272.241958

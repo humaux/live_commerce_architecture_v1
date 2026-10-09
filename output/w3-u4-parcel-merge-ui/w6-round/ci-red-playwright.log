@@ -1,0 +1,61 @@
+
+Running 9 tests using 1 worker
+
+  ✓  1 tests/admin/customer-tags.spec.ts:54:1 › CTUI calibration-sensitive note create uses real mutation response (998ms)
+  ✓  2 tests/admin/customer-tags.spec.ts:68:3 › CTUI catalogue, notes and passive-refresh draft preservation en/1440 (3.3s)
+  ✓  3 tests/admin/customer-tags.spec.ts:68:3 › CTUI catalogue, notes and passive-refresh draft preservation en/390 (3.0s)
+  ✓  4 tests/admin/customer-tags.spec.ts:68:3 › CTUI catalogue, notes and passive-refresh draft preservation zh-TW/1440 (3.6s)
+  ✓  5 tests/admin/customer-tags.spec.ts:68:3 › CTUI catalogue, notes and passive-refresh draft preservation zh-TW/390 (3.3s)
+  ✘  6 tests/admin/customer-tags.spec.ts:140:1 › CTUI catalogue duplicate/length, tag filter clear and persistence, notes pagination and cap (15.6s)
+  -  7 tests/admin/customer-tags.spec.ts:191:1 › CTUI real CAS conflicts, refresh discards only explicit user intent
+  -  8 tests/admin/customer-tags.spec.ts:217:1 › CTUI UNKNOWN explicit same-key retry commits once, revoked session cannot replay
+  -  9 tests/admin/customer-tags.spec.ts:248:1 › CTUI signed reader and non-privacy writer show conservative note permissions
+
+
+  1) tests/admin/customer-tags.spec.ts:140:1 › CTUI catalogue duplicate/length, tag filter clear and persistence, notes pagination and cap
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByTestId('customer-tags-editor')
+    Expected substring: "Tags and notes are temporarily unavailable. Try again."
+    Received string:    "Customer tagsSeed01Pick up to 20 tags. If someone changes the tags before you save, refresh and try again.Tags · Selected tags 1/20Seed01Seed02Seed03Seed04Seed05Seed06Seed07Seed08Seed09Seed10Seed11Seed12Seed13Seed14Seed15Seed16Seed17Seed18Seed19Seed20Seed21Save tagsNew tag"
+    Timeout: 15000ms
+
+    Call log:
+      - Expect "toContainText" getByTestId('customer-tags-editor') with timeout 15000ms
+      - waiting for getByTestId('customer-tags-editor')
+        - locator resolved to <section aria-labelledby="ct-editor-title" data-testid="customer-tags-editor">…</section>
+        - unexpected value "Customer tagsSeed01Pick up to 20 tags. If someone changes the tags before you save, refresh and try again.Loading…Save tagsNew tag"
+        32 × locator resolved to <section aria-labelledby="ct-editor-title" data-testid="customer-tags-editor">…</section>
+           - unexpected value "Customer tagsSeed01Pick up to 20 tags. If someone changes the tags before you save, refresh and try again.Tags · Selected tags 1/20Seed01Seed02Seed03Seed04Seed05Seed06Seed07Seed08Seed09Seed10Seed11Seed12Seed13Seed14Seed15Seed16Seed17Seed18Seed19Seed20Seed21Save tagsNew tag"
+
+
+      146 |       await step(page, `${fault} Retry`, "failed genuine read is visible and Retry restores controls/notes", async () => {
+      147 |         await page.reload(); const region = fault === "tag-read-503" ? page.getByTestId("customer-tags-editor") : notes;
+    > 148 |         await expect(region).toContainText(c.unavailable); await region.getByRole("button", { name: c.retry, exact: true }).click();
+          |                              ^
+      149 |         if (fault === "tag-read-503") await expect(region.getByRole("checkbox", { name: "Seed01", exact: true })).toBeVisible();
+      150 |         else await expect(region.locator("ul > li")).toHaveCount(50);
+      151 |       });
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/customer-tags.spec.ts:148:30
+        at step (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/customer-tags.spec.ts:19:9)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/customer-tags.spec.ts:146:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/w6-customers/20261008T045757.677007560/results/customer-tags-CTUI-catalog-97ef4-ce-notes-pagination-and-cap/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/w6-customers/20261008T045757.677007560/results/customer-tags-CTUI-catalog-97ef4-ce-notes-pagination-and-cap/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/w6-customers/20261008T045757.677007560/results/customer-tags-CTUI-catalog-97ef4-ce-notes-pagination-and-cap/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/w6-customers/20261008T045757.677007560/results/customer-tags-CTUI-catalog-97ef4-ce-notes-pagination-and-cap/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/admin/customer-tags.spec.ts:140:1 › CTUI catalogue duplicate/length, tag filter clear and persistence, notes pagination and cap
+  3 did not run
+  5 passed (30.3s)

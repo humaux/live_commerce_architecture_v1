@@ -1,0 +1,34 @@
+(node:19611) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ offer controls read authoritative limits without parsing unrelated CONTAINS window/stats (30.830042ms)
+✔ offer toggle preserves exactly the authoritative maximum in the real M4 payload (5.063792ms)
+✔ console BFF admits exactly A1/A7/A6 and A5 read/copy methods (0.423667ms)
+✔ results query is canonical repeated session_id 1..50, everything else queryless (0.16075ms)
+✔ real BFF route forwards only exact resources, authenticates scope and returns private scrubbed errors (75.807875ms)
+✔ new commands reject unknown keys and preserve frozen copy/lifecycle/recommend body (1.251333ms)
+✔ browser commands reuse Studio fences, exact no-comment recommend body and backend refusal codes (7.763583ms)
+✔ results client preserves canonical ids/order and rejects invalid list before fetch (2.061167ms)
+✔ stock client reuses catalog transport/key/parser and fences a changed login without retries (2.88675ms)
+(node:19612) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ A1 strict MOCK snapshot preserves unavailable counts, capability unknown and server stock (8.54325ms)
+✔ A7 returns a separate lifecycle version and closed full CONTAINS window (0.223875ms)
+✔ A5 results retain separate environments/currencies and bind exact requested ids/order (0.188583ms)
+✔ A5 copy parses real Go envelope, copied offer prices and CONTAINS window (0.423541ms)
+✔ A6 accepts optional operation UUID, never guessed send success (0.096291ms)
+(node:19613) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ LC-U1 one primary action follows lifecycle, never planning or transport state (1.136042ms)
+✔ LC-U1 stock target uses sellable delta and rejects fractions, negative and over-limit changes (0.65725ms)
+✔ LC-U1 embeds only explicit public FB post identities, never arbitrary URLs or guessed videos (0.721625ms)
+✔ LC-U1 public Facebook framing is allowed only on the console route (1.104458ms)
+✔ LC-U1 delayed copy completion cannot navigate after store switch or unmount (1.15225ms)
+✔ LC-U1 receipt fence survives cookie rotation; pending replay still has a separate session boundary (1.432125ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 372.555541

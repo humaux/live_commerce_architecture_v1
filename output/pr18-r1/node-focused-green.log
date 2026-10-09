@@ -1,0 +1,65 @@
+(node:7821) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ PR18 A8 clears names synchronously and keeps loaded older pages through a head poll (17.215125ms)
+✔ PR18 A8 hides clear before effects even without pagination (1.381292ms)
+✔ PR18 quiet A2 stream refreshes delayed claim marks without a new sequence or user refresh (1.940708ms)
+✔ PR18 late claim automatically exposes keyword view and the reused BuyerPanel (4.134959ms)
+✔ K3 A8 private polls every 10s, backs off, resets, pauses hidden and stops off-filter (7.355625ms)
+✔ K3 A8 unreplied polls every 10s, backs off, resets, pauses hidden and stops off-filter (7.862583ms)
+✔ K3 pasted tab is refused with invalid_text copy before any reply POST (0.88575ms)
+✔ real SQL UNKNOWN mark blocks public-mode switching without a local receipt (0.5095ms)
+✔ PR18 unknown public receipt has the correct cross-comment fence (1.383625ms)
+✔ PR18 queued public receipt has the correct cross-comment fence (0.980875ms)
+✔ actual A2 hook fake clock: 3/6/12/24/30 backoff, success reset, hide clears and stops, 403 locks (3.080459ms)
+✔ actual reset clears selected buyer and rereads without the old epoch cursor (0.948334ms)
+✔ reply hints, coded error, UNKNOWN and capability state execute the actual composer (0.918875ms)
+(node:7822) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ PR18 A3 invalid_ref remains a definite 422 refusal (0.365958ms)
+✔ PR18 a full history buffer stops paging without discarding rows or advancing its cursor (0.30375ms)
+✔ K3 reply text rejects every C0/C1 control except newline (0.295334ms)
+✔ SQL operation marks map to every merchant-visible delivery state (0.195708ms)
+✔ real bridge sealCursor uses payload.signature rather than plain base64url (14.809916ms)
+✔ A2 grammar refuses private/duplicate/ambiguous cursors and keys on reads (0.81925ms)
+✔ A3-A5 exact comment ref and bodies; explicit preemption private only (0.133333ms)
+✔ A4/A5 preserve frozen refusal codes, never provider/debug text (0.056583ms)
+✔ reset invalidates old buffers and cursor before reread; older page cannot advance live cursor (0.1075ms)
+✔ filter resources have only authorised opaque ids; backoff is capped and success resets (0.10425ms)
+(node:7823) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ PR18 real BFF preserves invalid_ref and cursor errors without upstream retry (16.827667ms)
+✔ PR18 valid A2 Unicode/escaped pages exceed 1 MiB but A8 cap stays unchanged (144.134959ms)
+✔ K3 comment-only no_source cannot widen the existing inbox error seam (2.067417ms)
+✔ LC-U2a real BFF seam A2-A5 exact grammar, privacy, denial and no diagnostic reflection (4.794375ms)
+✔ A8/A9/A13 and published templates: exact reads forward once with no-store (2.66975ms)
+✔ real streamed POST bodies: A10-A14 exact keys reach upstream (3.977291ms)
+✔ query, read headers, methods and body allowlists refuse before upstream (3.983666ms)
+✔ session, CSRF and store authority precede content forwarding (0.933417ms)
+✔ A12 fixed codes preserved; arbitrary upstream diagnostics stripped (4.655667ms)
+✔ client preserves codes and receipt; changed/aborted session cannot publish private response (3.843708ms)
+✔ A9 admits a full page of valid Unicode replies while bounding private response bytes (3.389208ms)
+✔ non-JSON upstream 401 still expires both authentication cookies without diagnostic leakage (0.990208ms)
+✔ real M7 response keeps no-referrer after matching Next production header rules (12.681667ms)
+(node:7824) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ offer controls read authoritative limits without parsing unrelated KEYWORD_QTY_CONTAINS window/stats (13.867584ms)
+✔ offer controls accept 101 through the backend cap of 200 distinct offers, reject 201 (1.867542ms)
+✔ offer toggle preserves exactly the authoritative maximum in the real M4 payload (2.492042ms)
+✔ console BFF admits exactly A1/A7/A6 and A5 read/copy methods (0.358958ms)
+✔ Next proxy admits the exact console family and results query before the BFF (81.267333ms)
+✔ PR18 proxy preserves malformed A2 cursor as 400 invalid_cursor (0.63125ms)
+✔ results query is canonical repeated session_id 1..50, everything else queryless (0.087458ms)
+✔ real BFF route forwards only exact resources, authenticates scope and returns private scrubbed errors (49.572083ms)
+✔ new commands reject unknown keys and preserve frozen copy/lifecycle/recommend body (0.181208ms)
+✔ browser commands reuse Studio fences, exact no-comment recommend body and backend refusal codes (2.228416ms)
+✔ results client preserves canonical ids/order and rejects invalid list before fetch (0.82625ms)
+✔ stock client reuses catalog transport/key/parser and fences a changed login without retries (1.32375ms)
+✔ journal replay sends the exact original method/path/body/key for all five commands (5.61625ms)
+ℹ tests 49
+ℹ suites 0
+ℹ pass 49
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 433.768042

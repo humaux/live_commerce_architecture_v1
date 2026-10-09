@@ -1,0 +1,11 @@
+# Purpose: preserve actual history real-helper local evidence after this prologue.
+# Depends on: sourceafefed5e and original main raw SHA256=7d2d88556029828f0d5d198a4945f6e6a5e521a3b377fdcc3b0e19cbdbf885a7.
+# Used by: integrator; runtime browser acceptance pending.
+0ad0e3af716c76a702f513083aec27eb3c5eebd61614ab513a276aa254cf0126  apps/admin/lib/auth.ts
+1b180d7e67db20c0c3bcfdfafbd6efa3d4c083f29652f74731d6177e370b8a3c  apps/admin/lib/backend.ts
+cce0263d90a0cfea3f96c4845b9c95c378d5353d541b19d58b4eb4c62d0af21a  apps/admin/lib/settings-client.ts
+494f2b7d039af3ac32650e9d9376d443b100b84e37aa3d578f822c9e57ada5d1  apps/admin/lib/customers-client.ts
+214c106aa7ba18e6c8b1d5f61f3ace99ef0de58771b80d6bff0f36f23ac1ca76  apps/admin/lib/import-history-model.ts
+70ab0559bd4bcaea5e4d39340e518917e80aedcb0d99b8401965be1bc120e197  apps/admin/lib/import-history-client.ts
+aa192f086ebebf9c7bd00bf0428449165c75664ff4ad49ef27fad077439cd3ba  apps/admin/app/api/stores/[store]/customers/[customer]/historical-orders/route.ts
+145439face274a8271a7f5c4759f345642f5eb073cb2e863c4a864df228cfd94  tests/admin/import-wire-real-loader.mjs

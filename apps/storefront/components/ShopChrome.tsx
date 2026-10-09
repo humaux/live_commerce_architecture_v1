@@ -1,8 +1,10 @@
-// Shell chrome rendered from the store design document (contracts/storefront-v2.md section B): announcement bar, header
+// Purpose: Shell chrome rendered from the store design document (contracts/storefront-v2.md section B): announcement bar, header
 // (logo/name, nav.header, search, cart) and footer (nav.footer, contact block with LINE/Facebook/Instagram, legal links).
 // Server components; the only client islands are the cart button (CartDrawer.tsx), the phone menu and the locale links.
 // BFF/Go: none here (the document was read once by app/[locale]/layout.tsx via lib/shop-upstream.ts loadShop).
 // Merchant text is rendered only as React text nodes; outbound links come pre-filtered by lib/design.ts.
+// Depends on: Next Link, design/nav and legal helpers, shell islands, shop copy and shared Taipei instant conversion.
+// Used by: the storefront layout and store pages.
 import Link from "next/link";
 import type { Locale } from "@live-commerce/i18n";
 import { resolveNav, safeExternal } from "../lib/design";
@@ -14,6 +16,7 @@ import { HeaderCart } from "./CartDrawer";
 import { ChatIcon, FacebookIcon, InstagramIcon, MailIcon, PhoneIcon, PinIcon, SearchIcon } from "./icons";
 import LocaleSwitch from "./LocaleSwitch";
 import MobileMenu from "./MobileMenu";
+import { instantToTaipei } from "../../../packages/format/src/index";
 
 function NavAnchor({ link, className }: { link: NavLink; className?: string }) {
   if (link.external)
@@ -33,6 +36,7 @@ function NavAnchor({ link, className }: { link: NavLink; className?: string }) {
   );
 }
 
+/** Display the storefront draft-preview notice. */
 export function PreviewBanner({ locale }: { locale: Locale }) {
   const copy = shopCopy[locale];
   return (
@@ -43,6 +47,7 @@ export function PreviewBanner({ locale }: { locale: Locale }) {
   );
 }
 
+/** Display the announcement supplied by the store design. */
 export function Announcement({ text }: { text: string }) {
   return (
     <p className="sf-announce" data-testid="announcement">
@@ -53,6 +58,7 @@ export function Announcement({ text }: { text: string }) {
 
 // `closed`: the host has no published store, so the cart and search would lead nowhere; only the brand, the language links and the legal
 // pages stay.
+/** Render the store announcement and navigation from its published design. */
 export function ShopHeader({ locale, design, preview, closed = false }: { locale: Locale; design: Design; preview: string | null; closed?: boolean }) {
   const copy = shopCopy[locale];
   const { profile, nav } = design;
@@ -101,6 +107,7 @@ export function ShopHeader({ locale, design, preview, closed = false }: { locale
 
 const withSearch = (locale: Locale, preview: string | null) => `/${locale}/search${preview ? `?preview=${encodeURIComponent(preview)}` : ""}`;
 
+/** Render store footer links, contact details and the current Taipei calendar year. */
 export function ShopFooter({ locale, design, preview }: { locale: Locale; design: Design; preview: string | null }) {
   const copy = shopCopy[locale];
   const { profile, nav } = design;
@@ -185,7 +192,7 @@ export function ShopFooter({ locale, design, preview }: { locale: Locale; design
       </div>
       <div className="sf-footer__base">
         <LocaleSwitch locale={locale} />
-        <p>© {new Date().getFullYear()} {profile.name}</p>
+        <p>© {instantToTaipei(new Date().toISOString()).slice(0, 4)} {profile.name}</p>
       </div>
     </footer>
   );

@@ -37,8 +37,7 @@ import { ProductDocumentVariants } from "./ProductDocumentVariants";
 import { ProductReadiness } from "./ProductReadiness";
 import { useProductEditorLayout } from "./useProductEditorLayout";
 function initialDraft(detail: ProductDetail | null): ProductDraft {
-  if (!detail) return emptyDraft();
-  return draftFromDetail(detail);
+  return detail ? draftFromDetail(detail) : emptyDraft();
 }
 /** Edits one catalog document; save/image writes remain delegated to the existing catalog command clients. */
 export function ProductDocumentForm({
@@ -73,6 +72,7 @@ export function ProductDocumentForm({
     [imageAxis, setImageAxis] = useState<string|null>(null),
     [mediaBusy, setMediaBusy] = useState(false),
     [mediaKnown, setMediaKnown] = useState(false);
+  const [readinessOpen, setReadinessOpen] = useState(false);
   const initial = useRef(JSON.stringify(initialDraft(detail))),
     urlPhotos = useRef<DraftPhoto[]>([]),
     rowArchive = useRef<DraftRow[]>([]);
@@ -102,7 +102,7 @@ export function ProductDocumentForm({
     "shipping",
     "seo",
   ] as const;
-  const { editor, fields, feedback, focus, noteSaveAttempt } =
+  const { editor, fields, feedback, focus, noteSaveAttempt, narrowViewport } =
     useProductEditorLayout(
       sections,
       setSection,
@@ -298,7 +298,14 @@ export function ProductDocumentForm({
             </button>
           ))}
         </nav>
-        <section>
+        {/* Readiness accordion (comment 4212540352): real button with a visible label in all locales; >900px renders no toggle at all, desktop layout unchanged. */}
+        {narrowViewport && (
+          <button type="button" className="pe-readiness-toggle" aria-expanded={readinessOpen}
+            aria-controls="pe-readiness-section" onClick={() => setReadinessOpen((open) => !open)}>
+            {c.progress}
+          </button>
+        )}
+        <section id="pe-readiness-section" hidden={narrowViewport && !readinessOpen}>
           <h2>{c.progress}</h2>
           <h3>{c.required}</h3>
           <ProductReadiness c={c} items={requirements} focus={focus} activeSection={section} />
@@ -500,7 +507,7 @@ export function ProductDocumentForm({
                   {c.code}
                   <input
                     value={row.code}
-                    disabled={!!row.id}
+                    disabled={mode === "edit" || !!row.id}
                     maxLength={64}
                     placeholder={c.generated}
                     onChange={(e) => setRow({ code: e.target.value })}
@@ -518,6 +525,7 @@ export function ProductDocumentForm({
             setRows={(rows) => change({ rows })}
             disabled={disabled}
             inventoryDisabled={!!detail && !detail.warehouse_id}
+            codeDisabled={mode === "edit"}
             onInvalidValues={() => setAxisError(c.matrixLimit)}
           />
           {axisError && <p role="alert">{axisError}</p>}

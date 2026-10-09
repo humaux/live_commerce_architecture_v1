@@ -1,0 +1,35 @@
+✔ K3 A8 private polls every 10s, backs off, resets, pauses hidden and stops off-filter (21.239458ms)
+✔ K3 A8 unreplied polls every 10s, backs off, resets, pauses hidden and stops off-filter (8.647916ms)
+✔ K3 pasted tab is refused with invalid_text copy before any reply POST (1.604083ms)
+✔ real SQL UNKNOWN mark blocks public-mode switching without a local receipt (0.597833ms)
+✔ UNKNOWN and queued public receipt survive selection remount without storing private identifiers (1.494208ms)
+✔ actual A2 hook fake clock: 3/6/12/24/30 backoff, success reset, hide clears and stops, 403 locks (3.487292ms)
+✔ actual reset clears selected buyer and rereads without the old epoch cursor (1.15875ms)
+✔ reply hints, coded error, UNKNOWN and capability state execute the actual composer (1.117334ms)
+✔ K3 reply text rejects every C0/C1 control except newline (0.795167ms)
+✔ SQL operation marks map to every merchant-visible delivery state (0.351291ms)
+✔ real bridge sealCursor uses payload.signature rather than plain base64url (11.348792ms)
+✔ A2 grammar refuses private/duplicate/ambiguous cursors and keys on reads (0.9175ms)
+✔ A3-A5 exact comment ref and bodies; explicit preemption private only (0.159416ms)
+✔ A4/A5 preserve frozen refusal codes, never provider/debug text (0.068666ms)
+✔ reset invalidates old buffers and cursor before reread; older page cannot advance live cursor (0.117959ms)
+✔ filter resources have only authorised opaque ids; backoff is capped and success resets (0.061708ms)
+✔ K3 comment-only no_source cannot widen the existing inbox error seam (17.57625ms)
+✔ LC-U2a real BFF seam A2-A5 exact grammar, privacy, denial and no diagnostic reflection (14.333667ms)
+✔ A8/A9/A13 and published templates: exact reads forward once with no-store (6.944916ms)
+✔ real streamed POST bodies: A10-A14 exact keys reach upstream (6.446958ms)
+✔ query, read headers, methods and body allowlists refuse before upstream (6.697875ms)
+✔ session, CSRF and store authority precede content forwarding (1.0775ms)
+✔ A12 fixed codes preserved; arbitrary upstream diagnostics stripped (7.756583ms)
+✔ client preserves codes and receipt; changed/aborted session cannot publish private response (3.631583ms)
+✔ A9 admits a full page of valid Unicode replies while bounding private response bytes (3.799125ms)
+✔ non-JSON upstream 401 still expires both authentication cookies without diagnostic leakage (1.616583ms)
+✔ real M7 response keeps no-referrer after matching Next production header rules (12.708584ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 27
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 352.621791

@@ -1,0 +1,18 @@
+✔ UNKNOWN and queued public receipt survive selection remount without storing private identifiers (13.244875ms)
+✔ actual A2 hook fake clock: 3/6/12/24/30 backoff, success reset, hide clears and stops, 403 locks (5.890333ms)
+✔ actual reset clears selected buyer and rereads without the old epoch cursor (1.313459ms)
+✔ reply hints, coded error, UNKNOWN and capability state execute the actual composer (1.377666ms)
+✔ real bridge sealCursor uses payload.signature rather than plain base64url (11.314375ms)
+✔ A2 grammar refuses private/duplicate/ambiguous cursors and keys on reads (0.872292ms)
+✔ A3-A5 exact comment ref and bodies; explicit preemption private only (0.270209ms)
+✔ A4/A5 preserve frozen refusal codes, never provider/debug text (0.068166ms)
+✔ reset invalidates old buffers and cursor before reread; older page cannot advance live cursor (0.353333ms)
+✔ filter resources have only authorised opaque ids; backoff is capped and success resets (0.065083ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 303.630041

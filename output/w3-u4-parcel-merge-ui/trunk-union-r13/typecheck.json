@@ -1,0 +1,13 @@
+{
+  "command": [
+    "pnpm",
+    "--filter",
+    "@live-commerce/admin",
+    "exec",
+    "tsc",
+    "--noEmit"
+  ],
+  "tested_index_tree": "3e9ee524309bea5eb37290bd59f6fe42c20547fa",
+  "exit_code": 0,
+  "seconds": 1.1528410911560059
+}

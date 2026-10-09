@@ -1,0 +1,9 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/test-node.sh"
+  ],
+  "sha": "fbdf8ebb0d1e091230fae7a646ce5405b84b2c50",
+  "exit_code": 0,
+  "seconds": 18.09024691581726
+}

@@ -1,0 +1,8 @@
+{
+  "status": 400,
+  "response_code": "invalid_json",
+  "root_cause": "editDocument copied create-only code into DocumentSKUPatch, which strictly rejects code",
+  "rejected_field": "skus[0].code",
+  "contract": "catalog-inventory-v1 \u00a7g",
+  "source_commit": "aa73e2f713b5054b84cadc29d2bb217b45994389"
+}

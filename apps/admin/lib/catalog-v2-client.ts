@@ -1,3 +1,6 @@
+// Purpose: Existing catalog reads and fenced writes; optional status observation preserves the unchanged Outcome contract.
+// Depends on: customers read/CSRF authority, catalog parsers and the exact authenticated stores BFF.
+// Used by: catalog editors, inventory and LC-U1's bounded stock command; never logs response bodies or credentials.
 // Catalog v2 admin requests (unit catalog-core). Browser -> BFF apps/admin/app/api/stores/[store]/[...resource]/route.ts
 // -> Go internal/httpapi/collections.go (GET catalog-products, GET products/{id}, collections CRUD + PUT
 // collections/{id}/products + the collection image), plus the existing product/SKU/inventory routes the editor reuses
@@ -42,7 +45,7 @@ export const command = (method: Command["method"], resource: string, body: unkno
 export type Outcome<T> = { ok: true; value: T } | { ok: false; code: string; uncertain: boolean; reconcile?: boolean };
 
 // One fenced write. `boundary` is the session fence of the read that rendered the screen: a changed session sends nothing.
-export async function send<T>(store: string, c: Command, boundary: string, parse: (value: unknown) => T): Promise<Outcome<T>> {
+export async function send<T>(store: string, c: Command, boundary: string, parse: (value: unknown) => T, onStatus?: (status: number) => void): Promise<Outcome<T>> {
   const csrf = csrfCookie();
   try {
     if (!csrf || (await sessionBoundary(csrf)) !== boundary || csrfCookie() !== csrf) return { ok: false, code: "unauthorized", uncertain: false, reconcile: true };
@@ -55,6 +58,7 @@ export async function send<T>(store: string, c: Command, boundary: string, parse
       headers: { "Content-Type": "application/json", "Idempotency-Key": c.key, "X-CSRF-Token": csrf },
       body: c.body, signal: AbortSignal.timeout(12000),
     });
+    onStatus?.(response.status);
     const value: unknown = await response.json().catch(() => null);
     // An auth gate is not a receipt from command.Run. On a retry the earlier
     // attempt may have committed; never remove its fence or issue a fresh key.

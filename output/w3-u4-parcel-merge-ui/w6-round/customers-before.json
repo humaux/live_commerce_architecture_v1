@@ -1,0 +1,10 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-customers-billing"
+  ],
+  "sha": "5ca3b82cede63d2e691b3b3b88e0da80c945ed20",
+  "exit_code": 0,
+  "seconds": 206.71
+}

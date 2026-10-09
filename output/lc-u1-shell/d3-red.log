@@ -1,0 +1,44 @@
+✖ claims window modes match Go constants and every SQL match_mode CHECK (8.0505ms)
+✖ contains prompt requires explicit quantity and removes the exact-only instruction (0.907541ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 156.665708
+
+✖ failing tests:
+
+test at tests/admin/claims-backend-parity.test.ts:12:1
+✖ claims window modes match Go constants and every SQL match_mode CHECK (8.0505ms)
+  Error: invalid_claims_response
+      at invalid (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/apps/admin/lib/claims-model.ts:60:35)
+      at Module.parseWindow (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/apps/admin/lib/claims-model.ts:79:107)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/claims-backend-parity.test.ts:23:29)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+
+test at tests/admin/claims-backend-parity.test.ts:30:1
+✖ contains prompt requires explicit quantity and removes the exact-only instruction (0.907541ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + '請留言「A1+數量」，例如 A1+1；只留 A1 不會登記；A1+2 = 數量改成 2 件（不是再加 2 件）。之後再留言，以最新數量為準。請只留關鍵字，不要加其他文字。留言不代表已保留庫存，結帳時才確認。'
+  - '留言「A1+數量」就能登記，例如「我要A1+2」；只留 A1 不會登記；一則留言只寫一個商品，不要問句；A1+2 = 數量改成 2 件（不是再加 2 件）。之後再留言，以最新數量為準。留言不代表已保留庫存，結帳時才確認。'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/claims-backend-parity.test.ts:31:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '請留言「A1+數量」，例如 A1+1；只留 A1 不會登記；A1+2 = 數量改成 2 件（不是再加 2 件）。之後再留言，以最新數量為準。請只留關鍵字，不要加其他文字。留言不代表已保留庫存，結帳時才確認。',
+    expected: '留言「A1+數量」就能登記，例如「我要A1+2」；只留 A1 不會登記；一則留言只寫一個商品，不要問句；A1+2 = 數量改成 2 件（不是再加 2 件）。之後再留言，以最新數量為準。留言不代表已保留庫存，結帳時才確認。',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

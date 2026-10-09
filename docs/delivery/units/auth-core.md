@@ -146,8 +146,8 @@ base, `go get golang.org/x/crypto@v0.57.0` locally and leave go.mod/go.sum out o
 
 ## Verify
 ```sh
-GOTOOLCHAIN=go1.27.1 go vet ./... && gofmt -l internal cmd
-GOTOOLCHAIN=go1.27.1 go test -race -count=1 ./internal/identity/... ./internal/identityhttp ./cmd/api
+GOTOOLCHAIN=go1.27.2 go vet ./... && gofmt -l internal cmd
+GOTOOLCHAIN=go1.27.2 go test -race -count=1 ./internal/identity/... ./internal/identityhttp ./cmd/api
 LC_FOCUSED_TIMEOUT=1200s bash scripts/dev/test-focused.sh '^Test(Identity|BrowserSessionStoreList|PrivateIdentityHTTP|AccountOnboarding|Pool)'   # regression: 0004/0065/OIDC unchanged
 python3 scripts/check_packet.py
 ```

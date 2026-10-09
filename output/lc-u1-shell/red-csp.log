@@ -1,0 +1,103 @@
+✔ LC-U1 one primary action follows lifecycle, never planning or transport state (0.324292ms)
+✔ LC-U1 stock target uses sellable delta and rejects fractions, negative and over-limit changes (0.14ms)
+✔ LC-U1 embeds only explicit public FB post identities, never arbitrary URLs or guessed videos (1.170791ms)
+✖ LC-U1 public Facebook framing is allowed only on the console route (2.636292ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 3
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 243.065167
+
+✖ failing tests:
+
+test at tests/admin/live-workspace.test.ts:28:1
+✖ LC-U1 public Facebook framing is allowed only on the console route (2.636292ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /source: "\/:locale\/studio\/console"/. Input:
+  
+  'import type { NextConfig } from "next";\n' +
+    'import { PHASE_PRODUCTION_BUILD } from "next/constants";\n' +
+    'import { companyConfig } from "./lib/company";\n' +
+    '\n' +
+    "// React's development build rebuilds call stacks with eval() (Next documents 'unsafe-eval' for `next dev`): without it the dev overlay opens a\n" +
+    '// permanent issue badge. Only the development server gets it; the production policy (next build/start) stays eval-free (R4S-04).\n' +
+    'const scriptSrc =\n' +
+    '  process.env.NODE_ENV === "development"\n' +
+    `    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"\n` +
+    `    : "script-src 'self' 'unsafe-inline'";\n` +
+    '\n' +
+    'const config: NextConfig = {\n' +
+    '  agentRules: false, // The repository owns its instruction hierarchy.\n' +
+    '  devIndicators: false, // Do not cover merchant controls in local visual acceptance.\n' +
+    '  poweredByHeader: false,\n' +
+    '  reactStrictMode: true,\n' +
+    "  // The orders proxy must see raw '?' and percent escapes before Next rewrites URLs.\n" +
+    '  skipProxyUrlNormalize: true,\n' +
+    '  output: "standalone",\n' +
+    '  transpilePackages: [\n' +
+    '    "@live-commerce/i18n",\n' +
+    '    "@live-commerce/ui",\n' +
+    '    "@live-commerce/format",\n' +
+    '  ],\n' +
+    '  async headers() {\n' +
+    '    return [\n' +
+    '      {\n' +
+    '        source: "/:path*",\n' +
+    '        headers: [\n' +
+    '          { key: "X-Content-Type-Options", value: "nosniff" },\n' +
+    '          { key: "X-Frame-Options", value: "DENY" },\n' +
+    '          { key: "Referrer-Policy", value: "same-origin" },\n' +
+    '          {\n' +
+    '            key: "Content-Security-Policy",\n' +
+    '            // R4S-04: same-origin sources only (no form-action: OAuth starts redirect off-site); nonce script-src is post-pilot.\n' +
+    "            value: `default-src 'self'; ${scriptSrc}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'`,\n" +
+    '          },\n' +
+    '        ],\n' +
+    '      },\n' +
+    "      // staff-team D3: the invitation token is in this path, so neither the page's own subresources nor anything else may receive\n" +
+    '      // it as a Referer, and the page is never cached. A real header (not only the <meta>) covers the stylesheet/script requests\n' +
+    '      // the browser starts before it parses <head>.\n' +
+    '      {\n' +
+    '        source: "/:locale/invite/:path*",\n' +
+    '        headers: [\n' +
+    '          { key: "Referrer-Policy", value: "no-referrer" },\n' +
+    '          { key: "Cache-Control", value: "no-store" },\n' +
+    '        ],\n' +
+    '      },\n' +
+    '      // ads-ui U2: the Meta return URL carries the one-time `code`/`state`; nothing may receive it as a Referer.\n' +
+    '      // Later entries win for the same key, so this overrides the global same-origin policy for this path only.\n' +
+    '      {\n' +
+    '        source: "/api/ads/meta/callback",\n' +
+    '        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],\n' +
+    '      },\n' +
+    '      // meta-connect: the merchant Page connect return carries the same one-time `code`/`state`.\n' +
+    '      {\n' +
+    '        source: "/api/meta/callback",\n' +
+    '        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],\n' +
+    '      },\n' +
+    '    ];\n' +
+    '  },\n' +
+    '};\n' +
+    'export default function nextConfig(phase: string): NextConfig {\n' +
+    '  // Public operator facts must be supplied deliberately to production builds.\n' +
+    '  // No NEXT_PUBLIC binding: runtime env remains authoritative after a domain move.\n' +
+    '  if (phase === PHASE_PRODUCTION_BUILD) companyConfig();\n' +
+    '  return config;\n' +
+    '}\n'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/live-workspace.test.ts:30:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'import type { NextConfig } from "next";\nimport { PHASE_PRODUCTION_BUILD } from "next/constants";\nimport { companyConfig } from "./lib/company";\n\n// React\'s development build rebuilds call stacks with eval() (Next documents \'unsafe-eval\' for `next dev`): without it the dev overlay opens a\n// permanent issue badge. Only the development server gets it; the production policy (next build/start) stays eval-free (R4S-04).\nconst scriptSrc =\n  process.env.NODE_ENV === "development"\n    ? "script-src \'self\' \'unsafe-inline\' \'unsafe-eval\'"\n    : "script-src \'self\' \'unsafe-inline\'";\n\nconst config: NextConfig = {\n  agentRules: false, // The repository owns its instruction hierarchy.\n  devIndicators: false, // Do not cover merchant controls in local visual acceptance.\n  poweredByHeader: false,\n  reactStrictMode: true,\n  // The orders proxy must see raw \'?\' and percent escapes before Next rewrites URLs.\n  skipProxyUrlNormalize: true,\n  output: "standalone",\n  transpilePackages: [\n    "@live-commerce/i18n",\n    "@live-commerce/ui",\n    "@live-commerce/format",\n  ],\n  async headers() {\n    return [\n      {\n        source: "/:path*",\n        headers: [\n          { key: "X-Content-Type-Options", value: "nosniff" },\n          { key: "X-Frame-Options", value: "DENY" },\n          { key: "Referrer-Policy", value: "same-origin" },\n          {\n            key: "Content-Security-Policy",\n            // R4S-04: same-origin sources only (no form-action: OAuth starts redirect off-site); nonce script-src is post-pilot.\n            value: `default-src \'self\'; ${scriptSrc}; style-src \'self\' \'unsafe-inline\'; img-src \'self\' data: blob:; font-src \'self\' data:; connect-src \'self\'; frame-ancestors \'none\'; object-src \'none\'; base-uri \'self\'`,\n          },\n        ],\n      },\n      // staff-team D3: the invitation token is in this path, so neither the page\'s own subresources nor anything else may receive\n      // it as a Referer, and the page is never cached. A real header (not only the <meta>) covers the stylesheet/script requests\n      // the browser starts before it parses <head>.\n      {\n        source: "/:locale/invite/:path*",\n        headers: [\n          { key: "Referrer-Policy", value: "no-referrer" },\n          { key: "Cache-Control", value: "no-store" },\n        ],\n      },\n      // ads-ui U2: the Meta return URL carries the one-time `code`/`state`; nothing may receive it as a Referer.\n      // Later entries win for the same key, so this overrides the global same-origin policy for this path only.\n      {\n        source: "/api/ads/meta/callback",\n        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],\n      },\n      // meta-connect: the merchant Page connect return carries the same one-time `code`/`state`.\n      {\n        source: "/api/meta/callback",\n        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],\n      },\n    ];\n  },\n};\nexport default function nextConfig(phase: string): NextConfig {\n  // Public operator facts must be supplied deliberately to production builds.\n  // No NEXT_PUBLIC binding: runtime env remains authoritative after a domain move.\n  if (phase === PHASE_PRODUCTION_BUILD) companyConfig();\n  return config;\n}\n',
+    expected: /source: "\/:locale\/studio\/console"/,
+    operator: 'match',
+    diff: 'simple'
+  }

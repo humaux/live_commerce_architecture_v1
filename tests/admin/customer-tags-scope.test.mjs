@@ -1,6 +1,6 @@
 // Purpose: regress (1) the tag manager staying mounted through an in-place catalogue refresh after a write and (2) a catalogue
 //   forbidden/not_found asking the parent guarded read(s) to re-run, while transient failures stay local (Codex review P2, PR #3).
-// Depends on: actual CustomerTags.tsx and Customers.tsx source via the TypeScript API, synthetic React hooks and element tree;
+// Depends on: actual CustomerTags/Customers/CustomerDetail source via the TypeScript API, synthetic React hooks and element tree;
 //   only the browser/network edges (readTagData transport, session-event dispatch) and child components are stubbed.
 // Used by: scripts/dev/test-node.sh (W6-U1 local MOCK evidence; browser gates remain the click proof).
 import assert from "node:assert/strict";
@@ -121,6 +121,7 @@ test("CustomerDetail forwards a scope-lost signal to the guarded read once per p
       if (p === "@/lib/orders-model") return { displayTime: () => "" }; if (p === "@/lib/orders-copy") return { ordersCopy: { en: {} } };
       if (p === "@/lib/customers-copy") return { customersCopy: { en: new Proxy({}, { get: () => "x" }) } };
       if (["./WorkspaceFrame", "./AdminPageHeader", "./CustomerTags"].includes(p)) return { WorkspaceFrame: "div", AdminPageHeader: "div", CustomerTags: "CustomerTags" };
+      if (p === "./CustomerHistoricalOrders") return { CustomerHistoricalOrders: "CustomerHistoricalOrders" };
       if (/\.css$/.test(p) || p === "@live-commerce/i18n" || p === "@/lib/model") return {};
       throw new Error(`Unexpected import ${p}`);
     } });

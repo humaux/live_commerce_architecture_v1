@@ -1,0 +1,1 @@
+{"command": ["bash", "scripts/dev/check-gates.sh"], "base_sha": "35abffca", "source_manifest": "source-hashes.json", "timeout_seconds": 120, "exit_code": 0, "elapsed_seconds": 31.373270750045776}

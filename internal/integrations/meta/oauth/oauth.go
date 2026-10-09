@@ -57,6 +57,9 @@ type Graph struct {
 type Reply struct {
 	Status int
 	Body   []byte
+	// Only non-secret rate metadata is exposed; no raw headers, cookies or credentials.
+	AppUsage      string
+	BusinessUsage string
 }
 
 // OK reports a 2xx status.
@@ -125,7 +128,7 @@ func (g *Graph) Do(ctx context.Context, method, path string, query url.Values, t
 	if err != nil || len(raw) > MaxBody {
 		return Reply{}, ErrTransport
 	}
-	return Reply{Status: resp.StatusCode, Body: raw}, nil
+	return Reply{Status: resp.StatusCode, Body: raw, AppUsage: resp.Header.Get("X-App-Usage"), BusinessUsage: resp.Header.Get("X-Business-Use-Case-Usage")}, nil
 }
 
 // App is the Meta app used for the code exchange. RedirectURI must equal the dialog value and the dashboard setting (U10).

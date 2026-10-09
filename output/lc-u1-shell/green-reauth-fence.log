@@ -1,0 +1,14 @@
+✔ LC-U1 one primary action follows lifecycle, never planning or transport state (0.3155ms)
+✔ LC-U1 stock target uses sellable delta and rejects fractions, negative and over-limit changes (0.098791ms)
+✔ LC-U1 embeds only explicit public FB post identities, never arbitrary URLs or guessed videos (0.130542ms)
+✔ LC-U1 public Facebook framing is allowed only on the console route (0.140959ms)
+✔ LC-U1 delayed copy completion cannot navigate after store switch or unmount (0.303625ms)
+✔ LC-U1 receipt fence survives cookie rotation; pending replay still has a separate session boundary (0.087417ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 71.121708

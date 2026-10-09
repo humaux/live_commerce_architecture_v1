@@ -1,0 +1,30 @@
+(node:57699) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/shell-render.test.ts:25
+  runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, { exports, require: resolve });
+                                                                                        ^
+
+TypeError: Cannot read properties of undefined (reading 'CommonJS')
+    at jsx (/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/shell-render.test.ts:25:89)
+    at <anonymous> (/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/shell-render.test.ts:28:22)
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async node:internal/modules/esm/loader:639:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.15.0
+✖ tests/admin/shell-render.test.ts (198.270042ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 206.982875
+
+✖ failing tests:
+
+test at tests/admin/shell-render.test.ts:1:1
+✖ tests/admin/shell-render.test.ts (198.270042ms)
+  'test failed'

@@ -1,0 +1,17 @@
+{
+  "head": "978a33bf55283feae59c07e6d58b08a175d1058c",
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-order"
+  ],
+  "conditions": {
+    "LC_BO01_EARLY_HEAD": 1,
+    "LC_BO01_REPEAT": 10
+  },
+  "timeout_seconds": 1800,
+  "exit_code": 0,
+  "source_sha256": "318607ea11cc214d3f780b3a99e34777f639ecd629bbbee349154c81591572be",
+  "source_after": "318607ea11cc214d3f780b3a99e34777f639ecd629bbbee349154c81591572be",
+  "elapsed_seconds": 65.124
+}

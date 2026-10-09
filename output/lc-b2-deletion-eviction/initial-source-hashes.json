@@ -1,0 +1,13 @@
+{
+  "source_commit": "f18eb4878a500b55bae5ca08109ec3c107f56c00",
+  "base_commit": "85e770894d6ebe911b3f36884ea14da95d01ec0f",
+  "sha256": {
+    "internal/integrations/meta/oauth/oauth.go": "164b956b54d82d2949897225e5cb775f4a881d169bd6c64dc0ede9cd6be588cc",
+    "internal/integrations/metareply/comment_deletion.go": "25a900eb39d879a9c4d365f5a6cdacefd86b02fadcfb223c5f3bc6ebf7c94b2d",
+    "internal/integrations/metareply/comment_deletion_test.go": "6c2afb64db5fae5c0cf7a100b6325d0858bbf1f51afc995dd207ad50d927f59b",
+    "internal/integrations/metareply/comment_poll.go": "3aab2cb097ffc7c4a28d6f2417018376936ac345e585f2759c58cd0bf8a507da",
+    "internal/integrations/metareply/comment_rate.go": "9aea4e36a2f5698c339969077fdd8923591f7216ad7b501af9f8e66d5d6e1e48",
+    "tests/foundation/live_console_comments_test.go": "5026581090a6e6b19ef4790b813a43a3d0a04141367d3c509e9c421863da7d24",
+    "tests/foundation/live_console_deletion_test.go": "bb95d92a71500ff7400cc8b2f154c5502842e69a4af8d453af2901276580acd0"
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "source_commit": "13dd69eb13fa15c71141c74508d686c4d22af41f",
+  "merge_commit": "1e069395562ffc81bde4a77e6320d226a4af8d70",
+  "trunk_commit": "30ddfb109059340070dd7aa4eabd0469f38983de",
+  "evidence_class": "E3 MOCK Graph + REAL_PG",
+  "commands": [
+    {
+      "command": "GOTOOLCHAIN=go1.27.2 go test -race -count=1 -v -run '^TestCommentDeletionLateBatchReportsCustodyFence$' ./internal/integrations/metareply",
+      "exit": 1,
+      "log": "red.log",
+      "sha256": "7004b3357361fb33de7d238f69d3e7066d9a765afee3a35e4637dd1409c57454",
+      "top_pass": 0,
+      "top_fail": 1,
+      "top_skip": 0,
+      "node_pass": 0,
+      "node_fail": 0
+    },
+    {
+      "command": "GOTOOLCHAIN=go1.27.2 go test -race -count=1 -v -run '^TestCommentDeletionLateBatchReportsCustodyFence$' ./internal/integrations/metareply",
+      "exit": 0,
+      "log": "green.log",
+      "sha256": "a3edf8a1d36f5e2fe2b1977aa196ab31bc1d7f66df818a3b60192758793bcec2",
+      "top_pass": 1,
+      "top_fail": 0,
+      "top_skip": 0,
+      "node_pass": 0,
+      "node_fail": 0
+    },
+    {
+      "command": "GOTOOLCHAIN=go1.27.2 go test -race -count=1 -v ./internal/integrations/metareply ./internal/integrations/meta/oauth",
+      "exit": 0,
+      "log": "package.log",
+      "sha256": "c02b24fac692149972c253a9a0b08c4aed3b92c6d930f2c011894236a41b4cf7",
+      "top_pass": 59,
+      "top_fail": 0,
+      "top_skip": 0,
+      "node_pass": 0,
+      "node_fail": 0
+    },
+    {
+      "command": "bash scripts/dev/test-focused.sh '^TestLiveConsoleLCN(01|02|04|05)' ./tests/foundation",
+      "exit": 0,
+      "log": "pg.log",
+      "sha256": "45471db1fdb556ae192085c4ef5d0f629dd8d6264d291c85c63e62d3a6150e0e",
+      "top_pass": 9,
+      "top_fail": 0,
+      "top_skip": 0,
+      "node_pass": 0,
+      "node_fail": 0
+    },
+    {
+      "command": "GOTOOLCHAIN=go1.27.2 go vet ./internal/integrations/metareply ./internal/integrations/meta/oauth ./cmd/claims-worker",
+      "exit": 0,
+      "log": "vet.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "top_pass": 0,
+      "top_fail": 0,
+      "top_skip": 0,
+      "node_pass": 0,
+      "node_fail": 0
+    },
+    {
+      "command": "bash scripts/dev/test-node.sh",
+      "exit": 0,
+      "log": "node.log",
+      "sha256": "5d6832a98412a2f5c149cb66b4ca976ee8b80833c26c43f27bb0191c447d88e3",
+      "top_pass": 0,
+      "top_fail": 0,
+      "top_skip": 0,
+      "node_pass": 1148,
+      "node_fail": 0
+    },
+    {
+      "command": "pnpm --filter @live-commerce/admin typecheck",
+      "exit": 0,
+      "log": "typecheck.log",
+      "raw_stdout_sha256": "a1e67e3654a27d2fb5c405ac8db166c9aec20d9dd1b72e70f8be73f0697a2b04",
+      "raw_stdout_path": "/Volumes/data/live_commerce_architecture_v1/output/lc-b2-deletion-eviction/k3-p2/typecheck.log",
+      "normalization": "Only final blank EOF line trimmed in committed review copy; canonical raw stdout retained.",
+      "sha256": "23e008b9c7dead4bfd4e1c57f9dca304dfa7a082b07c24544bbd49dc1080a36a",
+      "top_pass": 0,
+      "top_fail": 0,
+      "top_skip": 0,
+      "node_pass": 0,
+      "node_fail": 0
+    },
+    {
+      "command": "bash scripts/dev/check-gates.sh",
+      "exit": 0,
+      "log": "check-gates.log",
+      "sha256": "b6cdddca936112cc27c46bbf2dfa0504919adc3231cb65823ec16dd22b664756",
+      "top_pass": 0,
+      "top_fail": 0,
+      "top_skip": 0,
+      "node_pass": 13,
+      "node_fail": 0
+    },
+    {
+      "command": "bash scripts/dev/check-gates.sh (evidence staged)",
+      "exit": 0,
+      "log": "check-gates-packaged.log",
+      "sha256": "a4554512562f576ea1ee03111bbbf100eedc68f852823b6a3e7ff7d4cbd73e99"
+    },
+    {
+      "command": "node scripts/dev/pr-modes.mjs origin/r3/integration HEAD",
+      "exit": 0,
+      "log": "pr-modes.json",
+      "sha256": "57aa45a024ebafb96728e87cd688b102824461c5f1c471bdcc6744bcc35dd4de"
+    }
+  ],
+  "historical_evidence": "../initial-results.json and ../initial-source-hashes.json",
+  "independent_review": "Bounded source/log PASS at13dd69eb; no independent runtime rerun."
+}

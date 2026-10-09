@@ -1,0 +1,7 @@
+{
+  "tests/admin/product-editor.acceptance.ts": "357f00b90e48e1d50f6ad3a68dc69cbb083e3f452759ff7d5223af81efb8ec1c",
+  "tests/foundation/browser_catalog_core_test.go": "1b1c773e2973442946e5cd39bebc9e15f4b500c1c74915fa8065c7134b372012",
+  "tests/foundation/browser_order_chain_test.go": "c034b8317c0c8129ba870e95a34d85f0408fe520cd43b49519f191cbb3cb2233",
+  "tests/foundation/buyer_order_evidence_test.go": "65cbce869386bd66072327709888a4ed30a7870f9eb9a4b1cd60c1240b9aa99e",
+  "tests/storefront/order-gate.mjs": "bcb57aa9a5f343087b8bb48fa128afcd5b22f5ebd70851a5f4f6ff0eb15fdb9a"
+}

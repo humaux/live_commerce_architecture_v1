@@ -1,0 +1,959 @@
+=== RUN   TestStripeSP14BuyerHTTP
+=== RUN   TestStripeSP14BuyerHTTP/payuni_bytes_identical_stripe_disabled
+=== RUN   TestStripeSP14BuyerHTTP/payuni_bytes_identical_stripe_enabled
+=== RUN   TestStripeSP14BuyerHTTP/stripe_view_prepare_handoff_enums_and_keys
+=== RUN   TestStripeSP14BuyerHTTP/stripe_refresh_cancel_exact_keys_throttle_and_setonce
+=== RUN   TestStripeSP14BuyerHTTP/stripe_handoff_unavailable_variants
+=== RUN   TestStripeSP14BuyerHTTP/stripe_handoff_unavailable_variants/binding_disabled
+=== RUN   TestStripeSP14BuyerHTTP/stripe_handoff_unavailable_variants/qualification_revoked
+=== RUN   TestStripeSP14BuyerHTTP/stripe_handoff_unavailable_variants/after_cutoff
+=== RUN   TestStripeSP14BuyerHTTP/stripe_handoff_unavailable_variants/config_digest_mismatch
+=== RUN   TestStripeSP14BuyerHTTP/stripe_handoff_unavailable_variants/profile_mismatch
+=== RUN   TestStripeSP14BuyerHTTP/refresh_cancel_config_mismatch_is_409_and_no_job
+=== RUN   TestStripeSP14BuyerHTTP/scope_and_strictness
+--- PASS: TestStripeSP14BuyerHTTP (7.74s)
+    --- PASS: TestStripeSP14BuyerHTTP/payuni_bytes_identical_stripe_disabled (2.04s)
+    --- PASS: TestStripeSP14BuyerHTTP/payuni_bytes_identical_stripe_enabled (0.81s)
+    --- PASS: TestStripeSP14BuyerHTTP/stripe_view_prepare_handoff_enums_and_keys (0.72s)
+    --- PASS: TestStripeSP14BuyerHTTP/stripe_refresh_cancel_exact_keys_throttle_and_setonce (0.63s)
+    --- PASS: TestStripeSP14BuyerHTTP/stripe_handoff_unavailable_variants (2.53s)
+        --- PASS: TestStripeSP14BuyerHTTP/stripe_handoff_unavailable_variants/binding_disabled (0.43s)
+        --- PASS: TestStripeSP14BuyerHTTP/stripe_handoff_unavailable_variants/qualification_revoked (0.53s)
+        --- PASS: TestStripeSP14BuyerHTTP/stripe_handoff_unavailable_variants/after_cutoff (0.51s)
+        --- PASS: TestStripeSP14BuyerHTTP/stripe_handoff_unavailable_variants/config_digest_mismatch (0.57s)
+        --- PASS: TestStripeSP14BuyerHTTP/stripe_handoff_unavailable_variants/profile_mismatch (0.50s)
+    --- PASS: TestStripeSP14BuyerHTTP/refresh_cancel_config_mismatch_is_409_and_no_job (0.42s)
+    --- PASS: TestStripeSP14BuyerHTTP/scope_and_strictness (0.60s)
+=== RUN   TestStripeSP08HappyMock
+--- PASS: TestStripeSP08HappyMock (9.56s)
+=== RUN   TestStripeSP09CreateUnknown
+=== RUN   TestStripeSP09CreateUnknown/drop_after_execute_replays_same_key_and_pins_same_session
+=== RUN   TestStripeSP09CreateUnknown/cached_500_wait_then_list_match_pins
+=== RUN   TestStripeSP09CreateUnknown/cached_500_without_session_closes_only_after_expires_plus_15m
+=== RUN   TestStripeSP09CreateUnknown/first_send_400_closes_immediately
+=== RUN   TestStripeSP09CreateUnknown/400_after_uncertain_send_does_not_close_until_list
+=== RUN   TestStripeSP09CreateUnknown/conflict_and_rate_limit_back_off_then_succeed
+=== RUN   TestStripeSP09CreateUnknown/idempotency_error_alarms_without_closure
+=== RUN   TestStripeSP09CreateUnknown/at_most_one_create_key_per_attempt_across_the_gate
+--- PASS: TestStripeSP09CreateUnknown (36.10s)
+    --- PASS: TestStripeSP09CreateUnknown/drop_after_execute_replays_same_key_and_pins_same_session (0.74s)
+    --- PASS: TestStripeSP09CreateUnknown/cached_500_wait_then_list_match_pins (3.05s)
+    --- PASS: TestStripeSP09CreateUnknown/cached_500_without_session_closes_only_after_expires_plus_15m (7.28s)
+    --- PASS: TestStripeSP09CreateUnknown/first_send_400_closes_immediately (0.76s)
+    --- PASS: TestStripeSP09CreateUnknown/400_after_uncertain_send_does_not_close_until_list (10.74s)
+    --- PASS: TestStripeSP09CreateUnknown/conflict_and_rate_limit_back_off_then_succeed (7.26s)
+    --- PASS: TestStripeSP09CreateUnknown/idempotency_error_alarms_without_closure (1.13s)
+    --- PASS: TestStripeSP09CreateUnknown/at_most_one_create_key_per_attempt_across_the_gate (0.00s)
+=== RUN   TestStripeSP10Deadline
+=== RUN   TestStripeSP10Deadline/expire_then_retrieve_closes_and_restores_exact_stock
+=== RUN   TestStripeSP10Deadline/expire_400_already_expired_race_retries_with_a_fresh_key_and_releases_only_after_confirmation
+=== RUN   TestStripeSP10Deadline/expire_500_retries_with_a_fresh_key_and_releases_only_after_confirmation
+=== RUN   TestStripeSP10Deadline/paid_in_the_last_second_captures_not_closes
+=== RUN   TestStripeSP10Deadline/still_open_at_plus_60m_escalates_and_keeps_stock
+=== RUN   TestStripeSP10Deadline/expired_and_paid_is_conflicting_report_without_release
+=== RUN   TestStripeSP10Deadline/no_request_is_ever_made_with_a_foreign_account_key
+--- PASS: TestStripeSP10Deadline (46.19s)
+    --- PASS: TestStripeSP10Deadline/expire_then_retrieve_closes_and_restores_exact_stock (6.43s)
+    --- PASS: TestStripeSP10Deadline/expire_400_already_expired_race_retries_with_a_fresh_key_and_releases_only_after_confirmation (7.64s)
+    --- PASS: TestStripeSP10Deadline/expire_500_retries_with_a_fresh_key_and_releases_only_after_confirmation (7.22s)
+    --- PASS: TestStripeSP10Deadline/paid_in_the_last_second_captures_not_closes (6.36s)
+    --- PASS: TestStripeSP10Deadline/still_open_at_plus_60m_escalates_and_keeps_stock (9.40s)
+    --- PASS: TestStripeSP10Deadline/expired_and_paid_is_conflicting_report_without_release (6.83s)
+    --- PASS: TestStripeSP10Deadline/no_request_is_ever_made_with_a_foreign_account_key (0.00s)
+=== RUN   TestStripeSP11BuyerSignals
+=== RUN   TestStripeSP11BuyerSignals/cancel_while_create_unknown_waits_for_provider_confirmation
+=== RUN   TestStripeSP11BuyerSignals/cancel_while_open_expires_then_closes
+=== RUN   TestStripeSP11BuyerSignals/cancel_racing_a_payment_captures
+=== RUN   TestStripeSP11BuyerSignals/refresh_wakes_a_retrieve_and_is_throttled_by_the_db
+=== RUN   TestStripeSP11BuyerSignals/http_refresh_and_cancel_over_real_workers
+=== RUN   TestStripeSP11BuyerSignals/stale_signal_is_dropped_without_provider_io
+=== RUN   TestStripeSP11BuyerSignals/busy_lease_snoozes_without_generation_loss
+--- PASS: TestStripeSP11BuyerSignals (49.25s)
+    --- PASS: TestStripeSP11BuyerSignals/cancel_while_create_unknown_waits_for_provider_confirmation (1.12s)
+    --- PASS: TestStripeSP11BuyerSignals/cancel_while_open_expires_then_closes (1.20s)
+    --- PASS: TestStripeSP11BuyerSignals/cancel_racing_a_payment_captures (1.54s)
+    --- PASS: TestStripeSP11BuyerSignals/refresh_wakes_a_retrieve_and_is_throttled_by_the_db (1.15s)
+    --- PASS: TestStripeSP11BuyerSignals/http_refresh_and_cancel_over_real_workers (1.74s)
+    --- PASS: TestStripeSP11BuyerSignals/stale_signal_is_dropped_without_provider_io (1.61s)
+    --- PASS: TestStripeSP11BuyerSignals/busy_lease_snoozes_without_generation_loss (35.86s)
+=== RUN   TestStripeSP12MoneyChecks
+=== RUN   TestStripeSP12MoneyChecks/amount_mismatch_amount_total_records_review_not_a_fact
+=== RUN   TestStripeSP12MoneyChecks/amount_mismatch_currency_records_review_not_a_fact
+=== RUN   TestStripeSP12MoneyChecks/amount_mismatch_subtotal_records_review_not_a_fact
+=== RUN   TestStripeSP12MoneyChecks/amount_mismatch_discount_records_review_not_a_fact
+=== RUN   TestStripeSP12MoneyChecks/amount_mismatch_tax_records_review_not_a_fact
+=== RUN   TestStripeSP12MoneyChecks/amount_mismatch_shipping_records_review_not_a_fact
+=== RUN   TestStripeSP12MoneyChecks/amount_mismatch_payment_intent_amount_records_review_not_a_fact
+=== RUN   TestStripeSP12MoneyChecks/amount_mismatch_payment_intent_currency_records_review_not_a_fact
+=== RUN   TestStripeSP12MoneyChecks/presentment_drift_legacy_currency_conversion_captures_with_review_work_and_no_allocation
+=== RUN   TestStripeSP12MoneyChecks/presentment_drift_presentment_currency_captures_with_review_work_and_no_allocation
+=== RUN   TestStripeSP12MoneyChecks/presentment_drift_presentment_amount_captures_with_review_work_and_no_allocation
+=== RUN   TestStripeSP12MoneyChecks/identity_mismatch_is_not_recorded
+=== RUN   TestStripeSP12MoneyChecks/duplicate_session_reviews_never_captures_or_closes
+=== RUN   TestStripeSP12MoneyChecks/no_payment_required_is_conflicting_report
+=== RUN   TestStripeSP12MoneyChecks/webhook_is_a_wake_up_never_financial_authority
+=== RUN   TestStripeSP12MoneyChecks/complete_unpaid_escalates_after_60_minutes
+=== RUN   TestStripeSP12MoneyChecks/late_paid_after_closure_is_one_manual_refund_obligation_and_replay_converges
+--- PASS: TestStripeSP12MoneyChecks (100.09s)
+    --- PASS: TestStripeSP12MoneyChecks/amount_mismatch_amount_total_records_review_not_a_fact (5.58s)
+    --- PASS: TestStripeSP12MoneyChecks/amount_mismatch_currency_records_review_not_a_fact (6.38s)
+    --- PASS: TestStripeSP12MoneyChecks/amount_mismatch_subtotal_records_review_not_a_fact (6.38s)
+    --- PASS: TestStripeSP12MoneyChecks/amount_mismatch_discount_records_review_not_a_fact (6.39s)
+    --- PASS: TestStripeSP12MoneyChecks/amount_mismatch_tax_records_review_not_a_fact (5.97s)
+    --- PASS: TestStripeSP12MoneyChecks/amount_mismatch_shipping_records_review_not_a_fact (6.39s)
+    --- PASS: TestStripeSP12MoneyChecks/amount_mismatch_payment_intent_amount_records_review_not_a_fact (6.39s)
+    --- PASS: TestStripeSP12MoneyChecks/amount_mismatch_payment_intent_currency_records_review_not_a_fact (6.39s)
+    --- PASS: TestStripeSP12MoneyChecks/presentment_drift_legacy_currency_conversion_captures_with_review_work_and_no_allocation (6.39s)
+    --- PASS: TestStripeSP12MoneyChecks/presentment_drift_presentment_currency_captures_with_review_work_and_no_allocation (5.99s)
+    --- PASS: TestStripeSP12MoneyChecks/presentment_drift_presentment_amount_captures_with_review_work_and_no_allocation (6.32s)
+    --- PASS: TestStripeSP12MoneyChecks/identity_mismatch_is_not_recorded (6.37s)
+    --- PASS: TestStripeSP12MoneyChecks/duplicate_session_reviews_never_captures_or_closes (1.18s)
+    --- PASS: TestStripeSP12MoneyChecks/no_payment_required_is_conflicting_report (6.38s)
+    --- PASS: TestStripeSP12MoneyChecks/webhook_is_a_wake_up_never_financial_authority (1.18s)
+    --- PASS: TestStripeSP12MoneyChecks/complete_unpaid_escalates_after_60_minutes (7.22s)
+    --- PASS: TestStripeSP12MoneyChecks/late_paid_after_closure_is_one_manual_refund_obligation_and_replay_converges (6.84s)
+=== RUN   TestStripeSP21PinnedHandoffAfterKeyRotation
+=== RUN   TestStripeSP21PinnedHandoffAfterKeyRotation/profile_mismatch
+=== RUN   TestStripeSP21PinnedHandoffAfterKeyRotation/config_mismatch
+--- PASS: TestStripeSP21PinnedHandoffAfterKeyRotation (0.44s)
+    --- PASS: TestStripeSP21PinnedHandoffAfterKeyRotation/profile_mismatch (0.00s)
+    --- PASS: TestStripeSP21PinnedHandoffAfterKeyRotation/config_mismatch (0.00s)
+=== RUN   TestStripeSL05LiveIngress
+    stripe_live_ingress_test.go:94: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_ingress_test.go:97: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_live_ingress_test.go:107: OWNER-POOL: identity.store_grants payments:refund,orders:read
+=== RUN   TestStripeSL05LiveIngress/live_endpoint_is_admitted_and_produces_one_signal_and_job
+=== RUN   TestStripeSL05LiveIngress/livemode_false_on_a_live_endpoint_is_quarantined
+=== RUN   TestStripeSL05LiveIngress/sandbox_endpoint_is_404_on_the_live_ingress_and_live_endpoint_404_on_the_sandbox_ingress
+=== RUN   TestStripeSL05LiveIngress/no_secret_body_signature_or_pii_in_logs_or_tables
+--- PASS: TestStripeSL05LiveIngress (3.04s)
+    --- PASS: TestStripeSL05LiveIngress/live_endpoint_is_admitted_and_produces_one_signal_and_job (0.02s)
+    --- PASS: TestStripeSL05LiveIngress/livemode_false_on_a_live_endpoint_is_quarantined (0.00s)
+    --- PASS: TestStripeSL05LiveIngress/sandbox_endpoint_is_404_on_the_live_ingress_and_live_endpoint_404_on_the_sandbox_ingress (0.00s)
+    --- PASS: TestStripeSL05LiveIngress/no_secret_body_signature_or_pii_in_logs_or_tables (0.13s)
+=== RUN   TestStripeSL06LiveProcess
+=== RUN   TestStripeSL06LiveProcess/worker_refuses_LIVE_without_the_pair
+=== RUN   TestStripeSL06LiveProcess/api_refuses_LIVE_surfaces_without_the_pair
+=== RUN   TestStripeSL06LiveProcess/api_never_reads_STRIPE_secrets
+=== RUN   TestStripeSL06LiveProcess/checkout_switch_removes_stripe_from_hosted_while_an_in_flight_mock_attempt_closes
+=== RUN   TestStripeSL06LiveProcess/compose_wiring
+=== RUN   TestStripeSL06LiveProcess/shell_ops_admin
+=== RUN   TestStripeSL06LiveProcess/shell_ops_admin_r3
+=== RUN   TestStripeSL06LiveProcess/shell_preflight_P06
+--- PASS: TestStripeSL06LiveProcess (18.27s)
+    --- PASS: TestStripeSL06LiveProcess/worker_refuses_LIVE_without_the_pair (2.89s)
+    --- PASS: TestStripeSL06LiveProcess/api_refuses_LIVE_surfaces_without_the_pair (1.96s)
+    --- PASS: TestStripeSL06LiveProcess/api_never_reads_STRIPE_secrets (0.95s)
+    --- PASS: TestStripeSL06LiveProcess/checkout_switch_removes_stripe_from_hosted_while_an_in_flight_mock_attempt_closes (3.49s)
+    --- PASS: TestStripeSL06LiveProcess/compose_wiring (0.05s)
+    --- PASS: TestStripeSL06LiveProcess/shell_ops_admin (0.96s)
+    --- PASS: TestStripeSL06LiveProcess/shell_ops_admin_r3 (6.20s)
+    --- PASS: TestStripeSL06LiveProcess/shell_preflight_P06 (1.78s)
+=== RUN   TestStripeSL08RestrictedKey
+    stripe_live_rak_test.go:99: NOT_RUN: SL08 needs STRIPE_SANDBOX=1 and the owner's rk_test_ restricted test key (STRIPE_RESTRICTED_TEST_KEY); SANDBOX only, LIVE is refused
+--- SKIP: TestStripeSL08RestrictedKey (0.00s)
+=== RUN   TestStripeSL03Registrar
+=== RUN   TestStripeSL03Registrar/approve_rejections_replay_and_row
+    stripe_live_registrar_test.go:646: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_registrar_test.go:667: OWNER-POOL: identity.principals/memberships/store_grants of an extra merchant principal
+    stripe_live_registrar_test.go:667: OWNER-POOL: identity.store_grants integration:manage
+    stripe_live_registrar_test.go:669: OWNER-POOL: identity.principals/memberships/store_grants of an extra merchant principal
+    stripe_live_registrar_test.go:669: OWNER-POOL: identity.store_grants payments:refund
+=== RUN   TestStripeSL03Registrar/sandbox_account_cannot_be_approved
+    stripe_live_registrar_test.go:596: OWNER-POOL: identity.store_grants payments:refund,orders:read
+=== RUN   TestStripeSL03Registrar/endpoint_profile_and_account_environment_must_pair
+    stripe_live_registrar_test.go:613: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_registrar_test.go:617: OWNER-POOL: identity.store_grants payments:refund,orders:read
+=== RUN   TestStripeSL03Registrar/qualify_and_method_gates
+    stripe_live_registrar_test.go:767: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_registrar_test.go:800: OWNER-POOL: payments.account_qualifications PROVIDER_MOCK row on a LIVE connection
+    stripe_live_registrar_test.go:808: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.stripe_live_approvals SET
+    stripe_live_registrar_test.go:810: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.stripe_live_approvals SET
+    stripe_live_registrar_test.go:821: OWNER-POOL: identity.principals/memberships/store_grants of an extra merchant principal
+    stripe_live_registrar_test.go:821: OWNER-POOL: identity.store_grants payments:refund
+=== RUN   TestStripeSL03Registrar/canary_negatives_success_replay_and_caps
+    stripe_live_registrar_test.go:826: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_registrar_test.go:827: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_live_registrar_test.go:827: OWNER-POOL: payments.provider_observations report
+    stripe_live_registrar_test.go:827: OWNER-POOL: payments.stripe_refunds Stripe refund pin
+    stripe_live_registrar_test.go:827: OWNER-POOL: payments.provider_observations report
+    stripe_live_registrar_test.go:836: OWNER-POOL: payments.stripe_live_approvals extra revoked approval row of the same connection
+=== RUN   TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/SANDBOX_attempt
+    stripe_live_registrar_test.go:877: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.payment_attempts SET
+    stripe_live_registrar_test.go:879: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.payment_attempts SET
+=== RUN   TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/attempt_of_another_connection
+    stripe_live_registrar_test.go:877: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.payment_attempts SET
+    stripe_live_registrar_test.go:879: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.payment_attempts SET
+=== RUN   TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/attempt_in_another_currency
+    stripe_live_registrar_test.go:877: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.payment_attempts SET
+    stripe_live_registrar_test.go:879: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.payment_attempts SET
+=== RUN   TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/attempt_created_before_the_approval
+    stripe_live_registrar_test.go:877: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.payment_attempts SET
+    stripe_live_registrar_test.go:879: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.payment_attempts SET
+=== RUN   TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/attempt_under_another_approval's_qualification
+    stripe_live_registrar_test.go:877: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.account_qualifications SET
+    stripe_live_registrar_test.go:879: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.account_qualifications SET
+=== RUN   TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/no_CAPTURED_fact
+    stripe_live_registrar_test.go:877: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.facts SET
+    stripe_live_registrar_test.go:879: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.facts SET
+=== RUN   TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/captured_amount_above_the_canary_cap
+    stripe_live_registrar_test.go:877: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.facts SET
+    stripe_live_registrar_test.go:879: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.facts SET
+=== RUN   TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/partial_refund
+    stripe_live_registrar_test.go:877: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.refund_facts SET
+    stripe_live_registrar_test.go:879: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.refund_facts SET
+=== RUN   TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/refund_without_a_SUCCEEDED_fact
+    stripe_live_registrar_test.go:877: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.refund_facts SET
+    stripe_live_registrar_test.go:879: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.refund_facts SET
+=== RUN   TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/SANDBOX_refund
+    stripe_live_registrar_test.go:877: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.stripe_refunds SET
+    stripe_live_registrar_test.go:879: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.stripe_refunds SET
+=== RUN   TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/refund_of_another_attempt
+    stripe_live_registrar_test.go:877: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.stripe_refunds SET
+    stripe_live_registrar_test.go:879: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.stripe_refunds SET
+=== RUN   TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/receipt_endpoint_is_not_a_LIVE_endpoint
+    stripe_live_registrar_test.go:877: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.stripe_webhook_endpoints SET
+    stripe_live_registrar_test.go:879: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.stripe_webhook_endpoints SET
+=== RUN   TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/no_LIVE_attempt_receipt
+    stripe_live_registrar_test.go:877: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.stripe_webhook_receipts SET
+    stripe_live_registrar_test.go:879: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.stripe_webhook_receipts SET
+=== RUN   TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/no_LIVE_refund_receipt
+    stripe_live_registrar_test.go:877: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.stripe_webhook_receipts SET
+    stripe_live_registrar_test.go:879: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.stripe_webhook_receipts SET
+=== RUN   TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/receipts_not_on_a_LIVE_endpoint_of_this_connection
+    stripe_live_registrar_test.go:877: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.stripe_webhook_receipts SET
+    stripe_live_registrar_test.go:879: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.stripe_webhook_receipts SET
+=== RUN   TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/any_review_case_on_the_attempt
+    stripe_live_registrar_test.go:892: OWNER-POOL: payments.review_cases row (REFUND_HISTORY) and its removal
+    stripe_live_registrar_test.go:899: OWNER-POOL: replica-mode tamper/restore: DELETE FROM payments.review_cases
+=== RUN   TestStripeSL03Registrar/revoke_reconcile_refund_and_kill_switch
+    stripe_live_registrar_test.go:931: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_registrar_test.go:940: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_live_registrar_test.go:940: OWNER-POOL: payments.provider_observations report
+    stripe_live_registrar_test.go:985: OWNER-POOL: identity.principals/memberships/store_grants of an extra merchant principal
+    stripe_live_registrar_test.go:985: OWNER-POOL: identity.store_grants integration:manage
+    stripe_live_registrar_test.go:999: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_live_registrar_test.go:1002: OWNER-POOL: payments.provider_observations report
+    stripe_live_registrar_test.go:1009: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_live_registrar_test.go:1010: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeSL03Registrar/concurrent_qualify_and_revoke
+=== RUN   TestStripeSL03Registrar/concurrent_qualify_and_revoke/qualify_holds_the_approval_share_lock_revoke_waits_then_revokes_it
+    stripe_live_registrar_test.go:1038: OWNER-POOL: identity.store_grants payments:refund,orders:read
+=== RUN   TestStripeSL03Registrar/concurrent_qualify_and_revoke/revoke_holds_the_lock_qualify_waits_then_is_refused
+    stripe_live_registrar_test.go:1100: OWNER-POOL: identity.store_grants payments:refund,orders:read
+=== RUN   TestStripeSL03Registrar/disable_in_every_state
+=== RUN   TestStripeSL03Registrar/disable_in_every_state/after_revoke
+    stripe_live_registrar_test.go:1155: OWNER-POOL: identity.store_grants payments:refund,orders:read
+=== RUN   TestStripeSL03Registrar/disable_in_every_state/after_qualification_expiry
+    stripe_live_registrar_test.go:1165: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_registrar_test.go:1166: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.account_qualifications SET
+=== RUN   TestStripeSL03Registrar/disable_in_every_state/after_key_rotation
+    stripe_live_registrar_test.go:1175: OWNER-POOL: identity.store_grants payments:refund,orders:read
+=== RUN   TestStripeSL03Registrar/disable_in_every_state/disable_needs_only_scope_and_the_head_cas
+    stripe_live_registrar_test.go:1215: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_registrar_test.go:1219: OWNER-POOL: identity.principals/memberships/store_grants of an extra merchant principal
+    stripe_live_registrar_test.go:1219: OWNER-POOL: identity.store_grants payments:refund
+--- PASS: TestStripeSL03Registrar (7.92s)
+    --- PASS: TestStripeSL03Registrar/approve_rejections_replay_and_row (0.48s)
+    --- PASS: TestStripeSL03Registrar/sandbox_account_cannot_be_approved (0.37s)
+    --- PASS: TestStripeSL03Registrar/endpoint_profile_and_account_environment_must_pair (0.70s)
+    --- PASS: TestStripeSL03Registrar/qualify_and_method_gates (0.35s)
+    --- PASS: TestStripeSL03Registrar/canary_negatives_success_replay_and_caps (0.56s)
+        --- PASS: TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/SANDBOX_attempt (0.00s)
+        --- PASS: TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/attempt_of_another_connection (0.00s)
+        --- PASS: TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/attempt_in_another_currency (0.00s)
+        --- PASS: TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/attempt_created_before_the_approval (0.00s)
+        --- PASS: TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/attempt_under_another_approval's_qualification (0.00s)
+        --- PASS: TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/no_CAPTURED_fact (0.00s)
+        --- PASS: TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/captured_amount_above_the_canary_cap (0.00s)
+        --- PASS: TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/partial_refund (0.00s)
+        --- PASS: TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/refund_without_a_SUCCEEDED_fact (0.00s)
+        --- PASS: TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/SANDBOX_refund (0.00s)
+        --- PASS: TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/refund_of_another_attempt (0.00s)
+        --- PASS: TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/receipt_endpoint_is_not_a_LIVE_endpoint (0.00s)
+        --- PASS: TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/no_LIVE_attempt_receipt (0.00s)
+        --- PASS: TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/no_LIVE_refund_receipt (0.00s)
+        --- PASS: TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/receipts_not_on_a_LIVE_endpoint_of_this_connection (0.00s)
+        --- PASS: TestStripeSL03Registrar/canary_negatives_success_replay_and_caps/negative/any_review_case_on_the_attempt (0.00s)
+    --- PASS: TestStripeSL03Registrar/revoke_reconcile_refund_and_kill_switch (0.70s)
+    --- PASS: TestStripeSL03Registrar/concurrent_qualify_and_revoke (0.95s)
+        --- PASS: TestStripeSL03Registrar/concurrent_qualify_and_revoke/qualify_holds_the_approval_share_lock_revoke_waits_then_revokes_it (0.48s)
+        --- PASS: TestStripeSL03Registrar/concurrent_qualify_and_revoke/revoke_holds_the_lock_qualify_waits_then_is_refused (0.47s)
+    --- PASS: TestStripeSL03Registrar/disable_in_every_state (1.82s)
+        --- PASS: TestStripeSL03Registrar/disable_in_every_state/after_revoke (0.45s)
+        --- PASS: TestStripeSL03Registrar/disable_in_every_state/after_qualification_expiry (0.43s)
+        --- PASS: TestStripeSL03Registrar/disable_in_every_state/after_key_rotation (0.52s)
+        --- PASS: TestStripeSL03Registrar/disable_in_every_state/disable_needs_only_scope_and_the_head_cas (0.43s)
+=== RUN   TestStripeSL02Schema
+=== RUN   TestStripeSL02Schema/ledger_checksum_and_repeat
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/REAL_LIVE_Stripe_without_approval_(SP19)
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/approval_id_on_a_PROVIDER_MOCK_Stripe_row
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/approval_id_on_a_REAL_SANDBOX_Stripe_row
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/approval_id_on_a_PAYUNi_row
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/LIVE+SANDBOX
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/LIVE+PROVIDER_MOCK
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/SANDBOX+LIVE
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/STAGING+LIVE
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/LIVE+STAGING
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/SANDBOX_and_PROVIDER_MOCK_still_valid
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/refund/LIVE_admitted,_other_environments_refused
+=== RUN   TestStripeSL02Schema/approval_table_rls_privileges_and_definers
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active
+    stripe_live_schema_test.go:336: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_schema_test.go:338: OWNER-POOL: direct INSERTs into payments.stripe_live_approvals (rolled back)
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/approval_ref_shape
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/canary_cap_must_be_positive
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/max_below_canary
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/approved_at_after_recorded_at
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/revoke_triple_partial
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/revoked_by_is_not_a_member
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/canary_triple_partial
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/canary_triple_without_time
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/revoke_ref_shape
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/approved_by_is_not_a_member
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/connection_unknown
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/account_id_differs_from_account
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/account_id_shape
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/currency_shape
+=== NAME  TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active
+    stripe_live_schema_test.go:388: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_schema_test.go:403: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_schema_test.go:414: OWNER-POOL: identity.principals/memberships/store_grants of an extra merchant principal
+    stripe_live_schema_test.go:414: OWNER-POOL: identity.store_grants integration:manage
+    stripe_live_schema_test.go:430: OWNER-POOL: payments.stripe_live_approvals canary triple set directly (set-once trigger check)
+    stripe_live_schema_test.go:479: OWNER-POOL: identity.store_grants payments:refund,orders:read
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger
+    stripe_live_schema_test.go:495: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_schema_test.go:496: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_schema_test.go:504: OWNER-POOL: identity.store_grants payments:refund,orders:read
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/id_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/evidence_ref_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/expires_at_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/observed_at_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/id_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/evidence_ref_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/expires_at_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/observed_at_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/observed_at_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/id_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/evidence_ref_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/expires_at_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/revoke_refused
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/revoke_refused
+=== NAME  TestStripeSL02Schema/qualification_revoke_only_trigger
+    stripe_live_schema_test.go:552: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.account_qualifications SET
+    stripe_live_schema_test.go:552: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.account_qualifications SET
+=== RUN   TestStripeSL02Schema/upgrade_of_a_populated_database
+=== RUN   TestStripeSL02Schema/upgrade_of_a_populated_database/existing_rows_are_untouched
+=== RUN   TestStripeSL02Schema/upgrade_of_a_populated_database/re-created_functions_keep_signature,_owner,_search_path_and_ACL
+=== RUN   TestStripeSL02Schema/upgrade_of_a_populated_database/privilege_delta_equals_section_3.3
+=== RUN   TestStripeSL02Schema/upgrade_of_a_populated_database/the_upgraded_database_behaves
+--- PASS: TestStripeSL02Schema (8.16s)
+    --- PASS: TestStripeSL02Schema/ledger_checksum_and_repeat (0.13s)
+    --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table (0.04s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/REAL_LIVE_Stripe_without_approval_(SP19) (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/approval_id_on_a_PROVIDER_MOCK_Stripe_row (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/approval_id_on_a_REAL_SANDBOX_Stripe_row (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/approval_id_on_a_PAYUNi_row (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/LIVE+SANDBOX (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/LIVE+PROVIDER_MOCK (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/SANDBOX+LIVE (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/STAGING+LIVE (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/LIVE+STAGING (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/SANDBOX_and_PROVIDER_MOCK_still_valid (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/refund/LIVE_admitted,_other_environments_refused (0.01s)
+    --- PASS: TestStripeSL02Schema/approval_table_rls_privileges_and_definers (0.29s)
+    --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active (1.53s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/approval_ref_shape (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/canary_cap_must_be_positive (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/max_below_canary (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/approved_at_after_recorded_at (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/revoke_triple_partial (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/revoked_by_is_not_a_member (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/canary_triple_partial (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/canary_triple_without_time (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/revoke_ref_shape (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/approved_by_is_not_a_member (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/connection_unknown (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/account_id_differs_from_account (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/account_id_shape (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/currency_shape (0.00s)
+    --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger (1.28s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/id_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/evidence_ref_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/expires_at_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/observed_at_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/id_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/evidence_ref_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/expires_at_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/observed_at_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/observed_at_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/id_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/evidence_ref_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/expires_at_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/revoke_refused (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/revoke_refused (0.00s)
+    --- PASS: TestStripeSL02Schema/upgrade_of_a_populated_database (2.94s)
+        --- PASS: TestStripeSL02Schema/upgrade_of_a_populated_database/existing_rows_are_untouched (0.00s)
+        --- PASS: TestStripeSL02Schema/upgrade_of_a_populated_database/re-created_functions_keep_signature,_owner,_search_path_and_ACL (0.00s)
+        --- PASS: TestStripeSL02Schema/upgrade_of_a_populated_database/privilege_delta_equals_section_3.3 (0.00s)
+        --- PASS: TestStripeSL02Schema/upgrade_of_a_populated_database/the_upgraded_database_behaves (0.00s)
+=== RUN   TestStripeSL04LiveShape
+=== RUN   TestStripeSL04LiveShape/live_kit
+    stripe_live_shape_test.go:104: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_shape_test.go:124: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_live_shape_test.go:125: OWNER-POOL: payments.provider_observations report
+    stripe_live_shape_test.go:132: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_live_shape_test.go:134: OWNER-POOL: payments.provider_observations report
+    stripe_live_shape_test.go:148: OWNER-POOL: payments.stripe_refunds Stripe refund pin
+    stripe_live_shape_test.go:149: OWNER-POOL: payments.provider_observations report
+    stripe_live_shape_test.go:156: OWNER-POOL: payments.provider_observations report
+    stripe_live_shape_test.go:165: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_live_shape_test.go:166: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeSL04LiveShape/sandbox_kit
+    stripe_live_shape_test.go:105: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_shape_test.go:124: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_live_shape_test.go:125: OWNER-POOL: payments.provider_observations report
+    stripe_live_shape_test.go:132: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_live_shape_test.go:134: OWNER-POOL: payments.provider_observations report
+    stripe_live_shape_test.go:148: OWNER-POOL: payments.stripe_refunds Stripe refund pin
+    stripe_live_shape_test.go:149: OWNER-POOL: payments.provider_observations report
+    stripe_live_shape_test.go:156: OWNER-POOL: payments.provider_observations report
+    stripe_live_shape_test.go:165: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_live_shape_test.go:166: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeSL04LiveShape/refund_routes_are_not_mounted_for_an_unknown_environment
+    stripe_live_shape_test.go:107: OWNER-POOL: identity.store_grants payments:refund,orders:read
+--- PASS: TestStripeSL04LiveShape (3.68s)
+    --- PASS: TestStripeSL04LiveShape/live_kit (0.76s)
+    --- PASS: TestStripeSL04LiveShape/sandbox_kit (0.49s)
+    --- PASS: TestStripeSL04LiveShape/refund_routes_are_not_mounted_for_an_unknown_environment (0.42s)
+=== RUN   TestStripeSL09Watchdog
+    stripe_live_watchdog_test.go:188: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_watchdog_test.go:192: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_watchdog_test.go:207: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_live_watchdog_test.go:208: OWNER-POOL: payments.provider_observations report
+    stripe_live_watchdog_test.go:212: OWNER-POOL: replica-mode tamper/restore: UPDATE integration.operations SET
+    stripe_live_watchdog_test.go:213: OWNER-POOL: ten SANDBOX QUARANTINED receipts (noise for the LIVE-only W11e)
+    stripe_live_watchdog_test.go:227: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_live_watchdog_test.go:229: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_live_watchdog_test.go:229: OWNER-POOL: payments.provider_observations report
+    stripe_live_watchdog_test.go:236: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_live_watchdog_test.go:238: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+=== RUN   TestStripeSL09Watchdog/baseline_is_green_and_ignores_SANDBOX
+=== RUN   TestStripeSL09Watchdog/W11a_unknown_operation_older_than_60_minutes
+    stripe_live_watchdog_test.go:249: OWNER-POOL: replica-mode tamper/restore: UPDATE integration.operations SET
+    stripe_live_watchdog_test.go:253: OWNER-POOL: replica-mode tamper/restore: UPDATE integration.operations SET
+    stripe_live_watchdog_test.go:256: OWNER-POOL: replica-mode tamper/restore: UPDATE integration.operations SET
+    stripe_live_watchdog_test.go:258: OWNER-POOL: replica-mode tamper/restore: UPDATE integration.operations SET
+=== RUN   TestStripeSL09Watchdog/W11b_review_case_on_a_LIVE_attempt_in_the_last_24_hours
+    stripe_live_watchdog_test.go:263: OWNER-POOL: payments.provider_observations report
+    stripe_live_watchdog_test.go:268: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.review_cases SET
+=== RUN   TestStripeSL09Watchdog/W11c_work_item_in_REVIEW_REQUIRED
+    stripe_live_watchdog_test.go:275: OWNER-POOL: payments.provider_observations report
+    stripe_live_watchdog_test.go:279: OWNER-POOL: payments.provider_observations report
+    stripe_live_watchdog_test.go:286: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.review_cases SET
+    stripe_live_watchdog_test.go:288: OWNER-POOL: replica-mode tamper/restore: UPDATE fulfillment.payment_work_items SET
+=== RUN   TestStripeSL09Watchdog/W11d_refund_without_a_terminal_fact_or_refund_review
+    stripe_live_watchdog_test.go:293: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.stripe_refunds SET
+    stripe_live_watchdog_test.go:295: OWNER-POOL: payments.stripe_refunds Stripe refund pin
+    stripe_live_watchdog_test.go:296: OWNER-POOL: payments.provider_observations report
+    stripe_live_watchdog_test.go:302: OWNER-POOL: payments.review_cases REFUND_HISTORY (aged 3 days) and its removal
+    stripe_live_watchdog_test.go:310: OWNER-POOL: replica-mode tamper/restore: DELETE FROM payments.review_cases
+=== RUN   TestStripeSL09Watchdog/W11e_quarantined_or_ignored_LIVE_receipts_in_the_last_hour
+    stripe_live_watchdog_test.go:328: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.stripe_webhook_receipts SET
+=== RUN   TestStripeSL09Watchdog/W11a_a_settled_LIVE_payment_and_refund_are_not_trouble
+    stripe_live_watchdog_test.go:339: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_live_watchdog_test.go:339: OWNER-POOL: payments.provider_observations report
+    stripe_live_watchdog_test.go:345: OWNER-POOL: payments.stripe_refunds Stripe refund pin
+    stripe_live_watchdog_test.go:346: OWNER-POOL: payments.provider_observations report
+    stripe_live_watchdog_test.go:367: settled operation state=UNKNOWN result_code=stripe_terminal_observed (what the worker leaves behind)
+    stripe_live_watchdog_test.go:368: OWNER-POOL: replica-mode tamper/restore: UPDATE integration.operations SET
+    stripe_live_watchdog_test.go:367: settled operation state=UNKNOWN result_code=stripe_refund_terminal (what the worker leaves behind)
+    stripe_live_watchdog_test.go:368: OWNER-POOL: replica-mode tamper/restore: UPDATE integration.operations SET
+    stripe_live_watchdog_test.go:371: OWNER-POOL: replica-mode tamper/restore: UPDATE integration.operations SET
+    stripe_live_watchdog_test.go:371: OWNER-POOL: replica-mode tamper/restore: UPDATE integration.operations SET
+=== RUN   TestStripeSL09Watchdog/W11f_LIVE_endpoint_disabled_while_the_method_is_open
+=== RUN   TestStripeSL09Watchdog/threshold_overrides_are_validated_integers
+--- PASS: TestStripeSL09Watchdog (13.96s)
+    --- PASS: TestStripeSL09Watchdog/baseline_is_green_and_ignores_SANDBOX (0.38s)
+    --- PASS: TestStripeSL09Watchdog/W11a_unknown_operation_older_than_60_minutes (2.19s)
+    --- PASS: TestStripeSL09Watchdog/W11b_review_case_on_a_LIVE_attempt_in_the_last_24_hours (1.29s)
+    --- PASS: TestStripeSL09Watchdog/W11c_work_item_in_REVIEW_REQUIRED (0.88s)
+    --- PASS: TestStripeSL09Watchdog/W11d_refund_without_a_terminal_fact_or_refund_review (1.74s)
+    --- PASS: TestStripeSL09Watchdog/W11e_quarantined_or_ignored_LIVE_receipts_in_the_last_hour (1.76s)
+    --- PASS: TestStripeSL09Watchdog/W11a_a_settled_LIVE_payment_and_refund_are_not_trouble (0.62s)
+    --- PASS: TestStripeSL09Watchdog/W11f_LIVE_endpoint_disabled_while_the_method_is_open (0.88s)
+    --- PASS: TestStripeSL09Watchdog/threshold_overrides_are_validated_integers (1.19s)
+=== RUN   TestStripeSP15Process
+=== RUN   TestStripeSP15Process/disabled_assembly_serves_payuni_and_retains_the_stripe_job
+=== RUN   TestStripeSP15Process/account_mismatch_fails_before_any_checkout_request
+=== RUN   TestStripeSP15Process/exact_version_credentials_survive_rotation_and_never_substitute
+=== RUN   TestStripeSP15Process/built_payment_worker_binary_sandbox_stripe_enabled_ready_and_sigterm
+--- PASS: TestStripeSP15Process (28.34s)
+    --- PASS: TestStripeSP15Process/disabled_assembly_serves_payuni_and_retains_the_stripe_job (11.37s)
+    --- PASS: TestStripeSP15Process/account_mismatch_fails_before_any_checkout_request (0.72s)
+    --- PASS: TestStripeSP15Process/exact_version_credentials_survive_rotation_and_never_substitute (10.55s)
+    --- PASS: TestStripeSP15Process/built_payment_worker_binary_sandbox_stripe_enabled_ready_and_sigterm (3.16s)
+=== RUN   TestStripeRF05HappyMock
+=== RUN   TestStripeRF05HappyMock/full_refund:_REQUESTED_->_SUCCEEDED_->_REFUNDED,_one_key,_pre-send_read,_no_side_effects
+=== RUN   TestStripeRF05HappyMock/two_partial_refunds:_PARTIALLY_REFUNDED_then_REFUNDED
+--- PASS: TestStripeRF05HappyMock (12.60s)
+    --- PASS: TestStripeRF05HappyMock/full_refund:_REQUESTED_->_SUCCEEDED_->_REFUNDED,_one_key,_pre-send_read,_no_side_effects (5.83s)
+    --- PASS: TestStripeRF05HappyMock/two_partial_refunds:_PARTIALLY_REFUNDED_then_REFUNDED (3.05s)
+=== RUN   TestStripeRF06Unknown
+=== RUN   TestStripeRF06Unknown/drop_after_execute:_the_same-key_replay_pins_the_same_refund
+=== RUN   TestStripeRF06Unknown/cached_500:_resends_replay_the_500_until_resend_until,_then_the_list_pins_the_executed_refund
+=== RUN   TestStripeRF06Unknown/cached_500_with_nothing_executed:_list_finds_none,_UNKNOWN_+_REFUND_UNRESOLVED,_capacity_held,_no_second_POST
+=== RUN   TestStripeRF06Unknown/first-send_400:_REJECTED_and_capacity_released
+=== RUN   TestStripeRF06Unknown/400_after_an_earlier_send_does_not_release_capacity
+=== RUN   TestStripeRF06Unknown/429_backs_off;_409_and_idempotency_error_keep_the_same_key
+=== RUN   TestStripeRF06Unknown/at_most_one_distinct_create_key_per_refund,_ever
+--- PASS: TestStripeRF06Unknown (50.56s)
+    --- PASS: TestStripeRF06Unknown/drop_after_execute:_the_same-key_replay_pins_the_same_refund (1.74s)
+    --- PASS: TestStripeRF06Unknown/cached_500:_resends_replay_the_500_until_resend_until,_then_the_list_pins_the_executed_refund (9.50s)
+    --- PASS: TestStripeRF06Unknown/cached_500_with_nothing_executed:_list_finds_none,_UNKNOWN_+_REFUND_UNRESOLVED,_capacity_held,_no_second_POST (8.30s)
+    --- PASS: TestStripeRF06Unknown/first-send_400:_REJECTED_and_capacity_released (2.96s)
+    --- PASS: TestStripeRF06Unknown/400_after_an_earlier_send_does_not_release_capacity (8.60s)
+    --- PASS: TestStripeRF06Unknown/429_backs_off;_409_and_idempotency_error_keep_the_same_key (16.08s)
+    --- PASS: TestStripeRF06Unknown/at_most_one_distinct_create_key_per_refund,_ever (0.00s)
+=== RUN   TestStripeRF07Lifecycle
+=== RUN   TestStripeRF07Lifecycle/pending_(insufficient_balance)_then_succeeded
+=== RUN   TestStripeRF07Lifecycle/succeeded_then_a_later_refund.failed:_FAILED_fact,_capacity_released,_state_reverts
+=== RUN   TestStripeRF07Lifecycle/canceled_before_success_releases_capacity
+=== RUN   TestStripeRF07Lifecycle/every_failure_reason_is_mapped
+=== RUN   TestStripeRF07Lifecycle/amount_and_currency_drift:_review,_no_fact
+=== RUN   TestStripeRF07Lifecycle/replay_in_any_order_converges_(A1_received_at_rules)
+=== RUN   TestStripeRF07Lifecycle/a_review_after_capture_and_shipment_never_changes_order_or_work_state_(A1_guard)
+=== RUN   TestStripeRF07Lifecycle/late_first_send_(now_>=_resend_until-1h):_no_POST,_REJECTED_send_window_closed
+=== RUN   TestStripeRF07Lifecycle/list_finds_none_within_15_min_of_the_last_send:_snooze_and_list_again,_no_REFUND_UNRESOLVED_yet
+--- PASS: TestStripeRF07Lifecycle (47.28s)
+    --- PASS: TestStripeRF07Lifecycle/pending_(insufficient_balance)_then_succeeded (2.68s)
+    --- PASS: TestStripeRF07Lifecycle/succeeded_then_a_later_refund.failed:_FAILED_fact,_capacity_released,_state_reverts (2.60s)
+    --- PASS: TestStripeRF07Lifecycle/canceled_before_success_releases_capacity (2.56s)
+    --- PASS: TestStripeRF07Lifecycle/every_failure_reason_is_mapped (14.86s)
+    --- PASS: TestStripeRF07Lifecycle/amount_and_currency_drift:_review,_no_fact (6.33s)
+    --- PASS: TestStripeRF07Lifecycle/replay_in_any_order_converges_(A1_received_at_rules) (3.00s)
+    --- PASS: TestStripeRF07Lifecycle/a_review_after_capture_and_shipment_never_changes_order_or_work_state_(A1_guard) (1.32s)
+    --- PASS: TestStripeRF07Lifecycle/late_first_send_(now_>=_resend_until-1h):_no_POST,_REJECTED_send_window_closed (1.37s)
+    --- PASS: TestStripeRF07Lifecycle/list_finds_none_within_15_min_of_the_last_send:_snooze_and_list_again,_no_REFUND_UNRESOLVED_yet (9.14s)
+=== RUN   TestStripeRF12Guards
+=== RUN   TestStripeRF12Guards/replaced_B1_functions_differ_from_their_last_definition_only_by_the_stated_delta
+=== RUN   TestStripeRF12Guards/only_internal/integrations/psp/stripe_dials_Stripe
+=== RUN   TestStripeRF12Guards/COMMENT_ON_for_every_0062_object_and_column
+=== RUN   TestStripeRF12Guards/package_comments_(PROCESS_§5)
+    stripe_refund_guards_test.go:413: DATA internal/httpapi: package comment lacks [owns] (pre-existing; reviewer decision)
+=== RUN   TestStripeRF12Guards/logs_and_rows_carry_no_key,_whsec,_body_or_ARN_after_a_full_MOCK_refund_run
+--- PASS: TestStripeRF12Guards (12.70s)
+    --- PASS: TestStripeRF12Guards/replaced_B1_functions_differ_from_their_last_definition_only_by_the_stated_delta (7.86s)
+    --- PASS: TestStripeRF12Guards/only_internal/integrations/psp/stripe_dials_Stripe (0.36s)
+    --- PASS: TestStripeRF12Guards/COMMENT_ON_for_every_0062_object_and_column (0.02s)
+    --- PASS: TestStripeRF12Guards/package_comments_(PROCESS_§5) (0.01s)
+    --- PASS: TestStripeRF12Guards/logs_and_rows_carry_no_key,_whsec,_body_or_ARN_after_a_full_MOCK_refund_run (4.45s)
+=== RUN   TestStripeRF09AdminHTTP
+=== RUN   TestStripeRF09AdminHTTP/wire_shape_and_codes
+=== RUN   TestStripeRF09AdminHTTP/permission_matrix
+=== RUN   TestStripeRF09AdminHTTP/strict_transport_rules_write_nothing
+=== RUN   TestStripeRF09AdminHTTP/refresh_throttle
+=== RUN   TestStripeRF09AdminHTTP/merchant_projection_decodes_refunded,_shipped_and_reviewed_orders
+=== RUN   TestStripeRF09AdminHTTP/buyer_projection_has_amounts_only
+=== RUN   TestStripeRF09AdminHTTP/PAYUNi_responses_are_byte-identical_to_the_SP14_golden_files
+--- PASS: TestStripeRF09AdminHTTP (10.81s)
+    --- PASS: TestStripeRF09AdminHTTP/wire_shape_and_codes (2.58s)
+    --- PASS: TestStripeRF09AdminHTTP/permission_matrix (0.09s)
+    --- PASS: TestStripeRF09AdminHTTP/strict_transport_rules_write_nothing (0.01s)
+    --- PASS: TestStripeRF09AdminHTTP/refresh_throttle (0.03s)
+    --- PASS: TestStripeRF09AdminHTTP/merchant_projection_decodes_refunded,_shipped_and_reviewed_orders (1.42s)
+    --- PASS: TestStripeRF09AdminHTTP/buyer_projection_has_amounts_only (0.99s)
+    --- PASS: TestStripeRF09AdminHTTP/PAYUNi_responses_are_byte-identical_to_the_SP14_golden_files (0.49s)
+=== RUN   TestStripeRF06RejectionIsFinal
+=== RUN   TestStripeRF06RejectionIsFinal/first-send_400,_reconcile_delayed_past_the_5_s_snooze:_zero_further_POSTs,_exactly_one_REJECTED_fact
+=== RUN   TestStripeRF06RejectionIsFinal/a_rejection_report_of_the_first_send_never_releases_capacity_once_a_resend_happened
+--- PASS: TestStripeRF06RejectionIsFinal (20.65s)
+    --- PASS: TestStripeRF06RejectionIsFinal/first-send_400,_reconcile_delayed_past_the_5_s_snooze:_zero_further_POSTs,_exactly_one_REJECTED_fact (10.49s)
+    --- PASS: TestStripeRF06RejectionIsFinal/a_rejection_report_of_the_first_send_never_releases_capacity_once_a_resend_happened (6.78s)
+=== RUN   TestStripeRF04Request
+=== RUN   TestStripeRF04Request/atomic_request_writes_op,_refund,_event,_audit,_command_result_and_job
+=== RUN   TestStripeRF04Request/expected_refundable_CAS_and_capacity
+=== RUN   TestStripeRF04Request/two_concurrent_requests_whose_sum_exceeds_captured:_exactly_one_wins_(real_two-transaction_witness)
+=== RUN   TestStripeRF04Request/4.3_matrix_incl._the_A1_combinations
+=== RUN   TestStripeRF04Request/A1:_a_suppression_recorded_but_not_yet_applied_blocks_new_requests
+=== RUN   TestStripeRF04Request/not_refundable:_no_capture,_PAYUNi
+=== RUN   TestStripeRF04Request/authority:_401,_403,_404_and_store_isolation
+=== RUN   TestStripeRF04Request/the_21st_refund_is_refused
+=== RUN   TestStripeRF04Request/refresh_writes_a_MERCHANT_REFRESH_signal_and_a_job,_no_facts
+--- PASS: TestStripeRF04Request (14.10s)
+    --- PASS: TestStripeRF04Request/atomic_request_writes_op,_refund,_event,_audit,_command_result_and_job (0.05s)
+    --- PASS: TestStripeRF04Request/expected_refundable_CAS_and_capacity (0.04s)
+    --- PASS: TestStripeRF04Request/two_concurrent_requests_whose_sum_exceeds_captured:_exactly_one_wins_(real_two-transaction_witness) (0.05s)
+    --- PASS: TestStripeRF04Request/4.3_matrix_incl._the_A1_combinations (0.16s)
+    --- PASS: TestStripeRF04Request/A1:_a_suppression_recorded_but_not_yet_applied_blocks_new_requests (0.01s)
+    --- PASS: TestStripeRF04Request/not_refundable:_no_capture,_PAYUNi (0.01s)
+    --- PASS: TestStripeRF04Request/authority:_401,_403,_404_and_store_isolation (0.01s)
+    --- PASS: TestStripeRF04Request/the_21st_refund_is_refused (0.08s)
+    --- PASS: TestStripeRF04Request/refresh_writes_a_MERCHANT_REFRESH_signal_and_a_job,_no_facts (0.01s)
+=== RUN   TestStripeRF10Sandbox
+    stripe_refund_sandbox_test.go:85: NOT_RUN: RF10 requires STRIPE_SANDBOX=1 with a Stripe test key (owner-provided; SANDBOX only, LIVE refused)
+--- SKIP: TestStripeRF10Sandbox (0.00s)
+=== RUN   TestStripeRF03Schema
+=== RUN   TestStripeRF03Schema/migrations,_tables,_RLS,_PUBLIC_and_direct-role_privileges
+=== RUN   TestStripeRF03Schema/widened_constraints_keep_every_prior_value
+=== RUN   TestStripeRF03Schema/stripe_refunds_and_refund_facts_CHECKs
+=== RUN   TestStripeRF03Schema/foreign_keys,_definers,_ACLs_and_the_private_matrix
+=== RUN   TestStripeRF03Schema/runtime_pool_validator_accepts_the_new_grants_and_still_rejects_River_lifecycle_privileges
+=== RUN   TestStripeRF03Schema/post-River_routing_and_job_guards_include_payment_refund_v1
+=== RUN   TestStripeRF03Schema/set-once_trigger
+=== RUN   TestStripeRF03Schema/fact_trigger_and_append-only_facts
+=== RUN   TestStripeRF03Schema/mark_stripe_refund_sent_returns_CLOSED,_not_SEND,_while_REFUND_HISTORY_or_CONFLICTING_REPORT_exists
+=== RUN   TestStripeRF03Schema/the_pre-send_check_of_refund_B_does_not_suppress_after_refund_A_was_sent
+=== RUN   TestStripeRF03Schema/the_webhook_commit_increments_stripe_refunds.signal_count
+=== RUN   TestStripeRF03Schema/the_request_definer_sees_existing_refunds_in_the_capacity_sum_(not_as_superuser)
+=== RUN   TestStripeRF03Schema/populated_upgrade_from_0061
+    stripe_refund_schema_test.go:794: NOT_RUN: migrations.Apply has no partial-apply hook; a database frozen at 0061 with rows cannot be built without re-implementing the migrator
+--- PASS: TestStripeRF03Schema (16.25s)
+    --- PASS: TestStripeRF03Schema/migrations,_tables,_RLS,_PUBLIC_and_direct-role_privileges (0.02s)
+    --- PASS: TestStripeRF03Schema/widened_constraints_keep_every_prior_value (0.02s)
+    --- PASS: TestStripeRF03Schema/stripe_refunds_and_refund_facts_CHECKs (0.08s)
+    --- PASS: TestStripeRF03Schema/foreign_keys,_definers,_ACLs_and_the_private_matrix (0.07s)
+    --- PASS: TestStripeRF03Schema/runtime_pool_validator_accepts_the_new_grants_and_still_rejects_River_lifecycle_privileges (0.13s)
+    --- PASS: TestStripeRF03Schema/post-River_routing_and_job_guards_include_payment_refund_v1 (0.01s)
+    --- PASS: TestStripeRF03Schema/set-once_trigger (0.03s)
+    --- PASS: TestStripeRF03Schema/fact_trigger_and_append-only_facts (0.02s)
+    --- PASS: TestStripeRF03Schema/mark_stripe_refund_sent_returns_CLOSED,_not_SEND,_while_REFUND_HISTORY_or_CONFLICTING_REPORT_exists (2.75s)
+    --- PASS: TestStripeRF03Schema/the_pre-send_check_of_refund_B_does_not_suppress_after_refund_A_was_sent (2.97s)
+    --- PASS: TestStripeRF03Schema/the_webhook_commit_increments_stripe_refunds.signal_count (0.02s)
+    --- PASS: TestStripeRF03Schema/the_request_definer_sees_existing_refunds_in_the_capacity_sum_(not_as_superuser) (0.01s)
+    --- SKIP: TestStripeRF03Schema/populated_upgrade_from_0061 (0.00s)
+=== RUN   TestStripeRF08Webhook
+=== RUN   TestStripeRF08Webhook/the_four_new_types_are_admitted,_deduped,_ACKed_after_commit_and_consumed_under_the_refund-op_lease
+=== RUN   TestStripeRF08Webhook/a_late_refund.failed_after_20_partial_refunds_is_still_ACCEPTED;_charge_cap_is_independent
+=== RUN   TestStripeRF08Webhook/unknown_and_forged_refund/charge_objects_are_ignored
+=== RUN   TestStripeRF08Webhook/Dashboard_refund_seen_on_the_charge:_REFUND_HISTORY,_new_requests_refused
+=== RUN   TestStripeRF08Webhook/a_REQUESTED_refund_is_suppressed_before_send_when_the_charge_already_has_an_external_refund:_zero_POST
+=== RUN   TestStripeRF08Webhook/no_ACK_before_COMMIT;_a_commit-time_failure_is_a_503_with_nothing_persisted
+=== RUN   TestStripeRF08Webhook/no_body,_signature,_ARN,_receipt_URL_or_billing_email_in_logs_or_rows
+--- PASS: TestStripeRF08Webhook (24.97s)
+    --- PASS: TestStripeRF08Webhook/the_four_new_types_are_admitted,_deduped,_ACKed_after_commit_and_consumed_under_the_refund-op_lease (1.70s)
+    --- PASS: TestStripeRF08Webhook/a_late_refund.failed_after_20_partial_refunds_is_still_ACCEPTED;_charge_cap_is_independent (7.69s)
+    --- PASS: TestStripeRF08Webhook/unknown_and_forged_refund/charge_objects_are_ignored (5.38s)
+    --- PASS: TestStripeRF08Webhook/Dashboard_refund_seen_on_the_charge:_REFUND_HISTORY,_new_requests_refused (1.73s)
+    --- PASS: TestStripeRF08Webhook/a_REQUESTED_refund_is_suppressed_before_send_when_the_charge_already_has_an_external_refund:_zero_POST (1.40s)
+    --- PASS: TestStripeRF08Webhook/no_ACK_before_COMMIT;_a_commit-time_failure_is_a_503_with_nothing_persisted (1.61s)
+    --- PASS: TestStripeRF08Webhook/no_body,_signature,_ARN,_receipt_URL_or_billing_email_in_logs_or_rows (0.18s)
+=== RUN   TestStripeRF01Wire
+=== RUN   TestStripeRF01Wire/golden_body,_exact_key_set,_byte-identical_resend
+=== RUN   TestStripeRF01Wire/invalid_input_is_refused_before_any_request
+=== RUN   TestStripeRF01Wire/idempotency_key_format
+=== RUN   TestStripeRF01Wire/classification_(stripe-psp_5.6)_per_call
+=== RUN   TestStripeRF01Wire/payment_charge_read
+=== RUN   TestStripeRF01Wire/list_follows_pages,_newest_first,_caps_at_10_pages
+=== RUN   TestStripeRF01Wire/adapter_projections_never_carry_ARN,_receipt,_billing_details
+=== RUN   TestStripeRF01Wire/RefundAmountOK_spec_table
+=== RUN   TestStripeRF01Wire/pg_parity_payments.stripe_refund_amount_ok
+--- PASS: TestStripeRF01Wire (1.77s)
+    --- PASS: TestStripeRF01Wire/golden_body,_exact_key_set,_byte-identical_resend (0.02s)
+    --- PASS: TestStripeRF01Wire/invalid_input_is_refused_before_any_request (0.00s)
+    --- PASS: TestStripeRF01Wire/idempotency_key_format (0.00s)
+    --- PASS: TestStripeRF01Wire/classification_(stripe-psp_5.6)_per_call (0.01s)
+    --- PASS: TestStripeRF01Wire/payment_charge_read (0.00s)
+    --- PASS: TestStripeRF01Wire/list_follows_pages,_newest_first,_caps_at_10_pages (0.28s)
+    --- PASS: TestStripeRF01Wire/adapter_projections_never_carry_ARN,_receipt,_billing_details (0.00s)
+    --- PASS: TestStripeRF01Wire/RefundAmountOK_spec_table (0.00s)
+    --- PASS: TestStripeRF01Wire/pg_parity_payments.stripe_refund_amount_ok (1.46s)
+=== RUN   TestStripeRF02WebhookProjection
+=== RUN   TestStripeRF02WebhookProjection/vectors_through_the_Go_verifier
+=== RUN   TestStripeRF02WebhookProjection/fresh_events_rendered_by_the_fake
+=== RUN   TestStripeRF02WebhookProjection/node_half
+--- PASS: TestStripeRF02WebhookProjection (0.10s)
+    --- PASS: TestStripeRF02WebhookProjection/vectors_through_the_Go_verifier (0.00s)
+    --- PASS: TestStripeRF02WebhookProjection/fresh_events_rendered_by_the_fake (0.00s)
+    --- PASS: TestStripeRF02WebhookProjection/node_half (0.08s)
+=== RUN   TestStripeSP21RegistrarBindsStoredCredential
+=== RUN   TestStripeSP21RegistrarBindsStoredCredential/rotate_with_another_accounts_key_is_rejected_and_the_head_stays
+=== RUN   TestStripeSP21RegistrarBindsStoredCredential/old_key_and_foreign_account_cannot_qualify_the_new_head
+=== RUN   TestStripeSP21RegistrarBindsStoredCredential/stored_key_qualifies_and_the_probe_uses_it
+=== RUN   TestStripeSP21RegistrarBindsStoredCredential/stale_expected_version_is_refused_before_any_provider_call
+--- PASS: TestStripeSP21RegistrarBindsStoredCredential (0.33s)
+    --- PASS: TestStripeSP21RegistrarBindsStoredCredential/rotate_with_another_accounts_key_is_rejected_and_the_head_stays (0.00s)
+    --- PASS: TestStripeSP21RegistrarBindsStoredCredential/old_key_and_foreign_account_cannot_qualify_the_new_head (0.00s)
+    --- PASS: TestStripeSP21RegistrarBindsStoredCredential/stored_key_qualifies_and_the_probe_uses_it (0.00s)
+    --- PASS: TestStripeSP21RegistrarBindsStoredCredential/stale_expected_version_is_refused_before_any_provider_call (0.00s)
+=== RUN   TestStripeSP21Registrar
+=== RUN   TestStripeSP21Registrar/two_stores_two_accounts_register_and_first_rotation_is_exact_version
+=== RUN   TestStripeSP21Registrar/second_account_per_store_same_account_across_stores_and_cross_store_rebinding_are_rejected
+=== RUN   TestStripeSP21Registrar/non_owner_principal_is_rejected_everywhere
+=== RUN   TestStripeSP21Registrar/register_verifies_the_account_before_any_write
+=== RUN   TestStripeSP21Registrar/ciphertext_purpose_and_aad_swaps_fail_to_open
+=== RUN   TestStripeSP21Registrar/rotation_blocks_new_starts_until_requalified_and_historical_attempts_keep_their_version
+=== RUN   TestStripeSP21Registrar/method_bounds_currency_and_cas
+=== RUN   TestStripeSP21Registrar/qualification_evidence_formats_mock_and_probe
+=== RUN   TestStripeSP21Registrar/live_is_refused_by_the_registrar_and_by_sql
+=== RUN   TestStripeSP21Registrar/sandbox_probe_against_real_stripe
+    stripe_registrar_test.go:403: NOT_RUN: set STRIPE_SANDBOX=1 with a test STRIPE_SECRET_KEY and STRIPE_ACCOUNT_ID to probe the real sandbox (creates and expires one test session, no charge)
+--- PASS: TestStripeSP21Registrar (0.94s)
+    --- PASS: TestStripeSP21Registrar/two_stores_two_accounts_register_and_first_rotation_is_exact_version (0.01s)
+    --- PASS: TestStripeSP21Registrar/second_account_per_store_same_account_across_stores_and_cross_store_rebinding_are_rejected (0.01s)
+    --- PASS: TestStripeSP21Registrar/non_owner_principal_is_rejected_everywhere (0.01s)
+    --- PASS: TestStripeSP21Registrar/register_verifies_the_account_before_any_write (0.00s)
+    --- PASS: TestStripeSP21Registrar/ciphertext_purpose_and_aad_swaps_fail_to_open (0.00s)
+    --- PASS: TestStripeSP21Registrar/rotation_blocks_new_starts_until_requalified_and_historical_attempts_keep_their_version (0.31s)
+    --- PASS: TestStripeSP21Registrar/method_bounds_currency_and_cas (0.01s)
+    --- PASS: TestStripeSP21Registrar/qualification_evidence_formats_mock_and_probe (0.01s)
+    --- PASS: TestStripeSP21Registrar/live_is_refused_by_the_registrar_and_by_sql (0.03s)
+    --- SKIP: TestStripeSP21Registrar/sandbox_probe_against_real_stripe (0.00s)
+=== RUN   TestStripeSP02Currency
+=== RUN   TestStripeSP02Currency/HKD_minimum
+=== RUN   TestStripeSP02Currency/HKD_below
+=== RUN   TestStripeSP02Currency/USD_minimum
+=== RUN   TestStripeSP02Currency/USD_below
+=== RUN   TestStripeSP02Currency/SGD_minimum
+=== RUN   TestStripeSP02Currency/SGD_below
+=== RUN   TestStripeSP02Currency/MYR_minimum
+=== RUN   TestStripeSP02Currency/MYR_below
+=== RUN   TestStripeSP02Currency/TWD_minimum
+=== RUN   TestStripeSP02Currency/TWD_below
+=== RUN   TestStripeSP02Currency/TWD_old_min
+=== RUN   TestStripeSP02Currency/TWD_step
+=== RUN   TestStripeSP02Currency/TWD_maximum
+=== RUN   TestStripeSP02Currency/TWD_overflow
+=== RUN   TestStripeSP02Currency/USD_maximum
+=== RUN   TestStripeSP02Currency/USD_overflow
+=== RUN   TestStripeSP02Currency/JPY_denied
+=== RUN   TestStripeSP02Currency/ISK_denied
+=== RUN   TestStripeSP02Currency/UGX_denied
+=== RUN   TestStripeSP02Currency/HUF_denied
+=== RUN   TestStripeSP02Currency/BHD_denied
+=== RUN   TestStripeSP02Currency/lowercase_denied
+=== RUN   TestStripeSP02Currency/zero_denied
+=== RUN   TestStripeSP02Currency/negative_denied
+--- PASS: TestStripeSP02Currency (0.01s)
+    --- PASS: TestStripeSP02Currency/HKD_minimum (0.00s)
+    --- PASS: TestStripeSP02Currency/HKD_below (0.00s)
+    --- PASS: TestStripeSP02Currency/USD_minimum (0.00s)
+    --- PASS: TestStripeSP02Currency/USD_below (0.00s)
+    --- PASS: TestStripeSP02Currency/SGD_minimum (0.00s)
+    --- PASS: TestStripeSP02Currency/SGD_below (0.00s)
+    --- PASS: TestStripeSP02Currency/MYR_minimum (0.00s)
+    --- PASS: TestStripeSP02Currency/MYR_below (0.00s)
+    --- PASS: TestStripeSP02Currency/TWD_minimum (0.00s)
+    --- PASS: TestStripeSP02Currency/TWD_below (0.00s)
+    --- PASS: TestStripeSP02Currency/TWD_old_min (0.00s)
+    --- PASS: TestStripeSP02Currency/TWD_step (0.00s)
+    --- PASS: TestStripeSP02Currency/TWD_maximum (0.00s)
+    --- PASS: TestStripeSP02Currency/TWD_overflow (0.00s)
+    --- PASS: TestStripeSP02Currency/USD_maximum (0.00s)
+    --- PASS: TestStripeSP02Currency/USD_overflow (0.00s)
+    --- PASS: TestStripeSP02Currency/JPY_denied (0.00s)
+    --- PASS: TestStripeSP02Currency/ISK_denied (0.00s)
+    --- PASS: TestStripeSP02Currency/UGX_denied (0.00s)
+    --- PASS: TestStripeSP02Currency/HUF_denied (0.00s)
+    --- PASS: TestStripeSP02Currency/BHD_denied (0.00s)
+    --- PASS: TestStripeSP02Currency/lowercase_denied (0.00s)
+    --- PASS: TestStripeSP02Currency/zero_denied (0.00s)
+    --- PASS: TestStripeSP02Currency/negative_denied (0.00s)
+=== RUN   TestStripeSP06Schema
+=== RUN   TestStripeSP06Schema/negative/integration.merchant_accounts
+=== RUN   TestStripeSP06Schema/negative/integration.account_credentials
+=== RUN   TestStripeSP06Schema/negative/payments.account_qualifications
+=== RUN   TestStripeSP06Schema/negative/payments.facts
+=== RUN   TestStripeSP06Schema/negative/payments.review_cases
+=== RUN   TestStripeSP06Schema/deadline/expires_at_40_minutes
+=== RUN   TestStripeSP06Schema/deadline/send_deadline_7_minutes
+=== RUN   TestStripeSP06Schema/deadline/handoff_cutoff_5_minutes
+--- PASS: TestStripeSP06Schema (0.06s)
+    --- PASS: TestStripeSP06Schema/negative/integration.merchant_accounts (0.00s)
+    --- PASS: TestStripeSP06Schema/negative/integration.account_credentials (0.00s)
+    --- PASS: TestStripeSP06Schema/negative/payments.account_qualifications (0.00s)
+    --- PASS: TestStripeSP06Schema/negative/payments.facts (0.00s)
+    --- PASS: TestStripeSP06Schema/negative/payments.review_cases (0.00s)
+    --- PASS: TestStripeSP06Schema/deadline/expires_at_40_minutes (0.00s)
+    --- PASS: TestStripeSP06Schema/deadline/send_deadline_7_minutes (0.00s)
+    --- PASS: TestStripeSP06Schema/deadline/handoff_cutoff_5_minutes (0.00s)
+=== RUN   TestStripeSP19LiveRefusal
+--- PASS: TestStripeSP19LiveRefusal (0.00s)
+=== RUN   TestStripeSP06RegistrarIsolation
+=== RUN   TestStripeSP06RegistrarIsolation/second_account_same_store
+=== RUN   TestStripeSP06RegistrarIsolation/same_account_other_store
+=== RUN   TestStripeSP06RegistrarIsolation/foreign_principal
+=== RUN   TestStripeSP06RegistrarIsolation/foreign_tenant_store_pair
+--- PASS: TestStripeSP06RegistrarIsolation (0.14s)
+    --- PASS: TestStripeSP06RegistrarIsolation/second_account_same_store (0.00s)
+    --- PASS: TestStripeSP06RegistrarIsolation/same_account_other_store (0.00s)
+    --- PASS: TestStripeSP06RegistrarIsolation/foreign_principal (0.00s)
+    --- PASS: TestStripeSP06RegistrarIsolation/foreign_tenant_store_pair (0.00s)
+=== RUN   TestStripeSP06EndpointCustodyAndRLS
+--- PASS: TestStripeSP06EndpointCustodyAndRLS (0.12s)
+=== RUN   TestStripeSP13EndpointPrepareLocksRotation
+--- PASS: TestStripeSP13EndpointPrepareLocksRotation (0.40s)
+=== RUN   TestStripeSP13AcceptedReceiptNeedsCommittedLink
+--- PASS: TestStripeSP13AcceptedReceiptNeedsCommittedLink (0.15s)
+=== RUN   TestStripeSP11SQLSignalLoader
+=== RUN   TestStripeSP11SQLSignalLoader/wrong_job
+=== RUN   TestStripeSP11SQLSignalLoader/wrong_signal
+=== RUN   TestStripeSP11SQLSignalLoader/wrong_operation
+=== RUN   TestStripeSP11SQLSignalLoader/wrong_profile
+=== RUN   TestStripeSP11SQLSignalLoader/wrong_token
+=== RUN   TestStripeSP11SQLSignalLoader/wrong_generation
+--- PASS: TestStripeSP11SQLSignalLoader (0.32s)
+    --- PASS: TestStripeSP11SQLSignalLoader/wrong_job (0.00s)
+    --- PASS: TestStripeSP11SQLSignalLoader/wrong_signal (0.00s)
+    --- PASS: TestStripeSP11SQLSignalLoader/wrong_operation (0.00s)
+    --- PASS: TestStripeSP11SQLSignalLoader/wrong_profile (0.00s)
+    --- PASS: TestStripeSP11SQLSignalLoader/wrong_token (0.00s)
+    --- PASS: TestStripeSP11SQLSignalLoader/wrong_generation (0.00s)
+=== RUN   TestStripeSP07Start
+=== RUN   TestStripeSP07Start/atomic_rows_and_zero_provider_calls
+=== RUN   TestStripeSP07Start/replay_and_frozen_input_conflicts
+=== RUN   TestStripeSP07Start/concurrent_payuni_vs_stripe_one_winner
+=== RUN   TestStripeSP07Start/mixed_provider_lock_workload_no_deadlock
+=== RUN   TestStripeSP07Start/admission_drift
+=== RUN   TestStripeSP07Start/admission_drift/method_stale_version
+=== RUN   TestStripeSP07Start/admission_drift/method_disabled
+=== RUN   TestStripeSP07Start/admission_drift/method_hidden
+=== RUN   TestStripeSP07Start/admission_drift/amount_below_method_minimum
+=== RUN   TestStripeSP07Start/admission_drift/amount_above_method_maximum
+=== RUN   TestStripeSP07Start/admission_drift/qualification_revoked
+=== RUN   TestStripeSP07Start/admission_drift/qualification_expired
+=== RUN   TestStripeSP07Start/admission_drift/binding_disabled
+=== RUN   TestStripeSP07Start/admission_drift/wrong_environment_on_method
+=== RUN   TestStripeSP07Start/admission_drift/mock_evidence_on_sandbox_profile
+=== RUN   TestStripeSP07Start/admission_drift/hold_expired_before_start
+=== RUN   TestStripeSP07Start/currency_not_admitted_JPY
+=== RUN   TestStripeSP07Start/hold_expires_during_lock_wait
+=== RUN   TestStripeSP07Start/rotation_fences_new_starts_until_requalified
+=== RUN   TestStripeSP07Start/constructor_negatives
+--- PASS: TestStripeSP07Start (6.58s)
+    --- PASS: TestStripeSP07Start/atomic_rows_and_zero_provider_calls (0.32s)
+    --- PASS: TestStripeSP07Start/replay_and_frozen_input_conflicts (0.35s)
+    --- PASS: TestStripeSP07Start/concurrent_payuni_vs_stripe_one_winner (0.39s)
+    --- PASS: TestStripeSP07Start/mixed_provider_lock_workload_no_deadlock (0.52s)
+    --- PASS: TestStripeSP07Start/admission_drift (3.62s)
+        --- PASS: TestStripeSP07Start/admission_drift/method_stale_version (0.32s)
+        --- PASS: TestStripeSP07Start/admission_drift/method_disabled (0.31s)
+        --- PASS: TestStripeSP07Start/admission_drift/method_hidden (0.32s)
+        --- PASS: TestStripeSP07Start/admission_drift/amount_below_method_minimum (0.33s)
+        --- PASS: TestStripeSP07Start/admission_drift/amount_above_method_maximum (0.33s)
+        --- PASS: TestStripeSP07Start/admission_drift/qualification_revoked (0.33s)
+        --- PASS: TestStripeSP07Start/admission_drift/qualification_expired (0.36s)
+        --- PASS: TestStripeSP07Start/admission_drift/binding_disabled (0.33s)
+        --- PASS: TestStripeSP07Start/admission_drift/wrong_environment_on_method (0.33s)
+        --- PASS: TestStripeSP07Start/admission_drift/mock_evidence_on_sandbox_profile (0.34s)
+        --- PASS: TestStripeSP07Start/admission_drift/hold_expired_before_start (0.33s)
+    --- PASS: TestStripeSP07Start/currency_not_admitted_JPY (0.32s)
+    --- PASS: TestStripeSP07Start/hold_expires_during_lock_wait (0.39s)
+    --- PASS: TestStripeSP07Start/rotation_fences_new_starts_until_requalified (0.34s)
+    --- PASS: TestStripeSP07Start/constructor_negatives (0.33s)
+=== RUN   TestStripeUntrackedCaptureAndClose
+=== RUN   TestStripeUntrackedCaptureAndClose/all_untracked/capture
+    stripe_untracked_capture_test.go:64: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:79: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedCaptureAndClose/all_untracked/close
+    stripe_untracked_capture_test.go:64: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:79: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedCaptureAndClose/mixed/capture
+    stripe_untracked_capture_test.go:64: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:79: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedCaptureAndClose/mixed/close
+    stripe_untracked_capture_test.go:64: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:79: OWNER-POOL: payments.provider_observations report
+--- PASS: TestStripeUntrackedCaptureAndClose (1.60s)
+    --- PASS: TestStripeUntrackedCaptureAndClose/all_untracked/capture (0.42s)
+    --- PASS: TestStripeUntrackedCaptureAndClose/all_untracked/close (0.39s)
+    --- PASS: TestStripeUntrackedCaptureAndClose/mixed/capture (0.39s)
+    --- PASS: TestStripeUntrackedCaptureAndClose/mixed/close (0.40s)
+=== RUN   TestStripeUntrackedReservationRefusals
+=== RUN   TestStripeUntrackedReservationRefusals/capture/missing_tracked_lines
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:126: OWNER-POOL: replica-mode tamper/restore: DELETE FROM inventory.reservation_lines
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/capture/empty_quote
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:132: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders SET
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/capture/foreign_sku
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:144: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders SET
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/capture/missing_reservation
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:146: OWNER-POOL: replica-mode tamper/restore: DELETE FROM inventory.reservations
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/capture/tracked_flipped_with_missing_lines
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:126: OWNER-POOL: replica-mode tamper/restore: DELETE FROM inventory.reservation_lines
+    stripe_untracked_capture_test.go:128: OWNER-POOL: catalog tracking changed after a tracked hold; its RESERVE history must remain authoritative
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/close/missing_tracked_lines
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:126: OWNER-POOL: replica-mode tamper/restore: DELETE FROM inventory.reservation_lines
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/close/empty_quote
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:132: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders SET
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/close/foreign_sku
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:144: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders SET
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/close/missing_reservation
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:146: OWNER-POOL: replica-mode tamper/restore: DELETE FROM inventory.reservations
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/close/tracked_flipped_with_missing_lines
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:126: OWNER-POOL: replica-mode tamper/restore: DELETE FROM inventory.reservation_lines
+    stripe_untracked_capture_test.go:128: OWNER-POOL: catalog tracking changed after a tracked hold; its RESERVE history must remain authoritative
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+--- PASS: TestStripeUntrackedReservationRefusals (4.41s)
+    --- PASS: TestStripeUntrackedReservationRefusals/capture/missing_tracked_lines (0.41s)
+    --- PASS: TestStripeUntrackedReservationRefusals/capture/empty_quote (0.42s)
+    --- PASS: TestStripeUntrackedReservationRefusals/capture/foreign_sku (0.63s)
+    --- PASS: TestStripeUntrackedReservationRefusals/capture/missing_reservation (0.38s)
+    --- PASS: TestStripeUntrackedReservationRefusals/capture/tracked_flipped_with_missing_lines (0.38s)
+    --- PASS: TestStripeUntrackedReservationRefusals/close/missing_tracked_lines (0.38s)
+    --- PASS: TestStripeUntrackedReservationRefusals/close/empty_quote (0.39s)
+    --- PASS: TestStripeUntrackedReservationRefusals/close/foreign_sku (0.65s)
+    --- PASS: TestStripeUntrackedReservationRefusals/close/missing_reservation (0.37s)
+    --- PASS: TestStripeUntrackedReservationRefusals/close/tracked_flipped_with_missing_lines (0.39s)
+=== RUN   TestStripeUntrackedDriftReview
+=== RUN   TestStripeUntrackedDriftReview/became_tracked
+    stripe_untracked_review_test.go:36: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_review_test.go:65: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedDriftReview/sku_deleted
+    stripe_untracked_review_test.go:36: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_review_test.go:60: OWNER-POOL: replica-mode tamper/restore: DELETE FROM catalog.skus
+    stripe_untracked_review_test.go:65: OWNER-POOL: payments.provider_observations report
+--- PASS: TestStripeUntrackedDriftReview (6.32s)
+    --- PASS: TestStripeUntrackedDriftReview/became_tracked (3.16s)
+    --- PASS: TestStripeUntrackedDriftReview/sku_deleted (3.16s)
+=== RUN   TestStripeSP13WebhookHTTP
+=== RUN   TestStripeSP13WebhookHTTP/rejections_and_frozen_codes
+=== RUN   TestStripeSP13WebhookHTTP/accept_atomically_and_dedupe_changed_body
+=== RUN   TestStripeSP13WebhookHTTP/ignore_and_quarantine_reasons
+=== RUN   TestStripeSP13WebhookHTTP/malformed_after_signature_is_200_once
+=== RUN   TestStripeSP13WebhookHTTP/no_ack_before_commit_and_commit_failure_503
+=== RUN   TestStripeSP13WebhookHTTP/missing_signal_linkage_cannot_ack
+=== RUN   TestStripeSP13WebhookHTTP/signature_endpoint_mismatch_and_stale_key_version
+=== RUN   TestStripeSP13WebhookHTTP/historical_admission_survives_binding_disable_and_api_rotation_but_not_endpoint_disable
+=== RUN   TestStripeSP13WebhookHTTP/wrong_profile_then_correct_profile_admits_exactly_one_signal
+=== RUN   TestStripeSP13WebhookHTTP/signing_material_unavailable_is_503
+=== RUN   TestStripeSP13WebhookHTTP/concurrency_cap_is_exactly_32_and_the_rest_are_503_busy
+=== RUN   TestStripeSP13WebhookHTTP/constructor_negatives
+=== RUN   TestStripeSP13WebhookHTTP/no_forbidden_material_in_logs_or_database
+--- PASS: TestStripeSP13WebhookHTTP (6.43s)
+    --- PASS: TestStripeSP13WebhookHTTP/rejections_and_frozen_codes (0.02s)
+    --- PASS: TestStripeSP13WebhookHTTP/accept_atomically_and_dedupe_changed_body (0.02s)
+    --- PASS: TestStripeSP13WebhookHTTP/ignore_and_quarantine_reasons (0.08s)
+    --- PASS: TestStripeSP13WebhookHTTP/malformed_after_signature_is_200_once (0.01s)
+    --- PASS: TestStripeSP13WebhookHTTP/no_ack_before_commit_and_commit_failure_503 (4.00s)
+    --- PASS: TestStripeSP13WebhookHTTP/missing_signal_linkage_cannot_ack (0.02s)
+    --- PASS: TestStripeSP13WebhookHTTP/signature_endpoint_mismatch_and_stale_key_version (0.84s)
+    --- PASS: TestStripeSP13WebhookHTTP/historical_admission_survives_binding_disable_and_api_rotation_but_not_endpoint_disable (0.03s)
+    --- PASS: TestStripeSP13WebhookHTTP/wrong_profile_then_correct_profile_admits_exactly_one_signal (0.03s)
+    --- PASS: TestStripeSP13WebhookHTTP/signing_material_unavailable_is_503 (0.01s)
+    --- PASS: TestStripeSP13WebhookHTTP/concurrency_cap_is_exactly_32_and_the_rest_are_503_busy (0.55s)
+    --- PASS: TestStripeSP13WebhookHTTP/constructor_negatives (0.09s)
+    --- PASS: TestStripeSP13WebhookHTTP/no_forbidden_material_in_logs_or_database (0.20s)
+PASS
+ok  	livecommerce/tests/foundation	574.823s
+test-focused: top-level PASS=40 FAIL=0 SKIP=2 exit=0

@@ -94,11 +94,11 @@ contracts, not the cores' unit tests; a needed `mailtest` capability not in the 
 
 ## Verify
 ```sh
-GOTOOLCHAIN=go1.27.1 go vet ./tests/foundation && GOTOOLCHAIN=go1.27.1 go vet -tags browser ./tests/foundation
+GOTOOLCHAIN=go1.27.2 go vet ./tests/foundation && GOTOOLCHAIN=go1.27.2 go vet -tags browser ./tests/foundation
 node --test --experimental-strip-types tests/admin/password-bff.test.ts
 LC_FOCUSED_TIMEOUT=2400s bash scripts/dev/test-focused.sh '^TestPasswordPA(0[3-9]|08b)'
 bash scripts/dev/test-local.sh --browser-password-auth                    # PA11
-LC_MAIL_PROBE=1 GOTOOLCHAIN=go1.27.1 go test -count=1 -run '^TestMailPA12SMTPProbe$' -v ./tests/foundation  # owner server only; else NOT_RUN
+LC_MAIL_PROBE=1 GOTOOLCHAIN=go1.27.2 go test -count=1 -run '^TestMailPA12SMTPProbe$' -v ./tests/foundation  # owner server only; else NOT_RUN
 ```
 Red proof per gate (PROCESS §2.4): after M2, one targeted mutation of the merged candidate in a
 scratch copy (reverted) per gate → `output/auth-tests/red-<gate>.log`, then the green log (e.g. PA05:

@@ -1,0 +1,421 @@
+✔ billing status accepts the frozen shape (incl. UNBILLED with no customer, plans []) (6.272167ms)
+✔ billing status rejects unknown keys, unknown enums, bad money and duplicate plans (11.650083ms)
+✔ standing endpoint is exactly {standing} (0.103667ms)
+✔ banner shows only for GRACE and RESTRICTED (U5) (0.36275ms)
+✔ live subscription rule mirrors 409 subscription_exists (0.12075ms)
+✔ redirect URL: https on the two hosted Stripe hosts only, no credentials/port, never echoed on failure (0.235291ms)
+✔ exactly the nine W6-01B resources are admitted, each only under its own method (1.686791ms)
+✔ the customer list is claimed only when a tag filter is present (customers-request.ts stays the owner otherwise) (0.28975ms)
+✔ near misses are refused (no generic proxying) (0.911542ms)
+✔ reads: no body, no key, no transfer-encoding; tag-list takes no query at all (20.244125ms)
+✔ customer-list query: closed keys, tag must be a canonical uuid, list bounds identical to customers-request (1.499042ms)
+✔ note-list query: only limit and after, with the customers-list bounds (0.499ms)
+✔ writes: exactly one well-formed Idempotency-Key; the two DELETEs carry no body but still need the key (23.35875ms)
+✔ validTagName mirrors Go (NFC first, 1..20, trimmed, no control/Cf) (1.309625ms)
+✔ validNoteBody mirrors Go (1..1000, not blank, only \n \r \t controls) (0.707542ms)
+✔ tag-create body: closed keys, valid name and one of the eight colors (0.514625ms)
+✔ tag-patch body: at least one of name/color, nothing else (0.283834ms)
+✔ owner-tags body: tag_ids (<=100 canonical uuids) + 64-hex revision, exact keys (0.654208ms)
+✔ note bodies: create {body}; patch {body, version>=1}; deletes and reads carry no body at all (0.366083ms)
+✔ parseTagCatalog decodes {items: TagRecord[]} with the store-catalogue bounds (1.763709ms)
+✔ parseTagSet / parseDeletedTag / parseDeletedNote decode the frozen write receipts (0.668166ms)
+✔ parseNoteRecord / parseNotePage decode notes with the Go note rules (1.620708ms)
+✔ customer-tags copy: three locales, identical key sets, the integrator's ruled note-privacy text verbatim (0.283334ms)
+✔ components wire the ruled copy and the tag/note controls the specs click (0.968625ms)
+✔ tag read names must already be trimmed NFC and Unicode code-point bounded (0.130208ms)
+✔ session change before network sends nothing (4.594666ms)
+✔ session changes after network or during body parse drop the response (10.782375ms)
+✔ transient session digest failure is settled only before dispatch (0.479625ms)
+✔ lost response followed by a changed session is UNKNOWN after dispatch (0.31675ms)
+✔ lost response does not auto-retry; explicit replay keeps method/key/payload/scope (0.925375ms)
+✔ 5xx or malformed success is uncertain, coded refusal is settled (1.542458ms)
+✔ passive tag/detail refresh preserves an unsaved new-note draft (15.032ms)
+✔ passive refresh updates visible notes but preserves edit draft and original CAS version (0.822ms)
+✔ explicit refresh signal clears old edit draft while passive array changes do not (0.731167ms)
+✔ an unauthorized note read clears private note bodies and the draft (2.599708ms)
+✔ a transient note read failure keeps the notes already shown (2.655917ms)
+✔ an unauthorized note read signals the global logout once; a transient failure does not (4.618708ms)
+✔ non-privacy writer: own notes keep Edit and Delete on a fresh mount, others' notes do not (0.609458ms)
+✔ notes forbidden/not_found signals scope loss exactly once per mount, never on transient failure (11.969792ms)
+✔ bad path/store/method/query/header is refused without authority or backend calls (52.013375ms)
+✔ the actual proxy admits a tagged customer list with scoped search/cursor and rejects malformed tag authority (6.313625ms)
+✔ signed-out/cross-store/Origin-CSRF denials short circuit before body or forwarding (0.795209ms)
+✔ closed bodies and DELETE payloads cannot reach Go (3.459875ms)
+✔ all write methods preserve exact key/body/store and private success status (4.341625ms)
+✔ note pagination preserved and hostile backend errors/bodies sanitized (4.351ms)
+✔ UNKNOWN survives settled unauthorized retry until trusted success; fresh run ignored (2.181709ms)
+✔ UNKNOWN survives settled forbidden retry until trusted success; fresh run ignored (0.742542ms)
+✔ UNKNOWN survives settled version_changed retry until trusted success; fresh run ignored (0.798791ms)
+✔ first-attempt preflight refusal is settled and permits a fresh action (1.271167ms)
+✔ UNKNOWN and in-flight retries prevent duplicate dispatch; unmount discards stale outcome (0.666584ms)
+✔ an unauthorized write signals the global logout; forbidden does not (0.927958ms)
+✔ UNKNOWN command survives unmount/remount: still locked, same-key retry, cleared by trusted success (0.883333ms)
+✔ a command unmounted while in flight is treated as UNKNOWN on remount (0.767167ms)
+✔ a session boundary change drops the remembered UNKNOWN command (0.932583ms)
+✔ exactly the eleven contract §5 resources are admitted, each only under its own method (4.188916ms)
+✔ near misses are refused (no generic proxying) (0.159417ms)
+✔ customers list query: limit 1..100, opaque after, q 1..40, nothing else (1.0665ms)
+✔ finance query: from and to are required calendar dates, 0..91 days apart (0.392667ms)
+✔ every other resource takes no query at all (0.110041ms)
+✔ Idempotency-Key: required (and well-formed) on the three customer POSTs, forbidden everywhere else (45.935541ms)
+✔ bodies: JSON content type where a body is read, none where it is not, never chunked (1.055417ms)
+✔ body content: the frozen shapes only (0.712375ms)
+✔ customer list and detail decode exactly the frozen Go DTOs (3.216333ms)
+✔ decoders refuse: unknown key, missing key, wrong type, impossible values, actor-level leakage (1.688041ms)
+✔ finance and erasure summaries decode; anything else is refused (1.159709ms)
+✔ billing status, standing and redirect decode exactly the frozen DTOs (B3, BD4) (0.863958ms)
+✔ a checkout/portal redirect is followed only to a hosted Stripe page (bearer links, I11) (0.324208ms)
+✔ customer list accepts the frozen row and rejects unknown keys, dup ids, bad cursor, oversize (15.704708ms)
+✔ customer row invariants: nulls for bundle-only/erased, counts, money, consents (0.651333ms)
+✔ customer detail: bounded lists, order summaries reuse the orders parser, id must match (6.761541ms)
+✔ erasure summary is four counts only (0.30375ms)
+✔ finance summary: net = captured - refunded (I05), totals carry an empty day, sandbox flag (0.878125ms)
+✔ financeDay is the UTC+8 day (0.203292ms)
+✔ finance defaults keep Taipei dates across midnight, leap day and year end (0.304958ms)
+✔ tags and notes are parsed strictly (W6-01B) (1.435583ms)
+✔ route table admits exactly the eleven contract resources (1.318084ms)
+✔ list query: limit/after/q grammar, no duplicates, no unknown keys (0.886917ms)
+✔ finance query: both dates required, real calendar days, 0..91 day range (0.14625ms)
+✔ exact resources refuse any query, even a bare question mark (0.051584ms)
+✔ key rules: required on the three customer POSTs, forbidden everywhere else (39.669708ms)
+✔ export and portal must declare an empty body (0.11825ms)
+✔ bodies are exact and closed (0.247166ms)
+✔ selected tag survives searches and cursor pagination while an empty filter is omitted (24.464542ms)
+✔ customer list dispatch preserves legacy requests and sends every tag query to the closed W6 authority (250.76875ms)
+✔ customers reports link is hidden only when permissions are present and lack orders:read (0.124834ms)
+✔ reports are a finance subpage and preserve the existing single finance navigation entry (0.11275ms)
+✔ an authoritative erased customer immediately unmounts the cached private tags/notes subtree (23.088708ms)
+✔ the actual customer row shows manual tags and imported status without changing consent (3.986917ms)
+ℹ tests 88
+ℹ suites 0
+ℹ pass 88
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 812.018292
+
+> live-commerce-workspace@ build:storefront /Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui
+> pnpm --filter @live-commerce/storefront build
+
+
+> @live-commerce/storefront@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui/apps/storefront
+> next build
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 137ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 990ms
+  Running TypeScript ...
+  Finished TypeScript in 381ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/2) ...
+✓ Generating static pages using 9 workers (2/2) in 37ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/cart
+├ ƒ /[locale]/checkout
+├ ƒ /[locale]/claim
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/collections/[slug]
+├ ƒ /[locale]/data-deletion
+├ ƒ /[locale]/legal/[slug]
+├ ƒ /[locale]/legal/anti-fraud
+├ ƒ /[locale]/order-link
+├ ƒ /[locale]/orders/[orderID]
+├ ƒ /[locale]/orders/lookup
+├ ƒ /[locale]/pages/[slug]
+├ ƒ /[locale]/privacy
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[slug]
+├ ƒ /[locale]/search
+├ ƒ /api/buyer/[...path]
+├ ƒ /api/shop/product/[key]
+├ ƒ /api/shop/products
+├ ƒ /feeds/meta.csv
+├ ƒ /media/c/[collectionID]/[imageID]
+├ ƒ /media/p/[productID]/[imageID]
+├ ƒ /media/s/[imageID]
+├ ƒ /payment/return
+├ ƒ /products/[productID]
+├ ƒ /robots.txt
+└ ƒ /sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+> live-commerce-workspace@ build:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 17ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 2.0s
+  Running TypeScript ...
+  Finished TypeScript in 432ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/15) ...
+  Generating static pages using 9 workers (3/15)
+  Generating static pages using 9 workers (7/15)
+  Generating static pages using 9 workers (11/15)
+✓ Generating static pages using 9 workers (15/15) in 51ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/ads
+├ ƒ /[locale]/ads/attribution
+├ ƒ /[locale]/billing
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/customers
+├ ƒ /[locale]/customers/[customer]
+├ ƒ /[locale]/customers/import
+├ ƒ /[locale]/design
+├ ƒ /[locale]/finance
+├ ƒ /[locale]/finance/reports
+├ ƒ /[locale]/inventory
+├ ƒ /[locale]/invite/[token]
+├ ƒ /[locale]/messages
+├ ƒ /[locale]/orders
+├ ƒ /[locale]/orders/cvs-print
+├ ƒ /[locale]/orders/new
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[product]
+├ ƒ /[locale]/products/import
+├ ƒ /[locale]/promotions
+├ ƒ /[locale]/reset
+├ ƒ /[locale]/returns
+├ ƒ /[locale]/settings
+├ ƒ /[locale]/settings/operations
+├ ƒ /[locale]/settings/payments/card
+├ ƒ /[locale]/settings/settlements
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/studio
+├ ƒ /[locale]/studio/claims
+├ ƒ /[locale]/studio/console
+├ ƒ /[locale]/team
+├ ƒ /api/ads/meta/callback
+├ ƒ /api/ads/meta/connect
+├ ƒ /api/auth/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/password/login
+├ ƒ /api/auth/password/reset
+├ ƒ /api/auth/password/signup
+├ ƒ /api/auth/password/verify
+├ ƒ /api/meta/callback
+├ ƒ /api/meta/connect
+├ ƒ /api/onboarding/initial-store
+├ ƒ /api/stores
+├ ƒ /api/stores/[store]/[...resource]
+├ ƒ /api/stores/[store]/customers
+├ ƒ /api/stores/[store]/customers/[customer]/historical-orders
+├ ƒ /api/stores/[store]/customers/[customer]/notes
+├ ƒ /api/stores/[store]/customers/[customer]/notes/[note]
+├ ƒ /api/stores/[store]/customers/[customer]/tags
+├ ƒ /api/stores/[store]/customers/tags
+├ ƒ /api/stores/[store]/customers/tags/[tag]
+├ ƒ /api/stores/[store]/imports/[param]/[action]
+├ ƒ /api/stores/[store]/orders/export
+├ ƒ /api/stores/[store]/orders/pick-list
+├ ƒ /api/stores/[store]/reports/[report]
+├ ƒ /api/stores/[store]/shipments/cvs-batch
+├ ƒ /api/stores/[store]/tools/[...resource]
+├ ƒ /api/team/[action]
+├ ƒ /site/[locale]/[page]
+├ ƒ /site/robots.txt
+└ ƒ /site/sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packaged standalone admin server and static assets.
+=== RUN   TestBrowserCustomersBilling
+    browser_customers_billing_test.go:335: CB11 BROWSER (MOCK Stripe): admin half passed; screenshots hashed; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui/output/playwright/customers-billing/20261008T114740.365805000
+    browser_customers_billing_test.go:380: CB11 BROWSER buyer half passed; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui/output/playwright/customers-billing/20261008T114740.365805000
+--- PASS: TestBrowserCustomersBilling (42.76s)
+=== RUN   TestBrowserW6Customers
+2026/10/08 19:48:17 http: proxy error: dial tcp 127.0.0.1:51996: connect: connection refused
+2026/10/08 19:48:17 http: proxy error: dial tcp 127.0.0.1:51996: connect: connection refused
+2026/10/08 19:48:17 http: proxy error: dial tcp 127.0.0.1:51996: connect: connection refused
+2026/10/08 19:48:18 http: TLS handshake error from 127.0.0.1:52011: remote error: tls: unknown certificate
+2026/10/08 19:48:18 http: TLS handshake error from 127.0.0.1:52013: remote error: tls: unknown certificate
+2026/10/08 19:48:18 http: TLS handshake error from 127.0.0.1:52014: remote error: tls: unknown certificate
+2026/10/08 19:48:18 http: TLS handshake error from 127.0.0.1:52016: remote error: tls: unknown certificate
+2026/10/08 19:48:18 http: TLS handshake error from 127.0.0.1:52017: remote error: tls: unknown certificate
+2026/10/08 19:48:18 http: TLS handshake error from 127.0.0.1:52015: remote error: tls: unknown certificate
+2026/10/08 19:48:19 http: proxy error: context canceled
+2026/10/08 19:48:19 http: proxy error: context canceled
+2026/10/08 19:48:19 http: TLS handshake error from 127.0.0.1:52045: remote error: tls: unknown certificate
+2026/10/08 19:48:19 http: TLS handshake error from 127.0.0.1:52047: remote error: tls: unknown certificate
+2026/10/08 19:48:19 http: TLS handshake error from 127.0.0.1:52051: remote error: tls: unknown certificate
+2026/10/08 19:48:19 http: TLS handshake error from 127.0.0.1:52048: remote error: tls: unknown certificate
+2026/10/08 19:48:19 http: TLS handshake error from 127.0.0.1:52050: remote error: tls: unknown certificate
+2026/10/08 19:48:19 http: TLS handshake error from 127.0.0.1:52049: remote error: tls: unknown certificate
+2026/10/08 19:48:19 http: proxy error: context canceled
+2026/10/08 19:48:19 http: proxy error: context canceled
+2026/10/08 19:48:19 http: proxy error: context canceled
+2026/10/08 19:48:19 http: proxy error: context canceled
+2026/10/08 19:48:19 http: proxy error: context canceled
+2026/10/08 19:48:19 http: TLS handshake error from 127.0.0.1:52066: remote error: tls: unknown certificate
+2026/10/08 19:48:19 http: TLS handshake error from 127.0.0.1:52067: remote error: tls: unknown certificate
+2026/10/08 19:48:19 http: TLS handshake error from 127.0.0.1:52069: remote error: tls: unknown certificate
+2026/10/08 19:48:19 http: TLS handshake error from 127.0.0.1:52068: remote error: tls: unknown certificate
+2026/10/08 19:48:19 http: TLS handshake error from 127.0.0.1:52073: remote error: tls: unknown certificate
+2026/10/08 19:48:21 http: proxy error: context canceled
+2026/10/08 19:48:21 http: proxy error: context canceled
+2026/10/08 19:48:21 http: proxy error: context canceled
+2026/10/08 19:48:21 http: proxy error: context canceled
+2026/10/08 19:48:21 http: TLS handshake error from 127.0.0.1:52095: remote error: tls: unknown certificate
+2026/10/08 19:48:21 http: TLS handshake error from 127.0.0.1:52100: remote error: tls: unknown certificate
+2026/10/08 19:48:21 http: TLS handshake error from 127.0.0.1:52102: remote error: tls: unknown certificate
+2026/10/08 19:48:21 http: TLS handshake error from 127.0.0.1:52103: remote error: tls: unknown certificate
+2026/10/08 19:48:21 http: TLS handshake error from 127.0.0.1:52112: remote error: tls: unknown certificate
+2026/10/08 19:48:21 http: TLS handshake error from 127.0.0.1:52114: remote error: tls: unknown certificate
+2026/10/08 19:48:21 http: TLS handshake error from 127.0.0.1:52115: remote error: tls: unknown certificate
+2026/10/08 19:48:21 http: TLS handshake error from 127.0.0.1:52117: remote error: tls: unknown certificate
+2026/10/08 19:48:21 http: TLS handshake error from 127.0.0.1:52116: remote error: tls: unknown certificate
+2026/10/08 19:48:21 http: TLS handshake error from 127.0.0.1:52118: remote error: tls: unknown certificate
+2026/10/08 19:48:22 http: proxy error: context canceled
+2026/10/08 19:48:22 http: proxy error: context canceled
+2026/10/08 19:48:22 http: proxy error: context canceled
+2026/10/08 19:48:22 http: TLS handshake error from 127.0.0.1:52133: remote error: tls: unknown certificate
+2026/10/08 19:48:22 http: proxy error: context canceled
+2026/10/08 19:48:22 http: TLS handshake error from 127.0.0.1:52134: remote error: tls: unknown certificate
+2026/10/08 19:48:22 http: TLS handshake error from 127.0.0.1:52136: remote error: tls: unknown certificate
+2026/10/08 19:48:22 http: TLS handshake error from 127.0.0.1:52135: remote error: tls: unknown certificate
+2026/10/08 19:48:22 http: TLS handshake error from 127.0.0.1:52138: remote error: tls: unknown certificate
+2026/10/08 19:48:22 http: TLS handshake error from 127.0.0.1:52137: remote error: tls: unknown certificate
+2026/10/08 19:48:23 http: proxy error: context canceled
+2026/10/08 19:48:23 http: TLS handshake error from 127.0.0.1:52163: remote error: tls: unknown certificate
+2026/10/08 19:48:24 http: TLS handshake error from 127.0.0.1:52172: remote error: tls: unknown certificate
+2026/10/08 19:48:24 http: TLS handshake error from 127.0.0.1:52174: remote error: tls: unknown certificate
+2026/10/08 19:48:24 http: TLS handshake error from 127.0.0.1:52175: remote error: tls: unknown certificate
+2026/10/08 19:48:24 http: TLS handshake error from 127.0.0.1:52177: remote error: tls: unknown certificate
+2026/10/08 19:48:24 http: TLS handshake error from 127.0.0.1:52176: remote error: tls: unknown certificate
+2026/10/08 19:48:24 http: TLS handshake error from 127.0.0.1:52178: remote error: tls: unknown certificate
+2026/10/08 19:48:24 http: proxy error: context canceled
+2026/10/08 19:48:24 http: proxy error: context canceled
+2026/10/08 19:48:24 http: proxy error: context canceled
+2026/10/08 19:48:24 http: TLS handshake error from 127.0.0.1:52194: remote error: tls: unknown certificate
+2026/10/08 19:48:24 http: TLS handshake error from 127.0.0.1:52198: remote error: tls: unknown certificate
+2026/10/08 19:48:25 http: TLS handshake error from 127.0.0.1:52207: remote error: tls: unknown certificate
+2026/10/08 19:48:25 http: TLS handshake error from 127.0.0.1:52212: remote error: tls: unknown certificate
+2026/10/08 19:48:25 http: TLS handshake error from 127.0.0.1:52213: remote error: tls: unknown certificate
+2026/10/08 19:48:25 http: proxy error: context canceled
+2026/10/08 19:48:25 http: proxy error: context canceled
+2026/10/08 19:48:25 http: proxy error: context canceled
+2026/10/08 19:48:25 http: proxy error: context canceled
+2026/10/08 19:48:25 http: TLS handshake error from 127.0.0.1:52217: remote error: tls: unknown certificate
+2026/10/08 19:48:25 http: TLS handshake error from 127.0.0.1:52218: remote error: tls: unknown certificate
+2026/10/08 19:48:25 http: TLS handshake error from 127.0.0.1:52219: remote error: tls: unknown certificate
+2026/10/08 19:48:25 http: TLS handshake error from 127.0.0.1:52221: remote error: tls: unknown certificate
+2026/10/08 19:48:25 http: TLS handshake error from 127.0.0.1:52224: remote error: tls: unknown certificate
+2026/10/08 19:48:26 http: TLS handshake error from 127.0.0.1:52226: remote error: tls: unknown certificate
+2026/10/08 19:48:26 http: TLS handshake error from 127.0.0.1:52229: remote error: tls: unknown certificate
+2026/10/08 19:48:26 http: TLS handshake error from 127.0.0.1:52238: remote error: tls: unknown certificate
+2026/10/08 19:48:26 http: TLS handshake error from 127.0.0.1:52240: remote error: tls: unknown certificate
+2026/10/08 19:48:26 http: TLS handshake error from 127.0.0.1:52241: remote error: tls: unknown certificate
+2026/10/08 19:48:26 http: TLS handshake error from 127.0.0.1:52242: remote error: tls: unknown certificate
+2026/10/08 19:48:26 http: TLS handshake error from 127.0.0.1:52244: remote error: tls: unknown certificate
+2026/10/08 19:48:26 http: TLS handshake error from 127.0.0.1:52243: remote error: tls: unknown certificate
+2026/10/08 19:48:26 http: proxy error: context canceled
+2026/10/08 19:48:26 http: proxy error: context canceled
+2026/10/08 19:48:26 http: proxy error: context canceled
+2026/10/08 19:48:26 http: TLS handshake error from 127.0.0.1:52259: remote error: tls: unknown certificate
+2026/10/08 19:48:26 http: proxy error: context canceled
+2026/10/08 19:48:26 http: proxy error: context canceled
+2026/10/08 19:48:26 http: TLS handshake error from 127.0.0.1:52260: remote error: tls: unknown certificate
+2026/10/08 19:48:26 http: TLS handshake error from 127.0.0.1:52261: remote error: tls: unknown certificate
+2026/10/08 19:48:26 http: TLS handshake error from 127.0.0.1:52264: remote error: tls: unknown certificate
+2026/10/08 19:48:26 http: TLS handshake error from 127.0.0.1:52265: remote error: tls: unknown certificate
+2026/10/08 19:48:28 http: proxy error: context canceled
+2026/10/08 19:48:28 http: TLS handshake error from 127.0.0.1:52284: remote error: tls: unknown certificate
+2026/10/08 19:48:28 http: TLS handshake error from 127.0.0.1:52287: remote error: tls: unknown certificate
+2026/10/08 19:48:28 http: TLS handshake error from 127.0.0.1:52295: remote error: tls: unknown certificate
+2026/10/08 19:48:28 http: TLS handshake error from 127.0.0.1:52297: remote error: tls: unknown certificate
+2026/10/08 19:48:28 http: TLS handshake error from 127.0.0.1:52298: remote error: tls: unknown certificate
+2026/10/08 19:48:28 http: TLS handshake error from 127.0.0.1:52299: remote error: tls: unknown certificate
+2026/10/08 19:48:28 http: TLS handshake error from 127.0.0.1:52300: remote error: tls: unknown certificate
+2026/10/08 19:48:28 http: TLS handshake error from 127.0.0.1:52301: remote error: tls: unknown certificate
+2026/10/08 19:48:29 http: proxy error: context canceled
+2026/10/08 19:48:29 http: proxy error: context canceled
+2026/10/08 19:48:29 http: proxy error: context canceled
+2026/10/08 19:48:29 http: TLS handshake error from 127.0.0.1:52317: remote error: tls: unknown certificate
+2026/10/08 19:48:29 http: TLS handshake error from 127.0.0.1:52321: remote error: tls: unknown certificate
+2026/10/08 19:48:30 http: proxy error: context canceled
+2026/10/08 19:48:30 http: TLS handshake error from 127.0.0.1:52332: remote error: tls: unknown certificate
+2026/10/08 19:48:31 http: TLS handshake error from 127.0.0.1:52352: remote error: tls: unknown certificate
+2026/10/08 19:48:31 http: TLS handshake error from 127.0.0.1:52354: remote error: tls: unknown certificate
+2026/10/08 19:48:31 http: TLS handshake error from 127.0.0.1:52355: remote error: tls: unknown certificate
+2026/10/08 19:48:31 http: TLS handshake error from 127.0.0.1:52358: remote error: tls: unknown certificate
+2026/10/08 19:48:31 http: TLS handshake error from 127.0.0.1:52357: remote error: tls: unknown certificate
+2026/10/08 19:48:31 http: TLS handshake error from 127.0.0.1:52356: remote error: tls: unknown certificate
+2026/10/08 19:48:31 http: proxy error: context canceled
+2026/10/08 19:48:31 http: proxy error: context canceled
+2026/10/08 19:48:31 http: proxy error: context canceled
+2026/10/08 19:48:31 http: proxy error: context canceled
+2026/10/08 19:48:31 http: proxy error: context canceled
+2026/10/08 19:48:31 http: TLS handshake error from 127.0.0.1:52374: remote error: tls: unknown certificate
+2026/10/08 19:48:31 http: TLS handshake error from 127.0.0.1:52373: remote error: tls: unknown certificate
+2026/10/08 19:48:31 http: TLS handshake error from 127.0.0.1:52375: remote error: tls: unknown certificate
+2026/10/08 19:48:31 http: proxy error: context canceled
+2026/10/08 19:48:32 http: proxy error: context canceled
+2026/10/08 19:48:32 http: TLS handshake error from 127.0.0.1:52385: remote error: tls: unknown certificate
+2026/10/08 19:48:32 http: TLS handshake error from 127.0.0.1:52387: remote error: tls: unknown certificate
+2026/10/08 19:48:32 http: TLS handshake error from 127.0.0.1:52388: remote error: tls: unknown certificate
+2026/10/08 19:48:32 http: TLS handshake error from 127.0.0.1:52389: remote error: tls: unknown certificate
+2026/10/08 19:48:32 http: TLS handshake error from 127.0.0.1:52390: remote error: tls: unknown certificate
+2026/10/08 19:48:32 http: TLS handshake error from 127.0.0.1:52391: remote error: tls: unknown certificate
+2026/10/08 19:48:32 http: proxy error: context canceled
+2026/10/08 19:48:32 http: proxy error: context canceled
+2026/10/08 19:48:32 http: proxy error: context canceled
+2026/10/08 19:48:32 http: TLS handshake error from 127.0.0.1:52409: remote error: tls: unknown certificate
+2026/10/08 19:48:32 http: TLS handshake error from 127.0.0.1:52412: remote error: tls: unknown certificate
+2026/10/08 19:48:33 http: TLS handshake error from 127.0.0.1:52421: remote error: tls: unknown certificate
+2026/10/08 19:48:33 http: TLS handshake error from 127.0.0.1:52423: remote error: tls: unknown certificate
+2026/10/08 19:48:33 http: TLS handshake error from 127.0.0.1:52424: remote error: tls: unknown certificate
+2026/10/08 19:48:33 http: TLS handshake error from 127.0.0.1:52425: remote error: tls: unknown certificate
+2026/10/08 19:48:33 http: TLS handshake error from 127.0.0.1:52426: remote error: tls: unknown certificate
+2026/10/08 19:48:33 http: TLS handshake error from 127.0.0.1:52427: remote error: tls: unknown certificate
+2026/10/08 19:48:33 http: proxy error: context canceled
+2026/10/08 19:48:33 http: proxy error: context canceled
+2026/10/08 19:48:33 http: proxy error: context canceled
+2026/10/08 19:48:33 http: TLS handshake error from 127.0.0.1:52444: remote error: tls: unknown certificate
+2026/10/08 19:48:33 http: TLS handshake error from 127.0.0.1:52452: remote error: tls: unknown certificate
+2026/10/08 19:48:33 http: TLS handshake error from 127.0.0.1:52454: remote error: tls: unknown certificate
+2026/10/08 19:48:33 http: TLS handshake error from 127.0.0.1:52455: remote error: tls: unknown certificate
+2026/10/08 19:48:33 http: TLS handshake error from 127.0.0.1:52457: remote error: tls: unknown certificate
+2026/10/08 19:48:33 http: TLS handshake error from 127.0.0.1:52458: remote error: tls: unknown certificate
+2026/10/08 19:48:33 http: TLS handshake error from 127.0.0.1:52456: remote error: tls: unknown certificate
+2026/10/08 19:48:33 http: TLS handshake error from 127.0.0.1:52459: remote error: tls: unknown certificate
+2026/10/08 19:48:34 http: proxy error: context canceled
+2026/10/08 19:48:34 http: proxy error: context canceled
+2026/10/08 19:48:34 http: proxy error: context canceled
+2026/10/08 19:48:34 http: proxy error: context canceled
+2026/10/08 19:48:34 http: TLS handshake error from 127.0.0.1:52474: remote error: tls: unknown certificate
+2026/10/08 19:48:34 http: TLS handshake error from 127.0.0.1:52475: remote error: tls: unknown certificate
+2026/10/08 19:48:34 http: TLS handshake error from 127.0.0.1:52477: remote error: tls: unknown certificate
+    browser_w6_customers_reports_test.go:178: W6 customers BROWSER (signed MOCK IdP, REAL_PG synthetic data); evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui/output/playwright/w6-customers/20261008T114817.075100000
+--- PASS: TestBrowserW6Customers (18.07s)
+PASS
+ok  	livecommerce/tests/foundation	64.669s
+PASS: CB11 isolated admin + storefront Next, Go, PG, real worker; platform billing = MOCK (independent billingtest fake, Stripe pages answered in the browser); not provider or deployment acceptance; CB10 SANDBOX and CB12 LIVE are NOT_RUN.

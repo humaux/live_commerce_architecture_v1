@@ -1,0 +1,55 @@
+# Purpose: preserve focused-current.log local evidence; raw original command output follows this prologue.
+# Depends on: commands/status recorded in DELIVERY.md; original main-checkout log SHA256=798fa5670d6d1699442ff23c701b6566a265aab71b40f3ef52561250fbff03d4.
+# Used by: integrator source handoff; does not certify real browser acceptance.
+# Evidence normalization: trailing whitespace/blank EOF only; original raw bytes and SHA256 retained in main checkout/provenance above.
+✔ actual client sends original immutable Blob and exact mapping/count, no idempotency key, direct stale preview (247.661166ms)
+✔ post-dispatch commit cancellation/session fence and malformed response are uncertain without retry (173.630042ms)
+✔ preflight session change sends nothing; late download abort hides object URLs and clicks (40.263834ms)
+✔ actual proxy native75s transport preserves bytes and trusted bearer, strips source IDs on200 and409 (35.138625ms)
+✔ actual proxy refusal fences do not forward unknown tenant/method/kind or unauthorized store (67.327709ms)
+✔ actual failed-result proxy removes IDs and refuses any data-bearing row (17.966125ms)
+✔ actual proxy incoming abort cancels transport exactly once; coded conflict stays separate from stale (12.43425ms)
+✔ actual exact leaf uses one dynamic slug and dispatches only allowed handler verbs (5.927042ms)
+✔ copy key parity and merchant reasons stay specific rather than expose codes or generic placeholders (4.705333ms)
+✔ commit uses the original requested mapping, including an empty optional field, not resolved preview metadata (15.319542ms)
+✔ an UNKNOWN commit remains locked through a later forbidden retry and only explicit same-file success unlocks (4.962125ms)
+✔ leaving during a dispatched commit drops its payload and keeps an unconfirmed boolean without replay (3.627083ms)
+✔ a definite first preflight refusal clears pending before sign-out and does not invent an unconfirmed import (4.063375ms)
+✔ closed read grammar rejects writes/body/key/unknownquery before auth/forwarding (113.581167ms)
+✔ server session/store authorization denies before Go and clears ended sessions (2.053375ms)
+✔ private safe projection uses server token, canonical scope and exact after grammar (5.074958ms)
+✔ backend errors or unsafe/malformed projections are never echoed as history (15.248625ms)
+✔ thrown upstream read is a private unavailable response, not a raw rejected handler (2.045208ms)
+✔ archive read uses only fixed GET limit50/after and private JSON (31.771916ms)
+✔ changed parent session sends nothing; post-fetch/body changes drop old data (2.162333ms)
+✔ 403,404,401 and public/malformed reads remain honest errors with no auto retry (1.785292ms)
+✔ strict archive rows decode external order text, safe minor units and public keys (6.741292ms)
+✔ PII-shaped city and extra sensitive fields never pass the safe projection (0.309ms)
+✔ all canonical Go cities pass; malformed types/bounds/order/time/money/cursor fail (0.87625ms)
+✔ read grammar is exact limit/after, not the stale brief's cursor name (27.936584ms)
+✔ three locales retain truthful history-not-revenue basis and copy parity (0.552917ms)
+✔ SSR renders actual safe rows, shared money/time, total count and read-only three-locale basis (87.28975ms)
+✔ SSR distinguishes empty archive, 403, session loss and unavailable without stale rows/count (9.453625ms)
+✔ actual pagination callbacks use opaque trail; double click cannot skip; refresh/scope reset page1 (3.348167ms)
+✔ the static import subpage wins over customer detail and leaves the single customers nav intact (1.155625ms)
+✔ the actual list offers import only to privacy holders and carries the current authorized store (399.707791ms)
+✔ the actual detail mounts archive only for an active imported customer and passes its fenced identity (50.877917ms)
+✔ failure verdicts precede successful rows, by source row number, without mutating the input (1.36975ms)
+✔ the failure download contains only failed row metadata, with no source cell or success identifier (0.226ms)
+✔ reads quoted/BOM header only, without decoding malformed bytes from data rows (1.677708ms)
+✔ guess only unique metadata aliases with explicit unmapped values (0.631ms)
+✔ shared dynamic leaf admits only exact import methods/actions and bounded mapping/count (24.348041ms)
+✔ failed CSV emits only row/outcome/code, refusing any unexpected identifier or raw cell (1.654625ms)
+✔ raw-byte cap does not decode/rebuild uploads and cancels oversized chunks (6.933083ms)
+✔ backend privacy projection strips all source IDs on successful and failed rows (1.225375ms)
+✔ closed preview parser refuses data-bearing rows, unknown keys and inconsistent counts (0.2375ms)
+✔ order preview counts units while first CSV record numbers can exceed rows_total (0.073667ms)
+✔ commit receipt has exactly five keys and no extra customer cells (0.09225ms)
+ℹ tests 43
+ℹ suites 0
+ℹ pass 43
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1093.6945

@@ -1,3 +1,6 @@
+// Purpose: Start the isolated Next shell fixture and capture baseline or real-click navigation evidence.
+// Depends on: Playwright Chromium, Node process/fs/net helpers, shell-fixture and shell-browser.
+// Used by: --browser-admin-shell and W0 baseline capture; signed Go/PG acceptance remains separate.
 // UI-only MOCK gate; existing signed Go/PG modes remain separate acceptance.
 import { chromium } from "@playwright/test";
 import { spawn } from "node:child_process";
@@ -102,6 +105,7 @@ try {
     "/settings",
     "/signup",
     "/studio",
+    "/studio/console",
     "/studio/claims",
     "/team",
   ];

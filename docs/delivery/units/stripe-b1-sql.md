@@ -31,7 +31,7 @@ frozen and merged; do not change it.
 - `COMMENT ON` for every new table/column/function/role (PROCESS.md §5).
 
 ## Verify before returning
-- `GOTOOLCHAIN=go1.27.1 go build ./... && go vet ./migrations/...`
+- `GOTOOLCHAIN=go1.27.2 go build ./... && go vet ./migrations/...`
 - Migrations apply on a fresh DB and are idempotent under the runner: run
   `bash scripts/dev/test-focused.sh '^(TestPaymentQueue|TestPaymentCapture|TestPaymentQuery|TestPaymentStart|TestHostedPayment|TestBuyerPayment|TestMigrat)'`
   — every pre-existing payment gate must stay green (regression), and the run must show the

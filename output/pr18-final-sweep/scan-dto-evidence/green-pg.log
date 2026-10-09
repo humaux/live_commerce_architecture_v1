@@ -1,0 +1,18 @@
+=== RUN   TestLiveConsoleLCN02ScanExhausted
+=== RUN   TestLiveConsoleLCN02ScanExhausted/full-raw-page-all-filtered
+=== RUN   TestLiveConsoleLCN02ScanExhausted/deleted-final-row-100-to-99
+=== RUN   TestLiveConsoleLCN02ScanExhausted/facebook-no-eof-proof
+--- PASS: TestLiveConsoleLCN02ScanExhausted (4.31s)
+    --- PASS: TestLiveConsoleLCN02ScanExhausted/full-raw-page-all-filtered (1.95s)
+    --- PASS: TestLiveConsoleLCN02ScanExhausted/deleted-final-row-100-to-99 (2.15s)
+    --- PASS: TestLiveConsoleLCN02ScanExhausted/facebook-no-eof-proof (0.21s)
+=== RUN   TestLiveConsoleLCN02ItemSeqWire
+=== RUN   TestLiveConsoleLCN02ItemSeqWire/facebook-buffer-and-direct-history
+=== RUN   TestLiveConsoleLCN02ItemSeqWire/instagram-webhook-envelope
+--- PASS: TestLiveConsoleLCN02ItemSeqWire (0.62s)
+    --- PASS: TestLiveConsoleLCN02ItemSeqWire/facebook-buffer-and-direct-history (0.21s)
+    --- PASS: TestLiveConsoleLCN02ItemSeqWire/instagram-webhook-envelope (0.41s)
+PASS
+ok  	livecommerce/tests/foundation	6.717s
+test-focused: top-level PASS=2 FAIL=0 SKIP=0 exit=0
+exit=0

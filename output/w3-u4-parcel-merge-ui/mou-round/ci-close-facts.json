@@ -1,0 +1,18 @@
+{
+  "run": 37749360188,
+  "job": 113218584535,
+  "trace": "/private/tmp/claude-501/-Volumes-data-live-commerce-architecture-v1/d13e4b5b-6b4d-4249-8530-ca9ae1ef506c/scratchpad/pr2-mou/playwright/merchant-orders-c-browser/20261008T082523.051016483/results/orders-ui-MOU03-controlled-ea3df-istory-and-cross-tab-logout/trace.zip",
+  "trace_sha256": "e216be0ad262f83872ebc6a931cbaa7718f51d2b50360a0fba6dec89416a29f0",
+  "unfinished_close_events": [
+    {
+      "type": "before",
+      "callId": "call@633",
+      "startTime": 16763.253,
+      "class": "Page",
+      "method": "close",
+      "params": {},
+      "stepId": "pw:api@108"
+    }
+  ],
+  "product_root": "UNKNOWN"
+}

@@ -1,0 +1,13 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/test-node.sh"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-import-wizard-ui",
+  "base_sha": "9f7ec2cd84e34ff87dfb472e4a475126cb3908d5",
+  "candidate_tree": "3195778e70893d1da860179ee58d229755758e56",
+  "started": "2026-10-07T14:12:46.258373+00:00",
+  "ended": "2026-10-07T14:13:05.602344+00:00",
+  "exit_code": 0,
+  "log": "/Volumes/data/live_commerce_architecture_v1/output/w5-u1-import-wizard-ui/reconcile/node.log"
+}

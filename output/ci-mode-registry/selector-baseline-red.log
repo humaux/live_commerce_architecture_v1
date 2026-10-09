@@ -1,0 +1,73 @@
+✔ backend-only paths run foundation-shards only (1.733291ms)
+✔ node tests of deploy scripts and of the CI planner are backend-only (they cannot change a browser) (0.431167ms)
+✔ a UI path adds the whole browser set, including click-sweep and visual-lint (1.986458ms)
+✔ docs-only and output-only diffs keep the single required check (foundation-shards) (0.2785ms)
+✔ legacy browser_* paths still select all browsers; a known untagged foundation file stays backend-only (0.156333ms)
+✔ legacy deploy prefixes remain selected and unrelated paths do not select smoke (0.7375ms)
+✔ the browser set is release-gate's browser-mode universe minus the documented exclusions (18.7985ms)
+✔ every real browser-tagged foundation file selects registry browser modes, including non-browser names (225.192208ms)
+✖ tagged runner discovery follows registry additions, command arrays and line continuations (0.660333ms)
+✔ deploy smoke is selected for its workflow, verdict/helpers and executable test inputs (0.178ms)
+✔ new selection never drops legacy modes or deploy for any tracked path (90.686792ms)
+✔ CLI classifies merge-base and explicit head, including removed tags, deleted files and renames (442.327708ms)
+✔ CLI explicit head and stdin include tags outside the checkout and uncommitted tag removals (217.835542ms)
+✔ compound/legacy tags and unknown source are conservative; known untagged source stays backend-only (0.881125ms)
+✖ explicit-head CLI derives tagged runner modes from that head's real registry (152.575083ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "架构.md" (135.944583ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "internal/示例.go" (163.550084ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "tests/foundation/plain\tname_test.go" (153.913125ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, " deploy/scripts/synthetic-smoke.sh" (136.624042ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "架构.md" (149.699209ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "internal/示例.go" (134.144333ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "tests/foundation/plain\tname_test.go" (142.194791ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, " deploy/scripts/synthetic-smoke.sh" (133.259709ms)
+✔ stdin unions legacy trimming without trimming the source lookup path (90.786291ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 22
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2457.026459
+
+✖ failing tests:
+
+test at tests/ci/pr-modes.test.mjs:76:1
+✖ tagged runner discovery follows registry additions, command arrays and line continuations (0.660333ms)
+  AssertionError [ERR_ASSERTION]: registry additions must not need a planner hand-list
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-pr-modes-coverage/tests/ci/pr-modes.test.mjs:80:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/pr-modes.test.mjs:146:1
+✖ explicit-head CLI derives tagged runner modes from that head's real registry (152.575083ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+    assert.ok(r.cli([base, head]).modes.includes("--head-tagged-process"))
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-pr-modes-coverage/tests/ci/pr-modes.test.mjs:152:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

@@ -1,3 +1,5 @@
+// Purpose: Parse the closed Studio Claims wire models, including the Go/SQL claim-window modes.
+// Used by: StudioClaims, claims-client, console-client/model and admin Node tests.
 // Owns the Studio › Claims browser data model: exact TypeScript shapes of the frozen M1–M7
 // responses (contracts/live-keyword-claims-v1.md §4.2, §7.1) and closed parsers that reject
 // any extra, missing or ill-typed field before the UI renders it.
@@ -8,7 +10,9 @@
 import { validClaimLink, type ClaimLink } from "./claims-request.ts";
 import { wholeOnly } from "./orders-model.ts";
 
-export type MatchMode = "EXACT" | "KEYWORD_QTY_ONLY";
+/** Wire enum shared with internal/claims and migration 0115; no UI-only aliases. */
+export const matchModes = ["EXACT", "KEYWORD_QTY_ONLY", "KEYWORD_QTY_CONTAINS"] as const;
+export type MatchMode = (typeof matchModes)[number];
 export const persistedReasons = ["NO_MATCH", "UNKNOWN_KEYWORD", "OFFER_INACTIVE", "INVALID_QUANTITY",
   "QUANTITY_REQUIRED", "QUANTITY_OVER_MAX", "BUNDLE_LIMIT"] as const;
 export type PersistedReason = (typeof persistedReasons)[number];
@@ -74,7 +78,7 @@ const text = (value: unknown, max: number) => typeof value === "string" && Array
 export function parseWindow(value: unknown, sessionID: string): ClaimWindow {
   const row = exact(value, ["session_id", "state", "match_mode", "generation", "version", "opened_at", "closed_at"]);
   if (row.session_id !== sessionID || (row.state !== "OPEN" && row.state !== "CLOSED") ||
-    (row.match_mode !== "EXACT" && row.match_mode !== "KEYWORD_QTY_ONLY") || !count(row.generation) ||
+    !matchModes.includes(row.match_mode as MatchMode) || !count(row.generation) ||
     !count(row.version) || (row.opened_at !== null && !date(row.opened_at)) ||
     (row.closed_at !== null && !date(row.closed_at)) || (row.state === "OPEN" && row.opened_at === null)) invalid();
   return row as ClaimWindow;

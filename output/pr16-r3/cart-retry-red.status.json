@@ -1,0 +1,18 @@
+{
+  "name": "cart-retry-red",
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-order"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups",
+  "out": "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups/output/pr16-r3",
+  "timeout": 2400,
+  "head": "1c0da6c1d3375ca05ac4086cfbd4fafcf74966e5",
+  "pid": 72846,
+  "exit_code": 1,
+  "source_sha256": "186a939f41fa186cdd5252955295ef7d1ddff34d549456ab5fdae5a0ae3a6938",
+  "source_after": "186a939f41fa186cdd5252955295ef7d1ddff34d549456ab5fdae5a0ae3a6938",
+  "source_unchanged": true,
+  "elapsed_seconds": 52.692
+}

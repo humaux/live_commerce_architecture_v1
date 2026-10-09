@@ -1,0 +1,31 @@
+✔ route table: exactly the four resources, nothing generic (1.625125ms)
+✔ query grammar: card and settlement-detail are exact; settlements takes before/limit only (0.789625ms)
+✔ request fence: keyless PUT (CAS), bodyless GETs, no transfer-encoding (32.050667ms)
+✔ PUT body is the exact frozen shape {enabled, terms_version, descriptor_suffix, expected_version} (1.104083ms)
+✔ the BFF route wires the card grammar: keyless CAS PUT, exact body, no-store, auth required (2.129375ms)
+✔ bodyless dissolve DELETE (empty body stream, no content-length) reaches Go with the CAS query, no body, no key (20.288584ms)
+✔ every parcel DELETE must carry exactly one expected_version >= 1 (never forwarded without it) (3.453542ms)
+✔ a DELETE that declares a body or chunked framing is refused (0.537792ms)
+✔ DELETE needs the session, origin and CSRF like every command; other DELETEs stay unsupported (1.5095ms)
+✔ GET parcel-groups (open groups read) and merge-suggestions pass with no query; a query or key is refused (14.183208ms)
+✔ merge suggestions accept the frozen shape (server-masked recipient) and reject drift (1.518292ms)
+✔ created group requires the OPEN state and its members (0.1585ms)
+✔ dissolved group is exactly id/state/version (0.093375ms)
+✔ group shipment carries one SHIPPED version per member (2.978208ms)
+✔ open groups (GET parcel-groups) accept the frozen shape and fail closed on drift (71.450375ms)
+✔ reconcile: a reload rebuilds OPEN panels, a vanished OPEN group is dropped, history and live versions are kept (1.998542ms)
+✔ three locales cover the same keys and every refusal code (1.240292ms)
+✔ the owner-ruling sentence is exact in all three locales (0.157416ms)
+✔ the in_parcel_group copy is the same sentence in parcels-copy (blocked + errors) and orders-copy, in every locale (0.212166ms)
+✔ groupOfOrder prefers the OPEN group over retained SHIPPED/DISSOLVED history (0.431542ms)
+✔ parcelOrderNumber is the canonical LC-<32 uppercase hex> order number and matches the open-group parser (0.51975ms)
+✔ exactly the five W3-07B resources route (1.381583ms)
+✔ dissolve carries exactly ?expected_version=N (N >= 1) (0.229042ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 343.66375

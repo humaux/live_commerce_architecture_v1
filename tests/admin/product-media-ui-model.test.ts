@@ -111,41 +111,12 @@ test("PM-U copy has matching keys in ja and all currently routed locales", () =>
 });
 
 test("real-upload mode builds both Next applications on a clean CI checkout", () => {
-  const source = readFileSync(
-    new URL("../../scripts/dev/test-local.sh", import.meta.url),
-    "utf8",
-  );
+  const plan = execFileSync("bash", ["scripts/dev/test-local.sh", "--dry-run", "--browser-product-media-v2"], { encoding: "utf8" });
   for (const app of ["admin", "storefront"]) {
-    const block = [
-      ...source.matchAll(
-        /if (\[\[ [^\n]+ \]\]); then\n((?:(?!\nfi)[\s\S])*?)\nfi/g,
-      ),
-    ].find(
-      (match) =>
-        match[2].includes("pnpm run build:" + app) &&
-        !/\bexit 0\b/.test(match[2]),
-    );
-    assert.ok(block, app + " build predicate exists");
-    const answer = execFileSync(
-      "bash",
-      [
-        "-c",
-        `test_mode="$1"; if ${block[1]}; then printf yes; else printf no; fi`,
-        "--",
-        "--browser-product-media-v2",
-      ],
-      { encoding: "utf8" },
-    );
-    assert.equal(
-      answer,
-      "yes",
-      app + " must be prepared before readiness probes",
-    );
+    assert.ok(plan.includes("pnpm run build:" + app), app + " build exists");
+    assert.ok(plan.indexOf("pnpm run build:" + app) < plan.indexOf("docker run"), app + " is built before readiness probes");
   }
-  assert.match(
-    source,
-    /LC_BROWSER_PRODUCT_MEDIA_V2_ACCEPTANCE=1[^\n]+TestBrowserProductMediaV2RealUpload/,
-  );
+  assert.match(plan, /LC_BROWSER_PRODUCT_MEDIA_V2_ACCEPTANCE=1[^\n]+TestBrowserProductMediaV2RealUpload/);
 });
 
 test("upload recovery journal survives a new session while remaining product/store scoped", () => {
@@ -279,36 +250,13 @@ test("empty media sections render a readable localized placeholder until photos 
 });
 
 test("real-upload mode never exits through the storefront MOCK shortcut", () => {
-  const source = readFileSync(
-    new URL("../../scripts/dev/test-local.sh", import.meta.url),
-    "utf8",
-  );
-  const shortcut = source.match(
-    /if (\[\[ [^\n]+ \]\]); then\n  # LC_SHOP_MOCK=1:/,
-  );
-  assert.ok(shortcut, "incumbent MOCK storefront branch exists");
   for (const [mode, mock, expected] of [
-    ["--browser-product-media-v2", "0", "no"],
-    ["--browser-product-media-v2", "1", "no"],
-    ["--browser-storefront", "0", "no"],
-    ["--browser-storefront", "1", "yes"],
-  ]) {
-    const actual: string = execFileSync(
-      "bash",
-      [
-        "-c",
-        `test_mode="$1"; LC_SHOP_MOCK="$2"; if ${shortcut[1]}; then printf yes; else printf no; fi`,
-        "--",
-        mode,
-        mock,
-      ],
-      { encoding: "utf8" },
-    );
-    assert.equal(
-      actual,
-      expected,
-      `${mode} MOCK=${mock}: only the explicit storefront shortcut may exit before PG`,
-    );
+    ["--browser-product-media-v2", "0", false], ["--browser-product-media-v2", "1", false],
+    ["--browser-storefront", "0", false], ["--browser-storefront", "1", true],
+  ] as const) {
+    const plan = execFileSync("bash", ["scripts/dev/test-local.sh", "--dry-run", mode], { encoding: "utf8", env: { ...process.env, LC_SHOP_MOCK: mock } });
+    assert.equal(plan.includes("node tests/storefront/shop-gate.mjs"), expected);
+    assert.equal(plan.includes("docker run"), !expected);
   }
 });
 

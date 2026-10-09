@@ -1,0 +1,238 @@
+{
+  "HEAD": {
+    "--browser-live-console": [],
+    "--browser-migration-import": [],
+    "--browser-merchant-orders-ui": [
+      {
+        "line": 21,
+        "role": "allow"
+      },
+      {
+        "line": 22,
+        "role": "usage"
+      },
+      {
+        "line": 189,
+        "role": "presence-check"
+      },
+      {
+        "line": 520,
+        "role": "build-list"
+      },
+      {
+        "line": 671,
+        "role": "dispatch"
+      }
+    ],
+    "--browser-merchant-orders-bff": [
+      {
+        "line": 21,
+        "role": "allow"
+      },
+      {
+        "line": 22,
+        "role": "usage"
+      },
+      {
+        "line": 202,
+        "role": "comment-or-helper"
+      },
+      {
+        "line": 206,
+        "role": "presence-check"
+      },
+      {
+        "line": 520,
+        "role": "build-list"
+      },
+      {
+        "line": 644,
+        "role": "dispatch"
+      }
+    ]
+  },
+  "MERGE_HEAD": {
+    "--browser-live-console": [
+      {
+        "line": 21,
+        "role": "allow"
+      },
+      {
+        "line": 22,
+        "role": "usage"
+      },
+      {
+        "line": 214,
+        "role": "presence-check"
+      },
+      {
+        "line": 524,
+        "role": "build-list"
+      },
+      {
+        "line": 654,
+        "role": "dispatch"
+      }
+    ],
+    "--browser-migration-import": [
+      {
+        "line": 21,
+        "role": "allow"
+      },
+      {
+        "line": 22,
+        "role": "usage"
+      },
+      {
+        "line": 291,
+        "role": "presence-check"
+      },
+      {
+        "line": 524,
+        "role": "build-list"
+      },
+      {
+        "line": 761,
+        "role": "dispatch"
+      }
+    ],
+    "--browser-merchant-orders-ui": [
+      {
+        "line": 21,
+        "role": "allow"
+      },
+      {
+        "line": 22,
+        "role": "usage"
+      },
+      {
+        "line": 189,
+        "role": "presence-check"
+      },
+      {
+        "line": 524,
+        "role": "build-list"
+      },
+      {
+        "line": 678,
+        "role": "dispatch"
+      }
+    ],
+    "--browser-merchant-orders-bff": [
+      {
+        "line": 21,
+        "role": "allow"
+      },
+      {
+        "line": 22,
+        "role": "usage"
+      },
+      {
+        "line": 200,
+        "role": "presence-check"
+      },
+      {
+        "line": 524,
+        "role": "build-list"
+      },
+      {
+        "line": 648,
+        "role": "dispatch"
+      }
+    ]
+  },
+  "merged": {
+    "--browser-live-console": [
+      {
+        "line": 21,
+        "role": "allow"
+      },
+      {
+        "line": 22,
+        "role": "usage"
+      },
+      {
+        "line": 225,
+        "role": "presence-check"
+      },
+      {
+        "line": 535,
+        "role": "build-list"
+      },
+      {
+        "line": 665,
+        "role": "dispatch"
+      }
+    ],
+    "--browser-migration-import": [
+      {
+        "line": 21,
+        "role": "allow"
+      },
+      {
+        "line": 22,
+        "role": "usage"
+      },
+      {
+        "line": 302,
+        "role": "presence-check"
+      },
+      {
+        "line": 535,
+        "role": "build-list"
+      },
+      {
+        "line": 772,
+        "role": "dispatch"
+      }
+    ],
+    "--browser-merchant-orders-ui": [
+      {
+        "line": 21,
+        "role": "allow"
+      },
+      {
+        "line": 22,
+        "role": "usage"
+      },
+      {
+        "line": 189,
+        "role": "presence-check"
+      },
+      {
+        "line": 535,
+        "role": "build-list"
+      },
+      {
+        "line": 689,
+        "role": "dispatch"
+      }
+    ],
+    "--browser-merchant-orders-bff": [
+      {
+        "line": 21,
+        "role": "allow"
+      },
+      {
+        "line": 22,
+        "role": "usage"
+      },
+      {
+        "line": 202,
+        "role": "comment-or-helper"
+      },
+      {
+        "line": 206,
+        "role": "presence-check"
+      },
+      {
+        "line": 535,
+        "role": "build-list"
+      },
+      {
+        "line": 659,
+        "role": "dispatch"
+      }
+    ]
+  }
+}

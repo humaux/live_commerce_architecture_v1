@@ -69,7 +69,7 @@ not `apps/**`, not `scripts/dev/test-local.sh`, not contracts).
 
 ## Verify
 ```sh
-GOTOOLCHAIN=go1.27.1 go vet ./tests/foundation ./internal/billing/billingtest && GOTOOLCHAIN=go1.27.1 go test -count=1 ./internal/billing/billingtest
+GOTOOLCHAIN=go1.27.2 go vet ./tests/foundation ./internal/billing/billingtest && GOTOOLCHAIN=go1.27.2 go test -count=1 ./internal/billing/billingtest
 LC_FOCUSED_TIMEOUT=2400s bash scripts/dev/test-focused.sh '^TestCustomersBillingCB(0[1-9])'
 bash scripts/dev/test-local.sh --browser-customers-billing     # after the integrator adds the mode (hook)
 STRIPE_BILLING_SANDBOX=1 bash scripts/dev/test-focused.sh '^TestCustomersBillingCB10'   # platform test key only; else NOT_RUN

@@ -1,0 +1,1 @@
+{"command": ["pnpm", "exec", "tsc", "--noEmit", "-p", "."], "cwd": "apps/admin", "sha": "f7b75a8fd787987c47b58760bb48da1a7ac88c09", "state": "complete", "exit_code": 0, "timeout_seconds": 240, "elapsed_seconds": 9.758049011230469}

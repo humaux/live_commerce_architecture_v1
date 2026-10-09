@@ -1,0 +1,139 @@
+✔ LC-U1 one primary action follows lifecycle, never planning or transport state (0.647ms)
+✔ LC-U1 stock target uses sellable delta and rejects fractions, negative and over-limit changes (0.130834ms)
+✔ LC-U1 embeds only explicit public FB post identities, never arbitrary URLs or guessed videos (0.157ms)
+✔ LC-U1 public Facebook framing is allowed only on the console route (0.392875ms)
+✔ LC-U1 delayed copy completion cannot navigate after store switch or unmount (0.971916ms)
+✖ LC-U1 receipt fence survives cookie rotation; pending replay still has a separate session boundary (0.925166ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 5
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 117.374416
+
+✖ failing tests:
+
+test at tests/admin/live-workspace.test.ts:48:1
+✖ LC-U1 receipt fence survives cookie rotation; pending replay still has a separate session boundary (0.925166ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /const fenceKey = `live-workspace-command:\$\{scope\}`;/. Input:
+  
+  '// Purpose: Bound visible-only polling and single-command receipt fencing for LC-U1.\n' +
+    '// Depends on: React, existing StudioError and session-boundary helpers; sessionStorage stores opaque receipt keys only.\n' +
+    '// Used by: LiveWorkspace, LiveConsole and session-result UI; never calls a provider directly.\n' +
+    '"use client";\n' +
+    'import { useCallback, useEffect, useRef, useState } from "react";\n' +
+    'import { csrfCookie, sessionBoundary } from "@/lib/settings-client";\n' +
+    'import { StudioError } from "@/lib/studio-client";\n' +
+    'import { settleLiveCommand } from "./workspace-model";\n' +
+    '\n' +
+    '/** Reads private data with an epoch/session fence; schedules one read at a time, five seconds after completion. */\n' +
+    'export function useLiveRead<T>(scope: string, enabled: boolean, read: (signal: AbortSignal) => Promise<T>) {\n' +
+    '  const [view, setView] = useState<{ scope: string; data: T | null; error: string; boundary: string }>({ scope: "", data: null, error: "", boundary: "" });\n' +
+    '  const [revision, bump] = useState(0);\n' +
+    '  const readRef = useRef(read); readRef.current = read;\n' +
+    '  const cookie = useRef("");\n' +
+    '  useEffect(() => {\n' +
+    '    let alive = true, request: AbortController | null = null, timer: ReturnType<typeof setTimeout> | undefined;\n' +
+    '    let epoch = 0, signedOut = false;\n' +
+    '    const clear = (error = "") => { ++epoch; request?.abort(); clearTimeout(timer); cookie.current = ""; setView((previous) => ({ scope, data: null, error, boundary: !error && previous.scope === scope ? previous.boundary : "" })); };\n' +
+    '    const load = async () => {\n' +
+    '      if (!alive || !enabled || signedOut || document.visibilityState !== "visible") return;\n' +
+    '      const current = ++epoch; request?.abort(); request = new AbortController();\n' +
+    '      try {\n' +
+    '        const boundary = await sessionBoundary().catch(() => { throw new StudioError("signed-out"); });\n' +
+    '        const data = await readRef.current(request.signal);\n' +
+    '        if (!alive || epoch !== current) return;\n' +
+    '        if (boundary !== await sessionBoundary().catch(() => "")) throw new StudioError("signed-out");\n' +
+    '        cookie.current = csrfCookie(); setView({ scope, data, error: "", boundary });\n' +
+    '      } catch (error) {\n' +
+    '        if (!alive || epoch !== current) return;\n' +
+    '        const code = error instanceof StudioError ? error.code : "unavailable";\n' +
+    '        if (code === "signed-out" || code === "forbidden") signedOut = true;\n' +
+    '        setView((previous) => ({ scope, data: null, error: code, boundary: !signedOut && previous.scope === scope ? previous.boundary : "" }));\n' +
+    '      } finally {\n' +
+    '        if (alive && epoch === current && !signedOut) timer = setTimeout(load, 5000);\n' +
+    '      }\n' +
+    '    };\n' +
+    '    const visibility = () => { clear(); if (document.visibilityState === "visible") void load(); };\n' +
+    '    const logout = () => { signedOut = true; clear("signed-out"); };\n' +
+    '    const storage = (event: StorageEvent) => { if (event.key === "commerce-session-logout") logout(); };\n' +
+    '    const focus = () => { if (cookie.current && cookie.current !== csrfCookie()) logout(); };\n' +
+    '    const channel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("commerce-session") : null;\n' +
+    '    if (channel) channel.onmessage = (event) => { if (event.data?.type === "logout") logout(); };\n' +
+    '    document.addEventListener("visibilitychange", visibility);\n' +
+    '    window.addEventListener("commerce-session-logout", logout); window.addEventListener("storage", storage); window.addEventListener("focus", focus);\n' +
+    '    clear(); void load();\n' +
+    '    return () => { alive = false; ++epoch; request?.abort(); clearTimeout(timer); channel?.close(); document.removeEventListener("visibilitychange", visibility); window.removeEventListener("commerce-session-logout", logout); window.removeEventListener("storage", storage); window.removeEventListener("focus", focus); };\n' +
+    '  }, [scope, enabled, revision]);\n' +
+    '  const refresh = useCallback(() => bump((n) => n + 1), []);\n' +
+    '  const current = view.scope === scope && (!cookie.current || cookie.current === csrfCookie()) ? view : { scope, data: null, error: "", boundary: "" };\n' +
+    '  return { ...current, refresh };\n' +
+    '}\n' +
+    '\n' +
+    '/** Keeps one command/key across explicit retries and a durable opaque fence across reloads. */\n' +
+    'export function useLiveCommand(scope: string, boundary: string, onChanged: () => void) {\n' +
+    '  const [busy, setBusy] = useState(false), [error, setError] = useState(""), [fenced, setFenced] = useState(true);\n' +
+    '  const [reason, setReason] = useState("");\n' +
+    '  type Request = { key: string; execute: (key: string) => Promise<unknown>; complete: (value: unknown) => void };\n' +
+    '  const pending = useRef<Request | null>(null);\n' +
+    '  const lifetime = useRef(0);\n' +
+    '  const invalidate = useCallback(() => { ++lifetime.current; }, []);\n' +
+    '  useEffect(() => { ++lifetime.current; return () => { ++lifetime.current; }; }, []);\n' +
+    '  const active = useRef(false), identity = useRef(`${scope}|${boundary}`); identity.current = `${scope}|${boundary}`;\n' +
+    '  const fenceKey = `live-workspace-command:${scope}:${boundary}`;\n' +
+    '  useEffect(() => {\n' +
+    '    pending.current = null; active.current = false; setBusy(false);\n' +
+    '    let blocked = true;\n' +
+    '    try { blocked = !boundary || sessionStorage.getItem(fenceKey) !== null; } catch { /* unavailable storage fails closed */ }\n' +
+    '    setFenced(blocked); setError(blocked && boundary ? "recovery" : ""); setReason("");\n' +
+    '  }, [fenceKey, boundary]);\n' +
+    '  useEffect(() => {\n' +
+    '    const leave = (event: BeforeUnloadEvent) => { if (active.current || pending.current) { event.preventDefault(); event.returnValue = ""; } };\n' +
+    '    window.addEventListener("beforeunload", leave); return () => window.removeEventListener("beforeunload", leave);\n' +
+    '  }, []);\n' +
+    '  const attempt = async (request: Request) => {\n' +
+    '    const atStart = identity.current;\n' +
+    '    const generation = lifetime.current;\n' +
+    '    const isCurrent = () => identity.current === atStart && lifetime.current === generation;\n' +
+    '    active.current = true; setBusy(true); setError(""); setReason("");\n' +
+    '    try {\n' +
+    '      await settleLiveCommand(() => request.execute(request.key), isCurrent, (value) => {\n' +
+    '        sessionStorage.removeItem(fenceKey); pending.current = null; setFenced(false); onChanged(); request.complete(value);\n' +
+    '      });\n' +
+    '    } catch (caught) {\n' +
+    '      if (!isCurrent()) return;\n' +
+    '      const code = caught instanceof StudioError ? caught.code : "uncertain";\n' +
+    '      const retain = ["uncertain", "signed-out", "forbidden"].includes(code);\n' +
+    '      if (retain) { pending.current = code === "uncertain" ? request : null; setFenced(true); }\n' +
+    '      else { sessionStorage.removeItem(fenceKey); pending.current = null; setFenced(false); }\n' +
+    '      setError(code);\n' +
+    '      setReason(caught instanceof StudioError ? caught.api : "");\n' +
+    '      if (code === "conflict" || code === "signed-out" || code === "forbidden") onChanged();\n' +
+    '    } finally { if (isCurrent()) { active.current = false; setBusy(false); } }\n' +
+    '  };\n' +
+    '  const run = async <T,>(execute: (key: string) => Promise<T>, complete?: (value: T) => void) => {\n' +
+    '    if (!boundary || active.current || pending.current || fenced) return;\n' +
+    '    const key = crypto.randomUUID();\n' +
+    '    try { sessionStorage.setItem(fenceKey, key); } catch { setError("recovery"); setFenced(true); return; }\n' +
+    '    const request: Request = { key, execute, complete: (value) => complete?.(value as T) }; pending.current = request; await attempt(request);\n' +
+    '  };\n' +
+    '  return { busy, error, reason, blocked: busy || fenced || !!pending.current, canRetry: !!pending.current && !busy,\n' +
+    '    invalidate, run, retry: async () => { if (pending.current && !active.current) await attempt(pending.current); } };\n' +
+    '}\n'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/live-workspace.test.ts:50:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '// Purpose: Bound visible-only polling and single-command receipt fencing for LC-U1.\n// Depends on: React, existing StudioError and session-boundary helpers; sessionStorage stores opaque receipt keys only.\n// Used by: LiveWorkspace, LiveConsole and session-result UI; never calls a provider directly.\n"use client";\nimport { useCallback, useEffect, useRef, useState } from "react";\nimport { csrfCookie, sessionBoundary } from "@/lib/settings-client";\nimport { StudioError } from "@/lib/studio-client";\nimport { settleLiveCommand } from "./workspace-model";\n\n/** Reads private data with an epoch/session fence; schedules one read at a time, five seconds after completion. */\nexport function useLiveRead<T>(scope: string, enabled: boolean, read: (signal: AbortSignal) => Promise<T>) {\n  const [view, setView] = useState<{ scope: string; data: T | null; error: string; boundary: string }>({ scope: "", data: null, error: "", boundary: "" });\n  const [revision, bump] = useState(0);\n  const readRef = useRef(read); readRef.current = read;\n  const cookie = useRef("");\n  useEffect(() => {\n    let alive = true, request: AbortController | null = null, timer: ReturnType<typeof setTimeout> | undefined;\n    let epoch = 0, signedOut = false;\n    const clear = (error = "") => { ++epoch; request?.abort(); clearTimeout(timer); cookie.current = ""; setView((previous) => ({ scope, data: null, error, boundary: !error && previous.scope === scope ? previous.boundary : "" })); };\n    const load = async () => {\n      if (!alive || !enabled || signedOut || document.visibilityState !== "visible") return;\n      const current = ++epoch; request?.abort(); request = new AbortController();\n      try {\n        const boundary = await sessionBoundary().catch(() => { throw new StudioError("signed-out"); });\n        const data = await readRef.current(request.signal);\n        if (!alive || epoch !== current) return;\n        if (boundary !== await sessionBoundary().catch(() => "")) throw new StudioError("signed-out");\n        cookie.current = csrfCookie(); setView({ scope, data, error: "", boundary });\n      } catch (error) {\n        if (!alive || epoch !== current) return;\n        const code = error instanceof StudioError ? error.code : "unavailable";\n        if (code === "signed-out" || code === "forbidden") signedOut = true;\n        setView((previous) => ({ scope, data: null, error: code, boundary: !signedOut && previous.scope === scope ? previous.boundary : "" }));\n      } finally {\n        if (alive && epoch === current && !signedOut) timer = setTimeout(load, 5000);\n      }\n    };\n    const visibility = () => { clear(); if (document.visibilityState === "visible") void load(); };\n    const logout = () => { signedOut = true; clear("signed-out"); };\n    const storage = (event: StorageEvent) => { if (event.key === "commerce-session-logout") logout(); };\n    const focus = () => { if (cookie.current && cookie.current !== csrfCookie()) logout(); };\n    const channel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("commerce-session") : null;\n    if (channel) channel.onmessage = (event) => { if (event.data?.type === "logout") logout(); };\n    document.addEventListener("visibilitychange", visibility);\n    window.addEventListener("commerce-session-logout", logout); window.addEventListener("storage", storage); window.addEventListener("focus", focus);\n    clear(); void load();\n    return () => { alive = false; ++epoch; request?.abort(); clearTimeout(timer); channel?.close(); document.removeEventListener("visibilitychange", visibility); window.removeEventListener("commerce-session-logout", logout); window.removeEventListener("storage", storage); window.removeEventListener("focus", focus); };\n  }, [scope, enabled, revision]);\n  const refresh = useCallback(() => bump((n) => n + 1), []);\n  const current = view.scope === scope && (!cookie.current || cookie.current === csrfCookie()) ? view : { scope, data: null, error: "", boundary: "" };\n  return { ...current, refresh };\n}\n\n/** Keeps one command/key across explicit retries and a durable opaque fence across reloads. */\nexport function useLiveCommand(scope: string, boundary: string, onChanged: () => void) {\n  const [busy, setBusy] = useState(false), [error, setError] = useState(""), [fenced, setFenced] = useState(true);\n  const [reason, setReason] = useState("");\n  type Request = { key: string; execute: (key: string) => Promise<unknown>; complete: (value: unknown) => void };\n  const pending = useRef<Request | null>(null);\n  const lifetime = useRef(0);\n  const invalidate = useCallback(() => { ++lifetime.current; }, []);\n  useEffect(() => { ++lifetime.current; return () => { ++lifetime.current; }; }, []);\n  const active = useRef(false), identity = useRef(`${scope}|${boundary}`); identity.current = `${scope}|${boundary}`;\n  const fenceKey = `live-workspace-command:${scope}:${boundary}`;\n  useEffect(() => {\n    pending.current = null; active.current = false; setBusy(false);\n    let blocked = true;\n    try { blocked = !boundary || sessionStorage.getItem(fenceKey) !== null; } catch { /* unavailable storage fails closed */ }\n    setFenced(blocked); setError(blocked && boundary ? "recovery" : ""); setReason("");\n  }, [fenceKey, boundary]);\n  useEffect(() => {\n    const leave = (event: BeforeUnloadEvent) => { if (active.current || pending.current) { event.preventDefault(); event.returnValue = ""; } };\n    window.addEventListener("beforeunload", leave); return () => window.removeEventListener("beforeunload", leave);\n  }, []);\n  const attempt = async (request: Request) => {\n    const atStart = identity.current;\n    const generation = lifetime.current;\n    const isCurrent = () => identity.current === atStart && lifetime.current === generation;\n    active.current = true; setBusy(true); setError(""); setReason("");\n    try {\n      await settleLiveCommand(() => request.execute(request.key), isCurrent, (value) => {\n        sessionStorage.removeItem(fenceKey); pending.current = null; setFenced(false); onChanged(); request.complete(value);\n      });\n    } catch (caught) {\n      if (!isCurrent()) return;\n      const code = caught instanceof StudioError ? caught.code : "uncertain";\n      const retain = ["uncertain", "signed-out", "forbidden"].includes(code);\n      if (retain) { pending.current = code === "uncertain" ? request : null; setFenced(true); }\n      else { sessionStorage.removeItem(fenceKey); pending.current = null; setFenced(false); }\n      setError(code);\n      setReason(caught instanceof StudioError ? caught.api : "");\n      if (code === "conflict" || code === "signed-out" || code === "forbidden") onChanged();\n    } finally { if (isCurrent()) { active.current = false; setBusy(false); } }\n  };\n  const run = async <T,>(execute: (key: string) => Promise<T>, complete?: (value: T) => void) => {\n    if (!boundary || active.current || pending.current || fenced) return;\n    const key = crypto.randomUUID();\n    try { sessionStorage.setItem(fenceKey, key); } catch { setError("recovery"); setFenced(true); return; }\n    const request: Request = { key, execute, complete: (value) => complete?.(value as T) }; pending.current = request; await attempt(request);\n  };\n  return { busy, error, reason, blocked: busy || fenced || !!pending.current, canRetry: !!pending.current && !busy,\n    invalidate, run, retry: async () => { if (pending.current && !active.current) await attempt(pending.current); } };\n}\n',
+    expected: /const fenceKey = `live-workspace-command:\$\{scope\}`;/,
+    operator: 'match',
+    diff: 'simple'
+  }

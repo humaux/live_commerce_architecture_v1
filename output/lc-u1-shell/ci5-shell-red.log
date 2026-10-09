@@ -1,0 +1,37 @@
+(node:59429) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ shell-registry: every routed path has exactly one nonempty shared h1 in all three locales (90.322292ms)
+✔ shell-registry: orders stays one actual group button on live and non-live routes (4.65425ms)
+✖ shell-registry: loading/expired/unavailable/forbidden keep one safe heading and never leak private content (1.009125ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 2
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 427.521208
+
+✖ failing tests:
+
+test at tests/admin/shell-render.test.ts:81:1
+✖ shell-registry: loading/expired/unavailable/forbidden keep one safe heading and never leak private content (1.009125ms)
+  AssertionError [ERR_ASSERTION]: zh-TW loading: accessible status heading
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/shell-render.test.ts:84:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

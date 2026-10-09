@@ -1,0 +1,9 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/check-gates.sh"
+  ],
+  "source_sha": "4c51ddff25e4cb43590fedcdf565429a00b12d58",
+  "exit": 0,
+  "elapsed_seconds": 44.216
+}

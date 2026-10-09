@@ -1,0 +1,18 @@
+{
+  "command": [
+    "node",
+    "--test",
+    "--experimental-strip-types",
+    "tests/admin/parcels-bff.test.ts",
+    "tests/admin/inbox-bff.test.ts",
+    "tests/admin/customer-tags-bff.test.ts",
+    "tests/admin/customer-tags-proxy.test.ts",
+    "tests/admin/w6-route-seam.test.mjs"
+  ],
+  "sha": "5ca3b82cede63d2e691b3b3b88e0da80c945ed20",
+  "changed_file": "tests/admin/customer-tags.spec.ts",
+  "file_sha256": "100557a7df9255e42efad7b56d767bbf9172cf43fe53b309dbd067bee4b60e52",
+  "source_unchanged": true,
+  "exit_code": 0,
+  "seconds": 0.57
+}

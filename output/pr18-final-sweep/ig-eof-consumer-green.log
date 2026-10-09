@@ -1,0 +1,16 @@
+✔ PR18 bounded window refresh removes FB deletion behind60 arrivals history=false (25.811417ms)
+✔ PR18 bounded window refresh removes FB deletion behind60 arrivals history=true (4.396125ms)
+✔ PR18 bounded window refresh preserves explicit history until manual refresh (2.206417ms)
+✔ PR18 bounded window refresh atomically rebuilds IG100 deleted75=false (14.20275ms)
+✔ PR18 bounded window refresh atomically rebuilds IG100 deleted75=true (7.594541ms)
+✔ PR18 bounded window refresh stalled never publishes an incomplete IG window (7.825167ms)
+✔ PR18 bounded window refresh budget never publishes an incomplete IG window (11.2205ms)
+✔ PR18 bounded window refresh removes deleted IG final sequence (2.831666ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 401.205458

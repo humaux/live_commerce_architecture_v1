@@ -1,3 +1,6 @@
+// Purpose: share a context-bound cart and same-receipt recovery across the storefront shell.
+// Depends on: React, buyer-client session authority, purchase cart/journal helpers and cart-state.
+// Used by: storefront header, cart drawer, product purchase and cart pages; never a second cart writer.
 "use client";
 
 // Cart state of the whole storefront shell: the header count, the drawer, the product page "Add to cart" and the cart page
@@ -39,12 +42,14 @@ type CartApi = {
 
 const Ctx = createContext<CartApi | null>(null);
 
+/** Read the shell's current cart and explicitly invoked purchase commands. */
 export function useCart(): CartApi {
   const value = useContext(Ctx);
   if (!value) throw new Error("useCart outside CartProvider");
   return value;
 }
 
+/** Keeps visible cart ownership aligned with the context used by the durable purchase journal. */
 export default function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<Cart | null>(null);
   const [context, setContext] = useState("");
@@ -54,27 +59,45 @@ export default function CartProvider({ children }: { children: ReactNode }) {
   const [orderID, setOrderID] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const working = useRef(false);
+  const currentContext = useRef("");
+  const generation = useRef(0);
+  const adoptContext = useCallback((next: string) => {
+    // Another tab may rotate the buyer. Never publish B with A's items/order,
+    // even when B's read fails or its write acknowledgement is lost.
+    if (currentContext.current !== next) {
+      currentContext.current = next;
+      setCart(null);
+      setOrderID(null);
+    }
+    setContext(next);
+  }, []);
 
-  // Best-effort read for the header count: any failure leaves the count at zero, it never blocks the page.
+  // Same-context read failures retain the last cart; a newly observed context starts empty.
   const refresh = useCallback(async () => {
+    // Reads cannot supersede an in-flight command/its recovery context. Among reads,
+    // request order (not response arrival order) decides who may publish session/cart state.
+    if (working.current) return;
+    const ticket = ++generation.current;
     try {
       const session = await readBuyerSession();
+      if (ticket !== generation.current) return;
       if (session.state === "active" && session.context) {
+        adoptContext(session.context);
         const current = await readPurchase("cart", session.context, validCart);
-        setContext(session.context);
+        if (ticket !== generation.current || currentContext.current !== session.context) return;
         setCart(current);
         setOrderID(knownOrderID(session.context));
       } else {
-        setContext("");
+        adoptContext("");
         setCart(null);
         setOrderID(null);
       }
     } catch {
       /* count stays as it was */
     } finally {
-      setReady(true);
+      if (ticket === generation.current) setReady(true);
     }
-  }, []);
+  }, [adoptContext]);
 
   useEffect(() => {
     void refresh();
@@ -88,6 +111,7 @@ export default function CartProvider({ children }: { children: ReactNode }) {
     window.addEventListener("focus", onFocus);
     window.addEventListener("storage", onStorage);
     return () => {
+      generation.current++;
       window.removeEventListener("focus", onFocus);
       window.removeEventListener("storage", onStorage);
     };
@@ -98,27 +122,35 @@ export default function CartProvider({ children }: { children: ReactNode }) {
     async (build: (current: Cart) => ReturnType<typeof cartWithQuantity>): Promise<boolean> => {
       if (working.current) return false;
       working.current = true;
+      const ticket = ++generation.current;
       setBusy(true);
       setProblem(null);
       try {
         const session = await initializeBuyerSession();
+        if (ticket !== generation.current) return false;
         if (!session.context) throw new Error("no context");
         const ctx = session.context;
         const known = knownOrderID(ctx);
+        // Publish the obtained context BEFORE the write (PR #1 review comment 4212512400): if this
+        // first write's response is lost, the UI goes "uncertain" and Retry must resume the SAME
+        // journalled request (same purchase context + Idempotency-Key). With context set only on
+        // success the Retry button was dead and the buyer's only escape was a second purchase.
+        adoptContext(ctx);
         if (known) {
-          setContext(ctx);
           setOrderID(known);
           setProblem("order");
           return false;
         }
         const current = await readPurchase("cart", ctx, validCart);
+        if (ticket !== generation.current) return false;
         const result = await writePurchase(ctx, { kind: "cart", body: build(current) });
+        if (ticket !== generation.current) return false;
         if (result.kind !== "cart") throw new Error("unexpected result");
-        setContext(ctx);
         setCart(result.value);
         setOrderID(null);
         return true;
       } catch (reason) {
+        if (ticket !== generation.current) return false;
         const kind = cartProblem(reason);
         setProblem(kind);
         if (kind === "conflict" || kind === "session") {
@@ -129,9 +161,10 @@ export default function CartProvider({ children }: { children: ReactNode }) {
       } finally {
         working.current = false;
         setBusy(false);
+        if (ticket === generation.current) setReady(true);
       }
     },
-    [refresh],
+    [refresh, adoptContext],
   );
 
   const add = useCallback(
@@ -143,32 +176,38 @@ export default function CartProvider({ children }: { children: ReactNode }) {
 
   // "uncertain": resume the SAME journalled request (same idempotency key) instead of composing a new one.
   const retry = useCallback(async () => {
-    if (working.current || !context) return;
+    const ctx = currentContext.current;
+    if (working.current || !ctx) return;
     working.current = true;
+    const ticket = ++generation.current;
     setBusy(true);
     try {
-      const result = await writePurchase(context);
+      const result = await writePurchase(ctx);
+      if (ticket !== generation.current) return;
       if (result.kind === "cart") setCart(result.value);
       setProblem(null);
     } catch (reason) {
-      setProblem(cartProblem(reason));
+      if (ticket === generation.current) setProblem(cartProblem(reason));
     } finally {
       working.current = false;
       setBusy(false);
-      void refresh();
+      if (ticket === generation.current) void refresh();
     }
   }, [context, refresh]);
 
   const startNewCart = useCallback(async () => {
     if (working.current || !context || !orderID) return;
     working.current = true;
+    const ticket = ++generation.current;
     setBusy(true);
     try {
-      setCart(await continueShopping(context, orderID));
+      const next = await continueShopping(context, orderID);
+      if (ticket !== generation.current) return;
+      setCart(next);
       setOrderID(null);
       setProblem(null);
     } catch (reason) {
-      setProblem(cartProblem(reason));
+      if (ticket === generation.current) setProblem(cartProblem(reason));
     } finally {
       working.current = false;
       setBusy(false);

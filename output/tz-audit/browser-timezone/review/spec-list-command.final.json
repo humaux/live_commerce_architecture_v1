@@ -1,0 +1,13 @@
+{
+  "command": [
+    "pnpm",
+    "exec",
+    "playwright",
+    "test",
+    "--config",
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit/output/tz-audit/browser-timezone/review/playwright-static.config.ts",
+    "--list"
+  ],
+  "environment": "synthetic list only; no server/browser/API",
+  "exit_code": 0
+}

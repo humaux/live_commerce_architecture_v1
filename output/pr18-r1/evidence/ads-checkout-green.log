@@ -1,0 +1,13 @@
+
+Running 6 tests using 1 worker
+
+(node:13282) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/admin/attribution-checkout.spec.ts:113:5 › AT5 genuine checkout draft report zh-TW 390 (1.2s)
+  ✓  2 tests/admin/attribution-checkout.spec.ts:113:5 › AT5 genuine checkout draft report zh-TW 1586 (701ms)
+  ✓  3 tests/admin/attribution-checkout.spec.ts:113:5 › AT5 genuine checkout draft report zh-CN 390 (1.2s)
+  ✓  4 tests/admin/attribution-checkout.spec.ts:113:5 › AT5 genuine checkout draft report zh-CN 1586 (800ms)
+  ✓  5 tests/admin/attribution-checkout.spec.ts:113:5 › AT5 genuine checkout draft report en 390 (1.1s)
+  ✓  6 tests/admin/attribution-checkout.spec.ts:113:5 › AT5 genuine checkout draft report en 1586 (684ms)
+
+  6 passed (6.0s)

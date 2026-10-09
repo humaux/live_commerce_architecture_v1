@@ -1,0 +1,21 @@
+# PR18 seq DTO runs
+
+- task_id: 088736c6; delegated unit: pr18-seq-dto
+- base_commit: 21c27683fe22475b5ba2aa9954894305820675cf
+- branch: unit/pr18-seq-dto-only
+- worktree: /Volumes/data/live_commerce_architecture_v1/.worktrees/pr18-seq-dto-only
+- role: integration implementation; model: Codex/GPT-6 (declared agent identity), exact runtime model id UNKNOWN; reasoning: inherited, exact runtime setting UNKNOWN.
+- Scope: metabridge/client.go, metareply/comment_poll.go and focused Go tests, live/stream.go, focused foundation comment seq tests, live-console-v1 §2.6. No A2 OpenAPI exists; no OpenAPI edits.
+- Unit red command: GOTOOLCHAIN=go1.27.2 go test -race -count=1 -run '^TestConsoleCommentItemSeqWire$' -v ./internal/integrations/metareply
+- PG red initial runner error: LC_TEST_LOCK_WAIT=14400 LC_FOCUSED_TIMEOUT=900 bash scripts/dev/test-focused.sh '^TestLiveConsoleLCN02ItemSeqWire$' → exit 2, duration parse error, zero tests; red-pg.log. NOT a red acceptance result.
+- PG red actual command: LC_TEST_LOCK_WAIT=14400 LC_FOCUSED_TIMEOUT=900s bash scripts/dev/test-focused.sh '^TestLiveConsoleLCN02ItemSeqWire$' → exit 1, PASS=0 FAIL=1 SKIP=0; FB buffer/API/history and IG API missing seq assertions; red-pg-actual.log.
+- Unit red → exit 1, item seq omitted twice; red-unit.log.
+- Red exec sessions: unit 50790; runner-error PG 38971; actual PG 89350 (all completed).
+- OpenAPI structured scan → exit 0, files=6 A2_matches=0; openapi-proof.log.
+- Machine heartbeat lock held only by the PG runner. No browser run started by this task.
+- Green packages exec session 97205 → exit 0, 48 top-level PASS, 0 FAIL, 0 SKIP (metabridge has no test files).
+- Green PG exec session 28765 → exit 0, 7 top-level PASS, 0 FAIL, 0 SKIP.
+- Static first exec → exit 1, missing typescript-api and @live-commerce/i18n in the fresh worktree; check-gates.log.
+- Offline dependency install exec session 19966 → exit 0; install-offline.log; no manifest/lockfile change.
+- Static rerun exec session 3517 → exit 0, 82 modes and 1250 top-level tests; check-gates-with-deps.log.
+- Commit: f0b63101c910580316a618256b71e091221ecd7d; source files unchanged between green runs and commit.

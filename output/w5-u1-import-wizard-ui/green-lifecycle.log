@@ -1,0 +1,15 @@
+# Purpose: preserve green-lifecycle.log local evidence; raw original command output follows this prologue.
+# Depends on: commands/status recorded in DELIVERY.md; original main-checkout log SHA256=c672f5f6caab5a0cb5ac28483db4e9c2bb8233f779f84a4a5f4c5ea6d32932b0.
+# Used by: integrator source handoff; does not certify real browser acceptance.
+# Evidence normalization: trailing whitespace/blank EOF only; original raw bytes and SHA256 retained in main checkout/provenance above.
+✔ commit uses the original requested mapping, including an empty optional field, not resolved preview metadata (4.756375ms)
+✔ an UNKNOWN commit remains locked through a later forbidden retry and only explicit same-file success unlocks (0.926041ms)
+✔ leaving during a dispatched commit drops its payload and keeps an unconfirmed boolean without replay (0.847417ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 257.334125

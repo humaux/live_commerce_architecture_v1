@@ -1,0 +1,966 @@
+{
+  "archive_sha256": "29c2971d24de79d4cb2270635a6f5deb3daaa9427398a1eff6c111e5d00d4dd0",
+  "cases": [
+    {
+      "case": "browser-admin-legacy",
+      "before_commands": 19,
+      "after_commands": 19,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "d3c2204c880628ab4d298c44928e1a49bd0d950c10c4ed720d10ca8aa00fa76e"
+    },
+    {
+      "case": "browser-admin-shell",
+      "before_commands": 8,
+      "after_commands": 8,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "d01626ca37fc4452d00f6ad044ea834cd6e428e18bd1903a5328f83e9033bec7"
+    },
+    {
+      "case": "browser-ads-attribution",
+      "before_commands": 24,
+      "after_commands": 24,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "087f198e59bf276e29ea9e782285aab3504b630bb3a8c030187d19833e9e9c39"
+    },
+    {
+      "case": "browser-buyer-comms",
+      "before_commands": 19,
+      "after_commands": 19,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "ed5859d048fb591d60618d33dec033690ed16e04f98dad01fcd6d14f5b134b9a"
+    },
+    {
+      "case": "browser-buyer",
+      "before_commands": 19,
+      "after_commands": 19,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "e94f8e52c3bcc2b5a806563dc9153f4474e3b5fcfc75a77d1bb7c361ecb52738"
+    },
+    {
+      "case": "browser-card-payments",
+      "before_commands": 24,
+      "after_commands": 24,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "5b59da76d8b76317e5ad6f792248bd5a882e528e1dd66a2bf17caa4153d5f554"
+    },
+    {
+      "case": "browser-catalog-core",
+      "before_commands": 19,
+      "after_commands": 19,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "26beae2a7c503230073e3cb27299b27c83d62ca4e8f166e955f313904a8bf121"
+    },
+    {
+      "case": "browser-catalog-media",
+      "before_commands": 23,
+      "after_commands": 23,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "09e16fc1b375549a2f956151b778659dc37b17330f0d2c5c66e5ec1d0830aab7"
+    },
+    {
+      "case": "browser-checkout-offline",
+      "before_commands": 23,
+      "after_commands": 23,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "8fc270c937ae34629418aad1467c3a9cc74f1816919d544aa261b2fc4c82aa6a"
+    },
+    {
+      "case": "browser-claim-checkout",
+      "before_commands": 20,
+      "after_commands": 20,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "2690471f6a3f6c4a922a41a2a9c749c1ff3181f7f9aed75087ad2c6e2eb57c90"
+    },
+    {
+      "case": "browser-click-sweep",
+      "before_commands": 27,
+      "after_commands": 27,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "98f201202b5332e1b6c36984610ca7a48f15d14125edcbb32baf52331878eb2e"
+    },
+    {
+      "case": "browser-customers-billing",
+      "before_commands": 24,
+      "after_commands": 24,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "fee037b8ee80a63cd7095db9e01e6faad92b7a008607b37f12a632971a802145"
+    },
+    {
+      "case": "browser-cvs",
+      "before_commands": 24,
+      "after_commands": 24,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "1e88c487272ded32d17e17fdaf14beed85246a19f0dd0f291e9e8df159e53451"
+    },
+    {
+      "case": "browser-design",
+      "before_commands": 21,
+      "after_commands": 21,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "60613c3be878d54dbd7f2d5974416c0f4ad28e7037072e0b1cce36367785a1ae"
+    },
+    {
+      "case": "browser-e2e",
+      "before_commands": 23,
+      "after_commands": 23,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "fa5404707e37fb905b4953bd2f0aa84718c9d70dec9f71e9cecb7107bb4b6983"
+    },
+    {
+      "case": "browser-home-cod",
+      "before_commands": 23,
+      "after_commands": 23,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "e82071885674c1ef55b390a383ea3973edfcc2b31ea885dd10a475deec5337f5"
+    },
+    {
+      "case": "browser-identity",
+      "before_commands": 18,
+      "after_commands": 18,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "1a35d0aebce1deca40dfe5b4db7c3247d79131ca92bc6da2704ed8342c3a4105"
+    },
+    {
+      "case": "browser-inbox-linux-display",
+      "before_commands": 20,
+      "after_commands": 20,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "d2a333c9201f7f4c91494504b3669a6381a45e243a235d21c5c73cac2c81d7d0"
+    },
+    {
+      "case": "browser-inbox-linux-headless",
+      "before_commands": 21,
+      "after_commands": 21,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "0ee4750e9025cd931a53b9a4da33da7e14822b019fc24499f1ee086485632247"
+    },
+    {
+      "case": "browser-inbox-linux-no-xvfb",
+      "before_commands": 20,
+      "after_commands": 20,
+      "exit_code": 2,
+      "differences": [],
+      "command_env_sha256": "a98661fb6442aebc3f4fc6654278d173ca83bf0054d83e7d0a34f67a3eca8a73"
+    },
+    {
+      "case": "browser-inbox",
+      "before_commands": 20,
+      "after_commands": 20,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "5833945c85449077a1d3c73e3dff546df2cd901323f6d8c105e0c67f4b778e29"
+    },
+    {
+      "case": "browser-input-delivery",
+      "before_commands": 21,
+      "after_commands": 21,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "990958086f5b68642572438167b0d67797b87c9ce0befb6c36d3ff95ea979e99"
+    },
+    {
+      "case": "browser-live-claims",
+      "before_commands": 24,
+      "after_commands": 24,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "b36f30e612289c0a75e47a56165dbd8237aaec22441e26e4939f07cd4e2cd310"
+    },
+    {
+      "case": "browser-live-console",
+      "before_commands": 19,
+      "after_commands": 19,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "e983fdf8bd651bb3783b08c8894e26fe9a8193acd484de2cf97e9f054b538c3a"
+    },
+    {
+      "case": "browser-manual-order",
+      "before_commands": 23,
+      "after_commands": 23,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "df8658362c2bdf01ff25d583e8544723db3ad5d7c4188aa30aa0890c521f0d03"
+    },
+    {
+      "case": "browser-merchant-buyer",
+      "before_commands": 22,
+      "after_commands": 22,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "a7042fdf9997d0ef720d15ff9b3c1a138ce998b87379bd754259fa243e6a9b02"
+    },
+    {
+      "case": "browser-merchant-orders-bff",
+      "before_commands": 22,
+      "after_commands": 22,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "14ef23b4304308c85f823b43b758dab69e082575139299c2cf307d58147041b0"
+    },
+    {
+      "case": "browser-merchant-orders-ui-linux-display",
+      "before_commands": 25,
+      "after_commands": 25,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "2ccd3998081a6174155a1b714f53fa170953b0d97a260e2a1eeb878f9572ff97"
+    },
+    {
+      "case": "browser-merchant-orders-ui-linux-headless",
+      "before_commands": 26,
+      "after_commands": 26,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "d874dc87aac0a0a09611c6db03dd6cbcf1e79adf9d10c3de8af70711c16f6784"
+    },
+    {
+      "case": "browser-merchant-orders-ui-linux-no-xvfb",
+      "before_commands": 25,
+      "after_commands": 25,
+      "exit_code": 2,
+      "differences": [],
+      "command_env_sha256": "3d21975195b84762126a38cce8399b84abe3a2376979ea0fe3a4440f942d2d54"
+    },
+    {
+      "case": "browser-merchant-orders-ui",
+      "before_commands": 25,
+      "after_commands": 25,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "088708f6faff5c713841466c482be06221e812d78d06a973ae21d352b5b8280d"
+    },
+    {
+      "case": "browser-meta-ads",
+      "before_commands": 26,
+      "after_commands": 26,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "14a26bc272b0acd44a84d049489d5c1ef0ac517f46cbd47bed2cc6868dfcb895"
+    },
+    {
+      "case": "browser-meta-connect",
+      "before_commands": 20,
+      "after_commands": 20,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "768b421cec0011f3dd7209d70dbc9208ce796b46758af37322ab5fe409a4fb82"
+    },
+    {
+      "case": "browser-meta-health-ui",
+      "before_commands": 19,
+      "after_commands": 19,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "fd2eaa1d7f03a41179a4410da28d5ac01ab25cbb909345caab4d6c2852ff0076"
+    },
+    {
+      "case": "browser-migration-import",
+      "before_commands": 20,
+      "after_commands": 20,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "51f6e20f20369f1095515b54c7a264b05401120d2901d895e4b20df599dfaef4"
+    },
+    {
+      "case": "browser-operations-ads",
+      "before_commands": 19,
+      "after_commands": 19,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "0354996a5fedebb402e0ba0aae542d8d0f9ae6458cf560242b42f01e2996dcca"
+    },
+    {
+      "case": "browser-ops-polish",
+      "before_commands": 24,
+      "after_commands": 24,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "632bd8363dfe4d91c0e16acfb27c9be5d45ebe94e9e69aecbb5feea881188174"
+    },
+    {
+      "case": "browser-order",
+      "before_commands": 19,
+      "after_commands": 19,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "efe8ec0414657e899574b8acd6487bbfd5d91c07050b5b9bd0b4bbe4dec98f02"
+    },
+    {
+      "case": "browser-password-auth",
+      "before_commands": 20,
+      "after_commands": 20,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "e11efb74a4a9ba1e0a6a750f3c252b3c84a03d63fd18096d601fd3b8608acca3"
+    },
+    {
+      "case": "browser-payment",
+      "before_commands": 19,
+      "after_commands": 19,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "47f0e0e483bfca1dd92f817bcee1a2235e4930b58785dad21664c8e454a8426c"
+    },
+    {
+      "case": "browser-picklist",
+      "before_commands": 9,
+      "after_commands": 9,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "ee8ed19ef338f305e0f8903c883be39655693a9e5ae3938fea96aed85f1a5d2a"
+    },
+    {
+      "case": "browser-platform-site",
+      "before_commands": 10,
+      "after_commands": 10,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "30196c22bd73bf410bb8d4ecab5da9eeadb10d5fb69183d42bca6dcdacdc9c0f"
+    },
+    {
+      "case": "browser-product-editor",
+      "before_commands": 19,
+      "after_commands": 19,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "a3a91698f63c113860ed8ac0823c9b0e527b4e3daaed94d607b90e8cc5f39c02"
+    },
+    {
+      "case": "browser-product-media-v2",
+      "before_commands": 23,
+      "after_commands": 23,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "4b75c53df55699460c816a18f477913f86c30ddaea08f90fe8e0489672049836"
+    },
+    {
+      "case": "browser-promotions",
+      "before_commands": 23,
+      "after_commands": 23,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "6ef2085161f07b7ca0b9b8ed536685856dc72bcc48bc2daaeef77dcf745d28bd"
+    },
+    {
+      "case": "browser-refund-fulfilment",
+      "before_commands": 24,
+      "after_commands": 24,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "4eabcf85ce33b36b19b4775d311eecca7ccef17aabfcf24279b2cfdf29b0c66f"
+    },
+    {
+      "case": "browser-reports",
+      "before_commands": 20,
+      "after_commands": 20,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "601e4a5c3ddfd3ac80d0e991d3b7d8e3ad11fda5b0e7dfc9f849e4a4a90fbd07"
+    },
+    {
+      "case": "browser-returns-ui",
+      "before_commands": 24,
+      "after_commands": 24,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "68778c43548ccb21cc072456c62dde2d0f817cb847e8c1c92182829f63367af3"
+    },
+    {
+      "case": "browser-store-domains",
+      "before_commands": 24,
+      "after_commands": 24,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "5c9ab5e767b474490173f7d3bceca0a0fd82ed587ecb8e4dc398876ad900fd20"
+    },
+    {
+      "case": "browser-storefront-publish",
+      "before_commands": 24,
+      "after_commands": 24,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "bc859ea2cda2c8e9e309037a47a49a24116815cdb7c359b6e2755c9857abd936"
+    },
+    {
+      "case": "browser-storefront",
+      "before_commands": 20,
+      "after_commands": 20,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "b64ebab48476bde6d2e1487b66e87b9f6fe06061609fe5061099d2d93fc2beb4"
+    },
+    {
+      "case": "browser-studio-bff",
+      "before_commands": 20,
+      "after_commands": 20,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "64051f3c76473edc007654a8bafaf3df356ddd74623d8c210dbdbbbe1966d452"
+    },
+    {
+      "case": "browser-studio-ui",
+      "before_commands": 19,
+      "after_commands": 19,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "b9e9926837565a3aaafe89ce22cfe30434ba20cd329f0403e2328c8127c8449e"
+    },
+    {
+      "case": "browser-tracking-backfill",
+      "before_commands": 9,
+      "after_commands": 9,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "98a84e3b0a97ba431fe64a65f1caf83395ed93be967a22f1fcf50fc4358e332d"
+    },
+    {
+      "case": "browser-visual-lint",
+      "before_commands": 29,
+      "after_commands": 29,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "f26415c00a1be6397162218985f63343bfb3f813f2e98dac73436898688c9e88"
+    },
+    {
+      "case": "browser-webkit",
+      "before_commands": 97,
+      "after_commands": 97,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "33d7b0bcc96b34c750e0cf883ea606ca0fff27a2560b8959c40754e00b5e4818"
+    },
+    {
+      "case": "buyer-http",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "15454abd732b13760f230af6e2a7cf88bbdfefba683ea5da9ffaf6b7e31e40df"
+    },
+    {
+      "case": "checkout",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "9c2923bc55dbe203c0566e28cb3bd51c797a3da39199acd95ac40802e4448797"
+    },
+    {
+      "case": "click-shard1",
+      "before_commands": 27,
+      "after_commands": 27,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "c53653b31b23857dd1de1cb4390e04ec26f5f3da9ab5c263eb57e160641323de"
+    },
+    {
+      "case": "click-shard2",
+      "before_commands": 25,
+      "after_commands": 25,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "609d68eb92354c267a9e1334e37bd5239ff18bc8da545719635cfd3b7d4337b7"
+    },
+    {
+      "case": "default-foundation",
+      "before_commands": 16,
+      "after_commands": 16,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "eadc8e778b009ad96e584fc867de5f08ac458498a9b5db53ca393bde3a7e164d"
+    },
+    {
+      "case": "expiry-worker",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "260c79cc0ea4d8a33b1aa505353438fbd5f3ec59e69b52e86635137ad8d7d171"
+    },
+    {
+      "case": "explicit-foundation",
+      "before_commands": 16,
+      "after_commands": 16,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "eadc8e778b009ad96e584fc867de5f08ac458498a9b5db53ca393bde3a7e164d"
+    },
+    {
+      "case": "foundation-packages",
+      "before_commands": 16,
+      "after_commands": 16,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "d5caffd7c86b2dec0ef07d447c8df250fe35a80ba1b255cd44ce7b8bea57c05f"
+    },
+    {
+      "case": "foundation-run",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "a79886d46d4186b9c52f4d1258dfd2a3c27cbde68cad8e83bd82daa0d0faa4c9"
+    },
+    {
+      "case": "foundation-shard",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "1db715bb46c357dd85959eca5a53ab5e70df2e676a01f0067661c2a09a1afaeb"
+    },
+    {
+      "case": "foundation-skip",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "f0130d5b61e29e1521ee2151be4edcd2ccea6381ed4395b685140c0917ea52e2"
+    },
+    {
+      "case": "guard-synthetic-live-key",
+      "before_commands": 1,
+      "after_commands": 1,
+      "exit_code": 2,
+      "differences": [],
+      "command_env_sha256": "89d6c060579db8290b7da759da35362a760f3b1a1f09583d9174f8411c12c131"
+    },
+    {
+      "case": "inbox-send",
+      "before_commands": 16,
+      "after_commands": 16,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "78e3777d1427a46a4c9875719a6d52a6c1357366b5131605430a3347c7e2c079"
+    },
+    {
+      "case": "inbox",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "94cfc253e637f889fadf83a6e5ce342589cd44782b4ad189c18af9949b1ced7e"
+    },
+    {
+      "case": "invalid-mode",
+      "before_commands": 4,
+      "after_commands": 4,
+      "exit_code": 2,
+      "differences": [],
+      "command_env_sha256": "d5a3c8d8b22165fe0a740f6ba29643731c6821d3ebd0ecdc21a55ef10a55e3e3"
+    },
+    {
+      "case": "legacy-isolation",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "7d35713a19d596b114343df23d2306f97d5b1b2ad90865d09368c261f27e1855"
+    },
+    {
+      "case": "live-authority",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "ca806a556aaa1e8b00a06a6ec0b5d6c06e4710b7f6bda55d9f51e772dfe15d75"
+    },
+    {
+      "case": "live-browser-input",
+      "before_commands": 16,
+      "after_commands": 16,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "f485ad95c2ceb0397c16e9d51a493ec47de6fea4102a7ab631a92c9dead838bb"
+    },
+    {
+      "case": "live-console",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "403df3305ce5de3ff1e98a331eda46699d76c4adb78450b99d0fe5c238b43fdb"
+    },
+    {
+      "case": "live-media-crash",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "186f1f1e902a7aaaaee3e3697b1f44a576d3d4df6e28bc450f546b333476402b"
+    },
+    {
+      "case": "live-media-execution",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "82470cd8e0014ae9d97d2ec2c941c702b6f2c93891d921264c60b2099a603e3a"
+    },
+    {
+      "case": "live-media-input",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "253465f062d016d17434f47976d04da55470d3df21982d4e21ba2bbbac110ae0"
+    },
+    {
+      "case": "live-media-plan",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "194fc502ba9c5597104109de5de0062803505f568d2df06bd428d2868bbc7530"
+    },
+    {
+      "case": "live-media-recovery",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "07944f2bb8c32abec83ac3e1c927ec3e84b17d63f2ec732500be65dfd7791780"
+    },
+    {
+      "case": "live-media-runtime",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "158ed5ae05afd0c324b3d33cfe9b893530bcdfaad1ae728f04b1409e6381e79d"
+    },
+    {
+      "case": "live-media-stop",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "963cdcd642b57be8a9e8b686bbe79e6edd4ec601fa3f190b7c6220930562ebc7"
+    },
+    {
+      "case": "live-planning",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "bb3ca8d3886de11664d7b31718535c820a74bd2d6af2a77789834ee174944515"
+    },
+    {
+      "case": "local-recovery",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "d75b628a764366f30458c613b1d531df265be94975c227bc8bf0fe52104eb0d6"
+    },
+    {
+      "case": "lock-busy-browser-picklist",
+      "before_commands": 5,
+      "after_commands": 5,
+      "exit_code": 2,
+      "differences": [],
+      "command_env_sha256": "35bc6ced8a23db172895549b4d572946c31476ef76b71c684e8062c4e9a44a92"
+    },
+    {
+      "case": "lock-busy-browser-platform-site",
+      "before_commands": 5,
+      "after_commands": 5,
+      "exit_code": 2,
+      "differences": [],
+      "command_env_sha256": "35bc6ced8a23db172895549b4d572946c31476ef76b71c684e8062c4e9a44a92"
+    },
+    {
+      "case": "lock-busy-checkout",
+      "before_commands": 5,
+      "after_commands": 5,
+      "exit_code": 2,
+      "differences": [],
+      "command_env_sha256": "7b07cc53c385f4e288bacd931b89d04bdd7dafd4d469f0626780a6ae0a65b2ca"
+    },
+    {
+      "case": "merchant-orders",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "1f334a95842a45a9ee619b133b437b8d23c686901328c6d50c98c83c27a85003"
+    },
+    {
+      "case": "meta-consumer",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "479edf8ddfa5ee237952ef33eed28db94a74fd538f127f18de9bfa7ada5d4611"
+    },
+    {
+      "case": "meta-health",
+      "before_commands": 16,
+      "after_commands": 16,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "88b6a8fd350fb427abfc1659ba5a731abe38203a0a73451327aa40cda5d99b2b"
+    },
+    {
+      "case": "meta-inbox",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "cc3947ce02c135d0bd940bdfd658a02312c27173254320196c8bd1b6a77607c0"
+    },
+    {
+      "case": "meta-runtime",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "67784677498506133a90c10309dc24a5571c26fd70c5422f5813378af5fdc0b8"
+    },
+    {
+      "case": "msg-templates",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "7a77457e629f8aa01a8256554853e0338df281da562708041e906473b8cd7578"
+    },
+    {
+      "case": "operations-queue",
+      "before_commands": 16,
+      "after_commands": 16,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "d54decd4e37d60a01a4ec4e37f6652bea812c6a21a457b2665cd269d0ac1ece6"
+    },
+    {
+      "case": "ops-disk-guard",
+      "before_commands": 6,
+      "after_commands": 6,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "6f0e816918db1d51c70f5d19e41bce7a27fd14d2e1d794df0b2cd71cef5a4c27"
+    },
+    {
+      "case": "ordinary-go-failure",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 1,
+      "differences": [],
+      "command_env_sha256": "9c2923bc55dbe203c0566e28cb3bd51c797a3da39199acd95ac40802e4448797"
+    },
+    {
+      "case": "payment-worker",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "2d4cfeecc14eacaa8a06cc6498a9f37c54c77b3fb2968e82c931cdb0b0cbae89"
+    },
+    {
+      "case": "payment",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "b615f95fab412972966759237588c783349e0c3533e36bf4421755b1a78b33b4"
+    },
+    {
+      "case": "pg-retry-once",
+      "before_commands": 17,
+      "after_commands": 17,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "3664d0ba59b69b578dc36a2703a00f5a36a885d9354e8e48a58be95ab0509dd5"
+    },
+    {
+      "case": "purchase-entry",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "7d7d3dbed57d20e535b9a0e39d647b531a4462adcc61b5eacd027ab1cadeee5e"
+    },
+    {
+      "case": "storefront-mock-custom-evidence",
+      "before_commands": 11,
+      "after_commands": 11,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "0cdc451e0571482c93536df1030371c109ab32967729ce4db685bf28efef3725"
+    },
+    {
+      "case": "storefront-mock",
+      "before_commands": 12,
+      "after_commands": 12,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "ffd21fd2be2335fab5c685f28d705f369f2345b8fec8f16967382525581431d5"
+    },
+    {
+      "case": "storefront-resolver",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "16b8b9262a8f4db78344986636d9c011e1e54a51922e62c4981c73e4c99ef7a4"
+    },
+    {
+      "case": "stripe-browser",
+      "before_commands": 4,
+      "after_commands": 4,
+      "exit_code": 2,
+      "differences": [],
+      "command_env_sha256": "d5a3c8d8b22165fe0a740f6ba29643731c6821d3ebd0ecdc21a55ef10a55e3e3"
+    },
+    {
+      "case": "stripe-invalid-synthetic-key",
+      "before_commands": 4,
+      "after_commands": 4,
+      "exit_code": 2,
+      "differences": [],
+      "command_env_sha256": "b10da0a929a604556775bab90501cc3149922a1fdab988b37f7fe2cbb1c506ab"
+    },
+    {
+      "case": "stripe-node-only",
+      "before_commands": 41,
+      "after_commands": 41,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "21ad5d1c0f985e3699959b84f4f748f2846d1ad669e7221540528b9f5cc84da6"
+    },
+    {
+      "case": "stripe-synthetic-go-failure",
+      "before_commands": 31,
+      "after_commands": 31,
+      "exit_code": 1,
+      "differences": [],
+      "command_env_sha256": "e2fc5905bd81f176d5c20e08bd65bc5cf61dee6069f67b7b01902d025ce56b85"
+    },
+    {
+      "case": "stripe-synthetic-sandbox",
+      "before_commands": 81,
+      "after_commands": 81,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "89607c0866736d95a6c359e3beeb4f7657c98d9b4d3d2247ddc3754bba01d18e"
+    },
+    {
+      "case": "stripe-synthetic-split",
+      "before_commands": 101,
+      "after_commands": 101,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "e7e55a38fa0a96b3e3f2821a6a7e739e22f370c1539b6280217e116ba8e2c1d2"
+    },
+    {
+      "case": "stripe-wrong-account",
+      "before_commands": 4,
+      "after_commands": 4,
+      "exit_code": 2,
+      "differences": [],
+      "command_env_sha256": "e8d29e3facecc55803f2f6cbe5f41c3c40bd5a42daa5b27487fe7f433758cf68"
+    },
+    {
+      "case": "studio-backend",
+      "before_commands": 15,
+      "after_commands": 15,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "75c40015015909f5a5fb74e73bb72cb4ba7a991ed31db317aa686ba004df771e"
+    },
+    {
+      "case": "two-args",
+      "before_commands": 4,
+      "after_commands": 4,
+      "exit_code": 2,
+      "differences": [],
+      "command_env_sha256": "d5a3c8d8b22165fe0a740f6ba29643731c6821d3ebd0ecdc21a55ef10a55e3e3"
+    },
+    {
+      "case": "visual-existing-journeys",
+      "before_commands": 30,
+      "after_commands": 30,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "fb31caf4674d1e2ce44e4964827c158c55cc9121531e23fea018c6f0a40998e9"
+    },
+    {
+      "case": "visual-failed-verdict",
+      "before_commands": 29,
+      "after_commands": 29,
+      "exit_code": 1,
+      "differences": [],
+      "command_env_sha256": "f26415c00a1be6397162218985f63343bfb3f813f2e98dac73436898688c9e88"
+    },
+    {
+      "case": "visual-no-result",
+      "before_commands": 28,
+      "after_commands": 28,
+      "exit_code": 1,
+      "differences": [],
+      "command_env_sha256": "989ba27eeaea26987c39b42299b3dab7a1f6aff1f4473662a5f8bf5f2005472d"
+    },
+    {
+      "case": "visual-shard2",
+      "before_commands": 29,
+      "after_commands": 29,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "0fa810e74a9cea5b7fd977431d44690dc91d90445c58cc720b9dbdd82a4185ec"
+    },
+    {
+      "case": "webkit-count-failure",
+      "before_commands": 37,
+      "after_commands": 37,
+      "exit_code": 1,
+      "differences": [],
+      "command_env_sha256": "ee643bd4e208d7e328c2237e37a283327d94c2ff4419c1649526d17bed120e27"
+    },
+    {
+      "case": "webkit-go-failure",
+      "before_commands": 37,
+      "after_commands": 37,
+      "exit_code": 1,
+      "differences": [],
+      "command_env_sha256": "ee643bd4e208d7e328c2237e37a283327d94c2ff4419c1649526d17bed120e27"
+    },
+    {
+      "case": "webkit-not-installed",
+      "before_commands": 6,
+      "after_commands": 6,
+      "exit_code": 2,
+      "differences": [],
+      "command_env_sha256": "3b89308b2937438906cb9b1faa0cb300e42de6aa4e506c3d619a9a8b88bf98b5"
+    },
+    {
+      "case": "webkit-subset",
+      "before_commands": 47,
+      "after_commands": 47,
+      "exit_code": 0,
+      "differences": [],
+      "command_env_sha256": "0d8b54e8ace71af5aff019bae118bd1ac8e9c424f4506b6893a2aa2e292cd6a9"
+    }
+  ],
+  "all_equal": true
+}

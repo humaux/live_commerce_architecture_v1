@@ -132,8 +132,8 @@ lists; run `scripts/dev/depmap.sh` and include the diff.
 
 ## Verify
 ```sh
-GOTOOLCHAIN=go1.27.1 go vet ./internal/integrations/... && gofmt -l internal
-GOTOOLCHAIN=go1.27.1 go test -race -count=1 ./internal/integrations/shipping/... ./internal/integrations/core/...
+GOTOOLCHAIN=go1.27.2 go vet ./internal/integrations/... && gofmt -l internal
+GOTOOLCHAIN=go1.27.2 go test -race -count=1 ./internal/integrations/shipping/... ./internal/integrations/core/...
 LC_FOCUSED_TIMEOUT=1800s bash scripts/dev/test-focused.sh '^Test(T06|ExternalOperation|MetaClaimsIntakeMCI)'  # after F0/F1; regression
 bash scripts/dev/depmap.sh && python3 scripts/check_packet.py
 ```

@@ -1,0 +1,43 @@
+(node:33513) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✖ offer controls read authoritative limits without parsing unrelated CONTAINS window/stats (0.733875ms)
+✖ offer toggle preserves exactly the authoritative maximum in the real M4 payload (5.499ms)
+✔ console BFF admits exactly A1/A7/A6 and A5 read/copy methods (0.773334ms)
+✔ results query is canonical repeated session_id 1..50, everything else queryless (0.183542ms)
+✔ real BFF route forwards only exact resources, authenticates scope and returns private scrubbed errors (55.0245ms)
+✔ new commands reject unknown keys and preserve frozen copy/lifecycle/recommend body (0.168375ms)
+✔ browser commands reuse Studio fences, exact no-comment recommend body and backend refusal codes (1.277209ms)
+✔ results client preserves canonical ids/order and rejects invalid list before fetch (0.258458ms)
+✔ stock client reuses catalog transport/key/parser and fences a changed login without retries (2.897ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 7
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 231.340541
+
+✖ failing tests:
+
+test at tests/admin/live-console-bff.test.ts:29:1
+✖ offer controls read authoritative limits without parsing unrelated CONTAINS window/stats (0.733875ms)
+  TypeError: client.readOfferControls is not a function
+      at TestContext.<anonymous> (/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-transport/tests/admin/live-console-bff.test.ts:39:33)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+test at tests/admin/live-console-bff.test.ts:47:1
+✖ offer toggle preserves exactly the authoritative maximum in the real M4 payload (5.499ms)
+  Error: signed-out
+      at write (/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-transport/apps/admin/lib/studio-client.ts:68:19)
+      at async parsed (/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-transport/apps/admin/src/features/live/console-client.ts:18:22)
+      at async TestContext.<anonymous> (/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-transport/tests/admin/live-console-bff.test.ts:59:18)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    code: 'signed-out',
+    api: ''
+  }

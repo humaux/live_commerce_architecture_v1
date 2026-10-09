@@ -1,0 +1,303 @@
+?   	livecommerce/internal/integrations/metabridge	[no test files]
+=== RUN   TestLiveAudienceReadOnlySnapshot
+--- PASS: TestLiveAudienceReadOnlySnapshot (0.00s)
+=== RUN   TestLiveAudienceInsufficientDemographics
+=== RUN   TestLiveAudienceInsufficientDemographics/{}
+=== RUN   TestLiveAudienceInsufficientDemographics/[]
+=== RUN   TestLiveAudienceInsufficientDemographics/[_]
+=== RUN   TestLiveAudienceInsufficientDemographics/null
+--- PASS: TestLiveAudienceInsufficientDemographics (0.01s)
+    --- PASS: TestLiveAudienceInsufficientDemographics/{} (0.00s)
+    --- PASS: TestLiveAudienceInsufficientDemographics/[] (0.00s)
+    --- PASS: TestLiveAudienceInsufficientDemographics/[_] (0.00s)
+    --- PASS: TestLiveAudienceInsufficientDemographics/null (0.00s)
+=== RUN   TestLiveAudienceBoundVideoAndPagination
+=== RUN   TestLiveAudienceBoundVideoAndPagination/unmatched
+=== RUN   TestLiveAudienceBoundVideoAndPagination/ambiguous
+=== RUN   TestLiveAudienceBoundVideoAndPagination/unknown_video_path
+=== RUN   TestLiveAudienceBoundVideoAndPagination/missing_cursor
+=== RUN   TestLiveAudienceBoundVideoAndPagination/unsafe_cursor
+=== RUN   TestLiveAudienceBoundVideoAndPagination/cursor_cycle
+=== RUN   TestLiveAudienceBoundVideoAndPagination/malformed_list
+--- PASS: TestLiveAudienceBoundVideoAndPagination (0.01s)
+    --- PASS: TestLiveAudienceBoundVideoAndPagination/unmatched (0.00s)
+    --- PASS: TestLiveAudienceBoundVideoAndPagination/ambiguous (0.00s)
+    --- PASS: TestLiveAudienceBoundVideoAndPagination/unknown_video_path (0.00s)
+    --- PASS: TestLiveAudienceBoundVideoAndPagination/missing_cursor (0.00s)
+    --- PASS: TestLiveAudienceBoundVideoAndPagination/unsafe_cursor (0.00s)
+    --- PASS: TestLiveAudienceBoundVideoAndPagination/cursor_cycle (0.00s)
+    --- PASS: TestLiveAudienceBoundVideoAndPagination/malformed_list (0.00s)
+=== RUN   TestLiveAudiencePolicyAndMalformedRequest
+--- PASS: TestLiveAudiencePolicyAndMalformedRequest (0.00s)
+=== RUN   TestLiveAudienceCredentialScopes
+=== RUN   TestLiveAudienceCredentialScopes/exact_readonly
+=== RUN   TestLiveAudienceCredentialScopes/one_missing
+=== RUN   TestLiveAudienceCredentialScopes/other_missing
+=== RUN   TestLiveAudienceCredentialScopes/messaging_alone
+=== RUN   TestLiveAudienceCredentialScopes/none
+--- PASS: TestLiveAudienceCredentialScopes (0.00s)
+    --- PASS: TestLiveAudienceCredentialScopes/exact_readonly (0.00s)
+    --- PASS: TestLiveAudienceCredentialScopes/one_missing (0.00s)
+    --- PASS: TestLiveAudienceCredentialScopes/other_missing (0.00s)
+    --- PASS: TestLiveAudienceCredentialScopes/messaging_alone (0.00s)
+    --- PASS: TestLiveAudienceCredentialScopes/none (0.00s)
+=== RUN   TestLiveAudienceFailureNoReplay
+=== RUN   TestLiveAudienceFailureNoReplay/permission_HTTP
+=== RUN   TestLiveAudienceFailureNoReplay/permission_Graph
+=== RUN   TestLiveAudienceFailureNoReplay/server_uncertainty
+=== RUN   TestLiveAudienceFailureNoReplay/refused
+=== RUN   TestLiveAudienceFailureNoReplay/redirect
+--- PASS: TestLiveAudienceFailureNoReplay (0.04s)
+    --- PASS: TestLiveAudienceFailureNoReplay/permission_HTTP (0.00s)
+    --- PASS: TestLiveAudienceFailureNoReplay/permission_Graph (0.00s)
+    --- PASS: TestLiveAudienceFailureNoReplay/server_uncertainty (0.00s)
+    --- PASS: TestLiveAudienceFailureNoReplay/refused (0.00s)
+    --- PASS: TestLiveAudienceFailureNoReplay/redirect (0.00s)
+=== RUN   TestLiveAudienceFinishFence
+--- PASS: TestLiveAudienceFinishFence (0.00s)
+=== RUN   TestLiveAudienceMetricValidation
+--- PASS: TestLiveAudienceMetricValidation (0.00s)
+=== RUN   TestCommentFactsFieldsAndDerivation
+--- PASS: TestCommentFactsFieldsAndDerivation (0.00s)
+=== RUN   TestConsoleCommentItemSeqWire
+--- PASS: TestConsoleCommentItemSeqWire (0.00s)
+=== RUN   TestSealOpenRoundTripAndBinding
+--- PASS: TestSealOpenRoundTripAndBinding (0.00s)
+=== RUN   TestSealRejectsBadInput
+--- PASS: TestSealRejectsBadInput (0.00s)
+=== RUN   TestLoadPageTokenKeyringFromEnv
+--- PASS: TestLoadPageTokenKeyringFromEnv (0.00s)
+=== RUN   TestKeyringRedactionAndCopy
+--- PASS: TestKeyringRedactionAndCopy (0.00s)
+=== RUN   TestRegisterPageTokenValidatesBeforeSQL
+--- PASS: TestRegisterPageTokenValidatesBeforeSQL (0.00s)
+=== RUN   TestLiveVideosDispatchReadOnly
+--- PASS: TestLiveVideosDispatchReadOnly (0.00s)
+=== RUN   TestNormalizeLiveVideos
+=== RUN   TestNormalizeLiveVideos/empty
+=== RUN   TestNormalizeLiveVideos/bare_post_prefixed
+=== RUN   TestNormalizeLiveVideos/mismatched_prefix
+=== RUN   TestNormalizeLiveVideos/non_numeric_id
+=== RUN   TestNormalizeLiveVideos/live_first
+--- PASS: TestNormalizeLiveVideos (0.00s)
+    --- PASS: TestNormalizeLiveVideos/empty (0.00s)
+    --- PASS: TestNormalizeLiveVideos/bare_post_prefixed (0.00s)
+    --- PASS: TestNormalizeLiveVideos/mismatched_prefix (0.00s)
+    --- PASS: TestNormalizeLiveVideos/non_numeric_id (0.00s)
+    --- PASS: TestNormalizeLiveVideos/live_first (0.00s)
+=== RUN   TestSanitizeLiveToken
+--- PASS: TestSanitizeLiveToken (0.00s)
+=== RUN   TestLiveVideosBadResultAndPolicy
+--- PASS: TestLiveVideosBadResultAndPolicy (0.00s)
+=== RUN   TestRenderClaimLink
+--- PASS: TestRenderClaimLink (0.00s)
+=== RUN   TestRoutesConfigValidation
+--- PASS: TestRoutesConfigValidation (0.00s)
+=== RUN   TestCheckMapping
+--- PASS: TestCheckMapping (0.00s)
+=== RUN   TestDispatchSuccessBodyAndTokenPlacement
+--- PASS: TestDispatchSuccessBodyAndTokenPlacement (0.00s)
+=== RUN   TestDispatchNeverRepostsOnDoubt
+--- PASS: TestDispatchNeverRepostsOnDoubt (0.01s)
+=== RUN   TestDispatchRedirectNotFollowed
+--- PASS: TestDispatchRedirectNotFollowed (0.00s)
+=== RUN   TestDispatchTimeoutIsUnknown
+--- PASS: TestDispatchTimeoutIsUnknown (0.15s)
+=== RUN   TestDispatchRefusesBeforeAnyCall
+--- PASS: TestDispatchRefusesBeforeAnyCall (0.00s)
+=== RUN   TestReconcileNeverDispatches
+--- PASS: TestReconcileNeverDispatches (0.00s)
+=== RUN   TestLoadSecretScopesAndOpen
+--- PASS: TestLoadSecretScopesAndOpen (0.00s)
+=== RUN   TestSendRequestShapes
+--- PASS: TestSendRequestShapes (0.00s)
+=== RUN   TestSendOutcomeMapping
+=== RUN   TestSendOutcomeMapping/invalid_request_100
+=== RUN   TestSendOutcomeMapping/invalid_request_2018278
+=== RUN   TestSendOutcomeMapping/100_but_body_carries_id
+=== RUN   TestSendOutcomeMapping/other_4xx_before_LC-U9
+=== RUN   TestSendOutcomeMapping/400_other_code
+=== RUN   TestSendOutcomeMapping/5xx
+=== RUN   TestSendOutcomeMapping/429
+=== RUN   TestSendOutcomeMapping/2xx_garbled
+=== RUN   TestSendOutcomeMapping/2xx_without_id
+--- PASS: TestSendOutcomeMapping (0.01s)
+    --- PASS: TestSendOutcomeMapping/invalid_request_100 (0.00s)
+    --- PASS: TestSendOutcomeMapping/invalid_request_2018278 (0.00s)
+    --- PASS: TestSendOutcomeMapping/100_but_body_carries_id (0.00s)
+    --- PASS: TestSendOutcomeMapping/other_4xx_before_LC-U9 (0.00s)
+    --- PASS: TestSendOutcomeMapping/400_other_code (0.00s)
+    --- PASS: TestSendOutcomeMapping/5xx (0.00s)
+    --- PASS: TestSendOutcomeMapping/429 (0.00s)
+    --- PASS: TestSendOutcomeMapping/2xx_garbled (0.00s)
+    --- PASS: TestSendOutcomeMapping/2xx_without_id (0.00s)
+=== RUN   TestSendReconcileIsQueryOnlyAndRedactedSafe
+--- PASS: TestSendReconcileIsQueryOnlyAndRedactedSafe (0.00s)
+=== RUN   TestSendCheckMapping
+--- PASS: TestSendCheckMapping (0.00s)
+=== RUN   TestParseSendRejectsMismatches
+--- PASS: TestParseSendRejectsMismatches (0.00s)
+=== RUN   TestSendRoutesCoverTheActions
+--- PASS: TestSendRoutesCoverTheActions (0.00s)
+=== RUN   TestIsManualReply
+--- PASS: TestIsManualReply (0.00s)
+=== RUN   TestSoldOutDispatchSendsFrozenTextOnce
+--- PASS: TestSoldOutDispatchSendsFrozenTextOnce (0.00s)
+=== RUN   TestSoldOutDispatchNeverRepostsOnDoubt
+--- PASS: TestSoldOutDispatchNeverRepostsOnDoubt (0.00s)
+=== RUN   TestSoldOutRefusesMalformedBeforeAnyCall
+--- PASS: TestSoldOutRefusesMalformedBeforeAnyCall (0.00s)
+=== RUN   TestSoldOutCheckUsesSharedCheck
+--- PASS: TestSoldOutCheckUsesSharedCheck (0.00s)
+=== RUN   TestSoldOutTextRuleIsControlCharactersOnly
+--- PASS: TestSoldOutTextRuleIsControlCharactersOnly (0.00s)
+PASS
+ok  	livecommerce/internal/integrations/metareply	1.732s
+=== RUN   TestMediaPlannerRejectsInvalidBoundary
+--- PASS: TestMediaPlannerRejectsInvalidBoundary (0.00s)
+=== RUN   TestMediaOperationArgsFixedKind
+--- PASS: TestMediaOperationArgsFixedKind (0.00s)
+=== RUN   TestConsoleStreamPageScanExhaustedWire
+--- PASS: TestConsoleStreamPageScanExhaustedWire (0.00s)
+=== RUN   TestDecodeStudioInputStrictStatus
+=== RUN   TestDecodeStudioInputStrictStatus/closed_with_egress_liability
+=== RUN   TestDecodeStudioInputStrictStatus/open
+=== RUN   TestDecodeStudioInputStrictStatus/null_admission
+=== RUN   TestDecodeStudioInputStrictStatus/null_cleanup
+=== RUN   TestDecodeStudioInputStrictStatus/null_can_stop
+=== RUN   TestDecodeStudioInputStrictStatus/null_close_reason
+=== RUN   TestDecodeStudioInputStrictStatus/closed_without_admission
+=== RUN   TestDecodeStudioInputStrictStatus/open_with_admission
+--- PASS: TestDecodeStudioInputStrictStatus (0.00s)
+    --- PASS: TestDecodeStudioInputStrictStatus/closed_with_egress_liability (0.00s)
+    --- PASS: TestDecodeStudioInputStrictStatus/open (0.00s)
+    --- PASS: TestDecodeStudioInputStrictStatus/null_admission (0.00s)
+    --- PASS: TestDecodeStudioInputStrictStatus/null_cleanup (0.00s)
+    --- PASS: TestDecodeStudioInputStrictStatus/null_can_stop (0.00s)
+    --- PASS: TestDecodeStudioInputStrictStatus/null_close_reason (0.00s)
+    --- PASS: TestDecodeStudioInputStrictStatus/closed_without_admission (0.00s)
+    --- PASS: TestDecodeStudioInputStrictStatus/open_with_admission (0.00s)
+=== RUN   TestBrowserInputRuntimeProjectBoundary
+=== RUN   TestBrowserInputRuntimeProjectBoundary/nil
+=== RUN   TestBrowserInputRuntimeProjectBoundary/empty
+=== RUN   TestBrowserInputRuntimeProjectBoundary/too_many
+--- PASS: TestBrowserInputRuntimeProjectBoundary (0.00s)
+    --- PASS: TestBrowserInputRuntimeProjectBoundary/nil (0.00s)
+    --- PASS: TestBrowserInputRuntimeProjectBoundary/empty (0.00s)
+    --- PASS: TestBrowserInputRuntimeProjectBoundary/too_many (0.00s)
+=== RUN   TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig
+=== RUN   TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/empty_project
+=== RUN   TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/project_punctuation
+=== RUN   TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/project_whitespace
+=== RUN   TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/project_over_80
+=== RUN   TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/zero_version
+=== RUN   TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/negative_version
+=== RUN   TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/LIVE_config
+=== RUN   TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/lowercase_MOCK
+=== RUN   TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/invalid_endpoint
+=== RUN   TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/invalid_key
+=== RUN   TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/short_secret
+=== RUN   TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/no_stream_hosts
+=== RUN   TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/invalid_stream_host
+=== RUN   TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/nil_transport
+=== RUN   TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/typed_nil_transport
+--- PASS: TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig (0.00s)
+    --- PASS: TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/empty_project (0.00s)
+    --- PASS: TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/project_punctuation (0.00s)
+    --- PASS: TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/project_whitespace (0.00s)
+    --- PASS: TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/project_over_80 (0.00s)
+    --- PASS: TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/zero_version (0.00s)
+    --- PASS: TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/negative_version (0.00s)
+    --- PASS: TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/LIVE_config (0.00s)
+    --- PASS: TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/lowercase_MOCK (0.00s)
+    --- PASS: TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/invalid_endpoint (0.00s)
+    --- PASS: TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/invalid_key (0.00s)
+    --- PASS: TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/short_secret (0.00s)
+    --- PASS: TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/no_stream_hosts (0.00s)
+    --- PASS: TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/invalid_stream_host (0.00s)
+    --- PASS: TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/nil_transport (0.00s)
+    --- PASS: TestBrowserInputRuntimeRejectsInvalidProjectsAndConfig/typed_nil_transport (0.00s)
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/valid_ws://127.0.0.1:1
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/valid_wss://127.0.0.1:65535/
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/valid_ws://[::1]:1/
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/valid_wss://[::1]:65535
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_http://127.0.0.1:7880
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_WS://127.0.0.1:7880
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://localhost:7880
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://example.com:7880
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://192.168.0.1:7880
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.2:7880
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.01:7880
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:0
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:65536
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:07880
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:+1
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:abc
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:/
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:7880/path
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:7880/%2F
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:7880/?
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:7880/#
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:7880?x=1
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:7880#x
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://user@127.0.0.1:7880
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://[::ffff:127.0.0.1]:7880
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://[0:0:0:0:0:0:0:1]:7880
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://[::1]
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://[::1]:0
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://[::1]:65536
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://[::1]:07880
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://[::1]:7880/path
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://[::1]:7880/?
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://[::1]:7880/#
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://[::1%25lo0]:7880
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:7880_
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid__ws://127.0.0.1:7880
+=== RUN   TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:7880/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+--- PASS: TestBrowserInputRuntimeCanonicalBrowserURL (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/valid_ws://127.0.0.1:1 (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/valid_wss://127.0.0.1:65535/ (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/valid_ws://[::1]:1/ (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/valid_wss://[::1]:65535 (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_http://127.0.0.1:7880 (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_WS://127.0.0.1:7880 (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://localhost:7880 (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://example.com:7880 (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://192.168.0.1:7880 (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.2:7880 (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.01:7880 (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1 (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:0 (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:65536 (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:07880 (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:+1 (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:abc (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:/ (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:7880/path (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:7880/%2F (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:7880/? (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:7880/# (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:7880?x=1 (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:7880#x (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://user@127.0.0.1:7880 (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://[::ffff:127.0.0.1]:7880 (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://[0:0:0:0:0:0:0:1]:7880 (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://[::1] (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://[::1]:0 (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://[::1]:65536 (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://[::1]:07880 (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://[::1]:7880/path (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://[::1]:7880/? (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://[::1]:7880/# (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://[::1%25lo0]:7880 (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:7880_ (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid__ws://127.0.0.1:7880 (0.00s)
+    --- PASS: TestBrowserInputRuntimeCanonicalBrowserURL/invalid_ws://127.0.0.1:7880/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (0.00s)
+=== RUN   TestBrowserInputRuntimeRedactsAllFormatting
+--- PASS: TestBrowserInputRuntimeRedactsAllFormatting (0.00s)
+PASS
+ok  	livecommerce/internal/live	1.720s

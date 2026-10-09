@@ -1,0 +1,22 @@
+✔ A2 grammar refuses private/duplicate/ambiguous cursors and keys on reads (12.002458ms)
+✔ A3-A5 exact comment ref and bodies; explicit preemption private only (0.294333ms)
+✔ A4/A5 preserve frozen refusal codes, never provider/debug text (0.077917ms)
+✔ reset invalidates old buffers and cursor before reread; older page cannot advance live cursor (1.131166ms)
+✔ filter resources have only authorised opaque ids; backoff is capped and success resets (0.413417ms)
+✔ A8/A9/A13 and published templates: exact reads forward once with no-store (17.442208ms)
+✔ real streamed POST bodies: A10-A14 exact keys reach upstream (8.707959ms)
+✔ query, read headers, methods and body allowlists refuse before upstream (6.240625ms)
+✔ session, CSRF and store authority precede content forwarding (1.22375ms)
+✔ A12 fixed codes preserved; arbitrary upstream diagnostics stripped (5.763ms)
+✔ client preserves codes and receipt; changed/aborted session cannot publish private response (4.726833ms)
+✔ A9 admits a full page of valid Unicode replies while bounding private response bytes (3.814208ms)
+✔ non-JSON upstream 401 still expires both authentication cookies without diagnostic leakage (1.27775ms)
+✔ real M7 response keeps no-referrer after matching Next production header rules (43.288375ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 229.286583

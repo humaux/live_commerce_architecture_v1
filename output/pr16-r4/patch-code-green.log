@@ -1,0 +1,15 @@
+✔ PE14 new edit SKU carries its own shipping and clears no existing fields (10.679667ms)
+✔ PE14 patch changes only price and preserves unmentioned fields (0.200417ms)
+✔ PE14 on_hand is not available, zero target is transmitted, ambiguous warehouse refuses (0.284375ms)
+✔ PE14 explicit clears and shipping remain per SKU on an active row (0.121208ms)
+✔ PE14 archive supersedes every other edit on that SKU (b77eeb11) (0.213792ms)
+✔ PE14 no-op has no command fields and changed axes explicitly archive omitted variants (0.123583ms)
+✔ PE14 replacement SKU edit excludes create-only code from the strict patch grammar (0.238792ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 95.278

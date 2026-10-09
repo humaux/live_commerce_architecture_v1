@@ -1,0 +1,14 @@
+{
+  "source_sha": "a6bd46d8154fb2b05f3c80adc1c1ba7ab099e7e6",
+  "sha256": {
+    "apps/admin/components/MerchantOrders.tsx": "68e209abe955f6a43cd8b6e51b16e247876f2933752f6d1b4b405d95375d77cd",
+    "apps/admin/components/ParcelGroup.tsx": "4184241c427ddb9174fa3fd8f8977702feeb71a6036369c6817bfaab37462f94",
+    "playwright.config.ts": "5ca5140b2d48ece39b02146346808e1201dbb7fcffdf8b48a9587cce1c593a65",
+    "scripts/dev/test-node.sh": "f8fd68921907fc90c519c2b8451ca8f1cef489369c82f45e2bc5bd362e0e61e8",
+    "tests/admin/parcel-merge.spec.ts": "6a00cac5f539e4792ce84dc89c312e125fa8fa7c5b173c945a44a1b6123fbd0e",
+    "tests/admin/parcels-discovery.test.ts": "0ef284342c59e051a31c7d13bd7d607cc7dc31a4d83bfa93f283e166a20b9a01",
+    "tests/admin/parcels-scope.test.ts": "01a84682b27f95d14665813cbb8c0b1189bbdd8cb2f3d26fa5939fdec71a0257",
+    "tests/foundation/browser_merchant_orders_ui_test.go": "28b093df85630572d6d51573820caf293b890ef3e5bdda0c0aa55e3eea851600",
+    "tests/foundation/parcel_fixture_test.go": "db3abfd5cc65b8fc9437938b018e0bc302e173958fc2a3b946b90e70ff4573aa"
+  }
+}

@@ -1,0 +1,7 @@
+=== RUN   TestBrowserLiveConsoleRealChain
+    browser_live_console_test.go:613: FOCUSED_SPEC_ONLY: live-console grep="LCU2_404"; full-mode acceptance remains NOT_RUN
+    browser_live_console_test.go:640: LC-U1 MOCK Console; LC-U2a REAL_PG + MOCK Graph browser evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/output/playwright/live-console-396746924
+--- PASS: TestBrowserLiveConsoleRealChain (28.15s)
+PASS
+ok  	livecommerce/tests/foundation	30.443s
+test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0

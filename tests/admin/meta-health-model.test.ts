@@ -72,15 +72,9 @@ test("blocking advice comes from the blocking capability, not a secondary public
 test("clean health browser mode prepares admin standalone before starting its fixture", async () => {
   const { readFileSync } = await import("node:fs");
   const { execFileSync } = await import("node:child_process");
-  const script = readFileSync(new URL("../../scripts/dev/test-local.sh", import.meta.url), "utf8");
-  const lines = script.split("\n");
-  const build = lines.findIndex(line => line.includes("pnpm run build:admin"));
-  assert.ok(build > 0);
-  const condition = lines.slice(0, build).reverse().find(line => line.startsWith("if [["));
-  assert.ok(condition);
-  // Execute only the real preparation predicate, never the build or PG/browser mode.
-  const outcome = execFileSync("bash", ["-c", `test_mode="$1"\n${condition}\n  printf prepared\nelse\n  printf missing\nfi`, "health-build-predicate", "--browser-meta-health-ui"], { encoding: "utf8" });
-  assert.equal(outcome, "prepared");
+  const plan = execFileSync("bash", ["scripts/dev/test-local.sh", "--dry-run", "--browser-meta-health-ui"], { encoding: "utf8" });
+  assert.ok(plan.indexOf("pnpm run build:admin") > 0);
+  assert.ok(plan.indexOf("pnpm run build:admin") < plan.indexOf("docker run"), "admin build precedes fixture startup");
 });
 
 // MOCK SSR follows the existing attribution tests: execute the actual component and shared Badge,

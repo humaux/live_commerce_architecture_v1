@@ -1,0 +1,43 @@
+(node:22160) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ claims window modes match Go constants and every SQL match_mode CHECK (4.105792ms)
+✔ host prompt stays verbatim at the frozen trunk contract; Japanese is absent (1.815667ms)
+(node:22161) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ offer controls read authoritative limits without parsing unrelated KEYWORD_QTY_CONTAINS window/stats (19.829ms)
+✔ offer controls accept 101 through the backend cap of 200 distinct offers, reject 201 (1.854ms)
+✔ offer toggle preserves exactly the authoritative maximum in the real M4 payload (3.4845ms)
+✔ console BFF admits exactly A1/A7/A6 and A5 read/copy methods (0.371834ms)
+✔ Next proxy admits the exact console family and results query before the BFF (53.71275ms)
+✔ results query is canonical repeated session_id 1..50, everything else queryless (0.098625ms)
+✔ real BFF route forwards only exact resources, authenticates scope and returns private scrubbed errors (33.574292ms)
+✔ new commands reject unknown keys and preserve frozen copy/lifecycle/recommend body (0.164166ms)
+✔ browser commands reuse Studio fences, exact no-comment recommend body and backend refusal codes (1.362459ms)
+✔ results client preserves canonical ids/order and rejects invalid list before fetch (0.304542ms)
+✔ stock client reuses catalog transport/key/parser and fences a changed login without retries (1.026167ms)
+(node:22162) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ A1 strict MOCK snapshot preserves unavailable counts, capability unknown and server stock (6.930291ms)
+✔ A7 returns a separate lifecycle version and closed full KEYWORD_QTY_CONTAINS window (0.129416ms)
+✔ A5 results retain separate environments/currencies and bind exact requested ids/order (0.166458ms)
+✔ A5 copy parses real Go envelope, copied offer prices and KEYWORD_QTY_CONTAINS window (0.35625ms)
+✔ A6 accepts optional operation UUID, never guessed send success (0.086917ms)
+(node:22163) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Live settings navigation accepts a scene picker entry but never a malformed or unscoped deep link (1.74675ms)
+✔ LC-B7 stock permission admits live_adjust without inventory:write, not unrelated grants (0.088709ms)
+✔ Instagram comment total stays unavailable; Facebook observed count is not a platform total (0.063542ms)
+✔ LC-U1 one primary action follows lifecycle, never planning or transport state (0.049667ms)
+✔ LC-U1 stock target uses sellable delta and rejects fractions, negative and over-limit changes (0.081375ms)
+✔ LC-U1 links only explicit FB post identities, never arbitrary URLs or guessed videos (0.07325ms)
+✔ LC-U1 Facebook preview keeps the original no-frame CSP and uses a safe external link (1.960417ms)
+✔ LC-U1 delayed copy completion cannot navigate after store switch or unmount (0.149541ms)
+✔ LC-U1 receipt fence survives cookie rotation; pending replay still has a separate session boundary (0.46175ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 27
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 310.746959

@@ -1,0 +1,7 @@
+=== RUN   TestConsoleStreamPageScanExhaustedWire
+    stream_scan_test.go:22: scan_exhausted="" want explicit false
+--- FAIL: TestConsoleStreamPageScanExhaustedWire (0.00s)
+FAIL
+FAIL	livecommerce/internal/live	1.627s
+FAIL
+exit=1

@@ -1,0 +1,18 @@
+
+Running 11 tests using 1 worker
+
+(node:68647) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/admin/live-console.spec.ts:94:3 › LC-U1 MOCK contract real clicks en-1586 (36.5s)
+  ✓   2 tests/admin/live-console.spec.ts:94:3 › LC-U1 MOCK contract real clicks en-390 (36.4s)
+  ✓   3 tests/admin/live-console.spec.ts:94:3 › LC-U1 MOCK contract real clicks zh-TW-1586 (36.4s)
+  ✓   4 tests/admin/live-console.spec.ts:94:3 › LC-U1 MOCK contract real clicks zh-TW-390 (35.3s)
+  ✓   5 tests/admin/live-console.spec.ts:94:3 › LC-U1 MOCK contract real clicks zh-CN-1586 (35.6s)
+  ✓   6 tests/admin/live-console.spec.ts:94:3 › LC-U1 MOCK contract real clicks zh-CN-390 (36.3s)
+  ✓   7 tests/admin/live-console.spec.ts:336:1 › LC-U1 unknown receipt stays fenced after real logout and reauthentication (1.3s)
+  ✓   8 tests/admin/live-console.spec.ts:365:1 › LC-U1 delayed copy cannot navigate back after an actual SPA scene switch (2.6s)
+  ✓   9 tests/admin/live-console.spec.ts:391:3 › LC-U1 en: bounded live_adjust works, no-stock permission stays disabled, missing A1 is graceful (776ms)
+  ✓  10 tests/admin/live-console.spec.ts:391:3 › LC-U1 zh-TW: bounded live_adjust works, no-stock permission stays disabled, missing A1 is graceful (1.1s)
+  ✓  11 tests/admin/live-console.spec.ts:391:3 › LC-U1 zh-CN: bounded live_adjust works, no-stock permission stays disabled, missing A1 is graceful (861ms)
+
+  11 passed (3.7m)

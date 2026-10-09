@@ -1,0 +1,11 @@
+{
+  "command": [
+    "bash",
+    "-c",
+    "source scripts/dev/test-lock.sh\nlc_lock_acquire 180 || exit 2\ntrap lc_lock_release EXIT\ndocker run --rm --name \"$PR2_PROBE_NAME\" --label livecommerce.fixture=\"$PR2_PROBE_NAME\" --platform linux/arm64 --network none --memory=1536m --cpus=2 --pids-limit=256 --shm-size=256m --cap-drop=ALL --security-opt=no-new-privileges -v /Volumes/data/live_commerce_architecture_v1:/Volumes/data/live_commerce_architecture_v1:ro -v /Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/round973:/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/round973:rw -w /Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui -e PLAYWRIGHT_BROWSERS_PATH=/ms-playwright mcr.microsoft.com/playwright@sha256:a0f4498920a5dbac63196d9140ed738ef00470f27e2e74029abd8850b7bd5717 xvfb-run -a -e /dev/stderr node output/w3-u4-parcel-merge-ui/round973/linux-native-picker-probe.mjs --trace"
+  ],
+  "container": "lc-pr2-native-arm-973-60809",
+  "exit": 0,
+  "elapsed_seconds": 173.27,
+  "note": "Native Linux arm64; MOCK native-control probe, not GitHub amd64/full Studio CI"
+}

@@ -1,0 +1,18 @@
+{
+  "name": "node-final",
+  "command": [
+    "bash",
+    "scripts/dev/test-node.sh"
+  ],
+  "timeout": 300,
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race",
+  "branch": "unit/order-gate-bo01-race",
+  "out": "/Volumes/data/live_commerce_architecture_v1/.worktrees/order-gate-bo01-race/output/playwright/bo01-p2-validation",
+  "conditions": {},
+  "head": "978a33bf55283feae59c07e6d58b08a175d1058c",
+  "exit_code": 0,
+  "source_sha256": "b8b9139ed3247c39326c2467e3de46e25f40e56094844e6d554f3dcec31f8d0d",
+  "source_after": "b8b9139ed3247c39326c2467e3de46e25f40e56094844e6d554f3dcec31f8d0d",
+  "source_unchanged": true,
+  "elapsed_seconds": 29.711
+}

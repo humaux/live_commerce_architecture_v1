@@ -14,10 +14,10 @@
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 out=docs/engineering/dependency-map.md
-module="$(GOTOOLCHAIN=go1.27.1 go list -m)"
+module="$(GOTOOLCHAIN=go1.27.2 go list -m)"
 
 tmp="$(mktemp)"
-GOTOOLCHAIN=go1.27.1 go list -f '{{.ImportPath}}{{"\t"}}{{.Doc}}{{"\t"}}{{join .Imports " "}}' ./... |
+GOTOOLCHAIN=go1.27.2 go list -f '{{.ImportPath}}{{"\t"}}{{.Doc}}{{"\t"}}{{join .Imports " "}}' ./... |
   python3 -c '
 import sys
 module = sys.argv[1]

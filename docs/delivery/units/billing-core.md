@@ -135,8 +135,8 @@ test unit's), `internal/httpapi/{billing.go,billing_test.go}`, `internal/claims/
 
 ## Verify (unit tests must not start with `TestCustomersBillingCB`)
 ```sh
-GOTOOLCHAIN=go1.27.1 go vet ./... && gofmt -l internal cmd && bash scripts/dev/check-pkgdocs.sh
-GOTOOLCHAIN=go1.27.1 go test -race -count=1 ./internal/billing/... ./internal/claims ./internal/httpapi ./cmd/api
+GOTOOLCHAIN=go1.27.2 go vet ./... && gofmt -l internal cmd && bash scripts/dev/check-pkgdocs.sh
+GOTOOLCHAIN=go1.27.2 go test -race -count=1 ./internal/billing/... ./internal/claims ./internal/httpapi ./cmd/api
 LC_FOCUSED_TIMEOUT=1800s bash scripts/dev/test-focused.sh '^Test(T0[46]|LiveClaims|Identity|OwnerProvisioning|Migration|StripeSP|StripeRF0[3-9]|ManualFulfilmentMF0[2-6])'
 python3 scripts/check_packet.py
 ```
