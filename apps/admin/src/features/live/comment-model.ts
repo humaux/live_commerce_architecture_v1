@@ -1,8 +1,11 @@
 // Purpose: transient A2 stream parsing, epoch reconciliation and filter/cadence policy.
-// Depends on: live-console-v1 CommentStream DTO; no browser storage or identity inference.
+// Depends on: live-console-v1 CommentStream and A8 inbox DTOs; no browser storage or identity inference.
 // Used by: CommentStream hook and Node acceptance tests.
 // Invariant: deduped buffer is oldest-first by (created_at instant, ref); cap evicts only the oldest rows.
 // Deletions are inferred only from a non-empty, same-epoch periodic HEAD window, never incremental/history reads.
+import type { ConversationItem, ConversationList } from "../../../lib/inbox-types";
+/** I23 bounds both console comment and conversation memory. */
+export const COMMENT_MEMORY_CAP = 1000;
 export type CommentFilter = "all" | "keyword" | "private" | "unreplied";
 /** A2 SQL marks carry operation enums; render the same five delivery states as Go inbox.sendState. */
 export function commentSendState(state:string):"queued"|"sent"|"failed"|"blocked"|"unknown" {
@@ -60,6 +63,7 @@ export type CommentBuffer = {
   next: CommentCursor | null;
   older: string | null;
   reset: boolean;
+  historyLoaded: boolean;
 };
 /** A privacy boundary always starts with an empty in-memory buffer. */
 export const emptyComments = (): CommentBuffer => ({
@@ -68,6 +72,7 @@ export const emptyComments = (): CommentBuffer => ({
   next: null,
   older: null,
   reset: false,
+  historyLoaded: false,
 });
 const compareComments = (a: StreamComment, b: StreamComment) =>
   Date.parse(a.created_at) - Date.parse(b.created_at) || (a.ref < b.ref ? -1 : a.ref > b.ref ? 1 : 0);
@@ -77,16 +82,20 @@ export function applyCommentPage(
   page: CommentPage,
   older: boolean,
   reconcileHead = false,
+  headLimit = 50,
 ): CommentBuffer {
   if (page.reset || (old.epoch !== 0 && old.epoch !== page.epoch))
     return { ...emptyComments(), reset: true };
   // Historical paging stops at the memory cap: never consume a cursor for an unseen page.
-  if (older && old.items.length >= 1000) return old;
+  if (older && old.items.length >= COMMENT_MEMORY_CAP) return old;
   let retained = old.items;
   if (reconcileHead && !older && page.items.length > 0) {
     const floor = page.items.reduce((a, b) => compareComments(a, b) <= 0 ? a : b);
     const refs = new Set(page.items.map(row => row.ref));
-    retained = old.items.filter(row => compareComments(row, floor) < 0 || refs.has(row.ref));
+    // Explicit history uses the conservative floor rule. Without it, a short terminal
+    // head is the complete server window, including any now-deleted oldest live rows.
+    const wholeWindow = page.items.length < headLimit && page.older_cursor === null && !old.historyLoaded;
+    retained = old.items.filter(row => refs.has(row.ref) || (!wholeWindow && compareComments(row, floor) < 0));
   }
   const map = new Map(
     (older ? [...page.items, ...retained] : [...retained, ...page.items]).map(
@@ -96,11 +105,20 @@ export function applyCommentPage(
   return {
     epoch: page.epoch,
     // FB bridge and IG fallback arrive in opposite orders. Never use arrival order for retention.
-    items: [...map.values()].sort(compareComments).slice(-1000),
+    items: [...map.values()].sort(compareComments).slice(-COMMENT_MEMORY_CAP),
     next: older ? old.next : page.next,
     older: older || !old.epoch ? page.older_cursor : old.older,
     reset: false,
+    historyLoaded: old.historyLoaded || (older && page.items.length > 0),
   };
+}
+/** Merge A8 pages in memory, evicting oldest entries; head refresh may preserve the loaded history cursor. */
+export function mergeConversationPage(old: ConversationList | null, page: ConversationList, preserveCursor = false): ConversationList {
+  const identity = (row: ConversationItem) => row.conversation_id ?? row.bundle_id ?? "";
+  const items = [...new Map([...(old?.items ?? []), ...page.items].map(row => [identity(row), row])).values()]
+    .sort((a, b) => Date.parse(b.last_at) - Date.parse(a.last_at) || (identity(a) < identity(b) ? 1 : identity(a) > identity(b) ? -1 : 0))
+    .slice(0, COMMENT_MEMORY_CAP);
+  return { ...page, items, next_cursor: items.length >= COMMENT_MEMORY_CAP ? "" : preserveCursor && old ? old.next_cursor : page.next_cursor };
 }
 /** A8 filters stay server scoped; unreplied is a view over this session's live-comment conversations. */
 export function commentViewResource(

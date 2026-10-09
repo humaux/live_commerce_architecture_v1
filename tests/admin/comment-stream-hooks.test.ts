@@ -30,6 +30,49 @@ const { CommentStream } =
 const { commentCopy } =
   await import("../../apps/admin/src/features/live/comment-copy.ts");
 const sid = "22222222-2222-4222-8222-222222222222";
+test("PR18 enabled downgrade gates hook output before passive cleanup",async t=>{
+  const env=environment(t);let enabled=true;
+  globalThis.fetch=async()=>response(page());
+  const h=env.mount(()=>useCommentStream(store.id,sid,enabled));await h.settle();
+  h.output.select({ref:row.ref});h.flush();assert.equal(h.output.buffer.items.length,1);
+  // Hold queued passive effects, not the real render: inspect the first revoked commit.
+  const splice=h.effects.splice;h.effects.splice=(()=>[]) as typeof splice;
+  try {
+    enabled=false;h.dirty=true;h.flush();
+    assert.equal(h.output.buffer.items.length,0,"revoked hook cannot expose cached comments");
+    assert.equal(h.output.selection,null,"revoked hook cannot expose selected buyer");
+    assert.equal(h.output.busy,false);
+  } finally {h.effects.splice=splice;h.dirty=true;await h.settle();}
+});
+for(const view of ["all","private"] as const)test(`PR18 enabled downgrade first ${view} render hides rows buyer and composer`,async t=>{
+  const env=environment(t);
+  let currentStore={...store,role:"staff",permissions:["live:read","inbox:read","inbox:reply"]};
+  const claim={status:"ACCEPTED",reason:null,offer_id:sid,keyword:"A1",quantity:1,bundle_id:sid};
+  globalThis.fetch=async input=>{
+    const url=String(input);
+    if(url.includes("buyer-panel?"))return response({display_name:"PRIVATE_PANEL",platform:"facebook",purchase_ordinal:1,claims:[],claim_total_minor:0,orders:[],link_pending_manual:false});
+    if(url.includes("message-templates"))return response({items:[]});
+    if(url.includes("inbox/conversations"))return response({items:[{conversation_id:sid,bundle_id:sid,platform:"facebook",display_name:"PRIVATE_CONVERSATION",last_at:row.created_at,unreplied:true}],next_cursor:"",unread_total:1});
+    return response(page(1,[{...row,marks:{...row.marks,claim}}]));
+  };
+  const cap={state:"ok",reason:"ok",evidence:"MOCK",checked_at:null};
+  const h=env.mount(()=>CommentStream({store:currentStore,session:sid,locale:"en",platform:"facebook",capabilities:{facebook:{private_reply:cap,reply_public:cap}}} as any));await h.settle();
+  if(view==="private"){
+    node(h,n=>n.props["data-testid"]==="comment-filter-private").props.onClick();await h.settle();
+    node(h,n=>n.type==="button"&&textOf(n).includes("PRIVATE_CONVERSATION")).props.onClick();
+  }else node(h,n=>n.props["data-testid"]===`comment-select-${row.ref}`).props.onClick();
+  await h.settle();assert.ok(textOf(h.output).includes("PRIVATE_PANEL"));
+  if(view==="all")assert.ok(nodes(h.output).some(n=>n.props["data-testid"]==="comment-reply-text"));
+  const splice=h.effects.splice;h.effects.splice=(()=>[]) as typeof splice;
+  try {
+    currentStore={...currentStore,permissions:["inbox:read","inbox:reply"]};h.dirty=true;h.flush();
+    assert.equal(nodes(h.output).some(n=>n.props["data-testid"]===`comment-row-${row.ref}`),false);
+    assert.equal(nodes(h.output).some(n=>n.props["data-testid"]==="comment-conversations"),false);
+    assert.equal(nodes(h.output).some(n=>n.props["data-testid"]==="buyer-panel"),false);
+    assert.equal(nodes(h.output).some(n=>n.props["data-testid"]==="comment-reply-text"),false);
+    assert.equal(/SYNTHETIC_COMMENT|PRIVATE_PANEL|PRIVATE_CONVERSATION/.test(textOf(h.output)),false);
+  } finally {h.effects.splice=splice;h.dirty=true;await h.settle();}
+});
 for (const deniedPath of ["a2", "a8", "older"] as const) test(`PR18 R2 scoped404 ${deniedPath} clears both private views and stops recovery reads`, async t => {
   const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-09T01:00:00Z")});
   let revoked=false, reads=0;
@@ -77,6 +120,31 @@ test("PR18 A8 clears names synchronously and keeps loaded older pages through a 
   assert.equal(h.slots.some(s=>s.value?.items?.some((r:any)=>r.display_name?.includes("Synthetic"))),false,"A8 names must be synchronously cleared");
   h.flush();assert.equal(textOf(h.output).includes("Synthetic older buyer"),false);
 });
+test("PR18 A8 paged list stays bounded across fresh heads and stops older at cap",async t=>{
+  const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-09T00:00:00Z")});
+  let heads=0,olderReads=0;
+  const item=(n:number)=>({conversation_id:`synthetic-${n}`,bundle_id:null,display_name:`Synthetic buyer ${n}`,platform:"facebook",last_at:new Date(1000*n).toISOString(),unreplied:true});
+  globalThis.fetch=async input=>{
+    const url=String(input);if(!url.includes("inbox/conversations"))return response(page(1,[]));
+    if(url.includes("cursor=")){olderReads++;return response({items:Array.from({length:50},(_,i)=>item(i)),next_cursor:"more",unread_total:0});}
+    const start=50*(++heads);return response({items:Array.from({length:50},(_,i)=>item(start+i)),next_cursor:"more",unread_total:0});
+  };
+  const h=env.mount(()=>CommentStream({store,session:sid,locale:"en",platform:"facebook",capabilities:{}} as any));await h.settle();
+  node(h,n=>n.props["data-testid"]==="comment-filter-private").props.onClick();await h.settle();
+  node(h,n=>n.type==="button"&&textOf(n)===commentCopy("en").older).props.onClick();await h.settle();
+  assert.equal(olderReads,1);
+  for(let n=0;n<22;n++){
+    t.mock.timers.tick(10000);await h.settle();
+    const list=node(h,x=>x.props["data-testid"]==="comment-conversations");
+    assert.ok(nodes(list).filter(x=>x.type==="li").length<=1000,`head${heads}: DOM bounded`);
+    assert.ok(h.slots.every(s=>!Array.isArray(s.value?.items)||s.value.items.length<=1000),"retained A8 state bounded too");
+  }
+  const list=node(h,x=>x.props["data-testid"]==="comment-conversations");
+  assert.equal(nodes(list).filter(x=>x.type==="li").length,1000);
+  assert.ok(textOf(list).includes(`Synthetic buyer ${heads*50+49}`),"newest head kept");
+  assert.equal(textOf(list).includes("Synthetic buyer 0 ·"),false,"oldest evicted");
+  assert.equal(nodes(h.output).some(n=>n.type==="button"&&textOf(n)===commentCopy("en").older),false);
+});
 test("PR18 A8 hides clear before effects even without pagination",async t=>{
   const env=environment(t);
   globalThis.fetch=async input=>String(input).includes("inbox/conversations")?response({items:[{conversation_id:sid,bundle_id:null,display_name:"PRIVATE_A8_NAME",platform:"facebook",last_at:"2026-10-08T01:00:00Z",unreplied:true}],next_cursor:"",unread_total:1}):response(page());
@@ -85,17 +153,18 @@ test("PR18 A8 hides clear before effects even without pagination",async t=>{
   env.document.visibilityState="hidden";env.document.dispatchEvent(new Event("visibilitychange"));
   assert.equal(h.slots.some(s=>s.value?.items?.some((r:any)=>r.display_name==="PRIVATE_A8_NAME")),false);
 });
-test("PR18 deletion HEAD clears selected comment composer but keeps history and public guard",async t=>{
+for(const loadedHistory of [true,false])test(loadedHistory ? "PR18 deletion HEAD clears selected comment composer but keeps history and public guard" : "PR18 short complete HEAD clears oldest selected comment and composer",async t=>{
   const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-09T00:00:00Z")});
   let deleted=false,headReads=0;
   const history={...row,ref:"100",text:"Synthetic old history",created_at:"2026-10-08T00:00:00Z"};
-  const survivor={...row,ref:"123_455",text:"Synthetic surviving recent",created_at:row.created_at};
+  const survivor={...row,ref:loadedHistory?"123_455":"123_457",text:"Synthetic surviving recent",created_at:row.created_at};
   globalThis.fetch=async(input,init)=>{
     const url=String(input);
     if(init?.method==="POST")return response({send_state:"queued",operation_id:sid,outbound_id:sid});
     if(url.includes("message-templates"))return response({items:[]});
+    if(url.includes("before_cursor"))return response(page(1,[history]));
     if(url.includes("after_seq"))return response(page(1,[]));
-    headReads++;return response(page(1,deleted?[survivor]:[history,row,survivor]));
+    headReads++;return response({...page(1,deleted?[survivor]:loadedHistory?[row,survivor]:[history,row,survivor]),older_cursor:loadedHistory?"history":null});
   };
   const cap={state:"ok",reason:"ok",evidence:"MOCK",checked_at:null};
   const h=env.mount(()=>CommentStream({store,session:sid,locale:"en",platform:"facebook",capabilities:{facebook:{private_reply:cap,reply_public:cap}}} as any));await h.settle();
@@ -103,6 +172,7 @@ test("PR18 deletion HEAD clears selected comment composer but keeps history and 
   node(h,n=>n.type==="button"&&textOf(n)==="Public reply").props.onClick();h.flush();
   node(h,n=>n.props["data-testid"]==="comment-reply-text").props.onChange({target:{value:"Synthetic pending reply"}});h.flush();
   node(h,n=>n.type==="form").props.onSubmit({preventDefault(){}});await h.settle();
+  if(loadedHistory){node(h,n=>n.props["data-testid"]==="comment-older").props.onClick();await h.settle();}
   const guard=[...stored.keys()].find(k=>k.startsWith("live-comment-public-pending:"));assert.ok(guard);
   const headBefore=headReads;deleted=true;
   for(let n=0;n<3;n++){t.mock.timers.tick(3000);await h.settle();}
@@ -111,7 +181,7 @@ test("PR18 deletion HEAD clears selected comment composer but keeps history and 
   assert.equal(headReads,headBefore+1,"only the existing10s cadence re-reads the head");
   assert.equal(nodes(h.output).some(n=>n.props["data-testid"]===`comment-row-${row.ref}`),false);
   assert.equal(nodes(h.output).some(n=>n.props["data-testid"]==="comment-reply"),false);
-  assert.ok(textOf(h.output).includes("Synthetic old history"));assert.equal(stored.get(guard!),"1");
+  assert.equal(textOf(h.output).includes("Synthetic old history"),loadedHistory);assert.equal(stored.get(guard!),"1");
   assert.equal(h.slots.some(s=>s.value?.ref===row.ref),false,"selection is cleared, not only hidden");
 });
 test("PR18 quiet A2 stream refreshes delayed claim marks without a new sequence or user refresh",async t=>{

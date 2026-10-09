@@ -22,6 +22,23 @@ const sid = "22222222-2222-4222-8222-222222222222";
 const path = `live-sessions/${sid}/comments`;
 const deletionRows=[1,2,3,4].map(n=>({ref:String(n),created_at:new Date(n*1000).toISOString(),text:`Synthetic ${n}`}));
 const deletionPage=(items:unknown[])=>({epoch:1,reset:false,items,next:{epoch:1,seq:4},older_cursor:"history"}) as never;
+test("PR18 short complete HEAD removes an absent oldest live row",()=>{
+  const old=applyCommentPage(emptyComments(),deletionPage(deletionRows),false);
+  const head={...deletionPage(deletionRows.slice(1)) as any,older_cursor:null};
+  assert.deepEqual(applyCommentPage(old,head,false,true).items.map(r=>r.ref),["2","3","4"]);
+});
+test("PR18 full or cursor-bearing HEAD keeps the floor rule",()=>{
+  const old=applyCommentPage(emptyComments(),deletionPage(deletionRows),false);
+  const full={...deletionPage(deletionRows.slice(1)) as any,older_cursor:null};
+  assert.deepEqual(applyCommentPage(old,full,false,true,3).items.map(r=>r.ref),["1","2","3","4"]);
+  assert.deepEqual(applyCommentPage(old,deletionPage(deletionRows.slice(1)),false,true).items.map(r=>r.ref),["1","2","3","4"]);
+});
+test("PR18 loaded history stays protected from short complete HEAD",()=>{
+  let old=applyCommentPage(emptyComments(),deletionPage(deletionRows.slice(1)),false);
+  old=applyCommentPage(old,deletionPage([deletionRows[0]]),true);
+  const head={...deletionPage([deletionRows[3]]) as any,older_cursor:null};
+  assert.deepEqual(applyCommentPage(old,head,false,true).items.map(r=>r.ref),["1","2","3","4"]);
+});
 test("PR18 deletion HEAD removes absent refs inside its window",()=>{
   const old=applyCommentPage(emptyComments(),deletionPage(deletionRows),false);
   const result=applyCommentPage(old,deletionPage([deletionRows[2]]),false,true);

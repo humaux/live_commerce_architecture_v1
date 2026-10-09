@@ -7,6 +7,7 @@ import { inboxRead, InboxError } from "../../../lib/inbox-client";
 import { useInboxPrivacy } from "../messages/index";
 import {
   applyCommentPage,
+  COMMENT_MEMORY_CAP,
   commentDelay,
   emptyComments,
   parseCommentPage,
@@ -58,10 +59,11 @@ export function useCommentStream(
     if (!visible || privacy.blocked.current) return;
     fence.invalidate(true);
     const root = `live-sessions/${session}/comments`;
+    const pageLimit = 50;
     const load = async (older = false) => {
       if (!alive || inFlight.current || document.visibilityState !== "visible")
         return;
-      if (older && current.current.items.length >= 1000) return;
+      if (older && current.current.items.length >= COMMENT_MEMORY_CAP) return;
       if (!older && deadline.current > Date.now()) {
         timer = setTimeout(() => void load(), deadline.current - Date.now());
         return;
@@ -71,7 +73,7 @@ export function useCommentStream(
       setBusy(true);
       const ticket = fence.begin();
       let delay = 3000;
-      const query = new URLSearchParams({ limit: "50" });
+      const query = new URLSearchParams({ limit: String(pageLimit) });
       if (older && current.current.older)
         query.set("before_cursor", current.current.older);
       else if (current.current.next) {
@@ -89,9 +91,9 @@ export function useCommentStream(
         if (!older && !next.reset) {
           if (!current.current.next) marksReadAt.current = Date.now();
           else if (Date.now() - marksReadAt.current >= 10000) {
-            const head = parseCommentPage(await inboxRead<unknown>(store, `${root}?limit=50`, ticket.signal));
+            const head = parseCommentPage(await inboxRead<unknown>(store, `${root}?limit=${pageLimit}`, ticket.signal));
             if (!alive || !fence.current(ticket)) return;
-            const refreshed = applyCommentPage(next, head, false, true);
+            const refreshed = applyCommentPage(next, head, false, true, pageLimit);
             if (!refreshed.reset && head.items.length > 0)
               select(selected => selected?.ref && !refreshed.items.some(row => row.ref === selected.ref) ? null : selected);
             next = refreshed.reset ? refreshed : { ...refreshed, next: next.next, older: next.older };
@@ -107,7 +109,7 @@ export function useCommentStream(
           resetSelection.current++;
           setError("reset");
           const fresh = parseCommentPage(
-            await inboxRead<unknown>(store, `${root}?limit=50`, ticket.signal),
+            await inboxRead<unknown>(store, `${root}?limit=${pageLimit}`, ticket.signal),
           );
           if (!alive || !fence.current(ticket)) return;
           next = applyCommentPage(current.current, fresh, false);
@@ -167,21 +169,24 @@ export function useCommentStream(
     revision,
     retainOnReset,
   ]);
+  // A same-store grant downgrade commits before passive cleanup. Never return cached
+  // private state (including the A8 visibility gate) for that first revoked render.
   return {
-    buffer,
-    error,
-    busy,
-    selection,
-    select,
-    privacy,
+    buffer: enabled ? buffer : emptyComments(),
+    error: enabled ? error : "forbidden",
+    busy: enabled && busy,
+    selection: enabled ? selection : null,
+    select: enabled ? select : () => {},
+    privacy: { ...privacy, visible: enabled && privacy.visible },
     revision,
     resetGeneration: resetSelection.current,
     // A command refresh rereads current marks for existing rows, not only new comment sequence numbers.
     refresh: () => {
+      if (!enabled) return;
       deadline.current = 0;
       current.current = { ...current.current, next: null };
       refresh((n) => n + 1);
     },
-    older: () => void loader.current(true),
+    older: () => { if (enabled) void loader.current(true); },
   };
 }
