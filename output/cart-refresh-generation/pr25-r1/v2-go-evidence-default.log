@@ -1,0 +1,86 @@
+=== RUN   TestBuyerOrderEvidenceCompleteness
+=== RUN   TestBuyerOrderEvidenceCompleteness/trunk
+=== RUN   TestBuyerOrderEvidenceCompleteness/legacy-without-cart-retry
+=== RUN   TestBuyerOrderEvidenceCompleteness/with-PR7-UTC
+=== RUN   TestBuyerOrderEvidenceCompleteness/duplicate-history-alias
+=== RUN   TestBuyerOrderEvidenceCompleteness/missing-core-even-with-UTC
+=== RUN   TestBuyerOrderEvidenceCompleteness/missing-mobile-layout
+=== RUN   TestBuyerOrderEvidenceCompleteness/missing-desktop-layout
+=== RUN   TestBuyerOrderEvidenceCompleteness/duplicate-UTC
+=== RUN   TestBuyerOrderEvidenceCompleteness/duplicate-layout
+=== RUN   TestBuyerOrderEvidenceCompleteness/unknown-replaces-core
+=== RUN   TestBuyerOrderEvidenceCompleteness/duplicate-replaces-core
+=== RUN   TestBuyerOrderEvidenceCompleteness/unknown-extra
+--- PASS: TestBuyerOrderEvidenceCompleteness (0.00s)
+    --- PASS: TestBuyerOrderEvidenceCompleteness/trunk (0.00s)
+    --- PASS: TestBuyerOrderEvidenceCompleteness/legacy-without-cart-retry (0.00s)
+    --- PASS: TestBuyerOrderEvidenceCompleteness/with-PR7-UTC (0.00s)
+    --- PASS: TestBuyerOrderEvidenceCompleteness/duplicate-history-alias (0.00s)
+    --- PASS: TestBuyerOrderEvidenceCompleteness/missing-core-even-with-UTC (0.00s)
+    --- PASS: TestBuyerOrderEvidenceCompleteness/missing-mobile-layout (0.00s)
+    --- PASS: TestBuyerOrderEvidenceCompleteness/missing-desktop-layout (0.00s)
+    --- PASS: TestBuyerOrderEvidenceCompleteness/duplicate-UTC (0.00s)
+    --- PASS: TestBuyerOrderEvidenceCompleteness/duplicate-layout (0.00s)
+    --- PASS: TestBuyerOrderEvidenceCompleteness/unknown-replaces-core (0.00s)
+    --- PASS: TestBuyerOrderEvidenceCompleteness/duplicate-replaces-core (0.00s)
+    --- PASS: TestBuyerOrderEvidenceCompleteness/unknown-extra (0.00s)
+=== RUN   TestBuyerOrderRefreshFactComparison
+=== RUN   TestBuyerOrderRefreshFactComparison/invalid_json
+=== RUN   TestBuyerOrderRefreshFactComparison/id
+=== RUN   TestBuyerOrderRefreshFactComparison/version
+=== RUN   TestBuyerOrderRefreshFactComparison/quantity
+=== RUN   TestBuyerOrderRefreshFactComparison/sku
+=== RUN   TestBuyerOrderRefreshFactComparison/extra_line
+=== RUN   TestBuyerOrderRefreshFactComparison/extra_field
+=== RUN   TestBuyerOrderRefreshFactComparison/writes
+=== RUN   TestBuyerOrderRefreshFactComparison/receipts
+=== RUN   TestBuyerOrderRefreshFactComparison/receipt_version
+=== RUN   TestBuyerOrderRefreshFactComparison/request_hash
+--- PASS: TestBuyerOrderRefreshFactComparison (0.00s)
+    --- PASS: TestBuyerOrderRefreshFactComparison/invalid_json (0.00s)
+    --- PASS: TestBuyerOrderRefreshFactComparison/id (0.00s)
+    --- PASS: TestBuyerOrderRefreshFactComparison/version (0.00s)
+    --- PASS: TestBuyerOrderRefreshFactComparison/quantity (0.00s)
+    --- PASS: TestBuyerOrderRefreshFactComparison/sku (0.00s)
+    --- PASS: TestBuyerOrderRefreshFactComparison/extra_line (0.00s)
+    --- PASS: TestBuyerOrderRefreshFactComparison/extra_field (0.00s)
+    --- PASS: TestBuyerOrderRefreshFactComparison/writes (0.00s)
+    --- PASS: TestBuyerOrderRefreshFactComparison/receipts (0.00s)
+    --- PASS: TestBuyerOrderRefreshFactComparison/receipt_version (0.00s)
+    --- PASS: TestBuyerOrderRefreshFactComparison/request_hash (0.00s)
+=== RUN   TestBuyerOrderRefreshSamples
+=== RUN   TestBuyerOrderRefreshSamples/mount-direct
+=== RUN   TestBuyerOrderRefreshSamples/mount-visible-detail-loading
+=== RUN   TestBuyerOrderRefreshSamples/drawer-continuous
+=== RUN   TestBuyerOrderRefreshSamples/blank-before-first-line
+=== RUN   TestBuyerOrderRefreshSamples/wrong-loading-copy
+=== RUN   TestBuyerOrderRefreshSamples/empty-even-with-loading
+=== RUN   TestBuyerOrderRefreshSamples/changed-quantity
+=== RUN   TestBuyerOrderRefreshSamples/line-loss-after-first-line
+=== RUN   TestBuyerOrderRefreshSamples/blank-after-first-line
+=== RUN   TestBuyerOrderRefreshSamples/drawer-loading-does-not-excuse-line-loss
+=== RUN   TestBuyerOrderRefreshSamples/drawer-must-start-with-line
+=== RUN   TestBuyerOrderRefreshSamples/missing-initial-held-read-loading
+=== RUN   TestBuyerOrderRefreshSamples/never-published-line
+=== RUN   TestBuyerOrderRefreshSamples/extra-line
+=== RUN   TestBuyerOrderRefreshSamples/loading-with-quantity
+=== RUN   TestBuyerOrderRefreshSamples/empty-title-with-line
+--- PASS: TestBuyerOrderRefreshSamples (0.00s)
+    --- PASS: TestBuyerOrderRefreshSamples/mount-direct (0.00s)
+    --- PASS: TestBuyerOrderRefreshSamples/mount-visible-detail-loading (0.00s)
+    --- PASS: TestBuyerOrderRefreshSamples/drawer-continuous (0.00s)
+    --- PASS: TestBuyerOrderRefreshSamples/blank-before-first-line (0.00s)
+    --- PASS: TestBuyerOrderRefreshSamples/wrong-loading-copy (0.00s)
+    --- PASS: TestBuyerOrderRefreshSamples/empty-even-with-loading (0.00s)
+    --- PASS: TestBuyerOrderRefreshSamples/changed-quantity (0.00s)
+    --- PASS: TestBuyerOrderRefreshSamples/line-loss-after-first-line (0.00s)
+    --- PASS: TestBuyerOrderRefreshSamples/blank-after-first-line (0.00s)
+    --- PASS: TestBuyerOrderRefreshSamples/drawer-loading-does-not-excuse-line-loss (0.00s)
+    --- PASS: TestBuyerOrderRefreshSamples/drawer-must-start-with-line (0.00s)
+    --- PASS: TestBuyerOrderRefreshSamples/missing-initial-held-read-loading (0.00s)
+    --- PASS: TestBuyerOrderRefreshSamples/never-published-line (0.00s)
+    --- PASS: TestBuyerOrderRefreshSamples/extra-line (0.00s)
+    --- PASS: TestBuyerOrderRefreshSamples/loading-with-quantity (0.00s)
+    --- PASS: TestBuyerOrderRefreshSamples/empty-title-with-line (0.00s)
+PASS
+ok  	livecommerce/tests/foundation	0.640s
