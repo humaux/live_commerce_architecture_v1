@@ -33,7 +33,7 @@ export function CommentLabelPrint({ locale, store, session, rows, allowed, activ
   const [busy, setBusy] = useState(false), [failed, setFailed] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null), opener = useRef<HTMLElement | null>(null);
   const controller = useRef(new AbortController()), running = useRef(false), pending = useRef(new Map<string, string>());
-  const current = useRef({ active, eligible }); current.current = { active, eligible };
+  const current = useRef({ active, allowed, eligible }); current.current = { active, allowed, eligible };
   const selectedRows = eligible.filter((row) => selected.includes(row.ref));
   const labels = preview.map((ref) => eligible.find((row) => row.ref === ref)).filter((row): row is StreamComment => !!row);
   useEffect(() => {
@@ -41,9 +41,9 @@ export function CommentLabelPrint({ locale, store, session, rows, allowed, activ
     return () => { controller.current.abort(); pending.current.clear(); };
   }, []);
   useEffect(() => {
-    if (!active || labels.length === 0) { dialog.current?.close(); return; }
+    if (!active || !allowed || labels.length === 0) { dialog.current?.close(); return; }
     if (!dialog.current?.open) dialog.current?.showModal();
-  }, [active, labels.length]);
+  }, [active, allowed, labels.length]);
   const close = () => { setPreview([]); setFailed(false); opener.current?.focus(); };
   const show = (refs: string[]) => {
     if (!allowed || !active || running.current) return;
@@ -56,7 +56,7 @@ export function CommentLabelPrint({ locale, store, session, rows, allowed, activ
     let failure = false;
     // Only refs survive awaits; every label is still derived from the currently visible stream.
     const refs = labels.map((row) => row.ref), signal = controller.current.signal;
-    const valid = () => !signal.aborted && current.current.active && document.visibilityState === "visible" && refs.every((ref) => current.current.eligible.some((row) => row.ref === ref));
+    const valid = () => !signal.aborted && current.current.active && current.current.allowed && document.visibilityState === "visible" && refs.every((ref) => current.current.eligible.some((row) => row.ref === ref));
     for (const ref of refs) {
       if (!valid()) break;
       const key = pending.current.get(ref) ?? crypto.randomUUID(); pending.current.set(ref, key);
@@ -69,7 +69,8 @@ export function CommentLabelPrint({ locale, store, session, rows, allowed, activ
         setCounts((old) => ({ ...old, [ref]: result.print_count }));
       } catch (e) {
         failure = true;
-        if (e instanceof InboxError && [401, 403].includes(e.status)) { onDenied(); return; }
+        // A scoped 404 is authority loss too, not a recoverable print-record failure.
+        if (e instanceof InboxError && [401, 403, 404].includes(e.status)) { onDenied(); return; }
         // A lost ACK retains its key in memory. A later explicit print never blindly repeats that fact.
         if (e instanceof InboxError && e.status >= 400 && e.status < 500) pending.current.delete(ref);
       }
@@ -83,7 +84,7 @@ export function CommentLabelPrint({ locale, store, session, rows, allowed, activ
   };
   const controls: PrintControls = { c, allowed: allowed && active, busy, selected: selectedRows.map((row) => row.ref), counts, eligible,
     toggle: (ref) => setSelected((old) => old.includes(ref) ? old.filter((id) => id !== ref) : [...old, ref]), preview: show };
-  return <Controls.Provider value={controls}>{children}{active && labels.length > 0 && createPortal(
+  return <Controls.Provider value={controls}>{children}{active && allowed && labels.length > 0 && createPortal(
     <dialog className="comment-label-portal" ref={dialog} aria-labelledby="comment-label-title" onCancel={(event) => { event.preventDefault(); if (!busy) close(); }}>
       <div className="comment-label-tools">
         <h2 id="comment-label-title">{c.title} · {labels.length}</h2>

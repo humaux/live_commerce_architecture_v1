@@ -89,6 +89,59 @@ for (const locale of ["zh-TW", "zh-CN", "en"]) for (const width of [1586, 390]) 
   });
 }
 
+test("W3U3_404 real revoked store closes private labels before native print", async ({ page, request }) => {
+  await page.addInitScript(() => { (window as unknown as { printCalls: number }).printCalls = 0; window.print = () => { (window as unknown as { printCalls: number }).printCalls++; }; });
+  await open(page, "en");
+  await page.getByTestId(`comment-label-single-${data.print_refs[0]}`).click();
+  await expect(page.getByTestId("comment-label")).toHaveCount(1);
+  // Hold only background reads so the REAL scoped A3 404 owns this regression,
+  // rather than A1/A2 first expiring authority and hiding the original defect.
+  let resume!: () => void;
+  const held = new Promise<void>((resolve) => { resume = resolve; });
+  await page.route("**/api/stores/**", async (route) => {
+    if (route.request().method() === "GET") await held;
+    await route.continue();
+  });
+  const grant = async (mode: string) => {
+    const result = await request.post(`${required("LC_BROWSER_API_ORIGIN")}/__test/live-console/fault`, { headers: { "X-Console-Control": required("LC_BROWSER_CONSOLE_CONTROL") }, data: { scene: data.session, mode } });
+    expect(result.status()).toBe(200);
+  };
+  try {
+    await grant("grant_revoke");
+    const denied = page.waitForResponse((r) => r.request().method() === "POST" && new URL(r.url()).pathname.endsWith("/print"), { timeout: 10000 });
+    await page.getByTestId("comment-label-print").click();
+    expect((await denied).status()).toBe(404);
+    await expect(page.getByTestId("comment-label")).toHaveCount(0);
+    expect(await page.evaluate(() => (window as unknown as { printCalls: number }).printCalls)).toBe(0);
+    await privateStorage(page);
+    ledger.push({ locale: "en", width: 1586, action: "single-preview-real-store-revoke-A3-404-clear-no-print", count: 0 });
+  } finally { await grant("grant_restore"); resume(); await page.unrouteAll({ behavior: "wait" }); }
+});
+
+test("W3U3 lost A3 acknowledgement retries the same fact key", async ({ page }) => {
+  await page.addInitScript(() => { (window as unknown as { printCalls: number }).printCalls = 0; window.print = () => { (window as unknown as { printCalls: number }).printCalls++; }; });
+  await open(page, "en");
+  const ref = data.print_refs[0], keys: string[] = [], counts: number[] = [];
+  await page.getByTestId(`comment-label-single-${ref}`).click();
+  await page.route(`**/comments/${ref}/print`, async (route) => {
+    keys.push(route.request().headers()["idempotency-key"]);
+    const actual = await route.fetch(); expect(actual.status()).toBe(200);
+    counts.push((await actual.json()).print_count);
+    // The first actual transaction commits; only its acknowledgement is lost.
+    if (keys.length === 1) await route.abort("connectionreset"); else await route.fulfill({ response: actual });
+  });
+  await page.getByTestId("comment-label-print").click();
+  await expect(page.getByTestId("comment-label-status")).toContainText("not recorded");
+  await page.getByTestId("comment-label-print").click();
+  await expect.poll(() => counts.length).toBe(2);
+  expect(keys[1]).toBe(keys[0]); expect(counts[1]).toBe(counts[0]);
+  await expect(page.getByTestId("comment-label-status")).toHaveCount(0);
+  await page.getByTestId("comment-label-close").click();
+  await expect(page.getByTestId(`comment-label-count-${ref}`)).toContainText(`×${counts[0]}`);
+  await privateStorage(page);
+  ledger.push({ locale: "en", width: 1586, action: "single-print-lost-ACK-same-key-no-extra-fact", count: 1 });
+});
+
 test("W3U3 failed record still prints without claiming success; preview closes on reset", async ({ page, request }) => {
   await page.addInitScript(() => { (window as unknown as { printCalls: number }).printCalls = 0; window.print = () => { (window as unknown as { printCalls: number }).printCalls++; }; });
   await open(page, "en");
@@ -107,4 +160,6 @@ test("W3U3 failed record still prints without claiming success; preview closes o
   expect(response.status()).toBe(200);
   await expect(page.getByTestId("comment-label")).toHaveCount(0);
   await privateStorage(page);
+  ledger.push({ locale: "en", width: 1586, action: "single-print-failed-record-no-false-badge-epoch-clear", count: 1 });
 });
+
