@@ -1,0 +1,29 @@
+[
+  {
+    "case_id": "BC01 en drawer visible cart Retry preserves key/body and one committed write after reload",
+    "page": "https://buyer.example/en/products/t04-5e3b6f39a815",
+    "control": "add-to-cart",
+    "action": "click",
+    "expected": "first cart write settles as uncertain",
+    "actual": "first cart write settles as uncertain",
+    "status": "PASS"
+  },
+  {
+    "case_id": "BC01 en drawer visible cart Retry preserves key/body and one committed write after reload",
+    "page": "https://buyer.example/en/products/t04-5e3b6f39a815",
+    "control": "header-cart",
+    "action": "click",
+    "expected": "uncertain cart notice is visible",
+    "actual": "uncertain cart notice is visible",
+    "status": "PASS"
+  },
+  {
+    "case_id": "BC01 en drawer visible cart Retry preserves key/body and one committed write after reload",
+    "page": "https://buyer.example/en/products/t04-5e3b6f39a815",
+    "control": "cart-problem > Retry",
+    "action": "click",
+    "expected": "uncertainty clears and committed quantity appears",
+    "actual": "expect(locator).toHaveCount(expected) failed\n\nLocator:  getByTestId('cart-drawer').getByTestId('cart-problem')\nExpected: 0\nReceived: 1\nTimeout:  5000ms\n\nCall log:\n  - Expect \"toHaveCount\" getByTestId('cart-drawer').getByTestId('cart-problem') with timeout 5000ms\n  - waiting for getByTestId('cart-drawer').getByTestId('cart-problem')\n    14 × locator resolved to 1 element\n       - unexpected value \"1\"\n",
+    "status": "FAIL"
+  }
+]
