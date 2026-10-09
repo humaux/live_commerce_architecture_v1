@@ -493,7 +493,7 @@ func (c *Console) renewLocked(ctx context.Context, s *consoleSource, now time.Ti
 	return true
 }
 
-// pollOne performs one forward Graph read (after-cursor) outside the mutex and commits the result.
+// pollOne runs either a forward Graph read (after-cursor) or the §2.2 deletion batch outside the mutex, then commits under custody fences.
 func (c *Console) pollOne(ctx context.Context, s *consoleSource, now time.Time) {
 	c.mu.Lock()
 	if s.reading || c.sources[s.source] != s || !s.owned {
@@ -522,6 +522,9 @@ func (c *Console) pollOne(ctx context.Context, s *consoleSource, now time.Time) 
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	s.reading = false
+	if errors.Is(err, errSourceReplaced) {
+		return // A completed custody fence stays final even if ownership was regained before this lock.
+	}
 	if errors.Is(err, errCommentBudget) {
 		if b := c.rates[s.assetID]; b != nil {
 			s.nextPollAt = b.next

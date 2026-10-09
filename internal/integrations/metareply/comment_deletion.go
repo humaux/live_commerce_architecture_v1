@@ -19,6 +19,8 @@ const deletionInterval = 60 * time.Second
 const deletionAge = 30 * time.Minute
 const deletionBatchCap = 50
 
+var errSourceReplaced = errors.New("metareply: comment source replaced or lease lost")
+
 type deletionRef struct {
 	ref              string
 	seq              int64
@@ -99,7 +101,7 @@ func (c *Console) checkDeletions(ctx context.Context, s *consoleSource, refs []d
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.sources[s.source] != s || !s.owned {
-		return errCommentBudget
+		return errSourceReplaced
 	}
 	missing := map[string]int64{}
 	for _, r := range refs {

@@ -381,3 +381,52 @@ func TestCommentDeletionClearsDiscardedBackingSlots(t *testing.T) {
 		t.Fatal("deleted private text/reference remained in backing storage")
 	}
 }
+
+func TestCommentDeletionLateBatchReportsCustodyFence(t *testing.T) {
+	for _, change := range []string{"source_replaced", "lease_lost"} {
+		t.Run(change, func(t *testing.T) {
+			c, now := deletionConsole(t, &deletionGraph{})
+			entered, release := make(chan struct{}), make(chan struct{})
+			var once sync.Once
+			defer once.Do(func() { close(release) })
+			graph, err := metaoauth.NewGraph("http://127.0.0.1:1", "v99.0", &http.Client{Transport: deletionRoundTrip(func(r *http.Request) (*http.Response, error) {
+				close(entered)
+				select {
+				case <-r.Context().Done():
+					return nil, r.Context().Err()
+				case <-release:
+				}
+				return &http.Response{StatusCode: 200, Header: http.Header{}, Body: io.NopCloser(strings.NewReader(`{}`))}, nil
+			})})
+			if err != nil {
+				t.Fatal(err)
+			}
+			c.graph = graph
+			s := deletionSource(c, "s", "asset", now, "1_1")
+			refs := c.deletionBatch(s, now)
+			done := make(chan error, 1)
+			go func() {
+				done <- c.checkDeletions(context.Background(), s, refs, []byte("deletion-token-sentinel"), now)
+			}()
+			<-entered
+			c.mu.Lock()
+			if change == "source_replaced" {
+				deletionSource(c, "s", "asset", now, "1_1")
+			} else {
+				s.owned = false
+			}
+			c.mu.Unlock()
+			once.Do(func() { close(release) })
+			err = <-done
+			if !errors.Is(err, errSourceReplaced) || errors.Is(err, errCommentBudget) || err.Error() != "metareply: comment source replaced or lease lost" {
+				t.Fatalf("custody fence must have its own error, not rate throttling: %v", err)
+			}
+			if len(s.comments) != 1 || len(s.byRef) != 1 || s.seq != 1 || s.pollEpoch != 9 {
+				t.Fatal("late custody-fenced batch mutated private rows or cursor")
+			}
+			if current := c.sources[s.source]; len(current.comments) != 1 || len(current.byRef) != 1 {
+				t.Fatal("custody fence evicted the current source")
+			}
+		})
+	}
+}
