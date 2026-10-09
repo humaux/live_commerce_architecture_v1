@@ -1,0 +1,20 @@
+{
+  "name": "gates-final",
+  "command": [
+    "bash",
+    "scripts/dev/check-gates.sh"
+  ],
+  "timeout": 300,
+  "head": "3034c4073366d77e9e849fbfe77e966caf11e62f",
+  "exit_code": 0,
+  "source_sha256": "8c0a1de3c6b56f4112a30c4d06f652b1065f3e0ff47f1a8a0faf07c2a2c04391",
+  "source_after": "8c0a1de3c6b56f4112a30c4d06f652b1065f3e0ff47f1a8a0faf07c2a2c04391",
+  "source_unchanged": true,
+  "historical_output_sha256": "8ef625085150c6579f51b761da1ceb72e62008a085cd58dafb29a650aac9d72f",
+  "historical_output_after": "8ef625085150c6579f51b761da1ceb72e62008a085cd58dafb29a650aac9d72f",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 27.413
+}
