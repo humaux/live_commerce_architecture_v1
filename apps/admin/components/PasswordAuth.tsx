@@ -160,8 +160,10 @@ export function PasswordAuth({
     }
     setCode("");
     setNewPassword("");
-    setNow(Date.now());
-    setResendAt(Date.now() + RESEND_COOLDOWN_SECONDS * 1000);
+    // One clock read: two reads straddling a millisecond showed "61 s" (ceil of 60.001) on slow engines.
+    const sent = Date.now();
+    setNow(sent);
+    setResendAt(sent + RESEND_COOLDOWN_SECONDS * 1000);
     setStep("code");
     if (resend) codeInput.current?.focus();
   }
