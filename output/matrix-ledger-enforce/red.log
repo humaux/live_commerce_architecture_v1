@@ -1,0 +1,53 @@
+=== RUN   TestProductEditorMatrixLedger
+=== RUN   TestProductEditorMatrixLedger/missing-matrix-click
+    catalog_matrix_ledger_test.go:108: corrupted ledger admitted by the Go gate
+=== RUN   TestProductEditorMatrixLedger/missing-axis-remove
+    catalog_matrix_ledger_test.go:108: corrupted ledger admitted by the Go gate
+=== RUN   TestProductEditorMatrixLedger/failed-row
+    catalog_matrix_ledger_test.go:108: corrupted ledger admitted by the Go gate
+=== RUN   TestProductEditorMatrixLedger/missing-PASS
+    catalog_matrix_ledger_test.go:108: corrupted ledger admitted by the Go gate
+=== RUN   TestProductEditorMatrixLedger/PASS-prefix-is-not-PASS
+    catalog_matrix_ledger_test.go:108: corrupted ledger admitted by the Go gate
+=== RUN   TestProductEditorMatrixLedger/duplicate
+    catalog_matrix_ledger_test.go:108: corrupted ledger admitted by the Go gate
+=== RUN   TestProductEditorMatrixLedger/unexpected-extra-control
+    catalog_matrix_ledger_test.go:108: corrupted ledger admitted by the Go gate
+=== RUN   TestProductEditorMatrixLedger/wrong-locale
+    catalog_matrix_ledger_test.go:108: corrupted ledger admitted by the Go gate
+=== RUN   TestProductEditorMatrixLedger/wrong-width
+    catalog_matrix_ledger_test.go:108: corrupted ledger admitted by the Go gate
+=== RUN   TestProductEditorMatrixLedger/wrong-action
+    catalog_matrix_ledger_test.go:108: corrupted ledger admitted by the Go gate
+=== RUN   TestProductEditorMatrixLedger/wrong-top-level-row
+    catalog_matrix_ledger_test.go:108: corrupted ledger admitted by the Go gate
+=== RUN   TestProductEditorMatrixLedger/unknown-target-page
+    catalog_matrix_ledger_test.go:108: corrupted ledger admitted by the Go gate
+=== RUN   TestProductEditorMatrixLedger/null
+    catalog_matrix_ledger_test.go:115: malformed/empty ledger admitted
+=== RUN   TestProductEditorMatrixLedger/invalid-json
+    catalog_matrix_ledger_test.go:115: malformed/empty ledger admitted
+=== RUN   TestProductEditorMatrixLedger/object-instead-of-ledger
+    catalog_matrix_ledger_test.go:115: malformed/empty ledger admitted
+=== RUN   TestProductEditorMatrixLedger/empty
+    catalog_matrix_ledger_test.go:115: malformed/empty ledger admitted
+--- FAIL: TestProductEditorMatrixLedger (0.01s)
+    --- FAIL: TestProductEditorMatrixLedger/missing-matrix-click (0.00s)
+    --- FAIL: TestProductEditorMatrixLedger/missing-axis-remove (0.00s)
+    --- FAIL: TestProductEditorMatrixLedger/failed-row (0.00s)
+    --- FAIL: TestProductEditorMatrixLedger/missing-PASS (0.00s)
+    --- FAIL: TestProductEditorMatrixLedger/PASS-prefix-is-not-PASS (0.00s)
+    --- FAIL: TestProductEditorMatrixLedger/duplicate (0.00s)
+    --- FAIL: TestProductEditorMatrixLedger/unexpected-extra-control (0.00s)
+    --- FAIL: TestProductEditorMatrixLedger/wrong-locale (0.00s)
+    --- FAIL: TestProductEditorMatrixLedger/wrong-width (0.00s)
+    --- FAIL: TestProductEditorMatrixLedger/wrong-action (0.00s)
+    --- FAIL: TestProductEditorMatrixLedger/wrong-top-level-row (0.00s)
+    --- FAIL: TestProductEditorMatrixLedger/unknown-target-page (0.00s)
+    --- FAIL: TestProductEditorMatrixLedger/null (0.00s)
+    --- FAIL: TestProductEditorMatrixLedger/invalid-json (0.00s)
+    --- FAIL: TestProductEditorMatrixLedger/object-instead-of-ledger (0.00s)
+    --- FAIL: TestProductEditorMatrixLedger/empty (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	2.022s
+FAIL

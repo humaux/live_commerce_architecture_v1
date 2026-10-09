@@ -1,0 +1,47 @@
+✔ real Playwright ESM consumer collects the product-editor cases (2759.469208ms)
+✖ every actual mobile control operation is enclosed by its recording callback (24.676625ms)
+✔ a new bare click is rejected without running a browser (9.911ms)
+✔ a different control cannot borrow an existing action's recording callback (27.890042ms)
+✔ a direct ledger push cannot bypass canonical recording (4.923459ms)
+✔ removing the recording wrapper rejects the enclosed real action (5.652167ms)
+✔ shared table has only complete meaningful unique declarations (0.520625ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (zh-TW) (1.285708ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (zh-CN) (0.446292ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (en) (0.429125ms)
+✔ failed assertion and missing observation cannot emit a PASS or satisfy completeness (0.211708ms)
+✔ in-flight action cannot masquerade as complete or admit a concurrent duplicate (0.345833ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 11
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3100.711583
+
+✖ failing tests:
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:101:1
+✖ every actual mobile control operation is enclosed by its recording callback (24.676625ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+  + [
+  +   'mobile ledger.push bypasses the canonical recorder'
+  + ]
+  - []
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/tests/ci/product-editor-matrix-ledger.test.mjs:102:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'mobile ledger.push bypasses the canonical recorder' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

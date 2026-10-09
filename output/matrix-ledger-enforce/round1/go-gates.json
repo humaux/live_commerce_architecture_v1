@@ -1,0 +1,16 @@
+[
+  {
+    "command": "GOTOOLCHAIN=go1.27.2 go test -run Ledger -count=1 -v ./tests/foundation",
+    "exit": 0,
+    "log": "output/matrix-ledger-enforce/round1/go-ledger.log",
+    "sha256": "7208da97dba7cba2f083002802f0dccd8ef2c669822dbdf6da426c741020df91",
+    "raw_sha256": "7208da97dba7cba2f083002802f0dccd8ef2c669822dbdf6da426c741020df91"
+  },
+  {
+    "command": "GOTOOLCHAIN=go1.27.2 go vet -tags browser ./...",
+    "exit": 0,
+    "log": "output/matrix-ledger-enforce/round1/vet-current.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+]

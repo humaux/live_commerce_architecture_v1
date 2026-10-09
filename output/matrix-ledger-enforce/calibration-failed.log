@@ -1,0 +1,6 @@
+=== RUN   TestMatrixLedgerEvidenceProbe
+    matrix_ledger_evidence_probe_test.go:11: mobile matrix ledger row 50 is not PASS
+--- FAIL: TestMatrixLedgerEvidenceProbe (0.01s)
+FAIL
+FAIL	livecommerce/tests/foundation	0.565s
+FAIL

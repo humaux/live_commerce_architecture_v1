@@ -1,0 +1,91 @@
+{
+  "base_commit": "c2665c530493527d1cf1ab4d782b4afb6d626d8f",
+  "original_static_operations": 35,
+  "current_static_operations": 36,
+  "added": [
+    "dialog.accept() (existing global acceptance now explicitly recorded)"
+  ],
+  "missing_original_operations": [],
+  "files": {
+    "tests/admin/product-editor.acceptance.ts": "9d14a9fe89407a1b2c3a8f4fd59754335eb5e6fd2f0f45a8539a65c833fed84a",
+    "tests/admin/product-editor-matrix-ledger.ts": "f276952a873703c9abb123c9bbf9a9776bfda4f81239aa9f29e5cf9cb8a4bc96",
+    "tests/foundation/testdata/product_editor_matrix_cases.json": "17ac97d4e2b3146cb5775a6cc0d1352c7806516ba96d74c1b8b610d53d339855",
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "0501527f3cc2685bd24ebbfb3a71a4d746826985b88b835fc0ff6c21e44776a9"
+  },
+  "commit": "9eded6a183a73d0d12f11d4b2c4c76bad006b460",
+  "task_id": "55dcf44b-9378-4b31-970c-fe03b3951cc5/sub-actions",
+  "evidence_class": "DESIGN + MOCK (actual TS recorder and source AST, no browser)",
+  "model": "UNKNOWN exact runtime ID; inherited GPT-6 family",
+  "reasoning": "UNKNOWN inherited",
+  "role": "action-test-source writer",
+  "worktree": "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-matrix-ledger-actions",
+  "commands": [
+    {
+      "command": "node --test tests/ci/product-editor-matrix-ledger.test.mjs",
+      "exit_code": 0,
+      "log": "action-coverage-green.log",
+      "log_sha256": "79b56bc7efe09f3c5c0d1e6accea0ab6e05fa48a0e66c89e3a57a62b0ace7ce8",
+      "source_commit": "9eded6a183a73d0d12f11d4b2c4c76bad006b460"
+    },
+    {
+      "command": "node --test tests/ci/product-editor-matrix-ledger.test.mjs (initial actual-spec baseline)",
+      "exit_code": 1,
+      "log": "action-coverage-red.log",
+      "log_sha256": "0960ccc5bf8177c66c46bbc6657db14201e3c751c5510e9985375370c4226e09",
+      "source_commit": "c2665c530493527d1cf1ab4d782b4afb6d626d8f"
+    },
+    {
+      "command": "LC_MATRIX_ACTION_MUTATION=bare-click node --test tests/ci/product-editor-matrix-ledger.test.mjs",
+      "exit_code": 1,
+      "log": "action-bare-click-red.log",
+      "log_sha256": "9e3e63175255781470253402efb315ab8dbe86c8379c9874e38625b8dc0e499d",
+      "source_commit": "9eded6a183a73d0d12f11d4b2c4c76bad006b460"
+    },
+    {
+      "command": "LC_MATRIX_ACTION_MUTATION=removed-wrapper node --test tests/ci/product-editor-matrix-ledger.test.mjs",
+      "exit_code": 1,
+      "log": "action-removed-wrapper-red.log",
+      "log_sha256": "2762a4442065b54a67f723e2f54377f3f712de61b35fe18b18c3962873eb8846",
+      "source_commit": "9eded6a183a73d0d12f11d4b2c4c76bad006b460"
+    },
+    {
+      "command": "LC_MATRIX_ACTION_MUTATION=extra-control node --test tests/ci/product-editor-matrix-ledger.test.mjs",
+      "exit_code": 1,
+      "log": "action-extra-control-red.log",
+      "log_sha256": "879a6b04fc906dc524adbec9a44be0972d7b8442aaa3877e5156f09c0f61e0de",
+      "source_commit": "9eded6a183a73d0d12f11d4b2c4c76bad006b460"
+    },
+    {
+      "command": "LC_MATRIX_ACTION_MUTATION=direct-push node --test tests/ci/product-editor-matrix-ledger.test.mjs",
+      "exit_code": 1,
+      "log": "action-direct-push-red.log",
+      "log_sha256": "ea12f1c2f834a13eb08fdb5e27a684af64fdfd4d938fdb3839c6b27349f3ebce",
+      "source_commit": "9eded6a183a73d0d12f11d4b2c4c76bad006b460"
+    },
+    {
+      "command": "node node_modules/typescript-api/bin/tsc --project output/matrix-ledger-enforce/scoped-tsconfig.json",
+      "exit_code": 0,
+      "log": "action-typecheck-green.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source_commit": "9eded6a183a73d0d12f11d4b2c4c76bad006b460"
+    },
+    {
+      "command": "git diff --cached --check",
+      "exit_code": 0,
+      "log": null,
+      "log_sha256": null,
+      "source_commit": "9eded6a183a73d0d12f11d4b2c4c76bad006b460"
+    }
+  ],
+  "not_run": [
+    "browser-product-editor",
+    "PostgreSQL",
+    "full Node suite",
+    "check-gates full suite",
+    "independent acceptance",
+    "push/PR/deploy"
+  ],
+  "temporary_cleanup": [
+    "wrap-actions.py removed; logs/config preserved for parent evidence packaging"
+  ]
+}

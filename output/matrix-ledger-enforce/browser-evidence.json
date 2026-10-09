@@ -1,0 +1,7 @@
+{
+  "supersedes": "Historical b390 evidence relied on uncommitted external artifacts; current canonical evidence is committed here.",
+  "canonical_manifest": "output/matrix-ledger-enforce/browser/browser-evidence.json",
+  "evidence_class": "BROWSER + REAL_PG, synthetic MOCK identity/provider fixtures",
+  "required_rows": 231,
+  "exit": 0
+}
