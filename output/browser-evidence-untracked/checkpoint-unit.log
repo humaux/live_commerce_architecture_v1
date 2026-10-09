@@ -1,0 +1,26 @@
+✔ browser evidence uses unique local runs or the selected harness parent without rewriting history (237.663458ms)
+✔ reject direct (4.156708ms)
+✔ reject alias (2.728041ms)
+✔ reject split join (0.268292ms)
+✔ reject template (0.377834ms)
+✔ reject helper (0.774292ms)
+✔ reject copy destination (0.150208ms)
+✔ reject reporter (0.26125ms)
+✔ reject traversal (0.17ms)
+✔ reject tracked nonoutput (0.2435ms)
+✔ allow historical read (0.880833ms)
+✔ allow copy source (0.162208ms)
+✔ allow comment (0.354667ms)
+✔ allow string data (0.089ms)
+✔ allow run directory (0.267916ms)
+✔ Go Join aliases flag writes but not read-only history or comments (9.038375ms)
+✔ producer discovery covers acceptance suites and helpers, not documentation/artifacts (0.502333ms)
+✔ synthetic Go historical fixtures stay inside t.TempDir; real CopyFS destinations are audited (0.666125ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 427.238042

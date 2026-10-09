@@ -38,8 +38,8 @@ case "$1" in
   :
     }
     lc_run() {
-  health_main_root="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"
-  LC_META_HEALTH_EVIDENCE_ROOT="$health_main_root/output/w1-01u-banner/browser" LC_BROWSER_META_HEALTH_UI=1 GOTOOLCHAIN=go1.27.2 go test -race -tags browser -count=1 -timeout=900s -run '^(TestBrowserMetaHealthUI|TestMetaHealthUIWireRequiresCapability)$' -v ./tests/foundation
+  # brfEvidence owns meta-health-ui/<run>; its durable copy must have a distinct parent.
+  LC_META_HEALTH_EVIDENCE_ROOT="$LC_BROWSER_EVIDENCE_ROOT/meta-health-ui-durable" LC_BROWSER_META_HEALTH_UI=1 GOTOOLCHAIN=go1.27.2 go test -race -tags browser -count=1 -timeout=900s -run '^(TestBrowserMetaHealthUI|TestMetaHealthUIWireRequiresCapability)$' -v ./tests/foundation
     }
     ;;
   --browser-tracking-backfill)
@@ -50,8 +50,7 @@ case "$1" in
     }
     lc_run() {
   # Reuse the focused runner's machine-wide queue before creating any PG fixture.
-  tracking_main_root="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"
-  LC_TRACKING_EVIDENCE_ROOT="$tracking_main_root/output/w3-01b-ui/browser" LC_BROWSER_TRACKING_BACKFILL=1 LC_FOCUSED_TAGS=browser LC_FOCUSED_TIMEOUT=1000s bash scripts/dev/test-focused.sh '^TestBrowserTrackingBackfill$'
+  LC_TRACKING_EVIDENCE_ROOT="$LC_BROWSER_EVIDENCE_ROOT/tracking-backfill" LC_BROWSER_TRACKING_BACKFILL=1 LC_FOCUSED_TAGS=browser LC_FOCUSED_TIMEOUT=1000s bash scripts/dev/test-focused.sh '^TestBrowserTrackingBackfill$'
   printf 'PASS: tracking backfill real clicks, signed MOCK IdP/Stripe and real PG; no LIVE shipments or mail acceptance.\n'
   exit 0
     }
@@ -71,9 +70,9 @@ case "$1" in
     exit 2
   fi
   trap lc_lock_release EXIT
-  mkdir -p output/platform-site
+  mkdir -p "$LC_PLATFORM_EVIDENCE"
   node --test --test-reporter=spec --experimental-strip-types tests/admin/platform-site.test.ts
-  pnpm --filter admin build > output/platform-site/build.log 2>&1
+  pnpm --filter admin build > "$LC_PLATFORM_EVIDENCE/build.log" 2>&1
   node tests/admin/platform-runner.mjs
   exit 0
     }
@@ -102,10 +101,10 @@ case "$1" in
   :
     }
     lc_run() {
-  mkdir -p output/ui-w0-shell
+  mkdir -p "$LC_BROWSER_EVIDENCE_ROOT/ui-w0-shell"
   # --test-reporter=spec pins the "ℹ pass N / ℹ fail F" summary that scripts/dev/release-gate.sh counts (B-browser-admin-shell has no go test events).
   node --test --test-reporter=spec --experimental-strip-types tests/admin/shell-registry.test.ts tests/admin/shell-architecture.test.mjs
-  pnpm --filter @live-commerce/admin build > output/ui-w0-shell/build.log 2>&1
+  pnpm --filter @live-commerce/admin build > "$LC_BROWSER_EVIDENCE_ROOT/ui-w0-shell/build.log" 2>&1
   node tests/admin/shell-runner.mjs
   exit 0
     }
@@ -123,7 +122,7 @@ case "$1" in
   node --test tests/ui/click-sweep-lib.test.mjs
   # LC_SWEEP_SHARD=i/N (CI): reject a malformed value before the stack is built (the runner would only throw after the Next builds).
   node --input-type=module -e 'import { parseShard } from "./tests/ui/sweep-shard-lib.mjs"; parseShard(process.argv[1])' "${LC_SWEEP_SHARD:-}"
-  mkdir -p output/playwright output/ui-click-sweep
+  mkdir -p "$LC_SWEEP_OUT"
     }
     lc_run() {
   # One Go test owns PG + the Go API + both Next builds' processes and the seed; the runner (tests/ui/click-sweep.mjs) drives Chromium by real clicks.
@@ -133,12 +132,12 @@ case "$1" in
   # Sharded (LC_SWEEP_SHARD=i/N) it is independent of the sweep slice, so exactly shard 1 runs it; the marker is what sweep-aggregate.mjs checks.
   if [[ -z "${LC_SWEEP_SHARD:-}" || "${LC_SWEEP_SHARD%%/*}" == 1 ]]; then
     node tests/admin/platform-runner.mjs
-    printf '%s\n' "$(git rev-parse HEAD)" > output/ui-click-sweep/platform-runner.pass
+    printf '%s\n' "$(git rev-parse HEAD)" > "$LC_SWEEP_OUT/platform-runner.pass"
   fi
   if [[ -n "${LC_SWEEP_SHARD:-}" ]]; then
-    printf 'PASS: G-UI8 real-click sweep SHARD %s (this slice only: the whole-run verdict is `node tests/ui/sweep-aggregate.mjs click` over every shard); ledger in output/ui-click-sweep/; signed MOCK IdP, MOCK payments/carrier/Meta, no provider or deployment acceptance.\n' "$LC_SWEEP_SHARD"
+    printf 'PASS: G-UI8 real-click sweep SHARD %s (this slice only: the whole-run verdict is `node tests/ui/sweep-aggregate.mjs click` over every shard); ledger in %s; signed MOCK IdP, MOCK payments/carrier/Meta, no provider or deployment acceptance.\n' "$LC_SWEEP_SHARD" "$LC_SWEEP_OUT"
   else
-  printf 'PASS: G-UI8 real-click sweep (every admin registry route and storefront route at 1586x992 + 390x844 zh-TW and en desktop, 5 click journeys); ledger in output/ui-click-sweep/; signed MOCK IdP, MOCK payments/carrier/Meta, no provider or deployment acceptance.\n'
+  printf 'PASS: G-UI8 real-click sweep (every admin registry route and storefront route at 1586x992 + 390x844 zh-TW and en desktop, 5 click journeys); ledger in %s; signed MOCK IdP, MOCK payments/carrier/Meta, no provider or deployment acceptance.\n' "$LC_SWEEP_OUT"
   fi
     }
     ;;
@@ -155,28 +154,19 @@ case "$1" in
   node --test tests/ui/visual-lint-lib.test.mjs
   node tests/ui/visual-lint-canary.mjs
   node --input-type=module -e 'import { parseShard } from "./tests/ui/sweep-shard-lib.mjs"; parseShard(process.argv[1])' "${LC_SWEEP_SHARD:-}"
-  mkdir -p output/playwright output/ui-click-sweep output/ui-visual-audit
+  mkdir -p "$LC_SWEEP_OUT" "$LC_BROWSER_EVIDENCE_ROOT/ui-visual-audit"
     }
     lc_run() {
   # The click-sweep Go test seeds the stack and starts tests/ui/click-sweep.mjs, which hands over to tests/ui/visual-audit.mjs when LC_SWEEP_ONLY=visual-audit.
-  # The Go test reads <output/ui-click-sweep>/journeys.json after the runner: an empty one stands in for it (the audit has no journeys) and the G-UI8 file
-  # is put back afterwards. Evidence: output/ui-visual-audit/<UTC>/ (shots, crops, index.json, lint.json, lint.md), named by output/ui-visual-audit/LATEST.
-  va_sweep=output/ui-click-sweep
-  va_restore_journeys() {
-    if [[ -f "$va_sweep/journeys.json.visual-lint-backup" ]]; then mv -f "$va_sweep/journeys.json.visual-lint-backup" "$va_sweep/journeys.json"; elif [[ "${va_wrote_journeys:-0}" == 1 ]]; then rm -f "$va_sweep/journeys.json"; fi
-    va_wrote_journeys=0
-  }
-  trap 'va_restore_journeys; cleanup' EXIT INT TERM
-  rm -f output/ui-visual-audit/LATEST
-  if [[ -f "$va_sweep/journeys.json" ]]; then cp -p "$va_sweep/journeys.json" "$va_sweep/journeys.json.visual-lint-backup"; fi
-  printf '{}\n' > "$va_sweep/journeys.json"
-  va_wrote_journeys=1
+  # The audit has no click journeys. Supply its empty fixture only in this run's
+  # ignored sweep directory; historical journeys and global LATEST stay untouched.
+  printf '{}\n' > "$LC_SWEEP_OUT/journeys.json"
+  rm -f "$LC_BROWSER_EVIDENCE_ROOT/ui-visual-audit/LATEST"
   va_rc=0
   LC_SWEEP_ONLY=visual-audit LC_BROWSER_CLICK_SWEEP_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.2 go test -race -tags browser -count=1 -timeout=5400s -run '^TestBrowserClickSweep' -v ./tests/foundation || va_rc=$?
-  va_restore_journeys
-  va_dir="$(cat output/ui-visual-audit/LATEST 2>/dev/null || true)"
+  va_dir="$(cat "$LC_BROWSER_EVIDENCE_ROOT/ui-visual-audit/LATEST" 2>/dev/null || true)"
   if [[ -z "$va_dir" || ! -f "$va_dir/lint.json" ]]; then
-    printf 'FAIL: G-UI9 visual lint wrote no lint.json (the stack or the runner stopped early, go test exit %s; see output/playwright/click-sweep/*/click-sweep.mjs.log)\n' "$va_rc" >&2
+    printf 'FAIL: G-UI9 visual lint wrote no lint.json (the stack or the runner stopped early, go test exit %s; see %s/click-sweep/*/click-sweep.mjs.log)\n' "$va_rc" "$LC_BROWSER_EVIDENCE_ROOT" >&2
     exit 1
   fi
   va_verdict="$(node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));console.log(`shots ${r.shots.captured}/${r.shots.expected} (NOT_RUN ${r.shots.notRun.length}); instances ${Object.entries(r.totals).map(([k,v])=>k+" "+v.instances).join(", ")}; blocking ${r.blockingInstances}; ${r.verdict.reasons.join("; ")||"no blocking finding"}`);process.exit(r.verdict.exit)' "$va_dir/lint.json")" && va_lint=0 || va_lint=$?
@@ -535,9 +525,8 @@ case "$1" in
   fi
     }
     lc_run() {
-  # Evidence goes to the MAIN checkout (worktrees are deleted after merge; PROCESS.md §4).
-  stripe_main="$(cd "$(git rev-parse --git-common-dir)/.." && pwd)"
-  stripe_out="$stripe_main/output/stripe-b2-browser-tests"
+  # Durable evidence is selected once in the shared run-root prelude.
+  stripe_out="$LC_BROWSER_EVIDENCE_ROOT/stripe-b2-browser-tests"
   mkdir -p "$stripe_out"
   stripe_sha="$(git rev-parse --short=12 HEAD)"
   stripe_status=0
@@ -781,8 +770,7 @@ case "$1" in
   test -f tests/storefront/shop-fake-api.mjs
   node --test --experimental-strip-types apps/storefront/tests/shop.test.mjs
   COMMERCE_BUYER_WEB_ENABLED=0 pnpm run build:storefront
-  main_checkout="$(cd "$(git rev-parse --git-common-dir)/.." && pwd)"
-  shop_out="${LC_SHOP_EVIDENCE:-$main_checkout/output/storefront-shell/run-$(git rev-parse --short=12 HEAD)}"
+  shop_out="${LC_SHOP_EVIDENCE:-$LC_BROWSER_EVIDENCE_ROOT/storefront-shell}"
   mkdir -p "$shop_out"
   LC_SHOP_EVIDENCE="$shop_out" node tests/storefront/shop-gate.mjs | tee "$shop_out/shop-gate.log"
   grep -q 'cases=12 ' "$shop_out/shop-gate.log"
@@ -808,9 +796,8 @@ case "$1" in
     lc_run() {
   # Same production storefront + admin builds and the same go tests as the Chromium modes, with LC_BROWSER_ENGINE=webkit: phone-sized buyer
   # contexts run Playwright's iPhone 15 profile, desktop ones and every admin page run Desktop Safari. One go test process per step on a
-  # fresh PG cluster; any SKIP/FAIL, too few leaf cases or a missing log is a failed step (go_json_counts). Evidence goes to the MAIN checkout.
-  webkit_main="$(cd "$(git rev-parse --git-common-dir)/.." && pwd)"
-  webkit_out="$webkit_main/output/webkit"
+  # fresh PG cluster; any SKIP/FAIL, too few leaf cases or a missing log is a failed step (go_json_counts). Evidence stays in the selected run root.
+  webkit_out="$LC_BROWSER_EVIDENCE_ROOT/webkit"
   mkdir -p "$webkit_out"
   webkit_sha="$(git rev-parse --short=12 HEAD)"
   webkit_status=0
@@ -1330,8 +1317,8 @@ case "$1" in
     }
     lc_run() {
   test -f tests/deploy/ops-disk-guard.sh
-  mkdir -p output/ops-disk-guard
-  bash tests/deploy/ops-disk-guard.sh all 2>&1 | tee output/ops-disk-guard/od-all.log
+  mkdir -p "$LC_OD_EVIDENCE"
+  bash tests/deploy/ops-disk-guard.sh all 2>&1 | tee "$LC_OD_EVIDENCE/od-all.log"
   exit 0
     }
     ;;
@@ -1361,8 +1348,8 @@ case "$1" in
   source scripts/dev/test-lock.sh
   lc_lock_acquire "${LC_TEST_LOCK_WAIT:-300}" || exit 2
   trap lc_lock_release EXIT
-  mkdir -p output/ci-gates/picklist
-  pnpm --filter @live-commerce/admin build > output/ci-gates/picklist/build.log 2>&1
+  mkdir -p "$LC_BROWSER_EVIDENCE_ROOT/picklist"
+  pnpm --filter @live-commerce/admin build > "$LC_BROWSER_EVIDENCE_ROOT/picklist/build.log" 2>&1
   node --test --test-reporter=spec --experimental-strip-types tests/admin/picklist.spec.ts
   exit 0
     }
@@ -1547,6 +1534,49 @@ if [[ "$lc_dry_run" == 0 ]]; then
 fi
 if [[ "$#" -gt 1 ]]; then lc_usage >&2; exit 2; fi
 test_mode="${1:-foundation}"
+if [[ "$lc_dry_run" == 0 ]]; then
+# Allocate once before any browser build/log write. Explicit caller roots are kept,
+# made absolute and shared by shell, Go and Node; the default is always ignored.
+case "$test_mode" in
+  --browser*|--stripe-browser*|--ops-disk-guard)
+    if [[ -z "${LC_BROWSER_EVIDENCE_ROOT:-}" ]]; then
+      mkdir -p output/playwright
+      LC_BROWSER_EVIDENCE_ROOT="$(mktemp -d "$PWD/output/playwright/run.XXXXXXXX")"
+    else
+      lc_root_existed=0; [[ -d "$LC_BROWSER_EVIDENCE_ROOT" ]] && lc_root_existed=1
+      mkdir -p "$LC_BROWSER_EVIDENCE_ROOT"
+      LC_BROWSER_EVIDENCE_ROOT="$(cd "$LC_BROWSER_EVIDENCE_ROOT" && pwd -P)"
+      # Fixed children (ui-click-sweep, platform-site, …) would overwrite committed evidence under a tracked root such as
+      # output/: inside the repo, accept only an ignored directory with no tracked files (PR #23 review).
+      lc_repo_top="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+      [[ -n "$lc_repo_top" ]] && lc_repo_top="$(cd "$lc_repo_top" && pwd -P)"   # physical on both sides: symlinked paths cannot bypass
+      case "$LC_BROWSER_EVIDENCE_ROOT/" in
+        "${lc_repo_top:-/nonexistent-repo}"/*)
+          if [[ -n "$(git ls-files -- "$LC_BROWSER_EVIDENCE_ROOT" | head -1)" ]] || ! git check-ignore -q "$LC_BROWSER_EVIDENCE_ROOT/.lc-evidence-probe"; then
+            echo "test-local: LC_BROWSER_EVIDENCE_ROOT=$LC_BROWSER_EVIDENCE_ROOT is inside the repository but is not an ignored, untracked directory (use output/playwright/…)" >&2
+            (( lc_root_existed )) || rmdir "$LC_BROWSER_EVIDENCE_ROOT" 2>/dev/null || true   # leave no refused root behind
+            exit 2
+          fi ;;
+      esac
+      # A reused root must not redirect a fixed child (ui-click-sweep, platform-site, …) through a symlink (PR #23 review).
+      for lc_child in "$LC_BROWSER_EVIDENCE_ROOT"/*; do
+        [[ -L "$lc_child" ]] && { echo "test-local: $lc_child is a symlink inside LC_BROWSER_EVIDENCE_ROOT; refusing" >&2; exit 2; }
+      done
+    fi
+    export LC_BROWSER_EVIDENCE_ROOT
+    if [[ "$test_mode" == --ops-disk-guard ]]; then
+      export LC_OD_EVIDENCE="${LC_OD_EVIDENCE:-$LC_BROWSER_EVIDENCE_ROOT/ops-disk-guard}"
+    fi
+    export LC_PLATFORM_EVIDENCE="$LC_BROWSER_EVIDENCE_ROOT/platform-site"
+    export LC_SWEEP_OUT="$LC_BROWSER_EVIDENCE_ROOT/ui-click-sweep"
+    # A caller may reuse its run root: visual empty fixtures must not overwrite click evidence.
+    if [[ "$test_mode" == --browser-visual-lint ]]; then
+      export LC_SWEEP_OUT="$LC_BROWSER_EVIDENCE_ROOT/ui-visual-sweep"
+    fi
+    ;;
+esac
+
+fi
 if ! lc_select_mode "$test_mode"; then lc_usage >&2; exit 2; fi
 if [[ "$lc_dry_run" == 1 ]]; then
   printf '# mode=%s build=%s fixture=%s\n' "$test_mode" "$lc_build" "$lc_fixture"

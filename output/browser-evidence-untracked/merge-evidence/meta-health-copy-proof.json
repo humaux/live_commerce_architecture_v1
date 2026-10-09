@@ -1,0 +1,65 @@
+{
+  "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.VXRZjc7O/meta-health-ui/20261009T110524.892531000",
+  "durable": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.VXRZjc7O/meta-health-ui-durable/20261009T110524.892531000",
+  "distinct_siblings": true,
+  "file_count": 14,
+  "all_copy_bytes_equal": true,
+  "files": [
+    {
+      "path": "capabilities-zh-CN-390.png",
+      "sha256": "3631f5027268f021583030ce69fb3e8706a63772a2f8ee6e58cdd303af576d2b"
+    },
+    {
+      "path": "click-ledger.json",
+      "sha256": "fd0de0cfb06a9c3afa3cb3c98d0f09032fab1bad0d8bfd05c7bb8e5586acc2e3"
+    },
+    {
+      "path": "next.log",
+      "sha256": "eab88b3adc38296ede81c9a89ab6d08b1c73b284d0d9536d834ce5399c2aca98"
+    },
+    {
+      "path": "playwright.rf.config.ts",
+      "sha256": "699c59f9bdfd1279ba6643a057eaffd72760e4bbad2e856d8a542cde14f2b447"
+    },
+    {
+      "path": "playwright.log",
+      "sha256": "5a98dfca00afc7f62bfeab2ff59114a72a2a7ddac894b87f4c7b4a8be19abab3"
+    },
+    {
+      "path": "blocking-en-390.png",
+      "sha256": "eb97dabe9b9464e4df24fe584a121a8f049e6efd929ffbb3ecd3fccd372f5510"
+    },
+    {
+      "path": "click-ledger.md",
+      "sha256": "01a7853444c517f9c6c3f0ee67febadc79ef9e6f0921d6de1f1f193e9c463b91"
+    },
+    {
+      "path": "capabilities-en-390.png",
+      "sha256": "54eea8c31e0eb85c1a9558c2762f5b199fa1da54daf26f4ec3a9c413f3077406"
+    },
+    {
+      "path": "capabilities-zh-TW-390.png",
+      "sha256": "65ee922ed6ecedc2791bb5c96a9e137f651142db4d830e91360e3d30a82522d4"
+    },
+    {
+      "path": "warning-en-desktop.png",
+      "sha256": "cb0b58daabde3ef5f49e99422015b0669c965c8deb602b05ceb8df63231cf6bd"
+    },
+    {
+      "path": "blocking-zh-TW-390.png",
+      "sha256": "e82834df8a2928ab280775e17f3e2d0857276ec48989f7151f6c53ab9823c04f"
+    },
+    {
+      "path": "blocking-zh-CN-390.png",
+      "sha256": "31a07579326eac61333b52730a984b6df19f0744bbffab48c7491320bf57ccdd"
+    },
+    {
+      "path": "results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "path": "viewer/next.log",
+      "sha256": "c3f9cb947377ea8e74bd79a21fe5b68170d0a987a14e6c996e610016a5c85feb"
+    }
+  ]
+}

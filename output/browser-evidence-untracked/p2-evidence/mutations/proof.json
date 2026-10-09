@@ -1,0 +1,63 @@
+{
+  "cases": [
+    {
+      "case": "open-sync",
+      "producer": "tests/admin/product-editor.acceptance.ts",
+      "red": 1,
+      "green": 0,
+      "restored_byte_for_byte": true,
+      "source_sha256": "fe6b580fcc3341d0698228dec607c08c5727f3224916ad0682ee94d0b3b7f517"
+    },
+    {
+      "case": "open",
+      "producer": "tests/admin/product-editor.acceptance.ts",
+      "red": 1,
+      "green": 0,
+      "restored_byte_for_byte": true,
+      "source_sha256": "fe6b580fcc3341d0698228dec607c08c5727f3224916ad0682ee94d0b3b7f517"
+    },
+    {
+      "case": "url",
+      "producer": "tests/admin/product-editor.acceptance.ts",
+      "red": 1,
+      "green": 0,
+      "restored_byte_for_byte": true,
+      "source_sha256": "fe6b580fcc3341d0698228dec607c08c5727f3224916ad0682ee94d0b3b7f517"
+    },
+    {
+      "case": "bind",
+      "producer": "tests/admin/product-editor.acceptance.ts",
+      "red": 1,
+      "green": 0,
+      "restored_byte_for_byte": true,
+      "source_sha256": "fe6b580fcc3341d0698228dec607c08c5727f3224916ad0682ee94d0b3b7f517"
+    },
+    {
+      "case": "bind-path",
+      "producer": "tests/admin/product-editor.acceptance.ts",
+      "red": 1,
+      "green": 0,
+      "restored_byte_for_byte": true,
+      "source_sha256": "fe6b580fcc3341d0698228dec607c08c5727f3224916ad0682ee94d0b3b7f517"
+    },
+    {
+      "case": "go-open-file",
+      "producer": "tests/foundation/browser_catalog_core_test.go",
+      "red": 1,
+      "green": 0,
+      "restored_byte_for_byte": true,
+      "source_sha256": "fff6f2fba16007912b0155c0c94096508f3c3bad4c9bdc3c20121a5813c2ccc8"
+    },
+    {
+      "case": "go-named-open-flags",
+      "producer": "tests/foundation/browser_catalog_core_test.go",
+      "red": 1,
+      "green": 0,
+      "restored_byte_for_byte": true,
+      "source_sha256": "fff6f2fba16007912b0155c0c94096508f3c3bad4c9bdc3c20121a5813c2ccc8"
+    }
+  ],
+  "checker_sha256": "881159f46fefe6f8bee913f672d3cce58569483692ecb31a2a4934cd2e73da2b",
+  "head": "3145adfac5c3f72a32c149dfe16bf333bc200157",
+  "post_merge_bytes_verified_at": "f3fab830cb2ce009b89b71a8607b8c6df3dce598"
+}

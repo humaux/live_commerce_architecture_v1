@@ -362,6 +362,7 @@ func TestBrowserStorefront(t *testing.T) {
 	cmd.Dir = root
 	cmd.Env = browserEnvironment(map[string]string{
 		"LC_MEDIA_SIZES_PHASE":       os.Getenv("LC_MEDIA_SIZES_PHASE"),
+		"LC_MEDIA_SIZES_BASELINE":    os.Getenv("LC_MEDIA_SIZES_BASELINE"),
 		"COMMERCE_BUYER_WEB_ENABLED": "1", "COMMERCE_BUYER_API_ORIGIN": h.server.URL, "COMMERCE_BUYER_BFF_KEY": h.key,
 		"COMMERCE_BUYER_COOKIE_KEY": brToken(), "COMMERCE_BUYER_SESSION_TTL": "3600",
 		"LC_SFR_EVIDENCE": evidence, "LC_SFR_FACTS": factsFile, "LC_SFR_CONTROL": control.URL, "LC_SFR_CONTROL_KEY": controlKey,

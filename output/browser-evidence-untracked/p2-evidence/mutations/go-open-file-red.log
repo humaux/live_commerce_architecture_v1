@@ -1,0 +1,2 @@
+browser-evidence: tests/foundation/browser_catalog_core_test.go:268: unsafe write output/product-ui-v2/probe; use the run evidence directory under output/playwright
+browser-evidence: FAIL (1 unsafe write destinations)

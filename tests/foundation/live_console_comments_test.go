@@ -684,24 +684,42 @@ func TestLiveConsoleLCN05PrintAndMarks(t *testing.T) {
 	if len(page.Items) != 1 || page.Items[0].Ref != ref {
 		t.Fatalf("polled %+v", page.Items)
 	}
-	// A3 print twice → idempotent count 1 then 2.
-	print := func() live.CommentPrint {
+	// A3 print under two fresh keys → count 1 then 2; a same-key replay returns the stored receipt (§7.4).
+	print := func(key, session, commentRef string) (live.CommentPrint, error) {
 		var out live.CommentPrint
 		err := platform.WithScope(context.Background(), e.f.runtime, e.h.token, e.f.storeA1, "live:manage", func(tx pgx.Tx, s platform.Scope) error {
 			var err error
-			out, err = stream.PrintComment(context.Background(), tx, s, e.h.token, e.session, ref)
+			out, err = stream.PrintComment(context.Background(), tx, s, e.h.token, key, session, commentRef)
 			return err
 		})
-		if err != nil {
-			t.Fatalf("print: %v", err)
-		}
-		return out
+		return out, err
 	}
-	if p := print(); p.PrintCount != 1 || p.LastPrintedAt == nil {
-		t.Fatalf("print1 %+v", p)
+	key1, key2 := t04Key("lcn05a"), t04Key("lcn05b")
+	p1, err := print(key1, e.session, ref)
+	if err != nil {
+		t.Fatalf("print1: %v", err)
 	}
-	if p := print(); p.PrintCount != 2 || p.LastPrintedAt == nil {
-		t.Fatalf("print2 %+v", p)
+	if p1.PrintCount != 1 || p1.LastPrintedAt == nil {
+		t.Fatalf("print1 %+v", p1)
+	}
+	p2, err := print(key2, e.session, ref)
+	if err != nil {
+		t.Fatalf("print2: %v", err)
+	}
+	if p2.PrintCount != 2 || p2.LastPrintedAt == nil {
+		t.Fatalf("print2 %+v", p2)
+	}
+	// Same key again → the command.Run receipt: identical fact, print_count NOT incremented.
+	p2replay, err := print(key2, e.session, ref)
+	if err != nil {
+		t.Fatalf("print2 replay: %v", err)
+	}
+	if p2replay.PrintCount != p2.PrintCount || !p2replay.LastPrintedAt.Equal(*p2.LastPrintedAt) {
+		t.Fatalf("replay %+v differs from the first receipt %+v", p2replay, p2)
+	}
+	// Same key with a different canonical request (another comment_ref) → conflict, no print.
+	if _, err := print(key2, e.session, lcnRef()); !errors.Is(err, command.ErrConflict) {
+		t.Fatalf("same key + other ref err=%v want command.ErrConflict", err)
 	}
 	// A2 read + marks join (no text join; the print fact is visible).
 	var sp live.ConsoleStreamPage
@@ -726,9 +744,10 @@ func TestLiveConsoleLCN05PrintAndMarks(t *testing.T) {
 	if !it.Marks.PrivateReplyAvailable || it.Marks.PublicReplies != 0 || it.Marks.Intake != nil || it.Marks.Claim != nil || it.Marks.PrivateReply != nil {
 		t.Fatalf("marks %+v", it.Marks)
 	}
-	// A3 against a foreign/cross-store session → 404.
+	// A3 against a foreign/cross-store session under a FRESH key → 404 (a reused key would conflict on the
+	// request hash before the print runs).
 	err = platform.WithScope(context.Background(), e.f.runtime, e.h.token, e.f.storeA1, "live:manage", func(tx pgx.Tx, s platform.Scope) error {
-		_, err := stream.PrintComment(context.Background(), tx, s, e.h.token, randomUUID(), ref)
+		_, err := stream.PrintComment(context.Background(), tx, s, e.h.token, t04Key("lcn05c"), randomUUID(), ref)
 		return err
 	})
 	if !errors.Is(err, command.ErrNotFound) {

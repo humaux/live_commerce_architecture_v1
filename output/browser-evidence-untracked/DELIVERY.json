@@ -1,0 +1,123 @@
+{
+  "task_id": "evidence-harness-paths",
+  "delegated_task": "/root/evidence_harness_writer",
+  "base_commit": "5008661622d35a130e32d1b1fe7d0111ac03ad43",
+  "commit": "3e3ce8e3a88545547c0561571911b1a5db39d5b7",
+  "branch": "unit/evidence-harness-paths",
+  "worktree": "/Volumes/data/live_commerce_architecture_v1/.worktrees/evidence-harness-paths",
+  "role": "test harness writer",
+  "model": "gpt-6.1-sol",
+  "reasoning": "high",
+  "changed_paths": [
+    ".github/workflows/gates.yml",
+    "scripts/dev/test-local.sh",
+    "tests/foundation/browser_admin_legacy_test.go",
+    "tests/foundation/browser_claim_checkout_test.go",
+    "tests/foundation/browser_click_sweep_test.go",
+    "tests/foundation/browser_evidence_paths_test.go",
+    "tests/foundation/browser_live_console_test.go",
+    "tests/foundation/browser_refund_fulfilment_test.go",
+    "tests/foundation/browser_storefront_test.go",
+    "tests/foundation/browser_stripe_test.go",
+    "tests/foundation/browser_tracking_backfill_test.go",
+    "tests/ui/sweep-aggregate.mjs",
+    "tests/ui/sweep-shard-lib.test.mjs"
+  ],
+  "source_sha256": {
+    ".github/workflows/gates.yml": "bae935cf1f02e095b9a11e9d50b4ed7ea63e190e9b998f01516b86ac248ab783",
+    "scripts/dev/test-local.sh": "eb9dba34174fb053c1c421b6ea9c2ff5763d2a35d586d6844766a5548fb1294e",
+    "tests/foundation/browser_admin_legacy_test.go": "de625de16d26d7176c88456096390980ef27036c8e84b5db157aa87102da0511",
+    "tests/foundation/browser_claim_checkout_test.go": "d0b7d2eb285373130f715ae81cca5e5b2bdd718bc6fc6569ea8235dc9c941605",
+    "tests/foundation/browser_click_sweep_test.go": "24b7432950bbc556edc37337c35fc1afd1aaca8cbbe2d76e71d18878f012ea9d",
+    "tests/foundation/browser_evidence_paths_test.go": "65109e53f089ee43574dd25582648f8e0f12b465ff9569fc7eff8e92ce896a29",
+    "tests/foundation/browser_live_console_test.go": "fdeb5ae3a701edb1555057e47e3eca4d1acd312304ebb0ad44752540cc47f348",
+    "tests/foundation/browser_refund_fulfilment_test.go": "60293a012df0b5e4e25d3a60cfb846b453bba5cf57e4746d6ca27bf483eceea6",
+    "tests/foundation/browser_storefront_test.go": "c8db149815af7f53a9348eb1e2e806fdb3900d2091137ce979c300a4a02ca2e7",
+    "tests/foundation/browser_stripe_test.go": "d6a6898b41257a570fb0101c84af438f56f96e02ae0f79bb55f60447be206391",
+    "tests/foundation/browser_tracking_backfill_test.go": "493ac4b89cc66211ead961a16ff421e6678ddcdbfe6fd693a7bc95a032c1b3f4",
+    "tests/ui/sweep-aggregate.mjs": "96b17bae5f7ed4cc3df60671b12b7a42bb23ebca24c473eb0c819924720d9c3a",
+    "tests/ui/sweep-shard-lib.test.mjs": "1588b2ed09a0611e1c87bf8d64b2299e3ea679e95b4391de7320e915478cc6d0"
+  },
+  "implementation": "Run-owned Go/shell/CI evidence relocation; assertions/product code/history unchanged",
+  "path_changes": {
+    "output/platform-site": "ROOT/platform-site",
+    "output/ui-w0-shell": "ROOT/ui-w0-shell",
+    "output/ci-gates/picklist": "ROOT/picklist",
+    "<main>/output/storefront-shell/run-<sha>": "ROOT/storefront-shell (LC_SHOP_EVIDENCE explicit override retained)",
+    "<main>/output/w1-01u-banner/browser": "ROOT/meta-health-ui",
+    "<main>/output/w3-01b-ui/browser": "ROOT/tracking-backfill; temporary config <worktree>/output/playwright/tracking-playwright-*",
+    "output/ui-click-sweep": "ROOT/ui-click-sweep; direct-Go fallback <unique brfEvidence>/ui-click-sweep",
+    "output/ui-visual-audit/LATEST": "ROOT/ui-visual-audit/LATEST; historical journey backup/restore eliminated",
+    "<main>/output/stripe-b2-browser-tests": "ROOT/stripe-b2-browser-tests; Go fallback unique brfEvidence",
+    "<main>/output/webkit": "ROOT/webkit",
+    "<main>/output/claim-direct-checkout": "<unique claim evidence>/claim-direct-checkout",
+    "Go live-console CI fallback output/ci-gates": "shared browserEvidenceRoot fallback output/playwright",
+    "CI browser logs output/ci-gates": "ROOT/ci-gates",
+    "aggregate output/ci-aggregate": "output/playwright/ci-aggregate (or explicit ROOT/ci-aggregate)"
+  },
+  "commands": [
+    {
+      "command": "go test -tags browser -count=1 -timeout=90s -run '^TestBrowserEvidencePaths$' -v ./tests/foundation > output/playwright/harness-unit-validation/go-unit.log 2>&1",
+      "exit_code": 1,
+      "classification": "SETUP_FAILURE wrong test package; retained"
+    },
+    {
+      "command": "go vet -tags browser ./tests/foundation > output/playwright/harness-unit-validation/go-vet.log 2>&1",
+      "exit_code": 1,
+      "classification": "SETUP_FAILURE wrong test package; retained"
+    },
+    {
+      "command": "node --test --experimental-strip-types tests/ui/sweep-shard-lib.test.mjs > output/playwright/harness-unit-validation/node-aggregate.log 2>&1",
+      "exit_code": 0,
+      "cases": 9
+    },
+    {
+      "command": "go test -tags browser -count=1 -timeout=90s -run '^TestBrowserEvidencePaths$' -v ./tests/foundation",
+      "exit_code": 1,
+      "classification": "NEGATIVE_CONTROL ignores ROOT in brfEvidence; assertion failed; exact bytes restored",
+      "evidence": "go-unit-mutation-red.log"
+    },
+    {
+      "command": "go test -tags browser -count=1 -timeout=90s -run '^TestBrowserEvidencePaths$' -v ./tests/foundation > output/playwright/harness-unit-validation/go-unit-final-paths-green.log 2>&1",
+      "exit_code": 0,
+      "test_events": 3
+    },
+    {
+      "command": "go vet -tags browser ./tests/foundation > output/playwright/harness-unit-validation/go-vet-final-paths.log 2>&1",
+      "exit_code": 0
+    },
+    {
+      "command": "bash output/playwright/harness-unit-validation/allocation-check.sh > output/playwright/harness-unit-validation/allocation-check.log 2>&1",
+      "exit_code": 0
+    },
+    {
+      "command": "bash -n scripts/dev/test-local.sh > output/playwright/harness-unit-validation/shell-syntax.log 2>&1",
+      "exit_code": 0
+    },
+    {
+      "command": "python3 PyYAML safe_load gates.yml + bash -n output/playwright/harness-unit-validation/workflow-gate.sh",
+      "exit_code": 0,
+      "evidence": "workflow-syntax.log"
+    },
+    {
+      "command": "git diff --check > output/playwright/harness-unit-validation/diff-check-final.log 2>&1",
+      "exit_code": 0
+    },
+    {
+      "command": "git commit -m 'test: isolate browser harness evidence under run roots'",
+      "exit_code": 0
+    }
+  ],
+  "evidence_root": "/Volumes/data/live_commerce_architecture_v1/.worktrees/evidence-harness-paths/output/playwright/harness-unit-validation",
+  "inventory": "51 browser mode strings; 49 Go evidence source files; SOURCE_ONLY",
+  "scope": "Author UNIT/MOCK filesystem tests plus E1 structure; independent/runtime acceptance NOT_RUN",
+  "pending": [
+    "Parent independent review and ratchet injection red/green",
+    "Full test-node/check-gates/admin tsc on merged SHA",
+    "CI browser-product-editor and a second former tracked writer with no tracked git changes",
+    "Sharded click-sweep/visual artifact upload/download and aggregate runtime acceptance",
+    "Provider SANDBOX/LIVE not applicable to harness path unit; not run"
+  ],
+  "unresolved_implementation_issues": [],
+  "checkpoint": "Paused after current commit per owner steering; no code expansion/runtime work"
+}
