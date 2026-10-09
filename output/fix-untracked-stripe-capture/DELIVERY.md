@@ -1,52 +1,48 @@
-# fix-untracked-stripe-capture — K3 round 1 delivery
+# PR20 round 1 — Stripe unreserved quote lines
 
-- Branch: `unit/fix-untracked-stripe-capture`; initial base `e705f70a`; this round starts at `852b515f`.
-- Current executable source: `fb238b1ed540ee2de38889c4bda0650a1ad90c5d`. The final delivery commit contains evidence only. No push.
-- Author: Codex-4 / GPT-6 family (exact runtime model/effort not exposed). Same dedicated worktree `.worktrees/fix-untracked-stripe-capture`; SQL + foundation tests only.
+- Branch/worktree: `unit/fix-untracked-stripe-capture`, `.worktrees/fix-untracked-stripe-capture`.
+- Base: `66f9976122074c74138bdeae19c2b1dd0a61eeb8`; tested source: **`2b8089a9baa27e6d679018cea3e551c837bb2029`**. Final commit adds evidence only; `pr20-r1/source-hashes.json` binds current source and RF12 restore proof.
+- Codex-4 / GPT-6 family; exact parent runtime model/effort not exposed. Read-only collaborator checked SQL proof/restore; no second writer. Coordination task `45f87a0d-d0a6-46d0-b6e1-c2f4148664c9`.
+- Packet: `output/integrator/triage/pr20-66f99761.md`. Four real review threads fixed in this batch. No push.
 
-## K3 P2 fixed
+## Changes
 
-A valid empty-plan order whose SKU becomes tracked or disappears before paid reconciliation now keeps the authenticated CAPTURED fact and records the existing `PAID_ALLOCATION_FAILED` review case plus a `REVIEW_REQUIRED` work item. It returns before order confirmation, reservation commit, inventory movement or settled-order events. This is evidence of real money received, not permission to fulfill or automatically settle the order.
+`migrations/0167_stripe_untracked_reservation.sql:160` now proves **every** unreserved quote SKU from the immutable original quote and that SKU's original RESERVE history, including mixed orders. Shape, scope, quantity mismatch, missing tracked reservations and extra reserved SKUs fail closed. A sibling tracked SKU's legitimate RESERVE does not invalidate an untracked line.
 
-The capture-side proof in unmerged migration 0167 first rejects malformed/empty quote data and any historical RESERVE evidence. If the current scoped catalogue cannot justify the empty plan, durable review is allowed only when the order quote exactly matches its original immutable `storefront.quotes` row (tenant/store/owner/quote ID scoped). Forged/cross-store snapshots and missing tracked reservations remain PT409; all original ten refusal assertions are unchanged. The close-side guard is unchanged. No new table, function, role, grant or reason code; owner/SECURITY DEFINER/search_path/COMMENT stay exact.
+First capture checks current catalogue drift before the general review early return. A deleted/newly tracked unreserved SKU produces CAPTURED evidence, PAID_ALLOCATION_FAILED review and fulfillment state, and REVIEW_REQUIRED work; it never partially allocates tracked siblings or marks READY. PROVIDER_PRESENTMENT_DRIFT remains alongside allocation failure, so the existing refund guard permits only the full remaining amount.
 
-The old statement that catalogue drift remains an unresolved paid-recording limitation is superseded by this round. It stays fail-closed to settlement, with durable operator evidence. Current code mapped PT409 to River JobCancel rather than a retry from that individual reconcile job; absent terminal evidence the query path could keep producing observations. The new review path commits successfully, and its CAPTURED flag makes the existing query worker finish `stripe_terminal_observed` before making another HTTP request.
+Unpaid close uses original checkout evidence only; current SKU deletion/tracking no longer rolls back CLOSED_UNPAID. Its real capture worker returns success and query job terminates without another provider call. Later reports after an already successful capture do not reclassify the order: `v_new_capture` preserves stripe-refund-v1 §4.4. No contract change needed.
 
-## Red → green evidence
+Detailed comment IDs, line anchors and §4.4 explanation: **`pr20-r1/REVIEW-NOTES.md`**. Migration0167 was edited in place as authorized; number/count, owner, SECURITY DEFINER, search_path, ACL and COMMENT are unchanged. No Go runtime/API/migration-count/dependency changes. RF12 restores all three explicitly permitted seams and compares the whole function byte-for-byte with0062; the original0061→0062 guard assertion remains.
 
-New `TestStripeUntrackedDriftReview` uses a real catalogue edit and a disclosed owner-only deleted-SKU fixture, real Begin/Stripe initiation, actual CaptureWorker.Work, and the production payment-worker assembly over MOCK transport. Before the fix both cases fail with `JobCancelError: payment_capture_invalid_job`. Afterward:
+## Gates and red→green
 
-- Exactly one authenticated CAPTURED fact (correct amount/currency/report hash), one review case and one review work item survive commit and replay.
-- Order remains AWAITING_PAYMENT; reservation remains PAYMENT_PENDING; no ALLOCATE/RELEASE or settled-order event is written.
-- PaymentView reports REVIEW_REQUIRED. Replaying after changing the SKU back to untracked cannot settle.
-- The remaining query job completes as `stripe_terminal_observed`, with zero additional provider HTTP requests.
-- Existing normal all-untracked/mixed capture+close tests and all ten corruption refusals still pass.
+Exact commands, exit codes, counts and plaintext-log hashes: **`pr20-r1/results.json`**. All commands ran from this worktree on the frozen source above. Tests changed before their RED run; source implementation changed only afterward.
 
-All current gate commands, exit codes, PASS/SKIP counts and log hashes are in **`k3-r1/results.json`**. Current six source hashes are in `source-hashes.json` and `k3-r1/source-hashes.json`. Root `results.json` and compressed logs remain historical evidence from the first batch, not this round.
+| Gate | Exit | Result |
+| --- | ---: | --- |
+| Four new REAL_PG review regressions before fix | 1 | 0 top-level PASS /4 FAIL; `red.log` |
+| Untracked + RF12 + SP06 focused green | 0 | 11 PASS /0 FAIL /0 SKIP; `green.log` |
+| Later post-capture catalogue/presentment control | 0 | 1 PASS, unchanged order/work state; `post-capture.log` |
+| Foundation Stripe SP/SL/RF/Untracked | 0 | **45 PASS /0 FAIL /2 SKIP**,610.334s; `stripe-regression.log` |
+| Stripe/payment/refund package gates | 0 | 37 top-level PASS /1 SKIP; `stripe-package-gates.log` |
+| R2 release-head upgrade + KC03 + CRP02 | 0 | **3 PASS /0 FAIL /0 SKIP**; `upgrade.log` |
+| `bash scripts/dev/test-node.sh` | 0 | 1148 PASS /0 FAIL; `node.log` |
+| `pnpm --filter @live-commerce/admin typecheck` | 0 | `typecheck.log` |
+| `bash scripts/dev/check-gates.sh` | 0 | 82 modes documented, all tracked tests assigned, headers green; `check-gates.log` |
+| Source-only `git diff --check 66f99761..2b8089a9` | 0 | source whitespace clean |
 
-| Gate | Exit | Result / plaintext log |
-|---|---:|---|
-| Focused new drift test before fix | 1 | 2 expected failing cases; `k3-r1/red.log` |
-| Untracked + RF12 + SP06 | 0 | 7 top-level PASS, 0 FAIL/SKIP; `k3-r1/green.log` |
-| Foundation Stripe SP/SL/RF/Untracked | 0 | 40 top-level PASS, 0 FAIL, 2 top-level SKIP; 574.823s; `k3-r1/stripe-regression.log` |
-| Stripe/payment/refund package gates | 0 | 37 top-level PASS, 1 SKIP; `k3-r1/stripe-package-gates.log` |
-| R2 release-head upgrade + KC03 + CRP02 | 0 | 3 top-level PASS, 0 FAIL/SKIP; `k3-r1/upgrade.log` |
-| test-node.sh | 0 | 1137 PASS, 0 FAIL; `k3-r1/node.log` |
-| admin typecheck | 0 | `k3-r1/typecheck.log` |
-| check-gates.sh | 0 | 82 modes documented, every tracked test assigned, headers PASS; `k3-r1/check-gates.log` |
+The four new failure tests cover mixed tracking/deletion, durable fulfillment failure, unpaid all-untracked/mixed closure after tracking/deletion, and both reviews plus actual refund HTTP partial422/full201. A fifth control proves a later presentment report after ordinary capture preserves the settled aggregate even after catalogue drift. Existing normal all-untracked/mixed controls and ten original corruption refusals remain intact.
 
-**Evidence class: E3 in tested REAL_PG + MOCK environment.** All logs above are uncompressed text. The committed typecheck view trims only its final blank line for the Git whitespace check; raw stdout stays at the canonical path, and both hashes are recorded. Earlier first-batch `red-valid.log` is also now directly readable in this worktree; `red.log` retains the earlier diagnostic fixture error and is not the valid first-batch red proof. Gzip copies are supplementary, never required by the reviewer.
+**Evidence: E3, tested REAL_PG + MOCK environment.** No real provider money/refund was sent. Independent source review found no confirmed P0/P1 money/data-integrity gap and independently restored the complete function to0062; that review is E1 and does not replace K3 deep review or runtime acceptance. New red logs are uncompressed. Historical root/k3-r1 results describe earlier source and are superseded by this `pr20-r1/` package.
 
-Canonical evidence directory: `/Volumes/data/live_commerce_architecture_v1/output/fix-untracked-stripe-capture/`. Same text logs/manifests are committed under this unit's worktree output directory.
+## NOT_RUN / integrator
 
-## Review and remaining CI
+- K3 deep review and PR CI on this batch: pending integrator. Commit only; integrator pushes.
+- Existing sandbox skips: SL08 restricted-key probe, RF10 refund sandbox, SP16 package sandbox, optional registrar probe. No owner-provided test credentials were loaded. Nested RF03 populated0061-upgrade remains the pre-existing NOT_RUN because the migrator has no partial-apply hook; the three requested upgrade gates pass separately.
+- Full foundation/release G07, browser modes, provider SANDBOX/LIVE and production deployment: NOT_RUN. This batch changes SQL and Go tests only.
+- Foundation govulncheck failure in the packet is KNOWN and fixed by PR19. This batch does not modify go.mod/go.sum or toolchain pins to duplicate that fix.
+- Harnesses stopped and cleaned their owned PG/worker processes. Other agents' processes/caches untouched. No active implementation blocker.
+- W3-U2 remains explicitly paused at checkpoint `d5f4fb3e`, tested source115bd202. Resume must merge PR22's new registry before any runner edit, then trunk after PR22 lands; no old if/elif edits.
 
-Read-only review of fb238b1e found no P0/P1/P2 in the authorized scope and independently verified that restoring the two marked proof blocks produces the exact 0062 function body. It also verified the unchanged original refusal tests and the new worker RED log. This is E1 source review, not an independent runtime rerun (Humaux `3ca254d3-b7f0-401e-b52b-99d313c632f9`).
-
-- CI gates: foundation-shards and full `bash scripts/dev/release-gate.sh --strict --only G07`; integrator's final money review. Full G07 remains NOT_RUN locally under the Mac RAM rule.
-- SANDBOX NOT_RUN: SL08, RF10, SP16 and nested SP21 real probe; no owner test credentials/opt-in used. LIVE/provider capture/refund/deployment NOT_RUN.
-- Existing RF03 nested populated-upgrade-from-0061 case remains NOT_RUN (no partial-apply hook); the three listed upgrade gates actually ran.
-- Package regex matched no tests in settlement/stripeadmin/stripewebhook packages; those empty selections are not counted as test coverage. Foundation registrar/webhook gates ran separately.
-- Migration count remains 92; R2/CRP pins do not change again because 0167 is the same unmerged migration. No merged migration edited.
-
-All author-started test processes finished and the existing scripts cleaned their disposable PG fixtures. No shared cache or other task artifacts removed. Code committed; integrator pushes; no production action.
+Evidence packaging: the raw typecheck log ends with a blank EOF line; only that line is trimmed in the committed review copy for git whitespace checks. Raw uncompressed stdout and its hash remain at the canonical path recorded in results.json. All RED logs remain exact and uncompressed. Packaged check-gates rerun exits0.
