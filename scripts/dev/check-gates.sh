@@ -85,6 +85,31 @@ print(f"check-gates: ok ({len(modes)} modes, all documented; every tracked test 
 PY
 # Documentation ratchet (owner 2026-10-05): files added/changed since the base carry Purpose / Depends on / Used by headers.
 bash scripts/dev/check-headers.sh
+# Dependency register (PROCESS.md §5): every direct go.mod require has a docs/engineering/dependencies.md row at the same
+# version (2026-10-09: PR #19 bumped x/net but the register still said v0.59.0, so reviews kept citing the vulnerable one).
+# A submodule may share its parent's row when the row names it, e.g. river (+ `riverdriver/riverpgxv5`, `rivertype`).
+python3 - <<'PY'
+import json, re, subprocess, sys
+# go mod edit -json is Go's own go.mod parser: every require form, comments and the // indirect marker handled structurally.
+mods = [(r["Path"], r["Version"]) for r in json.loads(subprocess.run(["go", "mod", "edit", "-json"], check=True,
+        capture_output=True, text=True).stdout).get("Require") or [] if not r.get("Indirect")]
+if not mods:
+    sys.exit("check-gates: parsed no direct requires from go.mod (fail closed)")
+rows = [(m.group(1), l) for l in open("docs/engineering/dependencies.md") if (m := re.match(r"\| `([^`]+)`", l))]
+bad = []
+for mod, ver in mods:
+    # Match on the row's first cell only; prose elsewhere in a row may name other modules.
+    row = next((r for name, r in rows if name == mod), None) or next(
+        (r for name, r in rows if mod.startswith(name + "/") and f"`{mod[len(name)+1:]}`" in r), None)
+    cell = row.split("|")[2] if row else ""
+    if row is None:
+        bad.append(f"{mod} has no row in docs/engineering/dependencies.md")
+    elif cell.split()[:1] != [ver]:   # leading version token only: "v0.42.0 (raised from v0.39.0 ...)" must not satisfy v0.39.0
+        bad.append(f"{mod} is {ver} in go.mod but the register row says {cell.strip()}")
+if bad:
+    print("\n".join("check-gates: " + b for b in bad), file=sys.stderr)
+    sys.exit(1)
+PY
 # Go formatting (2026-10-06: an unformatted test file only surfaced as a CRP10 failure deep in the full PG suite).
 unformatted="$(gofmt -l cmd internal tests migrations 2>/dev/null || true)"
 if [[ -n "$unformatted" ]]; then printf 'check-gates: gofmt needed:\n%s\n' "$unformatted" >&2; exit 1; fi

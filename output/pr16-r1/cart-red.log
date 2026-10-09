@@ -1,0 +1,99 @@
+✖ rotated buyer context clears the prior cart on read and preserves the B receipt (59.96575ms)
+✖ rotated buyer context clears the prior cart on lost-write and preserves the B receipt (9.664542ms)
+✖ rotated buyer context clears the prior cart on refresh-read and preserves the B receipt (6.314833ms)
+✔ lost first write keeps Retry alive: same context, same idempotency key, no second purchase (18.287541ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 1
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 335.636875
+
+✖ failing tests:
+
+test at apps/storefront/tests/cart-provider-retry.test.mjs:37:3
+✖ rotated buyer context clears the prior cart on read and preserves the B receipt (59.96575ms)
+  AssertionError [ERR_ASSERTION]: cart A must not remain visible after adopting context B
+  + actual - expected
+  
+  + {
+  +   currency: 'TWD',
+  +   id: '00000000-0000-0000-0000-000000000003',
+  +   items: [
+  +     {
+  +       quantity: 4,
+  +       sku_id: '00000000-0000-0000-0000-000000000002'
+  +     },
+  +     {
+  +       quantity: 1,
+  +       sku_id: '00000000-0000-0000-0000-000000000001'
+  +     }
+  +   ],
+  +   version: 8
+  + }
+  - null
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups/apps/storefront/tests/cart-provider-retry.test.mjs:67:14)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { id: '00000000-0000-0000-0000-000000000003', currency: 'TWD', version: 8, items: [ [Object], [Object] ] },
+    expected: null,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at apps/storefront/tests/cart-provider-retry.test.mjs:37:3
+✖ rotated buyer context clears the prior cart on lost-write and preserves the B receipt (9.664542ms)
+  AssertionError [ERR_ASSERTION]: cart A must not remain visible after adopting context B
+  + actual - expected
+  
+  + {
+  +   currency: 'TWD',
+  +   id: '00000000-0000-0000-0000-000000000003',
+  +   items: [
+  +     {
+  +       quantity: 4,
+  +       sku_id: '00000000-0000-0000-0000-000000000002'
+  +     },
+  +     {
+  +       quantity: 1,
+  +       sku_id: '00000000-0000-0000-0000-000000000001'
+  +     }
+  +   ],
+  +   version: 8
+  + }
+  - null
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups/apps/storefront/tests/cart-provider-retry.test.mjs:67:14)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { id: '00000000-0000-0000-0000-000000000003', currency: 'TWD', version: 8, items: [ [Object], [Object] ] },
+    expected: null,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at apps/storefront/tests/cart-provider-retry.test.mjs:37:3
+✖ rotated buyer context clears the prior cart on refresh-read and preserves the B receipt (6.314833ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+  - 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups/apps/storefront/tests/cart-provider-retry.test.mjs:66:14)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    expected: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

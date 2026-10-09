@@ -1,0 +1,103 @@
+{
+  "base": "e705f70a694f7d0f4ed1c2967883e3f5d8d62803",
+  "source_commit": "79a5ff6ed70a0ce6ec365c65941e37a182164175",
+  "environment": "REAL_PG 18.6, MOCK Stripe observations, Go race; macOS",
+  "commands": [
+    {
+      "command": "bash scripts/dev/test-focused.sh '^TestStripeUntracked'",
+      "log": "red-valid.log",
+      "exit": 1,
+      "top_pass": 1,
+      "top_fail": 1,
+      "top_skip": 0,
+      "target_failures": 2
+    },
+    {
+      "command": "bash scripts/dev/test-focused.sh '^TestStripeUntracked|^TestStripeRF12Guards|^TestStripeSP06'",
+      "log": "green-focused.log",
+      "exit": 0,
+      "top_pass": 6,
+      "top_fail": 0,
+      "top_skip": 0
+    },
+    {
+      "command": "bash scripts/dev/test-focused.sh '^TestR2IntegrationUpgradeFromReleaseHead$|^TestLiveClaimsKC03|^TestClaimsRetentionCRP02'",
+      "log": "upgrade.log",
+      "exit": 0,
+      "top_pass": 3,
+      "top_fail": 0,
+      "top_skip": 0
+    },
+    {
+      "command": "pnpm install --offline --frozen-lockfile",
+      "log": "install.log",
+      "exit": 0
+    },
+    {
+      "command": "bash scripts/dev/test-node.sh",
+      "log": "node.log",
+      "exit": 0,
+      "pass": 1137,
+      "fail": 0
+    },
+    {
+      "command": "pnpm --filter @live-commerce/admin typecheck",
+      "log": "typecheck-admin.log",
+      "exit": 0
+    },
+    {
+      "command": "bash scripts/dev/check-gates.sh",
+      "log": "check-gates.log",
+      "exit": 0,
+      "modes": 82
+    },
+    {
+      "command": "LC_FOCUSED_TIMEOUT=1800s bash scripts/dev/test-focused.sh '^TestStripe(SP|SL|RF|Untracked)'",
+      "log": "stripe-regression.log",
+      "exit": 0,
+      "top_pass": 39,
+      "top_fail": 0,
+      "top_skip": 2,
+      "not_run": [
+        "stripe_live_rak_test.go:99: NOT_RUN: SL08 needs STRIPE_SANDBOX=1 and the owner's rk_test_ restricted test key (STRIPE_RESTRICTED_TEST_KEY); SANDBOX only, LIVE is refused",
+        "stripe_refund_sandbox_test.go:85: NOT_RUN: RF10 requires STRIPE_SANDBOX=1 with a Stripe test key (owner-provided; SANDBOX only, LIVE refused)",
+        "stripe_refund_schema_test.go:794: NOT_RUN: migrations.Apply has no partial-apply hook; a database frozen at 0061 with rows cannot be built without re-implementing the migrator",
+        "stripe_registrar_test.go:403: NOT_RUN: set STRIPE_SANDBOX=1 with a test STRIPE_SECRET_KEY and STRIPE_ACCOUNT_ID to probe the real sandbox (creates and expires one test session, no charge)"
+      ],
+      "zero_match_packages": []
+    },
+    {
+      "command": "bash scripts/dev/test-focused.sh '^TestStripeUntracked'",
+      "log": "green-scope-control.log",
+      "exit": 0,
+      "top_pass": 2,
+      "top_fail": 0,
+      "top_skip": 0,
+      "not_run": [],
+      "zero_match_packages": []
+    },
+    {
+      "command": "GOTOOLCHAIN=go1.27.1 go test -race -p 1 -count=1 -timeout=600s -run '^TestStripe(SP|SL|RF)|Refund' -v ./internal/integrations/psp/stripe/... ./internal/payments/... ./internal/merchantorders",
+      "log": "stripe-package-gates.log",
+      "exit": 0,
+      "top_pass": 37,
+      "top_fail": 0,
+      "top_skip": 1,
+      "not_run": [
+        "sandbox_test.go:62: NOT_RUN: SP16 requires STRIPE_SANDBOX=1 with a Stripe test key"
+      ],
+      "zero_match_packages": [
+        "ok  \tlivecommerce/internal/payments/settlement\t1.375s [no tests to run]",
+        "ok  \tlivecommerce/internal/payments/stripeadmin\t1.437s [no tests to run]",
+        "ok  \tlivecommerce/internal/payments/stripewebhook\t1.427s [no tests to run]"
+      ]
+    },
+    {
+      "command": "bash scripts/dev/check-gates.sh",
+      "log": "check-gates-final.log",
+      "exit": 0,
+      "modes": 82
+    }
+  ],
+  "final_source_commit": "50a407a9a3131e551e93da5c4b09bf38b101b3cd"
+}

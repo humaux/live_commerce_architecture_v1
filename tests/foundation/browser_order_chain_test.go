@@ -14,6 +14,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
+	"regexp"
 	"strings"
 	"syscall"
 	"testing"
@@ -78,6 +80,35 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 		}
 		return out, rows.Err()
 	}
+	type cartFact struct {
+		ID             string          `json:"id"`
+		Version        int64           `json:"version"`
+		Writes         int             `json:"writes"`
+		Receipts       int             `json:"receipts"`
+		ReceiptVersion int64           `json:"receipt_version"`
+		RequestHash    string          `json:"request_hash"`
+		Items          json.RawMessage `json:"items"`
+	}
+	// Scope the receipt to the initiating cart's owner/session and exact key; cart.updated
+	// is inserted only by the real cart writer transaction, so replay must add none.
+	cartFacts := func(ctx context.Context, cartID, key string) (cartFact, error) {
+		var out cartFact
+		err := h.f.owner.QueryRow(ctx, `SELECT c.id::text,c.version,
+		 (SELECT count(*) FROM storefront.events e WHERE e.tenant_id=c.tenant_id AND e.store_id=c.store_id AND e.owner_id=c.owner_id AND e.cart_id=c.id AND e.action='cart.updated'),
+		 (SELECT count(*) FROM buyer.command_results r WHERE r.tenant_id=c.tenant_id AND r.store_id=c.store_id AND r.owner_id=c.owner_id AND r.session_id=c.creator_session_id AND r.operation='cart.set' AND r.idempotency_key=$4 AND r.response->>'id'=c.id::text),
+		 coalesce((SELECT (r.response->>'version')::bigint FROM buyer.command_results r WHERE r.tenant_id=c.tenant_id AND r.store_id=c.store_id AND r.owner_id=c.owner_id AND r.session_id=c.creator_session_id AND r.operation='cart.set' AND r.idempotency_key=$4 AND r.response->>'id'=c.id::text),0),
+		 coalesce((SELECT encode(r.request_hash,'hex') FROM buyer.command_results r WHERE r.tenant_id=c.tenant_id AND r.store_id=c.store_id AND r.owner_id=c.owner_id AND r.session_id=c.creator_session_id AND r.operation='cart.set' AND r.idempotency_key=$4 AND r.response->>'id'=c.id::text),''),
+		 coalesce((SELECT jsonb_agg(jsonb_build_object('sku_id',l.sku_id::text,'quantity',l.quantity) ORDER BY l.sku_id) FROM storefront.cart_lines l WHERE l.tenant_id=c.tenant_id AND l.store_id=c.store_id AND l.owner_id=c.owner_id AND l.cart_id=c.id),'[]'::jsonb)
+		 FROM storefront.carts c WHERE c.tenant_id=$1 AND c.store_id=$2 AND c.id::text=$3`, h.f.tenantA, h.f.storeA1, cartID, key).
+			Scan(&out.ID, &out.Version, &out.Writes, &out.Receipts, &out.ReceiptVersion, &out.RequestHash, &out.Items)
+		return out, err
+	}
+	uuidPattern := regexp.MustCompile(`^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$`)
+	keyPattern := regexp.MustCompile(`^[A-Za-z0-9_.:-]{8,128}$`)
+	jsonEqual := func(a, b []byte) bool {
+		var left, right any
+		return json.Unmarshal(a, &left) == nil && json.Unmarshal(b, &right) == nil && reflect.DeepEqual(left, right)
+	}
 	before, err := facts(context.Background())
 	if err != nil || len(before) != 0 {
 		t.Fatal("order fixture is not empty")
@@ -107,6 +138,18 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 		w.Header().Set("Cache-Control", "no-store")
 		fail := func() { http.Error(w, "fixture control failed", 500) }
 		switch {
+		case r.Method == "GET" && strings.HasPrefix(r.URL.Path, "/cart-facts/"):
+			parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/cart-facts/"), "/")
+			if len(parts) != 2 || !uuidPattern.MatchString(parts[0]) || !keyPattern.MatchString(parts[1]) {
+				http.Error(w, "invalid fixture cart/key", 400)
+				return
+			}
+			out, e := cartFacts(r.Context(), parts[0], parts[1])
+			if e != nil {
+				fail()
+				return
+			}
+			_ = json.NewEncoder(w).Encode(out)
 		case r.Method == "GET" && r.URL.Path == "/facts":
 			out, e := facts(r.Context())
 			if e != nil {
@@ -195,9 +238,106 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 		Orders         []string `json:"orders"`
 		RepeatedOrders []string `json:"repeated_orders"`
 		Observations   []string `json:"observations"`
+		CartRetries    []struct {
+			CaseID      string   `json:"case_id"`
+			Locale      string   `json:"locale"`
+			Surface     string   `json:"surface"`
+			Key         string   `json:"key"`
+			RequestBody string   `json:"request_body"`
+			CartID      string   `json:"cart_id"`
+			SKUID       string   `json:"sku_id"`
+			Quantity    int64    `json:"quantity"`
+			Before      cartFact `json:"before"`
+			After       cartFact `json:"after"`
+			Reloaded    cartFact `json:"reloaded"`
+		} `json:"cart_retries"`
+		ClickLedger []struct {
+			CaseID   string `json:"case_id"`
+			Page     string `json:"page"`
+			Control  string `json:"control"`
+			Action   string `json:"action"`
+			Expected string `json:"expected"`
+			Actual   string `json:"actual"`
+			Status   string `json:"status"`
+		} `json:"click_ledger"`
 	}
 	if json.Unmarshal(data, &result) != nil || !buyerOrderCasesComplete(result.Cases, result.Observations) || len(result.Orders) != 7 || len(result.RepeatedOrders) != 2 || result.RepeatedOrders[0] == result.RepeatedOrders[1] {
 		t.Fatal("incomplete browser order evidence")
+	}
+	if len(result.CartRetries) != len(orderCartRetryCases) || len(result.ClickLedger) != 21 {
+		t.Fatal("expected six cart Retry cases and exactly 21 real-click ledger rows")
+	}
+	seenCartCases, seenCartKeys := map[string]bool{}, map[string]bool{}
+	cartIDs := map[string]int{}
+	finalCartFacts := []cartFact{}
+	for _, item := range result.CartRetries {
+		wantCase := "BC01 " + item.Locale + " " + item.Surface + " visible cart Retry preserves key/body and one committed write after reload"
+		if item.CaseID != wantCase || !orderCartRetryCases[item.CaseID] || seenCartCases[item.CaseID] || seenCartKeys[item.Key] || !keyPattern.MatchString(item.Key) || !uuidPattern.MatchString(item.CartID) || !uuidPattern.MatchString(item.SKUID) {
+			t.Fatal("cart Retry evidence is missing, duplicated or not bound to a real cart/key")
+		}
+		seenCartCases[item.CaseID], seenCartKeys[item.Key] = true, true
+		cartIDs[item.CartID]++
+		quantity := int64(1)
+		if item.Surface == "cart-page" {
+			quantity = 2
+		}
+		var body struct {
+			ExpectedVersion int64 `json:"expected_version"`
+			Items           []struct {
+				SKUID    string `json:"sku_id"`
+				Quantity int64  `json:"quantity"`
+			} `json:"items"`
+		}
+		if json.Unmarshal([]byte(item.RequestBody), &body) != nil || item.Quantity != quantity || body.ExpectedVersion != quantity-1 || len(body.Items) != 1 || body.Items[0].SKUID != item.SKUID || body.Items[0].Quantity != quantity {
+			t.Fatal("cart Retry request body does not match the initiating visible control")
+		}
+		for _, f := range []cartFact{item.Before, item.After, item.Reloaded} {
+			items, _ := json.Marshal(body.Items)
+			if f.ID != item.CartID || f.Version != quantity || f.Writes != int(quantity) || f.Receipts != 1 || f.ReceiptVersion != quantity || len(f.RequestHash) != 64 || f.RequestHash != item.Before.RequestHash || !jsonEqual(f.Items, items) {
+				t.Fatal("committed cart changed on visible Retry or reload")
+			}
+		}
+		// Independently re-read PostgreSQL after Node exits; its self-reported facts alone are insufficient.
+		current, e := cartFacts(context.Background(), item.CartID, item.Key)
+		if e != nil || current.Version != 2 || current.Writes != 2 || current.Receipts != 1 || current.ReceiptVersion != quantity || current.RequestHash != item.Before.RequestHash {
+			t.Fatal("final PostgreSQL cart/key receipt or write count mismatch")
+		}
+		body.Items[0].Quantity = 2
+		items, _ := json.Marshal(body.Items)
+		if !jsonEqual(current.Items, items) {
+			t.Fatal("reloaded cart quantity does not match final PostgreSQL lines")
+		}
+		finalCartFacts = append(finalCartFacts, current)
+	}
+	if len(cartIDs) != 3 {
+		t.Fatal("each locale must use a fresh cart for drawer and cart-page Retry")
+	}
+	for _, n := range cartIDs {
+		if n != 2 {
+			t.Fatal("each locale cart must have one drawer and one cart-page Retry")
+		}
+	}
+	seenClicks := map[string]bool{}
+	for _, row := range result.ClickLedger {
+		key := row.CaseID + "/" + row.Control
+		if !seenCartCases[row.CaseID] || seenClicks[key] || row.Action != "click" || row.Status != "PASS" || row.Expected == "" || row.Actual != row.Expected || !strings.HasPrefix(row.Page, "https://buyer.example/") {
+			t.Fatal("incomplete or duplicated cart click ledger")
+		}
+		seenClicks[key] = true
+	}
+	for caseID := range orderCartRetryCases {
+		controls := []string{"View cart", "Increase quantity", "cart-problem > Retry"}
+		if strings.Contains(caseID, " drawer ") {
+			controls = []string{"add-to-cart", "header-cart", "cart-problem > Retry", "header-cart after reload"}
+		}
+		for _, control := range controls {
+			if !seenClicks[caseID+"/"+control] {
+				t.Fatal("cart Retry ledger omits an initiating, retry or reload verification click")
+			}
+		}
+	}
+	if data, e := json.MarshalIndent(finalCartFacts, "", "  "); e != nil || os.WriteFile(filepath.Join(evidence, "cart-final-pg-facts.json"), data, 0o600) != nil {
+		t.Fatal("cannot preserve independent final cart facts")
 	}
 	after, err := facts(context.Background())
 	if err != nil || len(after) != len(result.Orders) {

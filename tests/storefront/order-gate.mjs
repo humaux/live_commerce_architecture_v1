@@ -19,7 +19,7 @@ import { displayTime } from "../../packages/format/src/index.ts";
 const root=process.cwd(), evidence=process.env.LC_ORDER_EVIDENCE;
 assert(evidence && /^http:\/\/127\.0\.0\.1:\d+$/.test(process.env.LC_ORDER_CONTROL));
 const origin="https://buyer.example", checkoutPath="/en/checkout";
-const children=new Set(), sockets=new Set(), logs=[], contexts=[], orders=[], observations=[], storageWrites=[], consoleText=[], requestURLs=[];
+const children=new Set(), sockets=new Set(), logs=[], contexts=[], orders=[], observations=[], storageWrites=[], consoleText=[], requestURLs=[], cartRetries=[], clickLedger=[];
 const pii={recipient_name:"Synthetic Gate Recipient",phone:"+886900000091",region:"Synthetic Region",city:"Synthetic City",postal_code:"99991",line1:"Synthetic Address Ninety One",line2:"Synthetic Unit Ninety Two"};
 const secrets=[], pageErrors=[], closedContextStates=new Map();
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return{promise,resolve};};
@@ -227,6 +227,51 @@ async function capture(p,name,fullPage=true,directory=review) {
   await mkdir(directory,{recursive:true});
   await p.screenshot({path:path.join(evidence,name),fullPage});await copyFile(path.join(evidence,name),path.join(directory,name));
 }
+const cartCopy={en:{retry:"Retry",increase:"Increase quantity",view:"View cart"},"zh-CN":{retry:"重试",increase:"增加数量",view:"查看购物车"},"zh-TW":{retry:"重試",increase:"增加數量",view:"查看購物車"}};
+async function cartClick(p,caseID,control,locator,expected,verify) {
+  const row={case_id:caseID,page:p.url(),control,action:"click",expected,actual:"NOT_RUN",status:"NOT_RUN"};clickLedger.push(row);
+  try {await locator.click();await verify();row.actual=expected;row.status="PASS";}
+  catch(error){row.actual=String(error.message).slice(0,1000);row.status="FAIL";throw error;}
+  finally {await writeFile(path.join(evidence,"cart-click-ledger.json"),JSON.stringify(clickLedger,null,2),{mode:0o600});}
+}
+async function cartRetry(p,locale,surface,initiate) {
+  const caseID=`BC01 ${locale} ${surface} visible cart Retry preserves key/body and one committed write after reload`;
+  const host=()=>p.getByTestId(surface==="drawer"?"cart-drawer":"cart-page");
+  const start=calls.length,lost=arm("cart",{method:"PUT",drop:true,repeat:true});
+  // Keep dropping transparent transport retries too: the first visible recovery must be the buyer's Retry click.
+  await initiate(caseID);
+  assert.equal(await lost.result.promise,200,"lost cart reply follows a real committed Go/PG write");
+  if(surface==="drawer")await cartClick(p,caseID,"header-cart",p.getByTestId("header-cart"),"uncertain cart notice is visible",async()=>expect(host().getByTestId("cart-problem")).toBeVisible());
+  const notice=host().getByTestId("cart-problem"),retry=notice.getByRole("button",{name:cartCopy[locale].retry,exact:true});
+  await expect(notice).toBeVisible();await expect(retry).toBeVisible();await expect(retry).toBeEnabled();
+  const pending=await stored(p);assert.equal(pending.kind,"cart");
+  const committed=JSON.parse(lost.out.body.toString()),quantity=surface==="drawer"?1:2;
+  assert.equal(committed.version,quantity);assert.equal(committed.items.length,1);assert.equal(committed.items[0].quantity,quantity);
+  assert.deepEqual(pending.body,{expected_version:quantity-1,items:[{sku_id:committed.items[0].sku_id,quantity}]});
+  const factPath=`cart-facts/${committed.id}/${pending.key}`,before=await control(factPath);
+  assert.equal(before.receipts,1);assert.equal(before.receipt_version,quantity);assert.equal(before.version,quantity);assert.equal(before.writes,quantity);
+  assert.deepEqual(before.items,pending.body.items);assert.match(before.request_hash,/^[a-f0-9]{64}$/);
+  const firstCalls=calls.slice(start).filter(x=>x.path==="/api/buyer/cart"&&x.method==="PUT");
+  assert(firstCalls.length>=1);for(const call of firstCalls){assert.equal(call.key,pending.key);assert.deepEqual(JSON.parse(call.body),pending.body);assert.equal(call.status,200);assert.equal(call.dropped,true);}
+  const explicitStart=calls.length;hook=null;
+  await cartClick(p,caseID,"cart-problem > Retry",retry,"uncertainty clears and committed quantity appears",async()=>{
+    await expect(notice).toHaveCount(0);await expect(host().getByTestId("cart-line-qty")).toHaveText(String(quantity));
+    await expect.poll(()=>stored(p)).toBeNull();
+  });
+  const explicit=calls.slice(explicitStart).filter(x=>x.path==="/api/buyer/cart"&&x.method==="PUT");
+  assert.equal(explicit.length,1,"one real cart PUT is triggered by the visible Retry button");
+  assert.equal(explicit[0].status,200);assert.equal(explicit[0].key,pending.key);assert.equal(explicit[0].body,firstCalls[0].body);assert.equal(explicit[0].dropped,false);
+  const after=await control(factPath);assert.deepEqual(after,before,"Retry replays one receipt without a second cart.updated event/version");
+  const writesBeforeReload=calls.filter(x=>x.path==="/api/buyer/cart"&&x.method==="PUT").length;
+  await p.reload();
+  if(surface==="drawer")await cartClick(p,caseID,"header-cart after reload",p.getByTestId("header-cart"),"persisted cart drawer opens with the committed quantity",async()=>expect(host().getByTestId("cart-line-qty")).toHaveText(String(quantity)));
+  await expect(host().getByTestId("cart-line-qty")).toHaveText(String(quantity));await expect(host().getByTestId("cart-problem")).toHaveCount(0);
+  assert.equal(calls.filter(x=>x.path==="/api/buyer/cart"&&x.method==="PUT").length,writesBeforeReload,"reload must only read the retained cart");
+  const reloaded=await control(factPath);assert.deepEqual(reloaded,before);
+  cartRetries.push({case_id:caseID,locale,surface,key:pending.key,request_body:firstCalls[0].body,cart_id:committed.id,sku_id:committed.items[0].sku_id,quantity,before,after,reloaded});
+  await writeFile(path.join(evidence,"cart-retry-facts.json"),JSON.stringify(cartRetries,null,2),{mode:0o600});
+  pass(caseID);
+}
 try {
   execFileSync("openssl",["req","-x509","-newkey","rsa:2048","-nodes","-keyout",path.join(certDir,"key.pem"),"-out",path.join(certDir,"cert.pem"),"-days","1","-subj","/CN=buyer.example"],{stdio:"ignore"});
   const port=await startNext();
@@ -246,6 +291,7 @@ try {
         for(const [page,warmup] of bo01Warmups)if(call.sourcePath==="/en/checkout"&&page.url()===origin+"/en/checkout"&&cookiePairs.includes(warmup.cookie))warmup.served.resolve();
       }
       if(active){active.out=out;active.result.resolve(out.status);}
+      call.dropped=!!active?.drop;
       if(active?.drop){res.destroy();return;}
       if(active?.after)await active.release.promise;
       const headers={...out.headers};delete headers.connection;delete headers["transfer-encoding"];
@@ -259,6 +305,21 @@ try {
     for(const s of [socket,upstream]){sockets.add(s);s.on("close",()=>sockets.delete(s));s.on("error",()=>{socket.destroy();upstream.destroy();});}
   });
   browser=await launch({headless:true,proxy:{server:`http://127.0.0.1:${await listen(proxy)}`}});
+
+  // BC01: first write in a fresh session (product drawer), then an edit on the cart page.
+  // All business requests run through production Next -> Go -> PG; only committed edge replies are lost.
+  for(const locale of ["en","zh-CN","zh-TW"]){
+    const context=await newContext(),p=await context.newPage();
+    await p.goto(`${origin}/${locale}/products/${process.env.LC_ORDER_PRODUCT}`);
+    await expect(p.getByTestId("add-to-cart")).toBeEnabled();assert.equal(await stored(p),null);
+    await cartRetry(p,locale,"drawer",async caseID=>cartClick(p,caseID,"add-to-cart",p.getByTestId("add-to-cart"),"first cart write settles as uncertain",async()=>expect(p.getByTestId("add-to-cart")).toBeEnabled()));
+    const routeCase=`BC01 ${locale} cart-page visible cart Retry preserves key/body and one committed write after reload`;
+    await cartClick(p,routeCase,"View cart",p.getByTestId("cart-drawer").getByRole("link",{name:cartCopy[locale].view,exact:true}),"cart page shows the retained first item",async()=>{
+      await expect(p).toHaveURL(`${origin}/${locale}/cart`);await expect(p.getByTestId("cart-page").getByTestId("cart-line-qty")).toHaveText("1");
+    });
+    await cartRetry(p,locale,"cart-page",async caseID=>cartClick(p,caseID,"Increase quantity",p.getByTestId("cart-page").getByRole("button",{name:cartCopy[locale].increase,exact:true}),"cart page shows uncertain committed edit",async()=>expect(p.getByTestId("cart-page").getByTestId("cart-problem")).toBeVisible()));
+    await context.close();
+  }
 
   // BO01/BO03: native form, all locales, in-memory PII and causal lost PUT.
   const c1=await newContext(),{p:a,quote:q1}=await quotePage(c1,false,undefined,true);await rememberCookie(c1);
@@ -572,7 +633,7 @@ try {
   }
   assert.deepEqual(pageErrors.filter(e=>!isWebkitCancelledFetch(e)).map(e=>e.name),[],"browser application exception"); // WebKit cancelled-fetch console noise: browser-engine.mjs
   pass("BO06 all attempted local/session writes, URLs and console exclude PII/bearer; other owner denied");
-  await writeFile(path.join(evidence,"result.json"),JSON.stringify({cases:observations.length,orders,repeated_orders:[order1,orderB],observations,storage_write_attempts:storageWrites.length,scope:"actual UI/Next/Go/isolated PG; synthetic TLS and buyer data; no PSP/production",not_run:["full foundation/race/vet and existing browser regression are separate root gates","independent visual review"]},null,2),{mode:0o600});
+  await writeFile(path.join(evidence,"result.json"),JSON.stringify({cases:observations.length,orders,repeated_orders:[order1,orderB],observations,cart_retries:cartRetries,click_ledger:clickLedger,storage_write_attempts:storageWrites.length,scope:"actual UI/Next/Go/isolated PG; synthetic TLS and buyer data; no PSP/production",not_run:["full foundation/race/vet and existing browser regression are separate root gates","independent visual review"]},null,2),{mode:0o600});
 }catch(error){
   // A failed step leaves what the buyer was looking at (screenshot + visible text of every page), so an intermittent failure is diagnosable from its own run.
   if(browser)for(const context of browser.contexts())for(const [index,page] of context.pages().entries()){

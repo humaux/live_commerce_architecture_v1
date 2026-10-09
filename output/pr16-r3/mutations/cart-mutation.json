@@ -1,0 +1,5 @@
+{
+  "path": "apps/storefront/components/CartLines.tsx",
+  "before_sha256": "a216aefa169067558b794ada46ab827defc230f1c1a2c53450812f0b6a6606f2",
+  "mutation": "visible Retry onClick replaced with no-op only for RED; restore original bytes"
+}
