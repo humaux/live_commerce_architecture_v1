@@ -85,11 +85,16 @@ export function classifyBackendFiles(registrySource, files, backendOnly = BACKEN
   return errors;
 }
 
+/** Real Git inventory, including unstaged new files: gate coverage before git add, not only before a PR. */
+export function backendGoFiles(repoRoot = root) {
+  return [...new Set(execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "-z", "--", "internal/"], { cwd: repoRoot, encoding: "utf8", maxBuffer: 64 << 20 })
+    .split("\0").filter((f) => f.endsWith(".go")))].sort();
+}
+
 function main() {
   const source = readFileSync(path.join(root, "scripts/dev/test-local.sh"), "utf8");
   // Package dirs of tracked non-test Go files under internal/ (test files never link into a shipped binary).
-  const files = execFileSync("git", ["ls-files", "-z", "--", "internal/"], { cwd: root, encoding: "utf8", maxBuffer: 64 << 20 })
-    .split("\0").filter((f) => f.endsWith(".go"));
+  const files = backendGoFiles();
   const dirs = [...new Set(files.filter((f) => !f.endsWith("_test.go")).map((f) => path.posix.dirname(f)))].sort();
   const errors = [...classifyBackendCoverage(source, dirs), ...classifyBackendFiles(source, files)];
   if (errors.length) {

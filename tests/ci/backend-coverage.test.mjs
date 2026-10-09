@@ -9,13 +9,28 @@
 // Used by: scripts/dev/test-node.sh, CI.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const usage = readFileSync(path.join(root, "scripts/dev/test-local.sh"), "utf8");
+
+test("round 3: the real Git inventory includes a new route before git add", async () => {
+  const { backendGoFiles } = await import("../../scripts/dev/check-backend-coverage.mjs");
+  assert.equal(typeof backendGoFiles, "function");
+  const fixture = mkdtempSync(path.join(tmpdir(), "ci-select-file-inventory-"));
+  try {
+    execFileSync("git", ["init", "-q"], { cwd: fixture });
+    mkdirSync(path.join(fixture, "internal/httpapi"), { recursive: true });
+    writeFileSync(path.join(fixture, "internal/httpapi/tracked.go"), "// Synthetic inventory fixture, never compiled.\n");
+    execFileSync("git", ["add", "internal/httpapi/tracked.go"], { cwd: fixture });
+    writeFileSync(path.join(fixture, "internal/httpapi/untracked_test.go"), "// Synthetic inventory fixture, never compiled.\n");
+    assert.deepEqual(backendGoFiles(fixture), ["internal/httpapi/tracked.go", "internal/httpapi/untracked_test.go"]);
+  } finally { rmSync(fixture, { recursive: true, force: true }); }
+});
 
 test("round 3: a new httpapi file is unclassified until explicitly covered", async () => {
   const { classifyBackendFiles } = await import("../../scripts/dev/check-backend-coverage.mjs");
