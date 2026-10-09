@@ -212,12 +212,16 @@ func runCatalogCoreBrowser(t *testing.T, productEditor bool) {
 	if productEditor {
 		prefix := "pe" + tag
 		// Preserve the original exact four-product fence. Exclude only the
-		// three explicitly named mobile matrices, each validated below.
-		if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND name LIKE $3 AND name NOT IN ($4,$5,$6)`, tenant, store, prefix+"%", prefix+" mobile matrix zh-TW", prefix+" mobile matrix zh-CN", prefix+" mobile matrix en"); n != 4 {
+		// three explicitly named mobile matrices and three axis-removal
+		// products, each validated below. No broad name-pattern exclusion.
+		if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND name LIKE $3 AND name NOT IN ($4,$5,$6,$7,$8,$9)`, tenant, store, prefix+"%", prefix+" mobile matrix zh-TW", prefix+" mobile matrix zh-CN", prefix+" mobile matrix en", prefix+" mobile axis remove zh-TW", prefix+" mobile axis remove zh-CN", prefix+" mobile axis remove en"); n != 4 {
 			t.Fatalf("PE: expected 4 products including the single committed lost-response copy, got %d", n)
 		}
-		if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND name LIKE $3`, tenant, store, prefix+"%"); n != 7 {
-			t.Fatalf("PE: expected original 4 plus exactly 3 mobile matrices, got %d products", n)
+		if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND name LIKE $3 AND name NOT IN ($4,$5,$6)`, tenant, store, prefix+"%", prefix+" mobile axis remove zh-TW", prefix+" mobile axis remove zh-CN", prefix+" mobile axis remove en"); n != 7 {
+			t.Fatalf("PE: expected original 4 plus exactly 3 mobile matrices excluding named axis-removal products, got %d products", n)
+		}
+		if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND name LIKE $3`, tenant, store, prefix+"%"); n != 10 {
+			t.Fatalf("PE: expected original 7 plus exactly 3 axis-removal products, got %d products", n)
 		}
 		if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.skus s JOIN catalog.products p ON p.id=s.product_id WHERE p.tenant_id=$1 AND p.store_id=$2 AND p.name=$3 AND s.price_minor=8000 AND s.currency='TWD' AND s.inventory_tracked`, tenant, store, prefix+" single"); n != 1 {
 			t.Fatal("PE: exact TWD single SKU readback failed")
@@ -257,8 +261,47 @@ func runCatalogCoreBrowser(t *testing.T, productEditor bool) {
 					t.Fatalf("PE mobile %s %s/S: exact edited price/compare/stock/code/keyword/active readback failed (matches=%d)", locale.name, row.option, n)
 				}
 			}
+			name = prefix + " mobile axis remove " + locale.name
+			sizeName := map[string]string{"zh-TW": "尺寸", "zh-CN": "尺寸", "en": "Size"}[locale.name]
+			if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.products
+				WHERE tenant_id=$1 AND store_id=$2 AND name=$3 AND status='draft'
+				AND options=jsonb_build_array(jsonb_build_object('name',$4::text,'values',jsonb_build_array('S')))`, tenant, store, name, sizeName); n != 1 {
+				t.Fatalf("PE axis remove %s: expected exactly one product with only Size[S], got %d", locale.name, n)
+			}
+			if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.skus s
+				JOIN catalog.products p ON p.id=s.product_id AND p.tenant_id=s.tenant_id AND p.store_id=s.store_id
+				WHERE p.tenant_id=$1 AND p.store_id=$2 AND p.name=$3`, tenant, store, name); n != 3 {
+				t.Fatalf("PE axis remove %s: expected two archived old SKUs plus one replacement, got %d", locale.name, n)
+			}
+			for _, row := range []struct {
+				option, index            string
+				price, compare, quantity int64
+			}{{"White", "0", 9000, 13000, 3}, {"Black", "1", 9100, 13100, 4}} {
+				if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.skus s
+					JOIN catalog.products p ON p.id=s.product_id AND p.tenant_id=s.tenant_id AND p.store_id=s.store_id
+					WHERE p.tenant_id=$1 AND p.store_id=$2 AND p.name=$3
+					AND s.option_values=ARRAY[$4::text,'S'] AND s.status='archived'
+					AND s.price_minor=$5 AND s.compare_at_minor=$6 AND s.currency='TWD'
+					AND s.inventory_tracked AND s.max_per_order IS NULL
+					AND s.code ~ ('^M[0-9]{10}-A' || $7::text || '-' || $8::text || '$')
+					AND (SELECT coalesce(sum(b.on_hand),0) FROM inventory.balances b
+					  WHERE b.tenant_id=s.tenant_id AND b.store_id=s.store_id AND b.sku_id=s.id)=$9`,
+					tenant, store, name, row.option, row.price, row.compare, locale.index, row.index, row.quantity); n != 1 {
+					t.Fatalf("PE axis remove %s %s/S: old SKU not archived with original values intact (matches=%d)", locale.name, row.option, n)
+				}
+			}
+			if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.skus s
+				JOIN catalog.products p ON p.id=s.product_id AND p.tenant_id=s.tenant_id AND p.store_id=s.store_id
+				WHERE p.tenant_id=$1 AND p.store_id=$2 AND p.name=$3 AND s.status='active'
+				AND s.option_values=ARRAY['S'] AND s.price_minor=9500 AND s.compare_at_minor=14500
+				AND s.currency='TWD' AND s.inventory_tracked AND s.max_per_order IS NULL
+				AND s.code ~ ('^M[0-9]{10}-A' || $4::text || '-S$')
+				AND (SELECT coalesce(sum(b.on_hand),0) FROM inventory.balances b
+				  WHERE b.tenant_id=s.tenant_id AND b.store_id=s.store_id AND b.sku_id=s.id)=9`, tenant, store, name, locale.index); n != 1 {
+				t.Fatalf("PE axis remove %s: exact active Size[S] replacement price/compare/stock/code readback failed (matches=%d)", locale.name, n)
+			}
 		}
-		t.Logf("PASS PE12-17: TWD tenant, original 4 products plus 3 mobile matrices with exact edited SKU readback; evidence=%s", evidence)
+		t.Logf("PASS PE12-17: TWD tenant, original 4 products plus 3 mobile matrices and 3 real axis-removal products with exact archived/replacement SKU readback; evidence=%s", evidence)
 		return
 	}
 
