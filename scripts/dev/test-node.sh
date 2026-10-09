@@ -59,7 +59,7 @@ node --test --experimental-strip-types tests/admin/import-wire-model.test.ts tes
 
 # CI speed-up (2026-10-07): LC_SWEEP_SHARD partition + whole-run aggregate (click sweep, visual lint), the foundation shard plan and the gates.yml matrix planner. No browser, no PG.
 node --test --experimental-strip-types tests/ui/sweep-shard-lib.test.mjs
-node --test tests/ci/shard-plan.test.mjs tests/ci/ci-plan.test.mjs tests/ci/pr-modes.test.mjs tests/ci/mode-registry.test.mjs tests/ci/backend-coverage.test.mjs
+node --test tests/ci/shard-plan.test.mjs tests/ci/ci-plan.test.mjs tests/ci/pr-modes.test.mjs tests/ci/mode-registry.test.mjs tests/ci/playwright-deps.test.mjs tests/ci/backend-coverage.test.mjs
 
 # LC-U2b browser registration (DB-free); the real UI spec is CI-only and must select its own authority suite.
 node --test --experimental-strip-types tests/admin/inbox-privacy.test.ts tests/admin/inbox-copy.test.ts tests/admin/inbox-bff.test.ts
