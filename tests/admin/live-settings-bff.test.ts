@@ -63,7 +63,11 @@ let answer: { status: number; body: string; contentType?: string } = {
   body: JSON.stringify({ items: [], next_cursor: "", unread_total: 0 }),
 };
 let storesStatus = 200;
-let permissions = ["live:read", "live:manage", "inbox:read", "inbox:reply"];
+let storeVisible = true;
+let storesCalls = 0;
+let afterResource: (() => void) | undefined;
+let permissions: string[] | undefined = ["live:read", "live:manage", "inbox:read", "inbox:reply"];
+let role: string | undefined;
 const upstream = createServer((req, res) => {
   const chunks: Buffer[] = [];
   req.on("data", (chunk) => chunks.push(chunk));
@@ -71,19 +75,21 @@ const upstream = createServer((req, res) => {
     res.setHeader("content-type", "application/json");
     res.setHeader("cache-control", "private, no-store");
     if (req.url === "/v1/admin/stores") {
+      storesCalls++;
       res.statusCode = storesStatus;
       res.end(
         JSON.stringify(
           storesStatus === 200
             ? {
-                items: [
+                items: storeVisible ? [
                   {
                     id: store,
                     name: "Synthetic store",
                     currency: "TWD",
                     permissions,
+                    role,
                   },
-                ],
+                ] : [],
               }
             : { code: "unauthorized" },
         ),
@@ -98,6 +104,7 @@ const upstream = createServer((req, res) => {
       body: Buffer.concat(chunks).toString(),
     });
     res.statusCode = answer.status;
+    afterResource?.();
     res.end(answer.body);
   });
 });
@@ -184,6 +191,120 @@ function reply(body: unknown, status = 200) {
   answer = { status, body: JSON.stringify(body) };
 }
 test.after(() => upstream.close());
+for (const method of ["GET", "POST"]) {
+  test(`reminder route absence ${method} is local only after fresh store and permission proof`, async () => {
+    answer = { status: 404, body: "404 page not found\n", contentType: "text/plain; charset=utf-8" };
+    const before = seen.length, authBefore = storesCalls;
+    const result = await call(`${roots}/reminders`, method);
+    assert.equal(result.status, 404);
+    assert.equal(result.body.code, "reminders_unavailable");
+    assert.match(result.headers.get("cache-control")!, /private.*no-store/);
+    assert.equal(seen.length, before + 1, "one explicit request, including POST");
+    assert.equal(storesCalls, authBefore + 2, "fresh scope proof after the missing route");
+    assert.equal(seen.at(-1)!.body, "");
+  });
+  test(`reminder route absence ${method} never aliases an initially revoked store`, async () => {
+    answer = { status: 404, body: "404 page not found\n", contentType: "text/plain" };
+    storeVisible = false;
+    const before = seen.length;
+    try {
+      const result = await call(`${roots}/reminders`, method);
+      assert.equal(result.status, 404);
+      assert.equal(result.body.code, "not_found");
+      assert.equal(seen.length, before);
+    } finally { storeVisible = true; }
+  });
+  test(`reminder route absence ${method} detects store loss at the fresh recheck`, async () => {
+    answer = { status: 404, body: "404 page not found\n", contentType: "text/plain" };
+    afterResource = () => { storeVisible = false; };
+    try {
+      const result = await call(`${roots}/reminders`, method);
+      assert.equal(result.status, 404);
+      assert.equal(result.body.code, "not_found");
+    } finally { afterResource = undefined; storeVisible = true; }
+  });
+  test(`reminder route absence ${method} requires fresh complete method permissions`, async () => {
+    const required = method === "GET" ? ["inbox:read"] : ["live:manage", "inbox:reply"];
+    const original = permissions!;
+    try {
+      for (const missing of required) {
+        permissions = original;
+        answer = { status: 404, body: "404 page not found\n", contentType: "text/plain" };
+        afterResource = () => { permissions = original.filter((p) => p !== missing); };
+        const result = await call(`${roots}/reminders`, method);
+        assert.equal(result.status, 403);
+        assert.equal(result.body.code, "forbidden");
+      }
+    } finally { afterResource = undefined; permissions = original; }
+  });
+  test(`reminder route ${method} preserves JSON not_found and existing authorization failures`, async () => {
+    for (const status of [404, 401, 403]) {
+      const code = status === 404 ? "not_found" : status === 401 ? "unauthorized" : "forbidden";
+      reply({ code, message: "PRIVATE-DIAGNOSTIC" }, status);
+      const before = storesCalls, writes = seen.length;
+      const result = await call(`${roots}/reminders`, method);
+      assert.equal(result.status, status);
+      assert.equal(result.body.code, code);
+      assert.ok(!JSON.stringify(result.body).includes("PRIVATE"));
+      assert.equal(storesCalls, before + 1);
+      assert.equal(seen.length, writes + 1);
+      if (status === 401) assert.match(result.headers.get("set-cookie")!, /Max-Age=0/);
+    }
+    reply({ code: "reminders_unavailable" }, 404);
+    assert.equal((await call(`${roots}/reminders`, method)).body.code, "retry_later");
+  });
+  test(`reminder route absence ${method} refuses unknown grants but accepts a current owner`, async () => {
+    const original = permissions;
+    try {
+      answer = { status: 404, body: "404 page not found\n", contentType: "text/plain" };
+      afterResource = () => { permissions = undefined; };
+      assert.equal((await call(`${roots}/reminders`, method)).body.code, "forbidden");
+      role = "owner";
+      assert.equal((await call(`${roots}/reminders`, method)).body.code, "reminders_unavailable");
+    } finally { afterResource = undefined; permissions = original; role = undefined; }
+  });
+  test(`reminder route absence ${method} fails closed when fresh authentication cannot be proved`, async () => {
+    for (const status of [401, 403, 503]) {
+      answer = { status: 404, body: "404 page not found\n", contentType: "text/plain" };
+      afterResource = () => { storesStatus = status; };
+      try {
+        const result = await call(`${roots}/reminders`, method);
+        assert.equal(result.status, status);
+        assert.equal(result.body.code, status === 401 ? "unauthorized" : status === 403 ? "forbidden" : "retry_later");
+        if (status === 401) assert.match(result.headers.get("set-cookie")!, /Max-Age=0/);
+      } finally { afterResource = undefined; storesStatus = 200; }
+    }
+  });
+}
+test("successful reminder requests retain one store auth check and one command dispatch", async () => {
+  for (const method of ["GET", "POST"]) {
+    reply(method === "GET"
+      ? { sent: [], queued: 0, failed: [], followup: [], link: null }
+      : { queued: 1, already_reminded: 0, followup: 0, restricted: 0, refused: 0, truncated: false });
+    const before = storesCalls, calls = seen.length;
+    assert.equal((await call(`${roots}/reminders`, method)).status, 200);
+    assert.equal(storesCalls, before + 1);
+    assert.equal(seen.length, calls + 1);
+  }
+});
+test("reminder absence proof rejects arbitrary text, wrong media types and unbounded bodies", async () => {
+  for (const [body, contentType] of [
+    ["PRIVATE missing store", "text/plain"],
+    ["404 page not found\n", "text/html"],
+    ["404 page not found\n", "application/json"],
+    ["404 page not found\n" + "x".repeat(1024 * 1024), "text/plain"],
+  ]) {
+    answer = { status: 404, body, contentType };
+    const before = storesCalls;
+    const result = await call(`${roots}/reminders`);
+    assert.equal(result.status, 503);
+    assert.equal(result.body.code, "retry_later");
+    assert.equal(storesCalls, before + 1);
+    assert.ok(!JSON.stringify(result.body).includes("PRIVATE"));
+  }
+  answer = { status: 404, body: "404 page not found\n", contentType: "text/plain" };
+  assert.equal((await call("live-settings/sold-out-reply")).body.code, "retry_later");
+});
 test("settings actual route permits only auth-scoped live reads/writes and keeps CAS receipt", async () => {
   reply(setting);
   let r = await call("live-settings/sold-out-reply");

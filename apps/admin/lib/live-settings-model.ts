@@ -328,6 +328,8 @@ export const settingsCodes = new Set([
   "unauthorized",
   "forbidden",
   "not_found",
+  // Internal BFF-only proof of an absent optional route; never accepted directly from upstream JSON.
+  "reminders_unavailable",
   "conflict",
   "version_conflict",
   "idempotency_conflict",

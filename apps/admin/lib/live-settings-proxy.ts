@@ -30,6 +30,29 @@ function denied(status: number, code: string) {
   if (status === 401) clearAuthCookies(response.headers);
   return response;
 }
+function scopeRefusal(
+  listed: Awaited<ReturnType<typeof authenticatedStores>>,
+  store: string,
+  required: string[],
+  proof = false,
+) {
+  if (!listed.stores) {
+    const status = listed.response.status;
+    return denied(
+      status === 401 || status === 403 ? status : 503,
+      status === 401 ? "unauthorized" : status === 403 ? "forbidden" : "retry_later",
+    );
+  }
+  const current = listed.stores.find((s) => s.id === store);
+  if (!current) return denied(404, "not_found");
+  if (
+    current.role !== "owner" &&
+    (proof || current.permissions) &&
+    !required.every((p) => current.permissions?.includes(p))
+  )
+    return denied(403, "forbidden");
+  return null;
+}
 /** Bind each request to the signed server session; no host/body authority and no diagnostic response bodies. */
 export async function liveSettingsProxy(
   request: Request,
@@ -60,29 +83,9 @@ export async function liveSettingsProxy(
     return denied(422, "invalid_request");
   try {
     const listed = await authenticatedStores(token);
-    if (!listed.stores)
-      return denied(
-        listed.response.status === 401
-          ? 401
-          : listed.response.status === 403
-            ? 403
-            : 503,
-        listed.response.status === 401
-          ? "unauthorized"
-          : listed.response.status === 403
-            ? "forbidden"
-            : "retry_later",
-      );
-    const current = listed.stores.find((s) => s.id === store);
-    if (!current) return denied(404, "not_found");
-    if (
-      current.role !== "owner" &&
-      current.permissions &&
-      !settingsPermissions(route.kind, request.method).every((p) =>
-        current.permissions!.includes(p),
-      )
-    )
-      return denied(403, "forbidden");
+    const required = settingsPermissions(route.kind, request.method);
+    const refused = scopeRefusal(listed, store, required);
+    if (refused) return refused;
     let body: string | undefined;
     const bodyless =
       read || route.kind === "remove" || route.kind === "reminders";
@@ -135,6 +138,17 @@ export async function liveSettingsProxy(
     );
     if (response.status === 401) return denied(401, "unauthorized");
     if (response.status === 403) return denied(403, "forbidden");
+    if (
+      route.kind === "reminders" && response.status === 404 &&
+      response.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase() === "text/plain"
+    ) {
+      // Only Go's bounded unmounted-route response can be local; JSON not_found remains a privacy boundary.
+      if (await readBody(response, "text/plain", 19) !== "404 page not found\n")
+        return denied(503, "retry_later");
+      // Missing routes cannot authorize a principal. Recheck current store membership and exact method grants.
+      const fresh = scopeRefusal(await authenticatedStores(token), store, required, true);
+      return fresh ?? denied(404, "reminders_unavailable");
+    }
     let value: unknown;
     try {
       value = JSON.parse(
@@ -150,7 +164,7 @@ export async function liveSettingsProxy(
           : null;
       return denied(
         response.status,
-        typeof code === "string" && settingsCodes.has(code)
+        typeof code === "string" && code !== "reminders_unavailable" && settingsCodes.has(code)
           ? code
           : "retry_later",
       );
