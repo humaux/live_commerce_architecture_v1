@@ -2,6 +2,7 @@
 // Depends on: live-console-v1 CommentStream DTO; no browser storage or identity inference.
 // Used by: CommentStream hook and Node acceptance tests.
 // Invariant: deduped buffer is oldest-first by (created_at instant, ref); cap evicts only the oldest rows.
+// Deletions are inferred only from a non-empty, same-epoch periodic HEAD window, never incremental/history reads.
 export type CommentFilter = "all" | "keyword" | "private" | "unreplied";
 /** A2 SQL marks carry operation enums; render the same five delivery states as Go inbox.sendState. */
 export function commentSendState(state:string):"queued"|"sent"|"failed"|"blocked"|"unknown" {
@@ -68,27 +69,34 @@ export const emptyComments = (): CommentBuffer => ({
   older: null,
   reset: false,
 });
-/** Explicit reset/epoch drift clears old data before a fresh read; historical reads never move the live cursor. */
+const compareComments = (a: StreamComment, b: StreamComment) =>
+  Date.parse(a.created_at) - Date.parse(b.created_at) || (a.ref < b.ref ? -1 : a.ref > b.ref ? 1 : 0);
+/** Merge transient rows; reconcileHead is enabled only by the hook's periodic HEAD read. Historical reads never move the live cursor. */
 export function applyCommentPage(
   old: CommentBuffer,
   page: CommentPage,
   older: boolean,
+  reconcileHead = false,
 ): CommentBuffer {
   if (page.reset || (old.epoch !== 0 && old.epoch !== page.epoch))
     return { ...emptyComments(), reset: true };
   // Historical paging stops at the memory cap: never consume a cursor for an unseen page.
   if (older && old.items.length >= 1000) return old;
+  let retained = old.items;
+  if (reconcileHead && !older && page.items.length > 0) {
+    const floor = page.items.reduce((a, b) => compareComments(a, b) <= 0 ? a : b);
+    const refs = new Set(page.items.map(row => row.ref));
+    retained = old.items.filter(row => compareComments(row, floor) < 0 || refs.has(row.ref));
+  }
   const map = new Map(
-    (older ? [...page.items, ...old.items] : [...old.items, ...page.items]).map(
+    (older ? [...page.items, ...retained] : [...retained, ...page.items]).map(
       (row) => [row.ref, row],
     ),
   );
   return {
     epoch: page.epoch,
     // FB bridge and IG fallback arrive in opposite orders. Never use arrival order for retention.
-    items: [...map.values()].sort((a, b) =>
-      Date.parse(a.created_at) - Date.parse(b.created_at) || (a.ref < b.ref ? -1 : a.ref > b.ref ? 1 : 0),
-    ).slice(-1000),
+    items: [...map.values()].sort(compareComments).slice(-1000),
     next: older ? old.next : page.next,
     older: older || !old.epoch ? page.older_cursor : old.older,
     reset: false,

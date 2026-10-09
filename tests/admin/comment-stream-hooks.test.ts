@@ -85,6 +85,35 @@ test("PR18 A8 hides clear before effects even without pagination",async t=>{
   env.document.visibilityState="hidden";env.document.dispatchEvent(new Event("visibilitychange"));
   assert.equal(h.slots.some(s=>s.value?.items?.some((r:any)=>r.display_name==="PRIVATE_A8_NAME")),false);
 });
+test("PR18 deletion HEAD clears selected comment composer but keeps history and public guard",async t=>{
+  const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-09T00:00:00Z")});
+  let deleted=false,headReads=0;
+  const history={...row,ref:"100",text:"Synthetic old history",created_at:"2026-10-08T00:00:00Z"};
+  const survivor={...row,ref:"123_455",text:"Synthetic surviving recent",created_at:row.created_at};
+  globalThis.fetch=async(input,init)=>{
+    const url=String(input);
+    if(init?.method==="POST")return response({send_state:"queued",operation_id:sid,outbound_id:sid});
+    if(url.includes("message-templates"))return response({items:[]});
+    if(url.includes("after_seq"))return response(page(1,[]));
+    headReads++;return response(page(1,deleted?[survivor]:[history,row,survivor]));
+  };
+  const cap={state:"ok",reason:"ok",evidence:"MOCK",checked_at:null};
+  const h=env.mount(()=>CommentStream({store,session:sid,locale:"en",platform:"facebook",capabilities:{facebook:{private_reply:cap,reply_public:cap}}} as any));await h.settle();
+  node(h,n=>n.props["data-testid"]===`comment-select-${row.ref}`).props.onClick();await h.settle();
+  node(h,n=>n.type==="button"&&textOf(n)==="Public reply").props.onClick();h.flush();
+  node(h,n=>n.props["data-testid"]==="comment-reply-text").props.onChange({target:{value:"Synthetic pending reply"}});h.flush();
+  node(h,n=>n.type==="form").props.onSubmit({preventDefault(){}});await h.settle();
+  const guard=[...stored.keys()].find(k=>k.startsWith("live-comment-public-pending:"));assert.ok(guard);
+  const headBefore=headReads;deleted=true;
+  for(let n=0;n<3;n++){t.mock.timers.tick(3000);await h.settle();}
+  assert.ok(textOf(h.output).includes("SYNTHETIC_COMMENT"),"incremental reads cannot imply deletion");
+  t.mock.timers.tick(3000);await h.settle();
+  assert.equal(headReads,headBefore+1,"only the existing10s cadence re-reads the head");
+  assert.equal(nodes(h.output).some(n=>n.props["data-testid"]===`comment-row-${row.ref}`),false);
+  assert.equal(nodes(h.output).some(n=>n.props["data-testid"]==="comment-reply"),false);
+  assert.ok(textOf(h.output).includes("Synthetic old history"));assert.equal(stored.get(guard!),"1");
+  assert.equal(h.slots.some(s=>s.value?.ref===row.ref),false,"selection is cleared, not only hidden");
+});
 test("PR18 quiet A2 stream refreshes delayed claim marks without a new sequence or user refresh",async t=>{
   const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-08T01:00:00Z")});
   let completed=false;const urls:string[]=[];

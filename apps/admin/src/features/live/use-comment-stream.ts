@@ -84,14 +84,16 @@ export function useCommentStream(
         );
         if (!alive || !fence.current(ticket)) return;
         let next = applyCommentPage(current.current, page, older);
-        // A2 attaches marks only to returned refs. Reconcile at most one recent 50-row window
-        // per 10 seconds, preserving the incremental cursor and the merchant's history cursor.
+        // Only the existing 10s HEAD window is evidence for deletions; incremental/history
+        // reads cannot establish absence. Preserve their cursors and older merchant history.
         if (!older && !next.reset) {
           if (!current.current.next) marksReadAt.current = Date.now();
           else if (Date.now() - marksReadAt.current >= 10000) {
             const head = parseCommentPage(await inboxRead<unknown>(store, `${root}?limit=50`, ticket.signal));
             if (!alive || !fence.current(ticket)) return;
-            const refreshed = applyCommentPage(next, head, false);
+            const refreshed = applyCommentPage(next, head, false, true);
+            if (!refreshed.reset && head.items.length > 0)
+              select(selected => selected?.ref && !refreshed.items.some(row => row.ref === selected.ref) ? null : selected);
             next = refreshed.reset ? refreshed : { ...refreshed, next: next.next, older: next.older };
             marksReadAt.current = Date.now();
           }

@@ -20,6 +20,36 @@ import {
 
 const sid = "22222222-2222-4222-8222-222222222222";
 const path = `live-sessions/${sid}/comments`;
+const deletionRows=[1,2,3,4].map(n=>({ref:String(n),created_at:new Date(n*1000).toISOString(),text:`Synthetic ${n}`}));
+const deletionPage=(items:unknown[])=>({epoch:1,reset:false,items,next:{epoch:1,seq:4},older_cursor:"history"}) as never;
+test("PR18 deletion HEAD removes absent refs inside its window",()=>{
+  const old=applyCommentPage(emptyComments(),deletionPage(deletionRows),false);
+  const result=applyCommentPage(old,deletionPage([deletionRows[2]]),false,true);
+  assert.deepEqual(result.items.map(r=>r.ref),["1","2","3"]);
+});
+test("PR18 deletion HEAD keeps paged history below its oldest tuple",()=>{
+  const old=applyCommentPage(emptyComments(),deletionPage(deletionRows),false);
+  const result=applyCommentPage(old,deletionPage([deletionRows[3]]),false,true);
+  assert.deepEqual(result.items.map(r=>r.ref),["1","2","3","4"]);
+});
+test("PR18 deletion is never inferred from incremental or older pages",()=>{
+  const old=applyCommentPage(emptyComments(),deletionPage(deletionRows),false);
+  for(const older of [false,true]){
+    const result=applyCommentPage(old,deletionPage([deletionRows[2]]),older);
+    assert.deepEqual(result.items.map(r=>r.ref),["1","2","3","4"]);
+  }
+  assert.deepEqual(applyCommentPage(old,deletionPage([deletionRows[2]]),true,true).items,old.items);
+});
+test("PR18 empty deletion HEAD is not evidence that any ref was deleted",()=>{
+  const old=applyCommentPage(emptyComments(),deletionPage(deletionRows),false);
+  assert.deepEqual(applyCommentPage(old,deletionPage([]),false,true).items,old.items);
+});
+test("PR18 deletion floor compares equal timestamp refs and timezone instants",()=>{
+  const items=deletionRows.map(r=>({...r,created_at:"2026-10-09T00:00:00Z"}));
+  const old=applyCommentPage(emptyComments(),deletionPage(items),false);
+  const result=applyCommentPage(old,deletionPage([{...items[2],created_at:"2026-10-09T08:00:00+08:00"}]),false,true);
+  assert.deepEqual(result.items.map(r=>r.ref),["1","2","3"]);
+});
 test("PR18 mixed FB and IG page orders normalize chronologically after dedupe", () => {
   const row=(ref:string,created_at:string)=>({ref,created_at,text:ref});
   const a=row("1","2026-10-09T00:00:01Z"),b=row("2","2026-10-09T00:00:02Z"),c=row("3","2026-10-09T08:00:02+08:00"),d=row("4","2026-10-09T00:00:03Z");
