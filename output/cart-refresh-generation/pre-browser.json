@@ -1,0 +1,7 @@
+{
+  "source_commit": "3b3350f8aaf7a4d586229cf492558bc59c6432a3",
+  "tracked_generated": {
+    "apps/storefront/next-env.d.ts": "1862ac4bbbc5192d4bf562161df66ea547ed3e67173100656ab606ae9797db2b"
+  },
+  "status": "?? output/cart-refresh-generation/\n"
+}
