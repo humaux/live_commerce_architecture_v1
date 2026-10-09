@@ -400,6 +400,8 @@ export function registerProductEditorAcceptance() {
       await expect(page.locator('[data-testid^="matrix-row-"]')).toHaveCount(
         12,
       );
+      // setInputFiles can target disabled inputs; wait for the real media/fence readiness.
+      await expect(page.getByTestId("photo-input")).toBeEnabled();
       await page.getByTestId("photo-input").setInputFiles({
         name: "matrix.png",
         mimeType: "image/png",
