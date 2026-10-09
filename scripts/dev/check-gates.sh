@@ -43,7 +43,7 @@ for s in scripts/dev/test-local.sh scripts/dev/test-local-runtime.sh scripts/dev
 done
 # Validate the same registry the selector reads; duplicate cases cannot silently shadow a mode.
 node --input-type=module -e 'import {readFileSync} from "node:fs"; import {modeEntries} from "./scripts/dev/pr-modes.mjs"; modeEntries(readFileSync("scripts/dev/test-local.sh","utf8"));'
-# CI-SELECT: every internal package dir must be wired by some browser mode's lc_covers data or be explicitly listed in
+# CI-SELECT: every internal package dir AND every Go file of split packages (httpapi) must be wired by lc_covers or listed in
 # BACKEND_ONLY_PACKAGES; browser-universe modes must carry the lc_covers line. A new/unclassified internal package fails here.
 node scripts/dev/check-backend-coverage.mjs
 # Worker-authority split (0096): no migration numbered after it may grant to the retired shared commerce_worker role

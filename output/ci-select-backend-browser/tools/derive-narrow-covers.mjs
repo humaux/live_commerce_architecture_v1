@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Purpose: round-2 (owner decision 2026-10-10 "Narrow per domain + nightly") evidence derivation of each browser mode's
+// Purpose: round-2/3 (owner decision 2026-10-10 "Narrow per domain + nightly") evidence derivation of each browser mode's
 //   lc_covers DOMAIN packages, replacing round 1's import-closure covers (48/51 modes covered all 70 internal packages
 //   because every harness boots the full httpapi.NewHandler, which made any backend PR as heavy as a UI PR).
 //   Evidence per mode, never guesses:
@@ -31,7 +31,7 @@
 import { readFileSync, readdirSync, writeFileSync, existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
-import { modeEntries, browserModes, SHARED_BACKEND_PACKAGES, BACKEND_ONLY_PACKAGES } from "../../../scripts/dev/pr-modes.mjs";
+import { modeEntries, browserModes, SHARED_BACKEND_PACKAGES, BACKEND_ONLY_PACKAGES, FILE_CLASSIFIED_PACKAGES, backendPathMatches } from "../../../scripts/dev/pr-modes.mjs";
 
 const root = path.resolve(import.meta.dirname, "../../..");
 const read = (rel) => readFileSync(path.join(root, rel), "utf8");
@@ -948,7 +948,67 @@ for (const d of zero) {
 }
 
 const narrow = {};
-for (const [m, list] of Object.entries(coversOnly)) narrow[m] = list.filter((p) => !shared.some((s) => under(p, s) || under(s, p)));
+for (const [m, list] of Object.entries(coversOnly)) narrow[m] = list.filter((p) => !FILE_CLASSIFIED_PACKAGES.includes(p) && !shared.some((s) => under(p, s) || under(s, p)));
+
+// Round 3: preserve ALL round-2 domain-package coverage. Route-file coverage is a conservative join to the
+// actual domain services a transport imports (not NewHandler's full API import closure). Broad ${path} URL
+// rows in the old derivation are NOT proof of a file-level call: they matched unrelated routes and missed
+// live-console's concatenated A2 URL. A direct service-import join also covers those dynamic callers without
+// guessing a per-mode allowlist; its ceiling is the existing domain set, with nightly as the safety net.
+const fileModes = new Map();
+const fileEvidence = {};
+const sharedFile = (file) => shared.some((s) => backendPathMatches(file, s));
+for (const file of httpapiIdx.files) {
+  if (sharedFile(file.rel)) continue;
+  const services = [...new Set(file.imports.values())].filter((p) => !shared.some((s) => backendPathMatches(p, s)) && !backendOnly.some((b) => backendPathMatches(p, b)));
+  const targets = new Set();
+  fileEvidence[file.rel] = { services: services.map((service) => ({ service, site: `${file.rel}:${lineOf(file.raw, file.raw.indexOf(`"livecommerce/${service}"`))}` })), callers: [], basis: "conservative service-domain join, not a direct URL claim" };
+  for (const [mode, list] of Object.entries(narrow)) {
+    for (const service of services) {
+      if (!list.some((p) => backendPathMatches(service, p))) continue;
+      targets.add(mode);
+    }
+  }
+  if (!targets.size) throw new Error(`${file.rel}: no domain service coverage; classify explicitly, never infer BACKEND_ONLY from missing URL evidence`);
+  fileModes.set(file.rel, targets);
+}
+
+// Same-package helper owners inherit all caller domains (e.g. adsRoute, customerRoute, metaConnectScope).
+// Only production files participate; shared helper owners already select all Go-booting modes.
+let changed;
+do {
+  changed = false;
+  for (const owner of httpapiIdx.files) {
+    const targets = fileModes.get(owner.rel);
+    if (!targets) continue;
+    for (const caller of httpapiIdx.files) {
+      if (caller.rel === owner.rel || !fileModes.has(caller.rel)) continue;
+      // Bare function values (noPrepare passed by collections.go), not only calls, are dependencies too.
+      if (!owner.funcs.some((fn) => new RegExp(`(?<![.\\w])${fn.name}\\b`).test(caller.bare))) continue;
+      if (!fileEvidence[owner.rel].callers.includes(caller.rel)) fileEvidence[owner.rel].callers.push(caller.rel);
+      for (const mode of fileModes.get(caller.rel)) if (!targets.has(mode)) {
+        targets.add(mode); changed = true;
+      }
+    }
+  }
+} while (changed);
+
+const allHttpFiles = execFileSync("git", ["ls-files", "-z", "--", "internal/httpapi/"], { cwd: root, encoding: "utf8" }).split("\0").filter((f) => f.endsWith(".go"));
+const testOwners = { "internal/httpapi/for_buyer_test.go": "internal/httpapi/live_console.go", "internal/httpapi/refunds_env_test.go": "internal/httpapi/refunds.go" };
+for (const file of allHttpFiles) {
+  if (sharedFile(file) || !file.endsWith("_test.go")) continue;
+  const owner = testOwners[file] ?? file.replace(/_test\.go$/, ".go");
+  if (!fileModes.has(owner)) throw new Error(`${file}: test has no classified production sibling; add an evidenced owner or SHARED reason`);
+  fileModes.set(file, new Set(fileModes.get(owner)));
+  fileEvidence[file] = { test_owner: owner, basis: "production adapter test ownership" };
+}
+for (const [file, targets] of fileModes) {
+  for (const mode of targets) narrow[mode].push(file);
+  fileEvidence[file].modes = [...targets].sort();
+  diagnostics.push(`FILE ${file}: ${[...targets].sort().join(" ")}`);
+}
+for (const list of Object.values(narrow)) list.sort();
+writeFileSync(path.join(import.meta.dirname, "file-coverage.json"), JSON.stringify(fileEvidence, null, 1) + "\n");
 
 const out = {};
 for (const e of entries) if (universe.has(e.name)) out[e.name] = derivation[e.name];
@@ -957,6 +1017,7 @@ writeFileSync(path.join(import.meta.dirname, "covers-narrow.json"), JSON.stringi
 
 // unclassified = what scripts/dev/check-backend-coverage.mjs would red: no covers ancestor, no SHARED ancestor, no BACKEND_ONLY entry
 const uncovered = pkgDirs.filter((d) =>
+  !FILE_CLASSIFIED_PACKAGES.includes(d) &&
   !Object.values(coversOnly).some((list) => list.some((c) => under(d, c))) &&
   !shared.some((s) => under(d, s)) && !backendOnly.some((b) => under(d, b)));
 const importers = new Map();

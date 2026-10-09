@@ -87,6 +87,42 @@ test("internal/live/stream.go selects --browser-live-console (PR #30 root cause)
   assert.ok(planPr(["internal/live/stream.go"], usage).modes.includes("--browser-live-console"));
 });
 
+test("round 3: the real PR #30 diff selects live-console without the shared-httpapi explosion", () => {
+  const files = execFileSync("git", ["show", "--format=", "--name-only", "b1bfbeb3"], { cwd: root, encoding: "utf8" }).split("\n").filter(Boolean);
+  assert.ok(files.includes("internal/httpapi/live_stream.go"));
+  const modes = planPr(files, usage).modes;
+  assert.ok(modes.includes("--browser-live-console"));
+  assert.ok(modes.length <= 25, `PR #30 must be domain-scoped, not all 48 browsers: ${modes.length}`);
+});
+
+test("round 3: live_stream transport alone selects live-console but not CVS", () => {
+  const modes = planPr(["internal/httpapi/live_stream.go"], usage).modes;
+  assert.ok(modes.includes("--browser-live-console"));
+  assert.ok(!modes.includes("--browser-cvs"));
+  assert.ok(modes.length <= 25, `live_stream transport selected ${modes.length} modes`);
+});
+
+test("round 3: handler.go and unknown httpapi files remain conservative", () => {
+  for (const file of ["internal/httpapi/handler.go", "internal/httpapi/not_yet_classified.go"]) {
+    const modes = planPr([file], usage).modes;
+    for (const mode of pgFull) assert.ok(modes.includes(mode), `${file} omitted ${mode}`);
+  }
+});
+
+test("round 3: a file-level lc_covers entry is exact, not its sibling directory", () => {
+  const one = appendMode(usage, "--browser-file-one", "  go test ./tests/foundation", "internal/fileprobe/one.go");
+  const source = appendMode(one, "--browser-file-two", "  go test ./tests/foundation", "internal/fileprobe/two.go");
+  assert.deepEqual(planPr(["internal/fileprobe/one.go"], source).modes, [...FOUNDATION, "--browser-file-one"]);
+  assert.deepEqual(planPr(["internal/fileprobe/two.go"], source).modes, [...FOUNDATION, "--browser-file-two"]);
+});
+
+test("round 3: a nonbrowser exact-file declaration cannot replace browser acceptance", () => {
+  const source = appendMode(usage, "--unit-file-probe", "  go test ./tests/foundation", "internal/fileprobe/one.go");
+  const modes = planPr(["internal/fileprobe/one.go"], source).modes;
+  for (const mode of pgFull) assert.ok(modes.includes(mode));
+  assert.ok(!modes.includes("--unit-file-probe"));
+});
+
 test("internal/integrations/metareply/x.go selects --browser-live-console (PR #24 root cause)", () => {
   assert.ok(planPr(["internal/integrations/metareply/x.go"], usage).modes.includes("--browser-live-console"));
 });
@@ -121,7 +157,7 @@ test("round 2 SHARED_BACKEND_PACKAGES: every entry carries a reason and selects 
   for (const [pkg, why] of Object.entries(SHARED_BACKEND_PACKAGES)) {
     assert.ok(pkg.startsWith("internal/"), `${pkg}: only internal packages may be shared`);
     assert.ok(typeof why === "string" && why.length > 10, `${pkg}: needs a one-line reason`);
-    const modes = planPr([`${pkg}/x.go`], usage).modes;
+    const modes = planPr([pkg.endsWith(".go") ? pkg : `${pkg}/x.go`], usage).modes;
     for (const m of pgFull) assert.ok(modes.includes(m), `${pkg}/x.go did not select ${m}`);
   }
 });
@@ -168,9 +204,9 @@ test("cmd/ changes select every PG-fixture browser mode (the modes drive the bin
 
 test("shared platform packages select every PG-fixture browser mode", async () => {
   const { SHARED_BACKEND_PACKAGES } = await import("../../scripts/dev/pr-modes.mjs");
-  for (const pkg of ["internal/platform", "internal/httpapi", "internal/command"]) {
+  for (const pkg of ["internal/platform", "internal/httpapi/handler.go", "internal/command"]) {
     assert.ok(pkg in SHARED_BACKEND_PACKAGES, `${pkg} must be a declared shared platform package`);
-    const modes = planPr([`${pkg}/x.go`], usage).modes;
+    const modes = planPr([pkg.endsWith(".go") ? pkg : `${pkg}/x.go`], usage).modes;
     for (const m of pgFull) assert.ok(modes.includes(m), `${pkg}/x.go did not select ${m}`);
   }
 });

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Purpose: CI-SELECT round-2 evidence — how many browser modes the narrowed lc_covers data selects for the REAL file
+// Purpose: CI-SELECT round-2/3 evidence — how many browser modes the narrowed lc_covers data selects for the REAL file
 //   lists of PR #30 (b1bfbeb3) and PR #24 (3034c407), the mandated single-path cases, and three realistic domain
 //   examples (orders/payments, catalog, migrations), against what round 1's full-closure covers selected for the same
 //   lists (round 1: every internal/ hit selected all 48 Go-seeded modes; cmd//migrations/ selected all 47 PG modes).
@@ -41,6 +41,8 @@ const cases = {
   "mandated: internal/live/stream.go": ["internal/live/stream.go"],
   "mandated: internal/integrations/metareply/x.go": ["internal/integrations/metareply/x.go"],
   "mandated: internal/platform/x.go (SHARED)": ["internal/platform/x.go"],
+  "mandated: internal/httpapi/live_stream.go (file-level)": ["internal/httpapi/live_stream.go"],
+  "mandated: internal/httpapi/handler.go (SHARED)": ["internal/httpapi/handler.go"],
   "mandated: docs+contracts only": ["docs/delivery/GATES.md", "contracts/invariants.json"],
 };
 const out = {
@@ -73,5 +75,7 @@ for (const [name, paths] of Object.entries(cases)) {
   console.log(`${name}: files=${paths.length} -> browser modes=${browsers.length} (round 1: ${round1}); total checks=${r.modes.length}; live-console=${browsers.includes("--browser-live-console")}`);
   console.log(`  selected: ${browsers.join(" ") || "(none)"}`);
 }
-writeFileSync(path.join(import.meta.dirname, "selection-counts-r2.json"), JSON.stringify(out, null, 1));
+const outputName = process.argv[2] ?? "selection-counts-r2.json";
+if (!/^selection-counts-r[23]\.json$/.test(outputName)) throw new Error("unsupported evidence output name");
+writeFileSync(path.join(import.meta.dirname, outputName), JSON.stringify(out, null, 1));
 console.log(`universe: browser=${universe.length} pg=${pg.length} go-seeded=${goSeeded.length} go-booting=${goBoot.length} shared=${Object.keys(SHARED_BACKEND_PACKAGES).length} backend-only=${Object.keys(BACKEND_ONLY_PACKAGES).length} covers-sum=${coversSum} mean=${(coversSum / universe.length).toFixed(1)}`);

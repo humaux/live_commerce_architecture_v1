@@ -17,6 +17,42 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const usage = readFileSync(path.join(root, "scripts/dev/test-local.sh"), "utf8");
 
+test("round 3: a new httpapi file is unclassified until explicitly covered", async () => {
+  const { classifyBackendFiles } = await import("../../scripts/dev/check-backend-coverage.mjs");
+  assert.equal(typeof classifyBackendFiles, "function");
+  const file = "internal/httpapi/unclassified_route.go";
+  const files = execFileSync("git", ["ls-files", "-z", "--", "internal/"], { cwd: root, encoding: "utf8" }).split("\0").filter((f) => f.endsWith(".go"));
+  const errors = classifyBackendFiles(usage, [...files, file]);
+  assert.equal(errors.length, 1, JSON.stringify(errors));
+  assert.match(errors[0], /unclassified_route.go.*classified by nobody/);
+  const covered = appendBrowserMode(usage, "--browser-file-probe", "  go test ./tests/foundation", file);
+  assert.deepEqual(classifyBackendFiles(covered, [...files, file]), []);
+});
+
+test("round 3: split packages cannot be re-widened by an ancestor lc_covers entry", async () => {
+  const { classifyBackendFiles } = await import("../../scripts/dev/check-backend-coverage.mjs");
+  assert.equal(typeof classifyBackendFiles, "function");
+  const files = execFileSync("git", ["ls-files", "-z", "--", "internal/"], { cwd: root, encoding: "utf8" }).split("\0").filter((f) => f.endsWith(".go"));
+  const widened = appendBrowserMode(usage, "--browser-broad-probe", "  go test ./tests/foundation", "internal/httpapi");
+  assert.ok(classifyBackendFiles(widened, files).some((e) => /internal\/httpapi.*file-level/.test(e)));
+});
+
+test("round 3: stale file entries fail independently of a valid sibling package", async () => {
+  const { classifyBackendFiles } = await import("../../scripts/dev/check-backend-coverage.mjs");
+  assert.equal(typeof classifyBackendFiles, "function");
+  const files = execFileSync("git", ["ls-files", "-z", "--", "internal/"], { cwd: root, encoding: "utf8" }).split("\0").filter((f) => f.endsWith(".go"));
+  const stale = appendBrowserMode(usage, "--browser-file-stale", "  go test ./tests/foundation", "internal/httpapi/removed_route.go");
+  assert.ok(classifyBackendFiles(stale, files).some((e) => /removed_route.go.*stale/.test(e)));
+});
+
+test("round 3: foundation-only file coverage does not classify a transport file", async () => {
+  const { classifyBackendFiles } = await import("../../scripts/dev/check-backend-coverage.mjs");
+  const files = execFileSync("git", ["ls-files", "-z", "--", "internal/"], { cwd: root, encoding: "utf8" }).split("\0").filter((f) => f.endsWith(".go"));
+  const file = "internal/httpapi/unclassified_route.go";
+  const onlyUnit = appendBrowserMode(usage, "--unit-file-probe", "  go test ./tests/foundation", file);
+  assert.ok(classifyBackendFiles(onlyUnit, [...files, file]).some((e) => e.includes(`${file} is classified by nobody`)));
+});
+
 // The same universe the gate walks: package dirs of tracked non-test Go files under internal/.
 function internalDirs() {
   return [...new Set(execFileSync("git", ["ls-files", "-z", "--", "internal/"], { cwd: root, encoding: "utf8", maxBuffer: 64 << 20 })

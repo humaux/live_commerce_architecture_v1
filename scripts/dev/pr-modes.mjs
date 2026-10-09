@@ -23,9 +23,9 @@
 //   attributed to the service packages its handler statement references; (b) narrow Go fixture evidence — the direct internal imports of the mode's OWN harness files and
 //   the consumer-import rule for packages no mode names directly (recorded per mode in output/ci-select-backend-browser/covers-derivation.json). Deliberately NOT the
 //   transitive closure below the called handlers: deeper service coupling is the nightly full-matrix's job (the owner's chosen safety net). Rules: a changed
-//   internal/<pkg>/** selects every mode whose lc_covers contains that package (prefix match); cmd/**, migrations/**, the SHARED_BACKEND_PACKAGES below, and any package
+//   internal/<pkg>/** selects declaring modes by package prefix or exact .go file; cmd/**, migrations/**, the SHARED_BACKEND_PACKAGES below, and any package
 //   no mode declares select every lc_fixture=pg browser mode (conservative); BACKEND_ONLY_PACKAGES-listed packages select none.
-//   scripts/dev/check-backend-coverage.mjs (check-gates) fails until a new internal package is lc_covers-covered, SHARED, or BACKEND_ONLY-listed.
+//   check-backend-coverage also requires every file of FILE_CLASSIFIED_PACKAGES to be classified; generic httpapi coverage is forbidden.
 //
 // Excluded browser modes (EXCLUDED_MODES): modes of release-gate's browser universe that cannot run on a GitHub runner. Currently only `--stripe-browser`: its SP18 step needs a Stripe
 //   test-mode key (STRIPE_SECRET_KEY in secrets.env + STRIPE_BROWSER=1 STRIPE_SANDBOX=1), gates.yml has no secrets by design, so it would end NOT_RUN. It stays an integrator-run
@@ -146,7 +146,7 @@ export const BACKEND_ONLY_PACKAGES = {
 };
 
 /**
- * Shared cross-cutting packages (CI-SELECT task rule): a change under any of them selects every Go-booting browser
+ * Shared package/file declarations (CI-SELECT task rule): a change under a package or to an exact file selects every Go-booting browser
  * mode, conservatively — they sit on the boot path or in the request grammar of every harness, so narrowing them per
  * domain would under-select on refactors. The Go-booting set is the 47 lc_fixture=pg modes plus
  * --browser-tracking-backfill (lc_fixture=none, but it boots the real Go API against the real PG through
@@ -157,7 +157,15 @@ export const BACKEND_ONLY_PACKAGES = {
  */
 export const SHARED_BACKEND_PACKAGES = {
   "internal/platform": "runtime configuration/service container every browser harness and cmd binary constructs (evidence: 45/48 Go-seeded modes)",
-  "internal/httpapi": "the monolithic handler the browser harnesses mount; it constructs its services internally (45/48)",
+  "internal/httpapi/handler.go": "mux/service construction, shared request/scope/body handling and response/error mapping used across all route families",
+  "internal/httpapi/handler_test.go": "tests the shared handler composition and transport boundary, not one domain route",
+  "internal/httpapi/claims.go": "claimsBody/claimsClassify/canonicalBearer are shared helpers called by unrelated ads/billing/customers/CVS/payment routes",
+  "internal/httpapi/claims_test.go": "tests the shared claims transport helpers as well as claim routes",
+  "internal/httpapi/studio.go": "studioRoute/studioDecodeRaw are shared by orders/shipments/CVS/inbox, beyond Studio routes",
+  "internal/httpapi/settings.go": "bearerToken and settings transport plumbing serve almost every domain route family",
+  "internal/httpapi/settings_test.go": "tests the shared bearer/settings transport plumbing",
+  "internal/httpapi/domain_error_codes_test.go": "pins error contracts across multiple domain adapters",
+  "internal/httpapi/purchase_entry_test.go": "tests purchase-entry routes implemented by the shared handler.go",
   "internal/command": "the command bus every service dispatches through (43/48)",
   "internal/httperror": "response/error grammar every handler of all three HTTP surfaces answers through (44/48)",
   "internal/pagination": "shared page/request grammar of every paginated admin and buyer list route (35/48)",
@@ -167,6 +175,14 @@ export const SHARED_BACKEND_PACKAGES = {
   "internal/integrations/psp/stripe": "Stripe PSP adapter the internal/platform runtime constructs at API boot (internal/platform/stripe_runtime.go) — boot path of every harness",
 };
 
+/** Packages whose files need explicit classification; an ancestor declaration cannot classify a new route file. */
+export const FILE_CLASSIFIED_PACKAGES = ["internal/httpapi"];
+
+/** Exact match for file declarations; ancestor-or-self match for package declarations. Used by planner and gate. */
+export function backendPathMatches(file, declaration) {
+  return declaration.endsWith(".go") ? file === declaration : file === declaration || file.startsWith(declaration + "/");
+}
+
 /**
  * Browser modes selected by backend paths alone (internal/, cmd/, migrations/) — CI-SELECT. Selection is registry DATA,
  * resolved most-specific first: cmd/, migrations/ and SHARED_BACKEND_PACKAGES prefixes select every Go-booting browser
@@ -174,7 +190,7 @@ export const SHARED_BACKEND_PACKAGES = {
  * this is exactly the set that boots the real Go API, including --browser-tracking-backfill which uses real PG without
  * the shared fixture script); BACKEND_ONLY_PACKAGES select none EVEN under a covered ancestor prefix (an explicit
  * per-package classification beats a general one — e.g. ecpayroute inside the covered ecpay prefix); then lc_covers
- * prefix match selects the declaring modes; anything else falls back to every Go-booting mode until
+ * package-prefix or exact-file match selects the declaring modes; anything else falls back to every Go-booting mode until
  * check-backend-coverage classifies it. check-backend-coverage fails contradictory data (a covers entry inside
  * BACKEND_ONLY, a package both SHARED and BACKEND_ONLY), so this precedence can never silently hide a classification.
  * Historical sources without the native registry carry no lc_covers data, so they fall back to the whole browser
@@ -187,16 +203,14 @@ export function backendBrowserModes(paths, source, backendOnly = BACKEND_ONLY_PA
   const entries = modeEntries(source);
   const universe = new Set(browserModes(source));
   const goBoot = entries.filter((e) => universe.has(e.name) && (e.fixture === "pg" || (e.covers ?? []).length > 0)).map((e) => e.name);
-  const under = (dir, pkg) => dir === pkg || dir.startsWith(pkg + "/");
   const selected = new Set();
   for (const p of hits) {
-    const dir = path.posix.dirname(p);
-    if (p.startsWith("cmd/") || p.startsWith("migrations/") || Object.keys(SHARED_BACKEND_PACKAGES).some((s) => under(dir, s))) {
+    if (p.startsWith("cmd/") || p.startsWith("migrations/") || Object.keys(SHARED_BACKEND_PACKAGES).some((s) => backendPathMatches(p, s))) {
       for (const m of goBoot) selected.add(m);
       continue;
     }
-    if (Object.keys(backendOnly).some((b) => under(dir, b))) continue;
-    const covering = entries.filter((e) => (e.covers ?? []).some((c) => under(dir, c))).map((e) => e.name);
+    if (Object.keys(backendOnly).some((b) => backendPathMatches(p, b))) continue;
+    const covering = entries.filter((e) => (e.covers ?? []).some((c) => backendPathMatches(p, c) && (!c.endsWith(".go") || universe.has(e.name)))).map((e) => e.name);
     if (covering.length) { for (const m of covering) selected.add(m); continue; }
     for (const m of goBoot) selected.add(m); // undeclared package: conservative until check-backend-coverage classifies it
   }
