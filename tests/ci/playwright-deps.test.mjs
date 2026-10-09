@@ -38,6 +38,7 @@ test('coverage assertion derives mixed Go roots and catches a new mode reusing t
 });
 
 function installer(failures, browsers = ['chromium']) {
+  mkdirSync('output/playwright', { recursive: true }); // untracked: absent on a fresh checkout (PR #27 review)
   const dir = mkdtempSync('output/playwright/ci-playwright-deps-test.');
   const bin = path.resolve(dir, 'bin'), trace = path.resolve(dir, 'trace.jsonl'); mkdirSync(bin);
   const fake = path.resolve(dir, 'edge.cjs');
