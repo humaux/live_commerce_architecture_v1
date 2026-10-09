@@ -47,9 +47,9 @@ matched tests or a missing log is never PASS.
 
 ## KC01–KC16 regression (with the §4.4 amendment in force)
 ```sh
-GOTOOLCHAIN=go1.27.1 go test -count=1 ./internal/claims/grammar -run 'TestGrammarKC01|TestGrammarBoundaries'
-GOTOOLCHAIN=go1.27.1 go test ./internal/claims/grammar -run '^$' -fuzz FuzzParse -fuzztime 60s   # KC01 fuzz
-GOTOOLCHAIN=go1.27.1 go test -race -count=1 ./internal/claims/... ./internal/httpapi ./internal/buyerhttp ./cmd/api   # KC02, KC13, KC14 units
+GOTOOLCHAIN=go1.27.2 go test -count=1 ./internal/claims/grammar -run 'TestGrammarKC01|TestGrammarBoundaries'
+GOTOOLCHAIN=go1.27.2 go test ./internal/claims/grammar -run '^$' -fuzz FuzzParse -fuzztime 60s   # KC01 fuzz
+GOTOOLCHAIN=go1.27.2 go test -race -count=1 ./internal/claims/... ./internal/httpapi ./internal/buyerhttp ./cmd/api   # KC02, KC13, KC14 units
 bash scripts/dev/test-focused.sh '^TestLiveClaims'              # KC02–KC15 real PG (KC03 as amended by clause 4/10)
 bash scripts/dev/test-focused.sh '^TestBrowserLiveClaimsRealChain'   # KC16 browser
 ```
@@ -58,10 +58,10 @@ against `8f491dc` and fail the review if any assertion beyond §4.4 clauses 4/10
 
 ## Commands
 ```sh
-GOTOOLCHAIN=go1.27.1 go test -race -count=1 ./internal/integrations/meta ./internal/integrations/core ./internal/integrations/metareply ./internal/claims ./internal/claimsintake
+GOTOOLCHAIN=go1.27.2 go test -race -count=1 ./internal/integrations/meta ./internal/integrations/core ./internal/integrations/metareply ./internal/claims ./internal/claimsintake
 bash scripts/dev/test-focused.sh '^TestMetaClaimsMCI'
 bash scripts/dev/test-focused.sh '^Test(MetaConsumer|MetaInbox|MetaIsolation|MetaRuntime|T06)'   # MC01–07, MI01–07, MIso, dispatcher
-GOTOOLCHAIN=go1.27.1 go test -race ./... && GOTOOLCHAIN=go1.27.1 go vet ./... && python3 scripts/check_packet.py
+GOTOOLCHAIN=go1.27.2 go test -race ./... && GOTOOLCHAIN=go1.27.2 go vet ./... && python3 scripts/check_packet.py
 ```
 Logs → main checkout `output/meta-intake-tests/` (command, SHA, exit code, PASS/FAIL/SKIP counts).
 
