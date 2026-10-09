@@ -13,14 +13,25 @@
 set -euo pipefail
 RUN=${1:?usage: visual_review.sh <gates-run-id>}
 ROOT=/Volumes/data/live_commerce_architecture_v1; R=humaux/live_commerce_architecture_v1
-OUT=$ROOT/output/visual-review/$RUN; mkdir -p "$OUT/dl"
+OUT=$ROOT/output/visual-review/$RUN; rm -rf "$OUT"; mkdir -p "$OUT/dl"
 SHA=$(gh run view "$RUN" -R $R --json headSha -q .headSha)   # recorded only; never checked out
 git -C $ROOT fetch -q origin r3/integration; TRUST=$(git -C $ROOT rev-parse FETCH_HEAD)
+# Complete corpus only (PR #23 review): every visual-lint shard job and the aggregate verdict succeeded, one artifact per shard.
+jobs=$(gh api "repos/$R/actions/runs/$RUN/jobs?per_page=100" --paginate -q '.jobs[]|"\(.name)\t\(.conclusion)"')
+shards=$(printf '%s\n' "$jobs" | grep -c '^gate (--browser-visual-lint' || true)
+bad=$(printf '%s\n' "$jobs" | grep -E '^gate \(--browser-visual-lint|^aggregate\b' | grep -vc $'\tsuccess$' || true)
+arts=$(gh api "repos/$R/actions/runs/$RUN/artifacts?per_page=100" -q '[.artifacts[]|select(.name|test("visual-lint"))]|length')
+if [ "$shards" -eq 0 ] || [ "$bad" -ne 0 ] || [ "$arts" -ne "$shards" ] || ! printf '%s\n' "$jobs" | grep -q $'^aggregate\tsuccess$'; then
+  printf 'NOT_RUN: incomplete visual corpus in run %s (shard jobs=%s, not successful incl. aggregate=%s, artifacts=%s)\n' "$RUN" "$shards" "$bad" "$arts" | tee "$OUT/findings.md"
+  exit 4
+fi
 for id in $(gh api "repos/$R/actions/runs/$RUN/artifacts?per_page=100" -q '.artifacts[]|select(.name|test("visual-lint"))|.id'); do
   gh api "repos/$R/actions/artifacts/$id/zip" > "$OUT/dl/$id.zip" && unzip -qo "$OUT/dl/$id.zip" -d "$OUT/dl/$id"
 done
 WT=$ROOT/.worktrees/visual-review-$RUN
-[ -d "$WT" ] || git -C $ROOT worktree add -q --detach "$WT" "$TRUST"
+# Always a fresh worktree: a rerun must never accept a previous run's shots or verdict (PR #23 review).
+[ -d "$WT" ] && git -C $ROOT worktree remove --force "$WT"
+git -C $ROOT worktree add -q --detach "$WT" "$TRUST"
 mkdir -p "$WT/visual-shots"
 # Download archives may preserve either output/playwright or just its run children.
 # Discover shots directly so an interrupted run without index.json is still reviewable.
