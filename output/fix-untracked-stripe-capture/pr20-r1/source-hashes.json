@@ -1,0 +1,15 @@
+{
+  "source_commit": "2b8089a9baa27e6d679018cea3e551c837bb2029",
+  "sha256": {
+    "migrations/0167_stripe_untracked_reservation.sql": "f14a2ad54b8ee37d209d20738c9cf52e393f99884ed7a64ed8ce86d6e507d0ae",
+    "tests/foundation/stripe_refund_guards_test.go": "dc7f3ab4fc659b64326da8be1f0338c859c3f0596f56570fc3a99e98559e70fc",
+    "tests/foundation/stripe_untracked_round1_test.go": "24efbc04ed94dc7a57dfa5935767ae9946933a9bbdeaacc7fe113abb962a695d"
+  },
+  "rf12_restore_seams": [
+    1,
+    1,
+    1
+  ],
+  "complete_body_restored_to_0062": true,
+  "restored_body_sha256": "33832c13b4ec74e98faa840e86972af043484cc1142da4f31d6a6b944e64e322"
+}
