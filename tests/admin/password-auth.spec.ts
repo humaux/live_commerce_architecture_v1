@@ -551,8 +551,12 @@ test("matrix: locale copy differs per locale and the reset wording is the same f
   expect(texts.every(Boolean)).toBe(true);
   expect(new Set(texts).size).toBe(3);
   // reset: a known and an unknown address produce the same visible code-step text (modulo the masked address)
+  // Compare at one browser instant: a ticking resend countdown must not make the two snapshots differ.
+  // The separate cooldown test above still advances real time and checks re-enabling.
+  const comparisonTime = Date.now();
   await page.setViewportSize({ width: 1586, height: 992 });
   const visible = async (email: string) => {
+    await page.clock.setFixedTime(comparisonTime);
     await useSource(context, source());
     await page.context().clearCookies({ name: challengeName });
     await page.goto("/en/reset");
