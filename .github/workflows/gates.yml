@@ -145,7 +145,16 @@ jobs:
             [[ "$kv" =~ ^LC_[A-Z0-9_]+=[A-Za-z0-9._:-]*$ ]] || { echo "refusing extra_env entry: $kv" >&2; exit 2; }
             export "$kv"; echo "extra_env: ${kv%%=*} set"
           done
-          log="output/ci-gates/$(printf '%s' "$MODE" | tr -c 'A-Za-z0-9_-' '_').log"
+          log_root=output/ci-gates
+          case "$MODE" in
+            --browser*|--stripe-browser*)
+              mkdir -p output/playwright
+              export LC_BROWSER_EVIDENCE_ROOT="$(mktemp -d "$PWD/output/playwright/run.XXXXXXXX")"
+              log_root="$LC_BROWSER_EVIDENCE_ROOT/ci-gates"
+              mkdir -p "$log_root"
+              ;;
+          esac
+          log="$log_root/$(printf '%s' "$MODE" | tr -c 'A-Za-z0-9_-' '_').log"
           case "$MODE" in
             foundation) bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
             shard:unit) LC_FOUNDATION_PKGS="$(go list ./... | grep -v '/tests/foundation$' | tr '\n' ' ')" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
@@ -163,16 +172,13 @@ jobs:
           esac
       - name: Failure summary
         if: always()
-        run: grep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log | head -200 || true
+        run: grep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log | head -200 || true
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: ${{ matrix.art }}
           path: |
             output/ci-gates/
-            output/ui-visual-audit/*/lint.md
-            output/ui-visual-audit/*/lint.json
-            output/ui-click-sweep/
             output/playwright/
           retention-days: 14
           if-no-files-found: ignore
@@ -213,7 +219,7 @@ jobs:
         if: always()
         with:
           name: aggregate
-          path: output/ci-aggregate/
+          path: output/playwright/ci-aggregate/
           retention-days: 14
           if-no-files-found: ignore
 
