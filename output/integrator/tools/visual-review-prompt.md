@@ -5,7 +5,7 @@ The screenshots are in ./visual-shots/<app>/<page-id>/<locale>-<desktop|mobile>.
 - Apps: admin, storefront, platform.
 - Locales: zh-TW (primary market), zh-CN, en.
 - Sizes: desktop 1586x992, mobile 390x844.
-./visual-shots/index.json lists every shot, and lint.md is the automated layout lint. Do not repeat the lint's findings; judge what it cannot.
+./visual-shots/index.json lists every shot per CI shard ({"shards":[{"shard","index"}]}), and lint.md is the automated layout lint. Do not repeat the lint's findings; judge what it cannot.
 
 Open EVERY page's zh-TW desktop and zh-TW mobile shots. Open the zh-CN and en shots wherever text length or wording could break the layout (tables, buttons, navigation, forms).
 
@@ -23,7 +23,7 @@ Severity:
 - P2 is clearly visible polish.
 - Skip taste-only nits.
 
-Write output/visual-review/findings.md with:
+Write output/ext-agents/visual-review/findings.md with:
 - First line: "VERDICT: PASS" if there is no P1, otherwise "VERDICT: FIX".
 - Then one section per page, in index.json order: "## <app> <page-id>: PASS|FIX". Under it, list findings as "- [P1|P2] <locale>-<size>: what is wrong, where on the screen, and a concrete fix (which shared component or token)".
 - Finally, "## Cross-page consistency": the components or patterns that differ between pages and should be unified.

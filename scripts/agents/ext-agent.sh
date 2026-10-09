@@ -4,7 +4,7 @@
 #   K2.8 at 2026-10-01: 1M context, reasoning-only, image/video input) through the Claude Code CLI, which speaks the
 #   Anthropic Messages API that Kimi exposes at https://api.kimi.com/coding/. Used by the integrator to offload work
 #   that does not need the top tier (docs/delivery/PROCESS.md §3 "Third-party models").
-# Usage: [PROVIDER=kimi|aliyun|deepseek] [MODEL=...] [RESUME=<session_id from a cut-off run's result.json>] bash scripts/agents/ext-agent.sh <worktree> <prompt-file> <out-dir> [effort low|high|max]
+# Usage: [READONLY=1] [PROVIDER=kimi|aliyun|deepseek] [MODEL=...] [RESUME=<session_id from a cut-off run's result.json>] bash scripts/agents/ext-agent.sh <worktree> <prompt-file> <out-dir> [effort low|high|max]
 #   kimi (subscription, 5-hour quota window): MODEL k3 (default) | kimi-for-coding (K2.8)
 #   deepseek (PAY-AS-YOU-GO, owner balance): MODEL deepseek-v4-pro (default) | deepseek-flash; refuses to start below
 #   DEEPSEEK_MIN_BALANCE_CNY (default 10, owner 2026-10-02), and a watchdog checks the balance every 60 s during the run and
@@ -49,6 +49,21 @@ settings="$out/kimi-settings.json"
 # owner 2026-10-02: DeepSeek never does UI/visual work — no write under apps/ (relative to the worktree cwd, and absolute)
 ui_deny=""; [[ $provider == deepseek ]] && ui_deny=', "Edit(apps/**)", "Write(apps/**)", "Edit(/'"$wt"'/apps/**)", "Write(/'"$wt"'/apps/**)"'
 base_sha=$(git -C "$wt" rev-parse HEAD)
+# READONLY=1 (reviews of untrusted trees, e.g. a PR head or screenshots that may carry prompt injection): no Bash at all, so no
+# repository script can run with the provider key in its environment; writes only under output/ext-agents/ (PR #23 security review).
+if [[ ${READONLY:-0} == 1 ]]; then
+  perm_mode=default
+  cat >"$settings" <<JSON
+{
+  "permissions": {
+    "allow": ["Read", "Glob", "Grep", "Write(output/ext-agents/**)", "Edit(output/ext-agents/**)"],
+    "deny": ["Bash", "WebFetch", "WebSearch", "Read(/Users/luolimo/.ssh/**)", "Read(/Users/luolimo/.config/**)", "Read(/Users/luolimo/Downloads/**)",
+      "Read(/Users/luolimo/Desktop/**)", "Read(/Users/luolimo/.claude/**)", "Read(/etc/**)"]
+  }
+}
+JSON
+else
+perm_mode=acceptEdits
 cat >"$settings" <<JSON
 {
   "permissions": {
@@ -65,6 +80,7 @@ cat >"$settings" <<JSON
   }
 }
 JSON
+fi
 # main checkout root (the shared output/ evidence area), resolved from the git common dir so worktrees agree
 repo_root=$(cd "$(git -C "$(dirname "$0")" rev-parse --git-common-dir)/.." && pwd)
 balance() { curl -s --max-time 20 -H "Authorization: Bearer $key" https://api.deepseek.com/user/balance | python3 -c 'import json,sys;print(json.load(sys.stdin)["balance_infos"][0]["total_balance"])'; }
@@ -89,7 +105,7 @@ env -i PATH="/Users/luolimo/.local/share/fnm/node-versions/v24.15.0/installation
   ANTHROPIC_MODEL="$model" ANTHROPIC_SMALL_FAST_MODEL="$model" \
   CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 DISABLE_AUTOUPDATER=1 MAX_THINKING_TOKENS="$think" \
   claude -p "$(cat "$prompt")" ${RESUME:+--resume "$RESUME"} --settings "$settings" --strict-mcp-config --mcp-config '{"mcpServers":{}}' \
-    --permission-mode acceptEdits --output-format json >"$out/result.json" 2>"$out/stderr.log" &
+    --permission-mode "$perm_mode" --output-format json >"$out/result.json" 2>"$out/stderr.log" &
 run_pid=$!
 if [[ $provider == deepseek ]]; then
   # Watchdog: stop the run (not the machine) once the owner's balance drops below the reserve; the marker tells the integrator.
