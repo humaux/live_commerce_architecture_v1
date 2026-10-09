@@ -3,7 +3,7 @@
 # Depends on: git grep, node (registry/architecture tests), scripts/dev/check-headers.sh, scripts/dev/ui-architecture-gate.mjs.
 # Used by: CI (.github/workflows/foundation.yml), scripts/dev/release-gate.sh, every unit self-check (AGENT-PREAMBLE §2).
 # check-gates.sh — keep docs/delivery/GATES.md and the test runners honest (unit maintainability).
-#  1. every mode in test-local.sh's usage line has a row in GATES.md, and every mode GATES.md names
+#  1. every mode in test-local.sh's registry has a row in GATES.md, and every mode GATES.md names
 #     exists (no undocumented gate, no stale row);
 #  2. every tracked *.spec.*|*.test.* file (git ls-files, whole repo) is run by some gate: its file name
 #     appears in scripts/dev/test-local.sh or tests/foundation/*.go, it matches a glob written in
@@ -38,15 +38,11 @@ node scripts/dev/ui-architecture-gate.mjs
 # every shard (a test in no list lands in the catch-all group; a duplicate, or a plan without a catch-all, fails here). Regenerate: node scripts/dev/shard-plan.mjs --write.
 node scripts/dev/shard-plan.mjs --check
 # Syntax first: a merge can leave a gate script that no longer parses (R4: a lost `fi` broke every mode).
-for s in scripts/dev/test-local.sh scripts/dev/test-node.sh scripts/dev/test-focused.sh scripts/dev/release-gate.sh; do
+for s in scripts/dev/test-local.sh scripts/dev/test-local-runtime.sh scripts/dev/test-node.sh scripts/dev/test-focused.sh scripts/dev/release-gate.sh; do
   bash -n "$s" || { echo "check-gates: $s does not parse (bash -n)" >&2; exit 1; }
 done
-# A merge can also duplicate a mode's run branch: only the first `elif` runs, so a later copy is dead code that silently
-# keeps stale commands (R4: the webkit..purchase-entry run branches existed three times, catalog-media twice with old text).
-dup_modes=$(grep -oE '^elif \[\[ "\$test_mode" == --[a-z0-9-]+ \]\]' scripts/dev/test-local.sh | sort | uniq -d)
-if [[ -n "$dup_modes" ]]; then
-  echo "check-gates: duplicated run branch in scripts/dev/test-local.sh: $dup_modes" >&2; exit 1
-fi
+# Validate the same registry the selector reads; duplicate cases cannot silently shadow a mode.
+node --input-type=module -e 'import {readFileSync} from "node:fs"; import {modeEntries} from "./scripts/dev/pr-modes.mjs"; modeEntries(readFileSync("scripts/dev/test-local.sh","utf8"));'
 # Worker-authority split (0096): no migration numbered after it may grant to the retired shared commerce_worker role
 # (a grant there reaches no worker login; post_river/0019 asserts the same at apply time — this fails earlier, in CI).
 for f in $(ls migrations/0*.sql | awk -F/ '$2 > "0096"'); do
@@ -57,12 +53,12 @@ import fnmatch, glob, os, re, subprocess, sys
 bad = []
 sh = open("scripts/dev/test-local.sh").read()
 gates = open("docs/delivery/GATES.md").read()
-usage = re.search(r"Usage: bash scripts/dev/test-local\.sh \[(.*?)\]", sh)
-if not usage:
-    sys.exit("check-gates: no usage line in test-local.sh")
-modes = set(usage.group(1).split("|"))
+names = subprocess.check_output(["bash", "scripts/dev/test-local.sh", "--list"], text=True).splitlines()
+if len(names) != len(set(names)):
+    sys.exit("check-gates: duplicate mode in registry")
+modes = set(names) - {"foundation"}
 rows = set(re.findall(r"^\| `(--[a-z0-9-]+)` \|", gates, re.M))
-bad += [f"mode {m} is in test-local.sh usage but has no GATES.md row" for m in sorted(modes - rows)]
+bad += [f"mode {m} is in test-local.sh registry but has no GATES.md row" for m in sorted(modes - rows)]
 bad += [f"GATES.md row {m} names a mode test-local.sh does not accept" for m in sorted(rows - modes)]
 go = "".join(open(f).read() for f in glob.glob("tests/foundation/*.go"))
 config = open("playwright.config.ts").read()
@@ -87,6 +83,31 @@ print(f"check-gates: ok ({len(modes)} modes, all documented; every tracked test 
 PY
 # Documentation ratchet (owner 2026-10-05): files added/changed since the base carry Purpose / Depends on / Used by headers.
 bash scripts/dev/check-headers.sh
+# Dependency register (PROCESS.md §5): every direct go.mod require has a docs/engineering/dependencies.md row at the same
+# version (2026-10-09: PR #19 bumped x/net but the register still said v0.59.0, so reviews kept citing the vulnerable one).
+# A submodule may share its parent's row when the row names it, e.g. river (+ `riverdriver/riverpgxv5`, `rivertype`).
+python3 - <<'PY'
+import json, re, subprocess, sys
+# go mod edit -json is Go's own go.mod parser: every require form, comments and the // indirect marker handled structurally.
+mods = [(r["Path"], r["Version"]) for r in json.loads(subprocess.run(["go", "mod", "edit", "-json"], check=True,
+        capture_output=True, text=True).stdout).get("Require") or [] if not r.get("Indirect")]
+if not mods:
+    sys.exit("check-gates: parsed no direct requires from go.mod (fail closed)")
+rows = [(m.group(1), l) for l in open("docs/engineering/dependencies.md") if (m := re.match(r"\| `([^`]+)`", l))]
+bad = []
+for mod, ver in mods:
+    # Match on the row's first cell only; prose elsewhere in a row may name other modules.
+    row = next((r for name, r in rows if name == mod), None) or next(
+        (r for name, r in rows if mod.startswith(name + "/") and f"`{mod[len(name)+1:]}`" in r), None)
+    cell = row.split("|")[2] if row else ""
+    if row is None:
+        bad.append(f"{mod} has no row in docs/engineering/dependencies.md")
+    elif cell.split()[:1] != [ver]:   # leading version token only: "v0.42.0 (raised from v0.39.0 ...)" must not satisfy v0.39.0
+        bad.append(f"{mod} is {ver} in go.mod but the register row says {cell.strip()}")
+if bad:
+    print("\n".join("check-gates: " + b for b in bad), file=sys.stderr)
+    sys.exit(1)
+PY
 # Go formatting (2026-10-06: an unformatted test file only surfaced as a CRP10 failure deep in the full PG suite).
 unformatted="$(gofmt -l cmd internal tests migrations 2>/dev/null || true)"
 if [[ -n "$unformatted" ]]; then printf 'check-gates: gofmt needed:\n%s\n' "$unformatted" >&2; exit 1; fi

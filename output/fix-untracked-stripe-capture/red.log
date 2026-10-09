@@ -1,0 +1,76 @@
+=== RUN   TestStripeUntrackedCaptureAndClose
+=== RUN   TestStripeUntrackedCaptureAndClose/all_untracked/capture
+    stripe_untracked_capture_test.go:60: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:75: OWNER-POOL: payments.provider_observations report
+    stripe_untracked_capture_test.go:78: CAPTURED observation/replay 0: ERROR: payment reservation empty (SQLSTATE PT409)
+=== RUN   TestStripeUntrackedCaptureAndClose/all_untracked/close
+    stripe_untracked_capture_test.go:60: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:75: OWNER-POOL: payments.provider_observations report
+    stripe_untracked_capture_test.go:78: CLOSED_UNPAID observation/replay 0: ERROR: payment reservation empty (SQLSTATE PT409)
+=== RUN   TestStripeUntrackedCaptureAndClose/mixed/capture
+    stripe_untracked_capture_test.go:60: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:75: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedCaptureAndClose/mixed/close
+    stripe_untracked_capture_test.go:60: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:75: OWNER-POOL: payments.provider_observations report
+--- FAIL: TestStripeUntrackedCaptureAndClose (2.90s)
+    --- FAIL: TestStripeUntrackedCaptureAndClose/all_untracked/capture (1.69s)
+    --- FAIL: TestStripeUntrackedCaptureAndClose/all_untracked/close (0.39s)
+    --- PASS: TestStripeUntrackedCaptureAndClose/mixed/capture (0.41s)
+    --- PASS: TestStripeUntrackedCaptureAndClose/mixed/close (0.41s)
+=== RUN   TestStripeUntrackedReservationRefusals
+=== RUN   TestStripeUntrackedReservationRefusals/capture/missing_tracked_lines
+    stripe_untracked_capture_test.go:118: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:122: OWNER-POOL: replica-mode tamper/restore: DELETE FROM inventory.reservation_lines
+    stripe_untracked_capture_test.go:139: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/capture/empty_quote
+    stripe_untracked_capture_test.go:118: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:128: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders SET
+    stripe_untracked_capture_test.go:139: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/capture/foreign_sku
+    stripe_untracked_capture_test.go:118: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:130: create product: forbidden
+=== RUN   TestStripeUntrackedReservationRefusals/capture/missing_reservation
+    stripe_untracked_capture_test.go:118: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:133: OWNER-POOL: replica-mode tamper/restore: DELETE FROM inventory.reservations
+    stripe_untracked_capture_test.go:139: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/capture/tracked_flipped_with_missing_lines
+    stripe_untracked_capture_test.go:118: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:122: OWNER-POOL: replica-mode tamper/restore: DELETE FROM inventory.reservation_lines
+    stripe_untracked_capture_test.go:124: OWNER-POOL: catalog tracking changed after a tracked hold; its RESERVE history must remain authoritative
+    stripe_untracked_capture_test.go:139: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/close/missing_tracked_lines
+    stripe_untracked_capture_test.go:118: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:122: OWNER-POOL: replica-mode tamper/restore: DELETE FROM inventory.reservation_lines
+    stripe_untracked_capture_test.go:139: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/close/empty_quote
+    stripe_untracked_capture_test.go:118: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:128: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders SET
+    stripe_untracked_capture_test.go:139: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/close/foreign_sku
+    stripe_untracked_capture_test.go:118: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:130: create product: forbidden
+=== RUN   TestStripeUntrackedReservationRefusals/close/missing_reservation
+    stripe_untracked_capture_test.go:118: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:133: OWNER-POOL: replica-mode tamper/restore: DELETE FROM inventory.reservations
+    stripe_untracked_capture_test.go:139: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/close/tracked_flipped_with_missing_lines
+    stripe_untracked_capture_test.go:118: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:122: OWNER-POOL: replica-mode tamper/restore: DELETE FROM inventory.reservation_lines
+    stripe_untracked_capture_test.go:124: OWNER-POOL: catalog tracking changed after a tracked hold; its RESERVE history must remain authoritative
+    stripe_untracked_capture_test.go:139: OWNER-POOL: payments.provider_observations report
+--- FAIL: TestStripeUntrackedReservationRefusals (3.88s)
+    --- PASS: TestStripeUntrackedReservationRefusals/capture/missing_tracked_lines (0.38s)
+    --- PASS: TestStripeUntrackedReservationRefusals/capture/empty_quote (0.41s)
+    --- FAIL: TestStripeUntrackedReservationRefusals/capture/foreign_sku (0.38s)
+    --- PASS: TestStripeUntrackedReservationRefusals/capture/missing_reservation (0.38s)
+    --- PASS: TestStripeUntrackedReservationRefusals/capture/tracked_flipped_with_missing_lines (0.39s)
+    --- PASS: TestStripeUntrackedReservationRefusals/close/missing_tracked_lines (0.40s)
+    --- PASS: TestStripeUntrackedReservationRefusals/close/empty_quote (0.39s)
+    --- FAIL: TestStripeUntrackedReservationRefusals/close/foreign_sku (0.40s)
+    --- PASS: TestStripeUntrackedReservationRefusals/close/missing_reservation (0.37s)
+    --- PASS: TestStripeUntrackedReservationRefusals/close/tracked_flipped_with_missing_lines (0.38s)
+FAIL
+FAIL	livecommerce/tests/foundation	7.991s
+FAIL
+test-focused: top-level PASS=0 FAIL=2 SKIP=0 exit=1

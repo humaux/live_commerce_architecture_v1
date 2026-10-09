@@ -1,0 +1,54 @@
+✖ round2 stale A session response cannot supersede newer refresh B or its lost-write Retry (40.746542ms)
+✖ round2 stale A session response cannot supersede newer mutation B or its lost-write Retry (8.342833ms)
+✔ rotated buyer context clears the prior cart on read and preserves the B receipt (6.666458ms)
+✔ rotated buyer context clears the prior cart on lost-write and preserves the B receipt (6.139417ms)
+✔ rotated buyer context clears the prior cart on refresh-read and preserves the B receipt (5.538458ms)
+✔ lost first write keeps Retry alive: same context, same idempotency key, no second purchase (9.072583ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 4
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 262.964917
+
+✖ failing tests:
+
+test at apps/storefront/tests/cart-provider-retry.test.mjs:37:3
+✖ round2 stale A session response cannot supersede newer refresh B or its lost-write Retry (40.746542ms)
+  AssertionError [ERR_ASSERTION]: late A must not roll back the published context
+  + actual - expected
+  
+  + 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+  - 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups/apps/storefront/tests/cart-provider-retry.test.mjs:75:14)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    expected: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at apps/storefront/tests/cart-provider-retry.test.mjs:37:3
+✖ round2 stale A session response cannot supersede newer mutation B or its lost-write Retry (8.342833ms)
+  AssertionError [ERR_ASSERTION]: late A must not roll back the published context
+  + actual - expected
+  
+  + 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+  - 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups/apps/storefront/tests/cart-provider-retry.test.mjs:75:14)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    expected: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

@@ -1,0 +1,33 @@
+browser engine: chromium
+PASS BC01 en drawer visible cart Retry preserves key/body and one committed write after reload
+PASS BC01 en cart-page visible cart Retry preserves key/body and one committed write after reload
+PASS BC01 zh-CN drawer visible cart Retry preserves key/body and one committed write after reload
+PASS BC01 zh-CN cart-page visible cart Retry preserves key/body and one committed write after reload
+PASS BC01 zh-TW drawer visible cart Retry preserves key/body and one committed write after reload
+PASS BC01 zh-TW cart-page visible cart Retry preserves key/body and one committed write after reload
+PASS BO01 desktop delivery-head completion keeps the language target stable
+PASS BO01 native address; three locales keep the pinned quote and carry no unsaved PII across the language switch
+PASS BO03 committed destination lost reply retries exact key and body
+PASS BO03 lost destination reply reload reads head and explicitly replaces metadata intent
+PASS BO03 reload reconfirmation, edits and concurrent/late address CAS fail closed
+PASS BO04 actual confirmed form creates authoritative DRAFT and exactly one order/hold/job/receipt
+PASS BO05 owned current-state GET renders real expiry rather than historical DRAFT receipt
+PASS BO02 expired authoritative quote fails closed with no order or hold
+PASS BO04 actual second-tab recovery queues on Web Lock and resumes same order without second POST
+PASS BO01 mobile delivery-head completion keeps the language target stable
+PASS BO05 lost checkout reply reload replays exact five-field intent and original key on mobile
+PASS BO05 locator storage failure retains and reloads same checkout without duplicate hold
+PASS BO05 later publication revocation preserves uncertain committed order and never resets owner
+PASS BO03 delayed real options cannot replace edited confirmed address or order snapshot
+PASS BO03 expired pending address retains recovery; quote-less new tab explicitly repairs shared intent
+PASS BH01 lost next-cart reply reload keeps original key/body and exactly one cart receipt
+PASS BH02 delayed initial owned GET cannot restore the old order after another tab continues
+PASS BH03 same buyer creates distinct B with two exact order facts and unchanged A snapshot/key replay
+PASS BH04 owned history renders each server created_at in Taipei across locales under Los Angeles browser time
+PASS BH05 authoritative Taipei history survives reload and noncredential locator loss without repinning an old order
+PASS BH05 same owned history renders Taipei times in UTC browser context
+PASS BH06 explicit continuation preserves a newer authoritative cart without issuing a clearing PUT
+PASS BH07 failed quote removal preserves continuation recovery and original key across reload
+PASS BH08 foreign buyer history is empty and foreign or malformed cursors are denied
+PASS BO02 service revision drift rejects a previously confirmed quotation without an order
+PASS BO06 all attempted local/session writes, URLs and console exclude PII/bearer; other owner denied

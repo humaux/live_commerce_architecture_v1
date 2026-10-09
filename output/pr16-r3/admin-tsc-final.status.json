@@ -1,0 +1,23 @@
+{
+  "name": "admin-tsc-final",
+  "command": [
+    "pnpm",
+    "--dir",
+    "apps/admin",
+    "exec",
+    "tsc",
+    "--noEmit",
+    "-p",
+    "."
+  ],
+  "timeout": 300,
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups",
+  "out": "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr1-ui-followups/output/pr16-r3",
+  "head": "be04b98280dc9593b28d500c12092aecbfc76b68",
+  "pid": 98670,
+  "exit_code": 0,
+  "source_sha256": "b84a3369cbb54b89e645eb4efd81d9aa667a1570d168f261cbc791ccdc4f1f4f",
+  "source_after": "b84a3369cbb54b89e645eb4efd81d9aa667a1570d168f261cbc791ccdc4f1f4f",
+  "source_unchanged": true,
+  "elapsed_seconds": 7.489
+}

@@ -1,3 +1,6 @@
+// Purpose: pin Stripe refund definer deltas, authority and leakage regression checks.
+// Depends on: migration bodies, REAL_PG catalogs, refund MOCK harness.
+// Used by: RF12 and foundation gates.
 package foundation_test
 
 // RF12 (contracts/stripe-refund-v1.md §4.4, §4.6, §9, PROCESS §5): guards. Prefix `srg`.
@@ -240,6 +243,25 @@ func TestStripeRF12Guards(t *testing.T) {
 			}
 			switch x.name {
 			case "apply_stripe_observation":
+				// 0167 moves per-line proof before first-capture review, then replaces only the two empty-plan guards.
+				// Restore all three declared seams and compare the COMPLETE remaining body with 0062.
+				captureProof := regexp.MustCompile(`(?s)  -- A6 capture per-line proof\.\n.*?  -- End A6 capture per-line proof\.\n`)
+				captureEmpty := regexp.MustCompile(`(?s)-- A6 capture empty-plan admission:.*?-- End A6 capture empty-plan admission\.`)
+				closeProof := regexp.MustCompile(`(?s)-- A6 close per-line proof\..*?-- End A6 close per-line proof\.`)
+				for name, seam := range map[string]*regexp.Regexp{"capture proof": captureProof, "capture empty guard": captureEmpty, "close proof": closeProof} {
+					if len(seam.FindAllString(newBody, -1)) != 1 {
+						t.Fatalf("0167 requires exactly one %s seam", name)
+					}
+				}
+				beforeA6, _ := srgOldUntil(t, qualified, func(base string, post bool) bool { return post || base >= "0167_" })
+				restored := captureProof.ReplaceAllString(newBody, "")
+				oldEmpty := "IF NOT FOUND THEN RAISE EXCEPTION 'payment reservation empty' USING ERRCODE='PT409'; END IF;"
+				restored = captureEmpty.ReplaceAllString(restored, oldEmpty)
+				restored = closeProof.ReplaceAllString(restored, oldEmpty)
+				if restored != beforeA6 {
+					t.Fatal("0167 changed behavior outside the per-line proof and two empty-plan guards")
+				}
+				removed, added, unified = srgDiff(srgLines(oldBody), srgLines(beforeA6))
 				// §4.4: ONE change, the post-capture review branch runs only when v_new_capture OR v_closed_before.
 				// SQL comment lines are documentation (PROCESS §5), not behaviour: the delta is judged on code lines.
 				var code []string

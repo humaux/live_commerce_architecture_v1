@@ -4,10 +4,16 @@ Used by: check-gates.sh, unit authors and integrator. -->
 # Gates: what runs, what it proves, how to run it
 
 Status: hand-kept, mechanically checked by `bash scripts/dev/check-gates.sh` (CI). The script fails when a
-mode in the usage line of `scripts/dev/test-local.sh` has no row here, when a row names a mode that no
+mode in the registry of `scripts/dev/test-local.sh` has no row here, when a row names a mode that no
 longer exists, when any tracked `*.spec.*|*.test.*` file (whole repo) is run by no gate, or when CI stops invoking `scripts/dev/test-node.sh`. Nothing may exist that
 no gate runs (PROCESS.md, unit maintainability). Evidence labels follow `AGENTS.md` (DESIGN, MODEL_ONLY,
 MOCK, SANDBOX, LIVE, NOT_RUN): a pass here is only ever as strong as the label in its "proves" cell.
+
+## Mode registration
+
+`test-local.sh` owns one native Bash case registry. Add one entry defining `lc_build`, `lc_fixture`, `lc_prepare()` and `lc_run()`; usage, admission, build selection and dispatch follow that entry. Keep command bodies in the entry and the shared task-owned PostgreSQL lifecycle in `test-local-runtime.sh`. The selector reads this registry as data, including at an explicit Git revision; malformed, duplicate or unsupported case arms fail closed.
+
+`bash scripts/dev/test-local.sh --list` lists the modes, including the default `foundation`. `bash scripts/dev/test-local.sh --dry-run MODE` prints the selected shell phases with their command/environment expressions without executing builds, tests or fixtures. Dry-run is not a runtime acceptance gate. The existing `LC_SWEEP_SHARD=1/10 bash scripts/dev/test-local.sh --browser-click-sweep` invocation is the CI equivalent of `--browser-click-sweep@1/10`.
 
 ## Tiers
 
