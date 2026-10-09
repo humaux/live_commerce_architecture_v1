@@ -1,0 +1,148 @@
+{
+  "source_commit": "f18eb4878a500b55bae5ca08109ec3c107f56c00",
+  "evidence_class": "MOCK Graph + REAL_PG",
+  "commands": [
+    {
+      "command": "GOTOOLCHAIN=go1.27.1 go test -race -count=1 -run '^TestCommentDeletion' -v ./internal/integrations/metareply",
+      "exit": 1,
+      "log": "unit-red.log",
+      "sha256": "7c33cb2a8d4c9ee65245bcf0b9231a7a1fab955b89425eab1e5e9e536aa3df35",
+      "top_pass": 1,
+      "top_fail": 6,
+      "top_skip": 0,
+      "node_pass": 0
+    },
+    {
+      "command": "bash scripts/dev/test-focused.sh '^TestLiveConsoleLCN01DeletionEviction$' ./tests/foundation",
+      "exit": 1,
+      "log": "pg-red.log",
+      "sha256": "d74db4cdcadef982218ddbdb11611460b57d9a417ae40fb7595dca72c3462bab",
+      "top_pass": 0,
+      "top_fail": 1,
+      "top_skip": 0,
+      "node_pass": 0
+    },
+    {
+      "command": "GOTOOLCHAIN=go1.27.1 go test -race -count=1 -run '^TestCommentDeletionDelayedFailure' -v ./internal/integrations/metareply",
+      "exit": 1,
+      "log": "backoff-red.log",
+      "sha256": "0a9753982e7a6a4b8cc61359c74d304e2e477be34fac63cee115b0432546e8b4",
+      "top_pass": 0,
+      "top_fail": 1,
+      "top_skip": 0,
+      "node_pass": 0
+    },
+    {
+      "command": "GOTOOLCHAIN=go1.27.1 go test -race -count=1 -run '^TestCommentDeletionFacts404' -v ./internal/integrations/metareply",
+      "exit": 1,
+      "log": "facts-404-red.log",
+      "sha256": "a32cc50d5df658cbd4cc7690ec01c1de38e308acd07539c5a61438ff0a99f73f",
+      "top_pass": 0,
+      "top_fail": 1,
+      "top_skip": 0,
+      "node_pass": 0
+    },
+    {
+      "command": "GOTOOLCHAIN=go1.27.1 go test -count=1 -run '^TestCommentDeletionContractDefaults$' -v ./internal/integrations/metareply",
+      "exit": 1,
+      "log": "defaults-red.log",
+      "sha256": "41f28a0717506d7c9563f54ca79c16f5df31b8600903b691d6c5a437604dd60c",
+      "top_pass": 0,
+      "top_fail": 1,
+      "top_skip": 0,
+      "node_pass": 0
+    },
+    {
+      "command": "GOTOOLCHAIN=go1.27.1 go test -race -count=1 -v ./internal/integrations/metareply ./internal/integrations/meta/oauth",
+      "exit": 0,
+      "log": "package-final.log",
+      "sha256": "ab1c973b6bd1968e22686ced8284794b632e7be21b1df149dd07d3a52c26da1f",
+      "top_pass": 58,
+      "top_fail": 0,
+      "top_skip": 0,
+      "node_pass": 0
+    },
+    {
+      "command": "bash scripts/dev/test-focused.sh '^TestLiveConsoleLCN(01|02|04|05)' ./tests/foundation",
+      "exit": 0,
+      "log": "pg-green-3.log",
+      "sha256": "ade618226c0e070e0409ae553b67155bebeacbad31331b3d9f5b1f021e1ca46c",
+      "top_pass": 9,
+      "top_fail": 0,
+      "top_skip": 0,
+      "node_pass": 0
+    },
+    {
+      "command": "GOTOOLCHAIN=go1.27.1 go vet ./internal/integrations/metareply ./internal/integrations/meta/oauth ./cmd/claims-worker",
+      "exit": 0,
+      "log": "vet.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "top_pass": 0,
+      "top_fail": 0,
+      "top_skip": 0,
+      "node_pass": 0
+    },
+    {
+      "command": "bash scripts/dev/test-node.sh",
+      "exit": 0,
+      "log": "node.log",
+      "sha256": "2c52f7faa1b3305f65234b69f2a932924c70300cac96a83a5253b07a86ad6500",
+      "top_pass": 0,
+      "top_fail": 0,
+      "top_skip": 0,
+      "node_pass": 1148
+    },
+    {
+      "command": "pnpm --filter @live-commerce/admin typecheck",
+      "exit": 0,
+      "log": "typecheck.log",
+      "sha256": "23e008b9c7dead4bfd4e1c57f9dca304dfa7a082b07c24544bbd49dc1080a36a",
+      "top_pass": 0,
+      "top_fail": 0,
+      "top_skip": 0,
+      "node_pass": 0,
+      "raw_stdout_sha256": "a1e67e3654a27d2fb5c405ac8db166c9aec20d9dd1b72e70f8be73f0697a2b04",
+      "raw_stdout_path": "/Volumes/data/live_commerce_architecture_v1/output/lc-b2-deletion-eviction/typecheck.log",
+      "normalization": "Only final blank EOF line trimmed in review copy; raw uncompressed stdout retained at canonical path."
+    },
+    {
+      "command": "bash scripts/dev/check-gates.sh",
+      "exit": 0,
+      "log": "check-gates.log",
+      "sha256": "51cc5a2c038b420beed5ce045598805354aeb5f54173befb75316b044b3bb904",
+      "top_pass": 0,
+      "top_fail": 0,
+      "top_skip": 0,
+      "node_pass": 13
+    },
+    {
+      "command": "pnpm install --offline --frozen-lockfile --ignore-scripts",
+      "exit": 0,
+      "log": "deps.log",
+      "sha256": "8aaf3bcb87a508a583d26feb4aca35a2afe64d45ab7ff53b269dcd22819e793e",
+      "top_pass": 0,
+      "top_fail": 0,
+      "top_skip": 0,
+      "node_pass": 0
+    },
+    {
+      "command": "bash scripts/dev/check-gates.sh (with evidence staged)",
+      "exit": 0,
+      "log": "check-gates-packaged.log",
+      "sha256": "4c2a1cde70072f336e736247ae2446e76304055d291b2a6912932c1389503c4e"
+    }
+  ],
+  "diagnostic_logs": [
+    "unit-green.log: first green failed only a new test assumption of exact60s despite shared slot delay; corrected to also assert budget blocking",
+    "pg-green.log: pre-existing IG fallback test exposed new bridge wait/idle-transaction conflict",
+    "pg-green-2.log: wait fixed, legitimate facts404 was still wrongly converted into escalating backoff/unavailable",
+    "unit-green-2.log",
+    "unit-green-3.log",
+    "package-green.log"
+  ],
+  "not_run": [
+    "provider SANDBOX/LIVE",
+    "full foundation",
+    "browser-live-console deletion fixture (business MOCK lacks real poller/Graph chain)"
+  ]
+}
