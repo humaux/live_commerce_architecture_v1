@@ -376,7 +376,8 @@ export function useLiveSettingsController({
           action.resource === "live-settings/sold-out-reply"
         )
           setSettings(null);
-        fail(e);
+        if (action.resource.endsWith("/reminders") && e instanceof LiveSettingsError && e.status === 404) reportFailure(e);
+        else fail(e);
       }
     } finally {
       if (privacy.fence.current(ticket)) {

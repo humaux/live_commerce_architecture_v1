@@ -52,6 +52,13 @@ test("PR31 optional reminder GET 404 preserves healthy settings and blocklist",a
  assert.equal(h.output.remindersUnavailable,true);assert.equal(h.output.privacy.visible,true);assert.equal(h.output.privacy.blocked.current,false);
 });
 
+test("PR31 missing reminder POST is local even when staff cannot discover it with a report read",async t=>{
+ const env=environment(t);globalThis.fetch=async(input,init)=>init?.method==="POST"?response({code:"not_found"},404):reads(input);
+ const h=env.mount(()=>useLiveSettingsController({store:noReportStore,locale:"en",scene:sid,initialError:null}));await h.waitFor(()=>!h.output.loading&&h.output.settings!==null,"staff settings ready");
+ await h.output.run({method:"POST",resource:`live-sessions/${sid}/reminders`,key:"missing-reminder-route"});h.flush();
+ assert.equal(h.output.settings?.version,3);assert.deepEqual(h.output.blocked?.items,[]);assert.equal(h.output.remindersUnavailable,true);assert.equal(h.output.privacy.blocked.current,false);
+});
+
 test("PR31 actual authorized reminder read 403 still tears down all private state",async t=>{
  const env=environment(t);globalThis.fetch=async input=>String(input).includes("/reminders")?response({code:"forbidden"},403):reads(input);
  const h=env.mount(()=>useLiveSettingsController({store:allStore,locale:"en",scene:sid,initialError:null}));await h.settle();
@@ -63,6 +70,12 @@ test("PR31 same settings destination preserves the actual scene selector",async 
  const h=env.mount(()=>LiveSettings({store:allStore,locale:"en",scene:"",initialError:null}));await h.waitFor(()=>!node(h,n=>n.props["data-testid"]==="scene-select").props.disabled,"scene selector ready");
  assert.equal(h.raw.props.onBeforeNavigate(`/en/studio/settings?store=${store.id}`),true);
  h.flush();assert.equal(node(h,n=>n.props["data-testid"]==="scene-select").props.disabled,false,"no replacement means privacy remains live");
+});
+
+test("PR31 same valid settings URL without store keeps the resolved default-store lifecycle",async t=>{
+ const env=environment(t);Object.assign(env.window,{location:{href:"https://local.invalid/en/studio/settings"}});globalThis.fetch=async input=>reads(input);
+ const h=env.mount(()=>LiveSettings({store:allStore,locale:"en",scene:"",initialError:null}));await h.waitFor(()=>!node(h,n=>n.props["data-testid"]==="scene-select").props.disabled,"default-store selector ready");
+ h.raw.props.onBeforeNavigate("/en/studio/settings");h.flush();assert.equal(node(h,n=>n.props["data-testid"]==="scene-select").props.disabled,false);
 });
 
 for(const destination of [`/en/studio/settings?store=${store.id}&scene=${drafts[20].session_id}`,`/en/studio/settings?store=${drafts[20].session_id}`,`/zh-CN/studio/settings?store=${store.id}`])test(`PR31 actual navigation synchronously clears old private state: ${destination}`,async t=>{

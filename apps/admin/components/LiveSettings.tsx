@@ -74,8 +74,12 @@ export function LiveSettings({
         // Same page keys do not remount this component, so terminal teardown
         // would strand it forever. Other destinations still clear synchronously.
         if (destination) {
-          const target = new URL(destination, "https://local.invalid");
-          if (target.origin === "https://local.invalid" && target.pathname === `/${locale}/studio/settings` && target.searchParams.get("store") === storeID && (target.searchParams.get("scene") ?? "") === scene) return true;
+          const current = typeof window !== "undefined" && window.location?.href ? new URL(window.location.href) : null;
+          const target = new URL(destination, current?.href ?? "https://local.invalid");
+          // A missing store query resolves the same default store server-side;
+          // exact current-address navigation must not terminally revoke it either.
+          if (current && target.origin === current.origin && target.pathname === current.pathname && target.search === current.search) return true;
+          if (target.origin === (current?.origin ?? "https://local.invalid") && target.pathname === `/${locale}/studio/settings` && target.searchParams.get("store") === storeID && (target.searchParams.get("scene") ?? "") === scene) return true;
         }
         privacy.suspend();
         return true;
