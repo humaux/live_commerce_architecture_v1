@@ -62,9 +62,11 @@ grep -q '"deny": \["Bash"' scripts/agents/ext-agent.sh && grep -q 'READONLY:-0' 
 [ -f "$WT/output/integrator/tools/visual-review-prompt.md" ] || { printf 'NOT_RUN: trusted trunk %s has no visual-review rubric yet\n' "${TRUST:0:8}" | tee "$OUT/findings.md"; exit 4; }
 rc=0; READONLY=1 MODEL=kimi-for-coding PROVIDER=kimi bash scripts/agents/ext-agent.sh "$WT" "$WT/output/integrator/tools/visual-review-prompt.md" "$OUT" high > "$OUT/run.log" 2>&1 || rc=$?
 F="$WT/output/ext-agents/visual-review/findings.md"
-if [ "$rc" -eq 0 ] && [ -f "$F" ] && head -1 "$F" | grep -qE '^VERDICT: (PASS|FIX)'; then
+# Complete reports only: every captured page has exactly one PASS|FIX section (PR #23 review).
+chk=""; [ "$rc" -eq 0 ] && [ -f "$F" ] && { chk=$(python3 "$WT/output/integrator/tools/visual_review_check.py" "$WT/visual-shots/index.json" "$F" 2>&1) || { cp "$F" "$OUT/findings.raw.md"; rc=5; }; }
+if [ "$rc" -eq 0 ] && [ -f "$F" ]; then
   cp "$F" "$OUT/findings.md"; head -1 "$OUT/findings.md"; grep -c '^- \[P1\]' "$OUT/findings.md" | sed 's/^/P1 count: /' || true
 else
-  printf 'NOT_RUN: no reviewer verdict (ext-agent rc=%s, findings file %s); see %s\n' "$rc" "$([ -f "$F" ] && echo 'without a VERDICT line' || echo missing)" "$OUT/run.log" | tee "$OUT/findings.md"
+  printf 'NOT_RUN: no complete reviewer verdict (rc=%s; %s); see %s\n' "$rc" "${chk:-findings file missing}" "$OUT/run.log" | tee "$OUT/findings.md"
   exit 4
 fi

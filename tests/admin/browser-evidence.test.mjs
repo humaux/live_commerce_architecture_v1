@@ -188,3 +188,19 @@ test("explicit evidence roots inside a repository must be ignored and untracked 
     assert.equal(run(realpathSync(tmpdir())).status, 0, "a root outside the repository is accepted");
   } finally { rmSync(repo, { recursive: true, force: true }); }
 });
+
+test("visual review refuses an incomplete report: every captured page needs exactly one PASS|FIX section (PR #23 review)", () => {
+  const dir = realpathSync(mkdtempSync(path.join(tmpdir(), "lc-visual-check-")));
+  try {
+    const index = path.join(dir, "index.json"), report = path.join(dir, "findings.md");
+    writeFileSync(index, JSON.stringify({ shards: [
+      { shard: "a/ui-visual-audit/1", index: { captured: [{ app: "admin", id: "orders" }, { app: "admin", id: "orders" }] } },
+      { shard: "b/ui-visual-audit/1", index: { captured: [{ app: "storefront", id: "cart" }] } }] }));
+    const check = (text) => { writeFileSync(report, text); return spawnSync("python3", [new URL("../../output/integrator/tools/visual_review_check.py", import.meta.url).pathname, index, report], { encoding: "utf8" }).status; };
+    assert.equal(check("VERDICT: PASS\n## admin orders: PASS\n## storefront cart: FIX\n- [P2] en-390: x\n"), 0, "complete report accepted");
+    assert.notEqual(check("VERDICT: PASS\n"), 0, "verdict-only report refused");
+    assert.notEqual(check("VERDICT: PASS\n## admin orders: PASS\n"), 0, "missing page refused");
+    assert.notEqual(check("VERDICT: PASS\n## admin orders: PASS\n## admin orders: FIX\n## storefront cart: PASS\n"), 0, "duplicate section refused");
+    assert.notEqual(check("## admin orders: PASS\n## storefront cart: PASS\n"), 0, "missing VERDICT refused");
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
