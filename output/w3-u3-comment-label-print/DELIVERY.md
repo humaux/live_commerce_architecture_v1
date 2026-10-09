@@ -3,9 +3,17 @@ Depends on: frozen brief, live-console-v1 section 7.4, PR18 trunk and approved t
 Used by: integrator K3/PR preparation and backend replay-receipt owner; no all-green claim. -->
 # W3-U3 comment label print — DELIVERY
 
-**Status: UI_DELIVERED; lost-ACK same-key case = BLOCKED(backend f4c26fcb). Full unit acceptance is not all green.**
+**Current status: LABEL_GATE_GREEN / A3_RESOLVED; overall NOT_READY pending LC-U2a scoped404 waits (task8f1bb58f).**
 
-## Latest K3 round-one P2 batch
+## Latest post-PR30 acceptance
+
+Merged origin `b1bfbeb3` (#30 principal-bound receipts), #23/#25 as **042758c5**. Original label/workspace specs and label component unchanged.
+Original lost-ACK case now GREEN: actual sameKey=true, counts=[7,7]. Labels9/9 and current45 observed ledger rows all PASS.
+Full `--browser-live-console` still exits **1**, solely because two existing LCU2_404 workspace waits timeout (workspace21/23).
+Owner delegated those diagnostics to LC-U2a; no test, timeout or assertion changed. Node1366/0, tsc/check-gates exit0.
+**Current commands/exits,18 screenshots,ledger and handoff: `pr30-ready/DELIVERY.md`. Do not report general READY until the full-mode failures are resolved or ruled on.**
+
+## Historical K3 round-one P2 batch (before PR30 integration)
 
 - Current tested source **b245fef897837aaebefcd56ac90a1b475cd195bc**. Two requested P2 fixes are implemented; current full browser acceptance remains **NOT_RUN / NOT_READY**.
 - Ledger actual now records observed DOM/API counts, states, dimensions and reload values, with outcomes derived from those values. It never copies expected; failures retain safe actual state. Names/text/ref/key are not written to the ledger.

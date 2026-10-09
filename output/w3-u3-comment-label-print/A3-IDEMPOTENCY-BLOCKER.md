@@ -3,6 +3,8 @@ Depends on: live-console-v1 §7.4, real signed Next/Go/PG print acceptance and e
 Used by: integrator-assigned backend task f4c26fcb and W3-U3 final gate. -->
 # A3 print facts — backend handoff (P1 / I02)
 
+**RESOLVED after PR #30:** backend `b1bfbeb3` merged into W3-U3 `042758c5`; original real-click replay now returns **[7,7]** with the same key. Current proof: `pr30-ready/DELIVERY.md`. Keep the historical red below; this is no longer the active blocker. Full wrapper has two separate LC-U2a response-wait failures, delegated as task8f1bb58f.
+
 Owner ruling: “交给后端单元修复，保留 UI 范围”.
 Backend coordination task: `f4c26fcb-ab2d-4a1b-9e29-0908e02406d3`, claimed by `qwen-aliyun-backend`; branch `unit/lc-a3-print-idempotency`. This UI author does not implement the backend fix.
 UI handoff accepts only this case as **BLOCKED(backend f4c26fcb)**; the existing test still fails normally and is not skipped.
