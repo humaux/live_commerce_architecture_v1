@@ -116,8 +116,8 @@ Not: SQL, contracts, other `internal/claims` files, `internal/integrations/meta/
 
 ## Verify
 ```sh
-GOTOOLCHAIN=go1.27.1 go test -race -count=1 ./internal/integrations/core ./internal/integrations/metareply ./internal/claims ./internal/claimsintake ./cmd/claims-worker ./cmd/meta-admin
-GOTOOLCHAIN=go1.27.1 go vet ./... && gofmt -l internal cmd
+GOTOOLCHAIN=go1.27.2 go test -race -count=1 ./internal/integrations/core ./internal/integrations/metareply ./internal/claims ./internal/claimsintake ./cmd/claims-worker ./cmd/meta-admin
+GOTOOLCHAIN=go1.27.2 go vet ./... && gofmt -l internal cmd
 bash scripts/dev/test-focused.sh '^TestT06'   # dispatcher + external-operation regression (phase B)
 ```
 Logs → main checkout `output/meta-intake-reply/`. MCI gates belong to `meta-intake-tests`.

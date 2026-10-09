@@ -69,7 +69,7 @@ Nothing else (not the cores' unit tests, not `apps/**`, not `deploy/**`, not con
 
 ## Verify
 ```sh
-GOTOOLCHAIN=go1.27.1 go vet ./tests/foundation ./internal/payments/...
+GOTOOLCHAIN=go1.27.2 go vet ./tests/foundation ./internal/payments/...
 LC_FOCUSED_TIMEOUT=2400s bash scripts/dev/test-focused.sh '^TestStripeSL0[2-69]'
 STRIPE_SANDBOX=1 bash scripts/dev/test-focused.sh '^TestStripeSL08'     # owner test RAK only; else NOT_RUN
 pnpm build:storefront && node tests/storefront/legal-pages.mjs
