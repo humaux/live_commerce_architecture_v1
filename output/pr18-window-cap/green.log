@@ -1,0 +1,17 @@
+✔ PR18 A8 paged list stays bounded across fresh heads and stops older at cap (113.358083ms)
+✔ PR18 deletion HEAD clears selected comment composer but keeps history and public guard (5.323208ms)
+✔ PR18 short complete HEAD clears oldest selected comment and composer (3.37175ms)
+✔ PR18 short complete HEAD removes an absent oldest live row (0.787708ms)
+✔ PR18 full or cursor-bearing HEAD keeps the floor rule (0.097ms)
+✔ PR18 loaded history stays protected from short complete HEAD (0.593375ms)
+✔ PR18 deletion HEAD removes absent refs inside its window (0.085541ms)
+✔ PR18 deletion HEAD keeps paged history below its oldest tuple (0.068625ms)
+✔ PR18 empty deletion HEAD is not evidence that any ref was deleted (0.063208ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 474.235958
