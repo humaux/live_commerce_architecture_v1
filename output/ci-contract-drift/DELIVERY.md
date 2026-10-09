@@ -1,5 +1,43 @@
 # CI-DRIFT delivery
 
+## Current batch — PR #33 round 1, six review findings (2026-10-10)
+
+- **READY for integrator review**, branch `unit/ci-contract-drift`, base `6023b55a`; source commits `ce5860a3`, `3febbff5`, **`5f64bd2853b9ae0bb431f471436201f05d703b82`**. Synced integrator merge `de592635` and required-plan wiring `6023b55a`, both preserved. No push. Implementer Codex-3; parent model/effort unavailable in this runtime; isolated Go worker and read-only reviewer explicitly `gpt-6.1-sol/high`.
+- Allowed writes: `scripts/dev/contractdrift/**`, `docs/delivery/GATES.md`, this unit's DELIVERY and curated evidence. Temporary actual product-source/BFF mutations were restored byte-for-byte; no final apps/internal/contracts/module/lock/workflow diff against `6023b55a`. No new dependency, mode, contract or baseline entry; baseline **237** unchanged. LC-U3 remains owner-paused with its seven uncommitted files and checkpoint preserved.
+
+| Finding | Root cause and final behavior | Real CLI regression |
+| --- | --- | --- |
+| P1 methodless Handle | Handle skipped unknown classification; unproven children now UNRESOLVED MOUNT, new/touched sources fail and unchanged mounts warn. Unknown `/` cannot establish child coverage. | `TestGoReviewMethodlessHandleCLI`: new, legacy, touched registration and child dependency |
+| P1 BFF deletion/retarget | Current-only aggregate could hide a formerly exposed route; compare actual producer file + upstream METHOD/path with merge-base, before dedupe. BFF_REMOVED always errors and cannot be seeded; full joint Go+contract retirement permitted. Backend-only routes stay INFO. | `TestReviewBFFRemovedRealCLI`, `TestReviewBFFRetargetRealCLI`, `TestReviewBFFDuplicateProducerAndJointRetirement` |
+| P1 diff ownership spoof | Hunk content impersonated file headers; only `diff --git` starts a file header block, and hunk `---`/`+++` content is ignored. | `TestReviewDiffHunkHeadersRealCLI` |
+| P2 suffix fallback | `*route("")` naming suppressed real routes; finite actual first-WriteHeader(405) body/status flow required, including imported responders and dependencies. Unknown factory remains a business route. | `TestGoReviewRouteSuffixCLI`, `TestGoReviewFactory405CLI`, `TestGoReview405ProofCLI` |
+| P2 aliases | Bound ServeMux method-value calls silently vanished; finite alias/same-package argument propagation reports UNRESOLVED with assignment/call/argument provenance. | `TestGoReviewMethodValueAliasCLI` |
+| P2 colon | Segment-internal colons collapsed distinct literals; only whole `/:name` segments normalize. | `TestGoReviewColonParameterCLI`, `TestGoReviewLiteralColonCLI` |
+
+- Additional 405 proof guard: header arguments committing200 and local decorator-name shadowing each produced erroneous CLI0. `TestReview405DecoratorFirstWriteAndShadowCLI` is red→green; only typed pure header operations and the correctly bound delegate can preserve405. Assertions were retained; old opaque dispatch checks now additionally require the newly reported mounts.
+- All six findings have **actual OS CLI red tests**. `review-round1/` contains their red logs and final Go green log. Three P1 **actual repository** mutations at final source: add the requested methodless NotFoundHandler registration; remove actual `apps/admin/app/api/stores/route.ts`; inject spoof hunk ownership and touch an unchanged-key legacy call in actual `internal/httpapi/handler.go`. Each gate exits **1**, then exact restoration exits **0** with equal original/restored hashes. `review-round1/real-mutations.json` and per-case JSON bind those results to `5f64bd28`.
+
+| Local gate at 5f64bd28 | Result |
+| --- | --- |
+| `GOFLAGS=-p=1 go test -race -count=1 -timeout=240s -v ./scripts/dev/contractdrift` | 0, **43** top-level tests |
+| `bash scripts/dev/test-node.sh` | 0, **1323** passes |
+| `cd apps/admin && pnpm exec tsc --noEmit -p .` | 0 |
+| `bash scripts/dev/check-gates.sh` | 0 |
+| `go vet ./scripts/dev/contractdrift` | 0 |
+| `bash scripts/dev/check-pkgdocs.sh` / `bash scripts/dev/depmap.sh --check` | 0 /0 |
+| `bash scripts/dev/test-local.sh --list` | 0, registry unchanged |
+
+- Evidence **E3 STATIC**, source hash **`29dbde62e8d012c855a340900dd876d0b8a5f70cfaede0a3fbd1e5774cd538ff`**; every final gate records unchanged source, tracked status and historical-output hash. Current inventories: Go278, contracts146, BFF292, errors0/warnings362. Root-local admission memo fixes7 formerly missed BFF tuples; baseline remains237. Curated index `review-round1-evidence.json`; raw task-local logs in `output/playwright/ci-contract-drift-r1/`.
+- Read-only parent ratchet/diff review at `ce5860a3` found no scopedP0/P1, E1 only. Final independent K3/CI remains integrator-owned. The Go worker's check-gates stopped for missing `typescript-api` in its isolated worktree; parent's installed worktree gate passed. One extra fixture had a brace setup error, corrected before its green run; it is not counted as causal red evidence.
+- Boundaries: unproven child muxes remain unknown; finite body proofs deliberately fail closed. Producer identity is file + upstream METHOD/path, not arbitrary browser-export semantics. No claim of API runtime behavior or provider acceptance.
+
+### CI gates / NOT_RUN
+
+Required `gates.yml` plan job continues running the drift CLI with the PR base SHA and propagating exit1. `node scripts/dev/pr-modes.mjs origin/r3/integration` selects **52** modes because shared gate/workflow paths changed; exact list is in `review-round1-evidence.json`. Browser modes, full foundation/G07, API/PG/provider/SANDBOX/LIVE and deployment are NOT_RUN locally for this static-tool batch. Integrator runs K3 pre-review/CI and pushes. No processes left running.
+
+
+## Prior delivery — historical, superseded by the round 1 batch below
+
 - **READY**; branch `unit/ci-contract-drift`, worktree `.worktrees/ci-contract-drift`, base `7975160e`. Tested source commit **`00791b32321db0972200fc05b2b75102c9d5e928`**. Parent runtime model/effort is not exposed; source-first Go/BFF workers and independent core reviewer explicitly used `gpt-6.1-sol/high` (Go inventory explorer medium). Integrator pushes/reviews; no push or deployment performed.
 - Zero external dependencies. `go/parser`/AST resolves scoped constants/concats, aliases, same-package wrappers and finite loops; no go.mod/go.sum/lockfile change. TS lexer/resolver enumerates actual BFF method tables/grammars/forwarders independently of Go candidates, with one mapping table in `bff.go`. Contracts use JSON positions and absolute MD v1 routes; a preceding `Route base: /v1/...` is mandatory for relative forms. Every finding has file:line provenance.
 - `baseline.json` records **237** legacy mismatches. Initial loading and seeding require merge-base findings; subsequent baseline keys only shrink. New, touched legacy, stale and added baseline entries exit1. Current and deleted positions use the merge-base's real source snapshot (including module scope), not stale baseline line numbers; committed/staged/working/untracked changes are covered. Changed unknown source fails. Methodless405 and mux mounts are notes. Opaque custom Go dispatch reports UNRESOLVED, never a claimed real404.
