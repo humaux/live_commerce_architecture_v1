@@ -193,6 +193,8 @@ async function stableLocaleTarget(p,mobile=false) {
       headDeadline = setTimeout(() => reject(new Error(`BO01 ${mobile ? "mobile" : "desktop"} destination-head wait exceeded 10000ms: GET /api/buyer/destination at ${p.url()}`)), 10000);
     })]);
   } finally { clearTimeout(headDeadline); }
+  // Calibration makes the unheld target head finish before observing loading, as the CI artifact did.
+  if(warmup&&headLoading.sourcePath==="/en/checkout")await expect(p.locator('input[name="recipient_name"]')).toBeEnabled();
   await expect(p.getByTestId("address-section")).toBeVisible();
   await expect(p.getByTestId("cart-line")).toHaveCount(1);
   await expect(p.getByRole("status").filter({hasText:"正在載入收件資訊…"})).toBeVisible();
@@ -220,7 +222,7 @@ try {
       const call={path:req.url,method:req.method,key:req.headers["idempotency-key"],body:body.length?body.toString():null,sourcePath:new URL(req.headers.referer||origin).pathname};
       if(req.url.startsWith("/api/buyer/"))calls.push(call);
       const active=hook&&hook.path===req.url&&(!hook.method||hook.method===req.method)?hook:null;
-      if(active){if(!active.repeat)hook=null;active.entered.resolve();if(active.before)await active.release.promise;}
+      if(active){active.sourcePath=call.sourcePath;if(!active.repeat)hook=null;active.entered.resolve();if(active.before)await active.release.promise;}
       const out=await relay(port,req,body);call.status=out.status;
       if(req.url==="/api/buyer/destination"&&req.method==="GET") {
         bo01Reads.push({sourcePath:call.sourcePath,status:out.status,held:!!active?.after});
