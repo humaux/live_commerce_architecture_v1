@@ -14,6 +14,14 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 type VNode = { type: unknown; props: Record<string, any> };
 type Slot = { value?: any; deps?: unknown[]; cleanup?: () => void };
 let active: Host;
+// WebCrypto digests (session fences, settings-client sessionBoundary) finish on the libuv pool, not after a fixed number of
+// event-loop turns; settle() waits for every in-flight digest so slow runners cannot outrun a fixed turn count (PR #18 CI, twice).
+let pendingDigests = 0;
+const realDigest = crypto.subtle.digest.bind(crypto.subtle);
+crypto.subtle.digest = ((...args: Parameters<SubtleCrypto["digest"]>) => {
+  pendingDigests++;
+  return realDigest(...args).finally(() => pendingDigests--);
+}) as SubtleCrypto["digest"];
 const same = (a?: unknown[], b?: unknown[]) =>
   !!a && !!b && a.length === b.length && a.every((v, i) => Object.is(v, b[i]));
 // A generic synchronous hook scheduler: it only implements hook storage/dependency ordering.
@@ -73,10 +81,15 @@ class Host {
     return this.output;
   }
   async settle() {
-    // WebCrypto session fences and Promise-finally reads yield to the event loop.
-    for (let i = 0; i < 12; i++) {
-      this.flush();
-      await new Promise<void>((done) => setImmediate(done));
+    // WebCrypto session fences and Promise-finally reads yield to the event loop; repeat until no digest is in flight
+    // (bounded), since a digest's continuation may start another read and another digest.
+    for (let round = 0; round < 50; round++) {
+      for (let i = 0; i < 12; i++) {
+        this.flush();
+        await new Promise<void>((done) => setImmediate(done));
+      }
+      if (pendingDigests === 0) break;
+      for (let i = 0; i < 2000 && pendingDigests > 0; i++) await new Promise<void>((done) => setImmediate(done));
     }
     this.flush();
   }
