@@ -12,6 +12,7 @@
 # Needs: gh, the Kimi subscription key file read by ext-agent.sh. Never sends secrets: screenshots show seeded MOCK data only.
 set -euo pipefail
 RUN=${1:?usage: visual_review.sh <gates-run-id>}
+[[ $RUN =~ ^[0-9]+$ ]] || { echo "visual_review: run id must be numeric" >&2; exit 2; }   # it reaches rm -rf and worktree paths
 ROOT=/Volumes/data/live_commerce_architecture_v1; R=humaux/live_commerce_architecture_v1
 OUT=$ROOT/output/visual-review/$RUN; rm -rf "$OUT"; mkdir -p "$OUT/dl"
 SHA=$(gh run view "$RUN" -R $R --json headSha -q .headSha)   # recorded only; never checked out
