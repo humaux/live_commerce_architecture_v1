@@ -1,0 +1,33 @@
+✔ settings actual route permits only auth-scoped live reads/writes and keeps CAS receipt (24.19525ms)
+✔ bodyless reminder/DELETE, private blocklist projection and restricted followup copy are exact (7.4605ms)
+✔ real template publication rejects unknown fields and auth failures clear cookies even without JSON (2.042708ms)
+✔ success receipts must describe the exact requested command, otherwise the result remains unknown (1.417791ms)
+✖ W3-U2 Next proxy admits settings routes without weakening Studio raw-path guards (156.220333ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 4
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 269.721958
+
+✖ failing tests:
+
+test at tests/admin/live-settings-bff.test.ts:365:1
+✖ W3-U2 Next proxy admits settings routes without weakening Studio raw-path guards (156.220333ms)
+  AssertionError [ERR_ASSERTION]: GET live-sessions/99e39cbe-ed5b-4b92-a5b0-242ba2b67412/reminders
+  
+  404 !== 200
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-bff.test.ts:372:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 404,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

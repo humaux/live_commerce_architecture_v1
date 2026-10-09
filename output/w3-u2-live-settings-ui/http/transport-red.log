@@ -1,0 +1,53 @@
+=== RUN   TestLiveSettingsHTTPFullRouterTransport
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/no_bearer
+    sold_out_settings_test.go:42: want 401 got 404 {"code":"not_found","message":"Resource not found.","request_id":"002e602844e8cd9b412f245f42fea19a","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/query
+    sold_out_settings_test.go:42: want 422 got 404 {"code":"not_found","message":"Resource not found.","request_id":"3cc8406ac2f9efdf38c644a3533ca1b9","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/empty_query
+    sold_out_settings_test.go:42: want 422 got 404 {"code":"not_found","message":"Resource not found.","request_id":"db043869d12944226fc5ec5ecc8c4a05","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/GET_body
+    sold_out_settings_test.go:42: want 422 got 404 {"code":"not_found","message":"Resource not found.","request_id":"082ef882ddc87cf5a4475331a2ad8d26","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/GET_key
+    sold_out_settings_test.go:42: want 422 got 404 {"code":"not_found","message":"Resource not found.","request_id":"2fc09739d0f52df264f26ac8b0ac1f58","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/HEAD
+    sold_out_settings_test.go:42: want 405 got 404 {"code":"not_found","message":"Resource not found.","request_id":"00e1ebbe2272f1d251b8a1dc90b84e31","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/POST
+    sold_out_settings_test.go:42: want 405 got 404 {"code":"not_found","message":"Resource not found.","request_id":"18d3052915900a8a5b5d398d46fb30dd","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/missing_key
+    sold_out_settings_test.go:42: want 422 got 404 {"code":"not_found","message":"Resource not found.","request_id":"f65594fd8e22c0c7b3d128808f43c64b","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/duplicate_key
+    sold_out_settings_test.go:42: want 422 got 404 {"code":"not_found","message":"Resource not found.","request_id":"cbf412299cb15088f4ac106b9e67efe3","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/unknown_field
+    sold_out_settings_test.go:42: want 400 got 404 {"code":"not_found","message":"Resource not found.","request_id":"7df8c526719d0e672aea1ce62f5ed888","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/null_boolean
+    sold_out_settings_test.go:42: want 400 got 404 {"code":"not_found","message":"Resource not found.","request_id":"fe163c34f984698bc6b892a9218619b5","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/top_null
+    sold_out_settings_test.go:42: want 400 got 404 {"code":"not_found","message":"Resource not found.","request_id":"79b17ed374304dc18866abff9ca2b633","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/missing_boolean
+    sold_out_settings_test.go:42: want 422 got 404 {"code":"not_found","message":"Resource not found.","request_id":"00528b55c7097d5a34b7730006218a57","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/duplicate_field
+    sold_out_settings_test.go:42: want 400 got 404 {"code":"not_found","message":"Resource not found.","request_id":"90915813c88a18eb2d31599d7069f0ed","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/negative_CAS
+    sold_out_settings_test.go:42: want 422 got 404 {"code":"not_found","message":"Resource not found.","request_id":"6cb44cbfd538503f2d65efecb7b81d7e","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/zero_template_version
+    sold_out_settings_test.go:42: want 422 got 404 {"code":"not_found","message":"Resource not found.","request_id":"0a5eb512758602f254fc144537162288","retryable":false,"details":{}}
+--- FAIL: TestLiveSettingsHTTPFullRouterTransport (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/no_bearer (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/query (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/empty_query (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/GET_body (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/GET_key (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/HEAD (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/POST (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/missing_key (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/duplicate_key (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/unknown_field (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/null_boolean (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/top_null (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/missing_boolean (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/duplicate_field (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/negative_CAS (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/zero_template_version (0.00s)
+FAIL
+FAIL	livecommerce/internal/httpapi	0.455s
+FAIL

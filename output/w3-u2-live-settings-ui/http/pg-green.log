@@ -1,0 +1,21 @@
+=== RUN   TestLiveSettingsHTTPStoreScopeCASReplay
+=== RUN   TestLiveSettingsHTTPStoreScopeCASReplay/unauthorized_PUT_403
+=== RUN   TestLiveSettingsHTTPStoreScopeCASReplay/cross-store_PUT_404
+=== RUN   TestLiveSettingsHTTPStoreScopeCASReplay/cross-store_GET_404
+=== RUN   TestLiveSettingsHTTPStoreScopeCASReplay/missing_auth_401
+=== RUN   TestLiveSettingsHTTPStoreScopeCASReplay/stale_PUT_409
+=== RUN   TestLiveSettingsHTTPStoreScopeCASReplay/read_fixed_default
+=== RUN   TestLiveSettingsHTTPStoreScopeCASReplay/CAS_and_replay
+=== RUN   TestLiveSettingsHTTPStoreScopeCASReplay/published_and_fixed_template_rules
+--- PASS: TestLiveSettingsHTTPStoreScopeCASReplay (1.32s)
+    --- PASS: TestLiveSettingsHTTPStoreScopeCASReplay/unauthorized_PUT_403 (0.00s)
+    --- PASS: TestLiveSettingsHTTPStoreScopeCASReplay/cross-store_PUT_404 (0.00s)
+    --- PASS: TestLiveSettingsHTTPStoreScopeCASReplay/cross-store_GET_404 (0.00s)
+    --- PASS: TestLiveSettingsHTTPStoreScopeCASReplay/missing_auth_401 (0.00s)
+    --- PASS: TestLiveSettingsHTTPStoreScopeCASReplay/stale_PUT_409 (0.01s)
+    --- PASS: TestLiveSettingsHTTPStoreScopeCASReplay/read_fixed_default (0.00s)
+    --- PASS: TestLiveSettingsHTTPStoreScopeCASReplay/CAS_and_replay (0.02s)
+    --- PASS: TestLiveSettingsHTTPStoreScopeCASReplay/published_and_fixed_template_rules (0.02s)
+PASS
+ok  	livecommerce/tests/foundation	3.107s
+test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0
