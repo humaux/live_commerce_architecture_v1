@@ -1,0 +1,14 @@
+[
+  {
+    "command": [
+      "bash",
+      "scripts/dev/test-node.sh"
+    ],
+    "exit": 1,
+    "source": "f538a96df5a7f4e52ab059fe8b85f97212f5478a",
+    "log": "output/w3-u2-live-settings-ui/trunk-resume/node.log",
+    "sha256": "7259e0acc276119d10c7173f4051835a8b65b959234de9caffa72a36c5b59030",
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/output/w3-u2-live-settings-ui/trunk-resume/logs/node.log",
+    "raw_sha256": "5c74d2846b82b806fcd0a7677308ea1b70f6885ccd00e362c452dc40357833e9"
+  }
+]

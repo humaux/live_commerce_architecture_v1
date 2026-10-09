@@ -1,0 +1,13 @@
+✔ only frozen session-scoped manual operations are available (1.068541ms)
+✔ private notes and sold-out drafts respect rune limits and closed placeholders (0.270333ms)
+✔ restricted rows can never advertise copying, and checkout links cannot carry bearer data (0.247625ms)
+✔ three admin locales preserve the mandatory policy copy and real PR planner includes this new mode (2.660333ms)
+✔ live-settings is one inert registry entry with the existing admin/PG command (14.193208ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 107.730166

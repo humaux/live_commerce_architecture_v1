@@ -1,0 +1,243 @@
+✔ R10: a fixed or sticky bar covering main content after scrolling (2.770666ms)
+✔ R11: controls narrower than a usable width (0.619708ms)
+ℹ tests 452
+ℹ suites 0
+ℹ pass 452
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ merchant reason text translates ledger events and conceals unknown or prototype codes (0.097666ms)
+✔ ledger read navigation requires effective integration:read permission regardless of role (0.072458ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ Design version published_at cell uses Taipei at the year boundary (2.104083ms)
+✔ ManualOrder bank-transfer expiry uses Taipei at the year boundary (2.491417ms)
+ℹ tests 53
+ℹ suites 0
+ℹ pass 53
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ Design version published_at cell uses Taipei at the year boundary (2.729792ms)
+✔ ManualOrder bank-transfer expiry uses Taipei at the year boundary (2.874542ms)
+ℹ tests 53
+ℹ suites 0
+ℹ pass 53
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ orders-v2 rejects client count approximations, unbounded or extra response data (0.148ms)
+✔ all three locales label every task queue, payment and delivery mode (0.31825ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 82.690958
+✔ numeric store IDs have no suggestion BFF or browser client (1.036042ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ PS1 production build validates config; public data is not bundled through NEXT_PUBLIC (1.11025ms)
+✔ PS review: admin image installs the manifests for its workspace dependencies before building (1.714708ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ audience-read is exactly the new local intention POST and never a data GET or queried write (0.230958ms)
+✔ route fails closed without ads:read and is not a duplicate navigation entry; locale keys match (0.093458ms)
+ℹ tests 37
+ℹ suites 0
+ℹ pass 37
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ no account id, key or approval shape is in any real body (2.456834ms)
+✔ the real statements display literally as signed contributions that add up to the server's net (9.485542ms)
+ℹ tests 48
+ℹ suites 0
+ℹ pass 48
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ PE14 no-op has no command fields and changed axes explicitly archive omitted variants (0.089833ms)
+✔ PE14 replacement SKU edit excludes create-only code from the strict patch grammar (0.193125ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ UNKNOWN retry 403 authorization loss requires reconciliation, not a fresh command (0.630333ms)
+✔ a conclusive command rejection stays distinct from authorization loss (0.730125ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ LC-U1 delayed copy completion cannot navigate after store switch or unmount (0.15125ms)
+✔ LC-U1 receipt fence survives cookie rotation; pending replay still has a separate session boundary (0.409458ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 27
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ reset invalidates old buffers and cursor before reread; older page cannot advance live cursor (0.099333ms)
+✔ filter resources have only authorised opaque ids; backoff is capped and success resets (0.051917ms)
+ℹ tests 75
+ℹ suites 0
+ℹ pass 75
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ SessionCopy resyncs closed same-ID titles, preserves open edits and cancels to latest draft (21.776959ms)
+✔ SessionCopy submit uses latest version; UNKNOWN request survives later draft/input changes (21.718125ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ M7 link response shape is closed (0.170792ms)
+✔ host prompt copy is the frozen text, verbatim (0.0865ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ a valid active zero-main product keeps an inline repair hint rather than a page error (3.288708ms)
+✔ a new product issues the image-axis stage only for a chosen axis (1.029625ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ an oversized phone JPEG is encoded below the cap after oriented scaling (0.756583ms)
+✔ a large transparent PNG stays alpha-capable and is never painted with an opaque matte (0.459541ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ MOU keeps native headed checks runnable on a Linux CI worker without DISPLAY (12.751958ms)
+✔ pick fixture serves the scoped parcel reads required by the orders page (5.48025ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ readOpenParcelGroups 503 preserves parent and local retry recovers actual DTOs (4.253041ms)
+✔ captured parent groups callback refuses hidden scope (2.167084ms)
+ℹ tests 30
+ℹ suites 0
+ℹ pass 30
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ P2 report products.csv real session/CSRF response is private and Vary Cookie (0.301541ms)
+✔ P2 report malformed query and wrong CSRF are rejected by actual helpers before upstream (0.22875ms)
+ℹ tests 118
+ℹ suites 0
+ℹ pass 118
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ order preview counts units while first CSV record numbers can exceed rows_total (0.088833ms)
+✔ commit receipt has exactly five keys and no extra customer cells (0.096417ms)
+ℹ tests 57
+ℹ suites 0
+ℹ pass 57
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ aggregate click: a route added to the registry after the shards ran cannot pass (the registry is re-read) (0.404708ms)
+✔ aggregate visual: honest shards pass; a missing shard, a missing shot, a blocking verdict and a registry route outside the universe each fail (5.274417ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ pack: deterministic, balanced to within the longest test, every name once (7.051083ms)
+✔ parseDurations: top-level lines only (1.584292ms)
+ℹ tests 42
+ℹ suites 0
+ℹ pass 42
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ a ticket from another store/page fence is never accepted (0.041125ms)
+✔ focus while already visible preserves the active epoch and the uncertain reply receipt (0.087167ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 24
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ quota recovery gives exact zh-CN comment-quota and DM-window instructions beside copy only (0.091917ms)
+✔ quota recovery gives exact en comment-quota and DM-window instructions beside copy only (0.103792ms)
+ℹ tests 125
+ℹ suites 0
+ℹ pass 125
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ three admin locales preserve the mandatory policy copy and real PR planner includes this new mode (1.37225ms)
+✔ live-settings is one inert registry entry with the existing admin/PG command (11.709625ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ W3-U2 captured command cannot dispatch after unmount (1.622792ms)
+✔ W3-U2 captured BuyerPanel add cannot dispatch after native hide (5.409916ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0

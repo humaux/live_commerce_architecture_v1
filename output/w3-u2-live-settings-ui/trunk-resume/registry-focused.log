@@ -1,0 +1,38 @@
+✔ mode discovery has no Docker/build dependency and includes the existing universe (28.019583ms)
+✔ dry-run resolves a mode without executing dependencies and keeps its command environment (58.31025ms)
+✔ one appended case is discovered and dispatched; malformed and duplicate registry entries fail closed (41.011791ms)
+✔ registry discovery cannot silently lose indented, aliased or unrecognised Bash case arms (3.386958ms)
+✔ backend-only paths run foundation-shards only (0.742916ms)
+✔ node tests of deploy scripts and of the CI planner are backend-only (they cannot change a browser) (1.191209ms)
+✔ a UI path adds the whole browser set, including click-sweep and visual-lint (5.162208ms)
+✔ docs-only and output-only diffs keep the single required check (foundation-shards) (0.260167ms)
+✔ legacy browser_* paths still select all browsers; a known untagged foundation file stays backend-only (0.487125ms)
+✔ legacy deploy prefixes remain selected and unrelated paths do not select smoke (1.570292ms)
+✔ the browser set is release-gate's browser-mode universe minus the documented exclusions (53.895792ms)
+✔ every real browser-tagged foundation file selects registry browser modes, including non-browser names (173.932084ms)
+✔ tagged runner discovery follows registry additions, command arrays and line continuations (1.056292ms)
+✔ deploy smoke is selected for its workflow, verdict/helpers and executable test inputs (1.50225ms)
+✔ new selection never drops legacy modes or deploy for any tracked path (421.648292ms)
+✔ CLI classifies merge-base and explicit head, including removed tags, deleted files and renames (481.582333ms)
+✔ CLI selects modes the base added after divergence when the checkout is the PR merge (PR #22 review P1) (221.771541ms)
+✔ CLI reads the merge checkout's source when the base adds a browser tag after the fork (PR #22 review P1) (211.100333ms)
+✔ CLI explicit head and stdin include tags outside the checkout and uncommitted tag removals (203.611666ms)
+✔ compound/legacy tags and unknown source are conservative; known untagged source stays backend-only (3.175791ms)
+✔ explicit-head CLI derives tagged runner modes from that head's real registry (193.826167ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "架构.md" (304.239ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "internal/示例.go" (201.58375ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "tests/foundation/plain\tname_test.go" (188.820917ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, " deploy/scripts/synthetic-smoke.sh" (172.949125ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "架构.md" (174.46825ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "internal/示例.go" (168.099583ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "tests/foundation/plain\tname_test.go" (200.226958ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, " deploy/scripts/synthetic-smoke.sh" (192.21225ms)
+✔ stdin unions legacy trimming without trimming the source lookup path (98.656542ms)
+ℹ tests 30
+ℹ suites 0
+ℹ pass 30
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3723.99125
