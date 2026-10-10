@@ -1,0 +1,33 @@
+rewrite --browser-click-sweep: 107 -> 106 packages
+rewrite --browser-visual-lint: 107 -> 106 packages
+rewrite --browser-checkout-offline: 99 -> 90 packages
+rewrite --browser-home-cod: 99 -> 90 packages
+rewrite --browser-promotions: 84 -> 75 packages
+rewrite --browser-password-auth: 74 -> 57 packages
+rewrite --browser-studio-ui: 64 -> 52 packages
+rewrite --browser-live-claims: 81 -> 77 packages
+rewrite --browser-refund-fulfilment: 85 -> 69 packages
+rewrite --browser-ads-attribution: 77 -> 60 packages
+rewrite --browser-cvs: 86 -> 70 packages
+rewrite --browser-storefront-publish: 80 -> 64 packages
+rewrite --browser-webkit: 92 -> 78 packages
+rewrite --browser-e2e: 96 -> 92 packages
+rewrite --browser-design: 80 -> 64 packages
+rewrite --browser-ops-polish: 89 -> 85 packages
+rewrite --browser-meta-connect: 69 -> 66 packages
+rewrite --browser-product-editor: 50 -> 41 packages
+rewrite --browser-catalog-core: 50 -> 41 packages
+rewrite --browser-returns-ui: 66 -> 57 packages
+rewrite --browser-operations-ads: 56 -> 47 packages
+rewrite --browser-product-media-v2: 71 -> 62 packages
+rewrite --browser-migration-import: 111 -> 74 packages
+insert-narrow-covers: rewritten=23 unchanged=28 (browser universe=51); file written
+✔ output/ci-select-backend-browser/tools/insert-narrow-covers.mjs (46.159833ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 49.7

@@ -1,11 +1,13 @@
-<!-- Purpose: CI-SELECT delivery, current round-3 acceptance plus retained round-1/2 history.
-Depends on: source f0a5d35d, real registry/Git inventories, recorded DB-free gates and generated coverage data.
+<!-- Purpose: CI-SELECT delivery, current round-4 acceptance (K3 P2 fixes + ui-flow tier) plus retained round-1/2/3 history.
+Depends on: source e7c7246e (round-3 base), real registry/Git inventories, recorded DB-free gates, generated coverage data,
+  K3 review output/ext-agents/k3-review-ci-select/findings.md (local, untracked).
 Used by: integrator independent review and PR creation; not production/browser acceptance. -->
 # CI-SELECT delivery — backend paths select the browser modes that run them + nightly trunk browser re-verification
 
-**CURRENT: round 3 READY (author E3, source `f0a5d35d1892db4d0c33f04bfb27270fa976559a`).**
-Sections 1–16 below are history; §§17–20 replace their httpapi classification, counts and current gate status.
-No push. Independent K3/PR CI, actual browsers and the first nightly execution remain NOT_RUN.
+**CURRENT: round 4 READY (author E3, base `e7c7246e`, branch `unit/ci-select-backend-browser`).**
+Sections 1–16 are round-1/2 history; §§17–20 are round 3; §§21–25 are round 4 and replace the counts and current gate
+status (§18's table carries all three rounds). No push. Independent K3/PR CI re-verification of THIS commit, actual
+browsers and the first nightly execution remain NOT_RUN.
 
 - Unit: ci-select-backend-browser. Branch: `unit/ci-select-backend-browser`. Base: `origin/r3/integration` (b1bfbeb3 at start; trunk advanced to 729afff9 (#27) mid-unit and to 9b738e0a (#29) during final verification — see §5).
 - Owner approval: 2026-10-10. Commit only; **no push performed**.
@@ -212,21 +214,23 @@ Registry parity (`r3-parity.log`, exit 0): all **83** modes' order/build/fixture
 
 ## 18. Current selection counts
 
-Reproducible command: `node output/ci-select-backend-browser/tools/selection-counts-r2.mjs selection-counts-r3.json` → exit 0. Data: `tools/selection-counts-r3.json`; log `r3-counts.log`. Browser universe=51, PG-fixture=47, Go-booting=48. Counts are selector results, **not measured CI wall time**.
+Round-4 reproducible command: `node --test output/ci-select-backend-browser/tools/selection-counts-r2.mjs` (no-argument run writes the round-4 evidence; the `node --test` form does not forward argv) → exit 0. Data: `tools/selection-counts-r4.json`; log `r4-counts.log`. Round-3 command/data retained: `selection-counts-r3.json`, `r3-counts.log`. Browser universe=51, PG-fixture=47, Go-booting=48. Counts are selector results, **not measured CI wall time**.
 
-| case | files | round 2 browsers | round 3 browsers | total checks |
-|---|---:|---:|---:|---:|
-| Real PR #30 `b1bfbeb3` |11|48|**22**, live-console included|23|
-| Real PR #24 `3034c407` |68|6|6|7|
-| orders/payments |2|17|17|18|
-| catalog |1|18|18|19|
-| migrations |1|48|48|49|
-| `internal/live/stream.go` |1|18|18|19|
-| `internal/httpapi/live_stream.go` |1|48|**22**, live-console included, CVS excluded|23|
-| metareply |1|2|2|3|
-| platform |1|48|48|49|
-| `internal/httpapi/handler.go` |1|48|**48**|49|
-| docs + contracts |2|0|0|1|
+| case | files | round 2 browsers | round 3 browsers | round 4 browsers | total checks |
+|---|---:|---:|---:|---:|---:|
+| Real PR #30 `b1bfbeb3` |11|48|**22**, live-console included|**25**, live-console included (§23)|26|
+| Real PR #24 `3034c407` |68|6|6|6|7|
+| orders/payments |2|17|17|**31**|32|
+| catalog |1|18|18|**34**|35|
+| migrations |1|48|48|48|49|
+| `internal/live/stream.go` |1|18|18|**20**, live-console included|21|
+| `internal/httpapi/live_stream.go` |1|48|**22**, live-console included, CVS excluded|**25**, live-console included, CVS excluded|26|
+| metareply |1|2|2|2|3|
+| platform |1|48|48|48|49|
+| `internal/httpapi/handler.go` |1|48|**48**|**48**|49|
+| docs + contracts |2|0|0|0|1|
+
+Round-4 growth is the mandated direction (K3 P2-1: UI-clicked admin writes were under-selected); every grown case traces to evidence rows in `covers-derivation.json` (§22–23). Covers total grew 2616 → **3332** entries (mean 51.3 → **65.3** per browser mode).
 
 ## 19. Red → green and final gates
 
@@ -251,3 +255,64 @@ Evidence: **E3, DB-free selector/inventory/gate environment only** (real Git CLI
 **READY for independent integrator review**, not merge/production approval. No push or PR created by author. Integrator: review conservative file-domain/helper joins, then push/open PR and run the required GitHub gates. Actual browser/PG/full-foundation executions, nightly triggering, independent K3/current PR CI and LIVE remain **NOT_RUN**; this unit runs no Docker, no browser, no production action. No TypeScript/product route changed.
 
 All owned local gate sessions ended; synthetic Git fixture cleaned, no containers/ports or processes remain. Red evidence is retained. W3-U3 is a separate pending task and still waits for SCOPE-404 merge; this delivery neither resumes it early nor reports it READY.
+
+## 21. Round 4 — K3 P2 fixes + ui-flow tier (current)
+
+- Base: `e7c7246e` (round 3, Codex-1); branch/worktree `unit/ci-select-backend-browser` / `.worktrees/ci-select-backend-browser`. Resumed from an interrupted session; partial work reviewed via `git diff` and kept (it was correct).
+- Author: Claude Code session (host-reported model `qwen3.8-max`; exact parent model ID not further exposed by host; E3, assistance — independent acceptance still owed). Read-only reviewer input: K3 `output/ext-agents/k3-review-ci-select/findings.md` (VERDICT **PASS**, no P0/P1; two P2s assigned to this round). The findings file stays local/untracked per round-2/3 precedent (external review inputs were never committed).
+- Write paths: `output/ci-select-backend-browser/**` (derivation tool, evidence tools, generated data, logs, this file), `scripts/dev/pr-modes.mjs` (uniform universe guard + one SHARED reason string), `scripts/dev/test-local.sh` (registry `lc_covers` DATA only, mechanically rewritten), `tests/ci/pr-modes.test.mjs`, `tests/ci/backend-coverage.test.mjs`. No product Go/SQL/UI, no dependencies, no migrations, no credentials, no deploy changes.
+
+**P2-2 (fixed)**: the browser-universe guard in `backendBrowserModes` applied only to file-style `lc_covers` entries (`!c.endsWith(".go") || universe.has(e.name)`), so a future non-browser mode declaring a PACKAGE cover would have been selected by backend changes. The guard is now uniform — `universe.has(e.name) && covers-match` — for every entry shape; a non-universe declaration can never answer a backend selection, and unmatched paths still fall through to the fail-closed goBoot set. Red→green test: *"round 4: a nonbrowser PACKAGE declaration is never browser acceptance (uniform universe guard, K3 P2)"* (r4-red-tests-ci.log → r4-final-tests-ci.log).
+
+**P2-1 (fixed)**: admin-side writes triggered by real UI clicks (the BFF composes the URL; no literal ever appears in a spec) were invisible to tiers 1–4. Fix = a fifth derivation tier, **ui-flow**, with evidence, not guesses (§22), plus precision work so the new tier charges only what the flow's own pages prove (§23). K3's three verified instances all gained exactly the missing domains, and the WRITE-GAP diagnostic K3 asked for is emitted per mode (currently **0**).
+
+## 22. ui-flow tier design (derive-narrow-covers.mjs, tier 5)
+
+Chain, each step file:line-tracked in `covers-derivation.json`: the mode's spec files plus their `tests/**` static-import closure (**drivers**) → clicked `data-testid`s and `goto` pages harvested from drivers → the admin/storefront component files DEFINING those testids/pages → those files as app entries → full static-import closure (`importEdges`/`closureOf`) → `harvestFile` collects URL literals, composed templates and fragments, but only on **proven bases** (`APP_BASES`: admin `/api/stores/{*}/`, storefront `/api/buyer/`). Every harvested URL is a **soft candidate**: unmatched candidates are silently dropped (no fail on ambiguity), matched ones join the mode's covers through the same route→file→service machinery as tiers 1–4. Two guards keep it honest:
+
+- **WRITE-GAP**: any mode whose drivers click a write-style control (write-verb testid, recorded non-GET BFF request, or `mcall`-style helper) while its covers matched no admin/identity or buyer write route is listed in `r2-diagnostics.txt` as `WRITE-GAP <mode>` (derive run also reports the count on stdout/stderr); the CI gate test *"round 4: the tracked derivation records the clicked bank-transfer write chain and flags no write-gap mode"* fails on any such line, so a hole can never pass silently. Round-4 result: `WRITE-GAP=0` (r4-derive.log).
+- **K3 example, verified end-to-end**: `--browser-checkout-offline` clicks merchant confirm/reject of bank transfers (`tests/admin/checkout-offline.spec.ts:164-231`): testid `transfer-confirm`/`transfer-reject` (spec :164,174,199,217) → definer `apps/admin/components/OrderBankTransfer.tsx` → `lib/logistics-client.ts:140-141` `` orders/${id}/bank-transfer/${action} `` → soft candidate `/api/stores/{*}/orders/{*}/bank-transfer/{*}` → Go `internal/httpapi/offline.go:49,55,66,75` (registered LITERALS `…/bank-transfer/{confirm,reject,refund-offline}` — no param alternative exists at the action position, so Go 1.22 mux preference keeps them) → `internal/merchantorders` now in checkout-offline covers (+33 entries). catalog-core/product-editor gained `internal/catalog` (+32 each); ops-polish gained merchantorders+reporting (+83) via its `/{store}/studio` and order-feed gotos.
+
+Diagnostics per mode now record `ui-flow drivers/entries/candidates/matched` (r2-diagnostics.txt). UNMAPPED stays exactly the round-2/3 baseline **4** URLs (stripe webhook, checkout/billing-portal sessions, handle-suggest — all explained in §12); `uncovered=0`.
+
+## 23. Round-4b precision fixes (why growth did not become dilution)
+
+The naive ui-flow tier over-charged (worst artifact: `--browser-cvs` picked up `internal/live` through store-selector → ads-client → `/api/ads/meta/connect` → inbox_send.go → live_stream.go). Five fixes, each pinned by the round-4 tests:
+
+1. **Double-wildcard drop + exact callBackend composition** (bffTable): a trailing `/v1/admin/stores/{*}/{*}` literal (lib/backend.ts:105's generic template) identifies no route and matched the whole admin family — dropped for every entry. Replaced by the route file's OWN `callBackend("<resource>")` call sites composed to `/v1/admin/stores/{*}/<resource>` (deliberately not the closure's libs — backend.ts's internal calls would leak). This also removes K3's flagged pre-existing dilution (see §24).
+2. **Named-import scoping**: `harvestFile(rel, names)` blanks top-level declarations of names the importer did not import (`blankUnimported`, length-preserving; whole file when nothing matches — never narrow on a guess). CvsPrint.tsx imports only `postPrintForm`, so CVS no longer inherits logistics-client's notify-settings URLs.
+3. **depthStrict soft matching**: a composed trailing `{*}` no longer absorbs deeper sibling routes (`orders/{*}` ≠ `orders/manual/options` → merchanttools stays out of CVS). Hard tiers keep round-2/3 absorb-deeper behavior unchanged.
+4. **preferParamRoutes (Go 1.22 mux dispatch preference)**: at a position where the candidate has `{*}` and some matched route has a `{param}` segment, routes with LITERAL segments there are dropped (`products/{*}` → `products/{product_id}`, not `products/export.csv`; `orders/{*}` → `orders/{order_id}`, not `orders/manual`). Where no param alternative exists, literals stay matched — bank-transfer confirm/reject survive, exactly the K3 example.
+5. **driverApp goto scoping**: a `goto`'s `${origin}` is the server of the issuing driver — `tests/admin/**` proves admin pages only, `tests/storefront/**` storefront only, e2e/ui drivers keep mode-level proven apps. Testid definers are NOT scoped this way (the definer IS the evidence). Killed the shop-helpers storefront product goto leaking admin `products` pages into CVS.
+
+Net: `internal/httpapi/live_stream.go` FILE cover 40 → **25** modes, CVS excluded, live-console included (pin updated with evidence: PR#30 → 26 total checks = 25 browsers + foundation-shards, of which e2e/manual-order/ops-polish growth is genuinely traced — manual-order IS merchanttools domain via reminders→inbox_send→live_stream helper chain; ops-polish gotos `/{store}/studio` whose studio-client reads `/live-sessions`). `--browser-live-console`'s covers gained `internal/inbox` (its buyer panel reads inbox routes: live-console.spec.ts:113,130 → BuyerPanel.tsx:70,132 → inbox_send.go:78 `SendPublicReply`), so an inbox change now selects live-console too — the round-2 "inbox stays one domain" pin was rewritten with that evidence, keeping inclusion AND exclusion assertions (not-CVS, not-meta-connect) and its ceiling unchanged where growth was not proven (inbox.go → ≤20, actual 15). **No assertion was weakened**: every stale oracle was updated only with file:line evidence in the test comment; narrowness properties (not-CVS, exact metareply pair, SHARED⊆covers subtraction) all retained.
+
+## 24. The one shrunken mode: `--browser-meta-connect` +0 −47 (justified)
+
+Growth report (`r4-grow-report.txt`, generator `tools/r4-growth-report.mjs`, log `r4-growth-report.log`): **31/51 modes grew/changed**, every added/removed package listed per mode plus per-package mode-count deltas. Exactly one mode shrank, and every one of its 47 removals is a round-3 artifact of the double-wildcard dilution that fix 23.1 removes — verified row-by-row against HEAD's `covers-derivation.json` (§ lines 227442–246565):
+
+- **45 packages directly**: HEAD resolved the spec literals `/api/meta/callback` + `/api/meta/connect` through lib/backend.ts's `/v1/admin/stores/{*}/{*}`, which matched EVERY admin-stores route — evidence rows show `billing.go:50/65/71/90`, `accounts.go:121` (K3's "1683 evidence lines, matching accounts.go:121 first"), `cod.go:26/31 → internal/merchantorders`, etc. Round 4 replaces that with the route files' own callBackend targets (`/v1/admin/stores/{*}/meta-connect/start`, `…/meta-connect/callback`) plus the fixed-prefix `/v1/identity/{*}` and `meta-connect/*` family — internal/metaconnect, internal/claims, internal/command, identityhttp, meta_connect.go, meta_health.go, ads.go all retained, and the ui-flow tier ADDS precise rows (`meta-connect/{disconnect,pick,states/{*},status}`, live-sessions/markets/products reads of the settings surfaces the wizard clicks).
+- **2 packages second-order**: internal/storehandles and internal/twcity were consumer-import joins whose importers (storefrontadmin/operator.go:24, customers/historical.go:21) sat in HEAD's meta-connect covers only via that same dilution.
+- The generator prints this justification under the removal line and prints `UNJUSTIFIED-REMOVAL: needs evidence before commit` for any future unannotated removal, so a shrink can never pass silently again.
+- Same mechanism slims the evidence file itself: `covers-derivation.json` drops 265,763 → 55,457 lines because thousands of dilution rows (one per admin-family handler × diluted URL) disappear; every surviving cover keeps its rows (gate: `uncovered=0`, check-backend-coverage ok).
+
+The two other K3 P2s are handled as they were chartered: the SHARED `handler.go` catalog-route over-selection note is now recorded in its reason string (pr-modes.mjs:160; safe direction, future file split could narrow it), and the nightly default-branch question stays an **integrator merge-time check** (not verifiable from this worktree; NOT_RUN).
+
+## 25. Round-4 red → green, commands, NOT_RUN, cleanup
+
+RED (pre-fix, retained): `r4-red-tests-ci.log` (`node --test tests/ci/pr-modes.test.mjs tests/ci/backend-coverage.test.mjs` against the new tests + round-3 registry) — the 5 new round-4 tests fail against round-3 behaviour (bank-transfer derivation row + no-WRITE-GAP, nonbrowser package guard, checkout-offline×merchantorders, catalog-core/product-editor×catalog, ops-polish order-feed/finance); all 63 existing tests of the two suites stay green. Nothing was deleted, no threshold relaxed to pass.
+
+GREEN (final state, all exit 0, no source edits during the runs):
+
+| command | exit | actual result / evidence |
+|---|---:|---|
+| `node --test tests/ci/*.mjs` |0|**124/124**, 0 fail/skip; `r4-final-tests-ci.log` (round 3: 119)|
+| `bash scripts/dev/test-node.sh` |0|**1365/1365**, 26 summaries, 0 fail/skip/cancel; `r4-final-test-node.log`, `r4-node-counts.log`; pre-existing `NOT_RUN: tests/media/r04-input-runner.test.mjs (COMMERCE_R04_LIVEKIT_BINARY unset)` warning unchanged|
+| `bash scripts/dev/check-gates.sh` |0|70 dirs + 86 split files classified, 51 browser declarations; 82 documented modes, 1256 Go inventory; `r4-final-check-gates.log`|
+| `bash scripts/dev/test-local.sh --list` |0|83 entries including foundation; `r4-final-list.log`|
+
+Derivation/evidence runs: `r4-derive.log` (51 modes; uncovered=0; WRITE-GAP=0), `r4-insert.log` (registry rewritten=23 unchanged=28, byte-identical arm structure asserted by the tool), `r4-insert-idempotent.log` (rerun: rewritten=0 unchanged=51, nothing to write), `r4-counts.log` + `tools/selection-counts-r4.json`, `r4-grow-report.txt`/`r4-growth-report.log`, regenerated `covers-derivation.json`, `tools/covers-narrow.json`, `tools/file-coverage.json`, `tools/r2-diagnostics.txt`. No `*.test.mjs` under `output/` (checked: 0).
+
+Evidence tier: all runs above are **SANDBOX/MODEL_ONLY** (node-only planner/derivation/gates on this worktree; real Git CLI; no PG, no browser, no Docker, no live platform). Actual `--browser-*` executions, PR CI on this commit, nightly firing and K3 re-review of round 4 remain **NOT_RUN**. No production action, no push.
+
+Handoff: **READY for independent integrator review** (author is not the acceptance reviewer). Integrator should: (1) re-run the four commands above; (2) spot-check the growth report's per-mode additions against `covers-derivation.json` rows; (3) decide the nightly default-branch question (K3 P2, merge-time); (4) push/open PR only after that. Cleanup: one-off probe scripts stayed in the session's /tmp scratchpad (outside the repo, never committed; the sandbox does not delete outside the worktree); no repo-side processes, containers, ports or fixtures of this task remain; `output/ext-agents/` (K3's own directory) left untouched and untracked.

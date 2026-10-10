@@ -1,0 +1,185 @@
+--browser-ads-attribution: +7 -0
+  added:   internal/httpapi/for_buyer_test.go internal/httpapi/live_console.go internal/httpapi/live_console_test.go internal/httpapi/meta_connect.go internal/httpapi/meta_health.go internal/mail internal/metaconnect
+--browser-catalog-core: +32 -0
+  added:   internal/ads internal/catalog internal/claims internal/httpapi/ads.go internal/httpapi/ads_test.go internal/httpapi/blocklist.go internal/httpapi/blocklist_test.go internal/httpapi/claimsource.go internal/httpapi/claimsource_test.go internal/httpapi/collections.go internal/httpapi/customer_historical.go internal/httpapi/customer_tags.go internal/httpapi/customer_tags_test.go internal/httpapi/customers.go internal/httpapi/customers_test.go internal/httpapi/cvs.go internal/httpapi/cvs_test.go internal/httpapi/for_buyer_test.go internal/httpapi/images.go internal/httpapi/images_test.go internal/httpapi/keyword_tools.go internal/httpapi/keyword_tools_test.go internal/httpapi/live_console.go internal/httpapi/live_console_test.go internal/httpapi/live_lifecycle.go internal/httpapi/live_lifecycle_test.go internal/httpapi/merchanttools.go internal/httpapi/merchanttools_test.go internal/httpapi/meta_connect.go internal/httpapi/meta_health.go internal/inventory internal/metaconnect
+--browser-catalog-media: +3 -0
+  added:   internal/checkout internal/domains internal/storefront
+--browser-checkout-offline: +33 -0
+  added:   internal/ads internal/catalog internal/csvguard internal/httpapi/ads.go internal/httpapi/ads_test.go internal/httpapi/cod.go internal/httpapi/collections.go internal/httpapi/finance.go internal/httpapi/finance_test.go internal/httpapi/for_buyer_test.go internal/httpapi/live_console.go internal/httpapi/live_console_test.go internal/httpapi/meta_connect.go internal/httpapi/meta_health.go internal/httpapi/orders.go internal/httpapi/orders_test.go internal/httpapi/payment_card.go internal/httpapi/payment_card_test.go internal/httpapi/refunds.go internal/httpapi/refunds_env_test.go internal/httpapi/refunds_test.go internal/httpapi/reports.go internal/httpapi/reports_test.go internal/httpapi/settlements.go internal/httpapi/settlements_test.go internal/merchantorders internal/metaconnect internal/payments internal/pricing internal/reporting internal/returns internal/storefrontadmin internal/storehandles
+--browser-claim-checkout: +22 -0
+  added:   internal/csvguard internal/domains internal/fulfillment internal/httpapi/cod.go internal/httpapi/offline.go internal/httpapi/orders.go internal/httpapi/orders_test.go internal/httpapi/parcels.go internal/httpapi/parcels_test.go internal/httpapi/picklist.go internal/httpapi/picklist_test.go internal/httpapi/promotions.go internal/httpapi/refunds.go internal/httpapi/refunds_env_test.go internal/httpapi/refunds_test.go internal/httpapi/returns.go internal/httpapi/returns_test.go internal/httpapi/settings_discovery.go internal/httpapi/shipments.go internal/httpapi/shipments_test.go internal/merchantorders internal/promotions
+--browser-click-sweep: +31 -0
+  added:   internal/buyer internal/catalog internal/checkout internal/csvguard internal/customers internal/domains internal/httpapi/cod.go internal/httpapi/collections.go internal/httpapi/finance.go internal/httpapi/finance_test.go internal/httpapi/offline.go internal/httpapi/orders.go internal/httpapi/orders_test.go internal/httpapi/promotions.go internal/httpapi/refunds.go internal/httpapi/refunds_env_test.go internal/httpapi/refunds_test.go internal/httpapi/reports.go internal/httpapi/reports_test.go internal/httpapi/storefront.go internal/httpapi/storefront_test.go internal/jobqueue internal/merchantorders internal/promotions internal/reporting internal/returns internal/storefront internal/storefrontadmin internal/storefrontdomains internal/storehandles internal/twcity
+--browser-cvs: +37 -0
+  added:   internal/ads internal/catalog internal/checkout internal/csvguard internal/design internal/domains internal/httpapi/ads.go internal/httpapi/ads_test.go internal/httpapi/cod.go internal/httpapi/collections.go internal/httpapi/design.go internal/httpapi/design_test.go internal/httpapi/for_buyer_test.go internal/httpapi/images.go internal/httpapi/images_test.go internal/httpapi/live_console.go internal/httpapi/live_console_test.go internal/httpapi/meta_connect.go internal/httpapi/meta_health.go internal/httpapi/offline.go internal/httpapi/orders.go internal/httpapi/orders_test.go internal/httpapi/promotions.go internal/httpapi/refunds.go internal/httpapi/refunds_env_test.go internal/httpapi/refunds_test.go internal/httpapi/storefront.go internal/httpapi/storefront_test.go internal/integrations/psp/payuni internal/jobqueue internal/merchantorders internal/metaconnect internal/promotions internal/returns internal/storefront internal/storefrontadmin internal/storehandles
+--browser-design: +23 -0
+  added:   internal/catalog internal/checkout internal/csvguard internal/domains internal/httpapi/cod.go internal/httpapi/collections.go internal/httpapi/offline.go internal/httpapi/orders.go internal/httpapi/orders_test.go internal/httpapi/parcels.go internal/httpapi/parcels_test.go internal/httpapi/picklist.go internal/httpapi/picklist_test.go internal/httpapi/refunds.go internal/httpapi/refunds_env_test.go internal/httpapi/refunds_test.go internal/httpapi/shipments.go internal/httpapi/shipments_test.go internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/inventory internal/jobqueue internal/merchantorders
+--browser-e2e: +22 -0
+  added:   internal/ads internal/customers internal/httpapi/ads.go internal/httpapi/ads_test.go internal/httpapi/finance.go internal/httpapi/finance_test.go internal/httpapi/inbox.go internal/httpapi/inbox_send.go internal/httpapi/inbox_send_test.go internal/httpapi/inbox_test.go internal/httpapi/live_flow.go internal/httpapi/live_flow_test.go internal/httpapi/live_stream.go internal/httpapi/live_stream_test.go internal/httpapi/meta_connect.go internal/httpapi/meta_health.go internal/httpapi/reports.go internal/httpapi/reports_test.go internal/live internal/metaconnect internal/reporting internal/twcity
+--browser-home-cod: +25 -0
+  added:   internal/ads internal/httpapi/ads.go internal/httpapi/ads_test.go internal/httpapi/cod.go internal/httpapi/for_buyer_test.go internal/httpapi/live_console.go internal/httpapi/live_console_test.go internal/httpapi/meta_connect.go internal/httpapi/meta_health.go internal/httpapi/orders.go internal/httpapi/orders_test.go internal/httpapi/payment_card.go internal/httpapi/payment_card_test.go internal/httpapi/refunds.go internal/httpapi/refunds_env_test.go internal/httpapi/refunds_test.go internal/httpapi/settlements.go internal/httpapi/settlements_test.go internal/merchantorders internal/metaconnect internal/payments internal/pricing internal/returns internal/storefrontadmin internal/storehandles
+--browser-inbox: +4 -0
+  added:   internal/catalog internal/httpapi/collections.go internal/httpapi/images.go internal/httpapi/images_test.go
+--browser-live-claims: +14 -0
+  added:   internal/ads internal/catalog internal/csvguard internal/httpapi/ads.go internal/httpapi/ads_test.go internal/httpapi/collections.go internal/httpapi/finance.go internal/httpapi/finance_test.go internal/httpapi/meta_connect.go internal/httpapi/meta_health.go internal/httpapi/reports.go internal/httpapi/reports_test.go internal/metaconnect internal/reporting
+--browser-live-console: +20 -0
+  added:   internal/ads internal/claims internal/httpapi/blocklist.go internal/httpapi/blocklist_test.go internal/httpapi/claimsource.go internal/httpapi/claimsource_test.go internal/httpapi/customer_historical.go internal/httpapi/customer_tags.go internal/httpapi/customer_tags_test.go internal/httpapi/customers.go internal/httpapi/customers_test.go internal/httpapi/cvs.go internal/httpapi/cvs_test.go internal/httpapi/keyword_tools.go internal/httpapi/keyword_tools_test.go internal/httpapi/merchanttools.go internal/httpapi/merchanttools_test.go internal/httpapi/reminders.go internal/httpapi/reminders_test.go internal/inbox
+--browser-manual-order: +36 -0
+  added:   internal/catalog internal/csvguard internal/customers internal/fulfillment internal/httpapi/cod.go internal/httpapi/collections.go internal/httpapi/images.go internal/httpapi/images_test.go internal/httpapi/inbox.go internal/httpapi/inbox_send.go internal/httpapi/inbox_send_test.go internal/httpapi/inbox_test.go internal/httpapi/live_stream.go internal/httpapi/live_stream_test.go internal/httpapi/offline.go internal/httpapi/orders.go internal/httpapi/orders_test.go internal/httpapi/parcels.go internal/httpapi/parcels_test.go internal/httpapi/picklist.go internal/httpapi/picklist_test.go internal/httpapi/promotions.go internal/httpapi/refunds.go internal/httpapi/refunds_env_test.go internal/httpapi/refunds_test.go internal/httpapi/reminders.go internal/httpapi/reminders_test.go internal/httpapi/returns.go internal/httpapi/returns_test.go internal/httpapi/settings_discovery.go internal/httpapi/shipments.go internal/httpapi/shipments_test.go internal/merchantorders internal/merchanttools internal/promotions internal/twcity
+--browser-merchant-buyer: +48 -0
+  added:   internal/ads internal/checkout internal/claims internal/csvguard internal/domains internal/httpapi/ads.go internal/httpapi/ads_test.go internal/httpapi/blocklist.go internal/httpapi/blocklist_test.go internal/httpapi/claimsource.go internal/httpapi/claimsource_test.go internal/httpapi/cod.go internal/httpapi/customer_historical.go internal/httpapi/customer_tags.go internal/httpapi/customer_tags_test.go internal/httpapi/customers.go internal/httpapi/customers_test.go internal/httpapi/cvs.go internal/httpapi/cvs_test.go internal/httpapi/for_buyer_test.go internal/httpapi/keyword_tools.go internal/httpapi/keyword_tools_test.go internal/httpapi/live_console.go internal/httpapi/live_console_test.go internal/httpapi/live_lifecycle.go internal/httpapi/live_lifecycle_test.go internal/httpapi/merchanttools.go internal/httpapi/merchanttools_test.go internal/httpapi/meta_connect.go internal/httpapi/meta_health.go internal/httpapi/offline.go internal/httpapi/orders.go internal/httpapi/orders_test.go internal/httpapi/parcels.go internal/httpapi/parcels_test.go internal/httpapi/picklist.go internal/httpapi/picklist_test.go internal/httpapi/refunds.go internal/httpapi/refunds_env_test.go internal/httpapi/refunds_test.go internal/httpapi/shipments.go internal/httpapi/shipments_test.go internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/inventory internal/jobqueue internal/merchantorders internal/metaconnect
+--browser-meta-connect: +0 -47
+  removed: internal/billing internal/customers internal/design internal/httpapi/billing.go internal/httpapi/billing_test.go internal/httpapi/cod.go internal/httpapi/design.go internal/httpapi/design_test.go internal/httpapi/finance.go internal/httpapi/finance_test.go internal/httpapi/imports.go internal/httpapi/imports_test.go internal/httpapi/notify.go internal/httpapi/offline.go internal/httpapi/operations.go internal/httpapi/operations_test.go internal/httpapi/orders.go internal/httpapi/orders_test.go internal/httpapi/promotions.go internal/httpapi/refunds.go internal/httpapi/refunds_env_test.go internal/httpapi/refunds_test.go internal/httpapi/reminders.go internal/httpapi/reminders_test.go internal/httpapi/reports.go internal/httpapi/reports_test.go internal/httpapi/storefront.go internal/httpapi/storefront_test.go internal/httpapi/templates.go internal/httpapi/templates_test.go internal/inbox internal/integrations/core internal/inventory internal/merchantorders internal/merchanttools internal/migrationimport internal/msgtemplates internal/notify internal/payments/platformstripe internal/payments/settlement internal/promotions internal/reporting internal/returns internal/storefrontadmin internal/storefrontdomains internal/storehandles internal/twcity
+  justified: all 47 removals are round-3 double-wildcard dilution artifacts (45 direct via /v1/admin/stores/{*}/{*} matching the whole admin family for /api/meta/{callback,connect}; storehandles+twcity second-order consumer-imports of dilution-acquired storefrontadmin/customers). Genuine meta-connect targets retained; see REMOVAL_NOTES in r4-growth-report.mjs for row-level evidence.
+--browser-migration-import: +4 -0
+  added:   internal/catalog internal/httpapi/collections.go internal/httpapi/images.go internal/httpapi/images_test.go
+--browser-operations-ads: +26 -0
+  added:   internal/catalog internal/csvguard internal/customers internal/httpapi/collections.go internal/httpapi/finance.go internal/httpapi/finance_test.go internal/httpapi/for_buyer_test.go internal/httpapi/images.go internal/httpapi/images_test.go internal/httpapi/live_console.go internal/httpapi/live_console_test.go internal/httpapi/meta_connect.go internal/httpapi/meta_health.go internal/httpapi/operations.go internal/httpapi/operations_test.go internal/httpapi/parcels.go internal/httpapi/parcels_test.go internal/httpapi/reports.go internal/httpapi/reports_test.go internal/httpapi/shipments.go internal/httpapi/shipments_test.go internal/integrations/core internal/mail internal/metaconnect internal/reporting internal/twcity
+--browser-ops-polish: +83 -0
+  added:   internal/ads internal/catalog internal/checkout internal/claims internal/csvguard internal/customers internal/design internal/domains internal/fulfillment internal/httpapi/ads.go internal/httpapi/ads_test.go internal/httpapi/blocklist.go internal/httpapi/blocklist_test.go internal/httpapi/claimsource.go internal/httpapi/claimsource_test.go internal/httpapi/cod.go internal/httpapi/collections.go internal/httpapi/customer_historical.go internal/httpapi/customer_tags.go internal/httpapi/customer_tags_test.go internal/httpapi/customers.go internal/httpapi/customers_test.go internal/httpapi/cvs.go internal/httpapi/cvs_test.go internal/httpapi/design.go internal/httpapi/design_test.go internal/httpapi/finance.go internal/httpapi/finance_test.go internal/httpapi/for_buyer_test.go internal/httpapi/images.go internal/httpapi/images_test.go internal/httpapi/inbox.go internal/httpapi/inbox_send.go internal/httpapi/inbox_send_test.go internal/httpapi/inbox_test.go internal/httpapi/keyword_tools.go internal/httpapi/keyword_tools_test.go internal/httpapi/live_console.go internal/httpapi/live_console_test.go internal/httpapi/live_flow.go internal/httpapi/live_flow_test.go internal/httpapi/live_lifecycle.go internal/httpapi/live_lifecycle_test.go internal/httpapi/live_stream.go internal/httpapi/live_stream_test.go internal/httpapi/merchanttools.go internal/httpapi/merchanttools_test.go internal/httpapi/meta_connect.go internal/httpapi/meta_health.go internal/httpapi/offline.go internal/httpapi/orders.go internal/httpapi/orders_test.go internal/httpapi/parcels.go internal/httpapi/parcels_test.go internal/httpapi/picklist.go internal/httpapi/picklist_test.go internal/httpapi/promotions.go internal/httpapi/refunds.go internal/httpapi/refunds_env_test.go internal/httpapi/refunds_test.go internal/httpapi/reports.go internal/httpapi/reports_test.go internal/httpapi/returns.go internal/httpapi/returns_test.go internal/httpapi/settings_discovery.go internal/httpapi/shipments.go internal/httpapi/shipments_test.go internal/httpapi/storefront.go internal/httpapi/storefront_test.go internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/jobqueue internal/live internal/mail internal/merchantorders internal/metaconnect internal/promotions internal/reporting internal/returns internal/storefront internal/storefrontadmin internal/storehandles internal/twcity
+--browser-password-auth: +13 -0
+  added:   internal/ads internal/catalog internal/httpapi/ads.go internal/httpapi/ads_test.go internal/httpapi/collections.go internal/httpapi/for_buyer_test.go internal/httpapi/images.go internal/httpapi/images_test.go internal/httpapi/live_console.go internal/httpapi/live_console_test.go internal/httpapi/meta_connect.go internal/httpapi/meta_health.go internal/metaconnect
+--browser-product-editor: +32 -0
+  added:   internal/ads internal/catalog internal/claims internal/httpapi/ads.go internal/httpapi/ads_test.go internal/httpapi/blocklist.go internal/httpapi/blocklist_test.go internal/httpapi/claimsource.go internal/httpapi/claimsource_test.go internal/httpapi/collections.go internal/httpapi/customer_historical.go internal/httpapi/customer_tags.go internal/httpapi/customer_tags_test.go internal/httpapi/customers.go internal/httpapi/customers_test.go internal/httpapi/cvs.go internal/httpapi/cvs_test.go internal/httpapi/for_buyer_test.go internal/httpapi/images.go internal/httpapi/images_test.go internal/httpapi/keyword_tools.go internal/httpapi/keyword_tools_test.go internal/httpapi/live_console.go internal/httpapi/live_console_test.go internal/httpapi/live_lifecycle.go internal/httpapi/live_lifecycle_test.go internal/httpapi/merchanttools.go internal/httpapi/merchanttools_test.go internal/httpapi/meta_connect.go internal/httpapi/meta_health.go internal/inventory internal/metaconnect
+--browser-product-media-v2: +51 -0
+  added:   internal/ads internal/checkout internal/claims internal/csvguard internal/customers internal/domains internal/fulfillment internal/httpapi/ads.go internal/httpapi/ads_test.go internal/httpapi/blocklist.go internal/httpapi/blocklist_test.go internal/httpapi/claimsource.go internal/httpapi/claimsource_test.go internal/httpapi/customer_historical.go internal/httpapi/customer_tags.go internal/httpapi/customer_tags_test.go internal/httpapi/customers.go internal/httpapi/customers_test.go internal/httpapi/cvs.go internal/httpapi/cvs_test.go internal/httpapi/finance.go internal/httpapi/finance_test.go internal/httpapi/keyword_tools.go internal/httpapi/keyword_tools_test.go internal/httpapi/live_lifecycle.go internal/httpapi/live_lifecycle_test.go internal/httpapi/merchanttools.go internal/httpapi/merchanttools_test.go internal/httpapi/meta_connect.go internal/httpapi/meta_health.go internal/httpapi/offline.go internal/httpapi/parcels.go internal/httpapi/parcels_test.go internal/httpapi/picklist.go internal/httpapi/picklist_test.go internal/httpapi/promotions.go internal/httpapi/reports.go internal/httpapi/reports_test.go internal/httpapi/returns.go internal/httpapi/returns_test.go internal/httpapi/settings_discovery.go internal/httpapi/shipments.go internal/httpapi/shipments_test.go internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/jobqueue internal/metaconnect internal/promotions internal/reporting internal/storefront internal/twcity
+--browser-promotions: +16 -0
+  added:   internal/ads internal/checkout internal/customers internal/domains internal/httpapi/ads.go internal/httpapi/ads_test.go internal/httpapi/finance.go internal/httpapi/finance_test.go internal/httpapi/meta_connect.go internal/httpapi/meta_health.go internal/httpapi/reports.go internal/httpapi/reports_test.go internal/metaconnect internal/reporting internal/returns internal/twcity
+--browser-refund-fulfilment: +27 -0
+  added:   internal/ads internal/catalog internal/design internal/fulfillment internal/httpapi/ads.go internal/httpapi/ads_test.go internal/httpapi/collections.go internal/httpapi/design.go internal/httpapi/design_test.go internal/httpapi/for_buyer_test.go internal/httpapi/images.go internal/httpapi/images_test.go internal/httpapi/live_console.go internal/httpapi/live_console_test.go internal/httpapi/meta_connect.go internal/httpapi/meta_health.go internal/httpapi/promotions.go internal/httpapi/returns.go internal/httpapi/returns_test.go internal/httpapi/settings_discovery.go internal/httpapi/storefront.go internal/httpapi/storefront_test.go internal/metaconnect internal/promotions internal/returns internal/storefrontadmin internal/storehandles
+--browser-returns-ui: +9 -0
+  added:   internal/ads internal/httpapi/ads.go internal/httpapi/ads_test.go internal/httpapi/for_buyer_test.go internal/httpapi/live_console.go internal/httpapi/live_console_test.go internal/httpapi/meta_connect.go internal/httpapi/meta_health.go internal/metaconnect
+--browser-store-domains: +3 -0
+  added:   internal/checkout internal/domains internal/storefront
+--browser-storefront: +32 -0
+  added:   internal/ads internal/attribution internal/csvguard internal/customers internal/domains internal/fulfillment internal/httpapi/ads.go internal/httpapi/ads_test.go internal/httpapi/cod.go internal/httpapi/meta_connect.go internal/httpapi/meta_health.go internal/httpapi/offline.go internal/httpapi/orders.go internal/httpapi/orders_test.go internal/httpapi/parcels.go internal/httpapi/parcels_test.go internal/httpapi/picklist.go internal/httpapi/picklist_test.go internal/httpapi/promotions.go internal/httpapi/refunds.go internal/httpapi/refunds_env_test.go internal/httpapi/refunds_test.go internal/httpapi/returns.go internal/httpapi/returns_test.go internal/httpapi/settings_discovery.go internal/httpapi/shipments.go internal/httpapi/shipments_test.go internal/merchantorders internal/metaconnect internal/promotions internal/storefrontdomains internal/twcity
+--browser-storefront-publish: +24 -0
+  added:   internal/catalog internal/checkout internal/csvguard internal/domains internal/httpapi/cod.go internal/httpapi/collections.go internal/httpapi/offline.go internal/httpapi/orders.go internal/httpapi/orders_test.go internal/httpapi/parcels.go internal/httpapi/parcels_test.go internal/httpapi/picklist.go internal/httpapi/picklist_test.go internal/httpapi/refunds.go internal/httpapi/refunds_env_test.go internal/httpapi/refunds_test.go internal/httpapi/shipments.go internal/httpapi/shipments_test.go internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/inventory internal/jobqueue internal/merchantorders internal/storefrontdomains
+--browser-studio-ui: +37 -0
+  added:   internal/ads internal/claims internal/csvguard internal/httpapi/ads.go internal/httpapi/ads_test.go internal/httpapi/blocklist.go internal/httpapi/blocklist_test.go internal/httpapi/claimsource.go internal/httpapi/claimsource_test.go internal/httpapi/cod.go internal/httpapi/customer_historical.go internal/httpapi/customer_tags.go internal/httpapi/customer_tags_test.go internal/httpapi/customers.go internal/httpapi/customers_test.go internal/httpapi/cvs.go internal/httpapi/cvs_test.go internal/httpapi/keyword_tools.go internal/httpapi/keyword_tools_test.go internal/httpapi/merchanttools.go internal/httpapi/merchanttools_test.go internal/httpapi/meta_connect.go internal/httpapi/meta_health.go internal/httpapi/offline.go internal/httpapi/orders.go internal/httpapi/orders_test.go internal/httpapi/parcels.go internal/httpapi/parcels_test.go internal/httpapi/picklist.go internal/httpapi/picklist_test.go internal/httpapi/refunds.go internal/httpapi/refunds_env_test.go internal/httpapi/refunds_test.go internal/httpapi/shipments.go internal/httpapi/shipments_test.go internal/merchantorders internal/metaconnect
+--browser-visual-lint: +31 -0
+  added:   internal/buyer internal/catalog internal/checkout internal/csvguard internal/customers internal/domains internal/httpapi/cod.go internal/httpapi/collections.go internal/httpapi/finance.go internal/httpapi/finance_test.go internal/httpapi/offline.go internal/httpapi/orders.go internal/httpapi/orders_test.go internal/httpapi/promotions.go internal/httpapi/refunds.go internal/httpapi/refunds_env_test.go internal/httpapi/refunds_test.go internal/httpapi/reports.go internal/httpapi/reports_test.go internal/httpapi/storefront.go internal/httpapi/storefront_test.go internal/jobqueue internal/merchantorders internal/promotions internal/reporting internal/returns internal/storefront internal/storefrontadmin internal/storefrontdomains internal/storehandles internal/twcity
+--browser-webkit: +18 -0
+  added:   internal/ads internal/csvguard internal/httpapi/ads.go internal/httpapi/ads_test.go internal/httpapi/cod.go internal/httpapi/for_buyer_test.go internal/httpapi/live_console.go internal/httpapi/live_console_test.go internal/httpapi/meta_connect.go internal/httpapi/meta_health.go internal/httpapi/orders.go internal/httpapi/orders_test.go internal/httpapi/refunds.go internal/httpapi/refunds_env_test.go internal/httpapi/refunds_test.go internal/inventory internal/merchantorders internal/metaconnect
+
+per-package mode-count deltas (old -> new):
+  internal/ads: 19 -> 37 (+18)
+  internal/attribution: 11 -> 12 (+1)
+  internal/billing: 13 -> 12 (-1)
+  internal/buyer: 30 -> 32 (+2)
+  internal/catalog: 18 -> 34 (+16)
+  internal/checkout: 21 -> 32 (+11)
+  internal/claims: 38 -> 45 (+7)
+  internal/csvguard: 18 -> 34 (+16)
+  internal/customers: 20 -> 28 (+8)
+  internal/design: 23 -> 25 (+2)
+  internal/domains: 19 -> 32 (+13)
+  internal/fulfillment: 26 -> 32 (+6)
+  internal/httpapi/ads.go: 21 -> 38 (+17)
+  internal/httpapi/ads_test.go: 21 -> 38 (+17)
+  internal/httpapi/billing.go: 13 -> 12 (-1)
+  internal/httpapi/billing_test.go: 13 -> 12 (-1)
+  internal/httpapi/blocklist.go: 38 -> 45 (+7)
+  internal/httpapi/blocklist_test.go: 38 -> 45 (+7)
+  internal/httpapi/claimsource.go: 38 -> 45 (+7)
+  internal/httpapi/claimsource_test.go: 38 -> 45 (+7)
+  internal/httpapi/cod.go: 17 -> 30 (+13)
+  internal/httpapi/collections.go: 18 -> 34 (+16)
+  internal/httpapi/customer_historical.go: 38 -> 45 (+7)
+  internal/httpapi/customer_tags.go: 38 -> 45 (+7)
+  internal/httpapi/customer_tags_test.go: 38 -> 45 (+7)
+  internal/httpapi/customers.go: 38 -> 45 (+7)
+  internal/httpapi/customers_test.go: 38 -> 45 (+7)
+  internal/httpapi/cvs.go: 38 -> 45 (+7)
+  internal/httpapi/cvs_test.go: 38 -> 45 (+7)
+  internal/httpapi/design.go: 23 -> 25 (+2)
+  internal/httpapi/design_test.go: 23 -> 25 (+2)
+  internal/httpapi/finance.go: 12 -> 20 (+8)
+  internal/httpapi/finance_test.go: 12 -> 20 (+8)
+  internal/httpapi/for_buyer_test.go: 27 -> 40 (+13)
+  internal/httpapi/images.go: 28 -> 38 (+10)
+  internal/httpapi/images_test.go: 28 -> 38 (+10)
+  internal/httpapi/imports.go: 11 -> 10 (-1)
+  internal/httpapi/imports_test.go: 11 -> 10 (-1)
+  internal/httpapi/inbox.go: 22 -> 25 (+3)
+  internal/httpapi/inbox_send.go: 22 -> 25 (+3)
+  internal/httpapi/inbox_send_test.go: 22 -> 25 (+3)
+  internal/httpapi/inbox_test.go: 22 -> 25 (+3)
+  internal/httpapi/keyword_tools.go: 38 -> 45 (+7)
+  internal/httpapi/keyword_tools_test.go: 38 -> 45 (+7)
+  internal/httpapi/live_console.go: 27 -> 40 (+13)
+  internal/httpapi/live_console_test.go: 27 -> 40 (+13)
+  internal/httpapi/live_flow.go: 18 -> 20 (+2)
+  internal/httpapi/live_flow_test.go: 18 -> 20 (+2)
+  internal/httpapi/live_lifecycle.go: 41 -> 46 (+5)
+  internal/httpapi/live_lifecycle_test.go: 41 -> 46 (+5)
+  internal/httpapi/live_stream.go: 22 -> 25 (+3)
+  internal/httpapi/live_stream_test.go: 22 -> 25 (+3)
+  internal/httpapi/merchanttools.go: 38 -> 45 (+7)
+  internal/httpapi/merchanttools_test.go: 38 -> 45 (+7)
+  internal/httpapi/meta_connect.go: 19 -> 38 (+19)
+  internal/httpapi/meta_health.go: 19 -> 38 (+19)
+  internal/httpapi/notify.go: 11 -> 10 (-1)
+  internal/httpapi/offline.go: 25 -> 36 (+11)
+  internal/httpapi/orders.go: 17 -> 30 (+13)
+  internal/httpapi/orders_test.go: 17 -> 30 (+13)
+  internal/httpapi/parcels.go: 29 -> 39 (+10)
+  internal/httpapi/parcels_test.go: 29 -> 39 (+10)
+  internal/httpapi/payment_card.go: 12 -> 14 (+2)
+  internal/httpapi/payment_card_test.go: 12 -> 14 (+2)
+  internal/httpapi/picklist.go: 28 -> 37 (+9)
+  internal/httpapi/picklist_test.go: 28 -> 37 (+9)
+  internal/httpapi/promotions.go: 23 -> 31 (+8)
+  internal/httpapi/refunds.go: 17 -> 30 (+13)
+  internal/httpapi/refunds_env_test.go: 17 -> 30 (+13)
+  internal/httpapi/refunds_test.go: 17 -> 30 (+13)
+  internal/httpapi/reminders.go: 17 -> 18 (+1)
+  internal/httpapi/reminders_test.go: 17 -> 18 (+1)
+  internal/httpapi/reports.go: 12 -> 20 (+8)
+  internal/httpapi/reports_test.go: 12 -> 20 (+8)
+  internal/httpapi/returns.go: 26 -> 32 (+6)
+  internal/httpapi/returns_test.go: 26 -> 32 (+6)
+  internal/httpapi/settings_discovery.go: 26 -> 32 (+6)
+  internal/httpapi/settlements.go: 12 -> 14 (+2)
+  internal/httpapi/settlements_test.go: 12 -> 14 (+2)
+  internal/httpapi/shipments.go: 29 -> 39 (+10)
+  internal/httpapi/shipments_test.go: 29 -> 39 (+10)
+  internal/httpapi/storefront.go: 21 -> 25 (+4)
+  internal/httpapi/storefront_test.go: 21 -> 25 (+4)
+  internal/httpapi/templates.go: 13 -> 12 (-1)
+  internal/httpapi/templates_test.go: 13 -> 12 (-1)
+  internal/integrations/psp/payuni: 32 -> 38 (+6)
+  internal/integrations/shipping/ecpay: 32 -> 37 (+5)
+  internal/inventory: 17 -> 22 (+5)
+  internal/jobqueue: 28 -> 36 (+8)
+  internal/live: 18 -> 20 (+2)
+  internal/mail: 36 -> 39 (+3)
+  internal/merchantorders: 17 -> 30 (+13)
+  internal/metaconnect: 19 -> 38 (+19)
+  internal/migrationimport: 11 -> 10 (-1)
+  internal/msgtemplates: 13 -> 12 (-1)
+  internal/notify: 11 -> 10 (-1)
+  internal/payments: 12 -> 14 (+2)
+  internal/payments/platformstripe: 10 -> 9 (-1)
+  internal/payments/settlement: 10 -> 9 (-1)
+  internal/pricing: 12 -> 14 (+2)
+  internal/promotions: 23 -> 31 (+8)
+  internal/reporting: 12 -> 20 (+8)
+  internal/returns: 14 -> 21 (+7)
+  internal/storefront: 26 -> 33 (+7)
+  internal/storefrontadmin: 13 -> 19 (+6)
+  internal/storefrontdomains: 19 -> 22 (+3)
+  internal/storehandles: 13 -> 19 (+6)
+  internal/twcity: 20 -> 28 (+8)
+
+modes grew/changed: 31/51
+
+✔ output/ci-select-backend-browser/tools/r4-growth-report.mjs (40.530084ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 44.116041

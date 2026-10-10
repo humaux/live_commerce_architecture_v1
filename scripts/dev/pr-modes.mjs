@@ -157,7 +157,7 @@ export const BACKEND_ONLY_PACKAGES = {
  */
 export const SHARED_BACKEND_PACKAGES = {
   "internal/platform": "runtime configuration/service container every browser harness and cmd binary constructs (evidence: 45/48 Go-seeded modes)",
-  "internal/httpapi/handler.go": "mux/service construction, shared request/scope/body handling and response/error mapping used across all route families",
+  "internal/httpapi/handler.go": "mux/service construction, shared request/scope/body handling and response/error mapping used across all route families; also registers the catalog product-write routes (handler.go:148-172), so even a catalog-scoped edit selects every Go-booting mode — deliberate over-selection (K3 round-4 review P2; safe direction, a future file split could narrow it)",
   "internal/httpapi/handler_test.go": "tests the shared handler composition and transport boundary, not one domain route",
   "internal/httpapi/claims.go": "claimsBody/claimsClassify/canonicalBearer are shared helpers called by unrelated ads/billing/customers/CVS/payment routes",
   "internal/httpapi/claims_test.go": "tests the shared claims transport helpers as well as claim routes",
@@ -190,7 +190,8 @@ export function backendPathMatches(file, declaration) {
  * this is exactly the set that boots the real Go API, including --browser-tracking-backfill which uses real PG without
  * the shared fixture script); BACKEND_ONLY_PACKAGES select none EVEN under a covered ancestor prefix (an explicit
  * per-package classification beats a general one — e.g. ecpayroute inside the covered ecpay prefix); then lc_covers
- * package-prefix or exact-file match selects the declaring modes; anything else falls back to every Go-booting mode until
+ * package-prefix or exact-file match selects the declaring browser-universe modes (uniform guard, round 4: a
+ * non-universe mode's covers data can never answer a backend selection); anything else falls back to every Go-booting mode until
  * check-backend-coverage classifies it. check-backend-coverage fails contradictory data (a covers entry inside
  * BACKEND_ONLY, a package both SHARED and BACKEND_ONLY), so this precedence can never silently hide a classification.
  * Historical sources without the native registry carry no lc_covers data, so they fall back to the whole browser
@@ -210,7 +211,11 @@ export function backendBrowserModes(paths, source, backendOnly = BACKEND_ONLY_PA
       continue;
     }
     if (Object.keys(backendOnly).some((b) => backendPathMatches(p, b))) continue;
-    const covering = entries.filter((e) => (e.covers ?? []).some((c) => backendPathMatches(p, c) && (!c.endsWith(".go") || universe.has(e.name)))).map((e) => e.name);
+    // Round 4 (K3 P2): the browser-universe guard applies uniformly to EVERY lc_covers entry, package-style and
+    // file-style alike. A non-browser-universe mode's declaration is not browser acceptance; with no universe member
+    // covering the path, selection falls through to the conservative goBoot fallback below (fail-closed), never to a
+    // silently thinner set.
+    const covering = entries.filter((e) => universe.has(e.name) && (e.covers ?? []).some((c) => backendPathMatches(p, c))).map((e) => e.name);
     if (covering.length) { for (const m of covering) selected.add(m); continue; }
     for (const m of goBoot) selected.add(m); // undeclared package: conservative until check-backend-coverage classifies it
   }

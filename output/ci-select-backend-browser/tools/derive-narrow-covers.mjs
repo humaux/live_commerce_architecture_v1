@@ -20,6 +20,18 @@
 //      Deliberately NOT the transitive internal closure (that was round 1's explosion) and NOT every file of the
 //      tests/foundation identifier graph (shared boot helpers would re-widen every mode): service-level coupling below
 //      the called handlers is the nightly full-matrix's job (owner's safety net).
+//   3. Round 4 (K3 P2-1) ui-flow: URLs the BFF composes at runtime never appear as literals in specs, so tiers 1-4
+//      missed every admin write a real click triggers. For each mode the derivation now walks the actual UI flow:
+//      spec/runner files + their tests/** import closure (UI drivers) -> clicked/used data-testids and goto pages ->
+//      the app components/pages defining them (testids cross-app: the definer IS the evidence; gotos only in the
+//      driver-proven apps; locale-root gotos excluded as login-hop dilution) -> each entry's static-import closure
+//      under apps/** -> harvested literal, composed-template (same-file binding resolution) and resource-fragment
+//      URLs on the proven BFF bases (/api/stores/{*}/, /api/buyer/). Plus Go-harness stitched URLs (fmt.Sprintf and
+//      "a"+expr+"b" mcall concatenations). All round-4 candidates are SOFT (unmatched -> silently dropped, no
+//      UNMAPPED noise); matched ones record via "ui-flow(<kind>) <app file:line> <- <driver>" provenance.
+//      WRITE-GAP diagnostic: any mode whose drivers click write-verb controls (or record non-GET BFF requests, or
+//      mcall-write /v1/admin URLs) without matching a single admin/identity write route is flagged as an
+//      under-selection hole — the flag must stay empty; fix the derivation with evidence, never silence it.
 //   Outputs: covers-derivation.json (mode -> [{path, handler, package, via}], the task deliverable), covers-narrow.json
 //   (mode -> final lc_covers list = evidence union minus SHARED_BACKEND_PACKAGES, which select every PG mode anyway),
 //   r2-diagnostics.txt (unmapped URLs, per-package mode counts, uncovered packages with their importers — the data for
@@ -541,13 +553,17 @@ function segEq(r, u) { // route segment vs url segment
   if (u.endsWith("*")) return r.startsWith(u.slice(0, -1)); // playwright glob tail: messages*
   return r === u;
 }
-function patternMatches(routePat, url, urlPrefix) {
+function patternMatches(routePat, url, urlPrefix, depthStrict) {
   const rp = segSplit(routePat), us = segSplit(url);
   for (let i = 0; i < us.length; i++) {
     if (rp[i] === undefined) return false;
     if (rp[i] === "{*}") return true;                 // route-side normalized wildcard absorbs the rest of the URL
     if (!segEq(rp[i], us[i])) return false;
-    if (i === us.length - 1 && us[i] === "{*}") return true; // URL-side template tail (${path}) absorbs deeper routes
+    // URL-side template tail (${path}) absorbs deeper routes — unless the candidate's depth is KNOWN (depthStrict,
+    // soft tier only): a composed `/v1/admin/stores/{*}/orders/{*}` means the order-detail route, and letting the
+    // tail absorb `orders/manual/options` charged merchanttools to every mode visiting the orders page (round-4
+    // CVS artifact). With depthStrict the loop falls through to the exact-length check below.
+    if (i === us.length - 1 && us[i] === "{*}" && !depthStrict) return true;
     if (i === us.length - 1 && urlPrefix && us[i].endsWith("*")) return true; // glob tail: route may continue deeper
   }
   if (!urlPrefix && rp.length !== us.length) return false;
@@ -573,6 +589,13 @@ function fragmentMatches(routePat, frag) {
 // (pure pass-through templates like `${config.api}/v1/buyer/${path}`) carry no information for catch-alls and are
 // dropped there; for a specific route file (e.g. lib/auth.ts `/v1/identity/${path}`) they are kept: the wildcard then
 // legitimately absorbs every route below the file's fixed prefix.
+// Round 4 (K3 P2-1 dilution fix): a TRAILING DOUBLE wildcard (`/v1/admin/stores/{*}/{*}` — lib/backend.ts's generic
+// `callBackend` composition `/v1/admin/stores/${storeID}/${resource}`) identifies no route at all: keeping it for a
+// specific entry charged that entry with the whole admin family (round-4 artifact: CVS picked up internal/live via
+// store-selector -> ads-client -> /api/ads/meta/connect -> inbox_send.go). It is dropped for every entry, and the
+// exact evidence replaces it: the route file's OWN `callBackend("<resource>")` call sites are composed to
+// `/v1/admin/stores/{*}/<resource>`. Deliberately NOT the closure's libs — backend.ts's own internal calls
+// (warehouses, catalog-ledger, ...) would leak into every importing entry and recreate the dilution.
 function bffTable() {
   const table = [];
   // Files whose /v1/ literals speak for one route handler: the route file plus its imports, followed transitively
@@ -613,7 +636,23 @@ function bffTable() {
               lits.add(norm);
             }
           }
-          table.push({ app, url: url.replace(/\/$/, "") || "/", file: rel, catchAll, lits: [...lits] });
+          // Exact upstream for admin call sites in THIS route file: callBackend("<resource>") reaches
+          // /v1/admin/stores/${storeID}/${resource} (lib/backend.ts). Lookbehind skips method-style .callBackend(
+          // receivers; template resources keep their ${...} holes as {*} (normalizeUrl strips any query tail).
+          if (app === "admin" && !catchAll) {
+            const own = read(rel);
+            for (const cm of own.matchAll(/(?<![.\w])callBackend\(\s*(?:"([^"\n]+)"|`([^`\n]*)`)/g)) {
+              const resource = (cm[1] ?? cm[2]).replace(/\$\{[^}]*\}/g, "{*}").replace(/^\//, "");
+              if (resource) lits.add(normalizeUrl(`/v1/admin/stores/{*}/${resource}`));
+            }
+          }
+          // Drop trailing-DOUBLE-wildcard pass-through templates for every entry (see header): they match every
+          // route in the family and identify none. Single trailing wildcards stay (fixed-prefix absorption).
+          const keep = [...lits].filter((l) => {
+            const s = segSplit(l);
+            return !(s.length >= 2 && s[s.length - 1] === "{*}" && s[s.length - 2] === "{*}");
+          });
+          table.push({ app, url: url.replace(/\/$/, "") || "/", file: rel, catchAll, lits: keep });
         }
       }
     };
@@ -666,6 +705,441 @@ function extractGoFragments(text) {
     frags.add(normalizeUrl(v));
   }
   return [...frags];
+}
+
+// ---------- round-4 ui-flow indexes (K3 P2-1: BFF-built URLs never appear as literals in specs) ----------
+// Admin/storefront clients COMPOSE request URLs at runtime — full template literals (`/api/stores/${store}/bank-transfer-
+// settings`), local path-builder composition (`${orderPath(store, id)}/bank-transfer`, logistics-client.ts:39,132) and bare
+// resource fragments handed to write helpers (`write(store, "POST", `orders/${id}/bank-transfer/${action}`)` ->
+// settings-client.ts:94 fetch(`/api/stores/${store}/${pending.resource}`); buyer-client.ts:147 fetch(`/api/buyer/${suffix}`)).
+// Tier 1-4 literal extraction cannot see them, so modes whose specs only CLICK the controls (checkout-offline's
+// transfer-confirm/reject, catalog-core's product writes, ops-polish's order-feed/finance reads) lost the domains behind
+// those URLs. Round 4 walks the real UI flow instead: spec/runner files + their tests/** import closure (the UI drivers)
+// yield clicked/used data-testids and goto page paths; testids map to the app components defining them, gotos to the
+// proven apps' page.tsx files; each entry's static-import closure (apps/**; packages/* are NOT followed — no /api//v1/
+// literal exists under packages/, grep 2026-10-10) is harvested for (a) full literals, (b) composed templates resolved
+// through same-file local bindings (params/unknown exprs -> {*}), (c) resource fragments: multi-segment path strings from
+// any literal, single-segment words only at bare request-helper call sites (request/write/get/... — never `x.get(`).
+// Fragments take their file's proven BFF base: apps/admin -> /api/stores/{*}/ (settings-client.ts:64), apps/storefront ->
+// /api/buyer/ (buyer-client.ts:147). Every ui-flow candidate is SOFT: unmatched candidates are silently dropped (no
+// UNMAPPED noise) — the WRITE-GAP diagnostic below is the hole-detector instead.
+const APP_BASES = { admin: "/api/stores/{*}/", storefront: "/api/buyer/" };
+const appOf = (rel) => (rel.startsWith("apps/admin/") ? "admin" : rel.startsWith("apps/storefront/") ? "storefront" : null);
+const appTsFiles = execFileSync("git", ["ls-files", "-z", "--", "apps/"], { cwd: root, encoding: "utf8", maxBuffer: 64 << 20 })
+  .split("\0").filter(Boolean).filter((f) => /\.(ts|tsx)$/.test(f) && !/\.(test|spec)\.tsx?$/.test(f)).sort();
+const appFileSet = new Set(appTsFiles);
+
+// data-testid definitions: literal, {"literal"} and {`template`} forms; ${...} normalizes to {*} on both sides so
+// `finance-row-${d}-TWD` (definer) matches getByTestId(`finance-row-${today}-TWD`) (driver).
+const normTestId = (s) => s.replace(/\$\{[^}]*\}/g, "{*}");
+const testidDefiners = new Map(); // normalized testid -> [app file rels]
+for (const rel of appTsFiles) {
+  let raw; try { raw = read(rel); } catch { continue; }
+  for (const m of raw.matchAll(/data-testid=(?:"([^"]+)"|\{`([^`]*)`\}|\{"([^"]+)"\}|'([^']+)')/g)) {
+    const id = normTestId(m[1] ?? m[2] ?? m[3] ?? m[4]);
+    if (!testidDefiners.has(id)) testidDefiners.set(id, []);
+    if (!testidDefiners.get(id).includes(rel)) testidDefiners.get(id).push(rel);
+  }
+}
+
+// page.tsx route index per app: dir segments under app/, (group) dirs transparent, a leading [locale] dropped (every
+// goto carries the locale prefix), other [param] dirs -> {*}.
+const pageRoutes = [];
+for (const rel of appTsFiles) {
+  if (!/(^|\/)page\.tsx?$/.test(rel)) continue;
+  const app = appOf(rel);
+  const m = new RegExp(`^apps/${app}/app/(.+)/page\\.tsx?$`).exec(rel.split(path.sep).join("/"));
+  if (!app || !m) continue;
+  let segs = m[1].split("/").filter(Boolean).filter((s) => !s.startsWith("("));
+  if (segs[0] === "[locale]" || segs[0] === "[lang]") segs = segs.slice(1);
+  pageRoutes.push({ app, segs: segs.map((s) => (s.startsWith("[") ? "{*}" : s)), rel });
+}
+
+// static-import resolution inside an app: @/ -> app root (+ src/ variant, admin keeps features under src/), relatives
+// against the importing dir; @live-commerce/* and node_modules/css are not followed (see header: no URL literals there).
+function resolveAppImport(spec, fromRel) {
+  const app = appOf(fromRel);
+  if (!app) return null;
+  const tries = [];
+  if (spec.startsWith("@/")) tries.push(`apps/${app}/${spec.slice(2)}`, `apps/${app}/src/${spec.slice(2)}`);
+  else if (spec.startsWith(".")) tries.push(path.posix.join(path.posix.dirname(fromRel), spec));
+  else return null;
+  for (const t of tries) for (const ext of ["", ".ts", ".tsx", "/index.ts", "/index.tsx", ".js", ".mjs"]) {
+    const c = t + ext;
+    if (appFileSet.has(c)) return c;
+  }
+  return null;
+}
+const closureMemo = new Map();
+// Round-4 dilution guards (both measured, not guessed — see DELIVERY.md round 4):
+//   * component->component edges are NOT followed: MerchantOrders -> OrderDetailPanel -> PickList -> ... would charge
+//     every sibling subtree's client calls to every mode visiting one page. A component the drivers actually touch is
+//     an entry in its own right via its data-testid definitions, so nothing reachable by a real click is lost.
+//   * lib->lib edges are NOT followed either: catalog-v2-client imports customers-client for helpers, and following
+//     that edge charged internal/reporting to 34 modes (finance/summary composed URLs) that never open the finance
+//     column. The harvested set is therefore exactly K3's mapping: entry -> its direct client/lib imports, plus (for
+//     a visited page.tsx) its directly rendered components -> THEIR direct lib imports. Fetching lives in the lib
+//     modules; a lib that imports a sibling lib does not fire the sibling's requests from the mounted tree.
+const isPageFile = (rel) => /(^|\/)(?:page|layout|template|loading|error)\.tsx?$/.test(rel);
+// Round 4b named-import edges: a client lib serves many domains (logistics-client: bank-transfer + COD +
+// notification-settings + CVS print in ONE file), so harvesting a lib whole charged every mode importing ANY name
+// from it with all of the lib's URLs (round-4 CVS × internal/notify artifact: CvsPrint.tsx imports only
+// postPrintForm, yet readNotifySettings' /api/stores/{store}/notification-settings landed in CVS's evidence and
+// cascaded reminders.go -> inbox_send.go -> live_stream.go onto 41 modes). An edge therefore records WHICH names
+// the importer pulls in; default/namespace/side-effect imports stay whole-file (conservative — the shape is not
+// knowable statically). `import(` (dynamic) is deliberately not followed. Type-only imports are skipped: types
+// emit no requests.
+const importEdgeMemo = new Map();
+function importEdges(rel) {
+  if (importEdgeMemo.has(rel)) return importEdgeMemo.get(rel);
+  let raw; try { raw = stripCommentsJs(read(rel)); } catch { importEdgeMemo.set(rel, []); return []; }
+  const out = [];
+  const add = (spec, names) => {
+    const t = resolveAppImport(spec, rel);
+    if (!t) return;
+    const hit = out.find((e) => e.target === t);
+    if (hit) { if (hit.names === null || names === null) hit.names = null; else for (const n of names) hit.names.add(n); }
+    else out.push({ target: t, names });
+  };
+  const named = (braceBody) => new Set(braceBody.split(",").map((s) => s.trim().replace(/^type\s+/, "").split(/\s+as\s+/)[0].trim()).filter(Boolean));
+  for (const m of raw.matchAll(/\bimport\s+([^;]*?)\s*from\s*["']([^"']+)["']/gs)) {
+    const clause = m[1].replace(/\s+/g, " ").trim();
+    if (/^type\s/.test(clause)) continue; // `import type {..} from` — no runtime code
+    const brace = /\{([^}]*)\}/.exec(clause);
+    const hasDefaultOrNs = /^(?:\*|[A-Za-z_$][\w$]*\s*(?:,|$))/.test(clause);
+    if (hasDefaultOrNs || !brace) add(m[2], null); // default/namespace/unknown shape: whole file
+    else add(m[2], named(brace[1]));
+  }
+  for (const m of raw.matchAll(/\bexport\s+(?:type\s+)?(\*|\{[^}]*\})\s*from\s*["']([^"']+)["']/g)) {
+    if (/\bexport\s+type\b/.test(m[0])) continue;
+    add(m[2], m[1] === "*" ? null : named(m[1].slice(1, -1))); // `export {orig as local}` — orig is the declared name
+  }
+  for (const m of raw.matchAll(/\bimport\s*["']([^"']+)["']/g)) add(m[1], null); // side-effect import
+  importEdgeMemo.set(rel, out);
+  return out;
+}
+// closure as Map(rel -> imported-names Set | null=whole-file); a file reached by several edges unions their names,
+// and any whole-file edge wins (null absorbs).
+function closureOf(entryRel) {
+  if (closureMemo.has(entryRel)) return closureMemo.get(entryRel);
+  const seen = new Map([[entryRel, null]]);
+  const join = (t, names) => {
+    if (!seen.has(t)) seen.set(t, names);
+    else if (names === null || seen.get(t) === null) seen.set(t, null);
+    else for (const n of names) seen.get(t).add(n);
+  };
+  for (const e of importEdges(entryRel)) {
+    join(e.target, e.names ? new Set(e.names) : null);
+    if (e.target.endsWith(".tsx") && isPageFile(entryRel))
+      for (const e2 of importEdges(e.target)) if (!e2.target.endsWith(".tsx")) join(e2.target, e2.names ? new Set(e2.names) : null);
+  }
+  closureMemo.set(entryRel, seen);
+  return seen;
+}
+// Length-preserving blanking of top-level declarations whose bound name is NOT imported: kept slices stay at their
+// original offsets (line numbers in provenance remain valid). If none of the imported names is declared here
+// (re-export hub, missed shape) the text is returned unchanged — never narrow on a guess.
+function blankUnimported(raw, names) {
+  const decls = [];
+  for (const m of raw.matchAll(/^(?:export\s+)?(?:declare\s+)?(?:default\s+)?(?:async\s+)?(?:const|let|var|function|class|type|interface|enum)\s+([A-Za-z_$][\w$]*)/gm)) decls.push({ name: m[1], start: m.index });
+  if (!decls.some((d) => names.has(d.name))) return raw;
+  const chars = raw.split("");
+  decls.forEach((d, i) => {
+    if (names.has(d.name)) return;
+    const end = i + 1 < decls.length ? decls[i + 1].start : raw.length;
+    for (let j = d.start; j < end; j++) if (chars[j] !== "\n") chars[j] = " ";
+  });
+  return chars.join("");
+}
+
+// A full URL carries no route information when every segment below the proven BFF base is a template wildcard
+// (`/api/stores/{*}/{*}` = settings-client's generic fetch): it cannot select a route, only dilute. Same for a
+// trailing DOUBLE wildcard anywhere (`/v1/admin/stores/{*}/{*}` = backend.ts callBackend pass-through, command-
+// journal's unresolved `${suffix}` tails): patternMatches lets the last {*} absorb route siblings, so such a URL
+// would charge EVERY same-prefix route family to the mode. Under-resolved real URLs are re-proven by the concrete
+// call-site literals/fragments of the client that composes them; dropping them here is the narrow direction.
+const URL_FAMILIES = [["api", "stores"], ["api", "buyer"], ["v1", "admin", "stores"], ["v1", "buyer"], ["v1", "identity"]];
+const informative = (u) => {
+  const segs = segSplit(u);
+  if (segs.length >= 2 && segs[segs.length - 1] === "{*}" && segs[segs.length - 2] === "{*}") return false;
+  for (const fam of URL_FAMILIES) {
+    if (fam.every((s, i) => segs[i] === s)) return segs.slice(fam.length).some((s) => s !== "{*}"); // `/v1/buyer/{*}` (buyer-server pass-through) dilutes like `/api/stores/{*}/{*}`
+  }
+  return true;
+};
+// same-file local bindings: const name = "lit" / `tpl`, const name = (params) => `tpl` | "lit", function name(params) { return `tpl` }
+function tsBindings(raw) {
+  const binds = new Map();
+  for (const m of raw.matchAll(/(?:const|let)\s+(\w+)\s*(?::[^=\n]+)?=\s*\(([^)]*)\)\s*(?::[^=\n]*?)?=>\s*(?:`([^`]*)`|"([^"\n]*)")/g)) {
+    binds.set(m[1], { params: m[2].split(",").map((s) => s.trim().split(/[:=\s]/)[0]).filter(Boolean), body: m[3] ?? m[4] });
+  }
+  for (const m of raw.matchAll(/function\s+(\w+)\s*\(([^)]*)\)\s*(?::[^{\n]*)?\{\s*return\s+(?:`([^`]*)`|"([^"\n]*)")/g)) {
+    if (!binds.has(m[1])) binds.set(m[1], { params: m[2].split(",").map((s) => s.trim().split(/[:=\s]/)[0]).filter(Boolean), body: m[3] ?? m[4] });
+  }
+  for (const m of raw.matchAll(/(?:const|let)\s+(\w+)\s*(?::[^=\n]+)?=\s*(?:`([^`]*)`|"([^"\n]*)")/g)) {
+    if (!binds.has(m[1])) binds.set(m[1], { value: m[2] ?? m[3] });
+  }
+  return binds;
+}
+function resolveTemplateExpr(expr, binds, depth) {
+  const e = expr.trim();
+  const b = binds.get((/^(\w+)\s*\(/.exec(e) ?? [null, null])[1] ?? e);
+  if (b && depth > 0) {
+    const body = b.body ?? b.value;
+    if (body !== undefined) { const r = resolveTemplate(body, binds, depth - 1); if (r !== null) return r; }
+  }
+  return "{*}"; // unresolved interpolation (variable, member access, ternary) normalizes to a wildcard segment
+}
+function resolveTemplate(tpl, binds, depth) {
+  if (depth < 0) return null;
+  let out = "", i = 0;
+  while (i < tpl.length) {
+    if (tpl[i] === "\\") { out += tpl[i + 1] ?? ""; i += 2; continue; }
+    if (tpl[i] === "$" && tpl[i + 1] === "{") {
+      let j = i + 2, d = 1;
+      while (j < tpl.length && d > 0) { if (tpl[j] === "{") d++; else if (tpl[j] === "}") d--; if (d > 0) j++; }
+      out += resolveTemplateExpr(tpl.slice(i + 2, j), binds, depth);
+      i = j + 1;
+      continue;
+    }
+    out += tpl[i];
+    i++;
+  }
+  return out;
+}
+// backtick scanner: yields every template literal's {text, off}; tracks ${ ... } depth incl. nested backticks so
+// `${orderPath(store, id)}/bank-transfer` is harvested whole.
+function scanTemplates(raw) {
+  const out = [];
+  let i = 0;
+  const skipNested = (j) => { // j at opening backtick inside ${...}; return index after its closing backtick
+    let k = j + 1, d2 = 0;
+    while (k < raw.length) {
+      if (raw[k] === "\\") { k += 2; continue; }
+      if (d2 === 0 && raw[k] === "`") return k + 1;
+      if (raw[k] === "$" && raw[k + 1] === "{") { d2++; k += 2; continue; }
+      if (d2 > 0) { if (raw[k] === "{") d2++; else if (raw[k] === "}") d2--; }
+      k++;
+    }
+    return k;
+  };
+  while (i < raw.length) {
+    const c = raw[i];
+    if (c === '"' || c === "'") { i++; while (i < raw.length && raw[i] !== c) { if (raw[i] === "\\") i++; i++; } i++; continue; }
+    if (c === "`") {
+      const start = i + 1;
+      let j = start, depth = 0;
+      while (j < raw.length) {
+        if (raw[j] === "\\") { j += 2; continue; }
+        if (depth === 0 && raw[j] === "`") break;
+        if (raw[j] === "$" && raw[j + 1] === "{") { depth++; j += 2; continue; }
+        if (depth > 0) {
+          if (raw[j] === "`") { j = skipNested(j); continue; }
+          if (raw[j] === "{") depth++;
+          else if (raw[j] === "}") depth--;
+        }
+        j++;
+      }
+      out.push({ text: raw.slice(start, j), off: start });
+      i = j + 1;
+      continue;
+    }
+    i++;
+  }
+  return out;
+}
+// Comment stripper for TS/JSX that PRESERVES string quotes and offsets (mask() blanks the quotes, which the URL
+// regexes need): header comments document example paths ("/api/ads/meta/*", customers-model.ts:1) that must never
+// become request evidence. Length-preserving, so line numbers stay valid. Regex literals holding quotes can
+// confuse it the same way they confuse mask(); candidates are soft, so the tool tolerates that.
+function stripCommentsJs(src) {
+  let out = "", i = 0;
+  const n = src.length;
+  while (i < n) {
+    const c = src[i];
+    if (c === "/" && src[i + 1] === "/") { while (i < n && src[i] !== "\n") { out += " "; i++; } }
+    else if (c === "/" && src[i + 1] === "*") { out += "  "; i += 2; while (i < n && !(src[i] === "*" && src[i + 1] === "/")) { out += src[i] === "\n" ? "\n" : " "; i++; } out += "  "; i += 2; }
+    else if (c === '"' || c === "'" || c === "`") {
+      const q = c; out += c; i++;
+      while (i < n && src[i] !== q) {
+        if (src[i] === "\\" && q !== "`") { out += src[i] + (src[i + 1] ?? ""); i += 2; continue; }
+        if (q === "`" && src[i] === "$" && src[i + 1] === "{") { // template interpolation may contain strings/comments
+          out += "${"; i += 2; let d = 1;
+          while (i < n && d > 0) {
+            if (src[i] === "{") d++;
+            else if (src[i] === "}") { d--; if (d === 0) { out += "}"; i++; break; } }
+            else if (src[i] === '"' || src[i] === "'" || src[i] === "`") { const q2 = src[i]; out += q2; i++; while (i < n && src[i] !== q2) { if (src[i] === "\\") { out += src[i] + (src[i + 1] ?? ""); i += 2; continue; } out += src[i]; i++; } out += src[i] ?? ""; i++; continue; }
+            out += src[i]; i++;
+          }
+          continue;
+        }
+        out += src[i]; i++;
+      }
+      out += i < n ? q : ""; i++;
+    } else { out += c; i++; }
+  }
+  return out;
+}
+const REQUESTY = new Set(["request", "write", "read", "get", "post", "put", "del", "fetch", "callBackend", "readSettings", "writeSettings", "mcall"]);
+const HTTP_METHOD_WORDS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]);
+const MIME_FIRST = new Set(["application", "text", "multipart", "image", "audio", "video", "font", "model"]);
+const harvestMemo = new Map();
+// Per app file: every BFF URL its code can emit -> [{url (normalized, fragments already base-prefixed), kind, line}].
+// `names` (round 4b): the identifiers the importing closure actually imports from this file — harvest is then
+// scoped to those declarations (blankUnimported); null harvests the whole file (entries, default/namespace edges).
+// Template bindings stay whole-file on purpose: a blanked-away `const base = (store) => ...` must still resolve
+// `${base(store)}` inside a kept slice.
+function harvestFile(rel, names = null) {
+  const key = names ? `${rel}\u0000${[...names].sort().join(",")}` : rel;
+  if (harvestMemo.has(key)) return harvestMemo.get(key);
+  const out = [];
+  let full; try { full = stripCommentsJs(read(rel)); } catch { harvestMemo.set(key, out); return out; }
+  const raw = names ? blankUnimported(full, names) : full; // offsets/lines identical to the source (both passes are length-preserving)
+  const app = appOf(rel);
+  const base = app ? APP_BASES[app] : null;
+  const seen = new Set();
+  const push = (kind, url, off) => {
+    if (!informative(url) || seen.has(kind + url)) return;
+    seen.add(kind + url);
+    out.push({ kind, url, line: lineOf(raw, off) });
+  };
+  // (a) full literals (same grammar as spec extraction, but per-candidate line + informativeness filter)
+  for (const m of raw.matchAll(/["'`]([^"'`\s]*\/(?:api|v1|bff|__test)\/[^"'`\s]*)["'`]/g)) {
+    const sch = /^[a-z][a-z0-9+.-]*:\/\/([^/\s"'`]*)/i.exec(m[1]);
+    if (sch && !/^(?:localhost(?::\d+)?|127\.0\.0\.1(?::\d+)?|\[?::1\]?(?::\d+)?|\$\{)/i.test(sch[1])) continue;
+    const u = normalizeUrl(m[1]);
+    if (/^\/(api|v1|bff|__test)\//.test(u)) push("literal", u, m.index);
+  }
+  const binds = tsBindings(full);
+  const fragment = (kind, frag, off) => {
+    if (!base) return; // packages/** and tests/** have no proven BFF base
+    const clean = frag.replace(/\$\{[^}]*\}/g, "{*}").replace(/[?#].*$/, "");
+    if (!/^[A-Za-z0-9][\w{}.*-]*(\/[\w{}.*-]+)+$/.test(clean)) return; // multi-segment path shape only
+    if (MIME_FIRST.has(clean.split("/")[0])) return;
+    push(kind, normalizeUrl(base + clean), off);
+  };
+  // (b) composed templates: resolved through same-file bindings; a leading /api//v1 result is a full URL, a bare
+  // multi-segment result is a resource fragment for this file's proven base.
+  for (const t of scanTemplates(raw)) {
+    if (!t.text.includes("${")) continue;
+    const res = resolveTemplate(t.text, binds, 4);
+    if (res === null) continue;
+    const noQuery = res.replace(/[?#].*$/, "");
+    if (/^(?:https?:\/\/[^/]+)?\/(?:api|v1|bff|__test)\//.test(noQuery)) {
+      const u = normalizeUrl(noQuery.replace(/^https?:\/\/[^/]+/, ""));
+      if (/^\/(api|v1|bff|__test)\//.test(u)) push("composed", u, t.off);
+    } else if (!noQuery.startsWith("/")) fragment("composed-fragment", noQuery, t.off);
+  }
+  // (c1) multi-segment plain-string fragments from any literal (write(store, "POST", "products/bulk-status", ...))
+  for (const m of raw.matchAll(/["']([A-Za-z0-9][\w.-]*(?:\/[\w.-]+)+)["']/g)) {
+    if (m[1].includes(".")) continue; // file extensions / dotted keys are not API paths
+    fragment("fragment", m[1], m.index);
+  }
+  // (c2) single-segment words ONLY at bare request-helper call sites (buyer-client request("GET", "session"));
+  // `x.get(` method calls are excluded by the lookbehind, method words never count as resources.
+  for (const m of raw.matchAll(/(?<![.\w])(\w+)\s*\(([^()]*)\)/g)) {
+    if (!REQUESTY.has(m[1])) continue;
+    for (const arg of splitTop(m[2], ",")) {
+      const lit = /^\s*["'`]([A-Za-z0-9_-]+)["'`]\s*$/.exec(arg);
+      if (lit && !HTTP_METHOD_WORDS.has(lit[1]) && base) push("request-call", normalizeUrl(base + lit[1]), m.index + arg.length); // line approximated by call site
+    }
+  }
+  out.sort((a, b) => (a.url < b.url ? -1 : a.url > b.url ? 1 : 0));
+  harvestMemo.set(key, out);
+  return out;
+}
+
+// tests/** UI-driver closure of a spec/runner file: relative imports (.acceptance.ts, -driver.ts, .mjs helpers the
+// specFiles regex does not see) plus the app files the drivers import directly (provenance + closure entries).
+const driverMemo = new Map();
+function driverFilesFor(specRel) {
+  if (driverMemo.has(specRel)) return driverMemo.get(specRel);
+  const drivers = new Set([specRel]);
+  const appImports = new Set();
+  const queue = [specRel];
+  while (queue.length && drivers.size < 60) {
+    const rel = queue.shift();
+    let raw; try { raw = read(rel); } catch { continue; }
+    for (const m of raw.matchAll(/\bfrom\s*["'](\.{1,2}\/[^"']+)["']/g)) {
+      const base = path.posix.join(path.posix.dirname(rel), m[1]);
+      for (const c of [base, `${base}.ts`, `${base}.mjs`, `${base}.js`, `${base}/index.ts`]) {
+        if (drivers.has(c) || !existsSync(path.join(root, c))) continue;
+        if (c.startsWith("tests/")) { drivers.add(c); queue.push(c); }
+        else if (appFileSet.has(c)) appImports.add(c);
+        break;
+      }
+    }
+  }
+  driverMemo.set(specRel, { drivers, appImports });
+  return driverMemo.get(specRel);
+}
+
+// Go-side stitched URLs the literal extractor cannot see: fmt.Sprintf("/v1/admin/stores/%s/products", ...) and
+// "a" + expr + "b" concatenations (browser_ops_polish_test.go's mcall calls) — one line scope, gaps without
+// commas/quotes only, results soft-matched like every round-4 candidate.
+const stitchMemo = new Map();
+function goStitchedUrls(rel) {
+  if (stitchMemo.has(rel)) return stitchMemo.get(rel);
+  const out = [];
+  const raw = stripCommentsJs(read(rel)); // Go // and /* */ headers document example URLs; they are not requests
+  raw.split("\n").forEach((line, idx) => {
+    if (!/\/(v1|api)\//.test(line)) return;
+    for (const m of line.matchAll(/Sprintf\(\s*"([^"\s]*)"/g)) {
+      const u = m[1].replace(/%[-#0-9.*]*[sdvq]/g, "{*}");
+      if (/^\/(v1|api)\//.test(u)) out.push({ url: normalizeUrl(u), line: idx + 1, kind: "go-sprintf" });
+    }
+    const lits = [...line.matchAll(/"([^"\\]*(?:\\.[^"\\]*)*)"/g)];
+    for (let i = 0; i < lits.length; i++) {
+      if (!/^\/?(v1|api)\//.test(lits[i][1])) continue;
+      let joined = lits[i][1], j = i + 1, last = lits[i];
+      while (j < lits.length) {
+        const gap = line.slice(last.index + last[0].length, lits[j].index);
+        if (!/^\s*\+\s*[^,;"']*\s*\+\s*$/.test(gap)) break;
+        joined += "{*}" + lits[j][1];
+        last = lits[j];
+        j++;
+      }
+      if (j > i + 1) { const u = normalizeUrl(joined); if (/^\/(v1|api)\//.test(u)) out.push({ url: u, line: idx + 1, kind: "go-concat" }); }
+      i = j - 1;
+    }
+  });
+  stitchMemo.set(rel, out);
+  return out;
+}
+
+// soft-candidate route matching, memoized per normalized URL (route tables are mode-independent)
+const matchUrlMemo = new Map();
+// Go 1.22 ServeMux dispatch preference, applied to template holes of SOFT candidates: a `{*}` segment carries a
+// runtime value, and when a matched route has a {param} at that position, the mux serves the value there — a
+// sibling LITERAL route (orders/manual, products/export.csv) is only ever reached by a request that literally
+// equals it, and the client that sends such a request names the literal (harvested on its own). Without this,
+// orders-client's `/api/stores/{store}/orders/${id}` (orders.go:20 {order_id}) also charged merchanttools.go:113
+// onto every mode visiting the orders page (round-4 CVS×live_stream artifact). When NO param route matches at the
+// hole's position, literals stay matched: logistics-client's `bank-transfer/${action}` has only literal siblings
+// (confirm/reject/refund-offline) — the action value IS one of them (K3 P2 example must survive).
+function preferParamRoutes(goPath, rs) {
+  const us = segSplit(goPath);
+  const drop = new Set();
+  for (let i = 0; i < us.length; i++) {
+    if (us[i] !== "{*}") continue;
+    if (!rs.some((r) => { const rp = segSplit(r.pattern); return rp[i] !== undefined && rp[i].startsWith("{"); })) continue;
+    for (const r of rs) { const rp = segSplit(r.pattern); if (rp[i] !== undefined && !rp[i].startsWith("{")) drop.add(r); }
+  }
+  return drop.size ? rs.filter((r) => !drop.has(r)) : rs;
+}
+function matchUrlSoft(norm) {
+  if (matchUrlMemo.has(norm)) return matchUrlMemo.get(norm);
+  const hits = [];
+  // depthStrict=true: soft candidates are template-composed client URLs (orders/${id}/bank-transfer/${action}) whose
+  // segment depth is KNOWN, so a trailing {*} may match a same-depth literal (bank-transfer/{*} -> .../confirm) but
+  // must NOT absorb deeper sibling routes (orders/{*} -> orders/manual/options). The hard tiers (observed spec URLs)
+  // keep the round-2/3 absorb-deeper behavior via matchRoutes(c) with no flag.
+  for (const tier of goCandidateTiers(norm)) {
+    for (const c of tier) for (const r of preferParamRoutes(c, matchRoutes(c, true))) if (!hits.includes(r)) hits.push(r);
+    if (hits.length) break;
+  }
+  matchUrlMemo.set(norm, hits);
+  return hits;
 }
 
 // ---------- tests/foundation + cmd indexes ----------
@@ -757,11 +1231,11 @@ function goCandidateTiers(url) {
   if (catchAll.length) tiers.push([...new Set(catchAll.flatMap((h) => h.ent.lits))]);
   return tiers.filter((t) => t.length);
 }
-function matchRoutes(goPath) {
+function matchRoutes(goPath, depthStrict) {
   const urlPrefix = goPath.endsWith("*");
   const hits = [];
   for (const r of allRoutes) {
-    if (patternMatches(r.pattern, goPath.replace(/\*$/, "{*}"), urlPrefix)) hits.push(r);
+    if (patternMatches(r.pattern, goPath.replace(/\*$/, "{*}"), urlPrefix, depthStrict && !urlPrefix)) hits.push(r);
   }
   return hits;
 }
@@ -791,10 +1265,14 @@ for (const e of entries) {
   const body = `${e.prepare}\n${e.run}`;
   const evidence = [];
   const covers = new Set();
+  // Round 4: one evidence row per (path, package) — a URL matching several registrations (GET/POST siblings, ui-flow
+  // candidates hitting a route family) proved the same coupling; the FIRST registration (route-table order) is kept.
+  // Without this the ui-flow tier multiplied covers-derivation.json ~15x with duplicate rows.
+  const evSeen = new Set();
   const addCover = (pkg, ev) => {
     if (!isPkg(pkg)) { if (ev) diagnostics.push(`${e.name}: attributed package ${pkg} is not a tracked internal dir (skipped)`); return; }
     covers.add(pkg);
-    if (ev) evidence.push(ev);
+    if (ev) { const k = `${ev.path}|${pkg}`; if (evSeen.has(k)) return; evSeen.add(k); evidence.push(ev); }
   };
 
   // --- OWN Go files ---
@@ -830,6 +1308,35 @@ for (const e of entries) {
     for (const s of tf.get(f).suites) for (const spec of suites[s] ?? []) if (existsSync(path.join(root, spec))) specFiles.add(spec);
   }
 
+  // --- round 4: UI drivers (specs + their tests/** import closure), proven apps, clicked testids, goto pages ---
+  const uiDrivers = new Set();
+  const driverAppImports = new Set();
+  for (const s of [...specFiles].sort()) {
+    const { drivers, appImports } = driverFilesFor(s);
+    for (const d of drivers) uiDrivers.add(d);
+    for (const a of appImports) driverAppImports.add(a);
+  }
+  const provenApps = new Set();
+  for (const d of uiDrivers) {
+    if (d.startsWith("tests/admin/") || d.startsWith("apps/admin/tests")) provenApps.add("admin");
+    else if (d.startsWith("tests/storefront/") || d.startsWith("apps/storefront/tests")) provenApps.add("storefront");
+    else { provenApps.add("admin"); provenApps.add("storefront"); } // tests/e2e, tests/ui: the flow spans both apps
+  }
+  for (const a of driverAppImports) { const app = appOf(a); if (app) provenApps.add(app); }
+  const CLICK_RE = /\.(?:click|check|uncheck|selectOption|fill|press|setInputFiles|tap|dblclick)\(/;
+  const uiTestids = new Map();  // normalized testid -> {driver, clicked}
+  const uiGotos = new Map();    // raw goto target -> driver
+  for (const d of [...uiDrivers].sort()) {
+    let raw; try { raw = read(d); } catch { continue; }
+    for (const m of raw.matchAll(/getByTestId\(\s*(?:"([^"]+)"|`([^`]+)`)|data-testid=["'\\]+([^{\\\]"']+)/g)) {
+      const id = normTestId(m[1] ?? m[2] ?? m[3]);
+      const clicked = CLICK_RE.test(raw.slice(m.index, m.index + 240));
+      const prev = uiTestids.get(id);
+      if (!prev || (clicked && !prev.clicked)) uiTestids.set(id, { driver: d, clicked });
+    }
+    for (const m of raw.matchAll(/\.goto\(\s*(?:new\s+URL\(\s*)?(?:"([^"]+)"|`([^`]+)`)/g)) if (!uiGotos.has(m[1] ?? m[2])) uiGotos.set(m[1] ?? m[2], d);
+  }
+
   // --- fixture-call evidence: direct internal imports of OWN files ---
   // (cmd/ binaries an OWN file builds/runs are recorded as INFORMATIONAL diagnostics, not covers: the process tests
   // prove the binary boots and serves the driven flows — the flows themselves are the path evidence below — while the
@@ -852,6 +1359,7 @@ for (const e of entries) {
   }
   for (const f of own) for (const u of tf.get(f).urls) if (!urls.has(u)) urls.set(u, `tests/foundation/${f}`);
 
+  const matchedRoutes = []; // every route registration any evidence tier matched (WRITE-GAP checks methods on these)
   for (const [norm, srcFile] of urls) {
     if (norm.startsWith("/__test") || norm.includes("/__test/")) {
       // harness-owned test route: the registering Go file's direct imports are fixture evidence (own files first)
@@ -870,6 +1378,7 @@ for (const e of entries) {
     for (const tier of goCandidateTiers(norm)) {
       for (const c of tier) for (const r of matchRoutes(c)) {
         matched++;
+        matchedRoutes.push(r);
         const via = r.regPkg === "internal/buyerhttp" ? `buyer-dispatch ${r.kind} @ ${r.dispatch}` : "route-service-call";
         addCover(r.regPkg, { path: norm, handler: `${r.file}:${r.line}`, package: r.regPkg, via: r.regPkg === "internal/buyerhttp" ? `buyer-dispatch ${r.kind} @ ${r.dispatch}` : "route-registration" });
         for (const p of r.pkgs) addCover(p, { path: norm, handler: `${r.file}:${r.line}`, package: p, via });
@@ -887,14 +1396,120 @@ for (const e of entries) {
   for (const f of own) for (const frag of tf.get(f).fragments) {
     for (const r of allRoutes) {
       if (!fragmentMatches(r.pattern, frag)) continue;
+      matchedRoutes.push(r);
       const via = r.regPkg === "internal/buyerhttp" ? `buyer-dispatch ${r.kind} @ ${r.dispatch}` : "route-service-call(go-fragment)";
       addCover(r.regPkg, { path: `go-fragment:${frag}`, handler: `${r.file}:${r.line}`, package: r.regPkg, via });
       for (const p of r.pkgs) addCover(p, { path: `go-fragment:${frag}`, handler: `${r.file}:${r.line}`, package: p, via });
     }
   }
 
+  // --- round-4 tier 5 (ui-flow): the BFF routes the spec's UI flow reaches without any URL literal in the spec ---
+  // Entry app files: components/pages defining a testid the drivers use, page.tsx of a goto path (proven apps only,
+  // locale-root gotos excluded: the landing page's Dashboard+Entry closure would dilute every mode), plus app files the
+  // drivers import directly. Each entry's static-import closure is harvested (harvestFile) for literal/composed/fragment
+  // URLs; candidates are SOFT — no match, no cover, no UNMAPPED (the WRITE-GAP check below is the hole detector).
+  const entryFiles = new Map(); // app rel -> provenance string
+  const addEntry = (rel, why) => { if (!entryFiles.has(rel)) entryFiles.set(rel, why); };
+  for (const a of [...driverAppImports].sort()) addEntry(a, `driver-import ${a}`);
+  for (const [id, info] of [...uiTestids].sort()) {
+    const defs = testidDefiners.get(id) ?? [];
+    // A testid defined in BOTH apps resolves to the proven one; a single-app definer wins regardless of the driver's
+    // dir (tests/storefront/promotions-gate.mjs clicks admin's transfer-confirm — the definer IS the evidence).
+    const proven = defs.filter((f) => provenApps.has(appOf(f)));
+    for (const f of (defs.length > 1 && proven.length ? proven : defs).sort()) addEntry(f, `testid ${id} <- ${info.driver}`);
+  }
+  // Round 4b: a goto's ${origin} is the SERVER OF THE DRIVER THAT ISSUES IT — tests/storefront helpers navigate the
+  // storefront, so resolving their /{locale}/products/{ref} shape against ADMIN page routes pulled the admin catalog
+  // closure into modes that only set up storefront products (round-4 CVS × catalog-v2-client × merchanttools.go:48
+  // artifact). Drivers whose dir does not pin one app (tests/e2e, tests/ui) keep the mode-level provenApps. Testid
+  // entries are NOT scoped this way: the definer IS the evidence (see above).
+  const driverApp = (d) =>
+    d.startsWith("tests/admin/") || d.startsWith("apps/admin/tests") ? new Set(["admin"])
+      : d.startsWith("tests/storefront/") || d.startsWith("apps/storefront/tests") ? new Set(["storefront"])
+        : provenApps;
+  for (const [g, d] of [...uiGotos].sort()) {
+    const u = normalizeUrl(g.replace(/\$\{[^}]*\}/g, "{*}"));
+    let segs = segSplit(u);
+    if (segs.length && (segs[0] === "{*}" || /^[a-z]{2}(?:-[A-Za-z0-9]{2,10})?$/i.test(segs[0]))) segs = segs.slice(1);
+    if (!segs.length) continue; // locale-root goto: the landing page's closure would dilute every mode (login hop)
+    if (!segs.some((s) => s !== "{*}")) continue; // fully-templated goto (/${locale}/${slug}): the page is unknowable — never guess
+    const gotoApps = driverApp(d);
+    for (const p of pageRoutes) {
+      if (!gotoApps.has(p.app)) continue;
+      const ps = p.segs;
+      const ok = ps.length === segs.length ? ps.every((s, i) => segEq(s, segs[i]))
+        : ps.length && ps[ps.length - 1] === "{*}" && segs.length > ps.length && ps.slice(0, -1).every((s, i) => segEq(s, segs[i]));
+      if (ok) addEntry(p.rel, `goto ${u} <- ${d}`);
+    }
+  }
+  const uiCandidates = new Map(); // normalized url -> {kind, prov}
+  for (const [entryRel, why] of [...entryFiles].sort()) {
+    for (const [rel, names] of [...closureOf(entryRel)].sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))) {
+      for (const c of harvestFile(rel, names)) if (!uiCandidates.has(c.url)) uiCandidates.set(c.url, { kind: c.kind, prov: `${rel}:${c.line} <- ${why}` });
+    }
+  }
+  // driver files the specFiles regex does not see (.acceptance.ts / -driver.ts / imported .mjs): their own literals
+  for (const d of [...uiDrivers].sort()) {
+    if (specFiles.has(d) || !/\.(ts|mjs|js)$/.test(d)) continue;
+    let text; try { text = stripCommentsJs(read(d)); } catch { continue; }
+    for (const u of extractUrls(text)) if (informative(u) && !uiCandidates.has(u)) uiCandidates.set(u, { kind: "driver-literal", prov: `${d}:0` });
+  }
+  // Go harness stitched URLs (mcall concatenation / fmt.Sprintf) the literal extractor cannot see
+  const goStitched = [];
+  for (const f of [...own].sort()) for (const c of goStitchedUrls(`tests/foundation/${f}`)) goStitched.push({ ...c, file: f });
+  let uiMatched = 0;
+  const matchSoft = (norm, info) => {
+    const rs = matchUrlSoft(norm);
+    if (!rs.length) return 0;
+    uiMatched++;
+    for (const r of rs) {
+      matchedRoutes.push(r);
+      const via = r.regPkg === "internal/buyerhttp" ? `buyer-dispatch ${r.kind} @ ${r.dispatch}` : "route-service-call";
+      addCover(r.regPkg, { path: norm, handler: `${r.file}:${r.line}`, package: r.regPkg, via: `${info.via} ${info.prov} ${r.regPkg === "internal/buyerhttp" ? `buyer-dispatch ${r.kind}` : "route-registration"}` });
+      for (const p of r.pkgs) addCover(p, { path: norm, handler: `${r.file}:${r.line}`, package: p, via: `${info.via} ${info.prov} ${via}` });
+    }
+    return rs.length;
+  };
+  for (const [norm, info] of uiCandidates) matchSoft(norm, { via: `ui-flow(${info.kind})`, prov: info.prov });
+  for (const c of goStitched) matchSoft(c.url, { via: c.kind, prov: `tests/foundation/${c.file}:${c.line}` });
+
+  // --- round-4 WRITE-GAP (K3 P2-1): a mode whose drivers demonstrably exercise admin/storefront WRITE controls must
+  // have matched at least one write route, or the derivation has a hole. Signals: a clicked write-verb testid defined
+  // by an app component, a non-GET BFF request listener in a driver, a Go harness mcall-write of an /v1/admin URL.
+  // Never silence a flag by hand-editing covers: re-derive with evidence. ---
+  const WRITE_VERBS = /(save|submit|confirm|reject|refund|create|delete|remove|activate|deactivate|archive|publish|send|connect|disconnect|enable|disable|upload|import|adjust|release|abandon|reply|rotate|decide|apply|approve)/;
+  const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+  const adminSignals = [], storefrontSignals = [];
+  for (const [id, info] of [...uiTestids].sort()) {
+    if (!info.clicked || !WRITE_VERBS.test(id)) continue;
+    const defs = testidDefiners.get(id) ?? [];
+    const where = `${id} clicked in ${info.driver}`;
+    if (defs.some((f) => appOf(f) === "admin")) adminSignals.push(where);
+    else if (defs.some((f) => appOf(f) === "storefront")) storefrontSignals.push(where);
+  }
+  for (const d of [...uiDrivers].sort()) {
+    let raw; try { raw = read(d); } catch { continue; }
+    if (/page\.on\(\s*["']request["']/.test(raw) && /method\(\)/.test(raw)) {
+      if (raw.includes("/api/stores/")) adminSignals.push(`non-GET /api/stores request listener in ${d}`);
+      if (raw.includes("/api/buyer/")) storefrontSignals.push(`non-GET /api/buyer request listener in ${d}`);
+    }
+  }
+  for (const f of [...own].sort()) {
+    const t = tf.get(f);
+    if (/\.mcall\(/.test(t.bare) && /"(POST|PUT|PATCH|DELETE)"/.test(t.raw) && t.urls.some((u) => u.startsWith("/v1/admin/"))) adminSignals.push(`mcall admin writes in tests/foundation/${f}`);
+  }
+  const adminWriteOk = matchedRoutes.some((r) => r.method && WRITE_METHODS.has(r.method) &&
+    ((r.regPkg === "internal/httpapi" && r.pattern.startsWith("/v1/admin/")) || r.regPkg === "internal/identityhttp"));
+  const storeWriteOk = matchedRoutes.some((r) => r.regPkg === "internal/buyerhttp" || (r.method && WRITE_METHODS.has(r.method)));
+  if (adminSignals.length && !adminWriteOk) {
+    diagnostics.push(`WRITE-GAP ${e.name}: admin write controls exercised (${adminSignals.join("; ")}) but no /v1/admin or identity write route matched — under-selection hole (K3 P2-1); extend the derivation with evidence, never delete this flag`);
+  }
+  if (!adminSignals.length && storefrontSignals.length && !storeWriteOk) {
+    diagnostics.push(`WRITE-GAP ${e.name}: storefront write controls exercised (${storefrontSignals.join("; ")}) but no buyer/write route matched — under-selection hole (K3 P2-1); extend the derivation with evidence, never delete this flag`);
+  }
+
   derivation[e.name] = evidence;
-  diagnostics.push(`${e.name}: own=${own.size} specs=${specFiles.size} urls=${urls.size} covers=${covers.size}`);
+  diagnostics.push(`${e.name}: own=${own.size} specs=${specFiles.size} urls=${urls.size} ui-flow drivers=${uiDrivers.size} entries=${entryFiles.size} candidates=${uiCandidates.size + goStitched.length} matched=${uiMatched} covers=${covers.size}`);
   for (const p of covers) pkgModeCount.set(p, (pkgModeCount.get(p) ?? 0) + 1);
   derivation[e.name + "#covers"] = [...covers].sort();
 }
@@ -1046,4 +1661,6 @@ const report = [
   ...Object.entries(coversOnly).map(([m, l]) => `${m}: ${l.length} pkgs -> ${l.join(" ")}`),
 ].join("\n");
 writeFileSync(path.join(import.meta.dirname, "r2-diagnostics.txt"), report);
-console.log(`derive-narrow-covers: ${Object.keys(out).length} modes; uncovered=${uncovered.length}; see r2-diagnostics.txt`);
+const writeGaps = diagnostics.filter((d) => d.startsWith("WRITE-GAP")).length;
+console.log(`derive-narrow-covers: ${Object.keys(out).length} modes; uncovered=${uncovered.length}; WRITE-GAP=${writeGaps}; see r2-diagnostics.txt`);
+if (writeGaps) console.error(`WRITE-GAP: ${writeGaps} mode(s) exercise write controls with no write route matched — under-selection hole (K3 P2-1)`);

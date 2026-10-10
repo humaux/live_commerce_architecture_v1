@@ -188,6 +188,17 @@ test("round 2 precedence: a covers entry inside BACKEND_ONLY, or a package both 
   assert.deepEqual(classifyBackendCoverage(ancestor, ["internal/probepkg", "internal/probepkg/worker"], { "internal/probepkg/worker": "synthetic: nested backend-only" }, {}), []);
 });
 
+// ---- CI-SELECT round 4 (K3 P2-1): the derivation must record BFF-built admin writes reached by real UI clicks. ----
+test("round 4: the tracked derivation records the clicked bank-transfer write chain and flags no write-gap mode", () => {
+  const derivation = JSON.parse(readFileSync(path.join(root, "output/ci-select-backend-browser/covers-derivation.json"), "utf8"));
+  const offline = derivation["--browser-checkout-offline"];
+  assert.ok(Array.isArray(offline), "covers-derivation.json lost the checkout-offline entry");
+  assert.ok(offline.some((e) => typeof e.via === "string" && e.via.includes("ui-flow") && e.path.includes("bank-transfer") && e.package === "internal/merchantorders"),
+    "checkout-offline clicks transfer-confirm/transfer-reject (tests/admin/checkout-offline.spec.ts) -> OrderBankTransfer.tsx -> logistics-client.ts -> offline.go DecideTransfer: the ui-flow evidence must be recorded");
+  const diag = readFileSync(path.join(root, "output/ci-select-backend-browser/tools/r2-diagnostics.txt"), "utf8");
+  assert.ok(!/^WRITE-GAP/m.test(diag), "a mode whose spec clicks admin write controls with no write-route cover is an under-selection hole (K3 P2-1); re-derive the covers");
+});
+
 test("round 2: the real SHARED and BACKEND_ONLY entries classify with no lc_covers entry anywhere (explicit lists suffice)", async () => {
   const { classifyBackendCoverage } = await import("../../scripts/dev/check-backend-coverage.mjs");
   const { SHARED_BACKEND_PACKAGES, BACKEND_ONLY_PACKAGES } = await import("../../scripts/dev/pr-modes.mjs");
