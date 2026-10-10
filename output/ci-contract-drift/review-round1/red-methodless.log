@@ -1,0 +1,7 @@
+=== RUN   TestGoReviewMethodlessHandleCLI
+    go_review_cli_test.go:51: new methodless Handle escaped gate: exit0 INFO () GO_MOUNT_OR_FALLBACK  /v1/review_mount internal/httpapi/routes.go:20 methodless registration; child paths remain absolute unless StripPrefix is explicit
+        SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=0 GO_MOUNT_OR_FALLBACK=1
+--- FAIL: TestGoReviewMethodlessHandleCLI (1.29s)
+FAIL
+FAIL	livecommerce/scripts/dev/contractdrift	2.280s
+FAIL

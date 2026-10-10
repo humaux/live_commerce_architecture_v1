@@ -1,0 +1,266 @@
+[
+  {
+    "case": "imported-alias",
+    "source_commit": "df9bf2b6b53c17ca2fdf767586deb756dc4476a5",
+    "path": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+    "mutation_exit": 1,
+    "expected_mutation_exit": 1,
+    "restored_exit": 0,
+    "original_sha256": "8a3c1919f835a5779715aec2162a894f85cb351da74fea6a93fa1ccf4e20e6b6",
+    "restored_sha256": "8a3c1919f835a5779715aec2162a894f85cb351da74fea6a93fa1ccf4e20e6b6",
+    "mutation_seconds": 1.504,
+    "restored_seconds": 0.827,
+    "blocking_findings": [
+      {
+        "Level": "ERROR",
+        "Reason": "TOUCHED",
+        "Finding": {
+          "kind": "UNRESOLVED",
+          "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+          "locations": [
+            {
+              "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+              "line": 1,
+              "end": 1
+            }
+          ]
+        }
+      },
+      {
+        "Level": "ERROR",
+        "Reason": "TOUCHED",
+        "Finding": {
+          "kind": "UNRESOLVED",
+          "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+          "locations": [
+            {
+              "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+              "line": 1,
+              "end": 1
+            }
+          ]
+        }
+      },
+      {
+        "Level": "ERROR",
+        "Reason": "TOUCHED",
+        "Finding": {
+          "kind": "UNRESOLVED",
+          "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+          "locations": [
+            {
+              "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+              "line": 120,
+              "end": 120
+            }
+          ]
+        }
+      },
+      {
+        "Level": "ERROR",
+        "Reason": "TOUCHED",
+        "Finding": {
+          "kind": "UNRESOLVED",
+          "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+          "locations": [
+            {
+              "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+              "line": 120,
+              "end": 120
+            }
+          ]
+        }
+      },
+      {
+        "Level": "ERROR",
+        "Reason": "TOUCHED",
+        "Finding": {
+          "kind": "UNRESOLVED",
+          "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+          "locations": [
+            {
+              "file": "apps/admin/lib/__ci_drift_alias_probe.ts",
+              "line": 1,
+              "end": 1
+            }
+          ]
+        }
+      },
+      {
+        "Level": "ERROR",
+        "Reason": "TOUCHED",
+        "Finding": {
+          "kind": "UNRESOLVED",
+          "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+          "locations": [
+            {
+              "file": "apps/admin/lib/__ci_drift_alias_probe.ts",
+              "line": 1,
+              "end": 1
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "case": "proxy-alias",
+    "source_commit": "df9bf2b6b53c17ca2fdf767586deb756dc4476a5",
+    "path": "apps/admin/proxy.ts",
+    "mutation_exit": 1,
+    "expected_mutation_exit": 1,
+    "restored_exit": 0,
+    "original_sha256": "870aa6165234c16dff0a8f10e102d8aea31198ef6295f24d2f30c4ecaeaf95c2",
+    "restored_sha256": "870aa6165234c16dff0a8f10e102d8aea31198ef6295f24d2f30c4ecaeaf95c2",
+    "mutation_seconds": 0.84,
+    "restored_seconds": 0.864,
+    "blocking_findings": [
+      {
+        "Level": "ERROR",
+        "Reason": "TOUCHED",
+        "Finding": {
+          "kind": "UNRESOLVED",
+          "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+          "locations": [
+            {
+              "file": "apps/admin/proxy.ts",
+              "line": 28,
+              "end": 28
+            }
+          ]
+        }
+      },
+      {
+        "Level": "ERROR",
+        "Reason": "TOUCHED",
+        "Finding": {
+          "kind": "UNRESOLVED",
+          "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+          "locations": [
+            {
+              "file": "apps/admin/proxy.ts",
+              "line": 28,
+              "end": 28
+            }
+          ]
+        }
+      },
+      {
+        "Level": "ERROR",
+        "Reason": "TOUCHED",
+        "Finding": {
+          "kind": "UNRESOLVED",
+          "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+          "locations": [
+            {
+              "file": "apps/admin/proxy.ts",
+              "line": 28,
+              "end": 28
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "case": "inline-alias",
+    "source_commit": "df9bf2b6b53c17ca2fdf767586deb756dc4476a5",
+    "path": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+    "mutation_exit": 1,
+    "restored_exit": 0,
+    "original_sha256": "8a3c1919f835a5779715aec2162a894f85cb351da74fea6a93fa1ccf4e20e6b6",
+    "restored_sha256": "8a3c1919f835a5779715aec2162a894f85cb351da74fea6a93fa1ccf4e20e6b6",
+    "blocking_findings": [
+      {
+        "Level": "ERROR",
+        "Reason": "TOUCHED",
+        "Finding": {
+          "kind": "UNRESOLVED",
+          "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+          "locations": [
+            {
+              "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+              "line": 119,
+              "end": 119
+            }
+          ]
+        }
+      },
+      {
+        "Level": "ERROR",
+        "Reason": "TOUCHED",
+        "Finding": {
+          "kind": "UNRESOLVED",
+          "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+          "locations": [
+            {
+              "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+              "line": 119,
+              "end": 119
+            }
+          ]
+        }
+      },
+      {
+        "Level": "ERROR",
+        "Reason": "TOUCHED",
+        "Finding": {
+          "kind": "UNRESOLVED",
+          "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+          "locations": [
+            {
+              "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+              "line": 119,
+              "end": 119
+            }
+          ]
+        }
+      },
+      {
+        "Level": "ERROR",
+        "Reason": "TOUCHED",
+        "Finding": {
+          "kind": "UNRESOLVED",
+          "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+          "locations": [
+            {
+              "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+              "line": 119,
+              "end": 119
+            }
+          ]
+        }
+      },
+      {
+        "Level": "ERROR",
+        "Reason": "TOUCHED",
+        "Finding": {
+          "kind": "UNRESOLVED",
+          "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+          "locations": [
+            {
+              "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+              "line": 119,
+              "end": 119
+            }
+          ]
+        }
+      },
+      {
+        "Level": "ERROR",
+        "Reason": "TOUCHED",
+        "Finding": {
+          "kind": "UNRESOLVED",
+          "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+          "locations": [
+            {
+              "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+              "line": 119,
+              "end": 119
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

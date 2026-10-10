@@ -49,7 +49,7 @@ concurrency:
 jobs:
   plan:
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 10 # + contract drift (go run, ~1-2 min)
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
       sweep_n: ${{ steps.plan.outputs.sweep_n }}
@@ -66,6 +66,21 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: node scripts/dev/pr-modes.mjs "$BASE_SHA" "$HEAD_SHA" >/dev/null
+      # CI-DRIFT (owner 2026-10-10): contract drift blocks `required` through this plan job. Go routes x contracts x BFF allowlist;
+      # new drift, a touched legacy route, a stale or grown baseline -> exit 1; untouched legacy -> warning. Base = the PR base SHA.
+      - if: github.event_name == 'pull_request'
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Contract drift (Go routes x contracts x BFF)
+        if: github.event_name == 'pull_request'
+        env:
+          CONTRACT_DRIFT_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          rc=0; go run ./scripts/dev/contractdrift > "$RUNNER_TEMP/drift.txt" 2>&1 || rc=$?
+          grep -vE '^(WARNING|INFO) ' "$RUNNER_TEMP/drift.txt" || true # ERROR lines, SUMMARY and tool failures only; legacy warnings/info stay out of the log
+          exit "$rc"
       - id: plan
         env:
           # PR: the set computed from the changed paths. Push: the sharded foundation suite (unit + groups, ~12 min wall). Dispatch: what was asked for.

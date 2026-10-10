@@ -1,0 +1,63 @@
+{
+  "exit": 1,
+  "errors": 1,
+  "findings": [
+    {
+      "Level": "ERROR",
+      "Reason": "merge-base regression",
+      "Finding": {
+        "kind": "BFF_REMOVED",
+        "method": "GET",
+        "path": "/v1/admin/stores",
+        "detail": "merge-base forwarding mapping removed or retargeted: apps/admin/app/api/stores/route.ts",
+        "locations": [
+          {
+            "file": "apps/admin/app/api/stores/route.ts",
+            "line": 11,
+            "end": 11
+          },
+          {
+            "file": "apps/admin/app/api/stores/route.ts",
+            "line": 17,
+            "end": 17
+          },
+          {
+            "file": "apps/admin/app/api/stores/route.ts",
+            "line": 36,
+            "end": 36
+          },
+          {
+            "file": "apps/admin/app/api/stores/route.ts",
+            "line": 37,
+            "end": 37
+          },
+          {
+            "file": "apps/admin/app/api/stores/route.ts",
+            "line": 38,
+            "end": 38
+          },
+          {
+            "file": "apps/admin/app/api/stores/route.ts",
+            "line": 39,
+            "end": 39
+          },
+          {
+            "file": "apps/admin/app/api/stores/route.ts",
+            "line": 40,
+            "end": 40
+          },
+          {
+            "file": "apps/admin/app/api/stores/route.ts",
+            "line": 41,
+            "end": 41
+          },
+          {
+            "file": "apps/admin/lib/auth.ts",
+            "line": 482,
+            "end": 512
+          }
+        ]
+      }
+    }
+  ]
+}
