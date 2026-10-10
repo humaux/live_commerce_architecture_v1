@@ -1,0 +1,6835 @@
+{
+  "version": 1,
+  "seed": "7975160e241ff4eb9c6070d15d2e8574df543bd9",
+  "entries": [
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "GET",
+      "path": "/v1/account",
+      "locations": [
+        {
+          "file": "contracts/customers-billing-v1.md",
+          "line": 41,
+          "end": 41
+        },
+        {
+          "file": "contracts/customers-billing-v1.md",
+          "line": 246,
+          "end": 246
+        },
+        {
+          "file": "contracts/customers-billing-v1.md",
+          "line": 408,
+          "end": 408
+        },
+        {
+          "file": "contracts/stripe-live-enable-v1.md",
+          "line": 39,
+          "end": 39
+        },
+        {
+          "file": "contracts/stripe-live-enable-v1.md",
+          "line": 65,
+          "end": 65
+        },
+        {
+          "file": "contracts/stripe-live-enable-v1.md",
+          "line": 96,
+          "end": 96
+        },
+        {
+          "file": "contracts/stripe-live-enable-v1.md",
+          "line": 318,
+          "end": 318
+        },
+        {
+          "file": "contracts/stripe-psp-v1.md",
+          "line": 173,
+          "end": 173
+        },
+        {
+          "file": "contracts/stripe-psp-v1.md",
+          "line": 467,
+          "end": 467
+        },
+        {
+          "file": "contracts/stripe-psp-v1.md",
+          "line": 479,
+          "end": 479
+        },
+        {
+          "file": "contracts/stripe-psp-v1.md",
+          "line": 1235,
+          "end": 1235
+        },
+        {
+          "file": "contracts/stripe-psp-v1.md",
+          "line": 1317,
+          "end": 1317
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/audit-events:",
+      "locations": [
+        {
+          "file": "contracts/foundation-v1.md",
+          "line": 28,
+          "end": 28
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/customers/{}/historical-orders[",
+      "locations": [
+        {
+          "file": "contracts/migration-import-v1.md",
+          "line": 122,
+          "end": 122
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/settlements[",
+      "locations": [
+        {
+          "file": "contracts/stripe-platform-account-v1.md",
+          "line": 432,
+          "end": 432
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}:",
+      "locations": [
+        {
+          "file": "contracts/foundation-v1.md",
+          "line": 27,
+          "end": 27
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "GET",
+      "path": "/v1/balance_transactions",
+      "locations": [
+        {
+          "file": "contracts/stripe-platform-account-v1.md",
+          "line": 412,
+          "end": 412
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "GET",
+      "path": "/v1/checkout/sessions",
+      "locations": [
+        {
+          "file": "contracts/stripe-psp-v1.md",
+          "line": 571,
+          "end": 571
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "GET",
+      "path": "/v1/checkout/sessions/{}",
+      "locations": [
+        {
+          "file": "contracts/stripe-psp-v1.md",
+          "line": 565,
+          "end": 565
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "GET",
+      "path": "/v1/merchant/ads/drafts[/{}]",
+      "locations": [
+        {
+          "file": "contracts/meta-ads-v1.md",
+          "line": 498,
+          "end": 498
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "GET",
+      "path": "/v1/merchant/ads/meta/callback",
+      "locations": [
+        {
+          "file": "contracts/meta-ads-v1.md",
+          "line": 134,
+          "end": 134
+        },
+        {
+          "file": "contracts/meta-ads-v1.md",
+          "line": 496,
+          "end": 496
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "GET",
+      "path": "/v1/merchant/ads/report",
+      "locations": [
+        {
+          "file": "contracts/meta-ads-v1.md",
+          "line": 503,
+          "end": 503
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "GET",
+      "path": "/v1/payment_intents/{}",
+      "locations": [
+        {
+          "file": "contracts/stripe-refund-v1.md",
+          "line": 103,
+          "end": 103
+        },
+        {
+          "file": "contracts/stripe-refund-v1.md",
+          "line": 126,
+          "end": 126
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "GET",
+      "path": "/v1/refunds",
+      "locations": [
+        {
+          "file": "contracts/stripe-refund-v1.md",
+          "line": 83,
+          "end": 83
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "GET",
+      "path": "/v1/refunds/{}",
+      "locations": [
+        {
+          "file": "contracts/stripe-refund-v1.md",
+          "line": 83,
+          "end": 83
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "GET",
+      "path": "/v1/storefront/checkouts/{}",
+      "locations": [
+        {
+          "file": "contracts/core-openapi.json",
+          "line": 150,
+          "end": 150
+        },
+        {
+          "file": "contracts/core-openapi.json",
+          "line": 151,
+          "end": 151
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "GET",
+      "path": "/v1/subscriptions",
+      "locations": [
+        {
+          "file": "contracts/customers-billing-v1.md",
+          "line": 323,
+          "end": 323
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "GET",
+      "path": "/v1/subscriptions/{}",
+      "locations": [
+        {
+          "file": "contracts/customers-billing-v1.md",
+          "line": 131,
+          "end": 131
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/ad-drafts/{}/publish",
+      "locations": [
+        {
+          "file": "contracts/core-openapi.json",
+          "line": 843,
+          "end": 843
+        },
+        {
+          "file": "contracts/core-openapi.json",
+          "line": 844,
+          "end": 844
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/conversations/{}/takeover",
+      "locations": [
+        {
+          "file": "contracts/core-openapi.json",
+          "line": 555,
+          "end": 555
+        },
+        {
+          "file": "contracts/core-openapi.json",
+          "line": 556,
+          "end": 556
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/page-live-videos",
+      "locations": [
+        {
+          "file": "contracts/live-session-flow-openapi.json",
+          "line": 386,
+          "end": 386
+        },
+        {
+          "file": "contracts/live-session-flow-openapi.json",
+          "line": 537,
+          "end": 537
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/start",
+      "locations": [
+        {
+          "file": "contracts/core-openapi.json",
+          "line": 405,
+          "end": 405
+        },
+        {
+          "file": "contracts/core-openapi.json",
+          "line": 406,
+          "end": 406
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/packages/{}/shipments",
+      "locations": [
+        {
+          "file": "contracts/core-openapi.json",
+          "line": 694,
+          "end": 694
+        },
+        {
+          "file": "contracts/core-openapi.json",
+          "line": 695,
+          "end": 695
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "POST",
+      "path": "/v1/billing_portal/sessions",
+      "locations": [
+        {
+          "file": "contracts/customers-billing-v1.md",
+          "line": 107,
+          "end": 107
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "POST",
+      "path": "/v1/checkout/sessions",
+      "locations": [
+        {
+          "file": "contracts/customers-billing-v1.md",
+          "line": 105,
+          "end": 105
+        },
+        {
+          "file": "contracts/stripe-psp-v1.md",
+          "line": 390,
+          "end": 390
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "POST",
+      "path": "/v1/checkout/sessions/{}/expire",
+      "locations": [
+        {
+          "file": "contracts/customers-billing-v1.md",
+          "line": 328,
+          "end": 328
+        },
+        {
+          "file": "contracts/stripe-psp-v1.md",
+          "line": 567,
+          "end": 567
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "POST",
+      "path": "/v1/identity/staff/{list",
+      "locations": [
+        {
+          "file": "contracts/storefront-v2.md",
+          "line": 251,
+          "end": 251
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "POST",
+      "path": "/v1/merchant/ads/drafts",
+      "locations": [
+        {
+          "file": "contracts/meta-ads-v1.md",
+          "line": 499,
+          "end": 499
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "POST",
+      "path": "/v1/merchant/ads/meta/bindings",
+      "locations": [
+        {
+          "file": "contracts/meta-ads-v1.md",
+          "line": 135,
+          "end": 135
+        },
+        {
+          "file": "contracts/meta-ads-v1.md",
+          "line": 497,
+          "end": 497
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "POST",
+      "path": "/v1/merchant/ads/meta/connect",
+      "locations": [
+        {
+          "file": "contracts/meta-ads-v1.md",
+          "line": 133,
+          "end": 133
+        },
+        {
+          "file": "contracts/meta-ads-v1.md",
+          "line": 495,
+          "end": 495
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "POST",
+      "path": "/v1/platform/stripe/webhook:",
+      "locations": [
+        {
+          "file": "contracts/customers-billing-v1.md",
+          "line": 130,
+          "end": 130
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "POST",
+      "path": "/v1/refunds",
+      "locations": [
+        {
+          "file": "contracts/stripe-refund-v1.md",
+          "line": 78,
+          "end": 78
+        },
+        {
+          "file": "contracts/stripe-refund-v1.md",
+          "line": 106,
+          "end": 106
+        },
+        {
+          "file": "contracts/stripe-refund-v1.md",
+          "line": 396,
+          "end": 396
+        },
+        {
+          "file": "contracts/stripe-refund-v1.md",
+          "line": 523,
+          "end": 523
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "POST",
+      "path": "/v1/storefront/carts/{}/checkout",
+      "locations": [
+        {
+          "file": "contracts/core-openapi.json",
+          "line": 9,
+          "end": 9
+        },
+        {
+          "file": "contracts/core-openapi.json",
+          "line": 10,
+          "end": 10
+        }
+      ]
+    },
+    {
+      "kind": "CONTRACT_ONLY",
+      "method": "PUT",
+      "path": "/v1/merchant/ads/capi",
+      "locations": [
+        {
+          "file": "contracts/meta-ads-v1.md",
+          "line": 504,
+          "end": 504
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "DELETE",
+      "path": "/v1/admin/stores/{}/customers/tags/{}",
+      "locations": [
+        {
+          "file": "internal/httpapi/customer_tags.go",
+          "line": 72,
+          "end": 72
+        },
+        {
+          "file": "internal/httpapi/customer_tags.go",
+          "line": 72,
+          "end": 75
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 42,
+          "end": 42
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 222,
+          "end": 222
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "DELETE",
+      "path": "/v1/admin/stores/{}/customers/{}/notes/{}",
+      "locations": [
+        {
+          "file": "internal/httpapi/customer_tags.go",
+          "line": 101,
+          "end": 101
+        },
+        {
+          "file": "internal/httpapi/customer_tags.go",
+          "line": 101,
+          "end": 104
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 42,
+          "end": 42
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 222,
+          "end": 222
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "DELETE",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/claims/blocklist/entries/{}",
+      "locations": [
+        {
+          "file": "internal/httpapi/blocklist.go",
+          "line": 33,
+          "end": 33
+        },
+        {
+          "file": "internal/httpapi/blocklist.go",
+          "line": 36,
+          "end": 36
+        },
+        {
+          "file": "internal/httpapi/blocklist.go",
+          "line": 56,
+          "end": 56
+        },
+        {
+          "file": "internal/httpapi/blocklist.go",
+          "line": 56,
+          "end": 64
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 58,
+          "end": 58
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 128,
+          "end": 128
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 210,
+          "end": 210
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "DELETE",
+      "path": "/v1/admin/stores/{}/parcel-groups/{}",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 229,
+          "end": 229
+        },
+        {
+          "file": "internal/httpapi/parcels.go",
+          "line": 31,
+          "end": 31
+        },
+        {
+          "file": "internal/httpapi/parcels.go",
+          "line": 79,
+          "end": 79
+        },
+        {
+          "file": "internal/httpapi/parcels.go",
+          "line": 79,
+          "end": 94
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/bank-transfer-settings",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 231,
+          "end": 231
+        },
+        {
+          "file": "internal/httpapi/offline.go",
+          "line": 33,
+          "end": 33
+        },
+        {
+          "file": "internal/httpapi/offline.go",
+          "line": 35,
+          "end": 35
+        },
+        {
+          "file": "internal/httpapi/offline.go",
+          "line": 35,
+          "end": 39
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/billing",
+      "locations": [
+        {
+          "file": "internal/httpapi/billing.go",
+          "line": 48,
+          "end": 48
+        },
+        {
+          "file": "internal/httpapi/billing.go",
+          "line": 50,
+          "end": 50
+        },
+        {
+          "file": "internal/httpapi/billing.go",
+          "line": 50,
+          "end": 63
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 226,
+          "end": 226
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/billing/standing",
+      "locations": [
+        {
+          "file": "internal/httpapi/billing.go",
+          "line": 48,
+          "end": 48
+        },
+        {
+          "file": "internal/httpapi/billing.go",
+          "line": 65,
+          "end": 65
+        },
+        {
+          "file": "internal/httpapi/billing.go",
+          "line": 65,
+          "end": 69
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 226,
+          "end": 226
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/cash-on-delivery-settings",
+      "locations": [
+        {
+          "file": "internal/httpapi/cod.go",
+          "line": 25,
+          "end": 25
+        },
+        {
+          "file": "internal/httpapi/cod.go",
+          "line": 26,
+          "end": 26
+        },
+        {
+          "file": "internal/httpapi/cod.go",
+          "line": 26,
+          "end": 30
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 232,
+          "end": 232
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/customers",
+      "locations": [
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 44,
+          "end": 44
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 44,
+          "end": 55
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 222,
+          "end": 222
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/customers/tags",
+      "locations": [
+        {
+          "file": "internal/httpapi/customer_tags.go",
+          "line": 56,
+          "end": 56
+        },
+        {
+          "file": "internal/httpapi/customer_tags.go",
+          "line": 56,
+          "end": 63
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 42,
+          "end": 42
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 222,
+          "end": 222
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/customers/{}",
+      "locations": [
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 56,
+          "end": 56
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 56,
+          "end": 62
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 222,
+          "end": 222
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/customers/{}/historical-orders",
+      "locations": [
+        {
+          "file": "internal/httpapi/customer_historical.go",
+          "line": 26,
+          "end": 26
+        },
+        {
+          "file": "internal/httpapi/customer_historical.go",
+          "line": 26,
+          "end": 37
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 43,
+          "end": 43
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 222,
+          "end": 222
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/customers/{}/notes",
+      "locations": [
+        {
+          "file": "internal/httpapi/customer_tags.go",
+          "line": 81,
+          "end": 81
+        },
+        {
+          "file": "internal/httpapi/customer_tags.go",
+          "line": 81,
+          "end": 92
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 42,
+          "end": 42
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 222,
+          "end": 222
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/dashboard",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 233,
+          "end": 233
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 42,
+          "end": 42
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 43,
+          "end": 43
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 43,
+          "end": 47
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/design/draft",
+      "locations": [
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 40,
+          "end": 40
+        },
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 41,
+          "end": 41
+        },
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 41,
+          "end": 43
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 198,
+          "end": 198
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/design/media",
+      "locations": [
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 40,
+          "end": 40
+        },
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 59,
+          "end": 59
+        },
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 59,
+          "end": 61
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 198,
+          "end": 198
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/design/media/{}",
+      "locations": [
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 40,
+          "end": 40
+        },
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 63,
+          "end": 63
+        },
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 63,
+          "end": 69
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 198,
+          "end": 198
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/design/versions",
+      "locations": [
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 40,
+          "end": 40
+        },
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 56,
+          "end": 56
+        },
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 56,
+          "end": 58
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 198,
+          "end": 198
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/finance/summary",
+      "locations": [
+        {
+          "file": "internal/httpapi/finance.go",
+          "line": 29,
+          "end": 29
+        },
+        {
+          "file": "internal/httpapi/finance.go",
+          "line": 30,
+          "end": 30
+        },
+        {
+          "file": "internal/httpapi/finance.go",
+          "line": 30,
+          "end": 41
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 224,
+          "end": 224
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/finance/summary.csv",
+      "locations": [
+        {
+          "file": "internal/httpapi/finance.go",
+          "line": 29,
+          "end": 29
+        },
+        {
+          "file": "internal/httpapi/finance.go",
+          "line": 42,
+          "end": 42
+        },
+        {
+          "file": "internal/httpapi/finance.go",
+          "line": 42,
+          "end": 56
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 224,
+          "end": 224
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/imports/{}/results.csv",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 223,
+          "end": 223
+        },
+        {
+          "file": "internal/httpapi/imports.go",
+          "line": 34,
+          "end": 34
+        },
+        {
+          "file": "internal/httpapi/imports.go",
+          "line": 106,
+          "end": 106
+        },
+        {
+          "file": "internal/httpapi/imports.go",
+          "line": 106,
+          "end": 124
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/inbox/buyer-panel",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 236,
+          "end": 236
+        },
+        {
+          "file": "internal/httpapi/inbox.go",
+          "line": 51,
+          "end": 51
+        },
+        {
+          "file": "internal/httpapi/inbox.go",
+          "line": 153,
+          "end": 153
+        },
+        {
+          "file": "internal/httpapi/inbox.go",
+          "line": 153,
+          "end": 165
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/inbox/conversations",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 236,
+          "end": 236
+        },
+        {
+          "file": "internal/httpapi/inbox.go",
+          "line": 50,
+          "end": 50
+        },
+        {
+          "file": "internal/httpapi/inbox.go",
+          "line": 55,
+          "end": 55
+        },
+        {
+          "file": "internal/httpapi/inbox.go",
+          "line": 55,
+          "end": 94
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/inbox/conversations/{}/messages",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 236,
+          "end": 236
+        },
+        {
+          "file": "internal/httpapi/inbox.go",
+          "line": 50,
+          "end": 50
+        },
+        {
+          "file": "internal/httpapi/inbox.go",
+          "line": 97,
+          "end": 97
+        },
+        {
+          "file": "internal/httpapi/inbox.go",
+          "line": 97,
+          "end": 106
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/inbox/order-prefill",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 233,
+          "end": 233
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 153,
+          "end": 153
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 345,
+          "end": 345
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 346,
+          "end": 346
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 346,
+          "end": 364
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/live-sessions",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 205,
+          "end": 205
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 36,
+          "end": 36
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 37,
+          "end": 46
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/live-sessions/{}",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 205,
+          "end": 205
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 36,
+          "end": 36
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 50,
+          "end": 50
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 50,
+          "end": 62
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/claims",
+      "locations": [
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 58,
+          "end": 58
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 60,
+          "end": 60
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 60,
+          "end": 63
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 210,
+          "end": 210
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/claims/blocklist",
+      "locations": [
+        {
+          "file": "internal/httpapi/blocklist.go",
+          "line": 33,
+          "end": 33
+        },
+        {
+          "file": "internal/httpapi/blocklist.go",
+          "line": 34,
+          "end": 34
+        },
+        {
+          "file": "internal/httpapi/blocklist.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/httpapi/blocklist.go",
+          "line": 37,
+          "end": 46
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 58,
+          "end": 58
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 128,
+          "end": 128
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 210,
+          "end": 210
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/claims/blocklist/check",
+      "locations": [
+        {
+          "file": "internal/httpapi/blocklist.go",
+          "line": 33,
+          "end": 33
+        },
+        {
+          "file": "internal/httpapi/blocklist.go",
+          "line": 35,
+          "end": 35
+        },
+        {
+          "file": "internal/httpapi/blocklist.go",
+          "line": 65,
+          "end": 65
+        },
+        {
+          "file": "internal/httpapi/blocklist.go",
+          "line": 65,
+          "end": 75
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 58,
+          "end": 58
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 128,
+          "end": 128
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 210,
+          "end": 210
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/claims/bundles",
+      "locations": [
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 58,
+          "end": 58
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 111,
+          "end": 111
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 111,
+          "end": 120
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 210,
+          "end": 210
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/claims/keywords/next",
+      "locations": [
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 58,
+          "end": 58
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 130,
+          "end": 130
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 210,
+          "end": 210
+        },
+        {
+          "file": "internal/httpapi/keyword_tools.go",
+          "line": 29,
+          "end": 29
+        },
+        {
+          "file": "internal/httpapi/keyword_tools.go",
+          "line": 30,
+          "end": 30
+        },
+        {
+          "file": "internal/httpapi/keyword_tools.go",
+          "line": 49,
+          "end": 49
+        },
+        {
+          "file": "internal/httpapi/keyword_tools.go",
+          "line": 49,
+          "end": 58
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/claims/library",
+      "locations": [
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 58,
+          "end": 58
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 93,
+          "end": 93
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 93,
+          "end": 97
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 210,
+          "end": 210
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/console",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 209,
+          "end": 209
+        },
+        {
+          "file": "internal/httpapi/live_console.go",
+          "line": 27,
+          "end": 27
+        },
+        {
+          "file": "internal/httpapi/live_console.go",
+          "line": 28,
+          "end": 28
+        },
+        {
+          "file": "internal/httpapi/live_console.go",
+          "line": 28,
+          "end": 35
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/input",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 205,
+          "end": 205
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 36,
+          "end": 36
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 98,
+          "end": 98
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 98,
+          "end": 106
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/input/prepared",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 205,
+          "end": 205
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 36,
+          "end": 36
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 107,
+          "end": 107
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 107,
+          "end": 115
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/reminders",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 238,
+          "end": 238
+        },
+        {
+          "file": "internal/httpapi/reminders.go",
+          "line": 32,
+          "end": 32
+        },
+        {
+          "file": "internal/httpapi/reminders.go",
+          "line": 62,
+          "end": 62
+        },
+        {
+          "file": "internal/httpapi/reminders.go",
+          "line": 62,
+          "end": 65
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/logistics/cvs-settings",
+      "locations": [
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 49,
+          "end": 49
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 75,
+          "end": 75
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 75,
+          "end": 79
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 227,
+          "end": 227
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/logistics/ecpay",
+      "locations": [
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 49,
+          "end": 49
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 52,
+          "end": 52
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 52,
+          "end": 56
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 227,
+          "end": 227
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/markets",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 201,
+          "end": 201
+        },
+        {
+          "file": "internal/httpapi/settings_discovery.go",
+          "line": 18,
+          "end": 18
+        },
+        {
+          "file": "internal/httpapi/settings_discovery.go",
+          "line": 19,
+          "end": 19
+        },
+        {
+          "file": "internal/httpapi/settings_discovery.go",
+          "line": 19,
+          "end": 21
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/markets/{}/countries/TW/payment-methods",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 201,
+          "end": 201
+        },
+        {
+          "file": "internal/httpapi/settings_discovery.go",
+          "line": 38,
+          "end": 38
+        },
+        {
+          "file": "internal/httpapi/settings_discovery.go",
+          "line": 38,
+          "end": 40
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/markets/{}/countries/{}/delivery-services",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 201,
+          "end": 201
+        },
+        {
+          "file": "internal/httpapi/settings.go",
+          "line": 19,
+          "end": 19
+        },
+        {
+          "file": "internal/httpapi/settings_discovery.go",
+          "line": 35,
+          "end": 35
+        },
+        {
+          "file": "internal/httpapi/settings_discovery.go",
+          "line": 35,
+          "end": 37
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/markets/{}/countries/{}/delivery-services/{}",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 200,
+          "end": 200
+        },
+        {
+          "file": "internal/httpapi/settings.go",
+          "line": 19,
+          "end": 19
+        },
+        {
+          "file": "internal/httpapi/settings.go",
+          "line": 22,
+          "end": 22
+        },
+        {
+          "file": "internal/httpapi/settings.go",
+          "line": 22,
+          "end": 24
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/markets/{}/countries/{}/delivery-services/{}/policy",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 201,
+          "end": 201
+        },
+        {
+          "file": "internal/httpapi/settings.go",
+          "line": 19,
+          "end": 19
+        },
+        {
+          "file": "internal/httpapi/settings_discovery.go",
+          "line": 41,
+          "end": 41
+        },
+        {
+          "file": "internal/httpapi/settings_discovery.go",
+          "line": 41,
+          "end": 43
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/markets/{}/countries/{}/payment-methods/{}",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 200,
+          "end": 200
+        },
+        {
+          "file": "internal/httpapi/settings.go",
+          "line": 19,
+          "end": 19
+        },
+        {
+          "file": "internal/httpapi/settings.go",
+          "line": 34,
+          "end": 34
+        },
+        {
+          "file": "internal/httpapi/settings.go",
+          "line": 34,
+          "end": 36
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/message-templates",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 239,
+          "end": 239
+        },
+        {
+          "file": "internal/httpapi/templates.go",
+          "line": 29,
+          "end": 29
+        },
+        {
+          "file": "internal/httpapi/templates.go",
+          "line": 44,
+          "end": 44
+        },
+        {
+          "file": "internal/httpapi/templates.go",
+          "line": 44,
+          "end": 48
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/meta-connect/callback",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 220,
+          "end": 220
+        },
+        {
+          "file": "internal/httpapi/meta_connect.go",
+          "line": 35,
+          "end": 35
+        },
+        {
+          "file": "internal/httpapi/meta_connect.go",
+          "line": 46,
+          "end": 46
+        },
+        {
+          "file": "internal/httpapi/meta_connect.go",
+          "line": 46,
+          "end": 48
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/meta-connect/states/{}",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 220,
+          "end": 220
+        },
+        {
+          "file": "internal/httpapi/meta_connect.go",
+          "line": 35,
+          "end": 35
+        },
+        {
+          "file": "internal/httpapi/meta_connect.go",
+          "line": 54,
+          "end": 54
+        },
+        {
+          "file": "internal/httpapi/meta_connect.go",
+          "line": 54,
+          "end": 58
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/meta-connect/status",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 220,
+          "end": 220
+        },
+        {
+          "file": "internal/httpapi/meta_connect.go",
+          "line": 35,
+          "end": 35
+        },
+        {
+          "file": "internal/httpapi/meta_connect.go",
+          "line": 49,
+          "end": 49
+        },
+        {
+          "file": "internal/httpapi/meta_connect.go",
+          "line": 49,
+          "end": 53
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/meta/health",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 221,
+          "end": 221
+        },
+        {
+          "file": "internal/httpapi/meta_health.go",
+          "line": 35,
+          "end": 35
+        },
+        {
+          "file": "internal/httpapi/meta_health.go",
+          "line": 38,
+          "end": 38
+        },
+        {
+          "file": "internal/httpapi/meta_health.go",
+          "line": 38,
+          "end": 42
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/notification-settings",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 235,
+          "end": 235
+        },
+        {
+          "file": "internal/httpapi/notify.go",
+          "line": 23,
+          "end": 23
+        },
+        {
+          "file": "internal/httpapi/notify.go",
+          "line": 24,
+          "end": 24
+        },
+        {
+          "file": "internal/httpapi/notify.go",
+          "line": 24,
+          "end": 28
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/operations",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 240,
+          "end": 240
+        },
+        {
+          "file": "internal/httpapi/operations.go",
+          "line": 41,
+          "end": 41
+        },
+        {
+          "file": "internal/httpapi/operations.go",
+          "line": 43,
+          "end": 43
+        },
+        {
+          "file": "internal/httpapi/operations.go",
+          "line": 43,
+          "end": 52
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/order-actions",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 218,
+          "end": 218
+        },
+        {
+          "file": "internal/httpapi/shipments.go",
+          "line": 41,
+          "end": 41
+        },
+        {
+          "file": "internal/httpapi/shipments.go",
+          "line": 92,
+          "end": 92
+        },
+        {
+          "file": "internal/httpapi/shipments.go",
+          "line": 92,
+          "end": 99
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/orders/cancel-refund-gaps",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 230,
+          "end": 230
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 104,
+          "end": 104
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 123,
+          "end": 123
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 123,
+          "end": 133
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/orders/manual/options",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 233,
+          "end": 233
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 42,
+          "end": 42
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 102,
+          "end": 102
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 102,
+          "end": 112
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/orders/merge-suggestions",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 229,
+          "end": 229
+        },
+        {
+          "file": "internal/httpapi/parcels.go",
+          "line": 31,
+          "end": 31
+        },
+        {
+          "file": "internal/httpapi/parcels.go",
+          "line": 33,
+          "end": 33
+        },
+        {
+          "file": "internal/httpapi/parcels.go",
+          "line": 33,
+          "end": 43
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/orders/unshipped.csv",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 218,
+          "end": 218
+        },
+        {
+          "file": "internal/httpapi/shipments.go",
+          "line": 41,
+          "end": 41
+        },
+        {
+          "file": "internal/httpapi/shipments.go",
+          "line": 82,
+          "end": 82
+        },
+        {
+          "file": "internal/httpapi/shipments.go",
+          "line": 82,
+          "end": 90
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/orders/{}",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 204,
+          "end": 204
+        },
+        {
+          "file": "internal/httpapi/orders.go",
+          "line": 18,
+          "end": 18
+        },
+        {
+          "file": "internal/httpapi/orders.go",
+          "line": 20,
+          "end": 20
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/orders/{}/bank-transfer",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 231,
+          "end": 231
+        },
+        {
+          "file": "internal/httpapi/offline.go",
+          "line": 33,
+          "end": 33
+        },
+        {
+          "file": "internal/httpapi/offline.go",
+          "line": 34,
+          "end": 34
+        },
+        {
+          "file": "internal/httpapi/offline.go",
+          "line": 49,
+          "end": 49
+        },
+        {
+          "file": "internal/httpapi/offline.go",
+          "line": 49,
+          "end": 53
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/orders/{}/cvs-shipment",
+      "locations": [
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 49,
+          "end": 49
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 50,
+          "end": 50
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 99,
+          "end": 99
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 99,
+          "end": 103
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 227,
+          "end": 227
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/orders/{}/refunds",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 215,
+          "end": 215
+        },
+        {
+          "file": "internal/httpapi/refunds.go",
+          "line": 32,
+          "end": 32
+        },
+        {
+          "file": "internal/httpapi/refunds.go",
+          "line": 45,
+          "end": 45
+        },
+        {
+          "file": "internal/httpapi/refunds.go",
+          "line": 64,
+          "end": 64
+        },
+        {
+          "file": "internal/httpapi/refunds.go",
+          "line": 64,
+          "end": 74
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/orders/{}/returns",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 230,
+          "end": 230
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 104,
+          "end": 104
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 152,
+          "end": 152
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 152,
+          "end": 162
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/orders/{}/shipment/history",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 218,
+          "end": 218
+        },
+        {
+          "file": "internal/httpapi/shipments.go",
+          "line": 41,
+          "end": 41
+        },
+        {
+          "file": "internal/httpapi/shipments.go",
+          "line": 70,
+          "end": 70
+        },
+        {
+          "file": "internal/httpapi/shipments.go",
+          "line": 70,
+          "end": 80
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/parcel-groups",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 229,
+          "end": 229
+        },
+        {
+          "file": "internal/httpapi/parcels.go",
+          "line": 31,
+          "end": 31
+        },
+        {
+          "file": "internal/httpapi/parcels.go",
+          "line": 46,
+          "end": 46
+        },
+        {
+          "file": "internal/httpapi/parcels.go",
+          "line": 46,
+          "end": 56
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/products/export.csv",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 233,
+          "end": 233
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 42,
+          "end": 42
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 48,
+          "end": 48
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 48,
+          "end": 61
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/provider-accounts",
+      "locations": [
+        {
+          "file": "internal/httpapi/accounts.go",
+          "line": 23,
+          "end": 23
+        },
+        {
+          "file": "internal/httpapi/accounts.go",
+          "line": 121,
+          "end": 121
+        },
+        {
+          "file": "internal/httpapi/accounts.go",
+          "line": 121,
+          "end": 130
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 203,
+          "end": 203
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/provider-accounts/{}",
+      "locations": [
+        {
+          "file": "internal/httpapi/accounts.go",
+          "line": 23,
+          "end": 23
+        },
+        {
+          "file": "internal/httpapi/accounts.go",
+          "line": 145,
+          "end": 145
+        },
+        {
+          "file": "internal/httpapi/accounts.go",
+          "line": 145,
+          "end": 154
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 203,
+          "end": 203
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/reports/channels",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 225,
+          "end": 225
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 35,
+          "end": 35
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 42,
+          "end": 71
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 50,
+          "end": 50
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 50,
+          "end": 56
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 72,
+          "end": 72
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 72,
+          "end": 85
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/reports/channels.csv",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 225,
+          "end": 225
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 35,
+          "end": 35
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 42,
+          "end": 71
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 50,
+          "end": 50
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 50,
+          "end": 56
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 86,
+          "end": 86
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 86,
+          "end": 100
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/reports/funnel",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 225,
+          "end": 225
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 35,
+          "end": 35
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 42,
+          "end": 71
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 57,
+          "end": 57
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 57,
+          "end": 63
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 72,
+          "end": 72
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 72,
+          "end": 85
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/reports/funnel.csv",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 225,
+          "end": 225
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 35,
+          "end": 35
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 42,
+          "end": 71
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 57,
+          "end": 57
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 57,
+          "end": 63
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 86,
+          "end": 86
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 86,
+          "end": 100
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/reports/manual-orders",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 225,
+          "end": 225
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 35,
+          "end": 35
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 42,
+          "end": 71
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 64,
+          "end": 64
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 64,
+          "end": 70
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 72,
+          "end": 72
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 72,
+          "end": 85
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/reports/manual-orders.csv",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 225,
+          "end": 225
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 35,
+          "end": 35
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 42,
+          "end": 71
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 64,
+          "end": 64
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 64,
+          "end": 70
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 86,
+          "end": 86
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 86,
+          "end": 100
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/reports/products.csv",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 225,
+          "end": 225
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 35,
+          "end": 35
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 42,
+          "end": 71
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 43,
+          "end": 43
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 43,
+          "end": 49
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 86,
+          "end": 86
+        },
+        {
+          "file": "internal/httpapi/reports.go",
+          "line": 86,
+          "end": 100
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/returns",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 230,
+          "end": 230
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 104,
+          "end": 104
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 164,
+          "end": 164
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 164,
+          "end": 182
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/settlements",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 217,
+          "end": 217
+        },
+        {
+          "file": "internal/httpapi/settlements.go",
+          "line": 34,
+          "end": 34
+        },
+        {
+          "file": "internal/httpapi/settlements.go",
+          "line": 35,
+          "end": 35
+        },
+        {
+          "file": "internal/httpapi/settlements.go",
+          "line": 35,
+          "end": 44
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/settlements/{}",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 217,
+          "end": 217
+        },
+        {
+          "file": "internal/httpapi/settlements.go",
+          "line": 34,
+          "end": 34
+        },
+        {
+          "file": "internal/httpapi/settlements.go",
+          "line": 45,
+          "end": 45
+        },
+        {
+          "file": "internal/httpapi/settlements.go",
+          "line": 45,
+          "end": 53
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/shipments/tracking-import/{}/result.csv",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 233,
+          "end": 233
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 42,
+          "end": 42
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 173,
+          "end": 173
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 173,
+          "end": 188
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/admin/stores/{}/storefront/domains",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 202,
+          "end": 202
+        },
+        {
+          "file": "internal/httpapi/storefront.go",
+          "line": 62,
+          "end": 62
+        },
+        {
+          "file": "internal/httpapi/storefront.go",
+          "line": 72,
+          "end": 72
+        },
+        {
+          "file": "internal/httpapi/storefront.go",
+          "line": 73,
+          "end": 73
+        },
+        {
+          "file": "internal/httpapi/storefront.go",
+          "line": 73,
+          "end": 75
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "PATCH",
+      "path": "/v1/admin/stores/{}/customers/tags/{}",
+      "locations": [
+        {
+          "file": "internal/httpapi/customer_tags.go",
+          "line": 68,
+          "end": 68
+        },
+        {
+          "file": "internal/httpapi/customer_tags.go",
+          "line": 68,
+          "end": 71
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 42,
+          "end": 42
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 222,
+          "end": 222
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "PATCH",
+      "path": "/v1/admin/stores/{}/customers/{}/notes/{}",
+      "locations": [
+        {
+          "file": "internal/httpapi/customer_tags.go",
+          "line": 97,
+          "end": 97
+        },
+        {
+          "file": "internal/httpapi/customer_tags.go",
+          "line": 97,
+          "end": 100
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 42,
+          "end": 42
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 222,
+          "end": 222
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "PATCH",
+      "path": "/v1/admin/stores/{}/live-sessions/{}",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 205,
+          "end": 205
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 36,
+          "end": 36
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 67,
+          "end": 67
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 67,
+          "end": 69
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "PATCH",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/claims/offers/{}",
+      "locations": [
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 58,
+          "end": 58
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 80,
+          "end": 80
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 80,
+          "end": 84
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 210,
+          "end": 210
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/billing/checkout",
+      "locations": [
+        {
+          "file": "internal/httpapi/billing.go",
+          "line": 48,
+          "end": 48
+        },
+        {
+          "file": "internal/httpapi/billing.go",
+          "line": 71,
+          "end": 71
+        },
+        {
+          "file": "internal/httpapi/billing.go",
+          "line": 71,
+          "end": 88
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 226,
+          "end": 226
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/billing/portal",
+      "locations": [
+        {
+          "file": "internal/httpapi/billing.go",
+          "line": 48,
+          "end": 48
+        },
+        {
+          "file": "internal/httpapi/billing.go",
+          "line": 90,
+          "end": 90
+        },
+        {
+          "file": "internal/httpapi/billing.go",
+          "line": 90,
+          "end": 107
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 226,
+          "end": 226
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/customers/tags",
+      "locations": [
+        {
+          "file": "internal/httpapi/customer_tags.go",
+          "line": 64,
+          "end": 64
+        },
+        {
+          "file": "internal/httpapi/customer_tags.go",
+          "line": 64,
+          "end": 67
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 42,
+          "end": 42
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 222,
+          "end": 222
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/customers/{}/consent-withdrawals",
+      "locations": [
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 63,
+          "end": 63
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 63,
+          "end": 74
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 222,
+          "end": 222
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/customers/{}/erasure",
+      "locations": [
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 89,
+          "end": 89
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 89,
+          "end": 104
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 222,
+          "end": 222
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/customers/{}/exports",
+      "locations": [
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 75,
+          "end": 75
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 75,
+          "end": 88
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 222,
+          "end": 222
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/customers/{}/notes",
+      "locations": [
+        {
+          "file": "internal/httpapi/customer_tags.go",
+          "line": 93,
+          "end": 93
+        },
+        {
+          "file": "internal/httpapi/customer_tags.go",
+          "line": 93,
+          "end": 96
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 42,
+          "end": 42
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 222,
+          "end": 222
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/design/media",
+      "locations": [
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 40,
+          "end": 40
+        },
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 62,
+          "end": 62
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 198,
+          "end": 198
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/design/media/{}/delete",
+      "locations": [
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 40,
+          "end": 40
+        },
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 70,
+          "end": 70
+        },
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 70,
+          "end": 72
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 198,
+          "end": 198
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/design/preview-token",
+      "locations": [
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 40,
+          "end": 40
+        },
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 53,
+          "end": 53
+        },
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 53,
+          "end": 55
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 198,
+          "end": 198
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/design/publish",
+      "locations": [
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 40,
+          "end": 40
+        },
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 47,
+          "end": 47
+        },
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 47,
+          "end": 49
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 198,
+          "end": 198
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/design/rollback",
+      "locations": [
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 40,
+          "end": 40
+        },
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 50,
+          "end": 50
+        },
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 50,
+          "end": 52
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 198,
+          "end": 198
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/imports/customers/commit",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 223,
+          "end": 223
+        },
+        {
+          "file": "internal/httpapi/imports.go",
+          "line": 34,
+          "end": 34
+        },
+        {
+          "file": "internal/httpapi/imports.go",
+          "line": 53,
+          "end": 53
+        },
+        {
+          "file": "internal/httpapi/imports.go",
+          "line": 53,
+          "end": 69
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/imports/customers/preview",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 223,
+          "end": 223
+        },
+        {
+          "file": "internal/httpapi/imports.go",
+          "line": 34,
+          "end": 34
+        },
+        {
+          "file": "internal/httpapi/imports.go",
+          "line": 36,
+          "end": 36
+        },
+        {
+          "file": "internal/httpapi/imports.go",
+          "line": 36,
+          "end": 51
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/imports/orders/commit",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 223,
+          "end": 223
+        },
+        {
+          "file": "internal/httpapi/imports.go",
+          "line": 34,
+          "end": 34
+        },
+        {
+          "file": "internal/httpapi/imports.go",
+          "line": 88,
+          "end": 88
+        },
+        {
+          "file": "internal/httpapi/imports.go",
+          "line": 88,
+          "end": 104
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/imports/orders/preview",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 223,
+          "end": 223
+        },
+        {
+          "file": "internal/httpapi/imports.go",
+          "line": 34,
+          "end": 34
+        },
+        {
+          "file": "internal/httpapi/imports.go",
+          "line": 72,
+          "end": 72
+        },
+        {
+          "file": "internal/httpapi/imports.go",
+          "line": 72,
+          "end": 87
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/inbox/conversations/{}/customer-link",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 236,
+          "end": 236
+        },
+        {
+          "file": "internal/httpapi/inbox.go",
+          "line": 50,
+          "end": 50
+        },
+        {
+          "file": "internal/httpapi/inbox.go",
+          "line": 141,
+          "end": 141
+        },
+        {
+          "file": "internal/httpapi/inbox.go",
+          "line": 141,
+          "end": 149
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/inbox/conversations/{}/messages",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 237,
+          "end": 237
+        },
+        {
+          "file": "internal/httpapi/inbox_send.go",
+          "line": 42,
+          "end": 42
+        },
+        {
+          "file": "internal/httpapi/inbox_send.go",
+          "line": 46,
+          "end": 46
+        },
+        {
+          "file": "internal/httpapi/inbox_send.go",
+          "line": 46,
+          "end": 54
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/inbox/conversations/{}/read",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 236,
+          "end": 236
+        },
+        {
+          "file": "internal/httpapi/inbox.go",
+          "line": 50,
+          "end": 50
+        },
+        {
+          "file": "internal/httpapi/inbox.go",
+          "line": 109,
+          "end": 109
+        },
+        {
+          "file": "internal/httpapi/inbox.go",
+          "line": 109,
+          "end": 117
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/inbox/conversations/{}/release",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 236,
+          "end": 236
+        },
+        {
+          "file": "internal/httpapi/inbox.go",
+          "line": 50,
+          "end": 50
+        },
+        {
+          "file": "internal/httpapi/inbox.go",
+          "line": 129,
+          "end": 129
+        },
+        {
+          "file": "internal/httpapi/inbox.go",
+          "line": 129,
+          "end": 137
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/inbox/conversations/{}/takeover",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 236,
+          "end": 236
+        },
+        {
+          "file": "internal/httpapi/inbox.go",
+          "line": 50,
+          "end": 50
+        },
+        {
+          "file": "internal/httpapi/inbox.go",
+          "line": 120,
+          "end": 120
+        },
+        {
+          "file": "internal/httpapi/inbox.go",
+          "line": 120,
+          "end": 128
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/live-sessions",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 205,
+          "end": 205
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 36,
+          "end": 36
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 47,
+          "end": 47
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 47,
+          "end": 49
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/claims/blocklist",
+      "locations": [
+        {
+          "file": "internal/httpapi/blocklist.go",
+          "line": 33,
+          "end": 33
+        },
+        {
+          "file": "internal/httpapi/blocklist.go",
+          "line": 34,
+          "end": 34
+        },
+        {
+          "file": "internal/httpapi/blocklist.go",
+          "line": 47,
+          "end": 47
+        },
+        {
+          "file": "internal/httpapi/blocklist.go",
+          "line": 47,
+          "end": 55
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 58,
+          "end": 58
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 128,
+          "end": 128
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 210,
+          "end": 210
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/claims/bundles/{}/link",
+      "locations": [
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 58,
+          "end": 58
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 123,
+          "end": 123
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 210,
+          "end": 210
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/claims/keywords/check",
+      "locations": [
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 58,
+          "end": 58
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 130,
+          "end": 130
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 210,
+          "end": 210
+        },
+        {
+          "file": "internal/httpapi/keyword_tools.go",
+          "line": 29,
+          "end": 29
+        },
+        {
+          "file": "internal/httpapi/keyword_tools.go",
+          "line": 30,
+          "end": 30
+        },
+        {
+          "file": "internal/httpapi/keyword_tools.go",
+          "line": 40,
+          "end": 40
+        },
+        {
+          "file": "internal/httpapi/keyword_tools.go",
+          "line": 40,
+          "end": 48
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/claims/manual",
+      "locations": [
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 58,
+          "end": 58
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 105,
+          "end": 105
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 105,
+          "end": 109
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 210,
+          "end": 210
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/claims/offer-import",
+      "locations": [
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 58,
+          "end": 58
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 86,
+          "end": 86
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 86,
+          "end": 90
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 210,
+          "end": 210
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/claims/offers",
+      "locations": [
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 58,
+          "end": 58
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 72,
+          "end": 72
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 72,
+          "end": 76
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 210,
+          "end": 210
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/claims/offers/batch",
+      "locations": [
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 58,
+          "end": 58
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 130,
+          "end": 130
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 210,
+          "end": 210
+        },
+        {
+          "file": "internal/httpapi/keyword_tools.go",
+          "line": 29,
+          "end": 29
+        },
+        {
+          "file": "internal/httpapi/keyword_tools.go",
+          "line": 30,
+          "end": 30
+        },
+        {
+          "file": "internal/httpapi/keyword_tools.go",
+          "line": 59,
+          "end": 59
+        },
+        {
+          "file": "internal/httpapi/keyword_tools.go",
+          "line": 59,
+          "end": 62
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/claims/offers/{}/recommend",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 237,
+          "end": 237
+        },
+        {
+          "file": "internal/httpapi/inbox_send.go",
+          "line": 43,
+          "end": 43
+        },
+        {
+          "file": "internal/httpapi/inbox_send.go",
+          "line": 84,
+          "end": 84
+        },
+        {
+          "file": "internal/httpapi/inbox_send.go",
+          "line": 84,
+          "end": 92
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/claims/simulate",
+      "locations": [
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 58,
+          "end": 58
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 130,
+          "end": 130
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 210,
+          "end": 210
+        },
+        {
+          "file": "internal/httpapi/keyword_tools.go",
+          "line": 29,
+          "end": 29
+        },
+        {
+          "file": "internal/httpapi/keyword_tools.go",
+          "line": 30,
+          "end": 30
+        },
+        {
+          "file": "internal/httpapi/keyword_tools.go",
+          "line": 31,
+          "end": 31
+        },
+        {
+          "file": "internal/httpapi/keyword_tools.go",
+          "line": 31,
+          "end": 39
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/claims/window",
+      "locations": [
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 58,
+          "end": 58
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 65,
+          "end": 65
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 65,
+          "end": 69
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 210,
+          "end": 210
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/comments/{}/print",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 208,
+          "end": 208
+        },
+        {
+          "file": "internal/httpapi/live_stream.go",
+          "line": 35,
+          "end": 35
+        },
+        {
+          "file": "internal/httpapi/live_stream.go",
+          "line": 55,
+          "end": 55
+        },
+        {
+          "file": "internal/httpapi/live_stream.go",
+          "line": 55,
+          "end": 64
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/comments/{}/private-reply",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 237,
+          "end": 237
+        },
+        {
+          "file": "internal/httpapi/inbox_send.go",
+          "line": 43,
+          "end": 43
+        },
+        {
+          "file": "internal/httpapi/inbox_send.go",
+          "line": 58,
+          "end": 58
+        },
+        {
+          "file": "internal/httpapi/inbox_send.go",
+          "line": 58,
+          "end": 68
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/comments/{}/public-reply",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 237,
+          "end": 237
+        },
+        {
+          "file": "internal/httpapi/inbox_send.go",
+          "line": 43,
+          "end": 43
+        },
+        {
+          "file": "internal/httpapi/inbox_send.go",
+          "line": 72,
+          "end": 72
+        },
+        {
+          "file": "internal/httpapi/inbox_send.go",
+          "line": 72,
+          "end": 80
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/input/start",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 205,
+          "end": 205
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 36,
+          "end": 36
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 116,
+          "end": 116
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 116,
+          "end": 122
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/input/token",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 205,
+          "end": 205
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 36,
+          "end": 36
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 127,
+          "end": 127
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 127,
+          "end": 172
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/lifecycle",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 207,
+          "end": 207
+        },
+        {
+          "file": "internal/httpapi/live_lifecycle.go",
+          "line": 27,
+          "end": 27
+        },
+        {
+          "file": "internal/httpapi/live_lifecycle.go",
+          "line": 28,
+          "end": 28
+        },
+        {
+          "file": "internal/httpapi/live_lifecycle.go",
+          "line": 28,
+          "end": 36
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/page-live-videos/read",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 206,
+          "end": 206
+        },
+        {
+          "file": "internal/httpapi/live_flow.go",
+          "line": 27,
+          "end": 27
+        },
+        {
+          "file": "internal/httpapi/live_flow.go",
+          "line": 58,
+          "end": 58
+        },
+        {
+          "file": "internal/httpapi/live_flow.go",
+          "line": 58,
+          "end": 60
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/rehearsal/start",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 205,
+          "end": 205
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 36,
+          "end": 36
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 80,
+          "end": 80
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 80,
+          "end": 86
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/rehearsal/stop",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 205,
+          "end": 205
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 36,
+          "end": 36
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 90,
+          "end": 90
+        },
+        {
+          "file": "internal/httpapi/studio.go",
+          "line": 90,
+          "end": 96
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/reminders",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 238,
+          "end": 238
+        },
+        {
+          "file": "internal/httpapi/reminders.go",
+          "line": 32,
+          "end": 32
+        },
+        {
+          "file": "internal/httpapi/reminders.go",
+          "line": 60,
+          "end": 60
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/reminders/{}",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 238,
+          "end": 238
+        },
+        {
+          "file": "internal/httpapi/reminders.go",
+          "line": 32,
+          "end": 32
+        },
+        {
+          "file": "internal/httpapi/reminders.go",
+          "line": 61,
+          "end": 61
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/logistics/ecpay/enabled",
+      "locations": [
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 49,
+          "end": 49
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 66,
+          "end": 66
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 66,
+          "end": 74
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 227,
+          "end": 227
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/markets",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 201,
+          "end": 201
+        },
+        {
+          "file": "internal/httpapi/settings_discovery.go",
+          "line": 18,
+          "end": 18
+        },
+        {
+          "file": "internal/httpapi/settings_discovery.go",
+          "line": 22,
+          "end": 22
+        },
+        {
+          "file": "internal/httpapi/settings_discovery.go",
+          "line": 22,
+          "end": 34
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/markets/{}/countries/{}/payment-methods/{}/inspect",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 200,
+          "end": 200
+        },
+        {
+          "file": "internal/httpapi/settings.go",
+          "line": 19,
+          "end": 19
+        },
+        {
+          "file": "internal/httpapi/settings.go",
+          "line": 43,
+          "end": 43
+        },
+        {
+          "file": "internal/httpapi/settings.go",
+          "line": 43,
+          "end": 48
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/message-templates",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 239,
+          "end": 239
+        },
+        {
+          "file": "internal/httpapi/templates.go",
+          "line": 29,
+          "end": 29
+        },
+        {
+          "file": "internal/httpapi/templates.go",
+          "line": 33,
+          "end": 33
+        },
+        {
+          "file": "internal/httpapi/templates.go",
+          "line": 33,
+          "end": 41
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/meta-connect/disconnect",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 220,
+          "end": 220
+        },
+        {
+          "file": "internal/httpapi/meta_connect.go",
+          "line": 35,
+          "end": 35
+        },
+        {
+          "file": "internal/httpapi/meta_connect.go",
+          "line": 69,
+          "end": 69
+        },
+        {
+          "file": "internal/httpapi/meta_connect.go",
+          "line": 69,
+          "end": 80
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/meta-connect/pick",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 220,
+          "end": 220
+        },
+        {
+          "file": "internal/httpapi/meta_connect.go",
+          "line": 35,
+          "end": 35
+        },
+        {
+          "file": "internal/httpapi/meta_connect.go",
+          "line": 59,
+          "end": 59
+        },
+        {
+          "file": "internal/httpapi/meta_connect.go",
+          "line": 59,
+          "end": 68
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/meta-connect/start",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 220,
+          "end": 220
+        },
+        {
+          "file": "internal/httpapi/meta_connect.go",
+          "line": 35,
+          "end": 35
+        },
+        {
+          "file": "internal/httpapi/meta_connect.go",
+          "line": 38,
+          "end": 38
+        },
+        {
+          "file": "internal/httpapi/meta_connect.go",
+          "line": 38,
+          "end": 45
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/meta/health/recheck",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 221,
+          "end": 221
+        },
+        {
+          "file": "internal/httpapi/meta_health.go",
+          "line": 35,
+          "end": 35
+        },
+        {
+          "file": "internal/httpapi/meta_health.go",
+          "line": 44,
+          "end": 44
+        },
+        {
+          "file": "internal/httpapi/meta_health.go",
+          "line": 44,
+          "end": 58
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/operations/{}/cancel",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 240,
+          "end": 240
+        },
+        {
+          "file": "internal/httpapi/operations.go",
+          "line": 41,
+          "end": 41
+        },
+        {
+          "file": "internal/httpapi/operations.go",
+          "line": 66,
+          "end": 66
+        },
+        {
+          "file": "internal/httpapi/operations.go",
+          "line": 68,
+          "end": 68
+        },
+        {
+          "file": "internal/httpapi/operations.go",
+          "line": 72,
+          "end": 72
+        },
+        {
+          "file": "internal/httpapi/operations.go",
+          "line": 72,
+          "end": 88
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/operations/{}/query",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 240,
+          "end": 240
+        },
+        {
+          "file": "internal/httpapi/operations.go",
+          "line": 41,
+          "end": 41
+        },
+        {
+          "file": "internal/httpapi/operations.go",
+          "line": 66,
+          "end": 66
+        },
+        {
+          "file": "internal/httpapi/operations.go",
+          "line": 68,
+          "end": 68
+        },
+        {
+          "file": "internal/httpapi/operations.go",
+          "line": 72,
+          "end": 72
+        },
+        {
+          "file": "internal/httpapi/operations.go",
+          "line": 72,
+          "end": 88
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/operations/{}/retry",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 240,
+          "end": 240
+        },
+        {
+          "file": "internal/httpapi/operations.go",
+          "line": 41,
+          "end": 41
+        },
+        {
+          "file": "internal/httpapi/operations.go",
+          "line": 66,
+          "end": 66
+        },
+        {
+          "file": "internal/httpapi/operations.go",
+          "line": 68,
+          "end": 68
+        },
+        {
+          "file": "internal/httpapi/operations.go",
+          "line": 72,
+          "end": 72
+        },
+        {
+          "file": "internal/httpapi/operations.go",
+          "line": 72,
+          "end": 88
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/orders/export",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 228,
+          "end": 228
+        },
+        {
+          "file": "internal/httpapi/picklist.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/httpapi/picklist.go",
+          "line": 56,
+          "end": 56
+        },
+        {
+          "file": "internal/httpapi/picklist.go",
+          "line": 56,
+          "end": 77
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/orders/for-buyer",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 233,
+          "end": 233
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 153,
+          "end": 153
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 345,
+          "end": 345
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 365,
+          "end": 365
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 365,
+          "end": 383
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/orders/manual/regenerate-link",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 233,
+          "end": 233
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 42,
+          "end": 42
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 133,
+          "end": 133
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 133,
+          "end": 152
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/orders/pick-list",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 228,
+          "end": 228
+        },
+        {
+          "file": "internal/httpapi/picklist.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/httpapi/picklist.go",
+          "line": 39,
+          "end": 39
+        },
+        {
+          "file": "internal/httpapi/picklist.go",
+          "line": 39,
+          "end": 54
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/orders/{}/bank-transfer/confirm",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 231,
+          "end": 231
+        },
+        {
+          "file": "internal/httpapi/offline.go",
+          "line": 33,
+          "end": 33
+        },
+        {
+          "file": "internal/httpapi/offline.go",
+          "line": 34,
+          "end": 34
+        },
+        {
+          "file": "internal/httpapi/offline.go",
+          "line": 55,
+          "end": 55
+        },
+        {
+          "file": "internal/httpapi/offline.go",
+          "line": 55,
+          "end": 62
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/orders/{}/bank-transfer/refund-offline",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 231,
+          "end": 231
+        },
+        {
+          "file": "internal/httpapi/offline.go",
+          "line": 33,
+          "end": 33
+        },
+        {
+          "file": "internal/httpapi/offline.go",
+          "line": 34,
+          "end": 34
+        },
+        {
+          "file": "internal/httpapi/offline.go",
+          "line": 66,
+          "end": 66
+        },
+        {
+          "file": "internal/httpapi/offline.go",
+          "line": 66,
+          "end": 74
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/orders/{}/bank-transfer/reject",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 231,
+          "end": 231
+        },
+        {
+          "file": "internal/httpapi/offline.go",
+          "line": 33,
+          "end": 33
+        },
+        {
+          "file": "internal/httpapi/offline.go",
+          "line": 34,
+          "end": 34
+        },
+        {
+          "file": "internal/httpapi/offline.go",
+          "line": 75,
+          "end": 75
+        },
+        {
+          "file": "internal/httpapi/offline.go",
+          "line": 75,
+          "end": 83
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/orders/{}/cancel",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 230,
+          "end": 230
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 104,
+          "end": 104
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 106,
+          "end": 106
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 106,
+          "end": 121
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/orders/{}/collection",
+      "locations": [
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 49,
+          "end": 49
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 50,
+          "end": 50
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 124,
+          "end": 124
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 124,
+          "end": 132
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 227,
+          "end": 227
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/orders/{}/cvs-shipment",
+      "locations": [
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 49,
+          "end": 49
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 50,
+          "end": 50
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 89,
+          "end": 89
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 89,
+          "end": 98
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 227,
+          "end": 227
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/orders/{}/cvs-shipment/abandon",
+      "locations": [
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 49,
+          "end": 49
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 50,
+          "end": 50
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 115,
+          "end": 115
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 115,
+          "end": 123
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 227,
+          "end": 227
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/orders/{}/cvs-shipment/print-form",
+      "locations": [
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 49,
+          "end": 49
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 50,
+          "end": 50
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 104,
+          "end": 104
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 104,
+          "end": 114
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 227,
+          "end": 227
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/orders/{}/pay-at-pickup-release",
+      "locations": [
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 49,
+          "end": 49
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 50,
+          "end": 50
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 133,
+          "end": 133
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 133,
+          "end": 141
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 227,
+          "end": 227
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/orders/{}/refunds/{}/refresh",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 215,
+          "end": 215
+        },
+        {
+          "file": "internal/httpapi/refunds.go",
+          "line": 32,
+          "end": 32
+        },
+        {
+          "file": "internal/httpapi/refunds.go",
+          "line": 45,
+          "end": 45
+        },
+        {
+          "file": "internal/httpapi/refunds.go",
+          "line": 75,
+          "end": 75
+        },
+        {
+          "file": "internal/httpapi/refunds.go",
+          "line": 75,
+          "end": 92
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/orders/{}/returns",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 230,
+          "end": 230
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 104,
+          "end": 104
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 135,
+          "end": 135
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 135,
+          "end": 150
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/parcel-groups",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 229,
+          "end": 229
+        },
+        {
+          "file": "internal/httpapi/parcels.go",
+          "line": 31,
+          "end": 31
+        },
+        {
+          "file": "internal/httpapi/parcels.go",
+          "line": 58,
+          "end": 58
+        },
+        {
+          "file": "internal/httpapi/parcels.go",
+          "line": 58,
+          "end": 77
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/products/bulk-status",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 117,
+          "end": 117
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 160,
+          "end": 160
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 160,
+          "end": 162
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/products/document",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 117,
+          "end": 117
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 154,
+          "end": 154
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 154,
+          "end": 156
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/products/import/commit",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 233,
+          "end": 233
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 42,
+          "end": 42
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 62,
+          "end": 65
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 65,
+          "end": 65
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 66,
+          "end": 66
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 66,
+          "end": 100
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/products/import/preview",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 233,
+          "end": 233
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 42,
+          "end": 42
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 62,
+          "end": 65
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 65,
+          "end": 65
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 66,
+          "end": 66
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 66,
+          "end": 100
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/products/{}/copy",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 117,
+          "end": 117
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 163,
+          "end": 163
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 163,
+          "end": 165
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/promotions",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 234,
+          "end": 234
+        },
+        {
+          "file": "internal/httpapi/promotions.go",
+          "line": 25,
+          "end": 25
+        },
+        {
+          "file": "internal/httpapi/promotions.go",
+          "line": 32,
+          "end": 32
+        },
+        {
+          "file": "internal/httpapi/promotions.go",
+          "line": 32,
+          "end": 40
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/promotions/{}",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 234,
+          "end": 234
+        },
+        {
+          "file": "internal/httpapi/promotions.go",
+          "line": 25,
+          "end": 25
+        },
+        {
+          "file": "internal/httpapi/promotions.go",
+          "line": 41,
+          "end": 41
+        },
+        {
+          "file": "internal/httpapi/promotions.go",
+          "line": 41,
+          "end": 53
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/provider-accounts",
+      "locations": [
+        {
+          "file": "internal/httpapi/accounts.go",
+          "line": 23,
+          "end": 23
+        },
+        {
+          "file": "internal/httpapi/accounts.go",
+          "line": 131,
+          "end": 131
+        },
+        {
+          "file": "internal/httpapi/accounts.go",
+          "line": 131,
+          "end": 144
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 203,
+          "end": 203
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/provider-accounts/{}/rotate",
+      "locations": [
+        {
+          "file": "internal/httpapi/accounts.go",
+          "line": 23,
+          "end": 23
+        },
+        {
+          "file": "internal/httpapi/accounts.go",
+          "line": 155,
+          "end": 155
+        },
+        {
+          "file": "internal/httpapi/accounts.go",
+          "line": 155,
+          "end": 169
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 203,
+          "end": 203
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/returns/{}/cancel",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 230,
+          "end": 230
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 104,
+          "end": 104
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 233,
+          "end": 233
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 233,
+          "end": 248
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/returns/{}/close",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 230,
+          "end": 230
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 104,
+          "end": 104
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 217,
+          "end": 217
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 217,
+          "end": 232
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/returns/{}/inspect",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 230,
+          "end": 230
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 104,
+          "end": 104
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 200,
+          "end": 200
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 200,
+          "end": 216
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/returns/{}/receive",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 230,
+          "end": 230
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 104,
+          "end": 104
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 184,
+          "end": 184
+        },
+        {
+          "file": "internal/httpapi/returns.go",
+          "line": 184,
+          "end": 199
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/shipments/cvs-batch",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 228,
+          "end": 228
+        },
+        {
+          "file": "internal/httpapi/picklist.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/httpapi/picklist.go",
+          "line": 84,
+          "end": 84
+        },
+        {
+          "file": "internal/httpapi/picklist.go",
+          "line": 84,
+          "end": 92
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/shipments/tracking-import/commit",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 233,
+          "end": 233
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 42,
+          "end": 42
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 162,
+          "end": 162
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 162,
+          "end": 171
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/shipments/tracking-import/preview",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 233,
+          "end": 233
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 42,
+          "end": 42
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 156,
+          "end": 156
+        },
+        {
+          "file": "internal/httpapi/merchanttools.go",
+          "line": 156,
+          "end": 160
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/storefront/domains",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 202,
+          "end": 202
+        },
+        {
+          "file": "internal/httpapi/storefront.go",
+          "line": 62,
+          "end": 62
+        },
+        {
+          "file": "internal/httpapi/storefront.go",
+          "line": 72,
+          "end": 72
+        },
+        {
+          "file": "internal/httpapi/storefront.go",
+          "line": 76,
+          "end": 76
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/storefront/domains/detach",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 202,
+          "end": 202
+        },
+        {
+          "file": "internal/httpapi/storefront.go",
+          "line": 62,
+          "end": 62
+        },
+        {
+          "file": "internal/httpapi/storefront.go",
+          "line": 72,
+          "end": 72
+        },
+        {
+          "file": "internal/httpapi/storefront.go",
+          "line": 80,
+          "end": 80
+        },
+        {
+          "file": "internal/httpapi/storefront.go",
+          "line": 80,
+          "end": 82
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/storefront/domains/suspend",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 202,
+          "end": 202
+        },
+        {
+          "file": "internal/httpapi/storefront.go",
+          "line": 62,
+          "end": 62
+        },
+        {
+          "file": "internal/httpapi/storefront.go",
+          "line": 72,
+          "end": 72
+        },
+        {
+          "file": "internal/httpapi/storefront.go",
+          "line": 77,
+          "end": 77
+        },
+        {
+          "file": "internal/httpapi/storefront.go",
+          "line": 77,
+          "end": 79
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/admin/stores/{}/storefront/publication",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 202,
+          "end": 202
+        },
+        {
+          "file": "internal/httpapi/storefront.go",
+          "line": 62,
+          "end": 62
+        },
+        {
+          "file": "internal/httpapi/storefront.go",
+          "line": 66,
+          "end": 66
+        },
+        {
+          "file": "internal/httpapi/storefront.go",
+          "line": 66,
+          "end": 71
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/identity/initial-store",
+      "locations": [
+        {
+          "file": "internal/identityhttp/handler.go",
+          "line": 74,
+          "end": 74
+        },
+        {
+          "file": "internal/identityhttp/handler.go",
+          "line": 74,
+          "end": 94
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/identity/login/complete",
+      "locations": [
+        {
+          "file": "internal/identityhttp/handler.go",
+          "line": 58,
+          "end": 58
+        },
+        {
+          "file": "internal/identityhttp/handler.go",
+          "line": 58,
+          "end": 73
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/identity/login/start",
+      "locations": [
+        {
+          "file": "internal/identityhttp/handler.go",
+          "line": 46,
+          "end": 46
+        },
+        {
+          "file": "internal/identityhttp/handler.go",
+          "line": 46,
+          "end": 57
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/identity/logout",
+      "locations": [
+        {
+          "file": "internal/identityhttp/handler.go",
+          "line": 95,
+          "end": 95
+        },
+        {
+          "file": "internal/identityhttp/handler.go",
+          "line": 95,
+          "end": 110
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/identity/password/complete",
+      "locations": [
+        {
+          "file": "internal/identityhttp/password.go",
+          "line": 94,
+          "end": 94
+        },
+        {
+          "file": "internal/identityhttp/password.go",
+          "line": 94,
+          "end": 116
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/identity/password/login",
+      "locations": [
+        {
+          "file": "internal/identityhttp/password.go",
+          "line": 73,
+          "end": 73
+        },
+        {
+          "file": "internal/identityhttp/password.go",
+          "line": 73,
+          "end": 81
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/identity/password/reset",
+      "locations": [
+        {
+          "file": "internal/identityhttp/password.go",
+          "line": 82,
+          "end": 82
+        },
+        {
+          "file": "internal/identityhttp/password.go",
+          "line": 82,
+          "end": 93
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/identity/password/signup",
+      "locations": [
+        {
+          "file": "internal/identityhttp/password.go",
+          "line": 64,
+          "end": 64
+        },
+        {
+          "file": "internal/identityhttp/password.go",
+          "line": 64,
+          "end": 72
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/identity/staff/accept",
+      "locations": [
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 63,
+          "end": 63
+        },
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 64,
+          "end": 64
+        },
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 64,
+          "end": 77
+        },
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 111,
+          "end": 111
+        },
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 111,
+          "end": 117
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/identity/staff/invite",
+      "locations": [
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 63,
+          "end": 63
+        },
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 64,
+          "end": 64
+        },
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 64,
+          "end": 77
+        },
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 93,
+          "end": 93
+        },
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 93,
+          "end": 101
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/identity/staff/list",
+      "locations": [
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 63,
+          "end": 63
+        },
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 64,
+          "end": 64
+        },
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 64,
+          "end": 77
+        },
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 86,
+          "end": 86
+        },
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 86,
+          "end": 92
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/identity/staff/remove",
+      "locations": [
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 63,
+          "end": 63
+        },
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 64,
+          "end": 64
+        },
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 64,
+          "end": 77
+        },
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 108,
+          "end": 108
+        },
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 108,
+          "end": 110
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/identity/staff/revoke-invite",
+      "locations": [
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 63,
+          "end": 63
+        },
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 64,
+          "end": 64
+        },
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 64,
+          "end": 77
+        },
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 102,
+          "end": 102
+        },
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 102,
+          "end": 104
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/identity/staff/set-role",
+      "locations": [
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 63,
+          "end": 63
+        },
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 64,
+          "end": 64
+        },
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 64,
+          "end": 77
+        },
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 105,
+          "end": 105
+        },
+        {
+          "file": "internal/identityhttp/staff.go",
+          "line": 105,
+          "end": 107
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "PUT",
+      "path": "/v1/admin/stores/{}/bank-transfer-settings",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 231,
+          "end": 231
+        },
+        {
+          "file": "internal/httpapi/offline.go",
+          "line": 33,
+          "end": 33
+        },
+        {
+          "file": "internal/httpapi/offline.go",
+          "line": 40,
+          "end": 40
+        },
+        {
+          "file": "internal/httpapi/offline.go",
+          "line": 40,
+          "end": 48
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "PUT",
+      "path": "/v1/admin/stores/{}/cash-on-delivery-settings",
+      "locations": [
+        {
+          "file": "internal/httpapi/cod.go",
+          "line": 25,
+          "end": 25
+        },
+        {
+          "file": "internal/httpapi/cod.go",
+          "line": 31,
+          "end": 31
+        },
+        {
+          "file": "internal/httpapi/cod.go",
+          "line": 31,
+          "end": 39
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 232,
+          "end": 232
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "PUT",
+      "path": "/v1/admin/stores/{}/customers/{}/tags",
+      "locations": [
+        {
+          "file": "internal/httpapi/customer_tags.go",
+          "line": 76,
+          "end": 76
+        },
+        {
+          "file": "internal/httpapi/customer_tags.go",
+          "line": 76,
+          "end": 79
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/httpapi/customers.go",
+          "line": 42,
+          "end": 42
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 222,
+          "end": 222
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "PUT",
+      "path": "/v1/admin/stores/{}/design/draft",
+      "locations": [
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 40,
+          "end": 40
+        },
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 44,
+          "end": 44
+        },
+        {
+          "file": "internal/httpapi/design.go",
+          "line": 44,
+          "end": 46
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 198,
+          "end": 198
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "PUT",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/claims/library/{}",
+      "locations": [
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 58,
+          "end": 58
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 98,
+          "end": 98
+        },
+        {
+          "file": "internal/httpapi/claims.go",
+          "line": 98,
+          "end": 102
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 210,
+          "end": 210
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "PUT",
+      "path": "/v1/admin/stores/{}/logistics/cvs-settings",
+      "locations": [
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 49,
+          "end": 49
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 80,
+          "end": 80
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 80,
+          "end": 88
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 227,
+          "end": 227
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "PUT",
+      "path": "/v1/admin/stores/{}/logistics/ecpay",
+      "locations": [
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 49,
+          "end": 49
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 57,
+          "end": 57
+        },
+        {
+          "file": "internal/httpapi/cvs.go",
+          "line": 57,
+          "end": 65
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 227,
+          "end": 227
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "PUT",
+      "path": "/v1/admin/stores/{}/markets/{}/countries/{}/delivery-services/{}",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 200,
+          "end": 200
+        },
+        {
+          "file": "internal/httpapi/settings.go",
+          "line": 19,
+          "end": 19
+        },
+        {
+          "file": "internal/httpapi/settings.go",
+          "line": 25,
+          "end": 25
+        },
+        {
+          "file": "internal/httpapi/settings.go",
+          "line": 25,
+          "end": 33
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "PUT",
+      "path": "/v1/admin/stores/{}/markets/{}/countries/{}/delivery-services/{}/policy",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 201,
+          "end": 201
+        },
+        {
+          "file": "internal/httpapi/settings.go",
+          "line": 19,
+          "end": 19
+        },
+        {
+          "file": "internal/httpapi/settings_discovery.go",
+          "line": 44,
+          "end": 44
+        },
+        {
+          "file": "internal/httpapi/settings_discovery.go",
+          "line": 44,
+          "end": 60
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "PUT",
+      "path": "/v1/admin/stores/{}/markets/{}/countries/{}/payment-methods/{}",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 200,
+          "end": 200
+        },
+        {
+          "file": "internal/httpapi/settings.go",
+          "line": 19,
+          "end": 19
+        },
+        {
+          "file": "internal/httpapi/settings.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/httpapi/settings.go",
+          "line": 37,
+          "end": 42
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "PUT",
+      "path": "/v1/admin/stores/{}/orders/{}/shipment",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 218,
+          "end": 218
+        },
+        {
+          "file": "internal/httpapi/shipments.go",
+          "line": 41,
+          "end": 41
+        },
+        {
+          "file": "internal/httpapi/shipments.go",
+          "line": 43,
+          "end": 43
+        },
+        {
+          "file": "internal/httpapi/shipments.go",
+          "line": 43,
+          "end": 68
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "PUT",
+      "path": "/v1/admin/stores/{}/parcel-groups/{}/shipment",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 229,
+          "end": 229
+        },
+        {
+          "file": "internal/httpapi/parcels.go",
+          "line": 31,
+          "end": 31
+        },
+        {
+          "file": "internal/httpapi/parcels.go",
+          "line": 96,
+          "end": 96
+        },
+        {
+          "file": "internal/httpapi/parcels.go",
+          "line": 96,
+          "end": 115
+        }
+      ]
+    },
+    {
+      "kind": "GO_ONLY",
+      "method": "PUT",
+      "path": "/v1/admin/stores/{}/products/{}/document",
+      "locations": [
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 117,
+          "end": 117
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 157,
+          "end": 157
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 157,
+          "end": 159
+        }
+      ]
+    },
+    {
+      "kind": "METHOD_MISMATCH",
+      "method": "go=GET,POST;contract=GET;bff=GET,POST",
+      "path": "/v1/admin/stores/{}/promotions",
+      "locations": [
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 9,
+          "end": 9
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 18,
+          "end": 18
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 309,
+          "end": 309
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 327,
+          "end": 327
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 404,
+          "end": 404
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 580,
+          "end": 580
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 581,
+          "end": 581
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 582,
+          "end": 582
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 583,
+          "end": 583
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 602,
+          "end": 602
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 603,
+          "end": 603
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 604,
+          "end": 604
+        },
+        {
+          "file": "apps/admin/lib/backend.ts",
+          "line": 105,
+          "end": 107
+        },
+        {
+          "file": "apps/admin/lib/promotions-request.ts",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "apps/admin/lib/promotions-request.ts",
+          "line": 9,
+          "end": 13
+        },
+        {
+          "file": "apps/admin/lib/promotions-request.ts",
+          "line": 10,
+          "end": 10
+        },
+        {
+          "file": "apps/admin/lib/promotions-request.ts",
+          "line": 11,
+          "end": 11
+        },
+        {
+          "file": "apps/admin/lib/promotions-request.ts",
+          "line": 12,
+          "end": 12
+        },
+        {
+          "file": "apps/admin/lib/promotions-request.ts",
+          "line": 14,
+          "end": 16
+        },
+        {
+          "file": "contracts/storefront-v2.md",
+          "line": 304,
+          "end": 304
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 234,
+          "end": 234
+        },
+        {
+          "file": "internal/httpapi/promotions.go",
+          "line": 25,
+          "end": 25
+        },
+        {
+          "file": "internal/httpapi/promotions.go",
+          "line": 26,
+          "end": 26
+        },
+        {
+          "file": "internal/httpapi/promotions.go",
+          "line": 26,
+          "end": 31
+        },
+        {
+          "file": "internal/httpapi/promotions.go",
+          "line": 32,
+          "end": 32
+        },
+        {
+          "file": "internal/httpapi/promotions.go",
+          "line": 32,
+          "end": 40
+        }
+      ]
+    },
+    {
+      "kind": "METHOD_MISMATCH",
+      "method": "go=GET,POST;contract=POST;bff=GET,POST",
+      "path": "/v1/admin/stores/{}/orders/{}/refunds",
+      "locations": [
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 9,
+          "end": 9
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 12,
+          "end": 14
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 309,
+          "end": 309
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 327,
+          "end": 327
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 404,
+          "end": 404
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 580,
+          "end": 580
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 581,
+          "end": 581
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 582,
+          "end": 582
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 583,
+          "end": 583
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 602,
+          "end": 602
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 603,
+          "end": 603
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 604,
+          "end": 604
+        },
+        {
+          "file": "apps/admin/lib/backend.ts",
+          "line": 105,
+          "end": 107
+        },
+        {
+          "file": "apps/admin/lib/orders-request.ts",
+          "line": 44,
+          "end": 44
+        },
+        {
+          "file": "apps/admin/lib/orders-request.ts",
+          "line": 49,
+          "end": 75
+        },
+        {
+          "file": "apps/admin/lib/orders-request.ts",
+          "line": 50,
+          "end": 50
+        },
+        {
+          "file": "apps/admin/lib/orders-request.ts",
+          "line": 51,
+          "end": 51
+        },
+        {
+          "file": "apps/admin/lib/orders-request.ts",
+          "line": 52,
+          "end": 52
+        },
+        {
+          "file": "apps/admin/lib/orders-request.ts",
+          "line": 53,
+          "end": 53
+        },
+        {
+          "file": "apps/admin/lib/orders-request.ts",
+          "line": 54,
+          "end": 54
+        },
+        {
+          "file": "apps/admin/lib/orders-request.ts",
+          "line": 55,
+          "end": 55
+        },
+        {
+          "file": "apps/admin/lib/orders-request.ts",
+          "line": 56,
+          "end": 56
+        },
+        {
+          "file": "apps/admin/lib/orders-request.ts",
+          "line": 58,
+          "end": 58
+        },
+        {
+          "file": "apps/admin/lib/orders-request.ts",
+          "line": 59,
+          "end": 59
+        },
+        {
+          "file": "apps/admin/lib/orders-request.ts",
+          "line": 60,
+          "end": 60
+        },
+        {
+          "file": "apps/admin/lib/orders-request.ts",
+          "line": 61,
+          "end": 61
+        },
+        {
+          "file": "apps/admin/lib/orders-request.ts",
+          "line": 62,
+          "end": 62
+        },
+        {
+          "file": "apps/admin/lib/orders-request.ts",
+          "line": 63,
+          "end": 63
+        },
+        {
+          "file": "apps/admin/lib/orders-request.ts",
+          "line": 65,
+          "end": 65
+        },
+        {
+          "file": "apps/admin/lib/orders-request.ts",
+          "line": 66,
+          "end": 66
+        },
+        {
+          "file": "apps/admin/lib/orders-request.ts",
+          "line": 69,
+          "end": 69
+        },
+        {
+          "file": "apps/admin/lib/orders-request.ts",
+          "line": 70,
+          "end": 70
+        },
+        {
+          "file": "apps/admin/lib/orders-request.ts",
+          "line": 71,
+          "end": 71
+        },
+        {
+          "file": "apps/admin/lib/orders-request.ts",
+          "line": 72,
+          "end": 72
+        },
+        {
+          "file": "apps/admin/lib/orders-request.ts",
+          "line": 73,
+          "end": 73
+        },
+        {
+          "file": "apps/admin/lib/orders-request.ts",
+          "line": 74,
+          "end": 74
+        },
+        {
+          "file": "apps/admin/lib/orders-request.ts",
+          "line": 76,
+          "end": 78
+        },
+        {
+          "file": "contracts/core-openapi.json",
+          "line": 254,
+          "end": 254
+        },
+        {
+          "file": "contracts/core-openapi.json",
+          "line": 255,
+          "end": 255
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 215,
+          "end": 215
+        },
+        {
+          "file": "internal/httpapi/refunds.go",
+          "line": 32,
+          "end": 32
+        },
+        {
+          "file": "internal/httpapi/refunds.go",
+          "line": 45,
+          "end": 45
+        },
+        {
+          "file": "internal/httpapi/refunds.go",
+          "line": 46,
+          "end": 46
+        },
+        {
+          "file": "internal/httpapi/refunds.go",
+          "line": 46,
+          "end": 63
+        },
+        {
+          "file": "internal/httpapi/refunds.go",
+          "line": 64,
+          "end": 64
+        },
+        {
+          "file": "internal/httpapi/refunds.go",
+          "line": 64,
+          "end": 74
+        }
+      ]
+    },
+    {
+      "kind": "METHOD_MISMATCH",
+      "method": "go=GET,PUT;contract=PUT;bff=GET,PUT",
+      "path": "/v1/admin/stores/{}/notification-settings",
+      "locations": [
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 9,
+          "end": 9
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 17,
+          "end": 17
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 309,
+          "end": 309
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 327,
+          "end": 327
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 404,
+          "end": 404
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 580,
+          "end": 580
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 581,
+          "end": 581
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 582,
+          "end": 582
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 583,
+          "end": 583
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 602,
+          "end": 602
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 603,
+          "end": 603
+        },
+        {
+          "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+          "line": 604,
+          "end": 604
+        },
+        {
+          "file": "apps/admin/lib/backend.ts",
+          "line": 105,
+          "end": 107
+        },
+        {
+          "file": "apps/admin/lib/logistics-request.ts",
+          "line": 9,
+          "end": 24
+        },
+        {
+          "file": "apps/admin/lib/logistics-request.ts",
+          "line": 10,
+          "end": 10
+        },
+        {
+          "file": "apps/admin/lib/logistics-request.ts",
+          "line": 11,
+          "end": 11
+        },
+        {
+          "file": "apps/admin/lib/logistics-request.ts",
+          "line": 12,
+          "end": 12
+        },
+        {
+          "file": "apps/admin/lib/logistics-request.ts",
+          "line": 13,
+          "end": 13
+        },
+        {
+          "file": "apps/admin/lib/logistics-request.ts",
+          "line": 14,
+          "end": 14
+        },
+        {
+          "file": "apps/admin/lib/logistics-request.ts",
+          "line": 16,
+          "end": 16
+        },
+        {
+          "file": "apps/admin/lib/logistics-request.ts",
+          "line": 17,
+          "end": 17
+        },
+        {
+          "file": "apps/admin/lib/logistics-request.ts",
+          "line": 19,
+          "end": 19
+        },
+        {
+          "file": "apps/admin/lib/logistics-request.ts",
+          "line": 20,
+          "end": 20
+        },
+        {
+          "file": "apps/admin/lib/logistics-request.ts",
+          "line": 22,
+          "end": 22
+        },
+        {
+          "file": "apps/admin/lib/logistics-request.ts",
+          "line": 23,
+          "end": 23
+        },
+        {
+          "file": "apps/admin/lib/logistics-request.ts",
+          "line": 25,
+          "end": 27
+        },
+        {
+          "file": "contracts/storefront-v2.md",
+          "line": 209,
+          "end": 209
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 235,
+          "end": 235
+        },
+        {
+          "file": "internal/httpapi/notify.go",
+          "line": 23,
+          "end": 23
+        },
+        {
+          "file": "internal/httpapi/notify.go",
+          "line": 24,
+          "end": 24
+        },
+        {
+          "file": "internal/httpapi/notify.go",
+          "line": 24,
+          "end": 28
+        },
+        {
+          "file": "internal/httpapi/notify.go",
+          "line": 29,
+          "end": 29
+        },
+        {
+          "file": "internal/httpapi/notify.go",
+          "line": 29,
+          "end": 37
+        }
+      ]
+    },
+    {
+      "kind": "METHOD_MISMATCH",
+      "method": "go=GET;contract=GET,POST;bff=",
+      "path": "/v1/admin/stores/{}/live-sessions/{}/page-live-videos",
+      "locations": [
+        {
+          "file": "contracts/live-session-flow-openapi.json",
+          "line": 386,
+          "end": 386
+        },
+        {
+          "file": "contracts/live-session-flow-openapi.json",
+          "line": 387,
+          "end": 387
+        },
+        {
+          "file": "contracts/live-session-flow-openapi.json",
+          "line": 537,
+          "end": 537
+        },
+        {
+          "file": "internal/httpapi/handler.go",
+          "line": 206,
+          "end": 206
+        },
+        {
+          "file": "internal/httpapi/live_flow.go",
+          "line": 27,
+          "end": 27
+        },
+        {
+          "file": "internal/httpapi/live_flow.go",
+          "line": 46,
+          "end": 46
+        },
+        {
+          "file": "internal/httpapi/live_flow.go",
+          "line": 46,
+          "end": 55
+        }
+      ]
+    }
+  ]
+}

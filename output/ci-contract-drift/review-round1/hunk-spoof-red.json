@@ -1,0 +1,37 @@
+{
+  "exit": 1,
+  "errors": 1,
+  "findings": [
+    {
+      "Level": "ERROR",
+      "Reason": "TOUCHED",
+      "Finding": {
+        "kind": "GO_ONLY",
+        "method": "POST",
+        "path": "/v1/admin/stores/{}/products/bulk-status",
+        "locations": [
+          {
+            "file": "internal/httpapi/handler.go",
+            "line": 120,
+            "end": 120
+          },
+          {
+            "file": "internal/httpapi/handler.go",
+            "line": 163,
+            "end": 163
+          },
+          {
+            "file": "internal/httpapi/handler.go",
+            "line": 163,
+            "end": 166
+          },
+          {
+            "file": "internal/httpapi/handler.go",
+            "line": 352,
+            "end": 377
+          }
+        ]
+      }
+    }
+  ]
+}

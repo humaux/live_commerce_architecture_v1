@@ -1,0 +1,488 @@
+{
+  "source_commit": "df9bf2b6b53c17ca2fdf767586deb756dc4476a5",
+  "base": "45ef5641bf87aabd4e5eef22de4ebee65130a97b",
+  "source_sha256": "48e1035694d1554075f1b7e655d637ad43190800621d2a7688a4115191075877",
+  "gates": {
+    "go-round1b-final": {
+      "name": "go-round1b-final",
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "-count=1",
+        "-timeout=300s",
+        "-v",
+        "./scripts/dev/contractdrift"
+      ],
+      "timeout": 360,
+      "head": "df9bf2b6b53c17ca2fdf767586deb756dc4476a5",
+      "exit_code": 0,
+      "source_sha256": "48e1035694d1554075f1b7e655d637ad43190800621d2a7688a4115191075877",
+      "source_after": "48e1035694d1554075f1b7e655d637ad43190800621d2a7688a4115191075877",
+      "source_unchanged": true,
+      "historical_output_sha256": "64c9dc24ef9e88247d3d25001be140fd9a11805b4ef3fab63906d25a20ff12d1",
+      "historical_output_after": "64c9dc24ef9e88247d3d25001be140fd9a11805b4ef3fab63906d25a20ff12d1",
+      "historical_output_unchanged": true,
+      "tracked_status_unchanged": true,
+      "tracked_status_clean_before": true,
+      "tracked_status_clean_after": true,
+      "elapsed_seconds": 117.837
+    },
+    "node-round1b-final": {
+      "name": "node-round1b-final",
+      "command": [
+        "bash",
+        "scripts/dev/test-node.sh"
+      ],
+      "timeout": 900,
+      "head": "df9bf2b6b53c17ca2fdf767586deb756dc4476a5",
+      "exit_code": 0,
+      "source_sha256": "48e1035694d1554075f1b7e655d637ad43190800621d2a7688a4115191075877",
+      "source_after": "48e1035694d1554075f1b7e655d637ad43190800621d2a7688a4115191075877",
+      "source_unchanged": true,
+      "historical_output_sha256": "64c9dc24ef9e88247d3d25001be140fd9a11805b4ef3fab63906d25a20ff12d1",
+      "historical_output_after": "64c9dc24ef9e88247d3d25001be140fd9a11805b4ef3fab63906d25a20ff12d1",
+      "historical_output_unchanged": true,
+      "tracked_status_unchanged": true,
+      "tracked_status_clean_before": true,
+      "tracked_status_clean_after": true,
+      "elapsed_seconds": 33.506
+    },
+    "tsc-round1b-final": {
+      "name": "tsc-round1b-final",
+      "command": [
+        "pnpm",
+        "--dir",
+        "apps/admin",
+        "exec",
+        "tsc",
+        "--noEmit",
+        "-p",
+        "."
+      ],
+      "timeout": 180,
+      "head": "df9bf2b6b53c17ca2fdf767586deb756dc4476a5",
+      "exit_code": 0,
+      "source_sha256": "48e1035694d1554075f1b7e655d637ad43190800621d2a7688a4115191075877",
+      "source_after": "48e1035694d1554075f1b7e655d637ad43190800621d2a7688a4115191075877",
+      "source_unchanged": true,
+      "historical_output_sha256": "64c9dc24ef9e88247d3d25001be140fd9a11805b4ef3fab63906d25a20ff12d1",
+      "historical_output_after": "64c9dc24ef9e88247d3d25001be140fd9a11805b4ef3fab63906d25a20ff12d1",
+      "historical_output_unchanged": true,
+      "tracked_status_unchanged": true,
+      "tracked_status_clean_before": true,
+      "tracked_status_clean_after": true,
+      "elapsed_seconds": 2.959
+    },
+    "static-round1b-final": {
+      "name": "static-round1b-final",
+      "command": [
+        "bash",
+        "-c",
+        "set -e\nbash scripts/dev/check-gates.sh\ngo vet ./scripts/dev/contractdrift\nbash scripts/dev/check-pkgdocs.sh\nbash scripts/dev/depmap.sh --check\nbash scripts/dev/test-local.sh --list"
+      ],
+      "timeout": 600,
+      "head": "df9bf2b6b53c17ca2fdf767586deb756dc4476a5",
+      "exit_code": 0,
+      "source_sha256": "48e1035694d1554075f1b7e655d637ad43190800621d2a7688a4115191075877",
+      "source_after": "48e1035694d1554075f1b7e655d637ad43190800621d2a7688a4115191075877",
+      "source_unchanged": true,
+      "historical_output_sha256": "64c9dc24ef9e88247d3d25001be140fd9a11805b4ef3fab63906d25a20ff12d1",
+      "historical_output_after": "64c9dc24ef9e88247d3d25001be140fd9a11805b4ef3fab63906d25a20ff12d1",
+      "historical_output_unchanged": true,
+      "tracked_status_unchanged": true,
+      "tracked_status_clean_before": true,
+      "tracked_status_clean_after": true,
+      "elapsed_seconds": 119.293
+    }
+  },
+  "go_top_level_passes": 64,
+  "node_passes": 1323,
+  "registry_modes": 83,
+  "baseline_entries": 237,
+  "baseline_unchanged": true,
+  "baseline_sha256": "082a0e597254a96c03272becf1c17e38a7c76e4cf842e1ef913233b4662fb3ec",
+  "normal_cli": {
+    "base": "9b738e0af64ebd08c25b39f8081d46d4dc5674fb",
+    "errors": 0,
+    "warnings": 362,
+    "counts": {
+      "CONTRACT_ONLY": 33,
+      "GO_405_FALLBACK": 4,
+      "GO_MOUNT_OR_FALLBACK": 88,
+      "GO_NOT_IN_BFF": 23,
+      "GO_ONLY": 200,
+      "METHOD_MISMATCH": 4,
+      "UNRESOLVED": 125
+    },
+    "routes": {
+      "bff": 292,
+      "contract": 146,
+      "go": 278
+    }
+  },
+  "actual_repository_probes": [
+    {
+      "case": "imported-alias",
+      "source_commit": "df9bf2b6b53c17ca2fdf767586deb756dc4476a5",
+      "path": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+      "mutation_exit": 1,
+      "expected_mutation_exit": 1,
+      "restored_exit": 0,
+      "original_sha256": "8a3c1919f835a5779715aec2162a894f85cb351da74fea6a93fa1ccf4e20e6b6",
+      "restored_sha256": "8a3c1919f835a5779715aec2162a894f85cb351da74fea6a93fa1ccf4e20e6b6",
+      "mutation_seconds": 1.504,
+      "restored_seconds": 0.827,
+      "blocking_findings": [
+        {
+          "Level": "ERROR",
+          "Reason": "TOUCHED",
+          "Finding": {
+            "kind": "UNRESOLVED",
+            "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+            "locations": [
+              {
+                "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+                "line": 1,
+                "end": 1
+              }
+            ]
+          }
+        },
+        {
+          "Level": "ERROR",
+          "Reason": "TOUCHED",
+          "Finding": {
+            "kind": "UNRESOLVED",
+            "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+            "locations": [
+              {
+                "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+                "line": 1,
+                "end": 1
+              }
+            ]
+          }
+        },
+        {
+          "Level": "ERROR",
+          "Reason": "TOUCHED",
+          "Finding": {
+            "kind": "UNRESOLVED",
+            "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+            "locations": [
+              {
+                "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+                "line": 120,
+                "end": 120
+              }
+            ]
+          }
+        },
+        {
+          "Level": "ERROR",
+          "Reason": "TOUCHED",
+          "Finding": {
+            "kind": "UNRESOLVED",
+            "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+            "locations": [
+              {
+                "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+                "line": 120,
+                "end": 120
+              }
+            ]
+          }
+        },
+        {
+          "Level": "ERROR",
+          "Reason": "TOUCHED",
+          "Finding": {
+            "kind": "UNRESOLVED",
+            "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+            "locations": [
+              {
+                "file": "apps/admin/lib/__ci_drift_alias_probe.ts",
+                "line": 1,
+                "end": 1
+              }
+            ]
+          }
+        },
+        {
+          "Level": "ERROR",
+          "Reason": "TOUCHED",
+          "Finding": {
+            "kind": "UNRESOLVED",
+            "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+            "locations": [
+              {
+                "file": "apps/admin/lib/__ci_drift_alias_probe.ts",
+                "line": 1,
+                "end": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "case": "proxy-alias",
+      "source_commit": "df9bf2b6b53c17ca2fdf767586deb756dc4476a5",
+      "path": "apps/admin/proxy.ts",
+      "mutation_exit": 1,
+      "expected_mutation_exit": 1,
+      "restored_exit": 0,
+      "original_sha256": "870aa6165234c16dff0a8f10e102d8aea31198ef6295f24d2f30c4ecaeaf95c2",
+      "restored_sha256": "870aa6165234c16dff0a8f10e102d8aea31198ef6295f24d2f30c4ecaeaf95c2",
+      "mutation_seconds": 0.84,
+      "restored_seconds": 0.864,
+      "blocking_findings": [
+        {
+          "Level": "ERROR",
+          "Reason": "TOUCHED",
+          "Finding": {
+            "kind": "UNRESOLVED",
+            "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+            "locations": [
+              {
+                "file": "apps/admin/proxy.ts",
+                "line": 28,
+                "end": 28
+              }
+            ]
+          }
+        },
+        {
+          "Level": "ERROR",
+          "Reason": "TOUCHED",
+          "Finding": {
+            "kind": "UNRESOLVED",
+            "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+            "locations": [
+              {
+                "file": "apps/admin/proxy.ts",
+                "line": 28,
+                "end": 28
+              }
+            ]
+          }
+        },
+        {
+          "Level": "ERROR",
+          "Reason": "TOUCHED",
+          "Finding": {
+            "kind": "UNRESOLVED",
+            "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+            "locations": [
+              {
+                "file": "apps/admin/proxy.ts",
+                "line": 28,
+                "end": 28
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "case": "inline-alias",
+      "source_commit": "df9bf2b6b53c17ca2fdf767586deb756dc4476a5",
+      "path": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+      "mutation_exit": 1,
+      "restored_exit": 0,
+      "original_sha256": "8a3c1919f835a5779715aec2162a894f85cb351da74fea6a93fa1ccf4e20e6b6",
+      "restored_sha256": "8a3c1919f835a5779715aec2162a894f85cb351da74fea6a93fa1ccf4e20e6b6",
+      "blocking_findings": [
+        {
+          "Level": "ERROR",
+          "Reason": "TOUCHED",
+          "Finding": {
+            "kind": "UNRESOLVED",
+            "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+            "locations": [
+              {
+                "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+                "line": 119,
+                "end": 119
+              }
+            ]
+          }
+        },
+        {
+          "Level": "ERROR",
+          "Reason": "TOUCHED",
+          "Finding": {
+            "kind": "UNRESOLVED",
+            "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+            "locations": [
+              {
+                "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+                "line": 119,
+                "end": 119
+              }
+            ]
+          }
+        },
+        {
+          "Level": "ERROR",
+          "Reason": "TOUCHED",
+          "Finding": {
+            "kind": "UNRESOLVED",
+            "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+            "locations": [
+              {
+                "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+                "line": 119,
+                "end": 119
+              }
+            ]
+          }
+        },
+        {
+          "Level": "ERROR",
+          "Reason": "TOUCHED",
+          "Finding": {
+            "kind": "UNRESOLVED",
+            "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+            "locations": [
+              {
+                "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+                "line": 119,
+                "end": 119
+              }
+            ]
+          }
+        },
+        {
+          "Level": "ERROR",
+          "Reason": "TOUCHED",
+          "Finding": {
+            "kind": "UNRESOLVED",
+            "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+            "locations": [
+              {
+                "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+                "line": 119,
+                "end": 119
+              }
+            ]
+          }
+        },
+        {
+          "Level": "ERROR",
+          "Reason": "TOUCHED",
+          "Finding": {
+            "kind": "UNRESOLVED",
+            "detail": "unaccounted forwarding sink value (alias, member or higher-order use)",
+            "locations": [
+              {
+                "file": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+                "line": 119,
+                "end": 119
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "red_log_index": "review-round1b/red-log-index.json",
+  "logs": {
+    "go-round1b-final": {
+      "raw_log": "/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-contract-drift/output/playwright/ci-contract-drift-r1b/go-round1b-final.log",
+      "raw_sha256": "ac6eba9091781b54071f03584812375542896b2529adcf7ae5707eac434c8dc1",
+      "bytes": 18067
+    },
+    "node-round1b-final": {
+      "raw_log": "/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-contract-drift/output/playwright/ci-contract-drift-r1b/node-round1b-final.log",
+      "raw_sha256": "870d5ede3461277fee734a7ea9fdf57a7e11227e12320008b7689812c1709ec3",
+      "bytes": 128477
+    },
+    "tsc-round1b-final": {
+      "raw_log": "/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-contract-drift/output/playwright/ci-contract-drift-r1b/tsc-round1b-final.log",
+      "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "static-round1b-final": {
+      "raw_log": "/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-contract-drift/output/playwright/ci-contract-drift-r1b/static-round1b-final.log",
+      "raw_sha256": "d5a7a521c8e4489a7d611f5c3bd77a1f725e59bd7d14a30211415e1bc89a25d8",
+      "bytes": 242637
+    }
+  },
+  "pr_modes": [
+    "foundation-shards",
+    "--browser-inbox",
+    "--browser-meta-health-ui",
+    "--browser-tracking-backfill",
+    "--browser-platform-site",
+    "--browser-admin-shell",
+    "--browser-click-sweep",
+    "--browser-visual-lint",
+    "--browser-identity",
+    "--browser-buyer-comms",
+    "--browser-checkout-offline",
+    "--browser-home-cod",
+    "--browser-promotions",
+    "--browser-password-auth",
+    "--browser-admin-legacy",
+    "--browser-buyer",
+    "--browser-merchant-buyer",
+    "--browser-manual-order",
+    "--browser-merchant-orders-bff",
+    "--browser-merchant-orders-ui",
+    "--browser-input-delivery",
+    "--browser-studio-bff",
+    "--browser-studio-ui",
+    "--browser-live-console",
+    "--browser-claim-checkout",
+    "--browser-live-claims",
+    "--browser-order",
+    "--browser-payment",
+    "--browser-refund-fulfilment",
+    "--browser-customers-billing",
+    "--browser-card-payments",
+    "--browser-meta-ads",
+    "--browser-ads-attribution",
+    "--browser-cvs",
+    "--browser-catalog-media",
+    "--browser-storefront-publish",
+    "--browser-store-domains",
+    "--browser-storefront",
+    "--browser-webkit",
+    "--browser-e2e",
+    "--live-browser-input",
+    "--browser-design",
+    "--browser-ops-polish",
+    "--browser-meta-connect",
+    "--browser-product-editor",
+    "--browser-catalog-core",
+    "--browser-returns-ui",
+    "--browser-picklist",
+    "--browser-operations-ads",
+    "--browser-product-media-v2",
+    "--browser-reports",
+    "--browser-migration-import"
+  ],
+  "evidence_class": "E3 STATIC; real OS CLI/Git and source fixtures, no API runtime acceptance",
+  "independent_review": {
+    "source_commit": "df9bf2b6b53c17ca2fdf767586deb756dc4476a5",
+    "class": "E1 read-only exact-repair review; no remaining scoped finding"
+  },
+  "not_run": [
+    "GitHub selected52 modes",
+    "full foundation/G07",
+    "API/PG/provider runtime",
+    "SANDBOX/LIVE/deployment",
+    "integrator K3 pre-review/CI/push"
+  ],
+  "cleanup": {
+    "child_worktrees_removed": [
+      "ci-drift-go-r1b",
+      "ci-drift-bff-r1b"
+    ],
+    "no_owned_processes": true,
+    "LC-U3": "explicitly paused; untouched by this batch"
+  },
+  "registry_unchanged_vs_base": true
+}

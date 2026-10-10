@@ -1,0 +1,20 @@
+{
+  "name": "node-final",
+  "command": [
+    "bash",
+    "scripts/dev/test-node.sh"
+  ],
+  "timeout": 900,
+  "head": "5f64bd2853b9ae0bb431f471436201f05d703b82",
+  "exit_code": 0,
+  "source_sha256": "29dbde62e8d012c855a340900dd876d0b8a5f70cfaede0a3fbd1e5774cd538ff",
+  "source_after": "29dbde62e8d012c855a340900dd876d0b8a5f70cfaede0a3fbd1e5774cd538ff",
+  "source_unchanged": true,
+  "historical_output_sha256": "7b8ae547c7b6732d3a25ce94711a70dd65f4f5d6f6836c167426e59b7eacc1cb",
+  "historical_output_after": "7b8ae547c7b6732d3a25ce94711a70dd65f4f5d6f6836c167426e59b7eacc1cb",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": true,
+  "tracked_status_clean_after": true,
+  "elapsed_seconds": 53.946
+}

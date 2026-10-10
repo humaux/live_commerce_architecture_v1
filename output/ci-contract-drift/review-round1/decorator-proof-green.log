@@ -1,0 +1,34 @@
+=== RUN   TestGoReviewMethodlessHandleCLI
+--- PASS: TestGoReviewMethodlessHandleCLI (3.33s)
+=== RUN   TestGoReviewRouteSuffixCLI
+--- PASS: TestGoReviewRouteSuffixCLI (0.68s)
+=== RUN   TestGoReviewFactory405CLI
+=== RUN   TestGoReviewFactory405CLI/header_argument_writes_first
+=== RUN   TestGoReviewFactory405CLI/status_reassigned
+--- PASS: TestGoReviewFactory405CLI (2.53s)
+    --- PASS: TestGoReviewFactory405CLI/header_argument_writes_first (0.59s)
+    --- PASS: TestGoReviewFactory405CLI/status_reassigned (0.59s)
+=== RUN   TestGoReviewMethodValueAliasCLI
+=== RUN   TestGoReviewMethodValueAliasCLI/h_:=_mux.HandleFunc;_alias_:=_h;_alias("GET_/v1/review_alias",_handler)
+=== RUN   TestGoReviewMethodValueAliasCLI/h_:=_mux.HandleFunc;_bindReview(h,_"GET_/v1/review_alias",_handler)
+=== RUN   TestGoReviewMethodValueAliasCLI/h_:=_mux.Handle;_h("/v1/review_alias",_http.NotFoundHandler())
+=== RUN   TestGoReviewMethodValueAliasCLI/child_:=_http.NewServeMux();_receiver_:=_child;_h_:=_receiver.HandleFunc;_h("GET_/v1/review_alias",_handler)
+--- PASS: TestGoReviewMethodValueAliasCLI (2.60s)
+    --- PASS: TestGoReviewMethodValueAliasCLI/h_:=_mux.HandleFunc;_alias_:=_h;_alias("GET_/v1/review_alias",_handler) (0.69s)
+    --- PASS: TestGoReviewMethodValueAliasCLI/h_:=_mux.HandleFunc;_bindReview(h,_"GET_/v1/review_alias",_handler) (0.64s)
+    --- PASS: TestGoReviewMethodValueAliasCLI/h_:=_mux.Handle;_h("/v1/review_alias",_http.NotFoundHandler()) (0.62s)
+    --- PASS: TestGoReviewMethodValueAliasCLI/child_:=_http.NewServeMux();_receiver_:=_child;_h_:=_receiver.HandleFunc;_h("GET_/v1/review_alias",_handler) (0.64s)
+=== RUN   TestGoReview405ProofCLI
+--- PASS: TestGoReview405ProofCLI (1.61s)
+=== RUN   TestGoReviewColonParameterCLI
+--- PASS: TestGoReviewColonParameterCLI (1.35s)
+=== RUN   TestGoReviewLiteralColonCLI
+--- PASS: TestGoReviewLiteralColonCLI (0.73s)
+=== RUN   TestReview405DecoratorFirstWriteAndShadowCLI
+=== RUN   TestReview405DecoratorFirstWriteAndShadowCLI/header_argument_commits_200
+=== RUN   TestReview405DecoratorFirstWriteAndShadowCLI/decorator_name_is_shadowed
+--- PASS: TestReview405DecoratorFirstWriteAndShadowCLI (1.33s)
+    --- PASS: TestReview405DecoratorFirstWriteAndShadowCLI/header_argument_commits_200 (0.66s)
+    --- PASS: TestReview405DecoratorFirstWriteAndShadowCLI/decorator_name_is_shadowed (0.67s)
+PASS
+ok  	livecommerce/scripts/dev/contractdrift	14.509s

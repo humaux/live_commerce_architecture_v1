@@ -1,0 +1,347 @@
+{
+  "source_commit": "5f64bd2853b9ae0bb431f471436201f05d703b82",
+  "base": "6023b55a1e827ec4126c36678d6baa719add3521",
+  "task_id": "5c534d11-9a75-4a52-9a4d-8da15bc236aa",
+  "class": "E3 STATIC",
+  "source_sha256": "29dbde62e8d012c855a340900dd876d0b8a5f70cfaede0a3fbd1e5774cd538ff",
+  "source_file_hashes": {
+    "scripts/dev/contractdrift/bff.go": "f586fc32d1a390b3758bd3dcb9ceb17375de1968a1a1085145e4ad86abff79d2",
+    "scripts/dev/contractdrift/git.go": "53b57a99b1cf00bc625d2e560a1488b58b03db9631a00029a8931bdac8cfb0f9",
+    "scripts/dev/contractdrift/go_eval.go": "aed9b08a89288e20222b24a896e34f31b7cb720229f8b9760a5b08e3b7ea21f2",
+    "scripts/dev/contractdrift/go_extract.go": "cdb68e499ef311943d6cd5d07398111784708f3440245d6773b16d4f4bdcb2a6",
+    "scripts/dev/contractdrift/go_extract_test.go": "9dc583137f29c44691c3b806dc60c7abcd79d3e8bbf1c6c4e85deacc542d2fb7",
+    "scripts/dev/contractdrift/go_fallback.go": "2c154f567b825ce233f67fa319e32d26a52ba681d3dc6b41c8fc1b504326e8a7",
+    "scripts/dev/contractdrift/go_review_cli_test.go": "55b93d0c9d69faa548ba05662505ddf9b3a8ee54ad1501c8bf652b5712a57023",
+    "scripts/dev/contractdrift/go_walk.go": "4895f310a33e9b53f78618abe9fb3536d3e552f69ef49eec657447a2ff3e4453",
+    "scripts/dev/contractdrift/main.go": "1e6bffaca60b7fc146bf6f1694b0eaa8c5823d505036abf396ee45ea8374e3d7",
+    "scripts/dev/contractdrift/ratchet.go": "65365567f5d3a355aded136c96a37d95a424d5eb4ccf590811b54fde0d2fe0da",
+    "scripts/dev/contractdrift/review_ratchet_cli_test.go": "6592d70c8165c10bc63e4a6db68124dff6445d716d3c26a54e6a066a4740f735",
+    "scripts/dev/contractdrift/snapshot.go": "a58b74c4312f0e957b17f50020a18207d4fade1056fe5aeaf982ac991b891066",
+    "scripts/dev/contractdrift/types.go": "f0ec04d189b899ad9bdd129269e123373659c9d3ba1d5fe57b9432d8a0a579be"
+  },
+  "gates": {
+    "go-final": {
+      "name": "go-final",
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "-count=1",
+        "-timeout=240s",
+        "-v",
+        "./scripts/dev/contractdrift"
+      ],
+      "timeout": 300,
+      "head": "5f64bd2853b9ae0bb431f471436201f05d703b82",
+      "exit_code": 0,
+      "source_sha256": "29dbde62e8d012c855a340900dd876d0b8a5f70cfaede0a3fbd1e5774cd538ff",
+      "source_after": "29dbde62e8d012c855a340900dd876d0b8a5f70cfaede0a3fbd1e5774cd538ff",
+      "source_unchanged": true,
+      "historical_output_sha256": "7b8ae547c7b6732d3a25ce94711a70dd65f4f5d6f6836c167426e59b7eacc1cb",
+      "historical_output_after": "7b8ae547c7b6732d3a25ce94711a70dd65f4f5d6f6836c167426e59b7eacc1cb",
+      "historical_output_unchanged": true,
+      "tracked_status_unchanged": true,
+      "tracked_status_clean_before": true,
+      "tracked_status_clean_after": true,
+      "elapsed_seconds": 50.651
+    },
+    "node-final": {
+      "name": "node-final",
+      "command": [
+        "bash",
+        "scripts/dev/test-node.sh"
+      ],
+      "timeout": 900,
+      "head": "5f64bd2853b9ae0bb431f471436201f05d703b82",
+      "exit_code": 0,
+      "source_sha256": "29dbde62e8d012c855a340900dd876d0b8a5f70cfaede0a3fbd1e5774cd538ff",
+      "source_after": "29dbde62e8d012c855a340900dd876d0b8a5f70cfaede0a3fbd1e5774cd538ff",
+      "source_unchanged": true,
+      "historical_output_sha256": "7b8ae547c7b6732d3a25ce94711a70dd65f4f5d6f6836c167426e59b7eacc1cb",
+      "historical_output_after": "7b8ae547c7b6732d3a25ce94711a70dd65f4f5d6f6836c167426e59b7eacc1cb",
+      "historical_output_unchanged": true,
+      "tracked_status_unchanged": true,
+      "tracked_status_clean_before": true,
+      "tracked_status_clean_after": true,
+      "elapsed_seconds": 53.946
+    },
+    "tsc-final": {
+      "name": "tsc-final",
+      "command": [
+        "pnpm",
+        "--dir",
+        "apps/admin",
+        "exec",
+        "tsc",
+        "--noEmit",
+        "-p",
+        "."
+      ],
+      "timeout": 300,
+      "head": "5f64bd2853b9ae0bb431f471436201f05d703b82",
+      "exit_code": 0,
+      "source_sha256": "29dbde62e8d012c855a340900dd876d0b8a5f70cfaede0a3fbd1e5774cd538ff",
+      "source_after": "29dbde62e8d012c855a340900dd876d0b8a5f70cfaede0a3fbd1e5774cd538ff",
+      "source_unchanged": true,
+      "historical_output_sha256": "7b8ae547c7b6732d3a25ce94711a70dd65f4f5d6f6836c167426e59b7eacc1cb",
+      "historical_output_after": "7b8ae547c7b6732d3a25ce94711a70dd65f4f5d6f6836c167426e59b7eacc1cb",
+      "historical_output_unchanged": true,
+      "tracked_status_unchanged": true,
+      "tracked_status_clean_before": true,
+      "tracked_status_clean_after": true,
+      "elapsed_seconds": 12.515
+    },
+    "static-final": {
+      "name": "static-final",
+      "command": [
+        "bash",
+        "-c",
+        "set -e\nbash scripts/dev/check-gates.sh\ngo vet ./scripts/dev/contractdrift\nbash scripts/dev/check-pkgdocs.sh\nbash scripts/dev/depmap.sh --check\nbash scripts/dev/test-local.sh --list"
+      ],
+      "timeout": 600,
+      "head": "5f64bd2853b9ae0bb431f471436201f05d703b82",
+      "exit_code": 0,
+      "source_sha256": "29dbde62e8d012c855a340900dd876d0b8a5f70cfaede0a3fbd1e5774cd538ff",
+      "source_after": "29dbde62e8d012c855a340900dd876d0b8a5f70cfaede0a3fbd1e5774cd538ff",
+      "source_unchanged": true,
+      "historical_output_sha256": "7b8ae547c7b6732d3a25ce94711a70dd65f4f5d6f6836c167426e59b7eacc1cb",
+      "historical_output_after": "7b8ae547c7b6732d3a25ce94711a70dd65f4f5d6f6836c167426e59b7eacc1cb",
+      "historical_output_unchanged": true,
+      "tracked_status_unchanged": true,
+      "tracked_status_clean_before": true,
+      "tracked_status_clean_after": true,
+      "elapsed_seconds": 43.101
+    }
+  },
+  "top_level_go_tests": 43,
+  "node_passes": 1323,
+  "real_repo_mutations": [
+    {
+      "case": "methodless",
+      "source_commit": "5f64bd2853b9ae0bb431f471436201f05d703b82",
+      "path": "internal/httpapi/handler.go",
+      "original_sha256": "e0a69e92a818e7c2fcf62ff5997e292188cd8e509840c63a085de4aae4b7f5c8",
+      "restored_sha256": "e0a69e92a818e7c2fcf62ff5997e292188cd8e509840c63a085de4aae4b7f5c8",
+      "mutation_exit": 1,
+      "restored_exit": 0,
+      "blocking_findings": [
+        {
+          "Level": "ERROR",
+          "Reason": "TOUCHED",
+          "Finding": {
+            "kind": "UNRESOLVED",
+            "method": "MOUNT",
+            "path": "/v1/__ci_methodless_probe",
+            "detail": "opaque Go methodless mount; child route identity is unproven",
+            "locations": [
+              {
+                "file": "internal/httpapi/handler.go",
+                "line": 113,
+                "end": 113
+              },
+              {
+                "file": "internal/httpapi/handler.go",
+                "line": 12,
+                "end": 12
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "case": "bff-delete",
+      "source_commit": "5f64bd2853b9ae0bb431f471436201f05d703b82",
+      "path": "apps/admin/app/api/stores/route.ts",
+      "original_sha256": "fb4d85c7afef9f19a75b71b7da5c6566bd04d85adddb566b9dfa43a533cadb31",
+      "restored_sha256": "fb4d85c7afef9f19a75b71b7da5c6566bd04d85adddb566b9dfa43a533cadb31",
+      "mutation_exit": 1,
+      "restored_exit": 0,
+      "blocking_findings": [
+        {
+          "Level": "ERROR",
+          "Reason": "merge-base regression",
+          "Finding": {
+            "kind": "BFF_REMOVED",
+            "method": "GET",
+            "path": "/v1/admin/stores",
+            "detail": "merge-base forwarding mapping removed or retargeted: apps/admin/app/api/stores/route.ts",
+            "locations": [
+              {
+                "file": "apps/admin/app/api/stores/route.ts",
+                "line": 11,
+                "end": 11
+              },
+              {
+                "file": "apps/admin/app/api/stores/route.ts",
+                "line": 17,
+                "end": 17
+              },
+              {
+                "file": "apps/admin/app/api/stores/route.ts",
+                "line": 36,
+                "end": 36
+              },
+              {
+                "file": "apps/admin/app/api/stores/route.ts",
+                "line": 37,
+                "end": 37
+              },
+              {
+                "file": "apps/admin/app/api/stores/route.ts",
+                "line": 38,
+                "end": 38
+              },
+              {
+                "file": "apps/admin/app/api/stores/route.ts",
+                "line": 39,
+                "end": 39
+              },
+              {
+                "file": "apps/admin/app/api/stores/route.ts",
+                "line": 40,
+                "end": 40
+              },
+              {
+                "file": "apps/admin/app/api/stores/route.ts",
+                "line": 41,
+                "end": 41
+              },
+              {
+                "file": "apps/admin/lib/auth.ts",
+                "line": 482,
+                "end": 512
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "case": "hunk-spoof",
+      "source_commit": "5f64bd2853b9ae0bb431f471436201f05d703b82",
+      "path": "internal/httpapi/handler.go",
+      "original_sha256": "e0a69e92a818e7c2fcf62ff5997e292188cd8e509840c63a085de4aae4b7f5c8",
+      "restored_sha256": "e0a69e92a818e7c2fcf62ff5997e292188cd8e509840c63a085de4aae4b7f5c8",
+      "mutation_exit": 1,
+      "restored_exit": 0,
+      "blocking_findings": [
+        {
+          "Level": "ERROR",
+          "Reason": "TOUCHED",
+          "Finding": {
+            "kind": "GO_ONLY",
+            "method": "POST",
+            "path": "/v1/admin/stores/{}/products/bulk-status",
+            "locations": [
+              {
+                "file": "internal/httpapi/handler.go",
+                "line": 120,
+                "end": 120
+              },
+              {
+                "file": "internal/httpapi/handler.go",
+                "line": 163,
+                "end": 163
+              },
+              {
+                "file": "internal/httpapi/handler.go",
+                "line": 163,
+                "end": 166
+              },
+              {
+                "file": "internal/httpapi/handler.go",
+                "line": 352,
+                "end": 377
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "baseline_sha256": "082a0e597254a96c03272becf1c17e38a7c76e4cf842e1ef913233b4662fb3ec",
+  "baseline_unchanged": true,
+  "required_plan_workflow_unchanged": true,
+  "inventory": {
+    "routes": {
+      "bff": 292,
+      "contract": 146,
+      "go": 278
+    },
+    "counts": {
+      "CONTRACT_ONLY": 33,
+      "GO_405_FALLBACK": 4,
+      "GO_MOUNT_OR_FALLBACK": 88,
+      "GO_NOT_IN_BFF": 23,
+      "GO_ONLY": 200,
+      "METHOD_MISMATCH": 4,
+      "UNRESOLVED": 125
+    },
+    "errors": 0,
+    "warnings": 362
+  },
+  "pr_modes": {
+    "modes": [
+      "foundation-shards",
+      "--browser-inbox",
+      "--browser-meta-health-ui",
+      "--browser-tracking-backfill",
+      "--browser-platform-site",
+      "--browser-admin-shell",
+      "--browser-click-sweep",
+      "--browser-visual-lint",
+      "--browser-identity",
+      "--browser-buyer-comms",
+      "--browser-checkout-offline",
+      "--browser-home-cod",
+      "--browser-promotions",
+      "--browser-password-auth",
+      "--browser-admin-legacy",
+      "--browser-buyer",
+      "--browser-merchant-buyer",
+      "--browser-manual-order",
+      "--browser-merchant-orders-bff",
+      "--browser-merchant-orders-ui",
+      "--browser-input-delivery",
+      "--browser-studio-bff",
+      "--browser-studio-ui",
+      "--browser-live-console",
+      "--browser-claim-checkout",
+      "--browser-live-claims",
+      "--browser-order",
+      "--browser-payment",
+      "--browser-refund-fulfilment",
+      "--browser-customers-billing",
+      "--browser-card-payments",
+      "--browser-meta-ads",
+      "--browser-ads-attribution",
+      "--browser-cvs",
+      "--browser-catalog-media",
+      "--browser-storefront-publish",
+      "--browser-store-domains",
+      "--browser-storefront",
+      "--browser-webkit",
+      "--browser-e2e",
+      "--live-browser-input",
+      "--browser-design",
+      "--browser-ops-polish",
+      "--browser-meta-connect",
+      "--browser-product-editor",
+      "--browser-catalog-core",
+      "--browser-returns-ui",
+      "--browser-picklist",
+      "--browser-operations-ads",
+      "--browser-product-media-v2",
+      "--browser-reports",
+      "--browser-migration-import"
+    ],
+    "deploy": false
+  },
+  "not_run": [
+    "52 selected browser modes: static-tool/workflow-only delta; production files restored unchanged",
+    "API/PG/provider/SANDBOX/LIVE runtime",
+    "CI/K3 final independent review"
+  ],
+  "lc_u3": "owner-paused; uncommitted work preserved in its own worktree"
+}

@@ -1,0 +1,50 @@
+=== RUN   TestReviewR1BForcedTextDiffCLI
+=== RUN   TestReviewR1BForcedTextDiffCLI/binary
+    review_r1b_ratchet_cli_test.go:37: binary suppressed raw changed lines: 0 WARNING (legacy) BFF_NO_GO POST /v1/admin/stores/{}/phantom apps/admin/app/api/stores/[store]/[...resource]/route.ts:5, apps/admin/app/api/stores/[store]/[...resource]/route.ts:6, apps/admin/app/api/stores/[store]/[...resource]/route.ts:7 
+        WARNING (legacy) CONTRACT_ONLY POST /v1/admin/stores/{}/ghost contracts/test-openapi.json:7, contracts/test-openapi.json:8 
+        WARNING (legacy) CONTRACT_ONLY POST /v1/admin/stores/{}/method contracts/test-openapi.json:10, contracts/test-openapi.json:11 
+        INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{}/method internal/httpapi/routes.go:8, internal/httpapi/routes.go:11, internal/httpapi/routes.go:15 
+        INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{}/orphan internal/httpapi/routes.go:8, internal/httpapi/routes.go:11, internal/httpapi/routes.go:14 
+        WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/method internal/httpapi/routes.go:8, internal/httpapi/routes.go:11, internal/httpapi/routes.go:15 
+        WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/orphan internal/httpapi/routes.go:8, internal/httpapi/routes.go:11, internal/httpapi/routes.go:14 
+        WARNING (legacy) METHOD_MISMATCH go=GET;contract=POST;bff= /v1/admin/stores/{}/method contracts/test-openapi.json:10, contracts/test-openapi.json:11, internal/httpapi/routes.go:8, internal/httpapi/routes.go:11, internal/httpapi/routes.go:15 
+        SUMMARY routes go=3 contract=3 bff=2; errors=0 warnings=6 BFF_NO_GO=1 CONTRACT_ONLY=2 GO_NOT_IN_BFF=2 GO_ONLY=2 METHOD_MISMATCH=1
+=== RUN   TestReviewR1BForcedTextDiffCLI/textconv
+    review_r1b_ratchet_cli_test.go:37: textconv suppressed raw changed lines: 0 WARNING (legacy) BFF_NO_GO POST /v1/admin/stores/{}/phantom apps/admin/app/api/stores/[store]/[...resource]/route.ts:5, apps/admin/app/api/stores/[store]/[...resource]/route.ts:6, apps/admin/app/api/stores/[store]/[...resource]/route.ts:7 
+        WARNING (legacy) CONTRACT_ONLY POST /v1/admin/stores/{}/ghost contracts/test-openapi.json:7, contracts/test-openapi.json:8 
+        WARNING (legacy) CONTRACT_ONLY POST /v1/admin/stores/{}/method contracts/test-openapi.json:10, contracts/test-openapi.json:11 
+        INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{}/method internal/httpapi/routes.go:8, internal/httpapi/routes.go:11, internal/httpapi/routes.go:15 
+        INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{}/orphan internal/httpapi/routes.go:8, internal/httpapi/routes.go:11, internal/httpapi/routes.go:14 
+        WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/method internal/httpapi/routes.go:8, internal/httpapi/routes.go:11, internal/httpapi/routes.go:15 
+        WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/orphan internal/httpapi/routes.go:8, internal/httpapi/routes.go:11, internal/httpapi/routes.go:14 
+        WARNING (legacy) METHOD_MISMATCH go=GET;contract=POST;bff= /v1/admin/stores/{}/method contracts/test-openapi.json:10, contracts/test-openapi.json:11, internal/httpapi/routes.go:8, internal/httpapi/routes.go:11, internal/httpapi/routes.go:15 
+        SUMMARY routes go=3 contract=3 bff=2; errors=0 warnings=6 BFF_NO_GO=1 CONTRACT_ONLY=2 GO_NOT_IN_BFF=2 GO_ONLY=2 METHOD_MISMATCH=1
+=== RUN   TestReviewR1BForcedTextDiffCLI/mnemonic
+    review_r1b_ratchet_cli_test.go:37: mnemonic suppressed raw changed lines: 0 WARNING (legacy) BFF_NO_GO POST /v1/admin/stores/{}/phantom apps/admin/app/api/stores/[store]/[...resource]/route.ts:5, apps/admin/app/api/stores/[store]/[...resource]/route.ts:6, apps/admin/app/api/stores/[store]/[...resource]/route.ts:7 
+        WARNING (legacy) CONTRACT_ONLY POST /v1/admin/stores/{}/ghost contracts/test-openapi.json:7, contracts/test-openapi.json:8 
+        WARNING (legacy) CONTRACT_ONLY POST /v1/admin/stores/{}/method contracts/test-openapi.json:10, contracts/test-openapi.json:11 
+        INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{}/method internal/httpapi/routes.go:8, internal/httpapi/routes.go:11, internal/httpapi/routes.go:15 
+        INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{}/orphan internal/httpapi/routes.go:8, internal/httpapi/routes.go:11, internal/httpapi/routes.go:14 
+        WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/method internal/httpapi/routes.go:8, internal/httpapi/routes.go:11, internal/httpapi/routes.go:15 
+        WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/orphan internal/httpapi/routes.go:8, internal/httpapi/routes.go:11, internal/httpapi/routes.go:14 
+        WARNING (legacy) METHOD_MISMATCH go=GET;contract=POST;bff= /v1/admin/stores/{}/method contracts/test-openapi.json:10, contracts/test-openapi.json:11, internal/httpapi/routes.go:8, internal/httpapi/routes.go:11, internal/httpapi/routes.go:15 
+        SUMMARY routes go=3 contract=3 bff=2; errors=0 warnings=6 BFF_NO_GO=1 CONTRACT_ONLY=2 GO_NOT_IN_BFF=2 GO_ONLY=2 METHOD_MISMATCH=1
+=== RUN   TestReviewR1BForcedTextDiffCLI/no-prefix
+--- FAIL: TestReviewR1BForcedTextDiffCLI (3.48s)
+    --- FAIL: TestReviewR1BForcedTextDiffCLI/binary (1.12s)
+    --- FAIL: TestReviewR1BForcedTextDiffCLI/textconv (0.98s)
+    --- FAIL: TestReviewR1BForcedTextDiffCLI/mnemonic (0.68s)
+    --- PASS: TestReviewR1BForcedTextDiffCLI/no-prefix (0.70s)
+=== RUN   TestReviewR1BDeletedUnresolvedCLI
+=== RUN   TestReviewR1BDeletedUnresolvedCLI/ordinary
+    review_r1b_ratchet_cli_test.go:73: deleted unresolved source accepted: 0 WARNING (unresolved) UNRESOLVED   contracts/opaque-openapi.json:1 OpenAPI has no paths object
+        SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=1 UNRESOLVED=1
+=== RUN   TestReviewR1BDeletedUnresolvedCLI/write-baseline
+    review_r1b_ratchet_cli_test.go:73: deleted unresolved source accepted: 0 WARNING (unresolved) UNRESOLVED   contracts/opaque-openapi.json:1 OpenAPI has no paths object
+        SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=1 UNRESOLVED=1
+--- FAIL: TestReviewR1BDeletedUnresolvedCLI (1.43s)
+    --- FAIL: TestReviewR1BDeletedUnresolvedCLI/ordinary (0.70s)
+    --- FAIL: TestReviewR1BDeletedUnresolvedCLI/write-baseline (0.73s)
+FAIL
+FAIL	livecommerce/scripts/dev/contractdrift	6.091s
+FAIL
