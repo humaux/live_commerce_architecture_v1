@@ -73,7 +73,8 @@ if [[ $provider == anthropic ]]; then
   lock="$ledger.lock"; got=0; for _ in $(seq 1 300); do mkdir "$lock" 2>/dev/null && { got=1; break; }; sleep 0.2; done
   ((got)) || { echo "refused: could not lock $ledger (remove a stale $lock only if no anthropic run is active)" >&2; exit 2; }
   trap 'rmdir "$lock" 2>/dev/null' EXIT
-  spent=$(awk -F'\t' '{s+=$2} END{printf "%.2f", s+0}' "$ledger" 2>/dev/null || echo 0)
+  # An unreadable ledger or a non-numeric amount is not "nothing spent": refuse (the ledger was just created if absent).
+  spent=$(awk -F'\t' '$2 !~ /^-?[0-9]+([.][0-9]+)?$/ {bad=1} {s+=$2} END{if (bad) exit 3; printf "%.2f", s+0}' "$ledger") || { echo "refused: unreadable or corrupt ledger $ledger" >&2; exit 2; }
   if python3 -c "import sys; sys.exit(0 if float('$spent')+float('$run_cap') > float('$cap') else 1)"; then
     echo "refused: Claude API spent \$$spent + run cap \$$run_cap would exceed budget \$$cap (ledger $ledger)" >&2; exit 2
   fi
