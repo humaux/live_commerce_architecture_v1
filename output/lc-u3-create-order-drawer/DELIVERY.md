@@ -3,7 +3,7 @@
 ## Scope-404复验 — PR36主干合并（2026-10-10）
 
 - 本轮只复验 LCU2_404。合并提交/测试源码 **`463cd8f0bfffe7a2031d559b9f240a9c966a205a`** 包含 SCOPE-404 PR36 **`287e08aa6c694030333dd00797c0d3bbac15abc6`**。三条 LC-U3 P2 继续暂停；本轮不代表整 PR32 或待修代码验收。
-- 七项暂停修改已逐文件备份，只暂存这七个 tracked 路径；确切 stash **`d1f7cc33821ae7c92ef8cf882b64f43f7ef82cb7`**，原 patch SHA256 **`7cfd496df313c80bbec909d79b5ec236d931e4fe5e77e6be239052a9c37dd11b`**。未暂存 owner 的 untracked 文件，不使用 autostash/pop0；报告提交后再恢复，备份保留。
+- 七项暂停修改已逐文件备份，只暂存这七个 tracked 路径；确切 stash **`d1f7cc33821ae7c92ef8cf882b64f43f7ef82cb7`**，原 patch SHA256 **`7cfd496df313c80bbec909d79b5ec236d931e4fe5e77e6be239052a9c37dd11b`**。未暂存 owner 的 untracked 文件，不使用 autostash/pop0。报告提交 `a22a3a0b` 后已按该确切OID恢复：apply0、七个原始文件hash及整个patch逐字节相同，无冲突；stash/备份保留。恢复记录：`output/playwright/lc-u3-pr36-recheck/restoration.json`。
 - `live-console.spec.ts`、Go harness、`test-local.sh` 与合并前逐字节相同；spec SHA256 `3df8c6fa47d7e559ff535ed7f146d3dec307ce4d973f66ab65906216b4d1182b`。原 LCU2_404 15s 等404和6500ms零轮询观察、Go780s模式边界均未改动；未过滤测试或开启 calibration。
 
 | 现有原完整模式／本地检查 | 结果 |
