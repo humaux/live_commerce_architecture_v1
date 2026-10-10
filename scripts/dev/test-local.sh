@@ -337,10 +337,13 @@ case "$1" in
     lc_prepare() {
   test -f tests/foundation/browser_manual_order_link_test.go
   test -f tests/storefront/manual-order-link-gate.mjs
+  # GATE-PORT r1 (K3 P1): the freed-port handoff red/green witness runs beside the gate it protects.
+  test -f tests/foundation/browser_admin_relay_test.go
+  grep -q '^func TestBrowserAdminRelayHandoffHasNoFreePortWindow' tests/foundation/browser_admin_relay_test.go
   node --test --experimental-strip-types apps/storefront/tests/order-link.test.mjs tests/admin/merchant-tools-model.test.ts
     }
     lc_run() {
-  LC_BROWSER_MANUAL_ORDER_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.2 go test -race -tags browser -count=1 -timeout=300s -run '^TestBrowserManualOrderLink$' -v ./tests/foundation
+  LC_BROWSER_MANUAL_ORDER_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.2 go test -race -tags browser -count=1 -timeout=300s -run '^TestBrowser(ManualOrderLink|AdminRelayHandoffHasNoFreePortWindow)$' -v ./tests/foundation
   printf 'PASS: isolated merchant UI manual order -> buyer link -> fresh browser exchange -> bank details -> transfer proof; signed MOCK IdP, local TLS/CONNECT edge; not provider or deployment acceptance.\n'
     }
     ;;
@@ -733,10 +736,13 @@ case "$1" in
   test -f tests/foundation/browser_catalog_media_test.go
   grep -q '^func TestBrowserCatalogMedia' tests/foundation/browser_catalog_media_test.go
   test -f tests/storefront/catalog-media-gate.mjs
+  # GATE-PORT r1 (K3 P1): the freed-port handoff red/green witness runs beside the gate it protects.
+  test -f tests/foundation/browser_admin_relay_test.go
+  grep -q '^func TestBrowserAdminRelayHandoffHasNoFreePortWindow' tests/foundation/browser_admin_relay_test.go
   mkdir -p output/playwright
     }
     lc_run() {
-  LC_BROWSER_CATALOG_MEDIA_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.2 go test -race -tags browser -count=1 -timeout=1500s -run '^TestBrowserCatalogMedia$' -v ./tests/foundation
+  LC_BROWSER_CATALOG_MEDIA_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.2 go test -race -tags browser -count=1 -timeout=1500s -run '^TestBrowser(CatalogMedia|AdminRelayHandoffHasNoFreePortWindow)$' -v ./tests/foundation
   printf 'PASS: catalog-media browser gate (BROWSER, MOCK IdP): merchant uploads 2 photos, reorders, renames, reprices and archives a SKU in the product editor and reads the results back in the Ledger; an anonymous buyer sees the home grid, gallery order, new price and no archived SKU; zh-TW + en, desktop + 390px; the storefront publication and the ACTIVE domain are written through the migration 0081 definers (merchant publish, operator bind), not owner-seeded; not provider or deployment acceptance.\n'
     }
     ;;
@@ -752,6 +758,7 @@ case "$1" in
   grep -q '^func TestBrowserAdminRelayOwnsExplicitOrigin' tests/foundation/browser_admin_relay_test.go
   grep -q '^func TestBrowserAdminRelayPreservesOriginAndTLSHeaders' tests/foundation/browser_admin_relay_test.go
   grep -q '^func TestBrowserAdminRelayPreservesPostCSRFAndRedirect' tests/foundation/browser_admin_relay_test.go
+  grep -q '^func TestBrowserAdminRelayHandoffHasNoFreePortWindow' tests/foundation/browser_admin_relay_test.go
   test -f tests/storefront/storefront-publish-gate.mjs
   test -f tests/admin/design.spec.ts
   node --test --experimental-strip-types tests/admin/storefront-model.test.ts tests/admin/design-gate.test.ts tests/admin/design-model.test.ts packages/markdown-lite/tests/index.test.ts

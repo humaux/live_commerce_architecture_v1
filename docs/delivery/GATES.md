@@ -16,10 +16,15 @@ MOCK, SANDBOX, LIVE, NOT_RUN): a pass here is only ever as strong as the label i
 `bash scripts/dev/test-local.sh --list` lists the modes, including the default `foundation`. `bash scripts/dev/test-local.sh --dry-run MODE` prints the selected shell phases with their command/environment expressions without executing builds, tests or fixtures. Dry-run is not a runtime acceptance gate. The existing `LC_SWEEP_SHARD=1/10 bash scripts/dev/test-local.sh --browser-click-sweep` invocation is the CI equivalent of `--browser-click-sweep@1/10`.
 
 `--browser-storefront-publish` also executes the DB-free `TestBrowserAdminRelay*` real-socket regressions:
-the public admin listener stays owned until cleanup, and the HTTP/WebKit TLS front preserves Host,
-Origin/CSRF, cookies, request bodies and redirects. The preparation guards require all three regression
-symbols. Shared automatic-port collision bounds and all eleven unchanged browser assertion/readiness
-lists are tested by `tests/ci/next-startup.test.mjs` in `test-node.sh`.
+the public admin listener stays owned until cleanup, the HTTP/WebKit TLS front preserves Host,
+Origin/CSRF, cookies, request bodies and redirects, and `TestBrowserAdminRelayHandoffHasNoFreePortWindow`
+replays the pre-fix reserve→free→explicit-port handoff on real sockets (a rival steals the freed port and
+the gate's bind then fails with EADDRINUSE) against the relay handoff that never frees a port.
+`--browser-catalog-media` and `--browser-manual-order` run that handoff regression beside their own gates.
+The preparation guards require all four regression symbols. Shared automatic-port collision bounds, all
+eleven unchanged browser assertion/readiness lists (now including environment assignment statements and
+readiness status predicates), the single bounded 5 s admin registration and the static freed-port-handoff
+guard over the two converted Go fixtures are tested by `tests/ci/next-startup.test.mjs` in `test-node.sh`.
 
 ## Tiers
 

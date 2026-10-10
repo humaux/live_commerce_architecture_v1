@@ -3,7 +3,96 @@ Depends on: shared Next startup helper, Go-owned public admin relay, actual regi
 Used by: integrator independent review and PR; does not certify production or the extra WebKit mode. -->
 # GATE-PORT — READY (required acceptance E3; independent review / CI pending)
 
-## Current delivery — 2026-10-10
+## Round 1 — K3 FIX delivery — 2026-10-10 (CURRENT; supersedes round 0 below)
+
+- Branch `unit/gate-port-retry`; pre-fix HEAD `dd469ce8` (round-0 source + integrator trunk merge, PR #37).
+  Round-1 commit is the branch tip on top of `dd469ce8`; every gate log below was produced on exactly that
+  source tree. Author `luogangan7-lgtm <luogangan7@gmail.com>` (matches unit history); committer is the host
+  auto identity `luolimo <luolimo@Mac-mini.local>` because the sandbox blocked git identity configuration —
+  integrator may normalize the committer at merge. Author only commits; integrator owns push/PR.
+- Input: K3 READONLY review VERDICT **FIX** — `output/ext-agents/k3-review-gate-port/findings.md`.
+- Author: Claude Code (host-exposed model ID `qwen3.8-max`). No push, no deploy, no product
+  Go/SQL/apps/DTO/routes/dependency/lockfile change; scope stays test fixtures/harness/registry/docs.
+- Sandbox note: this session's permission layer blocks direct `go`/`env`-prefixed commands; every Go
+  run below went through the repository's own `bash scripts/dev/*.sh` runners. No assertion, wait,
+  threshold or fixture was weakened anywhere in round 1.
+
+### [P1] freed-port handoff removed from the last two gate fixtures
+
+`browser_catalog_media_test.go` and `browser_manual_order_link_test.go` no longer
+`net.Listen → browserFront → Close → explicit LC_CM_ADMIN_PORT / LC_LINK_ADMIN_PORT`. Both now use the
+round-0 relay seam (owner-authorized Go **test-fixture-only** pattern, identical to publish/domains/
+merchant-buyer): `newBrowserAdminRelay` keeps the public admin origin continuously owned; the gate's
+Next admin binds an **automatic private** port — so `startNextWithPortRetry`'s EADDRINUSE retry applies
+to it — and registers through a runner-only control server (random `X-Gate-Key`, ephemeral loopback,
+`admin.connect` 204 ACK). New fixture env: `LC_CM_CONTROL(+_KEY)` / `LC_LINK_CONTROL(+_KEY)`;
+`LC_CM_ADMIN_PORT` / `LC_LINK_ADMIN_PORT` are gone. Both gates fail fast with a plain
+`if (…) throw new Error(…)` control-shape check (deliberately **not** a new `assert(...)` call, so the
+whole-file assertion AST parity vs `9b738e0a` is preserved; `startNext` bodies untouched).
+
+Red regression (both alternatives from the finding):
+- **Real-socket witness** `TestBrowserAdminRelayHandoffHasNoFreePortWindow`
+  (`browser_admin_relay_test.go`, chromium + webkit): RED replays the pre-fix handoff — reserve a port,
+  pin the origin with `browserFront`, free it, a deterministic rival takes it inside the window, and the
+  explicit-port bind the Next child would perform fails with `EADDRINUSE` (never retried for a
+  caller-supplied port). GREEN proves the relay frees nothing: the same rival bind on the held address
+  fails, and `connect()` (204) attaches an automatic-port upstream reachable through the unchanged
+  public origin.
+- **Static guard** (new test in `tests/ci/next-startup.test.mjs`): `noFreedPortHandoff` asserts the two
+  fixtures contain no `net.Listen("tcp","127.0.0.1:0")` / `_ = listener.Close()` and do use
+  `newBrowserAdminRelay` + `admin.connect`; the pre-fix source (`git show dd469ce8:…`) must FAIL the
+  guard (`assert.throws /freed before the gate binds it/`) and the current source must PASS, with no
+  `LC_*_ADMIN_PORT` left.
+- Registry: `--browser-manual-order` and `--browser-catalog-media` `-run` regexes now select the witness
+  beside their main gate (`^TestBrowser(ManualOrderLink|AdminRelayHandoffHasNoFreePortWindow)$`,
+  `^TestBrowser(CatalogMedia|AdminRelayHandoffHasNoFreePortWindow)$`); the publish arm already matched
+  it via `AdminRelay.*`. Prepare steps grep all four required relay symbols; a Node registry test locks
+  the widened selections (red log shows the old registry failing it).
+
+### [P2] registration timeout — `connectFixtureAdmin`
+
+`AbortSignal.timeout(1000)` → `AbortSignal.timeout(5000)`; still exactly **one** bounded attempt (no
+retry/restart on a lost ACK). Locked by a new Node test: source must contain `AbortSignal.timeout(5000)`,
+exactly one `await fetch(` and no `for`/`while` inside the function (red log shows the 1 s version failing).
+
+### [P2] AST-parity guard extended
+
+Two new printed-AST classes compared against baseline `9b738e0a` for all eleven gate adapters, ordered
+before the for/spawn/env classes so a mutation reports the specific class:
+1. `env.*`/`childEnv.*` assignment expression statements (e.g. `env.PORT = String(port);`);
+2. every `if` statement whose predicate mentions `status` (the readiness predicate, including outside
+   the polling loop).
+Red mutations (new Node test on `catalog-media-gate.mjs`): dropping `env.PORT = String(port);` fails with
+`environment assignment statements changed`; flipping the readiness `401`→`403` fails with
+`readiness status predicate changed`; inserting a relocated `if (response.status < 500) return port;`
+before the deadline throw fails with the same class. All three red, unmutated file green.
+
+### Round-1 required gates (evidence under `output/gate-port-retry/round1/`)
+
+| Command | Exit | Evidence |
+|---|---:|---|
+| `bash scripts/dev/test-node.sh` | 0 | 26 suites, **1337/1337**, fail 0; the five new guard tests green (log lines 1301–1305); `round1/test-node.log` |
+| `bash scripts/dev/check-gates.sh` | 0 | 82 modes documented, shard-plan ok; `round1/check-gates.log` |
+| red run of the new Node guards on pre-fix source | 1 | not ok 10/11/12 (registry arms, static handoff guard, 5 s lock), ok 13/14 (extended parity + mutations already green); `round1/red-node-guards.log` |
+| `bash scripts/dev/test-local.sh --browser-manual-order` | 0 | witness PASS (chromium+webkit) + `TestBrowserManualOrderLink` 10 cases through the new control seam; `round1/browser-manual-order.log` |
+| `bash scripts/dev/test-local.sh --browser-storefront-publish` | 0 | all 4 relay tests PASS incl. witness (chromium+webkit) + 23 UI cases; `round1/browser-storefront-publish.log` |
+| `bash scripts/dev/test-local.sh --browser-catalog-media` | 0 | witness PASS (chromium+webkit) + 20 cases/4 cells through the new control seam; `round1/browser-catalog-media.log` |
+
+`gofmt -l` clean on the three changed Go files. Browser runs queued on the machine-wide PG lock behind a
+concurrent session's `--browser-click-sweep` (no interference; the shared lock did its job). Evidence
+class: **E3 author environment, BROWSER / REAL_PG with MOCK IdP / synthetic edge**, not LIVE.
+
+### NOT_RUN / follow-up (round 1)
+
+- Independent K3 re-review of this round, required PR CI, full foundation/G07, global sweep/visual-lint,
+  provider SANDBOX/LIVE, production deploy: **NOT_RUN**. Extra WebKit publish remains
+  **FAIL_BASELINE_REPRODUCED** (round 0; predates the relay, not re-run here).
+- **Follow-up task (K3 [P2] #4, out of this unit's write scope):** ~25 non-gate harnesses (UI
+  sweep/audit, standalone buyer drivers, admin runners) still use the reserve-close handoff. They need
+  their own scoped conversion; detached admin process-group and localhost-specific startup protocols
+  must not be replaced mechanically.
+
+## Round 0 delivery — 2026-10-10 (retained history; superseded by round 1 above)
 
 - Branch `unit/gate-port-retry`; final tested source `75233f5ad0537a8eb7f1c982d0578f7200fa3f13`.
 - Original base `9b738e0a`; fetched trunk PR #33 `23568c39` merged in `b8fc7880` before tests.

@@ -2,11 +2,13 @@
 
 // Purpose: keep a browser fixture's public admin origin owned while Next starts on an automatic private port.
 // Depends on: Go net/http/httptest/httputil and browserFront's existing WebKit TLS boundary; no database.
-// Used by: publish, domains and merchant-buyer browser fixtures; GATE-PORT real-socket regression tests.
+// Used by: publish, domains, merchant-buyer, catalog-media and manual-order-link browser fixtures;
+// GATE-PORT real-socket regression tests (incl. the round-1 freed-port handoff red/green witness).
 package foundation_test
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -16,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 	"sync/atomic"
+	"syscall"
 	"testing"
 )
 
@@ -102,6 +105,82 @@ func TestBrowserAdminRelayOwnsExplicitOrigin(t *testing.T) {
 		t.Fatalf("owned cleanup did not release the public listener: %v", err)
 	}
 	reclaimed.Close()
+}
+
+// TestBrowserAdminRelayHandoffHasNoFreePortWindow is the GATE-PORT round-1 (K3 P1) red/green witness for the
+// catalog-media and manual-order-link fixtures. RED: replay their pre-fix handoff on real sockets — reserve a
+// public port, pin the origin with browserFront, free the port, and a deterministic rival takes it inside the
+// window; the explicit-port bind the gate's Next child then performs fails with EADDRINUSE, which
+// startNextWithPortRetry never retries for a caller-supplied port (proved in tests/ci/next-startup.test.mjs).
+// GREEN: the relay handoff frees nothing — the public listener stays owned (the same rival must fail), Next
+// binds an automatic private port and connect() attaches it to the unchanged public origin.
+func TestBrowserAdminRelayHandoffHasNoFreePortWindow(t *testing.T) {
+	for _, engine := range []string{"chromium", "webkit"} {
+		t.Run(engine, func(t *testing.T) {
+			t.Setenv("LC_BROWSER_ENGINE", engine)
+			// ---- RED: the pre-fix reserve-close-handoff of the two converted fixtures ------------------------------
+			reserved, err := net.Listen("tcp", "127.0.0.1:0")
+			if err != nil {
+				t.Fatal(err)
+			}
+			address := reserved.Addr().String()
+			_ = browserFront(t, address) // the pre-fix fixtures pinned the public origin BEFORE freeing the port
+			if err := reserved.Close(); err != nil {
+				t.Fatal(err)
+			}
+			rival, err := net.Listen("tcp", address) // the PR29 window: a parallel process takes the just-freed port
+			if err != nil {
+				t.Fatalf("red witness broken: the freed public admin port was not stealable: %v", err)
+			}
+			explicit, err := net.Listen("tcp", address) // what the gate's Next child did with the caller-supplied LC_*_ADMIN_PORT
+			if explicit != nil {
+				_ = explicit.Close()
+			}
+			if !errors.Is(err, syscall.EADDRINUSE) {
+				t.Fatalf("the explicit-port bind on the stolen port must fail with EADDRINUSE, got %v", err)
+			}
+			if err := rival.Close(); err != nil {
+				t.Fatal(err)
+			}
+
+			// ---- GREEN: the relay handoff the two fixtures use now --------------------------------------------------
+			front := newBrowserAdminRelay(t)
+			stolen, err := net.Listen("tcp", front.server.Listener.Addr().String())
+			if err == nil {
+				_ = stolen.Close()
+				t.Fatal("a rival stole the public admin port while the relay holds it")
+			}
+			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, _ = io.WriteString(w, "ready "+r.Host) // stand-in for the ready automatic-port admin Next
+			}))
+			t.Cleanup(upstream.Close)
+			_, port, err := net.SplitHostPort(upstream.Listener.Addr().String())
+			if err != nil {
+				t.Fatal(err)
+			}
+			recorder := httptest.NewRecorder()
+			front.connect(recorder, httptest.NewRequest("POST", "/admin-upstream", strings.NewReader(`{"port":`+port+`}`)))
+			if recorder.Code != http.StatusNoContent {
+				t.Fatalf("fixture registration: got %d, want 204", recorder.Code)
+			}
+			client := front.server.Client()
+			if engine == "webkit" {
+				client = browserAdminTLSClient(t)
+			}
+			response, err := client.Get(front.origin + "/api/stores")
+			if err != nil {
+				t.Fatal(err)
+			}
+			body, err := io.ReadAll(response.Body)
+			_ = response.Body.Close()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.HasPrefix(string(body), "ready ") {
+				t.Fatalf("the owned public origin did not reach the automatic-port upstream: %q", body)
+			}
+		})
+	}
 }
 
 func TestBrowserAdminRelayPreservesOriginAndTLSHeaders(t *testing.T) {

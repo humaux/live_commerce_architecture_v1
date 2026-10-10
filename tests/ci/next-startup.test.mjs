@@ -159,37 +159,125 @@ test("the real publish-mode registry runs every public-admin ownership regressio
   const run = /-run '([^']+)'/.exec(mode);
   assert.ok(run, "actual registry must expose the Go invocation");
   const selected = new RegExp(run[1]);
-  for (const name of ["TestBrowserStorefrontPublish", "TestBrowserAdminRelayOwnsExplicitOrigin", "TestBrowserAdminRelayPreservesOriginAndTLSHeaders", "TestBrowserAdminRelayPreservesPostCSRFAndRedirect"])
+  for (const name of ["TestBrowserStorefrontPublish", "TestBrowserAdminRelayOwnsExplicitOrigin", "TestBrowserAdminRelayPreservesOriginAndTLSHeaders", "TestBrowserAdminRelayPreservesPostCSRFAndRedirect", "TestBrowserAdminRelayHandoffHasNoFreePortWindow"])
     assert.equal(selected.test(name), true, `the CI mode omits ${name}`);
   assert.equal(selected.test("TestBrowserStoreDomains"), false);
 });
 
-test("all eleven gate adapters preserve original assertions, readiness loops, spawn and environment statements", async () => {
-  const baseline = "9b738e0af64ebd08c25b39f8081d46d4dc5674fb";
-  const files = execFileSync("git", ["ls-tree", "-r", "--name-only", baseline, "tests/storefront"], { encoding: "utf8" }).trim().split("\n").filter((f) => f.endsWith("-gate.mjs"));
-  const printer = ts.createPrinter({ removeComments: true });
+test("the catalog-media and manual-order registries run their gate together with the freed-port handoff regression", () => {
+  for (const [mode, main] of [["--browser-catalog-media", "TestBrowserCatalogMedia"], ["--browser-manual-order", "TestBrowserManualOrderLink"]]) {
+    const dry = execFileSync("bash", ["scripts/dev/test-local.sh", "--dry-run", mode], { encoding: "utf8" });
+    const run = /-run '([^']+)'/.exec(dry);
+    assert.ok(run, `${mode}: actual registry must expose the Go invocation`);
+    const selected = new RegExp(run[1]);
+    assert.equal(selected.test(main), true, `${mode} omits ${main}`);
+    assert.equal(selected.test("TestBrowserAdminRelayHandoffHasNoFreePortWindow"), true, `${mode} omits the freed-port handoff regression`);
+    assert.equal(selected.test("TestBrowserStorefrontPublish"), false, `${mode} widened past its own gate`);
+    assert.equal(selected.test("TestBrowserAdminRelayOwnsExplicitOrigin"), false, `${mode} widened past its own gate`);
+  }
+});
+
+// Round-1 K3 P1: the last commit whose catalog-media/manual-order Go fixtures still freed the reserved public
+// admin port and handed it to the gate as an explicit LC_*_ADMIN_PORT. The old source must fail the guard below.
+const PRE_FIX_HEAD = "dd469ce879e464b71ad9f70fedd9380682721cfc";
+
+test("the converted catalog-media and manual-order Go fixtures no longer free the public admin port (static red/green)", async () => {
+  // The guard the two fixtures must satisfy: no reserve-then-free handoff, an owned relay origin instead,
+  // and the runner-only control seam the gate uses to attach its automatic-port admin.
+  const noFreedPortHandoff = (file, source) => {
+    assert.equal(/_ = listener\.Close\(\)/.test(source), false, `${file}: the public admin listener is freed before the gate binds it`);
+    assert.equal(source.includes("net.Listen(\"tcp\", \"127.0.0.1:0\")"), false, `${file}: the gate still reserves a port it later frees`);
+    assert.match(source, /newBrowserAdminRelay\(t\)/, `${file}: the public admin origin is not continuously owned by the relay`);
+    assert.match(source, /admin\.connect\(w, r\)/, `${file}: the gate cannot register its automatic-port admin`);
+  };
+  for (const [file, portEnv] of [
+    ["tests/foundation/browser_catalog_media_test.go", "LC_CM_ADMIN_PORT"],
+    ["tests/foundation/browser_manual_order_link_test.go", "LC_LINK_ADMIN_PORT"],
+  ]) {
+    const before = execFileSync("git", ["show", `${PRE_FIX_HEAD}:${file}`], { encoding: "utf8" });
+    // RED: the pre-fix source is exactly the collision window (reserve -> browserFront -> Close -> explicit port).
+    assert.ok(before.includes(portEnv) && before.includes("_ = listener.Close()"), `${PRE_FIX_HEAD}:${file} lost the old handoff; the red witness is stale`);
+    assert.throws(() => noFreedPortHandoff(file, before), /freed before the gate binds it/);
+    // GREEN: the current source holds the listener and hands nothing over; the explicit port env is gone.
+    const current = await readFile(file, "utf8");
+    assert.equal(current.includes(portEnv), false, `${file}: the explicit-port handoff survives`);
+    noFreedPortHandoff(file, current);
+  }
+});
+
+test("connectFixtureAdmin keeps one bounded attempt with a CI-host-tolerant timeout", async () => {
+  const source = await readFile("tests/helpers/next-startup.mjs", "utf8");
+  const fn = /^export async function connectFixtureAdmin[\s\S]*?^\}/m.exec(source);
+  assert.ok(fn, "connectFixtureAdmin missing from the shared helper");
+  // K3 P2: 1 s was tight on a loaded CI host; 5 s bounds the single loopback control POST.
+  assert.match(fn[0], /AbortSignal\.timeout\(5000\)/);
+  // The no-blind-retry policy on a lost ACK stays: exactly one fetch, no loop.
+  assert.equal(fn[0].match(/await fetch\(/g).length, 1);
+  assert.equal(/\bfor\b|\bwhile\b/.test(fn[0]), false);
+});
+
+const GATE_BASELINE = "9b738e0af64ebd08c25b39f8081d46d4dc5674fb";
+const gatePrinter = ts.createPrinter({ removeComments: true });
+
+/**
+ * AST parity of one gate adapter against GATE_BASELINE. Preserved classes: whole-file assertion calls,
+ * environment member assignment expression statements (`env.HOSTNAME = "127.0.0.1"; env.PORT = String(port);`),
+ * readiness status predicates wherever they sit in the adapter, readiness `for` loops, spawn calls and
+ * env/childEnv/args/bin variable statements. K3 P2: the two middle classes used to escape the guard, so
+ * dropping env.PORT or changing/moving the readiness predicate passed. Throws naming the violated class.
+ * Returns false when the baseline file has no startNext/startStorefront adapter.
+ */
+function assertGateParity(file, before, currentSource) {
+  const old = ts.createSourceFile(file, before, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const start = old.statements.find((n) => ts.isFunctionDeclaration(n) && ["startNext", "startStorefront"].includes(n.name?.text));
+  if (!start) return false;
+  const current = ts.createSourceFile(file, currentSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const text = (node, source) => gatePrinter.printNode(ts.EmitHint.Unspecified, node, source);
+  const collect = (source, root, predicate) => {
+    const out = []; const visit = (node) => { if (predicate(node, source)) out.push(text(node, source)); ts.forEachChild(node, visit); }; visit(root); return out;
+  };
+  const now = current.statements.find((n) => ts.isFunctionDeclaration(n) && n.name?.text === start.name.text);
+  const assertions = (n, source) => ts.isCallExpression(n) && /^(assert|expect)(?:\.|\(|$)/.test(n.expression.getText(source));
+  assert.deepEqual(collect(current, current, assertions), collect(old, old, assertions), `${file}: original gate assertions changed`);
+  const envAssignment = (n, source) => ts.isExpressionStatement(n) && /^(?:env|childEnv)\./.test(text(n, source));
+  assert.deepEqual(collect(current, now, envAssignment), collect(old, start, envAssignment), `${file}: environment assignment statements changed`);
+  const readiness = (n, source) => ts.isIfStatement(n) && /\bstatus\b/.test(n.expression.getText(source));
+  assert.deepEqual(collect(current, now, readiness), collect(old, start, readiness), `${file}: readiness status predicate changed`);
+  assert.deepEqual(collect(current, now, ts.isForStatement), collect(old, start, ts.isForStatement), `${file}: readiness/env loop changed`);
+  const spawnCall = (n, source) => ts.isCallExpression(n) && n.expression.getText(source) === "spawn";
+  assert.deepEqual(collect(current, now, spawnCall), collect(old, start, spawnCall), `${file}: spawned app/args/env changed`);
+  const envStatement = (n, source) => ts.isVariableStatement(n) && n.declarationList.declarations.some((d) => ["env", "childEnv", "args", "bin"].includes(d.name.getText(source)));
+  assert.deepEqual(collect(current, now, envStatement), collect(old, start, envStatement), `${file}: environment/command changed`);
+  assert.ok(collect(current, now, (n, source) => ts.isCallExpression(n) && n.expression.getText(source) === "startNextWithPortRetry").length === 1, `${file}: shared helper missing`);
+  assert.ok(!/net\.createServer\(|freePort\(|listen\((reserve|probe)\)/.test(now.getText(current)), `${file}: old reservation survives`);
+  return true;
+}
+
+test("all eleven gate adapters preserve original assertions, readiness loops and predicates, spawn and environment statements", async () => {
+  const files = execFileSync("git", ["ls-tree", "-r", "--name-only", GATE_BASELINE, "tests/storefront"], { encoding: "utf8" }).trim().split("\n").filter((f) => f.endsWith("-gate.mjs"));
   let checked = 0;
   for (const file of files) {
-    const before = execFileSync("git", ["show", `${baseline}:${file}`], { encoding: "utf8" });
-    const old = ts.createSourceFile(file, before, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
-    const start = old.statements.find((n) => ts.isFunctionDeclaration(n) && ["startNext", "startStorefront"].includes(n.name?.text));
-    if (!start) continue;
-    checked++;
-    const current = ts.createSourceFile(file, await readFile(file, "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
-    const text = (node, source) => printer.printNode(ts.EmitHint.Unspecified, node, source);
-    const collect = (source, root, predicate) => {
-      const out = []; const visit = (node) => { if (predicate(node, source)) out.push(text(node, source)); ts.forEachChild(node, visit); }; visit(root); return out;
-    };
-    const now = current.statements.find((n) => ts.isFunctionDeclaration(n) && n.name?.text === start.name.text);
-    const assertions = (n, source) => ts.isCallExpression(n) && /^(assert|expect)(?:\.|\(|$)/.test(n.expression.getText(source));
-    assert.deepEqual(collect(current, current, assertions), collect(old, old, assertions), `${file}: original gate assertions changed`);
-    assert.deepEqual(collect(current, now, ts.isForStatement), collect(old, start, ts.isForStatement), `${file}: readiness/env loop changed`);
-    const spawnCall = (n, source) => ts.isCallExpression(n) && n.expression.getText(source) === "spawn";
-    assert.deepEqual(collect(current, now, spawnCall), collect(old, start, spawnCall), `${file}: spawned app/args/env changed`);
-    const envStatement = (n, source) => ts.isVariableStatement(n) && n.declarationList.declarations.some((d) => ["env", "childEnv", "args", "bin"].includes(d.name.getText(source)));
-    assert.deepEqual(collect(current, now, envStatement), collect(old, start, envStatement), `${file}: environment/command changed`);
-    assert.ok(collect(current, now, (n, source) => ts.isCallExpression(n) && n.expression.getText(source) === "startNextWithPortRetry").length === 1, `${file}: shared helper missing`);
-    assert.ok(!/net\.createServer\(|freePort\(|listen\((reserve|probe)\)/.test(now.getText(current)), `${file}: old reservation survives`);
+    const before = execFileSync("git", ["show", `${GATE_BASELINE}:${file}`], { encoding: "utf8" });
+    if (assertGateParity(file, before, await readFile(file, "utf8"))) checked++;
   }
   assert.equal(checked, 11);
+});
+
+test("the parity guard rejects a dropped env.PORT and a changed or relocated readiness predicate (red mutations)", async () => {
+  const file = "tests/storefront/catalog-media-gate.mjs";
+  const before = execFileSync("git", ["show", `${GATE_BASELINE}:${file}`], { encoding: "utf8" });
+  const current = await readFile(file, "utf8");
+  assert.equal(assertGateParity(file, before, current), true); // the shipped adapter passes its own guard
+  // RED 1 (K3 P2): dropping env.PORT used to slip through — no comparison covered expression statements.
+  const dropped = current.replace('env.HOSTNAME = "127.0.0.1"; env.PORT = String(port);', 'env.HOSTNAME = "127.0.0.1";');
+  assert.notEqual(dropped, current, "mutation target missing from the current gate");
+  assert.throws(() => assertGateParity(file, before, dropped), /environment assignment statements changed/);
+  // RED 2: weakening the readiness status predicate fails, named as such (before the loop comparison fires).
+  const weakened = current.replace('if (response.status === (app === "admin" ? 401 : 200)) return port;', 'if (response.status === (app === "admin" ? 403 : 200)) return port;');
+  assert.notEqual(weakened, current, "mutation target missing from the current gate");
+  assert.throws(() => assertGateParity(file, before, weakened), /readiness status predicate changed/);
+  // RED 3: the same predicate relocated OUTSIDE the readiness loop (loop text untouched) still fails.
+  const relocated = current.replace('throw new Error(`owned ${app} readiness deadline`);', 'if (response.status < 500) return port;\n    throw new Error(`owned ${app} readiness deadline`);');
+  assert.notEqual(relocated, current, "mutation target missing from the current gate");
+  assert.throws(() => assertGateParity(file, before, relocated), /readiness status predicate changed/);
 });

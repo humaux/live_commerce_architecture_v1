@@ -16,7 +16,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -100,13 +99,12 @@ func TestBrowserCatalogMedia(t *testing.T) {
 	}
 
 	// Merchant principal that can see only this store (production session issuance and permission checks stay in the path).
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	adminOrigin := browserFront(t, listener.Addr().String())
-	_, adminPort, _ := net.SplitHostPort(listener.Addr().String())
-	_ = listener.Close()
+	// GATE-PORT r1 (K3 P1): the public admin origin stays on a continuously owned Go listener (browserAdminRelay,
+	// like publish/domains/merchant-buyer). Next binds an automatic PRIVATE port — so the shared bind-race retry
+	// helper applies to it — and registers through the runner-only control below. The PR29 reserve-close-handoff
+	// window (freed port stolen before Next binds; explicit ports never retry) is gone.
+	admin := newBrowserAdminRelay(t)
+	adminOrigin := admin.origin
 	idp := newBrowserIDP(t, adminOrigin+"/api/auth/callback")
 	_, _, authority := identityFixture(t)
 	provider, err := oidclogin.New(ctx, oidclogin.Config{Issuer: idp.server.URL, ClientID: browserClientID, RedirectURL: idp.redirect, AllowLoopbackForTests: true})
@@ -135,6 +133,21 @@ func TestBrowserCatalogMedia(t *testing.T) {
 	api := httptest.NewServer(mux)
 	t.Cleanup(api.Close)
 
+	// Runner-only control (random key, ephemeral loopback): attach the ready automatic-port admin Next to the owned public origin.
+	controlKey := randomToken()
+	control := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-Gate-Key") != controlKey {
+			http.Error(w, "forbidden", 403)
+			return
+		}
+		if r.Method == "POST" && r.URL.Path == "/admin-upstream" {
+			admin.connect(w, r) // Runner-only, behind the same X-Gate-Key guard; no product route.
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	t.Cleanup(control.Close)
+
 	ordersBefore := countRows(t, f.owner, `SELECT count(*) FROM checkout.orders WHERE store_id=$1`, f.storeA1)
 	fixturesJSON, _ := json.Marshal(fixtures)
 	cmd := exec.CommandContext(ctx, "node", "tests/storefront/catalog-media-gate.mjs")
@@ -152,7 +165,8 @@ func TestBrowserCatalogMedia(t *testing.T) {
 		"COMMERCE_BUYER_WEB_ENABLED": "1", "COMMERCE_BUYER_DEMO_LABEL": "1",
 		"COMMERCE_BUYER_API_ORIGIN": h.server.URL, "COMMERCE_BUYER_BFF_KEY": h.key,
 		"COMMERCE_BUYER_COOKIE_KEY": brToken(), "COMMERCE_BUYER_SESSION_TTL": "3600",
-		"LC_CM_EVIDENCE": evidence, "LC_CM_ADMIN_PORT": adminPort, "LC_CM_STORE": f.storeA1, "LC_CM_CURRENCY": currency,
+		"LC_CM_EVIDENCE": evidence, "LC_CM_CONTROL": control.URL, "LC_CM_CONTROL_KEY": controlKey,
+		"LC_CM_STORE": f.storeA1, "LC_CM_CURRENCY": currency,
 		"LC_CM_FIXTURES": string(fixturesJSON), "LC_CM_FILES": files,
 	})
 	log := browserLog(t, filepath.Join(evidence, "browser.log"))

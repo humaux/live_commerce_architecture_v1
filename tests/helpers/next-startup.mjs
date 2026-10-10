@@ -20,13 +20,13 @@ export function nextAttemptLog(file, attempt) {
   return attempt === 1 ? file : `${file}.attempt-${attempt}`;
 }
 
-/** Attach a ready automatic-port admin to its Go-owned public origin; never retry/restart on a lost acknowledgement. */
+/** Attach a ready automatic-port admin to its Go-owned public origin: ONE bounded 5 s attempt (K3 P2: 1 s was tight on a loaded CI host); never retry/restart on a lost acknowledgement. */
 export async function connectFixtureAdmin(port, control, key) {
   if (!Number.isInteger(port) || port < 1 || port > 65535 || !/^http:\/\/127\.0\.0\.1:\d+$/.test(control) || !key)
     throw new Error("invalid fixture admin registration");
   const response = await fetch(`${control}/admin-upstream`, {
     method: "POST", headers: { "X-Gate-Key": key, "Content-Type": "application/json" },
-    body: JSON.stringify({ port }), signal: AbortSignal.timeout(1000),
+    body: JSON.stringify({ port }), signal: AbortSignal.timeout(5000),
   });
   if (response.status !== 204) throw new Error(`fixture admin registration refused (${response.status})`);
 }
