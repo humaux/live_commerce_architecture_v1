@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Purpose: keep the gate registry (docs/delivery/GATES.md) and the test runners in sync, plus repo-wide static ratchets.
-# Depends on: git grep, node (registry/architecture tests), scripts/dev/check-headers.sh, scripts/dev/ui-architecture-gate.mjs.
+# Depends on: git grep, Go stdlib contractdrift, node (registry/architecture tests), header and UI architecture ratchets.
 # Used by: CI (.github/workflows/foundation.yml), scripts/dev/release-gate.sh, every unit self-check (AGENT-PREAMBLE §2).
 # check-gates.sh — keep docs/delivery/GATES.md and the test runners honest (unit maintainability).
 #  1. every mode in test-local.sh's registry has a row in GATES.md, and every mode GATES.md names
@@ -29,6 +29,9 @@ else
   # 1 means no match; any other status (bad pathspec, unreadable repo) must fail closed.
   [[ "$grep_exit" == 1 ]] || exit "$grep_exit"
 fi
+# CI-DRIFT: real source inventories and reviewed baseline; missing base refs/new/touched/stale drift fail closed.
+go test ./scripts/dev/contractdrift
+go run ./scripts/dev/contractdrift
 # Browser artifact writes must stay in ignored run roots; history is input, never a mutable output.
 node scripts/dev/check-browser-evidence.mjs
 # UI W0 G-UI1 registry/parity and G-UI3/G-UI5 architecture ratchet.
@@ -109,7 +112,7 @@ if bad:
     sys.exit(1)
 PY
 # Go formatting (2026-10-06: an unformatted test file only surfaced as a CRP10 failure deep in the full PG suite).
-unformatted="$(gofmt -l cmd internal tests migrations 2>/dev/null || true)"
+unformatted="$(gofmt -l cmd internal tests migrations scripts/dev/contractdrift 2>/dev/null || true)"
 if [[ -n "$unformatted" ]]; then printf 'check-gates: gofmt needed:\n%s\n' "$unformatted" >&2; exit 1; fi
 # Browser-tagged test files (//go:build browser) only compile in --browser-* modes, so a helper name clash there passes every
 # PG shard and then breaks every browser gate (trunk a8d029ea: mustJSON redeclared). Type-check both tag sets here.

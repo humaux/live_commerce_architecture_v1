@@ -1,0 +1,145 @@
+[
+  {
+    "case": "methodless",
+    "source_commit": "5f64bd2853b9ae0bb431f471436201f05d703b82",
+    "path": "internal/httpapi/handler.go",
+    "original_sha256": "e0a69e92a818e7c2fcf62ff5997e292188cd8e509840c63a085de4aae4b7f5c8",
+    "restored_sha256": "e0a69e92a818e7c2fcf62ff5997e292188cd8e509840c63a085de4aae4b7f5c8",
+    "mutation_exit": 1,
+    "restored_exit": 0,
+    "blocking_findings": [
+      {
+        "Level": "ERROR",
+        "Reason": "TOUCHED",
+        "Finding": {
+          "kind": "UNRESOLVED",
+          "method": "MOUNT",
+          "path": "/v1/__ci_methodless_probe",
+          "detail": "opaque Go methodless mount; child route identity is unproven",
+          "locations": [
+            {
+              "file": "internal/httpapi/handler.go",
+              "line": 113,
+              "end": 113
+            },
+            {
+              "file": "internal/httpapi/handler.go",
+              "line": 12,
+              "end": 12
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "case": "bff-delete",
+    "source_commit": "5f64bd2853b9ae0bb431f471436201f05d703b82",
+    "path": "apps/admin/app/api/stores/route.ts",
+    "original_sha256": "fb4d85c7afef9f19a75b71b7da5c6566bd04d85adddb566b9dfa43a533cadb31",
+    "restored_sha256": "fb4d85c7afef9f19a75b71b7da5c6566bd04d85adddb566b9dfa43a533cadb31",
+    "mutation_exit": 1,
+    "restored_exit": 0,
+    "blocking_findings": [
+      {
+        "Level": "ERROR",
+        "Reason": "merge-base regression",
+        "Finding": {
+          "kind": "BFF_REMOVED",
+          "method": "GET",
+          "path": "/v1/admin/stores",
+          "detail": "merge-base forwarding mapping removed or retargeted: apps/admin/app/api/stores/route.ts",
+          "locations": [
+            {
+              "file": "apps/admin/app/api/stores/route.ts",
+              "line": 11,
+              "end": 11
+            },
+            {
+              "file": "apps/admin/app/api/stores/route.ts",
+              "line": 17,
+              "end": 17
+            },
+            {
+              "file": "apps/admin/app/api/stores/route.ts",
+              "line": 36,
+              "end": 36
+            },
+            {
+              "file": "apps/admin/app/api/stores/route.ts",
+              "line": 37,
+              "end": 37
+            },
+            {
+              "file": "apps/admin/app/api/stores/route.ts",
+              "line": 38,
+              "end": 38
+            },
+            {
+              "file": "apps/admin/app/api/stores/route.ts",
+              "line": 39,
+              "end": 39
+            },
+            {
+              "file": "apps/admin/app/api/stores/route.ts",
+              "line": 40,
+              "end": 40
+            },
+            {
+              "file": "apps/admin/app/api/stores/route.ts",
+              "line": 41,
+              "end": 41
+            },
+            {
+              "file": "apps/admin/lib/auth.ts",
+              "line": 482,
+              "end": 512
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "case": "hunk-spoof",
+    "source_commit": "5f64bd2853b9ae0bb431f471436201f05d703b82",
+    "path": "internal/httpapi/handler.go",
+    "original_sha256": "e0a69e92a818e7c2fcf62ff5997e292188cd8e509840c63a085de4aae4b7f5c8",
+    "restored_sha256": "e0a69e92a818e7c2fcf62ff5997e292188cd8e509840c63a085de4aae4b7f5c8",
+    "mutation_exit": 1,
+    "restored_exit": 0,
+    "blocking_findings": [
+      {
+        "Level": "ERROR",
+        "Reason": "TOUCHED",
+        "Finding": {
+          "kind": "GO_ONLY",
+          "method": "POST",
+          "path": "/v1/admin/stores/{}/products/bulk-status",
+          "locations": [
+            {
+              "file": "internal/httpapi/handler.go",
+              "line": 120,
+              "end": 120
+            },
+            {
+              "file": "internal/httpapi/handler.go",
+              "line": 163,
+              "end": 163
+            },
+            {
+              "file": "internal/httpapi/handler.go",
+              "line": 163,
+              "end": 166
+            },
+            {
+              "file": "internal/httpapi/handler.go",
+              "line": 352,
+              "end": 377
+            }
+          ]
+        }
+      }
+    ]
+  }
+]
