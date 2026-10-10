@@ -1,0 +1,43 @@
+commit 729afff93aaedda81faf1d1badf44ac3bea9cd85
+Author: humaux <luogangan7@gmail.com>
+Date:   Sat Oct 10 02:01:01 2026 +0800
+
+    ci: install only the Playwright engines each browser mode needs; bounded apt retries (#27)
+    
+    * ci: derive Playwright engines and bound apt dependency retries
+    
+    * docs(ci): deliver mode-specific Playwright deps and retry calibration
+    
+    * test(ci): create the untracked output/playwright parent before mkdtemp (PR #27 review)
+    
+    On a fresh checkout output/playwright does not exist, so five installer tests threw ENOENT and the
+    foundation Node gate failed. Red (dir absent): 5 pass/5 fail; green: 10/10.
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+    
+    * fix(auth): resend countdown reads the clock once (WebKit showed 61 s)
+    
+    sendStep1 called Date.now() twice (setNow, then setResendAt). When the two reads straddled a
+    millisecond, ceil((resendAt-now)/1000) rendered 'Send a new code in 61 s', so the reset
+    enumeration-parity test (known vs unknown address must render identical text) failed on the
+    slower WebKit engine in PR #27 CI run (password-auth step). Not an enumeration leak: the
+    cooldown is a client constant for both. Test unchanged.
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+    
+    ---------
+    
+    Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+
+diff --git a/scripts/dev/pr-modes.mjs b/scripts/dev/pr-modes.mjs
+index b2590974..63ac678e 100644
+--- a/scripts/dev/pr-modes.mjs
++++ b/scripts/dev/pr-modes.mjs
+@@ -49,6 +49,7 @@ export function modeEntries(source) {
+   for (const line of declarations.split("\n").map((line) => line.trim())) {
+     if (!line || line.startsWith("#") || ["lc_select_mode() {", 'case "$1" in', "fi", ";;", "esac", "}", "*) return 1 ;;"].includes(line)) continue;
+     if (/^lc_(?:build|fixture)=[a-z]+$/.test(line) || /^if \[\[ .* \]\]; then$/.test(line)) continue;
++    if (/^lc_browsers=(?:chromium|"chromium webkit")$/.test(line)) continue;
+     const arm = /^(--[a-z0-9-]+|foundation)\)$/.exec(line);
+     if (!arm) throw new Error("unsupported mode registry declaration");
+     arms.push(arm[1]);

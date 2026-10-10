@@ -1,0 +1,13 @@
+✔ every real internal package directory is classified (covered by lc_covers or BACKEND_ONLY-listed) (43.822209ms)
+✔ a new unclassified package fails the gate until covered or explicitly BACKEND_ONLY (26.245ms)
+✔ BACKEND_ONLY_PACKAGES entries are internal packages with a real one-line reason (0.154083ms)
+✔ every browser-universe mode declares lc_covers; a Go-running one must not declare it empty (26.705375ms)
+✔ covers entries must match a real internal package directory; parent prefixes are legal, stale entries are red (22.446208ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 175.546208

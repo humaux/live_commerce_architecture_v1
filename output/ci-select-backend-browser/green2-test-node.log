@@ -1,0 +1,656 @@
+✔ /products/{uuid} redirects permanently to the zh-TW product page (100.440667ms)
+✔ non-uuid ids are 404, never redirected (2.651875ms)
+✔ AT1: the locale redirect preserves the ad-click query without allowing a redirect target (0.463209ms)
+✔ R10: standalone signed signals survive a missing or expired seven-day touch (33.062208ms)
+✔ R10: standalone signals reject expiry, bad signature, duplicates and another host (1.275166ms)
+✔ AT1 R5: browser identity survives expired touch and rolls for ninety days (0.866167ms)
+✔ AT1 R5: missing ad parameters create no cookies; fbclid alone creates no touch (3.376875ms)
+✔ AT1 R5: lc_ad alone updates attribution and does not replace fbc (1.005208ms)
+✔ AT1: host-only first-party cookies contain no PII and read back exactly (0.780042ms)
+✔ AT1: a later valid click replaces the draft but preserves the browser identifier (0.51125ms)
+✔ R10: only a different fbclid replaces fbc and its first-seen timestamp (4.4495ms)
+✔ AT1: malformed and ambiguous links do not overwrite a valid prior touch (1.274792ms)
+✔ AT1: host and key binding reject copied cookies (1.173916ms)
+✔ AT1: duplicates and tampering invalidate the entire envelope (0.6885ms)
+✔ AT1: exactly seven days is valid, the next millisecond and future clicks are not (4.629042ms)
+✔ catalog list query limits equal the Go v2 parser (internal/buyerhttp/catalogv2.go) (27.238083ms)
+✔ collection list cap equals Go maxCollectionsPerStore (9.48325ms)
+✔ design caps equal internal/design/schema.go (nav, sections, pages) (14.120083ms)
+✔ CVS buyer-entered store bounds and return path equal Go (internal/checkout/cvs.go, migration 0093) (26.894209ms)
+✔ transfer view: closed shape and state rules mirror Go validTransferView (3.869375ms)
+✔ proof body and result: five digits, positive minor amount, ISO instant (0.542291ms)
+✔ minorFromText: major units with at most two decimals, never a float surprise (0.55825ms)
+✔ buyer email mirror: one plain address, 254 characters at most (0.572875ms)
+✔ countdown: whole hours and minutes, never negative (1.351042ms)
+✔ copy: three locales carry every key and every refusal code (0.688459ms)
+✔ options: a home row lists modes only with bank_transfer and then needs its window (0.946459ms)
+✔ checkoutInput: a home bank_transfer body, the optional trimmed email, and every refusal before any request (2.233ms)
+✔ order: AWAITING_TRANSFER is a valid commercial state without a hold time (0.646584ms)
+✔ BFF: exact transfer routes, keyed proof PUT, strict body, validated answers, no generic proxy (60.484125ms)
+✔ BFF: transfer refusal codes pass through as definite 422; checkout accepts bank_transfer and a valid email only (98.8325ms)
+✔ D06 order heading follows a settled transfer: never 'waiting for transfer' above a confirmed or expired one (0.1565ms)
+✔ uncertain prepare blocks all mutations; changed cookie context resolves journal (47.496459ms)
+✔ fully parsed local denial clears only its own pending operation (0.93525ms)
+✔ malformed journal, unavailable lock and stale context fail before writes (4.209916ms)
+✔ BPT05 exact handoff permits absent body/key, one fetch, no form persistence (60.264875ms)
+✔ BPT05 wrong handoff form and ordinary writes fail before any fetch (7.73375ms)
+✔ BPT05 unresolved cookie journal blocks handoff; lost response is one fetch without persistence (1.741ms)
+✔ SU02 refresh permits absent body/key, one fetch, no persistence (2.227875ms)
+✔ SU02 refresh rejects a body, a key or a malformed path before any fetch (0.266ms)
+✔ SU02 cancel permits absent body/key, one fetch, no persistence (0.361166ms)
+✔ SU02 cancel rejects a body, a key or a malformed path before any fetch (0.223958ms)
+✔ BPT01 exact private path, headers, body and three-locale one-fetch transport (59.864208ms)
+✔ BPT02 payment routes reject untrusted path, context, headers, key and body before fetch (11.551042ms)
+✔ BPT03 hostile upstream success is sanitized, never returned as payment data (17.05675ms)
+✔ BPT04 every handoff failure is nonretryable, including pre-route and transport loss (104.703458ms)
+✔ SU02 five routes: exact upstream path, method, key, body, one fetch each (14.5755ms)
+✔ SU02 refresh and cancel are keyless and pass every CSRF/context denial before fetch (6.8115ms)
+✔ SU02 every handoff/refresh/cancel failure is nonretryable and sanitized (81.940667ms)
+✔ SU02 hostile Stripe bodies become the sanitized 503; PAYUNi and Stripe bodies stay byte-identical (35.794208ms)
+✔ SU02 prepare accepts only the two known method codes (0.716ms)
+✔ disabled and invalid configuration fail closed before private fetch (89.04425ms)
+✔ private authority, cookie lifecycle and strict local denial (119.926791ms)
+✔ bad host, cookie, query and method never reach private API (8.751666ms)
+✔ stalled inbound POST body is canceled at its deadline without a cookie or private call (2.02675ms)
+✔ R10: Begin forwards independently signed signals; browser attribution and forwarded hosts are not authority (8.039416ms)
+✔ CVS BFF: exact routes, keyed open/store, keyless verify, validated answers, no generic proxy (10.808666ms)
+✔ CVS BFF: contract refusal codes pass through; pay_at_pickup_limit is a definite (non-retryable) 429 (2.088792ms)
+node:internal/modules/package_json_reader:301
+  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+        ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'typescript-api' imported from /Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/apps/storefront/tests/cart-provider-retry.test.mjs
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:301:9)
+    at packageResolve (node:internal/modules/esm/resolve:764:81)
+    at moduleResolve (node:internal/modules/esm/resolve:855:18)
+    at defaultResolve (node:internal/modules/esm/resolve:988:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:697:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:714:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:746:52)
+    at #resolve (node:internal/modules/esm/loader:679:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:599:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:162:33) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v24.15.0
+✖ apps/storefront/tests/cart-provider-retry.test.mjs (121.662833ms)
+✔ fragment grammar accepts only one canonical token (0.511292ms)
+✔ claim projections are closed (0.263125ms)
+✔ claim token rides only its header on B1/B2 and is never echoed (105.129917ms)
+✔ claim-priced cart edits send only SKU and quantity, keeping server price authority (18.135459ms)
+✔ direct-checkout sold-out projection is mandatory, boolean and closed (0.361208ms)
+✔ claim redeem shares the purchase lock, guards recovery and never persists the token (2.167375ms)
+✖ ClaimLink removal projects live-priced survivors on ready and conflict pages (0.455292ms)
+✖ ClaimLink revisit checks out applied A while pending B is sold out or unavailable (0.151958ms)
+✖ ClaimLink refreshes a nothing result after a second tab applied the claim (0.111458ms)
+✖ ClaimLink does not navigate when a buyable claim target is absent or has changed quantity (0.130333ms)
+✖ ClaimLink optional prior-order notice tolerates unreadable storage without bypassing recovery (0.112917ms)
+✔ CVS01 map form: only the two ECPay e-map actions, exact fields, top-level-safe values (4.009375ms)
+✔ CVS02 return path allowlist excludes /claim and anything but the checkout or product page (0.728375ms)
+✔ CVS03 selection projection: VERIFIED<=>pickup, REJECTED<=>reject_code, absent keys read as null (1.573667ms)
+✔ CVS04 buyer-entered store answer and request body (1.234833ms)
+✔ CVS05 store code table (§16.1) keeps leading zeros and per-chain lengths (0.586042ms)
+✔ CVS06 recipient mirror: real-name width 4..10 (CJK=2), no digits/symbols/emoji; 09 mobile (2.074292ms)
+✔ CVS07 checkout draft: name, phone and mode only; read once; corrupt/foreign shapes are dropped (0.345708ms)
+✔ CVS08 return URL: only ?cvs_selection=<uuid> is accepted (0.136042ms)
+✔ CVS09 buyer order projection and copy keys: nothing but PICKED_UP says picked up (0.128209ms)
+✔ CVS10 error codes: field mapping, definite refusals, official links are https constants (0.227541ms)
+✔ CVS11 client transport: verify is the one new keyless POST; the server refusal code rides BuyerClientError.detail (72.715ms)
+✔ every locale x page has a title, an updated line and at least one section (1.71325ms)
+✔ locales share the section count and per-section body count of every page (1.389875ms)
+✔ final text is only the owner-confirmed company facts (CR 81215167 name + registered address); nothing else is final (0.729833ms)
+✔ a legal page is published only when every text on it is final; buyers see no link to an unpublished one (0.673042ms)
+✔ data-deletion path is named in the privacy page of every locale (0.095125ms)
+✔ pendingOwnerText lists exactly the texts that keep a page unpublished and is written for the owner (2.533667ms)
+✔ a live (claim-origin) price replaces the catalog price and strikes it through (0.656708ms)
+✔ without a live price the catalog price and its compare-at are shown unchanged (0.072542ms)
+✔ a live price equal to or above the catalog price is shown as set (strike hidden by the UI guard) (0.05225ms)
+✔ a live price strikes the catalog price, never the variant sale price (0.044084ms)
+✔ order ref: 12 hex (dashes or spaces, any case) or a full id (1.848167ms)
+✔ contact: one email or a phone of 6..20 digits (0.328083ms)
+✔ body is exactly {order_ref, contact}; the answer is exactly {order_id} (0.294333ms)
+✔ BFF lookup: no cookie needed, fresh token goes upstream, cookie only on 200 and it carries that same token (204.680042ms)
+✔ BFF lookup: strict local denial before any private fetch (7.922875ms)
+✔ copy: three locales carry every key (0.236667ms)
+✔ MS4 srcset descriptors use actual decoded widths and deduplicate small renditions (1.443792ms)
+✔ MS1 product rendition allowlist preserves trusted Host and never forwards buyer cookies (30.488917ms)
+✔ MS2 invalid, duplicate, extra, encoded widths and non-product variants fail before fetch (4.428959ms)
+✔ MS3 old-image fallback is never promoted to immutable; committed variants are cacheable (3.01225ms)
+✔ TWD whole amounts show no decimals in every locale and at every magnitude (line, subtotal, total, zero) (43.471667ms)
+✔ cents appear only when there are cents, then always as two digits; the minor-unit arithmetic is untouched (2.981958ms)
+✔ digits come from the currency: JPY none, USD two when there are cents (4.950125ms)
+✔ one formatter: no component, page or lib builds a currency Intl.NumberFormat outside lib/money.ts (45.697541ms)
+✔ locale probe bounds a missing destination head with a route/device diagnostic (4.537042ms)
+✔ locale probe clears its deadline when the real head promise completes (0.471708ms)
+✔ warmup request interception has a precise local deadline and clears its timer (12.83475ms)
+✔ warmup upstream completion has a precise local deadline and clears its timer (1.620709ms)
+✔ warmup timer is cleared on upstream success and upstream rejection (1.807916ms)
+✔ EARLY_HEAD route continues a missing-Referer request without resolving the English barrier (1.786375ms)
+✔ fragment: exactly #o=<order id>&t=<43-char token>; anything else is null (2.313375ms)
+✔ body is exactly {order_id, token, proof}; the answer is exactly the order the link named (0.654917ms)
+✔ BFF link: no cookie needed, fresh token upstream, cookie only on a 200 naming the same order, link token never echoed (225.186834ms)
+✔ BFF link: strict local denial before any private fetch (9.123709ms)
+✔ copy: three locales, one refusal text, a retry and a lookup path (0.122208ms)
+✔ BPU01 fresh payment writes exact metadata before prepare, one bodyless Take, no persistent form (138.132084ms)
+✔ BPU01 lost prepare response replays original key/body only on explicit next click (7.253041ms)
+✔ BPU01 lost handoff is permanently GET-only, even after a second click (0.943583ms)
+✔ BPU01 storage, amount, scope and child/screen fences reject before irreversible writes (0.760667ms)
+✔ BPU01 document/child loss after prepare but before Take leaves exact replay marker (1.417834ms)
+✔ BPU01 malformed server handoff never submits and Take remains nonretryable (20.174792ms)
+✔ BPU01 marker replacement before Take and after Take blocks release/form reuse (67.8825ms)
+✔ BPU01 context replacement after prepare and after Take closes destination without form (57.669666ms)
+✔ BPU01 synchronous destination refuses invalid locale before opening a window (0.434916ms)
+✔ SU03 fresh Stripe pay: marker before prepare, one prepare, one handoff, navigate, URL never stored (72.356583ms)
+✔ SU03 marker replay: lost prepare response replays key/body, no uncertain on PENDING view with leftover marker (28.389667ms)
+✔ SU03 cross-device Continue needs no marker and never prepares (2.355792ms)
+✔ SU03 marker/view matrix: PAYUNi marker on Stripe view and Stripe marker on PAYUNi view send nothing (3.716667ms)
+✔ SU03 any other view renders without a POST (2.113709ms)
+✔ SU03 CREATING: waits on the schedule without the lock, then hands off once when READY (27.027083ms)
+✔ SU03 CREATING budget: 10 reads over 30 s, then the blank child is closed, no POST, no throw (14.543667ms)
+✔ SU03 cancel_requested seen on the re-GET aborts before the handoff POST (0.650959ms)
+✔ SU03 handoff outcomes: CREATING closes child, CLOSED/UNAVAILABLE/error/malformed reject; one POST each, never retried (11.164084ms)
+✔ SU03 Stripe prepare errors, amount/currency mismatch and popup loss stop before any handoff (7.678708ms)
+✔ SU03 two clicks make two handoff POSTs only because there were two clicks; sequential, none from reads (5.072958ms)
+✔ SU03 navigate: validates again, needs an owned blank child, sets used before replace, no URL in errors (2.269625ms)
+✔ SU03 refresh signal: keyless single POST, validated, throttled 1/10 s and 30 per page life, cancel never throttled (2.7675ms)
+✔ SU03 signal failures are single-shot and sanitized: HTTP error, malformed body, wrong order (1.396667ms)
+✔ private quote/option authority fields are required; only exact MANUAL home can checkout (3.929292ms)
+✔ continue shopping advances only ordered version, clears hint, keeps SQL history authoritative (65.687625ms)
+✔ lost next-cart response retries identical key/body and preserves a newer cart (2.778625ms)
+✔ continuation never overwrites an already advanced cart (1.243833ms)
+✔ unknown checkout blocks continuation without any business request (8.543834ms)
+✔ two queued continuation clicks mutate once; stale order ID cannot clear another order (2.766334ms)
+✔ CAS conflict resolves only after a newer cart is read (3.476666ms)
+✔ locator removal failure retains next-cart journal and recovery survives missing locator (6.183667ms)
+✔ order history summary rejects PII/unknown fields and malformed scope IDs (0.141875ms)
+✔ native address validation mirrors printable Unicode, limits and phone; journal forbids PII (6.196ms)
+✔ address lost reply replays exact in-memory intent, then confirms current head (4.042917ms)
+✔ address reload requires explicit new intent and exact observed CAS; stale head never auto-bumps (1.252ms)
+✔ old address receipt cannot confirm another tab's newer current head (0.811375ms)
+✔ a late address CAS winner requires another explicit confirmation, not an automatic version bump (0.493709ms)
+✔ checkout lost reply, queued duplicate and current GET reuse one key and one order (183.442792ms)
+✔ uncertain checkout retains original journal across later 401/403/404/5xx and malformed success (6.1925ms)
+✔ only a fresh definitive denial clears checkout; no order locator is invented (6.611875ms)
+✔ locator storage failure after commit retains same key; reload GET failure keeps locator (3.012292ms)
+✔ locator persisted but journal removal failed resumes pending receipt, not unrelated pointer (0.516708ms)
+✔ unavailable storage, invalid locator and late changed context fail closed (0.243416ms)
+✔ order locator readback mismatch and no-op journal removal both retain checkout recovery (0.448208ms)
+✔ direct claim continuation refuses a newer ordered cart inside the purchase lock (1.627708ms)
+✔ direct claim continuation keeps next-cart recovery after a conflicting clear (4.809084ms)
+✔ collector projection: admitted for derived connections, absent/null for primary (1.699208ms)
+✔ collector rejects identifiers, extra keys and malformed text (0.137458ms)
+✔ disclosure renders the contract §5 line with all three slots substituted (0.113583ms)
+✔ the disclosure line exists exactly when the hosted view returns a collector (0.075541ms)
+✔ a shop or collector name with a replacement pattern is shown literally (0.049292ms)
+✔ OrderPayment renders the disclosure with the view, above every pay button, through the helper only (0.883792ms)
+✔ BPT03 exact valid projection and Go nanosecond UTC timestamps (9.2165ms)
+✔ BPT03 view rejects private fields, inconsistent state and malformed names (0.924542ms)
+✔ BPT03 prepared receipt enforces exact original credit-card amount (0.148334ms)
+✔ BPT03 hosted form and replay are exact, bounded and action-allowlisted (0.235458ms)
+✔ SU01 Stripe views: fresh, both methods, attempt states, PAYUNi unchanged (0.54325ms)
+✔ SU01 Stripe view negatives (0.552833ms)
+✔ SU01 prepared amounts follow the corrected per-currency table (0.144584ms)
+✔ SU01 Stripe handoff union and every redirect_url negative (0.286ms)
+✔ SU01 payment signal is exactly {order_id, scheduled:boolean} (0.907584ms)
+✔ RUI01 refund summary: refunded states, pending money, absent ≡ null (0.816791ms)
+✔ RUI01 refund summary negatives (1.101834ms)
+✔ BPU03 neutral GET and POST return ignore every callback field and cookie (26.110583ms)
+✔ primary origin: exact path/query, same host, and no URL-controlled destination (25.336875ms)
+✔ GET and HEAD use trusted Host, private bounded uncached resolver and exact 301 (30.254875ms)
+✔ no writes redirected; resolution failures fail closed; unknown hosts keep native 404 (2.483125ms)
+✔ policy version is the frozen constant, in the customers-core D4 shape (0.463083ms)
+✔ route table: exactly the four buyer privacy routes, methods and body kinds (1.709625ms)
+✔ body shapes are closed and mirror the frozen Go inputs (no source, no policy_version) (0.438375ms)
+✔ GET privacy validator: closed shape, erased owner holds no consent (0.213459ms)
+✔ consent result and erasure summary validators (0.837125ms)
+✔ buyer export envelope never carries customer_id (0.929334ms)
+✔ failure classification: 410 and erased are the erased state (2.048166ms)
+✔ copy: every locale has the same keys, the ads box discloses that sent events cannot be recalled (0.249541ms)
+✔ selected option photo uses a main display slot without adding a fifth main image (5.742292ms)
+✔ use-cover selection and a main-thumbnail selection restore the original main gallery (0.370875ms)
+✔ cart thumbnail uses variant then catalog image_id, including when main images are absent (0.755833ms)
+✔ migrated four-main/five-detail images stay separate when the option photo changes (0.720333ms)
+✔ real cart-detail composition uses server SKU image_id (v2 detail available) (34.37825ms)
+✔ real cart-detail composition uses server SKU image_id (v2 detail unavailable) (0.613709ms)
+✔ parity: frontend caps equal the Go constants (2.309709ms)
+✔ detail parser: 4 main + 20 detail + option-value images are accepted and mapped (0.707625ms)
+✔ detail parser: 5 main, 21 detail, bad ids and over-cap option images are refused (0.1405ms)
+✔ detail parser: a backend before product-media-v2 (no new keys) still parses with empty defaults (0.074708ms)
+✔ v1 catalog row: images are main-only (<= 4) and image_id is a uuid or null (0.188583ms)
+✔ PRO-S1 code mirror: any case and spaces normalise; impossible codes never become a request (1.225375ms)
+✔ PRO-S2 promotion object: closed keys, kind/value pairing (0.200334ms)
+✔ PRO-S3 quote validator: promotion is optional but never malformed; the discount stays the server's own number (0.284667ms)
+✔ PRO-S4 journal grammar: a quote write may carry one canonical promo_code, nothing else (0.3735ms)
+✔ PRO-S5 copy: three locales cover every refusal code and the same keys (0.488083ms)
+✔ PRO-S6 BFF quote route: promo_code relayed untouched when canonical, refused before the private API otherwise (146.834042ms)
+✔ PRO-S7 BFF: every promo_* refusal is a definite, non-retryable 422 with its own code (25.154709ms)
+✔ demonstration disclosure is explicit and local-only (0.97475ms)
+✔ cart selection preserves unrelated SKUs and the observed CAS version (28.899375ms)
+✔ minor amounts are bounded before multiplication, including zero (0.176292ms)
+✔ delivery identity includes country for one market and method (0.148834ms)
+✔ journal is bound to context and rejects PII/unknown fields (0.669833ms)
+✔ lost response replays exact key/body, then clears only after parsed receipt (43.226708ms)
+✔ RUI02 buyer order admits MERCHANT_SHIPPED only with a SHIPPED head; absent shipment ≡ null (6.84025ms)
+✔ RUI02 shipment shape negatives (incl. unsafe links) (2.478792ms)
+✔ RUI02 history summary admits MERCHANT_SHIPPED (a shipped order must not break the list) (0.605125ms)
+✔ CVSP01 options: CVS rows carry pickup_selection/payment_modes; unavailable rows are a separate shape (1.458083ms)
+✔ CVSP02 CVS destination write: TW only, pickup_id required, empty home address; home unchanged (6.463125ms)
+✔ CVSP03 checkoutInput: payment_mode only for CVS rows and only a mode the row offers (1.944375ms)
+✔ COD confirmation includes expected fee, enforces collect cap and validates immutable order money (1.380834ms)
+✔ CVSP04 buyer order: pay_at_pickup <=> collection_state; cvs_shipment only on a matching CVS destination (0.857208ms)
+✔ CVSP05 journal accepts a CVS destination marker and a checkout body with payment_mode, nothing else (0.593125ms)
+✔ validProduct accepts up to the Go photo cap and rejects one more (2.801834ms)
+✔ design: garbage and hostile documents collapse to the safe default shape (12.414709ms)
+✔ design: links, preview token propagation, nav resolution (9.392125ms)
+✔ design: any merchant accent yields readable button text and link colour (WCAG AA) (5.326791ms)
+✔ variants: resolution, disabled out-of-stock combinations, initial choice, price bounds (0.223083ms)
+✔ catalog-v2 parsers accept the frozen shapes and refuse drift (9.584709ms)
+✔ free-delivery progress words the hint only when a threshold exists (0.757875ms)
+✔ list query: only whitelisted, canonical values survive (1.536292ms)
+✔ seo: JSON-LD cannot break out of its script tag; offers reflect stock and price range (17.514709ms)
+✔ seo: sitemap escapes and carries hreflang; robots refuses everything for a closed host (0.215708ms)
+✔ money: whole amounts drop cents, minor digits come from the currency, filters round-trip (1.562625ms)
+✔ cart line write: replaces one line, keeps the others, 0 removes, CAS version is the one shown (1.928459ms)
+✔ cart problems map to buyer-facing classes without leaking transport detail (0.106375ms)
+✔ checkout options accept the optional free-shipping threshold only as a positive integer or null (0.206ms)
+✔ no-image placeholder copy: exactly the locale label a photo-less card or gallery renders (0.050083ms)
+✔ storefront image caps equal the Go catalog caps (internal/catalog MaxMainImages, MaxDetailImages) (6.935584ms)
+✔ design text limits count code points like Go, never splitting a surrogate pair (0.668875ms)
+✔ G3: same-series cards exclude the current product and never invent absent draft/foreign products (0.79275ms)
+✔ G5: safety guidance exists in three languages without changing the five merchant policy approval boundaries (3.836ms)
+✔ G4: category chips omit empty collections; hidden collections absent from the public API stay absent (0.539334ms)
+node:internal/modules/cjs/loader:1476
+  const err = new Error(message);
+              ^
+
+Error: Cannot find module 'next/dist/build/swc'
+Require stack:
+- /Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/apps/storefront/tests/timezone.test.mjs
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1476:15)
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1049:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1073:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1094:12)
+    at Module._load (node:internal/modules/cjs/loader:1262:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.require (node:internal/modules/cjs/loader:1576:12)
+    at require (node:internal/modules/helpers:153:16)
+    at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/apps/storefront/tests/timezone.test.mjs:19:13
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/apps/storefront/tests/timezone.test.mjs'
+  ]
+}
+
+Node.js v24.15.0
+✖ apps/storefront/tests/timezone.test.mjs (233.229125ms)
+✔ dictionaries have exact parity and non-empty values (0.715709ms)
+✔ locale precedence and language quality mapping (0.662291ms)
+✔ localized paths preserve deep links and reject dangerous input (0.349291ms)
+✔ path locale only matches a canonical first segment (0.050167ms)
+✔ the four constructs render (0.727583ms)
+✔ XSS payloads stay inert text (8.233291ms)
+✔ fuzz: any string over a hostile alphabet renders only whitelisted tags (14.704542ms)
+✔ validator mirrors the Go rules (1.544208ms)
+✔ SDN1 allowlist: exactly the contract routes, per method (2.747167ms)
+✔ SDN1 allowlist: traversal, case, suffix and prefix tricks never match (0.689625ms)
+✔ SDN1 request shape: no query string anywhere, reads carry no body, key, length or transfer-encoding (95.588292ms)
+✔ SDN1 cap: 260 KiB = Go's 256 KiB document + 4 KiB envelope, and a body of exactly the cap is still below it (0.163583ms)
+✔ SDN2 renderer: every XSS payload comes out as whitelisted tags and escaped text only (5.126416ms)
+✔ SDN2 renderer: escape-first means the merchant's text never becomes markup (0.416916ms)
+✔ SDN2 renderer: fuzz (seeded) never produces a tag outside the whitelist (56.690542ms)
+✔ SDN2 client validator rejects what the server rejects (HTML, non-https links, `<` anywhere) (3.075333ms)
+✔ cleanForSave turns cleared fields into null but keeps an empty body (0.556334ms)
+✔ localIssues names each missing mandatory value by server path (0.670875ms)
+✔ moved swaps neighbours and ignores out-of-range moves (0.074709ms)
+✔ parsers accept the exact Go shapes and refuse extra or missing keys (0.377541ms)
+✔ BFF allowlist covers exactly the design resources (0.232125ms)
+✔ validDesignRequest refuses queries and bodies on reads, ignores other paths (194.603708ms)
+✔ designDetails forwards only a bounded {path, reason} pair (0.259667ms)
+✔ accepts exactly the three locale invite paths with a 20-200 char token (1.295041ms)
+✔ rejects anything that is not an exact same-origin relative invite path (0.361083ms)
+✔ rejects percent-encoded variants of the exact shape (0.72375ms)
+✔ the token is an opaque invite token shape, never a URL (0.154875ms)
+✔ fragment carrier: round-trips the exact invite path, is never a query string, and rejects hostile fragments (0.265667ms)
+✔ dashboard: accepts the frozen shape, rejects drift (9.158333ms)
+✔ import result: strict keys, closed error codes, committed never carries errors (0.82325ms)
+✔ csv file guard mirrors the Go bounds (0.107083ms)
+✔ manual options: a COD home row parses with its offer (D01: the page used to refuse the whole list) (0.777583ms)
+✔ manual options: only bank_transfer / pay_at_pickup / cash_on_delivery, key must equal market|country|code (0.132416ms)
+✔ manual result: link is https with the order id and a 43-char capability in the fragment only (0.26625ms)
+✔ draft: first problem, and the body has no price-like field at all (0.463542ms)
+✔ BFF grammar: exactly the seven tools resources (0.081584ms)
+✔ regenerate body/result: exactly {order_id, locale} and a fresh https link naming that order (0.162333ms)
+✔ copy parity: every locale has every key, import rules and error codes (1.239ms)
+✔ callback redirect target is always a same-origin /<locale>/settings path whatever the cookies, store, code or error say (6.266583ms)
+✔ the binding cookie: exactly one canonical store uuid, path-scoped to the callback, HttpOnly, Lax, 10 minutes, Secure (0.199541ms)
+✔ callback query: exactly one code and one state within charset/length bounds; Meta's error=… and repeats are not forwarded (0.6945ms)
+✔ the dialog URL the BFF hands the browser is https://www.facebook.com only (0.135375ms)
+✔ callback error mapping only ever yields fixed codes, never an upstream message (0.123583ms)
+✔ selected Page qualifies only a bare Facebook id, never rewrites another Page or external URL (4.098459ms)
+✔ status: not connected, connected with and without Instagram, and every deviation throws (14.572416ms)
+✔ pick state: closed shape, optional Instagram keys come as a pair, id must match (57.791166ms)
+✔ route grammar: only status/states/pick/disconnect; start and callback are dedicated routes; no query; reads carry no body or key (115.565083ms)
+✔ connect cookie, body and callback redirect never carry code/state and only fixed codes (0.306083ms)
+✔ copy: three locales have the same keys and every Go error code has a message (0.098417ms)
+node:internal/modules/package_json_reader:301
+  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+        ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'typescript-api' imported from /Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/tests/admin/meta-health-model.test.ts
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:301:9)
+    at packageResolve (node:internal/modules/esm/resolve:764:81)
+    at moduleResolve (node:internal/modules/esm/resolve:855:18)
+    at defaultResolve (node:internal/modules/esm/resolve:988:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:697:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:714:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:746:52)
+    at #resolve (node:internal/modules/esm/loader:679:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:599:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:162:33) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v24.15.0
+✖ tests/admin/meta-health-model.test.ts (174.974792ms)
+✔ D02 TWD input: whole dollars only, x100 on the wire (15.770375ms)
+✔ D02 TWD edit text: whole dollars have no decimals; a legacy amount with cents is never shown as another price (0.964875ms)
+✔ D02 display: NT$ without decimals in every language, cents only when there are cents (2.382667ms)
+✔ D02 live-price input (Studio claims): TWD whole dollars, other currencies their decimals (0.294375ms)
+✔ D02 discount code amounts: TWD whole dollars, a decimal is refused before it is sent (1.511209ms)
+✔ D02 no admin copy or component says 'minor units' to the merchant (189.476666ms)
+✔ M06 time: Asia/Taipei everywhere, labelled, never UTC (15.199166ms)
+✔ settings answer: exactly one boolean key (0.760792ms)
+✔ PUT body is the frozen single key (0.071417ms)
+✔ BFF grammar: GET read, PUT keyed command, nothing else (0.189042ms)
+✔ copy: three locales, same keys, no empty text (0.116959ms)
+✔ PRM01 parse: exact keys, kind/value pairing and ranges; duplicates and unknown keys are refused (3.657833ms)
+✔ PRM02 Taipei wall time: +08:00 on the wire, instant shown back in Taipei, impossible dates refused (18.322792ms)
+✔ PRM03 create body: normalised code, major units to minor units, optional fields null, whole body validated (3.918083ms)
+✔ PRM04 update + toggle: version CAS key, form round trip, pause keeps every other field (1.002333ms)
+✔ PRM05 BFF grammar: exactly list, create and update; nothing generic (0.47325ms)
+✔ PRM06 copy: three locales carry the same keys and every refusal code the Go routes can answer (0.544791ms)
+node:internal/modules/cjs/loader:1476
+  const err = new Error(message);
+              ^
+
+Error: Cannot find module 'typescript-api'
+Require stack:
+- /Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/scripts/dev/ui-architecture-gate.mjs
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1476:15)
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1049:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1073:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1094:12)
+    at Module._load (node:internal/modules/cjs/loader:1262:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.require (node:internal/modules/cjs/loader:1576:12)
+    at require (node:internal/modules/helpers:153:16)
+    at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/scripts/dev/ui-architecture-gate.mjs:8:42
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/scripts/dev/ui-architecture-gate.mjs'
+  ]
+}
+
+Node.js v24.15.0
+✖ tests/admin/shell-architecture.test.mjs (79.837375ms)
+node:internal/modules/package_json_reader:301
+  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+        ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@live-commerce/i18n' imported from /Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/apps/admin/lib/claims-copy.ts
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:301:9)
+    at packageResolve (node:internal/modules/esm/resolve:764:81)
+    at moduleResolve (node:internal/modules/esm/resolve:855:18)
+    at defaultResolve (node:internal/modules/esm/resolve:988:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:697:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:714:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:746:52)
+    at #resolve (node:internal/modules/esm/loader:679:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:599:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:162:33) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v24.15.0
+✖ tests/admin/shell-registry.test.ts (146.001041ms)
+node:internal/modules/package_json_reader:301
+  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+        ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'typescript-api' imported from /Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/tests/admin/shell-render.test.ts
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:301:9)
+    at packageResolve (node:internal/modules/esm/resolve:764:81)
+    at moduleResolve (node:internal/modules/esm/resolve:855:18)
+    at defaultResolve (node:internal/modules/esm/resolve:988:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:697:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:714:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:746:52)
+    at #resolve (node:internal/modules/esm/loader:679:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:599:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:162:33) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v24.15.0
+✖ tests/admin/shell-render.test.ts (100.898792ms)
+✔ created address is a strict HTTPS origin matching the assigned handle (0.527167ms)
+✔ DNS instructions must name the requested origin and a bare hostname target (4.589417ms)
+✔ domain kind is authoritative and closed, not inferred from host or token (0.929792ms)
+✔ apex DNS retains every concrete IPv4/IPv6 address and rejects malformed values (1.238292ms)
+✔ pending domain journal preserves exact action/key/target; legacy or corrupt markers never replay (0.471584ms)
+✔ browser-origin gate: every refusal happens before Go is called, for every action (46.780041ms)
+✔ only POST exists on the team routes (2.764166ms)
+✔ unknown action is a local 404 and never reaches Go (5.217083ms)
+✔ strict request grammar: wrong keys, types, ids, roles, locales and token shapes are 422 locally (13.555667ms)
+✔ what reaches Go: BFF key, bearer from the cookie, no Cookie/Origin, body unchanged, exactly one call per request (45.13225ms)
+✔ Go failures are rebuilt locally from allow-listed codes, never retried, and never echo the token (49.232833ms)
+✔ team answer: accepts the frozen shape, null role and OIDC member without email (1.435584ms)
+✔ team answer: unknown key, unknown role, bad id, bad mail state are rejected (0.86ms)
+✔ invite and accept answers are strict (1.637917ms)
+✔ request grammar: every action has an exact key set and rejects junk values (1.406833ms)
+✔ copy: three locales carry the same keys and a label for every role (1.033625ms)
+✔ role-aware navigation: hides entries the member's permissions cannot use; unknown shows all; Team is owner-only (0.396542ms)
+✔ P02 settlements directory rejects missing/link/owner/group/mode with a valid control (620.909041ms)
+✔ preflight health permission grammars and API/worker consistency fail closed (5086.854083ms)
+✔ merchant alert flag is explicit 0|1 and independently requires SMTP (2624.649208ms)
+✔ shared loader makes API/worker LIVE pair file-only before Compose interpolation (749.223583ms)
+✔ export bind accepts omitted JSON false but rejects unsafe source/config mutations (3.104541ms)
+✔ sanctioned operator allowlist and fail-closed gates (fake docker, no network) (3283.253791ms)
+✔ platform operator custody, export mount and binary are wired (339.328041ms)
+✔ actual export bind refuses a missing directory; enabling auto-create is detected (913.56275ms)
+✔ R3 preflight rejects cancelled PAYUNi, validates Page app and keeps LIVE pair mandatory (2130.984ms)
+✔ R3 smoke exercises exact denied probes, accepts 404 only for disabled mounts (296.216167ms)
+✔ positive control: a complete, valid configuration raises no META_LOGIN finding (342.906417ms)
+✔ feature off (COMMERCE_META_LOGIN_CONFIG_ID empty): no rule applies even with the other keys empty (210.39175ms)
+✔ P06: the Page route needs the webhook receiver (209.950042ms)
+✔ P06: sessions come from identity (1017.245791ms)
+✔ P06: without the claims profile nobody sends the private replies (a WARN, not a FAIL) (287.964042ms)
+✔ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("abc") (159.749292ms)
+✔ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("12 34") (153.051ms)
+✔ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("111111111111") (165.792083ms)
+✔ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("0x10") (160.219166ms)
+✔ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("-1") (146.082333ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (wrong host) (167.798167ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (http scheme) (301.112875ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (the ads callback path) (183.43875ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (trailing slash) (229.435ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (query string) (321.523167ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (empty) (147.941125ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("26.0") (216.562625ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("v26") (131.467666ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("v26.0.1") (256.351583ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("latest") (176.750208ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("") (153.706042ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("v1000.0") (259.253416ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION accepts v26.0 (185.395ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION accepts v22.0 (158.798375ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION accepts v99.9 (247.406708ms)
+✔ production without any alert channel is a FAIL (nobody would hear the next outage) (311.906041ms)
+✔ outside production the same gap is only a WARN (210.0795ms)
+✔ a webhook alone satisfies the rule (209.689167ms)
+✔ an e-mail target with a complete relay (host, username, secret) satisfies the rule (1008.076208ms)
+✔ an e-mail target without the relay secret cannot be sent: FAIL in production, WARN elsewhere (455.87825ms)
+✔ the example's CHANGE_ME_SENDER placeholder is not a relay: the e-mail target cannot be sent (153.101167ms)
+✔ LC_ALERT_EMAIL must be one plain address ("not-an-address") (166.101708ms)
+✔ LC_ALERT_EMAIL must be one plain address ("two@fake.invalid,three@fake.invalid") (163.328083ms)
+✔ LC_ALERT_EMAIL must be one plain address ("a b@fake.invalid") (142.426708ms)
+✔ LC_ALERT_EMAIL must be one plain address ("<owner@fake.invalid>") (166.448417ms)
+✔ LC_ALERT_EMAIL must be one plain address ("owner@fake") (303.046584ms)
+✔ storefront cart-line removal is reversible: clicked for real, not guarded (8.107333ms)
+✔ destructive / irreversible / sign-out classification (owner list, en + zh) (1.078625ms)
+✔ alike controls (rows with ids / numbers) share one class key (0.189834ms)
+✔ known defects classify, never silence: stale entries are reported (0.474459ms)
+✔ the markdown ledger has one row per interaction and names the verdict (0.20875ms)
+✔ protocolHrefOK accepts well-formed tel:/mailto: and rejects malformed ones (0.163333ms)
+✔ J1 waits for enabled media and clicks a real chooser; the uploaded cover is bound to the main section (443.787875ms)
+✔ J1 cannot credit a detail-image receipt as the main cover (0.833292ms)
+✔ J1 refuses a failed cover upload rather than continuing to activate (0.269625ms)
+✔ thresholds are the named constants of the brief (2.397666ms)
+✔ R1: document wider than the viewport, and the outermost element past the edge (0.690791ms)
+✔ R2: label tops, control tops and control heights of one visual row (8.770125ms)
+✔ R2: what is one row and what is not (1.500833ms)
+✔ R2: a button beside a field has to line up with its control (0.964375ms)
+✔ R3: a row made tall by stacked controls, a control wider than its cell (6.8685ms)
+✔ R3: a matrix whose EVERY row is doubled by a stacked stock cell (the median cannot see it) (1.226417ms)
+✔ R4: small text, helper text apart, icons and duplicates excepted (7.906125ms)
+✔ R5: tap targets on the 390 viewport only (1.526083ms)
+✔ R6: interactive elements and text boxes that overlap (0.665292ms)
+✔ R7: text clipped inside a control or label (either side), and select values that do not fit (1.176125ms)
+✔ R8: the same visible label twice in one list (1.243083ms)
+✔ evaluate() tags severity, selectRecords() keeps distinct groups first and counts every instance (0.477958ms)
+✔ R9: text and controls flush to the screen edge at 390 (0.888292ms)
+✔ R6/R9 judge the visible (ancestor-clipped) rectangle, not the raw one (integrator ruling 2026-10-05) (0.65875ms)
+✔ R10: a fixed or sticky bar covering main content after scrolling (2.802625ms)
+✔ R11: controls narrower than a usable width (1.450417ms)
+ℹ tests 403
+ℹ suites 0
+ℹ pass 392
+ℹ fail 11
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 17705.068583
+
+✖ failing tests:
+
+test at apps/storefront/tests/cart-provider-retry.test.mjs:1:1
+✖ apps/storefront/tests/cart-provider-retry.test.mjs (121.662833ms)
+  'test failed'
+
+test at apps/storefront/tests/claim.test.mjs:262:1
+✖ ClaimLink removal projects live-priced survivors on ready and conflict pages (0.455292ms)
+  Error: Cannot find module 'next/dist/build/swc'
+  Require stack:
+  - /Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/apps/storefront/tests/claim.test.mjs
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1476:15)
+      at wrapResolveFilename (node:internal/modules/cjs/loader:1049:27)
+      at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1073:10)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1094:12)
+      at Module._load (node:internal/modules/cjs/loader:1262:25)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+      at Module.require (node:internal/modules/cjs/loader:1576:12)
+      at require (node:internal/modules/helpers:153:16)
+      at claimPage (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/apps/storefront/tests/claim.test.mjs:232:57)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/apps/storefront/tests/claim.test.mjs:266:18) {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: [ '/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/apps/storefront/tests/claim.test.mjs' ]
+  }
+
+test at apps/storefront/tests/claim.test.mjs:273:1
+✖ ClaimLink revisit checks out applied A while pending B is sold out or unavailable (0.151958ms)
+  Error: Cannot find module 'next/dist/build/swc'
+  Require stack:
+  - /Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/apps/storefront/tests/claim.test.mjs
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1476:15)
+      at wrapResolveFilename (node:internal/modules/cjs/loader:1049:27)
+      at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1073:10)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1094:12)
+      at Module._load (node:internal/modules/cjs/loader:1262:25)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+      at Module.require (node:internal/modules/cjs/loader:1576:12)
+      at require (node:internal/modules/helpers:153:16)
+      at claimPage (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/apps/storefront/tests/claim.test.mjs:232:57)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/apps/storefront/tests/claim.test.mjs:276:18) {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: [ '/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/apps/storefront/tests/claim.test.mjs' ]
+  }
+
+test at apps/storefront/tests/claim.test.mjs:282:1
+✖ ClaimLink refreshes a nothing result after a second tab applied the claim (0.111458ms)
+  Error: Cannot find module 'next/dist/build/swc'
+  Require stack:
+  - /Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/apps/storefront/tests/claim.test.mjs
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1476:15)
+      at wrapResolveFilename (node:internal/modules/cjs/loader:1049:27)
+      at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1073:10)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1094:12)
+      at Module._load (node:internal/modules/cjs/loader:1262:25)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+      at Module.require (node:internal/modules/cjs/loader:1576:12)
+      at require (node:internal/modules/helpers:153:16)
+      at claimPage (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/apps/storefront/tests/claim.test.mjs:232:57)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/apps/storefront/tests/claim.test.mjs:283:16) {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: [ '/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/apps/storefront/tests/claim.test.mjs' ]
+  }
+
+test at apps/storefront/tests/claim.test.mjs:289:1
+✖ ClaimLink does not navigate when a buyable claim target is absent or has changed quantity (0.130333ms)
+  Error: Cannot find module 'next/dist/build/swc'
+  Require stack:
+  - /Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/apps/storefront/tests/claim.test.mjs
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1476:15)
+      at wrapResolveFilename (node:internal/modules/cjs/loader:1049:27)
+      at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1073:10)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1094:12)
+      at Module._load (node:internal/modules/cjs/loader:1262:25)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+      at Module.require (node:internal/modules/cjs/loader:1576:12)
+      at require (node:internal/modules/helpers:153:16)
+      at claimPage (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/apps/storefront/tests/claim.test.mjs:232:57)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/apps/storefront/tests/claim.test.mjs:291:18) {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: [ '/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/apps/storefront/tests/claim.test.mjs' ]
+  }
+
+test at apps/storefront/tests/claim.test.mjs:299:1
+✖ ClaimLink optional prior-order notice tolerates unreadable storage without bypassing recovery (0.112917ms)
+  Error: Cannot find module 'next/dist/build/swc'
+  Require stack:
+  - /Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/apps/storefront/tests/claim.test.mjs
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1476:15)
+      at wrapResolveFilename (node:internal/modules/cjs/loader:1049:27)
+      at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1073:10)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1094:12)
+      at Module._load (node:internal/modules/cjs/loader:1262:25)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+      at Module.require (node:internal/modules/cjs/loader:1576:12)
+      at require (node:internal/modules/helpers:153:16)
+      at claimPage (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/apps/storefront/tests/claim.test.mjs:232:57)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/apps/storefront/tests/claim.test.mjs:301:18) {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: [ '/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/apps/storefront/tests/claim.test.mjs' ]
+  }
+
+test at apps/storefront/tests/timezone.test.mjs:1:1
+✖ apps/storefront/tests/timezone.test.mjs (233.229125ms)
+  'test failed'
+
+test at tests/admin/meta-health-model.test.ts:1:1
+✖ tests/admin/meta-health-model.test.ts (174.974792ms)
+  'test failed'
+
+test at tests/admin/shell-architecture.test.mjs:1:1
+✖ tests/admin/shell-architecture.test.mjs (79.837375ms)
+  'test failed'
+
+test at tests/admin/shell-registry.test.ts:1:1
+✖ tests/admin/shell-registry.test.ts (146.001041ms)
+  'test failed'
+
+test at tests/admin/shell-render.test.ts:1:1
+✖ tests/admin/shell-render.test.ts (100.898792ms)
+  'test failed'
