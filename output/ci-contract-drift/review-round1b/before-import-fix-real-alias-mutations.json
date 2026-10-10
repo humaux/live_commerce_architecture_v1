@@ -1,0 +1,28 @@
+[
+  {
+    "case": "imported-alias",
+    "source_commit": "6012f01bfff46881133985961f0862e52d31dd73",
+    "path": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+    "mutation_exit": 0,
+    "expected_mutation_exit": 0,
+    "restored_exit": 0,
+    "original_sha256": "8a3c1919f835a5779715aec2162a894f85cb351da74fea6a93fa1ccf4e20e6b6",
+    "restored_sha256": "8a3c1919f835a5779715aec2162a894f85cb351da74fea6a93fa1ccf4e20e6b6",
+    "mutation_seconds": 2.123,
+    "restored_seconds": 0.682,
+    "blocking_findings": []
+  },
+  {
+    "case": "proxy-alias",
+    "source_commit": "6012f01bfff46881133985961f0862e52d31dd73",
+    "path": "apps/admin/proxy.ts",
+    "mutation_exit": 0,
+    "expected_mutation_exit": 0,
+    "restored_exit": 0,
+    "original_sha256": "870aa6165234c16dff0a8f10e102d8aea31198ef6295f24d2f30c4ecaeaf95c2",
+    "restored_sha256": "870aa6165234c16dff0a8f10e102d8aea31198ef6295f24d2f30c4ecaeaf95c2",
+    "mutation_seconds": 0.66,
+    "restored_seconds": 0.661,
+    "blocking_findings": []
+  }
+]

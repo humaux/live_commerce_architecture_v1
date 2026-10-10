@@ -1,0 +1,14 @@
+{
+  "openapi": "3.1.0",
+  "paths": {
+    "/v1/admin/stores/{store}/widgets/{id}": {
+      "get": {}
+    },
+    "/v1/admin/stores/{store}/ghost": {
+      "post": {}
+    },
+    "/v1/admin/stores/{store}/method": {
+      "post": {}
+    }
+  }
+}
