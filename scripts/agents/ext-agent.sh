@@ -20,7 +20,9 @@
 #     secret locations are denied. Write mode allows Edit/Write anywhere the OS lets the owner write (no path sandbox):
 #     write mode is for trusted tasks only; untrusted input runs READONLY=1 (Bash denied, writes only under output/ext-agents/).
 #     Bash allowlist deliberately has no file printers (head/tail/grep/sed/git diff): prefix rules cannot stop them reading
-#     denied paths (PR #38 review).
+#     denied paths (PR #38 review). Absolute permission paths need the "//" prefix ("/x" is project-root relative); a canary
+#     under ~/.config was readable before this fix, denied after (Read, Grep, Glob). Write mode also denies Edit/Write there
+#     (ledger and key files). Accepted structural limit: allowed git commit -F / go test can still read a file in write mode.
 #   - The worktree must be a dedicated git worktree under .worktrees/ (refused otherwise).
 # Never: production hosts, deploys, secrets, buyer PII, merges into release branches (integrator only).
 # Status: MODEL_ONLY until calibrated on real units (see docs/delivery/PROCESS.md §3).
@@ -92,9 +94,9 @@ if [[ ${READONLY:-0} == 1 ]]; then
 {
   "permissions": {
     "allow": ["Read", "Glob", "Grep", "Write(output/ext-agents/**)", "Edit(output/ext-agents/**)"],
-    "deny": ["Bash", "WebFetch", "WebSearch", "Read($HOME/.ssh/**)", "Read($HOME/.config/**)", "Read($HOME/Downloads/**)",
-      "Read($HOME/Desktop/**)", "Read($HOME/.claude/**)", "Read($HOME/.docker/**)", "Read($HOME/.aws/**)", "Read($HOME/.kube/**)",
-      "Read($HOME/.netrc)", "Read($HOME/.npmrc)", "Read($HOME/.kimi-agent-home/**)", "Read(/etc/**)"]
+    "deny": ["Bash", "WebFetch", "WebSearch", "Read(/$HOME/.ssh/**)", "Read(/$HOME/.config/**)", "Read(/$HOME/Downloads/**)",
+      "Read(/$HOME/Desktop/**)", "Read(/$HOME/.claude/**)", "Read(/$HOME/.docker/**)", "Read(/$HOME/.aws/**)", "Read(/$HOME/.kube/**)",
+      "Read(/$HOME/.netrc)", "Read(/$HOME/.npmrc)", "Read(/$HOME/.kimi-agent-home/**)", "Read(//etc/**)"]
   }
 }
 JSON
@@ -110,9 +112,10 @@ cat >"$settings" <<JSON
       "Bash(bash scripts/dev/check-gates.sh:*)", "Bash(bash scripts/dev/check-pkgdocs.sh:*)", "Bash(bash scripts/dev/depmap.sh:*)",
       "Bash(python3 scripts/check_packet.py:*)", "Bash(pnpm -s typecheck:*)", "Bash(pnpm run build:*)", "Bash(node --test:*)",
       "Bash(ls:*)", "Bash(wc:*)"],
-    "deny": ["Read($HOME/.ssh/**)", "Read($HOME/.config/**)", "Read($HOME/Downloads/**)",
-      "Read($HOME/Desktop/**)", "Read($HOME/.claude/**)", "Read($HOME/.docker/**)", "Read($HOME/.aws/**)", "Read($HOME/.kube/**)",
-      "Read($HOME/.netrc)", "Read($HOME/.npmrc)", "Read($HOME/.kimi-agent-home/**)", "Read(/etc/**)",
+    "deny": ["Read(/$HOME/.ssh/**)", "Read(/$HOME/.config/**)", "Read(/$HOME/Downloads/**)",
+      "Read(/$HOME/Desktop/**)", "Read(/$HOME/.claude/**)", "Read(/$HOME/.docker/**)", "Read(/$HOME/.aws/**)", "Read(/$HOME/.kube/**)",
+      "Read(/$HOME/.netrc)", "Read(/$HOME/.npmrc)", "Read(/$HOME/.kimi-agent-home/**)", "Read(//etc/**)",
+      "Edit(/$HOME/.config/**)", "Write(/$HOME/.config/**)", "Edit(/$HOME/.ssh/**)", "Write(/$HOME/.ssh/**)", "Edit(/$HOME/.claude/**)", "Write(/$HOME/.claude/**)", "Edit(/$HOME/.kimi-agent-home/**)", "Write(/$HOME/.kimi-agent-home/**)", 
       "Bash(ssh:*)", "Bash(scp:*)", "Bash(curl:*)", "Bash(wget:*)", "Bash(git push:*)", "Bash(git merge:*)"${ui_deny}]
   }
 }
