@@ -343,6 +343,12 @@ func (m *consoleMock) serve(w http.ResponseWriter, r *http.Request, store string
 // TestBrowserLiveConsoleRealChain runs signed MOCK OIDC, Next and Go with LC-U1 MOCK scenes
 // and LC-U2a real PG comments/inbox services. No LIVE Graph or production acceptance.
 func TestBrowserLiveConsoleRealChain(t *testing.T) {
+	t.Run("workspace", func(t *testing.T) { runBrowserLiveConsole(t, false) })
+	t.Run("labels", func(t *testing.T) { runBrowserLiveConsole(t, true) })
+}
+
+// runBrowserLiveConsole keeps label claims isolated from the frozen one-claim workspace fixture.
+func runBrowserLiveConsole(t *testing.T, labels bool) {
 	if os.Getenv("LC_BROWSER_LIVE_CONSOLE_ACCEPTANCE") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
 		t.Fatal("use scripts/dev/test-local.sh --browser-live-console")
 	}
@@ -353,6 +359,24 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 700*time.Second)
 	defer cancel()
 	comments := newConsoleCommentsFixture(t)
+	if labels {
+		t.Cleanup(func() {
+			// Only this disposable fixture's A3 facts; run before its parent session cleanup.
+			mustExec(t, comments.e.h.f.owner, `DELETE FROM live.comment_prints WHERE tenant_id=$1 AND store_id=$2 AND session_id=$3`, comments.e.h.f.tenantA, comments.e.h.f.storeA1, comments.e.session)
+		})
+		refs := []string{comments.ids["claim_ref"].(string)}
+		for i, ref := range comments.ids["reply_refs"].([]string)[:2] {
+			at := time.Now().UTC().Add(time.Second)
+			// Signed ingress + the real intake worker: no direct claim/print row fabrication.
+			comments.e.postFB(t, ref, "", fmt.Sprintf("A1+%d", i+2), &at, nil)
+			comments.e.apply(t)
+			if claim := comments.e.claimOf(t, ref); claim.Outcome != "ACCEPTED" || claim.Bundle == "" {
+				t.Fatal("W3-U3 synthetic claim not accepted")
+			}
+			refs = append(refs, ref)
+		}
+		comments.ids["print_refs"] = refs
+	}
 	h := comments.e.h
 	mustExec(t, h.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'inventory:write')`, h.f.tenantA, h.f.storeA1, h.actor)
 	narrow, narrowToken := lcPrincipal(t, h.f, h.f.tenantA, []string{h.f.storeA1}, "store:read", "live:read", "inventory:live_adjust")
@@ -599,7 +623,11 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 	sceneJSON, _ := json.Marshal(ids)
 	commentsJSON, _ := json.Marshal(comments.ids)
 	log := browserLog(t, filepath.Join(evidence, "playwright.log"))
-	cmd := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/live-console.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
+	spec := "tests/admin/live-console.spec.ts"
+	if labels {
+		spec = "tests/admin/comment-label-print.spec.ts"
+	}
+	cmd := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", spec, "--reporter=list", "--output="+filepath.Join(evidence, "results"))
 	if grep := os.Getenv("LC_BROWSER_CONSOLE_GREP"); grep != "" {
 		// Optional local focused-spec run; a filtered success is not acceptance of the full mode.
 		cmd.Args = append(cmd.Args, "--grep", grep)

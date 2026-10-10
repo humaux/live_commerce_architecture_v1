@@ -1,0 +1,14 @@
+✔ Host subset: nested Provider and React19 context shadow defaults without sibling leakage (0.7925ms)
+✔ Host subset: provider updates reach stable children and separate roots keep their own values (0.170792ms)
+✔ Host subset: render errors restore context and hook ownership (0.194666ms)
+✔ Host subset: portal children inherit logical context and retain handlers/state (0.156209ms)
+✔ Host subset: portal target/key changes remount children and removal runs cleanup (0.140542ms)
+✔ Host subset: createPortal rejects invalid DOM targets rather than swallowing children (0.082792ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 251.970125

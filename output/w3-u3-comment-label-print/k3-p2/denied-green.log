@@ -1,0 +1,17 @@
+✔ Host subset: nested Provider and React19 context shadow defaults without sibling leakage (11.751084ms)
+✔ Host subset: provider updates reach stable children and separate roots keep their own values (0.264916ms)
+✔ Host subset: render errors restore context and hook ownership (0.263084ms)
+✔ Host subset: portal children inherit logical context and retain handlers/state (0.309416ms)
+✔ Host subset: portal target/key changes remount children and removal runs cleanup (0.16325ms)
+✔ Host subset: createPortal rejects invalid DOM targets rather than swallowing children (0.098167ms)
+✔ W3U3 denied 401 resets busy and running without remount (14.000084ms)
+✔ W3U3 denied 403 resets busy and running without remount (1.483125ms)
+✔ W3U3 denied 404 resets busy and running without remount (1.242166ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 402.509875

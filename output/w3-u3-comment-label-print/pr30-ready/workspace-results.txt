@@ -1,0 +1,4 @@
+2 failed
+21 passed
+failed live-console.spec.ts:219:48
+failed live-console.spec.ts:219:48

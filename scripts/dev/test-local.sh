@@ -455,13 +455,14 @@ case "$1" in
     lc_browsers=chromium
     lc_prepare() {
   test -f tests/admin/live-console.spec.ts
+  test -f tests/admin/comment-label-print.spec.ts
   test -f tests/foundation/browser_live_console_test.go
   grep -q '^func TestBrowserLiveConsoleRealChain' tests/foundation/browser_live_console_test.go
   mkdir -p output/playwright
     }
     lc_run() {
   LC_BROWSER_LIVE_CONSOLE_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.2 go test -race -tags browser -count=1 -timeout=780s -run '^TestBrowserLiveConsoleRealChain$' -v ./tests/foundation
-  printf 'PASS: LC-U1 MOCK Console and LC-U2a REAL_PG comment/inbox browser; MOCK Graph only, no LIVE provider acceptance.\n'
+  printf 'PASS: LC-U1 MOCK Console and LC-U2a REAL_PG comment/inbox plus W3-U3 real print facts/browser CSS; MOCK Graph only, no physical-printer or LIVE provider acceptance.\n'
     }
     ;;
   --browser-claim-checkout)

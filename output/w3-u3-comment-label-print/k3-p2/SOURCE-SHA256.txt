@@ -1,0 +1,4 @@
+b16f85ad5f107a9145998bbbfad5ece4c1e0a93b392d98fef59dc610898f5a3a  apps/admin/components/CommentLabelPrint.tsx
+c5f1b3f7a685c1fd284cc03416f6b96cdaf509f71f114acb19bf3bf3bd12b156  tests/admin/comment-label-print.spec.ts
+9545fee79d4b021d1e659860c789f6245d3d998e6508b10a41d6b26e850b9205  tests/admin/comment-label-print.test.ts
+d10b09b8093bae411b11a35c1f820a07c052155ca030ddc1ca04fd19250c53fc  scripts/dev/test-node.sh

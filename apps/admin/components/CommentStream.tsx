@@ -21,6 +21,7 @@ import {
 import { useCommentStream } from "@/src/features/live/use-comment-stream";
 import { BuyerPanel } from "./BuyerPanel";
 import { CommentReply } from "./CommentReply";
+import { CommentLabelPrint, CommentLabelToolbar, CommentLabelAction } from "./CommentLabelPrint";
 
 /** Keep stream/list/selection tied to one server-authorised store/session, with no identity guessing. */
 export function CommentStream({
@@ -145,6 +146,9 @@ export function CommentStream({
     } finally { if (generation === request.current) paging.current = false; }
   };
   return (
+    <CommentLabelPrint key={`${store.id}:${session}:${stream.resetGeneration}:${privacy.visible}:${privacy.revision}`}
+      locale={locale} store={store.id} session={session} rows={stream.buffer.items}
+      allowed={permitted(store, "live:manage")} active={privacy.visible && !privacy.blocked.current && !resource} onDenied={privacy.expire}>
     <div className="comment-workspace" data-testid="comment-workspace">
       <section
         className="comment-stream"
@@ -230,6 +234,7 @@ export function CommentStream({
           </>
         ) : (
           <>
+            <CommentLabelToolbar />
             {!rows.length && (
               <p role="status">{stream.busy ? c.loading : c.empty}</p>
             )}
@@ -273,6 +278,7 @@ export function CommentStream({
                   >
                     {c.select}
                   </button>
+                  <CommentLabelAction row={row} />
                 </li>
               ))}
             </ul>
@@ -316,5 +322,6 @@ export function CommentStream({
         )}
       </aside>
     </div>
+    </CommentLabelPrint>
   );
 }

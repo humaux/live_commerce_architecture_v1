@@ -1,0 +1,180 @@
+commit 58510545f021d40dcc145c2f3531363e5aa47a81
+Author: luogangan7-lgtm <luogangan7@gmail.com>
+Date:   Sat Oct 10 03:09:31 2026 +0800
+
+    fix(live): reconcile revoked read scope without delaying denial
+    
+    Co-Authored-By: Codex <noreply@openai.com>
+
+diff --git a/tests/admin/inbox-bff.test.ts b/tests/admin/inbox-bff.test.ts
+index 499445cd..8d632639 100644
+--- a/tests/admin/inbox-bff.test.ts
++++ b/tests/admin/inbox-bff.test.ts
+@@ -6,7 +6,7 @@ import { randomBytes } from "node:crypto";
+ import { createServer } from "node:http";
+ import { createRequire, registerHooks } from "node:module";
+ import type { AddressInfo } from "node:net";
+-import { test } from "node:test";
++import { test, type TestContext } from "node:test";
+ import { fileURLToPath, pathToFileURL } from "node:url";
+ 
+ const adminRoot = fileURLToPath(new URL("../../apps/admin/", import.meta.url));
+@@ -52,12 +52,29 @@ let answer: { status: number; body: string; contentType?: string } = {
+   body: JSON.stringify({ items: [], next_cursor: "", unread_total: 0 }),
+ };
+ let storesStatus = 200;
++// Network-edge plans exercise scope revocation between the BFF check and the Go read.
++type StoreAnswer = { status: number; body: unknown; delay?: number; hold?: boolean; onStart?: () => void; onClose?: () => void };
++let storesAnswers: StoreAnswer[] | null = null;
++let storeChecks = 0;
++const storeAuthorities: boolean[] = [];
++let readDelay = 0, afterRead: (() => void) | undefined;
+ const upstream = createServer((req, res) => {
+   const chunks: Buffer[] = [];
+   req.on("data", (chunk) => chunks.push(chunk));
+   req.on("end", () => {
+     res.setHeader("content-type", "application/json");
+     if (req.url === "/v1/admin/stores") {
++      storeChecks++;
++      storeAuthorities.push(req.headers.authorization === `Bearer ${session}`);
++      const planned = storesAnswers?.shift();
++      if (planned) {
++        res.statusCode = planned.status;
++        planned.onStart?.();
++        if (planned.hold) { res.on("close", () => planned.onClose?.()); return; }
++        if (planned.delay) { setTimeout(() => res.end(JSON.stringify(planned.body)), planned.delay); return; }
++        res.end(JSON.stringify(planned.body));
++        return;
++      }
+       res.statusCode = storesStatus;
+       res.end(
+         JSON.stringify(
+@@ -80,7 +97,8 @@ const upstream = createServer((req, res) => {
+       body: Buffer.concat(chunks).toString(),
+     });
+     res.statusCode = answer.status;
+-    res.end(answer.body);
++    const finish = () => { afterRead?.(); res.end(answer.body); };
++    if (readDelay) setTimeout(finish, readDelay); else finish();
+   });
+ });
+ await new Promise<void>((resolve) => upstream.listen(0, "127.0.0.1", resolve));
+@@ -97,6 +115,7 @@ const route = await import(
+ );
+ test.after(() => upstream.close());
+ type Options = {
++  signal?: AbortSignal;
+   method?: string;
+   query?: string;
+   body?: unknown;
+@@ -125,6 +144,7 @@ async function call(path: string, over: Options = {}) {
+     {
+       method,
+       headers,
++      ...(over.signal ? { signal: over.signal } : {}),
+       ...(method !== "GET" && method !== "HEAD"
+         ? { body: over.raw ?? JSON.stringify(over.body ?? {}) }
+         : {}),
+@@ -143,6 +163,102 @@ async function call(path: string, over: Options = {}) {
+   };
+ }
+ const base = `inbox/conversations/${cid}`;
++const visibleStores = { items: [{ id: store, name: "Synthetic store", currency: "TWD" }] };
++function scopeRace(t: TestContext, fresh: StoreAnswer) {
++  const previous = answer;
++  storesAnswers = [{ status: 200, body: visibleStores }, fresh];
++  storeChecks = 0; storeAuthorities.length = 0;
++  answer = { status: 403, body: JSON.stringify({ code: "forbidden", message: "DO_NOT_FORWARD" }) };
++  t.after(() => { storesAnswers = null; answer = previous; readDelay = 0; afterRead = undefined; });
++}
++for (const [path, query] of [
++  ["inbox/buyer-panel", `?bundle_id=${cid}`],
++  ["inbox/conversations", `?filter=live_comment&session_id=${cid}`],
++  ["message-templates", ""],
++  [`live-sessions/${cid}/comments`, ""],
++]) test(`W3U3 revoked scope after ${path} read admission is 404`, async t => {
++  scopeRace(t, { status: 200, body: { items: [] } });
++  const before = seen.length, result = await call(path, { query });
++  assert.equal(result.status, 404);
++  assert.equal(result.body.code, "not_found");
++  assert.equal(seen.length, before + 1, "never replay the private read");
++  assert.equal(storeChecks, 2, "scope proof is fresh, not the original list");
++  assert.equal(storeAuthorities.every(Boolean), true, "same authenticated bearer for both checks");
++  assert.match(result.headers.get("cache-control") ?? "", /no-store/);
++  assert.equal(result.headers.get("referrer-policy"), "no-referrer");
++  assert.equal(result.headers.has("set-cookie"), false, "store loss is not logout");
++  assert.doesNotMatch(JSON.stringify(result.body), /DO_NOT_FORWARD/);
++});
++test("W3U3 genuine read permission denial stays 403", async t => {
++  scopeRace(t, { status: 200, body: visibleStores });
++  const result = await call("inbox/buyer-panel", { query: `?bundle_id=${cid}` });
++  assert.equal(result.status, 403); assert.equal(result.body.code, "forbidden");
++  assert.equal(storeChecks, 2); assert.equal(result.headers.has("set-cookie"), false);
++});
++for (const fresh of [
++  { status: 503, body: { code: "unavailable" } },
++  { status: 401, body: { code: "unauthorized" } },
++  { status: 200, body: { items: [{ id: store, name: null, currency: "TWD" }] } },
++]) test(`W3U3 unproven scope loss (${fresh.status}) preserves the denial`, async t => {
++  scopeRace(t, fresh);
++  const result = await call("inbox/buyer-panel", { query: `?bundle_id=${cid}` });
++  assert.equal(result.status, 403); assert.equal(result.body.code, "forbidden");
++  assert.equal(storeChecks, 2); assert.equal(result.headers.has("set-cookie"), false);
++});
++test("W3U3 write denial is not scope-reconciled or replayed", async t => {
++  scopeRace(t, { status: 200, body: { items: [] } });
++  const before = seen.length;
++  const result = await call(`live-sessions/${cid}/comments/123_456/print`, { method: "POST", body: {} });
++  assert.equal(result.status, 403); assert.equal(result.body.code, "forbidden");
++  assert.equal(storeChecks, 1); assert.equal(seen.length, before + 1);
++  assert.equal(seen.at(-1)?.headers["idempotency-key"], "synthetic-receipt");
++});
++test("W3U3 unknown upstream 403 never becomes an authoritative scope refusal", async t => {
++  scopeRace(t, { status: 200, body: { items: [] } });
++  answer = { status: 403, body: JSON.stringify({ code: "non_contract_code" }) };
++  const result = await call("inbox/buyer-panel", { query: `?bundle_id=${cid}` });
++  assert.equal(result.status, 503); assert.equal(result.body.code, "retry_later");
++  assert.equal(storeChecks, 1);
++});
++test("W3U3 successful read keeps one scope check and one private read", async t => {
++  scopeRace(t, { status: 200, body: { items: [] } });
++  answer = { status: 200, body: JSON.stringify({ items: [], next_cursor: "", unread_total: 0 }) };
++  const before = seen.length, result = await call("inbox/conversations");
++  assert.equal(result.status, 200); assert.equal(storeChecks, 1); assert.equal(seen.length, before + 1);
++});
++test("W3U3 stalled scope proof cannot delay a known denial past the privacy budget", { timeout: 10000 }, async t => {
++  let closed!: () => void;
++  const cancelled = new Promise<void>(resolve => { closed = resolve; });
++  scopeRace(t, { status: 200, body: { items: [] }, hold: true, onClose: closed });
++  storesAnswers![0].delay = 60; readDelay = 60;
++  const before = seen.length, started = performance.now();
++  const result = await call("inbox/buyer-panel", { query: `?bundle_id=${cid}` });
++  assert.equal(result.status, 403); assert.equal(result.body.code, "forbidden");
++  assert.ok(performance.now() - started < 1200, "known denial must not become the client's 8s timeout/503");
++  await cancelled;
++  assert.equal(storeChecks, 2); assert.equal(seen.length, before + 1);
++});
++test("W3U3 elapsed request budget skips scope proof rather than prolonging the denial", { timeout: 10000 }, async t => {
++  scopeRace(t, { status: 200, body: visibleStores });
++  let clock = 100;
++  t.mock.method(performance, "now", () => clock);
++  afterRead = () => { clock = 7600; };
++  const result = await call("inbox/buyer-panel", { query: `?bundle_id=${cid}` });
++  assert.equal(result.status, 403); assert.equal(result.body.code, "forbidden");
++  assert.equal(storeChecks, 1, "no proof after the absolute deadline");
++});
++test("W3U3 request cancellation also cancels scope proof and preserves the original denial", { timeout: 10000 }, async t => {
++  const controller = new AbortController();
++  let closed!: () => void;
++  const cancelled = new Promise<void>(resolve => { closed = resolve; });
++  scopeRace(t, { status: 200, body: { items: [] }, hold: true, onStart: () => controller.abort(), onClose: closed });
++  const before = seen.length, started = performance.now();
++  const result = await call("inbox/buyer-panel", { query: `?bundle_id=${cid}`, signal: controller.signal });
++  assert.equal(result.status, 403); assert.equal(result.body.code, "forbidden");
++  assert.ok(performance.now() - started < 1000, "abort must reach the identity fetch");
++  await cancelled;
++  assert.equal(seen.length, before + 1);
++});
+ test("PR18 real BFF preserves invalid_ref and cursor errors without upstream retry", async t=>{
+   t.after(()=>{answer={status:200,body:JSON.stringify({items:[],next_cursor:"",unread_total:0})};});
+   answer={status:422,body:JSON.stringify({code:"invalid_ref"})};

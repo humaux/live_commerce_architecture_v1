@@ -1,0 +1,12 @@
+[
+  {
+    "locale": "en",
+    "width": 1586,
+    "page": "/studio/console",
+    "control": "W3U3 lost A3 acknowledgement retries the same fact key",
+    "operation": "real-click contract case",
+    "expected": "All unchanged contract assertions pass",
+    "actual": "Test status: failed; see error-context.md",
+    "result": "FAIL"
+  }
+]
