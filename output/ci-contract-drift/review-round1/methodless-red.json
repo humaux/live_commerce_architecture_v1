@@ -1,0 +1,28 @@
+{
+  "exit": 1,
+  "errors": 1,
+  "findings": [
+    {
+      "Level": "ERROR",
+      "Reason": "TOUCHED",
+      "Finding": {
+        "kind": "UNRESOLVED",
+        "method": "MOUNT",
+        "path": "/v1/__ci_methodless_probe",
+        "detail": "opaque Go methodless mount; child route identity is unproven",
+        "locations": [
+          {
+            "file": "internal/httpapi/handler.go",
+            "line": 113,
+            "end": 113
+          },
+          {
+            "file": "internal/httpapi/handler.go",
+            "line": 12,
+            "end": 12
+          }
+        ]
+      }
+    }
+  ]
+}

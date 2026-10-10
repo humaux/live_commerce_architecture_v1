@@ -1,0 +1,7 @@
+=== RUN   TestGoReviewRouteSuffixCLI
+    go_review_cli_test.go:81: constructor name concealed business route: exit0 INFO () GO_405_FALLBACK GET /v1/review_suffix internal/httpapi/routes.go:18 explicit wrong-method fallback
+        SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=0 GO_405_FALLBACK=1
+--- FAIL: TestGoReviewRouteSuffixCLI (0.91s)
+FAIL
+FAIL	livecommerce/scripts/dev/contractdrift	2.007s
+FAIL
