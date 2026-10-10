@@ -1,6 +1,33 @@
 # LC-U3 create-order drawer delivery
 
-## Current batch — trunk merge + W3-U2 blocklist warning (2026-10-09)
+## Scope-404复验 — PR36主干合并（2026-10-10）
+
+- 本轮只复验 LCU2_404。合并提交/测试源码 **`463cd8f0bfffe7a2031d559b9f240a9c966a205a`** 包含 SCOPE-404 PR36 **`287e08aa6c694030333dd00797c0d3bbac15abc6`**。三条 LC-U3 P2 继续暂停；本轮不代表整 PR32 或待修代码验收。
+- 七项暂停修改已逐文件备份，只暂存这七个 tracked 路径；确切 stash **`d1f7cc33821ae7c92ef8cf882b64f43f7ef82cb7`**，原 patch SHA256 **`7cfd496df313c80bbec909d79b5ec236d931e4fe5e77e6be239052a9c37dd11b`**。未暂存 owner 的 untracked 文件，不使用 autostash/pop0；报告提交后再恢复，备份保留。
+- `live-console.spec.ts`、Go harness、`test-local.sh` 与合并前逐字节相同；spec SHA256 `3df8c6fa47d7e559ff535ed7f146d3dec307ce4d973f66ab65906216b4d1182b`。原 LCU2_404 15s 等404和6500ms零轮询观察、Go780s模式边界均未改动；未过滤测试或开启 calibration。
+
+| 现有原完整模式／本地检查 | 结果 |
+| --- | --- |
+| `env -u LC_BROWSER_CONSOLE_GREP -u LC_CONSOLE_CALIBRATION GOFLAGS=-p=1 bash scripts/dev/test-local.sh --browser-live-console` | 0；Go PASS，Playwright **23 passed**；完整模式398.598s |
+| `bash scripts/dev/test-node.sh` | 0；**1352** passes |
+| `pnpm --dir apps/admin exec tsc --noEmit -p .` | 0 |
+| `bash scripts/dev/check-gates.sh` | 0 |
+| `go run ./scripts/dev/contractdrift -json` | 0；errors0 |
+| `bash scripts/dev/test-local.sh --list` | 0；registry保持主干布局 |
+
+| LCU2_404视图 | 实际HTTP | privateRows / buyerPanel | sessionRetained | postLossReads |
+| --- | --- | --- | --- | --- |
+| all | 404 | 0 /0 | true | 0 |
+| private | 404 | 0 /0 | true | 0 |
+
+原 spec 先要求 comment/buyer可见，再真实PG撤 grant，等待实际网络404，验证全部私密状态清空、登录session不变。恢复grant后6500ms零读取，reload后重新出现comment；没有响应拦截代替平台修复。只读独立证据复核（E1，未复跑）确认这两份输出及源码未改，无本轮缺口。
+
+证据 **E3 REAL_PG + Chromium/生产Next/BFF/Go，MOCK IdP/Graph**，不声称 LIVE。四个最终runner记录同一源码 hash **`d3659b938cdfa3e80a4cd32e549a2008ec809897daa181239d997dfd169d9ece`**、clean tracked status、历史output hash全程不变。原始日志及status：`output/playwright/lc-u3-merge-validation/pr36-{live-console-full,node,tsc,gates}.{log,status.json}`；browser：`output/playwright/run.2mqhP0B2/live-console-3145764804/grant-revocation-{all,private}.json`。独立索引、stash/逐文件备份及源码对照：`output/playwright/lc-u3-pr36-recheck/`。浏览器生成证据留在 ignored run roots，不新增tracked浏览器产物。
+
+本轮不改产品、测试、路由、契约或超时；只合主干并记录验证。paused WIP 不属于测试源码或本轮验收，恢复后也不能用此结果声称WIP已通过。manual-order/新key calibration及三P2验证、全foundation/G07、真实provider/LIVE/部署均 NOT_RUN。提交不push、不回复GitHub；后续复核/推送由集成方执行。
+
+
+## Historical batch — trunk merge + W3-U2 blocklist warning (2026-10-09)
 
 - Source commit **`3a0f6aa1b36c246127986eca38342c0516544935`**, parents old K3-reviewed `f515dcdb` and trunk `4ff99766`. Branch `unit/lc-u3-create-order-drawer`; own worktree unchanged. No push/deployment. Parent model/effort is not exposed by this runtime; read-only explorers explicitly used `gpt-6.1-sol/high`.
 - Trunk registry is byte-identical (82 modes, `--list` exit0), along with the 13 reviewed LC-U2a seams/tests. Merge preserves trunk privacy/cursor/parcel/import routes and reapplies the six U3 CommentStream drawer hooks.
