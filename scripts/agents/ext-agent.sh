@@ -45,7 +45,9 @@ case "$provider" in
 # mode. Use READONLY=1 for untrusted input; never point write mode at untrusted trees.
 # anthropic = owner's Claude API credits (owner 2026-10-10: $200 grant, "注意额度控制"). User-level key + Default workspace id from
   # anthropic.env (ANTHROPIC_API_KEY, ANTHROPIC_WORKSPACE_ID). Two hard budget layers: --max-budget-usd per run, and a ledger
-  # outside the repo whose total may not pass ANTHROPIC_BUDGET_USD (default 180 of the 200 grant).
+  # outside the repo whose total may not pass ANTHROPIC_BUDGET_USD (default 180 of the 200 grant). --max-budget-usd is a
+  # client-side estimate and can overshoot slightly, so both caps are soft guards: the default 180 leaves $20 of the real $200
+  # grant as overshoot headroom, and the prepaid grant itself is the provider-side hard ceiling (spend stops when it is used).
   anthropic) model=${MODEL:-claude-sonnet-5-5}; base_url="https://api.anthropic.com"; key_file="$HOME/.config/livecommerce/anthropic.env"; key_var=ANTHROPIC_API_KEY
     case "$model" in claude-sonnet-5-5|claude-opus-5-5|claude-haiku-5-5) ;; *) echo "anthropic MODEL must be claude-sonnet-5-5, claude-opus-5-5 or claude-haiku-5-5" >&2; exit 2 ;; esac ;;
   *) echo "PROVIDER must be kimi, aliyun, deepseek or anthropic" >&2; exit 2 ;;
