@@ -1,0 +1,10 @@
+=== RUN   TestReviewR1BGlobalNamespaceSinkRealCLI
+=== RUN   TestReviewR1BGlobalNamespaceSinkRealCLI/reached_computed_sink
+    review_global_namespace_cli_test.go:39: computed sink value escaped: 0 WARNING (legacy) BFF_NO_GO DELETE /v1/admin/stores/{}/customers/tags/{} apps/admin/app/api/stores/[store]/customers/tags/[tag]/route.ts:9, apps/admin/app/api/stores/[store]/customers/tags/[tag]/route.ts:12, apps/admin/app/api/stores/[store]/customers/tags/[tag]/route.ts:14, apps/admin/lib/customer-tags-bff.ts:4, apps/admin/lib/customer-tags-request.ts:11, apps/admin/lib/customer-tags-request.ts:27, apps/admin/lib/customer-tags-request.ts:28, apps/admin/lib/customer-tags-request.ts:29, apps/admin/lib/customer-tags-request.ts:30, apps/admin/lib/customer-tags-request.ts:31, apps/admin/lib/customer-tags-request.ts:32, apps/admin/lib/customer-tags-request.ts:33, apps/admin/lib/customer-tags-request.ts:34, apps/admin/lib/customer-tags-request.ts:35, apps/admin/lib/customer-tags-request.ts:36, apps/admin/lib/customer-tags-request.ts:42 
+=== RUN   TestReviewR1BGlobalNamespaceSinkRealCLI/unused_computed_sink
+--- FAIL: TestReviewR1BGlobalNamespaceSinkRealCLI (2.56s)
+    --- FAIL: TestReviewR1BGlobalNamespaceSinkRealCLI/reached_computed_sink (1.33s)
+    --- PASS: TestReviewR1BGlobalNamespaceSinkRealCLI/unused_computed_sink (0.87s)
+FAIL
+FAIL	livecommerce/scripts/dev/contractdrift	3.595s
+FAIL

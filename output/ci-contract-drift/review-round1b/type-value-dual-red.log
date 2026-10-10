@@ -1,0 +1,6 @@
+=== RUN   TestReviewR1bTypeValueDualBindingRealCLI
+    bff_review_r1b_cli_test.go:274: dual type/value runtime alias erased: 0 SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=0
+--- FAIL: TestReviewR1bTypeValueDualBindingRealCLI (0.77s)
+FAIL
+FAIL	livecommerce/scripts/dev/contractdrift	1.116s
+FAIL

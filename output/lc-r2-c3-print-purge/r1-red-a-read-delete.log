@@ -1,0 +1,10 @@
+=== RUN   TestClaimsRetentionCRP02Schema
+=== RUN   TestClaimsRetentionCRP02Schema/writer-policy-behaviour
+    claims_retention_test.go:3456: writer command_results: another operation's aged receipt unreadable (USING operation): 1 rows, want 0
+    claims_retention_test.go:3458: writer command_results: another operation's aged receipt undeletable: 1 rows affected, want 0
+--- FAIL: TestClaimsRetentionCRP02Schema (2.70s)
+    --- FAIL: TestClaimsRetentionCRP02Schema/writer-policy-behaviour (0.55s)
+FAIL
+FAIL	livecommerce/tests/foundation	3.732s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
