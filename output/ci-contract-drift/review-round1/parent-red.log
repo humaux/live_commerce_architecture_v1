@@ -1,0 +1,22 @@
+=== RUN   TestReviewBFFRemovedRealCLI
+    review_ratchet_cli_test.go:52: deleted BFF ignored: exit=0 INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{}/widgets/{} internal/httpapi/routes.go:6, internal/httpapi/routes.go:8, internal/httpapi/routes.go:11, internal/httpapi/routes.go:12, internal/httpapi/routes.go:13 
+        SUMMARY routes go=1 contract=1 bff=0; errors=0 warnings=0 GO_NOT_IN_BFF=1
+--- FAIL: TestReviewBFFRemovedRealCLI (1.44s)
+=== RUN   TestReviewBFFRetargetRealCLI
+    review_ratchet_cli_test.go:88: retargeting old BFF ignored: 0 INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{}/widgets/{} internal/httpapi/routes.go:6, internal/httpapi/routes.go:8, internal/httpapi/routes.go:11, internal/httpapi/routes.go:12, internal/httpapi/routes.go:13 
+        SUMMARY routes go=2 contract=2 bff=1; errors=0 warnings=0 GO_NOT_IN_BFF=1
+--- FAIL: TestReviewBFFRetargetRealCLI (1.04s)
+=== RUN   TestReviewDiffHunkHeadersRealCLI
+    review_ratchet_cli_test.go:112: hunk content hijacked file context: 0 WARNING (legacy) BFF_NO_GO POST /v1/admin/stores/{}/phantom apps/admin/app/api/stores/[store]/[...resource]/route.ts:5, apps/admin/app/api/stores/[store]/[...resource]/route.ts:6, apps/admin/app/api/stores/[store]/[...resource]/route.ts:7 
+        WARNING (legacy) CONTRACT_ONLY POST /v1/admin/stores/{}/ghost contracts/test-openapi.json:7, contracts/test-openapi.json:8 
+        WARNING (legacy) CONTRACT_ONLY POST /v1/admin/stores/{}/method contracts/test-openapi.json:10, contracts/test-openapi.json:11 
+        INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{}/method internal/httpapi/routes.go:8, internal/httpapi/routes.go:11, internal/httpapi/routes.go:18 
+        INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{}/orphan internal/httpapi/routes.go:8, internal/httpapi/routes.go:11, internal/httpapi/routes.go:17 
+        WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/method internal/httpapi/routes.go:8, internal/httpapi/routes.go:11, internal/httpapi/routes.go:18 
+        WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/orphan internal/httpapi/routes.go:8, internal/httpapi/routes.go:11, internal/httpapi/routes.go:17 
+        WARNING (legacy) METHOD_MISMATCH go=GET;contract=POST;bff= /v1/admin/stores/{}/method contracts/test-openapi.json:10, contracts/test-openapi.json:11, internal/httpapi/routes.go:8, internal/httpapi/routes.go:11, internal/httpapi/routes.go:18 
+        SUMMARY routes go=3 contract=3 bff=2; errors=0 warnings=6 BFF_NO_GO=1 CONTRACT_ONLY=2 GO_NOT_IN_BFF=2 GO_ONLY=2 METHOD_MISMATCH=1
+--- FAIL: TestReviewDiffHunkHeadersRealCLI (0.88s)
+FAIL
+FAIL	livecommerce/scripts/dev/contractdrift	3.960s
+FAIL
