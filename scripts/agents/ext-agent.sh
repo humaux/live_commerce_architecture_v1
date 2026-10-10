@@ -54,6 +54,9 @@ mkdir -p "$out"; out=$(cd "$out" && pwd); prompt=$(cd "$(dirname "$prompt")" && 
 key=$(. "$key_file"; printf %s "${!key_var}")
 auth_env=(ANTHROPIC_AUTH_TOKEN="$key"); fast_model=$model; budget_args=()
 if [[ $provider == anthropic ]]; then
+  # A resumed session reports total_cost_usd cumulatively for the whole session, which would double-count earlier runs in the
+  # ledger. ponytail: resume refused for anthropic; record per-session totals and charge only the delta if resume is ever needed.
+  [[ -z ${RESUME:-} ]] || { echo "refused: RESUME is not supported for PROVIDER=anthropic (cumulative session cost)" >&2; exit 2; }
   ws=$(. "$key_file"; printf %s "${ANTHROPIC_WORKSPACE_ID:-}")
   [[ $ws == wrkspc_* ]] || { echo "refused: ANTHROPIC_WORKSPACE_ID missing in $key_file" >&2; exit 2; }
   auth_env=(ANTHROPIC_API_KEY="$key" "ANTHROPIC_CUSTOM_HEADERS=anthropic-workspace-id: $ws"); fast_model=claude-haiku-5-5
