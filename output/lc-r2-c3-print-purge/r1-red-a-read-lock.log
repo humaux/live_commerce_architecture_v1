@@ -1,0 +1,11 @@
+=== RUN   TestClaimsRetentionCRP02Schema
+=== RUN   TestClaimsRetentionCRP02Schema/writer-policy-behaviour
+    claims_retention_test.go:3456: writer command_results: another operation's aged receipt unreadable (USING operation): 1 rows, want 0
+    claims_retention_test.go:3456: writer command_results: another operation's aged receipt unlockable-invisible (FOR UPDATE): 1 rows, want 0
+    claims_retention_test.go:3454: writer command_results: another operation's aged receipt not updatable: ERROR: new row violates row-level security policy for table "command_results" (SQLSTATE 42501)
+--- FAIL: TestClaimsRetentionCRP02Schema (2.44s)
+    --- FAIL: TestClaimsRetentionCRP02Schema/writer-policy-behaviour (0.69s)
+FAIL
+FAIL	livecommerce/tests/foundation	3.993s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
