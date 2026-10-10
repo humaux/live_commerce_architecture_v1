@@ -55,10 +55,15 @@ if [[ $provider == anthropic ]]; then
   [[ $ws == wrkspc_* ]] || { echo "refused: ANTHROPIC_WORKSPACE_ID missing in $key_file" >&2; exit 2; }
   auth_env=(ANTHROPIC_API_KEY="$key" "ANTHROPIC_CUSTOM_HEADERS=anthropic-workspace-id: $ws"); fast_model=claude-haiku-5-5
   ledger="$HOME/.config/livecommerce/anthropic-ledger.tsv"; cap=${ANTHROPIC_BUDGET_USD:-180}; run_cap=${ANTHROPIC_RUN_BUDGET_USD:-5}
+  # Concurrent runs (up to 4 sub-agents) must not all pass the check against the same ledger: under an mkdir lock, check AND
+  # append a reservation of the full run cap; after the run a correction row (actual - cap) reconciles it (PR #38 review).
+  lock="$ledger.lock"; for _ in $(seq 1 300); do mkdir "$lock" 2>/dev/null && break; sleep 0.2; done
+  [[ -d $lock ]] || { echo "refused: could not lock $ledger" >&2; exit 2; }
   spent=$(awk -F'\t' '{s+=$2} END{printf "%.2f", s+0}' "$ledger" 2>/dev/null || echo 0)
   if python3 -c "import sys; sys.exit(0 if float('$spent')+float('$run_cap') > float('$cap') else 1)"; then
-    echo "refused: Claude API spent \$$spent + run cap \$$run_cap would exceed budget \$$cap (ledger $ledger)" >&2; exit 2
+    rmdir "$lock"; echo "refused: Claude API spent \$$spent + run cap \$$run_cap would exceed budget \$$cap (ledger $ledger)" >&2; exit 2
   fi
+  printf '%s\t%s\t%s\t%s\n' "$(date '+%F %T')" "$run_cap" "$model reserve" "$out" >>"$ledger"; chmod 600 "$ledger"; rmdir "$lock"
   echo "claude api: spent \$$spent of \$$cap; this run capped at \$$run_cap ($model)" >&2
   budget_args=(--max-budget-usd "$run_cap")
 fi
@@ -148,7 +153,8 @@ if [[ $provider == deepseek ]] && [[ -n $(git -C "$wt" diff --name-only "$base_s
 fi
 if [[ $provider == anthropic ]]; then
   cost=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("total_cost_usd") or 0)' "$out/result.json" 2>/dev/null || echo "$run_cap")
-  printf '%s\t%s\t%s\t%s\n' "$(date '+%F %T')" "$cost" "$model" "$out" >>"$ledger"; chmod 600 "$ledger"
+  adj=$(python3 -c "print(round(float('$cost')-float('$run_cap'),6))")
+  printf '%s\t%s\t%s\t%s\n' "$(date '+%F %T')" "$adj" "$model actual=$cost" "$out" >>"$ledger"; chmod 600 "$ledger"
   echo "claude api: run cost \$$cost; total now \$$(awk -F'\t' '{s+=$2} END{printf "%.2f", s+0}' "$ledger") of \$$cap" >&2
 fi
 python3 - "$out/result.json" <<'PY' || true
