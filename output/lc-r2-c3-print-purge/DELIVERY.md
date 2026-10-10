@@ -231,3 +231,58 @@ the scoping has two independent guards. 0169 needs no change.
 
 No existing assertion was weakened or removed; no PII (every key/ref/hash is a synthetic sentinel); the 0169 file is
 byte-identical to HEAD after the rounds (`git status` shows only the test file + this output directory).
+
+## Round 2 (PR #35 review — P1 privacy fix + CI count fix, 2026-10-10)
+
+Two items from the PR #35 review:
+
+1. **[P1 privacy, Codex thread 4236426681, `migrations/0169_lc_r2_c3x_purge.sql:385`]** Round 1's RD4 hook deleted
+   `inbox.bundle_peers` only for caller-supplied `p_peer_keys`, inside the `IF NOT v_single` + peer-keys block. Two
+   supported erasure paths never carry peer keys — `internal/retention`'s `validSelector` rejects them for the
+   comment-ref (b) and bundle (c) selectors, and `claims.replay_actor_erasures` calls
+   `apply_actor_erasure(..., NULL)` — so an erased actor's own peer links survived until the C3x age purge.
+   **Fix (inside the function, in 0169 itself — the PR is unmerged, so no new migration):** a bundle-derived
+   `DELETE FROM inbox.bundle_peers ... USING claims.bundles` mirroring the adjacent `claims.links` delete (same bundle
+   set via the existing `v_single`/actor CASE selector, same tenant/store scoping, before the RD1 de-identification),
+   running on EVERY erasure path; the peer-key delete stays and its `ROW_COUNT` is summed via `v_n` (a row the first
+   delete took is gone, so no double-count). Both count into `bundle_peers` (numbers only, RD6). `v_keys` of
+   `replay_actor_erasures` unchanged (0154 precedent); `allowedCounts` already contained the key — no Go change.
+   Header comment, function block comment and `COMMENT ON FUNCTION` updated to the two-arm description;
+   `contracts/claims-retention-purge-v1.md` (§3 lock-order note, `apply_actor_erasure` row, B3) and
+   `contracts/live-console-v1.md` (RD4 hook + Gate bullets of the LC-R2 amendment) amended to match.
+2. **[CI red, gate shard:g05]** `tests/foundation/r2_integration_upgrade_test.go` asserted `len(r2) != 92`; 0169 adds
+   a file → count 93, comment line in the established style (`// 0169 (LC-R2 C3x purge of comment prints, their A3
+   receipts and inbox bundle peers) adds one: 92 -> 93.`). No hold-back/ordering needed in this test (it applies
+   everything in numeric order; 0169's deps 0002/0071/0123/0127/0128 are all lower-numbered; the only hold-back is the
+   pre-existing 0096 worker-authorities one). CRP02's populated-upgrade test already held 0169 back from round 1 and
+   computes its checksum at test time, so amending 0169 is safe.
+
+### RED-first evidence (REAL_PG; assertions written against the fixed behaviour, run against round-1 0169)
+
+Three new subtests inside `TestClaimsRetentionLCR2C3xPrintPurge` (`tests/foundation/claims_retention_lc_r2_test.go`;
+kept inside the existing top-level test so the shard plan is untouched). Each seeds peer links of the erased actor in
+TWO stores plus other actors'/stores' links, asserts byte-identical digests of the untouched rows, and — on round-1
+0169 — failed exactly on the bug (links survive, `bundle_peers=0`), while the five existing subtests stayed PASS:
+
+| Subtest | Path (all pass `p_peer_keys=NULL`) | RED failure (r2-red-erasure-paths.log) |
+| --- | --- | --- |
+| `rd4-comment-ref-erasure-derives-peer-links` | selector (b) via `retention.Erase` + APPLIED intake | `bundle_peers=0, want 2`; actor's links survive both stores; logged counts lack the key |
+| `rd4-bundle-selector-erasure-derives-peer-links` | selector (c) manual bundle (single-bundle mode) | `bundle_peers=0, want 1`; the bundle's link survives; sibling + other-store links untouched |
+| `rd4-replay-derives-peer-links` | `retention.Replay` with explicit tombstones (actor digest + manual-bundle ref) | replayed actor's and manual bundle's links survive |
+
+Item 2's RED fails fast at the count check before any PG starts: `R2 migration set = 93 files ... want 92`.
+
+### Round 2 commands and exit codes
+
+| Command | Exit | Result |
+| --- | --- | --- |
+| `bash scripts/dev/test-focused.sh '^TestClaimsRetentionLCR2C3xPrintPurge$'` (pre-fix 0169) | 1 | **RED as designed**: 5 PASS, the 3 new subtests FAIL on surviving links / `bundle_peers=0` (`r2-red-erasure-paths.log`) |
+| `bash scripts/dev/test-focused.sh '^TestR2IntegrationUpgradeFromReleaseHead$'` (pre-fix count) | 1 | **RED**: 93 files, want 92 (`r2-red-upgrade-count.log`) |
+| `bash scripts/dev/test-focused.sh '^(TestClaimsRetention\|TestLiveConsoleLCN05\|TestR2IntegrationUpgrade)'` (post-fix) | 0 | **PASS=14 FAIL=0 SKIP=0**, all 8 C3x subtests green, CRP06/CRP08 green with the amended 0169 (`r2-green-full.log`) |
+| `go vet ./...` | 0 | clean (`r2-go-vet.log`) |
+| `bash scripts/dev/check-gates.sh` | 0 | ok — shard-plan ok (1257 tests), check-headers OK (`r2-check-gates.log`; G-UI5 >500-line WARNs are pre-existing frontend files, unrelated) |
+
+No existing assertion was weakened or removed (the five round-1 subtests pass unchanged — `rd4-erasure-deletes-peer-links`
+still expects `bundle_peers:2`, now taken by the bundle-derived arm; `rd4-peer-link-only-not-pt404` still 1); no PII
+(every actor/peer key, comment ref, digest and label is a synthetic sentinel); no destructive migration, no production
+touch — all runs are on the disposable PG container of `scripts/dev/test-focused.sh`.

@@ -1162,10 +1162,16 @@ run-log shape as C1–C6) and the missing RD4 hook to `claims.apply_actor_erasur
   pattern of 0071.
 - **C2 hook.** De-identifying a bundle (§10 C2) also deletes its `inbox.bundle_peers` rows — uncounted: C2 is a
   de-identify, not a purge class; the age rule above counts peer-link purges separately.
-- **RD4 hook.** `apply_actor_erasure` deletes `inbox.bundle_peers WHERE peer_key = ANY(p_peer_keys)` after the
-  `social.conversations` delete and COUNTS the rows (`bundle_peers` in the returned/logged counts; `internal/retention`'s
-  closed count set gains the key, so replays of a stored erasure round-trip). A counted peer-link delete keeps a
+- **RD4 hook.** `apply_actor_erasure` deletes `inbox.bundle_peers` in two arms and COUNTS both together (`bundle_peers`
+  in the returned/logged counts; `internal/retention`'s closed count set gains the key, so replays of a stored erasure
+  round-trip): (1, round 2) the erased actor's OWN links, derived from their bundles next to the `claims.links` delete —
+  same bundle set, same tenant/store scoping and selector CASE, so they go on EVERY erasure path, including the three
+  that carry no peer keys (the comment-ref and bundle selectors reject them; `replay_actor_erasures` passes NULL);
+  (2) `WHERE peer_key = ANY(p_peer_keys)` after the `social.conversations` delete (peer keys are global, like the social
+  deletes). The arms never double-count — a row arm (1) took is gone. A counted peer-link delete keeps a
   peer-link-only erasure away from PT404, the 0154 `blocked_actors` rationale.
 - **Gate.** `tests/foundation/claims_retention_lc_r2_test.go` (REAL_PG): aged vs young rows in two stores and two
   tenants, other-operation receipts untouched, the batch cap and `more`, report-only counting, the C2 hook, the RD4 hook
-  with its replay, and the peer-link-only PT404 case. CRP02's privilege/RLS matrix declares the new grants and policies.
+  with its replay, the peer-link-only PT404 case, and (round 2) the three peer-key-less erasure paths — comment-ref
+  selector, bundle selector and restore replay — each removing the erased actor's links while other actors' and stores'
+  links stay byte-identical. CRP02's privilege/RLS matrix declares the new grants and policies.

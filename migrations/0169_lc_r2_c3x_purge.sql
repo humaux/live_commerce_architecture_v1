@@ -7,9 +7,10 @@
 -- print fact (aged by first_printed_at, its creation stamp — the table has no created_at), the print receipt
 -- (aged by created_at, scoped to operation='live.comment.print' so the shared ledger's other operations are never
 -- touched) and inbox.bundle_peers (aged by created_at). It also wires the two other §10 bundle_peers rules: delete
--- on bundle de-identify (C2, inside run_retention) and on actor erasure (RD4, peer_key-scoped inside
--- claims.apply_actor_erasure, recreated here from 0127 + the 0154 blocked_actors patch). New numeric count keys
--- prints / print_receipts / bundle_peers join the run log and the erasure counts (numbers only).
+-- on bundle de-identify (C2, inside run_retention) and on actor erasure (RD4, inside claims.apply_actor_erasure,
+-- recreated here from 0127 + the 0154 blocked_actors patch: derived from the erased actor's bundles on EVERY
+-- erasure path, plus the caller-supplied peer keys). New numeric count keys prints / print_receipts / bundle_peers
+-- join the run log and the erasure counts (numbers only).
 --
 -- Depends on: 0127 (claims.run_retention / apply_actor_erasure being recreated), 0154 (the blocked_actors patch of
 -- apply_actor_erasure, preserved here), 0123 (live.comment_prints), 0002 (ops.command_results), 0128
@@ -17,7 +18,8 @@
 --
 -- Used by: the claims retention definers claims.run_retention (River job claims_retention_v1 / retention-admin run)
 -- and claims.apply_actor_erasure (erase_actor / replay_actor_erasures); internal/retention (allowedCounts);
--- tests/foundation/claims_retention_test.go (CRP02 matrix/RLS and the C3x purge gate).
+-- tests/foundation/claims_retention_test.go (CRP02 matrix/RLS) and
+-- tests/foundation/claims_retention_lc_r2_test.go (the C3x purge + erasure-path gate).
 
 DO $$
 BEGIN
@@ -283,11 +285,13 @@ GRANT EXECUTE ON FUNCTION claims.run_retention(integer) TO commerce_retention_jo
 
 -- ---------------------------------------------------------------------------------------
 -- claims.apply_actor_erasure (internal): recreated from 0127 + the 0154 blocked_actors patch, with the RD4
--- bundle_peers delete added (live-console-v1 §10: "for every peer_key it resolves, it also deletes that peer's
--- ... inbox.bundle_peers rows"). Peer-key scoped, inside the existing p_peer_keys block (so a manual-bundle erasure,
--- which has no peer keys, does not touch bundle_peers); COUNTED, so an actor whose only remaining record is a peer
--- link is erased, not reported as not found (the 0154 blocked_actors rationale). No EXECUTE grant: erase_actor and
--- replay_actor_erasures (same owner) call it.
+-- bundle_peers deletes added (live-console-v1 §10: "for every peer_key it resolves, it also deletes that peer's
+-- ... inbox.bundle_peers rows"). Two arms, both COUNTED into bundle_peers (numbers only): the erased actor's OWN
+-- links, derived from their bundles next to the claims.links delete (round 2: the comment-ref/bundle selectors and
+-- the restore replay all pass p_peer_keys=NULL, so a peer-key-only hook left their links until the age purge), and
+-- the caller-supplied p_peer_keys' DM links inside the existing p_peer_keys block. An actor whose only remaining
+-- record is a peer link is thus erased, not reported as not found (the 0154 blocked_actors rationale). No EXECUTE
+-- grant: erase_actor and replay_actor_erasures (same owner) call it.
 -- ---------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION claims.apply_actor_erasure(p_platform text, p_actor_key text, p_tenant uuid, p_store uuid,
  p_bundle uuid, p_peer_keys text[]) RETURNS jsonb
@@ -327,6 +331,15 @@ BEGIN
    CASE WHEN v_single THEN b.tenant_id=p_tenant AND b.store_id=p_store AND b.id=p_bundle
     ELSE b.platform=p_platform AND b.actor_key=p_actor_key END;
  GET DIAGNOSTICS n_links=ROW_COUNT;
+ -- C3x round 2 (0169 LC-R2, live-console-v1 §10 RD4): the erased actor's OWN peer links go with their bundles on
+ -- every erasure path — the comment-ref/bundle selectors and the restore replay all pass p_peer_keys=NULL — so this
+ -- delete mirrors the links delete above (same bundle set via claims.bundles, same tenant/store scoping, same CASE
+ -- selector, before the RD1 de-identification) and COUNTS into bundle_peers together with the peer-key delete below.
+ DELETE FROM inbox.bundle_peers bp USING claims.bundles b
+  WHERE bp.tenant_id=b.tenant_id AND bp.store_id=b.store_id AND bp.bundle_id=b.id AND b.purged_at IS NULL AND
+   CASE WHEN v_single THEN b.tenant_id=p_tenant AND b.store_id=p_store AND b.id=p_bundle
+    ELSE b.platform=p_platform AND b.actor_key=p_actor_key END;
+ GET DIAGNOSTICS n_peers=ROW_COUNT;
 
  IF NOT v_single THEN
   -- Every add/edit/remove of the actor's comments: comment_key is shared by the events of one comment, and the actor's
@@ -381,9 +394,11 @@ BEGIN
     AND NOT EXISTS(SELECT 1 FROM social.messages m WHERE m.conversation_id=c.id);
    GET DIAGNOSTICS n_conv=ROW_COUNT;
    -- C3x (0169 LC-R2, live-console-v1 §10 RD4): the peer's DM peer links go with the actor, peer_key-scoped like the
-   -- conversations above and COUNTED, so an actor whose only remaining record is a peer link is erased, not PT404.
+   -- conversations above and COUNTED into bundle_peers on top of the bundle-derived delete (a row can only be
+   -- deleted once, so the two never double-count), so an actor whose only remaining record is a peer link is
+   -- erased, not PT404.
    DELETE FROM inbox.bundle_peers bp WHERE bp.peer_key=ANY(p_peer_keys);
-   GET DIAGNOSTICS n_peers=ROW_COUNT;
+   GET DIAGNOSTICS v_n=ROW_COUNT; n_peers:=n_peers+v_n;
   END IF;
  END IF;
 
@@ -416,4 +431,4 @@ REVOKE ALL ON FUNCTION claims.apply_actor_erasure(text,text,uuid,uuid,uuid,text[
 COMMENT ON FUNCTION claims.run_retention(integer) IS
  'internal/retention (Worker.Work on commerce_retention_job, RunOnce on commerce_retention_operator). One batch of the hourly purge, C1-C6 of the contract plus C3x (0169 LC-R2), <= p_limit rows per class, SKIP LOCKED, advisory key hashtextextended(''claims-retention'',0) (busy => {"busy":1}). C4 (0127 LC-R1) redacts comment_ref/conversation_id/peer_key and renames semantic_key to <prefix>-purged:<id> for the four send actions that are terminal, or UNKNOWN with an expired/no lease; request_hash is kept. C3x (0169 LC-R2, live-console-v1 §10) DELETEs live.comment_prints (first_printed_at), the live.comment.print receipts in ops.command_results (created_at) and inbox.bundle_peers (created_at) at intake_days, and the C2 loop deletes a de-identified bundle''s peer links. Report-only unless claims.retention_policy.enforced (report-only never returns more=1). Returns and logs numeric counts only. Non-goals: erasing one actor, choosing rows by caller input.';
 COMMENT ON FUNCTION claims.apply_actor_erasure(text,text,uuid,uuid,uuid,text[]) IS
- 'internal/retention internal helper of erase_actor and replay_actor_erasures; no EXECUTE grant. Idempotent RD1 de-identification plus deletion of the actor''s links, intake, comment events, and (0127 LC-R1) redaction of the four send-action operations bound to the actor (private_reply via its bundle, dm_send via peer_key, public_reply via the actor''s comment refs; offer_recommend carries no person id), plus (peer keys) conversations, (0154 W3-05B) the restricted-buyer entry, and (0169 LC-R2, live-console-v1 §10 RD4) the peer''s inbox.bundle_peers rows. Never applies the RD5 hold; in replay mode (lc.retention_replay=on, set only by replay_actor_erasures) it also deletes PENDING intake rows and redacts non-terminal send operations.';
+ 'internal/retention internal helper of erase_actor and replay_actor_erasures; no EXECUTE grant. Idempotent RD1 de-identification plus deletion of the actor''s links, intake, comment events, and (0127 LC-R1) redaction of the four send-action operations bound to the actor (private_reply via its bundle, dm_send via peer_key, public_reply via the actor''s comment refs; offer_recommend carries no person id), plus (peer keys) conversations, (0154 W3-05B) the restricted-buyer entry, and (0169 LC-R2, live-console-v1 §10 RD4) inbox.bundle_peers rows — the erased actor''s own links derived from their bundles on every erasure path, counted together with the caller-supplied peer keys'' links. Never applies the RD5 hold; in replay mode (lc.retention_replay=on, set only by replay_actor_erasures) it also deletes PENDING intake rows and redacts non-terminal send operations.';
