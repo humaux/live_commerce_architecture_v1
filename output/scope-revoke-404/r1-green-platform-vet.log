@@ -1,0 +1,13 @@
+$ go test ./internal/platform -count=1 -v -run TestScopeRecheck
+=== RUN   TestScopeRecheckFailureKeepsDenial
+--- PASS: TestScopeRecheckFailureKeepsDenial (0.00s)
+PASS
+ok  	livecommerce/internal/platform	0.410s
+exit=0
+$ go test ./internal/platform -count=1
+ok  	livecommerce/internal/platform	0.347s
+exit=0
+$ go vet ./internal/platform ./tests/foundation
+exit=0
+$ gofmt -l internal/platform tests/foundation
+exit=0
