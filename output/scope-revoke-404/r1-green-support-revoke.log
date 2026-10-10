@@ -1,0 +1,5 @@
+=== RUN   TestScopeSupportGrantRevokedMidTransactionBecomesScopeNotFound
+--- PASS: TestScopeSupportGrantRevokedMidTransactionBecomesScopeNotFound (1.17s)
+PASS
+ok  	livecommerce/tests/foundation	3.747s
+test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0

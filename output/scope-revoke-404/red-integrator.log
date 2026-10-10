@@ -1,0 +1,7 @@
+=== RUN   TestScopeRevokeMidTransactionBecomesScopeNotFound
+    scope_revoke_race_test.go:39: mid-request store:read revoke error = ERROR: forbidden (SQLSTATE PT403) (sqlstate "PT403"), want ErrScopeNotFound (LCN03 404)
+--- FAIL: TestScopeRevokeMidTransactionBecomesScopeNotFound (1.25s)
+FAIL
+FAIL	livecommerce/tests/foundation	2.026s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
