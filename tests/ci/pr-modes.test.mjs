@@ -98,7 +98,11 @@ test("round 3: the real PR #30 diff selects live-console without the shared-http
   // reaches inbox_send.go -> live_stream.go) and --browser-ops-polish (its spec goes to /{store}/studio, and
   // studio-client.ts:60,99 read /live-sessions served by internal/live — covers-derivation.json). The CVS
   // artifact of the first round-4 derivation is gone (see the next test); the explosion guard (not all 48) stands.
-  assert.ok(modes.length <= 26, `PR #30 must be domain-scoped, not all 48 browsers: ${modes.length}`);
+  // Round 5 raises the ceiling 26 -> 27 for the same owner-mandated reason ("expect some domain counts to grow"):
+  // merging tf.bareSpecs (thread 4236972349) gives --browser-identity its own harness's auth-real/settings-real
+  // specs, whose import closure reaches internal/live + internal/inbox, so the round-3 FILE join for
+  // live_stream.go gains exactly identity (25 -> 26 FILE modes). CVS stays excluded (next test).
+  assert.ok(modes.length <= 27, `PR #30 must be domain-scoped, not all 48 browsers: ${modes.length}`);
 });
 
 test("round 3: live_stream transport alone selects live-console but not CVS", () => {
@@ -109,7 +113,10 @@ test("round 3: live_stream transport alone selects live-console but not CVS", ()
   // (CvsPrint.tsx imports only postPrintForm), so CVS's flows no longer reach the reminders/inbox_send helper
   // chain that owns live_stream.go's exported classifiers.
   assert.ok(!modes.includes("--browser-cvs"));
-  assert.ok(modes.length <= 26, `live_stream transport selected ${modes.length} modes (round 4 derives 25 FILE modes + foundation)`);
+  // Round 5: 26 FILE modes + foundation = 27 — the bareSpecs merge adds --browser-identity (auth-real/
+  // settings-real specs -> settings wizard import closure -> internal/live, internal/inbox), evidence-backed in
+  // covers-derivation.json; the CVS exclusion above is what this test really guards, and it still holds.
+  assert.ok(modes.length <= 27, `live_stream transport selected ${modes.length} modes (round 5 derives 26 FILE modes + foundation)`);
 });
 
 test("round 3: handler.go and unknown httpapi files remain conservative", () => {
@@ -224,7 +231,10 @@ test("round 2 data invariant: SHARED packages are subtracted from lc_covers (the
 
 test("round 2 BACKEND_ONLY_PACKAGES: the real cmd/worker-only entries select no browser mode", async () => {
   const { BACKEND_ONLY_PACKAGES, backendBrowserModes } = await import("../../scripts/dev/pr-modes.mjs");
-  assert.ok(Object.keys(BACKEND_ONLY_PACKAGES).length >= 3, "round 2 classified tlsask, retention and ecpayroute");
+  // Round 5 (thread 4236971117) removed the ecpayroute entry: TestBrowserTaiwanCvs boots the REAL dispatcher
+  // (taiwan_cvs_env_test.go:636-644 startDispatcher -> ecpayroute.Routes -> integration.NewDispatcher), so the package
+  // is exercised by browser gates and must not resolve to none. Floor is now tlsask + retention.
+  assert.ok(Object.keys(BACKEND_ONLY_PACKAGES).length >= 2, "round 2 classified tlsask, retention and ecpayroute; round 5 removed ecpayroute (real dispatcher wiring)");
   for (const pkg of Object.keys(BACKEND_ONLY_PACKAGES))
     assert.deepEqual(backendBrowserModes([`${pkg}/x.go`], usage), [], `${pkg} must select nothing (a cmd/** change still selects all Go-booting modes via the cmd rule)`);
 });
@@ -299,7 +309,8 @@ test("BACKEND_ONLY_PACKAGES is explicit classified data; listed packages select 
     assert.ok(pkg.startsWith("internal/"), `${pkg}: only internal packages may be backend-only`);
     assert.ok(typeof why === "string" && why.length > 10, `${pkg}: needs a one-line reason`);
   }
-  // Round 1 left BACKEND_ONLY empty; round 2 (2026-10-10) classified tlsask/retention/ecpayroute (asserted above).
+  // Round 1 left BACKEND_ONLY empty; round 2 (2026-10-10) classified tlsask/retention/ecpayroute; round 5 removed
+  // ecpayroute (thread 4236971117: the CVS browser gates boot the real ecpayroute.Routes dispatcher — see below).
   // The mechanism must keep working for any future classification, proved here with a synthetic list.
   assert.deepEqual(backendBrowserModes(["internal/classified/x.go"], usage, { "internal/classified": "synthetic: mechanism test" }), []);
   assert.ok(backendBrowserModes(["internal/classified/x.go"], usage).length >= pgFull.length, "an undeclared package stays conservative until classified");
@@ -310,6 +321,51 @@ test("a registry without lc_covers data (historical source) stays maximally cons
   // Shape of a historical test-local.sh: usage line + dispatch branch, no BEGIN MODE REGISTRY (pre-T02 refs the CLI can meet).
   const legacy = "printf 'Usage: bash scripts/dev/test-local.sh [foundation|--browser-x]\\n'\nif [[ $test_mode == --browser-x ]]; then\n  go test ./tests/foundation\nfi\n";
   assert.deepEqual(backendBrowserModes(["internal/live/stream.go"], legacy), ["--browser-x"]);
+});
+
+// ---- CI-SELECT round 5 (PR #39 review threads, owner task 2026-10-10): three under-selection findings. ----
+
+// Thread 4236971117: the round-2 BACKEND_ONLY entry for ecpayroute claimed "consumed only by cmd/claims-worker and
+// the non-browser taiwan-cvs foundation tests", but TestBrowserTaiwanCvs calls tcvEnv.startDispatcher
+// (taiwan_cvs_env_test.go:636-644), which wires the REAL ecpayroute.Routes into integration.NewDispatcher, and
+// --browser-click-sweep's sweep reuses the same tcvEnv. BACKEND_ONLY is checked BEFORE lc_covers
+// (pr-modes.mjs backendBrowserModes), so an ecpayroute-only change selected only foundation-shards. Round 5 drops
+// the entry; the derivation records the dispatcher wiring as go-fixture-import evidence on the env fixture
+// (taiwan_cvs_env_test.go:47 imports ecpayroute), so the modes' lc_covers name the package directly.
+test("round 5: an ecpayroute-only change selects the CVS browser gates (thread 4236971117)", async () => {
+  const { BACKEND_ONLY_PACKAGES } = await import("../../scripts/dev/pr-modes.mjs");
+  assert.ok(!("internal/integrations/shipping/ecpay/ecpayroute" in BACKEND_ONLY_PACKAGES),
+    "ecpayroute is not backend-only: the CVS browser gates boot the real ecpayroute.Routes dispatcher");
+  const modes = planPr(["internal/integrations/shipping/ecpay/ecpayroute/route.go"], usage).modes;
+  assert.ok(modes.includes("--browser-cvs"), `ecpayroute must select --browser-cvs (startDispatcher -> ecpayroute.Routes): ${modes}`);
+  assert.ok(modes.includes("--browser-click-sweep"), `ecpayroute must select --browser-click-sweep (same tcvEnv dispatcher): ${modes}`);
+});
+
+// Thread 4236972349: brfPlaywright hands the bare spec name "tracking-backfill.spec.ts" to Playwright
+// (browser_tracking_backfill_test.go:174). The derivation parsed bareSpecs (derive-narrow-covers.mjs:1156-1162) but
+// never merged them into the mode's specFiles, so the ui-flow tier saw specs=0 / drivers=0 and the mode's covers
+// missed the orders read chain its spec really clicks (orders table -> search -> expand -> tracking preview:
+// apps/admin/lib/orders-client.ts:73 /api/stores/{store}/orders[/search] -> internal/httpapi/orders.go ->
+// merchantorders.ListV2/Get/List at orders.go:54/76/87/97).
+test("round 5: an orders.go-only or merchantorders-only change selects --browser-tracking-backfill (thread 4236972349)", () => {
+  for (const p of ["internal/httpapi/orders.go", "internal/merchantorders/x.go"]) {
+    const modes = planPr([p], usage).modes;
+    assert.ok(modes.includes("--browser-tracking-backfill"), `${p} must select --browser-tracking-backfill (tracking-backfill.spec.ts drives the orders read chain): ${modes}`);
+  }
+});
+
+// Thread 4236972354: --browser-admin-legacy passes the suite as a helper ARGUMENT — runPlaywright(t, ctx, root,
+// evidence, "ledger", ...) (browser_admin_legacy_test.go:168) and the helper assigns env["LC_BROWSER_SUITE"] = suite
+// (line 262) — and playwright.config.ts:13 declares `ledger` as an UNQUOTED (but legal) TS property. The derivation
+// scanned only literal LC_BROWSER_SUITE assignments and quoted suite keys, so the mode saw specs=0 and its covers
+// missed the chain ledger.spec.ts:89-116 really executes (route.fetch POST **/api/stores/*/inventory/adjustments ->
+// handler.go:196 -> live_console.go:44-47 inventoryAdjustRoute -> inventory.AdjustOnHand). Merging bareSpecs alone
+// does NOT fix this: the harness never names a .spec.ts file, only the suite.
+test("round 5: an inventory-only or live_console.go-only change selects --browser-admin-legacy (thread 4236972354)", () => {
+  for (const p of ["internal/inventory/x.go", "internal/httpapi/live_console.go"]) {
+    const modes = planPr([p], usage).modes;
+    assert.ok(modes.includes("--browser-admin-legacy"), `${p} must select --browser-admin-legacy (ledger suite -> /en/inventory -> Ledger.tsx:396 inventory/adjustments): ${modes}`);
+  }
 });
 
 test("legacy browser_* paths still select all browsers; a known untagged foundation file stays backend-only", () => {

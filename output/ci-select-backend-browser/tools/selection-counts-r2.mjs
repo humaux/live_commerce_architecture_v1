@@ -1,12 +1,13 @@
 #!/usr/bin/env node
-// Purpose: CI-SELECT round-2/3 evidence — how many browser modes the narrowed lc_covers data selects for the REAL file
+// Purpose: CI-SELECT round-2/3/4/5 evidence — how many browser modes the narrowed lc_covers data selects for the REAL file
 // Depends on: real Git PR commits, pr-modes.mjs and test-local.sh; does not start a PG or browser gate.
-// Used by: CI-SELECT DELIVERY tables; optional argument selects a round-2/3/4 JSON evidence name (default: round 4).
-//   lists of PR #30 (b1bfbeb3) and PR #24 (3034c407), the mandated single-path cases, and three realistic domain
-//   examples (orders/payments, catalog, migrations), against what round 1's full-closure covers selected for the same
-//   lists (round 1: every internal/ hit selected all 48 Go-seeded modes; cmd//migrations/ selected all 47 PG modes).
+// Used by: CI-SELECT DELIVERY tables; optional argument selects a round-2/3/4/5 JSON evidence name (default: round 5).
+//   lists of PR #30 (b1bfbeb3) and PR #24 (3034c407), the mandated single-path cases (round 5 adds the five thread
+//   4236971117/4236972349/4236972354 regression paths), and three realistic domain examples (orders/payments,
+//   catalog, migrations), against what round 1's full-closure covers selected for the same lists (round 1: every
+//   internal/ hit selected all 48 Go-seeded modes; cmd//migrations/ selected all 47 PG modes).
 //   Records universe sizes and each case's selected browser modes; writes the selected evidence JSON (default
-//   selection-counts-r4.json) next to this file; numbers are quoted in DELIVERY.md.
+//   selection-counts-r5.json) next to this file; numbers are quoted in DELIVERY.md.
 // Depends on: scripts/dev/pr-modes.mjs, scripts/dev/test-local.sh, tests/foundation sources (tag lookup), git show.
 // Used by: unit ci-select-backend-browser only.
 import { execFileSync } from "node:child_process";
@@ -46,6 +47,12 @@ const cases = {
   "mandated: internal/httpapi/live_stream.go (file-level)": ["internal/httpapi/live_stream.go"],
   "mandated: internal/httpapi/handler.go (SHARED)": ["internal/httpapi/handler.go"],
   "mandated: docs+contracts only": ["docs/delivery/GATES.md", "contracts/invariants.json"],
+  // Round-5 regressions (PR #39 review threads): each single path must now select its browser gate.
+  "round5 mandated: ecpayroute/route.go (thread 4236971117)": ["internal/integrations/shipping/ecpay/ecpayroute/route.go"],
+  "round5 mandated: internal/httpapi/orders.go (thread 4236972349)": ["internal/httpapi/orders.go"],
+  "round5 mandated: internal/merchantorders/x.go (thread 4236972349)": ["internal/merchantorders/x.go"],
+  "round5 mandated: internal/inventory/x.go (thread 4236972354)": ["internal/inventory/x.go"],
+  "round5 mandated: internal/httpapi/live_console.go (thread 4236972354)": ["internal/httpapi/live_console.go"],
 };
 const out = {
   universe: {
@@ -77,9 +84,9 @@ for (const [name, paths] of Object.entries(cases)) {
   console.log(`${name}: files=${paths.length} -> browser modes=${browsers.length} (round 1: ${round1}); total checks=${r.modes.length}; live-console=${browsers.includes("--browser-live-console")}`);
   console.log(`  selected: ${browsers.join(" ") || "(none)"}`);
 }
-// Round 4: the no-argument run writes the round-4 evidence file, so the documented reproducible command keeps the
-// sandbox-permitted `node --test <tool>` form (which does not forward argv). r2/r3 names stay accepted for reruns.
-const outputName = process.argv[2] ?? "selection-counts-r4.json";
-if (!/^selection-counts-r[234]\.json$/.test(outputName)) throw new Error("unsupported evidence output name");
+// Round 4: the no-argument run writes the round-5 evidence file, so the documented reproducible command keeps the
+// sandbox-permitted `node --test <tool>` form (which does not forward argv). r2/r3/r4 names stay accepted for reruns.
+const outputName = process.argv[2] ?? "selection-counts-r5.json";
+if (!/^selection-counts-r[2345]\.json$/.test(outputName)) throw new Error("unsupported evidence output name");
 writeFileSync(path.join(import.meta.dirname, outputName), JSON.stringify(out, null, 1));
 console.log(`universe: browser=${universe.length} pg=${pg.length} go-seeded=${goSeeded.length} go-booting=${goBoot.length} shared=${Object.keys(SHARED_BACKEND_PACKAGES).length} backend-only=${Object.keys(BACKEND_ONLY_PACKAGES).length} covers-sum=${coversSum} mean=${(coversSum / universe.length).toFixed(1)}`);

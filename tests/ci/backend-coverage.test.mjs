@@ -182,7 +182,8 @@ test("round 2 precedence: a covers entry inside BACKEND_ONLY, or a package both 
   // Same package classified both ways: SHARED selects all PG modes, BACKEND_ONLY selects none — refuse to guess.
   const bothErrors = classifyBackendCoverage(mini, ["internal/probepkg"], { "internal/probepkg": "synthetic: both lists" }, { "internal/probepkg": "synthetic: both lists" });
   assert.ok(bothErrors.some((e) => e.includes("both BACKEND_ONLY_PACKAGES and SHARED_BACKEND_PACKAGES")), JSON.stringify(bothErrors));
-  // A covers entry that is an ANCESTOR of a BACKEND_ONLY entry is legal (the ecpay / ecpayroute shape): the ancestor
+  // A covers entry that is an ANCESTOR of a BACKEND_ONLY entry is legal (the ecpay shape — round 5 removed the real
+  // ecpayroute entry, so the precedence mechanism stays proven with the synthetic nested probe): the ancestor
   // selects its own modes; only files inside the backend-only package resolve to none.
   const ancestor = appendBrowserMode(miniBase, "--browser-probe-ancestor", "  go test ./tests/foundation", "internal/probepkg");
   assert.deepEqual(classifyBackendCoverage(ancestor, ["internal/probepkg", "internal/probepkg/worker"], { "internal/probepkg/worker": "synthetic: nested backend-only" }, {}), []);
@@ -203,7 +204,64 @@ test("round 2: the real SHARED and BACKEND_ONLY entries classify with no lc_cove
   const { classifyBackendCoverage } = await import("../../scripts/dev/check-backend-coverage.mjs");
   const { SHARED_BACKEND_PACKAGES, BACKEND_ONLY_PACKAGES } = await import("../../scripts/dev/pr-modes.mjs");
   assert.ok(Object.keys(SHARED_BACKEND_PACKAGES).length >= 9, "round 2 classified 9 shared packages");
-  assert.ok(Object.keys(BACKEND_ONLY_PACKAGES).length >= 3, "round 2 classified 3 backend-only packages");
+  // Round 5 (thread 4236971117) removed ecpayroute from BACKEND_ONLY: the CVS browser gates boot the real
+  // ecpayroute.Routes dispatcher, so the package is classified by lc_covers evidence, not as backend-only.
+  assert.ok(Object.keys(BACKEND_ONLY_PACKAGES).length >= 2, "round 2 classified tlsask, retention and ecpayroute; round 5 removed ecpayroute (real dispatcher wiring)");
   const dirs = ["internal/probepkg", ...Object.keys(SHARED_BACKEND_PACKAGES), ...Object.keys(BACKEND_ONLY_PACKAGES)];
   assert.deepEqual(classifyBackendCoverage(mini, dirs), []);
+});
+
+// ---- CI-SELECT round 5 (PR #39 review threads): the tracked derivation evidence for the three under-selections. ----
+// The planner tests (pr-modes.test.mjs round 5) prove SELECTION; these prove the EVIDENCE behind it — the regenerated
+// covers-derivation.json rows and the per-mode discovery diagnostics. A silent specs=0 discovery failure is exactly
+// what hid threads 4236972349/4236972354, so round 5 also makes specs=0 explicit (SPECS-ZERO) with a documented
+// allowlist instead of a quiet zero.
+test("round 5: covers-derivation.json records the dispatcher wiring, the orders read chain and the ledger write chain", () => {
+  const derivation = JSON.parse(readFileSync(path.join(root, "output/ci-select-backend-browser/covers-derivation.json"), "utf8"));
+  // Thread 4236971117: tcvEnv (taiwan_cvs_env_test.go) imports ecpayroute:47 and wires it in startDispatcher:636-644;
+  // the env header names its browser consumers, so the fixture-import tier records the package per mode.
+  for (const mode of ["--browser-cvs", "--browser-click-sweep"]) {
+    const rows = derivation[mode] ?? [];
+    assert.ok(rows.some((e) => e.package === "internal/integrations/shipping/ecpay/ecpayroute" && e.via === "go-fixture-import" && e.handler.startsWith("tests/foundation/taiwan_cvs_env_test.go")),
+      `${mode} must carry go-fixture-import evidence for ecpayroute (startDispatcher -> ecpayroute.Routes)`);
+  }
+  // Thread 4236972349: tracking-backfill.spec.ts clicks the orders table/search/expand chain -> orders-client.ts:73
+  // -> orders.go -> merchantorders.
+  const tb = derivation["--browser-tracking-backfill"] ?? [];
+  assert.ok(tb.some((e) => e.package === "internal/merchantorders" && e.path.includes("orders")),
+    "tracking-backfill must record the orders read chain (bareSpecs merge, thread 4236972349)");
+  // Thread 4236972354: the ledger suite drives /en/inventory; Ledger.tsx:396 commands inventory/adjustments ->
+  // handler.go:196 inventoryAdjustRoute -> internal/inventory.
+  const al = derivation["--browser-admin-legacy"] ?? [];
+  assert.ok(al.some((e) => e.package === "internal/inventory" && e.path.includes("inventory/adjustments")),
+    "admin-legacy must record the ledger inventory/adjustments chain (suite discovery, thread 4236972354)");
+});
+
+test("round 5: the tracked derivation discovers the bare and suite-named specs (specs>0, drivers>0)", () => {
+  const diag = readFileSync(path.join(root, "output/ci-select-backend-browser/tools/r2-diagnostics.txt"), "utf8");
+  const statsOf = (mode) => {
+    const m = new RegExp(`^${mode.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}: own=(\\d+) specs=(\\d+) urls=(\\d+) ui-flow drivers=(\\d+)`, "m").exec(diag);
+    assert.ok(m, `${mode} has no derivation diagnostics line`);
+    return { own: Number(m[1]), specs: Number(m[2]), drivers: Number(m[4]) };
+  };
+  // bareSpecs merge: tracking-backfill ("tracking-backfill.spec.ts" via brfPlaywright) and meta-health-ui
+  // ("meta-health-ui.spec.ts" via brfPlaywright) both discovered specs=0 before round 5.
+  for (const mode of ["--browser-tracking-backfill", "--browser-meta-health-ui"]) {
+    const s = statsOf(mode);
+    assert.ok(s.specs > 0 && s.drivers > 0, `${mode} still discovers no spec/driver: ${JSON.stringify(s)} (thread 4236972349)`);
+  }
+  // suite discovery: admin-legacy's harness names NO spec file — only the suites "ledger" (helper argument +
+  // unquoted playwright.config.ts key), "identity-mock" and "entry-mock" (adminMockSuite forwarder).
+  const al = statsOf("--browser-admin-legacy");
+  assert.ok(al.specs > 0 && al.drivers > 0, `--browser-admin-legacy still discovers no spec/driver: ${JSON.stringify(al)} (thread 4236972354)`);
+});
+
+test("round 5 sweep: every real Go browser mode discovers a spec, or is explicitly explained (SPECS-ZERO allowlist)", () => {
+  const diag = readFileSync(path.join(root, "output/ci-select-backend-browser/tools/r2-diagnostics.txt"), "utf8");
+  const unexplained = diag.split("\n").filter((l) => /^SPECS-ZERO(?!-OK)/.test(l));
+  assert.deepEqual(unexplained, [],
+    "a Go-booting browser mode with specs=0 is a discovery failure: fix the derivation with evidence or add the mode to SPECS_ZERO_OK with a written reason (thread 4236972354 sweep)");
+  // The single documented specs=0 Go-booting mode: --live-browser-input matches the browser universe by NAME but its
+  // arm runs Go-only BRW SQL/executor checks (go test -run '^TestLiveBrowserInputBRW' + go vet), no Playwright spec.
+  assert.match(diag, /^SPECS-ZERO-OK --live-browser-input:/m);
 });

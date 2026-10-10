@@ -1,13 +1,13 @@
-<!-- Purpose: CI-SELECT delivery, current round-4 acceptance (K3 P2 fixes + ui-flow tier) plus retained round-1/2/3 history.
-Depends on: source e7c7246e (round-3 base), real registry/Git inventories, recorded DB-free gates, generated coverage data,
+<!-- Purpose: CI-SELECT delivery, current round-5 acceptance (PR #39 review-thread under-selection fixes) plus retained round-1/2/3/4 history.
+Depends on: source 74495a89 (round-4 merge), real registry/Git inventories, recorded DB-free gates, generated coverage data,
   K3 review output/ext-agents/k3-review-ci-select/findings.md (local, untracked).
 Used by: integrator independent review and PR creation; not production/browser acceptance. -->
 # CI-SELECT delivery — backend paths select the browser modes that run them + nightly trunk browser re-verification
 
-**CURRENT: round 4 READY (author E3, base `e7c7246e`, branch `unit/ci-select-backend-browser`).**
-Sections 1–16 are round-1/2 history; §§17–20 are round 3; §§21–25 are round 4 and replace the counts and current gate
-status (§18's table carries all three rounds). No push. Independent K3/PR CI re-verification of THIS commit, actual
-browsers and the first nightly execution remain NOT_RUN.
+**CURRENT: round 5 READY (author E3, base `74495a89`, branch `unit/ci-select-backend-browser`, PR #39 review threads).**
+Sections 1–16 are round-1/2 history; §§17–20 are round 3; §§21–25 are round 4; §§26–30 are round 5 and replace the
+counts and current gate status (§18's table carries all rounds). No push. Independent PR CI re-verification of THIS
+commit, actual browsers and the first nightly execution remain NOT_RUN.
 
 - Unit: ci-select-backend-browser. Branch: `unit/ci-select-backend-browser`. Base: `origin/r3/integration` (b1bfbeb3 at start; trunk advanced to 729afff9 (#27) mid-unit and to 9b738e0a (#29) during final verification — see §5).
 - Owner approval: 2026-10-10. Commit only; **no push performed**.
@@ -214,23 +214,28 @@ Registry parity (`r3-parity.log`, exit 0): all **83** modes' order/build/fixture
 
 ## 18. Current selection counts
 
-Round-4 reproducible command: `node --test output/ci-select-backend-browser/tools/selection-counts-r2.mjs` (no-argument run writes the round-4 evidence; the `node --test` form does not forward argv) → exit 0. Data: `tools/selection-counts-r4.json`; log `r4-counts.log`. Round-3 command/data retained: `selection-counts-r3.json`, `r3-counts.log`. Browser universe=51, PG-fixture=47, Go-booting=48. Counts are selector results, **not measured CI wall time**.
+Round-5 reproducible command: `node --test output/ci-select-backend-browser/tools/selection-counts-r2.mjs` (no-argument run writes the round-5 evidence; the `node --test` form does not forward argv) → exit 0. Data: `tools/selection-counts-r5.json`; log `r5-counts.log`. Round-3/4 command/data retained: `selection-counts-r3.json`/`r3-counts.log`, `selection-counts-r4.json`/`r4-counts.log`. Browser universe=51, PG-fixture=47, Go-booting=48, SHARED=17, BACKEND_ONLY=**2** (round 5 removed ecpayroute, §26). Counts are selector results, **not measured CI wall time**.
 
-| case | files | round 2 browsers | round 3 browsers | round 4 browsers | total checks |
-|---|---:|---:|---:|---:|---:|
-| Real PR #30 `b1bfbeb3` |11|48|**22**, live-console included|**25**, live-console included (§23)|26|
-| Real PR #24 `3034c407` |68|6|6|6|7|
-| orders/payments |2|17|17|**31**|32|
-| catalog |1|18|18|**34**|35|
-| migrations |1|48|48|48|49|
-| `internal/live/stream.go` |1|18|18|**20**, live-console included|21|
-| `internal/httpapi/live_stream.go` |1|48|**22**, live-console included, CVS excluded|**25**, live-console included, CVS excluded|26|
-| metareply |1|2|2|2|3|
-| platform |1|48|48|48|49|
-| `internal/httpapi/handler.go` |1|48|**48**|**48**|49|
-| docs + contracts |2|0|0|0|1|
+| case | files | round 2 browsers | round 3 browsers | round 4 browsers | round 5 browsers | total checks |
+|---|---:|---:|---:|---:|---:|---:|
+| Real PR #30 `b1bfbeb3` |11|48|**22**, live-console included|**25**, live-console included (§23)|**26**, live-console included (+identity, §29)|27|
+| Real PR #24 `3034c407` |68|6|6|6|6|7|
+| orders/payments |2|17|17|**31**|**33**|34|
+| catalog |1|18|18|**34**|**37**|38|
+| migrations |1|48|48|48|48|49|
+| `internal/live/stream.go` |1|18|18|**20**, live-console included|**21**, live-console included|22|
+| `internal/httpapi/live_stream.go` |1|48|**22**, live-console included, CVS excluded|**25**, live-console included, CVS excluded|**26**, live-console included, CVS excluded (§29)|27|
+| metareply |1|2|2|2|2|3|
+| platform |1|48|48|48|48|49|
+| `internal/httpapi/handler.go` |1|48|**48**|**48**|**48**|49|
+| docs + contracts |2|0|0|0|0|1|
+| **r5** `ecpayroute/route.go` (thread 4236971117) |1|—|—|0 (BACKEND_ONLY swallowed it)|**4**: cvs, click-sweep, visual-lint, webkit|5|
+| **r5** `internal/httpapi/orders.go` (thread 4236972349) |1|—|—|30, tracking-backfill MISSING|**32**, tracking-backfill included|33|
+| **r5** `internal/merchantorders/x.go` (thread 4236972349) |1|—|—|30, tracking-backfill MISSING|**32**, tracking-backfill included|33|
+| **r5** `internal/inventory/x.go` (thread 4236972354) |1|—|—|22, admin-legacy MISSING|**25**, admin-legacy + live-console included|26|
+| **r5** `internal/httpapi/live_console.go` (thread 4236972354) |1|—|—|40, admin-legacy MISSING|**43**, admin-legacy included|44|
 
-Round-4 growth is the mandated direction (K3 P2-1: UI-clicked admin writes were under-selected); every grown case traces to evidence rows in `covers-derivation.json` (§22–23). Covers total grew 2616 → **3332** entries (mean 51.3 → **65.3** per browser mode).
+Round-4 growth was the mandated direction (K3 P2-1); round-5 growth is the reviewer-mandated direction of PR #39 threads 4236971117/4236972349/4236972354 — every grown case traces to evidence rows in `covers-derivation.json` (§27). Covers total grew 2616 → 3332 → **3494** entries (mean 51.3 → 65.3 → **68.5** per browser mode).
 
 ## 19. Red → green and final gates
 
@@ -256,7 +261,7 @@ Evidence: **E3, DB-free selector/inventory/gate environment only** (real Git CLI
 
 All owned local gate sessions ended; synthetic Git fixture cleaned, no containers/ports or processes remain. Red evidence is retained. W3-U3 is a separate pending task and still waits for SCOPE-404 merge; this delivery neither resumes it early nor reports it READY.
 
-## 21. Round 4 — K3 P2 fixes + ui-flow tier (current)
+## 21. Round 4 — K3 P2 fixes + ui-flow tier
 
 - Base: `e7c7246e` (round 3, Codex-1); branch/worktree `unit/ci-select-backend-browser` / `.worktrees/ci-select-backend-browser`. Resumed from an interrupted session; partial work reviewed via `git diff` and kept (it was correct).
 - Author: Claude Code session (host-reported model `qwen3.8-max`; exact parent model ID not further exposed by host; E3, assistance — independent acceptance still owed). Read-only reviewer input: K3 `output/ext-agents/k3-review-ci-select/findings.md` (VERDICT **PASS**, no P0/P1; two P2s assigned to this round). The findings file stays local/untracked per round-2/3 precedent (external review inputs were never committed).
@@ -316,3 +321,58 @@ Derivation/evidence runs: `r4-derive.log` (51 modes; uncovered=0; WRITE-GAP=0), 
 Evidence tier: all runs above are **SANDBOX/MODEL_ONLY** (node-only planner/derivation/gates on this worktree; real Git CLI; no PG, no browser, no Docker, no live platform). Actual `--browser-*` executions, PR CI on this commit, nightly firing and K3 re-review of round 4 remain **NOT_RUN**. No production action, no push.
 
 Handoff: **READY for independent integrator review** (author is not the acceptance reviewer). Integrator should: (1) re-run the four commands above; (2) spot-check the growth report's per-mode additions against `covers-derivation.json` rows; (3) decide the nightly default-branch question (K3 P2, merge-time); (4) push/open PR only after that. Cleanup: one-off probe scripts stayed in the session's /tmp scratchpad (outside the repo, never committed; the sandbox does not delete outside the worktree); no repo-side processes, containers, ports or fixtures of this task remain; `output/ext-agents/` (K3's own directory) left untouched and untracked.
+
+## 26. Round 5 — PR #39 review-thread under-selection fixes (current)
+
+- Base: `74495a89` (round-4 merge into `unit/ci-select-backend-browser`, PR #39); branch/worktree unchanged.
+- Author: Claude Code session (host-reported model `qwen3.8-max`; E3, assistance — independent acceptance still owed). Inputs: three PR #39 review threads, each verified plausible by the integrator before assignment: **4236971117** (ecpayroute swallowed by BACKEND_ONLY), **4236972349** (bareSpecs parsed but never merged), **4236972354** (unquoted suite keys + helper-passed suite literals invisible).
+- Write paths: `output/ci-select-backend-browser/**` (derivation tool, evidence tools, generated data, logs, this file), `scripts/dev/pr-modes.mjs` (one BACKEND_ONLY removal + comments), `scripts/dev/test-local.sh` (registry `lc_covers` DATA only, mechanically rewritten), `tests/foundation/taiwan_cvs_env_test.go` (header "Used by:" metadata only — the derivation's OWN-file rule 3; no test logic changed), `tests/ci/pr-modes.test.mjs`, `tests/ci/backend-coverage.test.mjs`. No product Go/SQL/UI logic, no dependencies, no migrations, no credentials, no deploy changes.
+
+## 27. The three fixes (mechanism + file:line evidence)
+
+**Thread 4236971117 — ecpayroute is browser-driven after all.** `BACKEND_ONLY_PACKAGES` lost `internal/integrations/shipping/ecpay/ecpayroute` (now tlsask + retention; the floor test was updated to `>= 2` with the round-5 reason, not deleted). Contrary to the round-2 entry's claim, `TestBrowserTaiwanCvs` boots the REAL claim router: `tests/foundation/taiwan_cvs_env_test.go:636-644` `startDispatcher` → `ecpayroute.Routes(e.claims, e.keys, e.client, e.cfg.ECPay)` over the ecpaytest fake, and `TestBrowserClickSweep` builds the same tcvEnv. The env file now carries a truthful "Used by:" header (lines 12-15, inside the 16-line OWN-rule window) naming the four modes that really boot it — `--browser-cvs`, `--browser-webkit` (its WebKit re-run of the same Test, test-local.sh `run_webkit_step cvs`), `--browser-click-sweep`, `--browser-visual-lint` (LC_SWEEP_ONLY arm runs `^TestBrowserClickSweep`). The derivation answers with tier-1 `go-fixture-import` rows (`via:"go-fixture-import"`, handler `tests/foundation/taiwan_cvs_env_test.go:<line>`) for ecpayroute (import :47), ecpay and ecpaytest in exactly those four modes — covers "derived from the real dispatcher wiring", as the thread demanded. Regression: ecpayroute-only change selects `--browser-cvs` AND `--browser-click-sweep` (red→green).
+
+**Thread 4236972349 — bareSpecs are merged, and validated.** The specFiles loop now merges `tf.get(f).bareSpecs` alongside specs/suites, and every unresolved bare `*.spec.ts` name emits `BARE-SPEC-UNRESOLVED <file>: "<name>" resolves in none of the tracked spec dirs` (bare `*.mjs` runners may legitimately live elsewhere; unresolved suites emit SUITE-UNRESOLVED). `tracking-backfill.spec.ts` (passed to `brfPlaywright` at `tests/foundation/browser_tracking_backfill_test.go:174`) is now discovered: `--browser-tracking-backfill` diagnostics went own=1 specs=0 drivers=0 → **specs=1 drivers=1**, and its covers (14 rows) now include `internal/merchantorders` and `internal/httpapi/orders.go` via the spec's real read chain. Regression: orders.go-only OR merchantorders-only change selects `--browser-tracking-backfill` (red→green); diagnostics assert specs>0.
+
+**Thread 4236972354 — suite discovery supports legal TS syntax and helper forwarding.** Three derivation changes: (1) the `playwright.config.ts` suite map is parsed from the `const suites` block accepting quoted AND unquoted keys (`ledger:` at playwright.config.ts:13), fail-closed if the block disappears; (2) the direct Go scan is now strict — only quoted literal values (`LC_BROWSER_SUITE: "x"` / `= "x"` / shell `LC_BROWSER_SUITE=x` validated against the suite map), killing the old regex's identifier false-captures; (3) a fixpoint over helper calls: any function whose body assigns `env["LC_BROWSER_SUITE"] = <param>` (e.g. `runPlaywright`, browser_admin_legacy_test.go:262) becomes a suite FORWARDER at that param index; literal args at call sites (browser_admin_legacy_test.go:168 `runPlaywright(t, ctx, root, evidence, "ledger", …)`) attribute the suite to the calling file; identifier args that are params of the enclosing function promote it to a forwarder too; ambiguous param indices emit SUITE-FORWARDER-AMBIGUOUS. `--browser-admin-legacy` diagnostics went specs=0 → **specs=5 drivers=7 urls=24**; its covers now include `internal/inventory` and `internal/httpapi/live_console.go` — the chain is real: ledger.spec.ts:89-116 drives `inventory/adjustments` (mock at :89, adjust clicks), Ledger.tsx:396 `command("adjust", "inventory/adjustments", …)` is the harvested fragment, and live_console.go:44-47 `inventoryAdjustRoute` → `inventory.AdjustOnHand` is the handler. Regression: inventory-only OR live_console.go-only change selects `--browser-admin-legacy` (red→green). Fixing bareSpecs alone was NOT sufficient, as the thread stated — without the suite machinery admin-legacy still discovers 0 specs.
+
+## 28. SPECS-ZERO handling and the mandated sweep
+
+A Go-booting browser mode whose discovery finds no spec is now a hard diagnostic: the derivation prints `SPECS-ZERO <mode>: …derivation hole, or add the mode to SPECS_ZERO_OK with a written reason`, and the CI test *"round 5 sweep: every real Go browser mode discovers a spec, or is explicitly explained"* fails on any unexplained row. `SPECS_ZERO_OK` carries exactly one entry with its written reason.
+
+Sweep result (task item — every mode with specs=0 or ui-flow drivers=0 in r2-diagnostics.txt):
+
+| mode | specs | drivers | explanation |
+|---|---:|---:|---|
+| `--live-browser-input` | 0 | 0 | **SPECS-ZERO-OK** (allowlisted with reason): Go-only BRW SQL/executor + HTTP-subset gates (`go test -run '^TestLiveBrowserInputBRW'` + `go vet -tags browser`); no Playwright spec exists for this mode by design. Its covers=6 come from tier-1/URL evidence, not specs. |
+| `--browser-platform-site`, `--browser-admin-shell`, `--browser-picklist` | n/a | n/a | node-only modes (`lc_fixture=none`, no Go harness file): `covers=[] by definition` rows in diagnostics; spec discovery does not apply — they are the browser themselves, driven by node scripts. |
+
+Every one of the other 47 Go-booting modes now discovers ≥1 spec AND ≥1 ui-flow driver (grep of r2-diagnostics.txt: the only `specs=0`/`drivers=0` row is `--live-browser-input`). Before round 5 the same grep listed `--browser-tracking-backfill`, `--browser-admin-legacy` and `--browser-meta-health-ui` — all three fixed (§27), meta-health-ui via its own bareSpec (`specs=1 drivers=1` now).
+
+## 29. Growth report, the ecpay zero-join retirement, pin raises
+
+`r5-grow-report.txt` (generator `tools/r5-growth-report.mjs`, log `r5-grow.log`): **41/51 modes grew/changed**; additions admin-legacy +30, identity +98, tracking-backfill +40, meta-health-ui +14, cvs +5, webkit +4, click-sweep +2, visual-lint +2. The ONLY removal across all modes is `internal/integrations/shipping/ecpay` (37 → 4 modes), printed with a per-mode justification (0 UNJUSTIFIED-REMOVAL rows):
+
+- At HEAD no mode named ecpay directly (browser_taiwan_cvs_test.go imports only ecpaytest; taiwan_cvs_env_test.go — the file importing ecpay/ecpayroute — was no mode's OWN file), so round 4's consumer-import rule joined ecpay into the 37 modes covering its production importers. Round 5 gives the four dispatcher-booting modes direct `go-fixture-import` evidence (count 0 → 4), and the zero-count join **retires by its own rule** ("a package NO mode names directly"). The 33 modes losing it construct checkout/fulfillment at boot but drive no CVS provider flow; ecpay changes still re-run the four CVS-family gates + foundation-shards (which compile everything), nightly matrix unchanged. This is the reviewer-mandated direction of thread 4236971117 ("let the relevant browser modes cover the package").
+- **identity +98** is genuine, not dilution: bareSpecs merge gives `--browser-identity` its own harness's conditional auth-real/settings-real specs; settings-real.spec.ts drives the settings wizard (account/market/payment/policy/service forms, provider-accounts, markets/countries, discovery fetches), whose import closure legitimately reaches the listed packages — every row carries file:line evidence in covers-derivation.json. Over-selection with evidence is the sanctioned safe direction ("expect some domain counts to grow").
+- Consequence for two round-3 pins: identity's closure reaches internal/live + internal/inbox, so the FILE join for `internal/httpapi/live_stream.go` gains exactly identity (25 → 26 FILE modes; PR #30 diff and live_stream-transport planPr totals 26 → 27). Both `<= 26` ceilings were raised to `<= 27` with round-5 justification comments — same pattern as round 4's sanctioned 25 → 26 raise. The properties those tests really guard (live-console included, **CVS excluded**, not all 48) are all still asserted.
+- UNMAPPED baseline 4 → **12**: the 8 new rows are `/v1/cvs/ecpay/map-return` + `/v1/cvs/ecpay/status` harvested from taiwan_cvs_env_test.go × the four CVS-family modes. They are registered on fulfillment's OWN mux (`internal/fulfillment/cvs_hooks.go:76-77`), and the route table indexes only httpapi/identityhttp/buyerhttp registrations — a table-scope boundary, not a coverage hole: `internal/fulfillment` is already in all four modes' covers via the same env file's go-fixture-import rows, so selection is unaffected. Documented here instead of extending the route table (out of round-5 scope).
+
+## 30. Round-5 red → green, commands, NOT_RUN, cleanup
+
+RED (pre-fix, retained): `r5-red-tests-ci.log` — `node --test tests/ci/*.mjs` with the six new round-5 tests against round-4 registry/pr-modes: **6 fail / 124 pass**; the failures are exactly the three pr-modes regressions (ecpayroute→cvs+click-sweep, orders/merchantorders→tracking-backfill, inventory/live_console→admin-legacy) and the three backend-coverage evidence tests (derivation rows, specs/drivers diagnostics, SPECS-ZERO sweep). No test deleted, no threshold relaxed; the two stale pins were RAISED only after the growth evidence existed (§29).
+
+GREEN (final state, all exit 0, no source edits during the runs):
+
+| command | exit | actual result / evidence |
+|---|---:|---|
+| `node --test tests/ci/*.mjs` |0|**130/130**, 0 fail/skip; `r5-tests-ci.log` (round 4: 124)|
+| `bash scripts/dev/test-node.sh` |0|**1371/1371**, 26 summaries, 0 fail/skip/cancel; `r5-test-node.log`, `r5-node-counts.log`; pre-existing `NOT_RUN: tests/media/r04-input-runner.test.mjs (COMMERCE_R04_LIVEKIT_BINARY unset)` warning unchanged|
+| `bash scripts/dev/check-gates.sh` |0|70 dirs + 86 split files classified, 51 browser declarations; 82 documented modes, 1263 Go inventory; shard-plan ok; `r5-check-gates.log`|
+| `bash scripts/dev/test-local.sh --list` |0|83 entries including foundation; `r5-list.log`|
+
+Derivation/evidence runs: `r5-derive.log` (51 modes; uncovered=0; WRITE-GAP=0; **SPECS-ZERO=0; SUITE/BARE-SPEC problems=0**), `r5-insert.log` (registry rewritten=41 unchanged=10, reproduced deterministically from the HEAD registry; byte-identical arm structure asserted by the tool), `r5-insert-idempotent.log` (rerun: rewritten=0 unchanged=51, nothing to write), `r5-counts.log` + `tools/selection-counts-r5.json`, `r5-grow.log` + `r5-grow-report.txt`, regenerated `covers-derivation.json`, `tools/covers-narrow.json`, `tools/file-coverage.json`, `tools/r2-diagnostics.txt`. No `*.test.mjs` under `output/` (checked: 0).
+
+Evidence tier: all runs above are **SANDBOX/MODEL_ONLY** (node-only planner/derivation/gates on this worktree; real Git CLI; no PG, no browser, no Docker, no live platform). Actual `--browser-*` executions, PR CI on this commit, nightly firing and reviewer re-check of the three threads remain **NOT_RUN**. No production action, no push.
+
+Handoff: **READY for independent integrator review** (author is not the acceptance reviewer). Integrator should: (1) re-run the four commands above; (2) spot-check the three regression selections in `tools/selection-counts-r5.json`; (3) read the ecpay zero-join retirement (§29) and the SPECS_ZERO_OK reason before accepting the removals; (4) push/update PR #39 only after that. Cleanup: round-5 scratch probes (`scratch-r5-*.mjs`) deleted before commit; no repo-side processes, containers, ports or fixtures of this task remain; `output/ext-agents/` left untouched and untracked.

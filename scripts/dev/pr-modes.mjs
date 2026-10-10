@@ -138,11 +138,14 @@ function hasBrowserTag(source) {
  * (output/ci-select-backend-browser/tools/r2-diagnostics.txt: uncovered-package importer listings) — a new entry must
  * come from that derivation's evidence, not from a guess. Round 1's list was empty because the import CLOSURE made
  * every package "wired"; round 2 asks what the specs/harnesses actually EXERCISE.
+ * Round 5 (PR #39 thread 4236971117) REMOVED the round-2 ecpayroute entry: its "non-browser tests only" premise was
+ * false — TestBrowserTaiwanCvs calls tcvEnv.startDispatcher (tests/foundation/taiwan_cvs_env_test.go:636-644), which
+ * wires the real ecpayroute.Routes into the claims dispatcher, and --browser-click-sweep reuses the same env. The
+ * derivation now records that wiring as go-fixture-import evidence, and the CVS modes' lc_covers name the package.
  */
 export const BACKEND_ONLY_PACKAGES = {
   "internal/tlsask": "TLS-ask listener middleware wired only by cmd/api main (cmd/api/tlsask.go); browser harnesses serve plain HTTP in-process and never construct it — a cmd/api change still selects all Go-booting browser modes via the cmd/** rule",
   "internal/retention": "retention sweeps run only in cmd/claims-worker and cmd/retention-admin; no browser harness starts a worker, and browser fixtures are always newer than any retention horizon",
-  "internal/integrations/shipping/ecpay/ecpayroute": "CVS routing table consumed only by cmd/claims-worker and the non-browser taiwan-cvs foundation tests; --browser-cvs drives the ecpaytest fake (lc_covers), not worker routing",
 };
 
 /**
@@ -189,7 +192,8 @@ export function backendPathMatches(file, declaration) {
  * mode (lc_fixture=pg plus any mode with non-empty lc_covers — the gate forces a Go-running mode to declare covers, so
  * this is exactly the set that boots the real Go API, including --browser-tracking-backfill which uses real PG without
  * the shared fixture script); BACKEND_ONLY_PACKAGES select none EVEN under a covered ancestor prefix (an explicit
- * per-package classification beats a general one — e.g. ecpayroute inside the covered ecpay prefix); then lc_covers
+ * per-package classification beats a general one — the ecpay ancestor covers ecpayroute; round 5 removed the
+ * ecpayroute entry itself because the CVS gates boot the real dispatcher, see BACKEND_ONLY_PACKAGES); then lc_covers
  * package-prefix or exact-file match selects the declaring browser-universe modes (uniform guard, round 4: a
  * non-universe mode's covers data can never answer a backend selection); anything else falls back to every Go-booting mode until
  * check-backend-coverage classifies it. check-backend-coverage fails contradictory data (a covers entry inside

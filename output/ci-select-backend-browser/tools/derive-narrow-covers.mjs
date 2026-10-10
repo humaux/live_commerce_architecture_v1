@@ -7,7 +7,12 @@
 //   Evidence per mode, never guesses:
 //   1. API paths its Playwright specs / node runners and its Go harness actually call: URL literals in the mode's spec
 //      files (registry-referenced, referenced by its Go harness files, or selected via LC_BROWSER_SUITE in
-//      playwright.config.ts) and in the harness's own Go files. Admin BFF URLs (/api/stores/<store>/REST) map to Go
+//      playwright.config.ts — round 5, threads 4236972349/4236972354: the suite map parses legal UNQUOTED TS keys
+//      (`ledger:`), suites handed to helper ARGUMENTS resolve through a parameter-forwarding fixpoint
+//      (runPlaywright(..., "ledger", ...)), and bare spec NAMES passed to shared helpers
+//      (brfPlaywright []string{"tracking-backfill.spec.ts"}) are merged and validated. A Go-booting mode that still
+//      discovers specs=0 is flagged SPECS-ZERO — a loud discovery failure — unless documented in SPECS_ZERO_OK)
+//      and in the harness's own Go files. Admin BFF URLs (/api/stores/<store>/REST) map to Go
 //      /v1/admin/stores/<store>/REST (apps/admin/lib/backend.ts callBackend pass-through); storefront /api/buyer/REST
 //      maps to /v1/buyer/REST (apps/storefront/lib/buyer-server.ts); other BFF URLs map through the /v1/ literals of
 //      their apps/*/app/**/route.ts handler (+ its one-level lib imports). Each Go path is matched against the real
@@ -1142,7 +1147,22 @@ function matchUrlSoft(norm) {
   return hits;
 }
 
+// playwright suite map. Round 5 (thread 4236972354): playwright.config.ts:13 declares `ledger` as an UNQUOTED (but
+// legal) TS property — the old quoted-key-only scan silently missed it, so --browser-admin-legacy discovered no spec.
+// Parse the `const suites` object block for quoted AND identifier keys (the tolerance check-gates.sh's suite parser
+// already has), restricted to that block so no other `key: [...]` literal (the reporter pipeline) invents a phantom
+// suite. Fail closed: losing the block would silently regress every suite-selected mode.
+const pwConfig = read("playwright.config.ts");
+const suiteMap = {};
+{
+  const block = /const suites[^=]*=\s*\{([\s\S]*?)\n\s*\};/.exec(pwConfig);
+  if (!block) throw new Error("playwright.config.ts: cannot locate the `const suites` object block — suite-driven spec discovery would silently regress (round 5, thread 4236972354)");
+  for (const m of block[1].matchAll(/(?:"([^"]+)"|'([^']+)'|([A-Za-z_$][\w$]*))\s*:\s*\[([^\]]*)\]/g))
+    suiteMap[m[1] ?? m[2] ?? m[3]] = [...m[4].matchAll(/"([^"]+\.(?:spec|test)\.ts)"/g)].map((x) => `tests/admin/${x[1]}`);
+}
+
 // ---------- tests/foundation + cmd indexes ----------
+const specProblems = []; // BARE-SPEC-UNRESOLVED / SUITE-UNRESOLVED findings, flushed into diagnostics below
 const tfDir = path.join(root, "tests/foundation");
 const tfFiles = readdirSync(tfDir).filter((f) => f.endsWith(".go")).sort();
 const tf = new Map();
@@ -1153,14 +1173,25 @@ for (const f of tfFiles) {
   const cmdRefs = new Set([...raw.matchAll(/["'](?:\.\.?\/)*cmd\/([a-z0-9-]+)["']/g)].map((m) => `cmd/${m[1]}`));
   const header = raw.split("\n").slice(0, 16).join("\n");
   const specs = new Set([...raw.matchAll(/((?:tests|apps)\/[A-Za-z0-9_.@/-]+\.(?:spec\.ts|mjs|test\.ts|test\.mjs))/g)].map((m) => m[1]));
-  // bare spec/runner file names handed to shared helpers (brfPlaywright(t, ..., []string{"tracking-backfill.spec.ts"}))
+  // bare spec/runner file names handed to shared helpers (brfPlaywright(t, ..., []string{"tracking-backfill.spec.ts"})).
+  // Round 5 (thread 4236972349): these are MERGED into the mode's specFiles below and VALIDATED here — a quoted
+  // *.spec.ts name that resolves in none of the tracked spec dirs is a moved/deleted spec: loud, never silent.
+  // (*.mjs names may legitimately live outside the spec dirs, e.g. wire-check scripts, so they only merge when found.)
   const bareSpecs = new Set();
   for (const m of raw.matchAll(/"([A-Za-z0-9_.@-]+\.(?:spec\.ts|mjs))"/g)) {
+    let hit = false;
     for (const dir of ["tests/admin", "tests/storefront", "tests/e2e", "tests/ui", "apps/admin/tests", "apps/storefront/tests"]) {
-      if (existsSync(path.join(root, dir, m[1]))) { bareSpecs.add(`${dir}/${m[1]}`); break; }
+      if (existsSync(path.join(root, dir, m[1]))) { bareSpecs.add(`${dir}/${m[1]}`); hit = true; break; }
     }
+    if (!hit && m[1].endsWith(".spec.ts")) specProblems.push(`BARE-SPEC-UNRESOLVED tests/foundation/${f}: "${m[1]}" resolves in none of the tracked spec dirs — moved/deleted spec or missing dir`);
   }
-  const suites = new Set([...raw.matchAll(/LC_BROWSER_SUITE"?\s*(?::|=)\s*\\?"?([a-z0-9-]+)/g)].map((m) => m[1]));
+  // Direct suite selection with a LITERAL value only: the Go map form ("LC_BROWSER_SUITE": "inbox", including the
+  // shell-escaped \" quotes of command strings) or a shell assignment (LC_BROWSER_SUITE=ledger ...) whose value is a
+  // suite playwright.config.ts really defines. Round 5: variable values (env["LC_BROWSER_SUITE"] = suite) are NO
+  // LONGER captured as identifier text — the helper-argument fixpoint below resolves them (thread 4236972354).
+  const suites = new Set();
+  for (const m of raw.matchAll(/LC_BROWSER_SUITE\\?"?\s*(?::|=)\s*\\?"([a-z0-9-]+)\\?"/g)) suites.add(m[1]);
+  for (const m of raw.matchAll(/LC_BROWSER_SUITE=([a-z0-9-]+)/g)) if (suiteMap[m[1]]) suites.add(m[1]);
   const urls = extractUrls(raw);
   const fragments = extractGoFragments(raw);
   tf.set(f, { raw, bare, imports, cmdRefs, header, specs, bareSpecs, suites, urls, fragments });
@@ -1183,10 +1214,94 @@ const pkgDirs = [...new Set(execFileSync("git", ["ls-files", "-z", "--", "intern
   .split("\0").filter(Boolean).filter((f) => f.endsWith(".go") && !f.endsWith("_test.go")).map((f) => path.posix.dirname(f)))].sort();
 const isPkg = (p) => pkgDirs.includes(p);
 
-// playwright suite map
-const pwConfig = read("playwright.config.ts");
-const suites = {};
-for (const m of pwConfig.matchAll(/"([a-z0-9-]+)":\s*\[([^\]]*)\]/g)) suites[m[1]] = [...m[2].matchAll(/"([^"]+\.(?:spec|test)\.ts)"/g)].map((x) => `tests/admin/${x[1]}`);
+// Round 5 (thread 4236972354): suites handed to helpers as ARGUMENTS. runPlaywright(t, ctx, root, evidence, "ledger",
+// env) assigns env["LC_BROWSER_SUITE"] = suite (tests/foundation/browser_admin_legacy_test.go:258,262), so no literal
+// assignment names the suite at the call site and the direct scan above cannot see it. Index every tests/foundation
+// function that forwards a PARAMETER into LC_BROWSER_SUITE, then attribute string-literal arguments at its call sites
+// to the CALLING file's suites; an identifier argument that is a parameter of the enclosing function promotes that
+// function to a forwarder too (runPlaywright(..., suite, ...) inside adminMockSuite(t, suite string, ...) <-
+// adminMockSuite(t, "identity-mock", false)), iterated to a fixpoint. Only tests/foundation is scanned (harness-internal
+// helpers, never production call graphs), positions come from the real Go signature (grouped params handled), and a
+// name forwarding two different positions is reported, never guessed.
+const suiteProblems = [];
+{
+  const parsedCache = new Map();
+  const parsedOf = (f) => { if (!parsedCache.has(f)) parsedCache.set(f, parseGoFile(`tests/foundation/${f}`)); return parsedCache.get(f); };
+  // positional parameter names of a parsed func (Go grouped params: "root, evidence, suite string" -> root/evidence/suite)
+  const paramNamesOf = (fn, code) => {
+    const names = [];
+    let pending = [];
+    for (const part of splitTop(code.slice(fn.parenOpen + 1, fn.sigEnd), ",")) {
+      const p = part.trim();
+      if (!p) continue;
+      const m = /^(\w+)\s+\S/.exec(p);
+      if (m) { names.push(...pending, m[1]); pending = []; }
+      else if (/^\w+$/.test(p)) pending.push(p);
+      else { names.push(...pending, null); pending = []; }
+    }
+    names.push(...pending.map(() => null));
+    return names;
+  };
+  const forwarders = new Map(); // func name -> { idx, defined }
+  const addForwarder = (name, idx, defined) => {
+    const prev = forwarders.get(name);
+    if (prev) {
+      if (prev.idx !== idx) suiteProblems.push(`SUITE-FORWARDER-AMBIGUOUS ${name}: forwards its suite parameter at index ${prev.idx} (${prev.defined}) and ${idx} (${defined}) — not guessing`);
+      return false;
+    }
+    forwarders.set(name, { idx, defined });
+    return true;
+  };
+  // pass 1: functions assigning the env key FROM A PARAMETER ("...": ident  /  env["..."] = ident)
+  for (const f of tfFiles) {
+    const t = tf.get(f);
+    if (!t.raw.includes("LC_BROWSER_SUITE")) continue;
+    const parsed = parsedOf(f);
+    for (const fn of parsed.funcs) {
+      // value is either a string literal (the direct scan already captured it — first alternative consumes it, group
+      // stays undefined) or an identifier; only an identifier that is a PARAMETER makes the function a forwarder.
+      const m = /"LC_BROWSER_SUITE"\s*(?:\]\s*=|:)\s*(?:\\?"[^"]*\\?"|([A-Za-z_]\w*))/.exec(parsed.raw.slice(fn.bodyStart, fn.end + 1));
+      if (!m || !m[1]) continue;
+      const idx = paramNamesOf(fn, parsed.code).indexOf(m[1]);
+      if (idx >= 0) addForwarder(fn.name, idx, `tests/foundation/${f}:${lineOf(parsed.raw, fn.start)}`);
+    }
+  }
+  // pass 2: attribute literal arguments at call sites; identifier arguments that are parameters promote their function
+  let grew = true;
+  const seenCalls = new Set();
+  while (grew) {
+    grew = false;
+    for (const [fnName, fwd] of [...forwarders]) {
+      const callRe = new RegExp(`(?:^|[^\\w.])${fnName}\\s*\\(|\\.${fnName}\\s*\\(`, "g");
+      for (const g of tfFiles) {
+        const t = tf.get(g);
+        if (!t.bare.includes(fnName)) continue;
+        const parsed = parsedOf(g);
+        for (const m of t.bare.matchAll(callRe)) {
+          const open = m.index + m[0].length - 1;
+          const key = `${g}:${open}`;
+          if (seenCalls.has(key)) continue;
+          seenCalls.add(key);
+          const [, close] = callSpan(t.bare, open);
+          const args = splitTop(parsed.code.slice(open + 1, close), ",");
+          const arg = (args[fwd.idx] ?? "").trim();
+          const lit = /^"([^"\\]*)"$/s.exec(arg);
+          if (lit) {
+            if (suiteMap[lit[1]]) t.suites.add(lit[1]);
+            else suiteProblems.push(`SUITE-UNRESOLVED tests/foundation/${g}: ${fnName} call passes suite "${lit[1]}" but playwright.config.ts defines no such suite`);
+            continue;
+          }
+          if (/^[A-Za-z_]\w*$/.test(arg)) {
+            const outer = parsed.funcs.find((fn) => fn.bodyStart <= m.index && fn.end >= m.index);
+            if (!outer) continue;
+            const idx = paramNamesOf(outer, parsed.code).indexOf(arg);
+            if (idx >= 0 && addForwarder(outer.name, idx, `tests/foundation/${g}:${lineOf(parsed.raw, outer.start)}`)) grew = true;
+          }
+        }
+      }
+    }
+  }
+}
 
 // ---------- route tables ----------
 const httpapiIdx = indexPkg("internal/httpapi");
@@ -1257,8 +1372,20 @@ function prefixRegPkgs(goPath) {
 const entries = modeEntries(read("scripts/dev/test-local.sh"));
 const universe = new Set(browserModes(read("scripts/dev/test-local.sh")));
 const derivation = {};
-const diagnostics = [];
+const diagnostics = [...specProblems, ...suiteProblems];
 const pkgModeCount = new Map();
+
+// Documented specs=0 Go-booting browser modes (round-5 sweep, thread 4236972354). specs=0 is otherwise a DISCOVERY
+// FAILURE (a SPECS-ZERO diagnostics row, asserted away by tests/ci/backend-coverage.test.mjs), so every exception
+// needs a written reason here:
+//  --live-browser-input matches the browser universe by NAME, but its arm runs Go-only BRW gates (go test -run
+//  '^TestLiveBrowserInputBRW' ./tests/foundation + go vet -tags browser); no Playwright spec exists for the mode and
+//  it builds no app (lc_build=none) — its covers come from its own harness imports/URLs, so specs=0 is the truth,
+//  not a missed discovery.
+// Node-only modes never reach the check (no Go harness file => covers=[] by definition, diagnosed separately).
+const SPECS_ZERO_OK = {
+  "--live-browser-input": "Go-only BRW SQL/executor + HTTP-subset gates (go test -run '^TestLiveBrowserInputBRW' + go vet -tags browser); no Playwright spec exists for this mode",
+};
 
 for (const e of entries) {
   if (!universe.has(e.name)) continue;
@@ -1304,8 +1431,26 @@ for (const e of entries) {
   const specFiles = new Set();
   for (const m of body.matchAll(/((?:tests|apps)\/[A-Za-z0-9_.@/-]+\.(?:spec\.ts|mjs|test\.ts|test\.mjs))/g)) if (existsSync(path.join(root, m[1]))) specFiles.add(m[1]);
   for (const f of own) {
-    for (const s of tf.get(f).specs) if (existsSync(path.join(root, s))) specFiles.add(s);
-    for (const s of tf.get(f).suites) for (const spec of suites[s] ?? []) if (existsSync(path.join(root, spec))) specFiles.add(spec);
+    const t = tf.get(f);
+    for (const s of t.specs) if (existsSync(path.join(root, s))) specFiles.add(s);
+    // Round 5 (thread 4236972349): MERGE the bare spec/runner names (brfPlaywright's []string arguments) that the
+    // parse above resolved+validated against the tracked spec dirs — they were parsed but dropped before, which is
+    // why --browser-tracking-backfill and --browser-meta-health-ui ran the ui-flow tier with specs=0.
+    for (const s of t.bareSpecs) specFiles.add(s);
+    for (const s of t.suites) {
+      const suiteSpecs = suiteMap[s];
+      if (!suiteSpecs) { diagnostics.push(`${e.name}: SUITE-UNRESOLVED tests/foundation/${f} selects suite "${s}" but playwright.config.ts defines none — spec discovery failed for it`); continue; }
+      for (const spec of suiteSpecs) if (existsSync(path.join(root, spec))) specFiles.add(spec);
+    }
+  }
+  // Round 5 (thread 4236972354 sweep): specs=0 on a Go-booting browser mode is a DISCOVERY FAILURE, never a silent
+  // zero — either the derivation missed the wiring (fix it with evidence) or the mode is documented in SPECS_ZERO_OK
+  // with a written reason. tests/ci/backend-coverage.test.mjs fails on any unexplained SPECS-ZERO row.
+  if (!specFiles.size) {
+    const why = SPECS_ZERO_OK[e.name];
+    diagnostics.push(why
+      ? `SPECS-ZERO-OK ${e.name}: ${why}`
+      : `SPECS-ZERO ${e.name}: Go-booting browser mode (own=${own.size}) discovered no Playwright spec/runner — derivation hole, or add the mode to SPECS_ZERO_OK with a written reason`);
   }
 
   // --- round 4: UI drivers (specs + their tests/** import closure), proven apps, clicked testids, goto pages ---
@@ -1662,5 +1807,11 @@ const report = [
 ].join("\n");
 writeFileSync(path.join(import.meta.dirname, "r2-diagnostics.txt"), report);
 const writeGaps = diagnostics.filter((d) => d.startsWith("WRITE-GAP")).length;
-console.log(`derive-narrow-covers: ${Object.keys(out).length} modes; uncovered=${uncovered.length}; WRITE-GAP=${writeGaps}; see r2-diagnostics.txt`);
+// round-5 explicit discovery-failure counts (thread 4236972354): SPECS-ZERO = Go-booting mode with no spec found and
+// no SPECS_ZERO_OK reason; SUITE/BARE-SPEC problems = suite or spec names the harness references but nothing defines.
+const specZero = diagnostics.filter((d) => /^SPECS-ZERO(?!-OK)/.test(d)).length;
+const discoveryProblems = diagnostics.filter((d) => d.includes("SUITE-UNRESOLVED") || d.startsWith("SUITE-FORWARDER-AMBIGUOUS") || d.startsWith("BARE-SPEC-UNRESOLVED")).length;
+console.log(`derive-narrow-covers: ${Object.keys(out).length} modes; uncovered=${uncovered.length}; WRITE-GAP=${writeGaps}; SPECS-ZERO=${specZero}; SUITE/BARE-SPEC problems=${discoveryProblems}; see r2-diagnostics.txt`);
 if (writeGaps) console.error(`WRITE-GAP: ${writeGaps} mode(s) exercise write controls with no write route matched — under-selection hole (K3 P2-1)`);
+if (specZero) console.error(`SPECS-ZERO: ${specZero} Go-booting browser mode(s) discovered no spec — derivation hole or missing SPECS_ZERO_OK reason (round 5)`);
+if (discoveryProblems) console.error(`SUITE/BARE-SPEC: ${discoveryProblems} referenced suite/spec name(s) resolve to nothing — fix the harness, the config or the derivation (round 5)`);
