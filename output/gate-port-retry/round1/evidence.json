@@ -1,0 +1,63 @@
+{
+  "unit": "GATE-PORT round 1 (K3 review VERDICT FIX)",
+  "branch": "unit/gate-port-retry",
+  "pre_fix_head": "dd469ce879e464b71ad9f70fedd9380682721cfc",
+  "date_local": "2026-10-10",
+  "evidence_class": "E3 author environment; BROWSER / REAL_PG with MOCK IdP and synthetic TLS/CONNECT edge; not LIVE, not provider, not deploy",
+  "sandbox_note": "This session's permission layer blocked direct `go` and env-prefixed commands; every Go compile/test ran inside the repository's own bash scripts/dev/*.sh runners. The standalone relay-only log was therefore not produced; the witness TestBrowserAdminRelayHandoffHasNoFreePortWindow ran (and passed, chromium+webkit) inside all three required browser modes below.",
+  "lock_note": "Browser modes queued on the machine-wide PG test lock behind a concurrent session's --browser-click-sweep; no other PID/lock was touched.",
+  "runs": [
+    {
+      "command": "node --test --test-reporter=tap tests/ci/next-startup.test.mjs (pre-conversion red run of the new guards)",
+      "exit": 1,
+      "log": "round1/red-node-guards.log",
+      "detail": "11 pass / 3 fail: not ok 10 (registry arms lack the witness), not ok 11 (fixtures still free the public admin port — static guard red on pre-fix source), not ok 12 (connectFixtureAdmin still AbortSignal.timeout(1000)); ok 13/14 (extended parity + red mutations already green). Proves the old code fails the new guards."
+    },
+    {
+      "command": "bash scripts/dev/check-gates.sh",
+      "exit": 0,
+      "log": "round1/check-gates.log",
+      "detail": "check-gates: ok (82 modes, all documented; every tracked test file is run); shard-plan ok; internally ran go vet/contractdrift."
+    },
+    {
+      "command": "bash scripts/dev/test-node.sh (post-conversion, with EXIT capture)",
+      "exit": 0,
+      "log": "round1/test-node.log",
+      "detail": "26 suites, 1337 pass / 0 fail; the five new guard tests green at log lines 1301-1305 (registry arms, static freed-port guard red/green, 5 s single-attempt lock, extended eleven-adapter parity, three red mutations)."
+    },
+    {
+      "command": "bash scripts/dev/test-local.sh --browser-manual-order",
+      "exit": 0,
+      "log": "round1/browser-manual-order.log",
+      "detail": "TestBrowserAdminRelayHandoffHasNoFreePortWindow PASS (chromium+webkit); TestBrowserManualOrderLink PASS cases=10 end-to-end through the LC_LINK_CONTROL relay seam; go test ok 8.600s."
+    },
+    {
+      "command": "bash scripts/dev/test-local.sh --browser-storefront-publish",
+      "exit": 0,
+      "log": "round1/browser-storefront-publish.log",
+      "detail": "All 4 relay tests PASS incl. witness (chromium+webkit); TestBrowserStorefrontPublish PASS cases=23; go test ok 13.268s. The 'proxy error: context canceled' lines are relay teardown noise after the PASS assertion."
+    },
+    {
+      "command": "bash scripts/dev/test-local.sh --browser-catalog-media",
+      "exit": 0,
+      "log": "round1/browser-catalog-media.log",
+      "detail": "Witness PASS (chromium+webkit); TestBrowserCatalogMedia PASS 4 cells (zh-TW/en x desktop/390px), 20 cases, DB readback exact, through the LC_CM_CONTROL relay seam; go test ok 10.339s."
+    },
+    {
+      "command": "gofmt -l tests/foundation/browser_admin_relay_test.go tests/foundation/browser_catalog_media_test.go tests/foundation/browser_manual_order_link_test.go",
+      "exit": 0,
+      "log": null,
+      "detail": "Empty output (clean) — run before the browser modes."
+    }
+  ],
+  "not_run": [
+    "independent K3 re-review of round 1",
+    "required PR CI",
+    "full foundation / G07",
+    "global sweep / visual-lint",
+    "provider SANDBOX/LIVE",
+    "production deploy",
+    "extra WebKit publish mode (remains FAIL_BASELINE_REPRODUCED from round 0; predates the relay)"
+  ],
+  "follow_up": "K3 [P2] #4: ~25 non-gate harnesses still use the reserve-close-handoff pattern; out of this unit's write scope, needs its own scoped task."
+}

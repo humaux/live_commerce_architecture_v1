@@ -10,7 +10,6 @@ package foundation_test
 import (
 	"context"
 	"encoding/json"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -49,13 +48,12 @@ func TestBrowserManualOrderLink(t *testing.T) {
 		t.Fatalf("enable cash on delivery: %d %v", status, out)
 	}
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	adminOrigin := browserFront(t, listener.Addr().String())
-	_, adminPort, _ := net.SplitHostPort(listener.Addr().String())
-	_ = listener.Close()
+	// GATE-PORT r1 (K3 P1): the public admin origin stays on a continuously owned Go listener (browserAdminRelay,
+	// like publish/domains/merchant-buyer). Next binds an automatic PRIVATE port — so the shared bind-race retry
+	// helper applies to it — and registers through the runner-only control below. The PR29 reserve-close-handoff
+	// window (freed port stolen before Next binds; explicit ports never retry) is gone.
+	admin := newBrowserAdminRelay(t)
+	adminOrigin := admin.origin
 	idp := newBrowserIDP(t, adminOrigin+"/api/auth/callback")
 	_, _, authority := identityFixture(t)
 	provider, err := oidclogin.New(ctx, oidclogin.Config{Issuer: idp.server.URL, ClientID: browserClientID, RedirectURL: idp.redirect, AllowLoopbackForTests: true})
@@ -79,6 +77,21 @@ func TestBrowserManualOrderLink(t *testing.T) {
 	api := httptest.NewServer(mux)
 	t.Cleanup(api.Close)
 
+	// Runner-only control (random key, ephemeral loopback): attach the ready automatic-port admin Next to the owned public origin.
+	controlKey := randomToken()
+	control := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-Gate-Key") != controlKey {
+			http.Error(w, "forbidden", 403)
+			return
+		}
+		if r.Method == "POST" && r.URL.Path == "/admin-upstream" {
+			admin.connect(w, r) // Runner-only, behind the same X-Gate-Key guard; no product route.
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	t.Cleanup(control.Close)
+
 	cmd := exec.CommandContext(ctx, "node", "tests/storefront/manual-order-link-gate.mjs")
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	defer func() {
@@ -92,7 +105,8 @@ func TestBrowserManualOrderLink(t *testing.T) {
 		"COMMERCE_PUBLIC_ORIGIN": adminOrigin, "COMMERCE_API_ORIGIN": api.URL, "COMMERCE_OIDC_ISSUER": idp.server.URL, "COMMERCE_BFF_KEY": adminKey,
 		"COMMERCE_BUYER_WEB_ENABLED": "1", "COMMERCE_BUYER_DEMO_LABEL": "1", "COMMERCE_BUYER_API_ORIGIN": e.bh.server.URL, "COMMERCE_BUYER_BFF_KEY": e.bh.key,
 		"COMMERCE_BUYER_COOKIE_KEY": brToken(), "COMMERCE_BUYER_SESSION_TTL": "3600",
-		"LC_LINK_EVIDENCE": evidence, "LC_LINK_ADMIN_PORT": adminPort, "LC_LINK_STORE": e.store(), "LC_LINK_PRODUCT_NAME": "Synthetic manual order",
+		"LC_LINK_EVIDENCE": evidence, "LC_LINK_CONTROL": control.URL, "LC_LINK_CONTROL_KEY": controlKey,
+		"LC_LINK_STORE": e.store(), "LC_LINK_PRODUCT_NAME": "Synthetic manual order",
 		"LC_LINK_ACCOUNT": "123-456-7890", "LC_LINK_AMOUNT": "12.50",
 	})
 	log := browserLog(t, filepath.Join(evidence, "browser.log"))

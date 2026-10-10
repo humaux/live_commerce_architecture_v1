@@ -1,0 +1,64 @@
+TAP version 13
+# Subtest: an automatic port stolen after reservation retries and reaches the owned listener
+ok 1 - an automatic port stolen after reservation retries and reaches the owned listener
+  ---
+  duration_ms: 126.850084
+  type: 'test'
+  ...
+# Subtest: the exact old publish-gate startNext fails on the same forced real port handoff
+ok 2 - the exact old publish-gate startNext fails on the same forced real port handoff
+  ---
+  duration_ms: 164.327167
+  type: 'test'
+  ...
+# Subtest: a caller-specified occupied port fails without allocation or retry
+ok 3 - a caller-specified occupied port fails without allocation or retry
+  ---
+  duration_ms: 76.869542
+  type: 'test'
+  ...
+# Subtest: a non-bind startup crash is not retried
+ok 4 - a non-bind startup crash is not retried
+  ---
+  duration_ms: 42.634917
+  type: 'test'
+  ...
+# Subtest: persistent automatic bind collisions stop after three total launches
+ok 5 - persistent automatic bind collisions stop after three total launches
+  ---
+  duration_ms: 130.92625
+  type: 'test'
+  ...
+# Subtest: a readiness rejection while the child is alive preserves the original error and never retries
+ok 6 - a readiness rejection while the child is alive preserves the original error and never retries
+  ---
+  duration_ms: 124.4175
+  type: 'test'
+  ...
+# Subtest: a failure before spawning is not retried
+ok 7 - a failure before spawning is not retried
+  ---
+  duration_ms: 0.554625
+  type: 'test'
+  ...
+# Subtest: ready admin registration uses the authenticated Go fixture seam once, with no restart on a lost acknowledgement
+ok 8 - ready admin registration uses the authenticated Go fixture seam once, with no restart on a lost acknowledgement
+  ---
+  duration_ms: 6.73175
+  type: 'test'
+  ...
+# Subtest: all eleven gate adapters preserve original assertions, readiness loops, spawn and environment statements
+ok 9 - all eleven gate adapters preserve original assertions, readiness loops, spawn and environment statements
+  ---
+  duration_ms: 315.731458
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1542.28725

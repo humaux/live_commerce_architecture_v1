@@ -1,5 +1,8 @@
 //go:build browser
 
+// Purpose: drive the real publish/unpublish/browser path with an owned stable admin fixture origin.
+// Depends on: browserAdminRelay, signed mock IdP, admin/storefront Next, Go services and disposable PostgreSQL.
+// Used by: --browser-storefront-publish; no production host or provider mutation.
 package foundation_test
 
 import (
@@ -7,7 +10,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -72,13 +74,8 @@ func TestBrowserStorefrontPublish(t *testing.T) {
 	}
 	registrarDSN := miRole(t, h.f, "commerce_storefront_registrar") // lc_store_registrar grant shape (inherit_noset)
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	adminOrigin := browserFront(t, listener.Addr().String())
-	_, adminPort, _ := net.SplitHostPort(listener.Addr().String())
-	_ = listener.Close()
+	admin := newBrowserAdminRelay(t)
+	adminOrigin := admin.origin
 	idp := newBrowserIDP(t, adminOrigin+"/api/auth/callback")
 	_, _, authority := identityFixture(t)
 	provider, err := oidclogin.New(ctx, oidclogin.Config{Issuer: idp.server.URL, ClientID: browserClientID, RedirectURL: idp.redirect, AllowLoopbackForTests: true})
@@ -164,6 +161,8 @@ func TestBrowserStorefrontPublish(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		switch {
+		case r.Method == "POST" && r.URL.Path == "/admin-upstream":
+			admin.connect(w, r) // Runner-only, behind the same X-Gate-Key guard; no product route.
 		case r.Method == "GET" && r.URL.Path == "/db":
 			_ = json.NewEncoder(w).Encode(facts())
 		case r.Method == "POST" && r.URL.Path == "/operator":
@@ -213,7 +212,7 @@ func TestBrowserStorefrontPublish(t *testing.T) {
 		"COMMERCE_BUYER_WEB_ENABLED": "1", "COMMERCE_BUYER_DEMO_LABEL": "1",
 		"COMMERCE_BUYER_API_ORIGIN": h.server.URL, "COMMERCE_BUYER_BFF_KEY": h.key,
 		"COMMERCE_BUYER_COOKIE_KEY": brToken(), "COMMERCE_BUYER_SESSION_TTL": "3600",
-		"LC_JOINT_EVIDENCE": evidence, "LC_JOINT_ADMIN_PORT": adminPort, "LC_JOINT_STORE": h.f.storeA1,
+		"LC_JOINT_EVIDENCE": evidence, "LC_JOINT_STORE": h.f.storeA1,
 		"LC_JOINT_CONTROL": control.URL, "LC_JOINT_CONTROL_KEY": controlKey,
 	})
 	log := browserLog(t, filepath.Join(evidence, "browser.log"))

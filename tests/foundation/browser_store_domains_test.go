@@ -1,5 +1,8 @@
 //go:build browser
 
+// Purpose: verify merchant domain setup through the owned stable admin fixture origin and real store APIs.
+// Depends on: browserAdminRelay, signed mock IdP, admin/storefront Next, disposable PostgreSQL and mock DNS/TLS.
+// Used by: --browser-store-domains; no real DNS, production host or provider mutation.
 package foundation_test
 
 import (
@@ -75,13 +78,8 @@ func TestBrowserStoreDomains(t *testing.T) {
 	// the production worker (P0-2: still unwired, see REVIEW-store-domains.md) would use.
 	verifier := miPool(t, h.f, "commerce_storefront_verifier")
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	adminOrigin := browserFront(t, listener.Addr().String())
-	_, adminPort, _ := net.SplitHostPort(listener.Addr().String())
-	_ = listener.Close()
+	admin := newBrowserAdminRelay(t)
+	adminOrigin := admin.origin
 	idp := newBrowserIDP(t, adminOrigin+"/api/auth/callback")
 	_, _, authority := identityFixture(t)
 	provider, err := oidclogin.New(ctx, oidclogin.Config{Issuer: idp.server.URL, ClientID: browserClientID, RedirectURL: idp.redirect, AllowLoopbackForTests: true})
@@ -169,6 +167,8 @@ func TestBrowserStoreDomains(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		switch {
+		case r.Method == "POST" && r.URL.Path == "/admin-upstream":
+			admin.connect(w, r) // Runner-only, behind the same X-Gate-Key guard; no product route.
 		case r.Method == "GET" && r.URL.Path == "/db":
 			store := r.URL.Query().Get("store")
 			if !command.ValidID(store) {
@@ -221,7 +221,7 @@ func TestBrowserStoreDomains(t *testing.T) {
 		"COMMERCE_BUYER_WEB_ENABLED": "1", "COMMERCE_BUYER_DEMO_LABEL": "1",
 		"COMMERCE_BUYER_API_ORIGIN": h.server.URL, "COMMERCE_BUYER_BFF_KEY": h.key,
 		"COMMERCE_BUYER_COOKIE_KEY": brToken(), "COMMERCE_BUYER_SESSION_TTL": "3600",
-		"LC_JOINT_EVIDENCE": evidence, "LC_JOINT_ADMIN_PORT": adminPort, "LC_JOINT_BASE": baseDomain,
+		"LC_JOINT_EVIDENCE": evidence, "LC_JOINT_BASE": baseDomain,
 		"LC_JOINT_CONTROL": control.URL, "LC_JOINT_CONTROL_KEY": controlKey,
 	})
 	log := browserLog(t, filepath.Join(evidence, "browser.log"))

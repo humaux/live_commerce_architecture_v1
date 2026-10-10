@@ -1,0 +1,203 @@
+{
+  "Purpose": "GATE-PORT author acceptance, final immutable source and explicit admin root repair.",
+  "Depends on": "Existing mode registry, task-owned real sockets, synthetic IdP/edge and disposable PostgreSQL.",
+  "Used by": "Integrator independent review and PR; does not certify production or the extra WebKit mode.",
+  "source_sha": "75233f5ad0537a8eb7f1c982d0578f7200fa3f13",
+  "original_base": "9b738e0af64ebd08c25b39f8081d46d4dc5674fb",
+  "integrated_trunk": "23568c39dd5994a5c42a914b981523c4765bc99e",
+  "commits": {
+    "auto": "6dcb4afbc3d408874e6a902d78806004045b61e2",
+    "retained_admin": "eb4de36d183a8bde45ddb5cf686d14300d2a0155",
+    "ci_regressions": "75233f5ad0537a8eb7f1c982d0578f7200fa3f13"
+  },
+  "final_batch": {
+    "session_id": 88166,
+    "pid": 89895,
+    "start_utc": "2026-10-10T05:15:16Z",
+    "end_utc": "2026-10-10T05:20:58Z",
+    "exit": 0,
+    "failed_modes": 0,
+    "serial": true,
+    "lock_wait_seconds": 14400,
+    "timeout": "Existing mode Go timeouts unchanged",
+    "successors": "All owned sessions ended; integrator reviews/pushes, author does not push."
+  },
+  "static": [
+    {
+      "command": "bash scripts/dev/test-node.sh",
+      "exit": 0,
+      "tests": 1333,
+      "pass": 1333,
+      "fail": 0,
+      "skip": 0,
+      "cancelled": 0,
+      "summaries": 26,
+      "log": "final/node.log"
+    },
+    {
+      "command": "bash scripts/dev/check-gates.sh",
+      "exit": 0,
+      "documented_modes": 82,
+      "go_inventory": 1256,
+      "log": "final/gates.log"
+    },
+    {
+      "command": "GOTOOLCHAIN=go1.27.2 go vet -tags browser -p 2 ./tests/foundation",
+      "exit": 0,
+      "log": "final/vet.log"
+    },
+    {
+      "command": "gofmt -l (four changed Go test files)",
+      "exit": 0,
+      "output_lines": 0,
+      "log": "final/gofmt.log"
+    },
+    {
+      "command": "bash scripts/dev/test-local.sh --list",
+      "exit": 0,
+      "entries_including_foundation": 83,
+      "log": "final/modes-list.txt"
+    },
+    {
+      "command": "go run ./scripts/dev/contractdrift",
+      "exit": 0,
+      "errors": 0,
+      "existing_warnings": 362,
+      "log": "final/contractdrift.log"
+    }
+  ],
+  "browser": [
+    {
+      "command": "LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-storefront-publish",
+      "exit": 0,
+      "cases": 23,
+      "note": "3 additional Go relay top-level tests + 4 subtests, then original publish UI",
+      "log": "final/browser-storefront-publish.log"
+    },
+    {
+      "command": "LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-store-domains",
+      "exit": 0,
+      "cases": 22,
+      "log": "final/browser-store-domains.log"
+    },
+    {
+      "command": "LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-merchant-buyer",
+      "exit": 0,
+      "cases": 8,
+      "log": "final/browser-merchant-buyer.log"
+    },
+    {
+      "command": "LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-manual-order",
+      "exit": 0,
+      "cases": 10,
+      "log": "final/browser-manual-order.log"
+    },
+    {
+      "command": "LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-buyer",
+      "exit": 0,
+      "cases": 13,
+      "log": "final/browser-buyer.log"
+    },
+    {
+      "command": "LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-order",
+      "exit": 0,
+      "cases": 33,
+      "log": "final/browser-order.log"
+    },
+    {
+      "command": "LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-buyer-comms",
+      "exit": 0,
+      "cases": null,
+      "note": "MOCK mailbox",
+      "log": "final/browser-buyer-comms.log"
+    },
+    {
+      "command": "LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-catalog-media",
+      "exit": 0,
+      "cases": 20,
+      "log": "final/browser-catalog-media.log"
+    },
+    {
+      "command": "LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-promotions",
+      "exit": 0,
+      "cases": 32,
+      "log": "final/browser-promotions.log"
+    },
+    {
+      "command": "LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-storefront",
+      "exit": 0,
+      "cases": null,
+      "note": "REAL stack, 28 active products, 2 collections",
+      "log": "final/browser-storefront.log"
+    },
+    {
+      "command": "LC_TEST_LOCK_WAIT=14400 LC_SHOP_MOCK=1 bash scripts/dev/test-local.sh --browser-storefront",
+      "exit": 0,
+      "cases": 12,
+      "note": "SF01–SF12 plus R5 extra checks",
+      "log": "final/browser-storefront-mock.log"
+    }
+  ],
+  "red_green": [
+    {
+      "case": "real explicit public-port ownership",
+      "red_exit": 1,
+      "red_file_sha": "c3536984bc445fac0a8880bd521744c84b630ca3508d0ee92ac480843350578b",
+      "red_log": "red-admin-origin.log",
+      "green_exit": 0,
+      "green_log": "green-admin-origin-final.log",
+      "classification": "RED extraction preserved legacy premature Close; real rival socket steals port; not a run of the entire old Go browser source"
+    },
+    {
+      "case": "real registry selection omits relay test",
+      "red_exit": 1,
+      "red_log": "explicit-admin/red-registry.log",
+      "green_exit": 0,
+      "green_pass": 10,
+      "green_log": "explicit-admin/green-registry.log"
+    },
+    {
+      "case": "original auto-port collision tests",
+      "red_exit": 1,
+      "red_log": "red-next-startup.log",
+      "green_exit": 0,
+      "green_pass": 10,
+      "note": "Current Node suite preserves original real Git startNext witness, all negatives and eleven assertions/readiness parity."
+    }
+  ],
+  "extra_webkit": {
+    "status": "FAIL_BASELINE_REPRODUCED, not PASS",
+    "command": "LC_TEST_LOCK_WAIT=14400 LC_BROWSER_ENGINE=webkit bash scripts/dev/test-local.sh --browser-storefront-publish",
+    "current": {
+      "source": "eb4de36d",
+      "exit": 1,
+      "workflow_passes": 22,
+      "error": "5 x Fetch API cannot load https; original uiErrors=[] assertion",
+      "driver": "explicit-admin/webkit-current-driver.log",
+      "driver_sha256": "8ad1368fe547a760ca155d47ae8a704dc67263e0c38f567380150998142e41ea"
+    },
+    "old_pair": {
+      "exit": 1,
+      "workflow_passes": 22,
+      "error": "Same 5 errors and original empty assertion",
+      "fixture_revision": "9b738e0a",
+      "go_sha256": "36202d0b5d0699d5cd4a597e7a5c71a41f4514d3367f448b28bc029a5b3387ca",
+      "js_sha256": "72b1969ddf674edf2a53031b12148c8250c9a0cfca48e5c2cdf9a3ee8b28d6fd",
+      "driver": "explicit-admin/baseline-webkit/driver.log",
+      "driver_sha256": "1fb6fe9c4a13d961745d391f1211aba89d6506a4d9ad8af8ce796aca775d8a20"
+    },
+    "restoration": "Both temporarily compared files restored exactly to final source HEAD752 before final gates; git diff --quiet passed.",
+    "limitations": "Source/application/runtime unchanged in comparison except the exact old Go/JS fixture pair. No cancellation filtering, assertions, thresholds or waits were changed."
+  },
+  "evidence_class": "E3 author environment; BROWSER/REAL_PG with MOCK IdP and synthetic edge, not LIVE",
+  "not_run": [
+    "Independent K3 on final candidate",
+    "PR required CI",
+    "Full foundation/G07",
+    "Global click sweep/visual lint",
+    "Provider sandbox/live",
+    "Production deployment",
+    "Other non-*-gate startup protocols"
+  ],
+  "cleanup": "Owned two batches and baseline comparison finished; fixture-owned processes/listeners/containers disposed, no other PID or lock touched."
+}

@@ -1,0 +1,112 @@
+BATCH_SOURCE=6dcb4afbc3d408874e6a902d78806004045b61e2 BATCH_PID=23245
+BEGIN --browser-storefront-publish 2026-10-09T22:45:33Z
+END --browser-storefront-publish exit=0 2026-10-09T22:46:26Z
+
+Packaged standalone admin server and static assets.
+=== RUN   TestBrowserStorefrontPublish
+    browser_storefront_publish_test.go:271: PASS: merchant Settings card (en/zh-TW, desktop/390px) + store-admin executable + anonymous buyer browser on https://buyer.example, no owner-seeded publication/domain rows; cases=23; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/output/playwright/storefront-publish-4232335982
+--- PASS: TestBrowserStorefrontPublish (12.35s)
+PASS
+ok  	livecommerce/tests/foundation	14.824s
+PASS: R3 storefront-publish: isolated admin + storefront Next, Go, PG with NO owner-seeded publication/domain row; the merchant publishes with the Settings card (en/zh-TW, desktop + 390px), the built cmd/store-admin executable binds/suspends/detaches/re-binds the origin, a fresh anonymous buyer browser sees the product or the not-found page on https://buyer.example; signed MOCK IdP + synthetic TLS/CONNECT edge, ownership/TLS evidence is an unverified reference; not DNS/TLS, Caddy or provider acceptance.
+BEGIN --browser-manual-order 2026-10-09T22:46:26Z
+END --browser-manual-order exit=0 2026-10-09T22:46:47Z
+
+Packaged standalone admin server and static assets.
+=== RUN   TestBrowserManualOrderLink
+    browser_manual_order_link_test.go:150: PASS: merchant UI manual order -> link -> fresh browser exchange -> bank details -> transfer proof; single use; cases=10; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/output/playwright/manual-order-link-247242268
+--- PASS: TestBrowserManualOrderLink (6.03s)
+PASS
+ok  	livecommerce/tests/foundation	7.758s
+PASS: isolated merchant UI manual order -> buyer link -> fresh browser exchange -> bank details -> transfer proof; signed MOCK IdP, local TLS/CONNECT edge; not provider or deployment acceptance.
+BEGIN --browser-buyer 2026-10-09T22:46:47Z
+END --browser-buyer exit=0 2026-10-09T22:47:07Z
+ƒ  (Dynamic)  server-rendered on demand
+
+=== RUN   TestBrowserBuyerRealChain
+    browser_buyer_chain_test.go:89: PASS: real browser/Next/Go/PG; cases=13; one order/hold; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/output/playwright/buyer-real-1564911226
+--- PASS: TestBrowserBuyerRealChain (9.98s)
+PASS
+ok  	livecommerce/tests/foundation	11.708s
+PASS: isolated PG + real buyer browser transport; not UI/PSP/deployment acceptance.
+BEGIN --browser-order 2026-10-09T22:47:07Z
+END --browser-order exit=0 2026-10-09T22:47:50Z
+ƒ  (Dynamic)  server-rendered on demand
+
+=== RUN   TestBrowserBuyerOrderUI
+    browser_order_chain_test.go:495: PASS: actual order UI/history; cases=33; buyers=6; orders=7; exact order/hold/job/receipt/reserve counts (one buyer twice, five once); evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/output/playwright/buyer-order-1987897644
+--- PASS: TestBrowserBuyerOrderUI (31.40s)
+PASS
+ok  	livecommerce/tests/foundation	33.122s
+PASS: isolated buyer address/order UI gate; not provider payment or deployment acceptance.
+BEGIN --browser-buyer-comms 2026-10-09T22:47:50Z
+END --browser-buyer-comms exit=0 2026-10-09T22:48:17Z
+ƒ  (Dynamic)  server-rendered on demand
+
+=== RUN   TestBrowserBuyerComms
+    browser_buyer_comms_test.go:136: BROWSER (MOCK mailbox, MOCK edge) buyer-comms gate passed; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/output/playwright/run.cyPqVvO8/buyer-comms/20261009T224759.943775000
+--- PASS: TestBrowserBuyerComms (16.60s)
+PASS
+ok  	livecommerce/tests/foundation	18.594s
+PASS: buyer-comms browser gate (BROWSER, MOCK mailbox): bank_transfer order with e-mail in the storefront shell, placed mail captured by a loopback SMTP fake, fresh-browser guest lookup (view-only, identical refusals); zh-TW + en, desktop + 390px; no real mailbox.
+BEGIN --browser-merchant-buyer 2026-10-09T22:48:17Z
+END --browser-merchant-buyer exit=0 2026-10-09T22:48:38Z
+
+Packaged standalone admin server and static assets.
+=== RUN   TestBrowserMerchantBuyerRealChain
+    browser_merchant_buyer_chain_test.go:226: PASS: production admin/Next + signed MOCK IdP + real catalog BFF/Go/PG -> exact buyer URL; cases=8; 3 locales; zero purchase effects; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/output/playwright/merchant-buyer-real-3082607710
+--- PASS: TestBrowserMerchantBuyerRealChain (5.19s)
+PASS
+ok  	livecommerce/tests/foundation	7.573s
+PASS: isolated merchant-to-buyer browser chain; not provider payment or real DNS/TLS deployment proof.
+BEGIN --browser-catalog-media 2026-10-09T22:48:38Z
+END --browser-catalog-media exit=0 2026-10-09T22:49:01Z
+
+Packaged standalone admin server and static assets.
+=== RUN   TestBrowserCatalogMedia
+    browser_catalog_media_test.go:238: BROWSER (MOCK IdP) catalog-media gate passed: 4 cells (zh-TW/en x desktop/390px), 20 cases, DB readback exact; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/output/playwright/run.gKRNJmf0/catalog-media/20261009T224853.200066000
+--- PASS: TestBrowserCatalogMedia (8.47s)
+PASS
+ok  	livecommerce/tests/foundation	10.202s
+PASS: catalog-media browser gate (BROWSER, MOCK IdP): merchant uploads 2 photos, reorders, renames, reprices and archives a SKU in the product editor and reads the results back in the Ledger; an anonymous buyer sees the home grid, gallery order, new price and no archived SKU; zh-TW + en, desktop + 390px; the storefront publication and the ACTIVE domain are written through the migration 0081 definers (merchant publish, operator bind), not owner-seeded; not provider or deployment acceptance.
+BEGIN --browser-store-domains 2026-10-09T22:49:01Z
+END --browser-store-domains exit=0 2026-10-09T22:49:27Z
+
+Packaged standalone admin server and static assets.
+=== RUN   TestBrowserStoreDomains
+    browser_store_domains_test.go:308: PASS: onboarding wizard (en) -> handle + ACTIVE platform subdomain -> publish (zh-TW 390px) -> buyer on https://<handle>.lctest.example -> custom domain (zh-CN) -> scripted DNS + VerifyPending sweep -> ACTIVE -> 301 contract -> suspend/detach/unpublish; cases=22; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/output/playwright/store-domains-1555404627
+--- PASS: TestBrowserStoreDomains (11.13s)
+PASS
+ok  	livecommerce/tests/foundation	12.862s
+PASS: R5 store-domains: isolated admin + storefront Next, Go, PG with NO owner-seeded domain row; the onboarding wizard shows the server-assigned random eight-digit address only after creation, the merchant publishes and the storefront is served at https://<handle>.<base> through the synthetic Host-mapped edge, the merchant adds a custom domain, sees the DNS instructions, the MOCK DNS+TLS turn green -> ACTIVE and the platform subdomain 301s to it; zh-TW + zh-CN + en, desktop + 390px; signed MOCK IdP, MOCK DNS/TLS edge: not real DNS/TLS, Caddy on_demand_tls or provider acceptance.
+BEGIN --browser-promotions 2026-10-09T22:49:27Z
+END --browser-promotions exit=0 2026-10-09T22:49:57Z
+
+Packaged standalone admin server and static assets.
+=== RUN   TestBrowserPromotions
+    browser_promotions_test.go:231: BROWSER (MOCK IdP, bank_transfer) promotions gate passed: 4 cells (zh-TW/en x desktop/390px), 32 cases, DB readback exact; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/output/playwright/run.B85Q2fYT/promotions/20261009T224940.607234000
+--- PASS: TestBrowserPromotions (15.96s)
+PASS
+ok  	livecommerce/tests/foundation	17.679s
+PASS: promotions browser gate (BROWSER, MOCK IdP): the merchant creates a 10% code with a minimum spend in /promotions, an anonymous buyer adds 2 products in the new storefront, applies the code at checkout, sees the discount and places a bank_transfer order, the merchant order view and finance show the discounted amounts; invalid and below-minimum codes show their messages; zh-TW + en, desktop + 390px; PG readback of codes/orders/redemptions; Stripe SANDBOX and WebKit are NOT_RUN here.
+BEGIN --browser-storefront 2026-10-09T22:49:57Z
+END --browser-storefront exit=0 2026-10-09T22:50:19Z
+ƒ  (Dynamic)  server-rendered on demand
+
+=== RUN   TestBrowserStorefront
+    browser_storefront_test.go:400: PASS: real-stack storefront shell; 28 active products, 2 collections; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/output/playwright/run.aUUZXLH0/storefront/20261009T225008.742457000
+--- PASS: TestBrowserStorefront (11.19s)
+PASS
+ok  	livecommerce/tests/foundation	12.920s
+PASS: SFR01-SFR09 buyer storefront shell on the REAL stack (production Next + real Go buyer API + isolated PG; shop built through the admin API, published through the migration 0081 definers; checkout path, free-shipping threshold and collection photo ids from the producers); synthetic CONNECT edge, no provider, no device. The MOCK sibling: LC_SHOP_MOCK=1 bash scripts/dev/test-local.sh --browser-storefront.
+BEGIN --browser-storefront-mock 2026-10-09T22:50:19Z
+END --browser-storefront-mock exit=0 2026-10-09T22:51:20Z
+PASS SF08 preview token shows the draft with banner/no-store/noindex and keeps it across nav; unknown token and forged header fall back to published
+PASS SF09 UI chrome follows the locale (en, zh-CN) while merchant text stays as entered
+PASS SF10 unpublished store: branded closed 404, robots Disallow, no sitemap; upstream down -> 500 error state, resolver down -> 503 fail-closed, recovers
+PASS SF11 visual-QA polish: footer never covered (checkout bar 1280/390/320, product phone bar 320/390), one header, image placeholders with icon+label, one money format, 44px targets, disabled CTA described, closed store chrome, home rail affordance
+PASS SF12 no page errors or hydration warnings across the whole phone walk-through
+PASS R5 extra MOCK: categories hidden/empty, related excludes current/withdrawn, foreign Host, assurance explicit-only/failure/no-bootstrap, three-language safety page, gallery, 8 exact-size captures
+engine=chromium cases=12 mode=start MOCK
+PASS: SF01-SF12 MOCK buyer storefront shell (SF11 = the visual-QA polish checks) (engine per LC_BROWSER_ENGINE) on the production Next build + contract-shaped fake API; not real Go/PG, published-origin resolver, order placement or deployment acceptance. Log: /Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/output/playwright/run.aS9eoBCQ/storefront-shell/shop-gate.log
+BATCH_FAILED_MODES=0

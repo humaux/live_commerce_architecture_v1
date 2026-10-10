@@ -1,6 +1,10 @@
+// Purpose: order-gate.mjs startup uses bounded shared bind-race recovery; gate assertions are unchanged.
+// Depends on: tests/helpers/next-startup.mjs and existing app/fixture/edge imports below.
+// Used by: its scripts/dev/test-local.sh browser mode; GATE-PORT acceptance.
 // Purpose: real buyer checkout/order/history gate, including stable locale targets and complete context privacy audits.
 // Depends on: production Next/Go/PG, Playwright, shared Taipei formatting, browser-engine and shop-helpers.
 // Used by: TestBrowserBuyerOrderUI in --browser-order and the WebKit order scenario; only synthetic TLS/fixture faults.
+import { startNextWithPortRetry, nextAttemptLog } from "../helpers/next-startup.mjs";
 import assert from "node:assert/strict";
 import http from "node:http";
 import https from "node:https";
@@ -45,16 +49,20 @@ function relay(port,req,body) {
   });
 }
 async function startNext() {
-  const reserve=net.createServer(),port=await listen(reserve);await new Promise(r=>reserve.close(r));
-  const log=createWriteStream(path.join(evidence,"next.log"),{flags:"wx",mode:0o600});logs.push(log);await once(log,"open");
-  const env={...process.env,NODE_ENV:"production",NEXT_TELEMETRY_DISABLED:"1"};
-  for(const name of Object.keys(env))if(name.startsWith("LC_ORDER_"))delete env[name];
-  const child=spawn(process.execPath,[path.join(root,"apps/storefront/node_modules/next/dist/bin/next"),"start","--hostname","127.0.0.1","--port",String(port)],{cwd:path.join(root,"apps/storefront"),env,stdio:["ignore",log,log]});children.add(child);
-  for(let i=0;i<100;i++){
-    if(child.exitCode!==null)throw new Error("owned Next failed readiness");
-    try{if((await relay(port,{url:"/api/buyer/session",method:"GET",headers:{host:"buyer.example"}},Buffer.alloc(0))).status===200)return port;}catch{}
-    await pause(50);
-  }throw new Error("owned Next readiness timeout");
+  return startNextWithPortRetry({}, async ({ port, attempt, track }) => {
+
+    const log=createWriteStream(nextAttemptLog(path.join(evidence,"next.log"), attempt),{flags:"wx",mode:0o600});logs.push(log);await once(log,"open");
+    const env={...process.env,NODE_ENV:"production",NEXT_TELEMETRY_DISABLED:"1"};
+    for(const name of Object.keys(env))if(name.startsWith("LC_ORDER_"))delete env[name];
+    const child=spawn(process.execPath,[path.join(root,"apps/storefront/node_modules/next/dist/bin/next"),"start","--hostname","127.0.0.1","--port",String(port)],{cwd:path.join(root,"apps/storefront"),env,stdio:["ignore",log,log]});
+    track(child, log);children.add(child);
+    for(let i=0;i<100;i++){
+      if(child.exitCode!==null)throw new Error("owned Next failed readiness");
+      try{if((await relay(port,{url:"/api/buyer/session",method:"GET",headers:{host:"buyer.example"}},Buffer.alloc(0))).status===200)return port;}catch{}
+      await pause(50);
+    }throw new Error("owned Next readiness timeout");
+
+  });
 }
 function arm(suffix,fields={}) {
   return hook={path:`/api/buyer/${suffix}`,entered:deferred(),release:deferred(),result:deferred(),...fields};

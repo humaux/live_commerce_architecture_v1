@@ -1,3 +1,11 @@
+// Purpose: manual-order-link-gate.mjs startup uses bounded shared bind-race recovery; gate assertions are unchanged.
+// Depends on: tests/helpers/next-startup.mjs and existing app/fixture/edge imports below.
+// Used by: its scripts/dev/test-local.sh browser mode; GATE-PORT acceptance.
+// GATE-PORT r1 (K3 P1): the admin no longer receives a freed explicit LC_LINK_ADMIN_PORT. It starts on an
+// automatic private port (so the shared retry helper covers it) and attaches to the Go-owned public origin
+// through connectFixtureAdmin + the runner-only LC_LINK_CONTROL seam, exactly like the publish/domains/
+// merchant-buyer gates. Fail fast when the seam is missing — a plain throw, not a new gate assertion:
+// the AST parity guard keeps the original assertion list byte-equal to the baseline.
 // Purpose: real-click manual order creation, buyer-link exchange and persisted bank deadline browser gate.
 // Depends on: production admin/storefront Next, real Go/PG, signed MOCK IdP, Playwright and shared Taipei displayTime.
 // Used by: TestBrowserManualOrderLink (--browser-manual-order), including the WebKit aggregate.
@@ -7,6 +15,7 @@
 // real Go/PG; the only host mapping is this disposable TLS/CONNECT edge (https://buyer.example). Depends on Playwright,
 // browser-engine and shared Taipei displayTime; called by the Go manual-order browser gate. The Go order expiry is the
 // timestamp authority, and the buyer bank deadline is the durable reload surface. Evidence: result.json, screenshots.
+import { startNextWithPortRetry, nextAttemptLog, connectFixtureAdmin } from "../helpers/next-startup.mjs";
 import assert from "node:assert/strict";
 import http from "node:http";
 import https from "node:https";
@@ -46,31 +55,38 @@ function relay(port, request, body = Buffer.alloc(0)) {
     call.on("error", reject); call.end(body);
   });
 }
-async function startNext(app, port) {
-  if (!port) { const reserve = net.createServer(); port = await listen(reserve); await new Promise(resolve => reserve.close(resolve)); }
-  const log = createWriteStream(path.join(evidence, `${app}.log`), {flags: "wx", mode: 0o600});
-  logs.push(log); await once(log, "open");
-  const env = {...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1"};
-  for (const name of Object.keys(env)) if (name.startsWith("LC_LINK_")) delete env[name];
-  const args = app === "admin"
-    ? [path.join(root, "apps/admin/.next/standalone/apps/admin/server.js")]
-    : [path.join(root, "apps/storefront/node_modules/next/dist/bin/next"), "start", "--hostname", "127.0.0.1", "--port", String(port)];
-  env.HOSTNAME = "127.0.0.1"; env.PORT = String(port);
-  const child = spawn(process.execPath, args, {cwd: path.join(root, `apps/${app}`), env, stdio: ["ignore", log, log]});
-  children.add(child);
-  for (let i = 0; i < 100; i++) {
-    if (!running(child)) throw new Error(`owned ${app} exited before readiness`);
-    try {
-      const response = await relay(port, {url: app === "admin" ? "/api/stores" : "/api/buyer/session", method: "GET", headers: {host: app === "admin" ? new URL(adminOrigin).host : "buyer.example"}});
-      if (response.status === (app === "admin" ? 401 : 200)) return port;
-    } catch {}
-    await wait(50);
-  }
-  throw new Error(`owned ${app} readiness deadline`);
+async function startNext(app, requestedPort) {
+  return startNextWithPortRetry({ port: requestedPort }, async ({ port, attempt, track }) => {
+
+    const log = createWriteStream(nextAttemptLog(path.join(evidence, `${app}.log`), attempt), {flags: "wx", mode: 0o600});
+    logs.push(log); await once(log, "open");
+    const env = {...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1"};
+    for (const name of Object.keys(env)) if (name.startsWith("LC_LINK_")) delete env[name];
+    const args = app === "admin"
+      ? [path.join(root, "apps/admin/.next/standalone/apps/admin/server.js")]
+      : [path.join(root, "apps/storefront/node_modules/next/dist/bin/next"), "start", "--hostname", "127.0.0.1", "--port", String(port)];
+    env.HOSTNAME = "127.0.0.1"; env.PORT = String(port);
+    const child = spawn(process.execPath, args, {cwd: path.join(root, `apps/${app}`), env, stdio: ["ignore", log, log]});
+    track(child, log);
+    children.add(child);
+    for (let i = 0; i < 100; i++) {
+      if (!running(child)) throw new Error(`owned ${app} exited before readiness`);
+      try {
+        const response = await relay(port, {url: app === "admin" ? "/api/stores" : "/api/buyer/session", method: "GET", headers: {host: app === "admin" ? new URL(adminOrigin).host : "buyer.example"}});
+        if (response.status === (app === "admin" ? 401 : 200)) return port;
+      } catch {}
+      await wait(50);
+    }
+    throw new Error(`owned ${app} readiness deadline`);
+
+  });
 }
 try {
   execFileSync("openssl", ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", path.join(certDir, "key.pem"), "-out", path.join(certDir, "cert.pem"), "-days", "1", "-subj", "/CN=buyer.example"], {stdio: "ignore"});
-  const [, buyerPort] = await Promise.all([startNext("admin", Number(process.env.LC_LINK_ADMIN_PORT)), startNext("storefront")]);
+  if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(process.env.LC_LINK_CONTROL) || !process.env.LC_LINK_CONTROL_KEY)
+    throw new Error("LC_LINK_CONTROL(+KEY) must name the Go-owned relay control; the admin no longer receives a freed explicit port");
+  const [adminPort, buyerPort] = await Promise.all([startNext("admin"), startNext("storefront")]);
+  await connectFixtureAdmin(adminPort, process.env.LC_LINK_CONTROL, process.env.LC_LINK_CONTROL_KEY);
   edge = https.createServer({key: await readFile(path.join(certDir, "key.pem")), cert: await readFile(path.join(certDir, "cert.pem"))}, async (request, response) => {
     try {
       const chunks = []; for await (const chunk of request) chunks.push(chunk);

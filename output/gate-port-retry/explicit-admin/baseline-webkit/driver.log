@@ -1,0 +1,56 @@
+browser engine: webkit
+PASS signed MOCK IdP; merchant created product + SKU in the UI; purchase entry reports no published address
+PASS buyer sees the not-found page (en, desktop): nothing published, nothing bound (no owner-seeded row)
+PASS Settings card (en, desktop): not published, awaiting platform domain, no merchant control to bind a domain
+PASS buyer sees the not-found page (en, desktop): published but no platform domain yet
+PASS anonymous buyer sees the product on https://buyer.example (en, desktop): published + operator-bound
+PASS buyer sees the not-found page (en, desktop): merchant unpublished
+PASS cycle A (en, desktop): publish -> still not found -> operator bind -> product visible -> unpublish -> not found
+PASS anonymous buyer sees the product on https://buyer.example (zh-TW, 390px): published again, domain still ACTIVE
+PASS buyer sees the not-found page (zh-TW, 390px): operator suspended the domain
+PASS anonymous buyer sees the product on https://buyer.example (zh-TW, 390px): re-bound after suspension
+PASS buyer sees the not-found page (zh-TW, 390px): merchant unpublished
+PASS cycle B (zh-TW, 390px): publish -> visible -> suspend -> not found -> bind -> visible -> unpublish -> not found
+PASS anonymous buyer sees the product on https://buyer.example (zh-TW, desktop): published again
+PASS buyer sees the not-found page (zh-TW, desktop): operator detached the domain
+PASS buyer sees the not-found page (zh-TW, desktop): a refused re-bind (same evidence) must not revive a DETACHED origin
+PASS anonymous buyer sees the product on https://buyer.example (zh-TW, desktop): DETACHED origin re-bound with renewed proof
+PASS buyer sees the not-found page (zh-TW, desktop): merchant unpublished
+PASS cycle C (zh-TW, desktop): publish -> visible -> detach -> not found -> same-evidence re-bind refused -> renewed re-bind -> visible -> unpublish
+PASS anonymous buyer sees the product on https://buyer.example (en, 390px): published from the 390px card
+PASS anonymous buyer sees the product on https://buyer.example (en, 390px): the refused stale write changed nothing
+PASS buyer sees the not-found page (en, 390px): merchant unpublished
+PASS cycle D (en, 390px): publish -> visible; stale second tab refused with 409 and reloaded; unpublish -> not found
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
++ [
++   'Fetch API cannot load https',
++   'Fetch API cannot load https',
++   'Fetch API cannot load https',
++   'Fetch API cannot load https',
++   'Fetch API cannot load https'
++ ]
+- []
+
+    at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/tests/storefront/storefront-publish-gate.mjs:328:10
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: [
+    'Fetch API cannot load https',
+    'Fetch API cannot load https',
+    'Fetch API cannot load https',
+    'Fetch API cannot load https',
+    'Fetch API cannot load https'
+  ],
+  expected: [],
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.15.0

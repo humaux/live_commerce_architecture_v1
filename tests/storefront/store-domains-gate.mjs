@@ -1,3 +1,6 @@
+// Purpose: store-domains-gate.mjs startup uses bounded shared bind-race recovery; gate assertions are unchanged.
+// Depends on: tests/helpers/next-startup.mjs and existing app/fixture/edge imports below.
+// Used by: its scripts/dev/test-local.sh browser mode; GATE-PORT acceptance.
 // R5 store-domains KEY acceptance gate (driver of TestBrowserStoreDomains; BROWSER, MOCK edge + scripted public DNS/TLS).
 // Production shape: no owner-seeded store/publication/domain row for the signing-in merchant. Actors:
 //   merchant  real Chromium/WebKit on the production admin Next (signed MOCK IdP, fresh principal with zero
@@ -11,6 +14,7 @@
 //             <handle>.<base> and the custom host through a disposable TLS/CONNECT edge (the only host mapping).
 // The platform-subdomain 301 to the ACTIVE custom origin (架构 §7, Decision 3) is a contract checkpoint: it is
 // recorded and reported like every other failure (P0-3: nothing calls the primary-origin endpoint yet).
+import { startNextWithPortRetry, nextAttemptLog, connectFixtureAdmin } from "../helpers/next-startup.mjs";
 import assert from "node:assert/strict";
 import http from "node:http";
 import https from "node:https";
@@ -67,33 +71,38 @@ function relay(port, request, body = Buffer.alloc(0)) {
     call.on("error", reject); call.end(body);
   });
 }
-async function startNext(app, port) {
-  if (!port) { const reserve = net.createServer(); port = await listen(reserve); await new Promise(resolve => reserve.close(resolve)); }
-  const log = createWriteStream(path.join(evidence, `${app}.log`), { flags: "wx", mode: 0o600 });
-  logs.push(log); await once(log, "open");
-  const env = { ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1" };
-  for (const name of Object.keys(env)) if (name.startsWith("LC_JOINT_")) delete env[name]; // runner-only keys never reach the apps
-  const args = app === "admin"
-    ? [path.join(root, "apps/admin/.next/standalone/apps/admin/server.js")]
-    : [path.join(root, "apps/storefront/node_modules/next/dist/bin/next"), "start", "--hostname", "127.0.0.1", "--port", String(port)];
-  env.HOSTNAME = "127.0.0.1"; env.PORT = String(port);
-  const child = spawn(process.execPath, args, { cwd: path.join(root, `apps/${app}`), env, stdio: ["ignore", log, log] });
-  children.add(child);
-  for (let i = 0; i < 100; i++) {
-    if (!running(child)) throw new Error(`owned ${app} exited before readiness`);
-    try {
-      const response = await relay(port, { url: app === "admin" ? "/api/stores" : "/api/buyer/session", method: "GET", headers: { host: app === "admin" ? new URL(adminOrigin).host : `gate.${BASE}` } });
-      // admin: 401 without a session; storefront: 404 not_found while nothing resolves (no 5xx = the app is up)
-      if (app === "admin" ? response.status === 401 : response.status < 500) return port;
-    } catch {}
-    await wait(50);
-  }
-  throw new Error(`owned ${app} readiness deadline`);
+async function startNext(app, requestedPort) {
+  return startNextWithPortRetry({ port: requestedPort }, async ({ port, attempt, track }) => {
+
+    const log = createWriteStream(nextAttemptLog(path.join(evidence, `${app}.log`), attempt), { flags: "wx", mode: 0o600 });
+    logs.push(log); await once(log, "open");
+    const env = { ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1" };
+    for (const name of Object.keys(env)) if (name.startsWith("LC_JOINT_")) delete env[name]; // runner-only keys never reach the apps
+    const args = app === "admin"
+      ? [path.join(root, "apps/admin/.next/standalone/apps/admin/server.js")]
+      : [path.join(root, "apps/storefront/node_modules/next/dist/bin/next"), "start", "--hostname", "127.0.0.1", "--port", String(port)];
+    env.HOSTNAME = "127.0.0.1"; env.PORT = String(port);
+    const child = spawn(process.execPath, args, { cwd: path.join(root, `apps/${app}`), env, stdio: ["ignore", log, log] });
+    track(child, log);
+    children.add(child);
+    for (let i = 0; i < 100; i++) {
+      if (!running(child)) throw new Error(`owned ${app} exited before readiness`);
+      try {
+        const response = await relay(port, { url: app === "admin" ? "/api/stores" : "/api/buyer/session", method: "GET", headers: { host: app === "admin" ? new URL(adminOrigin).host : `gate.${BASE}` } });
+        // admin: 401 without a session; storefront: 404 not_found while nothing resolves (no 5xx = the app is up)
+        if (app === "admin" ? response.status === 401 : response.status < 500) return port;
+      } catch {}
+      await wait(50);
+    }
+    throw new Error(`owned ${app} readiness deadline`);
+
+  });
 }
 const contractFailures = []; // contract checkpoints that must hold but are known-red defects (see REVIEW-store-domains.md)
 try {
   execFileSync("openssl", ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", path.join(certDir, "key.pem"), "-out", path.join(certDir, "cert.pem"), "-days", "1", "-subj", `/CN=${BASE}`], { stdio: "ignore" });
-  const [, buyerPort] = await Promise.all([startNext("admin", Number(process.env.LC_JOINT_ADMIN_PORT)), startNext("storefront")]);
+  const [adminPort, buyerPort] = await Promise.all([startNext("admin"), startNext("storefront")]);
+  await connectFixtureAdmin(adminPort, process.env.LC_JOINT_CONTROL, process.env.LC_JOINT_CONTROL_KEY);
   edge = https.createServer({ key: await readFile(path.join(certDir, "key.pem")), cert: await readFile(path.join(certDir, "cert.pem")) }, async (request, response) => {
     try {
       const chunks = []; for await (const chunk of request) chunks.push(chunk);

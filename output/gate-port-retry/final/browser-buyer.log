@@ -1,0 +1,64 @@
+
+> live-commerce-workspace@ build:storefront /Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry
+> pnpm --filter @live-commerce/storefront build
+
+
+> @live-commerce/storefront@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/apps/storefront
+> next build
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 16ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 971ms
+  Running TypeScript ...
+  Finished TypeScript in 287ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/2) ...
+✓ Generating static pages using 9 workers (2/2) in 44ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/cart
+├ ƒ /[locale]/checkout
+├ ƒ /[locale]/claim
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/collections/[slug]
+├ ƒ /[locale]/data-deletion
+├ ƒ /[locale]/legal/[slug]
+├ ƒ /[locale]/legal/anti-fraud
+├ ƒ /[locale]/order-link
+├ ƒ /[locale]/orders/[orderID]
+├ ƒ /[locale]/orders/lookup
+├ ƒ /[locale]/pages/[slug]
+├ ƒ /[locale]/privacy
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[slug]
+├ ƒ /[locale]/search
+├ ƒ /api/buyer/[...path]
+├ ƒ /api/shop/product/[key]
+├ ƒ /api/shop/products
+├ ƒ /feeds/meta.csv
+├ ƒ /media/c/[collectionID]/[imageID]
+├ ƒ /media/p/[productID]/[imageID]
+├ ƒ /media/s/[imageID]
+├ ƒ /payment/return
+├ ƒ /products/[productID]
+├ ƒ /robots.txt
+└ ƒ /sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+=== RUN   TestBrowserBuyerRealChain
+    browser_buyer_chain_test.go:89: PASS: real browser/Next/Go/PG; cases=13; one order/hold; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/output/playwright/buyer-real-4267850821
+--- PASS: TestBrowserBuyerRealChain (11.47s)
+PASS
+ok  	livecommerce/tests/foundation	13.180s
+PASS: isolated PG + real buyer browser transport; not UI/PSP/deployment acceptance.

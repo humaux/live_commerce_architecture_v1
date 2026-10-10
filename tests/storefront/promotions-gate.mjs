@@ -1,3 +1,6 @@
+// Purpose: promotions-gate.mjs startup uses bounded shared bind-race recovery; gate assertions are unchanged.
+// Depends on: tests/helpers/next-startup.mjs and existing app/fixture/edge imports below.
+// Used by: its scripts/dev/test-local.sh browser mode; GATE-PORT acceptance.
 // Independent promotions browser gate (R4 test author; contracts/storefront-v2.md §F). Driven by TestBrowserPromotions
 // (tests/foundation/browser_promotions_test.go), which owns the admin Next + Go API + PG and hands the admin origin in LC_PM_ADMIN_ORIGIN.
 // Per cell (zh-TW/en x desktop 1280px/mobile 390px), one journey end to end:
@@ -11,6 +14,7 @@
 //   merchant: /orders -> the order detail shows the discount and total, the bank-transfer panel shows the discounted amount, confirm the transfer;
 //     /finance shows the confirmed amount; /promotions shows the code's usage 1.
 // The only host mapping is a disposable TLS/CONNECT edge for https://buyer.example.
+import { startNextWithPortRetry, nextAttemptLog } from "../helpers/next-startup.mjs";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import http from "node:http";
@@ -65,23 +69,26 @@ function relay(port, request, body = Buffer.alloc(0)) {
   });
 }
 async function startStorefront() {
-  const reserve = net.createServer(); const port = await listen(reserve); await new Promise(resolve => reserve.close(resolve));
-  const log = createWriteStream(path.join(evidence, "storefront.log"), { flags: "wx", mode: 0o600 });
-  logs.push(log); await once(log, "open");
-  const env = { ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1", HOSTNAME: "127.0.0.1", PORT: String(port) };
-  for (const name of Object.keys(env)) if (name.startsWith("LC_PM_")) delete env[name];
-  const child = spawn(process.execPath, [path.join(root, "apps/storefront/node_modules/next/dist/bin/next"), "start", "--hostname", "127.0.0.1", "--port", String(port)],
-    { cwd: path.join(root, "apps/storefront"), env, stdio: ["ignore", log, log] });
-  children.add(child);
-  for (let i = 0; i < 100; i++) {
-    if (!running(child)) throw new Error("owned storefront exited before readiness");
-    try {
-      const response = await relay(port, { url: "/api/buyer/session", method: "GET", headers: { host: "buyer.example" } });
-      if (response.status === 200) return port;
-    } catch {}
-    await wait(50);
-  }
-  throw new Error("owned storefront readiness deadline");
+  return startNextWithPortRetry({}, async ({ port, attempt, track }) => {
+    const log = createWriteStream(nextAttemptLog(path.join(evidence, "storefront.log"), attempt), { flags: "wx", mode: 0o600 });
+    logs.push(log); await once(log, "open");
+    const env = { ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1", HOSTNAME: "127.0.0.1", PORT: String(port) };
+    for (const name of Object.keys(env)) if (name.startsWith("LC_PM_")) delete env[name];
+    const child = spawn(process.execPath, [path.join(root, "apps/storefront/node_modules/next/dist/bin/next"), "start", "--hostname", "127.0.0.1", "--port", String(port)],
+      { cwd: path.join(root, "apps/storefront"), env, stdio: ["ignore", log, log] });
+    track(child, log);
+    children.add(child);
+    for (let i = 0; i < 100; i++) {
+      if (!running(child)) throw new Error("owned storefront exited before readiness");
+      try {
+        const response = await relay(port, { url: "/api/buyer/session", method: "GET", headers: { host: "buyer.example" } });
+        if (response.status === 200) return port;
+      } catch {}
+      await wait(50);
+    }
+    throw new Error("owned storefront readiness deadline");
+
+  });
 }
 async function shot(page, name, run) {
   const file = path.join(evidence, `${name}-${run.locale}-${run.vp}.png`);
