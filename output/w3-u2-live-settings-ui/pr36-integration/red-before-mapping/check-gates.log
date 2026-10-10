@@ -1,0 +1,5 @@
+--- FAIL: TestBFFRealSourceMutation (0.42s)
+    bff_test.go:246: restore did not return clean inventory: routes=292 unresolved=12
+FAIL
+FAIL	livecommerce/scripts/dev/contractdrift	121.501s
+FAIL

@@ -1510,6 +1510,7 @@ case "$1" in
   --browser-live-settings)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/admin/live-settings.spec.ts
   test -f tests/foundation/browser_live_settings_test.go
