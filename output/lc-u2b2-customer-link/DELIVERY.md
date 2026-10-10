@@ -3,6 +3,8 @@ Depends on: base abe4714f, frozen live-console-v1 A9/A13/A14 and LC-B3b, current
 Used by: integrator scope ruling, K3 review and later complete acceptance; not a declaration that all unit gates passed. -->
 # LC-U2b2 customer link / BuyerPanel checkpoint
 
+Latest handoff (2026-10-09): READY for the integrator to commit the discovery fix on supplied base `5a8faa2342a881d6bc5a055b32bdeacb010af7e2`. The old blocked/WIP history below is retained for provenance; the integrator already committed the WIP, merged trunk, and fixed A13 authorization precedence. Current full browser acceptance is still pending. See the final section for this batch's actual commands and limits.
+
 **2026-10-08 update: test-fixture scope is APPROVED.** The new test-only extension below is uncommitted and E1/structure-ready. Full acceptance is still BLOCKED by this session’s runtime permissions (Git metadata read-only, loopback listen EPERM, Docker socket denied). No product Go, SQL, migration or OpenAPI changed. Historical green results below apply only to their recorded earlier source.
 
 - Branch: `unit/lc-u2b2-customer-link`; base `abe4714fb2026df609590a57da6862a0ff6e5b24`.
@@ -81,3 +83,24 @@ Decision: KEEP all seven tracked modifications and both untracked test files as 
 Current HEAD is still `3440ef6c`. All nine file hashes matched the previous source manifest before this status note. Fresh `git fetch origin` exited 255 (`FETCH_HEAD: Operation not permitted`), so mandatory own-remote/trunk synchronization and the WIP commit could not run. The current runtime still denies Docker socket access (exit1) and loopback listening (EPERM, exit1). Evidence: main output `status-20261009.json` and its three logs. Normal19 browser cases, real-PG seed, product-red/green and exactly-INU05 calibration remain NOT_RUN.
 
 Preserve the two untracked files in any later checkpoint: `tests/admin/inbox-customer-ui.spec.ts` and `tests/foundation/browser_inbox_customer_link_fixture_test.go`. In a capable environment first fetch/merge own remote if present and merge `origin/r3/integration` (including Go/tooling and registry changes), resolve the inbox registry as a union, then commit the WIP. Do not substitute old13-case evidence for current acceptance. No push or other unit work was performed.
+
+## Discovery fix — READY for integrator commit
+
+Integrator supplied commits: `d0c1e37d` saves the prior nine-file WIP; `6550d53a` merges trunk while preserving the inbox/parcel suite union; `5a8faa23` uses allSettled plus priority for 401/403 in BuyerPanel reload (integrator reported45/45). This batch changes no BuyerPanel, Go, mode registry, config or discovery assertions.
+
+Changes: `tests/admin/inbox-customer-ui.spec.ts` and this delivery file. Required customer-fixture parsing now runs in beforeEach, never at module load. Only a `--list` collection command with missing/empty customer fixture omits the six INU10 declarations and prints a fixed NOT_RUN reason to stderr, preserving the original13-case discovery contract. Real runs always register those six cases and require the fixture; present-fixture collection still has19 cases. No automatic test skip in actual acceptance and no fake response. The original discovery assertion file's SHA256 is identical before/after.
+
+| Actual command | Exit | Evidence |
+|---|---:|---|
+| `node --test --experimental-strip-types tests/admin/inbox-discovery.test.ts` | 1 → 0 | `discovery-red.log`: missing-fixture module throw; `discovery-green.log`: original assertions pass unchanged |
+| Focused actual customer-link/review/recovery/discovery Node files | 0 | `discovery-focused.status.json`: exact argv;53 pass/0 fail |
+| `bash scripts/dev/test-node.sh` | 1 | `discovery-test-node.log`: first batch444 pass/3 fail; team-bff loopback EPERM and two deploy-prep Docker socket errors. Script stops before later batches; not a green full Node gate |
+| `pnpm --filter @live-commerce/admin typecheck` | 0 | `discovery-admin-tsc.status.json` |
+| Strict `pnpm exec tsc` on all three inbox specs | 0 | `discovery-spec-tsc.status.json` contains complete argv |
+| `bash scripts/dev/test-local.sh --list` | 0 | `discovery-mode-list.log`: current registry |
+| `bash scripts/dev/check-gates.sh` | 0 | `discovery-check-gates.log` |
+| Actual Playwright `test --list --reporter=json`, inert fixture metadata present | 0 | `discovery-full-list.status.json`:19 total, six INU10, exact three-locales/two-widths; no browser launched |
+
+All logs and receipts are in main checkout `output/lc-u2b2-customer-link/`. Discovery repair has E3 automated red/green evidence bound to current file hashes. Full Node is environment-blocked; new real-PG seed/browser-normal/exact-INU05 calibration, click sweep and visual lint remain NOT_RUN locally, and are required from the integrator runner for full unit acceptance. No Git mutation, commit, synchronization or push was performed by the implementer. A read-only child reviewer accidentally used git rev-parse/diff despite the literal no-Git instruction; no Git state was changed and that activity stopped.
+
+Independent source review found no new P1/P2: fixtureless actual execution remains fail-closed, six real cases/calibration branches unchanged, and runtime-only synthetic fixture configuration introduces no new URL/log/storage sink. This was a source review, not independent runtime PASS (Humaux6dd07533). All owned check processes finished; awaiting integrator commit/push and runtime acceptance.

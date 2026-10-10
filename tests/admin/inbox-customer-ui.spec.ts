@@ -6,10 +6,15 @@ import { resolve } from "node:path";
 import { required, origin, api, evidence, store, login, privateBoundary,
   createInboxLedger, writeInboxLedger } from "./inbox-browser-support";
 
-const fixture = JSON.parse(required("LC_BROWSER_INBOX_CUSTOMER_FIXTURE")) as {
+let fixture: {
   conversation: string; session: string; customer_a: string; customer_b: string;
   name_a: string; name_b: string; confirmed_number: string; cancelled_number: string;
 };
+// Legacy discovery deliberately supplies only the original inbox fixture. Omit INU10 only
+// in that collection-only command; an actual run without the new fixture must still fail.
+const fixturelessCollection = process.argv.includes("--list") && !process.env.LC_BROWSER_INBOX_CUSTOMER_FIXTURE;
+if (fixturelessCollection) console.error("NOT_RUN INU10: customer fixture absent in collection-only command");
+test.beforeEach(() => { fixture = JSON.parse(required("LC_BROWSER_INBOX_CUSTOMER_FIXTURE")); });
 const { ledger, record } = createInboxLedger();
 // Separate headless contexts keep both real pages visible for CAS. INU05 separately exercises native hiding.
 // Disable traces so the test-only actor-control credential and signed login responses cannot enter artifacts.
@@ -70,7 +75,7 @@ async function fullPanel(page: Page, copy: typeof copies[number]) {
   // Independent literal: two claims at 700 minor, quantities 2+1 = TWD 21. No expected value read from A13.
   await expect(panel.locator("p").filter({ hasText: /NT\$\s*21(?:\.00)?$/ })).toHaveCount(1);
 }
-for (const copy of copies) for (const width of [1440, 390]) {
+for (const copy of (fixturelessCollection ? [] : copies)) for (const width of [1440, 390]) {
   test(`INU10 ${copy.locale}/${width} full A13 and real two-page customer-link CAS`, async ({ browser, request }) => {
     test.setTimeout(90000);
     const contexts = await Promise.all([browser.newContext({ viewport: { width, height: 900 } }), browser.newContext({ viewport: { width, height: 900 } })]);
