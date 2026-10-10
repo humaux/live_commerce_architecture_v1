@@ -1,0 +1,8 @@
+=== RUN   TestReviewR1BDeletionCreatesSecondUnknownCLI
+    review_r1b_ratchet_cli_test.go:135: unrelated legacy unknown hid deletion-created unknown: 0 WARNING (unresolved) UNRESOLVED   contracts/duplicate-unknown.md:1 relative Markdown route requires Route base
+        WARNING (unresolved) UNRESOLVED   contracts/duplicate-unknown.md:22 relative Markdown route requires Route base
+        SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=2 UNRESOLVED=2
+--- FAIL: TestReviewR1BDeletionCreatesSecondUnknownCLI (0.87s)
+FAIL
+FAIL	livecommerce/scripts/dev/contractdrift	1.914s
+FAIL

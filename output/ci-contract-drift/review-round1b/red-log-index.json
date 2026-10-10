@@ -1,0 +1,67 @@
+[
+  {
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-contract-drift/output/playwright/ci-contract-drift-r1b/parent-red.log",
+    "raw_sha256": "0c2ab4c9ee6855403111dbc94d8e89b722736edb5cf763fe0d317754400ce8a0",
+    "raw_bytes": 6218,
+    "curated_log": "output/ci-contract-drift/review-round1b/raw-diff-and-deletion-red.log",
+    "curation": "complete"
+  },
+  {
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-contract-drift/output/playwright/ci-contract-drift-r1b/unknown-identity-red.log",
+    "raw_sha256": "aab6e8c4a546775832f9b305d207be163a0073eeb9bd314636a07b91e93691a2",
+    "raw_bytes": 586,
+    "curated_log": "output/ci-contract-drift/review-round1b/deletion-identity-red.log",
+    "curation": "complete"
+  },
+  {
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-contract-drift/output/playwright/ci-contract-drift-r1b/worker-go/red.log",
+    "raw_sha256": "c7a533218de1fbbb868a5e717c73eae25d301411c596ea3f998eb0f8956c7e28",
+    "raw_bytes": 2302,
+    "curated_log": "output/ci-contract-drift/review-round1b/go-unknown-tail-red.log",
+    "curation": "complete"
+  },
+  {
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-contract-drift/output/playwright/ci-contract-drift-r1b/worker-bff/final-base-red.log",
+    "raw_sha256": "4c3bfa7a1deb28798bbc5e5e06a265e8060b7723c01f9f28b76a50c6ab92dbef",
+    "raw_bytes": 11705594,
+    "curated_log": "output/ci-contract-drift/review-round1b/bff-transport-sinks-red.log",
+    "curation": "test events and diagnostic first1800 chars per line"
+  },
+  {
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-contract-drift/output/playwright/ci-contract-drift-r1b/global-namespace-red.log",
+    "raw_sha256": "918539fd9d09db7279c191952f20e1870481f13af3006c5bfed2b3a68cb40c28",
+    "raw_bytes": 508516,
+    "curated_log": "output/ci-contract-drift/review-round1b/global-namespace-red.log",
+    "curation": "test events and diagnostic first1500 chars per line",
+    "source_commit": "6012f01bfff46881133985961f0862e52d31dd73",
+    "test_sha256": "debfbb9f06e0047afe0a6063e445b0543b09da688a6f622b50591a166cdf4afb"
+  },
+  {
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-contract-drift/output/playwright/ci-contract-drift-r1b/worker-bff-followup/followup-c4-red.log",
+    "raw_sha256": "f3e8baad4e8a8c37589894b9daa1b88a1235da3671941f9e5df7ce985dbdc2b6",
+    "raw_bytes": 7117095,
+    "curated_log": "output/ci-contract-drift/review-round1b/followup-c4-red.log",
+    "curation": "test events and diagnostic first1800 chars per line"
+  },
+  {
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-contract-drift/output/playwright/ci-contract-drift-r1b/worker-bff-followup/type-value-dual-red.log",
+    "raw_sha256": "717b706cadd83f2c0ec1683fd32b45c3fc3712808eb0e464b55eb39375eaddb0",
+    "raw_bytes": 305,
+    "curated_log": "output/ci-contract-drift/review-round1b/type-value-dual-red.log",
+    "curation": "complete"
+  },
+  {
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-contract-drift/output/playwright/ci-contract-drift-r1b/worker-bff-followup/config-reference-red.log",
+    "raw_sha256": "c9551cb2e23d9d58207db81eea3f9739f218f201348c63aadfe8de1431fe3e18",
+    "raw_bytes": 1049969,
+    "curated_log": "output/ci-contract-drift/review-round1b/config-reference-red.log",
+    "curation": "test events and diagnostic first1800 chars per line"
+  },
+  {
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-contract-drift/output/playwright/ci-contract-drift-r1b/worker-bff-followup/origin-object-red.log",
+    "raw_sha256": "00ac700a4147968c296dbf8f114e4bfcdf5dcb10a0e338fa22ec32c00cc36bd2",
+    "raw_bytes": 524899,
+    "curated_log": "output/ci-contract-drift/review-round1b/origin-object-red.log",
+    "curation": "test events and diagnostic first1800 chars per line"
+  }
+]
