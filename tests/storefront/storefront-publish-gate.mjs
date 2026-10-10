@@ -9,7 +9,7 @@
 //             suspend / detach / re-bind of https://buyer.example;
 //   buyer     a fresh anonymous browser context per check on the production storefront Next, reaching buyer.example
 //             through a disposable TLS/CONNECT edge (the only host mapping; no DNS/TLS proof is claimed).
-import { startNextWithPortRetry, nextAttemptLog } from "../helpers/next-startup.mjs";
+import { startNextWithPortRetry, nextAttemptLog, connectFixtureAdmin } from "../helpers/next-startup.mjs";
 import assert from "node:assert/strict";
 import http from "node:http";
 import https from "node:https";
@@ -102,7 +102,8 @@ async function startNext(app, requestedPort) {
 }
 try {
   execFileSync("openssl", ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", path.join(certDir, "key.pem"), "-out", path.join(certDir, "cert.pem"), "-days", "1", "-subj", "/CN=buyer.example"], { stdio: "ignore" });
-  const [, buyerPort] = await Promise.all([startNext("admin", Number(process.env.LC_JOINT_ADMIN_PORT)), startNext("storefront")]);
+  const [adminPort, buyerPort] = await Promise.all([startNext("admin"), startNext("storefront")]);
+  await connectFixtureAdmin(adminPort, process.env.LC_JOINT_CONTROL, process.env.LC_JOINT_CONTROL_KEY);
   edge = https.createServer({ key: await readFile(path.join(certDir, "key.pem")), cert: await readFile(path.join(certDir, "cert.pem")) }, async (request, response) => {
     try {
       const chunks = []; for await (const chunk of request) chunks.push(chunk);

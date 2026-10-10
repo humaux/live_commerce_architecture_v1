@@ -14,7 +14,7 @@
 //             <handle>.<base> and the custom host through a disposable TLS/CONNECT edge (the only host mapping).
 // The platform-subdomain 301 to the ACTIVE custom origin (架构 §7, Decision 3) is a contract checkpoint: it is
 // recorded and reported like every other failure (P0-3: nothing calls the primary-origin endpoint yet).
-import { startNextWithPortRetry, nextAttemptLog } from "../helpers/next-startup.mjs";
+import { startNextWithPortRetry, nextAttemptLog, connectFixtureAdmin } from "../helpers/next-startup.mjs";
 import assert from "node:assert/strict";
 import http from "node:http";
 import https from "node:https";
@@ -101,7 +101,8 @@ async function startNext(app, requestedPort) {
 const contractFailures = []; // contract checkpoints that must hold but are known-red defects (see REVIEW-store-domains.md)
 try {
   execFileSync("openssl", ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", path.join(certDir, "key.pem"), "-out", path.join(certDir, "cert.pem"), "-days", "1", "-subj", `/CN=${BASE}`], { stdio: "ignore" });
-  const [, buyerPort] = await Promise.all([startNext("admin", Number(process.env.LC_JOINT_ADMIN_PORT)), startNext("storefront")]);
+  const [adminPort, buyerPort] = await Promise.all([startNext("admin"), startNext("storefront")]);
+  await connectFixtureAdmin(adminPort, process.env.LC_JOINT_CONTROL, process.env.LC_JOINT_CONTROL_KEY);
   edge = https.createServer({ key: await readFile(path.join(certDir, "key.pem")), cert: await readFile(path.join(certDir, "cert.pem")) }, async (request, response) => {
     try {
       const chunks = []; for await (const chunk of request) chunks.push(chunk);

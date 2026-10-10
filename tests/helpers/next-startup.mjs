@@ -1,5 +1,5 @@
 // Purpose: shared owned-Next startup boundary for browser gates; retry only automatic-port bind collisions.
-// Depends on: Node net/events; caller-owned child/log and unchanged caller readiness callback.
+// Depends on: Node net/events/fetch; caller-owned child/log and unchanged caller readiness callback.
 // Used by: tests/storefront/*-gate.mjs; tests/ci/next-startup.test.mjs. No production process is managed here.
 import net from "node:net";
 import { once } from "node:events";
@@ -18,6 +18,17 @@ export async function allocateNextPort() {
 /** Keep the first log filename stable, while every later attempt preserves its own exclusive log. */
 export function nextAttemptLog(file, attempt) {
   return attempt === 1 ? file : `${file}.attempt-${attempt}`;
+}
+
+/** Attach a ready automatic-port admin to its Go-owned public origin; never retry/restart on a lost acknowledgement. */
+export async function connectFixtureAdmin(port, control, key) {
+  if (!Number.isInteger(port) || port < 1 || port > 65535 || !/^http:\/\/127\.0\.0\.1:\d+$/.test(control) || !key)
+    throw new Error("invalid fixture admin registration");
+  const response = await fetch(`${control}/admin-upstream`, {
+    method: "POST", headers: { "X-Gate-Key": key, "Content-Type": "application/json" },
+    body: JSON.stringify({ port }), signal: AbortSignal.timeout(1000),
+  });
+  if (response.status !== 204) throw new Error(`fixture admin registration refused (${response.status})`);
 }
 
 async function bindCollision(log) {

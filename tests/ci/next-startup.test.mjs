@@ -12,7 +12,7 @@ import path from "node:path";
 import test from "node:test";
 import ts from "typescript-api";
 import vm from "node:vm";
-import { allocateNextPort, nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
+import { allocateNextPort, nextAttemptLog, startNextWithPortRetry, connectFixtureAdmin } from "../helpers/next-startup.mjs";
 
 const bindProgram = `
 const http = require('node:http');
@@ -126,6 +126,32 @@ test("a failure before spawning is not retried", async () => {
   let allocations = 0;
   await assert.rejects(startNextWithPortRetry({ allocatePort: async () => { allocations++; return allocateNextPort(); } }, async () => { throw error; }), (caught) => caught === error);
   assert.equal(allocations, 1);
+});
+
+test("ready admin registration uses the authenticated Go fixture seam once, with no restart on a lost acknowledgement", { timeout: 5000 }, async () => {
+  const observed = [];
+  let reply = 204;
+  const server = http.createServer(async (request, response) => {
+    const chunks = []; for await (const chunk of request) chunks.push(chunk);
+    observed.push({ method: request.method, path: request.url, key: request.headers["x-gate-key"], body: JSON.parse(Buffer.concat(chunks)) });
+    if (reply === "lost") { request.socket.destroy(); return; } // actual lost ACK after the fixture observed registration
+    response.writeHead(reply); response.end();
+  });
+  server.listen(0, "127.0.0.1"); await once(server, "listening");
+  try {
+    const control = `http://127.0.0.1:${server.address().port}`;
+    await connectFixtureAdmin(43121, control, "synthetic-control");
+    assert.deepEqual(observed, [{ method: "POST", path: "/admin-upstream", key: "synthetic-control", body: { port: 43121 } }]);
+    reply = 503;
+    await assert.rejects(connectFixtureAdmin(43121, control, "synthetic-control"), /registration refused \(503\)/);
+    assert.equal(observed.length, 2); // one request per call, not a retry of an acknowledged/uncertain startup
+    reply = "lost";
+    await assert.rejects(connectFixtureAdmin(43121, control, "synthetic-control"), /fetch failed/);
+    assert.equal(observed.length, 3);
+    await assert.rejects(connectFixtureAdmin(0, control, "synthetic-control"), /invalid fixture/);
+    await assert.rejects(connectFixtureAdmin(43121, "http://example.invalid", "synthetic-control"), /invalid fixture/);
+    assert.equal(observed.length, 3);
+  } finally { await new Promise((resolve) => server.close(resolve)); }
 });
 
 test("all eleven gate adapters preserve original assertions, readiness loops, spawn and environment statements", async () => {
