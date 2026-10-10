@@ -35,7 +35,10 @@ case "$provider" in
   # coding tool like this CLI, never as a backend/batch API.
   aliyun) model=${MODEL:-qwen3.8-max}; base_url="https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic"; key_file="$HOME/.config/livecommerce/aliyun.env"; key_var=ALIYUN_CODING_API_KEY
     case "$model" in qwen3.8-max|qwen3.8-flash|qwen3.7-max|qwen3.7-plus|qwen3.6-flash) ;; *) echo "aliyun MODEL must be one of qwen3.8-max qwen3.8-flash qwen3.7-max qwen3.7-plus qwen3.6-flash" >&2; exit 2 ;; esac ;;
-  # anthropic = owner's Claude API credits (owner 2026-10-10: $200 grant, "注意额度控制"). User-level key + Default workspace id from
+  # Structural limit (all providers, write mode): the provider key is in the child's environment and allowed commands such as
+# go test or scripts/dev/*.sh can run arbitrary code, so a permission list cannot fully contain a prompt-injected model in write
+# mode. Use READONLY=1 for untrusted input; never point write mode at untrusted trees.
+# anthropic = owner's Claude API credits (owner 2026-10-10: $200 grant, "注意额度控制"). User-level key + Default workspace id from
   # anthropic.env (ANTHROPIC_API_KEY, ANTHROPIC_WORKSPACE_ID). Two hard budget layers: --max-budget-usd per run, and a ledger
   # outside the repo whose total may not pass ANTHROPIC_BUDGET_USD (default 180 of the 200 grant).
   anthropic) model=${MODEL:-claude-sonnet-5-5}; base_url="https://api.anthropic.com"; key_file="$HOME/.config/livecommerce/anthropic.env"; key_var=ANTHROPIC_API_KEY
@@ -57,13 +60,16 @@ if [[ $provider == anthropic ]]; then
   ledger="$HOME/.config/livecommerce/anthropic-ledger.tsv"; cap=${ANTHROPIC_BUDGET_USD:-180}; run_cap=${ANTHROPIC_RUN_BUDGET_USD:-5}
   # Concurrent runs (up to 4 sub-agents) must not all pass the check against the same ledger: under an mkdir lock, check AND
   # append a reservation of the full run cap; after the run a correction row (actual - cap) reconciles it (PR #38 review).
-  lock="$ledger.lock"; for _ in $(seq 1 300); do mkdir "$lock" 2>/dev/null && break; sleep 0.2; done
-  [[ -d $lock ]] || { echo "refused: could not lock $ledger" >&2; exit 2; }
+  num='^[0-9]+([.][0-9]+)?$'; [[ $cap =~ $num && $run_cap =~ $num ]] || { echo "refused: ANTHROPIC_BUDGET_USD/ANTHROPIC_RUN_BUDGET_USD must be numbers" >&2; exit 2; }
+  (umask 077; : >>"$ledger")
+  lock="$ledger.lock"; got=0; for _ in $(seq 1 300); do mkdir "$lock" 2>/dev/null && { got=1; break; }; sleep 0.2; done
+  ((got)) || { echo "refused: could not lock $ledger (remove a stale $lock only if no anthropic run is active)" >&2; exit 2; }
+  trap 'rmdir "$lock" 2>/dev/null' EXIT
   spent=$(awk -F'\t' '{s+=$2} END{printf "%.2f", s+0}' "$ledger" 2>/dev/null || echo 0)
   if python3 -c "import sys; sys.exit(0 if float('$spent')+float('$run_cap') > float('$cap') else 1)"; then
-    rmdir "$lock"; echo "refused: Claude API spent \$$spent + run cap \$$run_cap would exceed budget \$$cap (ledger $ledger)" >&2; exit 2
+    echo "refused: Claude API spent \$$spent + run cap \$$run_cap would exceed budget \$$cap (ledger $ledger)" >&2; exit 2
   fi
-  printf '%s\t%s\t%s\t%s\n' "$(date '+%F %T')" "$run_cap" "$model reserve" "$out" >>"$ledger"; chmod 600 "$ledger"; rmdir "$lock"
+  printf '%s\t%s\t%s\t%s\n' "$(date '+%F %T')" "$run_cap" "$model reserve" "$out" >>"$ledger"; rmdir "$lock"; trap - EXIT
   echo "claude api: spent \$$spent of \$$cap; this run capped at \$$run_cap ($model)" >&2
   budget_args=(--max-budget-usd "$run_cap")
 fi
@@ -80,8 +86,9 @@ if [[ ${READONLY:-0} == 1 ]]; then
 {
   "permissions": {
     "allow": ["Read", "Glob", "Grep", "Write(output/ext-agents/**)", "Edit(output/ext-agents/**)"],
-    "deny": ["Bash", "WebFetch", "WebSearch", "Read(/Users/luolimo/.ssh/**)", "Read(/Users/luolimo/.config/**)", "Read(/Users/luolimo/Downloads/**)",
-      "Read(/Users/luolimo/Desktop/**)", "Read(/Users/luolimo/.claude/**)", "Read(/etc/**)"]
+    "deny": ["Bash", "WebFetch", "WebSearch", "Read($HOME/.ssh/**)", "Read($HOME/.config/**)", "Read($HOME/Downloads/**)",
+      "Read($HOME/Desktop/**)", "Read($HOME/.claude/**)", "Read($HOME/.docker/**)", "Read($HOME/.aws/**)", "Read($HOME/.kube/**)",
+      "Read($HOME/.netrc)", "Read($HOME/.npmrc)", "Read(/etc/**)"]
   }
 }
 JSON
@@ -96,9 +103,10 @@ cat >"$settings" <<JSON
       "Bash(bash scripts/dev/test-focused.sh:*)", "Bash(bash scripts/dev/test-local.sh:*)", "Bash(bash scripts/dev/test-node.sh:*)",
       "Bash(bash scripts/dev/check-gates.sh:*)", "Bash(bash scripts/dev/check-pkgdocs.sh:*)", "Bash(bash scripts/dev/depmap.sh:*)",
       "Bash(python3 scripts/check_packet.py:*)", "Bash(pnpm -s typecheck:*)", "Bash(pnpm run build:*)", "Bash(node --test:*)",
-      "Bash(ls:*)", "Bash(wc:*)", "Bash(grep:*)", "Bash(sed -n:*)", "Bash(head:*)", "Bash(tail:*)"],
-    "deny": ["Read(/Users/luolimo/.ssh/**)", "Read(/Users/luolimo/.config/**)", "Read(/Users/luolimo/Downloads/**)",
-      "Read(/Users/luolimo/Desktop/**)", "Read(/Users/luolimo/.claude/**)", "Read(/etc/**)",
+      "Bash(ls:*)", "Bash(wc:*)"],
+    "deny": ["Read($HOME/.ssh/**)", "Read($HOME/.config/**)", "Read($HOME/Downloads/**)",
+      "Read($HOME/Desktop/**)", "Read($HOME/.claude/**)", "Read($HOME/.docker/**)", "Read($HOME/.aws/**)", "Read($HOME/.kube/**)",
+      "Read($HOME/.netrc)", "Read($HOME/.npmrc)", "Read(/etc/**)",
       "Bash(ssh:*)", "Bash(scp:*)", "Bash(curl:*)", "Bash(wget:*)", "Bash(git push:*)", "Bash(git merge:*)"${ui_deny}]
   }
 }
@@ -128,7 +136,7 @@ env -i PATH="/Users/luolimo/.local/share/fnm/node-versions/v24.15.0/installation
   ANTHROPIC_MODEL="$model" ANTHROPIC_SMALL_FAST_MODEL="$fast_model" \
   CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 DISABLE_AUTOUPDATER=1 MAX_THINKING_TOKENS="$think" \
   claude -p "$(cat "$prompt")" ${RESUME:+--resume "$RESUME"} --settings "$settings" --strict-mcp-config --mcp-config '{"mcpServers":{}}' \
-    --permission-mode "$perm_mode" "${budget_args[@]}" --output-format json >"$out/result.json" 2>"$out/stderr.log" &
+    --permission-mode "$perm_mode" ${budget_args[@]+"${budget_args[@]}"} --output-format json >"$out/result.json" 2>"$out/stderr.log" &
 run_pid=$!
 if [[ $provider == deepseek ]]; then
   # Watchdog: stop the run (not the machine) once the owner's balance drops below the reserve; the marker tells the integrator.
@@ -152,7 +160,7 @@ if [[ $provider == deepseek ]] && [[ -n $(git -C "$wt" diff --name-only "$base_s
   echo "REJECT: DeepSeek changed apps/ (UI is K2.8 only):" >&2; git -C "$wt" diff --name-only "$base_sha" -- apps/ >&2; status=3
 fi
 if [[ $provider == anthropic ]]; then
-  cost=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("total_cost_usd") or 0)' "$out/result.json" 2>/dev/null || echo "$run_cap")
+  cost=$(python3 -c 'import json,sys;c=json.load(open(sys.argv[1])).get("total_cost_usd"); assert isinstance(c,(int,float)); print(c)' "$out/result.json" 2>/dev/null || echo "$run_cap")
   adj=$(python3 -c "print(round(float('$cost')-float('$run_cap'),6))")
   printf '%s\t%s\t%s\t%s\n' "$(date '+%F %T')" "$adj" "$model actual=$cost" "$out" >>"$ledger"; chmod 600 "$ledger"
   echo "claude api: run cost \$$cost; total now \$$(awk -F'\t' '{s+=$2} END{printf "%.2f", s+0}' "$ledger") of \$$cap" >&2
