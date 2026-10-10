@@ -1,0 +1,7 @@
+=== RUN   TestGoReviewLiteralColonCLI
+    go_review_cli_test.go:114: literal colon paths collapsed: exit0 INFO () GO_NOT_IN_BFF GET /v1/a/b{} internal/httpapi/routes.go:18 
+        SUMMARY routes go=2 contract=2 bff=1; errors=0 warnings=0 GO_NOT_IN_BFF=1
+--- FAIL: TestGoReviewLiteralColonCLI (0.83s)
+FAIL
+FAIL	livecommerce/scripts/dev/contractdrift	1.739s
+FAIL

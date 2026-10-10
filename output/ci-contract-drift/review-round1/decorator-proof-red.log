@@ -1,0 +1,13 @@
+=== RUN   TestReview405DecoratorFirstWriteAndShadowCLI
+=== RUN   TestReview405DecoratorFirstWriteAndShadowCLI/header_argument_commits_200
+    review_ratchet_cli_test.go:178: 405 decorator accepted without actual first-write proof: 0 INFO () GO_405_FALLBACK GET /v1/decorator_probe internal/httpapi/routes.go:18, internal/httpapi/routes.go:22 explicit wrong-method fallback
+        SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=0 GO_405_FALLBACK=1
+=== RUN   TestReview405DecoratorFirstWriteAndShadowCLI/decorator_name_is_shadowed
+    review_ratchet_cli_test.go:178: 405 decorator accepted without actual first-write proof: 0 INFO () GO_405_FALLBACK GET /v1/decorator_probe internal/httpapi/routes.go:18, internal/httpapi/routes.go:23 explicit wrong-method fallback
+        SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=0 GO_405_FALLBACK=1
+--- FAIL: TestReview405DecoratorFirstWriteAndShadowCLI (2.13s)
+    --- FAIL: TestReview405DecoratorFirstWriteAndShadowCLI/header_argument_commits_200 (1.38s)
+    --- FAIL: TestReview405DecoratorFirstWriteAndShadowCLI/decorator_name_is_shadowed (0.75s)
+FAIL
+FAIL	livecommerce/scripts/dev/contractdrift	2.742s
+FAIL

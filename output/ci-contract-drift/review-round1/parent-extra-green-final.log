@@ -1,0 +1,14 @@
+=== RUN   TestReviewBFFRemovedRealCLI
+--- PASS: TestReviewBFFRemovedRealCLI (0.94s)
+=== RUN   TestReviewBFFRetargetRealCLI
+--- PASS: TestReviewBFFRetargetRealCLI (0.81s)
+=== RUN   TestReviewBFFDuplicateProducerAndJointRetirement
+=== RUN   TestReviewBFFDuplicateProducerAndJointRetirement/duplicate_producer
+=== RUN   TestReviewBFFDuplicateProducerAndJointRetirement/joint_retirement
+--- PASS: TestReviewBFFDuplicateProducerAndJointRetirement (1.45s)
+    --- PASS: TestReviewBFFDuplicateProducerAndJointRetirement/duplicate_producer (0.73s)
+    --- PASS: TestReviewBFFDuplicateProducerAndJointRetirement/joint_retirement (0.72s)
+=== RUN   TestReviewDiffHunkHeadersRealCLI
+--- PASS: TestReviewDiffHunkHeadersRealCLI (0.76s)
+PASS
+ok  	livecommerce/scripts/dev/contractdrift	4.607s
