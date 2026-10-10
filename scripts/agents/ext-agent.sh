@@ -4,7 +4,7 @@
 #   K2.8 at 2026-10-01: 1M context, reasoning-only, image/video input) through the Claude Code CLI, which speaks the
 #   Anthropic Messages API that Kimi exposes at https://api.kimi.com/coding/. Used by the integrator to offload work
 #   that does not need the top tier (docs/delivery/PROCESS.md §3 "Third-party models").
-# Usage: [READONLY=1] [PROVIDER=kimi|aliyun|deepseek] [MODEL=...] [RESUME=<session_id from a cut-off run's result.json>] bash scripts/agents/ext-agent.sh <worktree> <prompt-file> <out-dir> [effort low|high|max]
+# Usage: [READONLY=1] [PROVIDER=kimi|aliyun|deepseek|anthropic] [MODEL=...] [RESUME=<session_id from a cut-off run's result.json>] bash scripts/agents/ext-agent.sh <worktree> <prompt-file> <out-dir> [effort low|high|max]
 #   kimi (subscription, 5-hour quota window): MODEL k3 (default) | kimi-for-coding (K2.8)
 #   deepseek (PAY-AS-YOU-GO, owner balance): MODEL deepseek-v4-pro (default) | deepseek-flash; refuses to start below
 #   DEEPSEEK_MIN_BALANCE_CNY (default 10, owner 2026-10-02), and a watchdog checks the balance every 60 s during the run and
@@ -35,7 +35,12 @@ case "$provider" in
   # coding tool like this CLI, never as a backend/batch API.
   aliyun) model=${MODEL:-qwen3.8-max}; base_url="https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic"; key_file="$HOME/.config/livecommerce/aliyun.env"; key_var=ALIYUN_CODING_API_KEY
     case "$model" in qwen3.8-max|qwen3.8-flash|qwen3.7-max|qwen3.7-plus|qwen3.6-flash) ;; *) echo "aliyun MODEL must be one of qwen3.8-max qwen3.8-flash qwen3.7-max qwen3.7-plus qwen3.6-flash" >&2; exit 2 ;; esac ;;
-  *) echo "PROVIDER must be kimi, aliyun or deepseek" >&2; exit 2 ;;
+  # anthropic = owner's Claude API credits (owner 2026-10-10: $200 grant, "注意额度控制"). User-level key + Default workspace id from
+  # anthropic.env (ANTHROPIC_API_KEY, ANTHROPIC_WORKSPACE_ID). Two hard budget layers: --max-budget-usd per run, and a ledger
+  # outside the repo whose total may not pass ANTHROPIC_BUDGET_USD (default 180 of the 200 grant).
+  anthropic) model=${MODEL:-claude-sonnet-5-5}; base_url="https://api.anthropic.com"; key_file="$HOME/.config/livecommerce/anthropic.env"; key_var=ANTHROPIC_API_KEY
+    case "$model" in claude-sonnet-5-5|claude-opus-5-5|claude-haiku-5-5) ;; *) echo "anthropic MODEL must be claude-sonnet-5-5, claude-opus-5-5 or claude-haiku-5-5" >&2; exit 2 ;; esac ;;
+  *) echo "PROVIDER must be kimi, aliyun, deepseek or anthropic" >&2; exit 2 ;;
 esac
 case "$effort" in low) think=4000 ;; high) think=16000 ;; max) think=32000 ;; *) echo "effort must be low|high|max" >&2; exit 2 ;; esac
 wt=$(cd "$wt" && pwd); [[ "$wt" == */.worktrees/* ]] || { echo "refused: $wt is not under .worktrees/" >&2; exit 2; }
@@ -44,6 +49,19 @@ mkdir -p "$out"; out=$(cd "$out" && pwd); prompt=$(cd "$(dirname "$prompt")" && 
 [[ $(stat -f %Lp "$key_file" 2>/dev/null || stat -c %a "$key_file") == 600 ]] || { echo "refused: $key_file must be mode 600" >&2; exit 2; }
 # shellcheck disable=SC1090
 key=$(. "$key_file"; printf %s "${!key_var}")
+auth_env=(ANTHROPIC_AUTH_TOKEN="$key"); fast_model=$model; budget_args=()
+if [[ $provider == anthropic ]]; then
+  ws=$(. "$key_file"; printf %s "${ANTHROPIC_WORKSPACE_ID:-}")
+  [[ $ws == wrkspc_* ]] || { echo "refused: ANTHROPIC_WORKSPACE_ID missing in $key_file" >&2; exit 2; }
+  auth_env=(ANTHROPIC_API_KEY="$key" "ANTHROPIC_CUSTOM_HEADERS=anthropic-workspace-id: $ws"); fast_model=claude-haiku-5-5
+  ledger="$HOME/.config/livecommerce/anthropic-ledger.tsv"; cap=${ANTHROPIC_BUDGET_USD:-180}; run_cap=${ANTHROPIC_RUN_BUDGET_USD:-5}
+  spent=$(awk -F'\t' '{s+=$2} END{printf "%.2f", s+0}' "$ledger" 2>/dev/null || echo 0)
+  if python3 -c "import sys; sys.exit(0 if float('$spent')+float('$run_cap') > float('$cap') else 1)"; then
+    echo "refused: Claude API spent \$$spent + run cap \$$run_cap would exceed budget \$$cap (ledger $ledger)" >&2; exit 2
+  fi
+  echo "claude api: spent \$$spent of \$$cap; this run capped at \$$run_cap ($model)" >&2
+  budget_args=(--max-budget-usd "$run_cap")
+fi
 sandbox_home="$HOME/.kimi-agent-home"; mkdir -p "$sandbox_home/.claude"; chmod 700 "$sandbox_home"
 settings="$out/kimi-settings.json"
 # owner 2026-10-02: DeepSeek never does UI/visual work — no write under apps/ (relative to the worktree cwd, and absolute)
@@ -101,11 +119,11 @@ env -i PATH="/Users/luolimo/.local/share/fnm/node-versions/v24.15.0/installation
   GOMODCACHE="$(go env GOMODCACHE)" GOCACHE="$(go env GOCACHE)" GOTOOLCHAIN=go1.27.2 \
   npm_config_store_dir="$(pnpm store path 2>/dev/null || true)" PLAYWRIGHT_BROWSERS_PATH="$HOME/Library/Caches/ms-playwright" \
   DOCKER_CONFIG="$HOME/.docker" LC_TEST_LOCK_DIR="${TMPDIR:-/tmp}/lc-test-pg.lock" \
-  ANTHROPIC_BASE_URL="$base_url" ANTHROPIC_AUTH_TOKEN="$key" \
-  ANTHROPIC_MODEL="$model" ANTHROPIC_SMALL_FAST_MODEL="$model" \
+  ANTHROPIC_BASE_URL="$base_url" "${auth_env[@]}" \
+  ANTHROPIC_MODEL="$model" ANTHROPIC_SMALL_FAST_MODEL="$fast_model" \
   CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 DISABLE_AUTOUPDATER=1 MAX_THINKING_TOKENS="$think" \
   claude -p "$(cat "$prompt")" ${RESUME:+--resume "$RESUME"} --settings "$settings" --strict-mcp-config --mcp-config '{"mcpServers":{}}' \
-    --permission-mode "$perm_mode" --output-format json >"$out/result.json" 2>"$out/stderr.log" &
+    --permission-mode "$perm_mode" "${budget_args[@]}" --output-format json >"$out/result.json" 2>"$out/stderr.log" &
 run_pid=$!
 if [[ $provider == deepseek ]]; then
   # Watchdog: stop the run (not the machine) once the owner's balance drops below the reserve; the marker tells the integrator.
@@ -127,6 +145,11 @@ set -e
 [[ $provider == deepseek ]] && { after=$(balance); echo "deepseek balance after: $after CNY (run cost ≈ $(python3 -c "print(round(float('$before')-float('$after'),2))") CNY)" >>"$out/cost.txt"; cat "$out/cost.txt"; }
 if [[ $provider == deepseek ]] && [[ -n $(git -C "$wt" diff --name-only "$base_sha" -- apps/) ]]; then
   echo "REJECT: DeepSeek changed apps/ (UI is K2.8 only):" >&2; git -C "$wt" diff --name-only "$base_sha" -- apps/ >&2; status=3
+fi
+if [[ $provider == anthropic ]]; then
+  cost=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("total_cost_usd") or 0)' "$out/result.json" 2>/dev/null || echo "$run_cap")
+  printf '%s\t%s\t%s\t%s\n' "$(date '+%F %T')" "$cost" "$model" "$out" >>"$ledger"; chmod 600 "$ledger"
+  echo "claude api: run cost \$$cost; total now \$$(awk -F'\t' '{s+=$2} END{printf "%.2f", s+0}' "$ledger") of \$$cap" >&2
 fi
 python3 - "$out/result.json" <<'PY' || true
 import json,sys
