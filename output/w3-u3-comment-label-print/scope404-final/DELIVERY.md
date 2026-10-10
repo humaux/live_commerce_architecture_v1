@@ -1,72 +1,92 @@
-<!-- Purpose: W3-U3 exact post-PR36 verification request and current local evidence; no browser PASS claim.
-Depends on: merged PR36, frozen source22ef3ac2, unchanged specs and the current heavy-gate execution rule.
-Used by: integrator CI dispatch and this thread's completion follow-up. -->
-# W3-U3 — PR36 merged; browser acceptance pending
+<!-- Purpose: final W3-U3 post-PR36 acceptance, current evidence and explicitly untested boundaries.
+Depends on: merged PR30/PR36, frozen source4f0e08e5, original specs and serial local acceptance.
+Used by: integrator independent review and PR preparation; not production release approval. -->
+# W3-U3 — READY, author E3 (2026-10-10)
 
-- Source: `22ef3ac2a2b5263c9e2add87a34a03b154953614`; branch `unit/w3-u3-comment-label-print`.
-- GH #36: MERGED `2026-10-10T05:12:55Z`, merge `287e08aa6c694030333dd00797c0d3bbac15abc6`.
-  Fetched origin matches; merge SHA is an ancestor of this source (exit0).
-- `e4e48ec5` exact revert is an ancestor. BFF auth/catchall/inbox-bff tests equal trunk;
-  no `58510545` re-proof is reintroduced. No conflict, product change or duplicate Go/SQL repair.
-- Full accepted label/stream/print CSS and both specs equal `0b153c90`.
-  Workspace SHA256 `3df8c6fa47d7e559ff535ed7f146d3dec307ce4d973f66ab65906216b4d1182b`;
-  label SHA256 `c5f1b3f7a685c1fd284cc03416f6b96cdaf509f71f114acb19bf3bf3bd12b156`.
-- Read-only reviewer `w3_merge_audit` (`gpt-6.1-sol`, medium): E1, no preservation/merge finding,
-  no gate execution. Single native mode registry and workspace+label registration retained.
-- Only this W3-U3 unit is owned; W3-U2 is not modified.
+Tested source: **4f0e08e5003838d2746ce7dc9c77d1cccf7471e3**, branch unit/w3-u3-comment-label-print.
+The final handoff is an evidence-only descendant; apps/, tests/ and scripts/dev/ remain identical to that source.
+Author: Codex-1 (root runtime model/effort not exposed). One read-only test_worker, gpt-6.1-sol / medium,
+verified existing artifacts and source parity; that is E1 corroboration, **not** independent K3 or rerun evidence.
 
-## Actual local checks (source22ef)
+## Integration and scope
 
-| Command | Exit | Evidence |
+- GH #36 MERGED 2026-10-10T05:12:55Z, merge **287e08aa6c694030333dd00797c0d3bbac15abc6**.
+  Git ancestor exit0; own no-conflict merge **22ef3ac2a2b5263c9e2add87a34a03b154953614**.
+- Exact BFF revert **e4e48ec581c8be7309521f20dc4497bee9ca08cc** remains an ancestor.
+  auth.ts, store catchall and inbox-bff.test.ts equal that trunk baseline; rejected58510545 re-proof is absent.
+- Accepted print/stream/CSS/P2 files and both complete browser specs equal0b153c90.
+  Workspace SHA256 **3df8c6fa47d7e559ff535ed7f146d3dec307ce4d973f66ab65906216b4d1182b**;
+  label SHA256 **c5f1b3f7a685c1fd284cc03416f6b96cdaf509f71f114acb19bf3bf3bd12b156**.
+  This is not a claim that all feature files equal trunk: approved label UI remains the unit's diff.
+- Single native mode registry retained. No new Go/SQL/DTO/contract repair, product change, test operation,
+  waiter, assertion, threshold or harness timeout change in this verification round.
+- Owner explicitly approved **this round's local serial browser exception** in reply to call20454e5f.
+  Standing GitHub-only heavy-gate policy still applies to other rounds/units. No push/deploy.
+
+## Commands and actual results
+
+Browser prefix: LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh.
+Five actual invocations used one frozen source and ran strictly serially, not five copies of one result.
+
+| Command / run | Exit | Observed evidence |
 |---|---:|---|
-| `bash scripts/dev/test-node.sh` |0|1376/1376, 27 summaries, fail/skip/cancel0; `node.log` |
-| `pnpm --filter admin exec tsc --noEmit` |0|`tsc.log` |
-| `bash scripts/dev/check-gates.sh` |0|82 documented modes, inventory1262, headers; `gates.log` |
-| `go run ./scripts/dev/contractdrift` |0|**errors=0**, 362 existing baseline warnings; `contractdrift.log` |
-| Ancestors / source-spec/BFF parity |0|Checks above; no actions, waiters, thresholds or timeouts edited |
+| bash scripts/dev/test-node.sh |0|1376/1376, 27 summaries, fail/skip/cancel0; node.log, node-counts.log |
+| pnpm --filter admin exec tsc --noEmit |0|tsc.log |
+| bash scripts/dev/check-gates.sh |0|82 documented modes, inventory1262, headers; gates.log |
+| go run ./scripts/dev/contractdrift |0|**errors=0**, warnings362; contractdrift.log |
+| --browser-live-console, console-1 |0|23 workspace +9 label cases; native361.72s |
+| --browser-live-console, console-2 |0|23 workspace +9 label cases; native348.06s |
+| --browser-inbox |0|13 cases; 31 observed ledger rows; native31.08s |
+| --browser-click-sweep |0|147 page/viewport/locale units, load failures0;1135 PASS /0 FAIL /31 SKIP;18 journey steps PASS; native3071.10s |
+| --browser-visual-lint |0|342/342 screenshots, missing/NOT_RUN0, blocking0; **R5=21/R7=112 warnings retained**; native777.34s |
 
-These are E1 structural/static checks, **not** current E3 browser acceptance. Old candidate browser results
-are historical and do not satisfy the new two-run requirement.
+Static checks ran on22ef; its runtime/test bytes equal4f. They do not substitute for real browser results.
+Post-document check-gates and contractdrift are recorded in handoff-gates.log and handoff-contractdrift.log;
+their actual exit receipts are indexed in evidence/MANIFEST.md.
 
-## CI gates — exact acceptance
+Original command logs, PIDs, start/end UTC, source, exits and signals:
+local-acceptance/restart-20261010T055908059Z/ (state.json, supervisor.log, five mode logs).
+Supervisor34197 finished 2026-10-10T07:30:00.364Z, aggregate exit0; all owned child PIDs ended.
+Console retains780s Go timeout; inbox retains540s; sweep/lint retain5400s.
+Supervisor go_budget_seconds:1200 inbox metadata is an outer-envelope estimate only, **not** actual Go timeout;
+the unchanged registry is authoritative. No inner timeout was increased.
 
-Current `AGENT-PREAMBLE.md` and stored owner rule require every browser/full-foundation heavy gate
-on GitHub, not this Mac. One asynchronous execution-location choice was presented to the integrator;
-absent explicit local exception the existing GitHub rule remains. No heavy run or push was started.
-Integrator owns branch push/PR/CI dispatch.
+## Two original scope-revocation runs and A3 replay
 
-Use ONE fixed source commit (or evidence-only descendant whose apps/tests/scripts bytes equal this source):
+| Run | Started → ended UTC | Workspace artifact | Labels artifact |
+|---|---|---|---|
+| console-1 /PID34207 |05:59:08.199 →06:09:58.817|output/playwright/run.20izueha/live-console-4018777712|output/playwright/run.20izueha/live-console-808004645|
+| console-2 /PID43721 |06:09:58.870 →06:21:33.802|output/playwright/run.9LPrSopL/live-console-2930805195|output/playwright/run.9LPrSopL/live-console-286510693|
 
-1. `LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-live-console`
-2. After #1 finishes, run the **same original command again**, from the **same** source commit.
-3. `LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-inbox`
-4. `LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-click-sweep`
-5. `LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-visual-lint`
+Original LCU2_404 all/private cases pass in **each** run. All four raw JSON observations:
+REAL_PG status404, privateRows0, buyerPanel0, sessionRetained=true, postLossReads0.
+Grant restoration and original operation/wait/assertion sequence are unmodified.
 
-For GitHub, two distinct sequential workflow runs/IDs for the live-console mode are required;
-a matrix with a duplicated string or one test run reported twice is not two-run evidence.
-Within each original mode, keep all original operations/assertions/wait conditions/timeouts.
-The console Go timeout stays780s; no grep/focus/filter/calibration is substituted for the complete mode.
+Both unchanged lost-ACK cases pass: attempts2, sameKey=true, counts **[7,7]**, sameCount=true.
+Each label run: **9 files,45 independently observed rows,45 PASS**, not copied expected values.
+Native window.print is counted; no physical printer or OS-dialog acceptance is implied.
+Latest18 screenshots: zh-TW/zh-CN/en ×1586×992/390×844 ×preview/A4/small.
+Selected safe native reports/ledgers/screenshots are copied byte-for-byte into evidence/;
+evidence/SHA256SUMS.txt binds the copy, evidence/MANIFEST.md lists full native paths.
 
-Both console runs must each execute the original workspace and 9 label cases, including:
-- `LCU2_404 real store grant revoked clears all view and selected buyer`;
-- `LCU2_404 real store grant revoked clears private view and selected buyer`;
-- private data/selection clearing, same valid session, no reads after scope loss, and grant restoration;
-- unchanged A3 lost ACK same-key counts and native per-case click ledger.
+Other native artifacts remain in this worktree:
+- Inbox: output/playwright/inbox-ui/20261010T062236.231619000/.
+- Sweep: output/playwright/run.M88wYZH4/ui-click-sweep/; runner log under click-sweep/20261010T062402.507575000/.
+- Lint: output/playwright/run.Wzs7RSvr/ui-visual-audit/20261010T071704Z/.
 
-Capture run IDs, exact head/source SHA, command/exit/counts, full artifact paths and ledger outcomes at launch;
-watch through completion. Do not start a duplicate run or kill/delete someone else's PID/lock.
-A failure preserves raw evidence; any product Go/DTO/contract change still requires a new ruling.
+## Retained history, CI gates and NOT_RUN
 
-The semantically affected subset above does **not** reduce required PR CI. Actual unchanged
-`node scripts/dev/pr-modes.mjs origin/r3/integration` emits53 modes for314 paths (conservative UI-path/tag
-selection); the integrator's required plan remains authoritative.
+Foreground session81620 was **ABORTED by chat interruption**, with no full exit receipt.
+Its partial local-acceptance/console-1.log is preserved, not counted as a third PASS or product failure.
+Detached bounded supervisor restarted into a fresh directory; no duplicate active mode or foreign PID/lock was killed.
+Earlier A3 counts7→8, LCU2_404 timeout reds and rejected BFF evidence remain historical, never relabeled PASS.
 
-## NOT_RUN / state
+Required PR CI remains repository-selected; integrator recomputes pr-modes.mjs on the pushed PR.
+Current local results do **not** reduce that plan. Explicit affected modes: live-console, inbox, click-sweep, visual-lint.
+Current independent K3 / required PR CI: **NOT_RUN**. Full G07: **NOT_RUN** (no authored migration/GRANT/backend repair).
+Physical printer/OS dialog/paper pagination, LIVE Meta or other providers, production/deployment: **NOT_RUN**.
+MOCK Graph + REAL_PG + native real-click browser E3 applies only to the tested paths/environment.
 
-Current two full console runs, inbox, click-sweep and visual-lint: **NOT_RUN**, awaiting execution location/CI.
-New full foundation, current independent K3/required PR CI, physical printing/provider LIVE/deploy: **NOT_RUN**.
-W3-U3 is **not READY** until actual full results arrive. No push/deploy, no Go/SQL repair, no weakened tests.
-Local sessions56325/65180/16811/86939 all ended; foreign `output/ext-agents/` remains untouched.
-Exact coordination task `dbd03f8b-e0f2-4f2e-8ad9-a6f7e03efd0c`, agent `codex-w3-u3`.
-Quiet `w3-u3-scope-404` heartbeat stays active until two-run handoff or explicit cancellation.
+Exact coordination task **dbd03f8b-e0f2-4f2e-8ad9-a6f7e03efd0c**, agent codex-w3-u3.
+No source/process remains in progress. Foreign output/ext-agents/ is untouched and unstaged.
+Commit only; integrator opens the PR and performs independent review/push. READY is not release approval.

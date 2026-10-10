@@ -1,9 +1,9 @@
-<!-- Purpose: current W3-U3 verification handoff and retained historical evidence; no pending browser PASS claim.
+<!-- Purpose: current W3-U3 verified handoff and retained historical evidence.
 Depends on: frozen label brief, reverted BFF candidate, PR30 receipts, merged Go SCOPE-404 and exact specs.
 Used by: integrator CI/PR preparation; static checks alone are not browser or production acceptance. -->
 # W3-U3 comment label print — DELIVERY
 
-**Current status: PR36 MERGED — source22ef3ac2; BFF candidate remains reverted; waiting current browser acceptance, not READY. No push/deploy.**
+**Current status: READY, author E3 — tested source4f0e08e5; PR36 merged, BFF candidate reverted, all five serial browser invocations exit0. No push/deploy.**
 
 ## Current post-PR36 verification (2026-10-10)
 
@@ -13,10 +13,14 @@ Three BFF files equal trunk; `e4e48ec5` remains an ancestor. Original workspace/
 print/stream/CSS/P2 files are byte-identical to0b153c90. No duplicated Go/SQL fix or assertion/wait/timeout change.
 
 Actual local checks: **Node1376/1376 exit0, admin tsc0, check-gates0, contractdrift errors=0 exit0**.
-Current browser modes remain **NOT_RUN**, because the current preamble requires heavy gates on GitHub;
-one execution-location choice is pending. The integrator owns push/dispatch. Exact same-source two-run
-console request plus inbox/click-sweep/visual-lint: **[scope404-final/DELIVERY.md](scope404-final/DELIVERY.md)**.
-Previous statements of waiting for SCOPE-404 below are historical, not current merge status.
+Owner explicitly approved this round's local serial browser exception. Frozen source **4f0e08e5003838d2746ce7dc9c77d1cccf7471e3**:
+two original full console runs each **23 workspace +9 label PASS**, both LCU2_404 all/private real404;
+inbox **13 PASS**; full click-sweep **147 pages,1135 PASS/0 FAIL/31 SKIP,18 journey steps PASS**;
+visual lint **342/342 shots,blocking0** (R5=21/R7=112 warnings, not zero total findings). All commands exit0.
+Same-key lost-ACK counts **[7,7]** in both runs; original waiters/assertions/timeouts unchanged.
+Exact commands, times, source hashes, current18 screenshots, observed ledgers and NOT_RUN:
+**[scope404-final/DELIVERY.md](scope404-final/DELIVERY.md)**. Independent K3/required PR CI and physical/LIVE printing remain NOT_RUN.
+Previous waiting/blocked/candidate statements below are **historical**, not current acceptance or merge status.
 
 ## Revert ruling and pre-merge checks (historical)
 
@@ -116,7 +120,7 @@ All test-local/PG runs strictly serial with the current heartbeat lock. The last
 - Author inspected current zh-TW390/en1586 previews; modal controls and labels visible, desktop three-column alignment intact. Self-QA only; not independent visual acceptance.
 - Historical 26d global ledger was overwritten on a worker restart; it is retained under `resume/evidence/` but **not** cited as current coverage. Per-case 7877 artifacts fix that evidence loss.
 
-## CI gates / NOT_RUN / stop
+## Historical initial CI gates / NOT_RUN / stop (superseded by scope404-final)
 
 Integrator GitHub gates (standing RAM-heavy rule):
 - `bash scripts/dev/test-local.sh --browser-live-console` after the backend fix (must be fully green).
