@@ -748,13 +748,17 @@ case "$1" in
   # R3 storefront-publish KEY gate (BROWSER, MOCK edge): refuse a no-test success and run the pure card-model gate first.
   test -f tests/foundation/browser_storefront_publish_test.go
   grep -q '^func TestBrowserStorefrontPublish' tests/foundation/browser_storefront_publish_test.go
+  test -f tests/foundation/browser_admin_relay_test.go
+  grep -q '^func TestBrowserAdminRelayOwnsExplicitOrigin' tests/foundation/browser_admin_relay_test.go
+  grep -q '^func TestBrowserAdminRelayPreservesOriginAndTLSHeaders' tests/foundation/browser_admin_relay_test.go
+  grep -q '^func TestBrowserAdminRelayPreservesPostCSRFAndRedirect' tests/foundation/browser_admin_relay_test.go
   test -f tests/storefront/storefront-publish-gate.mjs
   test -f tests/admin/design.spec.ts
   node --test --experimental-strip-types tests/admin/storefront-model.test.ts tests/admin/design-gate.test.ts tests/admin/design-model.test.ts packages/markdown-lite/tests/index.test.ts
   mkdir -p output/playwright
     }
     lc_run() {
-  LC_BROWSER_STOREFRONT_PUBLISH_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.2 go test -race -tags browser -count=1 -timeout=900s -run '^TestBrowserStorefrontPublish$' -v ./tests/foundation
+  LC_BROWSER_STOREFRONT_PUBLISH_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.2 go test -race -tags browser -count=1 -timeout=900s -run '^TestBrowser(StorefrontPublish|AdminRelay.*)$' -v ./tests/foundation
   printf 'PASS: R3 storefront-publish: isolated admin + storefront Next, Go, PG with NO owner-seeded publication/domain row; the merchant publishes with the Settings card (en/zh-TW, desktop + 390px), the built cmd/store-admin executable binds/suspends/detaches/re-binds the origin, a fresh anonymous buyer browser sees the product or the not-found page on https://buyer.example; signed MOCK IdP + synthetic TLS/CONNECT edge, ownership/TLS evidence is an unverified reference; not DNS/TLS, Caddy or provider acceptance.\n'
     }
     ;;

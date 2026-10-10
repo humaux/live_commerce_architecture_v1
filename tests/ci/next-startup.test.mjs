@@ -154,6 +154,16 @@ test("ready admin registration uses the authenticated Go fixture seam once, with
   } finally { await new Promise((resolve) => server.close(resolve)); }
 });
 
+test("the real publish-mode registry runs every public-admin ownership regression as well as the existing browser test", () => {
+  const mode = execFileSync("bash", ["scripts/dev/test-local.sh", "--dry-run", "--browser-storefront-publish"], { encoding: "utf8" });
+  const run = /-run '([^']+)'/.exec(mode);
+  assert.ok(run, "actual registry must expose the Go invocation");
+  const selected = new RegExp(run[1]);
+  for (const name of ["TestBrowserStorefrontPublish", "TestBrowserAdminRelayOwnsExplicitOrigin", "TestBrowserAdminRelayPreservesOriginAndTLSHeaders", "TestBrowserAdminRelayPreservesPostCSRFAndRedirect"])
+    assert.equal(selected.test(name), true, `the CI mode omits ${name}`);
+  assert.equal(selected.test("TestBrowserStoreDomains"), false);
+});
+
 test("all eleven gate adapters preserve original assertions, readiness loops, spawn and environment statements", async () => {
   const baseline = "9b738e0af64ebd08c25b39f8081d46d4dc5674fb";
   const files = execFileSync("git", ["ls-tree", "-r", "--name-only", baseline, "tests/storefront"], { encoding: "utf8" }).trim().split("\n").filter((f) => f.endsWith("-gate.mjs"));
