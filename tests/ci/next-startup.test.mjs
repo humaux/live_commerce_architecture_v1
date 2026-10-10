@@ -179,7 +179,14 @@ test("the catalog-media and manual-order registries run their gate together with
 
 // Round-1 K3 P1: the last commit whose catalog-media/manual-order Go fixtures still freed the reserved public
 // admin port and handed it to the gate as an explicit LC_*_ADMIN_PORT. The old source must fail the guard below.
-const PRE_FIX_HEAD = "dd469ce879e464b71ad9f70fedd9380682721cfc";
+// The red witness is kept inline: dd469ce8 is a topic-branch merge that a squash merge drops from r3/integration history,
+// so `git show` of it would fail in any clone of the merged trunk (PR #37 review). These are the exact pre-fix lines.
+const preFix = (env) => [
+  'listener, err := net.Listen("tcp", "127.0.0.1:0")',
+  "adminOrigin := browserFront(t, listener.Addr().String())",
+  "_ = listener.Close()",
+  `"${env}": adminPort,`,
+].join("\n");
 
 test("the converted catalog-media and manual-order Go fixtures no longer free the public admin port (static red/green)", async () => {
   // The guard the two fixtures must satisfy: no reserve-then-free handoff, an owned relay origin instead,
@@ -194,9 +201,9 @@ test("the converted catalog-media and manual-order Go fixtures no longer free th
     ["tests/foundation/browser_catalog_media_test.go", "LC_CM_ADMIN_PORT"],
     ["tests/foundation/browser_manual_order_link_test.go", "LC_LINK_ADMIN_PORT"],
   ]) {
-    const before = execFileSync("git", ["show", `${PRE_FIX_HEAD}:${file}`], { encoding: "utf8" });
+    const before = preFix(portEnv);
     // RED: the pre-fix source is exactly the collision window (reserve -> browserFront -> Close -> explicit port).
-    assert.ok(before.includes(portEnv) && before.includes("_ = listener.Close()"), `${PRE_FIX_HEAD}:${file} lost the old handoff; the red witness is stale`);
+    assert.ok(before.includes(portEnv) && before.includes("_ = listener.Close()"), `${file}: inline pre-fix witness lost the old handoff`);
     assert.throws(() => noFreedPortHandoff(file, before), /freed before the gate binds it/);
     // GREEN: the current source holds the listener and hands nothing over; the explicit port env is gone.
     const current = await readFile(file, "utf8");
