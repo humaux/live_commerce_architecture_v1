@@ -1,0 +1,19 @@
+{
+  "name": "browser-missing-drawer-red",
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-manual-order"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer",
+  "out": "/Volumes/data/live_commerce_architecture_v1/output/lc-u3-create-order-drawer",
+  "timeout_seconds": 1800,
+  "head": "8642a68b7e3e6d8cb73223db8a66a34e91d6dd84",
+  "source_sha256": "e71e56f5b62865fbefab8bfe7448a622e0455fd06808565194ebfa919241e43f",
+  "started_at": "2026-10-08T15:11:27Z",
+  "state": "complete",
+  "pid": 23437,
+  "exit_code": 1,
+  "source_unchanged": true,
+  "elapsed_seconds": 559.351
+}

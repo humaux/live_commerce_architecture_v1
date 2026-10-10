@@ -1,0 +1,40 @@
+file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-ui-worker/apps/admin/components/ManualOrderItemPicker.tsx:7
+import { useEffect, useMemo, useRef, useState } from "react";
+                    ^^^^^^^
+SyntaxError: The requested module 'react' does not provide an export named 'useMemo'
+    at #asyncInstantiate (node:internal/modules/esm/module_job:326:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:429:5)
+    at async node:internal/modules/esm/loader:639:26
+    at async file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-ui-worker/tests/admin/inbox-review-host.test.ts:235:24
+
+Node.js v24.15.0
+✖ tests/admin/comment-stream-hooks.test.ts (439.926667ms)
+file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-ui-worker/apps/admin/components/ManualOrderItemPicker.tsx:7
+import { useEffect, useMemo, useRef, useState } from "react";
+                    ^^^^^^^
+SyntaxError: The requested module 'react' does not provide an export named 'useMemo'
+    at #asyncInstantiate (node:internal/modules/esm/module_job:326:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:429:5)
+    at async node:internal/modules/esm/loader:639:26
+    at async file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-ui-worker/tests/admin/inbox-review-host.test.ts:235:24
+
+Node.js v24.15.0
+✖ tests/admin/inbox-review-host.test.ts (440.006125ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 444.575541
+
+✖ failing tests:
+
+test at tests/admin/comment-stream-hooks.test.ts:1:1
+✖ tests/admin/comment-stream-hooks.test.ts (439.926667ms)
+  'test failed'
+
+test at tests/admin/inbox-review-host.test.ts:1:1
+✖ tests/admin/inbox-review-host.test.ts (440.006125ms)
+  'test failed'

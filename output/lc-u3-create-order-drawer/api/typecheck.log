@@ -1,0 +1,4 @@
+
+> @live-commerce/admin@ typecheck /Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-api-worker/apps/admin
+> tsc --noEmit
+

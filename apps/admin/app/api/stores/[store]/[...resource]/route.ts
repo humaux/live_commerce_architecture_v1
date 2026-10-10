@@ -19,6 +19,7 @@ import { promotionsRoute } from "@/lib/promotions-request";
 import { validStudioInputToken, validStudioQuery } from "@/lib/studio-request";
 import {
   claimLinkRoute, claimsCollection, claimsRoutes, claimsSubpath, validClaimLink,
+  claimBlocklistCheck, validClaimBlocklistQuery, validClaimRestriction,
 } from "@/lib/claims-request";
 import {
   DESIGN_MAX_JSON, designDetails, designGetPaths, designPostPaths, designPutPaths, isDesignImageBytes, isDesignJsonPut, isDesignPath, isDesignUpload, validDesignRequest,
@@ -254,7 +255,7 @@ async function route(request: Request, context: Context) {
   }
   if (imageUpload && Number(request.headers.get("content-length") ?? "0") > MAX_UPLOAD) return error(413, "invalid_request");
   if (studio) {
-    if (!(consoleAny.test(path) ? validConsoleQuery(request.url, path) : validStudioQuery(request.url, request.method === "GET" && (path === "live-sessions" || claimsCollection(path)))))
+    if (!(claimBlocklistCheck(path) ? validClaimBlocklistQuery(request.url) : consoleAny.test(path) ? validConsoleQuery(request.url, path) : validStudioQuery(request.url, request.method === "GET" && (path === "live-sessions" || claimsCollection(path)))))
       return error(422, "invalid_request");
     if (
       request.method === "GET" &&
@@ -434,7 +435,7 @@ async function route(request: Request, context: Context) {
       const claimLink = claimLinkRoute(path);
       // A1 includes up to 200 offers; legal Unicode names/variants can exceed the normal Studio 256 KiB cap.
       const consoleRead = request.method === "GET" && consoleRoutes.GET.test(path) && path.endsWith("/console");
-      body = await readBody(response, "application/json", tokenResponse || inputRead || claimLink ? 8192 : consoleRead ? 512 << 10 : 256 << 10);
+      body = await readBody(response, "application/json", tokenResponse || inputRead || claimLink || claimBlocklistCheck(path) ? 8192 : consoleRead ? 512 << 10 : 256 << 10);
       const parsed: unknown = JSON.parse(body);
       if (consoleAny.test(path) && response.ok) {
         const session = resource[1];
@@ -447,6 +448,7 @@ async function route(request: Request, context: Context) {
       if (tokenResponse && response.ok && !validStudioInputToken(parsed)) return error(503, "retry_later");
       // The claim link token leaves the BFF only in this closed shape (§7.1 M7).
       if (claimLink && response.ok && !validClaimLink(parsed)) return error(503, "retry_later");
+      if (claimBlocklistCheck(path) && response.ok && (response.status !== 200 || !validClaimRestriction(parsed))) return error(503, "retry_later");
       if (inputRead && response.ok) {
         if (path.endsWith("/prepared")) parseStudioInputPrepared(parsed);
         else parseStudioInput(parsed);
@@ -574,7 +576,7 @@ async function proxy(request: Request, context: Context) {
   const response = await route(request, context);
   if (path.startsWith("live-sessions") || path.startsWith("inbox/") || path === "message-templates" || path.startsWith("operations") || path === "ads/catalog-feed" || path === "ads/meta/unbind") response.headers.set("Cache-Control", "private, no-store");
   // Every M7 answer (success or not) forbids a Referer, like the Go route (§7.1).
-  if (claimLinkRoute(path) || inboxResource(path)) response.headers.set("Referrer-Policy", "no-referrer");
+  if (claimLinkRoute(path) || claimBlocklistCheck(path) || inboxResource(path)) response.headers.set("Referrer-Policy", "no-referrer");
   return response;
 }
 export const GET = proxy;

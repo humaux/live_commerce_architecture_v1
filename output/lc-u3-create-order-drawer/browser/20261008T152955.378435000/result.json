@@ -1,0 +1,92 @@
+{
+  "cases": 24,
+  "failed": [
+    "DU3-single-order-en-1440"
+  ],
+  "results": [
+    {
+      "case": "DU3-linked-en-1440",
+      "order_id": "2de5eb8f-c985-456d-aab0-12ee2f159ff1"
+    },
+    {
+      "case": "DU3-single-order-en-1440",
+      "attempts": 2,
+      "same_key": false,
+      "same_body": true,
+      "pg_delta": 2,
+      "pg_request_orders": 2,
+      "pg_request_receipts": 2,
+      "replay_status": 201
+    },
+    {
+      "case": "DU3-linked-en-390",
+      "order_id": "53a567c0-54a3-4e13-ae56-2e5c6108a67c"
+    },
+    {
+      "case": "DU3-single-order-en-390",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-zh-TW-1440",
+      "order_id": "bb3ffb09-e6cc-40e2-970e-50683fc809a5"
+    },
+    {
+      "case": "DU3-single-order-zh-TW-1440",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-zh-TW-390",
+      "order_id": "4c7f51bd-93fb-460f-a659-002981c1d270"
+    },
+    {
+      "case": "DU3-single-order-zh-TW-390",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-zh-CN-1440",
+      "order_id": "80d64fa3-d169-479f-9698-cad6ae20c7b1"
+    },
+    {
+      "case": "DU3-single-order-zh-CN-1440",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-zh-CN-390",
+      "order_id": "43e5bbbd-36fb-42f0-8d3b-213a31cce76f"
+    },
+    {
+      "case": "DU3-single-order-zh-CN-390",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+✔ dashboard: accepts the frozen shape, rejects drift (3.240333ms)
+✔ import result: strict keys, closed error codes, committed never carries errors (0.272708ms)
+✔ csv file guard mirrors the Go bounds (0.068916ms)
+✔ manual options: a COD home row parses with its offer (D01: the page used to refuse the whole list) (1.075334ms)
+✔ manual options: only bank_transfer / pay_at_pickup / cash_on_delivery, key must equal market|country|code (0.121458ms)
+✔ manual result: link is https with the order id and a 43-char capability in the fragment only (0.374417ms)
+✔ draft: first problem, and the body has no price-like field at all (0.569125ms)
+✔ BFF grammar: exactly the seven tools resources (0.07225ms)
+✔ regenerate body/result: exactly {order_id, locale} and a fresh https link naming that order (0.130041ms)
+✔ copy parity: every locale has every key, import rules and error codes (0.418458ms)
+✔ TSX seam refuses an unlisted import (4.310875ms)
+✔ Ads merchant timestamp uses Taipei at the year boundary (39.620583ms)
+✔ Design version published_at cell uses Taipei at the year boundary (2.608333ms)
+✔ ManualOrder bank-transfer expiry uses Taipei at the year boundary (2.096708ms)
+✔ shared ManualOrder form keeps fresh defaults and legacy input IDs (4.811875ms)
+✔ shared drawer quantity controls namespace IDs, bound quantity and remove zero in all locales (9.200833ms)
+✔ shared delivery choice emits one patch with the only allowed payment mode (2.939917ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 223.7455

@@ -147,5 +147,7 @@ func TestBrowserManualOrderLink(t *testing.T) {
 	if n := e.count(`SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='order.manual_link_regenerated'`, e.store()); n != 1 {
 		t.Fatalf("manual-link-regenerated audit rows: %d", n)
 	}
+	// Keep the legacy ten cases and exact audit/link counts above independent of LC-U3.
+	runCreateOrderDrawerBrowser(t)
 	t.Logf("PASS: merchant UI manual order -> link -> fresh browser exchange -> bank details -> transfer proof; single use; cases=%d; evidence=%s", result.Cases, evidence)
 }

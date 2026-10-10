@@ -1,0 +1,68 @@
+✖ LC-U3 all coded errors have explicit safe copy en (0.473416ms)
+✔ LC-U3 eligibility and every live/send reason en (0.133458ms)
+✖ LC-U3 all coded errors have explicit safe copy zh-TW (0.050167ms)
+✔ LC-U3 eligibility and every live/send reason zh-TW (0.066666ms)
+✖ LC-U3 all coded errors have explicit safe copy zh-CN (0.043833ms)
+✔ LC-U3 eligibility and every live/send reason zh-CN (0.057625ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 3
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 80.537292
+
+✖ failing tests:
+
+test at tests/admin/create-order-copy.test.ts:10:2
+✖ LC-U3 all coded errors have explicit safe copy en (0.473416ms)
+  AssertionError [ERR_ASSERTION]: invalid_json
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-ui-worker/tests/admin/create-order-copy.test.ts:11:125)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'The order could not be created. Try again.',
+    expected: 'The order could not be created. Try again.',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/create-order-copy.test.ts:10:2
+✖ LC-U3 all coded errors have explicit safe copy zh-TW (0.050167ms)
+  AssertionError [ERR_ASSERTION]: invalid_json
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-ui-worker/tests/admin/create-order-copy.test.ts:11:125)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: '無法建立訂單，請重試。',
+    expected: '無法建立訂單，請重試。',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/create-order-copy.test.ts:10:2
+✖ LC-U3 all coded errors have explicit safe copy zh-CN (0.043833ms)
+  AssertionError [ERR_ASSERTION]: invalid_json
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-ui-worker/tests/admin/create-order-copy.test.ts:11:125)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: '无法创建订单，请重试。',
+    expected: '无法创建订单，请重试。',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }

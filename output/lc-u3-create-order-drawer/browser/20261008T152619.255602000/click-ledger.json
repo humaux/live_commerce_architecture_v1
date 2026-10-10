@@ -1,0 +1,58 @@
+[
+  {
+    "case": "DU3-linked-en-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-en-1440",
+    "control": "linked order/send/copy",
+    "action": "click +/- then create and copy",
+    "actual": "real order; window_closed; native clipboard; bearer absent from DOM/storage/URL",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-en-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-en-1440",
+    "control": "duplicate/view order",
+    "action": "submit again then click view",
+    "actual": "real 409 points at first order",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-1440",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "actual": "one real catalog SKU selected",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-1440",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "actual": "one real catalog SKU selected",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-1440",
+    "control": "scenario",
+    "action": "run",
+    "actual": "assertion failed at create-order-drawer-gate.mjs:57:44",
+    "status": "FAIL"
+  }
+]

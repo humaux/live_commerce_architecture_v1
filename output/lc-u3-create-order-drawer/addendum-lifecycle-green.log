@@ -1,0 +1,15 @@
+(node:71709) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ UNKNOWN preserves the exact original bytes and key despite draft edits (0.37975ms)
+✔ navigation guard stores only an opaque boolean and blocks replacement attempts (0.329458ms)
+✔ unavailable storage never permits an unguarded money write (0.06075ms)
+✔ post-dispatch auth refusal can follow commit and must retain the order guard (0.1125ms)
+✔ a definitive response unlocks only the explicit new-attempt action (1.341709ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 87.109292

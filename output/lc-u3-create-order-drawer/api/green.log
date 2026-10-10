@@ -1,0 +1,28 @@
+✔ A15 real Request exact XOR selectors, bearer/store authorization, private closed success (16.030333ms)
+✔ A16 actual CSRF origin exact body/key, replay null-link and safe conflict detail (8.611ms)
+✔ real csrf/session helpers fence both reads and immutable receipt writes (25.345833ms)
+✔ unknown network/body/status is uncertain, no auto retry, no diagnostic reflected (1.329084ms)
+✔ logout during response.json discards private reads and successful write results (1.370833ms)
+✔ A15 exact selector XOR and method resources (0.563792ms)
+✔ A15 closed fields, inactive delivery omitted, no inferred customer or price sums (12.968292ms)
+✔ A16 exact nested body and builder never carries prices or truncates bundles (0.803292ms)
+✔ A16 replay null link is opt-in; send and price states stay closed (0.290542ms)
+✔ A16 coded errors close status/code pairs and preserve only the permitted order pointer (0.185417ms)
+✔ dashboard: accepts the frozen shape, rejects drift (2.999958ms)
+✔ import result: strict keys, closed error codes, committed never carries errors (0.296125ms)
+✔ csv file guard mirrors the Go bounds (0.07675ms)
+✔ manual options: a COD home row parses with its offer (D01: the page used to refuse the whole list) (1.196167ms)
+✔ manual options: only bank_transfer / pay_at_pickup / cash_on_delivery, key must equal market|country|code (0.166542ms)
+✔ manual result: link is https with the order id and a 43-char capability in the fragment only (0.27375ms)
+✔ draft: first problem, and the body has no price-like field at all (0.4505ms)
+✔ BFF grammar: exactly the seven tools resources (0.414708ms)
+✔ regenerate body/result: exactly {order_id, locale} and a fresh https link naming that order (0.613375ms)
+✔ copy parity: every locale has every key, import rules and error codes (1.335ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 171.003458

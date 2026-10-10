@@ -1,0 +1,9 @@
+[
+  {
+    "case": "DU3-setup",
+    "control": "scenario",
+    "action": "run",
+    "actual": "assertion failed at create-order-drawer-gate.mjs:90:8",
+    "status": "FAIL"
+  }
+]

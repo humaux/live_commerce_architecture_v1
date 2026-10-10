@@ -1,0 +1,21 @@
+{
+  "name": "browser-new-key-calibration-red",
+  "command": [
+    "env",
+    "LC_DRAWER_CALIBRATION=new-key-on-retry",
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-manual-order"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer",
+  "out": "/Volumes/data/live_commerce_architecture_v1/output/lc-u3-create-order-drawer",
+  "timeout_seconds": 1800,
+  "head": "142a58c5204159c671a38dfeb077de9a787a113d",
+  "source_sha256": "16e8ac45852239ae02f80174697bfc84f96003e63459dd38e705124badb5e988",
+  "started_at": "2026-10-08T15:29:31Z",
+  "state": "complete",
+  "pid": 56960,
+  "exit_code": 1,
+  "source_unchanged": true,
+  "elapsed_seconds": 48.014
+}

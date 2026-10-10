@@ -1,0 +1,25 @@
+✔ real SQL UNKNOWN mark blocks public-mode switching without a local receipt (12.814875ms)
+✔ UNKNOWN and queued public receipt survive selection remount without storing private identifiers (2.461958ms)
+✔ actual A2 hook fake clock: 3/6/12/24/30 backoff, success reset, hide clears and stops, 403 locks (5.627458ms)
+✔ actual reset clears selected buyer and rereads without the old epoch cursor (1.387958ms)
+✔ reply hints, coded error, UNKNOWN and capability state execute the actual composer (1.447125ms)
+✔ LC-U3 all coded errors have explicit safe copy en (0.401625ms)
+✔ LC-U3 eligibility and every live/send reason en (0.1135ms)
+✔ LC-U3 all coded errors have explicit safe copy zh-TW (0.05175ms)
+✔ LC-U3 eligibility and every live/send reason zh-TW (0.071208ms)
+✔ LC-U3 all coded errors have explicit safe copy zh-CN (0.044625ms)
+✔ LC-U3 eligibility and every live/send reason zh-CN (0.06475ms)
+✔ A15 exact selector XOR and method resources (0.557ms)
+✔ A15 closed fields, inactive delivery omitted, no inferred customer or price sums (8.807917ms)
+✔ A16 exact nested body and builder never carries prices or truncates bundles (0.796041ms)
+✔ A16 replay null link is opt-in; send and price states stay closed (0.287375ms)
+✔ A16 coded errors close status/code pairs and preserve only the permitted order pointer (0.183792ms)
+✔ tests/admin/inbox-review-host.test.ts (407.372125ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 455.942834

@@ -9,7 +9,7 @@ import {
 } from "@live-commerce/i18n";
 import { validOrdersQuery } from "./lib/orders-request";
 import { validStudioQuery } from "./lib/studio-request";
-import { claimsCollection, claimsSubpath } from "./lib/claims-request";
+import { claimsCollection, claimsSubpath, claimBlocklistCheck, validClaimBlocklistQuery } from "./lib/claims-request";
 import { platformRoute, requestHostname } from "./lib/company";
 import { consolePaths, consoleAny, validConsoleQuery } from "./src/features/live/console-request";
 import { commentResource, commentRoute, validCommentRequest, invalidCommentCursor } from "./src/features/live/comment-request";
@@ -109,7 +109,7 @@ export function proxy(request: NextRequest) {
     const relativeStudioPath = decoded.replace(storePrefix, "");
     if (
       studioPath.test(decoded) &&
-      !(consoleAny.test(relativeStudioPath) ? validConsoleQuery(request.url, relativeStudioPath) : validStudioQuery(
+      !(claimBlocklistCheck(relativeStudioPath) ? validClaimBlocklistQuery(request.url) : consoleAny.test(relativeStudioPath) ? validConsoleQuery(request.url, relativeStudioPath) : validStudioQuery(
         request.url,
         request.method === "GET" &&
           (decoded.endsWith("/live-sessions") ||

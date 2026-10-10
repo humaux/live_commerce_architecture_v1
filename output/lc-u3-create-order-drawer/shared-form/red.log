@@ -1,0 +1,74 @@
+✔ TSX seam refuses an unlisted import (5.491791ms)
+✔ Ads merchant timestamp uses Taipei at the year boundary (33.188667ms)
+✔ Design version published_at cell uses Taipei at the year boundary (3.400458ms)
+✔ ManualOrder bank-transfer expiry uses Taipei at the year boundary (3.653917ms)
+✖ shared ManualOrder form keeps fresh defaults and legacy input IDs (0.625625ms)
+✖ shared drawer quantity controls namespace IDs, bound quantity and remove zero in all locales (0.091375ms)
+✖ shared delivery choice emits one patch with the only allowed payment mode (0.05775ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 4
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2882.45175
+
+✖ failing tests:
+
+test at tests/admin/timezone-ui.test.mjs:144:1
+✖ shared ManualOrder form keeps fresh defaults and legacy input IDs (0.625625ms)
+  Error: ENOENT: no such file or directory, open '/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-form-worker/apps/admin/lib/manual-order-form.ts'
+      at readFileSync (node:fs:441:20)
+      at compile (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-form-worker/tests/admin/timezone-ui.test.mjs:24:18)
+      at manualFormFixture (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-form-worker/tests/admin/timezone-ui.test.mjs:120:31)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-form-worker/tests/admin/timezone-ui.test.mjs:145:13)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    errno: -2,
+    code: 'ENOENT',
+    syscall: 'open',
+    path: '/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-form-worker/apps/admin/lib/manual-order-form.ts'
+  }
+
+test at tests/admin/timezone-ui.test.mjs:162:1
+✖ shared drawer quantity controls namespace IDs, bound quantity and remove zero in all locales (0.091375ms)
+  Error: ENOENT: no such file or directory, open '/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-form-worker/apps/admin/lib/manual-order-form.ts'
+      at readFileSync (node:fs:441:20)
+      at compile (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-form-worker/tests/admin/timezone-ui.test.mjs:24:18)
+      at manualFormFixture (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-form-worker/tests/admin/timezone-ui.test.mjs:120:31)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-form-worker/tests/admin/timezone-ui.test.mjs:164:15)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    errno: -2,
+    code: 'ENOENT',
+    syscall: 'open',
+    path: '/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-form-worker/apps/admin/lib/manual-order-form.ts'
+  }
+
+test at tests/admin/timezone-ui.test.mjs:182:1
+✖ shared delivery choice emits one patch with the only allowed payment mode (0.05775ms)
+  Error: ENOENT: no such file or directory, open '/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-form-worker/apps/admin/lib/manual-order-form.ts'
+      at readFileSync (node:fs:441:20)
+      at compile (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-form-worker/tests/admin/timezone-ui.test.mjs:24:18)
+      at manualFormFixture (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-form-worker/tests/admin/timezone-ui.test.mjs:120:31)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-form-worker/tests/admin/timezone-ui.test.mjs:185:13)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    errno: -2,
+    code: 'ENOENT',
+    syscall: 'open',
+    path: '/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-form-worker/apps/admin/lib/manual-order-form.ts'
+  }

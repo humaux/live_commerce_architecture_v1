@@ -19,6 +19,8 @@ import {
   type CommentFilter,
 } from "@/src/features/live/comment-model";
 import { useCommentStream } from "@/src/features/live/use-comment-stream";
+import { CreateOrderDrawer } from "./CreateOrderDrawer";
+import { createOrderCopy } from "@/lib/create-order-copy";
 import { BuyerPanel } from "./BuyerPanel";
 import { CommentReply } from "./CommentReply";
 
@@ -38,6 +40,7 @@ export function CommentStream({
   capabilities: ConsoleCapabilities;
   calibration?: boolean;
 }) {
+  const [orderBundle, setOrderBundle] = useState<{id:string;generation:number}|null>(null);
   const c = commentCopy(locale),
     [filter, setFilter] = useState<CommentFilter>("all"),
     [conversations, setConversations] = useState<ConversationList | null>(null),
@@ -109,6 +112,7 @@ export function CommentStream({
     privacy.expire,
     stream.revision,
   ]);
+  useEffect(() => { setOrderBundle(null); }, [store.id, session, privacy.visible, stream.resetGeneration]);
   const rows = stream.buffer.items.filter(
     (row) => filter !== "keyword" || row.marks.claim !== null,
   );
@@ -146,6 +150,7 @@ export function CommentStream({
   };
   return (
     <div className="comment-workspace" data-testid="comment-workspace">
+      {privacy.visible && orderBundle && orderBundle.generation === stream.resetGeneration && <CreateOrderDrawer key={`${store.id}:${session}:${orderBundle.id}`} locale={locale} store={store} sessionId={session} bundleId={orderBundle.id} onUnauthorized={privacy.expire} onClose={() => setOrderBundle(null)} />}
       <section
         className="comment-stream"
         data-testid="comment-stream"
@@ -273,6 +278,7 @@ export function CommentStream({
                   >
                     {c.select}
                   </button>
+                  {row.marks.claim?.bundle_id && <><button type="button" data-testid={`comment-create-order-${row.ref}`} disabled={!permitted(store,"inventory:reserve") || !permitted(store,"orders:read")} onClick={() => setOrderBundle({id:row.marks.claim!.bundle_id!,generation:stream.resetGeneration})}>{createOrderCopy[locale].title}</button>{(!permitted(store,"inventory:reserve") || !permitted(store,"orders:read")) && <p>{createOrderCopy[locale].permission}</p>}</>}
                 </li>
               ))}
             </ul>

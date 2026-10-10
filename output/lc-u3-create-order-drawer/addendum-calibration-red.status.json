@@ -1,0 +1,21 @@
+{
+  "name": "addendum-calibration-red",
+  "command": [
+    "env",
+    "LC_DRAWER_CALIBRATION=new-key-on-retry",
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-manual-order"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer",
+  "out": "/Volumes/data/live_commerce_architecture_v1/output/lc-u3-create-order-drawer",
+  "timeout_seconds": 1800,
+  "head": "778de00853d4afb2c43b0eb8259fe1be1f9631f9",
+  "source_sha256": "091a4f21bac71315adf405441d5bb11e23520b26fd56342ed73a621dc0dcd7ea",
+  "started_at": "2026-10-08T15:49:33Z",
+  "state": "complete",
+  "pid": 78588,
+  "exit_code": 1,
+  "source_unchanged": true,
+  "elapsed_seconds": 47.459
+}

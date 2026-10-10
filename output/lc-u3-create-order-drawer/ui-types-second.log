@@ -1,0 +1,15 @@
+components/CreateOrderDrawer.tsx(491,128): error TS1127: Invalid character.
+components/CreateOrderDrawer.tsx(491,154): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+components/CreateOrderDrawer.tsx(491,155): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+components/CreateOrderDrawer.tsx(491,269): error TS1127: Invalid character.
+components/CreateOrderDrawer.tsx(491,302): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+components/CreateOrderDrawer.tsx(491,305): error TS17002: Expected corresponding JSX closing tag for 'ul'.
+components/CreateOrderDrawer.tsx(491,308): error TS1005: '}' expected.
+components/CreateOrderDrawer.tsx(491,309): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+components/CreateOrderDrawer.tsx(491,312): error TS17002: Expected corresponding JSX closing tag for 'form'.
+components/CreateOrderDrawer.tsx(491,315): error TS1005: ')' expected.
+components/CreateOrderDrawer.tsx(536,13): error TS17002: Expected corresponding JSX closing tag for 'dialog'.
+components/CreateOrderDrawer.tsx(538,7): error TS1128: Declaration or statement expected.
+components/CreateOrderDrawer.tsx(539,5): error TS1128: Declaration or statement expected.
+components/CreateOrderDrawer.tsx(540,3): error TS1109: Expression expected.
+components/CreateOrderDrawer.tsx(541,1): error TS1128: Declaration or statement expected.

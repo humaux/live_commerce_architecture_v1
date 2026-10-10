@@ -1,0 +1,18 @@
+{
+  "name": "addendum-node",
+  "command": [
+    "bash",
+    "scripts/dev/test-node.sh"
+  ],
+  "timeout_seconds": 600,
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer",
+  "out": "/Volumes/data/live_commerce_architecture_v1/output/lc-u3-create-order-drawer",
+  "head": "778de00853d4afb2c43b0eb8259fe1be1f9631f9",
+  "source_sha256": "091a4f21bac71315adf405441d5bb11e23520b26fd56342ed73a621dc0dcd7ea",
+  "started_at": "2026-10-08T15:49:05Z",
+  "state": "complete",
+  "pid": 75268,
+  "exit_code": 0,
+  "source_unchanged": true,
+  "elapsed_seconds": 20.935
+}

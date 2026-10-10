@@ -1,8 +1,8 @@
 // BFF for the merchant tools (contracts/storefront-v2.md section G): the browser calls /api/stores/{store}/tools/<resource> and this file
 // forwards to Go /v1/admin/stores/{store}/<resource> (internal/httpapi/merchanttools.go) with the merchant bearer from the HttpOnly session
-// cookie. The ONLY resources are the six of lib/merchant-tools-model.ts toolsRoute: GET dashboard, GET products/export.csv, GET
-// orders/manual/options, POST products/import/{preview,commit} (text/csv, <= 2 MiB, no key), POST orders/manual (JSON, Idempotency-Key).
-// It decides nothing: Go and the SQL definers own every rule and permission. It never forwards a tenant, a query string or a header the
+// cookie. Resources are enumerated by merchant-tools-model toolsRoute and trackingRoute. A15 reads one UUID selector; A16 is a
+// closed JSON, keyed command beside orders/manual, with the same longer pipeline budget.
+// It decides nothing: Go and the SQL definers own every rule and permission. It never forwards a tenant or an unknown query/header the
 // browser chose, never retries (a repeated import or order is the caller's explicit, keyed choice), and rebuilds every error locally from an
 // allow-listed code. It is a sibling of the generic stores/[store]/[...resource] BFF because these routes need their own body types and
 // longer upstream budgets (import 75 s, manual order 16 s) than that file's 6 s.
@@ -21,17 +21,18 @@ import {
 } from "@/lib/auth";
 import { fixtureSession } from "@/lib/backend";
 import { MAX_CSV_BYTES, parseImportResult, toolsRoute, validManualBody, validRegenerateBody, type ToolsRoute } from "@/lib/merchant-tools-model";
+import { validPrefillQuery, validForBuyerBody, parseOrderPrefill, parseForBuyerResult, forBuyerError } from "@/lib/create-order-model";
 import { trackingRoute, validTrackingQuery, parseTrackingPreview, parseTrackingCommit, type TrackingRoute } from "@/lib/tracking-import-model";
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const keyPattern = /^[A-Za-z0-9_.:-]{8,128}$/;
 const MAX_JSON = 64 * 1024;
-const nostore = { "Cache-Control": "private, no-store" };
+const nostore = { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer", "X-Content-Type-Options": "nosniff" };
 type Context = { params: Promise<{ store: string; resource: string[] }> };
 
 const budgets: Record<ToolsRoute | TrackingRoute, number> = {
   dashboard: 8000, export: 20000, "manual-options": 10000, "import-preview": 75000, "import-commit": 75000, "manual-place": 16000,
-  "manual-regenerate": 16000,
+  "manual-regenerate": 16000, "order-prefill": 16000, "for-buyer": 16000,
   "tracking-preview": 75000, "tracking-commit": 75000, "tracking-result": 20000,
 };
 
@@ -93,7 +94,7 @@ async function route(request: Request, context: Context) {
   if (!uuid.test(store) || !kind) return localError(404, "not_found");
   // Exact resources: no query at all (not even a bare "?").
   const search = new URL(request.url).search || (request.url.endsWith("?") ? "?" : "");
-  if (tracking ? !validTrackingQuery(tracking, search) : request.url.includes("?")) return localError(422, "invalid_request");
+  if (tracking ? !validTrackingQuery(tracking, search) : kind === "order-prefill" ? !validPrefillQuery(search) : request.url.includes("?")) return localError(422, "invalid_request");
   if (tracking && request.headers.has("idempotency-key")) return localError(422, "invalid_request");
   const isGet = request.method === "GET";
   if (isGet && (request.body !== null || request.headers.has("transfer-encoding") || request.headers.has("idempotency-key") ||
@@ -146,19 +147,72 @@ async function route(request: Request, context: Context) {
       } catch {
         return localError(400, "invalid_json");
       }
-      if (kind === "manual-regenerate" ? !validRegenerateBody(parsed) : !validManualBody(parsed)) return localError(422, "invalid_request");
+      if (kind === "manual-regenerate" ? !validRegenerateBody(parsed) : kind === "for-buyer" ? !validForBuyerBody(parsed) : !validManualBody(parsed)) return localError(422, "invalid_request");
       init.body = text;
       init.headers = { "Content-Type": "application/json", "Idempotency-Key": key };
     }
   }
 
-  const response = await upstream(path + (tracking ? search : ""), init, token, store, budgets[kind]);
+  const response = await upstream(path + (tracking || kind === "order-prefill" ? search : ""), init, token, store, budgets[kind]);
   if (authConfig && response.status === 401) {
-    const denied = await safeError(response);
+    const denied = kind === "order-prefill" || kind === "for-buyer" ? localError(401, "unauthorized") : await safeError(response);
     clearAuthCookies(denied.headers);
     return denied;
   }
   const requestID = response.headers.get("x-request-id") ?? "";
+  if (kind === "order-prefill" || kind === "for-buyer") {
+    // A15/A16 (live-console-v1 §5): bounded, closed private replies; only an already-ordered pointer may survive errors.
+    const data = await readCapped(response, 128 * 1024);
+    if (
+      !data ||
+      response.headers.get("content-type")?.split(";", 1)[0] !==
+        "application/json"
+    )
+      return localError(503, "retry_later");
+    let value: unknown;
+    try {
+      value = JSON.parse(
+        new TextDecoder("utf-8", { fatal: true }).decode(data),
+      );
+    } catch {
+      return localError(503, "retry_later");
+    }
+    if (!response.ok) {
+      const coded = forBuyerError(response.status, value);
+      if (!coded) return localError(503, "retry_later");
+      const denied = localError(response.status, coded.code);
+      if (coded.code === "bundle_already_ordered") {
+        // localError's general details type is string-only. This single frozen A16 detail permits null too.
+        const envelope = await denied.json();
+        return Response.json(
+          { ...envelope, details: { order_id: coded.order_id } },
+          {
+            status: response.status,
+            headers: { ...Object.fromEntries(denied.headers), ...nostore },
+          },
+        );
+      }
+      return denied;
+    }
+    if (
+      kind === "order-prefill"
+        ? response.status !== 200
+        : response.status !== 200 && response.status !== 201
+    )
+      return localError(503, "retry_later");
+    try {
+      const parsed =
+        kind === "order-prefill"
+          ? parseOrderPrefill(value)
+          : parseForBuyerResult(value);
+      return Response.json(parsed, {
+        status: response.status,
+        headers: { ...nostore },
+      });
+    } catch {
+      return localError(503, "retry_later");
+    }
+  }
   if (kind === "export" || kind === "tracking-result") {
     // The export streams straight through, only as the exact attachment shape; never buffered or stored here.
     const disposition = response.headers.get("content-disposition") ?? "";
