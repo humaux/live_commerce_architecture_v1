@@ -17,7 +17,7 @@ Run from the isolated worktree above. stdout/stderr saved uncompressed.
 
 1. `git worktree add -b codex/pr31-ops-nav .worktrees/pr31-ops-nav 2c4d2f5320d9172e6f0094341bb81f7c9ccb1093` (from main repository): exit 0.
 2. `node --test --experimental-strip-types tests/admin/ops-polish-model.test.ts`: initial dependency diagnostic exit 1; dependency-failure.log.
-3. `node --test --experimental-strip-types tests/admin/ops-polish-model.test.ts`: valid RED exit 1, 5 pass/1 fail with actual old browser consumer missing nav-live-settings; red.log and red-source-hashes.txt. Original consumer preserved in red-ops-polish.spec.ts.
+3. `node --test --experimental-strip-types tests/admin/ops-polish-model.test.ts`: valid RED exit 1, 5 pass/1 fail with actual old browser consumer missing nav-live-settings; red.log and red-source-hashes.txt. Original consumer preserved in red-ops-polish.source.txt.
 4. `node --test --experimental-strip-types tests/admin/ops-polish-model.test.ts`: GREEN exit 0, 6 pass/0 fail; green.log.
 5. `node_modules/.bin/tsc --noEmit --strict --target ES2023 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --typeRoots apps/admin/node_modules/@types tests/admin/ops-polish-model.test.ts tests/admin/ops-polish.spec.ts`: exit 1, missing explicit Node types; typecheck-missing-types.log retained.
 6. `node_modules/.bin/tsc --noEmit --strict --target ES2023 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --skipLibCheck --types node --typeRoots apps/admin/node_modules/@types tests/admin/ops-polish-model.test.ts tests/admin/ops-polish.spec.ts`: exit 0; typecheck.log.

@@ -1,0 +1,23 @@
+{
+  "reason": "Archived red-source snapshots are evidence, not runnable suite files; preserve byte hashes and coverage ratchet",
+  "files": [
+    {
+      "old": "output/w3-u2-live-settings-ui/pr31-r1/extra/observer-card/red-comment-stream-hooks.test.ts.txt",
+      "new": "output/w3-u2-live-settings-ui/pr31-r1/extra/observer-card/red-comment-stream-hooks.source.txt",
+      "sha256": "e3b5fb1488b5b715ab40193d66826f1b88950e905b97c2ff480a5a9ecbdd25aa",
+      "contents_unchanged": true
+    },
+    {
+      "old": "output/w3-u2-live-settings-ui/pr31-r1/extra/observer-card/red-live-console.spec.ts.txt",
+      "new": "output/w3-u2-live-settings-ui/pr31-r1/extra/observer-card/red-live-console.source.txt",
+      "sha256": "3df8c6fa47d7e559ff535ed7f146d3dec307ce4d973f66ab65906216b4d1182b",
+      "contents_unchanged": true
+    },
+    {
+      "old": "output/w3-u2-live-settings-ui/pr31-r1/extra/ops-card/red-ops-polish.spec.ts",
+      "new": "output/w3-u2-live-settings-ui/pr31-r1/extra/ops-card/red-ops-polish.source.txt",
+      "sha256": "399b6b022e0500822b96846ba0049ec6cc6684e8f844b871c67cc3dfc569ce2b",
+      "contents_unchanged": true
+    }
+  ]
+}
