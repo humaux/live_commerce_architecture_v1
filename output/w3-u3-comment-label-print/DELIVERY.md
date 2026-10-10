@@ -1,11 +1,24 @@
-<!-- Purpose: current W3-U3 author READY handoff with pinned runtime and regression evidence.
-Depends on: frozen label brief, approved BFF scope-race fix, PR30 receipts and current trunk.
-Used by: integrator K3/PR preparation; local E3 is not independent or production acceptance. -->
+<!-- Purpose: current W3-U3 verification handoff and retained historical evidence; no pending browser PASS claim.
+Depends on: frozen label brief, reverted BFF candidate, PR30 receipts, merged Go SCOPE-404 and exact specs.
+Used by: integrator CI/PR preparation; static checks alone are not browser or production acceptance. -->
 # W3-U3 comment label print — DELIVERY
 
-**Current status: WAITING_SCOPE404 — BFF candidate reverted as e4e48ec5; not current full-mode READY. No push/deploy.**
+**Current status: PR36 MERGED — source22ef3ac2; BFF candidate remains reverted; waiting current browser acceptance, not READY. No push/deploy.**
 
-## Latest integrator ruling (2026-10-10)
+## Current post-PR36 verification (2026-10-10)
+
+Verified GH #36 MERGED `2026-10-10T05:12:55Z` at `287e08aa`, fetched ancestry exit0;
+merged origin/r3/integration into own branch as **22ef3ac2a2b5263c9e2add87a34a03b154953614** without conflicts.
+Three BFF files equal trunk; `e4e48ec5` remains an ancestor. Original workspace/label specs and accepted
+print/stream/CSS/P2 files are byte-identical to0b153c90. No duplicated Go/SQL fix or assertion/wait/timeout change.
+
+Actual local checks: **Node1376/1376 exit0, admin tsc0, check-gates0, contractdrift errors=0 exit0**.
+Current browser modes remain **NOT_RUN**, because the current preamble requires heavy gates on GitHub;
+one execution-location choice is pending. The integrator owns push/dispatch. Exact same-source two-run
+console request plus inbox/click-sweep/visual-lint: **[scope404-final/DELIVERY.md](scope404-final/DELIVERY.md)**.
+Previous statements of waiting for SCOPE-404 below are historical, not current merge status.
+
+## Revert ruling and pre-merge checks (historical)
 
 K3 passed the implementation of58510545, but the integrator rejected shipping the BFF second-opinion classification:
 LCN03 belongs to Go, covers every domain, and stale views can turn a genuine403 into404 and alter BuyerPanel revocation.
