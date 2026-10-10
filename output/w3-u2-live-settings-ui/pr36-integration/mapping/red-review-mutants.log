@@ -1,0 +1,17 @@
+=== RUN   TestBFFLiveSettingsMutations
+=== RUN   TestBFFLiveSettingsMutations/nested_false_guard
+    bff_live_settings_test.go:154: unknown source accepted
+=== RUN   TestBFFLiveSettingsMutations/nested_function_guard
+    bff_live_settings_test.go:154: unknown source accepted
+=== RUN   TestBFFLiveSettingsMutations/computed_method_override
+    bff_live_settings_test.go:166: changed sink missing: [GET /v1/admin/stores GET /v1/admin/stores/{}/live-sessions/{}/claims/blocklist/check]; unresolved=[]
+=== RUN   TestBFFLiveSettingsMutations/unknown_computed_key
+    bff_live_settings_test.go:154: unknown source accepted
+--- FAIL: TestBFFLiveSettingsMutations (0.78s)
+    --- FAIL: TestBFFLiveSettingsMutations/nested_false_guard (0.26s)
+    --- FAIL: TestBFFLiveSettingsMutations/nested_function_guard (0.17s)
+    --- FAIL: TestBFFLiveSettingsMutations/computed_method_override (0.17s)
+    --- FAIL: TestBFFLiveSettingsMutations/unknown_computed_key (0.18s)
+FAIL
+FAIL	livecommerce/scripts/dev/contractdrift	1.107s
+FAIL

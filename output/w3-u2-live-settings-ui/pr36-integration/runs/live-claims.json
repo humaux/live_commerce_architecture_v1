@@ -1,0 +1,32 @@
+{
+  "name": "live-claims",
+  "argv": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-live-claims"
+  ],
+  "source_sha": "7737cb87d186c5b17ef582142c7766136660a41b",
+  "env": {
+    "LC_TEST_LOCK_WAIT": "1800",
+    "LC_BROWSER_ENGINE": "chromium",
+    "LC_HEADER_BASE": "origin/r3/integration",
+    "LC_BROWSER_EVIDENCE_ROOT": "$PWD/output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-claims-evidence"
+  },
+  "unset_env": [
+    "LC_BROWSER_CONSOLE_GREP",
+    "LC_BROWSER_SETTINGS_GREP",
+    "LC_CONSOLE_CALIBRATION",
+    "LC_OPS_POLISH_ONLY",
+    "CONTRACT_DRIFT_BASE"
+  ],
+  "started_at": "2026-10-10T07:46:41.988740+00:00",
+  "timeout_seconds": 3000,
+  "log": "output/w3-u2-live-settings-ui/pr36-integration/runs/live-claims.log",
+  "state": "finished",
+  "pid": 56977,
+  "exit_code": 0,
+  "elapsed_seconds": 26.825,
+  "ended_at": "2026-10-10T07:47:08.813979+00:00",
+  "log_sha256": "e38339a8e35e13516d32e8396897c73ea8dae2f9bbabad1079f2e5f7b5fb4694",
+  "original_log": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-claims.log"
+}

@@ -1,0 +1,20 @@
+{
+  "argv": [
+    "bash",
+    "scripts/dev/check-gates.sh"
+  ],
+  "source_sha": "7737cb87d186c5b17ef582142c7766136660a41b",
+  "started_at": "2026-10-10T07:55:08.868087+00:00",
+  "env": {
+    "LC_HEADER_BASE": "origin/r3/integration"
+  },
+  "purpose": "Final staged artifact filenames and headers; runtime source unchanged",
+  "timeout_seconds": 600,
+  "state": "finished",
+  "log": "output/w3-u2-live-settings-ui/pr36-integration/final-artifact-check.log",
+  "pid": 74090,
+  "exit_code": 0,
+  "elapsed_seconds": 124.891,
+  "ended_at": "2026-10-10T07:57:13.748675+00:00",
+  "log_sha256": "235d4912cbb255aea027132e096d6ff4925b22ccf2815e4d901983dae499dd87"
+}

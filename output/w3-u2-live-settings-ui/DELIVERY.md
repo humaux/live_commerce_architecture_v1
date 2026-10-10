@@ -1,70 +1,65 @@
-# W3-U2 PR #31 review batch delivery
+# W3-U2 PR #31 post-PR36 delivery
 
-- Branch/worktree: `unit/w3-u2-live-settings-ui`, `.worktrees/w3-u2-live-settings-ui`; base `539f1cb8` includes integrator changes, both suites, registry and #23 evidence paths. Frozen tested source: **`0ff7ca92fea1e31607c16099ea5429b6dd882a7b`**. Final commit packages evidence only; `pr31-r1/extra/SOURCE.json` and browser manifest bind all current runtime/test files.
-- Author Codex-4 (parent model/effort unexposed); isolated UI/test workers GPT-6.1-sol/high or medium and read-only source/security review. Task `e0cab99c-5ed3-4d22-a3cd-88700fb57c71`. No push; CI priority #29/#33, then integrator pushes this batch.
-- Original K3 PASS at `b06df828` and old `trunk-resume/`, `browser-before-extra/`, `pr31-r1/extra/before-extra/` results are historical, not current-head independent review.
+- Branch/worktree: `unit/w3-u2-live-settings-ui`, `.worktrees/w3-u2-live-settings-ui`.
+- Frozen tested source: **`7737cb87d186c5b17ef582142c7766136660a41b`**; trunk PR36: `287e08aa6c694030333dd00797c0d3bbac15abc6`, merged as `9e6282b7`. This final handoff changes evidence and documentation only. [SOURCE](pr36-integration/SOURCE.json) binds 61 current source/test files; its SHA256 is `07a69001c6c2f2cdf59a11be898768043cedcfc738265806834d69c8b9234e0d`.
+- Author Codex-4; runtime model/effort unexposed. Isolated mapping worker owns five `scripts/dev/contractdrift/` files; its recorded actual model/effort are UNKNOWN. Read-only source/artifact reviewers own no product paths. Current task: `35a92743-066e-4fd9-8fb0-98eb3af4c539`.
+- Evidence: **E3 in the tested BROWSER + MOCK business + REAL_PG authorization/adapter environment**. Source review `9806004a`, completed-subset artifact audit `e5d3a2ec`, and remaining-run audit `14008b1b` are **E1**, not new K3/CI approval.
 
-## Seven review items
+## Changes and review resolution
 
-1. Reminder POST retains the safe aggregate receipt. No report GET without inbox:read; real permission loss still clears private state.
-2. Same-address navigation preserves privacy lifetime, including resolved default-store URLs. Other scene/store/locale departure clears synchronously and late reads cannot repaint.
-3. Scene selector consumes next_cursor and uses authoritative detail/title for a deep-linked scene beyond page 20. Real fixture has 21 scenes.
-4. Shared templates accept 120 Unicode runes and 501/5001 legal rows under the unchanged 1MiB response bound. 121 runes, malformed rows and oversized bodies remain refused through actual Request/route tests.
-5. Sold-out sent badge requires commentSendState(sent), verified for success/queued/failed/blocked/UNKNOWN in zh-TW/zh-CN/en at 1440/390. No packages/i18n change.
-6. Optional reminder 404 is local only after exact Go plain404 plus fresh signed store/method authority. Store not_found and 401/403 clear private data; upstream JSON cannot forge the internal absence marker. Healthy sold-out/list controls and known POST receipts remain.
-7. Selected-scene placeholder is disabled. Explicit useId/htmlFor association retains its name/native option state and the same grid layout; browser assertions/waits unchanged.
+The seven first-round fixes remain: preserve successful reminder receipts without inbox:read; keep same-address navigation alive; paginate scenes including scene 21; accept the contract's 120-rune template names; show sold-out sent badges only for a successful send; isolate positively proven optional-reminder absence; disable the selected scene's empty placeholder. Privacy-generation fences retain the original UNKNOWN command key and prevent discarded callbacks from borrowing fresh authority. Their red/green evidence remains under `pr31-r1/`.
 
-Captured run/save/copy/page/more callbacks retain their render's privacy generation. Hide/reveal cannot lend new authority to discarded work; visible focus preserves the fence and UNKNOWN exact-key retry. Actual six negative counterexamples were RED, then GREEN. Uncompressed logs and corrected Node24 navigator fixture diagnostic remain under pr31-r1.
+OP4 keeps its exact navigation-array assertion in all three locales, with `nav-live-settings` immediately after `nav-claims`. The legitimate structure change passed both original full Ops runs; no containment assertion or timeout change.
 
-## Additional actual CI failures
+The scoped-404 dependency is now resolved by **trunk PR36**, in `internal/platform/platform.go`: after a mid-transaction denial, roll back and re-resolve the signed scope within the bounded deadline; emit 404 only when store loss is proven. This also covers the dedicated settings adapter. This branch implements no second SCOPE-404 fix. The earlier shared BFF candidate `58510545` is historical; the W3-U3 revert `e4e48ec5` and source parity were checked read-only (E1).
 
-**OP4:** exact toEqual navigation list and both live-group inventories include nav-live-settings after nav-claims in all three locales. Counts 8/11 remain; no contains-style weakening. Actual consumer AST went RED, then 6/6 GREEN. Full ops mode passes twice.
+Both original full Console runs now pass LCU2_404 all/private, without changing the original waits or later assertions. Four native REAL_PG receipts each have **status=404, privateRows=0, buyerPanel=0, sessionRetained=true, postLossReads=0**. The unit's legitimate restriction-check observer arm, local missing-bundle handling and effect-generation polling fence remain in place; they do not normalize a Go 403.
 
-**LCU2_404:** the newly mounted restriction check can observe grant loss before A2/A8, then expire the containing console and stop those polls. The actual emitted GET drives the original browser waiter in Node. Its added arm uses the exact current store/session check path, GET and 404; all four original arms and every later clear/cookie/login/zero-read assertion, 15s waiter and 6.5s observation budget remain.
+The new single mode registry is preserved. Commit `f9263012` declares `lc_browsers=chromium` in the existing live-settings registry block; the existing missing-declaration test was RED, then GREEN.
 
-Backend bundle missing/purged also yields PT404. The BFF separately proves store_scope_lost from fresh signed authority; upstream cannot forge it. Ordinary missing bundle clears the selected buyer and local fence without revoking the console. True store loss clears everything immediately. A queued A2 timer before passive cleanup genuinely issued one extra read RED; the effect-generation/blocked admission guard prevents it and borrowing a new fence.
+Commit `017c62b5` imports the source-derived CI-DRIFT mapping from worker `f60d71d4`. It derives dedicated leaf resources/methods from the actual tuple, native fetch path/options and guarded exported handlers. Unknown shapes remain UNRESOLVED; nested non-executing guards and computed method overrides are rejected. Thirteen mutation cases and the full scanner tests passed after actual red failures. No baseline relaxation or product route change. Uncompressed worker evidence: [mapping/evidence.json](pr36-integration/mapping/evidence.json), `red-tests.log`, `red-cli.log`, `red-guard-alias.log`, `red-review-mutants.log`, `green-review-focused.log`, `whole-review-tests.log`, `green-review-cli.log`.
 
-Both full console repetitions pass the two grant-revocation cases. Current real response ledgers show **buyer-panel** and **restriction check** as first 404 observers. Canonical records are `pr31-r1/extra/console-{1,2}-observers.json` and `browser-current/console-{1,2}/scope-reads-*.json`. They contain only pathname/category/method/status, without query, header, body, buyer name or message text.
+Commit `7737cb87` renames three archived test-source snapshots to `.source.txt`, preserving bytes. They cannot be misclassified as runnable tests by check-gates. Red/green provenance is in `pr36-integration/red-archived-test-names/`.
 
-## Interface and evidence
+## Contract / interface
 
-Review-batch production changes are TS/BFF only. New fixed internal BFF codes reminders_unavailable/store_scope_lost distinguish positively proven conditions; Go routes, permissions, OpenAPI, SQL, migrations and lockfiles are unchanged. The existing authorized thin sold-out GET/PUT adapter remains CAS/idempotent; the final REAL_PG handler tests prove scope, replay and refusal behavior.
+No additional product contract, Go runtime endpoint, SQL/migration, permission, OpenAPI, dependency or lockfile change in this post-PR36 batch. The previously authorized sold-out GET/PUT adapter remains CAS/idempotent; focused REAL_PG tests cover it and PR36's scope recheck. CI-DRIFT changes are static tooling only.
 
-Current canonical browser evidence is **committed** under `pr31-r1/extra/browser-current/`: both console ledgers/logs, both ops admin/storefront results, 22 live-settings per-test ledgers plus native aggregate and 12 synthetic screenshots, and live-claims result/ledger/log/screens. Comment-author/body screenshot masks remain. Screens use synthetic fixtures; no real buyer PII is asserted. Hash manifests and `browser-evidence.json` bind each file and frozen source. The unchanged KC16 harness allocates its own fresh ignored output/playwright/live-claims-* directory; its exact actual path is recorded, not assumed from the caller root.
+## Actual commands and exits
 
-## Commands / exit codes
+All paths below are relative to this delivery directory. [RESULTS](pr36-integration/RESULTS.json) and `pr36-integration/runs/*.json` record exact argv, environment, UTC timestamps, timeout, PID, exit and actual log SHA256. Browser runs were serial, using Chromium and unique ignored evidence roots; `LC_TEST_LOCK_WAIT=1800` changes only resource queue waiting. No grep, calibration, Ops subset, browser assertion or test-wait change.
 
-Full exact argv/environment, exits and log hashes: `pr31-r1/extra/{final-local-gates,final-http-real-pg,browser-runs}.json`. Browser commands below use `LC_TEST_LOCK_WAIT=1800 LC_BROWSER_ENGINE=chromium` and a unique `LC_BROWSER_EVIDENCE_ROOT` under output/playwright; exact values are in each run record. Queue waiting changes no product/test timeout.
-
-| Command | Exit | Result/evidence |
+| Command | Exit | Current source evidence |
 | --- | ---: | --- |
-| `bash scripts/dev/test-node.sh` | 0 | **1401 PASS / 0 FAIL**; `pr31-r1/extra/final-node.log` |
-| `pnpm typecheck:admin` | 0 | `pr31-r1/extra/final-typecheck.log` |
-| `bash scripts/dev/test-local.sh --list` | 0 | `pr31-r1/extra/final-registry-list.log` |
-| `bash scripts/dev/check-gates.sh` | 0 | **83 modes all documented**, every tracked test run and header ratchet green; `pr31-r1/extra/final-check-gates.log` |
-| `LC_TEST_LOCK_WAIT=1800 bash scripts/dev/test-focused.sh 'TestLiveSettingsHTTP' ./tests/foundation ./internal/httpapi` | 0 | **2 top-level / 24 subcases / 0 skips**, REAL_PG scope/CAS/replay and full router; `pr31-r1/extra/final-http-real-pg.log` |
-| `bash scripts/dev/test-local.sh --browser-live-console` #1 | 0 | `pr31-r1/extra/browser-live-console-1.log` |
-| `bash scripts/dev/test-local.sh --browser-live-console` #2 | 0 | `pr31-r1/extra/browser-live-console-2.log` |
-| `bash scripts/dev/test-local.sh --browser-ops-polish` #1 | 0 | `pr31-r1/extra/browser-ops-polish-1.log` |
-| `bash scripts/dev/test-local.sh --browser-ops-polish` #2 | 0 | `pr31-r1/extra/browser-ops-polish-2.log` |
-| `bash scripts/dev/test-local.sh --browser-live-settings` #1 | 0 | `pr31-r1/extra/browser-live-settings-1.log` |
-| `bash scripts/dev/test-local.sh --browser-live-claims` #1 | 0 | `pr31-r1/extra/browser-live-claims-1.log` |
-| `node scripts/dev/pr-modes.mjs origin/r3/integration` | 0 | **54 modes** selected; `pr31-r1/extra/pr-modes.json` |
+| `bash scripts/dev/test-node.sh` | 0 | `pr36-integration/runs/test-node.log`; all suites green, no failed/skipped cases |
+| `pnpm typecheck:admin` | 0 | `pr36-integration/runs/typecheck.log` |
+| `bash scripts/dev/test-local.sh --list` | 0 | `pr36-integration/runs/registry-list.log`; single registry retained |
+| `bash scripts/dev/check-gates.sh` | 0 | `pr36-integration/runs/check-gates.log`; 83 modes all documented, every tracked test run, header/dependency/format/shard checks green |
+| `LC_TEST_LOCK_WAIT=1800 bash scripts/dev/test-focused.sh 'TestLiveSettingsHTTP\|TestScopeRevokeMidTransactionBecomesScopeNotFound\|TestScopeSupportGrantRevokedMidTransactionBecomesScopeNotFound\|TestScopeRecheckFailureKeepsDenial' ./tests/foundation ./internal/httpapi ./internal/platform` | 0 | `pr36-integration/runs/http-real-pg.log`; 5 top-level PASS, 0 FAIL/SKIP |
+| `bash scripts/dev/test-local.sh --browser-live-console` ×2 | 0 / 0 | `pr36-integration/runs/console-{1,2}.log`; four original all/private scoped-404 cases pass |
+| `bash scripts/dev/test-local.sh --browser-ops-polish` ×2 | 0 / 0 | `pr36-integration/runs/ops-{1,2}.log`; Storefront + Admin pass both times, Admin 8 tests each, OP4 en/zh-CN/zh-TW |
+| `bash scripts/dev/test-local.sh --browser-live-settings` | 0 | `pr36-integration/runs/live-settings.log`; **22 Playwright tests passed, zero skips**, 22 per-test click ledgers plus native aggregate |
+| `bash scripts/dev/test-local.sh --browser-live-claims` | 0 | `pr36-integration/runs/live-claims.log`; **one real-chain driver, 21 business cases, three locales, zero skips** |
+| `go run ./scripts/dev/contractdrift` | 0 | `pr36-integration/runs/contractdrift-post.log`; **errors=0**, warnings=362 retained legacy. Started 07:47:08.942Z, after Claims ended 07:47:08.813Z and Settings ended 07:46:41.914Z |
 
-Focused parent current Node 132/132 and BFF 38/38 pass; worker cards retain their actual RED commands and raw logs. Current live-settings is **22/22**, KC16 result **21 cases / 3 locales**; both console and ops full repetitions exit 0. The original live-settings 5b run was 20/22: a wrapping label redirected Playwright's option state check to the enabled select. Explicit label association fixed it, with a new actual view RED→GREEN counterexample and no browser assertion change. Earlier claims attempt exit 2 was **NOT_RUN** due another owner's PG lock, not a browser failure. Both records remain preserved.
+After copying/staging artifacts, the final artifact-name/check-gates check **passed (exit 0)** and is recorded in `pr36-integration/final-artifact-check.json` and its log. It verifies the final tracked filenames; passed browser modes are not repeated. Native logs are retained byte-identical: the global `git diff --cached --check` returns 2 for log whitespace only; the exact non-log check returns 0 ([record](pr36-integration/artifact-style-check.json)).
 
-## Shared GET 403 race follow-up
+## Committed canonical evidence
 
-The reviewed local runs observed first scoped **404** responses; they do not establish the cause of CI run `37956489889`, job `113918794414` at `539f1cb8`. Its two LCU2_404 cases time out after 15s, but the retained artifact records only one initial A2 200 per case and lacks network/HAR/trace data for the other scoped responses. Their first 403/404 status is **UNKNOWN** from this evidence.
+`pr36-integration/browser/` contains only needed native ledgers/results/logs, plus **12 synthetic masked settings screenshots** at 1440/390 in zh-TW/zh-CN/en. Settings masks private rows, drafts, preview and BuyerPanel; sold-out status screenshots mask comment author/text. No generated spec snapshots, traces, videos, credentials or real buyer data are copied.
 
-Current GET 403 handling is still direct; the unit-specific 404 observer/purged-bundle fix does **not** normalize an admitted request that becomes forbidden in Go. The shared candidate `58510545` proves store disappearance with the same token before mapping GET 403 to 404. Per the integrator ruling, this unit does not duplicate that implementation and awaits its reviewed trunk integration. That commit changes catchall inbox handling; the dedicated live-settings-proxy used by blocklist/check is outside its scope, so its coverage must be confirmed during shared integration.
+Console receipts: `browser/console-1/live-console-3015325301/grant-revocation-{all,private}.json` and `browser/console-2/live-console-2879311949/grant-revocation-{all,private}.json`. Claims uses its actual fresh native root `output/playwright/live-claims-2725675277`; copied `browser/live-claims/result.json` retains the 21-case result and token hash only. The caller's unused Claims evidence-root value is not substituted for the real path.
 
-Source/artifact check and sanitized CI references: `pr31-r1/extra/scope403-check/REPORT.json`. No product source or browser assertion changed in this follow-up. Earlier E3 local passes remain valid for their tested cases; they are not evidence that the shared 403 race is fixed or that the PR is merge-ready without the shared dependency.
+[SOURCE](pr36-integration/SOURCE.json), [RESULTS](pr36-integration/RESULTS.json) and [MANIFEST](pr36-integration/MANIFEST.json) bind tested code, native results, logs and copied artifacts by SHA256. Runtime source and the four original browser specs are byte-identical throughout these runs; the specs also match `20417870`.
 
-## Evidence class / remaining gates
+## Historical evidence / NOT_RUN
 
-**E3: complete in the tested BROWSER + MOCK business + REAL_PG signed-authority/adapter environment**, bound to the current frozen source and file hashes. Read-only audits are E1; current-head independent K3/CI remains pending with the integrator. No new K3 PASS or production/provider acceptance claim.
+Old `b06df828` K3 PASS, `trunk-resume/`, `browser-before-extra/` and `pr31-r1/` runs belong to earlier source revisions. They are historical evidence, not current-head independent approval. The former pending-403 note is superseded by the actual PR36 integration and native receipts above; CI539f1cb8's first denied status remains UNKNOWN from its incomplete old artifact.
 
-CI gates needed: foundation-shards and the planner's 54-mode set. Four relevant modes were run here (console/ops twice, settings/claims once); other 50 modes, full foundation, provider SANDBOX/LIVE and deployment are NOT_RUN locally. The integrator prioritizes #29/#33, then pushes this batch. Local gates passed; shared 403-race integration remains an external dependency.
+The first current-source Settings attempt never reached tests: another live owner's machine PG lock caused **NOT_RUN exit2 after 1800s**; Claims was not started in that chain. The holder was neither killed nor its lock removed. `pr36-integration/history/pg-queue-not-run.{json,log}` preserves this; the successful remaining-only runner 50173 is separately recorded. The interrupted initial check-gates metadata has no recorded exit and is **UNKNOWN**; only the completed retry is counted.
 
-Owned browser/PG/Next runners finished, mutex released; other agents' processes, fixtures and shared caches untouched. RULINGS supersede old READINESS questions. Commit only, stop; no push.
+## CI gates / risks / handoff
+
+Required next CI: **foundation-shards plus the current PR planner's selected required set**. Full foundation, other selected browser modes, iPhone WebKit, provider SANDBOX/LIVE, real messages and deployment are **NOT_RUN locally**. The four directly affected browser modes above passed on frozen source; current-head independent K3 and remote CI remain the integrator's gates. Scanner warnings362 are retained opaque/legacy provenance, not errors=0 proof of those routes.
+
+Owned native browser/Next/PG runner processes finished; shared browser mutex released. Other tasks' processes/fixtures/caches were untouched. The heartbeat is paused after acceptance. **Commit only; integrator reviews and pushes.**
