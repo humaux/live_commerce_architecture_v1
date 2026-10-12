@@ -1,6 +1,10 @@
+// Purpose: browser-gate.mjs startup uses bounded shared bind-race recovery; gate assertions are unchanged.
+// Depends on: tests/helpers/next-startup.mjs and existing app/fixture/edge imports below.
+// Used by: its scripts/dev/test-local.sh browser mode; GATE-PORT acceptance.
 // Real browser and production Next; only the TLS/domain edge is a local fixture.
 // No APIRequestContext cookie jar: Set-Cookie reaches Chromium solely through
 // the actual HTTPS response, including the headers-before-body abort gates.
+import { startNextWithPortRetry, nextAttemptLog } from "../helpers/next-startup.mjs";
 import assert from "node:assert/strict";
 import http from "node:http";
 import https from "node:https";
@@ -28,20 +32,24 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 async function listen(server) { server.listen(0,"127.0.0.1"); await once(server,"listening"); return server.address().port; }
 
 async function startNext(index) {
-  const reserve=net.createServer(), port=await listen(reserve); await new Promise(r=>reserve.close(r));
-  const log=createWriteStream(path.join(evidence,`next-${index}-${Date.now()}.log`),{flags:"wx",mode:0o600}); logs.push(log);
-  await once(log,"open"); // spawn requires an open file descriptor, not a pending stream
-  const child=spawn(process.execPath,[path.join(root,"apps/storefront/node_modules/next/dist/bin/next"),"start","--hostname","127.0.0.1","--port",String(port)],{
-    cwd:path.join(root,"apps/storefront"),env:{...process.env,NODE_ENV:"production",NEXT_TELEMETRY_DISABLED:"1"},stdio:["ignore",log,log],
-  }); children.add(child);
-  for(let i=0;i<100;i++) {
-    if(child.exitCode!==null) throw new Error("owned Next exited before readiness");
-    // Node24 fetch ignores a supplied Host; raw http preserves the virtual
-    // hostname the real TLS edge will forward. Readiness must test that route.
-    try { const res=await relay(port,{url:"/api/buyer/session",method:"GET",headers:{host:"buyer.example"}},Buffer.alloc(0)); if(res.status===200) return {port,child}; } catch {}
-    await wait(50);
-  }
-  throw new Error("owned Next readiness timeout");
+  return startNextWithPortRetry({}, async ({ port, attempt, track }) => {
+
+    const log=createWriteStream(nextAttemptLog(path.join(evidence,`next-${index}-${Date.now()}.log`), attempt),{flags:"wx",mode:0o600}); logs.push(log);
+    await once(log,"open"); // spawn requires an open file descriptor, not a pending stream
+    const child=spawn(process.execPath,[path.join(root,"apps/storefront/node_modules/next/dist/bin/next"),"start","--hostname","127.0.0.1","--port",String(port)],{
+      cwd:path.join(root,"apps/storefront"),env:{...process.env,NODE_ENV:"production",NEXT_TELEMETRY_DISABLED:"1"},stdio:["ignore",log,log],
+    });
+    track(child, log); children.add(child);
+    for(let i=0;i<100;i++) {
+      if(child.exitCode!==null) throw new Error("owned Next exited before readiness");
+      // Node24 fetch ignores a supplied Host; raw http preserves the virtual
+      // hostname the real TLS edge will forward. Readiness must test that route.
+      try { const res=await relay(port,{url:"/api/buyer/session",method:"GET",headers:{host:"buyer.example"}},Buffer.alloc(0)); if(res.status===200) return {port,child}; } catch {}
+      await wait(50);
+    }
+    throw new Error("owned Next readiness timeout");
+
+  });
 }
 
 // Fixed loopback target, no redirects and no cookie jar. Preserve Host/Origin

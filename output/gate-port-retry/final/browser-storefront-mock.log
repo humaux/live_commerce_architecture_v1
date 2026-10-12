@@ -1,0 +1,98 @@
+✔ design: garbage and hostile documents collapse to the safe default shape (1.023375ms)
+✔ design: links, preview token propagation, nav resolution (0.111791ms)
+✔ design: any merchant accent yields readable button text and link colour (WCAG AA) (0.234834ms)
+✔ variants: resolution, disabled out-of-stock combinations, initial choice, price bounds (0.151125ms)
+✔ catalog-v2 parsers accept the frozen shapes and refuse drift (0.477ms)
+✔ free-delivery progress words the hint only when a threshold exists (0.060542ms)
+✔ list query: only whitelisted, canonical values survive (0.207542ms)
+✔ seo: JSON-LD cannot break out of its script tag; offers reflect stock and price range (7.652ms)
+✔ seo: sitemap escapes and carries hreflang; robots refuses everything for a closed host (0.156083ms)
+✔ money: whole amounts drop cents, minor digits come from the currency, filters round-trip (0.405042ms)
+✔ cart line write: replaces one line, keeps the others, 0 removes, CAS version is the one shown (7.356375ms)
+✔ cart problems map to buyer-facing classes without leaking transport detail (0.092583ms)
+✔ checkout options accept the optional free-shipping threshold only as a positive integer or null (0.186125ms)
+✔ no-image placeholder copy: exactly the locale label a photo-less card or gallery renders (0.046666ms)
+✔ storefront image caps equal the Go catalog caps (internal/catalog MaxMainImages, MaxDetailImages) (4.840667ms)
+✔ design text limits count code points like Go, never splitting a surrogate pair (0.214042ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 111.16425
+
+> live-commerce-workspace@ build:storefront /Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry
+> pnpm --filter @live-commerce/storefront build
+
+
+> @live-commerce/storefront@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/apps/storefront
+> next build
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 20ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 869ms
+  Running TypeScript ...
+  Finished TypeScript in 352ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/2) ...
+✓ Generating static pages using 9 workers (2/2) in 58ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/cart
+├ ƒ /[locale]/checkout
+├ ƒ /[locale]/claim
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/collections/[slug]
+├ ƒ /[locale]/data-deletion
+├ ƒ /[locale]/legal/[slug]
+├ ƒ /[locale]/legal/anti-fraud
+├ ƒ /[locale]/order-link
+├ ƒ /[locale]/orders/[orderID]
+├ ƒ /[locale]/orders/lookup
+├ ƒ /[locale]/pages/[slug]
+├ ƒ /[locale]/privacy
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[slug]
+├ ƒ /[locale]/search
+├ ƒ /api/buyer/[...path]
+├ ƒ /api/shop/product/[key]
+├ ƒ /api/shop/products
+├ ƒ /feeds/meta.csv
+├ ƒ /media/c/[collectionID]/[imageID]
+├ ƒ /media/p/[productID]/[imageID]
+├ ƒ /media/s/[imageID]
+├ ƒ /payment/return
+├ ƒ /products/[productID]
+├ ƒ /robots.txt
+└ ƒ /sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+browser engine: chromium
+PASS SF01 home renders the five section types, announcement, nav, footer contact, accent variable (390 + 1280, no overflow, no iOS zoom)
+PASS SF02 title/canonical/Open Graph(absolute image)/Product JSON-LD, sitemap lists active products only, robots, noindex on cart
+PASS SF03 collections grid, sort select, price filter keeps its inputs open, cursor load more reaches all 30 products
+PASS SF04 variant chips resolve price/stock, sold-out cannot be added, two SKUs added, drawer, cart edit/remove, free-delivery hint (MOCK field), reload keeps cart
+PASS SF05 cart -> Checkout page -> delivery -> quotation reaches the existing order flow (order placement itself: existing gates)
+PASS SF06 search by title and by SKU code; empty result state
+PASS SF07 id URL redirects permanently to the slug, draft/hidden product and unknown collection are branded 404s
+PASS SF08 preview token shows the draft with banner/no-store/noindex and keeps it across nav; unknown token and forged header fall back to published
+PASS SF09 UI chrome follows the locale (en, zh-CN) while merchant text stays as entered
+PASS SF10 unpublished store: branded closed 404, robots Disallow, no sitemap; upstream down -> 500 error state, resolver down -> 503 fail-closed, recovers
+PASS SF11 visual-QA polish: footer never covered (checkout bar 1280/390/320, product phone bar 320/390), one header, image placeholders with icon+label, one money format, 44px targets, disabled CTA described, closed store chrome, home rail affordance
+PASS SF12 no page errors or hydration warnings across the whole phone walk-through
+PASS R5 extra MOCK: categories hidden/empty, related excludes current/withdrawn, foreign Host, assurance explicit-only/failure/no-bootstrap, three-language safety page, gallery, 8 exact-size captures
+engine=chromium cases=12 mode=start MOCK
+PASS: SF01-SF12 MOCK buyer storefront shell (SF11 = the visual-QA polish checks) (engine per LC_BROWSER_ENGINE) on the production Next build + contract-shaped fake API; not real Go/PG, published-origin resolver, order placement or deployment acceptance. Log: /Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/output/playwright/run.Bx9Ha1aH/storefront-shell/shop-gate.log

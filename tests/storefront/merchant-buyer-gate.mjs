@@ -1,5 +1,9 @@
+// Purpose: merchant-buyer-gate.mjs startup uses bounded shared bind-race recovery; gate assertions are unchanged.
+// Depends on: tests/helpers/next-startup.mjs and existing app/fixture/edge imports below.
+// Used by: its scripts/dev/test-local.sh browser mode; GATE-PORT acceptance.
 // Causal gate: actual merchant UI -> admin BFF/Go/PG -> configured URL -> buyer
 // production Next. The only host mapping is this disposable TLS/CONNECT edge.
+import { startNextWithPortRetry, nextAttemptLog, connectFixtureAdmin } from "../helpers/next-startup.mjs";
 import { openBuyerSession } from "./shop-helpers.mjs";
 import { createProductInEditor, selectLedgerRow } from "./merchant-product.mjs"; // stop-bleed D01: products are created in the editor
 import assert from "node:assert/strict";
@@ -47,30 +51,34 @@ function relay(port, request, body = Buffer.alloc(0)) {
     call.on("error", reject); call.end(body);
   });
 }
-async function startNext(app, port) {
-  if (!port) { const reserve = net.createServer(); port = await listen(reserve); await new Promise(resolve => reserve.close(resolve)); }
-  const log = createWriteStream(path.join(evidence, `${app}.log`), {flags: "wx", mode: 0o600});
-  logs.push(log); await once(log, "open");
-  // The runner-only privileged fixture key is never inherited by either app.
-  const env = {...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1"};
-  for (const name of Object.keys(env)) if (name.startsWith("LC_JOINT_")) delete env[name];
-  const args = app === "admin"
-    ? [path.join(root, "apps/admin/.next/standalone/apps/admin/server.js")]
-    : [path.join(root, "apps/storefront/node_modules/next/dist/bin/next"), "start", "--hostname", "127.0.0.1", "--port", String(port)];
-  env.HOSTNAME = "127.0.0.1"; env.PORT = String(port);
-  const child = spawn(process.execPath, args, {
-    cwd: path.join(root, `apps/${app}`), env, stdio: ["ignore", log, log],
+async function startNext(app, requestedPort) {
+  return startNextWithPortRetry({ port: requestedPort }, async ({ port, attempt, track }) => {
+
+    const log = createWriteStream(nextAttemptLog(path.join(evidence, `${app}.log`), attempt), {flags: "wx", mode: 0o600});
+    logs.push(log); await once(log, "open");
+    // The runner-only privileged fixture key is never inherited by either app.
+    const env = {...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1"};
+    for (const name of Object.keys(env)) if (name.startsWith("LC_JOINT_")) delete env[name];
+    const args = app === "admin"
+      ? [path.join(root, "apps/admin/.next/standalone/apps/admin/server.js")]
+      : [path.join(root, "apps/storefront/node_modules/next/dist/bin/next"), "start", "--hostname", "127.0.0.1", "--port", String(port)];
+    env.HOSTNAME = "127.0.0.1"; env.PORT = String(port);
+    const child = spawn(process.execPath, args, {
+      cwd: path.join(root, `apps/${app}`), env, stdio: ["ignore", log, log],
+    });
+    track(child, log);
+    children.add(child);
+    for (let i = 0; i < 100; i++) {
+      if (!running(child)) throw new Error(`owned ${app} exited before readiness`);
+      try {
+        const response = await relay(port, {url: app === "admin" ? "/api/stores" : "/api/buyer/session", method: "GET", headers: {host: app === "admin" ? new URL(adminOrigin).host : "buyer.example"}});
+        if (response.status === (app === "admin" ? 401 : 200)) return port;
+      } catch {}
+      await wait(50);
+    }
+    throw new Error(`owned ${app} readiness deadline`);
+
   });
-  children.add(child);
-  for (let i = 0; i < 100; i++) {
-    if (!running(child)) throw new Error(`owned ${app} exited before readiness`);
-    try {
-      const response = await relay(port, {url: app === "admin" ? "/api/stores" : "/api/buyer/session", method: "GET", headers: {host: app === "admin" ? new URL(adminOrigin).host : "buyer.example"}});
-      if (response.status === (app === "admin" ? 401 : 200)) return port;
-    } catch {}
-    await wait(50);
-  }
-  throw new Error(`owned ${app} readiness deadline`);
 }
 const noPurchaseEffects = (before, after) => {
   for (const table of ["storefront.cart_lines", "storefront.quotes", "storefront.events", "checkout.orders", "checkout.command_results", "checkout.payment_attempts", "integration.operations", "integration.operation_events", "inventory.reservations", "inventory.ledger", "ops.command_results"])
@@ -78,7 +86,8 @@ const noPurchaseEffects = (before, after) => {
 };
 try {
   execFileSync("openssl", ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", path.join(certDir, "key.pem"), "-out", path.join(certDir, "cert.pem"), "-days", "1", "-subj", "/CN=buyer.example"], {stdio: "ignore"});
-  const [, buyerPort] = await Promise.all([startNext("admin", Number(process.env.LC_JOINT_ADMIN_PORT)), startNext("storefront")]);
+  const [adminPort, buyerPort] = await Promise.all([startNext("admin"), startNext("storefront")]);
+  await connectFixtureAdmin(adminPort, process.env.LC_JOINT_CONTROL, process.env.LC_JOINT_CONTROL_KEY);
   edge = https.createServer({key: await readFile(path.join(certDir, "key.pem")), cert: await readFile(path.join(certDir, "cert.pem"))}, async (request, response) => {
     try {
       const chunks = []; for await (const chunk of request) chunks.push(chunk);

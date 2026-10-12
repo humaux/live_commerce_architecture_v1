@@ -1,0 +1,5 @@
+tests=1333 summaries=26
+fail=0 summaries=26
+cancelled=0 summaries=26
+skipped=0 summaries=26
+pass=1333 summaries=26
