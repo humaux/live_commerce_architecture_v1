@@ -1,0 +1,26 @@
+{
+  "name": "r2-premerge-tsc-20261013",
+  "timeout": 180,
+  "command": [
+    "pnpm",
+    "--dir",
+    "apps/admin",
+    "exec",
+    "tsc",
+    "--noEmit",
+    "-p",
+    "."
+  ],
+  "head": "25cabecf5474da9302c7e947a29d5f2de6558735",
+  "exit_code": 0,
+  "source_sha256": "78e22ef37f3af68ad6903cff6e3cf3aefc0469b3eca150ec4bad2aed116f8069",
+  "source_after": "78e22ef37f3af68ad6903cff6e3cf3aefc0469b3eca150ec4bad2aed116f8069",
+  "source_unchanged": true,
+  "historical_output_sha256": "b6449b980cd1ecf29df34ccbb69f5fb1f7756e9c9512206489836e91edf8a637",
+  "historical_output_after": "b6449b980cd1ecf29df34ccbb69f5fb1f7756e9c9512206489836e91edf8a637",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 1.514
+}

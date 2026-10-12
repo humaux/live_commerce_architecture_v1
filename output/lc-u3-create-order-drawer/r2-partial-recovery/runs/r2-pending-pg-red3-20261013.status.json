@@ -1,0 +1,22 @@
+{
+  "name": "r2-pending-pg-red3-20261013",
+  "timeout": 240,
+  "command": [
+    "bash",
+    "scripts/dev/test-focused.sh",
+    "^TestLiveConsoleRecoveryPendingReservation",
+    "./tests/foundation"
+  ],
+  "head": "827911163bf20415aa32c39e6c4e72995e6d5e76",
+  "exit_code": 1,
+  "source_sha256": "73602f32337e6b531b0fa8b4033dfa93fba116db35657efbfdf9f0c37f21feea",
+  "source_after": "73602f32337e6b531b0fa8b4033dfa93fba116db35657efbfdf9f0c37f21feea",
+  "source_unchanged": true,
+  "historical_output_sha256": "b6449b980cd1ecf29df34ccbb69f5fb1f7756e9c9512206489836e91edf8a637",
+  "historical_output_after": "b6449b980cd1ecf29df34ccbb69f5fb1f7756e9c9512206489836e91edf8a637",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 50.101
+}

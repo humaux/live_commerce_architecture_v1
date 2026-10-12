@@ -1,0 +1,20 @@
+{
+  "apps/admin/components/CreateOrderDrawer.tsx": "64c5ffadd8acedacfd5e1bbdbc6dc1a5b830a98690a2bbfc262cae31da23a3ef",
+  "apps/admin/src/features/live/use-live-workspace.ts": "9af086d644ade9ce0f5912bce5a1a75d2d3a2124e6abcb230fd7a841898c1dbf",
+  "contracts/live-console-v1.md": "c4b4bff67f6088c8d2ee879b8eb66aea56b40b1f7ededc47ea8fbb21729a3bc1",
+  "internal/merchanttools/order_attempt.go": "ef4bd5be82bb922315f38c46a70e502d3e3d4871d54bd45117f5f7250fcf55d9",
+  "internal/merchanttools/order_for_buyer.go": "be54cb0b3e01af6fd60118ff85d7bb401f323553472c68c74f4d2c0ab1b51ac9",
+  "tests/admin/create-order-capability-recovery.mjs": "a9dbb6dd61e723b32fd6df9ed239d7d49941588bd6c4e3a606a875e5a94ed0de",
+  "tests/admin/create-order-drawer-gate.mjs": "2111810e19f7bafac266be6eef2153b22e356d16a652757341ac5f55cb37792c",
+  "tests/admin/create-order-partial-recovery.mjs": "82eba53a581aef94f177b6d4aa04ee7b84047c1dfada2bccf71131a5d14ae62a",
+  "tests/admin/create-order-review.test.ts": "73b3a8287b460f112fa7a82188d579831d734b3123bfe2a26b3a8db0bf07d310",
+  "tests/admin/live-console.spec.ts": "f4b604c0088e79b63d7f432e610a1702e3b9ab54f55681b2148b49d157d9a5e6",
+  "tests/admin/live-workspace-hooks.test.ts": "331d4a77b4622434f0023fbcbd0ac6b2d55af61822e1b4fc2e5f9b74ae8bbe01",
+  "tests/foundation/browser_create_order_capability_test.go": "523d69e3de330411f24d2985c0a61552faa98a13e99fb62e0bd4b5cd83108c4a",
+  "tests/foundation/browser_create_order_drawer_test.go": "c7be7c095874f0d19e50bcbc6bd63a867e0baff55c07886054e3ef0f8f561a69",
+  "tests/foundation/browser_create_order_partial_test.go": "82ac005322637992ff986b686c4c0768411f511275e0d182658390c78992e41b",
+  "tests/foundation/live_console_order_recovery_lookup_test.go": "a09b3a7dd045befa94151a0afab149376af48aae36df19c36f62ebb2436a0944",
+  "tests/foundation/live_console_order_recovery_partial_test.go": "2d6e09290808d28aaeaf276ddaa5b29cda2cec4a7fbe175a8472936816c2e8ec",
+  "tests/foundation/live_console_order_recovery_pending_test.go": "ba226b606798d429a1cc26326004e46cf1d8dd99b269661ed6ad6a8cf26df8b5",
+  "tests/foundation/live_console_order_recovery_test.go": "0938ea5cb4ebd601a6d8483a05b097a406faf1837816627c635948b7c4cced16"
+}

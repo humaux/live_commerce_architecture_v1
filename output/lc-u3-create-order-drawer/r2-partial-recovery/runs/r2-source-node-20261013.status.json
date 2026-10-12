@@ -1,0 +1,20 @@
+{
+  "name": "r2-source-node-20261013",
+  "timeout": 240,
+  "command": [
+    "bash",
+    "scripts/dev/test-node.sh"
+  ],
+  "head": "25cabecf5474da9302c7e947a29d5f2de6558735",
+  "exit_code": 0,
+  "source_sha256": "9832ff16041f58b75b9da54d150490cfe1481f9518b09b0b139f7bc9733a4c30",
+  "source_after": "9832ff16041f58b75b9da54d150490cfe1481f9518b09b0b139f7bc9733a4c30",
+  "source_unchanged": true,
+  "historical_output_sha256": "b6449b980cd1ecf29df34ccbb69f5fb1f7756e9c9512206489836e91edf8a637",
+  "historical_output_after": "b6449b980cd1ecf29df34ccbb69f5fb1f7756e9c9512206489836e91edf8a637",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 64.343
+}

@@ -1,0 +1,66 @@
+[
+  {
+    "locale": "en",
+    "width": 390,
+    "page": "/studio/console",
+    "control": "keyword filter",
+    "operation": "click",
+    "result": "PASS"
+  },
+  {
+    "locale": "en",
+    "width": 390,
+    "page": "/studio/console",
+    "control": "three checkboxes",
+    "operation": "check; uncheck first; recheck first",
+    "result": "PASS"
+  },
+  {
+    "locale": "en",
+    "width": 390,
+    "page": "/studio/console",
+    "control": "preview labels",
+    "operation": "click",
+    "result": "PASS"
+  },
+  {
+    "locale": "en",
+    "width": 390,
+    "page": "/studio/console",
+    "control": "paper selector",
+    "operation": "A4→label→A4; reload and reopen",
+    "result": "PASS"
+  },
+  {
+    "locale": "en",
+    "width": 390,
+    "page": "/studio/console",
+    "control": "print",
+    "operation": "click",
+    "result": "PASS"
+  },
+  {
+    "locale": "en",
+    "width": 390,
+    "page": "/studio/console",
+    "control": "close preview",
+    "operation": "click after printing",
+    "result": "PASS"
+  },
+  {
+    "locale": "en",
+    "width": 390,
+    "page": "/studio/console",
+    "control": "escape preview",
+    "operation": "single print button; Escape",
+    "result": "PASS"
+  },
+  {
+    "locale": "en",
+    "width": 390,
+    "page": "/studio/console",
+    "control": "single label",
+    "operation": "click",
+    "result": "PASS"
+  }
+]

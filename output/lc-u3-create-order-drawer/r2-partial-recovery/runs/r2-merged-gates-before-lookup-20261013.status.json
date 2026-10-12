@@ -1,0 +1,20 @@
+{
+  "name": "r2-merged-gates-before-lookup-20261013",
+  "timeout": 600,
+  "command": [
+    "bash",
+    "scripts/dev/check-gates.sh"
+  ],
+  "head": "827911163bf20415aa32c39e6c4e72995e6d5e76",
+  "exit_code": 0,
+  "source_sha256": "8ac92baa1bf78913b6e1d2b00cd1ac1ea780e19206100ef94e60ad5b5aedf47d",
+  "source_after": "8ac92baa1bf78913b6e1d2b00cd1ac1ea780e19206100ef94e60ad5b5aedf47d",
+  "source_unchanged": true,
+  "historical_output_sha256": "b6449b980cd1ecf29df34ccbb69f5fb1f7756e9c9512206489836e91edf8a637",
+  "historical_output_after": "b6449b980cd1ecf29df34ccbb69f5fb1f7756e9c9512206489836e91edf8a637",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 178.922
+}

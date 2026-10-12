@@ -1,0 +1,36 @@
+{
+  "committed_fixes": [
+    "apps/admin/components/CreateOrderDrawer.tsx",
+    "apps/admin/src/features/live/use-live-workspace.ts",
+    "contracts/live-console-v1.md",
+    "internal/merchanttools/order_attempt.go",
+    "internal/merchanttools/order_for_buyer.go",
+    "tests/admin/create-order-capability-recovery.mjs",
+    "tests/admin/create-order-drawer-gate.mjs",
+    "tests/admin/create-order-partial-recovery.mjs",
+    "tests/admin/create-order-review.test.ts",
+    "tests/admin/live-console.spec.ts",
+    "tests/admin/live-workspace-hooks.test.ts",
+    "tests/foundation/browser_create_order_capability_test.go",
+    "tests/foundation/browser_create_order_drawer_test.go",
+    "tests/foundation/browser_create_order_partial_test.go",
+    "tests/foundation/live_console_order_recovery_partial_test.go",
+    "tests/foundation/live_console_order_recovery_test.go"
+  ],
+  "preserved_uncommitted_tests": [
+    "tests/foundation/live_console_order_recovery_pending_test.go",
+    "tests/foundation/live_console_order_recovery_lookup_test.go"
+  ],
+  "proposed_not_applied": [
+    "internal/claims/live_price_grant.go",
+    "internal/merchanttools/order_attempt.go",
+    "contracts/live-console-v1.md",
+    "tests/foundation/live_claims_schema_test.go",
+    "tests/foundation/r2_integration_upgrade_test.go"
+  ],
+  "delivery": [
+    "output/lc-u3-create-order-drawer/DELIVERY.md",
+    "output/lc-u3-create-order-drawer/r2-partial-recovery/"
+  ],
+  "unallocated_migration": "NOT_WRITTEN; owner number required"
+}

@@ -1,0 +1,10 @@
+[
+  {
+    "locale": "en",
+    "width": 1586,
+    "page": "/studio/console",
+    "control": "print with lost acknowledgement",
+    "operation": "click print twice explicitly",
+    "result": "PASS"
+  }
+]

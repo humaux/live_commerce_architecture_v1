@@ -1,0 +1,21 @@
+{
+  "name": "r2-partial-pg-green3-20261013",
+  "command": [
+    "bash",
+    "scripts/dev/test-focused.sh",
+    "TestLiveConsoleRecovery|TestLiveConsoleOrderForBuyer|TestLiveConsoleMerchantOriginGrantBranch"
+  ],
+  "timeout": 600,
+  "head": "25cabecf5474da9302c7e947a29d5f2de6558735",
+  "exit_code": 0,
+  "source_sha256": "dee438fa6cebdfe48be56b52b6804ef4260f30c0998ab777f59e90c47ad8256b",
+  "source_after": "dee438fa6cebdfe48be56b52b6804ef4260f30c0998ab777f59e90c47ad8256b",
+  "source_unchanged": true,
+  "historical_output_sha256": "b6449b980cd1ecf29df34ccbb69f5fb1f7756e9c9512206489836e91edf8a637",
+  "historical_output_after": "b6449b980cd1ecf29df34ccbb69f5fb1f7756e9c9512206489836e91edf8a637",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 70.916
+}

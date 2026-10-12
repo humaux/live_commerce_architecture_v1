@@ -1,0 +1,20 @@
+{
+  "name": "r2-premerge-gates-20261013",
+  "timeout": 420,
+  "command": [
+    "bash",
+    "scripts/dev/check-gates.sh"
+  ],
+  "head": "25cabecf5474da9302c7e947a29d5f2de6558735",
+  "exit_code": 0,
+  "source_sha256": "08166fd38a94c05293bd6635eef9d716d2f3014c950efb1b1a5d21c3f2b2f190",
+  "source_after": "08166fd38a94c05293bd6635eef9d716d2f3014c950efb1b1a5d21c3f2b2f190",
+  "source_unchanged": true,
+  "historical_output_sha256": "b6449b980cd1ecf29df34ccbb69f5fb1f7756e9c9512206489836e91edf8a637",
+  "historical_output_after": "b6449b980cd1ecf29df34ccbb69f5fb1f7756e9c9512206489836e91edf8a637",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 252.517
+}

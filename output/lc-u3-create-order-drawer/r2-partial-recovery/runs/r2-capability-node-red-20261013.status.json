@@ -1,0 +1,23 @@
+{
+  "name": "r2-capability-node-red-20261013",
+  "timeout": 120,
+  "command": [
+    "node",
+    "--test",
+    "--experimental-strip-types",
+    "--test-name-pattern=retained UNKNOWN then capability409",
+    "tests/admin/create-order-review.test.ts"
+  ],
+  "head": "25cabecf5474da9302c7e947a29d5f2de6558735",
+  "exit_code": 1,
+  "source_sha256": "255c0c4f7f64340d6ca665bc051cbec95316d966ad6031d19a099aece5b12fdf",
+  "source_after": "255c0c4f7f64340d6ca665bc051cbec95316d966ad6031d19a099aece5b12fdf",
+  "source_unchanged": true,
+  "historical_output_sha256": "b6449b980cd1ecf29df34ccbb69f5fb1f7756e9c9512206489836e91edf8a637",
+  "historical_output_after": "b6449b980cd1ecf29df34ccbb69f5fb1f7756e9c9512206489836e91edf8a637",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 1.312
+}

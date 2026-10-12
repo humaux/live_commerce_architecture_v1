@@ -1,0 +1,79 @@
+diff --git a/tests/foundation/live_console_order_recovery_lookup_test.go b/tests/foundation/live_console_order_recovery_lookup_test.go
+index e7d9ac3d..b81eca0b 100644
+--- a/tests/foundation/live_console_order_recovery_lookup_test.go
++++ b/tests/foundation/live_console_order_recovery_lookup_test.go
+@@ -119,6 +119,74 @@ func TestLiveConsoleRecoveryReservationLookupReadOnlyAndBinding(t *testing.T) {
+ 	}
+ }
+ 
++func TestLiveConsoleRecoveryReservationLookupChecksEveryMatchingRow(t *testing.T) {
++	p := lcrqNewPending(t)
++	e, ctx := p.e, context.Background()
++	_, _, historicalBundle, _ := e.scenario()
++	// Disclosed owner fixture: a legitimately accepted second bundle records a historical released row of this exact attempt.
++	// The real pending row remains untouched; selecting just that row must not hide a mismatched historical tail.
++	tag, err := e.p.f.owner.Exec(ctx, `INSERT INTO inbox.order_for_buyer
++ (tenant_id,store_id,bundle_id,request_id,idempotency_key_hash,request_hash,buyer_id,state,conversation_id,principal_id)
++ SELECT tenant_id,store_id,$4::uuid,request_id,idempotency_key_hash,request_hash,buyer_id,'released',conversation_id,principal_id
++ FROM inbox.order_for_buyer WHERE tenant_id=$1 AND store_id=$2 AND idempotency_key_hash=$3 AND state='pending'`,
++		e.tenant(), e.store(), p.keyHash, historicalBundle)
++	if err != nil || tag.RowsAffected() != 1 {
++		t.Fatal("historical matching-row fixture insert count differs")
++	}
++	lcrpRequireFacts(t, e, p.key, lcrpFacts{Pending: 1, Released: 1, LiveGrants: 1})
++	probe := func(t *testing.T, token, wantState string) {
++		t.Helper()
++		before := lcrqLedgerStamp(t, p)
++		var result *string
++		err := platform.WithScope(ctx, e.p.f.runtime, token, e.store(), "inventory:reserve", func(tx pgx.Tx, _ platform.Scope) error {
++			if _, err := tx.Exec(ctx, `SELECT set_config('transaction_read_only','on',true)`); err != nil {
++				return err
++			}
++			return tx.QueryRow(ctx, `SELECT claims.for_buyer_request($1::bytea,$2::bytea,$3::uuid)::text`, p.keyHash, p.bodyHash, p.buyer).Scan(&result)
++		})
++		message := ""
++		if wantState != "" {
++			message = "idempotency_conflict"
++		}
++		lcrqRequireError(t, err, wantState, message)
++		if wantState == "" && (result == nil || *result != p.request) {
++			t.Fatal("mixed pending/released lookup did not return the original pending request")
++		}
++		if lcrqLedgerStamp(t, p) != before {
++			t.Fatal("mixed-row read-only lookup changed its ledger")
++		}
++	}
++	probe(t, e.token(), "")
++	// A different authorized store principal may read the same server-owner binding; stored principal is not request identity.
++	probe(t, e.member(), "")
++	for _, tc := range []struct {
++		name, assignment string
++		value            any
++	}{
++		{"historical-body", "request_hash=$4::bytea", make([]byte, 32)},
++		{"historical-owner", "buyer_id=$4::uuid", randomUUID()},
++		{"historical-request", "request_id=$4::uuid", randomUUID()},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			// Each mutation touches only the released tail. Restore all bound fields even when the assertion fails.
++			t.Cleanup(func() {
++				mustExec(t, e.p.f.owner, `UPDATE inbox.order_for_buyer SET request_hash=$4,buyer_id=$5::uuid,request_id=$6::uuid
++ WHERE tenant_id=$1 AND store_id=$2 AND bundle_id=$3 AND state='released'`,
++					e.tenant(), e.store(), historicalBundle, p.bodyHash, p.buyer, p.request)
++			})
++			tag, err := e.p.f.owner.Exec(ctx, `UPDATE inbox.order_for_buyer SET `+tc.assignment+`
++ WHERE tenant_id=$1 AND store_id=$2 AND bundle_id=$3 AND state='released'`,
++				e.tenant(), e.store(), historicalBundle, tc.value)
++			if err != nil || tag.RowsAffected() != 1 {
++				t.Fatal("historical tail mutation count differs")
++			}
++			probe(t, e.token(), "PT409")
++		})
++		probe(t, e.token(), "")
++	}
++	lcrpRequireFacts(t, e, p.key, lcrpFacts{Pending: 1, Released: 1, LiveGrants: 1})
++}
++
+ func TestLiveConsoleRecoveryReservationLookupScopeAndAuthority(t *testing.T) {
+ 	p := lcrqNewPending(t)
+ 	e, ctx := p.e, context.Background()

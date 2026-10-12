@@ -1,0 +1,169 @@
+diff --git a/contracts/live-console-v1.md b/contracts/live-console-v1.md
+index 47ab524f..00feb042 100644
+--- a/contracts/live-console-v1.md
++++ b/contracts/live-console-v1.md
+@@ -542,6 +542,26 @@ link exposing its owner. The merchant pool requires at least two connections (ou
+ and inner scoped work); the constructor rejects smaller pools and admits at most half the
+ pool as outer attempts.
+ 
++An attempt may have committed A16 reservation rows and unconsumed live-price grants before
++checkout Begin. Only after the original locked Begin lookup proves absence, recovery calls
++`claims.for_buyer_request(p_key_hash bytea,p_request_hash bytea,p_buyer uuid) RETURNS uuid`
++with the same SHA-256 `order-for-buyer|store|key`, canonical A16 JSON body hash and
++server-issued private buyer owner used by placement. This read-only definer requires the
++authenticated merchant scope, no buyer GUC, read committed isolation and `inventory:reserve`.
++Every matching tenant/store/key row, including placed or released history, must agree on one
++request id, body hash and buyer owner, otherwise `PT409 idempotency_conflict`. It returns
++that request id only while pending rows remain, otherwise NULL, so repeated recovery does
++not retimestamp already-expired grants. The stored
++principal is not a filter: another currently authorized merchant can recover the same attempt.
++When a request exists, the existing `claims.for_buyer_release` releases only its eligible
++pending reservations and expires its unconsumed grants in the **same** scoped transaction
++as both receipts. Cleanup runs outside receipt callbacks so old `not_created` receipt replays
++also repair residual reservations. Any lookup/release/seal error rolls the transaction back;
++found Begin (created or UNKNOWN) never authorizes release. Recovery never reserves bundles,
++issues grants or starts Begin. The new definer has pinned `search_path=pg_catalog`, owner
++`commerce_claims_writer`, PUBLIC revoked, and EXECUTE only for `commerce_runtime` plus its owner;
++it adds no table or RLS grants.
++
+ `not_created` permanently closes the original attempt. Late or concurrent original
+ requests return `409 attempt_closed` before checkout money writes. Different normalized
+ request/kind on the same key returns `409 idempotency_conflict`. Recovery lost replies replay
+diff --git a/internal/claims/live_price_grant.go b/internal/claims/live_price_grant.go
+index 6abf4d52..7801f9af 100644
+--- a/internal/claims/live_price_grant.go
++++ b/internal/claims/live_price_grant.go
+@@ -2,9 +2,9 @@
+ // claims definers that reserve the bundles, evaluate the fail-closed buyer comparison, write the single-use grants, bind a grant to its quote and
+ // report the live-priced lines of a placed order. It decides nothing: every rule (peer comparison, permission, 15-minute expiry, single use,
+ // quantity ceiling) lives in SQL (migration 0129 + claims.live_prices / consume_live_prices); a Go caller can only ask.
+-// Depends on: SQL claims.for_buyer_lines / for_buyer_begin / for_buyer_finish / for_buyer_release (merchant transaction on commerce_runtime) and
++// Depends on: SQL claims.for_buyer_lines / for_buyer_begin / for_buyer_request / for_buyer_finish / for_buyer_release (merchant transaction on commerce_runtime) and
+ //   claims.bind_merchant_origin_grant (buyer transaction on commerce_buyer_runtime), internal/command, internal/platform, pgx.
+-// Used by: internal/merchanttools/order_for_buyer.go (A15 prefill, A16 for-buyer order).
++// Used by: internal/merchanttools/order_for_buyer.go (A15 prefill, A16 for-buyer order), order_attempt.go (A16R recovery).
+ // Invariants: I05/I08 (no price crosses this file: a live price still comes only from claims.live_prices into the Quote), live-console-v1 §5.1
+ //   one live order per bundle, §5.3 fail-closed eligibility. Status: MOCK (REAL_PG gates LCN12/LPC01-06).
+ 
+@@ -144,6 +144,16 @@ func FinishForBuyer(ctx context.Context, tx pgx.Tx, request, order string) ([]Gr
+ 	return out, nil
+ }
+ 
++// RequestForBuyer validates all original key/body/private-owner reservation rows and reads their request while pending rows remain, else nil.
++// Calls claims.for_buyer_request (live-console-v1 §5.1.1) in the scoped merchant recovery transaction; it writes nothing.
++func RequestForBuyer(ctx context.Context, tx pgx.Tx, keyHash, requestHash []byte, buyerOwner string) (*string, error) {
++	var request *string
++	if err := tx.QueryRow(ctx, `SELECT claims.for_buyer_request($1::bytea,$2::bytea,$3::uuid)::text`, keyHash, requestHash, buyerOwner).Scan(&request); err != nil {
++		return nil, forBuyerError(err)
++	}
++	return request, nil
++}
++
+ // ReleaseForBuyer gives the bundles of a refused placement back and expires its unconsumed grants. Calls claims.for_buyer_release (0129) in the
+ // merchant transaction. A placed row is never touched.
+ func ReleaseForBuyer(ctx context.Context, tx pgx.Tx, request string) error {
+diff --git a/internal/merchanttools/order_attempt.go b/internal/merchanttools/order_attempt.go
+index 2f06121c..65ab4135 100644
+--- a/internal/merchanttools/order_attempt.go
++++ b/internal/merchanttools/order_attempt.go
+@@ -1,17 +1,23 @@
+ // Purpose: serialize merchant manual/for-buyer attempts across all pipeline transactions and authoritative A16R recovery.
+-// Depends on: platform scoped transactions, command.Run append-only ops.command_results, checkout durable Begin receipts.
++// Depends on: platform scoped transactions, command.Run append-only ops.command_results, checkout durable Begin receipts,
++//
++//	claims.for_buyer_request / for_buyer_release for A16R's original reservation cleanup.
++//
+ // Used by: ManualOrders.Place, ForBuyer.Place and ForBuyer.Recover; no external provider calls.
+ // Invariants: I01/I02/I03/I06/I11; absence requires a durable seal; created requires post-DM A16 completion.
+ package merchanttools
+ 
+ import (
+ 	"context"
++	"crypto/sha256"
++	"encoding/json"
+ 	"errors"
+ 	"net/http"
+ 	"time"
+ 
+ 	"github.com/jackc/pgx/v5"
+ 	"livecommerce/internal/checkout"
++	"livecommerce/internal/claims"
+ 	"livecommerce/internal/command"
+ 	"livecommerce/internal/platform"
+ )
+@@ -159,9 +165,15 @@ func (f *ForBuyer) Recover(ctx context.Context, token, store, key string, in For
+ 		return OrderRecovery{}, ErrManualDisabled
+ 	}
+ 	request := canonicalForBuyer(in)
++	canonical, err := json.Marshal(request)
++	if err != nil {
++		return OrderRecovery{}, &Error{Status: http.StatusUnprocessableEntity, Code: "invalid_request"}
++	}
++	keyHash := sha256.Sum256([]byte("order-for-buyer|" + store + "|" + key))
++	requestHash := sha256.Sum256(canonical) // exactly the original placeOrder canonical body, without the attempt envelope
+ 	m := f.manual
+ 	var out OrderRecovery
+-	err := m.withAttempt(ctx, token, store, key, forBuyerOperation, request, true, func(callCtx context.Context) error {
++	err = m.withAttempt(ctx, token, store, key, forBuyerOperation, request, true, func(callCtx context.Context) error {
+ 		return platform.WithScope(callCtx, m.pool, token, store, manualPermission, func(tx pgx.Tx, scope platform.Scope) error {
+ 			if err := requireCatalog(callCtx, tx, scope, token); err != nil {
+ 				return err
+@@ -219,6 +231,17 @@ func (f *ForBuyer) Recover(ctx context.Context, token, store, key string, in For
+ 				}
+ 				resolved = OrderRecovery{State: "created", OrderID: result.OrderID}
+ 			} else {
++				// Calls claims.for_buyer_request / for_buyer_release (live-console-v1 §5.1.1) under the original Begin lock.
++				// Keep cleanup outside command callbacks: a legacy not_created receipt must repair its pending rows on replay.
++				pendingRequest, lookupErr := claims.RequestForBuyer(callCtx, tx, keyHash[:], requestHash[:], issued.Scope.OwnerID)
++				if lookupErr != nil {
++					return lookupErr
++				}
++				if pendingRequest != nil {
++					if err = claims.ReleaseForBuyer(callCtx, tx, *pendingRequest); err != nil {
++						return err
++					}
++				}
+ 				binding := struct {
+ 					OwnerID string `json:"owner_id"`
+ 				}{issued.Scope.OwnerID}
+diff --git a/tests/foundation/live_claims_schema_test.go b/tests/foundation/live_claims_schema_test.go
+index f5e9faba..4a632db0 100644
+--- a/tests/foundation/live_claims_schema_test.go
++++ b/tests/foundation/live_claims_schema_test.go
+@@ -400,7 +400,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
+ 				"live.comment_poll_sources", "live.console_source", "live.console_marks", "live.comment_print",
+ 				// 0129 (LC-B6): the seven for-buyer definers it owns.
+ 				"claims.for_buyer_scope", "claims.for_buyer_peer_state", "claims.for_buyer_lines", "claims.for_buyer_begin", "claims.for_buyer_finish",
+-				"claims.for_buyer_release", "claims.bind_merchant_origin_grant",
++				"claims.for_buyer_release", "claims.bind_merchant_origin_grant", "claims.for_buyer_request", // A16R §5.1.1: original reservation lookup only.
+ 				// 0147 (W6-02B): the two report seams it owns (EXECUTE: commerce_auth only).
+ 				"claims.report_order_bundles", "claims.report_funnel_bundles"})
+ 		lcSameSet(t, "schema claims ACL", lcStrings(t, f.owner, `SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END||' '||a.privilege_type
+@@ -478,6 +478,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
+ 			"for_buyer_finish": {args: "p_request uuid, p_order uuid", result: "TABLE(bundle_id uuid, offer_id uuid, sku_id uuid, quantity bigint, live_price_minor bigint)", volatility: "v",
+ 				acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
+ 			"for_buyer_release":          {args: "p_request uuid", result: "integer", volatility: "v", acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
++			"for_buyer_request":          {args: "p_key_hash bytea, p_request_hash bytea, p_buyer uuid", result: "uuid", volatility: "s", acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
+ 			"bind_merchant_origin_grant": {args: "p_quote uuid", result: "integer", volatility: "v", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_buyer_runtime"},
+ 			// 0110 ACL ruling: one narrow internal read capability, no new table grants.
+ 			"order_live_sources": {args: "p_tenant uuid, p_store uuid, p_orders uuid[]", result: "TABLE(order_id uuid, session_id uuid)",
+@@ -591,8 +592,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
+ 		// 0148 (LC-B7) adds exactly one: console_session_facts.
+ 		// 0165 (LC-B3b) adds exactly three: buyer_panel_claims, orders_of_bundles, session_peer_linked.
+ 		// 0129 (LC-B6) adds exactly seven: for_buyer_scope, for_buyer_peer_state, for_buyer_lines, for_buyer_begin, for_buyer_finish, for_buyer_release, bind_merchant_origin_grant.
+-		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 46 {
+-			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its forty-six (incl. two 0147 report seams) functions (previous twenty-one + two 0118 attribution seams + four 0123 comment read-through definers + one 0130 pick-list seam + seven 0129 for-buyer definers + one 0148 console facts helper + five 0154 blocklist definers/predicates + three 0165 buyer-panel projections)", n)
++		// A16R §5.1.1 adds exactly one read-only original-request getter, with no table grants.
++		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 47 {
++			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its forty-seven (incl. two 0147 report seams) functions (previous twenty-one + two 0118 attribution seams + four 0123 comment read-through definers + one 0130 pick-list seam + seven 0129 for-buyer definers + one A16R original-request getter + one 0148 console facts helper + five 0154 blocklist definers/predicates + three 0165 buyer-panel projections)", n)
+ 		}
+ 		denied := lcStrings(t, f.owner, `SELECT r.rolname||' '||p.proname FROM pg_roles r CROSS JOIN pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+ 			WHERE n.nspname='claims' AND r.rolname LIKE 'commerce\_%' AND has_function_privilege(r.oid,p.oid,'EXECUTE')
+@@ -619,6 +621,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
+ 			       OR (r.rolname='commerce_runtime' AND p.proname IN ('block_actor','unblock_actor','list_blocked_actors','actor_restricted_for_bundle'))
+ 			       -- 0129 (LC-B6): the merchant transaction calls the four for-buyer definers and the peer-state helper; the buyer pool binds the grant.
+ 			       OR (r.rolname='commerce_runtime' AND p.proname IN ('for_buyer_peer_state','for_buyer_lines','for_buyer_begin','for_buyer_finish','for_buyer_release'))
++			       OR (r.rolname='commerce_runtime' AND p.oid='claims.for_buyer_request(bytea,bytea,uuid)'::regprocedure)
+ 			       OR (r.rolname='commerce_buyer_runtime' AND p.proname='bind_merchant_origin_grant')
+ 			       -- claims-retention-purge-v1 §4: owner, job and operator rows (§6 clause 1)
+ 			       OR (r.rolname='commerce_retention_writer' AND p.proname IN ('run_retention','erase_actor','apply_actor_erasure','set_retention_policy','retention_status','replay_actor_erasures','links_not_purged'))

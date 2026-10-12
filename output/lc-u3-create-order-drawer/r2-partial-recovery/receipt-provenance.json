@@ -1,0 +1,464 @@
+[
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-capability-browser-red-20261013.status.json",
+    "source_sha256": "64dd3b6c10892f2430c8e22f60530d6c66213b63d641db630b015428fac7fd30",
+    "receipt": "runs/r2-capability-browser-red-20261013.status.json",
+    "receipt_sha256": "64dd3b6c10892f2430c8e22f60530d6c66213b63d641db630b015428fac7fd30",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-capability-browser-red2-20261013.status.json",
+    "source_sha256": "303e7f1f3108620c9121140be8bff1f4495e9079de3358b606b8cdac834daf0a",
+    "receipt": "runs/r2-capability-browser-red2-20261013.status.json",
+    "receipt_sha256": "303e7f1f3108620c9121140be8bff1f4495e9079de3358b606b8cdac834daf0a",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-capability-node-green-20261013.status.json",
+    "source_sha256": "916854faea6137a14f8d49a75f3657118811651e0505dd57ea4056904065ce66",
+    "receipt": "runs/r2-capability-node-green-20261013.status.json",
+    "receipt_sha256": "916854faea6137a14f8d49a75f3657118811651e0505dd57ea4056904065ce66",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-capability-node-red-20261013.status.json",
+    "source_sha256": "533476171b412291f2cfd03774873ca04f018a5ab1ce062b4f289477e5252be6",
+    "receipt": "runs/r2-capability-node-red-20261013.status.json",
+    "receipt_sha256": "533476171b412291f2cfd03774873ca04f018a5ab1ce062b4f289477e5252be6",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-console-green-before-lookup-20261013.status.json",
+    "source_sha256": "a12f69f5c67c81bbaf60f07ff9f9a35d1aa4b35aa04b86e2fa8bd7645b7661f5",
+    "receipt": "runs/r2-console-green-before-lookup-20261013.status.json",
+    "receipt_sha256": "a12f69f5c67c81bbaf60f07ff9f9a35d1aa4b35aa04b86e2fa8bd7645b7661f5",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-console-refresh-node-green-20261013.status.json",
+    "source_sha256": "356155a819a1cfa35785fd9c3384b67129e28477307af9e40ebcbec2d7ece46c",
+    "receipt": "runs/r2-console-refresh-node-green-20261013.status.json",
+    "receipt_sha256": "356155a819a1cfa35785fd9c3384b67129e28477307af9e40ebcbec2d7ece46c",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-console-refresh-node-red-20261013.status.json",
+    "source_sha256": "6a1dee920557840be1c7c9f37f272dc8f96e8c284ac8c83c2dfc26f7469eedbe",
+    "receipt": "runs/r2-console-refresh-node-red-20261013.status.json",
+    "receipt_sha256": "6a1dee920557840be1c7c9f37f272dc8f96e8c284ac8c83c2dfc26f7469eedbe",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-inbox-green-before-lookup-20261013.status.json",
+    "source_sha256": "d4eee5fd5b821b4b3b2f62482eed3043a2640cbb51577be632380c80d0187b8e",
+    "receipt": "runs/r2-inbox-green-before-lookup-20261013.status.json",
+    "receipt_sha256": "d4eee5fd5b821b4b3b2f62482eed3043a2640cbb51577be632380c80d0187b8e",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-manual-green-before-lookup-20261013.status.json",
+    "source_sha256": "dc612cf8677c958af802a2d01332e1baa5d7228a22dc126007ef4dd9c32c33a7",
+    "receipt": "runs/r2-manual-green-before-lookup-20261013.status.json",
+    "receipt_sha256": "dc612cf8677c958af802a2d01332e1baa5d7228a22dc126007ef4dd9c32c33a7",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-merged-browser-vet-before-lookup-20261013.status.json",
+    "source_sha256": "963fe66aaa33b26369ecb6c640f4e2267b82950fa618cb05161d7089edbbeb8a",
+    "receipt": "runs/r2-merged-browser-vet-before-lookup-20261013.status.json",
+    "receipt_sha256": "963fe66aaa33b26369ecb6c640f4e2267b82950fa618cb05161d7089edbbeb8a",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-merged-build-before-lookup-20261013.status.json",
+    "source_sha256": "14d42b8dbd65edd972d36e9c7841be0e1e68aea6b9150d40f1683a24015d9924",
+    "receipt": "runs/r2-merged-build-before-lookup-20261013.status.json",
+    "receipt_sha256": "14d42b8dbd65edd972d36e9c7841be0e1e68aea6b9150d40f1683a24015d9924",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-merged-contract-before-lookup-20261013.status.json",
+    "source_sha256": "b0dabb5b3f2987ccf0c21d431660c091e356a997196a660cadd8aeaf25e9e7e9",
+    "receipt": "runs/r2-merged-contract-before-lookup-20261013.status.json",
+    "receipt_sha256": "b0dabb5b3f2987ccf0c21d431660c091e356a997196a660cadd8aeaf25e9e7e9",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-merged-gates-before-lookup-20261013.status.json",
+    "source_sha256": "d5b92bfd76f9af5ce73d3cf2ec02fdcd96638b6b44fd4776d6f901e56e9e1afd",
+    "receipt": "runs/r2-merged-gates-before-lookup-20261013.status.json",
+    "receipt_sha256": "d5b92bfd76f9af5ce73d3cf2ec02fdcd96638b6b44fd4776d6f901e56e9e1afd",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-merged-node-before-lookup-20261013.status.json",
+    "source_sha256": "bc9e0631154c18ea709cdb05cf72b8e418b0d50a8ba4e7d452464f4301b1c6a9",
+    "receipt": "runs/r2-merged-node-before-lookup-20261013.status.json",
+    "receipt_sha256": "bc9e0631154c18ea709cdb05cf72b8e418b0d50a8ba4e7d452464f4301b1c6a9",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-merged-pg-fixed-before-lookup-20261013.status.json",
+    "source_sha256": "1f760b13fc63c82d3cb3d77859b9655293085aeee1921bcf2fe159c011d3ac5e",
+    "receipt": "runs/r2-merged-pg-fixed-before-lookup-20261013.status.json",
+    "receipt_sha256": "1f760b13fc63c82d3cb3d77859b9655293085aeee1921bcf2fe159c011d3ac5e",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-merged-race-before-lookup-20261013.status.json",
+    "source_sha256": "aa832f7b94b23486f3398c11ecec9b252dc431b6c6ed5cc3a0106ae00e01fc84",
+    "receipt": "runs/r2-merged-race-before-lookup-20261013.status.json",
+    "receipt_sha256": "aa832f7b94b23486f3398c11ecec9b252dc431b6c6ed5cc3a0106ae00e01fc84",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-merged-tsc-before-lookup-20261013.status.json",
+    "source_sha256": "2a8af047b8130b10a7a8f7615edbdcca02fd39b05f6d8b78c18bc0c186aaaabe",
+    "receipt": "runs/r2-merged-tsc-before-lookup-20261013.status.json",
+    "receipt_sha256": "2a8af047b8130b10a7a8f7615edbdcca02fd39b05f6d8b78c18bc0c186aaaabe",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-merged-vet-before-lookup-20261013.status.json",
+    "source_sha256": "c8f082488a57dd853ca5773aa5175ee3e8ea2ef909a1eccfd62df30d621bebee",
+    "receipt": "runs/r2-merged-vet-before-lookup-20261013.status.json",
+    "receipt_sha256": "c8f082488a57dd853ca5773aa5175ee3e8ea2ef909a1eccfd62df30d621bebee",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-partial-browser-red-20261013.status.json",
+    "source_sha256": "1a4e64aa35f44ecd62e782359723c887b74cdadc060f12a2bd6d05f841c0e336",
+    "receipt": "runs/r2-partial-browser-red-20261013.status.json",
+    "receipt_sha256": "1a4e64aa35f44ecd62e782359723c887b74cdadc060f12a2bd6d05f841c0e336",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-partial-pg-green-20261013.status.json",
+    "source_sha256": "ff861bfbb8772b08b81d6cb45d6613988237c7562db19a5781695fe02f1d43c2",
+    "receipt": "runs/r2-partial-pg-green-20261013.status.json",
+    "receipt_sha256": "ff861bfbb8772b08b81d6cb45d6613988237c7562db19a5781695fe02f1d43c2",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-partial-pg-green2-20261013.status.json",
+    "source_sha256": "6ec8251615cdc4858d58811a1aa8151f52778e9bcf09fa6b3405a227d2c20916",
+    "receipt": "runs/r2-partial-pg-green2-20261013.status.json",
+    "receipt_sha256": "6ec8251615cdc4858d58811a1aa8151f52778e9bcf09fa6b3405a227d2c20916",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-partial-pg-green3-20261013.status.json",
+    "source_sha256": "6aee2842bc4bbf85ac10f0d914bf7efd9121ffa80af8c031d1803b7fa4955c50",
+    "receipt": "runs/r2-partial-pg-green3-20261013.status.json",
+    "receipt_sha256": "6aee2842bc4bbf85ac10f0d914bf7efd9121ffa80af8c031d1803b7fa4955c50",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-partial-pg-red2-20261013.status.json",
+    "source_sha256": "7c8fdf061df459917cb9de8b0b3584ed1e156173fc8df7faf3ecf68b73ed7fcd",
+    "receipt": "runs/r2-partial-pg-red2-20261013.status.json",
+    "receipt_sha256": "7c8fdf061df459917cb9de8b0b3584ed1e156173fc8df7faf3ecf68b73ed7fcd",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-pending-pg-red-20261013.status.json",
+    "source_sha256": "dc6a74fc1dfb9c7d90feee9c51efe6e20e3faa74b70594199ef87b088e20e397",
+    "receipt": "runs/r2-pending-pg-red-20261013.status.json",
+    "receipt_sha256": "dc6a74fc1dfb9c7d90feee9c51efe6e20e3faa74b70594199ef87b088e20e397",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-pending-pg-red2-20261013.status.json",
+    "source_sha256": "0ce6ec85c40d06836890f8518f66750b3f3bb4d456b7557513e91edb915ffc3f",
+    "receipt": "runs/r2-pending-pg-red2-20261013.status.json",
+    "receipt_sha256": "0ce6ec85c40d06836890f8518f66750b3f3bb4d456b7557513e91edb915ffc3f",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-pending-pg-red3-20261013.status.json",
+    "source_sha256": "c6d50c928d9fa7f9a52a5fc1355a4abd53a0b799eba521c507f8dcdc026f32c2",
+    "receipt": "runs/r2-pending-pg-red3-20261013.status.json",
+    "receipt_sha256": "c6d50c928d9fa7f9a52a5fc1355a4abd53a0b799eba521c507f8dcdc026f32c2",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-premerge-gates-20261013.status.json",
+    "source_sha256": "34e2cf890031acd1b05626f2dde5d1f84acee66e38cc3a9171cbe3752e37e500",
+    "receipt": "runs/r2-premerge-gates-20261013.status.json",
+    "receipt_sha256": "34e2cf890031acd1b05626f2dde5d1f84acee66e38cc3a9171cbe3752e37e500",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-premerge-node-20261013.status.json",
+    "source_sha256": "883343a442a3cf0c7981dae250d004b48dc88b1ebe64dea9ee939916763da6f6",
+    "receipt": "runs/r2-premerge-node-20261013.status.json",
+    "receipt_sha256": "883343a442a3cf0c7981dae250d004b48dc88b1ebe64dea9ee939916763da6f6",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-premerge-tsc-20261013.status.json",
+    "source_sha256": "f3973b814f6f152dc1803f30e240c6470bdb241e9649268447b64a5e88dc3c5b",
+    "receipt": "runs/r2-premerge-tsc-20261013.status.json",
+    "receipt_sha256": "f3973b814f6f152dc1803f30e240c6470bdb241e9649268447b64a5e88dc3c5b",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-source-node-20261013.status.json",
+    "source_sha256": "069dea25234cb17d535a99575bfd2377770512e26a6a7b0f22cfb80006a8fbf6",
+    "receipt": "runs/r2-source-node-20261013.status.json",
+    "receipt_sha256": "069dea25234cb17d535a99575bfd2377770512e26a6a7b0f22cfb80006a8fbf6",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/r2-source-tsc-20261013.status.json",
+    "source_sha256": "8efb2c5c13c7cfd92d22494918d5dc83d5d7d47a128c8e36d11fb3b45bed9ef6",
+    "receipt": "runs/r2-source-tsc-20261013.status.json",
+    "receipt_sha256": "8efb2c5c13c7cfd92d22494918d5dc83d5d7d47a128c8e36d11fb3b45bed9ef6",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/create-order-drawer-1547862142/capability-pg-readback.json",
+    "source_sha256": "a55e77b821672bfe4593f7096f67457edc24b2bc5e247ee5f55169585ddb2483",
+    "receipt": "manual-green/capability-pg-readback.json",
+    "receipt_sha256": "a55e77b821672bfe4593f7096f67457edc24b2bc5e247ee5f55169585ddb2483",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/create-order-drawer-1547862142/click-ledger.json",
+    "source_sha256": "4ee18760752b441813587921592d7c497bcbcaeac5a971d65052e623741d0986",
+    "receipt": "manual-green/click-ledger.json",
+    "receipt_sha256": "4ee18760752b441813587921592d7c497bcbcaeac5a971d65052e623741d0986",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/create-order-drawer-1547862142/partial-pg-readback.json",
+    "source_sha256": "a5ad429e3e6c64f9580c9a8f0f4221fded4ab26077b25fba2b19cc445fb06a9c",
+    "receipt": "manual-green/partial-pg-readback.json",
+    "receipt_sha256": "a5ad429e3e6c64f9580c9a8f0f4221fded4ab26077b25fba2b19cc445fb06a9c",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/create-order-drawer-1547862142/pg-readback.json",
+    "source_sha256": "a125be3a3262bd993fa7b6b06311cacbc9d06cabe34b15f33cf80d2fe9bb6473",
+    "receipt": "manual-green/pg-readback.json",
+    "receipt_sha256": "a125be3a3262bd993fa7b6b06311cacbc9d06cabe34b15f33cf80d2fe9bb6473",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/create-order-drawer-1547862142/result.json",
+    "source_sha256": "76ee1490cc7718215c26d81c1b0c83c4703b8eeb7d10c9901743f5f7cd87b1a1",
+    "receipt": "manual-green/result.json",
+    "receipt_sha256": "76ee1490cc7718215c26d81c1b0c83c4703b8eeb7d10c9901743f5f7cd87b1a1",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/create-order-drawer-1015611304/click-ledger.json",
+    "source_sha256": "0b74569876240526a0ff528457fece5cfd6bab498e22c878c74e0b6dcea7a657",
+    "receipt": "partial-red/click-ledger.json",
+    "receipt_sha256": "0b74569876240526a0ff528457fece5cfd6bab498e22c878c74e0b6dcea7a657",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/create-order-drawer-1015611304/partial-pg-readback.json",
+    "source_sha256": "b527a835414b50f809d54633bcf31030324faad451d8f413985955ef4f516f8f",
+    "receipt": "partial-red/partial-pg-readback.json",
+    "receipt_sha256": "b527a835414b50f809d54633bcf31030324faad451d8f413985955ef4f516f8f",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/create-order-drawer-1015611304/pg-readback.json",
+    "source_sha256": "c795501273b2b14cebdc14ddf089e79c7c88d7dfca534db07573b527328ff5b2",
+    "receipt": "partial-red/pg-readback.json",
+    "receipt_sha256": "c795501273b2b14cebdc14ddf089e79c7c88d7dfca534db07573b527328ff5b2",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/create-order-drawer-1015611304/result.json",
+    "source_sha256": "8850f2d9669e83344d8cef9554f3b70c60cbb26d61733cc9319158df8fd34d8d",
+    "receipt": "partial-red/result.json",
+    "receipt_sha256": "8850f2d9669e83344d8cef9554f3b70c60cbb26d61733cc9319158df8fd34d8d",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/create-order-drawer-3342173282/capability-pg-readback.json",
+    "source_sha256": "a5ad429e3e6c64f9580c9a8f0f4221fded4ab26077b25fba2b19cc445fb06a9c",
+    "receipt": "capability-red/capability-pg-readback.json",
+    "receipt_sha256": "a5ad429e3e6c64f9580c9a8f0f4221fded4ab26077b25fba2b19cc445fb06a9c",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/create-order-drawer-3342173282/click-ledger.json",
+    "source_sha256": "04e52061e7e88c8d7d6a815010adb98b6064b1b815956e0f06e0cb40df311f1a",
+    "receipt": "capability-red/click-ledger.json",
+    "receipt_sha256": "04e52061e7e88c8d7d6a815010adb98b6064b1b815956e0f06e0cb40df311f1a",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/create-order-drawer-3342173282/partial-pg-readback.json",
+    "source_sha256": "a5ad429e3e6c64f9580c9a8f0f4221fded4ab26077b25fba2b19cc445fb06a9c",
+    "receipt": "capability-red/partial-pg-readback.json",
+    "receipt_sha256": "a5ad429e3e6c64f9580c9a8f0f4221fded4ab26077b25fba2b19cc445fb06a9c",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/create-order-drawer-3342173282/pg-readback.json",
+    "source_sha256": "a125be3a3262bd993fa7b6b06311cacbc9d06cabe34b15f33cf80d2fe9bb6473",
+    "receipt": "capability-red/pg-readback.json",
+    "receipt_sha256": "a125be3a3262bd993fa7b6b06311cacbc9d06cabe34b15f33cf80d2fe9bb6473",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/create-order-drawer-3342173282/result.json",
+    "source_sha256": "4502fdd7d13585acca33d562b86dc3e7fd7cfa8c320bbd6e2dc846ab4baf0599",
+    "receipt": "capability-red/result.json",
+    "receipt_sha256": "4502fdd7d13585acca33d562b86dc3e7fd7cfa8c320bbd6e2dc846ab4baf0599",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/run.RTiZWkoG/live-console-637929488/grant-revocation-all.json",
+    "source_sha256": "51cc99d6ce213356afb403484993e70d2cca6c77890a533b79743b2b3fc20644",
+    "receipt": "console/grant-revocation-all.json",
+    "receipt_sha256": "51cc99d6ce213356afb403484993e70d2cca6c77890a533b79743b2b3fc20644",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/run.RTiZWkoG/live-console-637929488/grant-revocation-private.json",
+    "source_sha256": "6ec12f53e4093d0ec3f19fe0cf483a64ba8d50a9d3dcc61652a928dca8829c86",
+    "receipt": "console/grant-revocation-private.json",
+    "receipt_sha256": "6ec12f53e4093d0ec3f19fe0cf483a64ba8d50a9d3dcc61652a928dca8829c86",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/run.RTiZWkoG/live-console-637929488/native-hidden-read-counts.json",
+    "source_sha256": "1f78f0298133810928b002a27daae87266ec01e629a74b992165a1f6ef9e3835",
+    "receipt": "console/native-hidden-read-counts.json",
+    "receipt_sha256": "1f78f0298133810928b002a27daae87266ec01e629a74b992165a1f6ef9e3835",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/run.RTiZWkoG/live-console-637929488/en-390-receipts.json",
+    "source_sha256": "0e4c66e81bb3c64d513f57cf9b07d76cad428e3bd5b6402d13c592bfbdc2423c",
+    "receipt": "console/en-390-receipts.json",
+    "receipt_sha256": "0e4c66e81bb3c64d513f57cf9b07d76cad428e3bd5b6402d13c592bfbdc2423c",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/run.RTiZWkoG/live-console-3748403557/label-click-ledger-6842577ca0b28ad9ce5b-0a37413c73567e212c15.json",
+    "source_sha256": "c84772f44145d94ef55e4a05dc1e10a1fbdc6b0ddd1880fe190734085ee26442",
+    "receipt": "console-labels/label-click-ledger-6842577ca0b28ad9ce5b-0a37413c73567e212c15.json",
+    "receipt_sha256": "eb20804a18d9a3487496de39398028394189b7d3bc1605ff188e652c469bedc8",
+    "transform": "strip_raw"
+  },
+  {
+    "source": "output/playwright/run.RTiZWkoG/live-console-3748403557/label-click-ledger-6842577ca0b28ad9ce5b-2177a37ed61f437f0cb4.json",
+    "source_sha256": "243c04d9858d7891155a981edbd8de6e3c7437bea5523736407ba83670876d38",
+    "receipt": "console-labels/label-click-ledger-6842577ca0b28ad9ce5b-2177a37ed61f437f0cb4.json",
+    "receipt_sha256": "e5025f1d9b609bab268ad87c70a0ae3cf6e1318e65825a4eee40acf24707d714",
+    "transform": "strip_raw"
+  },
+  {
+    "source": "output/playwright/run.RTiZWkoG/live-console-3748403557/label-click-ledger-6842577ca0b28ad9ce5b-492357f327a3fc117b3f.json",
+    "source_sha256": "68cf4a126bde8c44593fa54312465558b464c614bc687dc74dd5150ed91fc27d",
+    "receipt": "console-labels/label-click-ledger-6842577ca0b28ad9ce5b-492357f327a3fc117b3f.json",
+    "receipt_sha256": "9e83b738c9fb7bf7c0a64d3417b84b99daff27aa77d68a91682bd785bf5c2756",
+    "transform": "strip_raw"
+  },
+  {
+    "source": "output/playwright/run.RTiZWkoG/live-console-3748403557/label-click-ledger-6842577ca0b28ad9ce5b-50db09ca1b36eadb3095.json",
+    "source_sha256": "08ddf4ef706cf8aaebaa5c9bf5e79b5655d96a2ca8fec69470dc039e0d218878",
+    "receipt": "console-labels/label-click-ledger-6842577ca0b28ad9ce5b-50db09ca1b36eadb3095.json",
+    "receipt_sha256": "b6812f5b5e9fafed93c487af96a54ab72f17e60767b88d3bce2c72a3f4ff13d2",
+    "transform": "strip_raw"
+  },
+  {
+    "source": "output/playwright/run.RTiZWkoG/live-console-3748403557/label-click-ledger-6842577ca0b28ad9ce5b-971ca030ab2d465cf6d5.json",
+    "source_sha256": "82410e50768fdc72f3969fc5279b49b60e2995eff3e35d1f3b9a614bc86afc77",
+    "receipt": "console-labels/label-click-ledger-6842577ca0b28ad9ce5b-971ca030ab2d465cf6d5.json",
+    "receipt_sha256": "316ef2496ca2cb629ef56289e4ca754800083238e81efb290a14c39c41e37867",
+    "transform": "strip_raw"
+  },
+  {
+    "source": "output/playwright/run.RTiZWkoG/live-console-3748403557/label-click-ledger-6842577ca0b28ad9ce5b-a70934920c83c87a12b1.json",
+    "source_sha256": "6e65152ef7e27c929dc5a5418931d82973f978cfe1436365e14ccd62eddf54e1",
+    "receipt": "console-labels/label-click-ledger-6842577ca0b28ad9ce5b-a70934920c83c87a12b1.json",
+    "receipt_sha256": "526cfc8076ce14acc6d3b33523286e73e8a95c288a04fae3113f4ee379599970",
+    "transform": "strip_raw"
+  },
+  {
+    "source": "output/playwright/run.RTiZWkoG/live-console-3748403557/label-click-ledger-6842577ca0b28ad9ce5b-bd46d9f6a70f04484610.json",
+    "source_sha256": "12298a664e3e150ee133c8e17ab33a6a4a4a31cc67aa0b5485ccff9e5ff1a79d",
+    "receipt": "console-labels/label-click-ledger-6842577ca0b28ad9ce5b-bd46d9f6a70f04484610.json",
+    "receipt_sha256": "3984ea27c06bf5a4675689f67f385a32a8580f303f032bf89ec7a50aaf355f45",
+    "transform": "strip_raw"
+  },
+  {
+    "source": "output/playwright/run.RTiZWkoG/live-console-3748403557/label-click-ledger-6842577ca0b28ad9ce5b-cb6c53d9c3a3facba3d5.json",
+    "source_sha256": "073575a1a17d29bae117086bd9a1d9435c8992049fba40fa0613af5d781dc509",
+    "receipt": "console-labels/label-click-ledger-6842577ca0b28ad9ce5b-cb6c53d9c3a3facba3d5.json",
+    "receipt_sha256": "c36d8b843a5fabf17ce85bb228e0dfc2a0faf338732307432b1bcf3158c112b6",
+    "transform": "strip_raw"
+  },
+  {
+    "source": "output/playwright/run.RTiZWkoG/live-console-3748403557/label-click-ledger-6842577ca0b28ad9ce5b-e410b87403402d35b4a9.json",
+    "source_sha256": "3a3557da73a81a9aaa08cb3ac73baa97d8ac2dc1f70b4c1b26efac39ba448c25",
+    "receipt": "console-labels/label-click-ledger-6842577ca0b28ad9ce5b-e410b87403402d35b4a9.json",
+    "receipt_sha256": "019a2a598da8f1706ece3929b49e51122e2a7d1b714f8918317dbd54d934924f",
+    "transform": "strip_raw"
+  },
+  {
+    "source": "output/playwright/run.RTiZWkoG/live-console-3748403557/label-click-ledger-6842577ca0b28ad9ce5b-fb90d2190ad4d06414fe.json",
+    "source_sha256": "2e26bb566395b748d630352cd209c7a63142d1cf723ad91e8ab5727389bea24d",
+    "receipt": "console-labels/label-click-ledger-6842577ca0b28ad9ce5b-fb90d2190ad4d06414fe.json",
+    "receipt_sha256": "379f82287a1697abe753c483cb94b70ae7405e2fdf3a8ceca1d189b5286793c7",
+    "transform": "strip_raw"
+  },
+  {
+    "source": "output/playwright/run.RTiZWkoG/live-console-637929488/results/.last-run.json",
+    "source_sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+    "receipt": "console/workspace-last-run.json",
+    "receipt_sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/run.RTiZWkoG/live-console-3748403557/results/.last-run.json",
+    "source_sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+    "receipt": "console/labels-last-run.json",
+    "receipt_sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/inbox-ui/20261012T184808.651470000/browser-console.json",
+    "source_sha256": "79045cfd7943c95bcf6f2329bdd9111cf96360eb0444e2ecc80f5bb19f01af6c",
+    "receipt": "inbox/browser-console.json",
+    "receipt_sha256": "79045cfd7943c95bcf6f2329bdd9111cf96360eb0444e2ecc80f5bb19f01af6c",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/inbox-ui/20261012T184808.651470000/click-ledger.json",
+    "source_sha256": "c5884530e67e585ea2aec1baf18f29aca34a1a2d3cd27d155f2deadeaba1ecb2",
+    "receipt": "inbox/click-ledger.json",
+    "receipt_sha256": "7b0f8fd1055c4f19a2822db8d515ccbaaaf3558008c77da0f4398bcfb39413d3",
+    "transform": "strip_raw"
+  },
+  {
+    "source": "output/playwright/inbox-ui/20261012T184808.651470000/native-visibility.json",
+    "source_sha256": "55d52b51d8005b81c9968e441582db14c192951c9249341a3237aa765da9f8f2",
+    "receipt": "inbox/native-visibility.json",
+    "receipt_sha256": "55d52b51d8005b81c9968e441582db14c192951c9249341a3237aa765da9f8f2",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/pending-release/for_buyer_request.sql",
+    "source_sha256": "c9d44c6c8dccb9a699bcc8d774093b440818d689df8f2a654a155a96be09ff7d",
+    "receipt": "pending-design/for_buyer_request.sql",
+    "receipt_sha256": "c9d44c6c8dccb9a699bcc8d774093b440818d689df8f2a654a155a96be09ff7d",
+    "transform": "exact"
+  },
+  {
+    "source": "output/playwright/lc-u3-k3-p2/pending-release/source.patch",
+    "source_sha256": "d51bed416b1b76ae55ba2cfe63ba7505da58b4add3c5269e1e8343f971473079",
+    "receipt": "pending-design/source.patch",
+    "receipt_sha256": "d51bed416b1b76ae55ba2cfe63ba7505da58b4add3c5269e1e8343f971473079",
+    "transform": "exact"
+  }
+]
