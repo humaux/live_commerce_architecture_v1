@@ -1,0 +1,8 @@
+{
+  "removed_owned_temp_dir": "output/matrix-ledger-enforce/collection-qqhNJb",
+  "owned_origin": "test-node collection temp created2026-10-12T14:14:56Z inside the stopped pre-freeze runner12305, started14:14:22Z; only generated config remained",
+  "rollback_copy": "output/playwright/pr28-canonical-20261012T142112Z/cleanup/aborted-collection-config.source.txt",
+  "sha256": "05a0f5000586d64a5b79759756f9353ee9c5ec6c056c57a92ca71e07321e3dce",
+  "foreign_ext_agents_preserved": true,
+  "no_shared_cache_or_foreign_process_cleanup": true
+}

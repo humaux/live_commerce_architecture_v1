@@ -1,60 +1,64 @@
-# matrix-ledger-enforce delivery — PR28 round 3
+# matrix-ledger-enforce delivery — PR28 canonical outcome addendum
 
-- Branch: `unit/matrix-ledger-enforce`; base/pulled head `5e4e96b9bc5ce1e33185442d3173555ccec3dc79` (pull was a no-op).
-- Source commits: `bcc24338c6ca9eff892368849468a682dbd778a7` (receiver/effect binding), `ec94cb0502c657892ad649dc2ad4e8384cb03860` (capture DOM precondition before opening the native dialog). Final runs bind **ec94cb05** and 16 source hashes; later changes are evidence/docs only.
-- Author/ownership: Codex-4 `/root`, GPT-6 family (exact runtime variant/effort not exposed). Read-only explorer: `gpt-6.1-sol`, high. Parent writes only the matrix gate, acceptance spec, shared test declaration and unit evidence. Foreign `output/ext-agents/` is preserved and excluded from staging.
+- Branch: `unit/matrix-ledger-enforce`; pulled base `5e4e96b9bc5ce1e33185442d3173555ccec3dc79`.
+- Tested source: **`05c2af77a6f90cef0fc797520b2f6361d1635527`**, with 18 Git/current hashes in [SOURCE.json](round3-canonical/SOURCE.json). The final evidence commit changes only unit documentation and receipts.
+- Preserved commits: `bcc24338` receiver/effect identity; `ec94cb05` native-dialog precondition; `7f02bbea` preceding evidence. Author: Codex-4 `/root`, GPT-6 family; exact parent runtime variant/effort is not exposed. Read-only audit: `gpt-6.1-sol`, high, task `a480d297-sub-resume-audit`.
+- Owned scope: matrix recorder, static Node gate/helpers, shared test declaration and unit evidence. Foreign `output/ext-agents/` and unrelated untracked files are excluded from staging.
 
-## Changes and review findings
+## Result and review replies
 
-The static gate previously recorded an outcome event without its receiver. A `product-name` fill could borrow `product-slug.toBeVisible()` and record PASS without a value assertion. `tests/ci/product-editor-matrix-ledger.test.mjs` now resolves each direct awaited outcome through the same inert locator slice as the operated receiver. It discharges only that step's pending action, using an exact operated receiver with the operation's matcher class, or an explicitly declared method-specific effect locator. Fill requires value readback; check/uncheck require checked-state readback. Non-pure supplemental assertions cannot certify an action or contaminate dependency resolution.
+The gate now checks each reached outcome against machine requirements declared alongside the case's canonical `expected` claim: exact locator, matcher, operand, polarity, action/reload position, write count and ACK source. Persistence must check the declared rows after reload, and immutable SKU codes and archived IDs must come from their actual producers. Repeating row/ID zero cannot certify every row. Supplemental or unused callbacks cannot donate proof.
 
-The receiver/method/Enter/Escape/row identity checks, required DOM reads, action/outcome/receipt order and nested-step isolation remain. Cross-control effects are declared in the **same shared 77-case table**; all 77 page/row/control/action/expected values are unchanged. No blanket ancestor/descendant matching was added. If/for-wrapped outcomes remain fail-closed, as requested.
+The original operated-locator/effect identity check and the requirement for a post-action assertion inside the same step before its observed return remain. The source tracer uses a deterministic clock only in its inert evaluation; the real browser's clock, fixtures, waits and assertions are unchanged. Source extraction and claim validation have separate focused helpers. Runtime ledger rows keep the original fields without copying static proof metadata.
 
-Native archive acceptance proves a UI change that cannot exist before acceptance: the replacement row's `data-sku-id` is absent before opening the dialog; after acceptance and the existing successful save ACK, a retrying UI assertion requires its server-issued UUID and excludes the old IDs. The native ledger records `beforeId: null` and `replacementSKU`. Capturing the precondition before `window.confirm` avoids a DOM read blocked by the open dialog. Original reload, field, write-count and PG assertions/waits/timeouts are retained.
+All **77 original page/row/control/action/expected declarations are unchanged**. New optional requirements/effects are test metadata; there are no application, HTTP, SQL or public contract changes. Native acceptance retains the absent-before-dialog to server-issued replacement UUID transition, successful ACK and old-ID exclusion from `ec94cb05`.
 
-Contract/interface changes: **none in application/HTTP/SQL/public contracts**. The test-only declaration adds optional effect locator/matcher metadata, consumed by the Node gate; Go continues enforcing the original exact identity/expected/PASS set.
-
-## Red → green and integrity evidence
-
-[red-tests.json](round3/red-tests.json) binds the initial red gate/spec snapshots and log, plus the **final gate SHA256**, final spec SHA256 and each hashed mutation copy. Initial unrelated-locator and same-control visibility regressions both failed before the fix: **exit 1, two failed tests**. Final focused suite: **37 PASS / 0 FAIL / 0 SKIP**, exit 0.
-
-The exact review mutation retains the action and observed return, replacing only the name's value assertion with `await expect(page.getByTestId("product-slug")).toBeVisible();`. On the final gate:
-
-| Mutation / restoration | Exit | Actual result |
+| Thread | Fix SHA | One-line reply for integrator |
 | --- | --- | --- |
-| `LC_MATRIX_ACTION_MUTATION=unrelated-outcome` | 1 | Only product-name outcome failures, three locales |
-| `LC_MATRIX_ACTION_MUTATION=tautological-outcome` | 1 | Same-control visibility cannot replace value readback |
-| `LC_MATRIX_ACTION_MUTATION=nested-step` | 1 | Parent lacks its outcome; nested extra identity also rejected |
-| `LC_MATRIX_ACTION_MUTATION=native-missing-outcome` | 1 | **Only native archive outcome failures**, three locales; no missing DOM-read findings |
-| Restore original final spec, no mutation | 0 | Real-source mobile action gate green |
+| `4246050140` | `bcc24338` + `05c2af77` | Every operated action requires a post-action outcome before its observed return, bound to the operated locator or declared effect; removed and unrelated outcomes are RED. |
+| `4246713403` | `05c2af77` | Each outcome now validates its canonical expected claim, including exact values, write counts and persisted rows; dropped count/persistence assertions and unrelated visibility checks are RED. |
 
-These use `node --test --test-name-pattern='every actual mobile' tests/ci/product-editor-matrix-ledger.test.mjs`; exact argv/env/exits and hashes are recorded in the JSON. Source snapshots use `.source.txt`, never runnable `.spec`/`.test` filenames.
+## Red → green
 
-The old round2 seven-test RED lacks a producer-gate hash, and its intermediate native diagnostic contains unrelated DOM-read failures. They are historical/diagnostic only and **are not this round's isolated red proof**. The regenerated native RED above uses the final gate. Intermediate emitter diagnostics are marked `NOT_ACCEPTANCE` in `round3/diagnostics/`; earlier bcc local successes are historical under `round3/before-modal-precondition/`.
+[red-tests.json](round3-canonical/red-tests.json) binds the producer gate, helper, declaration and spec hashes plus exact argv/env, mutation copies, raw logs and exits. Before implementation, five expected-claim regressions failed (exit 1); resumed row/code regressions failed twice, and repeated archived-ID regression failed once (exit 1). Current full Node includes **51 focused PASS / 0 FAIL / 0 SKIP**.
 
-Read-only peer audit `b5c7252b-6bc0-45b8-9154-87dfed0a2db1` independently ran 37 focused tests and eight receiver/effect/polarity/dependency probes: exit 0, no confirmed P0/P1 in scope. It predates only the precondition-read relocation; final ec94 source/artifact audit `cc05f37b-4331-4634-95bb-11952e1f1c2c` verifies the relocated precondition, all 16 Git/current/run hashes, exact mutation snapshots and canonical ledger. It did not rerun the browser. These are scoped source/focused evidence, **not new Claude/K3 or CI approval**.
+Final-source calibrations use `node --test --test-name-pattern='every actual mobile' tests/ci/product-editor-matrix-ledger.test.mjs` with the recorded `LC_MATRIX_ACTION_MUTATION`:
 
-## Gates run on frozen ec94cb05
-
-[SOURCE](round3/SOURCE.json), [local gate receipts](round3/local-gates.json), [browser receipt](round3/browser-run.json) retain argv, bounded runner PIDs/timeouts, UTC times, exits and log hashes.
-
-| Command | Exit | Current evidence |
+| Mutation / restoration | Exit | Proof |
 | --- | --- | --- |
-| `node --test tests/ci/product-editor-matrix-ledger.test.mjs` | 0 | `round3/focused-green.log`; 37/0/0 |
-| `bash scripts/dev/test-node.sh` | 0 | `round3/test-node.log`; 31.220 s |
-| `pnpm typecheck:admin` | 0 | `round3/typecheck.log`; 0.925 s |
-| `go test ./tests/foundation -run '^TestProductEditorMatrixLedger' -count=1 -v` | 0 | `round3/go-ledger.log`; DB-free corruption controls |
-| `bash scripts/dev/check-gates.sh` | 0 | `round3/check-gates.log`; staged-evidence recheck also exit 0 (`round3/check-gates-staged.json`), 82 modes documented and tracked tests run |
-| `bash scripts/dev/test-local.sh --browser-product-editor` | 0 | `round3/browser-product-editor.log`; 114.044 s, original full mode |
+| `dropped-write-count` | 1 | Canonical local-write proof missing |
+| `dropped-persistence` | 1 | Required post-reload value assertion missing |
+| `unrelated-outcome` | 1 | Unrelated visible control cannot certify the action |
+| `nested-step` | 1 | Nested outcome cannot certify its parent |
+| `native-missing-outcome` | 1 | Only native outcome failures in three locales; no unrelated DOM-read failure |
+| Restore original source, no mutation | 0 | Actual-source gate green |
 
-Browser evidence used `LC_BROWSER_EVIDENCE_ROOT` under `output/playwright/pr28-r3-outcomes-20261012T110558Z`, resolved against the worktree; no grep, calibration, retry or relaxed wait. **12 PE/review cases plus two mandatory frozen CC12 cases passed, zero skips.** Real Go/isolated PG validates **231 unique required PASS rows**, 77 per zh-TW/zh-CN/en at 390px; raw ledger has 286 rows. All three native receipts show the absent-to-new-UUID transition.
+Raw snapshots end in `.source.txt`; none are runnable test filenames. [Audit](round3-canonical/AUDIT.md) records source-bound peer checks: baseline green, ten negative probes RED and unchanged source hashes. This is scoped source/focused evidence, **not new K3/Claude or CI approval**.
 
-Canonical actual [ledger](browser/product-editor-click-ledger.json), [PE/review result log](browser/playwright.log), [CC12 result log](browser/cc12-playwright.log) and [browser manifest](browser/browser-evidence.json) are committed and hash-bound to ec94. No screenshot delivery claim; auxiliary native paths remain only in original records. No source/hash changed during or after final runs. Artifact names are checked again by check-gates before handoff. Raw logs and exact source/mutation snapshots retain producer bytes: the ancillary full `git diff --cached --check` exits 2 for forensic whitespace; non-forensic staged files and both source commits pass that diagnostic (exit 0). No project gate is disabled; records are in `round3/whitespace-checks.json`.
+## Actual gates on frozen 05c2af77
 
-## CI gates / limits / handoff
+[Local receipts](round3-canonical/local-gates.json) and [browser receipt](round3-canonical/browser-run.json) record bounded runner PIDs/timeouts, UTC timestamps, argv, exits and log hashes.
 
-Evidence class: **E3 in the automated tested environment; BROWSER + REAL_PG with synthetic MOCK identity/provider fixtures.** Required integrator CI: foundation-shards (Node/check-gates and ledger controls), plus the PR planner's affected browser set including `--browser-product-editor`. Current-head remote CI and new external approval are **NOT_RUN** here; provider SANDBOX/LIVE, production/deployment and the full foundation suite are **NOT_RUN**.
+| Command | Exit | Evidence |
+| --- | --- | --- |
+| `bash scripts/dev/test-node.sh` | 0 | [test-node.log](round3-canonical/test-node.log), 70.729 s; includes 51 matrix tests |
+| `pnpm typecheck:admin` | 0 | [typecheck.log](round3-canonical/typecheck.log), 1.749 s |
+| `go test ./tests/foundation -run '^TestProductEditorMatrixLedger' -count=1 -v` | 0 | [go-ledger.log](round3-canonical/go-ledger.log), 25.637 s; DB-free ledger corruption controls |
+| `bash scripts/dev/check-gates.sh` | 0 | [check-gates.log](round3-canonical/check-gates.log), 258.145 s; [staged artifact recheck](round3-canonical/check-gates-staged.json) also exit 0; 82 modes documented, every tracked test run |
+| `bash scripts/dev/test-local.sh --browser-product-editor` | 0 | [browser-product-editor.log](round3-canonical/browser-product-editor.log), 181.158 s; original complete mode |
 
-Risk/limit: this bounded source gate proves receiver/effect identity, matcher class, ownership and order; it is not a formal equivalence proof of every matcher operand. Actual original browser assertions and PG readbacks provide runtime acceptance. Unsupported wrapped-outcome grammar fails closed.
+The browser run used `output/playwright/pr28-canonical-20261012T142112Z` under the worktree, `LC_BROWSER_ENGINE=chromium` and bounded shared-PG lock waiting. No grep, calibration, retry or relaxed wait. **12 PE/review cases and two mandatory CC12 cases passed, zero skips.** Real Go/isolated PG validates **231 unique required PASS identities** at 390px: 77 each in zh-TW, zh-CN and en. The raw ledger contains 286 rows, including non-matrix coverage.
 
-Integrator to-do: review/push the batch, run required CI, reply to and resolve threads. Author commits only. Owned browser/Next/PG fixtures and runners exited; browser mutex released. No production/real money/messages/keys/buyer PII, provider actions, push/rebase/deploy, foreign directory edits or shared-cache cleanup.
+Current canonical copies are the actual [ledger](round3-canonical/browser/product-editor-click-ledger.json), [PE/review log](round3-canonical/browser/playwright.log), [CC12 log](round3-canonical/browser/cc12-playwright.log), last-run receipts and [manifest](round3-canonical/browser/browser-evidence.json). Copies preserve native bytes and SHA256. No screenshot delivery claim. All 18 executable source hashes remained unchanged throughout the gates.
+
+## Historical evidence and limits
+
+Earlier `round1`, `round2`, `round3` and root `browser/` evidence belongs to its recorded source, not this addendum. Round1 ran before the #23 evidence-path merge; its old source hash is not a current binding. The round2 native diagnostic included unrelated missing DOM reads and is not the isolated native RED above.
+
+Intermediate `focused-green.log`, `resume-focused-green.log` and `implementation-diagnostic.log` under `round3-canonical` are diagnostic/history only. The stopped pre-freeze runner is explicitly `NOT_ACCEPTANCE`; its early Node log was replaced and was not retained. Only the completed `local-gates.json` and `browser-run.json` certify the final source. Forensic snapshots/logs preserve raw producer whitespace: the ancillary staged whitespace diagnostic exits 2; non-forensic files and source commits exit 0 ([receipts](round3-canonical/whitespace-checks.json)). No project gate is disabled.
+
+Evidence: **E3 in the automated tested environment — BROWSER + isolated REAL_PG, synthetic MOCK identity/provider fixtures.** The source gate covers its declared grammar; unsupported wrapped assertions fail closed. It is not a general formal proof of arbitrary TypeScript. Browser assertions and PG readbacks provide runtime acceptance.
+
+CI gates: foundation-shards and the PR planner's affected browser set including `--browser-product-editor`. New-head CI/external approval, full foundation, provider SANDBOX/LIVE and production/deployment are **NOT_RUN** here. No production, live keys, real money/messages or real buyer PII.
+
+The owner authorized normal branch push for this batch after gates. Integrator retains review-thread replies/resolution and merging. No thread was resolved and no merge/rebase/deploy performed. Own runners and browser fixtures exited; shared browser-build lock released. No foreign directory or shared cache cleanup.
