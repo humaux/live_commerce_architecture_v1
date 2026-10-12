@@ -26,7 +26,9 @@ export function createProductEditorMatrixLedger(ledger: unknown[], locale: keyof
     for (const field of ["page", "row", "control", "action", "expected"] as const)
       if (typeof entry[field] !== "string" || (field !== "row" && !entry[field]))
         throw new Error(`Invalid matrix declaration ${field}`);
-    const expanded = { ...entry, control: expand(entry.control), expected: expand(entry.expected) };
+    // Static source-contract metadata is not a runtime observation or part of the native ledger schema.
+    const expanded = { page: entry.page, row: entry.row, action: entry.action,
+      control: expand(entry.control), expected: expand(entry.expected) };
     return [key(expanded), expanded] as const;
   }));
   if (declared.size !== cases.length) throw new Error("Duplicate matrix declaration");

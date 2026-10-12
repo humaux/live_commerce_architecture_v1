@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
-import { runInNewContext } from "node:vm";
+import { locatorIdentities } from "./product-editor-matrix-source.mjs";
 import ts from "typescript-api";
 
 const specPath = "tests/admin/product-editor.acceptance.ts";
@@ -14,6 +14,8 @@ let spec = readFileSync(specPath, "utf8");
 const startMarker = "// Keep additional products after the frozen list-count checks.";
 const endMarker = "// Controlled read-only ambiguity:";
 const actions = new Set(["click", "fill", "press", "check", "uncheck", "selectOption", "accept"]);
+const canonicalModes = ["dropped-write-count", "wrong-value-argument", "wrong-document-count", "dropped-reload", "dropped-persistence",
+  "wrong-checked-state", "wrong-ack-source", "dropped-archived-id", "dropped-code-stability", "snapshot-after-action"];
 
 test("real Playwright ESM consumer collects the product-editor cases", () => {
   // Match brfPlaywright's generated-config seam, without starting any server or browser.
@@ -60,6 +62,12 @@ if (process.env.LC_MATRIX_ACTION_MUTATION === "removed-postcondition") spec = ch
 if (["unrelated-outcome", "tautological-outcome", "nested-step"].includes(process.env.LC_MATRIX_ACTION_MUTATION))
   spec = changePostcondition(spec, process.env.LC_MATRIX_ACTION_MUTATION);
 if (process.env.LC_MATRIX_ACTION_MUTATION === "native-missing-outcome") spec = nativePostcondition(spec, "");
+if (canonicalModes.includes(process.env.LC_MATRIX_ACTION_MUTATION)) spec = canonicalFault(spec, process.env.LC_MATRIX_ACTION_MUTATION);
+// Save the exact injected source as inert evidence, never as a runnable test.
+if (process.env.LC_MATRIX_MUTATION_SNAPSHOT) {
+  assert.ok(process.env.LC_MATRIX_MUTATION_SNAPSHOT.endsWith(".source.txt"));
+  writeFileSync(process.env.LC_MATRIX_MUTATION_SNAPSHOT, spec);
+}
 
 function changePostcondition(text, mode) {
   const start = text.indexOf(startMarker), assertion = 'await expect(page.getByTestId("product-name")).toHaveValue(`${tag} mobile matrix ${locale}`);';
@@ -91,6 +99,41 @@ function nativePostcondition(text, replacement) {
   const at = text.indexOf(assertion, start);
   assert.ok(at > start, "mutation targets the accepted replacement's persisted UI identity");
   return text.slice(0, at) + replacement + text.slice(at + assertion.length);
+}
+function canonicalFault(text, mode) {
+  const start = text.indexOf(startMarker);
+  const region = text.slice(start);
+  const changes = {
+    "dropped-write-count": ['expect(writes.length).toBe(localWriteStart);', ""],
+    "wrong-value-argument": ['await expect(page.getByTestId("product-name")).toHaveValue(`${tag} mobile matrix ${locale}`);', 'await expect(page.getByTestId("product-name")).toHaveValue("wrong canonical value");'],
+    "wrong-document-count": ['expect(writes.slice(saveStart).filter((r) => r.path.endsWith("/document"))).toHaveLength(1);', 'expect(writes.slice(saveStart).filter((r) => r.path.endsWith("/document"))).toHaveLength(2);'],
+    "dropped-reload": ['await page.reload();', ""],
+    "wrong-checked-state": ['await expect(tracking).toBeChecked({ checked: state.untracked });', 'await expect(tracking).toBeChecked({ checked: !state.untracked });'],
+    "wrong-ack-source": ['r.url().endsWith("/document")', 'r.url().endsWith("/not-document")'],
+    "dropped-archived-id": ['await expect(savedMatrix.locator(`[data-sku-id="${whiteID}"]`)).toHaveCount(0);', ""],
+  };
+  if (mode === "dropped-persistence") {
+    const after = region.indexOf('control: "saved row readback"');
+    const value = "await expect(field.control).toHaveValue(field.value);";
+    const at = region.indexOf(value, after);
+    assert.ok(after >= 0 && at > after);
+    return text.slice(0, start) + region.slice(0, at) + region.slice(at + value.length);
+  }
+  if (mode === "dropped-code-stability") {
+    const value = 'await expect(remaining.getByTestId("matrix-code-0")).toHaveValue(generatedCode);';
+    const first = region.indexOf(value), second = region.indexOf(value, first + value.length);
+    assert.ok(first >= 0 && second > first);
+    return text.slice(0, start) + region.slice(0, second) + region.slice(second + value.length);
+  }
+  if (mode === "snapshot-after-action") {
+    const snapshot = "const localWriteStart = writes.length;";
+    const action = 'await page.getByTestId("product-name").fill(`${tag} mobile matrix ${locale}`);';
+    assert.ok(region.includes(snapshot) && region.includes(action));
+    return text.slice(0, start) + region.replace(snapshot, "").replace(action, action + "\n" + snapshot);
+  }
+  const [from, to] = changes[mode];
+  assert.ok(region.includes(from), `real ${mode} mutation anchor`);
+  return text.slice(0, start) + region.replace(from, to);
 }
 
 function swapLocator(text) {
@@ -184,261 +227,11 @@ function uncoveredActions(text) {
   visit(source);
   for (const controls of receivers.values())
     if (controls.size > 1) failures.push(`one recording callback operates distinct controls: ${[...controls].join(", ")}`);
-  try { failures.push(...locatorIdentities(source, start, end)); }
+  try { failures.push(...locatorIdentities(source, start, end, { specPath, actions, productEditorCopy, cases, expand, identityKey, assertLocatorIdentity })); }
   catch (error) { failures.push(`identity mismatch: unsupported source binding: ${error.message}`); }
   return failures;
 }
 
-function locatorIdentities(source, start, end) {
-  // Slice only identities, locator expressions and their lexical dependencies from the
-  // real spec. Execute its actual loops/object factories against inert locators: no UI,
-  // assertions, HTTP, storage or provider actions execute in this source gate.
-  const host = ts.createCompilerHost({ noResolve: true });
-  host.getSourceFile = (name) => name === specPath ? source : undefined;
-  const checker = ts.createProgram([specPath], { noResolve: true }, host).getTypeChecker();
-  const needed = new Set(), steps = new Map(), reads = new Map(), outcomes = new Map();
-  const inRegion = (node) => node.getStart(source) >= start && node.getEnd() <= end;
-  const call = (node, name) => ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === name;
-  const unwrap = (node) => ts.isAwaitExpression(node) || ts.isParenthesizedExpression(node) ? unwrap(node.expression) : node;
-  const walk = (node, visit) => { visit(node); ts.forEachChild(node, (child) => walk(child, visit)); };
-  const text = (node) => node.getText(source);
-  function pure(node) {
-    // This VM is only a bounded evaluator, never an authority/security boundary.
-    // Whitelist the current pure locator/data grammar before compiling any slice.
-    const methods = new Set(["getByTestId", "getByRole", "locator", "nth", "map", "entries", "now", "toString", "slice"]);
-    walk(node, (child) => {
-      if (ts.isNewExpression(child) || ts.isAwaitExpression(child) || ts.isSpreadAssignment(child) ||
-          ts.isThrowStatement(child) || ts.isTryStatement(child) || ts.isExpressionStatement(child))
-        throw new Error(`non-pure locator dependency: ${text(child)}`);
-      if (ts.isPropertyAccessExpression(child) && ["constructor", "prototype", "__proto__"].includes(child.name.text))
-        throw new Error("unsafe property in locator dependency");
-      if (ts.isBinaryExpression(child) && child.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
-          child.operatorToken.kind <= ts.SyntaxKind.LastAssignment)
-        throw new Error("mutable locator dependency is not supported");
-      if (ts.isDeleteExpression(child) || ts.isPostfixUnaryExpression(child))
-        throw new Error("mutating locator dependency is not supported");
-      if (ts.isGetAccessor(child) || ts.isSetAccessor(child) || ts.isMethodDeclaration(child))
-        throw new Error("dynamic object behavior is not supported");
-      if (ts.isElementAccessExpression(child))
-        assert.ok(ts.isIdentifier(child.argumentExpression) || ts.isNumericLiteral(child.argumentExpression), "dynamic property key is not supported");
-      if (!ts.isCallExpression(child)) return;
-      if (ts.isPropertyAccessExpression(child.expression)) {
-        assert.ok(methods.has(child.expression.name.text), `unknown locator/data method: ${text(child.expression)}`);
-      } else if (ts.isIdentifier(child.expression) && child.expression.text !== "String") {
-        const declarations = checker.getSymbolAtLocation(child.expression)?.declarations ?? [];
-        assert.ok(declarations.length === 1 && ts.isVariableDeclaration(declarations[0]) &&
-          declarations[0].initializer && ts.isArrowFunction(declarations[0].initializer), `unknown locator factory: ${text(child.expression)}`);
-      } else assert.ok(ts.isIdentifier(child.expression), "dynamic locator call is not supported");
-    });
-  }
-  function need(node) {
-    pure(node);
-    walk(node, (child) => {
-      if (!ts.isIdentifier(child)) return;
-      for (const declaration of checker.getSymbolAtLocation(child)?.declarations ?? []) {
-        let variable = declaration;
-        while (ts.isBindingElement(variable) || ts.isArrayBindingPattern(variable) || ts.isObjectBindingPattern(variable)) variable = variable.parent;
-        if (ts.isVariableDeclaration(variable)) {
-          assert.ok((variable.parent.flags & ts.NodeFlags.Const) || ts.isForStatement(variable.parent.parent), "mutable source locator/data binding is not supported");
-        }
-        if (!ts.isVariableDeclaration(declaration) || !declaration.initializer || needed.has(declaration)) continue;
-        needed.add(declaration);
-        need(declaration.initializer);
-      }
-    });
-  }
-  function parentStep(node) {
-    for (let p = node.parent; p; p = p.parent)
-      if (steps.has(p)) return steps.get(p);
-  }
-  const callbackOwner = (node) => {
-    for (let p = node.parent; p; p = p.parent)
-      if (ts.isFunctionLike(p)) return p;
-  };
-  walk(source, (node) => {
-    if (inRegion(node) && call(node, "matrixStep")) {
-      const callback = node.arguments[1];
-      assert.ok(ts.isArrowFunction(callback) || ts.isFunctionExpression(callback), "matrixStep needs an inspectable callback");
-      steps.set(callback, { node, operations: [] });
-      need(node.arguments[0]);
-    }
-  });
-  walk(source, (node) => {
-    if (!inRegion(node) || !ts.isBinaryExpression(node) ||
-        node.operatorToken.kind < ts.SyntaxKind.FirstAssignment || node.operatorToken.kind > ts.SyntaxKind.LastAssignment) return;
-    const left = text(node.left);
-    assert.ok((left === "matrixNativeDialog" && (ts.isArrowFunction(node.right) || text(node.right) === "undefined")) ||
-      (left === "acceptedConfirmation" && call(node.right, "matrixStep")), "dynamic assignment may change source locator identity");
-  });
-  walk(source, (node) => {
-    if (!inRegion(node) || !ts.isCallExpression(node)) return;
-    const step = parentStep(node), callee = node.expression;
-    if (!step) return;
-    if (ts.isPropertyAccessExpression(callee) && actions.has(callee.name.text)) {
-      step.operations.push(node);
-      need(callee.expression);
-      if (callee.name.text === "press") {
-        assert.equal(node.arguments.length, 1, "press key must be explicit and unambiguous");
-        need(node.arguments[0]);
-      }
-    }
-  });
-  walk(source, (node) => {
-    if (!inRegion(node) || !call(node, "expect")) return;
-    const step = parentStep(node), receiver = node.arguments[0];
-    if (step && receiver && (!step.operations.length || text(receiver) === "field.control")) {
-      // Read-only declarations have no operated locator; bind their actual DOM reads.
-      reads.set(node, receiver);
-      need(receiver);
-    }
-  });
-  // Only a direct awaited DOM/Page matcher in this exact callback is an outcome.
-  // Branch-only assertions, unused closures and nested steps cannot lend proof.
-  const uiMatchers = new Set(["toHaveValue", "toHaveText", "toContainText", "toHaveCount", "toBeChecked",
-    "toBeEnabled", "toBeDisabled", "toBeVisible", "toBeHidden", "toBeFocused", "toBeInViewport",
-    "toHaveURL", "toHaveAttribute", "toHaveAccessibleName"]);
-  walk(source, (node) => {
-    if (!inRegion(node) || !ts.isExpressionStatement(node) || !ts.isAwaitExpression(node.expression) ||
-        !steps.has(callbackOwner(node)) || node.parent !== callbackOwner(node).body) return;
-    const matcher = unwrap(node.expression);
-    if (!ts.isCallExpression(matcher) || !ts.isPropertyAccessExpression(matcher.expression) ||
-        !uiMatchers.has(matcher.expression.name.text)) return;
-    let expectation = matcher.expression.expression;
-    if (ts.isPropertyAccessExpression(expectation) && expectation.name.text === "not") expectation = expectation.expression;
-    if (!call(expectation, "expect") || !expectation.arguments[0]) return;
-    const receiver = expectation.arguments[0], previous = new Set(needed);
-    let resolved = true;
-    try { need(receiver); }
-    catch {
-      // A supplemental assertion may use an awaited SKU ID outside the pure slice.
-      // It cannot certify an action. Keep the known dependencies uncontaminated.
-      resolved = false;
-      for (const dependency of needed) if (!previous.has(dependency)) needed.delete(dependency);
-    }
-    outcomes.set(node, { receiver: resolved ? receiver : undefined,
-      matcher: matcher.expression.name.text,
-      negated: ts.isPropertyAccessExpression(matcher.expression.expression) && matcher.expression.expression.name.text === "not",
-      attribute: matcher.arguments[0] && ts.isStringLiteral(matcher.arguments[0]) ? matcher.arguments[0].text : undefined });
-  });
-  // Conditions and iteration sources are dependencies too. The original lexical scopes,
-  // row indices, locale data and field.label/control pairs survive the slice unchanged.
-  for (const entry of [...needed, ...[...steps.values()].map((entry) => entry.node), ...reads.keys()]) {
-    for (let p = entry.parent; p; p = p.parent) {
-      if (ts.isForOfStatement(p) || ts.isForStatement(p) || ts.isIfStatement(p)) {
-        if (ts.isForOfStatement(p)) need(p.expression);
-        if (ts.isForStatement(p)) { if (p.condition) need(p.condition); if (p.initializer) need(p.initializer); }
-        if (ts.isIfStatement(p)) need(p.expression);
-      }
-    }
-  }
-  const emitted = new Set();
-  function emit(node) {
-    if (ts.isBlock(node) || ts.isSourceFile(node)) return node.statements.map(emit).filter(Boolean).join("\n");
-    if (ts.isVariableStatement(node)) {
-      const declarations = node.declarationList.declarations.filter((d) => needed.has(d));
-      return declarations.length ? `const ${declarations.map(text).join(", ")};` : "";
-    }
-    if (ts.isForOfStatement(node)) {
-      const body = emit(node.statement);
-      return body ? `for (${text(node.initializer)} of ${text(node.expression)}) {${body}}` : "";
-    }
-    if (ts.isForStatement(node)) {
-      const body = emit(node.statement);
-      return body ? `for (${text(node.initializer)}; ${text(node.condition)}; ${text(node.incrementor)}) {${body}}` : "";
-    }
-    if (ts.isIfStatement(node)) {
-      const yes = emit(node.thenStatement), no = node.elseStatement ? emit(node.elseStatement) : "";
-      return yes || no ? `if (${text(node.expression)}) {${yes}} else {${no}}` : "";
-    }
-    if (ts.isReturnStatement(node) && steps.has(callbackOwner(node))) {
-      const receipt = node.expression && unwrap(node.expression);
-      const observed = receipt && ts.isObjectLiteralExpression(receipt) && receipt.properties.some((property) =>
-        (ts.isPropertyAssignment(property) || ts.isShorthandPropertyAssignment(property)) && property.name.getText(source) === "observed");
-      return `${observed ? "__observed();" : ""} return;`;
-    }
-    if (!ts.isExpressionStatement(node)) return "";
-    const expression = unwrap(node.expression);
-    if (call(expression, "matrixStep")) return emitStep(expression);
-    if (ts.isCallExpression(expression) && ts.isPropertyAccessExpression(expression.expression) && actions.has(expression.expression.name.text)) {
-      emitted.add(expression);
-      const method = expression.expression.name.text;
-      return `__action(${text(expression.expression.expression)}, ${JSON.stringify(method)}${method === "press" ? `, ${text(expression.arguments[0])}` : ""});`;
-    }
-    const found = [];
-    walk(expression, (child) => { if (reads.has(child)) found.push(`__read(${text(reads.get(child))});`); });
-    if (outcomes.has(node)) {
-      const outcome = outcomes.get(node);
-      found.push(`__outcome(${outcome.receiver ? text(outcome.receiver) : "undefined"}, ${JSON.stringify(outcome.matcher)}, ${outcome.negated}, ${JSON.stringify(outcome.attribute)});`);
-    }
-    // The real native-dialog handler is assigned rather than invoked in the spec.
-    // Trace its body with an inert Dialog, retaining the actual parameter binding.
-    if (ts.isBinaryExpression(expression) && ts.isArrowFunction(expression.right)) {
-      const body = emit(expression.right.body);
-      if (body) return `{ const ${text(expression.right.parameters[0].name)} = __dialog; ${body} }`;
-    }
-    if (ts.isBinaryExpression(expression) && call(expression.right, "matrixStep")) return emitStep(expression.right);
-    return found.join("\n");
-  }
-  function emitStep(node) {
-    emitted.add(node);
-    return `__step(${text(node.arguments[0])}, locale, () => {${emit(node.arguments[1].body)}});`;
-  }
-  // Do not emit setup outside the bounded mobile region.
-  const region = source.statements.flatMap(function find(node) {
-    if (inRegion(node)) return [node];
-    const children = [];
-    ts.forEachChild(node, (child) => { children.push(...find(child)); });
-    return children;
-  });
-  const code = ts.transpileModule(region.map(emit).join("\n"), {
-    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
-  }).outputText;
-  for (const { node, operations } of steps.values()) {
-    assert.ok(emitted.has(node), "unsupported syntax hides a matrix callback");
-    for (const operation of operations) assert.ok(emitted.has(operation), "unsupported syntax hides an operated locator");
-  }
-  const failures = [], records = [], stack = [];
-  const locator = (segments = []) => Object.freeze({
-    segments,
-    getByTestId: (id) => locator([...segments, ["testId", id]]),
-    getByRole: (role, options) => locator([...segments, ["role", role, options]]),
-    locator: (css) => locator([...segments, ["css", css]]),
-    nth: (i) => locator([...segments, ["nth", i]]),
-  });
-  const record = (receiver, method, key) => {
-    assert.ok(stack.length, "source action must belong to a matrix step");
-    assert.ok(receiver && Array.isArray(receiver.segments), "unknown/dynamic source locator");
-    stack.at(-1)[method ? "actions" : "reads"].push(receiver.segments);
-    if (method) { stack.at(-1).methods.push(method); stack.at(-1).keys.push(key); stack.at(-1).events.push({ type: "action", receiver: receiver.segments, method }); }
-  };
-  try {
-    runInNewContext(code, {
-      page: locator(), productEditorCopy, tag: "MOCK-source-gate",
-      __dialog: locator([["nativeDialog"]]),
-      __action: record, __read: (receiver) => record(receiver),
-      __outcome: (receiver, matcher, negated, attribute) => stack.at(-1).events.push({ type: "outcome", receiver: receiver?.segments, matcher, negated, attribute }),
-      __observed: () => stack.at(-1).events.push({ type: "observed" }),
-      __step: (identity, locale, body) => {
-        const entry = { identity, locale, actions: [], reads: [], methods: [], keys: [], events: [] };
-        stack.push(entry); body(); stack.pop(); records.push(entry);
-      },
-    }, { timeout: 1000 });
-  } catch (error) {
-    failures.push(`identity mismatch: cannot resolve actual source locator: ${error.message}`);
-    return failures;
-  }
-  for (const entry of records) {
-    try { assertLocatorIdentity(entry); }
-    catch (error) { failures.push(`identity mismatch: ${JSON.stringify(entry.identity)} (${entry.locale}): ${error.message}`); }
-  }
-  for (const locale of Object.keys(productEditorCopy)) {
-    const keys = records.filter((record) => record.locale === locale).map(({ identity }) => identityKey(identity));
-    const expected = cases.map((entry) => identityKey({ ...entry, control: expand(entry.control, productEditorCopy[locale]) }));
-    if (JSON.stringify([...keys].sort()) !== JSON.stringify([...expected].sort()))
-      failures.push(`identity mismatch: source declarations do not cover the shared table exactly (${locale}): ${keys.length}/${expected.length}; missing ${expected.filter((key) => !keys.includes(key)).slice(0, 3).join(", ")}`);
-  }
-  return failures;
-}
 
 const identityKey = (entry) => JSON.stringify([entry.page, entry.row ?? "", entry.control, entry.action]);
 function assertLocatorIdentity({ identity, locale, actions: operated, reads, methods, keys, events }) {
@@ -548,6 +341,35 @@ test("an unresolved outcome cannot certify a known operated control", () => {
   const unknown = spec.replace(assertion, 'await expect(unknownOutcomeFactory()).toHaveValue("unknown");');
   assert.ok(uncoveredActions(unknown).some((line) => line.includes("missing outcome assertion")));
 });
+for (const mode of canonicalModes) {
+  test(`canonical expected claim rejects ${mode} with action and receipt retained`, () => {
+    assert.ok(uncoveredActions(canonicalFault(spec, mode)).some((line) => line.includes("canonical expected claim")));
+  });
+}
+test("canonical expected claim rejects reading the first persisted axis row twice", () => {
+  const start = spec.indexOf("const axisCreateStart = writes.length;");
+  const at = spec.indexOf("for (let i = 0; i < 2; i++)", start);
+  assert.ok(start > 0 && at > start, "mutation targets the persisted axis-create loop");
+  const bad = spec.slice(0, at) + spec.slice(at).replace("for (let i = 0; i < 2; i++)", "for (const i of [0, 0])");
+  assert.ok(uncoveredActions(bad).some((line) => line.includes("canonical expected claim")));
+});
+test("canonical expected claim rejects an immutable SKU code with a different value source", () => {
+  const value = "value: state.code,";
+  assert.ok(spec.includes(value));
+  const bad = spec.replace(value, 'value: existing ? `M0000000000-${localeIndex}-${i}` : state.code,');
+  assert.ok(uncoveredActions(bad).some((line) => line.includes("canonical expected claim")));
+});
+test("canonical expected claim rejects checking one archived SKU identity twice", () => {
+  const loop = "for (const oldID of oldAxisIDs)";
+  assert.ok(spec.includes(loop));
+  const bad = spec.replace(loop, "for (const oldID of [oldAxisIDs[0], oldAxisIDs[0]])");
+  assert.ok(uncoveredActions(bad).some((line) => line.includes("canonical expected claim")));
+});
+test("an unused closure cannot donate the canonical counter snapshot binding", () => {
+  const start = spec.indexOf(startMarker), prefix = spec.slice(0, start), region = spec.slice(start);
+  const bad = prefix + region.replace("const localWriteStart = writes.length;", "const localWriteStart = 0; const donor = () => { const localWriteStart = writes.length; return localWriteStart; };");
+  assert.ok(uncoveredActions(bad).some((line) => line.includes("canonical expected claim")));
+});
 
 for (const [name, mutate] of [["literal", swapLocator], ["lexical alias", swapAlias], ["field factory", swapField],
   ["row coordinate", swapRow], ["role label", swapRole], ["CSS ancestor", swapScope], ["unknown dynamic", unknownLocator]]) {
@@ -625,11 +447,14 @@ for (const entry of cases) {
 test("shared table has only complete meaningful unique declarations", () => {
   const identities = new Set();
   for (const entry of cases) {
-    assert.deepEqual(Object.keys(entry).filter((key) => key !== "effects").sort(), ["action", "control", "expected", "page", "row"]);
-    for (const [field, value] of Object.entries(entry).filter(([key]) => key !== "effects")) {
+    assert.deepEqual(Object.keys(entry).filter((key) => !["effects", "requirements"].includes(key)).sort(), ["action", "control", "expected", "page", "row"]);
+    for (const [field, value] of Object.entries(entry).filter(([key]) => !["effects", "requirements"].includes(key))) {
       assert.equal(typeof value, "string");
       if (field !== "row") assert.ok(value.trim().length > 0);
     }
+    const required = entry.requirements;
+    assert.ok(required && required.ui.length + required.facts.length > 0, "each expected claim has nonempty machine requirements");
+    assert.ok(Object.keys(required).every((key) => ["ui", "facts", "bindings", "reloads", "persisted", "children"].includes(key)));
     if (entry.effects) {
       assert.ok(Array.isArray(entry.effects) && entry.effects.length > 0);
       for (const effect of entry.effects) {
