@@ -1,0 +1,134 @@
+✖ native wheel frames cover tall section interiors, not just section headings (5.740166ms)
+✖ a frozen pane fails instead of claiming complete evidence (1.61825ms)
+✖ document-only wheel movement does not prove that the nested pane scrolled (1.291834ms)
+✖ frame bound fails visibly and retains partial shots (1.267041ms)
+✖ initial offset is rewound using native input before shooting (1.248333ms)
+✖ a hidden final slice is not mistaken for a reached end (1.021834ms)
+✔ a short pane is captured once without unnecessary scrolling (1.116417ms)
+✖ a missing required product pane fails, never skips a page (1.215208ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 1
+ℹ fail 7
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 55.624375
+
+✖ failing tests:
+
+test at tests/ui/visual-scroll-capture.test.mjs:37:1
+✖ native wheel frames cover tall section interiors, not just section headings (5.740166ms)
+  AssertionError [ERR_ASSERTION]: one fullPage document screenshot misses inner content
+      at TestContext.<anonymous> (file://./tests/ui/visual-scroll-capture.test.mjs:40:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ui/visual-scroll-capture.test.mjs:50:1
+✖ a frozen pane fails instead of claiming complete evidence (1.61825ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  true !== false
+
+      at TestContext.<anonymous> (file://./tests/ui/visual-scroll-capture.test.mjs:52:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ui/visual-scroll-capture.test.mjs:54:1
+✖ document-only wheel movement does not prove that the nested pane scrolled (1.291834ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  true !== false
+
+      at TestContext.<anonymous> (file://./tests/ui/visual-scroll-capture.test.mjs:56:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ui/visual-scroll-capture.test.mjs:58:1
+✖ frame bound fails visibly and retains partial shots (1.267041ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  true !== false
+
+      at TestContext.<anonymous> (file://./tests/ui/visual-scroll-capture.test.mjs:60:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ui/visual-scroll-capture.test.mjs:63:1
+✖ initial offset is rewound using native input before shooting (1.248333ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  1500 !== 0
+
+      at TestContext.<anonymous> (file://./tests/ui/visual-scroll-capture.test.mjs:66:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1500,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ui/visual-scroll-capture.test.mjs:69:1
+✖ a hidden final slice is not mistaken for a reached end (1.021834ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  true !== false
+
+      at TestContext.<anonymous> (file://./tests/ui/visual-scroll-capture.test.mjs:71:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ui/visual-scroll-capture.test.mjs:78:1
+✖ a missing required product pane fails, never skips a page (1.215208ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  true !== false
+
+      at TestContext.<anonymous> (file://./tests/ui/visual-scroll-capture.test.mjs:80:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

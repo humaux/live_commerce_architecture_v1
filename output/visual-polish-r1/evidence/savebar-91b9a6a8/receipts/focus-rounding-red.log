@@ -1,0 +1,44 @@
+✔ PE13 Cartesian matrix is local, preserves edits and deduplicates values (0.610041ms)
+✔ PE13 bulk quantity skips negative rows without modifying them (0.097625ms)
+✔ PE12 untracked document uses whole currency and per-order cap, never quantity (11.010542ms)
+✔ PE14 missing readback is not guessed or silently cleared by full replacement (0.063375ms)
+✔ bulk status accepts explicit per-item results, never empty or duplicated confirmations (0.19125ms)
+✔ matrix refuses over 100 SKUs before expansion (0.079291ms)
+✔ PR #1 4212540344: per-row matrix labels reappear where the matrix header is not visible (≤900px), desktop untouched (0.779083ms)
+✔ PR #1 4212540352: pre-publish missing-items list collapses behind a real toggle at ≤900px instead of being removed (0.999542ms)
+✔ mobile product sections reuse the existing hinted TabStrip (0.170083ms)
+✔ mobile save status has its own row instead of a fixed narrow text cap (0.175709ms)
+✔ empty mobile save status reserves the same line as the first dirty edit (0.130375ms)
+✔ readiness cannot promise field focus while the actual destination is locked (51.395292ms)
+✖ pane focus rounds fractional reveal upward so a field stays fully inside the clip (22.496417ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 12
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 477.917125
+
+✖ failing tests:
+
+test at tests/admin/product-document.test.ts:219:1
+✖ pane focus rounds fractional reveal upward so a field stays fully inside the clip (22.496417ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+    assert.ok(control.getBoundingClientRect().bottom <= root.getBoundingClientRect().bottom)
+
+      at TestContext.<anonymous> (file://./tests/admin/product-document.test.ts:244:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

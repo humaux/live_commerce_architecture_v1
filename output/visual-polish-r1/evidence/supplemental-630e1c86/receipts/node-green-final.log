@@ -1,0 +1,49 @@
+✔ G-UI8 storefront pages and the sweep's STOREFRONT_ROUTES are the same set (3.658209ms)
+✔ parseShard: i/N, empty means unsharded, anything malformed throws (0.31025ms)
+✔ assignShards: deterministic, every key owned once, near-balanced (LPT bound) (2.568ms)
+✔ planClick: for every N the shards partition the whole universe (every registry route x variant, storefront walk, journey) (3.670083ms)
+✔ planClick at N=10 keeps every shard within ~1.3x of the mean planned cost (0.250167ms)
+✔ aggregate click: honest shards pass for several N (4.666834ms)
+✔ aggregate click: a missing shard, a dropped page row, a lost journey, a failing row, a stale known defect and a missing platform marker are each a failure (15.467541ms)
+✔ aggregate click: a route added to the registry after the shards ran cannot pass (the registry is re-read) (1.833083ms)
+✔ aggregate visual: honest shards pass; a missing shard, a missing shot, a blocking verdict and a registry route outside the universe each fail (13.660917ms)
+✔ artifact discovery finds nested run evidence and retains platform marker refusal (5.49575ms)
+✔ thresholds are the named constants of the brief (1.295666ms)
+✔ R1: document wider than the viewport, and the outermost element past the edge (0.809708ms)
+✔ R2: label tops, control tops and control heights of one visual row (0.971334ms)
+✔ R2: what is one row and what is not (0.147833ms)
+✔ R2: a button beside a field has to line up with its control (0.144417ms)
+✔ R3: a row made tall by stacked controls, a control wider than its cell (0.368916ms)
+✔ R3: a matrix whose EVERY row is doubled by a stacked stock cell (the median cannot see it) (0.667291ms)
+✔ R4: small text, helper text apart, icons and duplicates excepted (0.135125ms)
+✔ R5: tap targets on the 390 viewport only (0.412625ms)
+✔ R6: interactive elements and text boxes that overlap (0.259ms)
+✔ R7: text clipped inside a control or label (either side), and select values that do not fit (0.672458ms)
+✔ R8: the same visible label twice in one list (0.366834ms)
+✔ evaluate() tags severity, selectRecords() keeps distinct groups first and counts every instance (1.003333ms)
+✔ R9: text and controls flush to the screen edge at 390 (0.689791ms)
+✔ R6/R9 judge the visible (ancestor-clipped) rectangle, not the raw one (integrator ruling 2026-10-05) (0.206542ms)
+✔ R10: a fixed or sticky bar covering main content after scrolling (0.319833ms)
+✔ R11: controls narrower than a usable width (0.208041ms)
+✔ native wheel frames cover tall section interiors, not just section headings (21.127416ms)
+✔ a frozen pane fails instead of claiming complete evidence (3.657459ms)
+✔ document-only wheel movement does not prove that the nested pane scrolled (4.315416ms)
+✔ frame bound fails visibly and retains partial shots (5.557375ms)
+✔ initial offset is rewound using native input before shooting (8.066917ms)
+✔ a hidden final slice is not mistaken for a reached end (19.370792ms)
+✔ a short pane is captured once without unnecessary scrolling (8.786125ms)
+✔ a missing required product pane fails, never skips a page (2.79275ms)
+✔ 1440 supplement covers only affected desktop admin routes without replacing the primary matrix (0.825584ms)
+✔ supplemental 1440 blockers are folded into the real owning verdict without inflating primary captures (1.372667ms)
+✔ supplemental capture failure cannot hide behind an existing successful primary screenshot (0.572917ms)
+✔ G-UI9 fails closed when the required 1440 newContext rejects despite a successful primary shot (11.443042ms)
+ℹ Injected G-UI9 exit=1: 1 page states, required inner-scroll coverage or supplemental captures were not reached; supplemental 1440x900: context-error: injected supplemental newContext rejection; supplemental 1440x900: capture or required state not reached
+✔ supplemental setup/absent capture failures close allocated contexts and still fail G-UI9 (3.542959ms)
+ℹ tests 40
+ℹ suites 0
+ℹ pass 40
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 201.295291

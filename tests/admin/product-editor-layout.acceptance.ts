@@ -2,6 +2,7 @@
 // Depends on: Playwright Page/expect and the production ProductDocumentForm markup; caller-owned browser/PG fixture.
 // Used by: product-editor.acceptance.ts under --browser-product-editor; reads geometry and performs real nav clicks.
 import { expect, type Page } from "@playwright/test";
+import { presentationCopy } from "../../apps/admin/lib/presentation-copy";
 
 // Runtime acceptance, not a style/threshold test. evaluate only reads geometry
 // and focus; section opening and scrolling are driven by actual nav clicks.
@@ -51,6 +52,28 @@ export async function assertProductEditorReservedLayout(
     }
   };
   await assertReserved();
+  if (page.viewportSize()!.width <= 390) {
+    const locale = new URL(page.url()).pathname.split("/")[1] as keyof typeof presentationCopy;
+    const tabs = form.getByTestId("product-section-tabs");
+    await expect(tabs).toBeVisible();
+    const hint = tabs.locator("..").getByText(`${presentationCopy[locale].previous} · ${presentationCopy[locale].next}`, { exact: true });
+    await expect(hint).toBeVisible();
+    // READ/MEASURE: overflow has a visible hint and the hint is outside the horizontal clip.
+    expect(await hint.evaluate(el => {
+      const r = el.getBoundingClientRect();
+      const parent = el.parentElement!.getBoundingClientRect();
+      return r.left >= parent.left && r.right <= parent.right && r.width > 0;
+    })).toBe(true);
+    const status = footer.locator(":scope > span");
+    if ((await status.innerText()).trim()) {
+      // READ/MEASURE: a localized status row cannot share the actions' baseline or a 90px cap.
+      expect(await status.evaluate(el => {
+        const label = el.getBoundingClientRect();
+        const actions = el.nextElementSibling!.getBoundingClientRect();
+        return label.bottom <= actions.top && label.width >= actions.width;
+      })).toBe(true);
+    }
+  }
   // Diagnostic companion, NOT a replacement for frozen R6/R9. Read the actual
   // clip and native hit-test result; retain any frozen raw-rectangle failure.
   const clippedBounds = await form.evaluate((element) => {
@@ -143,5 +166,11 @@ export async function assertProductEditorReservedLayout(
     await expect(media).toHaveAttribute("aria-current", "location");
     await expect.poll(() => pane.locator("#media").evaluate((element) => element.contains(document.activeElement))).toBe(true);
   }
+  await pane.hover();
+  const endDistance = await pane.evaluate(el => el.scrollHeight + el.clientHeight); // READ/MEASURE
+  await page.mouse.wheel(0, endDistance);
+  await expect.poll(() => pane.evaluate(el => el.scrollHeight - el.clientHeight - el.scrollTop)).toBeLessThanOrEqual(2);
+  await expect(pane.locator("#seo").locator("input,textarea").last()).toBeInViewport();
+  if (capture) await capture("scroll-end");
   expect(await readiness.locator("[data-ready]").evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-ready")))).toEqual(statusBefore);
 }

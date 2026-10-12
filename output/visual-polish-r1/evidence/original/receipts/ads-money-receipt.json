@@ -1,0 +1,42 @@
+{
+  "task_id": "VISUAL-POLISH-R1/item-1",
+  "subcanvas": "45d9-sub-ads",
+  "role": "ui_worker",
+  "base_commit": "64ba8319",
+  "worktree": ".",
+  "changed_paths": [
+    "apps/admin/lib/ads-model.ts",
+    "tests/admin/ads-model.test.ts",
+    "tests/admin/ads.spec.ts"
+  ],
+  "summary": "AdsResults calls formatMinor; formatMinor now delegates shared money so zh-TW TWD retains NT$. Existing fallback and frozen display-only minor units retained. Three-locale literal Node tests; existing real-click ads report assertions extended at1440/390.",
+  "commands": [
+    {
+      "command": "node --test --experimental-strip-types --test-name-pattern 'ads report money:' tests/admin/ads-model.test.ts",
+      "phase": "red",
+      "exit_code": 1,
+      "pass": 0,
+      "fail": 2,
+      "log": "./output/visual-polish-r1/ads-money-red.log"
+    },
+    {
+      "command": "node --test --experimental-strip-types tests/admin/ads-model.test.ts",
+      "phase": "green",
+      "exit_code": 0,
+      "pass": 24,
+      "fail": 0,
+      "skip": 0,
+      "log": "./output/visual-polish-r1/ads-money-green.log"
+    }
+  ],
+  "source_sha256": {
+    "apps/admin/lib/ads-model.ts": "bb4af956087471c5ffa0a14c5bf7429a3d198c6b2d9a634dfe793fb2401afe81",
+    "tests/admin/ads-model.test.ts": "a89483826fba28e2e86fcc1196475cefe1851cec367e66cfdc7bb69def18f309",
+    "tests/admin/ads.spec.ts": "90e4cf1752e5c5719c90a0be06ccb0a99728e7e0eeecbca584e90c1d1e3e28d9"
+  },
+  "NOT_RUN": [
+    "Browser --browser-meta-ads normal and screenshots; main agent/integrator owns runtime gates",
+    "Full test-node.sh, tsc, check-gates.sh; root owns shared final gate run"
+  ],
+  "unresolved": []
+}
