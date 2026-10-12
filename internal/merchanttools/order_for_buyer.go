@@ -108,22 +108,27 @@ func NewForBuyer(manual *ManualOrders, planner PayLinkPlanner) (*ForBuyer, error
 
 // validateTarget normalizes the `for` object: ids valid and distinct, at most five, sorted (the lock order of the reservation rows).
 func validateTarget(t ForBuyerTarget) (ForBuyerTarget, error) {
+	t = normalizeTarget(t)
 	bad := &Error{Status: http.StatusUnprocessableEntity, Code: "invalid_request"}
 	if len(t.BundleIDs) > maxForBuyerBundle || (t.ConversationID != nil && !command.ValidID(*t.ConversationID)) {
 		return t, bad
 	}
+	for i, id := range t.BundleIDs {
+		if !command.ValidID(id) || (i > 0 && t.BundleIDs[i-1] == id) {
+			return t, bad
+		}
+	}
+	return t, nil
+}
+
+func normalizeTarget(t ForBuyerTarget) ForBuyerTarget {
 	ids := slices.Clone(t.BundleIDs)
 	if ids == nil {
 		ids = []string{}
 	}
 	sort.Strings(ids)
-	for i, id := range ids {
-		if !command.ValidID(id) || (i > 0 && ids[i-1] == id) {
-			return t, bad
-		}
-	}
 	t.BundleIDs = ids
-	return t, nil
+	return t
 }
 
 // forBuyerRequest is the single normalized full A16 request used by placement, binding and recovery receipts.
@@ -133,13 +138,9 @@ type forBuyerRequest struct {
 	Send   bool           `json:"send_payment_link"`
 }
 
-func normalizeForBuyer(in ForBuyerInput) (ManualInput, ForBuyerTarget, forBuyerRequest, error) {
-	manual, err := ValidateManual(ManualInput{Items: in.Items, Customer: in.Customer, Delivery: in.Delivery, PaymentMode: in.PaymentMode, Locale: in.Locale})
-	if err != nil {
-		return manual, ForBuyerTarget{}, forBuyerRequest{}, err
-	}
-	target, err := validateTarget(in.For)
-	return manual, target, forBuyerRequest{Manual: manual, For: target, Send: in.SendPaymentLink}, err
+func canonicalForBuyer(in ForBuyerInput) forBuyerRequest {
+	manual := normalizeManual(ManualInput{Items: in.Items, Customer: in.Customer, Delivery: in.Delivery, PaymentMode: in.PaymentMode, Locale: in.Locale})
+	return forBuyerRequest{Manual: manual, For: normalizeTarget(in.For), Send: in.SendPaymentLink}
 }
 
 // pickOrigins derives the cart-line origins from the granted bundles' claim lines: per requested SKU the first line (bundle, keyword order) whose
@@ -175,14 +176,11 @@ func (f *ForBuyer) Place(ctx context.Context, token, storeID, key string, in For
 		return ForBuyerResult{}, false, ErrManualDisabled
 	}
 	m := f.manual
-	manualIn, target, request, err := normalizeForBuyer(in)
-	if err != nil {
-		return ForBuyerResult{}, false, err
-	}
+	request := canonicalForBuyer(in)
 	if !attemptHeld(ctx, m, storeID, key) {
 		var out ForBuyerResult
 		var replayed bool
-		err = m.withAttempt(ctx, token, storeID, key, forBuyerOperation, request, false, func(c context.Context) error {
+		err := m.withAttempt(ctx, token, storeID, key, forBuyerOperation, request, false, func(c context.Context) error {
 			var inner error
 			out, replayed, inner = f.Place(c, token, storeID, key, in)
 			return inner
@@ -191,6 +189,14 @@ func (f *ForBuyer) Place(ctx context.Context, token, storeID, key string, in For
 			return ForBuyerResult{}, false, mapForBuyerError(err)
 		}
 		return out, replayed, nil
+	}
+	manualIn, err := ValidateManual(request.Manual)
+	if err != nil {
+		return ForBuyerResult{}, false, err
+	}
+	target, err := validateTarget(request.For)
+	if err != nil {
+		return ForBuyerResult{}, false, err
 	}
 
 	var receipt forBuyerReceipt

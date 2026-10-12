@@ -218,9 +218,31 @@ func stepKey(key, step string) string {
 	return "mt-" + hex.EncodeToString(sum[:16])
 }
 
-// ValidateManual normalizes and validates a body before any database work. Delivery detail rules (CVS vs home against the option's kind,
+// normalizeManual owns copies of delivery pointers, preserving canonical receipt hashes without mutating caller input.
+// It deliberately accepts invalid business values: recovery must bind and close the exact body that placement refused with 422.
+func normalizeManual(in ManualInput) ManualInput {
+	in.Items = slices.Clone(in.Items)
+	in.Customer.Name, in.Customer.Email = strings.TrimSpace(in.Customer.Name), strings.TrimSpace(in.Customer.Email)
+	in.Customer.Phone = strings.TrimSpace(in.Customer.Phone)
+	if in.Delivery.CVS != nil {
+		c := *in.Delivery.CVS
+		c.StoreCode, c.StoreName, c.StoreAddress = strings.TrimSpace(c.StoreCode), strings.TrimSpace(c.StoreName), strings.TrimSpace(c.StoreAddress)
+		in.Delivery.CVS = &c
+	}
+	if in.Delivery.HomeAddress != nil {
+		h := *in.Delivery.HomeAddress
+		for _, f := range []*string{&h.Region, &h.City, &h.PostalCode, &h.Line1, &h.Line2} {
+			*f = strings.TrimSpace(*f)
+		}
+		in.Delivery.HomeAddress = &h
+	}
+	return in
+}
+
+// ValidateManual normalizes and validates placement before pipeline writes. Delivery detail rules (CVS vs home against the option's kind,
 // payment mode against the option) need the options and are checked in Place.
 func ValidateManual(in ManualInput) (ManualInput, error) {
+	in = normalizeManual(in)
 	bad := &Error{Status: http.StatusUnprocessableEntity, Code: "invalid_request"}
 	if len(in.Items) < 1 || len(in.Items) > maxManualLines {
 		return in, bad
@@ -232,8 +254,6 @@ func ValidateManual(in ManualInput) (ManualInput, error) {
 		}
 		seen[it.SKUID] = true
 	}
-	in.Customer.Name, in.Customer.Email = strings.TrimSpace(in.Customer.Name), strings.TrimSpace(in.Customer.Email)
-	in.Customer.Phone = strings.TrimSpace(in.Customer.Phone)
 	if !plain(in.Customer.Name, 1, 120) || !phoneRx.MatchString(in.Customer.Phone) || digits(in.Customer.Phone) < 6 || digits(in.Customer.Phone) > 20 ||
 		(in.Customer.Email != "" && (len(in.Customer.Email) > 254 || !emailRx.MatchString(in.Customer.Email))) {
 		return in, bad
@@ -245,15 +265,11 @@ func ValidateManual(in ManualInput) (ManualInput, error) {
 		return in, bad
 	}
 	if c := in.Delivery.CVS; c != nil {
-		c.StoreCode, c.StoreName, c.StoreAddress = strings.TrimSpace(c.StoreCode), strings.TrimSpace(c.StoreName), strings.TrimSpace(c.StoreAddress)
 		if !plain(c.StoreCode, 1, 32) || !plain(c.StoreName, 1, 40) || !plain(c.StoreAddress, 5, 120) {
 			return in, bad
 		}
 	}
 	if h := in.Delivery.HomeAddress; h != nil {
-		for _, f := range []*string{&h.Region, &h.City, &h.PostalCode, &h.Line1, &h.Line2} {
-			*f = strings.TrimSpace(*f)
-		}
 		if !plain(h.City, 1, 100) || !plain(h.Line1, 1, 200) || (h.Region != "" && !plain(h.Region, 1, 100)) ||
 			(h.PostalCode != "" && !plain(h.PostalCode, 1, 20)) || (h.Line2 != "" && !plain(h.Line2, 1, 200)) {
 			return in, bad
@@ -351,14 +367,11 @@ func (m *ManualOrders) Place(ctx context.Context, token, storeID, key string, in
 	if m == nil {
 		return ManualResult{}, false, ErrManualDisabled
 	}
-	in, err := ValidateManual(in)
-	if err != nil {
-		return ManualResult{}, false, err
-	}
+	in = normalizeManual(in)
 	if !attemptHeld(ctx, m, storeID, key) {
 		var out ManualResult
 		var replayed bool
-		err = m.withAttempt(ctx, token, storeID, key, manualOperation, in, false, func(c context.Context) error {
+		err := m.withAttempt(ctx, token, storeID, key, manualOperation, in, false, func(c context.Context) error {
 			var inner error
 			out, replayed, inner = m.Place(c, token, storeID, key, in)
 			return inner
@@ -367,6 +380,10 @@ func (m *ManualOrders) Place(ctx context.Context, token, storeID, key string, in
 			return ManualResult{}, false, mapForBuyerError(err)
 		}
 		return out, replayed, nil
+	}
+	in, err := ValidateManual(in)
+	if err != nil {
+		return ManualResult{}, false, err
 	}
 	var receipt manualReceipt
 	var origin, state string

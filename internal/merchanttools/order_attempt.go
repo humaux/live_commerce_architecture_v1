@@ -132,13 +132,10 @@ func (f *ForBuyer) Recover(ctx context.Context, token, store, key string, in For
 	if f == nil || f.manual == nil {
 		return OrderRecovery{}, ErrManualDisabled
 	}
-	_, _, request, err := normalizeForBuyer(in)
-	if err != nil {
-		return OrderRecovery{}, err
-	}
+	request := canonicalForBuyer(in)
 	m := f.manual
 	var out OrderRecovery
-	err = m.withAttempt(ctx, token, store, key, forBuyerOperation, request, true, func(callCtx context.Context) error {
+	err := m.withAttempt(ctx, token, store, key, forBuyerOperation, request, true, func(callCtx context.Context) error {
 		return platform.WithScope(callCtx, m.pool, token, store, manualPermission, func(tx pgx.Tx, scope platform.Scope) error {
 			if err := requireCatalog(callCtx, tx, scope, token); err != nil {
 				return err

@@ -496,7 +496,7 @@ replay otherwise returns the same order and operation, with `buyer_link` null (a
 
 ### 5.1.1 A16R authoritative recovery (LC-U3, frozen 2026-10-12)
 
-`POST …/orders/for-buyer/recover` takes the **same** original A16 JSON body and
+`POST /v1/admin/stores/{store_id}/orders/for-buyer/recover` takes the **same** original A16 JSON body and
 `Idempotency-Key`. Authority is `inventory:reserve` + `catalog:read` + `orders:read`
 under the authenticated store scope. It creates no order, stock hold, buyer link or DM.
 It answers 200 with exactly `{state:"created", order_id:uuid}` when the durable
@@ -506,19 +506,37 @@ No bearer links or customer data leave this endpoint. A pre-amendment partial ch
 order without either the full original A16 receipt or the new canonical attempt binding
 remains UNKNOWN; a key alone cannot establish its original target/send/customer body.
 Recovery must be enabled only after every manual/for-buyer writer uses the shared attempt
-lock (drain requests from older binaries during rollout).
+lock and guarded checkout Begin (drain requests from older binaries during rollout).
 
 Manual and for-buyer entry points serialize the entire pipeline and recovery under
 one server-scoped store/key advisory lock, held across the existing step transactions.
 An append-only `ops.command_results` request binding fixes the normalized request (including
-A16 target and send flag) before dynamic delivery/payment checks. The separate append-only
+A16 target and send flag) before static or dynamic placement validation. Canonicalization
+copies delivery data without mutating caller input; invalid recipient/payment business
+values can still be recovered with the same frozen body. Recovery keeps structural JSON,
+body/key conflict and scope checks, and does not repeat placement's business validation.
+The separate append-only
 recovery receipt never overwrites a successful merchant/checkout receipt. Resolution probes
 checkout with the server-derived buyer capability and begin step key; absence of an upper
 merchant receipt or a bounded order list is never absence authority. Missing/invalid scope,
 expired capability, timeout or database error retains UNKNOWN, without sealing.
 
+The outer attempt connection alone is not absence authority. Recovery also holds the exact
+tenant/store/private-owner/begin-step checkout advisory lock on the merchant transaction
+that commits **both** the checkout-closure and upper recovery receipts. The authenticated
+checkout reader verifies the issued buyer scope and durable receipt/order without acquiring
+that already-held lock. Permission/session/store authority is checked again after the lock
+wait, after lookup and before committing either result. Losing this transaction rolls back
+the seal. Original manual/for-buyer Begin holds the same checkout lock through money commit
+and checks the durable closure via one scoped merchant connection before any money writes;
+therefore losing the original outer lock cannot let it write after a committed seal.
+The derived original buyer capability stays server-private; an absent attempt has no buyer
+link exposing its owner. The merchant pool requires at least two connections (outer attempt
+and inner scoped work); the constructor rejects smaller pools and admits at most half the
+pool as outer attempts.
+
 `not_created` permanently closes the original attempt. Late or concurrent original
-requests return `409 attempt_closed` before any pipeline writes. Different normalized
+requests return `409 attempt_closed` before checkout money writes. Different normalized
 request/kind on the same key returns `409 idempotency_conflict`. Recovery lost replies replay
 with the same body/key and return the committed result. `created` preserves the original
 order and never authorizes a replacement key; the UI opens that order. A business 422 by
