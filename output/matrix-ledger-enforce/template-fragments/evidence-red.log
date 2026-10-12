@@ -1,0 +1,23 @@
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption/playwright-log
+    catalog_matrix_ledger_test.go:351: playwright-log corruption must reject canonical evidence
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption/cc12-log
+    catalog_matrix_ledger_test.go:351: cc12-log corruption must reject canonical evidence
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption/ledger
+    catalog_matrix_ledger_test.go:351: ledger corruption must reject canonical evidence
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption/manifest
+    catalog_matrix_ledger_test.go:351: manifest corruption must reject canonical evidence
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption/source
+    catalog_matrix_ledger_test.go:351: source corruption must reject canonical evidence
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption/gate-source
+    catalog_matrix_ledger_test.go:351: gate-source corruption must reject canonical evidence
+--- FAIL: TestProductEditorMatrixLedgerEvidenceCorruption (0.07s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceCorruption/playwright-log (0.02s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceCorruption/cc12-log (0.01s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceCorruption/ledger (0.01s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceCorruption/manifest (0.01s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceCorruption/source (0.01s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceCorruption/gate-source (0.01s)
+FAIL
+FAIL	livecommerce/tests/foundation	0.681s
+FAIL

@@ -1,64 +1,53 @@
-# matrix-ledger-enforce delivery — PR28 canonical outcome addendum
+# matrix-ledger-enforce delivery — template fragments and evidence integrity
 
-- Branch: `unit/matrix-ledger-enforce`; pulled base `5e4e96b9bc5ce1e33185442d3173555ccec3dc79`.
-- Tested source: **`05c2af77a6f90cef0fc797520b2f6361d1635527`**, with 18 Git/current hashes in [SOURCE.json](round3-canonical/SOURCE.json). The final evidence commit changes only unit documentation and receipts.
-- Preserved commits: `bcc24338` receiver/effect identity; `ec94cb05` native-dialog precondition; `7f02bbea` preceding evidence. Author: Codex-4 `/root`, GPT-6 family; exact parent runtime variant/effort is not exposed. Read-only audit: `gpt-6.1-sol`, high, task `a480d297-sub-resume-audit`.
-- Owned scope: matrix recorder, static Node gate/helpers, shared test declaration and unit evidence. Foreign `output/ext-agents/` and unrelated untracked files are excluded from staging.
+- Branch: `unit/matrix-ledger-enforce`; pulled `da911f4251434460b62cca81eb52c5652072a87f` (exit 0).
+- Tested source: **`e15311a729fe085a0c19323ad3332cbef295991c`**, with 18 Git/checkout hashes in [SOURCE.json](template-fragments/SOURCE.json). The final evidence commit changes only documentation and receipts.
+- Author: Codex-4 `/root`, GPT-6 family; exact parent runtime variant/effort is not exposed. Read-only peer: `gpt-6.1-sol`, high, subcanvas `eaf4cbfd-sub-template`.
+- Owned scope: the template signature helper, its real-source regression and the existing Go evidence gate plus unit evidence. Foreign `output/ext-agents/` is excluded. No application, API, SQL or public contract change; browser fixtures, waits and assertions are unchanged.
 
 ## Result and review replies
 
-The gate now checks each reached outcome against machine requirements declared alongside the case's canonical `expected` claim: exact locator, matcher, operand, polarity, action/reload position, write count and ACK source. Persistence must check the declared rows after reload, and immutable SKU codes and archived IDs must come from their actual producers. Repeating row/ID zero cannot certify every row. Supplemental or unused callbacks cannot donate proof.
+TemplateHead, TemplateMiddle and TemplateTail now retain their literal text as well as their kind. The exact savedBlack fallback-selector mutation can no longer erase the Black-SKU identity constraint. Existing plain-string/no-substitution equivalence and wrapper normalization remain.
 
-The original operated-locator/effect identity check and the requirement for a post-action assertion inside the same step before its observed return remain. The source tracer uses a deterministic clock only in its inert evaluation; the real browser's clock, fixtures, waits and assertions are unchanged. Source extraction and claim validation have separate focused helpers. Runtime ledger rows keep the original fields without copying static proof metadata.
-
-All **77 original page/row/control/action/expected declarations are unchanged**. New optional requirements/effects are test metadata; there are no application, HTTP, SQL or public contract changes. Native acceptance retains the absent-before-dialog to server-issued replacement UUID transition, successful ACK and old-ID exclusion from `ec94cb05`.
+The Go gate follows the canonical directory DELIVERY selects. It verifies every file in that browser directory against `ARTIFACTS.json`, including both Playwright logs, the ledger, manifest and last-run receipts. All five native copies must also match `copied_native_bytes`. The manifest is hashed externally, avoiding a self-hash cycle. SOURCE, index and manifest must bind the same tested SHA and identical source maps. Every source digest is checked against safe, actual checkout bytes; all 18 tested producers, including the evidence gate itself, are mandatory. Removing hash entries cannot exempt required files. Existing exact identity, PASS, expected-field and duplicate checks remain.
 
 | Thread | Fix SHA | One-line reply for integrator |
 | --- | --- | --- |
-| `4246050140` | `bcc24338` + `05c2af77` | Every operated action requires a post-action outcome before its observed return, bound to the operated locator or declared effect; removed and unrelated outcomes are RED. |
-| `4246713403` | `05c2af77` | Each outcome now validates its canonical expected claim, including exact values, write counts and persisted rows; dropped count/persistence assertions and unrelated visibility checks are RED. |
+| `4249311520` | `e15311a7` | Template signatures preserve Head/Middle/Tail text; the exact savedBlack fallback-selector mutation is RED and the original source is GREEN. |
+| `4249391831` | `e15311a7` | The manifest's full source map is verified against actual checkout bytes, including this gate; changed spec or gate source is RED, with fresh browser evidence on the final source. |
+| `4249391853` | `e15311a7` | Every canonical artifact is SHA-256 checked against the external index and native-copy record; tampered logs or a manifest edit retaining its commit are RED. |
 
 ## Red → green
 
-[red-tests.json](round3-canonical/red-tests.json) binds the producer gate, helper, declaration and spec hashes plus exact argv/env, mutation copies, raw logs and exits. Before implementation, five expected-claim regressions failed (exit 1); resumed row/code regressions failed twice, and repeated archived-ID regression failed once (exit 1). Current full Node includes **51 focused PASS / 0 FAIL / 0 SKIP**.
+[red-tests.json](template-fragments/red-tests.json) binds exact commands, source/snapshot hashes, logs and exit codes. The fallback regression first failed on the old helper (exit 1). Final-source fallback injection exits 1; restoring the original source exits 0. Focused Node is **52 PASS / 0 FAIL / 0 SKIP**.
 
-Final-source calibrations use `node --test --test-name-pattern='every actual mobile' tests/ci/product-editor-matrix-ledger.test.mjs` with the recorded `LC_MATRIX_ACTION_MUTATION`:
+The Go validator was extracted without changing its original checks, then six isolated checkout corruptions were added. All six initially failed the required rejection (exit 1). After the fix all six pass (exit 0), rejecting arbitrary PE and CC12 logs, edited ledger bytes, a manifest edit retaining the source commit, changed acceptance source and changed gate source. The test never mutates the delivered artifacts in place. [RED](template-fragments/evidence-red.log), [GREEN](template-fragments/evidence-green.log); forensic snapshots end in `.source.txt` and are not runnable test filenames.
 
-| Mutation / restoration | Exit | Proof |
-| --- | --- | --- |
-| `dropped-write-count` | 1 | Canonical local-write proof missing |
-| `dropped-persistence` | 1 | Required post-reload value assertion missing |
-| `unrelated-outcome` | 1 | Unrelated visible control cannot certify the action |
-| `nested-step` | 1 | Nested outcome cannot certify its parent |
-| `native-missing-outcome` | 1 | Only native outcome failures in three locales; no unrelated DOM-read failure |
-| Restore original source, no mutation | 0 | Actual-source gate green |
+[Scoped audit](template-fragments/AUDIT.md): peer actual-source JS probes are E3, Go control-flow review is E1. No new K3, Claude or CI approval is claimed.
 
-Raw snapshots end in `.source.txt`; none are runnable test filenames. [Audit](round3-canonical/AUDIT.md) records source-bound peer checks: baseline green, ten negative probes RED and unchanged source hashes. This is scoped source/focused evidence, **not new K3/Claude or CI approval**.
+## Actual gates on frozen e15311a7
 
-## Actual gates on frozen 05c2af77
-
-[Local receipts](round3-canonical/local-gates.json) and [browser receipt](round3-canonical/browser-run.json) record bounded runner PIDs/timeouts, UTC timestamps, argv, exits and log hashes.
+[Local receipts](template-fragments/local-gates.json), [browser receipt](template-fragments/browser-run.json), [Go/vet receipts](template-fragments/final-gates.json) and [check-gates receipt](template-fragments/check-gates.json) record bounded runner PIDs, commands, timestamps, exits and log hashes. All 18 source hashes remain unchanged.
 
 | Command | Exit | Evidence |
 | --- | --- | --- |
-| `bash scripts/dev/test-node.sh` | 0 | [test-node.log](round3-canonical/test-node.log), 70.729 s; includes 51 matrix tests |
-| `pnpm typecheck:admin` | 0 | [typecheck.log](round3-canonical/typecheck.log), 1.749 s |
-| `go test ./tests/foundation -run '^TestProductEditorMatrixLedger' -count=1 -v` | 0 | [go-ledger.log](round3-canonical/go-ledger.log), 25.637 s; DB-free ledger corruption controls |
-| `bash scripts/dev/check-gates.sh` | 0 | [check-gates.log](round3-canonical/check-gates.log), 258.145 s; [staged artifact recheck](round3-canonical/check-gates-staged.json) also exit 0; 82 modes documented, every tracked test run |
-| `bash scripts/dev/test-local.sh --browser-product-editor` | 0 | [browser-product-editor.log](round3-canonical/browser-product-editor.log), 181.158 s; original complete mode |
+| `bash scripts/dev/test-node.sh` | 0 | [test-node.log](template-fragments/test-node.log), 133.958 s; includes 52 matrix tests |
+| `pnpm typecheck:admin` | 0 | [typecheck.log](template-fragments/typecheck.log), 2.098 s |
+| `go test ./tests/foundation -run '^TestProductEditorMatrixLedger' -count=1 -v` | 0 | [go-ledger.log](template-fragments/go-ledger.log), 5.339 s; current canonical evidence and six corruption controls |
+| `go vet -tags browser ./tests/foundation` | 0 | [go-vet.log](template-fragments/go-vet.log), 1.992 s; empty success output |
+| `bash scripts/dev/check-gates.sh` | 0 | [check-gates.log](template-fragments/check-gates.log), 216.651 s; all 82 modes documented, all tracked tests run, contract drift errors=0 |
+| `bash scripts/dev/test-local.sh --browser-product-editor` | 0 | [browser-product-editor.log](template-fragments/browser-product-editor.log), 120.285 s; independent original complete run |
 
-The browser run used `output/playwright/pr28-canonical-20261012T142112Z` under the worktree, `LC_BROWSER_ENGINE=chromium` and bounded shared-PG lock waiting. No grep, calibration, retry or relaxed wait. **12 PE/review cases and two mandatory CC12 cases passed, zero skips.** Real Go/isolated PG validates **231 unique required PASS identities** at 390px: 77 each in zh-TW, zh-CN and en. The raw ledger contains 286 rows, including non-matrix coverage.
+Browser evidence uses `output/playwright/pr28-integrity-repeat-20261012T151736Z`, Chromium and the bounded shared-PG lock. No grep, calibration, added test retry or relaxed wait. **12 PE/review cases + 2 mandatory CC12 cases passed, zero skips.** Go/isolated PG verifies **231 required unique PASS identities**, 77 each in zh-TW, zh-CN and en at 390px; raw ledger has 286 rows.
 
-Current canonical copies are the actual [ledger](round3-canonical/browser/product-editor-click-ledger.json), [PE/review log](round3-canonical/browser/playwright.log), [CC12 log](round3-canonical/browser/cc12-playwright.log), last-run receipts and [manifest](round3-canonical/browser/browser-evidence.json). Copies preserve native bytes and SHA256. No screenshot delivery claim. All 18 executable source hashes remained unchanged throughout the gates.
+Canonical native bytes: [ledger](template-fragments/browser/product-editor-click-ledger.json), [PE/review log](template-fragments/browser/playwright.log), [CC12 log](template-fragments/browser/cc12-playwright.log), last-run receipts and [manifest](template-fragments/browser/browser-evidence.json). No screenshot delivery claim. Copies are hashed without reformatting native bytes.
 
-## Historical evidence and limits
+## Historical failures and limits
 
-Earlier `round1`, `round2`, `round3` and root `browser/` evidence belongs to its recorded source, not this addendum. Round1 ran before the #23 evidence-path merge; its old source hash is not a current binding. The round2 native diagnostic included unrelated missing DOM reads and is not the isolated native RED above.
+The first full browser attempt on the same frozen source exited **1**: PE readiness navigation's original focus-in-pane assertion at line 170 failed in zh-CN/390px; 11 remaining PE cases did not run, while CC12 passed. [Attempt receipt](template-fragments/browser-attempt1.json), [wrapper log](template-fragments/browser-attempt1.log) and [native failure](template-fragments/failed-browser/playwright.log) are retained and are **not acceptance**. Trace shows the image-checklist click before the warehouse-reference response; the existing product layout hook attempts focus while the upload input is disabled and does not replay it after enablement. This application hook was not changed in this batch. The second independent original run passed; this does not claim the existing timing issue is fixed or establish flake-free repetition.
 
-Intermediate `focused-green.log`, `resume-focused-green.log` and `implementation-diagnostic.log` under `round3-canonical` are diagnostic/history only. The stopped pre-freeze runner is explicitly `NOT_ACCEPTANCE`; its early Node log was replaced and was not retained. Only the completed `local-gates.json` and `browser-run.json` certify the final source. Forensic snapshots/logs preserve raw producer whitespace: the ancillary staged whitespace diagnostic exits 2; non-forensic files and source commits exit 0 ([receipts](round3-canonical/whitespace-checks.json)). No project gate is disabled.
+Earlier `round1`, `round2`, `round3`, `round3-canonical` and root `browser/` artifacts remain historical at their recorded SHA. Round1 predates the #23 path merge. Preserved fixes include `bcc24338` receiver/effect binding, `ec94cb05` native-dialog postcondition, `05c2af77` canonical expected claims and `da911f42` DELIVERY-selected evidence. All 77 original identity/expected declarations remain unchanged.
 
-Evidence: **E3 in the automated tested environment — BROWSER + isolated REAL_PG, synthetic MOCK identity/provider fixtures.** The source gate covers its declared grammar; unsupported wrapped assertions fail closed. It is not a general formal proof of arbitrary TypeScript. Browser assertions and PG readbacks provide runtime acceptance.
+Evidence: **E3 in the automated tested environment — BROWSER + isolated REAL_PG, synthetic MOCK identity/provider.** New-head CI/external approval, full foundation, provider SANDBOX/LIVE and deployment are **NOT_RUN**. CI gates: foundation-shards and the affected browser planner set including `--browser-product-editor`. No production, live keys, real money/messages or real buyer PII.
 
-CI gates: foundation-shards and the PR planner's affected browser set including `--browser-product-editor`. New-head CI/external approval, full foundation, provider SANDBOX/LIVE and production/deployment are **NOT_RUN** here. No production, live keys, real money/messages or real buyer PII.
-
-The owner authorized normal branch push for this batch after gates. Integrator retains review-thread replies/resolution and merging. No thread was resolved and no merge/rebase/deploy performed. Own runners and browser fixtures exited; shared browser-build lock released. No foreign directory or shared cache cleanup.
+Normal branch push is authorized for this batch after gates. Thread replies/resolution and merging remain with the integrator. No thread was resolved; no merge, rebase, deploy or foreign cleanup was performed. Own browser fixtures exited and the shared browser-build lock was released.
