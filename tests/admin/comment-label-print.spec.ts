@@ -4,11 +4,14 @@
 import { expect, type Page } from "@playwright/test";
 import { test } from "./inbox-private-evidence";
 import { writeFile } from "node:fs/promises";
+import assert from "node:assert/strict";
+import { commentLabelStrictFixture } from "./comment-label-strict-fixture";
 
 const required = (key: string) => { const value = process.env[key]; if (!value) throw new Error(`${key} missing`); return value; };
 const origin = required("LC_BROWSER_PUBLIC_ORIGIN"), store = required("LC_BROWSER_CONSOLE_STORE");
 const data: { session: string; print_refs: string[] } = JSON.parse(required("LC_BROWSER_CONSOLE_COMMENTS"));
 const evidence = required("LC_BROWSER_EVIDENCE");
+if (process.env.W3U3_A4_CALIBRATION && process.env.W3U3_A4_CALIBRATION !== "two-columns") throw new Error("Unsupported W3U3_A4_CALIBRATION");
 const ledger: { locale: string; width: number; page: string; control: string; operation: string; expected: string; actual: string; result: "PASS" | "FAIL" }[] = [];
 function record(locale: string, width: number, control: string, operation: string, expected: string, actual: Record<string, unknown>, passed: boolean) {
   ledger.push({ locale, width, page: "/studio/console", control, operation, expected, actual: JSON.stringify(actual), result: passed ? "PASS" : "FAIL" });
@@ -54,6 +57,9 @@ test.afterEach(async ({ page }, info) => {
     rows.push({ locale: info.title.match(/zh-TW|zh-CN|en-/)?.[0]?.replace(/-$/, "") ?? "en", width: page.viewportSize()?.width ?? 0, page: "/studio/console", control: info.title, operation: "real-click contract case", expected: "All unchanged contract assertions pass", actual: JSON.stringify({ testStatus: info.status, ...actual }), result: "FAIL" });
   }
   await writeFile(`${evidence}/label-click-ledger-${info.testId.replace(/[^\w-]/g, "_")}.json`, JSON.stringify(rows, null, 2));
+  // Persist failed observations first; a ledger FAIL must also fail the browser process.
+  const failures = rows.filter((row) => row.result === "FAIL");
+  assert.equal(failures.length, 0, `Label click criteria failed: ${failures.map((row) => row.control).join(", ")}`);
 });
 for (const locale of ["zh-TW", "zh-CN", "en"]) for (const width of [1586, 390]) {
   test(`W3U3 three label real A3 print ${locale}-${width}`, async ({ page }) => {
@@ -110,6 +116,10 @@ for (const locale of ["zh-TW", "zh-CN", "en"]) for (const width of [1586, 390]) 
     await expect(page.getByTestId("comment-stream")).toBeHidden();
     await expect(page.locator("h1")).toBeHidden();
     await expect(page.getByTestId("comment-label-sheet")).toHaveAttribute("data-paper", "a4");
+    // Test-only fault injection: normal product CSS is unchanged. This flag carries no authority or credentials.
+    if (process.env.W3U3_A4_CALIBRATION === "two-columns") {
+      await page.addStyleTag({ content: '.comment-label-sheet[data-paper="a4"] { grid-template-columns: repeat(2, 60mm) !important; }' });
+    }
     const a4 = { paper: await page.getByTestId("comment-label-sheet").getAttribute("data-paper"), labelCount: await page.getByTestId("comment-label").count(),
       printControlVisible: await page.getByTestId("comment-label-print").isVisible(), streamVisible: await page.getByTestId("comment-stream").isVisible(), headingVisible: await page.locator("h1").isVisible(),
       columns: await page.getByTestId("comment-label-sheet").evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(" ").length) };
@@ -125,7 +135,9 @@ for (const locale of ["zh-TW", "zh-CN", "en"]) for (const width of [1586, 390]) 
     await page.getByTestId("comment-label-paper").selectOption("a4");
     paperSequence.push(await page.getByTestId("comment-label-paper").inputValue());
     await page.getByTestId("comment-label-close").click();
-    const close = { labelsAfterClose: await page.getByTestId("comment-label").count(), streamVisible: await page.getByTestId("comment-stream").isVisible() };
+    await expect(page.getByTestId("comment-label-preview")).toBeFocused();
+    const close = { labelsAfterClose: await page.getByTestId("comment-label").count(), streamVisible: await page.getByTestId("comment-stream").isVisible(),
+      openerFocused: await page.getByTestId("comment-label-preview").evaluate((el) => document.activeElement === el) };
     for (const w of writes) await expect(page.getByTestId(`comment-label-count-${w.ref}`)).toContainText(`×${w.count}`);
     const badgeBefore = await Promise.all(writes.map(async (w) => (await page.getByTestId(`comment-label-count-${w.ref}`).textContent())?.includes(`×${w.count}`)));
     // Marks must survive refresh through real A2/PG, not just local optimistic state.
@@ -136,6 +148,14 @@ for (const locale of ["zh-TW", "zh-CN", "en"]) for (const width of [1586, 390]) 
     await expect(page.getByTestId("comment-label-paper")).toHaveValue("a4");
     const single = { labelCount: await page.getByTestId("comment-label").count(), restoredPaper: await page.getByTestId("comment-label-paper").inputValue() };
     await page.getByTestId("comment-label-close").click();
+    await expect(page.getByTestId(`comment-label-single-${data.print_refs[0]}`)).toBeFocused();
+    await page.getByTestId(`comment-label-single-${data.print_refs[0]}`).click();
+    await expect(page.getByTestId("comment-label")).toHaveCount(1);
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("comment-label")).toHaveCount(0);
+    await expect(page.getByTestId(`comment-label-single-${data.print_refs[0]}`)).toBeFocused();
+    const escape = { remainingLabels: await page.getByTestId("comment-label").count(),
+      openerFocused: await page.getByTestId(`comment-label-single-${data.print_refs[0]}`).evaluate((el) => document.activeElement === el) };
     record(locale, width, "keyword filter", "click", "Three actual claimed keyword comments visible", filter, filter.beforeRows === 50 && filter.filteredRows === 3);
     record(locale, width, "three checkboxes", "check; uncheck first; recheck first", "Selection counts 3→2→3", { checkedCounts: checked }, checked.join(",") === "3,2,3");
     record(locale, width, "preview labels", "click", "Three exact synthetic names/keywords/quantities/time/session labels", preview, Object.values(preview).every((n) => n === 3));
@@ -143,7 +163,8 @@ for (const locale of ["zh-TW", "zh-CN", "en"]) for (const width of [1586, 390]) 
       paperSequence.join(",") === "a4,label,a4" && a4.columns === 3 && a4.paper === "a4" && a4.labelCount === 3 && !a4.printControlVisible && !a4.streamVisible && !a4.headingVisible && single.restoredPaper === "a4" && !!box && Math.abs(box.width - 60 * 96 / 25.4) < 0.5 && Math.abs(box.height - 40 * 96 / 25.4) < 0.5);
     record(locale, width, "print", "click", "Three exact {} A3 requests, three unique keys, confirmed badges survive A2 reload", { ...written, badgeMatchesBeforeReload: badgeBefore.filter(Boolean).length, badgeMatchesAfterReload: badgeAfter.filter(Boolean).length },
       written.writeCount === 3 && written.statuses.every((s) => s === 200) && written.emptyBodyCount === 3 && written.uniqueKeyCount === 3 && written.uuidKeyCount === 3 && written.printCalls === 1 && badgeBefore.every(Boolean) && badgeAfter.every(Boolean));
-    record(locale, width, "close preview", "click", "Dialog closes; console remains usable", close, close.labelsAfterClose === 0 && close.streamVisible);
+    record(locale, width, "close preview", "click after printing", "Dialog closes; console remains usable; preview opener regains focus", close, close.labelsAfterClose === 0 && close.streamVisible && close.openerFocused);
+    record(locale, width, "escape preview", "single print button; Escape", "Dialog closes; single-label opener regains focus", escape, escape.remainingLabels === 0 && escape.openerFocused);
     record(locale, width, "single label", "click", "One label opens with restored paper preference", single, single.labelCount === 1 && single.restoredPaper === "a4");
   });
 }
@@ -177,6 +198,32 @@ test("W3U3_404 real revoked store closes private labels before native print", as
     record("en", 1586, "print after scoped grant revocation", "click", "Real A3 404 clears private labels; native print calls=0", actual,
       actual.status === 404 && actual.remainingLabels === 0 && actual.printCalls === 0);
   } finally { await grant("grant_restore"); resume(); await page.unrouteAll({ behavior: "wait" }); }
+});
+
+test("W3U3 StrictMode real React development replay keeps printing usable", async ({ page }) => {
+  const fixture = commentLabelStrictFixture();
+  // Synthetic component fixture only: real React development + native DOM, MOCK transport, not REAL_PG/App routing acceptance.
+  await page.route("**/__test/w3u3-strict", (route) => route.fulfill({ contentType: "text/html", body: fixture.html }));
+  await page.route("**/__test/w3u3-strict.js", (route) => route.fulfill({ contentType: "application/javascript", body: fixture.script }));
+  await page.goto(`${origin}/__test/w3u3-strict`); await page.bringToFront();
+  const state = () => page.evaluate(() => (window as unknown as { __strictLabel: { setups: number; cleanups: number; writes: number; prints: number; version: string } }).__strictLabel);
+  await expect.poll(async () => (await state())?.setups).toBe(2);
+  expect((await state()).cleanups).toBe(1); expect((await state()).version).toBe("19.3.0");
+  const opener = page.getByTestId("comment-label-single-123_456"); await opener.click();
+  await page.getByTestId("comment-label-print").click();
+  await expect.poll(async () => (await state()).writes).toBe(1);
+  await expect(page.getByTestId("comment-label-print")).toBeDisabled();
+  await expect(page.getByTestId("comment-label-close")).toBeDisabled();
+  // Deliver the controlled transport acknowledgement; this does not invoke UI handlers or alter DOM.
+  await page.evaluate(() => (window as unknown as { __resolveStrictPrint: () => void }).__resolveStrictPrint());
+  await expect.poll(async () => (await state()).prints).toBe(1);
+  await expect(page.getByTestId("comment-label-print")).toBeEnabled();
+  await expect(page.getByTestId("comment-label-close")).toBeEnabled();
+  const actual = { class: "MOCK_REACT_DEV", ...await state(), printEnabled: await page.getByTestId("comment-label-print").isEnabled(), closeEnabled: await page.getByTestId("comment-label-close").isEnabled() };
+  await page.getByTestId("comment-label-close").click(); await expect(opener).toBeFocused();
+  await expect(page.getByTestId("comment-label")).toHaveCount(0);
+  record("en", 1586, "StrictMode replay and print", "mount; single label; print; controlled ACK; close", "Real dev setup/cleanup/setup; one MOCK write/print; busy released; closes", actual,
+    actual.setups === 2 && actual.cleanups === 1 && actual.writes === 1 && actual.prints === 1 && actual.printEnabled && actual.closeEnabled);
 });
 
 test("W3U3 lost A3 acknowledgement retries the same fact key", async ({ page }) => {

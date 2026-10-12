@@ -3,7 +3,10 @@ Depends on: frozen label brief, reverted BFF candidate, PR30 receipts, merged Go
 Used by: integrator CI/PR preparation; static checks alone are not browser or production acceptance. -->
 # W3-U3 comment label print — DELIVERY
 
-**Current status: READY, author E3 — tested source4f0e08e5; PR36 merged, BFF candidate reverted, all five serial browser invocations exit0. No push/deploy.**
+**Current status (2026-10-12): all four PR40 round1 fixes present, BLOCKED_ENV; no new commit/READY. Node22 targeted tests pass, admin and browser-spec tsc/check-gates exit0; full Node exit1 from loopback/Docker permissions and git add exit128 from read-only metadata. Native StrictMode mount/full browser/two-column A4 calibration NOT_RUN. [Current handoff](pr40-r1/DELIVERY.md). No push/thread resolution.**
+
+The post-PR36 acceptance below was READY on the former source4f0e08e5/a688b843. Its unchanged historical
+evidence remains valid for that source only, not for the current PR40 product changes.
 
 ## Current post-PR36 verification (2026-10-10)
 

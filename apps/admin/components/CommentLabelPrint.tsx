@@ -17,10 +17,10 @@ const copy = {
 };
 type PrintControls = {
   c: typeof copy.en; allowed: boolean; busy: boolean; selected: string[]; counts: Record<string, number>;
-  eligible: StreamComment[]; toggle: (ref: string) => void; preview: (refs: string[]) => void;
+  eligible: StreamComment[]; toggle: (ref: string) => void; preview: (refs: string[], trigger: HTMLElement) => void;
 };
 const Controls = createContext<PrintControls | null>(null);
-const printable = (row: StreamComment) => !!row.marks.claim?.keyword && (row.marks.claim.quantity ?? 0) > 0;
+const printable = (row: StreamComment) => row.marks.claim?.status === "ACCEPTED" && !!row.marks.claim.keyword && (row.marks.claim.quantity ?? 0) > 0;
 
 /** Keep label data in current stream memory; only a validated paper-size preference crosses storage. */
 export function CommentLabelPrint({ locale, store, session, rows, allowed, active, onDenied, children }: {
@@ -37,17 +37,22 @@ export function CommentLabelPrint({ locale, store, session, rows, allowed, activ
   const selectedRows = eligible.filter((row) => selected.includes(row.ref));
   const labels = preview.map((ref) => eligible.find((row) => row.ref === ref)).filter((row): row is StreamComment => !!row);
   useEffect(() => {
+    // Dev StrictMode replays setup after cleanup; each setup owns a fresh cancellation scope.
+    const owned = new AbortController(); controller.current = owned;
     try { const saved = localStorage.getItem("comment-label-paper"); if (saved === "a4" || saved === "label") setPaper(saved); } catch { /* Storage is optional. */ }
-    return () => { controller.current.abort(); pending.current.clear(); };
+    return () => { owned.abort(); pending.current.clear(); };
   }, []);
   useEffect(() => {
     if (!active || !allowed || labels.length === 0) { dialog.current?.close(); return; }
     if (!dialog.current?.open) dialog.current?.showModal();
   }, [active, allowed, labels.length]);
-  const close = () => { setPreview([]); setFailed(false); opener.current?.focus(); };
-  const show = (refs: string[]) => {
+  const close = () => {
+    // Release the native modal's inert boundary before focusing the outside opener.
+    dialog.current?.close(); setPreview([]); setFailed(false); opener.current?.focus();
+  };
+  const show = (refs: string[], trigger: HTMLElement) => {
     if (!allowed || !active || running.current) return;
-    opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    opener.current = trigger;
     setFailed(false); setPreview(refs.filter((ref) => eligible.some((row) => row.ref === ref)));
   };
   const print = async () => {
@@ -113,12 +118,12 @@ export function CommentLabelPrint({ locale, store, session, rows, allowed, activ
 /** Entry point next to existing stream filters; no second comment/read/write implementation. */
 export function CommentLabelToolbar() {
   const v = useContext(Controls); if (!v || !v.eligible.length) return null;
-  return <div className="comment-label-toolbar"><button type="button" data-testid="comment-label-preview" disabled={!v.allowed || v.busy || !v.selected.length} onClick={() => v.preview(v.selected)}>{v.c.preview} ({v.selected.length})</button>{!v.allowed && <span className="live-helper">{v.c.denied}</span>}</div>;
+  return <div className="comment-label-toolbar"><button type="button" data-testid="comment-label-preview" disabled={!v.allowed || v.busy || !v.selected.length} onClick={(event) => v.preview(v.selected, event.currentTarget)}>{v.c.preview} ({v.selected.length})</button>{!v.allowed && <span className="live-helper">{v.c.denied}</span>}</div>;
 }
 
 /** Keyword-row checkbox, single-print entry and confirmed count; no optimistic badge on failure. */
 export function CommentLabelAction({ row }: { row: StreamComment }) {
   const v = useContext(Controls); if (!v || !printable(row)) return null;
   const count = Math.max(row.marks.printed?.count ?? 0, v.counts[row.ref] ?? 0);
-  return <div className="comment-label-actions"><label><input type="checkbox" data-testid={`comment-label-select-${row.ref}`} checked={v.selected.includes(row.ref)} disabled={!v.allowed || v.busy} onChange={() => v.toggle(row.ref)} />{v.c.select}</label><button type="button" data-testid={`comment-label-single-${row.ref}`} disabled={!v.allowed || v.busy} onClick={() => v.preview([row.ref])}>{v.c.single}</button>{count > 0 && <span data-testid={`comment-label-count-${row.ref}`}>{v.c.printed} ×{count}</span>}</div>;
+  return <div className="comment-label-actions"><label><input type="checkbox" data-testid={`comment-label-select-${row.ref}`} checked={v.selected.includes(row.ref)} disabled={!v.allowed || v.busy} onChange={() => v.toggle(row.ref)} />{v.c.select}</label><button type="button" data-testid={`comment-label-single-${row.ref}`} disabled={!v.allowed || v.busy} onClick={(event) => v.preview([row.ref], event.currentTarget)}>{v.c.single}</button>{count > 0 && <span data-testid={`comment-label-count-${row.ref}`}>{v.c.printed} ×{count}</span>}</div>;
 }
