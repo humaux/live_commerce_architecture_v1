@@ -129,7 +129,9 @@ export function useLiveSettingsController({
         privacy.expire();
         return;
       }
-      if (cause instanceof LiveSettingsError && cause.status === 404) {
+      // Studio pagination/detail use their own closed not-found code for scoped 404s.
+      if ((cause instanceof LiveSettingsError && cause.status === 404) ||
+          (cause instanceof StudioError && cause.code === "not-found")) {
         privacy.fence.invalidate(true);
         clear();
       }

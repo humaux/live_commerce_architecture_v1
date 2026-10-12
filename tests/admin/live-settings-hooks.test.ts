@@ -177,6 +177,38 @@ test("PR31 reminder scope 404 clears already loaded private sections",async t=>{
  assert.equal(h.output.remindersUnavailable,false);assert.equal(h.output.receipt.current,null);
 });
 
+for(const status of [404,503] as const)test(`PR31 Studio pagination ${status} ${status===404?"clears private page and fences late reads":"preserves authorized private state"}`,async t=>{
+ const env=environment(t), entry={id:store.id,platform:"facebook",note:"MOCK private note",source_bundle_id:null,created_at:"2030-01-01T00:00:00Z"};
+ let release!:(r:Response)=>void,entered!:()=>void,writes=0;
+ const held=new Promise<Response>(resolve=>release=resolve),started=new Promise<void>(resolve=>entered=resolve);
+ globalThis.fetch=async(input,init)=>{
+  const url=String(input);
+  if(init?.method==="POST"){writes++;return response(queued);}
+  if(url.includes("claims/blocklist")){if(url.includes("cursor=")){entered();return held;}return response({items:[entry],next_cursor:"next-private-page"});}
+  if(url.includes("cursor=page-two"))return response({code:status===404?"not_found":"unavailable"},status);
+  return reads(input);
+ };
+ const h=env.mount(()=>useLiveSettingsController({store:allStore,locale:"en",scene:sid,initialError:null}));
+ await h.waitFor(()=>!h.output.loading&&h.output.sessions?.items.length===20&&h.output.settings?.version===3&&h.output.report!==null&&h.output.blocked?.items.length===1,"loaded private page before Studio refusal");
+ h.output.setDraft("MOCK private unsaved reply");h.output.setRemove(entry.id);h.flush();
+ const ticket=h.output.privacy.fence.begin(),oldRun=h.output.run,late=h.output.page("next-private-page");
+ await started;await h.output.loadMoreSessions();h.flush();
+ try{
+  if(status===404){
+   for(const field of ["sessions","settings","report","result","blocked","remove"] as const)assert.equal(h.output[field],null,`${field} must clear on Studio not-found`);
+   assert.equal(h.output.draft,"");assert.equal(h.output.receipt.current,null);assert.equal(h.output.enabled,false);
+   assert.equal(h.output.privacy.fence.current(ticket),false);assert.equal(ticket.signal.aborted,true);
+   await oldRun({method:"POST",resource:`live-sessions/${sid}/reminders`,key:"MOCK-discarded-scope"});assert.equal(writes,0);
+  }else{
+   assert.equal(h.output.settings?.version,3);assert.equal(h.output.sessions?.items.length,20);assert.equal(h.output.draft,"MOCK private unsaved reply");
+   assert.equal(h.output.privacy.fence.current(ticket),true);
+  }
+  assert.equal(h.output.error,status===404?"not-found":"unavailable");assert.equal(h.output.privacy.blocked.current,false);
+ }finally{release(response({items:[{...entry,note:"MOCK late private note"}],next_cursor:""}));await late;h.flush();}
+ if(status===404){assert.equal(h.output.blocked,null,"a late accepted response cannot repaint cleared private data");assert.equal(h.output.sessions,null);}
+ else assert.equal(h.output.blocked?.items[0].note,"MOCK late private note");
+});
+
 for(const action of ["run","save","copy","page","loadMoreSessions"] as const)test(`PR31 old ${action} callback cannot borrow a revealed page's new fence`,async t=>{
  const env=environment(t);let writes=0,copies=0,readsAfterReveal=0,recordReads=false;
  const navigatorDescriptor=Object.getOwnPropertyDescriptor(globalThis,"navigator");
