@@ -52,7 +52,9 @@ export async function nativePage(evidence: string, profilePrefix: string) {
   try {
     await diagnostics.close();
     let port = 0;
-    const deadline = performance.now() + 10_000;
+    // A loaded CI runner can take >10 s to cold-start Chromium and publish DevToolsActivePort while the process is
+    // running (seen twice: #31 live-console, #28 live-settings). 30 s stays well inside every caller's test timeout.
+    const deadline = performance.now() + 30_000;
     while (performance.now() < deadline && !exited()) {
       if (launchError) throw launchError;
       try { port = Number((await readFile(`${profile}/DevToolsActivePort`, "utf8")).split("\n")[0]); } catch { /* Chromium has not opened CDP yet. */ }

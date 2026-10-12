@@ -230,6 +230,8 @@ try {
   const regenReply = merchant.waitForResponse(r => r.request().method() === "POST" && new URL(r.url()).pathname === `/api/stores/${process.env.LC_LINK_STORE}/tools/orders/manual/regenerate-link`);
   await merchant.getByTestId("manual-order-regenerate").click();
   assert.equal((await regenReply).status(), 201);
+  // The 201 arrives before React re-renders the link; wait for the rendered value to change instead of racing it.
+  await expect(merchant.getByTestId("manual-order-link")).not.toHaveText(link);
   const newLink = (await merchant.getByTestId("manual-order-link").innerText()).trim();
   assert.notEqual(newLink, link, "regenerate issues a different link");
   const newFragment = new URL(newLink).hash;
