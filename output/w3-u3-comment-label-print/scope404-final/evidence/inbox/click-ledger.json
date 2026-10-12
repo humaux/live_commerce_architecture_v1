@@ -1,0 +1,250 @@
+[
+  {
+    "page": "Messages",
+    "control": "Copy claim link",
+    "action": "select flagged bundle; click copy twice; refresh",
+    "expected": "native clipboard matches one persisted M7 link; token-free receipt; no DM; manual flag clears",
+    "actual": "native clipboard matches one persisted M7 link; token-free receipt; no DM; manual flag clears",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "list refresh",
+    "action": "click Refresh",
+    "expected": "real A8 list read and named conversation restored",
+    "actual": "real A8 list read and named conversation restored",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "filter",
+    "action": "select Instagram",
+    "expected": "only Instagram conversation visible",
+    "actual": "only Instagram conversation visible",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "filter",
+    "action": "select Messenger/unreplied/live comment/all",
+    "expected": "server filtered rows match platform and reply status",
+    "actual": "server filtered rows match platform and reply status",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "conversation",
+    "action": "click open thread",
+    "expected": "decrypted DM visible and real PG read_seq advanced",
+    "actual": "decrypted DM visible and real PG read_seq advanced",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "thread refresh/older",
+    "action": "click Refresh then Older messages",
+    "expected": "real authorized A9 reads; empty older page removes pager without losing thread",
+    "actual": "real authorized A9 reads; empty older page removes pager without losing thread",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "takeover",
+    "action": "click then refresh/reopen",
+    "expected": "human takeover persisted in real PG",
+    "actual": "human takeover persisted in real PG",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "reply",
+    "action": "fill and click send then refresh/reopen",
+    "expected": "one encrypted outbound appears in authoritative readback",
+    "actual": "one encrypted outbound appears in authoritative readback",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "release",
+    "action": "click then refresh/reopen",
+    "expected": "auto mode persisted in real PG",
+    "actual": "auto mode persisted in real PG",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "reader admission",
+    "action": "open and refresh with inbox:read only",
+    "expected": "reads admitted; no POST/read marker or reply mutation",
+    "actual": "reads admitted; no POST/read marker or reply mutation",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "viewer denial",
+    "action": "navigate with catalogue viewer",
+    "expected": "inbox nav absent; real backend denies 403 with no DM",
+    "actual": "inbox nav absent; real backend denies 403 with no DM",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "ambiguous acknowledgment",
+    "action": "click send; committed response dropped; click Retry this submission",
+    "expected": "identical key/body, same server operation/outbound id, exactly one PG outbound survives refresh",
+    "actual": "identical key/body, same server operation/outbound id, exactly one PG outbound survives refresh",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "closed window",
+    "action": "open expired conversation",
+    "expected": "send disabled with 24h window reason",
+    "actual": "send disabled with 24h window reason",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "missing capability",
+    "action": "reload and open conversation",
+    "expected": "send disabled with capability reason",
+    "actual": "send disabled with capability reason",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "late response/store switch",
+    "action": "open pending A then B and switch shell store",
+    "expected": "old private response never repaints B/other store",
+    "actual": "old private response never repaints B/other store",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "native visibility",
+    "action": "activate another native tab then return",
+    "expected": "trusted hidden clears DM; authorized A9 read required before repaint",
+    "actual": "trusted hidden clears DM; authorized A9 read required before repaint",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "viewport zh-TW/1440",
+    "action": "select Messenger/open conversation",
+    "expected": "thread and BuyerPanel visible without horizontal overflow",
+    "actual": "thread and BuyerPanel visible without horizontal overflow",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "mobile back zh-TW",
+    "action": "click back",
+    "expected": "private detail removed before reopening the list",
+    "actual": "private detail removed before reopening the list",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "viewport zh-TW/390",
+    "action": "select Messenger/open conversation",
+    "expected": "thread and BuyerPanel visible without horizontal overflow",
+    "actual": "thread and BuyerPanel visible without horizontal overflow",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "locale zh-TW/1440",
+    "action": "switch locale and open conversation",
+    "expected": "exact localized heading/composer/buyer labels verified",
+    "actual": "exact localized heading/composer/buyer labels verified",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "locale zh-TW/390",
+    "action": "switch locale and open conversation",
+    "expected": "exact localized heading/composer/buyer labels verified",
+    "actual": "exact localized heading/composer/buyer labels verified",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "viewport zh-CN/1440",
+    "action": "select Messenger/open conversation",
+    "expected": "thread and BuyerPanel visible without horizontal overflow",
+    "actual": "thread and BuyerPanel visible without horizontal overflow",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "mobile back zh-CN",
+    "action": "click back",
+    "expected": "private detail removed before reopening the list",
+    "actual": "private detail removed before reopening the list",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "viewport zh-CN/390",
+    "action": "select Messenger/open conversation",
+    "expected": "thread and BuyerPanel visible without horizontal overflow",
+    "actual": "thread and BuyerPanel visible without horizontal overflow",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "locale zh-CN/1440",
+    "action": "switch locale and open conversation",
+    "expected": "exact localized heading/composer/buyer labels verified",
+    "actual": "exact localized heading/composer/buyer labels verified",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "locale zh-CN/390",
+    "action": "switch locale and open conversation",
+    "expected": "exact localized heading/composer/buyer labels verified",
+    "actual": "exact localized heading/composer/buyer labels verified",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "viewport en/1440",
+    "action": "select Messenger/open conversation",
+    "expected": "thread and BuyerPanel visible without horizontal overflow",
+    "actual": "thread and BuyerPanel visible without horizontal overflow",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "mobile back en",
+    "action": "click back",
+    "expected": "private detail removed before reopening the list",
+    "actual": "private detail removed before reopening the list",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "viewport en/390",
+    "action": "select Messenger/open conversation",
+    "expected": "thread and BuyerPanel visible without horizontal overflow",
+    "actual": "thread and BuyerPanel visible without horizontal overflow",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "locale en/1440",
+    "action": "switch locale and open conversation",
+    "expected": "exact localized heading/composer/buyer labels verified",
+    "actual": "exact localized heading/composer/buyer labels verified",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "locale en/390",
+    "action": "switch locale and open conversation",
+    "expected": "exact localized heading/composer/buyer labels verified",
+    "actual": "exact localized heading/composer/buyer labels verified",
+    "status": "PASS"
+  }
+]

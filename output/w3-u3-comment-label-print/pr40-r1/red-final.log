@@ -1,0 +1,166 @@
+✔ Host subset: nested Provider and React19 context shadow defaults without sibling leakage (8.844625ms)
+✔ Host subset: provider updates reach stable children and separate roots keep their own values (0.172833ms)
+✔ Host subset: render errors restore context and hook ownership (0.198959ms)
+✔ Host subset: portal children inherit logical context and retain handlers/state (0.335292ms)
+✔ Host subset: portal target/key changes remount children and removal runs cleanup (0.124292ms)
+✔ Host subset: createPortal rejects invalid DOM targets rather than swallowing children (0.076666ms)
+✖ W3U3 PR40 rejected positive-quantity claims expose no printable output or actions (1.014334ms)
+✖ W3U3 PR40 rejected mark refresh removes an already previewed label (0.477ms)
+✖ W3U3 PR40 close restores opener focus after native modal closes (0.442ms)
+✖ W3U3 PR40 escape restores opener focus after native modal closes (0.273708ms)
+✖ W3U3 PR40 after print restores opener focus after native modal closes (14.159334ms)
+✖ W3U3 PR40 focus returns to the triggering button even when it was not the active element (0.371542ms)
+✔ W3U3 ledger actual comes from an independent observation (4.142333ms)
+✔ W3U3 ledger records failed observed criteria rather than constant PASS (2.726708ms)
+✔ W3U3 denied 401 resets busy and running without remount (2.005208ms)
+✔ W3U3 denied 403 resets busy and running without remount (1.15825ms)
+✔ W3U3 denied 404 resets busy and running without remount (0.913292ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 11
+ℹ fail 6
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 245.826166
+
+✖ failing tests:
+
+test at tests/admin/comment-label-print.test.ts:48:1
+✖ W3U3 PR40 rejected positive-quantity claims expose no printable output or actions (1.014334ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  2 !== 0
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u3-comment-label-print/tests/admin/comment-label-print.test.ts:51:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-label-print.test.ts:55:1
+✖ W3U3 PR40 rejected mark refresh removes an already previewed label (0.477ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u3-comment-label-print/tests/admin/comment-label-print.test.ts:61:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-label-print.test.ts:67:55
+✖ W3U3 PR40 close restores opener focus after native modal closes (0.442ms)
+  AssertionError [ERR_ASSERTION]: focus outside an open modal would be ignored
+  + actual - expected
+  
+    [
+  +   'focus',
+      'close',
+  -   'focus'
+    ]
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u3-comment-label-print/tests/admin/comment-label-print.test.ts:79:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: [ 'focus', 'close' ],
+    expected: [ 'close', 'focus' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-label-print.test.ts:67:55
+✖ W3U3 PR40 escape restores opener focus after native modal closes (0.273708ms)
+  AssertionError [ERR_ASSERTION]: focus outside an open modal would be ignored
+  + actual - expected
+  
+    [
+  +   'focus',
+      'close',
+  -   'focus'
+    ]
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u3-comment-label-print/tests/admin/comment-label-print.test.ts:79:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: [ 'focus', 'close' ],
+    expected: [ 'close', 'focus' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-label-print.test.ts:67:55
+✖ W3U3 PR40 after print restores opener focus after native modal closes (14.159334ms)
+  AssertionError [ERR_ASSERTION]: focus outside an open modal would be ignored
+  + actual - expected
+  
+    [
+  +   'focus',
+      'close',
+  -   'focus'
+    ]
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u3-comment-label-print/tests/admin/comment-label-print.test.ts:79:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: [ 'focus', 'close' ],
+    expected: [ 'close', 'focus' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-label-print.test.ts:83:1
+✖ W3U3 PR40 focus returns to the triggering button even when it was not the active element (0.371542ms)
+  AssertionError [ERR_ASSERTION]: Values have same structure but are not reference-equal:
+  
+  Element {
+    nodeType: 1
+  }
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u3-comment-label-print/tests/admin/comment-label-print.test.ts:86:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { nodeType: 1 },
+    expected: { nodeType: 1 },
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

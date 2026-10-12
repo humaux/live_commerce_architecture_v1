@@ -1,0 +1,35 @@
+✔ W3U3 revoked scope after inbox/buyer-panel read admission is 404 (56.364208ms)
+✔ W3U3 revoked scope after inbox/conversations read admission is 404 (9.317459ms)
+✔ W3U3 revoked scope after message-templates read admission is 404 (4.409958ms)
+✔ W3U3 revoked scope after live-sessions/30928f37-bb4b-43fa-8588-2515731cc7e3/comments read admission is 404 (6.068583ms)
+✔ W3U3 genuine read permission denial stays 403 (3.72025ms)
+✔ W3U3 unproven scope loss (503) preserves the denial (4.016291ms)
+✔ W3U3 unproven scope loss (401) preserves the denial (5.777958ms)
+✔ W3U3 unproven scope loss (200) preserves the denial (2.156208ms)
+✔ W3U3 write denial is not scope-reconciled or replayed (5.264834ms)
+✔ W3U3 unknown upstream 403 never becomes an authoritative scope refusal (1.68375ms)
+✔ W3U3 successful read keeps one scope check and one private read (0.927292ms)
+✔ W3U3 stalled scope proof cannot delay a known denial past the privacy budget (627.9535ms)
+✔ W3U3 elapsed request budget skips scope proof rather than prolonging the denial (1.926708ms)
+✔ W3U3 request cancellation also cancels scope proof and preserves the original denial (7.327667ms)
+✔ PR18 real BFF preserves invalid_ref and cursor errors without upstream retry (3.974ms)
+✔ PR18 valid A2 Unicode/escaped pages exceed 1 MiB but A8 cap stays unchanged (199.77075ms)
+✔ K3 comment-only no_source cannot widen the existing inbox error seam (13.653667ms)
+✔ LC-U2a real BFF seam A2-A5 exact grammar, privacy, denial and no diagnostic reflection (22.462917ms)
+✔ A8/A9/A13 and published templates: exact reads forward once with no-store (5.06675ms)
+✔ real streamed POST bodies: A10-A14 exact keys reach upstream (4.181459ms)
+✔ query, read headers, methods and body allowlists refuse before upstream (5.825916ms)
+✔ session, CSRF and store authority precede content forwarding (1.286167ms)
+✔ A12 fixed codes preserved; arbitrary upstream diagnostics stripped (5.666458ms)
+✔ client preserves codes and receipt; changed/aborted session cannot publish private response (5.245625ms)
+✔ A9 admits a full page of valid Unicode replies while bounding private response bytes (5.860625ms)
+✔ non-JSON upstream 401 still expires both authentication cookies without diagnostic leakage (1.651209ms)
+✔ real M7 response keeps no-referrer after matching Next production header rules (31.7125ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 27
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1720.641625

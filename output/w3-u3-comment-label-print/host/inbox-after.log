@@ -1,0 +1,322 @@
+TAP version 13
+# Subtest: Host subset: nested Provider and React19 context shadow defaults without sibling leakage
+ok 1 - Host subset: nested Provider and React19 context shadow defaults without sibling leakage
+  ---
+  duration_ms: 0.859166
+  type: 'test'
+  ...
+# Subtest: Host subset: provider updates reach stable children and separate roots keep their own values
+ok 2 - Host subset: provider updates reach stable children and separate roots keep their own values
+  ---
+  duration_ms: 0.2615
+  type: 'test'
+  ...
+# Subtest: Host subset: render errors restore context and hook ownership
+ok 3 - Host subset: render errors restore context and hook ownership
+  ---
+  duration_ms: 0.6385
+  type: 'test'
+  ...
+# Subtest: Host subset: portal children inherit logical context and retain handlers/state
+ok 4 - Host subset: portal children inherit logical context and retain handlers/state
+  ---
+  duration_ms: 0.180708
+  type: 'test'
+  ...
+# Subtest: Host subset: portal target/key changes remount children and removal runs cleanup
+ok 5 - Host subset: portal target/key changes remount children and removal runs cleanup
+  ---
+  duration_ms: 0.137875
+  type: 'test'
+  ...
+# Subtest: Host subset: createPortal rejects invalid DOM targets rather than swallowing children
+ok 6 - Host subset: createPortal rejects invalid DOM targets rather than swallowing children
+  ---
+  duration_ms: 0.097084
+  type: 'test'
+  ...
+# Subtest: review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard
+ok 7 - review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard
+  ---
+  duration_ms: 14.969875
+  type: 'test'
+  ...
+# Subtest: review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST
+ok 8 - review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST
+  ---
+  duration_ms: 2.20875
+  type: 'test'
+  ...
+# Subtest: review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key
+ok 9 - review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key
+  ---
+  duration_ms: 3.89975
+  type: 'test'
+  ...
+# Subtest: review2 P1 missing CSRF before cached recopy cannot copy or issue again
+ok 10 - review2 P1 missing CSRF before cached recopy cannot copy or issue again
+  ---
+  duration_ms: 1.427708
+  type: 'test'
+  ...
+# Subtest: review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch
+ok 11 - review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch
+  ---
+  duration_ms: 1.166959
+  type: 'test'
+  ...
+# Subtest: review2 P1 late issued-link completion after hide cannot write clipboard
+ok 12 - review2 P1 late issued-link completion after hide cannot write clipboard
+  ---
+  duration_ms: 1.021417
+  type: 'test'
+  ...
+# Subtest: review2 P1 late issued-link completion after selection cannot write clipboard
+ok 13 - review2 P1 late issued-link completion after selection cannot write clipboard
+  ---
+  duration_ms: 0.984458
+  type: 'test'
+  ...
+# Subtest: review2 P1 late issued-link completion after unmount cannot write clipboard
+ok 14 - review2 P1 late issued-link completion after unmount cannot write clipboard
+  ---
+  duration_ms: 1.244375
+  type: 'test'
+  ...
+# Subtest: review2 P1 late issued-link completion after logout cannot write clipboard
+ok 15 - review2 P1 late issued-link completion after logout cannot write clipboard
+  ---
+  duration_ms: 1.299125
+  type: 'test'
+  ...
+# Subtest: review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read)
+ok 16 - review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read)
+  ---
+  duration_ms: 0.73975
+  type: 'test'
+  ...
+# Subtest: review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage)
+ok 17 - review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage)
+  ---
+  duration_ms: 0.657542
+  type: 'test'
+  ...
+# Subtest: review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true}
+ok 18 - review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true}
+  ---
+  duration_ms: 0.634459
+  type: 'test'
+  ...
+# Subtest: review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true}
+ok 19 - review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true}
+  ---
+  duration_ms: 0.795125
+  type: 'test'
+  ...
+# Subtest: review2 P2 exactly one matching binding uses named DM hard gate ok
+ok 20 - review2 P2 exactly one matching binding uses named DM hard gate ok
+  ---
+  duration_ms: 2.649292
+  type: 'test'
+  ...
+# Subtest: review2 P2 exactly one matching binding uses named DM hard gate review_required
+ok 21 - review2 P2 exactly one matching binding uses named DM hard gate review_required
+  ---
+  duration_ms: 0.660833
+  type: 'test'
+  ...
+# Subtest: review2 P2 exactly one matching binding uses named DM hard gate missing_permission
+ok 22 - review2 P2 exactly one matching binding uses named DM hard gate missing_permission
+  ---
+  duration_ms: 0.579833
+  type: 'test'
+  ...
+# Subtest: review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission)
+ok 23 - review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission)
+  ---
+  duration_ms: 0.883208
+  type: 'test'
+  ...
+# Subtest: review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required)
+ok 24 - review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required)
+  ---
+  duration_ms: 0.629416
+  type: 'test'
+  ...
+# Subtest: review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission)
+ok 25 - review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission)
+  ---
+  duration_ms: 0.487292
+  type: 'test'
+  ...
+# Subtest: review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok)
+ok 26 - review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok)
+  ---
+  duration_ms: 0.42625
+  type: 'test'
+  ...
+# Subtest: review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit
+ok 27 - review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit
+  ---
+  duration_ms: 1.117791
+  type: 'test'
+  ...
+# Subtest: review2 P2 missing health and single binding without named DM remain disabled
+ok 28 - review2 P2 missing health and single binding without named DM remain disabled
+  ---
+  duration_ms: 3.908125
+  type: 'test'
+  ...
+# Subtest: review2 P2 expired cached issued link cannot be recopied or silently reissued
+ok 29 - review2 P2 expired cached issued link cannot be recopied or silently reissued
+  ---
+  duration_ms: 1.200292
+  type: 'test'
+  ...
+# Subtest: Host subset: nested Provider and React19 context shadow defaults without sibling leakage
+ok 30 - Host subset: nested Provider and React19 context shadow defaults without sibling leakage
+  ---
+  duration_ms: 0.885792
+  type: 'test'
+  ...
+# Subtest: Host subset: provider updates reach stable children and separate roots keep their own values
+ok 31 - Host subset: provider updates reach stable children and separate roots keep their own values
+  ---
+  duration_ms: 0.169833
+  type: 'test'
+  ...
+# Subtest: Host subset: render errors restore context and hook ownership
+ok 32 - Host subset: render errors restore context and hook ownership
+  ---
+  duration_ms: 0.18975
+  type: 'test'
+  ...
+# Subtest: Host subset: portal children inherit logical context and retain handlers/state
+ok 33 - Host subset: portal children inherit logical context and retain handlers/state
+  ---
+  duration_ms: 0.170708
+  type: 'test'
+  ...
+# Subtest: Host subset: portal target/key changes remount children and removal runs cleanup
+ok 34 - Host subset: portal target/key changes remount children and removal runs cleanup
+  ---
+  duration_ms: 0.186
+  type: 'test'
+  ...
+# Subtest: Host subset: createPortal rejects invalid DOM targets rather than swallowing children
+ok 35 - Host subset: createPortal rejects invalid DOM targets rather than swallowing children
+  ---
+  duration_ms: 0.087541
+  type: 'test'
+  ...
+# Subtest: P1-1 actual visible focus preserves pending ticket, selection, revision and real retry receipt
+ok 36 - P1-1 actual visible focus preserves pending ticket, selection, revision and real retry receipt
+  ---
+  duration_ms: 2.439167
+  type: 'test'
+  ...
+# Subtest: P1-1 actual unchanged-session pageshow checks without clearing; changed-session focus expires
+ok 37 - P1-1 actual unchanged-session pageshow checks without clearing; changed-session focus expires
+  ---
+  duration_ms: 0.289375
+  type: 'test'
+  ...
+# Subtest: P1-1 actual hide/reveal clears and requests fresh revision, never accepts obsolete completion
+ok 38 - P1-1 actual hide/reveal clears and requests fresh revision, never accepts obsolete completion
+  ---
+  duration_ms: 0.245292
+  type: 'test'
+  ...
+# Subtest: P1-1 changed-session visible focus expires even with a pending request
+ok 39 - P1-1 changed-session visible focus expires even with a pending request
+  ---
+  duration_ms: 0.16825
+  type: 'test'
+  ...
+# Subtest: P1-2 actual A9 refresh 404 removes rendered DM and unsent draft
+ok 40 - P1-2 actual A9 refresh 404 removes rendered DM and unsent draft
+  ---
+  duration_ms: 14.276084
+  type: 'test'
+  ...
+# Subtest: P1-2 actual send-finally A9 404 removes DM, draft and uncertain immutable receipt
+ok 41 - P1-2 actual send-finally A9 404 removes DM, draft and uncertain immutable receipt
+  ---
+  duration_ms: 1.817334
+  type: 'test'
+  ...
+# Subtest: actual uncertain send still retains exact receipt when A9 authority remains (0ms post-send A9)
+ok 42 - actual uncertain send still retains exact receipt when A9 authority remains (0ms post-send A9)
+  ---
+  duration_ms: 1.620667
+  type: 'test'
+  ...
+# Subtest: actual uncertain send still retains exact receipt when A9 authority remains (50ms post-send A9)
+ok 43 - actual uncertain send still retains exact receipt when A9 authority remains (50ms post-send A9)
+  ---
+  duration_ms: 105.19325
+  type: 'test'
+  ...
+# Subtest: actual A9 stale held completion cannot paint after component cleanup
+ok 44 - actual A9 stale held completion cannot paint after component cleanup
+  ---
+  duration_ms: 1.013167
+  type: 'test'
+  ...
+# Subtest: P2 actual A14 404 clears buyer facts and customer draft (explicit future-version MOCK)
+ok 45 - P2 actual A14 404 clears buyer facts and customer draft (explicit future-version MOCK)
+  ---
+  duration_ms: 1.434791
+  type: 'test'
+  ...
+# Subtest: safe authority errors remain the actual InboxError transport class
+ok 46 - safe authority errors remain the actual InboxError transport class
+  ---
+  duration_ms: 0.044292
+  type: 'test'
+  ...
+# Subtest: actual current A13 without version keeps A14 disabled; future MOCK grants no backend claim
+ok 47 - actual current A13 without version keeps A14 disabled; future MOCK grants no backend claim
+  ---
+  duration_ms: 0.541792
+  type: 'test'
+  ...
+# Subtest: P1-2 actual A11 takeover write 404 clears private state despite failing follow-up A9
+ok 48 - P1-2 actual A11 takeover write 404 clears private state despite failing follow-up A9
+  ---
+  duration_ms: 0.869708
+  type: 'test'
+  ...
+# Subtest: P1-2 actual A12 send write 404 clears private state despite failing follow-up A9
+ok 49 - P1-2 actual A12 send write 404 clears private state despite failing follow-up A9
+  ---
+  duration_ms: 0.847083
+  type: 'test'
+  ...
+# Subtest: A13 server orders omission remains distinct from authorized omitted data
+ok 50 - A13 server orders omission remains distinct from authorized omitted data
+  ---
+  duration_ms: 0.504417
+  type: 'test'
+  ...
+# Subtest: A13 server orders omission remains distinct from authorized empty data
+ok 51 - A13 server orders omission remains distinct from authorized empty data
+  ---
+  duration_ms: 0.322667
+  type: 'test'
+  ...
+# Subtest: A13 server orders omission remains distinct from authorized populated data
+ok 52 - A13 server orders omission remains distinct from authorized populated data
+  ---
+  duration_ms: 0.333459
+  type: 'test'
+  ...
+1..52
+# tests 52
+# suites 0
+# pass 52
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 764.219334

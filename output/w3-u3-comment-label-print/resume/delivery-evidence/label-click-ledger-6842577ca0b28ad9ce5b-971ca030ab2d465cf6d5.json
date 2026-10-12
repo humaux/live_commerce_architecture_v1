@@ -1,0 +1,72 @@
+[
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "page": "/studio/console",
+    "control": "keyword filter",
+    "operation": "click",
+    "expected": "Three actual claimed keyword comments visible",
+    "actual": "Three actual claimed keyword comments visible",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "page": "/studio/console",
+    "control": "three checkboxes",
+    "operation": "check; uncheck first; recheck first",
+    "expected": "Selection counts 3→2→3",
+    "actual": "Selection counts 3→2→3",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "page": "/studio/console",
+    "control": "preview labels",
+    "operation": "click",
+    "expected": "Three exact synthetic names/keywords/quantities/time/session labels",
+    "actual": "Three exact synthetic names/keywords/quantities/time/session labels",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "page": "/studio/console",
+    "control": "paper selector",
+    "operation": "A4→label→A4; reload and reopen",
+    "expected": "Print media 60×40mm / A4 three columns; A4 preference survives reload",
+    "actual": "Print media 60×40mm / A4 three columns; A4 preference survives reload",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "page": "/studio/console",
+    "control": "print",
+    "operation": "click",
+    "expected": "Three exact {} A3 requests, three unique keys, confirmed badges survive A2 reload",
+    "actual": "Three exact {} A3 requests, three unique keys, confirmed badges survive A2 reload",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "page": "/studio/console",
+    "control": "close preview",
+    "operation": "click",
+    "expected": "Dialog closes; console remains usable",
+    "actual": "Dialog closes; console remains usable",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "page": "/studio/console",
+    "control": "single label",
+    "operation": "click",
+    "expected": "One label opens with restored paper preference",
+    "actual": "One label opens with restored paper preference",
+    "result": "PASS"
+  }
+]

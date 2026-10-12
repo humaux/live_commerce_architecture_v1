@@ -1,0 +1,9 @@
+{
+  "baseline": "992cff85",
+  "source": "b245fef897837aaebefcd56ac90a1b475cd195bc",
+  "method": "TypeScript AST expect call sequence, whitespace-normalized",
+  "before": 53,
+  "after": 53,
+  "identical": true,
+  "lostAckSameKeyPresent": true
+}

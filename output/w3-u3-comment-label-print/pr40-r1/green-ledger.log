@@ -1,0 +1,27 @@
+✔ Host subset: nested Provider and React19 context shadow defaults without sibling leakage (8.714958ms)
+✔ Host subset: provider updates reach stable children and separate roots keep their own values (0.204083ms)
+✔ Host subset: render errors restore context and hook ownership (0.219709ms)
+✔ Host subset: portal children inherit logical context and retain handlers/state (0.371208ms)
+✔ Host subset: portal target/key changes remount children and removal runs cleanup (0.125667ms)
+✔ Host subset: createPortal rejects invalid DOM targets rather than swallowing children (0.084541ms)
+✔ W3U3 PR40 rejected positive-quantity claims expose no printable output or actions (0.663875ms)
+✔ W3U3 PR40 rejected mark refresh removes an already previewed label (2.347584ms)
+✔ W3U3 PR40 close restores opener focus after native modal closes (0.261333ms)
+✔ W3U3 PR40 escape restores opener focus after native modal closes (0.186292ms)
+✔ W3U3 PR40 after print restores opener focus after native modal closes (8.6785ms)
+✔ W3U3 PR40 focus returns to the triggering button even when it was not the active element (0.177625ms)
+✔ W3U3 PR40 two-column A4 calibration fails only after the FAIL ledger is saved (9.094583ms)
+✔ W3U3 PR40 normal three-column A4 persists PASS without a teardown failure (7.807042ms)
+✔ W3U3 ledger actual comes from an independent observation (2.2295ms)
+✔ W3U3 ledger records failed observed criteria rather than constant PASS (2.289916ms)
+✔ W3U3 denied 401 resets busy and running without remount (2.146625ms)
+✔ W3U3 denied 403 resets busy and running without remount (1.194375ms)
+✔ W3U3 denied 404 resets busy and running without remount (0.991917ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 247.764333

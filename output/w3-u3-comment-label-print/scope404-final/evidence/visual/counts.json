@@ -1,0 +1,804 @@
+{
+ "commit": "4f0e08e500",
+ "generated": "2026-10-10T07:29:58.443Z",
+ "shots": {
+  "expected": 342,
+  "captured": 342,
+  "notRun": 0
+ },
+ "blockingInstances": 0,
+ "totals": {
+  "R1": {
+   "name": "horizontal overflow",
+   "severity": "block",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  },
+  "R2": {
+   "name": "form-row misalignment",
+   "severity": "block",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  },
+  "R3": {
+   "name": "table row consistency",
+   "severity": "block",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  },
+  "R4": {
+   "name": "min text size",
+   "severity": "warn",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  },
+  "R5": {
+   "name": "tap target (390)",
+   "severity": "warn",
+   "instances": 21,
+   "blocking": 0,
+   "groups": 18,
+   "units": 15
+  },
+  "R6": {
+   "name": "overlap",
+   "severity": "block",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  },
+  "R7": {
+   "name": "clipped text",
+   "severity": "block for controls, warn for labels/links",
+   "instances": 112,
+   "blocking": 0,
+   "groups": 112,
+   "units": 93
+  },
+  "R8": {
+   "name": "duplicate list label",
+   "severity": "warn",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  },
+  "R9": {
+   "name": "edge padding (390)",
+   "severity": "block",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  },
+  "R10": {
+   "name": "fixed-bar occlusion",
+   "severity": "warn",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  },
+  "R11": {
+   "name": "narrow control",
+   "severity": "warn",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  }
+ },
+ "byApp": {
+  "admin": {
+   "R7": 112,
+   "R5": 21
+  },
+  "platform": {},
+  "storefront": {}
+ },
+ "byRoute": [
+  {
+   "app": "admin",
+   "id": "orders",
+   "route": "/orders",
+   "state": "registry",
+   "counts": {
+    "R5": 3,
+    "R7": 6
+   },
+   "blocking": 0,
+   "warn": 9,
+   "total": 9,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "settings",
+   "route": "/settings",
+   "state": "registry",
+   "counts": {
+    "R5": 6,
+    "R7": 3
+   },
+   "blocking": 0,
+   "warn": 9,
+   "total": 9,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "settings-operations",
+   "route": "/settings/operations",
+   "state": "registry",
+   "counts": {
+    "R5": 6,
+    "R7": 3
+   },
+   "blocking": 0,
+   "warn": 9,
+   "total": 9,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "customers-customer",
+   "route": "/customers/[customer]",
+   "state": "registry",
+   "counts": {
+    "R5": 3,
+    "R7": 4
+   },
+   "blocking": 0,
+   "warn": 7,
+   "total": 7,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "promotions",
+   "route": "/promotions",
+   "state": "registry",
+   "counts": {
+    "R7": 6
+   },
+   "blocking": 0,
+   "warn": 6,
+   "total": 6,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "settings-payments-card",
+   "route": "/settings/payments/card",
+   "state": "registry",
+   "counts": {
+    "R5": 3,
+    "R7": 3
+   },
+   "blocking": 0,
+   "warn": 6,
+   "total": 6,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "home",
+   "route": "/",
+   "state": "registry",
+   "counts": {
+    "R7": 5
+   },
+   "blocking": 0,
+   "warn": 5,
+   "total": 5,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "products-new-variants",
+   "route": "/products/new",
+   "state": "create-with-variants",
+   "counts": {
+    "R7": 5
+   },
+   "blocking": 0,
+   "warn": 5,
+   "total": 5,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "products-product",
+   "route": "/products/[product]",
+   "state": "registry",
+   "counts": {
+    "R7": 5
+   },
+   "blocking": 0,
+   "warn": 5,
+   "total": 5,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "ads-attribution",
+   "route": "/ads/attribution",
+   "state": "registry",
+   "counts": {
+    "R7": 4
+   },
+   "blocking": 0,
+   "warn": 4,
+   "total": 4,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "design",
+   "route": "/design",
+   "state": "registry",
+   "counts": {
+    "R7": 4
+   },
+   "blocking": 0,
+   "warn": 4,
+   "total": 4,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "finance-reports",
+   "route": "/finance/reports",
+   "state": "registry",
+   "counts": {
+    "R7": 4
+   },
+   "blocking": 0,
+   "warn": 4,
+   "total": 4,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "products-new",
+   "route": "/products/new",
+   "state": "create-empty",
+   "counts": {
+    "R7": 4
+   },
+   "blocking": 0,
+   "warn": 4,
+   "total": 4,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "studio-console",
+   "route": "/studio/console",
+   "state": "registry",
+   "counts": {
+    "R7": 4
+   },
+   "blocking": 0,
+   "warn": 4,
+   "total": 4,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "team",
+   "route": "/team",
+   "state": "registry",
+   "counts": {
+    "R7": 4
+   },
+   "blocking": 0,
+   "warn": 4,
+   "total": 4,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "ads",
+   "route": "/ads",
+   "state": "registry",
+   "counts": {
+    "R7": 3
+   },
+   "blocking": 0,
+   "warn": 3,
+   "total": 3,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "billing",
+   "route": "/billing",
+   "state": "registry",
+   "counts": {
+    "R7": 3
+   },
+   "blocking": 0,
+   "warn": 3,
+   "total": 3,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "collections",
+   "route": "/collections",
+   "state": "registry",
+   "counts": {
+    "R7": 3
+   },
+   "blocking": 0,
+   "warn": 3,
+   "total": 3,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "customers",
+   "route": "/customers",
+   "state": "registry",
+   "counts": {
+    "R7": 3
+   },
+   "blocking": 0,
+   "warn": 3,
+   "total": 3,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "customers-import",
+   "route": "/customers/import",
+   "state": "registry",
+   "counts": {
+    "R7": 3
+   },
+   "blocking": 0,
+   "warn": 3,
+   "total": 3,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "finance",
+   "route": "/finance",
+   "state": "registry",
+   "counts": {
+    "R7": 3
+   },
+   "blocking": 0,
+   "warn": 3,
+   "total": 3,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "inventory",
+   "route": "/inventory",
+   "state": "registry",
+   "counts": {
+    "R7": 3
+   },
+   "blocking": 0,
+   "warn": 3,
+   "total": 3,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "messages",
+   "route": "/messages",
+   "state": "registry",
+   "counts": {
+    "R7": 3
+   },
+   "blocking": 0,
+   "warn": 3,
+   "total": 3,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "orders-cvs-print",
+   "route": "/orders/cvs-print",
+   "state": "registry",
+   "counts": {
+    "R7": 3
+   },
+   "blocking": 0,
+   "warn": 3,
+   "total": 3,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "orders-new",
+   "route": "/orders/new",
+   "state": "registry",
+   "counts": {
+    "R7": 3
+   },
+   "blocking": 0,
+   "warn": 3,
+   "total": 3,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "products",
+   "route": "/products",
+   "state": "registry",
+   "counts": {
+    "R7": 3
+   },
+   "blocking": 0,
+   "warn": 3,
+   "total": 3,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "products-import",
+   "route": "/products/import",
+   "state": "registry",
+   "counts": {
+    "R7": 3
+   },
+   "blocking": 0,
+   "warn": 3,
+   "total": 3,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "returns",
+   "route": "/returns",
+   "state": "registry",
+   "counts": {
+    "R7": 3
+   },
+   "blocking": 0,
+   "warn": 3,
+   "total": 3,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "settings-settlements",
+   "route": "/settings/settlements",
+   "state": "registry",
+   "counts": {
+    "R7": 3
+   },
+   "blocking": 0,
+   "warn": 3,
+   "total": 3,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "studio",
+   "route": "/studio",
+   "state": "registry",
+   "counts": {
+    "R7": 3
+   },
+   "blocking": 0,
+   "warn": 3,
+   "total": 3,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "studio-claims",
+   "route": "/studio/claims",
+   "state": "registry",
+   "counts": {
+    "R7": 3
+   },
+   "blocking": 0,
+   "warn": 3,
+   "total": 3,
+   "notRun": 0
+  },
+  {
+   "app": "storefront",
+   "id": "cart",
+   "route": "/cart",
+   "state": "registry",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  },
+  {
+   "app": "storefront",
+   "id": "checkout",
+   "route": "/checkout",
+   "state": "registry",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  },
+  {
+   "app": "storefront",
+   "id": "claim",
+   "route": "/claim",
+   "state": "registry",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  },
+  {
+   "app": "storefront",
+   "id": "collections",
+   "route": "/collections",
+   "state": "registry",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  },
+  {
+   "app": "storefront",
+   "id": "collections-slug",
+   "route": "/collections/[slug]",
+   "state": "registry",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  },
+  {
+   "app": "platform",
+   "id": "contact",
+   "route": "/contact",
+   "state": "public",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  },
+  {
+   "app": "platform",
+   "id": "data-deletion",
+   "route": "/data-deletion",
+   "state": "public",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  },
+  {
+   "app": "storefront",
+   "id": "data-deletion",
+   "route": "/data-deletion",
+   "state": "registry",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  },
+  {
+   "app": "platform",
+   "id": "home",
+   "route": "/",
+   "state": "public",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  },
+  {
+   "app": "storefront",
+   "id": "home",
+   "route": "/",
+   "state": "registry",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "invite-token",
+   "route": "/invite/[token]",
+   "state": "registry",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  },
+  {
+   "app": "storefront",
+   "id": "legal-anti-fraud",
+   "route": "/legal/anti-fraud",
+   "state": "registry",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  },
+  {
+   "app": "storefront",
+   "id": "legal-slug",
+   "route": "/legal/[slug]",
+   "state": "registry",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  },
+  {
+   "app": "storefront",
+   "id": "order-link",
+   "route": "/order-link",
+   "state": "registry",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  },
+  {
+   "app": "storefront",
+   "id": "orders-lookup",
+   "route": "/orders/lookup",
+   "state": "registry",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  },
+  {
+   "app": "storefront",
+   "id": "orders-orderid",
+   "route": "/orders/[orderID]",
+   "state": "registry",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  },
+  {
+   "app": "storefront",
+   "id": "pages-slug",
+   "route": "/pages/[slug]",
+   "state": "registry",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  },
+  {
+   "app": "platform",
+   "id": "privacy",
+   "route": "/privacy",
+   "state": "public",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  },
+  {
+   "app": "storefront",
+   "id": "privacy",
+   "route": "/privacy",
+   "state": "registry",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  },
+  {
+   "app": "storefront",
+   "id": "products",
+   "route": "/products",
+   "state": "registry",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  },
+  {
+   "app": "storefront",
+   "id": "products-slug",
+   "route": "/products/[slug]",
+   "state": "registry",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "reset",
+   "route": "/reset",
+   "state": "registry",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  },
+  {
+   "app": "storefront",
+   "id": "search",
+   "route": "/search",
+   "state": "registry",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "signed-out-home",
+   "route": "/",
+   "state": "signed-out",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  },
+  {
+   "app": "admin",
+   "id": "signup",
+   "route": "/signup",
+   "state": "registry",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  },
+  {
+   "app": "platform",
+   "id": "terms",
+   "route": "/terms",
+   "state": "public",
+   "counts": {},
+   "blocking": 0,
+   "warn": 0,
+   "total": 0,
+   "notRun": 0
+  }
+ ]
+}
