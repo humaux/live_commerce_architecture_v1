@@ -1,0 +1,48 @@
+import json, hashlib, subprocess, re, collections, time
+from pathlib import Path
+root=Path.cwd(); out=root/'output/matrix-ledger-enforce/round5/audit'; r=root/'output/matrix-ledger-enforce/round5'
+def load(p): return json.loads(Path(p).read_text())
+def sha(p): return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+s=load(r/'SOURCE.json'); a=load(r/'ARTIFACTS.json'); m=load(r/'browser/browser-evidence.json'); checks=[]
+def check(ok,msg):
+ assert ok,msg
+ checks.append(msg)
+base='d93700a4ab0fb541aa8d3ee2d540c0d94b29f50f'
+check(subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()==base,'HEAD matches designated source commit')
+check(s['tested_source_commit']==a['tested_source_commit']==m['tested_source_commit']==base,'three commit bindings equal')
+check(s['source_files_sha256']==a['source_files_sha256']==m['source_files_sha256'] and len(s['source_files_sha256'])==14,'exact 14 hard producer map agreement')
+before={p:sha(root/p) for p in s['source_files_sha256']}
+check(before==s['source_files_sha256'],'all 14 current checkout hashes match')
+for p,h in before.items(): check(hashlib.sha256(subprocess.check_output(['git','show',base+':'+p])).hexdigest()==h,'Git blob matches '+p)
+for p,h in a['artifacts_sha256'].items(): check(sha(root/p)==h,'indexed bytes match '+p)
+check(len(m['copied_native_bytes'])==5,'five native copy entries')
+for ent in m['copied_native_bytes']:
+ check((root/ent['source_native']).read_bytes()==(root/ent['canonical']).read_bytes() and sha(root/ent['canonical'])==ent['sha256']==a['artifacts_sha256'][ent['canonical']],'native origin exact '+ent['canonical'])
+for name,n in [('playwright.log',12),('cc12-playwright.log',2)]:
+ txt=(r/'browser'/name).read_text(); lines=re.findall(r'^\s*✓\s+\d+\s+(.+)$',txt,re.M)
+ check(len(lines)==n and len(set(lines))==n and re.search(r'\b'+str(n)+r' passed\b',txt) and not re.search(r'\b[1-9]\d* (?:failed|skipped)\b',txt),'native unique passed count '+name)
+for name in ['pe-last-run.json','cc12-last-run.json']:
+ j=load(r/'browser'/name); check(j['status']=='passed' and j['failedTests']==[],'last run passed '+name)
+raw=load(r/'browser/product-editor-click-ledger.json'); cases=load(root/'tests/foundation/testdata/product_editor_matrix_cases.json'); golden=load(root/'tests/foundation/testdata/product_editor_mobile_matrix_ledger.json')
+check(len(raw)==322 and len(cases)==89 and len(golden)==267,'raw322 cases89 golden267')
+fields=['page','locale','width','row','control','action','expected','actual']; keys=['page','row','control','action','expected']; casekeys={tuple(c.get(k,'') for k in keys) for c in cases}
+check(len(casekeys)==89,'89 case identities unique')
+project=[{k:v.get(k,'') for k in fields} for v in raw if v.get('width')==390 and v.get('page') in {'mobile matrix new','mobile matrix edit','mobile axis remove','mobile matrix bulk'}]
+check(project==golden,'golden exact ordered eight-field independent native projection no synthesized PASS')
+check(all(v['actual']=='PASS' for v in project),'every native required row PASS')
+ids=[tuple(v[k] for k in fields[:6]) for v in project]
+check(len(set(ids))==267,'267 unique required identities')
+check(collections.Counter(v['locale'] for v in project)=={'zh-TW':89,'zh-CN':89,'en':89},'89 each locale width390')
+for ent in s['actual_commands']:
+ receipt=load(root/ent['receipt']); check(receipt['command']==ent['command'] and receipt['exit_code']==ent['exit_code']==0 and receipt['source_files_sha256']==receipt['source_files_sha256_after']==before,'actual current-source green command '+str(ent['command']))
+check(load(r/'browser-initial-archive-red.json')['exit_code']==1 and load(r/'canonical-preparation-error.json')['exit_code']==1,'prior composite/preparation failures retained exit1')
+delivery=(root/'output/matrix-ledger-enforce/DELIVERY.md').read_text()
+check('round5 alone is the designated current canonical evidence' in delivery and 'New CI/K3/external approval: NOT_RUN' in delivery,'DELIVERY history/current/NOT_RUN honesty')
+for target in re.findall(r'\]\(([^)]+)\)',delivery): check((root/'output/matrix-ledger-enforce'/target).exists(),'DELIVERY link exists '+target)
+started=time.time(); cmd=['go','test','./tests/foundation','-run','^TestProductEditorMatrixLedger','-count=1','-v']
+run=subprocess.run(cmd,capture_output=True,text=True,timeout=300); (out/'go-ledger-independent.log').write_text(run.stdout+run.stderr)
+(out/'go-ledger-independent.receipt.json').write_text(json.dumps({'task_id':'27efd779-sub-canonical-audit','base_commit':base,'command':cmd,'timeout_seconds':300,'exit_code':run.returncode,'duration_seconds':time.time()-started,'source_before':before,'source_after':{p:sha(root/p) for p in before}},indent=2)+'\n')
+check(run.returncode==0,'independent focused Go exit0 exact titles and corruption controls')
+check(before=={p:sha(root/p) for p in before},'14 producer hashes stable before after audit')
+result={'task_id':'27efd779-sub-canonical-audit','base_commit':base,'result':'PASS','scope':'E3 scoped artifact audit and independent DB-free focused Go gate','checks':checks,'indexed_artifacts':len(a['artifacts_sha256']),'native_copies':5,'raw_rows':322,'unique_required_PASS':267,'cases':89,'unresolved':[],'NOT_RUN':['new browser run','full Node','PG','CI/K3/external approval'],'commands':[{'command':'python3 executes canonical-audit.source.txt via compile','exit_code':0},{'command':cmd,'exit_code':run.returncode}]}
+(out/'canonical-audit.json').write_text(json.dumps(result,indent=2)+'\n'); print(json.dumps({k:v for k,v in result.items() if k!='checks'},indent=2)); print('PASS checks',len(checks))

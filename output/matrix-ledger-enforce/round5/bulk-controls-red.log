@@ -1,0 +1,44 @@
+✖ actual rendered bulk controls have matching real actions in the canonical table (9.481333ms)
+✔ removing the Apply declaration is RED even when table and ledger agree (1.761875ms)
+✔ a new rendered control without a case is RED (1.467625ms)
+✔ Escape alone is not a select action (1.070333ms)
+✔ changing the production identity is RED (1.02075ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 4
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 217.209625
+
+✖ failing tests:
+
+test at tests/ci/product-editor-matrix-controls.test.mjs:10:1
+✖ actual rendered bulk controls have matching real actions in the canonical table (9.481333ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   'Missing rendered select action bulk-field',
+  +   'Missing rendered select action bulk-target',
+  +   'Unidentified actionable select',
+  +   'Unidentified actionable select',
+  +   'Missing rendered input action bulk-value',
+  +   'Unidentified actionable button',
+  +   'Missing rendered button action bulk-apply'
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/tests/ci/product-editor-matrix-controls.test.mjs:11:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'Missing rendered select action bulk-field', 'Missing rendered select action bulk-target', 'Unidentified actionable select', 'Unidentified actionable select', 'Missing rendered input action bulk-value', 'Unidentified actionable button', 'Missing rendered button action bulk-apply' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

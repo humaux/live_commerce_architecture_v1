@@ -1,0 +1,16 @@
+# Purpose: demonstrate actual execution-gate refusal on the final runner shapes, then restore exact bytes.
+# Depends on: local check-gates and two owned calibration mutations; no GitHub/PG/browser invocation.
+# Used by: PR28 R4/R5 execution evidence. Only restored informational harness files are modified.
+import subprocess,json,hashlib
+from pathlib import Path
+base=Path(__file__).parent;sha=lambda x:hashlib.sha256(x).hexdigest()
+for name,path,change in [('node','scripts/dev/test-node.sh',lambda s:'\n'.join(line.replace('tests/ci/product-editor-matrix-ledger.test.mjs','') if line.startswith('node ') else line for line in s.split('\n'))),('go-ci','.github/workflows/gates.yml',lambda s:s.replace('LC_FOUNDATION_SKIP="$(node scripts/dev/shard-plan.mjs skip "${MODE#shard:}")"','LC_FOUNDATION_SKIP="TestProductEditorMatrixLedgerEvidence"'))]:
+ p=Path(path);original=p.read_bytes();changed=change(original.decode()).encode();assert changed!=original
+ (base/(name+'-binding-original.source.txt')).write_bytes(original)
+ try:
+  p.write_bytes(changed)
+  with (base/(name+'-binding-final-red.log')).open('w') as log:r=subprocess.run(['bash','scripts/dev/check-gates.sh'],stdout=log,stderr=subprocess.STDOUT,timeout=300)
+ finally:p.write_bytes(original)
+ assert p.read_bytes()==original
+ record={'command':['bash','scripts/dev/check-gates.sh'],'exit_code':r.returncode,'tested_source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'mutated_file':path,'before_sha256':sha(original),'mutated_sha256':sha(changed),'restored_sha256':sha(p.read_bytes()),'mutation':'remove actual ledger Node argv' if name=='node' else 'exclude exact Go evidence test at CI dispatch'}
+ (base/(name+'-binding-final-red.json')).write_text(json.dumps(record,indent=2)+'\n');assert r.returncode==1;print(name,r.returncode)

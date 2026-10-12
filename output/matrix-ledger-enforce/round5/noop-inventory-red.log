@@ -1,0 +1,29 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
++ [
++   'DOM inventory must use the imported real recorder assertRenderedControls method'
++ ]
+- []
+
+    at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/[eval1]:2:8
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async node:internal/modules/esm/loader:246:26
+    at async ModuleLoader.executeModuleJob (node:internal/modules/esm/loader:243:20)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: [
+    'DOM inventory must use the imported real recorder assertRenderedControls method'
+  ],
+  expected: [],
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.15.0

@@ -1,41 +1,63 @@
-# matrix-ledger-enforce — PR28 round-4
+# matrix-ledger-enforce — PR28 round-5
 
-- Branch: `unit/matrix-ledger-enforce`; starting head `c81533c26a067422141dcb9d3a0f775d09078027`.
-- `git fetch origin && git merge origin/r3/integration` → exit 0, already up to date at merged trunk `1200178c5ffe3decaee09077e2bb8b7f59ea715c`.
-- Tested source: **`2d9edcab7392cd886af975979f5c551745accfbc`**, recorded in [SOURCE.json](round4/SOURCE.json). Eleven unit executable producers are checkout-bound; twelve shared context hashes remain informational. The final handoff commit changes receipts/documentation only.
-- Author: Codex-4 `/root`, exact parent runtime variant/effort not exposed. Isolated JS worker: `test_worker`, `gpt-6.1-sol`, medium, detached worktree `.worktrees/pr28-r4-js-proof`. Read-only execution/source reviewer: `explorer`, `gpt-6.1-sol`, medium. [Task/worker proof](round4/PROOF.json).
-- Scope: matrix evidence/outcome and execution gates. Application, fixture, spec, waits and browser assertions are unchanged. Foreign `output/ext-agents/` is excluded.
+- Branch: `unit/matrix-ledger-enforce`; starting remote head `40bad95377741ebcb76b371e9d42f03bce1df581`.
+- `git fetch origin && git merge origin/unit/matrix-ledger-enforce && git merge origin/r3/integration` → exit 0; trunk union merge `760e354e8d466e2e5876d1fb5d433d74e3d10d2e`, merged trunk `fef7920378c0b8cde843d22b27d33c62b07451b7`.
+- Tested source: **`d93700a4ab0fb541aa8d3ee2d540c0d94b29f50f`**, [SOURCE.json](round5/SOURCE.json). Fourteen unit executable producers (including the modified bulk widget/test selectors) are checkout-bound; twelve unchanged shared context files remain informational. Harness execution is independently content-bound. Golden ledger fixture projects only the 267 mobile rows unchanged from the final real native run, not synthesized; evidence/fixture handoff does not change frozen executable bytes.
+- Author: Codex-4 `/root`; parent runtime/effort not exposed. Go worker `test_worker`, `gpt-6.1-sol`, medium, isolated `.worktrees/pr28-r5-run-identity` at `760e354e`; owned only the Go outcome module and [worker proof](round5-run-identity/NOTES.md). Independent scoped reviewer `explorer`, same model/medium, read-only; Humaux `d6cfc5d0-932a-4f75-ad6d-d88f0d849a6e`. No recursive delegation.
+- Contract/interface changes: none. Required CI gates: foundation-shards and original `--browser-product-editor`; new CI results pending integrator.
+- Native logs/worker patch are retained unchanged, including tool-emitted whitespace. `git diff --cached --check` for source/docs/fixture passes (exit 0); the unrestricted receipt diff reports native whitespace (exit 2) and is not used to rewrite evidence.
+- Foreign `output/ext-agents/` is excluded. Application changes are stable test IDs only; original waits/assertions remain, with stronger bulk operation/readback assertions.
 
-## Fixes and red → green
+## This round: red → green
 
-P1-a: byte/hash integrity did not establish a passing run. After all existing hashes and exact ledger identities validate, both native final receipts must explicitly say `passed` with `failedTests=[]`; the PE/CC12 logs must start and finish exactly 12/2 cases with zero failed/skipped/flaky/interrupted/not-run outcomes. Manifest passed counts, skipped=0, raw rows, exact required PASS count and per-locale totals must agree with the native results and validated ledger. The logical outcome/fixture module keeps each Go file below 600 lines.
+**4251070834 (P1):** table-only completeness omitted seven actual bulk controls. The JSX scanner derives controls from production select/input/button nodes; the browser enumerates the mounted DOM and binds its call to the real imported recorder method. Removing a rendered control's table row is RED even when the reduced table/ledger agree. Each locale at 390px now actually selects a SKU, opens, fills/cancels/reopens, selects field/target/scope/operation, fills/apply, saves and reloads. Cancel compares every matrix input/select value, checked and disabled state. Apply adds 2 only to White (3→5), leaves Black at 4; exactly one document write, original SKU identities/prices/compare-at/codes and quantities persist after reload and REAL_PG archive readback.
 
-[Outcome RED](round4/outcome-red.json) → exit 1: all 13 initial consistently rehashed corruptions were accepted by the old gate. [Current-source GREEN](round4/outcome-final-green.json) → exit 0: 17 rehashed outcome controls reject semantic corruption; six original byte/source corruptions still reject and ten informational shared-source changes still pass. Exact command: `go test ./tests/foundation -run '^TestProductEditorMatrixLedgerEvidence(RunOutcome|SharedSources|Corruption)$' -count=1 -v`. The extra controls retain 12 passing cases while appending a failure/skip/flaky outcome, or remove the completion summary. Both native copy hashes and the external manifest index are refreshed in each isolated corruption fixture, so a SHA mismatch cannot satisfy these tests.
+[Initial controls RED](round5/bulk-controls-red.log): exit 1, all seven missing controls reproduced. On final gate, [missing Apply RED](round5/missing-control-red.log) and [swapped/no-op recorder RED](round5/noop-inventory-red.log): exit 1 each; [controls GREEN](round5/bulk-controls-green.log): 9/9, exit 0. [Proof/hash record](round5/bulk-proof.json). Canonical action/outcome/expected-claim gates and identity checks are preserved.
 
-P1-b: existing `check-gates` coverage mistook the Node filename in a Go source-hash list for execution. [Node-removal before](round4/binding-before-red.json) and [real CI-skip insertion before](round4/go-binding-before-red.json) both incorrectly exited 0 (acceptance RED=1). The new independent execution check requires active `node --test` argv entries, the actual balanced CI planner dispatch and real foundation selector forwarding; shared runner hashes remain informational. On the same real mutations [Node removal now](round4/binding-after-red.json) and [CI-skip insertion now](round4/go-binding-after-red.json), `bash scripts/dev/check-gates.sh` exits 1 with the specific binding error; originals were restored byte-for-byte. [Binding unit RED](round4/binding-unit-red.json) → 1; [GREEN](round4/binding-unit-green.json) → 0, six tests.
+**4251070846 (P2/test integrity):** counts alone admitted a different suite saying 12/2 passed. Go now requires the exact consumer files and complete titles, once each, for all PE/review/feedback and CC12 cases; line numbers/durations may change. [Worker native RED](round5-run-identity/red.receipt.json): exit 1, 12 consistently rehashed wrong-file/title/substitute/drop/duplicate/fake-run corruptions accepted by the old gate. [Worker GREEN](round5-run-identity/green.receipt.json): exit 0 (prior 33 controls + 12 identity controls + metadata positive). This is isolated-fixture evidence; final current-source canonical gate follows below.
 
-P2: unary signatures now retain prefix/postfix operators, distinguishing `!/~ /+`, `++/--` and postfix updates while preserving harmless parentheses. Presence of `CI` forbids either calibration hook, including empty values, before source mutation/snapshot or collection. [Isolated JS RED](round4/js-proof/red.log) → 1 (12 failures); [GREEN](round4/js-proof/green.log) → 0 (12 passed); [parent independent focused run](round4/js-parent-green.json) → 0. Genuine red/green logs are separate from the honest initial child-harness errors/recursive run, which are preserved as history. [Baseline source](round4/baseline-claims.source.txt) is inert, not a runnable snapshot.
+The first full run at `d10e499d` had 12+2 Playwright passes and a valid 267-row ledger, but the Go archive expectation still said White=3. Its [actual composite RED](round5/browser-initial-archive-red.json) is exit 1 and retained uncompressed. `d93700a4` changes that exact expected quantity to the saved bulk result 5, retaining Black=4 and every other archive/replacement field and condition. The original full mode then exits 0; this is an updated exact assertion for the added flow, not a relaxed assertion.
 
 ## Current actual gates
 
-Original full browser mode: 12 PE/review + 2 frozen CC12 cases, zero skips; both last-run receipts are passed with empty failedTests. Matrix ledger: 286 raw rows, 231 unique required PASS identities, 77 per locale (`zh-TW`, `zh-CN`, `en`) at 390px. All frozen unit/context hashes are unchanged before/after these runs. [Canonical manifest](round4/browser/browser-evidence.json); five native files are copied byte-for-byte, with the external [artifact index](round4/ARTIFACTS.json). No screenshot claim is made.
+The original full `--browser-product-editor` mode passes 12 PE/review/feedback + 2 frozen CC12, zero skips. Both native last-run receipts are passed with empty failedTests. Ledger: 322 raw rows, 267 unique required PASS identities, 89 per locale (`zh-TW`, `zh-CN`, `en`) at 390px. [Canonical manifest](round5/browser/browser-evidence.json); five native files copied byte-for-byte, with [external artifact hashes](round5/ARTIFACTS.json). No generated runnable test/spec snapshots are committed.
 
-| Command | Exit | Evidence |
-| --- | --- | --- |
-| `bash scripts/dev/test-local.sh --browser-product-editor` | 0 | [receipt](round4/browser-run.json) |
-| `bash scripts/dev/test-node.sh` | 0 | [receipt](round4/test-node.json) |
-| `pnpm typecheck:admin` | 0 | [receipt](round4/typecheck.json) |
-| `go vet -tags browser ./tests/foundation` | 0 | [receipt](round4/go-vet.json) |
-| `bash scripts/dev/check-gates.sh` | 0 | [frozen-source receipt](round4/check-gates.json), [final staged-artifact receipt](round4/staged-check-gates.json) |
-| `go test ./tests/foundation -run '^TestProductEditorMatrixLedger' -count=1 -v` | 0 | [receipt](round4/go-ledger.json), exact ledger, actual canonical evidence, corruption/shared/outcome controls |
+| Exact command | Exit | Evidence |
+|---|---:|---|
+| `bash scripts/dev/test-local.sh --browser-product-editor` | 0 | [native/full receipt](round5/browser-product-editor.json) |
+| `bash scripts/dev/test-node.sh` | 0 | [final source receipt](round5/test-node-final.json) |
+| `bash scripts/dev/check-gates.sh` | 0 | [receipt](round5/check-gates.json), all 83 modes documented/run and contract drift errors=0 |
+| `pnpm typecheck:admin` | 0 | [receipt](round5/typecheck-final.json) |
+| `go vet -tags browser ./tests/foundation` | 0 | [receipt](round5/go-vet.json), identical final file hashes before source commit |
+| `node --test tests/ci/product-editor-matrix-controls.test.mjs` | 0 | [9 tests](round5/bulk-controls-green.log) |
+| `go test ./tests/foundation -run '^TestProductEditorMatrixLedger' -count=1 -v` | 0 | [current canonical and all corruption controls](round5/go-ledger.json) |
 
-E3 actual local acceptance and independent deterministic artifact acceptance passed. [Independent receipt](round4/audit/command-receipt.json): 33 checks verify the 64-entry index as audited, all five unchanged native copies, 11 hard source hashes, exact outcomes and required PASS identities. The actual independent command `go test ./tests/foundation -run '^TestProductEditorMatrixLedgerEvidence($|RunOutcome$)' -count=1 -v` exited 0. This does not claim an independent full browser/PG run or new external review/CI approval. The final handoff commit contains evidence/documentation only. After the audit receipts and metadata were staged, the same actual evidence/outcome Go target exited 0 again ([final receipt](round4/final-evidence.json)); final staged `check-gates` also exited 0. `check-gates` documents all 83 modes and reports contract drift errors=0.
+| `bash scripts/dev/check-gates.sh` (after actual execution-binding injections/restoration) | 0 | [final restored receipt](round5/check-gates-restored.json), errors=0 and all modes documented |
+| `go test ./tests/foundation -run '^TestProductEditorMatrixLedger' -count=1 -v` (final staged artifact set) | 0 | [final receipt](round5/go-ledger-final.json) |
 
-## Limits and history
+## Retained round-4 fixes
 
-- MOCK identity/isolated REAL_PG/browser execution only; no provider, production, deployment, PR merge or thread-resolution acceptance.
-- CI and a new external independent review: NOT_RUN in this local batch. The read-only source audit (`de8791f4-0dc5-465e-973a-ce8916253d8e`) is E1, not K3/CI approval.
-- `test-node.sh`: optional media `r04-input-runner` is honestly NOT_RUN because the pinned binary is unset; the required Node suites pass. Structural test titles marked Go NOT_RUN do not claim a runtime gate.
-- One intermediate outcome fixture build error and initial JS child-harness failures are retained; they are not counted as successful red acceptance evidence.
-- Accepted FOLLOWUPS remain unchanged: source-list derivation/per-path expansion, self-attesting receipts and merge-ref product-context drift. Execution content checks support the current bounded runner shapes, not arbitrary shell control flow; actual required CI browser execution remains necessary.
-- Earlier `merge-ref/`, round-1 and round-2 runs describe their own historical source; they do not prove this changed source. Only `round4/` is designated canonical here.
+P1-a still requires both native receipts passed, no failed tests, exact log outcomes and manifest/ledger agreement. P1-b still independently requires active Node argv and balanced foundation CI selector forwarding (now also the new controls suite). Prefix/postfix operator signatures and refusal of both mutation hooks whenever CI is present (even empty) are retained. [Historical round-4 proof](round4/PROOF.json), [outcome red](round4/outcome-red.json), [Node removal red](round4/binding-after-red.json), [Go skip red](round4/go-binding-after-red.json), [unary/CI-hook red-green](round4/js-proof/green.log). These historical runs bind their own source; round5 alone is the designated current canonical evidence.
+
+The current-source P1-b injection actually removes the ledger suite from Node argv, then separately excludes the Go evidence test in the CI dispatch: [Node RED](round5/node-binding-final-red.json) and [Go CI RED](round5/go-ci-binding-final-red.json) each exit 1. Both receipts prove byte-for-byte restoration. [Restored final check-gates](round5/check-gates-restored.json) and [final canonical Go](round5/go-ledger-final.json) both exit 0 on the final staged artifact/fixture set.
+
+Independent scoped artifact acceptance [audit](round5/audit/canonical-audit.json) passes 128 assertions plus an [independent actual Go run](round5/audit/go-ledger-independent.receipt.json), exit 0. Its 59-artifact snapshot was audited before this final metadata/receipt expansion; it is local E3 artifact proof, not new full browser, CI or K3 approval.
+
+| Review item | Integrator reply text |
+|---|---|
+| 4251070834 | All seven rendered bulk controls now receive real select/fill/click actions, Cancel is unchanged-state checked, Apply persists White=5/Black=4 through save/reload and REAL_PG; actual JSX/DOM completeness rejects a missing Apply row. |
+| 4251070846 | Canonical logs require the exact 12 PE/review/feedback and two CC12 file/title identities once each; consistently rehashed wrong-file/title and same-count substitutions are rejected. |
+| R4 P1-a | Both last-run receipts and logs require passed outcomes with no failures/skips, and manifest counts must match the real ledger; all rehashed outcome corruptions are rejected. |
+| R4 P1-b | Removing active Node argv or excluding the Go test from the actual CI selector turns check-gates red; byte-exact restoration is green. |
+| R4 cheap P2s | Unary operators remain signature-bound and CI presence refuses either mutation hook; full current Node suite is green. |
+
+## Limits
+
+- MOCK identity + isolated REAL_PG/browser only; no real provider, production, deployment, PR merge or thread resolution.
+- New CI/K3/external approval: NOT_RUN; focused read-only source review is not a new full independent approval.
+- Optional media r04 runner remains NOT_RUN because its pinned binary is unset; required Node suites pass.
+- One initial artifact preparation attempt used the wrong fixture projection and DELIVERY header; [receipt](round5/canonical-preparation-error.json) is exit 1, retained as a preparation error, not red-test acceptance. After restoring the original projection/header contract, the same complete Go gate exits 0.
+- The initial full composite failure remains honestly recorded; its passing Playwright receipts are not designated final complete evidence.
+- Accepted FOLLOWUPS (source-list/path expansion, self-attesting receipts, unrelated merge-ref context drift) remain unchanged. Execution content checks support the current bounded runner shapes, not arbitrary shell control flow.
+
+Owned isolated worker worktree was removed after byte-exact proof/patch comparison (exit 0); native test processes completed and the browser-build resource was released. Parent checkout retains all RED/GREEN evidence.

@@ -1,0 +1,41 @@
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity/playwright.log/wrong-file
+    catalog_matrix_evidence_test.go:410: consistently rehashed wrong-file must reject executed case identity
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity/playwright.log/wrong-title
+    catalog_matrix_evidence_test.go:410: consistently rehashed wrong-title must reject executed case identity
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity/playwright.log/substituted-case
+    catalog_matrix_evidence_test.go:410: consistently rehashed substituted-case must reject executed case identity
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity/playwright.log/drop-case
+    catalog_matrix_evidence_test.go:410: consistently rehashed drop-case must reject executed case identity
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity/playwright.log/duplicate-case
+    catalog_matrix_evidence_test.go:410: consistently rehashed duplicate-case must reject executed case identity
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity/playwright.log/same-counts-fake-run
+    catalog_matrix_evidence_test.go:410: consistently rehashed same-counts-fake-run must reject executed case identity
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity/cc12-playwright.log/wrong-file
+    catalog_matrix_evidence_test.go:410: consistently rehashed wrong-file must reject executed case identity
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity/cc12-playwright.log/wrong-title
+    catalog_matrix_evidence_test.go:410: consistently rehashed wrong-title must reject executed case identity
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity/cc12-playwright.log/substituted-case
+    catalog_matrix_evidence_test.go:410: consistently rehashed substituted-case must reject executed case identity
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity/cc12-playwright.log/drop-case
+    catalog_matrix_evidence_test.go:410: consistently rehashed drop-case must reject executed case identity
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity/cc12-playwright.log/duplicate-case
+    catalog_matrix_evidence_test.go:410: consistently rehashed duplicate-case must reject executed case identity
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity/cc12-playwright.log/same-counts-fake-run
+    catalog_matrix_evidence_test.go:410: consistently rehashed same-counts-fake-run must reject executed case identity
+--- FAIL: TestProductEditorMatrixLedgerEvidenceRunIdentity (0.20s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceRunIdentity/playwright.log/wrong-file (0.03s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceRunIdentity/playwright.log/wrong-title (0.01s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceRunIdentity/playwright.log/substituted-case (0.02s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceRunIdentity/playwright.log/drop-case (0.02s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceRunIdentity/playwright.log/duplicate-case (0.01s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceRunIdentity/playwright.log/same-counts-fake-run (0.02s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceRunIdentity/cc12-playwright.log/wrong-file (0.01s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceRunIdentity/cc12-playwright.log/wrong-title (0.02s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceRunIdentity/cc12-playwright.log/substituted-case (0.02s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceRunIdentity/cc12-playwright.log/drop-case (0.01s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceRunIdentity/cc12-playwright.log/duplicate-case (0.01s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceRunIdentity/cc12-playwright.log/same-counts-fake-run (0.02s)
+FAIL
+FAIL	livecommerce/tests/foundation	0.825s
+FAIL

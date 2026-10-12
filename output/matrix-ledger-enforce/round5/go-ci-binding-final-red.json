@@ -1,0 +1,13 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/check-gates.sh"
+  ],
+  "exit_code": 1,
+  "tested_source_commit": "d93700a4ab0fb541aa8d3ee2d540c0d94b29f50f",
+  "mutated_file": ".github/workflows/gates.yml",
+  "before_sha256": "9bc46d8fc42e36253df350fb7f5bfaf644c0a37d70705d662461ecfbdd3f9100",
+  "mutated_sha256": "cd87a8fc372472b37b1126aa5b809547ecfc45c3b0b1eef4bc505adb2aa0c467",
+  "restored_sha256": "9bc46d8fc42e36253df350fb7f5bfaf644c0a37d70705d662461ecfbdd3f9100",
+  "mutation": "exclude exact Go evidence test at CI dispatch"
+}

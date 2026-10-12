@@ -1,0 +1,316 @@
+# Purpose: run the RAM-heavy gates (full foundation suite, browser modes, focused PG regexes) on GitHub-hosted
+#   runners instead of the dev Mac (owner 2026-10-06: "把所有需要高ram的，放到GitHub上去跑"). One matrix job per mode,
+#   each on its own 16 GB runner, so modes run in parallel instead of queueing on the local machine-wide PG lock.
+#   2026-10-07 speed-up: a `plan` job fans the two long gates out (`--browser-click-sweep` -> N LC_SWEEP_SHARD slices, `--browser-visual-lint` -> M slices,
+#   `foundation-shards` -> the balanced groups of scripts/dev/shard-plan.json) and an `aggregate` job proves the slices together cover the full universe.
+# Depends on: scripts/dev/ci-plan.mjs (matrix), scripts/dev/shard-plan.mjs + shard-plan.json (foundation groups), scripts/dev/test-local.sh (modes),
+#   scripts/dev/ci-playwright-browsers.mjs (registry engine requirements), ci-playwright-install.sh (bounded apt retries),
+#   scripts/dev/test-focused.sh (regex runs), tests/ui/sweep-aggregate.mjs (whole-run verdict), the pinned postgres image,
+#   Playwright Chromium/WebKit for --browser-* modes (cached per Playwright version). No secrets: every gate uses MOCK/SANDBOX fixtures only.
+# Used by: the integrator (`gh workflow run gates.yml --ref <branch> -f modes='[...]'`, or `-f full_browser_universe=true` for the nightly set on demand);
+#   pushes to r3/integration run the sharded foundation suite automatically; every PR into r3/integration runs the set scripts/dev/pr-modes.mjs computes from its
+#   changed paths; the nightly schedule re-verifies trunk browser health with the FULL browser universe (CI-SELECT: push runs select no browser job).
+# Integration is by PR only (docs/delivery/PROCESS.md section 2 step 6). The required set is fixed by the repo, never chosen by the merging agent: foundation-shards always, plus every
+#   CI-runnable --browser-* mode when any UI path changed, plus the browser modes wired by changed internal//cmd//migrations/ paths via the registry's lc_covers data
+#   (scripts/dev/pr-modes.mjs, CI-SELECT), plus deploy-smoke when deploy/ or scripts/deploy* changed.
+#   STABLE REQUIRED CHECK NAME for a branch ruleset: `Gates (GitHub runners) / required` (job `required`: fails when plan, any gate leg, the sweep/visual aggregate or an expected
+#   deploy-smoke failed, was cancelled or was skipped). Do NOT require the individual `gate (<mode>)` names: they change with the planned set. `extra_env` is never applied on pull_request;
+#   calibration / fault-injection runs stay an extra workflow_dispatch. No pull_request_target, no secrets.
+name: Gates (GitHub runners)
+
+on:
+  push:
+    branches: [r3/integration]
+  pull_request:
+    branches: [r3/integration]
+    types: [opened, synchronize, reopened]
+  schedule:
+    # CI-SELECT nightly trunk re-verification (off-peak UTC, non-:00 minute): push runs select no browser job, so r3/integration's
+    # browser health was never re-checked after merges. This run selects the FULL browser universe on the default-branch HEAD;
+    # a failure shows up in the same `required` aggregate as any other leg.
+    - cron: '43 21 * * *'
+  workflow_dispatch:
+    inputs:
+      modes:
+        description: >-
+          JSON array of gates. "foundation" = full suite serially (test-local.sh); "foundation-shards" = unit shard + the balanced tests/foundation groups in parallel;
+          "--browser-click-sweep" / "--browser-visual-lint" = the whole gate, run as parallel shards plus an aggregate verdict (a single slice: "--browser-click-sweep@3/10");
+          other "--browser-x" / "--inbox-send" etc. = test-local.sh mode; "focused:<go -run regex>" = test-focused.sh.
+          Ignored when full_browser_universe is "true".
+        default: '["foundation-shards"]'
+        required: true
+      full_browser_universe:
+        description: >-
+          "true" = run the nightly full browser universe (exactly the set a UI-path PR gets from scripts/dev/pr-modes.mjs)
+          on the current HEAD; any other value = use `modes`.
+        default: 'false'
+        required: false
+      extra_env:
+        description: >-
+          Optional space-separated LC_*=value pairs exported for every mode (fault-injection calibration of a new gate,
+          e.g. LC_PM_UI_INJECT_FAULT=missing-detail or LC_INBOX_CALIBRATION=retain-thread for --browser-inbox). Empty for normal runs.
+        default: ''
+        required: false
+
+permissions:
+  contents: read
+
+# A superseded push to a PR frees its runners. Push and dispatch keep their own per-job groups below (unique group here = never cancelled at workflow level).
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('gates-pr-{0}', github.event.pull_request.number) || format('gates-run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10 # + contract drift (go run, ~1-2 min)
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      sweep_n: ${{ steps.plan.outputs.sweep_n }}
+      visual_n: ${{ steps.plan.outputs.visual_n }}
+      deploy: ${{ steps.pr.outputs.deploy || 'false' }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+          fetch-depth: ${{ github.event_name == 'pull_request' && '0' || '1' }} # the PR diff needs the merge base ('0' quoted: a bare 0 is falsy in an expression, so `&& 0 || 1` always gave 1)
+      - id: pr
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/dev/pr-modes.mjs "$BASE_SHA" "$HEAD_SHA" >/dev/null
+      - id: nightly
+        # CI-SELECT: feed one tracked UI-side path through the SAME planner so the schedule/dispatch full-universe set is
+        # exactly what a UI-path PR gets — never a second hand-kept list. (gates.yml itself is such a path.)
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.full_browser_universe == 'true')
+        run: printf '.github/workflows/gates.yml\n' | node scripts/dev/pr-modes.mjs --stdin >/dev/null
+      # CI-DRIFT (owner 2026-10-10): contract drift blocks `required` through this plan job. Go routes x contracts x BFF allowlist;
+      # new drift, a touched legacy route, a stale or grown baseline -> exit 1; untouched legacy -> warning. Base = the PR base SHA.
+      - if: github.event_name == 'pull_request'
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Contract drift (Go routes x contracts x BFF)
+        if: github.event_name == 'pull_request'
+        env:
+          CONTRACT_DRIFT_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          rc=0; go run ./scripts/dev/contractdrift > "$RUNNER_TEMP/drift.txt" 2>&1 || rc=$?
+          grep -vE '^(WARNING|INFO) ' "$RUNNER_TEMP/drift.txt" || true # ERROR lines, SUMMARY and tool failures only; legacy warnings/info stay out of the log
+          exit "$rc"
+      - id: plan
+        env:
+          # PR: the set computed from the changed paths. Schedule / dispatch full_browser_universe: the full browser universe via the same planner.
+          # Push: the sharded foundation suite (unit + groups, ~12 min wall). Dispatch: what was asked for.
+          MODES: ${{ github.event_name == 'pull_request' && steps.pr.outputs.modes || github.event_name == 'schedule' && steps.nightly.outputs.modes || github.event_name == 'workflow_dispatch' && (inputs.full_browser_universe == 'true' && steps.nightly.outputs.modes || inputs.modes) || '["foundation-shards"]' }}
+        run: node scripts/dev/ci-plan.mjs
+
+  gate:
+    name: gate (${{ matrix.mode }})
+    needs: plan
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    concurrency:
+      # event_name separates run classes on the same ref: a nightly schedule (cancel-in-progress) must never cancel push verification.
+      group: gates-${{ github.event_name }}-${{ github.ref }}-${{ matrix.mode }}-${{ github.event_name == 'workflow_dispatch' && inputs.extra_env || '' }}
+      # A push never cancels the running full suite (it would never finish under frequent merges); GitHub keeps only the newest pending run.
+      cancel-in-progress: ${{ github.event_name != 'push' }}
+    env:
+      GOTOOLCHAIN: go1.27.2
+      GOFLAGS: -mod=readonly
+      PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+      MODE: ${{ matrix.mode }}
+      # Sweep fingerprints cover a shared store; concurrent UI copies alter another page's before/after state.
+      LC_SWEEP_WORKERS: "1"
+      EXTRA_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.extra_env || '' }} # never on pull_request
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # live_media_stop_legacy_test builds a pinned pre-LMR binary from git history
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: "24"
+          package-manager-cache: false # v5 auto-caches from package.json packageManager before pnpm exists; keep v4 behaviour
+      - name: Node dependencies (frozen lockfile)
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile --ignore-scripts
+      - name: Browser requirements from registry
+        id: browsers
+        run: node scripts/dev/ci-playwright-browsers.mjs "$MODE"
+      - name: Playwright version (cache key)
+        id: pw
+        if: steps.browsers.outputs.engines != ''
+        # The version pnpm resolved from the frozen lockfile: a new Playwright (new browser revisions) is a new cache key, a lockfile change that keeps it is a hit.
+        run: echo "version=$(pnpm exec playwright --version | awk '{print $NF}')" >> "$GITHUB_OUTPUT"
+      - name: Writable Playwright browser dir
+        if: steps.browsers.outputs.engines != ''
+        run: sudo mkdir -p "$PLAYWRIGHT_BROWSERS_PATH" && sudo chown "$(id -u):$(id -g)" "$PLAYWRIGHT_BROWSERS_PATH"
+      - name: Restore Playwright browsers
+        id: pwcache
+        if: steps.browsers.outputs.engines != ''
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: /opt/ms-playwright
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-${{ steps.browsers.outputs.cache }}
+          restore-keys: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-chromium-webkit
+      - name: Browsers for browser modes
+        if: steps.browsers.outputs.engines != ''
+        # Always install the selected system deps; cached binaries do not imply apt packages exist.
+        # Three 240s attempts +15s kill grace each +two 10s backoffs <=785s; total step stays 15min.
+        timeout-minutes: 15
+        env:
+          BROWSERS: ${{ steps.browsers.outputs.engines }}
+        run: |
+          read -r -a browsers <<< "$BROWSERS"
+          bash scripts/dev/ci-playwright-install.sh "${browsers[@]}"
+      - name: Save Playwright browsers
+        # Saved right after the install (not at job end), so a run whose gate then fails still seeds the cache. Parallel jobs racing for the same key only log a warning.
+        if: ${{ steps.browsers.outputs.engines != '' && steps.pwcache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: /opt/ms-playwright
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-${{ steps.browsers.outputs.cache }}
+      - name: Download pinned test image
+        run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+      - name: Gate
+        run: |
+          set -o pipefail
+          mkdir -p output/ci-gates
+          # Only LC_* names with plain values: an inject-fail run of a new gate must not be able to set arbitrary env.
+          for kv in $EXTRA_ENV; do
+            [[ "$kv" =~ ^LC_[A-Z0-9_]+=[A-Za-z0-9._:-]*$ ]] || { echo "refusing extra_env entry: $kv" >&2; exit 2; }
+            export "$kv"; echo "extra_env: ${kv%%=*} set"
+          done
+          log_root=output/ci-gates
+          case "$MODE" in
+            --browser*|--stripe-browser*|--ops-disk-guard)
+              mkdir -p output/playwright
+              export LC_BROWSER_EVIDENCE_ROOT="$(mktemp -d "$PWD/output/playwright/run.XXXXXXXX")"
+              log_root="$LC_BROWSER_EVIDENCE_ROOT/ci-gates"
+              mkdir -p "$log_root"
+              ;;
+          esac
+          log="$log_root/$(printf '%s' "$MODE" | tr -c 'A-Za-z0-9_-' '_').log"
+          case "$MODE" in
+            foundation) bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
+            shard:unit) LC_FOUNDATION_PKGS="$(go list ./... | grep -v '/tests/foundation$' | tr '\n' ' ')" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
+            # A balanced group of scripts/dev/shard-plan.json: an anchored explicit -run list, or (the catch-all) -skip of every other group's tests.
+            shard:g[0-9][0-9]) LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="$(node scripts/dev/shard-plan.mjs run "${MODE#shard:}")" LC_FOUNDATION_SKIP="$(node scripts/dev/shard-plan.mjs skip "${MODE#shard:}")" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
+            shard:*)    LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="${MODE#shard:}" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
+            focused:*)  LC_FOCUSED_TIMEOUT=7200s bash scripts/dev/test-focused.sh "${MODE#focused:}" 2>&1 | tee "$log" ;;
+            # One slice of the sweep / visual lint (tests/ui/sweep-shard-lib.mjs): its own PG, fixture and store, so click-sweep runs its single worker race-free.
+            --browser-click-sweep@*|--browser-visual-lint@*) LC_SWEEP_SHARD="${MODE##*@}" xvfb-run -a bash scripts/dev/test-local.sh "${MODE%@*}" 2>&1 | tee "$log" ;;
+            # Some browser suites run headed on purpose (MOU03 native bfcache/visibility); the runner has no display.
+            # Xvfb comes with `playwright install --with-deps`.
+            --browser*|--stripe-browser*) xvfb-run -a bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$log" ;;
+            --*)        bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$log" ;;
+            *) echo "unknown mode: $MODE" >&2; exit 2 ;;
+          esac
+      - name: Failure summary
+        if: always()
+        run: grep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log | head -200 || true
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        if: always() && !startsWith(matrix.mode, '--browser-visual-lint')
+        with:
+          name: ${{ matrix.art }}
+          path: |
+            output/ci-gates/
+            output/playwright/
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Upload visual lint evidence
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        if: always() && startsWith(matrix.mode, '--browser-visual-lint')
+        with:
+          name: ${{ matrix.art }}
+          path: |
+            output/playwright/**/ci-gates/*.log
+            output/playwright/**/ui-visual-audit/**/lint.*
+            output/playwright/**/ui-visual-audit/**/index.json
+            output/playwright/**/ui-visual-audit/**/shots/**
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # Whole-run verdict of the sharded sweep / visual lint: fails when a shard is missing or incomplete, or when any route x variant, journey or shot of the live registry
+  # was not covered by exactly one shard. Runs even when a shard job failed (it then names what is missing). Skipped for a single-slice re-run (`@i/N`).
+  aggregate:
+    needs: [plan, gate]
+    if: ${{ always() && needs.plan.result == 'success' && (needs.plan.outputs.sweep_n != '0' || needs.plan.outputs.visual_n != '0') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: "24" # tests/ui/sweep-aggregate.mjs imports apps/admin/src/routes.ts (type stripping); no pnpm install needed
+          package-manager-cache: false # v5 auto-caches from package.json packageManager before pnpm exists; keep v4 behaviour
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        if: ${{ always() && needs.plan.outputs.sweep_n != '0' }}
+        continue-on-error: true # no artifact at all is reported by the aggregate itself ("no shard evidence"), not as a download error
+        with:
+          pattern: gate-browser-click-sweep_*
+          path: evidence/click
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        if: ${{ always() && needs.plan.outputs.visual_n != '0' }}
+        continue-on-error: true
+        with:
+          pattern: gate-browser-visual-lint_*
+          path: evidence/visual
+      - name: Click sweep covers every route x variant and journey
+        if: ${{ always() && needs.plan.outputs.sweep_n != '0' }}
+        run: node tests/ui/sweep-aggregate.mjs click evidence/click
+      - name: Visual lint covers every shot
+        if: ${{ always() && needs.plan.outputs.visual_n != '0' }}
+        run: node tests/ui/sweep-aggregate.mjs visual evidence/visual
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        if: always()
+        with:
+          name: aggregate
+          path: output/playwright/ci-aggregate/
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # deploy-smoke.yml as a reusable workflow: when deploy/ or scripts/deploy* changed it runs inside this run, so `required` waits for it (see deploy-smoke.yml header).
+  deploy:
+    needs: plan
+    if: ${{ needs.plan.outputs.deploy == 'true' }}
+    uses: ./.github/workflows/deploy-smoke.yml
+
+  # The ONE check a branch ruleset requires: `Gates (GitHub runners) / required`. Always runs; red unless plan and every gate leg succeeded, the aggregate succeeded when it was
+  # expected (a sweep / visual-lint was planned), and deploy-smoke succeeded when it was expected. Skipped / cancelled / failed anywhere else is red, never silently green.
+  required:
+    name: required
+    needs: [plan, gate, aggregate, deploy]
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      PLAN: ${{ needs.plan.result }}
+      GATE: ${{ needs.gate.result }}
+      AGG: ${{ needs.aggregate.result }}
+      AGG_EXPECTED: ${{ needs.plan.outputs.sweep_n != '0' || needs.plan.outputs.visual_n != '0' }}
+      DEPLOY: ${{ needs.deploy.result }}
+      DEPLOY_EXPECTED: ${{ needs.plan.outputs.deploy == 'true' }}
+    steps:
+      - run: |
+          echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"
+          rc=0
+          [[ "$PLAN" == success ]] || rc=1
+          [[ "$GATE" == success ]] || rc=1
+          if [[ "$AGG_EXPECTED" == true ]]; then [[ "$AGG" == success ]] || rc=1; else [[ "$AGG" == skipped ]] || rc=1; fi
+          if [[ "$DEPLOY_EXPECTED" == true ]]; then [[ "$DEPLOY" == success ]] || rc=1; else [[ "$DEPLOY" == skipped ]] || rc=1; fi
+          exit "$rc"
