@@ -1,4 +1,4 @@
-// Purpose: Fail when mobile product-editor controls bypass the canonical action ledger.
+// Purpose: Fail when mobile product-editor controls bypass ledger identity or post-action outcome assertions.
 // Depends on: Node test/assert/fs/vm and installed typescript-api; reads the actual Playwright spec and shared cases.
 // Used by: test-node / product-editor matrix coverage gate; no browser, network or PostgreSQL is started.
 import test from "node:test";
@@ -56,6 +56,30 @@ if (process.env.LC_MATRIX_ACTION_MUTATION === "unknown-locator") spec = unknownL
 if (process.env.LC_MATRIX_ACTION_MUTATION === "swap-native-locator") spec = swapNative(spec, 'page.getByTestId("product-save").accept()');
 if (process.env.LC_MATRIX_ACTION_MUTATION === "swap-native-method") spec = swapNative(spec, "dialog.check()");
 if (process.env.LC_MATRIX_ACTION_MUTATION === "swap-press-key") spec = swapPressKey(spec);
+if (process.env.LC_MATRIX_ACTION_MUTATION === "removed-postcondition") spec = changePostcondition(spec, "removed");
+
+function changePostcondition(text, mode) {
+  const start = text.indexOf(startMarker), assertion = 'await expect(page.getByTestId("product-name")).toHaveValue(`${tag} mobile matrix ${locale}`);';
+  const at = text.indexOf(assertion, start);
+  assert.ok(at > start, "mutation targets the real mobile name postcondition");
+  const without = text.slice(0, at) + text.slice(at + assertion.length);
+  if (mode === "before") {
+    const action = without.indexOf('await page.getByTestId("product-name").fill(', start);
+    return without.slice(0, action) + assertion + "\n" + without.slice(action);
+  }
+  if (mode === "after-return") {
+    const receipt = 'return { observed: { value: `${tag} mobile matrix ${locale}` } };';
+    const after = without.indexOf(receipt, start) + receipt.length;
+    return without.slice(0, after) + "\n" + assertion + without.slice(after);
+  }
+  const replacement = { removed: "", "not-awaited": assertion.replace("await ", ""),
+    "unused-function": `const unusedOutcome = async () => { ${assertion} };`,
+    "nested-step": `await matrixStep({ page: "mobile matrix new", control: "product-name", action: "fill" }, async () => {
+      await page.getByTestId("product-name").fill("nested action"); ${assertion} return { observed: "nested only" }; });`,
+    "unreachable-branch": `if (false) { ${assertion} }` }[mode];
+  assert.ok(replacement !== undefined, "known assertion mutation");
+  return text.slice(0, at) + replacement + text.slice(at + assertion.length);
+}
 
 function swapLocator(text) {
   // Change both the operation and its readback, leaving the claimed identity intact.
@@ -160,7 +184,7 @@ function locatorIdentities(source, start, end) {
   const host = ts.createCompilerHost({ noResolve: true });
   host.getSourceFile = (name) => name === specPath ? source : undefined;
   const checker = ts.createProgram([specPath], { noResolve: true }, host).getTypeChecker();
-  const needed = new Set(), steps = new Map(), reads = new Map();
+  const needed = new Set(), steps = new Map(), reads = new Map(), outcomes = new Set();
   const inRegion = (node) => node.getStart(source) >= start && node.getEnd() <= end;
   const call = (node, name) => ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === name;
   const unwrap = (node) => ts.isAwaitExpression(node) || ts.isParenthesizedExpression(node) ? unwrap(node.expression) : node;
@@ -215,6 +239,10 @@ function locatorIdentities(source, start, end) {
     for (let p = node.parent; p; p = p.parent)
       if (steps.has(p)) return steps.get(p);
   }
+  const callbackOwner = (node) => {
+    for (let p = node.parent; p; p = p.parent)
+      if (ts.isFunctionLike(p)) return p;
+  };
   walk(source, (node) => {
     if (inRegion(node) && call(node, "matrixStep")) {
       const callback = node.arguments[1];
@@ -252,6 +280,22 @@ function locatorIdentities(source, start, end) {
       need(receiver);
     }
   });
+  // Only a direct awaited DOM/Page matcher in this exact callback is an outcome.
+  // Branch-only assertions, unused closures and nested steps cannot lend proof.
+  const uiMatchers = new Set(["toHaveValue", "toHaveText", "toContainText", "toHaveCount", "toBeChecked",
+    "toBeEnabled", "toBeDisabled", "toBeVisible", "toBeHidden", "toBeFocused", "toBeInViewport",
+    "toHaveURL", "toHaveAttribute", "toHaveAccessibleName"]);
+  walk(source, (node) => {
+    if (!inRegion(node) || !ts.isExpressionStatement(node) || !ts.isAwaitExpression(node.expression) ||
+        !steps.has(callbackOwner(node)) || node.parent !== callbackOwner(node).body) return;
+    const matcher = unwrap(node.expression);
+    if (!ts.isCallExpression(matcher) || !ts.isPropertyAccessExpression(matcher.expression) ||
+        !uiMatchers.has(matcher.expression.name.text)) return;
+    let expectation = matcher.expression.expression;
+    if (ts.isPropertyAccessExpression(expectation) && expectation.name.text === "not") expectation = expectation.expression;
+    if (!call(expectation, "expect") || !expectation.arguments[0]) return;
+    outcomes.add(node);
+  });
   // Conditions and iteration sources are dependencies too. The original lexical scopes,
   // row indices, locale data and field.label/control pairs survive the slice unchanged.
   for (const entry of [...needed, ...[...steps.values()].map((entry) => entry.node), ...reads.keys()]) {
@@ -282,6 +326,12 @@ function locatorIdentities(source, start, end) {
       const yes = emit(node.thenStatement), no = node.elseStatement ? emit(node.elseStatement) : "";
       return yes || no ? `if (${text(node.expression)}) {${yes}} else {${no}}` : "";
     }
+    if (ts.isReturnStatement(node) && steps.has(callbackOwner(node))) {
+      const receipt = node.expression && unwrap(node.expression);
+      const observed = receipt && ts.isObjectLiteralExpression(receipt) && receipt.properties.some((property) =>
+        (ts.isPropertyAssignment(property) || ts.isShorthandPropertyAssignment(property)) && property.name.getText(source) === "observed");
+      return `${observed ? "__observed();" : ""} return;`;
+    }
     if (!ts.isExpressionStatement(node)) return "";
     const expression = unwrap(node.expression);
     if (call(expression, "matrixStep")) return emitStep(expression);
@@ -292,6 +342,7 @@ function locatorIdentities(source, start, end) {
     }
     const found = [];
     walk(expression, (child) => { if (reads.has(child)) found.push(`__read(${text(reads.get(child))});`); });
+    if (outcomes.has(node)) found.push("__outcome();");
     // The real native-dialog handler is assigned rather than invoked in the spec.
     // Trace its body with an inert Dialog, retaining the actual parameter binding.
     if (ts.isBinaryExpression(expression) && ts.isArrowFunction(expression.right)) {
@@ -331,15 +382,17 @@ function locatorIdentities(source, start, end) {
     assert.ok(stack.length, "source action must belong to a matrix step");
     assert.ok(receiver && Array.isArray(receiver.segments), "unknown/dynamic source locator");
     stack.at(-1)[method ? "actions" : "reads"].push(receiver.segments);
-    if (method) { stack.at(-1).methods.push(method); stack.at(-1).keys.push(key); }
+    if (method) { stack.at(-1).methods.push(method); stack.at(-1).keys.push(key); stack.at(-1).events.push("action"); }
   };
   try {
     runInNewContext(code, {
       page: locator(), productEditorCopy, tag: "MOCK-source-gate",
       __dialog: locator([["nativeDialog"]]),
       __action: record, __read: (receiver) => record(receiver),
+      __outcome: () => stack.at(-1).events.push("outcome"),
+      __observed: () => stack.at(-1).events.push("observed"),
       __step: (identity, locale, body) => {
-        const entry = { identity, locale, actions: [], reads: [], methods: [], keys: [] };
+        const entry = { identity, locale, actions: [], reads: [], methods: [], keys: [], events: [] };
         stack.push(entry); body(); stack.pop(); records.push(entry);
       },
     }, { timeout: 1000 });
@@ -361,12 +414,20 @@ function locatorIdentities(source, start, end) {
 }
 
 const identityKey = (entry) => JSON.stringify([entry.page, entry.row ?? "", entry.control, entry.action]);
-function assertLocatorIdentity({ identity, locale, actions: operated, reads, methods, keys }) {
+function assertLocatorIdentity({ identity, locale, actions: operated, reads, methods, keys, events }) {
   const copy = productEditorCopy[locale], { control, row = "" } = identity;
   const declaration = cases.find((entry) => identityKey({ ...entry, control: expand(entry.control, copy) }) === identityKey(identity));
   assert.ok(declaration, "undeclared identity");
   // Reuse canonical action vocabulary rather than maintaining a per-case method list.
   if (operated.length) {
+    let pendingOutcome = false;
+    for (const event of events) {
+      if (event === "action" || event === "observed")
+        assert.ok(!pendingOutcome, "missing outcome assertion after action and before the next action or observed return");
+      if (event === "action") pendingOutcome = true;
+      if (event === "outcome") pendingOutcome = false;
+    }
+    assert.ok(!pendingOutcome && events.includes("observed"), "missing outcome assertion before the observed return");
     const grammar = { fill: ["fill"], "fill Enter": ["fill", "press"], Escape: ["press"],
       "check uncheck": ["check", "uncheck"], "uncheck check": ["uncheck", "check"], uncheck: ["uncheck"], accept: ["accept"] };
     let expectedMethods = grammar[declaration.action];
@@ -412,6 +473,25 @@ function assertLocatorIdentity({ identity, locale, actions: operated, reads, met
 
 test("every actual mobile control operation is enclosed by its recording callback", () => {
   assert.deepEqual(uncoveredActions(spec), []);
+});
+
+for (const mode of ["removed", "before", "after-return", "not-awaited", "unused-function", "nested-step", "unreachable-branch"]) {
+  test(`post-action outcome cannot be ${mode} while the action and observed receipt remain`, () => {
+    assert.ok(uncoveredActions(changePostcondition(spec, mode)).some((line) => line.includes("missing outcome assertion")));
+  });
+}
+test("each checked state needs its own outcome before the next operation", () => {
+  const assertion = "await expect(selected).toBeChecked();";
+  assert.ok(spec.includes(assertion));
+  assert.ok(uncoveredActions(spec.replace(assertion, "")).some((line) => line.includes("missing outcome assertion")));
+});
+test("native acceptance cannot certify its earlier dialog message without the visible save outcome", () => {
+  const start = spec.indexOf("await dialog.accept();", spec.indexOf(startMarker));
+  const assertion = 'await expect(page.getByTestId("product-save")).toBeEnabled();';
+  const at = spec.indexOf(assertion, start);
+  assert.ok(at > start);
+  const missing = spec.slice(0, at) + spec.slice(at + assertion.length);
+  assert.ok(uncoveredActions(missing).some((line) => line.includes("native archive confirmation") && line.includes("missing outcome assertion")));
 });
 
 for (const [name, mutate] of [["literal", swapLocator], ["lexical alias", swapAlias], ["field factory", swapField],
