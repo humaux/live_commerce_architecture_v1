@@ -1,0 +1,10 @@
+=== RUN   TestClaimsRetentionCRP02Schema
+=== RUN   TestClaimsRetentionCRP02Schema/writer-policy-behaviour
+    claims_retention_test.go:3452: writer bundle_peers: lock-only UPDATE cannot change created_at: err=<nil> (SQLSTATE ""), want SQLSTATE 42501
+    claims_retention_test.go:3452: writer bundle_peers: lock-only UPDATE cannot even rewrite the same value: err=<nil> (SQLSTATE ""), want SQLSTATE 42501
+--- FAIL: TestClaimsRetentionCRP02Schema (1.79s)
+    --- FAIL: TestClaimsRetentionCRP02Schema/writer-policy-behaviour (0.37s)
+FAIL
+FAIL	livecommerce/tests/foundation	2.570s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

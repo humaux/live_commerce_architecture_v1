@@ -1,0 +1,14 @@
+=== RUN   TestGoReviewMethodValueAliasCLI
+=== RUN   TestGoReviewMethodValueAliasCLI/h_:=_mux.HandleFunc;_alias_:=_h;_alias("GET_/v1/review_alias",_handler)
+    go_review_cli_test.go:99: method value registration escaped gate: exit0 SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=0
+=== RUN   TestGoReviewMethodValueAliasCLI/h_:=_mux.HandleFunc;_bindReview(h,_"GET_/v1/review_alias",_handler)
+    go_review_cli_test.go:99: method value registration escaped gate: exit0 SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=0
+=== RUN   TestGoReviewMethodValueAliasCLI/h_:=_mux.Handle;_h("/v1/review_alias",_http.NotFoundHandler())
+    go_review_cli_test.go:99: method value registration escaped gate: exit0 SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=0
+--- FAIL: TestGoReviewMethodValueAliasCLI (2.68s)
+    --- FAIL: TestGoReviewMethodValueAliasCLI/h_:=_mux.HandleFunc;_alias_:=_h;_alias("GET_/v1/review_alias",_handler) (0.96s)
+    --- FAIL: TestGoReviewMethodValueAliasCLI/h_:=_mux.HandleFunc;_bindReview(h,_"GET_/v1/review_alias",_handler) (0.87s)
+    --- FAIL: TestGoReviewMethodValueAliasCLI/h_:=_mux.Handle;_h("/v1/review_alias",_http.NotFoundHandler()) (0.85s)
+FAIL
+FAIL	livecommerce/scripts/dev/contractdrift	2.947s
+FAIL

@@ -161,7 +161,7 @@ test("TCV08 merchant: create a label, copy the code, print in a new tab, timelin
   // Six real print clicks after the already-confirmed label; no extra Create or
   // fake BFF success. Fetch the real BFF 200, hold its response while capturing
   // actual opening DOM, then release unchanged. No pending form navigation.
-  const printEvidence = path.resolve("output/admin-visual/cvs-print", new Date().toISOString().replace(/[:.]/g, "-"));
+  const printEvidence = path.resolve(evidence, "cvs-print", new Date().toISOString().replace(/[:.]/g, "-"));
   for (const viewport of [{ width: 1586, height: 992 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
     for (const locale of ["zh-TW", "zh-CN", "en"] as const) {

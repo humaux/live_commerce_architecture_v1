@@ -1,0 +1,7 @@
+=== RUN   TestScopeSupportGrantRevokedMidTransactionBecomesScopeNotFound
+    scope_revoke_race_test.go:121: mid-request support revoke error = forbidden, want ErrScopeNotFound (LCN03 404)
+--- FAIL: TestScopeSupportGrantRevokedMidTransactionBecomesScopeNotFound (1.18s)
+FAIL
+FAIL	livecommerce/tests/foundation	1.925s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

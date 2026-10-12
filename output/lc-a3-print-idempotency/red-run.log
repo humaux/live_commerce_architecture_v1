@@ -1,0 +1,24 @@
+=== RUN   TestLiveConsoleLCN05PrintIdempotencyKey
+    live_console_print_idempotency_test.go:125: same-key replay returned print_count=2, want the stored receipt's 1
+    live_console_print_idempotency_test.go:128: same-key replay changed the response:
+         first: {"print_count":1,"last_printed_at":"2026-10-09T23:03:02.799122+08:00"}
+        
+        replay: {"print_count":2,"last_printed_at":"2026-10-09T23:03:02.801753+08:00"}
+    live_console_print_idempotency_test.go:131: print fact after same-key replay = 2, want 1 (the replay must not print again)
+    live_console_print_idempotency_test.go:140: new-key print returned print_count=3, want 2
+    live_console_print_idempotency_test.go:143: print fact after new key = 3, want 2
+    live_console_print_idempotency_test.go:149: same key + other ref: status=200 body={"print_count":1,"last_printed_at":"2026-10-09T23:03:02.807232+08:00"}
+        , want 409 conflict
+    live_console_print_idempotency_test.go:152: conflicting comment_ref printed anyway: print_count=1
+    live_console_print_idempotency_test.go:162: same key + other session: status=200 body={"print_count":1,"last_printed_at":"2026-10-09T23:03:02.816003+08:00"}
+        , want 409 conflict
+    live_console_print_idempotency_test.go:165: conflicting session printed anyway: print_count=1
+    live_console_print_idempotency_test.go:175: cross-store attempt moved the store-A1 print fact to 3, want 2
+    live_console_print_idempotency_test.go:181: post-negative replay: status=200 body={"print_count":4,"last_printed_at":"2026-10-09T23:03:02.821463+08:00"}
+        , want the original receipt {"print_count":1,"last_printed_at":"2026-10-09T23:03:02.799122+08:00"}
+    live_console_print_idempotency_test.go:205: receipts = map[], want exactly one row each for key1 and key2
+--- FAIL: TestLiveConsoleLCN05PrintIdempotencyKey (1.95s)
+FAIL
+FAIL	livecommerce/tests/foundation	2.979s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

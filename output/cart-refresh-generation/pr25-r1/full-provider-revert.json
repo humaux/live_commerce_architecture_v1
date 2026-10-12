@@ -1,0 +1,130 @@
+{
+  "task_id": "c4bf3500-sub-browser",
+  "test_head_commit": "5c3f5ce11e7a8b683d009217a7f199b56f4af2d7",
+  "original_base_commit": "ae509c18e839a54f7e921804cd942fc0a8be2896",
+  "complete_revert_source_commit": "ddba31c90b1b19e5865b54929a6e4416bfab3c67",
+  "origin_integration_commit_observed": "305695a7233bbb676e24f11b110d2bdeaf99dc2d",
+  "complete_revert_matches_origin_provider": true,
+  "provider_path": "apps/storefront/components/CartProvider.tsx",
+  "original_provider_sha256": "f710037b23d513e504fa81291df6fef8e6cc031b37de4658a52415e9e7008b6d",
+  "complete_revert_provider_sha256": "5a669ce12840f5e97be23b69dbab034c2e3d3e046a21fea1f227db6472456415",
+  "origin_provider_sha256": "5a669ce12840f5e97be23b69dbab034c2e3d3e046a21fea1f227db6472456415",
+  "backup_path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr25-browser-race/output/pr25-browser-race/full-provider-revert/CartProvider.ae509c18.tsx",
+  "rollback_command": "cp /Volumes/data/live_commerce_architecture_v1/.worktrees/pr25-browser-race/output/pr25-browser-race/full-provider-revert/CartProvider.ae509c18.tsx /Volumes/data/live_commerce_architecture_v1/.worktrees/pr25-browser-race/apps/storefront/components/CartProvider.tsx",
+  "test_sha256": {
+    "tests/storefront/order-gate.mjs": "b8c70bf64065ac32b65251bb5b39d61bdda6371c535673914ece6beb8068c38a",
+    "tests/foundation/browser_order_chain_test.go": "197b2adecdd166337f0461194c5d857e3298fff12abecec0764e9b9178b947b6",
+    "tests/foundation/buyer_order_evidence_test.go": "c3c86852905e3ecbe4d156383c877bcb6c5067ac8bf0cf11589cd60287cd8432"
+  },
+  "run_status": "EXPECTED_RED: one Chrome full-providerrevert command completed exit1 precise BC02 mount empty1 after actual native failure barrier",
+  "source_override_status": "RESTORED byte-exact original ae509 Provider, no tracked product diff/no productcommit",
+  "command": "LC_BROWSER_ENGINE=chromium bash scripts/dev/test-local.sh --browser-order",
+  "exit_code": 1,
+  "restored_provider_sha256": "f710037b23d513e504fa81291df6fef8e6cc031b37de4658a52415e9e7008b6d",
+  "rollback_verified_byte_exact": true,
+  "head_commit_after": "5c3f5ce11e7a8b683d009217a7f199b56f4af2d7",
+  "raw_evidence_origin": "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr25-browser-race/output/playwright/buyer-order-538258339",
+  "raw_evidence_primary": "output/pr25-browser-race/full-provider-revert/raw-chromium",
+  "phases": [
+    {
+      "surface": "drawer",
+      "held_status": 200,
+      "session_status": 503,
+      "session_failures": 1,
+      "settlement": {
+        "fetch": {
+          "status": 503,
+          "settlement": "resolved",
+          "sequence": 3
+        },
+        "lock": {
+          "name": "commerce-buyer-session-v1",
+          "settlement": "rejected",
+          "code": "request_failed",
+          "status": 503,
+          "sequence": 4
+        },
+        "fetch_count": 1,
+        "lock_count": 1,
+        "barrier": {
+          "name": "commerce-buyer-session-v1",
+          "acquired_sequence": 5,
+          "settled_sequence": 6
+        }
+      },
+      "samples": [
+        {
+          "title": null,
+          "lines": 1,
+          "qty": "1",
+          "detail_loading": null
+        }
+      ],
+      "empty": 0,
+      "line_loss": 0
+    },
+    {
+      "surface": "mount",
+      "held_status": 200,
+      "session_status": 503,
+      "session_failures": 1,
+      "settlement": {
+        "fetch": {
+          "status": 503,
+          "settlement": "resolved",
+          "sequence": 1
+        },
+        "lock": {
+          "name": "commerce-buyer-session-v1",
+          "settlement": "rejected",
+          "code": "request_failed",
+          "status": 503,
+          "sequence": 2
+        },
+        "fetch_count": 1,
+        "lock_count": 1,
+        "barrier": {
+          "name": "commerce-buyer-session-v1",
+          "acquired_sequence": 3,
+          "settled_sequence": 4
+        }
+      },
+      "samples": [
+        {
+          "title": "Loading…",
+          "lines": 0,
+          "qty": null,
+          "detail_loading": null
+        },
+        {
+          "title": "Your cart is empty",
+          "lines": 0,
+          "qty": null,
+          "detail_loading": null
+        }
+      ],
+      "empty": 1,
+      "line_loss": 0
+    }
+  ],
+  "raw_sha256": {
+    "browser.log": "61c0c6e64433662ed74d0e488cf187ceeb3e305b0c8d288ed2d6ae5379fa202c",
+    "next.log": "d38501446c71c4ff8f8124234729c6f2751a4597a6aecaea2c3887871f3d3b28",
+    "cart-click-ledger.json": "ee9c85052bd6febde0b333221163d4945eddc2ddab579c6d74947a698edbb75a",
+    "cart-refresh-race-facts.json": "97f2c8df564b8b75e9ba73e914af287d028469e7df83933ce74bbebec24144f7",
+    "cart-retry-facts.json": "9df80be44c4c450ebec91fec7231f52890dccb82d987cadcee27d08c1a27c468",
+    "failure-0.png": "8225c6ad0d82fe6d77641d39c2960a62469f53e877b4b1562870ce32284a73ea",
+    "failure-0.txt": "8ee72bb8754f8437a6d8842a06df3c200cb6b975c913ab221b780c364f9f7d23"
+  },
+  "mode_log_sha256": "1f443d3f0eb2dcbba108f973dcf26ef67dfc8a1cf12f3025518fc4789ac0e16e",
+  "test_sha256_after": {
+    "tests/storefront/order-gate.mjs": "b8c70bf64065ac32b65251bb5b39d61bdda6371c535673914ece6beb8068c38a",
+    "tests/foundation/browser_order_chain_test.go": "197b2adecdd166337f0461194c5d857e3298fff12abecec0764e9b9178b947b6",
+    "tests/foundation/buyer_order_evidence_test.go": "c3c86852905e3ecbe4d156383c877bcb6c5067ac8bf0cf11589cd60287cd8432"
+  },
+  "evidence_level": "E3 exact finaltests complete original provider revert control; root independently owns fixed-source GREEN/PG/buyer",
+  "not_run": [
+    "Additional WebKit full-provider repeat intentionally not requested",
+    "Full foundation, CI/provider/production"
+  ]
+}

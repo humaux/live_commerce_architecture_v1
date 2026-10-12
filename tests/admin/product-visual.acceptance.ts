@@ -112,9 +112,10 @@ export function registerProductVisualAcceptance() {
       await page.getByTestId("axis-values-1").press("Enter");
       await expect(page.locator('[data-testid^="matrix-row-"]')).toHaveCount(6);
       await expect(page.getByTestId("axis-values-1")).toHaveValue("");
-      await mkdir("output/product-editor-visual", { recursive: true });
+      const out = path.resolve(process.env.LC_BROWSER_EVIDENCE!, "product-editor-visual");
+      await mkdir(out, { recursive: true });
       await writeFile(
-        "output/product-editor-visual/controls-ledger.json",
+        path.join(out, "controls-ledger.json"),
         JSON.stringify(
           {
             status: "PASS",
@@ -142,7 +143,7 @@ export function registerProductVisualAcceptance() {
   }) => {
     test.setTimeout(300000);
     const phase = process.env.PRODUCT_VISUAL_PHASE!;
-    const out = path.resolve(`output/product-editor-visual/${phase}`);
+    const out = path.resolve(process.env.LC_BROWSER_EVIDENCE!, "product-editor-visual", phase);
     await mkdir(out, { recursive: true });
     const origin = process.env.LC_BROWSER_PUBLIC_ORIGIN!;
     const store = process.env.LC_BROWSER_STORE!;

@@ -1,0 +1,20 @@
+{
+  "name": "browser-vet-final",
+  "command": [
+    "go",
+    "vet",
+    "-tags",
+    "browser",
+    "./tests/foundation"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked",
+  "out": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/evidence-hygiene-validation",
+  "timeout": 300,
+  "head": "bb393536dd03a88daa1b2a5d238b14ee9d9945ae",
+  "pid": 86043,
+  "exit_code": 0,
+  "source_sha256": "44d026f2f3cada76e14adee685173aa945abd8f07f85cda267c0ee2577f40d90",
+  "source_after": "44d026f2f3cada76e14adee685173aa945abd8f07f85cda267c0ee2577f40d90",
+  "source_unchanged": true,
+  "elapsed_seconds": 3.101
+}

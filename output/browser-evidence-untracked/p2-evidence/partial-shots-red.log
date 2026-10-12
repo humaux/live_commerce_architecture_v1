@@ -1,0 +1,34 @@
+Retained failed reviewer fixture: /private/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/lc-visual-review-layout-DRDW9u
+✔ browser evidence uses unique local runs or the selected harness parent without rewriting history (84.908792ms)
+✔ browser evidence rejects labels that escape the harness directory before creating files (28.2325ms)
+✔ shell isolates visual fixtures from a click ledger when caller reuses its evidence root (14.809042ms)
+✔ ops disk guard allocation isolates its log and child evidence from committed history (6.158291ms)
+✔ visual artifact upload selects lint/index/shots and excludes raw unrelated evidence (9.182333ms)
+✖ visual reviewer discovers nested per-run artifact shots through its real copy loop (22.829875ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 5
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 216.890875
+
+✖ failing tests:
+
+test at tests/admin/browser-evidence.test.mjs:139:1
+✖ visual reviewer discovers nested per-run artifact shots through its real copy loop (22.829875ms)
+  Error: ENOENT: no such file or directory, open '/private/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/lc-visual-review-layout-DRDW9u/wt/visual-shots/admin/partial.png'
+      at readFileSync (node:fs:441:20)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/tests/admin/browser-evidence.test.mjs:157:18)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    errno: -2,
+    code: 'ENOENT',
+    syscall: 'open',
+    path: '/private/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/lc-visual-review-layout-DRDW9u/wt/visual-shots/admin/partial.png'
+  }

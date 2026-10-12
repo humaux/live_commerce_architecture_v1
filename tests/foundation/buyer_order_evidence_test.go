@@ -1,10 +1,12 @@
 // Purpose: preserve all 23 order cases and both layout regressions; require six real cart Retry cases and retain PR7's additive UTC history check.
-// Depends on: order-gate.mjs completed-case records and the standard testing package; no browser or database fixture.
-// Used by: TestBrowserBuyerOrderUI and TestBuyerOrderEvidenceCompleteness.
+// Depends on: order-gate.mjs observations/cart facts/samples and standard json/reflect/testing; no browser or database fixture.
+// Used by: TestBrowserBuyerOrderUI and DB-free evidence, exact fact and loading/continuity counterexamples.
 
 package foundation_test
 
 import (
+	"encoding/json"
+	"reflect"
 	"testing"
 )
 
@@ -139,5 +141,131 @@ func TestBuyerOrderEvidenceCompleteness(t *testing.T) {
 		if buyerOrderCasesComplete(len(rows), rows) {
 			t.Fatalf("duplicate cart Retry case accepted: %s", missing)
 		}
+	}
+}
+
+type browserOrderCartFact struct {
+	ID             string          `json:"id"`
+	Version        int64           `json:"version"`
+	Writes         int             `json:"writes"`
+	Receipts       int             `json:"receipts"`
+	ReceiptVersion int64           `json:"receipt_version"`
+	RequestHash    string          `json:"request_hash"`
+	Items          json.RawMessage `json:"items"`
+}
+
+// Node evidence indentation and PostgreSQL jsonb formatting are not cart facts. Every
+// scalar and the complete semantic items object still must match the independent read.
+func browserOrderCartFactsEqual(a, b browserOrderCartFact) bool {
+	var left, right any
+	return a.ID == b.ID && a.Version == b.Version && a.Writes == b.Writes && a.Receipts == b.Receipts && a.ReceiptVersion == b.ReceiptVersion && a.RequestHash == b.RequestHash && json.Unmarshal(a.Items, &left) == nil && json.Unmarshal(b.Items, &right) == nil && reflect.DeepEqual(left, right)
+}
+
+func TestBuyerOrderRefreshFactComparison(t *testing.T) {
+	pg := browserOrderCartFact{ID: "cart", Version: 1, Writes: 1, Receipts: 1, ReceiptVersion: 1, RequestHash: "exact-request-hash", Items: json.RawMessage(`[{"sku_id": "sku", "quantity": 1}]`)}
+	node := pg
+	node.Items = json.RawMessage(`[
+  {"quantity": 1, "sku_id": "sku"}
+]`)
+	if reflect.DeepEqual(pg, node) || !browserOrderCartFactsEqual(pg, node) {
+		t.Fatal("must accept semantic JSON equality while reproducing the former RawMessage byte-comparison failure")
+	}
+	for name, change := range map[string]func(*browserOrderCartFact){
+		"id":              func(f *browserOrderCartFact) { f.ID = "other" },
+		"version":         func(f *browserOrderCartFact) { f.Version++ },
+		"writes":          func(f *browserOrderCartFact) { f.Writes++ },
+		"receipts":        func(f *browserOrderCartFact) { f.Receipts++ },
+		"receipt_version": func(f *browserOrderCartFact) { f.ReceiptVersion++ },
+		"request_hash":    func(f *browserOrderCartFact) { f.RequestHash = "different" },
+		"quantity":        func(f *browserOrderCartFact) { f.Items = json.RawMessage(`[{"sku_id":"sku","quantity":2}]`) },
+		"sku":             func(f *browserOrderCartFact) { f.Items = json.RawMessage(`[{"sku_id":"other","quantity":1}]`) },
+		"extra_line": func(f *browserOrderCartFact) {
+			f.Items = json.RawMessage(`[{"sku_id":"sku","quantity":1},{"sku_id":"other","quantity":1}]`)
+		},
+		"extra_field": func(f *browserOrderCartFact) {
+			f.Items = json.RawMessage(`[{"sku_id":"sku","quantity":1,"unexpected":true}]`)
+		},
+		"invalid_json": func(f *browserOrderCartFact) { f.Items = json.RawMessage(`[`) },
+	} {
+		t.Run(name, func(t *testing.T) {
+			changed := node
+			change(&changed)
+			if browserOrderCartFactsEqual(pg, changed) {
+				t.Fatal("different persisted fact incorrectly accepted")
+			}
+		})
+	}
+}
+
+// A fresh mount has two explicit loading states: session/cart observation, then real
+// CartLines detail hydration. Once its first line appears, continuity is mandatory.
+type browserOrderCartSample struct {
+	Title         *string `json:"title"`
+	Lines         int     `json:"lines"`
+	Qty           *string `json:"qty"`
+	DetailLoading *string `json:"detail_loading"`
+}
+
+func browserOrderCartSamplesValid(surface string, samples []browserOrderCartSample) bool {
+	if len(samples) == 0 || (surface != "drawer" && surface != "mount") {
+		return false
+	}
+	seenLine := false
+	for i, sample := range samples {
+		if surface == "mount" && i == 0 {
+			if sample.Title == nil || *sample.Title != "Loading…" || sample.Lines != 0 || sample.Qty != nil || sample.DetailLoading != nil {
+				return false
+			}
+			continue
+		}
+		if sample.Lines == 1 && sample.Qty != nil && *sample.Qty == "1" && sample.Title == nil && sample.DetailLoading == nil {
+			seenLine = true
+			continue
+		}
+		if surface == "mount" && !seenLine && sample.Lines == 0 && sample.Qty == nil {
+			initialLoading := sample.Title != nil && *sample.Title == "Loading…" && sample.DetailLoading == nil
+			detailLoading := sample.Title == nil && sample.DetailLoading != nil && *sample.DetailLoading == "Loading…"
+			if initialLoading || detailLoading {
+				continue
+			}
+		}
+		return false
+	}
+	return seenLine
+}
+
+func TestBuyerOrderRefreshSamples(t *testing.T) {
+	text := func(s string) *string { return &s }
+	initial := browserOrderCartSample{Title: text("Loading…")}
+	detail := browserOrderCartSample{DetailLoading: text("Loading…")}
+	line := browserOrderCartSample{Lines: 1, Qty: text("1")}
+	for _, tc := range []struct {
+		name    string
+		surface string
+		samples []browserOrderCartSample
+		want    bool
+	}{
+		{"mount-direct", "mount", []browserOrderCartSample{initial, line}, true},
+		{"mount-visible-detail-loading", "mount", []browserOrderCartSample{initial, detail, line}, true},
+		{"drawer-continuous", "drawer", []browserOrderCartSample{line, line}, true},
+		{"blank-before-first-line", "mount", []browserOrderCartSample{initial, {}, line}, false},
+		{"wrong-loading-copy", "mount", []browserOrderCartSample{initial, {DetailLoading: text("Unavailable")}, line}, false},
+		{"empty-even-with-loading", "mount", []browserOrderCartSample{initial, {Title: text("Your cart is empty"), DetailLoading: text("Loading…")}, line}, false},
+		{"changed-quantity", "mount", []browserOrderCartSample{initial, {Lines: 1, Qty: text("2")}}, false},
+		{"line-loss-after-first-line", "mount", []browserOrderCartSample{initial, line, detail, line}, false},
+		{"blank-after-first-line", "mount", []browserOrderCartSample{initial, line, {}, line}, false},
+		{"drawer-loading-does-not-excuse-line-loss", "drawer", []browserOrderCartSample{line, detail, line}, false},
+		{"drawer-must-start-with-line", "drawer", []browserOrderCartSample{initial, line}, false},
+		{"missing-initial-held-read-loading", "mount", []browserOrderCartSample{detail, line}, false},
+		{"never-published-line", "mount", []browserOrderCartSample{initial, detail}, false},
+		{"extra-line", "mount", []browserOrderCartSample{initial, {Lines: 2, Qty: text("1")}}, false},
+		{"loading-with-quantity", "mount", []browserOrderCartSample{initial, {DetailLoading: text("Loading…"), Qty: text("1")}, line}, false},
+		{"empty-title-with-line", "mount", []browserOrderCartSample{initial, {Title: text("Your cart is empty"), Lines: 1, Qty: text("1")}}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if browserOrderCartSamplesValid(tc.surface, tc.samples) != tc.want {
+				t.Fatal("visible cart sample sequence accepted/rejected incorrectly")
+			}
+		})
 	}
 }

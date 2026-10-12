@@ -1,0 +1,24 @@
+{
+  "name": "tsc-merge",
+  "command": [
+    "pnpm",
+    "exec",
+    "tsc",
+    "--noEmit",
+    "-p",
+    "apps/admin"
+  ],
+  "timeout": 300,
+  "head": "ff9a770d4db1c39bd7595f6918d8a1716df885c8",
+  "exit_code": 0,
+  "source_sha256": "e7bf55b70082ae585371ee1c1cf039cddcd344eab8de1f253f77fd5f27fc8175",
+  "source_after": "e7bf55b70082ae585371ee1c1cf039cddcd344eab8de1f253f77fd5f27fc8175",
+  "source_unchanged": true,
+  "historical_output_sha256": "c11d888b1a6325ccefcc309a43348ad18ee4f6e5d76279cbc9c21397d8c0db9a",
+  "historical_output_after": "c11d888b1a6325ccefcc309a43348ad18ee4f6e5d76279cbc9c21397d8c0db9a",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 4.641
+}

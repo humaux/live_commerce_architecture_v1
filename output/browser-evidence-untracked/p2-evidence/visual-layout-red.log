@@ -1,0 +1,71 @@
+Retained failed upload fixture: /private/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/lc-upload-layout-vPum5K
+Retained failed reviewer fixture: /private/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/lc-visual-review-layout-qCPh3C
+✔ browser evidence uses unique local runs or the selected harness parent without rewriting history (119.261083ms)
+✔ browser evidence rejects labels that escape the harness directory before creating files (35.504959ms)
+✔ shell isolates visual fixtures from a click ledger when caller reuses its evidence root (17.213958ms)
+✔ ops disk guard allocation isolates its log and child evidence from committed history (9.235333ms)
+✖ visual artifact upload selects lint/index/shots and excludes raw unrelated evidence (17.67575ms)
+✖ visual reviewer discovers nested per-run artifact shots through its real copy loop (9.037333ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 4
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 282.597583
+
+✖ failing tests:
+
+test at tests/admin/browser-evidence.test.mjs:118:1
+✖ visual artifact upload selects lint/index/shots and excludes raw unrelated evidence (17.67575ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+    [
+  +   'output/playwright/run.local/catalog-core/result.json',
+      'output/playwright/run.local/ci-gates/visual.log',
+  +   'output/playwright/run.local/facts.json',
+  +   'output/playwright/run.local/trace.zip',
+  +   'output/playwright/run.local/ui-visual-audit/20261009T010203Z/crops/control.png',
+      'output/playwright/run.local/ui-visual-audit/20261009T010203Z/index.json',
+      'output/playwright/run.local/ui-visual-audit/20261009T010203Z/lint.json',
+      'output/playwright/run.local/ui-visual-audit/20261009T010203Z/lint.md',
+      'output/playwright/run.local/ui-visual-audit/20261009T010203Z/shots/admin/home/en-390x844.png'
+    ]
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/tests/admin/browser-evidence.test.mjs:134:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'output/playwright/run.local/catalog-core/result.json', 'output/playwright/run.local/ci-gates/visual.log', 'output/playwright/run.local/facts.json', 'output/playwright/run.local/trace.zip', 'output/playwright/run.local/ui-visual-audit/20261009T010203Z/crops/control.png', 'output/playwright/run.local/ui-visual-audit/20261009T010203Z/index.json', 'output/playwright/run.local/ui-visual-audit/20261009T010203Z/lint.json', 'output/playwright/run.local/ui-visual-audit/20261009T010203Z/lint.md', 'output/playwright/run.local/ui-visual-audit/20261009T010203Z/shots/admin/home/en-390x844.png' ],
+    expected: [ 'output/playwright/run.local/ci-gates/visual.log', 'output/playwright/run.local/ui-visual-audit/20261009T010203Z/index.json', 'output/playwright/run.local/ui-visual-audit/20261009T010203Z/lint.json', 'output/playwright/run.local/ui-visual-audit/20261009T010203Z/lint.md', 'output/playwright/run.local/ui-visual-audit/20261009T010203Z/shots/admin/home/en-390x844.png' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/browser-evidence.test.mjs:139:1
+✖ visual reviewer discovers nested per-run artifact shots through its real copy loop (9.037333ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  1 !== 0
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/tests/admin/browser-evidence.test.mjs:153:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

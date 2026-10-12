@@ -1,0 +1,9 @@
+{
+  "source": "tests/admin/product-editor.acceptance.ts",
+  "original_sha256": "fe6b580fcc3341d0698228dec607c08c5727f3224916ad0682ee94d0b3b7f517",
+  "mutation": "replace per-run product-ui-v2 path with tracked output/product-ui-v2 path",
+  "red_exit": 1,
+  "green_exit": 0,
+  "restored_byte_for_byte": true,
+  "head": "bb393536dd03a88daa1b2a5d238b14ee9d9945ae"
+}

@@ -126,7 +126,7 @@ test("settings: the merchant enables cash on delivery with a cap, surcharge and 
         const box = await page.getByTestId(control).boundingBox();
         expect(box?.height, `${language} ${control} touch height`).toBeGreaterThanOrEqual(44);
       }
-      await page.screenshot({ path: path.resolve("output/home-cod-ui", `admin-settings-${language}-${width}.png`), fullPage: false, animations: "disabled", scale: "css" });
+      await page.screenshot({ path: path.resolve(evidence, "home-cod-ui", `admin-settings-${language}-${width}.png`), fullPage: false, animations: "disabled", scale: "css" });
       expect(await page.getByTestId("cod-max").evaluate((input) => {
         const r = input.getBoundingClientRect();
         return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2) === input;

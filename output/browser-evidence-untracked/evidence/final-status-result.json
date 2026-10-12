@@ -1,0 +1,7 @@
+{
+  "command": "git status --short | grep -v '^??'",
+  "grep_exit": 1,
+  "output_bytes": 0,
+  "meaning": "no tracked status lines; no restoration used",
+  "source_commit": "bb393536dd03a88daa1b2a5d238b14ee9d9945ae"
+}

@@ -1,0 +1,58 @@
+✖ failed later transport session refresh keeps an earlier observed cart eligible (63.590375ms)
+✖ failed later 503 session refresh keeps an earlier observed cart eligible (9.188833ms)
+✔ newer successful session supersedes a delayed valid A cart on cart (9.980083ms)
+✔ newer successful session supersedes a delayed valid A cart on cart-fails (5.618292ms)
+✔ newer successful session supersedes a delayed valid A cart on absent (6.2615ms)
+✔ a completed same-context command fences an earlier valid cart read (22.954959ms)
+✔ unmount still fences a delayed session refresh after separating issued and observed generations (4.72075ms)
+✔ unmount still fences a delayed cart refresh after separating issued and observed generations (8.051292ms)
+✔ round2 stale A session response cannot supersede newer refresh B or its lost-write Retry (11.310208ms)
+✔ round2 stale A session response cannot supersede newer mutation B or its lost-write Retry (9.270542ms)
+✔ rotated buyer context clears the prior cart on read and preserves the B receipt (6.903458ms)
+✔ rotated buyer context clears the prior cart on lost-write and preserves the B receipt (7.548875ms)
+✔ rotated buyer context clears the prior cart on refresh-read and preserves the B receipt (6.189125ms)
+✔ lost first write keeps Retry alive: same context, same idempotency key, no second purchase (5.189417ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 12
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 489.75
+
+✖ failing tests:
+
+test at apps/storefront/tests/cart-provider-retry.test.mjs:38:3
+✖ failed later transport session refresh keeps an earlier observed cart eligible (63.590375ms)
+  AssertionError [ERR_ASSERTION]: a failed later refresh cannot finish the pending authoritative observation
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/cart-refresh-generation/apps/storefront/tests/cart-provider-retry.test.mjs:71:14)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at apps/storefront/tests/cart-provider-retry.test.mjs:38:3
+✖ failed later 503 session refresh keeps an earlier observed cart eligible (9.188833ms)
+  AssertionError [ERR_ASSERTION]: a failed later refresh cannot finish the pending authoritative observation
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/cart-refresh-generation/apps/storefront/tests/cart-provider-retry.test.mjs:71:14)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

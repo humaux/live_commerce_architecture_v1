@@ -238,9 +238,18 @@ func brfBuyerNode(t *testing.T, ctx context.Context, e *rfxEnv, o rfxOrder, scri
 	}
 }
 
+// browserEvidenceRoot is the shared, caller-owned browser artifact base. Each
+// harness adds its own run directory; standalone runs default to ignored output.
+func browserEvidenceRoot(root string) string {
+	if base := os.Getenv("LC_BROWSER_EVIDENCE_ROOT"); base != "" {
+		return base
+	}
+	return filepath.Join(root, "output", "playwright")
+}
+
 func brfEvidence(t *testing.T, root, name string) string {
 	t.Helper()
-	dir := filepath.Join(root, "output/playwright", name, time.Now().UTC().Format("20060102T150405.000000000"))
+	dir := filepath.Join(browserEvidenceRoot(root), name, time.Now().UTC().Format("20060102T150405.000000000"))
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		t.Fatal(err)
 	}

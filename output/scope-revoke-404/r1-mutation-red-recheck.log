@@ -1,0 +1,7 @@
+$ (mutation: scopeLost returns err != nil || status=="not_found") go test ./internal/platform -run TestScopeRecheckFailureKeepsDenial -count=1
+--- FAIL: TestScopeRecheckFailureKeepsDenial (0.00s)
+    scope_recheck_test.go:24: a failed re-check reported scope loss; it must keep the original denial
+FAIL
+FAIL	livecommerce/internal/platform	1.266s
+FAIL
+exit=1

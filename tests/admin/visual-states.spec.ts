@@ -1,9 +1,12 @@
 // Purpose: Checks fixture-driven inventory visual states and long-SKU overflow; writes browser evidence.
 // Depends on: ./fixtures/ledger-identity, node:fs/promises, @playwright/test; harness env: COMMERCE_FIXTURE_STORE_ID
 // Used by: tests/foundation/browser_admin_legacy_test.go
+import { browserEvidenceDirectory } from "../browser-evidence.mjs";
 import { test, expect } from "./fixtures/ledger-identity";
 import { mkdir, writeFile } from "node:fs/promises";
 import type { APIRequestContext } from "@playwright/test";
+
+const reviewEvidence = browserEvidenceDirectory("ledger-review");
 
 // This spec alone adds a realistic variant code to the disposable Go/PG
 // fixture. The real catalog projection and intrinsic table layout must create
@@ -40,7 +43,7 @@ test("ledger selection caret and scroll surface are authored and active", async 
   request,
 }) => {
   const longSKU = await createLongSkuFixture(request);
-  await mkdir("output/playwright/ledger-review", { recursive: true });
+  await mkdir(reviewEvidence, { recursive: true });
   await page.goto("/en/inventory");
   await expect(page.getByRole("radio", { name: `Select ${longSKU}`, exact: true })).toBeVisible();
   const input = page.locator(".search-field input");
@@ -67,7 +70,7 @@ test("ledger selection caret and scroll surface are authored and active", async 
     focused: true,
   });
   await input.screenshot({
-    path: "output/playwright/ledger-review/selection-active.png",
+    path: `${reviewEvidence}/selection-active.png`,
     caret: "initial",
   });
   await input.press("ArrowRight");
@@ -78,7 +81,7 @@ test("ledger selection caret and scroll surface are authored and active", async 
   }));
   expect(caret).toEqual({ start: 17, end: 17, focused: true });
   await input.screenshot({
-    path: "output/playwright/ledger-review/caret-active.png",
+    path: `${reviewEvidence}/caret-active.png`,
     caret: "initial",
   });
   await input.fill("");
@@ -100,7 +103,7 @@ test("ledger selection caret and scroll surface are authored and active", async 
       break;
     }
   }
-  await writeFile("output/playwright/ledger-review/scroll-widths.json", JSON.stringify(viewportMeasurements, null, 2) + "\n");
+  await writeFile(`${reviewEvidence}/scroll-widths.json`, JSON.stringify(viewportMeasurements, null, 2) + "\n");
   expect(overflowWidth).toBeGreaterThan(0);
   await table.hover();
   await page.mouse.wheel(120, 0);
@@ -116,9 +119,9 @@ test("ledger selection caret and scroll surface are authored and active", async 
   }));
   expect(scroll.scrollbarColor).toBe("rgb(86, 97, 113) rgb(245, 246, 248)");
   expect(scroll.scrollbarWidth).toBe("thin");
-  await table.screenshot({ path: "output/playwright/ledger-review/scrollbar-active.png" });
+  await table.screenshot({ path: `${reviewEvidence}/scrollbar-active.png` });
   await writeFile(
-    "output/playwright/ledger-review/active-style-evidence.json",
+    `${reviewEvidence}/active-style-evidence.json`,
     JSON.stringify({ styles, caret, overflowWidth, scroll }, null, 2),
   );
   // Next retains hidden dev-tool DOM; only visible chrome can cover the UI.

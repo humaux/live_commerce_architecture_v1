@@ -1,0 +1,47 @@
+{
+  "merge_commit": "ae17bc99fcb78ef573b4eaa48f475fc2d8fae562",
+  "prior_handoff": "8446551377486c9b32e2341ea84ea156fa669ad7",
+  "runtime_diff": [],
+  "source_hashes_match": {
+    "apps/storefront/components/CartProvider.tsx": "f710037b23d513e504fa81291df6fef8e6cc031b37de4658a52415e9e7008b6d",
+    "apps/storefront/tests/cart-provider-retry.test.mjs": "220e82fa2d5d665e66d2fe6dc246039df8cfe007248dcc41924544a01659d8a1"
+  },
+  "commands": [
+    {
+      "command": "bash scripts/dev/test-node.sh",
+      "exit": 0,
+      "log": "node.log",
+      "sha256": "06e05d9290ba764c055db7c2d4db1cd91f9bc378178c84e383ec0a69c11432ad",
+      "node_pass": 1189,
+      "node_fail": 0
+    },
+    {
+      "command": "pnpm --filter @live-commerce/storefront typecheck",
+      "exit": 0,
+      "log": "typecheck.log",
+      "raw_stdout_path": "/Volumes/data/live_commerce_architecture_v1/output/cart-refresh-generation/pr22-merge/typecheck.log",
+      "raw_stdout_sha256": "3b871f702620074c27110253386a9a5d62e30d1a34abdb3da52bdd1d2f9ff4cb",
+      "normalization": "Final blank EOF line only trimmed in committed review copy.",
+      "sha256": "9f55df25896b5ce4031aed107ac85353d0bdc43bcb23b6ad663e630567657ef6",
+      "node_pass": 0,
+      "node_fail": 0
+    },
+    {
+      "command": "bash scripts/dev/test-local.sh --list",
+      "exit": 0,
+      "log": "registry-list.log",
+      "sha256": "5e780dc27ce8a1089b7191e5aa0a0a800d2a9144d7aa53ef5ffe91b5bd9cfd66",
+      "node_pass": 0,
+      "node_fail": 0
+    },
+    {
+      "command": "bash scripts/dev/check-gates.sh",
+      "exit": 0,
+      "log": "check-gates.log",
+      "sha256": "56e8974ec3364d99240189caac6194fdb841ac99819453d71aee501848abb4d4",
+      "node_pass": 13,
+      "node_fail": 0
+    }
+  ],
+  "browser_evidence": "Previous actualorder32+buyer13 retained: all apps/internal/migrations/foundation browser runtime bytes unchanged; no browser rerun claimed."
+}

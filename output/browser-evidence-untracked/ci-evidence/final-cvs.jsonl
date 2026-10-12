@@ -1,0 +1,19 @@
+{"Time":"2026-10-09T19:58:12.85102+08:00","Action":"start","Package":"livecommerce/tests/foundation"}
+{"Time":"2026-10-09T19:58:13.60261+08:00","Action":"run","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs"}
+{"Time":"2026-10-09T19:58:13.603423+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs","Output":"=== RUN   TestBrowserTaiwanCvs\n","OutputType":"frame"}
+{"Time":"2026-10-09T19:58:13.603498+08:00","Action":"run","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs/WebKit"}
+{"Time":"2026-10-09T19:58:13.603503+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs/WebKit","Output":"=== RUN   TestBrowserTaiwanCvs/WebKit\n","OutputType":"frame"}
+{"Time":"2026-10-09T19:58:43.986606+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs/WebKit","Output":"2026/10/09 19:58:43 http: proxy error: context canceled\n"}
+{"Time":"2026-10-09T19:58:43.988076+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs/WebKit","Output":"2026/10/09 19:58:43 http: proxy error: context canceled\n"}
+{"Time":"2026-10-09T19:58:43.988135+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs/WebKit","Output":"2026/10/09 19:58:43 http: proxy error: context canceled\n"}
+{"Time":"2026-10-09T19:58:43.988165+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs/WebKit","Output":"2026/10/09 19:58:43 http: proxy error: context canceled\n"}
+{"Time":"2026-10-09T19:58:43.988205+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs/WebKit","Output":"2026/10/09 19:58:43 http: proxy error: context canceled\n"}
+{"Time":"2026-10-09T19:58:43.989377+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs/WebKit","Output":"2026/10/09 19:58:43 http: proxy error: context canceled\n"}
+{"Time":"2026-10-09T19:58:57.401097+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs/WebKit","Output":"    browser_taiwan_cvs_test.go:221: TCV08 BROWSER (MOCK) buyer half + TCV14 buyer_entered UI half passed; screenshots hashed; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.0kCZB8vM/taiwan-cvs/20261009T115813.837019000\n"}
+{"Time":"2026-10-09T19:58:57.472471+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs/WebKit","Output":"--- PASS: TestBrowserTaiwanCvs/WebKit (43.87s)\n","OutputType":"frame"}
+{"Time":"2026-10-09T19:58:57.472645+08:00","Action":"pass","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs/WebKit","Elapsed":43.87}
+{"Time":"2026-10-09T19:58:57.473705+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs","Output":"--- PASS: TestBrowserTaiwanCvs (43.87s)\n","OutputType":"frame"}
+{"Time":"2026-10-09T19:58:57.473735+08:00","Action":"pass","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs","Elapsed":43.87}
+{"Time":"2026-10-09T19:58:57.47567+08:00","Action":"output","Package":"livecommerce/tests/foundation","Output":"PASS\n","OutputType":"frame"}
+{"Time":"2026-10-09T19:58:58.493686+08:00","Action":"output","Package":"livecommerce/tests/foundation","Output":"ok  \tlivecommerce/tests/foundation\t45.642s\n"}
+{"Time":"2026-10-09T19:58:58.493926+08:00","Action":"pass","Package":"livecommerce/tests/foundation","Elapsed":45.643}

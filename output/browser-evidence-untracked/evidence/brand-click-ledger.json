@@ -1,0 +1,194 @@
+[
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "page": "signin",
+    "action": "navigate by link; reload",
+    "expected": "exact brand/title/operator; no overflow",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "page": "signup",
+    "action": "navigate by link; reload",
+    "expected": "exact brand/title/operator; no overflow",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "page": "reset",
+    "action": "navigate by link; reload",
+    "expected": "exact brand/title/operator; no overflow",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "page": "signin",
+    "action": "select locale en",
+    "expected": "route changes; untranslated brand preserved",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 1586,
+    "page": "signin",
+    "action": "navigate by link; reload",
+    "expected": "exact brand/title/operator; no overflow",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 1586,
+    "page": "signup",
+    "action": "navigate by link; reload",
+    "expected": "exact brand/title/operator; no overflow",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 1586,
+    "page": "reset",
+    "action": "navigate by link; reload",
+    "expected": "exact brand/title/operator; no overflow",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 1586,
+    "page": "signin",
+    "action": "select locale en",
+    "expected": "route changes; untranslated brand preserved",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 390,
+    "page": "signin",
+    "action": "navigate by link; reload",
+    "expected": "exact brand/title/operator; no overflow",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 390,
+    "page": "signup",
+    "action": "navigate by link; reload",
+    "expected": "exact brand/title/operator; no overflow",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 390,
+    "page": "reset",
+    "action": "navigate by link; reload",
+    "expected": "exact brand/title/operator; no overflow",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 390,
+    "page": "signin",
+    "action": "select locale en",
+    "expected": "route changes; untranslated brand preserved",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 1586,
+    "page": "signin",
+    "action": "navigate by link; reload",
+    "expected": "exact brand/title/operator; no overflow",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 1586,
+    "page": "signup",
+    "action": "navigate by link; reload",
+    "expected": "exact brand/title/operator; no overflow",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 1586,
+    "page": "reset",
+    "action": "navigate by link; reload",
+    "expected": "exact brand/title/operator; no overflow",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 1586,
+    "page": "signin",
+    "action": "select locale en",
+    "expected": "route changes; untranslated brand preserved",
+    "result": "PASS"
+  },
+  {
+    "locale": "en",
+    "width": 390,
+    "page": "signin",
+    "action": "navigate by link; reload",
+    "expected": "exact brand/title/operator; no overflow",
+    "result": "PASS"
+  },
+  {
+    "locale": "en",
+    "width": 390,
+    "page": "signup",
+    "action": "navigate by link; reload",
+    "expected": "exact brand/title/operator; no overflow",
+    "result": "PASS"
+  },
+  {
+    "locale": "en",
+    "width": 390,
+    "page": "reset",
+    "action": "navigate by link; reload",
+    "expected": "exact brand/title/operator; no overflow",
+    "result": "PASS"
+  },
+  {
+    "locale": "en",
+    "width": 390,
+    "page": "signin",
+    "action": "select locale zh-TW",
+    "expected": "route changes; untranslated brand preserved",
+    "result": "PASS"
+  },
+  {
+    "locale": "en",
+    "width": 1586,
+    "page": "signin",
+    "action": "navigate by link; reload",
+    "expected": "exact brand/title/operator; no overflow",
+    "result": "PASS"
+  },
+  {
+    "locale": "en",
+    "width": 1586,
+    "page": "signup",
+    "action": "navigate by link; reload",
+    "expected": "exact brand/title/operator; no overflow",
+    "result": "PASS"
+  },
+  {
+    "locale": "en",
+    "width": 1586,
+    "page": "reset",
+    "action": "navigate by link; reload",
+    "expected": "exact brand/title/operator; no overflow",
+    "result": "PASS"
+  },
+  {
+    "locale": "en",
+    "width": 1586,
+    "page": "signin",
+    "action": "select locale zh-TW",
+    "expected": "route changes; untranslated brand preserved",
+    "result": "PASS"
+  }
+]

@@ -1,0 +1,60 @@
+{
+  "source_commit": "3b3350f8aaf7a4d586229cf492558bc59c6432a3",
+  "worktree_evidence": "/Volumes/data/live_commerce_architecture_v1/.worktrees/cart-refresh-generation/output/playwright/buyer-order-1492868996",
+  "canonical_evidence": "/Volumes/data/live_commerce_architecture_v1/output/cart-refresh-generation/browser/order/buyer-order-1492868996",
+  "files": {
+    "desktop-order.png": {
+      "sha256": "e2faa305758a8ef42cb2400bfcead9b2b686aefa330ccdafb6d7a3c6c7e58351",
+      "bytes": 118204
+    },
+    "browser.log": {
+      "sha256": "39ccce840d55c109ba2052f805af0fc6162c98da30f0d89df84e5f59549baa91",
+      "bytes": 3025
+    },
+    "next.log": {
+      "sha256": "f02d90542af4eb55e3cc353dde6cdfc3c34f6d13d199323089284b8c30166724",
+      "bytes": 155
+    },
+    "mobile-address.png": {
+      "sha256": "a1665cc57e811b0226045bd56e659f2755623dceb4d429af62e5efa9e503aa60",
+      "bytes": 199950
+    },
+    "result.json": {
+      "sha256": "60b9915943f09340bc403292f3bf8d22ed072e156e4031d8c25073ec0939562f",
+      "bytes": 22690
+    },
+    "mobile-order.png": {
+      "sha256": "7b28a203f1e33fc965c675e1b64995194c0ddcfe31f8612b9b3240f4e745277f",
+      "bytes": 102976
+    },
+    "cart-click-ledger.json": {
+      "sha256": "3e6c5bd3d247b86b8db379b24e52efe18576e58a83258f77c179581294742368",
+      "bytes": 8093
+    },
+    "desktop-address.png": {
+      "sha256": "4092709cc12c5bbe3476d081a385bbe881602d395808040f2e12f4e473bcb318",
+      "bytes": 218012
+    },
+    "desktop-history.png": {
+      "sha256": "c95486f31be8b4b3a0235422cff690b75ce23b46f6b01ad3f309177522db0d3e",
+      "bytes": 77176
+    },
+    "cart-final-pg-facts.json": {
+      "sha256": "4bf68a31c4213e3cdbcffacb254608403d8c32debda7f05a5c8cc53f8de708b1",
+      "bytes": 2066
+    },
+    "cart-retry-facts.json": {
+      "sha256": "564c5e718f4bd7dbc5f7c057ee73dad0c0869b2d07f048c62ee5585826a6d1b5",
+      "bytes": 9740
+    },
+    "mobile-history.png": {
+      "sha256": "8f6982487820f1c03e1b123e3c13f7ba176a6984d655c592edd9dc42a2e97ee3",
+      "bytes": 64642
+    },
+    "desktop-address-viewport.png": {
+      "sha256": "3bff782335b3316e6712f3d5df8eba017cd260b4121442125504e15117769401",
+      "bytes": 70114
+    }
+  },
+  "verified_go_summary": "browser_order_chain_test.go:386: PASS: actual order UI/history; cases=32; buyers=6; orders=7; exact order/hold/job/receipt/reserve counts (one buyer twice, five once); evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/cart-refresh-generation/output/playwright/buyer-order-1492868996"
+}

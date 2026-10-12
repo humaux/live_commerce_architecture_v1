@@ -1,0 +1,9 @@
+{
+  "tested_sha": "792b0847ac3883f994aaad8ca60f215196ac006e",
+  "files": {
+    "apps/storefront/components/CartProvider.tsx": "611ad036da5345a31c313ea8a77cd8cd04181aea8b9dc21ce5445e0864f1db43",
+    "apps/storefront/tests/cart-provider-retry.test.mjs": "9812ab5b101e54d8d04d96cd11cb4c89b1726db7c7dbf8800764fd2d68955886",
+    "tests/storefront/order-gate.mjs": "fd93e9f103101d3656c3b1f1aeb0dc9050bea5f84366474c6c1d58fc111b798f",
+    "tests/foundation/browser_order_chain_test.go": "4bb2820b1f3e41633b82b03c52ff4d49b856edc49aa86bcd60cf894b0f6306ed"
+  }
+}

@@ -1,0 +1,242 @@
+[
+  {
+    "argv": [
+      "node",
+      "--test",
+      "tests/admin/browser-evidence.test.mjs"
+    ],
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/00.log"
+  },
+  {
+    "argv": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/01.log"
+  },
+  {
+    "argv": [
+      "node",
+      "--check",
+      "playwright.config.ts"
+    ],
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/02.log"
+  },
+  {
+    "argv": [
+      "node",
+      "--check",
+      "tests/admin/entry.spec.ts"
+    ],
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/03.log"
+  },
+  {
+    "argv": [
+      "node",
+      "--check",
+      "tests/admin/home-cod.spec.ts"
+    ],
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/04.log"
+  },
+  {
+    "argv": [
+      "node",
+      "--check",
+      "tests/admin/ledger.spec.ts"
+    ],
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/05.log"
+  },
+  {
+    "argv": [
+      "node",
+      "--check",
+      "tests/admin/picklist.spec.ts"
+    ],
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/06.log"
+  },
+  {
+    "argv": [
+      "node",
+      "--check",
+      "tests/admin/platform-runner.mjs"
+    ],
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/07.log"
+  },
+  {
+    "argv": [
+      "node",
+      "--check",
+      "tests/admin/product-editor.acceptance.ts"
+    ],
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/08.log"
+  },
+  {
+    "argv": [
+      "node",
+      "--check",
+      "tests/admin/product-review.acceptance.ts"
+    ],
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/09.log"
+  },
+  {
+    "argv": [
+      "node",
+      "--check",
+      "tests/admin/product-visual.acceptance.ts"
+    ],
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/10.log"
+  },
+  {
+    "argv": [
+      "node",
+      "--check",
+      "tests/admin/shell-runner.mjs"
+    ],
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/11.log"
+  },
+  {
+    "argv": [
+      "node",
+      "--check",
+      "tests/admin/taiwan-cvs.spec.ts"
+    ],
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/12.log"
+  },
+  {
+    "argv": [
+      "node",
+      "--check",
+      "tests/admin/visual-states.spec.ts"
+    ],
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/13.log"
+  },
+  {
+    "argv": [
+      "node",
+      "--check",
+      "tests/deploy/platform-edge.mjs"
+    ],
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/14.log"
+  },
+  {
+    "argv": [
+      "node",
+      "--check",
+      "tests/storefront/browser-gate.mjs"
+    ],
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/15.log"
+  },
+  {
+    "argv": [
+      "node",
+      "--check",
+      "tests/storefront/cvs-pap-only.mjs"
+    ],
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/16.log"
+  },
+  {
+    "argv": [
+      "node",
+      "--check",
+      "tests/storefront/home-cod-buyer.mjs"
+    ],
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/17.log"
+  },
+  {
+    "argv": [
+      "node",
+      "--check",
+      "tests/storefront/legal-pages.mjs"
+    ],
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/18.log"
+  },
+  {
+    "argv": [
+      "node",
+      "--check",
+      "tests/storefront/media-sizes-perf.mjs"
+    ],
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/19.log"
+  },
+  {
+    "argv": [
+      "node",
+      "--check",
+      "tests/storefront/order-gate.mjs"
+    ],
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/20.log"
+  },
+  {
+    "argv": [
+      "node",
+      "--check",
+      "tests/ui/click-sweep.mjs"
+    ],
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/21.log"
+  },
+  {
+    "argv": [
+      "node",
+      "--check",
+      "tests/ui/visual-audit.mjs"
+    ],
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/22.log"
+  },
+  {
+    "argv": [
+      "node",
+      "--check",
+      "tests/browser-evidence.mjs"
+    ],
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/23.log"
+  },
+  {
+    "argv": [
+      "node",
+      "--check",
+      "tests/admin/browser-evidence.test.mjs"
+    ],
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/24.log"
+  },
+  {
+    "argv": [
+      "node",
+      "/Volumes/data/live_commerce_architecture_v1/node_modules/@playwright/test/cli.js",
+      "test",
+      "--list",
+      "--config=playwright.config.ts",
+      "--reporter=list"
+    ],
+    "env": {
+      "NODE_PATH": "/Volumes/data/live_commerce_architecture_v1/node_modules"
+    },
+    "exit_code": 0,
+    "evidence": "output/playwright/evidence-spec-paths-verify/playwright-list.log"
+  }
+]

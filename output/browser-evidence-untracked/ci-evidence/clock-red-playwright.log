@@ -1,0 +1,58 @@
+
+Running 11 tests using 1 worker
+
+(node:26210) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/admin/password-auth.spec.ts:165:1 › full chain: sign-up -> code -> onboarding -> logout -> sign-in -> code -> workspace; forgot -> reset -> signed in, old session revoked (zh-TW, desktop) (5.7s)
+  ✓   2 tests/admin/password-auth.spec.ts:293:1 › BFF contract: Origin, query, client IP, strict keys, cookie clearing on 200/409 only, sessions survive a failed verify, no secret in any body (1.5s)
+  ✓   3 tests/admin/password-auth.spec.ts:420:1 › SSR: no form with a password field lacks method=post (/, /signup, /reset) (33ms)
+  ✓   4 tests/admin/password-auth.spec.ts:437:1 › throttled UI state and the 60 s resend cooldown (1.1m)
+  ✓   5 tests/admin/password-auth.spec.ts:492:5 › matrix zh-CN desktop: forms, autocomplete attributes, code step, screenshots, mail language (1.2s)
+  ✓   6 tests/admin/password-auth.spec.ts:492:5 › matrix zh-TW desktop: forms, autocomplete attributes, code step, screenshots, mail language (1.4s)
+  ✓   7 tests/admin/password-auth.spec.ts:492:5 › matrix en desktop: forms, autocomplete attributes, code step, screenshots, mail language (1.8s)
+  ✓   8 tests/admin/password-auth.spec.ts:492:5 › matrix zh-CN mobile: forms, autocomplete attributes, code step, screenshots, mail language (941ms)
+  ✓   9 tests/admin/password-auth.spec.ts:492:5 › matrix zh-TW mobile: forms, autocomplete attributes, code step, screenshots, mail language (929ms)
+  ✓  10 tests/admin/password-auth.spec.ts:492:5 › matrix en mobile: forms, autocomplete attributes, code step, screenshots, mail language (890ms)
+  ✘  11 tests/admin/password-auth.spec.ts:548:1 › matrix: locale copy differs per locale and the reset wording is the same for known and unknown addresses (847ms)
+
+
+  1) tests/admin/password-auth.spec.ts:548:1 › matrix: locale copy differs per locale and the reset wording is the same for known and unknown addresses
+
+    Error: reset step-1 wording must not depend on whether the account exists
+
+    expect(received).toBe(expected) // Object.is equality
+
+    - Expected  - 1
+    + Received  + 1
+
+    @@ -8,10 +8,10 @@
+
+      6-digit code
+      The code is valid for 10 minutes. Check your spam folder if it does not arrive.
+      New password
+      At least 12 characters. Use a password you do not use anywhere else.
+    - Send a new code in 60 s
+    + Send a new code in 61 s
+      Set password and sign in
+      Start over
+
+      DaWan Live is operated by Hong Kong Da Wan Trading Limited
+
+      575 |   const a = await visible(known);
+      576 |   const b = await visible(newEmail());
+    > 577 |   expect(a, "reset step-1 wording must not depend on whether the account exists").toBe(b);
+          |                                                                                   ^
+      578 |   // sanity: the recorded screenshots exist
+      579 |   const shots = readFileSync(join(evidenceDir!, "screenshots.jsonl"), "utf8").trim().split("\n").map((l: string) => JSON.parse(l));
+      580 |   expect(shots.length).toBeGreaterThanOrEqual(3 * 2 * 4 + 1);
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/tests/admin/password-auth.spec.ts:577:83
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.a4zzSGz1/password-auth-20261009T113008.291880000/results/password-auth-matrix-local-7159d-known-and-unknown-addresses/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.a4zzSGz1/password-auth-20261009T113008.291880000/results/password-auth-matrix-local-7159d-known-and-unknown-addresses/error-context.md
+
+  1 failed
+    tests/admin/password-auth.spec.ts:548:1 › matrix: locale copy differs per locale and the reset wording is the same for known and unknown addresses
+  10 passed (1.4m)

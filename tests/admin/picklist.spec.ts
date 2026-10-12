@@ -1,6 +1,7 @@
 // Purpose: real-click W3-U1b acceptance against isolated contract-shaped MOCK HTTP, run only in CI.
 // Depends on: packaged Next admin, Playwright Chromium/API requests, picklist-fixture TLS facade and node:test.
 // Used by: test-local.sh --browser-picklist; no evaluate writes, provider effects or PG.
+import { browserEvidenceDirectory } from "../browser-evidence.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { chromium, expect } from "@playwright/test";
@@ -14,7 +15,7 @@ test(
   "W3-U1b real clicks: selection, print, CSV, confirmation, unknown and scope",
   { timeout: 900000 },
   async () => {
-    const output = "output/ci-gates/picklist";
+    const output = browserEvidenceDirectory("picklist");
     await mkdir(output, { recursive: true });
     const fixture = await pickFixture();
     const probe = createServer();

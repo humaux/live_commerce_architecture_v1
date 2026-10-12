@@ -622,7 +622,7 @@ func sbEvidenceRoot(t *testing.T) string {
 	}
 	base := os.Getenv("LC_STRIPE_EVIDENCE_ROOT")
 	if base == "" {
-		base = filepath.Join(root, "output", "stripe-b2-browser-tests")
+		base = brfEvidence(t, root, "stripe-b2-browser-tests")
 	}
 	if err = os.MkdirAll(base, 0o700); err != nil {
 		t.Fatal(err)
@@ -1036,7 +1036,7 @@ func TestBrowserPayuniBaseline(t *testing.T) {
 	}
 	dir := os.Getenv("LC_BASELINE_OUT_DIR")
 	if dir == "" {
-		dir = filepath.Join(root, "output", "stripe-b2-browser-tests")
+		dir = brfEvidence(t, root, "stripe-b2-browser-tests")
 	}
 	if err = os.MkdirAll(dir, 0o700); err != nil {
 		t.Fatal(err)

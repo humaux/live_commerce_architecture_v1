@@ -1,11 +1,13 @@
 // Purpose: select isolated browser acceptance suites and engine profiles.
 // Depends on: Playwright, LC_BROWSER_SUITE/LC_BROWSER_ENGINE and each test-owned Go fixture.
 // Used by: registered browser gates; signed identities never share ledger authority.
+import { browserEvidenceDirectory } from "./tests/browser-evidence.mjs";
 import { defineConfig, devices } from "@playwright/test";
 
 // These suites have deliberately different server/authority fixtures. Never
 // silently run signed-identity tests against a ledger's shared dev bearer.
 const suite = process.env.LC_BROWSER_SUITE ?? "ledger";
+const evidence = browserEvidenceDirectory("playwright");
 const suites: Record<string, string[]> = {
   "operations-ads": ["operations-ads.spec.ts"],
   ledger: ["ledger.spec.ts", "production.spec.ts", "visual-states.spec.ts"],
@@ -48,9 +50,9 @@ export default defineConfig({
   expect: { timeout: 10000 },
   reporter: [
     ["list"],
-    ["json", { outputFile: "output/playwright/results.json" }],
+    ["json", { outputFile: `${evidence}/results.json` }],
   ],
-  outputDir: "output/playwright/test-results",
+  outputDir: `${evidence}/test-results`,
   use: {
     ...safari,
     baseURL: "http://127.0.0.1:3100",

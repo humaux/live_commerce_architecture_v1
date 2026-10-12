@@ -17,6 +17,7 @@
 // server log") are asserted by PA11's harness (tests/admin/password-auth.spec.ts + browser_password_auth_test.go).
 // Run: node --test --experimental-strip-types tests/admin/password-bff.test.ts
 import assert from "node:assert/strict";
+import { responseBodyForSecretScan } from "./password-response-canaries.ts";
 import { randomBytes } from "node:crypto";
 import { createServer } from "node:http";
 import { registerHooks } from "node:module";
@@ -331,4 +332,47 @@ test("PA10 upstream diagnostics never reach the browser: safeError rebuilds the 
   // an unknown or malformed code becomes the generic retry_later
   const odd = await auth.safeError(upstreamError(500, "Sensitive Code!"));
   assert.ok(!(await odd.text()).includes("Sensitive"));
+});
+
+// This public UUID is from the actual failed WebKit artifact, not a secret-bearing response value.
+const collisionCode = "432082";
+const publicRequestID = "cd9f732f63af432082efee8be2c29826";
+const errorEnvelope = (extra: Record<string, unknown> = {}) => ({
+  code: "forbidden", message: "Access denied.", retryable: false, details: {},
+  request_id: publicRequestID, ...extra,
+});
+test("response canary scan distinguishes an OTP substring in a public generated request ID", () => {
+  const scan = responseBodyForSecretScan(JSON.stringify(errorEnvelope()));
+  assert.ok(!scan.includes(collisionCode), "an independent UUID chunk is not an echoed OTP");
+  assert.ok(scan.includes("Access denied."));
+});
+test("response canary scan retains real leaks in every non-metadata field and nested request IDs", () => {
+  for (const body of [
+    errorEnvelope({ message: `code=${collisionCode}` }),
+    errorEnvelope({ code: collisionCode }),
+    errorEnvelope({ details: { code: Number(collisionCode) } }),
+    errorEnvelope({ details: { request_id: publicRequestID } }),
+    errorEnvelope({ other: [publicRequestID] }),
+    errorEnvelope({ request_id: collisionCode }),
+    { request_id: publicRequestID },
+  ]) assert.ok(responseBodyForSecretScan(JSON.stringify(body)).includes(collisionCode), JSON.stringify(body));
+});
+test("response canary scan preserves malformed bodies and rejects noncanonical request IDs", () => {
+  for (const request_id of [publicRequestID.toUpperCase(), "prefix" + publicRequestID, publicRequestID.slice(1)])
+    assert.ok(responseBodyForSecretScan(JSON.stringify(errorEnvelope({ request_id }))).includes(collisionCode));
+  const malformed = `not-json: code=${collisionCode}`;
+  assert.equal(responseBodyForSecretScan(malformed), malformed);
+});
+test("response canary scan decodes JSON-escaped leaks before checking the body", () => {
+  const body = JSON.stringify(errorEnvelope({ message: collisionCode, request_id: "112233445566478890aabbccddeeff00" })).replace(collisionCode, "\\u0034\\u0033\\u0032\\u0030\\u0038\\u0032");
+  assert.ok(responseBodyForSecretScan(body).includes(collisionCode));
+});
+
+test("response canary scan never loses duplicate-key or large-number raw leaks", () => {
+  const bodies = [
+    `{"code":"forbidden","message":"${collisionCode}","message":"Access denied.","request_id":"112233445566478890aabbccddeeff00","retryable":false,"details":{}}`,
+    `{"code":"forbidden","message":"Access denied.","request_id":"${collisionCode}","request_id":"112233445566478890aabbccddeeff00","retryable":false,"details":{}}`,
+    `{"code":"forbidden","message":"Access denied.","request_id":"112233445566478890aabbccddeeff00","retryable":false,"details":{"amount":9000000000000000432082}}`,
+  ];
+  for (const body of bodies) assert.ok(responseBodyForSecretScan(body).includes(collisionCode));
 });

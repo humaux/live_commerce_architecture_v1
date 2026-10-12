@@ -1,0 +1,94 @@
+[
+  {
+    "name": "focused-node",
+    "command": [
+      "node",
+      "--test",
+      "--experimental-strip-types",
+      "apps/storefront/tests/cart-provider-retry.test.mjs"
+    ],
+    "exit": 0,
+    "log": "output/cart-refresh-generation/pr25-r1/focused-node.log",
+    "sha256": "0e15c356f1c149e719e96661ca6e695c98319e166cd90670fb5cc8e3aea18ff5",
+    "source_sha": "792b0847ac3883f994aaad8ca60f215196ac006e",
+    "canonical_raw_log": "/Volumes/data/live_commerce_architecture_v1/output/cart-refresh-generation/pr25-r1/focused-node.log",
+    "canonical_raw_sha256": "0e15c356f1c149e719e96661ca6e695c98319e166cd90670fb5cc8e3aea18ff5"
+  },
+  {
+    "name": "node-final",
+    "command": [
+      "bash",
+      "scripts/dev/test-node.sh"
+    ],
+    "exit": 0,
+    "log": "output/cart-refresh-generation/pr25-r1/node-final.log",
+    "sha256": "5f29b3629ace9f91b04a7c4c41a86375d7c74b0735224a79941001d9ed30dfe8",
+    "source_sha": "792b0847ac3883f994aaad8ca60f215196ac006e",
+    "canonical_raw_log": "/Volumes/data/live_commerce_architecture_v1/output/cart-refresh-generation/pr25-r1/node-final.log",
+    "canonical_raw_sha256": "5f29b3629ace9f91b04a7c4c41a86375d7c74b0735224a79941001d9ed30dfe8"
+  },
+  {
+    "name": "typecheck-final",
+    "command": [
+      "pnpm",
+      "--filter",
+      "@live-commerce/storefront",
+      "typecheck"
+    ],
+    "exit": 0,
+    "log": "output/cart-refresh-generation/pr25-r1/typecheck-final.log",
+    "sha256": "9f55df25896b5ce4031aed107ac85353d0bdc43bcb23b6ad663e630567657ef6",
+    "source_sha": "792b0847ac3883f994aaad8ca60f215196ac006e",
+    "canonical_raw_log": "/Volumes/data/live_commerce_architecture_v1/output/cart-refresh-generation/pr25-r1/typecheck-final.log",
+    "canonical_raw_sha256": "3b871f702620074c27110253386a9a5d62e30d1a34abdb3da52bdd1d2f9ff4cb"
+  },
+  {
+    "name": "registry-list-final",
+    "command": [
+      "bash",
+      "scripts/dev/test-local.sh",
+      "--list"
+    ],
+    "exit": 0,
+    "log": "output/cart-refresh-generation/pr25-r1/registry-list-final.log",
+    "sha256": "5e780dc27ce8a1089b7191e5aa0a0a800d2a9144d7aa53ef5ffe91b5bd9cfd66",
+    "source_sha": "792b0847ac3883f994aaad8ca60f215196ac006e",
+    "canonical_raw_log": "/Volumes/data/live_commerce_architecture_v1/output/cart-refresh-generation/pr25-r1/registry-list-final.log",
+    "canonical_raw_sha256": "5e780dc27ce8a1089b7191e5aa0a0a800d2a9144d7aa53ef5ffe91b5bd9cfd66"
+  },
+  {
+    "name": "check-gates-final",
+    "command": [
+      "bash",
+      "scripts/dev/check-gates.sh"
+    ],
+    "exit": 0,
+    "log": "output/cart-refresh-generation/pr25-r1/check-gates-final.log",
+    "sha256": "d1a9b5181f953010652d745be2fbbd5d0f0fce0a44c15cf3ad61cbd381689f10",
+    "source_sha": "792b0847ac3883f994aaad8ca60f215196ac006e",
+    "canonical_raw_log": "/Volumes/data/live_commerce_architecture_v1/output/cart-refresh-generation/pr25-r1/check-gates-final.log",
+    "canonical_raw_sha256": "d1a9b5181f953010652d745be2fbbd5d0f0fce0a44c15cf3ad61cbd381689f10"
+  },
+  {
+    "name": "go-evidence",
+    "command": [
+      "env",
+      "GOTOOLCHAIN=go1.27.2",
+      "go",
+      "test",
+      "-tags",
+      "browser",
+      "-run",
+      "^TestBuyerOrder(Evidence|RefreshFactComparison)",
+      "-count=1",
+      "-v",
+      "./tests/foundation"
+    ],
+    "exit": 0,
+    "log": "output/cart-refresh-generation/pr25-r1/go-evidence.log",
+    "sha256": "71344be3c7f6575fb0c8d62153ed2f65bb2a14c5e04a8327243b417db1ee36a2",
+    "source_sha": "792b0847ac3883f994aaad8ca60f215196ac006e",
+    "canonical_raw_log": "/Volumes/data/live_commerce_architecture_v1/output/cart-refresh-generation/pr25-r1/go-evidence.log",
+    "canonical_raw_sha256": "71344be3c7f6575fb0c8d62153ed2f65bb2a14c5e04a8327243b417db1ee36a2"
+  }
+]

@@ -40,8 +40,7 @@ func TestBrowserClaimDirectCheckout(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 850*time.Second)
 		defer cancel()
 		root, _ := filepath.Abs("../..")
-		main, _ := filepath.Abs(filepath.Join(root, "../.."))
-		evidence := brfEvidence(t, main, "claim-checkout")
+		evidence := brfEvidence(t, root, "claim-checkout")
 		e := ltgNew(t, tcvOpts{origin: sbOrigin})
 		// psSetup inside tcvNew already owns a synthetic CARD order; count only this journey's delta.
 		baseOrders := e.count(`SELECT count(*) FROM checkout.orders WHERE store_id=$1`, e.store())
@@ -184,8 +183,8 @@ func TestBrowserClaimDirectCheckout(t *testing.T) {
 				t.Fatal("CDC token leaked outside claim header")
 			}
 		}
-		// Persist a token-free pointer beside the authoritative main-checkout delivery logs.
-		dest := filepath.Join(main, "output", "claim-direct-checkout")
+		// Persist the token-free pointer with this run's authoritative artifacts.
+		dest := filepath.Join(evidence, "claim-direct-checkout")
 		_ = os.MkdirAll(dest, 0755)
 		name := "chromium"
 		if strings.EqualFold(os.Getenv("LC_BROWSER_ENGINE"), "webkit") {

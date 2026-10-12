@@ -1,0 +1,8 @@
+{
+  "original_sha256": "622c87d9d6e36b3cf2116e32ec894e08bbcd5a17ee1ca8be7d7ca8e0044d4c16",
+  "mutation_sha256": "c06b55d38c91a824f4df3001c9c02ca9d50c3301b252cb4ad830b7d8f3aa3733",
+  "mutation": "actual browser Date.now advances 1ms per call for the known reset, fixed time for unknown; original full-text assertion unchanged",
+  "restored_original_sha256": "622c87d9d6e36b3cf2116e32ec894e08bbcd5a17ee1ca8be7d7ca8e0044d4c16",
+  "green_source_sha256": "94178737879e600e0e0ad054e3eb6f6e594716d9b69c64736e23c1d89a7b4377",
+  "original_restored_before_fix": true
+}

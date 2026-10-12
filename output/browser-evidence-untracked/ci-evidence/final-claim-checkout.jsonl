@@ -1,0 +1,19 @@
+{"Time":"2026-10-09T20:00:43.052854+08:00","Action":"start","Package":"livecommerce/tests/foundation"}
+{"Time":"2026-10-09T20:00:44.569299+08:00","Action":"run","Package":"livecommerce/tests/foundation","Test":"TestBrowserClaimDirectCheckout"}
+{"Time":"2026-10-09T20:00:44.569405+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserClaimDirectCheckout","Output":"=== RUN   TestBrowserClaimDirectCheckout\n","OutputType":"frame"}
+{"Time":"2026-10-09T20:00:44.569457+08:00","Action":"run","Package":"livecommerce/tests/foundation","Test":"TestBrowserClaimDirectCheckout/RealClick"}
+{"Time":"2026-10-09T20:00:44.569469+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserClaimDirectCheckout/RealClick","Output":"=== RUN   TestBrowserClaimDirectCheckout/RealClick\n","OutputType":"frame"}
+{"Time":"2026-10-09T20:01:00.490902+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserClaimDirectCheckout/RealClick","Output":"2026/10/09 20:01:00 http: proxy error: context canceled\n"}
+{"Time":"2026-10-09T20:01:03.415839+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserClaimDirectCheckout/RealClick","Output":"2026/10/09 20:01:03 http: proxy error: context canceled\n"}
+{"Time":"2026-10-09T20:01:03.416017+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserClaimDirectCheckout/RealClick","Output":"2026/10/09 20:01:03 http: proxy error: context canceled\n"}
+{"Time":"2026-10-09T20:01:03.416027+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserClaimDirectCheckout/RealClick","Output":"2026/10/09 20:01:03 http: proxy error: context canceled\n"}
+{"Time":"2026-10-09T20:01:03.416052+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserClaimDirectCheckout/RealClick","Output":"2026/10/09 20:01:03 http: proxy error: context canceled\n"}
+{"Time":"2026-10-09T20:01:08.242694+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserClaimDirectCheckout/RealClick","Output":"2026/10/09 20:01:08 http: proxy error: context canceled\n"}
+{"Time":"2026-10-09T20:01:09.456934+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserClaimDirectCheckout/RealClick","Output":"    browser_claim_checkout_test.go:194: PASS CDC04/CDC05 cases=19 orders=6 engine=webkit evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.0kCZB8vM/claim-checkout/20261009T120044.569463000\n"}
+{"Time":"2026-10-09T20:01:09.468648+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserClaimDirectCheckout/RealClick","Output":"--- PASS: TestBrowserClaimDirectCheckout/RealClick (24.90s)\n","OutputType":"frame"}
+{"Time":"2026-10-09T20:01:09.468709+08:00","Action":"pass","Package":"livecommerce/tests/foundation","Test":"TestBrowserClaimDirectCheckout/RealClick","Elapsed":24.9}
+{"Time":"2026-10-09T20:01:09.470245+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserClaimDirectCheckout","Output":"--- PASS: TestBrowserClaimDirectCheckout (24.90s)\n","OutputType":"frame"}
+{"Time":"2026-10-09T20:01:09.470275+08:00","Action":"pass","Package":"livecommerce/tests/foundation","Test":"TestBrowserClaimDirectCheckout","Elapsed":24.9}
+{"Time":"2026-10-09T20:01:09.470885+08:00","Action":"output","Package":"livecommerce/tests/foundation","Output":"PASS\n","OutputType":"frame"}
+{"Time":"2026-10-09T20:01:10.484858+08:00","Action":"output","Package":"livecommerce/tests/foundation","Output":"ok  \tlivecommerce/tests/foundation\t27.430s\n"}
+{"Time":"2026-10-09T20:01:10.485268+08:00","Action":"pass","Package":"livecommerce/tests/foundation","Elapsed":27.432}

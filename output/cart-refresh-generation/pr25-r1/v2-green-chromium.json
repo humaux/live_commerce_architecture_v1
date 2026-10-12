@@ -1,0 +1,27 @@
+{
+  "source_sha": "a4989bc6e55c8f813acf99f95850e98213f4d264",
+  "engine": "chromium",
+  "exit": 0,
+  "command": "LC_BROWSER_ENGINE=chromium LC_TEST_LOCK_WAIT=300 bash scripts/dev/test-local.sh --browser-order",
+  "evidence": "/Volumes/data/live_commerce_architecture_v1/output/cart-refresh-generation/pr25-r1/v2-green-chromium",
+  "cases": 33,
+  "clicks": 30,
+  "files": {
+    "desktop-order.png": "43b73ec0869aa94ab4cdd3406e9bb454c2af076a37887e851889e253f4a31fe9",
+    "browser.log": "2659ce2b6424293bee7e7ae99b65890a1a04e899d6ad0f8fc4bc90e83b535832",
+    "next.log": "091467c5b73545de2f6d5b0071434ea236748ab15e11192ac9d76f55b1de06b4",
+    "mobile-address.png": "19c8bbbbaccad46eecff86665ea6c6534fd8403e5731e8ed61ee390bf700e352",
+    "result.json": "06b7113fb183b85f27465f43634e6e4cb9297ce1bafe89c2669350b806ca9abe",
+    "mobile-order.png": "74abd4f3675cd9370109ae7a6c15f9db477ee6ef41cb42e3d8b9e72aa21b6b9d",
+    "cart-click-ledger.json": "06ac4bc9847b4f97acf68e07212f66c3fc398f9ad6d479399e522badc51c14ab",
+    "desktop-address.png": "a44e7d8639408530cf6e803e2ec5d2e8bb451e6ae5bd99cad6e2a5073f4cbf3c",
+    "desktop-history.png": "6a6de08daa81eed7120941504cdc54aae403f9fa9de0c03f837acef39fa827c0",
+    "cart-final-pg-facts.json": "50b4259b5e2370a1a4f644d8ea715fd6cd0c69ef260f4edb7a5b82c8939591d2",
+    "cart-refresh-race-facts.json": "ba9266d972236e3b3ff3eb37ef554fe7149837b794bea2e9b5d6a8c499036c86",
+    "cart-retry-facts.json": "d50ba249d14ada4183e277a8d3710aa6215d1f1ae84af45f341b3f4fddf42b51",
+    "mobile-history.png": "68d526a76801a2a82b5600db3989387ecfb961ab4e054bd6543a50e29008bc25",
+    "cart-refresh-final-pg-facts.json": "dee185e47ae4c6538768378a34b457a36e52968a92f0e96a81f29db502c0b856",
+    "gate.log": "8f0ecd3e1e1d9e1d119a6ac4bf543952a15952c4a265afe54a43172f279476b4",
+    "desktop-address-viewport.png": "3bff782335b3316e6712f3d5df8eba017cd260b4121442125504e15117769401"
+  }
+}

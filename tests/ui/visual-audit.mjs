@@ -6,7 +6,7 @@
 //      zh-TW, zh-CN and en, full page, after the page settled (network + DOM quiet, fonts, lazy images); plus the primary form pages in their
 //      "create new" state and the signed-out admin landing. A missing shot is a failure, never a silent skip.
 //   2. layout lint: tests/ui/visual-lint-lib.mjs measures every page in place (getBoundingClientRect / getComputedStyle, read-only) before it is shot.
-// Output: output/ui-visual-audit/<UTC>/{shots,crops,index.json,lint.json,lint.md}; output/ui-visual-audit/LATEST names the directory. Exit 1 on any blocking
+// Output: <run root>/ui-visual-audit/<UTC>/{shots,crops,index.json,lint.json,lint.md}; its parent LATEST names the directory. Exit 1 on any blocking
 // violation (R1 R2 R3 R6), any missing shot or any page that did not load; R4 R5 R7 R8 are WARN.
 // Nothing here changes product state: navigation, reads and the same real Playwright actions the click sweep uses to reach a state (add to cart, place the
 // COD order, add a variant axis in the empty product editor). page.evaluate only measures, scrolls to wake lazy images, and (for crops) draws a temporary outline.
@@ -70,10 +70,11 @@ export async function main() {
   const origin = facts.store_origin, HOST = new URL(origin).host;
   const root = process.cwd();
   const commit = (() => { try { return execFileSync("git", ["rev-parse", "--short=10", "HEAD"], { encoding: "utf8" }).trim(); } catch { return "unknown"; } })();
-  const out = path.join(root, "output", "ui-visual-audit", stamp());
+  const auditRoot = path.join(path.dirname(env("LC_SWEEP_OUT")), "ui-visual-audit");
+  const out = path.join(auditRoot, stamp());
   await mkdir(path.join(out, "shots"), { recursive: true });
   await mkdir(path.join(out, "crops"), { recursive: true });
-  await writeFile(path.join(root, "output", "ui-visual-audit", "LATEST"), `${path.relative(root, out)}\n`);
+  await writeFile(path.join(auditRoot, "LATEST"), `${path.relative(root, out)}\n`);
   const t0 = Date.now();
   const log = (...a) => console.log(`[${String(Math.round((Date.now() - t0) / 1000)).padStart(4)}s]`, ...a);
 

@@ -2,6 +2,7 @@
 // first cart write's response is lost and there was no prior session context, the obtained
 // purchase context must already be published so Retry resumes the SAME journalled request
 // (same context + Idempotency-Key), never a second purchase.
+// Also pins refresh observation ordering: a failed later session read cannot erase an earlier valid cart read.
 // Depends on: the REAL CartProvider.tsx executed in a synthetic-hooks VM (real hooks order, jsx
 // stub), the REAL lib/purchase journal + lib/buyer-client session handshake with only
 // globalThis.fetch faked, in-memory Storage and navigator.locks stubs (same seams as
@@ -32,6 +33,181 @@ const cart = {
 };
 const expiry = new Date(Date.now() + 3600_000).toISOString();
 const tick = () => new Promise((resolve) => setImmediate(resolve));
+
+for (const failure of ["transport", "503"]) {
+  test(`failed later ${failure} session refresh keeps an earlier observed cart eligible`, async () => {
+    browser();
+    const originalFetch = globalThis.fetch;
+    const initial = Promise.withResolvers(), entered = Promise.withResolvers(), release = Promise.withResolvers();
+    let sessionReads = 0, failNext = false, h;
+    const sessionA = { state: "active", context: ctx, expires_at: expiry };
+    globalThis.fetch = async (url, init = {}) => {
+      if (url === "/api/buyer/session") {
+        if (++sessionReads === 1) return initial.promise; // Hold only the mount read; exercise refresh through its exact promise.
+        if (failNext) {
+          failNext = false;
+          if (failure === "transport") throw new Error("synthetic transient session failure");
+          return Response.json({ code: "unavailable" }, { status: 503 });
+        }
+        return Response.json(sessionA);
+      }
+      if (url === "/api/buyer/cart" && init.method !== "PUT") {
+        assert.equal(new Headers(init.headers).get("X-Buyer-Context"), ctx);
+        entered.resolve();
+        await release.promise;
+        return Response.json(cart);
+      }
+      throw new Error("unexpected MOCK route");
+    };
+    try {
+      h = harness(); h.render();
+      const earlier = h.api().refresh();
+      await entered.promise; h.render();
+      assert.equal(h.api().context, ctx);
+      assert.equal(h.api().cart, null); assert.equal(h.api().ready, false);
+      failNext = true;
+      await h.api().refresh(); // The same refresh invoked by focus/storage; await its actual completion.
+      h.render();
+      assert.equal(h.api().ready, false, "a failed later refresh cannot finish the pending authoritative observation");
+      assert.equal(h.api().cart, null);
+      release.resolve();
+      await earlier; h.render();
+      assert.equal(h.api().context, ctx);
+      assert.equal(h.api().cart?.id, cart.id, "failed later session read must not discard the valid earlier cart");
+      assert.equal(h.api().cart.version, 8); assert.equal(h.api().count, 5);
+      assert.equal(h.api().ready, true);
+    } finally {
+      h?.unmount(); release.resolve(); initial.resolve(Response.json(sessionA));
+      globalThis.fetch = originalFetch;
+      for (const name of ["window", "localStorage", "sessionStorage", "navigator"]) delete globalThis[name];
+    }
+  });
+}
+
+for (const result of ["cart", "cart-fails", "absent"]) {
+  test(`newer successful session supersedes a delayed valid A cart on ${result}`, async () => {
+    browser();
+    const originalFetch = globalThis.fetch, contextB = "b".repeat(43);
+    const initial = Promise.withResolvers(), entered = Promise.withResolvers(), validationEntered = Promise.withResolvers();
+    const cartRelease = Promise.withResolvers(), validationRelease = Promise.withResolvers();
+    const sessionA = { state: "active", context: ctx, expires_at: expiry };
+    const sessionB = { ...sessionA, context: contextB };
+    const cartB = { ...cart, id: "00000000-0000-0000-0000-000000000004", version: 20, items: [{ sku_id: sku, quantity: 2 }] };
+    let sessionReads = 0, session = sessionA, holdValidation = false, h;
+    globalThis.fetch = async (url, init = {}) => {
+      if (url === "/api/buyer/session") {
+        if (++sessionReads === 1) return initial.promise;
+        if (holdValidation) {
+          holdValidation = false;
+          validationEntered.resolve();
+          await validationRelease.promise;
+          return Response.json(sessionA); // An earlier valid A validation response, delivered after B's newer observation.
+        }
+        return Response.json(session);
+      }
+      if (url === "/api/buyer/cart" && init.method !== "PUT") {
+        const owner = new Headers(init.headers).get("X-Buyer-Context");
+        if (owner === ctx) {
+          entered.resolve(); await cartRelease.promise;
+          return Response.json(cart);
+        }
+        assert.equal(owner, contextB);
+        return result === "cart" ? Response.json(cartB) : Response.json({ code: "unavailable" }, { status: 503 });
+      }
+      throw new Error("unexpected MOCK route");
+    };
+    try {
+      h = harness(); h.render();
+      const earlier = h.api().refresh();
+      await entered.promise;
+      holdValidation = true; cartRelease.resolve();
+      await validationEntered.promise; // Hold the real readPurchase context validation, so A truly completes successfully later.
+      session = result === "absent" ? { state: "absent", context: null, expires_at: null } : sessionB;
+      await h.api().refresh(); h.render();
+      assert.equal(h.api().context, result === "absent" ? "" : contextB);
+      assert.equal(h.api().cart?.id ?? null, result === "cart" ? cartB.id : null);
+      validationRelease.resolve();
+      await earlier; h.render();
+      assert.equal(h.api().context, result === "absent" ? "" : contextB, "old A cannot restore its ownership");
+      assert.equal(h.api().cart?.id ?? null, result === "cart" ? cartB.id : null, "A's items cannot appear under B even if B cart read fails");
+      assert.equal(h.api().count, result === "cart" ? 2 : 0);
+      assert.equal(h.api().ready, true);
+    } finally {
+      h?.unmount(); cartRelease.resolve(); validationRelease.resolve(); initial.resolve(Response.json(sessionA));
+      globalThis.fetch = originalFetch;
+      for (const name of ["window", "localStorage", "sessionStorage", "navigator"]) delete globalThis[name];
+    }
+  });
+}
+
+test("a completed same-context command fences an earlier valid cart read", async () => {
+  browser();
+  const originalFetch = globalThis.fetch;
+  const initial = Promise.withResolvers(), entered = Promise.withResolvers(), release = Promise.withResolvers();
+  const sessionA = { state: "active", context: ctx, expires_at: expiry };
+  let sessionReads = 0, cartReads = 0, current = cart, puts = 0, h;
+  globalThis.fetch = async (url, init = {}) => {
+    if (url === "/api/buyer/session") return ++sessionReads === 1 ? initial.promise : Response.json(sessionA);
+    if (url === "/api/buyer/cart") {
+      if (init.method === "PUT") {
+        puts++;
+        const body = JSON.parse(init.body);
+        assert.equal(body.expected_version, 8);
+        current = { ...cart, version: 9, items: body.items };
+        return Response.json(current);
+      }
+      if (++cartReads === 1) {
+        entered.resolve(); await release.promise;
+        return Response.json(cart);
+      }
+      return Response.json(current);
+    }
+    throw new Error("unexpected MOCK route");
+  };
+  try {
+    h = harness(); h.render();
+    const earlier = h.api().refresh(); await entered.promise;
+    assert.equal(await h.api().add(sku, 1), true); h.render();
+    assert.equal(puts, 1); assert.equal(h.api().cart.version, 9); assert.equal(h.api().count, 6);
+    release.resolve(); await earlier; h.render();
+    assert.equal(h.api().cart.version, 9, "pre-command cart cannot overwrite the acknowledged write even with the same context");
+    assert.equal(h.api().context, ctx); assert.equal(h.api().count, 6); assert.equal(h.api().ready, true);
+  } finally {
+    h?.unmount(); release.resolve(); initial.resolve(Response.json(sessionA));
+    globalThis.fetch = originalFetch;
+    for (const name of ["window", "localStorage", "sessionStorage", "navigator"]) delete globalThis[name];
+  }
+});
+
+for (const phase of ["session", "cart"]) {
+  test(`unmount still fences a delayed ${phase} refresh after separating issued and observed generations`, async () => {
+    browser();
+    const originalFetch = globalThis.fetch;
+    const initial = Promise.withResolvers(), entered = Promise.withResolvers(), release = Promise.withResolvers();
+    const sessionA = { state: "active", context: ctx, expires_at: expiry };
+    let sessionReads = 0, h;
+    globalThis.fetch = async (url) => {
+      if (url === "/api/buyer/session") {
+        if (++sessionReads === 1) return initial.promise;
+        if (phase === "session") { entered.resolve(); await release.promise; }
+        return Response.json(sessionA);
+      }
+      if (url === "/api/buyer/cart") { entered.resolve(); await release.promise; return Response.json(cart); }
+      throw new Error("unexpected MOCK route");
+    };
+    try {
+      h = harness(); h.render();
+      const earlier = h.api().refresh(); await entered.promise;
+      h.unmount(); const writesAtUnmount = h.stateWrites.length;
+      release.resolve(); await earlier;
+      assert.equal(h.stateWrites.length, writesAtUnmount, "late read must never publish or set ready after actual effect cleanup");
+    } finally {
+      h?.unmount(); release.resolve(); initial.resolve(Response.json(sessionA));
+      globalThis.fetch = originalFetch;
+      for (const name of ["window", "localStorage", "sessionStorage", "navigator"]) delete globalThis[name];
+    }
+  });
+}
 
 for (const newer of ["refresh", "mutation"]) {
   test(`round2 stale A session response cannot supersede newer ${newer} B or its lost-write Retry`, async () => {
@@ -182,6 +358,8 @@ function harness() {
   }).outputText;
   const slots = [];
   const effects = [];
+  const cleanups = [];
+  const stateWrites = [];
   let cursor = 0;
   const react = {
     createContext: () => ({ Provider: "CartProvider.Ctx.Provider" }),
@@ -192,6 +370,7 @@ function harness() {
       return [
         slots[index].value,
         (value) => {
+          stateWrites.push(index);
           slots[index].value = typeof value === "function" ? value(slots[index].value) : value;
         },
       ];
@@ -205,7 +384,8 @@ function harness() {
       if (!slots[index]) {
         slots[index] = {};
         effects.push(() => {
-          effect();
+          const cleanup = effect();
+          if (typeof cleanup === "function") cleanups.push(cleanup);
         });
       }
     },
@@ -237,7 +417,8 @@ function harness() {
   }
   /** Latest rendered CartApi: state reads and callbacks both come from the real component. */
   const api = () => tree.props.value;
-  return { render, api };
+  const unmount = () => { for (const cleanup of cleanups.splice(0)) cleanup(); };
+  return { render, api, unmount, stateWrites };
 }
 
 test("lost first write keeps Retry alive: same context, same idempotency key, no second purchase", async () => {

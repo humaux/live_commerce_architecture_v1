@@ -1,0 +1,42 @@
+✔ browser evidence uses unique local runs or the selected harness parent without rewriting history (101.154125ms)
+✔ browser evidence rejects labels that escape the harness directory before creating files (29.074084ms)
+✔ shell isolates visual fixtures from a click ledger when caller reuses its evidence root (14.321958ms)
+✔ ops disk guard allocation isolates its log and child evidence from committed history (5.962708ms)
+✔ reject quoted screenshot path (7.700084ms)
+✔ reject computed writer (0.475958ms)
+✔ reject renamed import (0.500709ms)
+✔ reject local writer alias (0.347917ms)
+✔ reject quoted reporter (0.171792ms)
+✔ reject openSync write (0.209042ms)
+✔ reject open write (0.171167ms)
+✔ reject URL writer (0.745ms)
+✔ reject bound writer (0.24175ms)
+✔ reject bound path (0.40225ms)
+✔ reject direct (0.09525ms)
+✔ reject alias (0.257166ms)
+✔ reject split join (0.128667ms)
+✔ reject template (0.302375ms)
+✔ reject helper (0.331125ms)
+✔ reject copy destination (0.053959ms)
+✔ reject reporter (0.315ms)
+✔ reject traversal (0.103833ms)
+✔ reject tracked nonoutput (0.074833ms)
+✔ allow read-only open (0.625209ms)
+✔ allow read-only URL open (0.195416ms)
+✔ allow historical read (0.448ms)
+✔ allow copy source (0.077667ms)
+✔ allow comment (0.292417ms)
+✔ allow string data (0.063042ms)
+✔ allow run directory (0.193084ms)
+✔ Go Join aliases flag writes but not read-only history or comments (2.198208ms)
+✔ producer discovery covers acceptance suites and helpers, not documentation/artifacts (0.435292ms)
+✔ synthetic Go historical fixtures stay inside t.TempDir; real CopyFS destinations are audited (0.676708ms)
+✔ Go OpenFile rejects create/write flags but preserves historical read-only descriptors (0.512666ms)
+ℹ tests 34
+ℹ suites 0
+ℹ pass 34
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 225.852959

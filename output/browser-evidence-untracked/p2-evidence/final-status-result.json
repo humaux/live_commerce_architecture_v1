@@ -1,0 +1,8 @@
+{
+  "command": "git status --short | grep -v '^??'",
+  "grep_exit": 1,
+  "output_bytes": 0,
+  "meaning": "no tracked changes; no restoration used",
+  "head": "f3fab830cb2ce009b89b71a8607b8c6df3dce598",
+  "untracked_external_review_preserved": true
+}

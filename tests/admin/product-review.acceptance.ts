@@ -7,7 +7,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { productEditorCopy } from "../../apps/admin/lib/product-editor-copy";
-const out = path.resolve("output/product-ui-v2-fix");
+const out = path.resolve(process.env.LC_BROWSER_EVIDENCE!, "product-ui-v2-fix");
 const store = () => process.env.LC_BROWSER_STORE!;
 const url = (suffix: string) =>
   `${process.env.LC_BROWSER_PUBLIC_ORIGIN}/en/${suffix}?store=${store()}`;

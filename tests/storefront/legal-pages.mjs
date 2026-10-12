@@ -11,9 +11,10 @@
 // /{locale}/data-deletion -> 200 only once customers-billing-ui has merged (route file present), else NOT_RUN, never PASS;
 // counts the unpublished legal pages (the owner's to-do list) and, with LC_LEGAL_REQUIRE_FINAL=1, fails while any remains
 // (the stripe-live-enable-v1 §9 `policy_pages` attestation check).
-// Evidence: LC_LEGAL_EVIDENCE_DIR (default output/stripe-live-tests/lg01 under the cwd) gets lg01.json, the marker list and
+// Evidence: LC_LEGAL_EVIDENCE_DIR (default unique browser evidence directory) gets lg01.json, the marker list and
 // the screenshots; every screenshot is sha256-hashed into lg01.json. No PII, no secret: the pages are static text.
 // Run: pnpm build:storefront && node tests/storefront/legal-pages.mjs   (cwd = repo root)
+import { browserEvidenceDirectory } from "../browser-evidence.mjs";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
@@ -26,7 +27,7 @@ import { launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chr
 
 const root = process.cwd();
 const storefront = path.join(root, "apps/storefront");
-const evidenceDir = path.resolve(process.env.LC_LEGAL_EVIDENCE_DIR || path.join(root, "output/stripe-live-tests/lg01"));
+const evidenceDir = path.resolve(process.env.LC_LEGAL_EVIDENCE_DIR || browserEvidenceDirectory("lg01"));
 const requireFinal = process.env.LC_LEGAL_REQUIRE_FINAL === "1";
 // The closed slug set of legal-pages.md P2 and the locales of packages/i18n (parsed, not imported: this gate must not
 // depend on the code under test).

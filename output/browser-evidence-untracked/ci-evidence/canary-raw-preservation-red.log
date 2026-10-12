@@ -1,0 +1,37 @@
+✔ response canary scan distinguishes an OTP substring in a public generated request ID (0.590583ms)
+✔ response canary scan retains real leaks in every non-metadata field and nested request IDs (0.359208ms)
+✔ response canary scan preserves malformed bodies and rejects noncanonical request IDs (0.329084ms)
+✔ response canary scan decodes JSON-escaped leaks before checking the body (0.197208ms)
+✖ response canary scan never loses duplicate-key or large-number raw leaks (6.926167ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 4
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 182.826042
+
+✖ failing tests:
+
+test at tests/admin/password-bff.test.ts:371:1
+✖ response canary scan never loses duplicate-key or large-number raw leaks (6.926167ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+    assert.ok(responseBodyForSecretScan(body).includes(collisionCode))
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/tests/admin/password-bff.test.ts:377:37)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

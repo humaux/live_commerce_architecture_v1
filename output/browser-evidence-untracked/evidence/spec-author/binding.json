@@ -1,0 +1,30 @@
+{
+  "base_commit": "5008661622d35a130e32d1b1fe7d0111ac03ad43",
+  "head_commit": "12fd9078921079ef5fade13509d3f714647c7a2f",
+  "sha256": {
+    "playwright.config.ts": "8f99c3ff304b372a62961eb8d36cfa1bf4865672dd6e35b1e63fb695aef5c8e3",
+    "tests/admin/browser-evidence.test.mjs": "76d495f426555399d51c1c917a2c30ba83a44f66fe2846eb15562a20145492b1",
+    "tests/admin/entry.spec.ts": "beade727cbfb0a01831ba461791ca2abc46d8477d5af9c51818b22725b878b38",
+    "tests/admin/home-cod.spec.ts": "f7f7e03718a791f720a0d7031b9efdad4f1d7106cf1489262a984b55e61420e0",
+    "tests/admin/ledger.spec.ts": "030274df6481a8f9783f45de7e54ac965a56cf4721edca269c8359f7d58a15ca",
+    "tests/admin/picklist.spec.ts": "dca1afa5619985c3be0a6ec5c5fe0bd2d20f3c531863503f3f92077c59d8c83f",
+    "tests/admin/platform-runner.mjs": "d5a09b8623d7658f7ee7434e7b734e3e43525b771753bd63a4b0cc649f8fc4ef",
+    "tests/admin/product-editor.acceptance.ts": "fe6b580fcc3341d0698228dec607c08c5727f3224916ad0682ee94d0b3b7f517",
+    "tests/admin/product-review.acceptance.ts": "e9fb97fb23762ffede5ee3b755e88c88263bb5d458075b05b214e44766f077a4",
+    "tests/admin/product-visual.acceptance.ts": "bc144bfca929a3d915d0ea37f8b2a7ed558d0e4e472156f4206f2a2ee7f7941f",
+    "tests/admin/shell-runner.mjs": "22a4e25dc9f3057c1cd89d08dfec971fbb9c27a5bb668d15a9117f1f95c480fa",
+    "tests/admin/taiwan-cvs.spec.ts": "66e65a7ecd7b09c994a4cfb3e2b3ca7b4aca746aa1d724a078bb3cb03aa40fad",
+    "tests/admin/visual-states.spec.ts": "5db2e1636f9350a8fef9d2278c0aa308f6bae2910337ae6f134c121270480896",
+    "tests/browser-evidence.d.mts": "3c42537e6e1b8f7859114c04c62ccc3b946a98f0472b14f0e2524023130b3cea",
+    "tests/browser-evidence.mjs": "94b3e128732f771b2dcc6fdcafd88fd1e72225aceaf1e31703440663883eda9f",
+    "tests/deploy/platform-edge.mjs": "22bafca775443894155ebfb7c0553470c4ec30df39ed4d4ad7fd734222772b62",
+    "tests/storefront/browser-gate.mjs": "ff08c1bbfd0d067a6a1cb1bb680e6328b9a02ce3df6903154032424d642ea012",
+    "tests/storefront/cvs-pap-only.mjs": "8235b42df42b9d1d7b49adc3c7d981699f111881d81807fca461728ff61c967f",
+    "tests/storefront/home-cod-buyer.mjs": "9628ef35693eb9a7774cdc3c94055b7e9c642eee2fb3b1eab1b3cc31e46a461c",
+    "tests/storefront/legal-pages.mjs": "7bebe72bf8557be8840d2c111ced5af40332d72c7c7a110ea30ef5fca6821edd",
+    "tests/storefront/media-sizes-perf.mjs": "709c16aee21cbedc6960b753035cd532401948c7e54a755e0c34b18f3ee56ba6",
+    "tests/storefront/order-gate.mjs": "a39d65ebcf4a6e032d6184db6d7f2535321cb7f42696572151f34ddbe74ba83f",
+    "tests/ui/click-sweep.mjs": "0054dda891cd91ecf1db8f52705fa7404b61971f6dd6c7a4eec4a65dac9526ae",
+    "tests/ui/visual-audit.mjs": "1822fb040934faef575414db928d9b5ee4c0f41e6f824bec5a97f08eef7b8ef7"
+  }
+}

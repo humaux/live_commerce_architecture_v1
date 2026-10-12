@@ -1,0 +1,21 @@
+{
+  "name": "product-editor-green",
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-product-editor"
+  ],
+  "timeout": 1200,
+  "head": "a72cb5b732db94cdaadfd6f32ad93b576563a862",
+  "exit_code": 0,
+  "source_sha256": "e7bf55b70082ae585371ee1c1cf039cddcd344eab8de1f253f77fd5f27fc8175",
+  "source_after": "e7bf55b70082ae585371ee1c1cf039cddcd344eab8de1f253f77fd5f27fc8175",
+  "source_unchanged": true,
+  "historical_output_sha256": "c11d888b1a6325ccefcc309a43348ad18ee4f6e5d76279cbc9c21397d8c0db9a",
+  "historical_output_after": "c11d888b1a6325ccefcc309a43348ad18ee4f6e5d76279cbc9c21397d8c0db9a",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": true,
+  "tracked_status_clean_after": true,
+  "elapsed_seconds": 101.317
+}

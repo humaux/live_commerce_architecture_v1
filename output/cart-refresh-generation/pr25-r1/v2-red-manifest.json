@@ -1,0 +1,257 @@
+{
+  "task_id": "c4bf3500-sub-browser",
+  "base_commit": "ae509c18e839a54f7e921804cd942fc0a8be2896",
+  "head_commit": "5c3f5ce11e7a8b683d009217a7f199b56f4af2d7",
+  "write_paths": [
+    "tests/storefront/order-gate.mjs",
+    "tests/foundation/browser_order_chain_test.go",
+    "tests/foundation/buyer_order_evidence_test.go"
+  ],
+  "source_sha256": {
+    "tests/storefront/order-gate.mjs": "b8c70bf64065ac32b65251bb5b39d61bdda6371c535673914ece6beb8068c38a",
+    "tests/foundation/browser_order_chain_test.go": "197b2adecdd166337f0461194c5d857e3298fff12abecec0764e9b9178b947b6",
+    "tests/foundation/buyer_order_evidence_test.go": "c3c86852905e3ecbe4d156383c877bcb6c5067ac8bf0cf11589cd60287cd8432",
+    "apps/storefront/components/CartProvider.tsx": "f710037b23d513e504fa81291df6fef8e6cc031b37de4658a52415e9e7008b6d"
+  },
+  "implementation": "Specific actual visible direct CartLines loading status measured as detail_loading. Strict mount initial-loading prefix + explicit detail hydration loading before first line, then exact uninterrupted line1/qty1; whole drawer continuity. Pure fact/sample types/helpers/counterexamples moved to existing DB-free file; old frozen registry and tests body byte-identical.",
+  "commands": [
+    {
+      "command": "node --check tests/storefront/order-gate.mjs",
+      "exit_code": 0
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    },
+    {
+      "command": "GOTOOLCHAIN=go1.27.2 go test -run '^TestBuyerOrder(Evidence|Refresh)' -v ./tests/foundation",
+      "exit_code": 0,
+      "log": "detail-loading-pure-final-tests.log"
+    },
+    {
+      "command": "GOTOOLCHAIN=go1.27.2 go test -tags browser -run '^TestBuyerOrder(Evidence|Refresh)' -v ./tests/foundation",
+      "exit_code": 0,
+      "log": "detail-loading-browser-compile.log"
+    }
+  ],
+  "diagnostic": "Parent1928127132 Node33PASS but Go old parser rejected samples Loading0 -> title:null0 -> line1. Exact unmeasured blank cause inferred from source CartLines visible loading branch until new actual measurement runs. Original diagnostic preserved full raw; no fixture altered.",
+  "negative_controls": [
+    "blank/no-loading",
+    "wrong loading copy",
+    "empty title even with loading marker",
+    "changed qty",
+    "line loss after firstline even with loading",
+    "blank afterfirstline",
+    "drawer loading line loss",
+    "missing initial held-read loading",
+    "never published line",
+    "extra line",
+    "loading with qty",
+    "empty title with line"
+  ],
+  "not_run": [
+    "Latest fixed-source GREEN/PG: root owns",
+    "Fullproviderrevert ONEChrome: pending root allGREEN/heavyrelease",
+    "Full foundation, CI, external providers, production"
+  ],
+  "historical_evidence": "Prior barrier-final RED hashes fd93e9f1/4bb2820b now historical only; preserved unchanged.",
+  "runs": {
+    "chromium": {
+      "command": "LC_BROWSER_ENGINE=chromium bash scripts/dev/test-local.sh --browser-order",
+      "exit_code": 1,
+      "result": "EXPECTED_RED precisely BC02 mount empty1 after native settlement barrier with actual nonempty cart held",
+      "log": "detail-loading-final-red-chromium.log",
+      "raw_dir": "detail-loading-final-red-chromium",
+      "phases": [
+        {
+          "surface": "drawer",
+          "held_status": 200,
+          "session_status": 503,
+          "session_failures": 1,
+          "settlement": {
+            "fetch": {
+              "status": 503,
+              "settlement": "resolved",
+              "sequence": 3
+            },
+            "lock": {
+              "name": "commerce-buyer-session-v1",
+              "settlement": "rejected",
+              "code": "request_failed",
+              "status": 503,
+              "sequence": 4
+            },
+            "fetch_count": 1,
+            "lock_count": 1,
+            "barrier": {
+              "name": "commerce-buyer-session-v1",
+              "acquired_sequence": 5,
+              "settled_sequence": 6
+            }
+          },
+          "samples": [
+            {
+              "title": null,
+              "lines": 1,
+              "qty": "1",
+              "detail_loading": null
+            }
+          ],
+          "empty": 0,
+          "line_loss": 0
+        },
+        {
+          "surface": "mount",
+          "held_status": 200,
+          "session_status": 503,
+          "session_failures": 1,
+          "settlement": {
+            "fetch": {
+              "status": 503,
+              "settlement": "resolved",
+              "sequence": 1
+            },
+            "lock": {
+              "name": "commerce-buyer-session-v1",
+              "settlement": "rejected",
+              "code": "request_failed",
+              "status": 503,
+              "sequence": 2
+            },
+            "fetch_count": 1,
+            "lock_count": 1,
+            "barrier": {
+              "name": "commerce-buyer-session-v1",
+              "acquired_sequence": 3,
+              "settled_sequence": 4
+            }
+          },
+          "samples": [
+            {
+              "title": "Loading…",
+              "lines": 0,
+              "qty": null,
+              "detail_loading": null
+            },
+            {
+              "title": "Your cart is empty",
+              "lines": 0,
+              "qty": null,
+              "detail_loading": null
+            }
+          ],
+          "empty": 1,
+          "line_loss": 0
+        }
+      ],
+      "raw_sha256": {
+        "browser.log": "61c0c6e64433662ed74d0e488cf187ceeb3e305b0c8d288ed2d6ae5379fa202c",
+        "next.log": "d75c0dd3a8059fb422d4726c9da551dc5f8fef3d614f916cc00ffa99c1e6ba5f",
+        "cart-click-ledger.json": "02536dee6d74d17aa43e5eabd65b7038b78d5313c151c0472870adc7fe7c6cc3",
+        "cart-refresh-race-facts.json": "838d4dcb219b29b463ea4a43e5d5f648dc7298755c35810a7019c82a32c03019",
+        "cart-retry-facts.json": "bbff7838599917435230216ca3d4c489139e572555736085633d7d291df70bc9",
+        "failure-0.png": "6b99f12a7556cfa7dd19565934481058b9da0784aae47c680fb4bc3576a32bec",
+        "failure-0.txt": "7a4968e68412e50ab7cb3a51c52ec12a2f182e25b8a72b867ba5de0eb453e4e5"
+      }
+    },
+    "webkit": {
+      "command": "LC_BROWSER_ENGINE=webkit bash scripts/dev/test-local.sh --browser-order",
+      "exit_code": 1,
+      "result": "EXPECTED_RED precisely BC02 mount empty1 after native settlement barrier with actual nonempty cart held",
+      "log": "detail-loading-final-red-webkit.log",
+      "raw_dir": "detail-loading-final-red-webkit",
+      "phases": [
+        {
+          "surface": "drawer",
+          "held_status": 200,
+          "session_status": 503,
+          "session_failures": 1,
+          "settlement": {
+            "fetch": {
+              "status": 503,
+              "settlement": "resolved",
+              "sequence": 3
+            },
+            "lock": {
+              "name": "commerce-buyer-session-v1",
+              "settlement": "rejected",
+              "code": "request_failed",
+              "status": 503,
+              "sequence": 4
+            },
+            "fetch_count": 1,
+            "lock_count": 1,
+            "barrier": {
+              "name": "commerce-buyer-session-v1",
+              "acquired_sequence": 5,
+              "settled_sequence": 6
+            }
+          },
+          "samples": [
+            {
+              "title": null,
+              "lines": 1,
+              "qty": "1",
+              "detail_loading": null
+            }
+          ],
+          "empty": 0,
+          "line_loss": 0
+        },
+        {
+          "surface": "mount",
+          "held_status": 200,
+          "session_status": 503,
+          "session_failures": 1,
+          "settlement": {
+            "fetch": {
+              "status": 503,
+              "settlement": "resolved",
+              "sequence": 1
+            },
+            "lock": {
+              "name": "commerce-buyer-session-v1",
+              "settlement": "rejected",
+              "code": "request_failed",
+              "status": 503,
+              "sequence": 2
+            },
+            "fetch_count": 1,
+            "lock_count": 1,
+            "barrier": {
+              "name": "commerce-buyer-session-v1",
+              "acquired_sequence": 3,
+              "settled_sequence": 4
+            }
+          },
+          "samples": [
+            {
+              "title": "Loading…",
+              "lines": 0,
+              "qty": null,
+              "detail_loading": null
+            },
+            {
+              "title": "Your cart is empty",
+              "lines": 0,
+              "qty": null,
+              "detail_loading": null
+            }
+          ],
+          "empty": 1,
+          "line_loss": 0
+        }
+      ],
+      "raw_sha256": {
+        "browser.log": "32a375e3baf24a731d939eea2d03cf9951695e726a7c87d931b5d87d9a2efc80",
+        "next.log": "5b0fc59f45a4a44ee599b84b306ca694adc9fa78714498953db9479f368de34e",
+        "cart-click-ledger.json": "20505e1b84b84bdf6822e0767ac2d2f3d7d4425080d7586316fa561ed85eee28",
+        "cart-refresh-race-facts.json": "d2627d63d7160929853d496b223f4f76bc8fddfc00f161d47901006b83ac7d9e",
+        "cart-retry-facts.json": "c1687df73c92b5559a798793f4749c70549bb0251324ba2ee35be12890b4cc01",
+        "failure-0.png": "7f45c18d0395a237ce289cb1110b507c7f3e8ea548128037a9a5a5aabc11e454",
+        "failure-0.txt": "7a4968e68412e50ab7cb3a51c52ec12a2f182e25b8a72b867ba5de0eb453e4e5"
+      }
+    }
+  },
+  "evidence_level": "E3 current exact-test-hash readiness-only baseline RED both engines; fixed-source GREEN/PG still root-owned"
+}

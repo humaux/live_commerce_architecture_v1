@@ -1,0 +1,38 @@
+✔ reject quoted screenshot path (2.946917ms)
+✔ reject computed writer (0.304125ms)
+✔ reject renamed import (0.642666ms)
+✔ reject local writer alias (1.160041ms)
+✔ reject quoted reporter (0.246625ms)
+✔ reject openSync write (0.532208ms)
+✔ reject open write (0.332625ms)
+✔ reject URL writer (0.323125ms)
+✔ reject bound writer (2.013041ms)
+✔ reject bound path (0.244334ms)
+✔ reject direct (0.111833ms)
+✔ reject alias (1.0375ms)
+✔ reject split join (0.172333ms)
+✔ reject template (0.324458ms)
+✔ reject helper (0.355542ms)
+✔ reject copy destination (0.072958ms)
+✔ reject reporter (0.150416ms)
+✔ reject traversal (0.068125ms)
+✔ reject tracked nonoutput (0.054208ms)
+✔ allow read-only open (0.423292ms)
+✔ allow read-only URL open (0.172959ms)
+✔ allow historical read (0.119959ms)
+✔ allow copy source (0.056708ms)
+✔ allow comment (0.195417ms)
+✔ allow string data (0.05ms)
+✔ allow run directory (0.154958ms)
+✔ Go Join aliases flag writes but not read-only history or comments (1.763041ms)
+✔ producer discovery covers acceptance suites and helpers, not documentation/artifacts (0.168083ms)
+✔ synthetic Go historical fixtures stay inside t.TempDir; real CopyFS destinations are audited (0.32ms)
+✔ Go OpenFile rejects create/write flags but preserves historical read-only descriptors (0.5ms)
+ℹ tests 30
+ℹ suites 0
+ℹ pass 30
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 209.495

@@ -2,7 +2,7 @@
 # Purpose: one declarative case registry for mode discovery, preparation, builds and execution.
 # Depends on: Bash3.2+, test-local-runtime.sh, Docker/Go/Node and each mode's declared tools.
 # Used by: developers, CI, pr-modes.mjs, check-gates.sh and release-gate.sh.
-# Add a mode in ONE case entry below; no parallel usage/build/dispatch lists.
+# Add a mode in ONE case entry below; browser arms declare lc_browsers for CI dependency selection.
 set -euo pipefail
 # Keep the runtime guard before cd, exactly as in the original runner; metadata paths are inert.
 if [[ "${1:-}" != --list && "${1:-}" != --dry-run ]]; then
@@ -15,6 +15,7 @@ case "$1" in
   --browser-inbox)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/foundation/browser_inbox_ui_test.go
   test -f tests/admin/inbox-ui.spec.ts
@@ -34,24 +35,25 @@ case "$1" in
   --browser-meta-health-ui)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   :
     }
     lc_run() {
-  health_main_root="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"
-  LC_META_HEALTH_EVIDENCE_ROOT="$health_main_root/output/w1-01u-banner/browser" LC_BROWSER_META_HEALTH_UI=1 GOTOOLCHAIN=go1.27.2 go test -race -tags browser -count=1 -timeout=900s -run '^(TestBrowserMetaHealthUI|TestMetaHealthUIWireRequiresCapability)$' -v ./tests/foundation
+  # brfEvidence owns meta-health-ui/<run>; its durable copy must have a distinct parent.
+  LC_META_HEALTH_EVIDENCE_ROOT="$LC_BROWSER_EVIDENCE_ROOT/meta-health-ui-durable" LC_BROWSER_META_HEALTH_UI=1 GOTOOLCHAIN=go1.27.2 go test -race -tags browser -count=1 -timeout=900s -run '^(TestBrowserMetaHealthUI|TestMetaHealthUIWireRequiresCapability)$' -v ./tests/foundation
     }
     ;;
   --browser-tracking-backfill)
     lc_build=admin
     lc_fixture=none
+    lc_browsers=chromium
     lc_prepare() {
   :
     }
     lc_run() {
   # Reuse the focused runner's machine-wide queue before creating any PG fixture.
-  tracking_main_root="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"
-  LC_TRACKING_EVIDENCE_ROOT="$tracking_main_root/output/w3-01b-ui/browser" LC_BROWSER_TRACKING_BACKFILL=1 LC_FOCUSED_TAGS=browser LC_FOCUSED_TIMEOUT=1000s bash scripts/dev/test-focused.sh '^TestBrowserTrackingBackfill$'
+  LC_TRACKING_EVIDENCE_ROOT="$LC_BROWSER_EVIDENCE_ROOT/tracking-backfill" LC_BROWSER_TRACKING_BACKFILL=1 LC_FOCUSED_TAGS=browser LC_FOCUSED_TIMEOUT=1000s bash scripts/dev/test-focused.sh '^TestBrowserTrackingBackfill$'
   printf 'PASS: tracking backfill real clicks, signed MOCK IdP/Stripe and real PG; no LIVE shipments or mail acceptance.\n'
   exit 0
     }
@@ -59,6 +61,7 @@ case "$1" in
   --browser-platform-site)
     lc_build=none
     lc_fixture=none
+    lc_browsers=chromium
     lc_prepare() {
   :
     }
@@ -71,9 +74,9 @@ case "$1" in
     exit 2
   fi
   trap lc_lock_release EXIT
-  mkdir -p output/platform-site
+  mkdir -p "$LC_PLATFORM_EVIDENCE"
   node --test --test-reporter=spec --experimental-strip-types tests/admin/platform-site.test.ts
-  pnpm --filter admin build > output/platform-site/build.log 2>&1
+  pnpm --filter admin build > "$LC_PLATFORM_EVIDENCE/build.log" 2>&1
   node tests/admin/platform-runner.mjs
   exit 0
     }
@@ -98,14 +101,15 @@ case "$1" in
   --browser-admin-shell)
     lc_build=none
     lc_fixture=none
+    lc_browsers=chromium
     lc_prepare() {
   :
     }
     lc_run() {
-  mkdir -p output/ui-w0-shell
+  mkdir -p "$LC_BROWSER_EVIDENCE_ROOT/ui-w0-shell"
   # --test-reporter=spec pins the "ℹ pass N / ℹ fail F" summary that scripts/dev/release-gate.sh counts (B-browser-admin-shell has no go test events).
   node --test --test-reporter=spec --experimental-strip-types tests/admin/shell-registry.test.ts tests/admin/shell-architecture.test.mjs
-  pnpm --filter @live-commerce/admin build > output/ui-w0-shell/build.log 2>&1
+  pnpm --filter @live-commerce/admin build > "$LC_BROWSER_EVIDENCE_ROOT/ui-w0-shell/build.log" 2>&1
   node tests/admin/shell-runner.mjs
   exit 0
     }
@@ -113,6 +117,7 @@ case "$1" in
   --browser-click-sweep)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # G-UI8 (BROWSER, MOCK): the real-click sweep over every admin registry route and every storefront route. Refuse a no-test success before any build.
   test -f tests/foundation/browser_click_sweep_test.go
@@ -123,7 +128,7 @@ case "$1" in
   node --test tests/ui/click-sweep-lib.test.mjs
   # LC_SWEEP_SHARD=i/N (CI): reject a malformed value before the stack is built (the runner would only throw after the Next builds).
   node --input-type=module -e 'import { parseShard } from "./tests/ui/sweep-shard-lib.mjs"; parseShard(process.argv[1])' "${LC_SWEEP_SHARD:-}"
-  mkdir -p output/playwright output/ui-click-sweep
+  mkdir -p "$LC_SWEEP_OUT"
     }
     lc_run() {
   # One Go test owns PG + the Go API + both Next builds' processes and the seed; the runner (tests/ui/click-sweep.mjs) drives Chromium by real clicks.
@@ -133,18 +138,19 @@ case "$1" in
   # Sharded (LC_SWEEP_SHARD=i/N) it is independent of the sweep slice, so exactly shard 1 runs it; the marker is what sweep-aggregate.mjs checks.
   if [[ -z "${LC_SWEEP_SHARD:-}" || "${LC_SWEEP_SHARD%%/*}" == 1 ]]; then
     node tests/admin/platform-runner.mjs
-    printf '%s\n' "$(git rev-parse HEAD)" > output/ui-click-sweep/platform-runner.pass
+    printf '%s\n' "$(git rev-parse HEAD)" > "$LC_SWEEP_OUT/platform-runner.pass"
   fi
   if [[ -n "${LC_SWEEP_SHARD:-}" ]]; then
-    printf 'PASS: G-UI8 real-click sweep SHARD %s (this slice only: the whole-run verdict is `node tests/ui/sweep-aggregate.mjs click` over every shard); ledger in output/ui-click-sweep/; signed MOCK IdP, MOCK payments/carrier/Meta, no provider or deployment acceptance.\n' "$LC_SWEEP_SHARD"
+    printf 'PASS: G-UI8 real-click sweep SHARD %s (this slice only: the whole-run verdict is `node tests/ui/sweep-aggregate.mjs click` over every shard); ledger in %s; signed MOCK IdP, MOCK payments/carrier/Meta, no provider or deployment acceptance.\n' "$LC_SWEEP_SHARD" "$LC_SWEEP_OUT"
   else
-  printf 'PASS: G-UI8 real-click sweep (every admin registry route and storefront route at 1586x992 + 390x844 zh-TW and en desktop, 5 click journeys); ledger in output/ui-click-sweep/; signed MOCK IdP, MOCK payments/carrier/Meta, no provider or deployment acceptance.\n'
+  printf 'PASS: G-UI8 real-click sweep (every admin registry route and storefront route at 1586x992 + 390x844 zh-TW and en desktop, 5 click journeys); ledger in %s; signed MOCK IdP, MOCK payments/carrier/Meta, no provider or deployment acceptance.\n' "$LC_SWEEP_OUT"
   fi
     }
     ;;
   --browser-visual-lint)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # G-UI9 (BROWSER, MOCK): screenshot corpus + deterministic layout lint on the click-sweep stack. Refuse a no-test success before any build, and prove the
   # lint can observe a failure (canary: a known-bad page trips every rule, a known-good page trips none) before it is allowed to say a page is clean.
@@ -155,28 +161,19 @@ case "$1" in
   node --test tests/ui/visual-lint-lib.test.mjs
   node tests/ui/visual-lint-canary.mjs
   node --input-type=module -e 'import { parseShard } from "./tests/ui/sweep-shard-lib.mjs"; parseShard(process.argv[1])' "${LC_SWEEP_SHARD:-}"
-  mkdir -p output/playwright output/ui-click-sweep output/ui-visual-audit
+  mkdir -p "$LC_SWEEP_OUT" "$LC_BROWSER_EVIDENCE_ROOT/ui-visual-audit"
     }
     lc_run() {
   # The click-sweep Go test seeds the stack and starts tests/ui/click-sweep.mjs, which hands over to tests/ui/visual-audit.mjs when LC_SWEEP_ONLY=visual-audit.
-  # The Go test reads <output/ui-click-sweep>/journeys.json after the runner: an empty one stands in for it (the audit has no journeys) and the G-UI8 file
-  # is put back afterwards. Evidence: output/ui-visual-audit/<UTC>/ (shots, crops, index.json, lint.json, lint.md), named by output/ui-visual-audit/LATEST.
-  va_sweep=output/ui-click-sweep
-  va_restore_journeys() {
-    if [[ -f "$va_sweep/journeys.json.visual-lint-backup" ]]; then mv -f "$va_sweep/journeys.json.visual-lint-backup" "$va_sweep/journeys.json"; elif [[ "${va_wrote_journeys:-0}" == 1 ]]; then rm -f "$va_sweep/journeys.json"; fi
-    va_wrote_journeys=0
-  }
-  trap 'va_restore_journeys; cleanup' EXIT INT TERM
-  rm -f output/ui-visual-audit/LATEST
-  if [[ -f "$va_sweep/journeys.json" ]]; then cp -p "$va_sweep/journeys.json" "$va_sweep/journeys.json.visual-lint-backup"; fi
-  printf '{}\n' > "$va_sweep/journeys.json"
-  va_wrote_journeys=1
+  # The audit has no click journeys. Supply its empty fixture only in this run's
+  # ignored sweep directory; historical journeys and global LATEST stay untouched.
+  printf '{}\n' > "$LC_SWEEP_OUT/journeys.json"
+  rm -f "$LC_BROWSER_EVIDENCE_ROOT/ui-visual-audit/LATEST"
   va_rc=0
   LC_SWEEP_ONLY=visual-audit LC_BROWSER_CLICK_SWEEP_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.2 go test -race -tags browser -count=1 -timeout=5400s -run '^TestBrowserClickSweep' -v ./tests/foundation || va_rc=$?
-  va_restore_journeys
-  va_dir="$(cat output/ui-visual-audit/LATEST 2>/dev/null || true)"
+  va_dir="$(cat "$LC_BROWSER_EVIDENCE_ROOT/ui-visual-audit/LATEST" 2>/dev/null || true)"
   if [[ -z "$va_dir" || ! -f "$va_dir/lint.json" ]]; then
-    printf 'FAIL: G-UI9 visual lint wrote no lint.json (the stack or the runner stopped early, go test exit %s; see output/playwright/click-sweep/*/click-sweep.mjs.log)\n' "$va_rc" >&2
+    printf 'FAIL: G-UI9 visual lint wrote no lint.json (the stack or the runner stopped early, go test exit %s; see %s/click-sweep/*/click-sweep.mjs.log)\n' "$va_rc" "$LC_BROWSER_EVIDENCE_ROOT" >&2
     exit 1
   fi
   va_verdict="$(node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));console.log(`shots ${r.shots.captured}/${r.shots.expected} (NOT_RUN ${r.shots.notRun.length}); instances ${Object.entries(r.totals).map(([k,v])=>k+" "+v.instances).join(", ")}; blocking ${r.blockingInstances}; ${r.verdict.reasons.join("; ")||"no blocking finding"}`);process.exit(r.verdict.exit)' "$va_dir/lint.json")" && va_lint=0 || va_lint=$?
@@ -195,6 +192,7 @@ case "$1" in
   --browser-identity)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   :
     }
@@ -206,6 +204,7 @@ case "$1" in
   --browser-buyer-comms)
     lc_build=storefront
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # buyer-comms browser gate (independent R4 tests): refuse a no-test success before any build.
   test -f tests/foundation/browser_buyer_comms_test.go
@@ -220,6 +219,7 @@ case "$1" in
   --browser-checkout-offline)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # COB (BROWSER, MOCK: no PSP on this path): refuse a no-test success before any build.
   test -f tests/foundation/browser_checkout_offline_test.go
@@ -236,6 +236,7 @@ case "$1" in
   --browser-home-cod)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # home-cod R5 (BROWSER, MOCK: no PSP and no carrier API on this path): refuse a no-test success before any build.
   test -f tests/foundation/browser_home_cod_test.go
@@ -252,6 +253,7 @@ case "$1" in
   --browser-promotions)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # promotions browser gate (independent R4 tests): refuse a no-test success before any build.
   test -f tests/foundation/browser_promotions_test.go
@@ -267,6 +269,7 @@ case "$1" in
   --browser-password-auth)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # PA11: refuse a no-test success (merchant-password-auth-v1 §9).
   test -f tests/admin/password-auth.spec.ts
@@ -288,6 +291,7 @@ case "$1" in
   --browser-admin-legacy)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # Orphan-spec gate (ledger/production/visual-states + identity-mock + entry-mock): refuse a no-test success.
   test -f tests/foundation/browser_admin_legacy_test.go
@@ -304,6 +308,7 @@ case "$1" in
   --browser-buyer)
     lc_build=storefront
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   :
     }
@@ -315,6 +320,7 @@ case "$1" in
   --browser-merchant-buyer)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # Do not report a pass from an exact Go test selector matching no test.
   test -f tests/foundation/browser_merchant_buyer_chain_test.go
@@ -327,6 +333,7 @@ case "$1" in
   --browser-manual-order)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/foundation/browser_manual_order_link_test.go
   test -f tests/storefront/manual-order-link-gate.mjs
@@ -340,6 +347,7 @@ case "$1" in
   --browser-merchant-orders-bff)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/foundation/browser_merchant_orders_bff_test.go
   test -f tests/admin/orders-bff.spec.ts
@@ -361,6 +369,7 @@ case "$1" in
   --browser-merchant-orders-ui)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/foundation/browser_merchant_orders_ui_test.go
   test -f tests/admin/orders-ui.spec.ts
@@ -392,6 +401,7 @@ case "$1" in
   --browser-input-delivery)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/foundation/browser_input_delivery_test.go
   test -f tests/admin/input-delivery.spec.ts
@@ -410,6 +420,7 @@ case "$1" in
   --browser-studio-bff)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/admin/studio-request.test.ts
   test -f tests/admin/studio-bff.spec.ts
@@ -426,6 +437,7 @@ case "$1" in
   --browser-studio-ui)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/admin/studio-ui.spec.ts
   test -f tests/foundation/browser_studio_ui_test.go
@@ -440,6 +452,7 @@ case "$1" in
   --browser-live-console)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/admin/live-console.spec.ts
   test -f tests/foundation/browser_live_console_test.go
@@ -454,6 +467,7 @@ case "$1" in
   --browser-claim-checkout)
     lc_build=storefront
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/storefront/claim-checkout.mjs
   test -f tests/foundation/browser_claim_checkout_test.go
@@ -467,6 +481,7 @@ case "$1" in
   --browser-live-claims)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # KC16: refuse a no-test success, and run the pure claims BFF/copy contracts first.
   test -f tests/admin/claims-ui.spec.ts
@@ -483,6 +498,7 @@ case "$1" in
   --browser-order)
     lc_build=storefront
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/foundation/browser_order_chain_test.go
     }
@@ -494,6 +510,7 @@ case "$1" in
   --browser-payment)
     lc_build=storefront
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/foundation/browser_payment_chain_test.go
     }
@@ -505,6 +522,7 @@ case "$1" in
   --stripe-browser)
     lc_build=storefront
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # SP18 / SU05-SU09 (contracts/stripe-buyer-ui-v1.md §9). Steps can be narrowed with
   # LC_STRIPE_BROWSER_STEPS (default: all); only sp18/su07/su09 need the SANDBOX variables.
@@ -534,9 +552,8 @@ case "$1" in
   fi
     }
     lc_run() {
-  # Evidence goes to the MAIN checkout (worktrees are deleted after merge; PROCESS.md §4).
-  stripe_main="$(cd "$(git rev-parse --git-common-dir)/.." && pwd)"
-  stripe_out="$stripe_main/output/stripe-b2-browser-tests"
+  # Durable evidence is selected once in the shared run-root prelude.
+  stripe_out="$LC_BROWSER_EVIDENCE_ROOT/stripe-b2-browser-tests"
   mkdir -p "$stripe_out"
   stripe_sha="$(git rev-parse --short=12 HEAD)"
   stripe_status=0
@@ -588,6 +605,7 @@ case "$1" in
   --browser-refund-fulfilment)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # MF07 + RF11 (BROWSER, MOCK Stripe): refuse a no-test success and run the pure BFF model gate first.
   test -f tests/foundation/browser_refund_fulfilment_test.go
@@ -608,6 +626,7 @@ case "$1" in
   --browser-customers-billing)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # CB11 (BROWSER, MOCK Stripe): refuse a no-test success and run the pure BFF fence/decoder gate first.
   test -f tests/foundation/browser_customers_billing_test.go
@@ -629,6 +648,7 @@ case "$1" in
   --browser-card-payments)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # W4-U1 (BROWSER, MOCK Stripe): refuse a no-test success and run the pure parser / BFF-fence / copy / wire-fixture / state-machine gates first.
   test -f tests/foundation/browser_card_payments_test.go
@@ -649,6 +669,7 @@ case "$1" in
   --browser-meta-ads)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # MA09a (BROWSER, Meta = MOCK): refuse a no-test success and run the pure model/request gates first.
   test -f tests/foundation/browser_meta_ads_test.go
@@ -670,6 +691,7 @@ case "$1" in
   --browser-ads-attribution)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/foundation/browser_ads_attribution_test.go
   grep -q '^func TestBrowserAdsAttribution' tests/foundation/browser_ads_attribution_test.go
@@ -686,6 +708,7 @@ case "$1" in
   --browser-cvs)
     lc_build=both
     lc_fixture=pg
+    lc_browsers="chromium webkit"
     lc_prepare() {
   # TCV08 (BROWSER, MOCK ECPay map/Create + signed status posts): refuse a no-test success before any build.
   test -f tests/foundation/browser_taiwan_cvs_test.go
@@ -704,6 +727,7 @@ case "$1" in
   --browser-catalog-media)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # catalog-media browser gate (independent R3 tests): refuse a no-test success before any build.
   test -f tests/foundation/browser_catalog_media_test.go
@@ -719,6 +743,7 @@ case "$1" in
   --browser-storefront-publish)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # R3 storefront-publish KEY gate (BROWSER, MOCK edge): refuse a no-test success and run the pure card-model gate first.
   test -f tests/foundation/browser_storefront_publish_test.go
@@ -736,6 +761,7 @@ case "$1" in
   --browser-store-domains)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # R5 store-domains KEY gate (BROWSER, MOCK edge + MOCK DNS/TLS): refuse a no-test success and run the pure domain-model gate first.
   test -f tests/foundation/browser_store_domains_test.go
@@ -752,6 +778,7 @@ case "$1" in
   --browser-storefront)
     lc_build=storefront
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # Real stack (unit storefront-integration): the pure logic tests first (the MOCK fake only feeds node tests/the LC_SHOP_MOCK variant), then PG + Go + Next.
   test -f tests/foundation/browser_storefront_test.go
@@ -780,8 +807,7 @@ case "$1" in
   test -f tests/storefront/shop-fake-api.mjs
   node --test --experimental-strip-types apps/storefront/tests/shop.test.mjs
   COMMERCE_BUYER_WEB_ENABLED=0 pnpm run build:storefront
-  main_checkout="$(cd "$(git rev-parse --git-common-dir)/.." && pwd)"
-  shop_out="${LC_SHOP_EVIDENCE:-$main_checkout/output/storefront-shell/run-$(git rev-parse --short=12 HEAD)}"
+  shop_out="${LC_SHOP_EVIDENCE:-$LC_BROWSER_EVIDENCE_ROOT/storefront-shell}"
   mkdir -p "$shop_out"
   LC_SHOP_EVIDENCE="$shop_out" node tests/storefront/shop-gate.mjs | tee "$shop_out/shop-gate.log"
   grep -q 'cases=12 ' "$shop_out/shop-gate.log"
@@ -793,6 +819,7 @@ case "$1" in
   --browser-webkit)
     lc_build=both
     lc_fixture=pg
+    lc_browsers="chromium webkit"
     lc_prepare() {
   # WebKit/iPhone Safari coverage of the buyer-critical flows (MOCK tier; docs/delivery/GATES.md). Refuse before any build when the WebKit
   # browser is absent: that is NOT_RUN (exit 2), never a green run on Chromium.
@@ -807,9 +834,8 @@ case "$1" in
     lc_run() {
   # Same production storefront + admin builds and the same go tests as the Chromium modes, with LC_BROWSER_ENGINE=webkit: phone-sized buyer
   # contexts run Playwright's iPhone 15 profile, desktop ones and every admin page run Desktop Safari. One go test process per step on a
-  # fresh PG cluster; any SKIP/FAIL, too few leaf cases or a missing log is a failed step (go_json_counts). Evidence goes to the MAIN checkout.
-  webkit_main="$(cd "$(git rev-parse --git-common-dir)/.." && pwd)"
-  webkit_out="$webkit_main/output/webkit"
+  # fresh PG cluster; any SKIP/FAIL, too few leaf cases or a missing log is a failed step (go_json_counts). Evidence stays in the selected run root.
+  webkit_out="$LC_BROWSER_EVIDENCE_ROOT/webkit"
   mkdir -p "$webkit_out"
   webkit_sha="$(git rev-parse --short=12 HEAD)"
   webkit_status=0
@@ -842,6 +868,7 @@ case "$1" in
   --browser-e2e)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # T12: refuse a no-test success; the whole deal loop is one Go test driving one Playwright spec.
   test -f tests/foundation/browser_e2e_test.go
@@ -1228,6 +1255,7 @@ case "$1" in
   --browser-design)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # R3 storefront-publish KEY gate (BROWSER, MOCK edge): refuse a no-test success and run the pure card-model gate first.
   test -f tests/foundation/browser_storefront_publish_test.go
@@ -1248,6 +1276,7 @@ case "$1" in
   --browser-ops-polish)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # ops-polish independent gates (OP1 buyer half, OP2, OP3 UI half, OP4): refuse a no-test success before any build.
   test -f tests/foundation/browser_ops_polish_test.go
@@ -1267,6 +1296,7 @@ case "$1" in
   --browser-meta-connect)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # meta-connect (BROWSER, Meta = MOCK fake Graph): refuse a no-test success and run the pure model/request gates first.
   test -f tests/foundation/browser_meta_connect_test.go
@@ -1286,6 +1316,7 @@ case "$1" in
   --browser-product-editor)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # CC12 (BROWSER + REAL_PG): refuse a no-test success before any build; the admin Next build is the only web build this gate needs.
   test -f tests/foundation/browser_catalog_core_test.go
@@ -1305,6 +1336,7 @@ case "$1" in
   --browser-catalog-core)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # CC12 (BROWSER + REAL_PG): refuse a no-test success before any build; the admin Next build is the only web build this gate needs.
   test -f tests/foundation/browser_catalog_core_test.go
@@ -1329,14 +1361,15 @@ case "$1" in
     }
     lc_run() {
   test -f tests/deploy/ops-disk-guard.sh
-  mkdir -p output/ops-disk-guard
-  bash tests/deploy/ops-disk-guard.sh all 2>&1 | tee output/ops-disk-guard/od-all.log
+  mkdir -p "$LC_OD_EVIDENCE"
+  bash tests/deploy/ops-disk-guard.sh all 2>&1 | tee "$LC_OD_EVIDENCE/od-all.log"
   exit 0
     }
     ;;
   --browser-returns-ui)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # W3-U5 (BROWSER): refuse a no-test success and run the pure returns model/BFF-grammar gate first.
   test -f tests/foundation/browser_returns_ui_test.go
@@ -1353,6 +1386,7 @@ case "$1" in
   --browser-picklist)
     lc_build=none
     lc_fixture=none
+    lc_browsers=chromium
     lc_prepare() {
   :
     }
@@ -1360,8 +1394,8 @@ case "$1" in
   source scripts/dev/test-lock.sh
   lc_lock_acquire "${LC_TEST_LOCK_WAIT:-300}" || exit 2
   trap lc_lock_release EXIT
-  mkdir -p output/ci-gates/picklist
-  pnpm --filter @live-commerce/admin build > output/ci-gates/picklist/build.log 2>&1
+  mkdir -p "$LC_BROWSER_EVIDENCE_ROOT/picklist"
+  pnpm --filter @live-commerce/admin build > "$LC_BROWSER_EVIDENCE_ROOT/picklist/build.log" 2>&1
   node --test --test-reporter=spec --experimental-strip-types tests/admin/picklist.spec.ts
   exit 0
     }
@@ -1369,6 +1403,7 @@ case "$1" in
   --browser-operations-ads)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/foundation/browser_operations_ads_test.go
   grep -q "^func TestBrowserOperationsAds" tests/foundation/browser_operations_ads_test.go
@@ -1383,6 +1418,7 @@ case "$1" in
   --browser-product-media-v2)
     lc_build=both
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   test -f tests/foundation/browser_product_media_v2_test.go
   test -f tests/foundation/browser_product_media_v2_fixture_test.go
@@ -1398,6 +1434,7 @@ case "$1" in
   --browser-reports)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # W6-U1: four actual reports and audited CSVs; signed HTTPS and real scoped Go/PG fixtures.
   test -f tests/foundation/browser_w6_customers_reports_test.go
@@ -1415,6 +1452,7 @@ case "$1" in
   --browser-migration-import)
     lc_build=admin
     lc_fixture=pg
+    lc_browsers=chromium
     lc_prepare() {
   # W5-U1: actual signed HTTPS UI and scoped Go/PG, original CSV bytes and no invented status endpoint.
   test -f tests/foundation/browser_migration_import_ui_test.go
@@ -1499,7 +1537,7 @@ lc_mode_names() {
     declaration="${declaration%"${declaration##*[![:space:]]}"}"
     case "$declaration" in
       ''|'#'*|'lc_select_mode() {'|'case "$1" in'|'fi'|';;'|'esac'|'}'|'*) return 1 ;;') continue ;;
-      lc_build=*|lc_fixture=*|'if [['*']]; then') continue ;;
+      lc_build=*|lc_fixture=*|lc_browsers=chromium|'lc_browsers="chromium webkit"'|'if [['*']]; then') continue ;;
     esac
     if [[ ! "$line" =~ $valid ]]; then printf 'invalid mode registry declaration\n' >&2; return 2; fi
     mode="${BASH_REMATCH[1]}"
@@ -1546,6 +1584,49 @@ if [[ "$lc_dry_run" == 0 ]]; then
 fi
 if [[ "$#" -gt 1 ]]; then lc_usage >&2; exit 2; fi
 test_mode="${1:-foundation}"
+if [[ "$lc_dry_run" == 0 ]]; then
+# Allocate once before any browser build/log write. Explicit caller roots are kept,
+# made absolute and shared by shell, Go and Node; the default is always ignored.
+case "$test_mode" in
+  --browser*|--stripe-browser*|--ops-disk-guard)
+    if [[ -z "${LC_BROWSER_EVIDENCE_ROOT:-}" ]]; then
+      mkdir -p output/playwright
+      LC_BROWSER_EVIDENCE_ROOT="$(mktemp -d "$PWD/output/playwright/run.XXXXXXXX")"
+    else
+      lc_root_existed=0; [[ -d "$LC_BROWSER_EVIDENCE_ROOT" ]] && lc_root_existed=1
+      mkdir -p "$LC_BROWSER_EVIDENCE_ROOT"
+      LC_BROWSER_EVIDENCE_ROOT="$(cd "$LC_BROWSER_EVIDENCE_ROOT" && pwd -P)"
+      # Fixed children (ui-click-sweep, platform-site, …) would overwrite committed evidence under a tracked root such as
+      # output/: inside the repo, accept only an ignored directory with no tracked files (PR #23 review).
+      lc_repo_top="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+      [[ -n "$lc_repo_top" ]] && lc_repo_top="$(cd "$lc_repo_top" && pwd -P)"   # physical on both sides: symlinked paths cannot bypass
+      case "$LC_BROWSER_EVIDENCE_ROOT/" in
+        "${lc_repo_top:-/nonexistent-repo}"/*)
+          if [[ -n "$(git ls-files -- "$LC_BROWSER_EVIDENCE_ROOT" | head -1)" ]] || ! git check-ignore -q "$LC_BROWSER_EVIDENCE_ROOT/.lc-evidence-probe"; then
+            echo "test-local: LC_BROWSER_EVIDENCE_ROOT=$LC_BROWSER_EVIDENCE_ROOT is inside the repository but is not an ignored, untracked directory (use output/playwright/…)" >&2
+            (( lc_root_existed )) || rmdir "$LC_BROWSER_EVIDENCE_ROOT" 2>/dev/null || true   # leave no refused root behind
+            exit 2
+          fi ;;
+      esac
+      # A reused root must not redirect a fixed child (ui-click-sweep, platform-site, …) through a symlink (PR #23 review).
+      for lc_child in "$LC_BROWSER_EVIDENCE_ROOT"/*; do
+        [[ -L "$lc_child" ]] && { echo "test-local: $lc_child is a symlink inside LC_BROWSER_EVIDENCE_ROOT; refusing" >&2; exit 2; }
+      done
+    fi
+    export LC_BROWSER_EVIDENCE_ROOT
+    if [[ "$test_mode" == --ops-disk-guard ]]; then
+      export LC_OD_EVIDENCE="${LC_OD_EVIDENCE:-$LC_BROWSER_EVIDENCE_ROOT/ops-disk-guard}"
+    fi
+    export LC_PLATFORM_EVIDENCE="$LC_BROWSER_EVIDENCE_ROOT/platform-site"
+    export LC_SWEEP_OUT="$LC_BROWSER_EVIDENCE_ROOT/ui-click-sweep"
+    # A caller may reuse its run root: visual empty fixtures must not overwrite click evidence.
+    if [[ "$test_mode" == --browser-visual-lint ]]; then
+      export LC_SWEEP_OUT="$LC_BROWSER_EVIDENCE_ROOT/ui-visual-sweep"
+    fi
+    ;;
+esac
+
+fi
 if ! lc_select_mode "$test_mode"; then lc_usage >&2; exit 2; fi
 if [[ "$lc_dry_run" == 1 ]]; then
   printf '# mode=%s build=%s fixture=%s\n' "$test_mode" "$lc_build" "$lc_fixture"

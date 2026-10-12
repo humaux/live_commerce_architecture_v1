@@ -1,0 +1,71 @@
+
+Running 11 tests using 1 worker
+
+(node:35261) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/admin/password-auth.spec.ts:165:1 › full chain: sign-up -> code -> onboarding -> logout -> sign-in -> code -> workspace; forgot -> reset -> signed in, old session revoked (zh-TW, desktop) (4.6s)
+  ✘   2 tests/admin/password-auth.spec.ts:293:1 › BFF contract: Origin, query, client IP, strict keys, cookie clearing on 200/409 only, sessions survive a failed verify, no secret in any body (1.4s)
+  -   3 tests/admin/password-auth.spec.ts:420:1 › SSR: no form with a password field lacks method=post (/, /signup, /reset)
+  -   4 tests/admin/password-auth.spec.ts:437:1 › throttled UI state and the 60 s resend cooldown
+  -   5 tests/admin/password-auth.spec.ts:492:5 › matrix zh-CN desktop: forms, autocomplete attributes, code step, screenshots, mail language
+  -   6 tests/admin/password-auth.spec.ts:492:5 › matrix zh-TW desktop: forms, autocomplete attributes, code step, screenshots, mail language
+  -   7 tests/admin/password-auth.spec.ts:492:5 › matrix en desktop: forms, autocomplete attributes, code step, screenshots, mail language
+  -   8 tests/admin/password-auth.spec.ts:492:5 › matrix zh-CN mobile: forms, autocomplete attributes, code step, screenshots, mail language
+  -   9 tests/admin/password-auth.spec.ts:492:5 › matrix zh-TW mobile: forms, autocomplete attributes, code step, screenshots, mail language
+  -  10 tests/admin/password-auth.spec.ts:492:5 › matrix en mobile: forms, autocomplete attributes, code step, screenshots, mail language
+  -  11 tests/admin/password-auth.spec.ts:548:1 › matrix: locale copy differs per locale and the reset wording is the same for known and unknown addresses
+
+
+  1) tests/admin/password-auth.spec.ts:293:1 › BFF contract: Origin, query, client IP, strict keys, cookie clearing on 200/409 only, sessions survive a failed verify, no secret in any body
+
+    Error: a response body carries a secret
+
+    expect(received).not.toContain(expected) // indexOf
+
+    Expected substring: not "432082"
+    Received string:        "{\"code\":\"method_not_allowed\",\"message\":\"Method not allowed.\",\"request_id\":\"d3dc485fd26f4b4c852868cf2ac50d2a\",\"retryable\":false,\"details\":{}}
+    {\"code\":\"method_not_allowed\",\"message\":\"Method not allowed.\",\"request_id\":\"2b7afc42c5fb40df8d02319cd3cc4a9d\",\"retryable\":false,\"details\":{}}
+    {\"code\":\"method_not_allowed\",\"message\":\"Method not allowed.\",\"request_id\":\"17962a6872af4908856f5d7201ebf1bc\",\"retryable\":false,\"details\":{}}
+    {\"code\":\"method_not_allowed\",\"message\":\"Method not allowed.\",\"request_id\":\"e7c2b832b80c45c5af1c681648b15dd3\",\"retryable\":false,\"details\":{}}
+    {\"code\":\"forbidden\",\"message\":\"Access denied.\",\"request_id\":\"cd9f732f63af432082efee8be2c29826\",\"retryable\":false,\"details\":{}}
+    {\"code\":\"forbidden\",\"message\":\"Access denied.\",\"request_id\":\"a5a6029aaab746e6998e7f3dce3f1c28\",\"retryable\":false,\"details\":{}}
+    {\"code\":\"forbidden\",\"message\":\"Access denied.\",\"request_id\":\"3793cc24a34c4f6f9334f41db6405a5c\",\"retryable\":false,\"details\":{}}
+    {\"code\":\"forbidden\",\"message\":\"Access denied.\",\"request_id\":\"c66e273f58674c4dbbb8e07ae3355824\",\"retryable\":false,\"details\":{}}
+    {\"step\":\"code\",\"expires_at\":\"2026-10-09T11:49:10Z\"}
+    {\"code\":\"invalid_request\",\"message\":\"Invalid request.\",\"request_id\":\"bc67acb6ab284e9291757bc482dc545b\",\"retryable\":false,\"details\":{}}
+    {\"code\":\"invalid_request\",\"message\":\"Invalid request.\",\"request_id\":\"a07ed5c7062345dcb678f61cdef6ea56\",\"retryable\":false,\"details\":{}}
+    {\"code\":\"invalid_request\",\"message\":\"Invalid request.\",\"request_id\":\"028215b729cd450faae1f4cc6296bd10\",\"retryable\":false,\"details\":{}}
+    {\"code\":\"invalid_request\",\"message\":\"Invalid request.\",\"request_id\":\"7831b4c784db42d8b3f6b749d977d42b\",\"retryable\":false,\"details\":{}}
+    {\"code\":\"invalid_request\",\"message\":\"Invalid request.\",\"request_id\":\"8b5febb516bd4ab68c2a97af7990b109\",\"retryable\":false,\"details\":{}}
+    {\"code\":\"invalid_request\",\"message\":\"Invalid request.\",\"request_id\":\"e5adbfce517c4129b4b3103f9aa4bc2d\",\"retryable\":false,\"details\":{}}
+    {\"code\":\"invalid_request\",\"message\":\"Invalid request.\",\"request_id\":\"8f3464bcb10849c5a7e7aef32d2b236f\",\"retryable\":false,\"details\":{}}
+    {\"code\":\"invalid_request\",\"message\":\"Invalid request.\",\"request_id\":\"def4657952f6474fa9de76e3b773d7d5\",\"retryable\":false,\"details\":{}}
+    {\"step\":\"code\",\"expires_at\":\"2026-10-09T11:49:10Z\"}
+    {\"code\":\"invalid_request\",\"message\":\"Invalid request.\",\"request_id\":\"32e63e1e7cd04ef5a2765d23f49fd9f3\",\"retryable\":false,\"details\":{}}
+    {\"code\":\"invalid_request\",\"message\":\"Invalid request.\",\"request_id\":\"5ef32af544a34f94a90a37e6cf2c8adf\",\"retryable\":false,\"details\":{}}
+    {\"code\":\"invalid_code\",\"message\":\"Invalid code.\",\"request_id\":\"6d686aad52214c1bbcba517bcab91a0d\",\"retryable\":false,\"details\":{}}
+    {\"code\":\"invalid_request\",\"message\":\"Invalid request.\",\"request_id\":\"43af9f88f5a746fa9a9cac60f82d7897\",\"retryable\":false,\"details\":{}}
+    {\"code\":\"invalid_request\",\"message\":\"Invalid request.\",\"request_id\":\"6740a67f94974752b3cf0eef6065c73a\",\"retryable\":false,\"details\":{}}
+    {\"redirect\":\"/en/\"}
+    {\"step\":\"code\",\"expires_at\":\"2026-10-09T11:49:11Z\"}
+    {\"code\":\"invalid_code\",\"message\":\"Invalid code.\",\"request_id\":\"80b22c51d9ef4ad68dab7416ab76b303\",\"retryable\":false,\"details\":{}}
+    {\"step\":\"code\",\"expires_at\":\"2026-10-09T11:49:11Z\"}
+    {\"step\":\"code\",\"expires_at\":\"2026-10-09T11:49:11Z\"}
+    {\"redirect\":\"/en/\"}
+    {\"code\":\"account_exists\",\"message\":\"Request could not be completed.\",\"request_id\":\"d1db520416fd40fea93d90da534f96aa\",\"retryable\":false,\"details\":{}}"
+
+      411 |   // no response body ever echoed a password, an address or a code
+      412 |   const all = bodies.join("\n");
+    > 413 |   for (const secret of [password, racePw, email, race, code, lCode, codes[0], codes[1]]) expect(all, "a response body carries a secret").not.toContain(secret);
+          |                                                                                                                                              ^
+      414 |   await ctx.dispose();
+      415 | });
+      416 |
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/tests/admin/password-auth.spec.ts:413:142
+
+    Error Context: output/playwright/run.ZrIXRxQU/password-auth-20261009T113904.064316000/results/password-auth-BFF-contract-6c61b-erify-no-secret-in-any-body/error-context.md
+
+  1 failed
+    tests/admin/password-auth.spec.ts:293:1 › BFF contract: Origin, query, client IP, strict keys, cookie clearing on 200/409 only, sessions survive a failed verify, no secret in any body
+  9 did not run
+  1 passed (6.6s)

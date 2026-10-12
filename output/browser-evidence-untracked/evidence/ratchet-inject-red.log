@@ -1,0 +1,6 @@
+browser-evidence: tests/admin/product-editor.acceptance.ts:25: unsafe write output/product-ui-v2; use the run evidence directory under output/playwright
+browser-evidence: tests/admin/product-editor.acceptance.ts:44: unsafe write output/product-ui-v2/click-ledger.json; use the run evidence directory under output/playwright
+browser-evidence: tests/admin/product-editor.acceptance.ts:48: unsafe write output/product-ui-v2/screenshots.json; use the run evidence directory under output/playwright
+browser-evidence: tests/admin/product-editor.acceptance.ts:52: unsafe write output/product-ui-v2/write-metadata.json; use the run evidence directory under output/playwright
+browser-evidence: tests/admin/product-editor.acceptance.ts:76: unsafe write output/product-ui-v2/*.png; use the run evidence directory under output/playwright
+browser-evidence: FAIL (5 unsafe write destinations)

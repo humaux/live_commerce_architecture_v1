@@ -1,6 +1,7 @@
 // PS1/PS2/PS4: production Next, real Chromium clicks. No Go/PG/provider or live account writes.
 // Local transport bridge preserves actual Host and HTTPS browser URLs; PS3 separately
 // checks the unchanged Caddy edge allowlist and www redirect with a real local container.
+import { browserEvidenceDirectory } from "../browser-evidence.mjs";
 import assert from "node:assert/strict";
 import { chromium } from "@playwright/test";
 import { spawn } from "node:child_process";
@@ -11,7 +12,7 @@ import path from "node:path";
 import { fixture } from "./shell-fixture.mjs";
 import { assertPlatformMessagingCopy } from "./platform-messaging-copy.fixture.mjs";
 
-const output = process.env.LC_PLATFORM_EVIDENCE || "output/platform-site";
+const output = process.env.LC_PLATFORM_EVIDENCE || browserEvidenceDirectory("platform-site");
 await mkdir(output, { recursive: true });
 const host = "platform.example.invalid",
   adminHost = "admin.example.invalid",
@@ -228,7 +229,7 @@ async function matrix(s) {
           fullPage: true,
         });
         if (name === "home" && locale === "zh-TW" && width === 1586)
-          await page.screenshot({ path: ".impeccable/review/hero-repro.png" });
+          await page.screenshot({ path: path.join(output, "hero-repro.png") });
         ledger.push({
           locale,
           width,

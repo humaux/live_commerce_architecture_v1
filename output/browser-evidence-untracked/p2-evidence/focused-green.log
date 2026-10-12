@@ -1,0 +1,44 @@
+✔ browser evidence uses unique local runs or the selected harness parent without rewriting history (94.061209ms)
+✔ browser evidence rejects labels that escape the harness directory before creating files (31.528ms)
+✔ shell isolates visual fixtures from a click ledger when caller reuses its evidence root (16.232792ms)
+✔ ops disk guard allocation isolates its log and child evidence from committed history (6.861ms)
+✔ visual artifact upload selects lint/index/shots and excludes raw unrelated evidence (7.449375ms)
+✔ visual reviewer discovers nested per-run artifact shots through its real copy loop (29.617959ms)
+✔ reject quoted screenshot path (3.126333ms)
+✔ reject computed writer (0.392208ms)
+✔ reject renamed import (0.487417ms)
+✔ reject local writer alias (0.356ms)
+✔ reject quoted reporter (0.177667ms)
+✔ reject openSync write (0.221417ms)
+✔ reject open write (0.179209ms)
+✔ reject URL writer (0.209ms)
+✔ reject bound writer (0.156084ms)
+✔ reject bound path (0.1975ms)
+✔ reject direct (0.094875ms)
+✔ reject alias (0.184ms)
+✔ reject split join (0.129125ms)
+✔ reject template (0.288875ms)
+✔ reject helper (0.322875ms)
+✔ reject copy destination (0.061375ms)
+✔ reject reporter (0.129292ms)
+✔ reject traversal (0.075708ms)
+✔ reject tracked nonoutput (0.055708ms)
+✔ allow read-only open (0.38325ms)
+✔ allow read-only URL open (0.146208ms)
+✔ allow historical read (0.115833ms)
+✔ allow copy source (0.056209ms)
+✔ allow comment (0.184ms)
+✔ allow string data (0.05525ms)
+✔ allow run directory (0.350084ms)
+✔ Go Join aliases flag writes but not read-only history or comments (2.634666ms)
+✔ producer discovery covers acceptance suites and helpers, not documentation/artifacts (0.24875ms)
+✔ synthetic Go historical fixtures stay inside t.TempDir; real CopyFS destinations are audited (2.131667ms)
+✔ Go OpenFile rejects create/write flags but preserves historical read-only descriptors (1.327541ms)
+ℹ tests 36
+ℹ suites 0
+ℹ pass 36
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 225.660959

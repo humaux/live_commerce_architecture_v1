@@ -1,0 +1,163 @@
+Retained failed label fixture: /private/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/lc-browser-evidence-label-ESu0pC
+✔ browser evidence uses unique local runs or the selected harness parent without rewriting history (95.840958ms)
+✖ browser evidence rejects labels that escape the harness directory before creating files (27.852292ms)
+✖ reject quoted screenshot path (2.966792ms)
+✖ reject computed writer (0.313ms)
+✖ reject renamed import (0.429625ms)
+✖ reject local writer alias (0.335875ms)
+✖ reject quoted reporter (0.160333ms)
+✔ reject direct (0.295084ms)
+✔ reject alias (0.27975ms)
+✔ reject split join (0.16475ms)
+✔ reject template (0.3005ms)
+✔ reject helper (0.433792ms)
+✔ reject copy destination (0.086166ms)
+✔ reject reporter (0.134167ms)
+✔ reject traversal (0.103917ms)
+✔ reject tracked nonoutput (0.096417ms)
+✔ allow historical read (0.368083ms)
+✔ allow copy source (0.052875ms)
+✔ allow comment (0.191959ms)
+✔ allow string data (0.057833ms)
+✔ allow run directory (0.385708ms)
+✔ Go Join aliases flag writes but not read-only history or comments (1.782958ms)
+✔ producer discovery covers acceptance suites and helpers, not documentation/artifacts (0.18325ms)
+✔ synthetic Go historical fixtures stay inside t.TempDir; real CopyFS destinations are audited (0.345708ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 18
+ℹ fail 6
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 192.991625
+
+✖ failing tests:
+
+test at tests/admin/browser-evidence.test.mjs:47:1
+✖ browser evidence rejects labels that escape the harness directory before creating files (27.852292ms)
+  AssertionError [ERR_ASSERTION]: node:internal/modules/run_main:107
+      triggerUncaughtException(
+      ^
+
+  AssertionError [ERR_ASSERTION]: Missing expected exception: ..
+      at file:///private/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/lc-browser-evidence-label-ESu0pC/[eval1]:3:17
+      at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+      at async node:internal/modules/esm/loader:246:26
+      at async ModuleLoader.executeModuleJob (node:internal/modules/esm/loader:243:20)
+      at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /evidence label/,
+    operator: 'throws',
+    diff: 'simple'
+  }
+
+  Node.js v24.15.0
+
+
+  1 !== 0
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/tests/admin/browser-evidence.test.mjs:57:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/browser-evidence-paths.test.mjs:24:3
+✖ reject quoted screenshot path (2.966792ms)
+  AssertionError [ERR_ASSERTION]: await page.screenshot({'path':'output/product-ui-v2/shot.png'})
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/tests/ci/browser-evidence-paths.test.mjs:24:36)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/browser-evidence-paths.test.mjs:24:3
+✖ reject computed writer (0.313ms)
+  AssertionError [ERR_ASSERTION]: await fs['writeFile']('output/product-ui-v2/x','x')
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/tests/ci/browser-evidence-paths.test.mjs:24:36)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/browser-evidence-paths.test.mjs:24:3
+✖ reject renamed import (0.429625ms)
+  AssertionError [ERR_ASSERTION]: import {writeFile as persist} from 'node:fs/promises';await persist('output/product-ui-v2/x','x')
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/tests/ci/browser-evidence-paths.test.mjs:24:36)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/browser-evidence-paths.test.mjs:24:3
+✖ reject local writer alias (0.335875ms)
+  AssertionError [ERR_ASSERTION]: const persist=fs.writeFileSync;persist('output/product-ui-v2/x','x')
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/tests/ci/browser-evidence-paths.test.mjs:24:36)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/browser-evidence-paths.test.mjs:24:3
+✖ reject quoted reporter (0.160333ms)
+  AssertionError [ERR_ASSERTION]: export default defineConfig({'outputDir':'output/product-ui-v2/results'})
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/tests/ci/browser-evidence-paths.test.mjs:24:36)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

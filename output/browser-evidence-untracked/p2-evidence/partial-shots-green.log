@@ -1,0 +1,14 @@
+✔ browser evidence uses unique local runs or the selected harness parent without rewriting history (80.546958ms)
+✔ browser evidence rejects labels that escape the harness directory before creating files (25.9365ms)
+✔ shell isolates visual fixtures from a click ledger when caller reuses its evidence root (10.9825ms)
+✔ ops disk guard allocation isolates its log and child evidence from committed history (5.898333ms)
+✔ visual artifact upload selects lint/index/shots and excludes raw unrelated evidence (6.7585ms)
+✔ visual reviewer discovers nested per-run artifact shots through its real copy loop (26.408958ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 193.734292

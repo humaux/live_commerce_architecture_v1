@@ -1,0 +1,9 @@
+{"Time":"2026-10-09T19:55:24.055566+08:00","Action":"start","Package":"livecommerce/tests/foundation"}
+{"Time":"2026-10-09T19:55:24.998306+08:00","Action":"run","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerRealChain"}
+{"Time":"2026-10-09T19:55:24.998721+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerRealChain","Output":"=== RUN   TestBrowserBuyerRealChain\n","OutputType":"frame"}
+{"Time":"2026-10-09T19:55:43.419951+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerRealChain","Output":"    browser_buyer_chain_test.go:89: PASS: real browser/Next/Go/PG; cases=13; one order/hold; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/buyer-real-4228233897\n"}
+{"Time":"2026-10-09T19:55:43.437603+08:00","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerRealChain","Output":"--- PASS: TestBrowserBuyerRealChain (18.44s)\n","OutputType":"frame"}
+{"Time":"2026-10-09T19:55:43.437787+08:00","Action":"pass","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerRealChain","Elapsed":18.44}
+{"Time":"2026-10-09T19:55:43.440141+08:00","Action":"output","Package":"livecommerce/tests/foundation","Output":"PASS\n","OutputType":"frame"}
+{"Time":"2026-10-09T19:55:44.455283+08:00","Action":"output","Package":"livecommerce/tests/foundation","Output":"ok  \tlivecommerce/tests/foundation\t20.399s\n"}
+{"Time":"2026-10-09T19:55:44.455404+08:00","Action":"pass","Package":"livecommerce/tests/foundation","Elapsed":20.4}

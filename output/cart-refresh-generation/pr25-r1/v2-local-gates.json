@@ -1,0 +1,99 @@
+[
+  {
+    "name": "v2-node",
+    "command": [
+      "bash",
+      "scripts/dev/test-node.sh"
+    ],
+    "exit": 0,
+    "log": "output/cart-refresh-generation/pr25-r1/v2-node.log",
+    "sha256": "166d8d42c7f3c760565d930d1f67ecd1db67bf12ae80716b9e4004561a03556e",
+    "source_sha": "a4989bc6e55c8f813acf99f95850e98213f4d264",
+    "canonical_raw_log": "/Volumes/data/live_commerce_architecture_v1/output/cart-refresh-generation/pr25-r1/v2-node.log",
+    "canonical_raw_sha256": "166d8d42c7f3c760565d930d1f67ecd1db67bf12ae80716b9e4004561a03556e"
+  },
+  {
+    "name": "v2-typecheck",
+    "command": [
+      "pnpm",
+      "--filter",
+      "@live-commerce/storefront",
+      "typecheck"
+    ],
+    "exit": 0,
+    "log": "output/cart-refresh-generation/pr25-r1/v2-typecheck.log",
+    "sha256": "9f55df25896b5ce4031aed107ac85353d0bdc43bcb23b6ad663e630567657ef6",
+    "source_sha": "a4989bc6e55c8f813acf99f95850e98213f4d264",
+    "canonical_raw_log": "/Volumes/data/live_commerce_architecture_v1/output/cart-refresh-generation/pr25-r1/v2-typecheck.log",
+    "canonical_raw_sha256": "3b871f702620074c27110253386a9a5d62e30d1a34abdb3da52bdd1d2f9ff4cb"
+  },
+  {
+    "name": "v2-registry-list",
+    "command": [
+      "bash",
+      "scripts/dev/test-local.sh",
+      "--list"
+    ],
+    "exit": 0,
+    "log": "output/cart-refresh-generation/pr25-r1/v2-registry-list.log",
+    "sha256": "5e780dc27ce8a1089b7191e5aa0a0a800d2a9144d7aa53ef5ffe91b5bd9cfd66",
+    "source_sha": "a4989bc6e55c8f813acf99f95850e98213f4d264",
+    "canonical_raw_log": "/Volumes/data/live_commerce_architecture_v1/output/cart-refresh-generation/pr25-r1/v2-registry-list.log",
+    "canonical_raw_sha256": "5e780dc27ce8a1089b7191e5aa0a0a800d2a9144d7aa53ef5ffe91b5bd9cfd66"
+  },
+  {
+    "name": "v2-check-gates",
+    "command": [
+      "bash",
+      "scripts/dev/check-gates.sh"
+    ],
+    "exit": 0,
+    "log": "output/cart-refresh-generation/pr25-r1/v2-check-gates.log",
+    "sha256": "787fe3ffdb6daf716e6ec3db1a963e66327a71d06c629aef6ec5a4c0e5fde734",
+    "source_sha": "a4989bc6e55c8f813acf99f95850e98213f4d264",
+    "canonical_raw_log": "/Volumes/data/live_commerce_architecture_v1/output/cart-refresh-generation/pr25-r1/v2-check-gates.log",
+    "canonical_raw_sha256": "787fe3ffdb6daf716e6ec3db1a963e66327a71d06c629aef6ec5a4c0e5fde734"
+  },
+  {
+    "name": "v2-go-evidence",
+    "command": [
+      "env",
+      "GOTOOLCHAIN=go1.27.2",
+      "go",
+      "test",
+      "-tags",
+      "browser",
+      "-run",
+      "^TestBuyerOrder(Evidence|Refresh)",
+      "-count=1",
+      "-v",
+      "./tests/foundation"
+    ],
+    "exit": 0,
+    "log": "output/cart-refresh-generation/pr25-r1/v2-go-evidence.log",
+    "sha256": "518919cab0c6d5d87b9b99e4b11934538ec0f9bf4ed44c1e9a685447de723ec2",
+    "source_sha": "a4989bc6e55c8f813acf99f95850e98213f4d264",
+    "canonical_raw_log": "/Volumes/data/live_commerce_architecture_v1/output/cart-refresh-generation/pr25-r1/v2-go-evidence.log",
+    "canonical_raw_sha256": "518919cab0c6d5d87b9b99e4b11934538ec0f9bf4ed44c1e9a685447de723ec2"
+  },
+  {
+    "name": "v2-go-evidence-default",
+    "command": [
+      "env",
+      "GOTOOLCHAIN=go1.27.2",
+      "go",
+      "test",
+      "-run",
+      "^TestBuyerOrder(Evidence|Refresh)",
+      "-count=1",
+      "-v",
+      "./tests/foundation"
+    ],
+    "exit": 0,
+    "log": "output/cart-refresh-generation/pr25-r1/v2-go-evidence-default.log",
+    "sha256": "14d8b42bdb9bede20ee29eb6304812e3841e7b6f35ff4014cc9458a6c007503a",
+    "source_sha": "a4989bc6e55c8f813acf99f95850e98213f4d264",
+    "canonical_raw_log": "/Volumes/data/live_commerce_architecture_v1/output/cart-refresh-generation/pr25-r1/v2-go-evidence-default.log",
+    "canonical_raw_sha256": "14d8b42bdb9bede20ee29eb6304812e3841e7b6f35ff4014cc9458a6c007503a"
+  }
+]

@@ -92,7 +92,7 @@ func TestBrowserTrackingBackfill(t *testing.T) {
 	t.Cleanup(control.Close)
 	evidenceRoot := os.Getenv("LC_TRACKING_EVIDENCE_ROOT")
 	if evidenceRoot == "" {
-		t.Fatal("persistent main-output LC_TRACKING_EVIDENCE_ROOT required")
+		t.Fatal("run-owned LC_TRACKING_EVIDENCE_ROOT required")
 	}
 	evidence := filepath.Join(evidenceRoot, time.Now().UTC().Format("20060102T150405.000000000"))
 	if err := os.MkdirAll(evidence, 0o700); err != nil {
@@ -133,8 +133,12 @@ func TestBrowserTrackingBackfill(t *testing.T) {
 			t.Errorf("preserve request binding evidence: %v", err)
 		}
 	})
-	// The config must resolve Playwright from THIS worktree, while durable artifacts remain in main output.
-	configDir, err := os.MkdirTemp(filepath.Join(stack.root, "output"), "tracking-playwright-")
+	// Resolve Playwright from this worktree even if the caller stores evidence elsewhere.
+	configBase := filepath.Join(stack.root, "output", "playwright")
+	if err := os.MkdirAll(configBase, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	configDir, err := os.MkdirTemp(configBase, "tracking-playwright-")
 	if err != nil {
 		t.Fatal(err)
 	}

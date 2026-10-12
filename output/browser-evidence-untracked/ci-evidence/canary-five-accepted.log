@@ -1,0 +1,13 @@
+✔ response canary scan distinguishes an OTP substring in a public generated request ID (0.925333ms)
+✔ response canary scan retains real leaks in every non-metadata field and nested request IDs (0.149625ms)
+✔ response canary scan preserves malformed bodies and rejects noncanonical request IDs (0.105583ms)
+✔ response canary scan decodes JSON-escaped leaks before checking the body (0.063334ms)
+✔ response canary scan never loses duplicate-key or large-number raw leaks (0.064209ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 101.457416

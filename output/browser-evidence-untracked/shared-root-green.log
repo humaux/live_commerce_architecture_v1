@@ -1,0 +1,11 @@
+✔ browser evidence uses unique local runs or the selected harness parent without rewriting history (85.102417ms)
+✔ browser evidence rejects labels that escape the harness directory before creating files (26.3555ms)
+✔ shell isolates visual fixtures from a click ledger when caller reuses its evidence root (10.649417ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 177.825625

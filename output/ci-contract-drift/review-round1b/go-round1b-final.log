@@ -1,0 +1,277 @@
+=== RUN   TestReviewR1bBuyerTransportRealCLI
+=== RUN   TestReviewR1bBuyerTransportRealCLI/DELETE
+=== RUN   TestReviewR1bBuyerTransportRealCLI/unknownMethod()
+=== RUN   TestReviewR1bBuyerTransportRealCLI/omitted
+=== RUN   TestReviewR1bBuyerTransportRealCLI/deleted_function
+=== RUN   TestReviewR1bBuyerTransportRealCLI/deleted_fetch
+--- PASS: TestReviewR1bBuyerTransportRealCLI (10.87s)
+    --- PASS: TestReviewR1bBuyerTransportRealCLI/DELETE (2.72s)
+    --- PASS: TestReviewR1bBuyerTransportRealCLI/unknownMethod() (1.86s)
+    --- PASS: TestReviewR1bBuyerTransportRealCLI/omitted (1.91s)
+    --- PASS: TestReviewR1bBuyerTransportRealCLI/deleted_function (1.54s)
+    --- PASS: TestReviewR1bBuyerTransportRealCLI/deleted_fetch (1.64s)
+=== RUN   TestReviewR1bSpecializedExtraSinksRealCLI
+=== RUN   TestReviewR1bSpecializedExtraSinksRealCLI/apps/admin/app/api/stores/[store]/reports/[report]/route.ts_fixed_POST
+=== RUN   TestReviewR1bSpecializedExtraSinksRealCLI/apps/admin/app/api/stores/[store]/reports/[report]/route.ts_dynamic_URL
+=== RUN   TestReviewR1bSpecializedExtraSinksRealCLI/apps/admin/app/api/stores/[store]/tools/[...resource]/route.ts_fixed_POST
+=== RUN   TestReviewR1bSpecializedExtraSinksRealCLI/apps/admin/app/api/stores/[store]/tools/[...resource]/route.ts_dynamic_URL
+=== RUN   TestReviewR1bSpecializedExtraSinksRealCLI/apps/storefront/app/api/buyer/[...path]/route.ts_fixed_POST
+=== RUN   TestReviewR1bSpecializedExtraSinksRealCLI/apps/storefront/app/api/buyer/[...path]/route.ts_dynamic_URL
+=== RUN   TestReviewR1bSpecializedExtraSinksRealCLI/apps/admin/lib/import-proxy.ts_fixed_POST
+=== RUN   TestReviewR1bSpecializedExtraSinksRealCLI/apps/admin/lib/import-proxy.ts_dynamic_URL
+=== RUN   TestReviewR1bSpecializedExtraSinksRealCLI/apps/admin/lib/picklist-proxy.ts_fixed_POST
+=== RUN   TestReviewR1bSpecializedExtraSinksRealCLI/apps/admin/lib/picklist-proxy.ts_dynamic_URL
+=== RUN   TestReviewR1bSpecializedExtraSinksRealCLI/apps/storefront/lib/buyer-server.ts_fixed_POST
+=== RUN   TestReviewR1bSpecializedExtraSinksRealCLI/apps/storefront/lib/buyer-server.ts_dynamic_URL
+--- PASS: TestReviewR1bSpecializedExtraSinksRealCLI (19.87s)
+    --- PASS: TestReviewR1bSpecializedExtraSinksRealCLI/apps/admin/app/api/stores/[store]/reports/[report]/route.ts_fixed_POST (2.33s)
+    --- PASS: TestReviewR1bSpecializedExtraSinksRealCLI/apps/admin/app/api/stores/[store]/reports/[report]/route.ts_dynamic_URL (1.93s)
+    --- PASS: TestReviewR1bSpecializedExtraSinksRealCLI/apps/admin/app/api/stores/[store]/tools/[...resource]/route.ts_fixed_POST (1.65s)
+    --- PASS: TestReviewR1bSpecializedExtraSinksRealCLI/apps/admin/app/api/stores/[store]/tools/[...resource]/route.ts_dynamic_URL (1.48s)
+    --- PASS: TestReviewR1bSpecializedExtraSinksRealCLI/apps/storefront/app/api/buyer/[...path]/route.ts_fixed_POST (1.56s)
+    --- PASS: TestReviewR1bSpecializedExtraSinksRealCLI/apps/storefront/app/api/buyer/[...path]/route.ts_dynamic_URL (1.48s)
+    --- PASS: TestReviewR1bSpecializedExtraSinksRealCLI/apps/admin/lib/import-proxy.ts_fixed_POST (1.40s)
+    --- PASS: TestReviewR1bSpecializedExtraSinksRealCLI/apps/admin/lib/import-proxy.ts_dynamic_URL (2.03s)
+    --- PASS: TestReviewR1bSpecializedExtraSinksRealCLI/apps/admin/lib/picklist-proxy.ts_fixed_POST (1.40s)
+    --- PASS: TestReviewR1bSpecializedExtraSinksRealCLI/apps/admin/lib/picklist-proxy.ts_dynamic_URL (1.48s)
+    --- PASS: TestReviewR1bSpecializedExtraSinksRealCLI/apps/storefront/lib/buyer-server.ts_fixed_POST (1.43s)
+    --- PASS: TestReviewR1bSpecializedExtraSinksRealCLI/apps/storefront/lib/buyer-server.ts_dynamic_URL (1.42s)
+=== RUN   TestReviewR1bSinkValuesRealCLI
+=== RUN   TestReviewR1bSinkValuesRealCLI/member_call
+=== RUN   TestReviewR1bSinkValuesRealCLI/empty_sink
+=== RUN   TestReviewR1bSinkValuesRealCLI/inline_alias
+=== RUN   TestReviewR1bSinkValuesRealCLI/module_alias
+=== RUN   TestReviewR1bSinkValuesRealCLI/wrapper
+=== RUN   TestReviewR1bSinkValuesRealCLI/member
+=== RUN   TestReviewR1bSinkValuesRealCLI/spread
+=== RUN   TestReviewR1bSinkValuesRealCLI/higher_order
+--- PASS: TestReviewR1bSinkValuesRealCLI (11.94s)
+    --- PASS: TestReviewR1bSinkValuesRealCLI/member_call (1.69s)
+    --- PASS: TestReviewR1bSinkValuesRealCLI/empty_sink (1.30s)
+    --- PASS: TestReviewR1bSinkValuesRealCLI/inline_alias (1.39s)
+    --- PASS: TestReviewR1bSinkValuesRealCLI/module_alias (1.37s)
+    --- PASS: TestReviewR1bSinkValuesRealCLI/wrapper (1.38s)
+    --- PASS: TestReviewR1bSinkValuesRealCLI/member (1.39s)
+    --- PASS: TestReviewR1bSinkValuesRealCLI/spread (1.35s)
+    --- PASS: TestReviewR1bSinkValuesRealCLI/higher_order (1.38s)
+=== RUN   TestReviewR1bUnreachableSinkValueRealCLI
+--- PASS: TestReviewR1bUnreachableSinkValueRealCLI (1.95s)
+=== RUN   TestReviewR1bImportedSinkValuesRealCLI
+=== RUN   TestReviewR1bImportedSinkValuesRealCLI/alias
+=== RUN   TestReviewR1bImportedSinkValuesRealCLI/wrapper
+=== RUN   TestReviewR1bImportedSinkValuesRealCLI/re-export
+=== RUN   TestReviewR1bImportedSinkValuesRealCLI/unknown_binding
+=== RUN   TestReviewR1bImportedSinkValuesRealCLI/unused_import
+--- PASS: TestReviewR1bImportedSinkValuesRealCLI (7.47s)
+    --- PASS: TestReviewR1bImportedSinkValuesRealCLI/alias (1.69s)
+    --- PASS: TestReviewR1bImportedSinkValuesRealCLI/wrapper (1.38s)
+    --- PASS: TestReviewR1bImportedSinkValuesRealCLI/re-export (1.40s)
+    --- PASS: TestReviewR1bImportedSinkValuesRealCLI/unknown_binding (1.41s)
+    --- PASS: TestReviewR1bImportedSinkValuesRealCLI/unused_import (1.36s)
+=== RUN   TestReviewR1bAdminProxySinkValuesRealCLI
+=== RUN   TestReviewR1bAdminProxySinkValuesRealCLI/unreachable_alias
+=== RUN   TestReviewR1bAdminProxySinkValuesRealCLI/reachable_alias
+--- PASS: TestReviewR1bAdminProxySinkValuesRealCLI (3.22s)
+    --- PASS: TestReviewR1bAdminProxySinkValuesRealCLI/unreachable_alias (1.68s)
+    --- PASS: TestReviewR1bAdminProxySinkValuesRealCLI/reachable_alias (1.32s)
+=== RUN   TestReviewR1bTypeValueDualBindingRealCLI
+--- PASS: TestReviewR1bTypeValueDualBindingRealCLI (0.70s)
+=== RUN   TestReviewR1bSharedCyclicSinkGraphRealCLI
+--- PASS: TestReviewR1bSharedCyclicSinkGraphRealCLI (1.89s)
+=== RUN   TestReviewR1bWorkspaceSinkBindingsRealCLI
+=== RUN   TestReviewR1bWorkspaceSinkBindingsRealCLI/unused_import
+=== RUN   TestReviewR1bWorkspaceSinkBindingsRealCLI/reached_export
+--- PASS: TestReviewR1bWorkspaceSinkBindingsRealCLI (3.23s)
+    --- PASS: TestReviewR1bWorkspaceSinkBindingsRealCLI/unused_import (1.65s)
+    --- PASS: TestReviewR1bWorkspaceSinkBindingsRealCLI/reached_export (1.37s)
+=== RUN   TestReviewR1bWorkspaceManifestRetargetRealCLI
+--- PASS: TestReviewR1bWorkspaceManifestRetargetRealCLI (2.25s)
+=== RUN   TestReviewR1bMerchantTransportProofRealCLI
+=== RUN   TestReviewR1bMerchantTransportProofRealCLI/fixed_override
+=== RUN   TestReviewR1bMerchantTransportProofRealCLI/dynamic_URL
+=== RUN   TestReviewR1bMerchantTransportProofRealCLI/spread_before_init
+=== RUN   TestReviewR1bMerchantTransportProofRealCLI/path_reassigned
+=== RUN   TestReviewR1bMerchantTransportProofRealCLI/config_origin_retarget
+=== RUN   TestReviewR1bMerchantTransportProofRealCLI/config_property_reassigned
+=== RUN   TestReviewR1bMerchantTransportProofRealCLI/computed_config_assignment
+=== RUN   TestReviewR1bMerchantTransportProofRealCLI/config_object_escape
+--- PASS: TestReviewR1bMerchantTransportProofRealCLI (11.57s)
+    --- PASS: TestReviewR1bMerchantTransportProofRealCLI/fixed_override (1.69s)
+    --- PASS: TestReviewR1bMerchantTransportProofRealCLI/dynamic_URL (1.41s)
+    --- PASS: TestReviewR1bMerchantTransportProofRealCLI/spread_before_init (1.36s)
+    --- PASS: TestReviewR1bMerchantTransportProofRealCLI/path_reassigned (1.33s)
+    --- PASS: TestReviewR1bMerchantTransportProofRealCLI/config_origin_retarget (1.41s)
+    --- PASS: TestReviewR1bMerchantTransportProofRealCLI/config_property_reassigned (1.37s)
+    --- PASS: TestReviewR1bMerchantTransportProofRealCLI/computed_config_assignment (1.41s)
+    --- PASS: TestReviewR1bMerchantTransportProofRealCLI/config_object_escape (1.36s)
+=== RUN   TestReviewR1bOriginObjectEscapeRealCLI
+--- PASS: TestReviewR1bOriginObjectEscapeRealCLI (1.96s)
+=== RUN   TestBFFRootFixtures
+--- PASS: TestBFFRootFixtures (0.01s)
+=== RUN   TestBFFImportsUnknownAndProvenance
+--- PASS: TestBFFImportsUnknownAndProvenance (0.00s)
+=== RUN   TestBFFRealFamilies
+    bff_test.go:96: routes=292 unresolved=0
+--- PASS: TestBFFRealFamilies (0.47s)
+=== RUN   TestBFFBuyerMethods
+--- PASS: TestBFFBuyerMethods (0.46s)
+=== RUN   TestBFFUnsupportedFormsAndExtraSinks
+=== RUN   TestBFFUnsupportedFormsAndExtraSinks/new_RegExp("^items/.*$")
+=== RUN   TestBFFUnsupportedFormsAndExtraSinks/new_RegExp("items")
+=== RUN   TestBFFUnsupportedFormsAndExtraSinks/new_RegExp("^items$","i")
+=== RUN   TestBFFUnsupportedFormsAndExtraSinks/new_RegExp(dynamicPattern())
+--- PASS: TestBFFUnsupportedFormsAndExtraSinks (0.01s)
+    --- PASS: TestBFFUnsupportedFormsAndExtraSinks/new_RegExp("^items/.*$") (0.00s)
+    --- PASS: TestBFFUnsupportedFormsAndExtraSinks/new_RegExp("items") (0.00s)
+    --- PASS: TestBFFUnsupportedFormsAndExtraSinks/new_RegExp("^items$","i") (0.00s)
+    --- PASS: TestBFFUnsupportedFormsAndExtraSinks/new_RegExp(dynamicPattern()) (0.00s)
+=== RUN   TestBFFRealSourceMutation
+--- PASS: TestBFFRealSourceMutation (2.19s)
+=== RUN   TestBFFNestedTemplatesAndConcat
+--- PASS: TestBFFNestedTemplatesAndConcat (0.00s)
+=== RUN   TestBFFParameterValidationDoesNotProduceRoute
+--- PASS: TestBFFParameterValidationDoesNotProduceRoute (0.00s)
+=== RUN   TestGoUnknownRangeTailRetainsKnownRoutesAndProvenance
+--- PASS: TestGoUnknownRangeTailRetainsKnownRoutesAndProvenance (0.00s)
+=== RUN   TestGoLexicalAliasesAndReassignment
+--- PASS: TestGoLexicalAliasesAndReassignment (0.00s)
+=== RUN   TestGoWrapperFiniteRangesAndConditionalAppend
+--- PASS: TestGoWrapperFiniteRangesAndConditionalAppend (0.00s)
+=== RUN   TestGoProducerDiscoveryMountsAndOpaqueDispatch
+    go_extract_test.go:187: single-line dispatch has naturally single-line span
+--- PASS: TestGoProducerDiscoveryMountsAndOpaqueDispatch (0.00s)
+=== RUN   TestGoEmptyRangeMutationAndBranchUnion
+--- PASS: TestGoEmptyRangeMutationAndBranchUnion (0.00s)
+=== RUN   TestGoAPIImportClosureExcludesWorkerBridge
+--- PASS: TestGoAPIImportClosureExcludesWorkerBridge (0.00s)
+=== RUN   TestGoOpaqueDependencySpans
+--- PASS: TestGoOpaqueDependencySpans (0.00s)
+=== RUN   TestGoRepositoryInventory
+    go_extract_test.go:279: real inventory routes=278 unresolved=30 notes=92
+--- PASS: TestGoRepositoryInventory (0.98s)
+=== RUN   TestGoOpaqueMountMarkersAndChildSpans
+--- PASS: TestGoOpaqueMountMarkersAndChildSpans (0.00s)
+=== RUN   TestGoUnsupportedClosuresAndSwitchAssignmentsStayVisible
+--- PASS: TestGoUnsupportedClosuresAndSwitchAssignmentsStayVisible (0.00s)
+=== RUN   TestGoImportChangesAndShadows
+--- PASS: TestGoImportChangesAndShadows (0.00s)
+=== RUN   TestGoReviewMethodlessHandleCLI
+--- PASS: TestGoReviewMethodlessHandleCLI (2.47s)
+=== RUN   TestGoReviewRouteSuffixCLI
+--- PASS: TestGoReviewRouteSuffixCLI (0.72s)
+=== RUN   TestGoReviewFactory405CLI
+=== RUN   TestGoReviewFactory405CLI/header_argument_writes_first
+=== RUN   TestGoReviewFactory405CLI/status_reassigned
+--- PASS: TestGoReviewFactory405CLI (2.50s)
+    --- PASS: TestGoReviewFactory405CLI/header_argument_writes_first (0.60s)
+    --- PASS: TestGoReviewFactory405CLI/status_reassigned (0.62s)
+=== RUN   TestGoReviewMethodValueAliasCLI
+=== RUN   TestGoReviewMethodValueAliasCLI/h_:=_mux.HandleFunc;_alias_:=_h;_alias("GET_/v1/review_alias",_handler)
+=== RUN   TestGoReviewMethodValueAliasCLI/h_:=_mux.HandleFunc;_bindReview(h,_"GET_/v1/review_alias",_handler)
+=== RUN   TestGoReviewMethodValueAliasCLI/h_:=_mux.Handle;_h("/v1/review_alias",_http.NotFoundHandler())
+=== RUN   TestGoReviewMethodValueAliasCLI/child_:=_http.NewServeMux();_receiver_:=_child;_h_:=_receiver.HandleFunc;_h("GET_/v1/review_alias",_handler)
+--- PASS: TestGoReviewMethodValueAliasCLI (2.85s)
+    --- PASS: TestGoReviewMethodValueAliasCLI/h_:=_mux.HandleFunc;_alias_:=_h;_alias("GET_/v1/review_alias",_handler) (0.84s)
+    --- PASS: TestGoReviewMethodValueAliasCLI/h_:=_mux.HandleFunc;_bindReview(h,_"GET_/v1/review_alias",_handler) (0.72s)
+    --- PASS: TestGoReviewMethodValueAliasCLI/h_:=_mux.Handle;_h("/v1/review_alias",_http.NotFoundHandler()) (0.65s)
+    --- PASS: TestGoReviewMethodValueAliasCLI/child_:=_http.NewServeMux();_receiver_:=_child;_h_:=_receiver.HandleFunc;_h("GET_/v1/review_alias",_handler) (0.63s)
+=== RUN   TestGoReview405ProofCLI
+--- PASS: TestGoReview405ProofCLI (1.41s)
+=== RUN   TestGoReviewColonParameterCLI
+--- PASS: TestGoReviewColonParameterCLI (0.68s)
+=== RUN   TestGoReviewLiteralColonCLI
+--- PASS: TestGoReviewLiteralColonCLI (0.65s)
+=== RUN   TestGoReviewR1BInlineMethodlessCLI
+=== RUN   TestGoReviewR1BInlineMethodlessCLI/Handle
+=== RUN   TestGoReviewR1BInlineMethodlessCLI/HandleFunc
+--- PASS: TestGoReviewR1BInlineMethodlessCLI (0.77s)
+    --- PASS: TestGoReviewR1BInlineMethodlessCLI/Handle (0.39s)
+    --- PASS: TestGoReviewR1BInlineMethodlessCLI/HandleFunc (0.12s)
+=== RUN   TestGoReviewR1BHandle405BodyCLI
+=== RUN   TestGoReviewR1BHandle405BodyCLI/static405
+=== RUN   TestGoReviewR1BHandle405BodyCLI/first200
+=== RUN   TestGoReviewR1BHandle405BodyCLI/dynamicStatus
+--- PASS: TestGoReviewR1BHandle405BodyCLI (0.95s)
+    --- PASS: TestGoReviewR1BHandle405BodyCLI/static405 (0.45s)
+    --- PASS: TestGoReviewR1BHandle405BodyCLI/first200 (0.14s)
+    --- PASS: TestGoReviewR1BHandle405BodyCLI/dynamicStatus (0.10s)
+=== RUN   TestGoReviewR1BUnknownRangeTailCLI
+=== RUN   TestGoReviewR1BUnknownRangeTailCLI/emptyAppend
+=== RUN   TestGoReviewR1BUnknownRangeTailCLI/knownAppend
+=== RUN   TestGoReviewR1BUnknownRangeTailCLI/knownUnknownBranch
+--- PASS: TestGoReviewR1BUnknownRangeTailCLI (0.80s)
+    --- PASS: TestGoReviewR1BUnknownRangeTailCLI/emptyAppend (0.39s)
+    --- PASS: TestGoReviewR1BUnknownRangeTailCLI/knownAppend (0.10s)
+    --- PASS: TestGoReviewR1BUnknownRangeTailCLI/knownUnknownBranch (0.10s)
+=== RUN   TestThreeWayKinds
+--- PASS: TestThreeWayKinds (0.10s)
+=== RUN   TestASTAndParameterNormalization
+--- PASS: TestASTAndParameterNormalization (0.11s)
+=== RUN   TestLegacyTouchedAndStaleRatchet
+--- PASS: TestLegacyTouchedAndStaleRatchet (0.46s)
+=== RUN   TestUnresolvedNeverSilent
+--- PASS: TestUnresolvedNeverSilent (0.18s)
+=== RUN   TestInitialSeedCannotGrandfatherNewDeletion
+--- PASS: TestInitialSeedCannotGrandfatherNewDeletion (0.10s)
+=== RUN   TestDeletedBaselineCannotReseedNewDrift
+--- PASS: TestDeletedBaselineCannotReseedNewDrift (0.18s)
+=== RUN   TestBaseDirectiveAndShiftedDeletionProvenance
+--- PASS: TestBaseDirectiveAndShiftedDeletionProvenance (0.33s)
+=== RUN   TestOpaqueMethodsNeverBecomeFalseMissing
+--- PASS: TestOpaqueMethodsNeverBecomeFalseMissing (0.00s)
+=== RUN   TestBaselineGrowthMissingBaseAndShrink
+--- PASS: TestBaselineGrowthMissingBaseAndShrink (0.30s)
+=== RUN   TestMalformedJSONIsUnresolved
+--- PASS: TestMalformedJSONIsUnresolved (0.06s)
+=== RUN   TestSnapshotKeepsModuleScope
+--- PASS: TestSnapshotKeepsModuleScope (0.21s)
+=== RUN   TestMultilineUnresolvedJSONValueIsTouched
+--- PASS: TestMultilineUnresolvedJSONValueIsTouched (0.35s)
+=== RUN   TestInitialLoadedBaselineCannotHideNewDrift
+--- PASS: TestInitialLoadedBaselineCannotHideNewDrift (0.10s)
+=== RUN   TestReviewR1BGlobalNamespaceSinkRealCLI
+=== RUN   TestReviewR1BGlobalNamespaceSinkRealCLI/reached_computed_sink
+=== RUN   TestReviewR1BGlobalNamespaceSinkRealCLI/unused_computed_sink
+--- PASS: TestReviewR1BGlobalNamespaceSinkRealCLI (3.50s)
+    --- PASS: TestReviewR1BGlobalNamespaceSinkRealCLI/reached_computed_sink (1.81s)
+    --- PASS: TestReviewR1BGlobalNamespaceSinkRealCLI/unused_computed_sink (1.45s)
+=== RUN   TestReviewR1BForcedTextDiffCLI
+=== RUN   TestReviewR1BForcedTextDiffCLI/binary
+=== RUN   TestReviewR1BForcedTextDiffCLI/textconv
+=== RUN   TestReviewR1BForcedTextDiffCLI/mnemonic
+=== RUN   TestReviewR1BForcedTextDiffCLI/no-prefix
+--- PASS: TestReviewR1BForcedTextDiffCLI (2.90s)
+    --- PASS: TestReviewR1BForcedTextDiffCLI/binary (0.72s)
+    --- PASS: TestReviewR1BForcedTextDiffCLI/textconv (0.72s)
+    --- PASS: TestReviewR1BForcedTextDiffCLI/mnemonic (0.72s)
+    --- PASS: TestReviewR1BForcedTextDiffCLI/no-prefix (0.74s)
+=== RUN   TestReviewR1BDeletedUnresolvedCLI
+=== RUN   TestReviewR1BDeletedUnresolvedCLI/ordinary
+=== RUN   TestReviewR1BDeletedUnresolvedCLI/write-baseline
+--- PASS: TestReviewR1BDeletedUnresolvedCLI (1.64s)
+    --- PASS: TestReviewR1BDeletedUnresolvedCLI/ordinary (0.81s)
+    --- PASS: TestReviewR1BDeletedUnresolvedCLI/write-baseline (0.82s)
+=== RUN   TestReviewR1BDeletionFixLeavesUnrelatedUnknownCLI
+--- PASS: TestReviewR1BDeletionFixLeavesUnrelatedUnknownCLI (0.77s)
+=== RUN   TestReviewR1BDeletionCreatesSecondUnknownCLI
+--- PASS: TestReviewR1BDeletionCreatesSecondUnknownCLI (0.80s)
+=== RUN   TestReviewBFFRemovedRealCLI
+--- PASS: TestReviewBFFRemovedRealCLI (0.76s)
+=== RUN   TestReviewBFFRetargetRealCLI
+--- PASS: TestReviewBFFRetargetRealCLI (0.75s)
+=== RUN   TestReviewBFFDuplicateProducerAndJointRetirement
+=== RUN   TestReviewBFFDuplicateProducerAndJointRetirement/duplicate_producer
+=== RUN   TestReviewBFFDuplicateProducerAndJointRetirement/joint_retirement
+--- PASS: TestReviewBFFDuplicateProducerAndJointRetirement (1.54s)
+    --- PASS: TestReviewBFFDuplicateProducerAndJointRetirement/duplicate_producer (0.78s)
+    --- PASS: TestReviewBFFDuplicateProducerAndJointRetirement/joint_retirement (0.75s)
+=== RUN   TestReviewDiffHunkHeadersRealCLI
+--- PASS: TestReviewDiffHunkHeadersRealCLI (0.75s)
+=== RUN   TestReview405DecoratorFirstWriteAndShadowCLI
+=== RUN   TestReview405DecoratorFirstWriteAndShadowCLI/header_argument_commits_200
+=== RUN   TestReview405DecoratorFirstWriteAndShadowCLI/decorator_name_is_shadowed
+--- PASS: TestReview405DecoratorFirstWriteAndShadowCLI (1.34s)
+    --- PASS: TestReview405DecoratorFirstWriteAndShadowCLI/header_argument_commits_200 (0.74s)
+    --- PASS: TestReview405DecoratorFirstWriteAndShadowCLI/decorator_name_is_shadowed (0.60s)
+PASS
+ok  	livecommerce/scripts/dev/contractdrift	113.693s

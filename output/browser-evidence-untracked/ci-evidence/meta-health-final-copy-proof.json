@@ -1,0 +1,64 @@
+{
+  "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.n15TBE7b/meta-health-ui/20261009T120233.413412000",
+  "durable": "/Volumes/data/live_commerce_architecture_v1/.worktrees/browser-evidence-untracked/output/playwright/run.n15TBE7b/meta-health-ui-durable/20261009T120233.413412000",
+  "distinct_parents": true,
+  "files_byte_equal": 14,
+  "files": [
+    {
+      "file": "capabilities-zh-CN-390.png",
+      "sha256": "8d6798b2e9897e72a311cddc39b38845180ab671de28892d5fb08e91401dda9c"
+    },
+    {
+      "file": "click-ledger.json",
+      "sha256": "fd0de0cfb06a9c3afa3cb3c98d0f09032fab1bad0d8bfd05c7bb8e5586acc2e3"
+    },
+    {
+      "file": "next.log",
+      "sha256": "27ce88206b2f41bd7e497bfad2481b80b6a9f39183851cab826cbb7b2efc0034"
+    },
+    {
+      "file": "playwright.rf.config.ts",
+      "sha256": "a4960e27d2ee907ae9202a4a6cb762a17359092655a01568249f1d81979c8ec6"
+    },
+    {
+      "file": "playwright.log",
+      "sha256": "08838cb34ed4e41c8f9809cd2d7ea206a61dc5fa1c5726f43e8e3afcf23c336f"
+    },
+    {
+      "file": "blocking-en-390.png",
+      "sha256": "eb97dabe9b9464e4df24fe584a121a8f049e6efd929ffbb3ecd3fccd372f5510"
+    },
+    {
+      "file": "click-ledger.md",
+      "sha256": "01a7853444c517f9c6c3f0ee67febadc79ef9e6f0921d6de1f1f193e9c463b91"
+    },
+    {
+      "file": "capabilities-en-390.png",
+      "sha256": "c832f181178d7c70138924432117856b996fd6344fc47d53c7535b18a327606c"
+    },
+    {
+      "file": "capabilities-zh-TW-390.png",
+      "sha256": "15884d47aa43deaa7a753de33fb30063fa6ed4d19f1c3b52188fcce5b67b23af"
+    },
+    {
+      "file": "warning-en-desktop.png",
+      "sha256": "cb0b58daabde3ef5f49e99422015b0669c965c8deb602b05ceb8df63231cf6bd"
+    },
+    {
+      "file": "blocking-zh-TW-390.png",
+      "sha256": "e82834df8a2928ab280775e17f3e2d0857276ec48989f7151f6c53ab9823c04f"
+    },
+    {
+      "file": "blocking-zh-CN-390.png",
+      "sha256": "31a07579326eac61333b52730a984b6df19f0744bbffab48c7491320bf57ccdd"
+    },
+    {
+      "file": "results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "file": "viewer/next.log",
+      "sha256": "0bf5241de95e544d2d232e87a1b31464037e340d06d23693fb18b7b466b95ea4"
+    }
+  ]
+}
