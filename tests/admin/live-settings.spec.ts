@@ -317,6 +317,8 @@ test("split signed staff sees reminder result without report read and local send
     const response=await waitWrite(page,"/reminders","POST",()=>page.getByTestId("reminder-trigger").click());
     expect(response.status()).toBe(200);
     await expect(page.getByTestId("reminder-result")).toContainText("Queued 2");
+    // PR #31 review: the POST result is the only feedback without inbox:read, so follow-up/restricted counts must show.
+    await expect(page.getByTestId("reminder-result")).toContainText(/Follow-up \d+ · Restricted \d+/);
     await expect(page.getByTestId("reminder-report")).toHaveCount(0);
     await expect(page.getByTestId("sold-out-enabled")).toBeVisible();await expect(blockRow(page,f.entry)).toBeVisible();
     expect((await facts(request)).receipts.filter(r=>r.action==="remind")).toHaveLength(1);

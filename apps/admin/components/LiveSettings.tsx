@@ -194,7 +194,7 @@ export function LiveSettings({
               </button>
               {!scene && <p>{c.chooseFirst}</p>}
               {!canRemind && <p>{c.noReply}</p>}
-              {result && <p role="status" data-testid="reminder-result">{c.result}: {c.queued} {result.queued} · {c.already} {result.already_reminded} · {c.failed} {result.refused}</p>}
+              {result && <p role="status" data-testid="reminder-result">{c.result}: {c.queued} {result.queued} · {c.already} {result.already_reminded} · {c.followup} {result.followup} · {c.restricted} {result.restricted} · {c.failed} {result.refused}</p>}
               {result?.truncated && <p role="status">{c.more}</p>}
               {remindersUnavailable && <p role="status" data-testid="reminders-unavailable">{c.unavailable}</p>}
               {canReport ? (
