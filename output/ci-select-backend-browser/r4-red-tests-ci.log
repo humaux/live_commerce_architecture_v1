@@ -1,0 +1,171 @@
+✔ round 3: the real Git inventory includes a new route before git add (32.356417ms)
+✔ round 3: a new httpapi file is unclassified until explicitly covered (23.49025ms)
+✔ round 3: split packages cannot be re-widened by an ancestor lc_covers entry (9.351458ms)
+✔ round 3: stale file entries fail independently of a valid sibling package (8.477459ms)
+✔ round 3: foundation-only file coverage does not classify a transport file (7.863542ms)
+✔ every real internal package directory is classified (covered by lc_covers or BACKEND_ONLY-listed) (13.721292ms)
+✔ a new unclassified package fails the gate until covered or explicitly BACKEND_ONLY (19.999875ms)
+✔ BACKEND_ONLY_PACKAGES entries are internal packages with a real one-line reason (0.142916ms)
+✔ every browser-universe mode declares lc_covers; a Go-running one must not declare it empty (25.311292ms)
+✔ covers entries must match a real internal package directory; parent prefixes are legal, stale entries are red (19.034125ms)
+✔ round 2: a package no lc_covers entry reaches fails until SHARED or BACKEND_ONLY classifies it (mechanism, synthetic lists) (0.365083ms)
+✔ round 2 precedence: a covers entry inside BACKEND_ONLY, or a package both SHARED and BACKEND_ONLY, is a contradiction the gate must fail (0.155209ms)
+✖ round 4: the tracked derivation records the clicked bank-transfer write chain and flags no write-gap mode (25.536292ms)
+✔ round 2: the real SHARED and BACKEND_ONLY entries classify with no lc_covers entry anywhere (explicit lists suffice) (0.192917ms)
+✔ docs, contracts, deploy files and node-test dirs run foundation-shards only (1.197917ms)
+✔ node tests of deploy scripts and of the CI planner are backend-only (they cannot change a browser) (0.925917ms)
+✔ internal/ is NOT backend-only any more: a package no mode declares falls to the conservative PG rule (CI-SELECT) (2.092166ms)
+✔ a UI path adds the whole browser set, including click-sweep and visual-lint (28.439875ms)
+✔ docs-only and output-only diffs keep the single required check (foundation-shards) (0.549583ms)
+✔ internal/live/stream.go selects --browser-live-console (PR #30 root cause) (1.840375ms)
+✔ round 3: the real PR #30 diff selects live-console without the shared-httpapi explosion (16.564541ms)
+✔ round 3: live_stream transport alone selects live-console but not CVS (1.6925ms)
+✔ round 3: handler.go and unknown httpapi files remain conservative (3.425ms)
+✔ round 3: a file-level lc_covers entry is exact, not its sibling directory (3.468584ms)
+✔ round 3: a nonbrowser exact-file declaration cannot replace browser acceptance (2.058041ms)
+✖ round 4: a nonbrowser PACKAGE declaration is never browser acceptance (uniform universe guard, K3 P2) (2.528708ms)
+✖ round 4: --browser-checkout-offline covers internal/merchantorders (its spec clicks bank-transfer confirm/reject, K3 P2 example) (5.263458ms)
+✖ round 4: --browser-catalog-core and --browser-product-editor cover internal/catalog (their spec performs admin product/collection writes) (1.618292ms)
+✖ round 4: --browser-ops-polish covers the admin order-feed and finance domains OP2/OP3 read (K3 P2 example c) (1.782083ms)
+✔ internal/integrations/metareply/x.go selects --browser-live-console (PR #24 root cause) (1.620292ms)
+✔ round 2 narrowness: internal/live/stream.go does NOT select unrelated domains such as --browser-cvs (1.547041ms)
+✔ round 2 evidence: a metareply change selects exactly the modes whose harnesses drive MetaReply (live console + e2e) (2.03875ms)
+✔ round 2 narrowness: an inbox change selects the inbox modes but not the live console (1.60925ms)
+✔ round 2 SHARED_BACKEND_PACKAGES: every entry carries a reason and selects all PG browser modes (27.871791ms)
+✔ round 2 data invariant: SHARED packages are subtracted from lc_covers (they select all PG modes anyway) (1.421166ms)
+✔ round 2 BACKEND_ONLY_PACKAGES: the real cmd/worker-only entries select no browser mode (4.455125ms)
+✔ round 2: the conservative rules reach the Go-booting 48th mode (--browser-tracking-backfill) (7.815166ms)
+✔ a new migration selects every PG-fixture browser mode (the modes run on the migrated schema) (1.654666ms)
+✔ docs-only and contracts-only diffs still select no browser mode (0.077625ms)
+✔ cmd/ changes select every PG-fixture browser mode (the modes drive the binaries cmd/ builds) (1.589958ms)
+✔ shared platform packages select every PG-fixture browser mode (4.808583ms)
+✔ an internal package no mode declares selects every PG-fixture browser mode until the gate classifies it (1.688833ms)
+✔ lc_covers is registry DATA: declaring modes are selected by prefix match, non-declaring modes are not (4.567958ms)
+✔ backend changes never select the node-only browser modes (no Go harness, no PG fixture) (5.862375ms)
+✔ BACKEND_ONLY_PACKAGES is explicit classified data; listed packages select no browser mode (mechanism, synthetic list) (3.441875ms)
+✔ a registry without lc_covers data (historical source) stays maximally conservative (0.12825ms)
+✔ legacy browser_* paths still select all browsers; a known untagged foundation file stays backend-only (0.793833ms)
+✔ legacy deploy prefixes remain selected and unrelated paths do not select smoke (4.639542ms)
+✔ the browser set is release-gate's browser-mode universe minus the documented exclusions (80.027583ms)
+✔ every real browser-tagged foundation file selects registry browser modes, including non-browser names (217.171833ms)
+✔ tagged runner discovery follows registry additions, command arrays and line continuations (1.743667ms)
+✔ deploy smoke is selected for its workflow, verdict/helpers and executable test inputs (3.105333ms)
+✔ new selection never drops legacy modes or deploy for any tracked path (2269.747666ms)
+✔ CLI classifies merge-base and explicit head, including removed tags, deleted files and renames (484.335375ms)
+✔ CLI selects modes the base added after divergence when the checkout is the PR merge (PR #22 review P1) (223.039041ms)
+✔ CLI reads the merge checkout's source when the base adds a browser tag after the fork (PR #22 review P1) (223.249125ms)
+✔ CLI explicit head and stdin include tags outside the checkout and uncommitted tag removals (198.717125ms)
+✔ compound/legacy tags and unknown source are conservative; known untagged source stays backend-only (6.757ms)
+✔ explicit-head CLI derives tagged runner modes from that head's real registry (169.965916ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "架构.md" (143.583583ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "internal/示例.go" (151.377958ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "tests/foundation/plain\tname_test.go" (160.982875ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, " deploy/scripts/synthetic-smoke.sh" (158.106959ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "架构.md" (153.154875ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "internal/示例.go" (155.123208ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "tests/foundation/plain\tname_test.go" (152.243834ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, " deploy/scripts/synthetic-smoke.sh" (146.746ms)
+✔ stdin unions legacy trimming without trimming the source lookup path (82.997042ms)
+ℹ tests 68
+ℹ suites 0
+ℹ pass 63
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5389.614959
+
+✖ failing tests:
+
+test at tests/ci/backend-coverage.test.mjs:192:1
+✖ round 4: the tracked derivation records the clicked bank-transfer write chain and flags no write-gap mode (25.536292ms)
+  AssertionError [ERR_ASSERTION]: checkout-offline clicks transfer-confirm/transfer-reject (tests/admin/checkout-offline.spec.ts) -> OrderBankTransfer.tsx -> logistics-client.ts -> offline.go DecideTransfer: the ui-flow evidence must be recorded
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/tests/ci/backend-coverage.test.mjs:196:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/pr-modes.test.mjs:131:1
+✖ round 4: a nonbrowser PACKAGE declaration is never browser acceptance (uniform universe guard, K3 P2) (2.528708ms)
+  AssertionError [ERR_ASSERTION]: the universe guard must apply to package-style lc_covers entries too
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/tests/ci/pr-modes.test.mjs:134:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/pr-modes.test.mjs:145:1
+✖ round 4: --browser-checkout-offline covers internal/merchantorders (its spec clicks bank-transfer confirm/reject, K3 P2 example) (5.263458ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(planPr(["internal/merchantorders/x.go"], usage).modes.includes("--browser-checkout-offline"))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/tests/ci/pr-modes.test.mjs:146:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/pr-modes.test.mjs:149:1
+✖ round 4: --browser-catalog-core and --browser-product-editor cover internal/catalog (their spec performs admin product/collection writes) (1.618292ms)
+  AssertionError [ERR_ASSERTION]: catalog-core.spec.ts drives the products/collections UI
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/tests/ci/pr-modes.test.mjs:151:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/pr-modes.test.mjs:155:1
+✖ round 4: --browser-ops-polish covers the admin order-feed and finance domains OP2/OP3 read (K3 P2 example c) (1.782083ms)
+  AssertionError [ERR_ASSERTION]: OP2 polls the admin order feed
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/tests/ci/pr-modes.test.mjs:156:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

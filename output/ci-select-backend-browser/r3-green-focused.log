@@ -1,0 +1,382 @@
+TAP version 13
+# Subtest: round 3: a new httpapi file is unclassified until explicitly covered
+ok 1 - round 3: a new httpapi file is unclassified until explicitly covered
+  ---
+  duration_ms: 13.92725
+  type: 'test'
+  ...
+# Subtest: round 3: split packages cannot be re-widened by an ancestor lc_covers entry
+ok 2 - round 3: split packages cannot be re-widened by an ancestor lc_covers entry
+  ---
+  duration_ms: 8.71875
+  type: 'test'
+  ...
+# Subtest: round 3: stale file entries fail independently of a valid sibling package
+ok 3 - round 3: stale file entries fail independently of a valid sibling package
+  ---
+  duration_ms: 8.727792
+  type: 'test'
+  ...
+# Subtest: round 3: foundation-only file coverage does not classify a transport file
+ok 4 - round 3: foundation-only file coverage does not classify a transport file
+  ---
+  duration_ms: 8.14825
+  type: 'test'
+  ...
+# Subtest: every real internal package directory is classified (covered by lc_covers or BACKEND_ONLY-listed)
+ok 5 - every real internal package directory is classified (covered by lc_covers or BACKEND_ONLY-listed)
+  ---
+  duration_ms: 13.26175
+  type: 'test'
+  ...
+# Subtest: a new unclassified package fails the gate until covered or explicitly BACKEND_ONLY
+ok 6 - a new unclassified package fails the gate until covered or explicitly BACKEND_ONLY
+  ---
+  duration_ms: 19.713875
+  type: 'test'
+  ...
+# Subtest: BACKEND_ONLY_PACKAGES entries are internal packages with a real one-line reason
+ok 7 - BACKEND_ONLY_PACKAGES entries are internal packages with a real one-line reason
+  ---
+  duration_ms: 0.165542
+  type: 'test'
+  ...
+# Subtest: every browser-universe mode declares lc_covers; a Go-running one must not declare it empty
+ok 8 - every browser-universe mode declares lc_covers; a Go-running one must not declare it empty
+  ---
+  duration_ms: 25.667792
+  type: 'test'
+  ...
+# Subtest: covers entries must match a real internal package directory; parent prefixes are legal, stale entries are red
+ok 9 - covers entries must match a real internal package directory; parent prefixes are legal, stale entries are red
+  ---
+  duration_ms: 19.87675
+  type: 'test'
+  ...
+# Subtest: round 2: a package no lc_covers entry reaches fails until SHARED or BACKEND_ONLY classifies it (mechanism, synthetic lists)
+ok 10 - round 2: a package no lc_covers entry reaches fails until SHARED or BACKEND_ONLY classifies it (mechanism, synthetic lists)
+  ---
+  duration_ms: 0.432125
+  type: 'test'
+  ...
+# Subtest: round 2 precedence: a covers entry inside BACKEND_ONLY, or a package both SHARED and BACKEND_ONLY, is a contradiction the gate must fail
+ok 11 - round 2 precedence: a covers entry inside BACKEND_ONLY, or a package both SHARED and BACKEND_ONLY, is a contradiction the gate must fail
+  ---
+  duration_ms: 0.142792
+  type: 'test'
+  ...
+# Subtest: round 2: the real SHARED and BACKEND_ONLY entries classify with no lc_covers entry anywhere (explicit lists suffice)
+ok 12 - round 2: the real SHARED and BACKEND_ONLY entries classify with no lc_covers entry anywhere (explicit lists suffice)
+  ---
+  duration_ms: 0.09525
+  type: 'test'
+  ...
+# Subtest: docs, contracts, deploy files and node-test dirs run foundation-shards only
+ok 13 - docs, contracts, deploy files and node-test dirs run foundation-shards only
+  ---
+  duration_ms: 0.885875
+  type: 'test'
+  ...
+# Subtest: node tests of deploy scripts and of the CI planner are backend-only (they cannot change a browser)
+ok 14 - node tests of deploy scripts and of the CI planner are backend-only (they cannot change a browser)
+  ---
+  duration_ms: 0.950333
+  type: 'test'
+  ...
+# Subtest: internal/ is NOT backend-only any more: a package no mode declares falls to the conservative PG rule (CI-SELECT)
+ok 15 - internal/ is NOT backend-only any more: a package no mode declares falls to the conservative PG rule (CI-SELECT)
+  ---
+  duration_ms: 2.355208
+  type: 'test'
+  ...
+# Subtest: a UI path adds the whole browser set, including click-sweep and visual-lint
+ok 16 - a UI path adds the whole browser set, including click-sweep and visual-lint
+  ---
+  duration_ms: 24.520875
+  type: 'test'
+  ...
+# Subtest: docs-only and output-only diffs keep the single required check (foundation-shards)
+ok 17 - docs-only and output-only diffs keep the single required check (foundation-shards)
+  ---
+  duration_ms: 0.405208
+  type: 'test'
+  ...
+# Subtest: internal/live/stream.go selects --browser-live-console (PR \#30 root cause)
+ok 18 - internal/live/stream.go selects --browser-live-console (PR \#30 root cause)
+  ---
+  duration_ms: 1.725917
+  type: 'test'
+  ...
+# Subtest: round 3: the real PR \#30 diff selects live-console without the shared-httpapi explosion
+ok 19 - round 3: the real PR \#30 diff selects live-console without the shared-httpapi explosion
+  ---
+  duration_ms: 23.297167
+  type: 'test'
+  ...
+# Subtest: round 3: live_stream transport alone selects live-console but not CVS
+ok 20 - round 3: live_stream transport alone selects live-console but not CVS
+  ---
+  duration_ms: 1.748792
+  type: 'test'
+  ...
+# Subtest: round 3: handler.go and unknown httpapi files remain conservative
+ok 21 - round 3: handler.go and unknown httpapi files remain conservative
+  ---
+  duration_ms: 4.06675
+  type: 'test'
+  ...
+# Subtest: round 3: a file-level lc_covers entry is exact, not its sibling directory
+ok 22 - round 3: a file-level lc_covers entry is exact, not its sibling directory
+  ---
+  duration_ms: 3.625292
+  type: 'test'
+  ...
+# Subtest: round 3: a nonbrowser exact-file declaration cannot replace browser acceptance
+ok 23 - round 3: a nonbrowser exact-file declaration cannot replace browser acceptance
+  ---
+  duration_ms: 1.796459
+  type: 'test'
+  ...
+# Subtest: internal/integrations/metareply/x.go selects --browser-live-console (PR \#24 root cause)
+ok 24 - internal/integrations/metareply/x.go selects --browser-live-console (PR \#24 root cause)
+  ---
+  duration_ms: 1.834041
+  type: 'test'
+  ...
+# Subtest: round 2 narrowness: internal/live/stream.go does NOT select unrelated domains such as --browser-cvs
+ok 25 - round 2 narrowness: internal/live/stream.go does NOT select unrelated domains such as --browser-cvs
+  ---
+  duration_ms: 1.620083
+  type: 'test'
+  ...
+# Subtest: round 2 evidence: a metareply change selects exactly the modes whose harnesses drive MetaReply (live console + e2e)
+ok 26 - round 2 evidence: a metareply change selects exactly the modes whose harnesses drive MetaReply (live console + e2e)
+  ---
+  duration_ms: 1.620792
+  type: 'test'
+  ...
+# Subtest: round 2 narrowness: an inbox change selects the inbox modes but not the live console
+ok 27 - round 2 narrowness: an inbox change selects the inbox modes but not the live console
+  ---
+  duration_ms: 1.700958
+  type: 'test'
+  ...
+# Subtest: round 2 SHARED_BACKEND_PACKAGES: every entry carries a reason and selects all PG browser modes
+ok 28 - round 2 SHARED_BACKEND_PACKAGES: every entry carries a reason and selects all PG browser modes
+  ---
+  duration_ms: 27.119791
+  type: 'test'
+  ...
+# Subtest: round 2 data invariant: SHARED packages are subtracted from lc_covers (they select all PG modes anyway)
+ok 29 - round 2 data invariant: SHARED packages are subtracted from lc_covers (they select all PG modes anyway)
+  ---
+  duration_ms: 1.432542
+  type: 'test'
+  ...
+# Subtest: round 2 BACKEND_ONLY_PACKAGES: the real cmd/worker-only entries select no browser mode
+ok 30 - round 2 BACKEND_ONLY_PACKAGES: the real cmd/worker-only entries select no browser mode
+  ---
+  duration_ms: 4.709083
+  type: 'test'
+  ...
+# Subtest: round 2: the conservative rules reach the Go-booting 48th mode (--browser-tracking-backfill)
+ok 31 - round 2: the conservative rules reach the Go-booting 48th mode (--browser-tracking-backfill)
+  ---
+  duration_ms: 7.837125
+  type: 'test'
+  ...
+# Subtest: a new migration selects every PG-fixture browser mode (the modes run on the migrated schema)
+ok 32 - a new migration selects every PG-fixture browser mode (the modes run on the migrated schema)
+  ---
+  duration_ms: 1.5505
+  type: 'test'
+  ...
+# Subtest: docs-only and contracts-only diffs still select no browser mode
+ok 33 - docs-only and contracts-only diffs still select no browser mode
+  ---
+  duration_ms: 0.06575
+  type: 'test'
+  ...
+# Subtest: cmd/ changes select every PG-fixture browser mode (the modes drive the binaries cmd/ builds)
+ok 34 - cmd/ changes select every PG-fixture browser mode (the modes drive the binaries cmd/ builds)
+  ---
+  duration_ms: 1.539209
+  type: 'test'
+  ...
+# Subtest: shared platform packages select every PG-fixture browser mode
+ok 35 - shared platform packages select every PG-fixture browser mode
+  ---
+  duration_ms: 5.092958
+  type: 'test'
+  ...
+# Subtest: an internal package no mode declares selects every PG-fixture browser mode until the gate classifies it
+ok 36 - an internal package no mode declares selects every PG-fixture browser mode until the gate classifies it
+  ---
+  duration_ms: 1.82975
+  type: 'test'
+  ...
+# Subtest: lc_covers is registry DATA: declaring modes are selected by prefix match, non-declaring modes are not
+ok 37 - lc_covers is registry DATA: declaring modes are selected by prefix match, non-declaring modes are not
+  ---
+  duration_ms: 5.321541
+  type: 'test'
+  ...
+# Subtest: backend changes never select the node-only browser modes (no Go harness, no PG fixture)
+ok 38 - backend changes never select the node-only browser modes (no Go harness, no PG fixture)
+  ---
+  duration_ms: 6.558666
+  type: 'test'
+  ...
+# Subtest: BACKEND_ONLY_PACKAGES is explicit classified data; listed packages select no browser mode (mechanism, synthetic list)
+ok 39 - BACKEND_ONLY_PACKAGES is explicit classified data; listed packages select no browser mode (mechanism, synthetic list)
+  ---
+  duration_ms: 3.664875
+  type: 'test'
+  ...
+# Subtest: a registry without lc_covers data (historical source) stays maximally conservative
+ok 40 - a registry without lc_covers data (historical source) stays maximally conservative
+  ---
+  duration_ms: 0.135083
+  type: 'test'
+  ...
+# Subtest: legacy browser_* paths still select all browsers; a known untagged foundation file stays backend-only
+ok 41 - legacy browser_* paths still select all browsers; a known untagged foundation file stays backend-only
+  ---
+  duration_ms: 0.885667
+  type: 'test'
+  ...
+# Subtest: legacy deploy prefixes remain selected and unrelated paths do not select smoke
+ok 42 - legacy deploy prefixes remain selected and unrelated paths do not select smoke
+  ---
+  duration_ms: 4.740458
+  type: 'test'
+  ...
+# Subtest: the browser set is release-gate's browser-mode universe minus the documented exclusions
+ok 43 - the browser set is release-gate's browser-mode universe minus the documented exclusions
+  ---
+  duration_ms: 86.180416
+  type: 'test'
+  ...
+# Subtest: every real browser-tagged foundation file selects registry browser modes, including non-browser names
+ok 44 - every real browser-tagged foundation file selects registry browser modes, including non-browser names
+  ---
+  duration_ms: 102.633709
+  type: 'test'
+  ...
+# Subtest: tagged runner discovery follows registry additions, command arrays and line continuations
+ok 45 - tagged runner discovery follows registry additions, command arrays and line continuations
+  ---
+  duration_ms: 1.763291
+  type: 'test'
+  ...
+# Subtest: deploy smoke is selected for its workflow, verdict/helpers and executable test inputs
+ok 46 - deploy smoke is selected for its workflow, verdict/helpers and executable test inputs
+  ---
+  duration_ms: 3.243042
+  type: 'test'
+  ...
+# Subtest: new selection never drops legacy modes or deploy for any tracked path
+ok 47 - new selection never drops legacy modes or deploy for any tracked path
+  ---
+  duration_ms: 2358.458
+  type: 'test'
+  ...
+# Subtest: CLI classifies merge-base and explicit head, including removed tags, deleted files and renames
+ok 48 - CLI classifies merge-base and explicit head, including removed tags, deleted files and renames
+  ---
+  duration_ms: 441.954709
+  type: 'test'
+  ...
+# Subtest: CLI selects modes the base added after divergence when the checkout is the PR merge (PR \#22 review P1)
+ok 49 - CLI selects modes the base added after divergence when the checkout is the PR merge (PR \#22 review P1)
+  ---
+  duration_ms: 246.113625
+  type: 'test'
+  ...
+# Subtest: CLI reads the merge checkout's source when the base adds a browser tag after the fork (PR \#22 review P1)
+ok 50 - CLI reads the merge checkout's source when the base adds a browser tag after the fork (PR \#22 review P1)
+  ---
+  duration_ms: 438.739125
+  type: 'test'
+  ...
+# Subtest: CLI explicit head and stdin include tags outside the checkout and uncommitted tag removals
+ok 51 - CLI explicit head and stdin include tags outside the checkout and uncommitted tag removals
+  ---
+  duration_ms: 299.93225
+  type: 'test'
+  ...
+# Subtest: compound/legacy tags and unknown source are conservative; known untagged source stays backend-only
+ok 52 - compound/legacy tags and unknown source are conservative; known untagged source stays backend-only
+  ---
+  duration_ms: 7.271209
+  type: 'test'
+  ...
+# Subtest: explicit-head CLI derives tagged runner modes from that head's real registry
+ok 53 - explicit-head CLI derives tagged runner modes from that head's real registry
+  ---
+  duration_ms: 175.951
+  type: 'test'
+  ...
+# Subtest: real Git CLI preserves legacy selection: quotePath=true, "架构.md"
+ok 54 - real Git CLI preserves legacy selection: quotePath=true, "架构.md"
+  ---
+  duration_ms: 150.938042
+  type: 'test'
+  ...
+# Subtest: real Git CLI preserves legacy selection: quotePath=true, "internal/示例.go"
+ok 55 - real Git CLI preserves legacy selection: quotePath=true, "internal/示例.go"
+  ---
+  duration_ms: 153.171291
+  type: 'test'
+  ...
+# Subtest: real Git CLI preserves legacy selection: quotePath=true, "tests/foundation/plain\\tname_test.go"
+ok 56 - real Git CLI preserves legacy selection: quotePath=true, "tests/foundation/plain\\tname_test.go"
+  ---
+  duration_ms: 162.050583
+  type: 'test'
+  ...
+# Subtest: real Git CLI preserves legacy selection: quotePath=true, " deploy/scripts/synthetic-smoke.sh"
+ok 57 - real Git CLI preserves legacy selection: quotePath=true, " deploy/scripts/synthetic-smoke.sh"
+  ---
+  duration_ms: 150.832709
+  type: 'test'
+  ...
+# Subtest: real Git CLI preserves legacy selection: quotePath=false, "架构.md"
+ok 58 - real Git CLI preserves legacy selection: quotePath=false, "架构.md"
+  ---
+  duration_ms: 203.084292
+  type: 'test'
+  ...
+# Subtest: real Git CLI preserves legacy selection: quotePath=false, "internal/示例.go"
+ok 59 - real Git CLI preserves legacy selection: quotePath=false, "internal/示例.go"
+  ---
+  duration_ms: 145.471291
+  type: 'test'
+  ...
+# Subtest: real Git CLI preserves legacy selection: quotePath=false, "tests/foundation/plain\\tname_test.go"
+ok 60 - real Git CLI preserves legacy selection: quotePath=false, "tests/foundation/plain\\tname_test.go"
+  ---
+  duration_ms: 154.92475
+  type: 'test'
+  ...
+# Subtest: real Git CLI preserves legacy selection: quotePath=false, " deploy/scripts/synthetic-smoke.sh"
+ok 61 - real Git CLI preserves legacy selection: quotePath=false, " deploy/scripts/synthetic-smoke.sh"
+  ---
+  duration_ms: 151.996125
+  type: 'test'
+  ...
+# Subtest: stdin unions legacy trimming without trimming the source lookup path
+ok 62 - stdin unions legacy trimming without trimming the source lookup path
+  ---
+  duration_ms: 89.617333
+  type: 'test'
+  ...
+1..62
+# tests 62
+# suites 0
+# pass 62
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5720.659416

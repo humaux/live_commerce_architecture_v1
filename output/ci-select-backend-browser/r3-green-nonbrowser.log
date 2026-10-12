@@ -1,0 +1,22 @@
+TAP version 13
+# Subtest: round 3: foundation-only file coverage does not classify a transport file
+ok 1 - round 3: foundation-only file coverage does not classify a transport file
+  ---
+  duration_ms: 12.237583
+  type: 'test'
+  ...
+# Subtest: round 3: a nonbrowser exact-file declaration cannot replace browser acceptance
+ok 2 - round 3: a nonbrowser exact-file declaration cannot replace browser acceptance
+  ---
+  duration_ms: 2.925625
+  type: 'test'
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 2
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 50.643583

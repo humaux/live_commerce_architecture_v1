@@ -1,0 +1,228 @@
+--browser-admin-legacy: +30 -0
+  added:   internal/ads internal/claims internal/httpapi/ads.go internal/httpapi/ads_test.go internal/httpapi/blocklist.go internal/httpapi/blocklist_test.go internal/httpapi/claimsource.go internal/httpapi/claimsource_test.go internal/httpapi/customer_historical.go internal/httpapi/customer_tags.go internal/httpapi/customer_tags_test.go internal/httpapi/customers.go internal/httpapi/customers_test.go internal/httpapi/cvs.go internal/httpapi/cvs_test.go internal/httpapi/for_buyer_test.go internal/httpapi/keyword_tools.go internal/httpapi/keyword_tools_test.go internal/httpapi/live_console.go internal/httpapi/live_console_test.go internal/httpapi/live_lifecycle.go internal/httpapi/live_lifecycle_test.go internal/httpapi/merchanttools.go internal/httpapi/merchanttools_test.go internal/httpapi/meta_connect.go internal/httpapi/meta_health.go internal/httpapi/settings_discovery.go internal/inventory internal/metaconnect internal/pricing
+--browser-ads-attribution: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-buyer: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-buyer-comms: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-card-payments: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-catalog-core: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-catalog-media: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-checkout-offline: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-claim-checkout: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-click-sweep: +2 -0
+  added:   internal/integrations/shipping/ecpay/ecpayroute internal/integrations/shipping/ecpay/ecpaytest
+--browser-customers-billing: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-cvs: +5 -0
+  added:   internal/httpapi/operations.go internal/httpapi/operations_test.go internal/integrations/core internal/integrations/shipping/ecpay/ecpayroute internal/inventory
+--browser-design: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-e2e: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-home-cod: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-identity: +98 -0
+  added:   internal/ads internal/billing internal/catalog internal/claims internal/csvguard internal/customers internal/design internal/fulfillment internal/httpapi/ads.go internal/httpapi/ads_test.go internal/httpapi/billing.go internal/httpapi/billing_test.go internal/httpapi/blocklist.go internal/httpapi/blocklist_test.go internal/httpapi/claimsource.go internal/httpapi/claimsource_test.go internal/httpapi/cod.go internal/httpapi/collections.go internal/httpapi/customer_historical.go internal/httpapi/customer_tags.go internal/httpapi/customer_tags_test.go internal/httpapi/customers.go internal/httpapi/customers_test.go internal/httpapi/cvs.go internal/httpapi/cvs_test.go internal/httpapi/design.go internal/httpapi/design_test.go internal/httpapi/finance.go internal/httpapi/finance_test.go internal/httpapi/for_buyer_test.go internal/httpapi/images.go internal/httpapi/images_test.go internal/httpapi/imports.go internal/httpapi/imports_test.go internal/httpapi/inbox.go internal/httpapi/inbox_send.go internal/httpapi/inbox_send_test.go internal/httpapi/inbox_test.go internal/httpapi/keyword_tools.go internal/httpapi/keyword_tools_test.go internal/httpapi/live_console.go internal/httpapi/live_console_test.go internal/httpapi/live_flow.go internal/httpapi/live_flow_test.go internal/httpapi/live_lifecycle.go internal/httpapi/live_lifecycle_test.go internal/httpapi/live_stream.go internal/httpapi/live_stream_test.go internal/httpapi/merchanttools.go internal/httpapi/merchanttools_test.go internal/httpapi/meta_connect.go internal/httpapi/meta_health.go internal/httpapi/notify.go internal/httpapi/offline.go internal/httpapi/orders.go internal/httpapi/orders_test.go internal/httpapi/payment_card.go internal/httpapi/payment_card_test.go internal/httpapi/picklist.go internal/httpapi/picklist_test.go internal/httpapi/promotions.go internal/httpapi/refunds.go internal/httpapi/refunds_env_test.go internal/httpapi/refunds_test.go internal/httpapi/reminders.go internal/httpapi/reminders_test.go internal/httpapi/reports.go internal/httpapi/reports_test.go internal/httpapi/returns.go internal/httpapi/returns_test.go internal/httpapi/settings_discovery.go internal/httpapi/settlements.go internal/httpapi/settlements_test.go internal/httpapi/storefront.go internal/httpapi/storefront_test.go internal/httpapi/templates.go internal/httpapi/templates_test.go internal/inbox internal/inventory internal/jobqueue internal/live internal/merchantorders internal/merchanttools internal/metaconnect internal/migrationimport internal/msgtemplates internal/notify internal/payments internal/payments/platformstripe internal/payments/settlement internal/pricing internal/promotions internal/reporting internal/returns internal/storefrontadmin internal/storefrontdomains internal/storehandles internal/twcity
+--browser-live-claims: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-manual-order: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-merchant-buyer: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-merchant-orders-bff: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-merchant-orders-ui: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-meta-ads: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-meta-connect: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-meta-health-ui: +14 -0
+  added:   internal/ads internal/catalog internal/csvguard internal/customers internal/httpapi/collections.go internal/httpapi/finance.go internal/httpapi/finance_test.go internal/httpapi/images.go internal/httpapi/images_test.go internal/httpapi/reports.go internal/httpapi/reports_test.go internal/mail internal/reporting internal/twcity
+--browser-migration-import: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-ops-polish: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-order: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-payment: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-product-editor: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-product-media-v2: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-promotions: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-refund-fulfilment: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-reports: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-returns-ui: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-store-domains: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-storefront: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-storefront-publish: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-studio-bff: +0 -1
+  removed: internal/integrations/shipping/ecpay
+  justified: the only removal is internal/integrations/shipping/ecpay — round 4 spread it via the consumer-import zero-join (no mode named it directly); round 5's tcvEnv OWN attribution gives the four modes that really boot the dispatcher (cvs, click-sweep, visual-lint, webkit) direct go-fixture-import evidence, retiring the zero-count join by its own rule. See REMOVAL_NOTES in r5-growth-report.mjs for the full evidence.
+--browser-tracking-backfill: +40 -0
+  added:   internal/ads internal/catalog internal/csvguard internal/customers internal/fulfillment internal/httpapi/ads.go internal/httpapi/ads_test.go internal/httpapi/cod.go internal/httpapi/collections.go internal/httpapi/finance.go internal/httpapi/finance_test.go internal/httpapi/for_buyer_test.go internal/httpapi/images.go internal/httpapi/images_test.go internal/httpapi/live_console.go internal/httpapi/live_console_test.go internal/httpapi/meta_connect.go internal/httpapi/meta_health.go internal/httpapi/offline.go internal/httpapi/orders.go internal/httpapi/orders_test.go internal/httpapi/parcels.go internal/httpapi/parcels_test.go internal/httpapi/picklist.go internal/httpapi/picklist_test.go internal/httpapi/refunds.go internal/httpapi/refunds_env_test.go internal/httpapi/refunds_test.go internal/httpapi/reports.go internal/httpapi/reports_test.go internal/httpapi/returns.go internal/httpapi/returns_test.go internal/httpapi/settings_discovery.go internal/httpapi/shipments.go internal/httpapi/shipments_test.go internal/merchantorders internal/metaconnect internal/reporting internal/returns internal/twcity
+--browser-visual-lint: +2 -0
+  added:   internal/integrations/shipping/ecpay/ecpayroute internal/integrations/shipping/ecpay/ecpaytest
+--browser-webkit: +4 -0
+  added:   internal/integrations/shipping/ecpay/ecpayroute internal/returns internal/storefrontadmin internal/storehandles
+
+per-package mode-count deltas (old -> new):
+  internal/ads: 37 -> 41 (+4)
+  internal/billing: 12 -> 13 (+1)
+  internal/catalog: 34 -> 37 (+3)
+  internal/claims: 45 -> 47 (+2)
+  internal/csvguard: 34 -> 37 (+3)
+  internal/customers: 28 -> 31 (+3)
+  internal/design: 25 -> 26 (+1)
+  internal/fulfillment: 32 -> 34 (+2)
+  internal/httpapi/ads.go: 38 -> 41 (+3)
+  internal/httpapi/ads_test.go: 38 -> 41 (+3)
+  internal/httpapi/billing.go: 12 -> 13 (+1)
+  internal/httpapi/billing_test.go: 12 -> 13 (+1)
+  internal/httpapi/blocklist.go: 45 -> 47 (+2)
+  internal/httpapi/blocklist_test.go: 45 -> 47 (+2)
+  internal/httpapi/claimsource.go: 45 -> 47 (+2)
+  internal/httpapi/claimsource_test.go: 45 -> 47 (+2)
+  internal/httpapi/cod.go: 30 -> 32 (+2)
+  internal/httpapi/collections.go: 34 -> 37 (+3)
+  internal/httpapi/customer_historical.go: 45 -> 47 (+2)
+  internal/httpapi/customer_tags.go: 45 -> 47 (+2)
+  internal/httpapi/customer_tags_test.go: 45 -> 47 (+2)
+  internal/httpapi/customers.go: 45 -> 47 (+2)
+  internal/httpapi/customers_test.go: 45 -> 47 (+2)
+  internal/httpapi/cvs.go: 45 -> 47 (+2)
+  internal/httpapi/cvs_test.go: 45 -> 47 (+2)
+  internal/httpapi/design.go: 25 -> 26 (+1)
+  internal/httpapi/design_test.go: 25 -> 26 (+1)
+  internal/httpapi/finance.go: 20 -> 23 (+3)
+  internal/httpapi/finance_test.go: 20 -> 23 (+3)
+  internal/httpapi/for_buyer_test.go: 40 -> 43 (+3)
+  internal/httpapi/images.go: 38 -> 41 (+3)
+  internal/httpapi/images_test.go: 38 -> 41 (+3)
+  internal/httpapi/imports.go: 10 -> 11 (+1)
+  internal/httpapi/imports_test.go: 10 -> 11 (+1)
+  internal/httpapi/inbox.go: 25 -> 26 (+1)
+  internal/httpapi/inbox_send.go: 25 -> 26 (+1)
+  internal/httpapi/inbox_send_test.go: 25 -> 26 (+1)
+  internal/httpapi/inbox_test.go: 25 -> 26 (+1)
+  internal/httpapi/keyword_tools.go: 45 -> 47 (+2)
+  internal/httpapi/keyword_tools_test.go: 45 -> 47 (+2)
+  internal/httpapi/live_console.go: 40 -> 43 (+3)
+  internal/httpapi/live_console_test.go: 40 -> 43 (+3)
+  internal/httpapi/live_flow.go: 20 -> 21 (+1)
+  internal/httpapi/live_flow_test.go: 20 -> 21 (+1)
+  internal/httpapi/live_lifecycle.go: 46 -> 48 (+2)
+  internal/httpapi/live_lifecycle_test.go: 46 -> 48 (+2)
+  internal/httpapi/live_stream.go: 25 -> 26 (+1)
+  internal/httpapi/live_stream_test.go: 25 -> 26 (+1)
+  internal/httpapi/merchanttools.go: 45 -> 47 (+2)
+  internal/httpapi/merchanttools_test.go: 45 -> 47 (+2)
+  internal/httpapi/meta_connect.go: 38 -> 41 (+3)
+  internal/httpapi/meta_health.go: 38 -> 41 (+3)
+  internal/httpapi/notify.go: 10 -> 11 (+1)
+  internal/httpapi/offline.go: 36 -> 38 (+2)
+  internal/httpapi/operations.go: 17 -> 18 (+1)
+  internal/httpapi/operations_test.go: 17 -> 18 (+1)
+  internal/httpapi/orders.go: 30 -> 32 (+2)
+  internal/httpapi/orders_test.go: 30 -> 32 (+2)
+  internal/httpapi/parcels.go: 39 -> 40 (+1)
+  internal/httpapi/parcels_test.go: 39 -> 40 (+1)
+  internal/httpapi/payment_card.go: 14 -> 15 (+1)
+  internal/httpapi/payment_card_test.go: 14 -> 15 (+1)
+  internal/httpapi/picklist.go: 37 -> 39 (+2)
+  internal/httpapi/picklist_test.go: 37 -> 39 (+2)
+  internal/httpapi/promotions.go: 31 -> 32 (+1)
+  internal/httpapi/refunds.go: 30 -> 32 (+2)
+  internal/httpapi/refunds_env_test.go: 30 -> 32 (+2)
+  internal/httpapi/refunds_test.go: 30 -> 32 (+2)
+  internal/httpapi/reminders.go: 18 -> 19 (+1)
+  internal/httpapi/reminders_test.go: 18 -> 19 (+1)
+  internal/httpapi/reports.go: 20 -> 23 (+3)
+  internal/httpapi/reports_test.go: 20 -> 23 (+3)
+  internal/httpapi/returns.go: 32 -> 34 (+2)
+  internal/httpapi/returns_test.go: 32 -> 34 (+2)
+  internal/httpapi/settings_discovery.go: 32 -> 35 (+3)
+  internal/httpapi/settlements.go: 14 -> 15 (+1)
+  internal/httpapi/settlements_test.go: 14 -> 15 (+1)
+  internal/httpapi/shipments.go: 39 -> 40 (+1)
+  internal/httpapi/shipments_test.go: 39 -> 40 (+1)
+  internal/httpapi/storefront.go: 25 -> 26 (+1)
+  internal/httpapi/storefront_test.go: 25 -> 26 (+1)
+  internal/httpapi/templates.go: 12 -> 13 (+1)
+  internal/httpapi/templates_test.go: 12 -> 13 (+1)
+  internal/inbox: 14 -> 15 (+1)
+  internal/integrations/core: 17 -> 18 (+1)
+  internal/integrations/shipping/ecpay: 37 -> 4 (-33)
+  internal/integrations/shipping/ecpay/ecpayroute: 0 -> 4 (+4)
+  internal/integrations/shipping/ecpay/ecpaytest: 2 -> 4 (+2)
+  internal/inventory: 22 -> 25 (+3)
+  internal/jobqueue: 36 -> 37 (+1)
+  internal/live: 20 -> 21 (+1)
+  internal/mail: 39 -> 40 (+1)
+  internal/merchantorders: 30 -> 32 (+2)
+  internal/merchanttools: 13 -> 14 (+1)
+  internal/metaconnect: 38 -> 41 (+3)
+  internal/migrationimport: 10 -> 11 (+1)
+  internal/msgtemplates: 12 -> 13 (+1)
+  internal/notify: 10 -> 11 (+1)
+  internal/payments: 14 -> 15 (+1)
+  internal/payments/platformstripe: 9 -> 10 (+1)
+  internal/payments/settlement: 9 -> 10 (+1)
+  internal/pricing: 14 -> 16 (+2)
+  internal/promotions: 31 -> 32 (+1)
+  internal/reporting: 20 -> 23 (+3)
+  internal/returns: 21 -> 24 (+3)
+  internal/storefrontadmin: 19 -> 21 (+2)
+  internal/storefrontdomains: 22 -> 23 (+1)
+  internal/storehandles: 19 -> 21 (+2)
+  internal/twcity: 28 -> 31 (+3)
+
+modes grew/changed: 41/51

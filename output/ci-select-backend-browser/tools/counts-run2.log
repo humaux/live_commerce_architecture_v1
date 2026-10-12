@@ -1,0 +1,16 @@
+pr-30 b1bfbeb3 (internal/live/stream.go + internal/httpapi/live_stream.go): files=11 -> modes=49 (browser=48, backend-driven=48, --browser-live-console=true); OLD planner browser modes=0
+pr-24 3034c407 (internal/integrations/metareply + meta/oauth): files=68 -> modes=49 (browser=48, backend-driven=48, --browser-live-console=true); OLD planner browser modes=0
+internal/live/stream.go (mandated case 1): files=1 -> modes=49 (browser=48, backend-driven=48, --browser-live-console=true); OLD planner browser modes=0
+internal/integrations/metareply/x.go (mandated case 2): files=1 -> modes=49 (browser=48, backend-driven=48, --browser-live-console=true); OLD planner browser modes=0
+migrations/0169_x.sql (mandated case 3): files=1 -> modes=48 (browser=47, backend-driven=47, --browser-live-console=true); OLD planner browser modes=0
+docs+contracts only (mandated case 4): files=2 -> modes=1 (browser=0, backend-driven=0, --browser-live-console=false); OLD planner browser modes=0
+universe: browser=51 pg=47 go-seeded=48 backend-only-listed=0
+✔ selection counts (65.084209ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 116.758792

@@ -1,0 +1,265 @@
+✖ round 3: a new httpapi file is unclassified until explicitly covered (2.921291ms)
+✖ round 3: split packages cannot be re-widened by an ancestor lc_covers entry (0.165166ms)
+✖ round 3: stale file entries fail independently of a valid sibling package (0.10925ms)
+✔ every real internal package directory is classified (covered by lc_covers or BACKEND_ONLY-listed) (22.226792ms)
+✔ a new unclassified package fails the gate until covered or explicitly BACKEND_ONLY (14.169875ms)
+✔ BACKEND_ONLY_PACKAGES entries are internal packages with a real one-line reason (0.1465ms)
+✔ every browser-universe mode declares lc_covers; a Go-running one must not declare it empty (16.281166ms)
+✔ covers entries must match a real internal package directory; parent prefixes are legal, stale entries are red (11.629875ms)
+✔ round 2: a package no lc_covers entry reaches fails until SHARED or BACKEND_ONLY classifies it (mechanism, synthetic lists) (0.42575ms)
+✔ round 2 precedence: a covers entry inside BACKEND_ONLY, or a package both SHARED and BACKEND_ONLY, is a contradiction the gate must fail (0.182833ms)
+✔ round 2: the real SHARED and BACKEND_ONLY entries classify with no lc_covers entry anywhere (explicit lists suffice) (0.112958ms)
+✔ docs, contracts, deploy files and node-test dirs run foundation-shards only (1.205167ms)
+✔ node tests of deploy scripts and of the CI planner are backend-only (they cannot change a browser) (0.697875ms)
+✔ internal/ is NOT backend-only any more: a package no mode declares falls to the conservative PG rule (CI-SELECT) (1.876875ms)
+✔ a UI path adds the whole browser set, including click-sweep and visual-lint (15.613083ms)
+✔ docs-only and output-only diffs keep the single required check (foundation-shards) (0.3545ms)
+✔ internal/live/stream.go selects --browser-live-console (PR #30 root cause) (1.125ms)
+✖ round 3: the real PR #30 diff selects live-console without the shared-httpapi explosion (49.018917ms)
+✖ round 3: live_stream transport alone selects live-console but not CVS (3.762584ms)
+✔ round 3: handler.go and unknown httpapi files remain conservative (1.760709ms)
+✖ round 3: a file-level lc_covers entry is exact, not its sibling directory (1.58875ms)
+✔ internal/integrations/metareply/x.go selects --browser-live-console (PR #24 root cause) (1.109625ms)
+✔ round 2 narrowness: internal/live/stream.go does NOT select unrelated domains such as --browser-cvs (0.910542ms)
+✔ round 2 evidence: a metareply change selects exactly the modes whose harnesses drive MetaReply (live console + e2e) (0.935583ms)
+✔ round 2 narrowness: an inbox change selects the inbox modes but not the live console (0.85775ms)
+✔ round 2 SHARED_BACKEND_PACKAGES: every entry carries a reason and selects all PG browser modes (8.053875ms)
+✔ round 2 data invariant: SHARED packages are subtracted from lc_covers (they select all PG modes anyway) (0.627042ms)
+✔ round 2 BACKEND_ONLY_PACKAGES: the real cmd/worker-only entries select no browser mode (2.427458ms)
+✔ round 2: the conservative rules reach the Go-booting 48th mode (--browser-tracking-backfill) (4.368ms)
+✔ a new migration selects every PG-fixture browser mode (the modes run on the migrated schema) (1.143875ms)
+✔ docs-only and contracts-only diffs still select no browser mode (0.073167ms)
+✔ cmd/ changes select every PG-fixture browser mode (the modes drive the binaries cmd/ builds) (0.891833ms)
+✔ shared platform packages select every PG-fixture browser mode (2.665875ms)
+✔ an internal package no mode declares selects every PG-fixture browser mode until the gate classifies it (0.913125ms)
+✔ lc_covers is registry DATA: declaring modes are selected by prefix match, non-declaring modes are not (2.708042ms)
+✔ backend changes never select the node-only browser modes (no Go harness, no PG fixture) (3.441709ms)
+✔ BACKEND_ONLY_PACKAGES is explicit classified data; listed packages select no browser mode (mechanism, synthetic list) (1.841833ms)
+✔ a registry without lc_covers data (historical source) stays maximally conservative (0.082166ms)
+✔ legacy browser_* paths still select all browsers; a known untagged foundation file stays backend-only (0.495875ms)
+✔ legacy deploy prefixes remain selected and unrelated paths do not select smoke (2.742375ms)
+✔ the browser set is release-gate's browser-mode universe minus the documented exclusions (56.80825ms)
+✔ every real browser-tagged foundation file selects registry browser modes, including non-browser names (179.914958ms)
+✔ tagged runner discovery follows registry additions, command arrays and line continuations (1.0045ms)
+✔ deploy smoke is selected for its workflow, verdict/helpers and executable test inputs (1.865708ms)
+✔ new selection never drops legacy modes or deploy for any tracked path (1229.771959ms)
+✔ CLI classifies merge-base and explicit head, including removed tags, deleted files and renames (417.265792ms)
+✔ CLI selects modes the base added after divergence when the checkout is the PR merge (PR #22 review P1) (196.142292ms)
+✔ CLI reads the merge checkout's source when the base adds a browser tag after the fork (PR #22 review P1) (178.840792ms)
+✔ CLI explicit head and stdin include tags outside the checkout and uncommitted tag removals (180.916ms)
+✔ compound/legacy tags and unknown source are conservative; known untagged source stays backend-only (3.570916ms)
+✔ explicit-head CLI derives tagged runner modes from that head's real registry (169.815291ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "架构.md" (125.613458ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "internal/示例.go" (136.331083ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "tests/foundation/plain\tname_test.go" (141.772291ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, " deploy/scripts/synthetic-smoke.sh" (130.426375ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "架构.md" (128.599209ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "internal/示例.go" (134.429083ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "tests/foundation/plain\tname_test.go" (163.05125ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, " deploy/scripts/synthetic-smoke.sh" (135.408959ms)
+✔ stdin unions legacy trimming without trimming the source lookup path (76.543958ms)
+ℹ tests 60
+ℹ suites 0
+ℹ pass 54
+ℹ fail 6
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3964.190667
+
+✖ failing tests:
+
+test at tests/ci/backend-coverage.test.mjs:20:1
+✖ round 3: a new httpapi file is unclassified until explicitly covered (2.921291ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/tests/ci/backend-coverage.test.mjs:22:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/backend-coverage.test.mjs:32:1
+✖ round 3: split packages cannot be re-widened by an ancestor lc_covers entry (0.165166ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/tests/ci/backend-coverage.test.mjs:34:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/backend-coverage.test.mjs:40:1
+✖ round 3: stale file entries fail independently of a valid sibling package (0.10925ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/tests/ci/backend-coverage.test.mjs:42:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/pr-modes.test.mjs:90:1
+✖ round 3: the real PR #30 diff selects live-console without the shared-httpapi explosion (49.018917ms)
+  AssertionError [ERR_ASSERTION]: PR #30 must be domain-scoped, not all 48 browsers: 49
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/tests/ci/pr-modes.test.mjs:95:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/pr-modes.test.mjs:98:1
+✖ round 3: live_stream transport alone selects live-console but not CVS (3.762584ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(!modes.includes("--browser-cvs"))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/tests/ci/pr-modes.test.mjs:101:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/pr-modes.test.mjs:112:1
+✖ round 3: a file-level lc_covers entry is exact, not its sibling directory (1.58875ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      'foundation-shards',
+  +   '--browser-inbox',
+  +   '--browser-meta-health-ui',
+  +   '--browser-tracking-backfill',
+  +   '--browser-click-sweep',
+  +   '--browser-visual-lint',
+  +   '--browser-identity',
+  +   '--browser-buyer-comms',
+  +   '--browser-checkout-offline',
+  +   '--browser-home-cod',
+  +   '--browser-promotions',
+  +   '--browser-password-auth',
+  +   '--browser-admin-legacy',
+  +   '--browser-buyer',
+  +   '--browser-merchant-buyer',
+  +   '--browser-manual-order',
+  +   '--browser-merchant-orders-bff',
+  +   '--browser-merchant-orders-ui',
+  +   '--browser-input-delivery',
+  +   '--browser-studio-bff',
+  +   '--browser-studio-ui',
+  +   '--browser-live-console',
+  +   '--browser-claim-checkout',
+  +   '--browser-live-claims',
+  +   '--browser-order',
+  +   '--browser-payment',
+  +   '--browser-refund-fulfilment',
+  +   '--browser-customers-billing',
+  +   '--browser-card-payments',
+  +   '--browser-meta-ads',
+  +   '--browser-ads-attribution',
+  +   '--browser-cvs',
+  +   '--browser-catalog-media',
+  +   '--browser-storefront-publish',
+  +   '--browser-store-domains',
+  +   '--browser-storefront',
+  +   '--browser-webkit',
+  +   '--browser-e2e',
+  +   '--live-browser-input',
+  +   '--browser-design',
+  +   '--browser-ops-polish',
+  +   '--browser-meta-connect',
+  +   '--browser-product-editor',
+  +   '--browser-catalog-core',
+  +   '--browser-returns-ui',
+  +   '--browser-operations-ads',
+  +   '--browser-product-media-v2',
+  +   '--browser-reports',
+  +   '--browser-migration-import',
+      '--browser-file-probe'
+    ]
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/tests/ci/pr-modes.test.mjs:114:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [
+      'foundation-shards',             '--browser-inbox',
+      '--browser-meta-health-ui',      '--browser-tracking-backfill',
+      '--browser-click-sweep',         '--browser-visual-lint',
+      '--browser-identity',            '--browser-buyer-comms',
+      '--browser-checkout-offline',    '--browser-home-cod',
+      '--browser-promotions',          '--browser-password-auth',
+      '--browser-admin-legacy',        '--browser-buyer',
+      '--browser-merchant-buyer',      '--browser-manual-order',
+      '--browser-merchant-orders-bff', '--browser-merchant-orders-ui',
+      '--browser-input-delivery',      '--browser-studio-bff',
+      '--browser-studio-ui',           '--browser-live-console',
+      '--browser-claim-checkout',      '--browser-live-claims',
+      '--browser-order',               '--browser-payment',
+      '--browser-refund-fulfilment',   '--browser-customers-billing',
+      '--browser-card-payments',       '--browser-meta-ads',
+      '--browser-ads-attribution',     '--browser-cvs',
+      '--browser-catalog-media',       '--browser-storefront-publish',
+      '--browser-store-domains',       '--browser-storefront',
+      '--browser-webkit',              '--browser-e2e',
+      '--live-browser-input',          '--browser-design',
+      '--browser-ops-polish',          '--browser-meta-connect',
+      '--browser-product-editor',      '--browser-catalog-core',
+      '--browser-returns-ui',          '--browser-operations-ads',
+      '--browser-product-media-v2',    '--browser-reports',
+      '--browser-migration-import',    '--browser-file-probe'
+    ],
+    expected: [ 'foundation-shards', '--browser-file-probe' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

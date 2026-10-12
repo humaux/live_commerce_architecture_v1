@@ -9,6 +9,10 @@ package foundation_test
 //
 // Owner-pool writes (disclosed fixtures): control.storefront_* rows (bhPublish), identity.store_grants/principals/sessions for member
 // variants, and the aged timestamps / planted rows that individual gates list in their own header.
+//
+// Used by: --browser-cvs (TestBrowserTaiwanCvs) and --browser-webkit (its WebKit re-run of TestBrowserTaiwanCvs): startDispatcher below
+// wires the REAL ecpayroute.Routes claim router into the claims dispatcher, so this file's imports are their fixture evidence; also
+// --browser-click-sweep and --browser-visual-lint (TestBrowserClickSweep builds the same tcvEnv, dispatcher included).
 
 import (
 	"context"

@@ -1,0 +1,12 @@
+✔ mode discovery has no Docker/build dependency and includes the existing universe (120.274584ms)
+✔ dry-run resolves a mode without executing dependencies and keeps its command environment (119.425708ms)
+✔ one appended case is discovered and dispatched; malformed and duplicate registry entries fail closed (63.373542ms)
+✔ registry discovery cannot silently lose indented, aliased or unrecognised Bash case arms (16.419375ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 421.445792

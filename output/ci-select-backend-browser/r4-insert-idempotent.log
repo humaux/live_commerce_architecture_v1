@@ -1,0 +1,10 @@
+insert-narrow-covers: rewritten=0 unchanged=51 (browser universe=51); nothing to write
+✔ output/ci-select-backend-browser/tools/insert-narrow-covers.mjs (40.660959ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 43.908875
