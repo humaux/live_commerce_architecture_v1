@@ -97,3 +97,35 @@ test("a definitive response unlocks only the explicit new-attempt action", () =>
   assert.notEqual(next.key, first.key);
   assert.equal(JSON.parse(next.body).customer.name, "edited");
 });
+
+test("a coded definitive refusal settles an UNKNOWN replay without relaxing ambiguous replies", async () => {
+  const { retainOrderAttempt } = await import("../../apps/admin/lib/create-order-attempt.ts");
+  for (const outcome of [
+    { status: 409, code: "insufficient_inventory" },
+    { status: 409, code: "cod_surcharge_changed" },
+    { status: 422, code: "max_per_order_exceeded" },
+    { status: 422, code: "pay_at_pickup_amount_exceeds" },
+    { status: 422, code: "cash_on_delivery_amount_exceeds" },
+    { status: 429, code: "pay_at_pickup_limit" },
+    { status: 429, code: "cash_on_delivery_limit" },
+  ]) assert.equal(retainOrderAttempt({ ...outcome, uncertain: false }, true), false, outcome.code);
+  for (const outcome of [
+    { status: 0, code: "unavailable", uncertain: true },
+    { status: 400, code: "invalid_json", uncertain: false },
+    { status: 415, code: "json_required", uncertain: false },
+    { status: 409, code: "insufficient_inventory", uncertain: true },
+    { status: 503, code: "insufficient_inventory", uncertain: false },
+    { status: 401, code: "unauthorized", uncertain: false },
+    { status: 403, code: "forbidden", uncertain: false },
+    { status: 409, code: "idempotency_conflict", uncertain: false },
+    { status: 409, code: "unknown_code", uncertain: false },
+    { status: 422, code: "insufficient_inventory", uncertain: false },
+    { status: 422, code: "invalid_request", uncertain: false },
+    { status: 422, code: "bank_transfer_unavailable", uncertain: false },
+    { status: 409, code: "bundle_buyer_mismatch", uncertain: false },
+    { status: 409, code: "capability", uncertain: false },
+  ]) assert.equal(retainOrderAttempt(outcome, true), true, `${outcome.status}/${outcome.code}`);
+  for (const previouslyUncertain of [false, true]) for (const outcome of [
+    { status: 409, code: "conflict" }, { status: 404, code: "not_found" },
+  ]) assert.equal(retainOrderAttempt({ ...outcome, uncertain: false }, previouslyUncertain), true, "post-commit generic errors retain even on first response");
+});

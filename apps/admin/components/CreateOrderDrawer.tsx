@@ -31,6 +31,8 @@ import {
 import {
   prefillForm,
   makeForBuyerBody,
+  orderRestrictionSession,
+  type OrderClaimSession,
   type DrawerTarget,
   type OrderPrefill,
   type ForBuyerResult,
@@ -83,12 +85,14 @@ export function CreateOrderDrawer({
   conversationId,
   bundleId,
   sessionId,
+  claimSessions,
   onClose,
   onUnauthorized,
 }: DrawerTarget & {
   locale: Locale;
   store: Store;
   sessionId?: string;
+  claimSessions?: readonly OrderClaimSession[];
   onClose: () => void;
   onUnauthorized?: () => void;
 }) {
@@ -154,7 +158,7 @@ export function CreateOrderDrawer({
     deniedCallback.current?.();
   }, [privacy.expire]);
   const canCreate =
-    permitted(store, "inventory:reserve") && permitted(store, "orders:read");
+    permitted(store, "inventory:reserve") && permitted(store, "orders:read") && permitted(store, "catalog:read");
   useEffect(() => {
     if (!privacy.visible) return;
     const element = dialog.current,
@@ -188,8 +192,11 @@ export function CreateOrderDrawer({
         )
           return;
         let warning: "restricted" | "clear" | "unavailable" = "unavailable";
-        if (sessionId && data.bundles.length && permitted(store, "live:read")) {
-          try { warning = await readOrderRestricted(store.id, sessionId, data.bundles, ticket.signal) ? "restricted" : "clear"; }
+        // A13 may start with another session's claim. Resolve only offers actually selected by A15;
+        // the comment entry supplies its current session directly. Missing/ambiguous metadata stays visibly unchecked.
+        const restrictionSession = sessionId ?? orderRestrictionSession(data.items, claimSessions ?? []);
+        if (restrictionSession && data.bundles.length && permitted(store, "live:read")) {
+          try { warning = await readOrderRestricted(store.id, restrictionSession, data.bundles, ticket.signal) ? "restricted" : "clear"; }
           catch (cause) { if (denied(cause)) throw cause; }
         }
         if (!privacy.fence.current(ticket) || (await checkedBoundary(scope)) !== scope || !privacy.fence.current(ticket)) return;
@@ -281,6 +288,7 @@ export function CreateOrderDrawer({
     conversationId,
     bundleId,
     sessionId,
+    claimSessions,
     locale,
     canCreate,
     privacy.visible,
@@ -375,6 +383,7 @@ export function CreateOrderDrawer({
         } else {
           attempt.current.finish();
           guard.current?.clear();
+          setUncertain(false);
         }
         if ([401, 403].includes(outcome.status)) expire();
       }

@@ -73,20 +73,34 @@ async function addCatalog(drawer,prefix="drawer") {
  await expect(prefix==="drawer"?drawer.getByTestId(`drawer-quantity-${sku}`):drawer.getByTestId("mo-lines").locator('input[type="number"]')).toBeVisible();
  record("catalog search and variant","fill/search/expand/add","one real catalog SKU selected");
 }
-async function definitiveRefusal(page,form,{requestPath,submitId,errorId,newAttemptId,editDraft=false}) {
+async function definitiveRefusal(page,form,{requestPath,submitId,errorId,newAttemptId,editDraft=false,unknownFirst=false}) {
  const before=await (await fetch(`${api}/__test/drawer-facts`)).json();
  let posts=0;
  const observe=request=>{if(request.method()==="POST"&&new URL(request.url()).pathname===requestPath) posts++;};
  page.on("request",observe);
- // Network-edge request fault only: forward to the real BFF/Go with solely the first line's quantity changed.
+ const attempts=[];
+ if(unknownFirst) await form.getByTestId(`drawer-quantity-${sku}`).fill("1000");
+ // UNKNOWN drops only the reply to the merchant's frozen request. The separate 422 case mutates quantity at the network edge.
  await page.route(`**${requestPath}`,async route=>{
-  const body=JSON.parse(route.request().postData());body.items[0].quantity=0;
-  const real=await route.fetch({postData:JSON.stringify(body)});
-  assert.equal(real.status(),422,"real BFF/Go must definitively refuse zero quantity");
+  attempts.push({key:route.request().headers()["idempotency-key"],body:route.request().postData()});
+  const body=JSON.parse(route.request().postData());
+  if(unknownFirst) assert.equal(body.items[0].quantity,1000,"real UI supplied the immutable inventory-refused intent");
+  else body.items[0].quantity=0;
+  const real=await route.fetch(unknownFirst?{}:{postData:JSON.stringify(body)});
+  assert.equal(real.status(),unknownFirst?409:422,"real BFF/Go must refuse invalid quantity or insufficient inventory");
+  if(unknownFirst) assert.equal((await real.json()).code,"insufficient_inventory","actual checkout refusal after durable receipt lookup");
+  if(unknownFirst&&attempts.length===1) { await real.dispose();await route.abort("failed");return; }
   await route.fulfill({response:real});
  });
+ if(unknownFirst) {
+  await form.getByTestId(submitId).click();
+  await expect(form.getByTestId(errorId)).toBeVisible();
+  await expect(form.getByTestId("drawer-close")).toBeDisabled();
+  await expect(form.getByTestId(newAttemptId)).toHaveCount(0);
+  await expect(form.getByTestId(submitId)).toBeEnabled();
+ }
  const [refusal]=await Promise.all([page.waitForResponse(r=>r.request().method()==="POST"&&new URL(r.url()).pathname===requestPath),form.getByTestId(submitId).click()]);
- assert.equal(refusal.status(),422);assert(refusal.headers()["cache-control"]?.includes("no-store"));
+ assert.equal(refusal.status(),unknownFirst?409:422);assert(refusal.headers()["cache-control"]?.includes("no-store"));
  await expect(form.getByTestId(errorId)).toBeVisible();
  await expect(form.getByTestId(newAttemptId)).toBeVisible();
  if(editDraft) {
@@ -96,15 +110,24 @@ async function definitiveRefusal(page,form,{requestPath,submitId,errorId,newAtte
  await expect(form.getByTestId(submitId)).toBeDisabled();
  const refused=await (await fetch(`${api}/__test/drawer-facts`)).json();
  assert.equal(refused.orders,before.orders,"actual definitive refusal creates zero orders");
- assert.equal(posts,1,"one explicit refused POST, including after any draft edit");
+ assert.equal(posts,unknownFirst?2:1,"only explicit refused POSTs, including after any draft edit");
+ if(unknownFirst) {
+  assert.equal(attempts[0].key,attempts[1].key,"UNKNOWN replay retains original key");
+  assert.equal(attempts[0].body,attempts[1].body,"UNKNOWN replay retains original body");
+  await expect(form.getByTestId("drawer-close")).toBeEnabled();
+  assert.equal(await page.evaluate(()=>Object.keys(sessionStorage).filter(key=>key.startsWith("buyer-order-unresolved:")).length),0,"definitive refusal clears opaque OrderGuard");
+  const exact=await (await fetch(`${api}/__test/drawer-request-facts`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({keys:attempts.map(a=>a.key)})})).json();
+  assert.deepEqual(exact,{orders:0,receipts:0},"refused attempts create no PG order or success receipt");
+ }
  await page.unroute(`**${requestPath}`);
  await form.getByTestId(newAttemptId).click();
  await expect(form.getByTestId(submitId)).toBeEnabled();
  const after=await (await fetch(`${api}/__test/drawer-facts`)).json();
- assert.equal(posts,1,"explicit new-attempt action must not POST");
+ assert.equal(posts,unknownFirst?2:1,"explicit new-attempt action must not POST");
  assert.equal(after.orders,before.orders,"explicit new-attempt action creates zero orders");
  page.off("request",observe);
- record(newAttemptId,"real 422 then explicit click","zero PG orders; submit remains disabled after refusal/draft edit; new-attempt enables without network write");
+ record(newAttemptId,unknownFirst?"real UNKNOWN/409 then explicit click":"real 422 then explicit click","zero merchant-manual order delta; submit remains disabled after refusal/draft edit; new-attempt enables without network write");
+ if(unknownFirst) { record("UNKNOWN then coded refusal","abort real inventory 409/replay/click new attempt","same key/body; zero PG orders/receipts; OrderGuard released; close enabled");cases++; }
 }
 async function privateBoundary(page,link="") {
  // G-UI8 audit [READ/MEASURE]: read private DOM/storage/resource surfaces; never persist their contents.
@@ -177,6 +200,21 @@ try {
   const fixture=fixtures[index++];
   const context=await browser.newContext(ctxOpts({ignoreHTTPSErrors:true,viewport:{width,height:900},permissions:["clipboard-read","clipboard-write"]}));
   const page=await context.newPage();
+  // Network-edge A13 projection fault: the first claim is unrelated to the real A15 target.
+  // All actual target offers, order writes and restriction replies remain real BFF/Go/PG.
+  let expectedSession, injectedFirst=false;
+  const restrictionRequests=[];
+  const observeRestriction=request=>{if(request.method()==="GET"&&new URL(request.url()).pathname.endsWith("/claims/blocklist/check")) restrictionRequests.push(new URL(request.url()));};
+  page.on("request",observeRestriction);
+  if(locale==="en"&&width===1440) await page.route(`**/api/stores/${store}/inbox/buyer-panel?**`,async route=>{
+   if(new URL(route.request().url()).searchParams.get("conversation_id")!==fixture.Linked) { await route.continue();return; }
+   const real=await route.fetch();assert.equal(real.status(),200);
+   const value=await real.json();assert.equal(value.claims.length,1,"positive real A13 target fixture");
+   expectedSession=value.claims[0].session_id;
+   const unrelated={...value.claims[0],offer_id:crypto.randomUUID(),session_id:crypto.randomUUID()};
+   value.claims.unshift(unrelated);injectedFirst=true;
+   await route.fulfill({response:real,json:value});
+  });
   // No trace, console text collection or browser response serialization: these could retain bearer links.
   await page.goto(`${origin}/en`);
   await page.getByRole("button",{name:"Sign in with identity service",exact:true}).click();
@@ -190,6 +228,14 @@ try {
   await expect(drawer.getByTestId("drawer-blocklist-warning")).toBeVisible();
   const restrictedCopy={en:"This buyer is on the restricted list.","zh-TW":"此買家已在限制名單中。","zh-CN":"此买家已在限制名单中。"};
   await expect(drawer.getByTestId("drawer-blocklist-warning")).toContainText(restrictedCopy[locale]);
+  if(locale==="en"&&width===1440) {
+   assert.equal(injectedFirst,true);
+   assert(restrictionRequests.length>0,"actual target restriction request was sent");
+   assert(restrictionRequests.every(url=>url.pathname===`/api/stores/${store}/live-sessions/${expectedSession}/claims/blocklist/check`&&url.searchParams.get("bundle_id")===fixture.Bundle),"restriction lookup must match actual A15 offer and bundle, not unrelated first claim");
+   record("exact restriction session","real click with unrelated first A13 claim","actual A15 session/bundle GET; restricted warning");
+   await page.unroute(`**/api/stores/${store}/inbox/buyer-panel?**`);
+  }
+  page.off("request",observeRestriction);
   record("blocklist warning","open by real BuyerPanel click","restricted boolean warning visible");
   await expect(drawer.getByTestId("drawer-linked-customer")).toBeVisible();
   await expect(drawer.getByTestId("drawer-name")).toHaveValue("王小明");
@@ -237,6 +283,10 @@ try {
 
   current=`DU3-unlinked-${locale}-${width}`;
   drawer=await openConversation(page,locale,fixture.Unlinked);
+  const unavailableCopy={en:"The restriction status could not be checked.","zh-TW":"無法確認限制名單狀態。","zh-CN":"无法确认限制名单状态。"};
+  await expect(drawer.getByTestId("drawer-blocklist-warning")).toBeVisible();
+  await expect(drawer.getByTestId("drawer-blocklist-warning")).toContainText(unavailableCopy[locale]);
+  record("missing restriction session","open zero-claims conversation","explicit localized could-not-check warning");
   for(const id of ["name","phone","email"]) await expect(drawer.getByTestId(`drawer-${id}`)).toHaveValue("");
   await expect(drawer.getByTestId("drawer-linked-customer")).toHaveCount(0);
   await expect(drawer.getByTestId("drawer-send-payment-link")).toBeDisabled();
@@ -255,6 +305,14 @@ try {
   await drawer.getByTestId("drawer-mode-pay_at_pickup").check();
   await fillEmpty(drawer);
   if(locale==="en"&&width===1440) await definitiveRefusal(page,drawer,{requestPath:routePath,submitId:"drawer-submit",errorId:"drawer-error",newAttemptId:"drawer-new-attempt"});
+  if(locale==="en"&&width===1440) {
+   await definitiveRefusal(page,drawer,{requestPath:routePath,submitId:"drawer-submit",errorId:"drawer-error",newAttemptId:"drawer-new-attempt",unknownFirst:true});
+   await drawer.getByTestId("drawer-close").click();
+   drawer=await openConversation(page,locale,fixture.Unlinked);
+   await addCatalog(drawer);await fillEmpty(drawer);
+   await expect(drawer.getByTestId("drawer-submit")).toBeEnabled();
+   record("settled guard close/reopen","click close then create","new drawer can submit after refused intent");
+  }
   await page.screenshot({path:path.join(evidence,`unlinked-${locale}-${width}.png`),fullPage:true});
   record("unlinked warning/empty fields/zero","edit form","no customer guessing; quantity zero removes; valid catalog line re-added");cases++;
 
@@ -329,6 +387,61 @@ try {
  await expect(page.getByTestId("drawer-live-warning")).toBeVisible();
  record("claimed comment direct create","click","real CommentStream opens bundle-prefilled drawer without guessed conversation");
  await context.close();
+ // Switch only this owned issuer/subject to a real narrow staff principal; authenticate through normal clicks.
+ const switched=await fetch(`${api}/__test/drawer-principal`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({limited:true})});
+ assert.equal(switched.status,204);
+ try {
+  for(const locale of ["en","zh-TW","zh-CN"]) {
+   current=`DU3-no-catalog-${locale}-390`;
+   const limited=await browser.newContext(ctxOpts({ignoreHTTPSErrors:true,viewport:{width:390,height:844}})),page=await limited.newPage();
+   const requests=[];
+   page.on("request",request=>{
+    if(/\/tools\/(?:inbox\/order-prefill|orders\/(?:manual\/options|for-buyer))$/.test(new URL(request.url()).pathname)) requests.push(request.method());
+   });
+   try {
+    await page.goto(`${origin}/en`);await page.getByRole("button",{name:"Sign in with identity service",exact:true}).click();
+    await expect(page.getByTestId("dashboard-page")).toBeVisible();
+    // G-UI8 audit [READ/MEASURE]: real browser fetch carries Chromium's secure loopback cookies;
+    // APIRequestContext uses a different HTTP cookie transport and would inspect an anonymous 401.
+    const storesReply=await page.evaluate(async()=>{
+     const response=await fetch("/api/stores",{credentials:"same-origin",cache:"no-store"});
+     return {status:response.status,data:await response.json()};
+    });
+    assert.equal(storesReply.status,200);
+    const stores=storesReply.data.items;
+    assert(Array.isArray(stores),"real store list shape");
+    for(const id of [store,process.env.LC_DRAWER_COMMENT_STORE]) {
+     const selected=stores.find(value=>value.id===id);assert(selected,"real narrow store is visible");
+     assert.equal(selected.role,"fulfilment","owner bypass cannot satisfy negative permission test");
+     for(const permission of ["orders:read","inventory:reserve","inbox:read","live:read"]) assert(selected.permissions.includes(permission));
+     assert(!selected.permissions.includes("catalog:read"));
+    }
+    for(const reload of [false,true]) {
+     const buyer=page.waitForResponse(response=>response.request().method()==="GET"&&new URL(response.url()).pathname===`/api/stores/${store}/inbox/buyer-panel`&&new URL(response.url()).searchParams.get("conversation_id")===fixtures[0].Linked);
+     if(reload) await page.reload();else await page.goto(`${origin}/${locale}/messages?store=${store}`);
+     const [loaded]=await Promise.all([buyer,page.getByTestId(`conversation-${fixtures[0].Linked}`).click()]);
+     assert.equal(loaded.status(),200);
+     await expect(page.getByTestId("buyer-panel")).toBeVisible();
+     await expect(page.getByTestId("buyer-create-order")).toBeDisabled();
+     await expect(page.getByTestId("buyer-panel")).toContainText(locale==="en"?"Catalog-read":locale==="zh-TW"?"商品目錄":"商品目录");
+     assert.deepEqual(requests,[],"real narrow role selection/reload sends no A15/options/A16");
+    }
+    await page.goto(`${origin}/${locale}/studio/console?store=${process.env.LC_DRAWER_COMMENT_STORE}&scene=${process.env.LC_DRAWER_COMMENT_SCENE}`);
+    await expect(page.getByTestId(`comment-row-${process.env.LC_DRAWER_COMMENT_REF}`)).toBeVisible();
+    await expect(page.getByTestId(`comment-create-order-${process.env.LC_DRAWER_COMMENT_REF}`)).toBeDisabled();
+    await expect(page.getByTestId(`comment-row-${process.env.LC_DRAWER_COMMENT_REF}`)).toContainText(locale==="en"?"Catalog-read":locale==="zh-TW"?"商品目錄":"商品目录");
+    await page.reload();
+    await expect(page.getByTestId(`comment-row-${process.env.LC_DRAWER_COMMENT_REF}`)).toBeVisible();
+    await expect(page.getByTestId(`comment-create-order-${process.env.LC_DRAWER_COMMENT_REF}`)).toBeDisabled();
+    assert.deepEqual(requests,[],"real narrow CommentStream entry/reload sends no A15/options/A16");
+    record("catalog permission entry gates","real signed login/conversation click/reload/console navigation","real fulfilment grants; buyer retained; create controls disabled; zero A15/options/A16");
+    cases++;
+   } finally { await limited.close(); }
+  }
+ } finally {
+  const restored=await fetch(`${api}/__test/drawer-principal`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({limited:false})});
+  assert.equal(restored.status,204,"restore owned fixture identity");
+ }
 } catch (error) {
  const coordinate=String(error?.stack||"").match(/create-order-drawer-gate\.mjs:(\d+):(\d+)/);
  failed.push(current);ledger.push({case:current,control:"scenario",action:"run",actual:coordinate?`assertion failed at create-order-drawer-gate.mjs:${coordinate[1]}:${coordinate[2]}`:"assertion failed; private diagnostics suppressed",status:"FAIL"});

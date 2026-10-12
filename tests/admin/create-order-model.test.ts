@@ -13,6 +13,7 @@ import {
   validForBuyerBody,
   prefillForm,
   makeForBuyerBody,
+  orderRestrictionSession,
 } from "../../apps/admin/lib/create-order-model.ts";
 import {
   parseManualResult,
@@ -20,6 +21,17 @@ import {
 } from "../../apps/admin/lib/merchant-tools-model.ts";
 const id = "11111111-1111-4111-8111-111111111111",
   optionKey = `${id}|TW|home`;
+test("restriction session follows actual A15 offers, never the first unrelated A13 claim", () => {
+  const other = "22222222-2222-4222-8222-222222222222";
+  const selected = "33333333-3333-4333-8333-333333333333";
+  const lines = [{ offer_id: id }];
+  assert.equal(orderRestrictionSession(lines, [{ offer_id: other, session_id: other }, { offer_id: id, session_id: selected }]), selected);
+  for (const claims of [[], [{ offer_id: other, session_id: other }], [{ offer_id: id, session_id: "invalid" }], [{ offer_id: id, session_id: selected }, { offer_id: id, session_id: other }]]) {
+    assert.equal(orderRestrictionSession(lines, claims), undefined, "missing or ambiguous actual offer must be unavailable");
+  }
+  assert.equal(orderRestrictionSession([{ offer_id: id }, { offer_id: other }], [{ offer_id: id, session_id: selected }, { offer_id: other, session_id: other }]), undefined, "multiple actual sessions must not guess a prefix");
+  assert.equal(orderRestrictionSession([], [{ offer_id: id, session_id: selected }]), undefined);
+});
 const prefill = () => ({
   items: [
     {

@@ -44,7 +44,6 @@ export function BuyerPanel({
   const [busy, setBusy] = useState(false);
   const [revision, setRevision] = useState(0);
   const [orderOpen, setOrderOpen] = useState(false);
-  const [orderSession, setOrderSession] = useState<string | undefined>();
   const callbacks = useRef({ onUnauthorized, onLinked });
   callbacks.current = { onUnauthorized, onLinked };
   const clear = useCallback(() => {
@@ -53,7 +52,6 @@ export function BuyerPanel({
     setCustomer("");
     setBusy(false);
     setOrderOpen(false);
-    setOrderSession(undefined);
   }, []);
   const privacy = useInboxPrivacy(clear);
   const data = value?.scope === scope && privacy.visible ? value.data : null;
@@ -120,6 +118,7 @@ export function BuyerPanel({
     !!conversationId &&
     permitted(store, "inbox:reply") &&
     permitted(store, "customers:read");
+  const canCreate = permitted(store, "inventory:reserve") && permitted(store, "orders:read") && permitted(store, "catalog:read");
   const link = async (unlink = false) => {
     if (
       !canLink ||
@@ -165,9 +164,9 @@ export function BuyerPanel({
   return (
     <aside className={styles.panel} data-testid="buyer-panel" aria-busy={busy}>
       <h2>{c.buyer}</h2>
-      {data && <button type="button" data-testid="buyer-create-order" disabled={!permitted(store, "inventory:reserve") || !permitted(store, "orders:read")} onClick={() => { setOrderSession(data.claims[0]?.session_id); setOrderOpen(true); }}>{createOrderCopy[locale as Locale].title}</button>}
-      {data && (!permitted(store, "inventory:reserve") || !permitted(store, "orders:read")) && <p>{createOrderCopy[locale as Locale].permission}</p>}
-      {orderOpen && data && <CreateOrderDrawer key={scope} locale={locale as Locale} store={store} sessionId={orderSession} conversationId={conversationId} bundleId={bundleId} onUnauthorized={privacy.expire} onClose={() => setOrderOpen(false)} />}
+      {data && <button type="button" data-testid="buyer-create-order" disabled={!canCreate} onClick={() => setOrderOpen(true)}>{createOrderCopy[locale as Locale].title}</button>}
+      {data && !canCreate && <p>{createOrderCopy[locale as Locale].permission}</p>}
+      {orderOpen && data && <CreateOrderDrawer key={scope} locale={locale as Locale} store={store} claimSessions={data.claims} conversationId={conversationId} bundleId={bundleId} onUnauthorized={privacy.expire} onClose={() => setOrderOpen(false)} />}
       {!privacy.visible && (
         <p className={styles.notice}>
           {privacy.blocked.current ? c.signedOut : c.hidden}

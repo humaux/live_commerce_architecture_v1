@@ -1,5 +1,5 @@
 // Purpose: Checks Taipei merchant timestamps rendered by the real admin TSX components.
-// Depends on: node:test, Next SWC, apps/admin/components, packages/format/src/index.ts.
+// Depends on: node:test, Next SWC, apps/admin/components, real create-order-model and packages/format/src/index.ts.
 // Used by: timezone audit focused Node gate; presentation and hook shells only are simulated.
 // Status: component-level MOCK evidence; loaded timestamp assertions do not certify browser clicks or HTTP/auth seams.
 import { test } from "node:test";
@@ -8,6 +8,7 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
 import vm from "node:vm";
+import * as createOrderModel from "../../apps/admin/lib/create-order-model.ts";
 
 const root = resolve(import.meta.dirname, "../..");
 const require = createRequire(resolve(root, "apps/admin/package.json"));
@@ -107,7 +108,9 @@ test("ManualOrder bank-transfer expiry uses Taipei at the year boundary", () => 
     "./customers.css": {}, "./merchant-tools.css": {},
     "@/lib/manual-order-form": { emptyManualForm: () => ({ home: {}, cvs: {} }) },
     "./ManualOrderFormFields": {},
-    "@/lib/create-order-attempt": compile("apps/admin/lib/create-order-attempt.ts", {}),
+    "@/lib/create-order-attempt": compile("apps/admin/lib/create-order-attempt.ts", {
+      "./create-order-model.ts": createOrderModel,
+    }),
   });
   // Compile uses the actual component; only hook state and surrounding presentation are fixtures.
   const tree = ManualOrder({ locale: "zh-TW", stores: [], store: { id: "store", name: "store" },

@@ -216,6 +216,23 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	origin := browserFront(t, addr)
 	idp := newBrowserIDP(t, origin+"/api/auth/callback")
 	mustExec(t, e.p.f.owner, `INSERT INTO identity.external_identities(issuer,subject,principal_id) VALUES($1,'browser-subject',$2)`, idp.server.URL, e.p.f.principalA)
+	// A real staff role with the exact problematic grant combination, in both owned fixture stores.
+	// Its signed login stays behind the same OIDC/BFF/session seams as the owner cases.
+	narrow := randomUUID()
+	mustExec(t, e.p.f.owner, `INSERT INTO identity.principals(id) VALUES($1)`, narrow)
+	for _, scope := range [][2]string{{e.tenant(), e.store()}, {cf.tenantA, cf.storeA1}} {
+		mustExec(t, e.p.f.owner, `INSERT INTO identity.memberships(tenant_id,principal_id) VALUES($1,$2) ON CONFLICT DO NOTHING`, scope[0], narrow)
+		mustExec(t, e.p.f.owner, `INSERT INTO identity.store_staff(tenant_id,store_id,principal_id,role) VALUES($1,$2,$3,'fulfilment')`, scope[0], scope[1], narrow)
+		for _, permission := range []string{"store:read", "inbox:read", "live:read", "orders:read", "inventory:reserve"} {
+			mustExec(t, e.p.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,$4)`, scope[0], scope[1], narrow, permission)
+		}
+	}
+	t.Cleanup(func() {
+		mustExec(t, e.p.f.owner, `UPDATE identity.external_identities SET principal_id=$2 WHERE issuer=$1 AND subject='browser-subject'`, idp.server.URL, e.p.f.principalA)
+		for _, query := range []string{`DELETE FROM identity.session_events WHERE principal_id=$1`, `DELETE FROM identity.sessions WHERE principal_id=$1`, `DELETE FROM ops.command_results WHERE principal_id=$1`, `DELETE FROM ops.audit_events WHERE principal_id=$1`, `DELETE FROM identity.store_staff WHERE principal_id=$1`, `DELETE FROM identity.store_grants WHERE principal_id=$1`, `DELETE FROM identity.memberships WHERE principal_id=$1`, `DELETE FROM identity.principals WHERE id=$1`} {
+			mustExec(t, e.p.f.owner, query, narrow)
+		}
+	})
 	_, _, authority := identityFixture(t)
 	provider, err := oidclogin.New(ctx, oidclogin.Config{Issuer: idp.server.URL, ClientID: browserClientID, RedirectURL: idp.redirect, AllowLoopbackForTests: true})
 	if err != nil {
@@ -233,6 +250,30 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle("/v1/identity/", private)
 	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Owned test-only switch after all owner contexts close; product handlers and grants stay real.
+		if r.Method == "POST" && r.URL.Path == "/__test/drawer-principal" {
+			var input struct {
+				Limited bool `json:"limited"`
+			}
+			dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 128))
+			dec.DisallowUnknownFields()
+			if dec.Decode(&input) != nil {
+				http.Error(w, "invalid fixture control", 400)
+				return
+			}
+			principal := e.p.f.principalA
+			if input.Limited {
+				principal = narrow
+			}
+			result, err := e.p.f.owner.Exec(r.Context(), `UPDATE identity.external_identities SET principal_id=$2 WHERE issuer=$1 AND subject='browser-subject'`, idp.server.URL, principal)
+			if err != nil || result.RowsAffected() != 1 {
+				http.Error(w, "fixture control failed", 500)
+				return
+			}
+			w.Header().Set("Cache-Control", "no-store")
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
 		if r.Method == "POST" && (r.URL.Path == "/__test/drawer-request-facts" || r.URL.Path == "/__test/manual-request-facts") {
 			operation := "merchanttools.order.for_buyer"
 			if r.URL.Path == "/__test/manual-request-facts" {
@@ -339,8 +380,28 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 		Cases  int      `json:"cases"`
 		Failed []string `json:"failed"`
 	}
-	if json.Unmarshal(data, &result) != nil || result.Cases != 25 || len(result.Failed) != 0 {
-		t.Fatal("drawer exact 25-case matrix result missing")
+	// Keep the original exact 26 cases, plus each of the three new narrow-role locale cases.
+	if json.Unmarshal(data, &result) != nil || result.Cases != 29 || len(result.Failed) != 0 {
+		t.Fatalf("drawer exact 29-case matrix result missing; evidence=%s", evidence)
+	}
+	ledgerBytes, err := os.ReadFile(filepath.Join(evidence, "click-ledger.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ledger []struct{ Case, Control, Status string }
+	if err := json.Unmarshal(ledgerBytes, &ledger); err != nil {
+		t.Fatal(err)
+	}
+	for _, locale := range []string{"en", "zh-TW", "zh-CN"} {
+		matches := 0
+		for _, row := range ledger {
+			if row.Case == "DU3-no-catalog-"+locale+"-390" && row.Control == "catalog permission entry gates" && row.Status == "PASS" {
+				matches++
+			}
+		}
+		if matches != 1 {
+			t.Fatalf("drawer narrow-role locale %s requires exactly one real click verdict, got %d; evidence=%s", locale, matches, evidence)
+		}
 	}
 	t.Logf("PASS LC-U3 real browser/Go/PG matrix cases=%d orders=%d; evidence=%s", result.Cases, orders, evidence)
 }

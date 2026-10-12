@@ -1,7 +1,8 @@
 // Purpose: freeze one order request and retain only an opaque unresolved flag across privacy boundaries.
-// Depends on: caller session scope, key generator and browser sessionStorage port.
+// Depends on: closed A16/manual refusal vocabulary, caller session scope, key generator and browser sessionStorage port.
 // Used by: ManualOrder, CreateOrderDrawer and Node acceptance; buyer fields and request keys never enter storage.
 type StoragePort = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+import { forBuyerErrors } from "./create-order-model.ts";
 /** A retry always uses the first serialized body, even if the source draft is later mutated. */
 export class OrderAttempt {
   private value: Readonly<{ key: string; body: string }> | null = null;
@@ -71,15 +72,25 @@ export class OrderGuard {
   }
 }
 
-/** A16 reauthorizes messaging after creating the order; auth refusal does not prove no order exists. */
+// Only refusals behind checkout.Begin's durable receipt lookup can settle a lost business response.
+// Generic conflicts/not_found can arise after commit; dynamic options/peer/capability checks run before replay lookup.
+// Body/content-type parsing also precedes lookup, so even a coded 400/415 must retain a previously UNKNOWN receipt.
+const replayRefusals: Readonly<Record<number, readonly string[]>> = {
+  409: ["insufficient_inventory", "cod_surcharge_changed"],
+  422: ["pay_at_pickup_amount_exceeds", "cash_on_delivery_amount_exceeds", "max_per_order_exceeded"],
+  429: ["pay_at_pickup_limit", "cash_on_delivery_limit"],
+};
+/** Retain ambiguous post-dispatch outcomes; only a replay-safe coded refusal settles an earlier UNKNOWN. */
 export function retainOrderAttempt(
   outcome: { status: number; uncertain: boolean; code: string },
   previouslyUncertain: boolean,
 ): boolean {
   return (
-    previouslyUncertain ||
+    (previouslyUncertain && !replayRefusals[outcome.status]?.includes(outcome.code)) ||
+    !forBuyerErrors[outcome.status]?.includes(outcome.code) ||
     outcome.uncertain ||
+    outcome.status >= 500 ||
     [401, 403].includes(outcome.status) ||
-    outcome.code === "idempotency_conflict"
+    ["idempotency_conflict", "conflict", "not_found"].includes(outcome.code)
   );
 }

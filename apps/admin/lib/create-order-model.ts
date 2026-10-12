@@ -19,6 +19,24 @@ import { emptyManualForm, type ManualFormValues } from "./manual-order-form.ts";
 
 /** Exactly one private target selector for A15. */
 export type DrawerTarget = { conversationId?: string; bundleId?: string };
+/** Minimal A13 claim metadata; no buyer identity is inferred from it. */
+export type OrderClaimSession = { offer_id: string; session_id: string };
+/** Match only the actual A15 offer set. Truncated, conflicting or multi-session metadata cannot select a session prefix. */
+export function orderRestrictionSession(
+  items: readonly Pick<PrefillItem, "offer_id">[],
+  claims: readonly OrderClaimSession[],
+): string | undefined {
+  const selected = new Set<string>();
+  if (!items.length) return undefined;
+  for (const offer of new Set(items.map(item => item.offer_id))) {
+    const matches = claims.filter(claim => claim.offer_id === offer);
+    if (!matches.length || matches.some(claim => !id(claim.session_id))) return undefined;
+    const sessions = new Set(matches.map(claim => claim.session_id));
+    if (sessions.size !== 1) return undefined;
+    selected.add(matches[0].session_id);
+  }
+  return selected.size === 1 ? [...selected][0] : undefined;
+}
 /** A15 claim line; prices are informational unit references, never quote inputs. */
 export type PrefillItem = {
   sku_id: string;

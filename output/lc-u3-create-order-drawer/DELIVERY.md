@@ -1,5 +1,110 @@
 # LC-U3 create-order drawer delivery
 
+## PR32第一轮三P2未提交交接 — READY（2026-10-12）
+
+- 最新裁决：**所有修改保持未提交**，集成方负责commit、`git merge FETCH_HEAD`、合并后最终门禁和push。Codex-3本轮没有fetch/add/commit/merge/push，暂存区为空，HEAD保持`7d03d087f0b7fa629d6f49f18c4974835bea3d47`。READY仅指当前工作树可供复核／提交，不代表PR已合并。
+- Implementer: Codex-3，UI角色；runtime model/effort本端未公开，未推断。两位只读helpers为`gpt-6.1-sol/high`。允许写路径即下面精确14项；没有产品Go、迁移、生产ACL、契约或锁文件变化。
+- 三条修复：UNKNOWN只接受七个可证明未建单的receipt后业务拒绝来结算，仍保留400/415、网络／5xx／auth／未知码的原body/key；限制检查按实际A15 offer匹配A13场次，缺失／冲突时三语明确无法检查；三个创建入口均增加catalog:read，真实无catalog角色不发A15/options/A16。
+- Browser fixture修正：角色信息改用真实页面fetch。当前Chromium HTTP loopback的Secure cookie在APIRequestContext上未发送，合成cookie探针为API401／native200；没有伪造权限或放宽HTTP200断言。Go严格矩阵从26增加到29，并独立要求三语言各一条唯一的真实权限PASS记录。PG14与既有超时均未改动。
+- 本轮最终tracked源码hash：**`e0abd876cfc6aae9002817a15e2a28b8b417c4ef3cbf3a838b14c59d3332ad35`**。未跟踪的新增`create-order-review.test.ts`另有逐文件hash；red→green期间逐字节相同。每次run的源码／历史output／tracked状态前后均相同；下面结果不依赖历史轮次的通过声明。
+
+| 当前工作树命令 | exit | 结果／run |
+| --- | --- | --- |
+| `bash scripts/dev/test-node.sh` | **0** | **1367 passed，0 failed，29调用**；`p2-handoff-final-node-20261012`，包括真实BFF seams与严格TZ依赖断言 |
+| `pnpm --dir apps/admin exec tsc --noEmit -p .` | **0** | `p2-handoff-final-tsc-20261012` |
+| `bash scripts/dev/check-gates.sh` | **0** | `p2-handoff-final-gates-20261012`；82模式、headers／registry；内含contractdrift：**errors=0，warnings=362**历史baseline |
+| `go vet -tags browser ./tests/foundation` | **0** | `p2-handoff-final-vet-20261012` |
+| `bash scripts/dev/test-local.sh --browser-manual-order` | **0** | `p2-handoff-browser-final-20261012`；**Drawer29＋legacy10**；真实PG **14/14**；Go PASS |
+| `LC_DRAWER_CALIBRATION=new-key-on-retry bash scripts/dev/test-local.sh --browser-manual-order` | **1（预期RED）** | `p2-handoff-calibration-20261012`；仅`DU3-single-order-en-1440`失败；同body／不同key，HTTP201，PG15/14；该请求两个订单／receipt |
+| `git diff --check` | **0** | 暂存区为空，所有改动未提交 |
+
+证据：`output/playwright/lc-u3-k3-p2/p2-handoff-*.{log,status.json}`及`output/playwright/lc-u3-k3-p2/handoff-20261012/manifest.json`（含逐文件hash、日志hash及精确提交路径）；正常Drawer `output/playwright/create-order-drawer-3833881137/{result,click-ledger,pg-readback}.json`；legacy `output/playwright/manual-order-link-2464377956/`；校准 `output/playwright/create-order-drawer-4043610404/`。浏览器三条权限案例为三语言×390px、真实PG fulfilment角色／签名MOCK OIDC，含两个入口和reload；直接Drawer守卫另由actual-source Node覆盖。
+
+RED保留：原拒绝死锁`p2-attempt-red.log`；actual-source三项反例`p2-resume-red-20261012.log`（11目标失败＋2正对照）；严格TZ未登记依赖`p2-related-node-final-20261012.log`；首次浏览器角色读取失败`p2-handoff-browser-20261012.log`；随后29项全部通过但Go仍要求旧26项的`p2-handoff-browser-green-20261012.log`；cookie根因`p2-cookie-transport-20261012.log`。没有删除断言、改低阈值、增加重试或延长超时。
+
+**证据级E3：当前工作树的自动化BROWSER＋REAL_PG，外部IdP／Meta／TLS edge为MOCK。** 独立源码复核E1没有指定范围P0/P1／隐私P2；K3最终复核、merged-head CI／更广pr-modes、LIVE／生产部署仍未完成，由集成方处理。现有receipt JOIN及merchant-manual计数不单独外推所有checkout孤儿订单不存在。
+
+### 精确提交清单与消息
+
+修复及其共用测试是一个原子review批次，避免拆开Drawer／host／browser fixture形成中间失败提交。第一个逻辑提交包含这13个文件：
+
+```text
+apps/admin/components/BuyerPanel.tsx
+apps/admin/components/CommentStream.tsx
+apps/admin/components/CreateOrderDrawer.tsx
+apps/admin/lib/create-order-attempt.ts
+apps/admin/lib/create-order-copy.ts
+apps/admin/lib/create-order-model.ts
+scripts/dev/test-node.sh
+tests/admin/create-order-attempt.test.ts
+tests/admin/create-order-model.test.ts
+tests/admin/create-order-review.test.ts
+tests/admin/create-order-drawer-gate.mjs
+tests/admin/timezone-ui.test.mjs
+tests/foundation/browser_create_order_drawer_test.go
+```
+
+```text
+fix(lc-u3): resolve order drawer retry, session and catalog review findings
+
+Settle only proven order refusals after UNKNOWN, resolve restriction checks
+from the actual prefill, and require catalog access at every entry.
+Verify immutable retries and narrow-role controls through real browser/PG,
+and keep the timezone fixture on the real attempt/model seam.
+
+Implemented-by: Codex-3
+```
+
+第二个逻辑提交仅`output/lc-u3-create-order-drawer/DELIVERY.md`：
+
+```text
+docs(lc-u3): record round-one P2 verification and uncommitted handoff
+
+Implemented-by: Codex-3
+```
+
+**不要提交**owner的`output/ext-agents/`或ignored运行产物；原7项paused.patch、确切stash及before/final备份保留。原测试与失败证据未被重写。集成方合主干时保留两边意图，尤其`test-node.sh`两边的每个entry；merged-head再跑必过门禁。受限环境记录下面仅作为历史，不是当前BLOCKED状态。
+
+## PR32第一轮三P2修复 — 2026-10-12，BLOCKED／未提交
+
+- Implementer: Codex-3，UI角色；本端未公开确切runtime model/effort。只读测试／安全复核：`gpt-6.1-sol`，high reasoning。Branch `unit/lc-u3-create-order-drawer`，工作树 `.worktrees/lc-u3-create-order-drawer`，HEAD/base `7d03d087f0b7fa629d6f49f18c4974835bea3d47`。**没有新提交或合并，不push。** 当前代码绑定文件hash，不能用以下历史轮次的通过结果替代本轮验收。
+- UNKNOWN后确定拒绝：仅保留在checkout durable receipt查询之后、可证明未建单的七码结算白名单；解析400/415、通用conflict/not_found、未知码、401/403、5xx／网络UNKNOWN仍保持原body/key。Drawer结算后清除uncertain和OrderGuard；新意图仍只从显式new-attempt进入。
+- 限制名单：BuyerPanel删除`claims[0]`场次推断；Drawer用实际A15 offer集合匹配A13唯一有效session，当前CommentStream直接传真实场次。缺失、截断、冲突或多场次信息保持三语“无法检查”，不猜身份或场次。
+- 权限：Drawer、BuyerPanel和CommentStream三处均要求`catalog:read`+`orders:read`+`inventory:reserve`，三语原因明确商品目录权限。实际源码组件测试证明缺catalog时不发A15/options/A16；正向加载sentinel避免空页面假通过。
+- 测试准备：修复旧browser草稿decoy变量作用域；库存UNKNOWN案例由真实UI输入1000，网络边界只丢首个真实409回复，重放同key/body。新增真实PG fulfilment角色两店精确grant、普通签名MOCK OIDC登录、三语390px入口与reload零请求案例。没有提高超时或修改预期PG14。该浏览器案例尚未运行。
+- 时区回归：严格导入表发现新模型依赖，补入真实`create-order-model`；未列出的依赖继续抛错，没有fallback stub。
+- Contract/interface changes: 无生产HTTP、契约、迁移或ACL变更；只新增owned test mux的fixture角色控制。
+
+### 本轮证据与检查（均为合并前工作树）
+
+日志及每次命令／timeout／exit／源码和历史output哈希：`output/playwright/lc-u3-k3-p2/p2-*-20261012.{log,status.json}`；逐文件哈希及新untracked测试哈希：`output/playwright/lc-u3-k3-p2/resume-20261012/final-manifest.json`。最终tracked源码hash `879bc4da540b6cbe59e7ef5887bc2ae41f397ee1ba925c26df51328f922736b6`；运行中源码／历史output保持不变。新review测试在red→green期间逐字节未变。
+
+| 命令／run | exit | 实际结果 |
+| --- | --- | --- |
+| `node --test tests/admin/create-order-review.test.ts` / `p2-resume-red-20261012` | 1 | 13项：11个目标断言失败、2正对照通过；原UNKNOWN拒绝死锁red另见保留的`p2-attempt-red.log` |
+| `node --test --experimental-transform-types` + review/attempt/model/client/copy/timezone-ui六套 / `p2-pure-node-final-20261012` | 0 | **42/42**，组件／客户端MOCK证据，含实际源码和网络边界fixture |
+| `TZ=UTC`、`TZ=America/Los_Angeles`，`node --test --experimental-strip-types tests/admin/timezone-ui.test.mjs` | 0、0 | 各**7/7**；新增依赖未登记的red见`p2-related-node-final-20261012.log` |
+| `pnpm --dir apps/admin exec tsc --noEmit -p .` | 0 | admin类型检查；随后只改测试／文档，产品TS输入未变 |
+| `go vet -tags browser ./tests/foundation`；`node --check tests/admin/create-order-drawer-gate.mjs`；`git diff --check` | 0 | 结构检查；不代表PG／浏览器通过 |
+| `bash scripts/dev/test-local.sh --list` | 0 | 82模式；本单元属于**`--browser-manual-order`**，没有独立create-order-drawer模式 |
+| `bash scripts/dev/check-gates.sh` / `p2-final-gates-premerge-20261012` | 0 | 包含漂移检查；82模式与header／registry检查通过 |
+| `go run ./scripts/dev/contractdrift` | 0 | **errors=0，warnings=362**历史baseline；Go278／contract146／BFF295 |
+| `bash scripts/dev/test-node.sh` | 1 | 首批455：452通过、3失败；`team-bff`无法listen127.0.0.1（EPERM），两个deploy-prep测试遭Docker socket拒绝；整个门禁未完成 |
+| 包含真实`create-order-bff.test.ts`的相关Node检查 | 1 | 本地HTTP listener遭EPERM；同轮TZ新增依赖错误随后修复为两TZ绿色；BFF网络验收仍BLOCKED |
+| `bash scripts/dev/test-local.sh --browser-manual-order` | 1 | admin production build成功，Docker socket拒绝，未启动Go/PG/浏览器案例；**NOT_RUN**浏览器结果 |
+| `git fetch origin r3/integration`；`git add -- <owned paths>` | 255、128 | 分别无法写`FETCH_HEAD`和`index.lock`：Operation not permitted；未尝试绕过权限或rebase |
+
+当前证据级：**E3限于42个组件／客户端MOCK与本地静态门禁；真实PG／浏览器NOT_RUN，整个PR32不READY。** 源码只读独立复核未见指定范围P0/P1／隐私P2（E1），不能代替K3或真实浏览器。现有浏览器订单观察只证明merchant-manual总数和receipt绑定计数，不能单独证明所有checkout孤儿订单不存在。
+
+### 允许写路径、保留与续接
+
+- 仅`apps/admin/components/{CreateOrderDrawer,BuyerPanel,CommentStream}.tsx`，`apps/admin/lib/{create-order-attempt,create-order-model,create-order-copy}.ts`，`scripts/dev/test-node.sh`，`tests/admin/create-order-{attempt,model,review}.test.ts`，`tests/admin/create-order-drawer-gate.mjs`，`tests/admin/timezone-ui.test.mjs`，`tests/foundation/browser_create_order_drawer_test.go`，本DELIVERY及owned ignored证据。没有产品Go／SQL／migration／lockfile改动。`output/ext-agents/`未修改。
+- 原七项WIP的`paused.patch` SHA256 `7cfd496df313c80bbec909d79b5ec236d931e4fe5e77e6be239052a9c37dd11b`及确切stash保持原样。修改前文件、当前完整文件与patch保存在`output/playwright/lc-u3-k3-p2/resume-20261012/`；没有丢失工作。
+- BLOCKED：运行时`.git`只读、loopback监听／Docker socket访问受限。只有实际运行权限改变后才能提交、`git fetch origin r3/integration && git merge FETCH_HEAD`、保留两边意图解决冲突，`test-node.sh`必须保留两边所有entry，再完整复跑本地门禁。缓存`origin/r3/integration` SHA见manifest，不视为本端fetch结果。
+- CI gates／待复跑：`--browser-manual-order`（legacy+drawer全部真实点击／PG），`LC_DRAWER_CALIBRATION=new-key-on-retry`应精确RED single-order；入口回归`--browser-live-console`、`--browser-inbox`，以及合并后pr-modes要求的模式。calibration本轮NOT_RUN；全foundation／G07、LIVE／生产发布未运行。
+
+以下为保留的历史轮次记录；其中“暂停”和通过结果只属于各自日期／SHA。
+
 ## Scope-404复验 — PR36主干合并（2026-10-10）
 
 - 本轮只复验 LCU2_404。合并提交/测试源码 **`463cd8f0bfffe7a2031d559b9f240a9c966a205a`** 包含 SCOPE-404 PR36 **`287e08aa6c694030333dd00797c0d3bbac15abc6`**。三条 LC-U3 P2 继续暂停；本轮不代表整 PR32 或待修代码验收。

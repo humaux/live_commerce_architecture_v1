@@ -278,7 +278,7 @@ export function CommentStream({
                   >
                     {c.select}
                   </button>
-                  {row.marks.claim?.bundle_id && <><button type="button" data-testid={`comment-create-order-${row.ref}`} disabled={!permitted(store,"inventory:reserve") || !permitted(store,"orders:read")} onClick={() => setOrderBundle({id:row.marks.claim!.bundle_id!,generation:stream.resetGeneration})}>{createOrderCopy[locale].title}</button>{(!permitted(store,"inventory:reserve") || !permitted(store,"orders:read")) && <p>{createOrderCopy[locale].permission}</p>}</>}
+                  {row.marks.claim?.bundle_id && <><button type="button" data-testid={`comment-create-order-${row.ref}`} disabled={!permitted(store,"inventory:reserve") || !permitted(store,"orders:read") || !permitted(store,"catalog:read")} onClick={() => setOrderBundle({id:row.marks.claim!.bundle_id!,generation:stream.resetGeneration})}>{createOrderCopy[locale].title}</button>{(!permitted(store,"inventory:reserve") || !permitted(store,"orders:read") || !permitted(store,"catalog:read")) && <p>{createOrderCopy[locale].permission}</p>}</>}
                 </li>
               ))}
             </ul>
