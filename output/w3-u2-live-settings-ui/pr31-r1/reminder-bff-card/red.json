@@ -1,0 +1,17 @@
+{
+  "task_id": "e0cab99c-sub-reminder-bff",
+  "base_commit": "c9608348149f83d5d3433bf21b741ccc4f9dff13",
+  "argv": [
+    "node",
+    "--test",
+    "--experimental-strip-types",
+    "--test-name-pattern=reminder route|reminder absence",
+    "tests/admin/live-settings-bff.test.ts"
+  ],
+  "exit_code": 1,
+  "sha256": {
+    "apps/admin/lib/live-settings-proxy.ts": "724d57f597d6bdb6a4ff9402037187b516ed39ab527525ec20f59931c4f5cbe4",
+    "apps/admin/lib/live-settings-model.ts": "47233569c51ab7cd3cc2518a65b04ec6fc06d88fd0a60dcee85f49f2eca7c824",
+    "tests/admin/live-settings-bff.test.ts": "7697595cdede0890579dc152ebf110df75fc54559b06b14227265f84a1b14bb8"
+  }
+}

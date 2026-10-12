@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "node",
+    "--test",
+    "tests/ci/playwright-deps.test.mjs"
+  ],
+  "exit_code": 0,
+  "source_parent": "9e6282b79906d7a1c3b7821d6c80f89ced4f4acd",
+  "changed_file_sha256": "5a4c50d9a29e9cd27cef3c2575ee165e368b2529db0eb7d9c59b255cc01fb0ba",
+  "elapsed_seconds": 8.785,
+  "log": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/registry-green.log"
+}

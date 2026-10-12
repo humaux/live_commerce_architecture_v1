@@ -1,0 +1,33 @@
+[
+  {
+    "command": [
+      "bash",
+      "scripts/dev/check-gates.sh"
+    ],
+    "exit": 0,
+    "source": "539f1cb8138975e27ef75cdaf0563f154117c698",
+    "log": "output/w3-u2-live-settings-ui/pr31-r1/merge-check-gates.log",
+    "sha256": "543708b00c97e8f346ffa03059664095687eb03d910b1bcc6cc72fc871eec4e5"
+  },
+  {
+    "command": [
+      "bash",
+      "scripts/dev/test-node.sh"
+    ],
+    "exit": 0,
+    "source": "539f1cb8138975e27ef75cdaf0563f154117c698",
+    "log": "output/w3-u2-live-settings-ui/pr31-r1/merge-node.log",
+    "sha256": "226fde9b2ddf5159c53823b6282508d70e0abdd2281c2581ab87ade0ecfc118d"
+  },
+  {
+    "command": [
+      "bash",
+      "scripts/dev/test-local.sh",
+      "--list"
+    ],
+    "exit": 0,
+    "source": "539f1cb8138975e27ef75cdaf0563f154117c698",
+    "log": "output/w3-u2-live-settings-ui/pr31-r1/merge-list.log",
+    "sha256": "462cc214e71676c0cb82e06c4ccceb397bc612117ba19798dee00f5e64fb89f5"
+  }
+]

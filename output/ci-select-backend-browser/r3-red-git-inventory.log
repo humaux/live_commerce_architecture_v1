@@ -1,0 +1,34 @@
+TAP version 13
+# Subtest: round 3: the real Git inventory includes a new route before git add
+not ok 1 - round 3: the real Git inventory includes a new route before git add
+  ---
+  duration_ms: 2.872292
+  type: 'test'
+  location: '/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/tests/ci/backend-coverage.test.mjs:21:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/tests/ci/backend-coverage.test.mjs:23:10)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 41.474709

@@ -1,0 +1,92 @@
+{
+  "audited_head": "036c317f62b7c8bba5521e2673f4825272515fba",
+  "ci": {
+    "run_id": 37956489889,
+    "job_id": 113918794414,
+    "head": "539f1cb8138975e27ef75cdaf0563f154117c698",
+    "artifact_id": 11634812141,
+    "artifact_expired": false,
+    "failure_cases": [
+      {
+        "view": "private",
+        "timeout_ms": 15000,
+        "error_context_sha256": "40a3da8cfcecef5540301b54cf6ebd0d65754c571753ab102ce3ef29c9dadd07",
+        "a2_record_file": "playwright/run.DjIhY902/live-console-118673117/comment-reads-a80c934079c9585d1976-c542a18a1edfe73f2896.json",
+        "a2_record_sha256": "1535d90295aeb7297102e6cfd08625495281cf813ba73544173ff9dc9138ebcf",
+        "a2_statuses": [
+          200
+        ],
+        "first_scoped_denial_status": "UNKNOWN; other scoped routes not recorded; no HAR/trace/network file in artifact"
+      },
+      {
+        "view": "all",
+        "timeout_ms": 15000,
+        "error_context_sha256": "5d3bcc556801ce143ce2f4bd8ab88261a1191cfc8d4b36ffdd22f7389c01ffcf",
+        "a2_record_file": "playwright/run.DjIhY902/live-console-118673117/comment-reads-a80c934079c9585d1976-a239e690a38cf837fc90.json",
+        "a2_record_sha256": "1535d90295aeb7297102e6cfd08625495281cf813ba73544173ff9dc9138ebcf",
+        "a2_statuses": [
+          200
+        ],
+        "first_scoped_denial_status": "UNKNOWN; other scoped routes not recorded; no HAR/trace/network file in artifact"
+      }
+    ],
+    "network_capture_available": false
+  },
+  "local": {
+    "grant_cases": [
+      {
+        "repetition": 1,
+        "view": "all",
+        "status": 404,
+        "privateRows": 0,
+        "buyerPanel": 0,
+        "sessionRetained": true,
+        "postLossReads": 0
+      },
+      {
+        "repetition": 1,
+        "view": "private",
+        "status": 404,
+        "privateRows": 0,
+        "buyerPanel": 0,
+        "sessionRetained": true,
+        "postLossReads": 0
+      },
+      {
+        "repetition": 2,
+        "view": "all",
+        "status": 404,
+        "privateRows": 0,
+        "buyerPanel": 0,
+        "sessionRetained": true,
+        "postLossReads": 0
+      },
+      {
+        "repetition": 2,
+        "view": "private",
+        "status": 404,
+        "privateRows": 0,
+        "buyerPanel": 0,
+        "sessionRetained": true,
+        "postLossReads": 0
+      }
+    ],
+    "scope_events_403": 0,
+    "scope_events_404": 6,
+    "scope_events_total": 197
+  },
+  "source": {
+    "shared_fix": "58510545f021d40dcc145c2f3531363e5aa47a81",
+    "shared_fix_scope": "catchall inbox GET403 reproof; dedicated live-settings-proxy not covered by this commit",
+    "ours": "GET403 still returned directly; our fresh authority check applies to check404, not 403",
+    "sha256": {
+      "apps/admin/app/api/stores/[store]/[...resource]/route.ts": "8a3c1919f835a5779715aec2162a894f85cb351da74fea6a93fa1ccf4e20e6b6",
+      "apps/admin/lib/auth.ts": "0ad0e3af716c76a702f513083aec27eb3c5eebd61614ab513a276aa254cf0126",
+      "apps/admin/lib/live-settings-proxy.ts": "45da3cdfba23518c75bcc2743928a693d1cb2358bafa63cacd7dab8802e4ee73",
+      "apps/admin/components/BuyerPanel.tsx": "9116854af47cd0839523e3e540318306f0b26365fe11de172e229e7eec7fc43c"
+    }
+  },
+  "conclusion": "CI539 actual first403 is not provable from retained evidence; code can hit the same race; local404 passes do not cover it. Do not duplicate shared403 fix; wait reviewed shared integration and report dedicated-proxy coverage gap.",
+  "product_source_changes": "none",
+  "evidence_level": "E1 source/artifact audit; no new runtime execution"
+}

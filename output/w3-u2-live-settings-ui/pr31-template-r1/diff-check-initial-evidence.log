@@ -1,0 +1,55 @@
+$ git show --format= --check HEAD
+output/w3-u2-live-settings-ui/pr31-template-r1/red-initial-envelope-expectation.log:24: trailing whitespace.
++
+output/w3-u2-live-settings-ui/pr31-template-r1/red-initial-envelope-expectation.log:26: trailing whitespace.
++
+output/w3-u2-live-settings-ui/pr31-template-r1/red-initial-envelope-expectation.log:42: trailing whitespace.
++
+output/w3-u2-live-settings-ui/pr31-template-r1/red-initial-envelope-expectation.log:44: trailing whitespace.
++
+output/w3-u2-live-settings-ui/pr31-template-r1/red-initial-envelope-expectation.log:60: trailing whitespace.
++
+output/w3-u2-live-settings-ui/pr31-template-r1/red-initial-envelope-expectation.log:62: trailing whitespace.
++
+output/w3-u2-live-settings-ui/pr31-template-r1/red-initial-envelope-expectation.log:78: trailing whitespace.
++
+output/w3-u2-live-settings-ui/pr31-template-r1/red-initial-envelope-expectation.log:80: trailing whitespace.
++
+output/w3-u2-live-settings-ui/pr31-template-r1/red-initial-envelope-expectation.log:96: trailing whitespace.
++
+output/w3-u2-live-settings-ui/pr31-template-r1/red-initial-envelope-expectation.log:98: trailing whitespace.
++
+output/w3-u2-live-settings-ui/pr31-template-r1/red-initial-envelope-expectation.log:114: trailing whitespace.
++
+output/w3-u2-live-settings-ui/pr31-template-r1/red-initial-envelope-expectation.log:116: trailing whitespace.
++
+output/w3-u2-live-settings-ui/pr31-template-r1/red-initial-envelope-expectation.log:133: trailing whitespace.
++
+output/w3-u2-live-settings-ui/pr31-template-r1/red-initial-envelope-expectation.log:141: trailing whitespace.
++
+output/w3-u2-live-settings-ui/pr31-template-r1/red.log:24: trailing whitespace.
++
+output/w3-u2-live-settings-ui/pr31-template-r1/red.log:26: trailing whitespace.
++
+output/w3-u2-live-settings-ui/pr31-template-r1/red.log:42: trailing whitespace.
++
+output/w3-u2-live-settings-ui/pr31-template-r1/red.log:44: trailing whitespace.
++
+output/w3-u2-live-settings-ui/pr31-template-r1/red.log:60: trailing whitespace.
++
+output/w3-u2-live-settings-ui/pr31-template-r1/red.log:62: trailing whitespace.
++
+output/w3-u2-live-settings-ui/pr31-template-r1/red.log:78: trailing whitespace.
++
+output/w3-u2-live-settings-ui/pr31-template-r1/red.log:80: trailing whitespace.
++
+output/w3-u2-live-settings-ui/pr31-template-r1/red.log:96: trailing whitespace.
++
+output/w3-u2-live-settings-ui/pr31-template-r1/red.log:98: trailing whitespace.
++
+output/w3-u2-live-settings-ui/pr31-template-r1/red.log:114: trailing whitespace.
++
+output/w3-u2-live-settings-ui/pr31-template-r1/red.log:116: trailing whitespace.
++
+
+EXIT_CODE=2

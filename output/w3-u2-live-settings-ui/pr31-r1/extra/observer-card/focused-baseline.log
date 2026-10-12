@@ -1,0 +1,119 @@
+✔ PR18 final public unresolved receipt survives relogin but coarse fence stays session-bound (1.246875ms)
+✔ PR18 enabled downgrade gates hook output before passive cleanup (22.103ms)
+✔ PR18 enabled downgrade first all render hides rows buyer and composer (5.796834ms)
+✔ PR18 enabled downgrade first private render hides rows buyer and composer (3.479334ms)
+✔ PR18 R2 scoped404 a2 clears both private views and stops recovery reads (3.5365ms)
+✔ PR18 R2 scoped404 a8 clears both private views and stops recovery reads (3.312208ms)
+✔ PR18 R2 scoped404 older clears both private views and stops recovery reads (3.960459ms)
+✔ PR18 A8 clears names synchronously and keeps loaded older pages through a head poll (4.714042ms)
+✔ PR18 A8 paged list stays bounded across fresh heads and stops older at cap (108.247083ms)
+✔ PR18 A8 hides clear before effects even without pagination (1.345625ms)
+✔ PR18 deletion HEAD clears selected comment composer but keeps history and public guard (4.35475ms)
+✔ PR18 short complete HEAD clears a covered selected comment and composer (3.504083ms)
+✔ PR18 quiet A2 stream refreshes delayed claim marks without a new sequence or user refresh (1.652333ms)
+✔ PR18 late claim automatically exposes keyword view and the reused BuyerPanel (2.865375ms)
+✔ K3 A8 private polls every 10s, backs off, resets, pauses hidden and stops off-filter (7.574917ms)
+✔ K3 A8 unreplied polls every 10s, backs off, resets, pauses hidden and stops off-filter (6.722833ms)
+✔ K3 pasted tab is refused with invalid_text copy before any reply POST (0.803167ms)
+✔ PR18 facts_unavailable mark uses actionable copy zh-TW (0.492291ms)
+✔ PR18 facts_unavailable mark uses actionable copy zh-CN (0.440958ms)
+✔ PR18 facts_unavailable mark uses actionable copy en (0.43175ms)
+✔ real SQL UNKNOWN mark blocks public-mode switching without a local receipt (0.439291ms)
+✔ PR18 unknown public receipt has the correct cross-comment fence (2.436375ms)
+✔ PR18 queued public receipt has the correct cross-comment fence (2.023708ms)
+✔ PR18 public guard releases only definite sent (0.866625ms)
+✔ PR18 public guard releases only definite failed (0.8465ms)
+✔ PR18 public guard releases only definite blocked (0.869625ms)
+✔ PR18 public guard releases only definite refused (0.704375ms)
+✔ PR31 soldout badge en SUCCEEDED reflects confirmed delivery (0.600959ms)
+✔ PR31 soldout badge en ACKNOWLEDGED reflects confirmed delivery (0.495584ms)
+✔ PR31 soldout badge en READY reflects confirmed delivery (0.424042ms)
+✔ PR31 soldout badge en DISPATCHING reflects confirmed delivery (0.416625ms)
+✔ PR31 soldout badge en FAILED_FINAL reflects confirmed delivery (0.408458ms)
+✔ PR31 soldout badge en BLOCKED_POLICY reflects confirmed delivery (0.497666ms)
+✔ PR31 soldout badge en UNKNOWN reflects confirmed delivery (0.498375ms)
+✔ PR31 soldout badge zh-TW SUCCEEDED reflects confirmed delivery (0.472333ms)
+✔ PR31 soldout badge zh-TW ACKNOWLEDGED reflects confirmed delivery (0.430542ms)
+✔ PR31 soldout badge zh-TW READY reflects confirmed delivery (0.365333ms)
+✔ PR31 soldout badge zh-TW DISPATCHING reflects confirmed delivery (0.387917ms)
+✔ PR31 soldout badge zh-TW FAILED_FINAL reflects confirmed delivery (0.379916ms)
+✔ PR31 soldout badge zh-TW BLOCKED_POLICY reflects confirmed delivery (0.389542ms)
+✔ PR31 soldout badge zh-TW UNKNOWN reflects confirmed delivery (0.412416ms)
+✔ PR31 soldout badge zh-CN SUCCEEDED reflects confirmed delivery (0.387834ms)
+✔ PR31 soldout badge zh-CN ACKNOWLEDGED reflects confirmed delivery (0.393791ms)
+✔ PR31 soldout badge zh-CN READY reflects confirmed delivery (0.404292ms)
+✔ PR31 soldout badge zh-CN DISPATCHING reflects confirmed delivery (0.371625ms)
+✔ PR31 soldout badge zh-CN FAILED_FINAL reflects confirmed delivery (0.370125ms)
+✔ PR31 soldout badge zh-CN BLOCKED_POLICY reflects confirmed delivery (0.409334ms)
+✔ PR31 soldout badge zh-CN UNKNOWN reflects confirmed delivery (0.515333ms)
+✔ PR18 P1 IG earliest50 refresh preserves100 rows selection and private draft (32.792083ms)
+✔ PR18 final expired older cursor keeps live buffer selection and polling (1.665542ms)
+✔ PR18 command refresh keeps epoch evidence while cursorless initial=0 (0.867209ms)
+✔ PR18 command refresh keeps epoch evidence while cursorless initial=1 (0.742208ms)
+✔ PR18 bounded window refresh removes FB deletion behind60 arrivals history=false (2.922167ms)
+✔ PR18 bounded window refresh removes FB deletion behind60 arrivals history=true (2.814916ms)
+✔ PR18 bounded window refresh preserves explicit history until manual refresh (1.435ms)
+✔ PR18 bounded window refresh atomically rebuilds IG100 deleted75=false (6.976792ms)
+✔ PR18 bounded window refresh atomically rebuilds IG100 deleted75=true (5.765625ms)
+✔ PR18 bounded window refresh stalled never publishes an incomplete IG window (6.530459ms)
+✔ PR18 bounded window refresh budget never publishes an incomplete IG window (8.975125ms)
+✔ PR18 bounded window refresh removes deleted IG final sequence (2.204708ms)
+✔ actual A2 hook fake clock: 3/6/12/24/30 backoff, success reset, hide clears and stops, 403 locks (3.288959ms)
+✔ actual reset clears selected buyer and rereads without the old epoch cursor (0.767333ms)
+✔ reply hints, coded error, UNKNOWN and capability state execute the actual composer (1.009542ms)
+✔ PR18 R2 templates read 404 denies the composer (0.4525ms)
+✔ PR18 buyer-panel read 404: stays local (retention-purged or gone selection), console keeps access (0.40075ms)
+✔ PR18 buyer-panel read 403: revokes the console scope (0.346958ms)
+✔ W3-U2 restriction check 404 first expires all console views and rejects late A8 (2.154583ms)
+✔ PR31 actual restriction GET is accepted by the LCU2_404 observer with strict scope negatives (7.9435ms)
+ℹ {"path":"/api/stores/10000000-0000-4000-8000-000000000001/live-sessions/22222222-2222-4222-8222-222222222222/claims/blocklist/check","category":"restriction","method":"GET","status":404}
+✖ PR31 restriction bundle not_found keeps healthy console polls and clears only selected buyer private state (2.119667ms)
+✖ PR31 terminal denial admits no queued A2 timer read before passive cleanup (1.171917ms)
+✔ secondary failures preserve A1; only A1 is periodic; IG notice follows the platform/embeddability observation (201.220583ms)
+✔ the existing console refresh also explicitly refreshes its parent list; no automatic list read (17.47ms)
+✔ parent forwards only an explicit refresh callback and retains the scene when list is unavailable (7.360709ms)
+✔ every explicit browser response/event/navigation waiter has a finite sub-test budget (7.316084ms)
+ℹ tests 74
+ℹ suites 0
+ℹ pass 72
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 647.561
+
+✖ failing tests:
+
+test at tests/admin/comment-stream-hooks.test.ts:810:1
+✖ PR31 restriction bundle not_found keeps healthy console polls and clears only selected buyer private state (2.119667ms)
+  AssertionError [ERR_ASSERTION]: healthy server scope stays enabled after bundle-only 404
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-observer-tests/tests/admin/comment-stream-hooks.test.ts:827:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:838:1
+✖ PR31 terminal denial admits no queued A2 timer read before passive cleanup (1.171917ms)
+  AssertionError [ERR_ASSERTION]: the already scheduled A2 callback must check terminal admission before fetching
+  
+  2 !== 1
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-observer-tests/tests/admin/comment-stream-hooks.test.ts:847:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

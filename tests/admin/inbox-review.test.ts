@@ -269,10 +269,9 @@ test("actual A9 stale held completion cannot paint after component cleanup", asy
   assert.equal(fence.current(ticket), false);
   assert.equal(textOf(host.output).includes("MOCK_DM"), false);
 });
-test("P2 actual A14 404 clears buyer facts and customer draft (explicit future-version MOCK)", async (t) => {
+test("P2 actual A14 404 clears buyer facts and customer draft (A9 authority)", async (t) => {
   const env = environment(t);
-  // A13 production lacks version. This fixture exercises an existing dormant handler,
-  // and does not assert backend availability or change the missing-version production rule.
+  // A14 takes its independent CAS version from A9, never a fabricated A13 field.
   const buyer = {
     display_name: "MOCK_BUYER",
     platform: "messenger",
@@ -281,11 +280,14 @@ test("P2 actual A14 404 clears buyer facts and customer draft (explicit future-v
     claim_total_minor: 0,
     orders: [],
     link_pending_manual: false,
-    version: 7,
   };
   let writes = 0;
   globalThis.fetch = async (input, init) => {
     if (String(input).includes("buyer-panel?")) return response(buyer);
+    if (String(input).includes("/messages?")) return response({ ...thread, link_version: 7 });
+    if (String(input).includes("/customers?")) return response({ items: [{ customer_id: "30000000-0000-4000-8000-000000000003", display_name: "MOCK_PICK", phone_last3: null,
+      first_seen_at: "2030-01-01T00:00:00Z", last_activity_at: "2030-01-01T00:00:00Z", orders_count: 0, paid_orders_count: 0,
+      captured_minor: 0, refunded_minor: 0, currency: null, claims_count: 0, platforms: [], consents: { marketing_messages: false, ads_personalization: false }, active: true, imported: false, tags: [] }], next_cursor: "" });
     if (String(input).endsWith("/customer-link")) {
       writes++;
       return response({ code: "not_found" }, 404);
@@ -298,7 +300,7 @@ test("P2 actual A14 404 clears buyer facts and customer draft (explicit future-v
     "A13 buyer fields and idle link controls",
   );
   assert.ok(textOf(host.output).includes("MOCK_BUYER"));
-  const input = node(host, (n) => n.type === "input");
+  const input = node(host, (n) => n.type === "select");
   assert.equal(input.props.disabled, false);
   input.props.onChange({
     target: { value: "30000000-0000-4000-8000-000000000003" },
@@ -311,18 +313,19 @@ test("P2 actual A14 404 clears buyer facts and customer draft (explicit future-v
   );
   assert.equal(writes, 1);
   assert.equal(textOf(host.output).includes("MOCK_BUYER"), false, "A14 authority-loss 404 removes old buyer facts");
-  assert.ok(!nodes(host.output).some((n) => n.type === "input" && n.props.value), "customer draft removed");
+  assert.ok(!nodes(host.output).some((n) => n.type === "select" && n.props.value), "customer draft removed");
 });
 test("safe authority errors remain the actual InboxError transport class", () => {
   const error = new InboxError("not_found", 404);
   assert.equal(error.status, 404);
   assert.equal(error.code, "not_found");
 });
-test("actual current A13 without version keeps A14 disabled; future MOCK grants no backend claim", async (t) => {
+test("A9 missing link_version keeps A14 disabled even when A13 is available", async (t) => {
   const env = environment(t);
   let writes = 0;
   globalThis.fetch = async (_input, init) => {
     if (init?.method === "POST") writes++;
+    if (String(_input).includes("/customers?")) return response({ items: [], next_cursor: "" });
     return response({
       display_name: "MOCK_BUYER_NO_VERSION",
       platform: "messenger",
@@ -336,11 +339,11 @@ test("actual current A13 without version keeps A14 disabled; future MOCK grants 
   const host = env.mount(() => BuyerPanel({ store, conversationId: conversation.conversation_id } as any));
   await host.waitFor(
     () => textOf(host.output).includes("MOCK_BUYER_NO_VERSION") && host.output.props["aria-busy"] === false,
-    "A13 actual missing-version controls",
+    "A9 missing-version controls",
   );
-  assert.equal(node(host, (n) => n.type === "input").props.disabled, true);
+  assert.equal(node(host, (n) => n.type === "select").props.disabled, true);
   assert.equal(node(host, (n) => n.type === "button" && textOf(n) === "Link customer").props.disabled, true);
-  assert.equal(writes, 0, "missing A13 version never synthesizes authority or mutation");
+  assert.equal(writes, 0, "missing A9 version never synthesizes authority or mutation");
 });
 for (const kind of ["takeover", "messages"] as const) {
   test(`P1-2 actual ${kind === "takeover" ? "A11 takeover" : "A12 send"} write 404 clears private state despite failing follow-up A9`, async (t) => {
@@ -424,7 +427,9 @@ for (const shape of ["omitted", "empty", "populated"] as const) {
     let writes = 0;
     globalThis.fetch = async (input, init) => {
       if (init?.method === "POST") writes++;
-      assert.ok(String(input).includes("buyer-panel?"), "actual A13 request only");
+      if (String(input).includes("/customers?")) return response({ items: [], next_cursor: "" });
+      if (String(input).includes("/messages?")) return response({ ...thread, link_version: null });
+      assert.ok(String(input).includes("buyer-panel?"), "actual A13/A9 and existing customer requests only");
       return response(buyer);
     };
     // The owner hint is intentionally stale for omitted orders. Server omission remains authoritative.
@@ -435,11 +440,11 @@ for (const shape of ["omitted", "empty", "populated"] as const) {
     );
     const rendered = textOf(host.output);
     assert.ok(rendered.includes("MOCK_CLAIM"), "authorized claim facts remain visible");
-    assert.equal(rendered.includes("Order details require order read access."), shape === "omitted");
+    assert.equal(rendered.includes("The server has not shared order details."), shape === "omitted");
     assert.equal(rendered.includes("No orders supplied."), shape === "empty", "omission must never pretend authorized emptiness");
     assert.equal(rendered.includes("MOCK_A13_ORDER"), shape === "populated");
     assert.equal(nodes(host.output).filter((n) => n.type === "button" && textOf(n) === "MOCK_A13_ORDER").length, shape === "populated" ? 1 : 0);
-    assert.equal(node(host, (n) => n.type === "input").props.disabled, true);
+    assert.equal(node(host, (n) => n.type === "select").props.disabled, true);
     for (const label of ["Link customer", "Unlink customer"])
       assert.equal(node(host, (n) => n.type === "button" && textOf(n) === label).props.disabled, true, "A14 stays deferred without its supplied version");
     assert.equal(writes, 0);

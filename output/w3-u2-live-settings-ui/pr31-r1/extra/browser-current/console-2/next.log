@@ -1,0 +1,9 @@
+▲ Next.js 16.3.5
+- Local:         http://127.0.0.1:53753
+- Network:       http://127.0.0.1:53753
+✓ Ready in 0ms
+✓ Running next.config took 6ms
+⨯ Error: The destination stream closed early.
+    at ignore-listed frames {
+  digest: '929681814'
+}

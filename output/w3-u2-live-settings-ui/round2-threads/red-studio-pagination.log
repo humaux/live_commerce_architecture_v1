@@ -1,0 +1,266 @@
+✖ PR31 Studio pagination 404 clears private page and fences late reads (30.354916ms)
+✔ PR31 Studio pagination 503 preserves authorized private state (2.584166ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 1
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 509.13275
+
+✖ failing tests:
+
+test at tests/admin/live-settings-hooks.test.ts:180:40
+✖ PR31 Studio pagination 404 clears private page and fences late reads (30.354916ms)
+  AssertionError [ERR_ASSERTION]: sessions must clear on Studio not-found
+  + actual - expected
+  
+  + {
+  +   items: [
+  +     {
+  +       aspect_ratio: '16:9',
+  +       created_at: '2030-01-01T00:00:00Z',
+  +       program_id: '10000000-0000-4000-8000-000000000001',
+  +       scheduled_at: null,
+  +       session_id: '00000000-0000-4000-8000-000000000001',
+  +       state: 'DRAFT',
+  +       title: 'MOCK scene 1',
+  +       updated_at: '2030-01-01T00:00:00Z',
+  +       version: 1
+  +     },
+  +     {
+  +       aspect_ratio: '16:9',
+  +       created_at: '2030-01-01T00:00:00Z',
+  +       program_id: '10000000-0000-4000-8000-000000000001',
+  +       scheduled_at: null,
+  +       session_id: '00000000-0000-4000-8000-000000000002',
+  +       state: 'DRAFT',
+  +       title: 'MOCK scene 2',
+  +       updated_at: '2030-01-01T00:00:00Z',
+  +       version: 1
+  +     },
+  +     {
+  +       aspect_ratio: '16:9',
+  +       created_at: '2030-01-01T00:00:00Z',
+  +       program_id: '10000000-0000-4000-8000-000000000001',
+  +       scheduled_at: null,
+  +       session_id: '00000000-0000-4000-8000-000000000003',
+  +       state: 'DRAFT',
+  +       title: 'MOCK scene 3',
+  +       updated_at: '2030-01-01T00:00:00Z',
+  +       version: 1
+  +     },
+  +     {
+  +       aspect_ratio: '16:9',
+  +       created_at: '2030-01-01T00:00:00Z',
+  +       program_id: '10000000-0000-4000-8000-000000000001',
+  +       scheduled_at: null,
+  +       session_id: '00000000-0000-4000-8000-000000000004',
+  +       state: 'DRAFT',
+  +       title: 'MOCK scene 4',
+  +       updated_at: '2030-01-01T00:00:00Z',
+  +       version: 1
+  +     },
+  +     {
+  +       aspect_ratio: '16:9',
+  +       created_at: '2030-01-01T00:00:00Z',
+  +       program_id: '10000000-0000-4000-8000-000000000001',
+  +       scheduled_at: null,
+  +       session_id: '00000000-0000-4000-8000-000000000005',
+  +       state: 'DRAFT',
+  +       title: 'MOCK scene 5',
+  +       updated_at: '2030-01-01T00:00:00Z',
+  +       version: 1
+  +     },
+  +     {
+  +       aspect_ratio: '16:9',
+  +       created_at: '2030-01-01T00:00:00Z',
+  +       program_id: '10000000-0000-4000-8000-000000000001',
+  +       scheduled_at: null,
+  +       session_id: '00000000-0000-4000-8000-000000000006',
+  +       state: 'DRAFT',
+  +       title: 'MOCK scene 6',
+  +       updated_at: '2030-01-01T00:00:00Z',
+  +       version: 1
+  +     },
+  +     {
+  +       aspect_ratio: '16:9',
+  +       created_at: '2030-01-01T00:00:00Z',
+  +       program_id: '10000000-0000-4000-8000-000000000001',
+  +       scheduled_at: null,
+  +       session_id: '00000000-0000-4000-8000-000000000007',
+  +       state: 'DRAFT',
+  +       title: 'MOCK scene 7',
+  +       updated_at: '2030-01-01T00:00:00Z',
+  +       version: 1
+  +     },
+  +     {
+  +       aspect_ratio: '16:9',
+  +       created_at: '2030-01-01T00:00:00Z',
+  +       program_id: '10000000-0000-4000-8000-000000000001',
+  +       scheduled_at: null,
+  +       session_id: '00000000-0000-4000-8000-000000000008',
+  +       state: 'DRAFT',
+  +       title: 'MOCK scene 8',
+  +       updated_at: '2030-01-01T00:00:00Z',
+  +       version: 1
+  +     },
+  +     {
+  +       aspect_ratio: '16:9',
+  +       created_at: '2030-01-01T00:00:00Z',
+  +       program_id: '10000000-0000-4000-8000-000000000001',
+  +       scheduled_at: null,
+  +       session_id: '00000000-0000-4000-8000-000000000009',
+  +       state: 'DRAFT',
+  +       title: 'MOCK scene 9',
+  +       updated_at: '2030-01-01T00:00:00Z',
+  +       version: 1
+  +     },
+  +     {
+  +       aspect_ratio: '16:9',
+  +       created_at: '2030-01-01T00:00:00Z',
+  +       program_id: '10000000-0000-4000-8000-000000000001',
+  +       scheduled_at: null,
+  +       session_id: '00000000-0000-4000-8000-000000000010',
+  +       state: 'DRAFT',
+  +       title: 'MOCK scene 10',
+  +       updated_at: '2030-01-01T00:00:00Z',
+  +       version: 1
+  +     },
+  +     {
+  +       aspect_ratio: '16:9',
+  +       created_at: '2030-01-01T00:00:00Z',
+  +       program_id: '10000000-0000-4000-8000-000000000001',
+  +       scheduled_at: null,
+  +       session_id: '00000000-0000-4000-8000-000000000011',
+  +       state: 'DRAFT',
+  +       title: 'MOCK scene 11',
+  +       updated_at: '2030-01-01T00:00:00Z',
+  +       version: 1
+  +     },
+  +     {
+  +       aspect_ratio: '16:9',
+  +       created_at: '2030-01-01T00:00:00Z',
+  +       program_id: '10000000-0000-4000-8000-000000000001',
+  +       scheduled_at: null,
+  +       session_id: '00000000-0000-4000-8000-000000000012',
+  +       state: 'DRAFT',
+  +       title: 'MOCK scene 12',
+  +       updated_at: '2030-01-01T00:00:00Z',
+  +       version: 1
+  +     },
+  +     {
+  +       aspect_ratio: '16:9',
+  +       created_at: '2030-01-01T00:00:00Z',
+  +       program_id: '10000000-0000-4000-8000-000000000001',
+  +       scheduled_at: null,
+  +       session_id: '00000000-0000-4000-8000-000000000013',
+  +       state: 'DRAFT',
+  +       title: 'MOCK scene 13',
+  +       updated_at: '2030-01-01T00:00:00Z',
+  +       version: 1
+  +     },
+  +     {
+  +       aspect_ratio: '16:9',
+  +       created_at: '2030-01-01T00:00:00Z',
+  +       program_id: '10000000-0000-4000-8000-000000000001',
+  +       scheduled_at: null,
+  +       session_id: '00000000-0000-4000-8000-000000000014',
+  +       state: 'DRAFT',
+  +       title: 'MOCK scene 14',
+  +       updated_at: '2030-01-01T00:00:00Z',
+  +       version: 1
+  +     },
+  +     {
+  +       aspect_ratio: '16:9',
+  +       created_at: '2030-01-01T00:00:00Z',
+  +       program_id: '10000000-0000-4000-8000-000000000001',
+  +       scheduled_at: null,
+  +       session_id: '00000000-0000-4000-8000-000000000015',
+  +       state: 'DRAFT',
+  +       title: 'MOCK scene 15',
+  +       updated_at: '2030-01-01T00:00:00Z',
+  +       version: 1
+  +     },
+  +     {
+  +       aspect_ratio: '16:9',
+  +       created_at: '2030-01-01T00:00:00Z',
+  +       program_id: '10000000-0000-4000-8000-000000000001',
+  +       scheduled_at: null,
+  +       session_id: '00000000-0000-4000-8000-000000000016',
+  +       state: 'DRAFT',
+  +       title: 'MOCK scene 16',
+  +       updated_at: '2030-01-01T00:00:00Z',
+  +       version: 1
+  +     },
+  +     {
+  +       aspect_ratio: '16:9',
+  +       created_at: '2030-01-01T00:00:00Z',
+  +       program_id: '10000000-0000-4000-8000-000000000001',
+  +       scheduled_at: null,
+  +       session_id: '00000000-0000-4000-8000-000000000017',
+  +       state: 'DRAFT',
+  +       title: 'MOCK scene 17',
+  +       updated_at: '2030-01-01T00:00:00Z',
+  +       version: 1
+  +     },
+  +     {
+  +       aspect_ratio: '16:9',
+  +       created_at: '2030-01-01T00:00:00Z',
+  +       program_id: '10000000-0000-4000-8000-000000000001',
+  +       scheduled_at: null,
+  +       session_id: '00000000-0000-4000-8000-000000000018',
+  +       state: 'DRAFT',
+  +       title: 'MOCK scene 18',
+  +       updated_at: '2030-01-01T00:00:00Z',
+  +       version: 1
+  +     },
+  +     {
+  +       aspect_ratio: '16:9',
+  +       created_at: '2030-01-01T00:00:00Z',
+  +       program_id: '10000000-0000-4000-8000-000000000001',
+  +       scheduled_at: null,
+  +       session_id: '00000000-0000-4000-8000-000000000019',
+  +       state: 'DRAFT',
+  +       title: 'MOCK scene 19',
+  +       updated_at: '2030-01-01T00:00:00Z',
+  +       version: 1
+  +     },
+  +     {
+  +       aspect_ratio: '16:9',
+  +       created_at: '2030-01-01T00:00:00Z',
+  +       program_id: '10000000-0000-4000-8000-000000000001',
+  +       scheduled_at: null,
+  +       session_id: '00000000-0000-4000-8000-000000000020',
+  +       state: 'DRAFT',
+  +       title: 'MOCK scene 20',
+  +       updated_at: '2030-01-01T00:00:00Z',
+  +       version: 1
+  +     }
+  +   ],
+  +   next_cursor: 'page-two'
+  + }
+  - null
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-hooks.test.ts:198:100)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: {
+      items: [
+        [Object], [Object], [Object],
+        [Object], [Object], [Object],
+        [Object], [Object], [Object],
+        [Object], [Object], [Object],
+        [Object], [Object], [Object],
+        [Object], [Object], [Object],
+        [Object], [Object]
+      ],
+      next_cursor: 'page-two'
+    },
+    expected: null,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

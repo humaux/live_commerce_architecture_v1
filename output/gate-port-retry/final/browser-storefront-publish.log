@@ -1,0 +1,213 @@
+✔ the four constructs render (0.869584ms)
+✔ XSS payloads stay inert text (4.298375ms)
+✔ fuzz: any string over a hostile alphabet renders only whitelisted tags (18.726167ms)
+✔ validator mirrors the Go rules (0.258708ms)
+✔ SDN1 allowlist: exactly the contract routes, per method (1.156333ms)
+✔ SDN1 allowlist: traversal, case, suffix and prefix tricks never match (0.309791ms)
+✔ SDN1 request shape: no query string anywhere, reads carry no body, key, length or transfer-encoding (41.617166ms)
+✔ SDN1 cap: 260 KiB = Go's 256 KiB document + 4 KiB envelope, and a body of exactly the cap is still below it (0.101708ms)
+✔ SDN2 renderer: every XSS payload comes out as whitelisted tags and escaped text only (0.843125ms)
+✔ SDN2 renderer: escape-first means the merchant's text never becomes markup (0.113375ms)
+✔ SDN2 renderer: fuzz (seeded) never produces a tag outside the whitelist (14.251042ms)
+✔ SDN2 client validator rejects what the server rejects (HTML, non-https links, `<` anywhere) (0.266125ms)
+✔ cleanForSave turns cleared fields into null but keeps an empty body (1.292209ms)
+✔ localIssues names each missing mandatory value by server path (1.506ms)
+✔ moved swaps neighbours and ignores out-of-range moves (0.089375ms)
+✔ parsers accept the exact Go shapes and refuse extra or missing keys (0.44775ms)
+✔ BFF allowlist covers exactly the design resources (0.253416ms)
+✔ validDesignRequest refuses queries and bodies on reads, ignores other paths (39.324708ms)
+✔ designDetails forwards only a bounded {path, reason} pair (0.185625ms)
+✔ parses never-published, published and bound states (2.187958ms)
+✔ rejects anything outside the closed shape (1.318875ms)
+✔ parses the domain list and the one-time request instructions (0.743541ms)
+✔ rejects domain shapes outside the closed contract (0.434625ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 207.299
+
+> live-commerce-workspace@ build:storefront /Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry
+> pnpm --filter @live-commerce/storefront build
+
+
+> @live-commerce/storefront@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/apps/storefront
+> next build
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 136ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 2.0s
+  Running TypeScript ...
+  Finished TypeScript in 308ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/2) ...
+✓ Generating static pages using 9 workers (2/2) in 91ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/cart
+├ ƒ /[locale]/checkout
+├ ƒ /[locale]/claim
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/collections/[slug]
+├ ƒ /[locale]/data-deletion
+├ ƒ /[locale]/legal/[slug]
+├ ƒ /[locale]/legal/anti-fraud
+├ ƒ /[locale]/order-link
+├ ƒ /[locale]/orders/[orderID]
+├ ƒ /[locale]/orders/lookup
+├ ƒ /[locale]/pages/[slug]
+├ ƒ /[locale]/privacy
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[slug]
+├ ƒ /[locale]/search
+├ ƒ /api/buyer/[...path]
+├ ƒ /api/shop/product/[key]
+├ ƒ /api/shop/products
+├ ƒ /feeds/meta.csv
+├ ƒ /media/c/[collectionID]/[imageID]
+├ ƒ /media/p/[productID]/[imageID]
+├ ƒ /media/s/[imageID]
+├ ƒ /payment/return
+├ ƒ /products/[productID]
+├ ƒ /robots.txt
+└ ƒ /sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+> live-commerce-workspace@ build:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 29ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1383ms
+  Running TypeScript ...
+  Finished TypeScript in 386ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/15) ...
+  Generating static pages using 9 workers (3/15) 
+  Generating static pages using 9 workers (7/15) 
+  Generating static pages using 9 workers (11/15) 
+✓ Generating static pages using 9 workers (15/15) in 165ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/ads
+├ ƒ /[locale]/ads/attribution
+├ ƒ /[locale]/billing
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/customers
+├ ƒ /[locale]/customers/[customer]
+├ ƒ /[locale]/customers/import
+├ ƒ /[locale]/design
+├ ƒ /[locale]/finance
+├ ƒ /[locale]/finance/reports
+├ ƒ /[locale]/inventory
+├ ƒ /[locale]/invite/[token]
+├ ƒ /[locale]/messages
+├ ƒ /[locale]/orders
+├ ƒ /[locale]/orders/cvs-print
+├ ƒ /[locale]/orders/new
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[product]
+├ ƒ /[locale]/products/import
+├ ƒ /[locale]/promotions
+├ ƒ /[locale]/reset
+├ ƒ /[locale]/returns
+├ ƒ /[locale]/settings
+├ ƒ /[locale]/settings/operations
+├ ƒ /[locale]/settings/payments/card
+├ ƒ /[locale]/settings/settlements
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/studio
+├ ƒ /[locale]/studio/claims
+├ ƒ /[locale]/studio/console
+├ ƒ /[locale]/team
+├ ƒ /api/ads/meta/callback
+├ ƒ /api/ads/meta/connect
+├ ƒ /api/auth/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/password/login
+├ ƒ /api/auth/password/reset
+├ ƒ /api/auth/password/signup
+├ ƒ /api/auth/password/verify
+├ ƒ /api/meta/callback
+├ ƒ /api/meta/connect
+├ ƒ /api/onboarding/initial-store
+├ ƒ /api/stores
+├ ƒ /api/stores/[store]/[...resource]
+├ ƒ /api/stores/[store]/customers
+├ ƒ /api/stores/[store]/customers/[customer]/historical-orders
+├ ƒ /api/stores/[store]/customers/[customer]/notes
+├ ƒ /api/stores/[store]/customers/[customer]/notes/[note]
+├ ƒ /api/stores/[store]/customers/[customer]/tags
+├ ƒ /api/stores/[store]/customers/tags
+├ ƒ /api/stores/[store]/customers/tags/[tag]
+├ ƒ /api/stores/[store]/imports/[param]/[action]
+├ ƒ /api/stores/[store]/orders/export
+├ ƒ /api/stores/[store]/orders/pick-list
+├ ƒ /api/stores/[store]/reports/[report]
+├ ƒ /api/stores/[store]/shipments/cvs-batch
+├ ƒ /api/stores/[store]/tools/[...resource]
+├ ƒ /api/team/[action]
+├ ƒ /site/[locale]/[page]
+├ ƒ /site/robots.txt
+└ ƒ /site/sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packaged standalone admin server and static assets.
+=== RUN   TestBrowserAdminRelayOwnsExplicitOrigin
+--- PASS: TestBrowserAdminRelayOwnsExplicitOrigin (0.00s)
+=== RUN   TestBrowserAdminRelayPreservesOriginAndTLSHeaders
+=== RUN   TestBrowserAdminRelayPreservesOriginAndTLSHeaders/chromium
+=== RUN   TestBrowserAdminRelayPreservesOriginAndTLSHeaders/webkit
+--- PASS: TestBrowserAdminRelayPreservesOriginAndTLSHeaders (0.01s)
+    --- PASS: TestBrowserAdminRelayPreservesOriginAndTLSHeaders/chromium (0.00s)
+    --- PASS: TestBrowserAdminRelayPreservesOriginAndTLSHeaders/webkit (0.01s)
+=== RUN   TestBrowserAdminRelayPreservesPostCSRFAndRedirect
+=== RUN   TestBrowserAdminRelayPreservesPostCSRFAndRedirect/chromium
+=== RUN   TestBrowserAdminRelayPreservesPostCSRFAndRedirect/webkit
+--- PASS: TestBrowserAdminRelayPreservesPostCSRFAndRedirect (0.01s)
+    --- PASS: TestBrowserAdminRelayPreservesPostCSRFAndRedirect/chromium (0.00s)
+    --- PASS: TestBrowserAdminRelayPreservesPostCSRFAndRedirect/webkit (0.01s)
+=== RUN   TestBrowserStorefrontPublish
+2026/10/10 13:15:42 http: proxy error: context canceled
+2026/10/10 13:15:42 http: proxy error: context canceled
+2026/10/10 13:15:42 http: proxy error: context canceled
+2026/10/10 13:15:42 http: proxy error: context canceled
+2026/10/10 13:15:42 http: proxy error: context canceled
+2026/10/10 13:15:42 http: proxy error: context canceled
+2026/10/10 13:15:42 http: proxy error: context canceled
+2026/10/10 13:15:42 http: proxy error: context canceled
+    browser_storefront_publish_test.go:270: PASS: merchant Settings card (en/zh-TW, desktop/390px) + store-admin executable + anonymous buyer browser on https://buyer.example, no owner-seeded publication/domain rows; cases=23; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/output/playwright/storefront-publish-2497573832
+--- PASS: TestBrowserStorefrontPublish (12.83s)
+PASS
+ok  	livecommerce/tests/foundation	14.649s
+PASS: R3 storefront-publish: isolated admin + storefront Next, Go, PG with NO owner-seeded publication/domain row; the merchant publishes with the Settings card (en/zh-TW, desktop + 390px), the built cmd/store-admin executable binds/suspends/detaches/re-binds the origin, a fresh anonymous buyer browser sees the product or the not-found page on https://buyer.example; signed MOCK IdP + synthetic TLS/CONNECT edge, ownership/TLS evidence is an unverified reference; not DNS/TLS, Caddy or provider acceptance.

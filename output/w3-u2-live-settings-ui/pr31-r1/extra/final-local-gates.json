@@ -1,0 +1,46 @@
+{
+  "tested_source_commit": "0ff7ca92fea1e31607c16099ea5429b6dd882a7b",
+  "results": [
+    {
+      "command": "bash scripts/dev/test-node.sh",
+      "argv": [
+        "bash",
+        "scripts/dev/test-node.sh"
+      ],
+      "exit": 0,
+      "log": "output/w3-u2-live-settings-ui/pr31-r1/extra/final-node.log",
+      "sha256": "f73a0f0f543357e72a65a62cd84d818ccd111a641e2173466f59140e51fcc969"
+    },
+    {
+      "command": "pnpm typecheck:admin",
+      "argv": [
+        "pnpm",
+        "typecheck:admin"
+      ],
+      "exit": 0,
+      "log": "output/w3-u2-live-settings-ui/pr31-r1/extra/final-typecheck.log",
+      "sha256": "37fab15de17aa0ca1a1d3a45526b7890fbc4ca46e75454c0325fd964a5f448ef"
+    },
+    {
+      "command": "bash scripts/dev/test-local.sh --list",
+      "argv": [
+        "bash",
+        "scripts/dev/test-local.sh",
+        "--list"
+      ],
+      "exit": 0,
+      "log": "output/w3-u2-live-settings-ui/pr31-r1/extra/final-registry-list.log",
+      "sha256": "462cc214e71676c0cb82e06c4ccceb397bc612117ba19798dee00f5e64fb89f5"
+    },
+    {
+      "command": "bash scripts/dev/check-gates.sh",
+      "argv": [
+        "bash",
+        "scripts/dev/check-gates.sh"
+      ],
+      "exit": 0,
+      "log": "output/w3-u2-live-settings-ui/pr31-r1/extra/final-check-gates.log",
+      "sha256": "1c565c9385cb3463c02619abc6157e677ceaa4f1d55a974c6c46155d12207391"
+    }
+  ]
+}

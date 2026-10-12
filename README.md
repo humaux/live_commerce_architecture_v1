@@ -113,3 +113,7 @@ python3 scripts/check_packet.py --delivery-baseline
 生成文件的SHA-256清单见 `MANIFEST.sha256`；它只能检查文件变化，不能证明结论真实或生产正确。
 
 开发开始后用`python3 scripts/check_packet.py`核对包结构；`--delivery-baseline`专用于核对这次交付没有伪造产品执行状态。两者均不验证产品门禁结果的真实性。
+
+### W3-U2 直播設定驗收
+
+`bash scripts/dev/test-local.sh --browser-live-settings` runs manual reminders, sold-out merchant template/CAS and restricted-buyer controls in three locales at desktop/mobile widths. The browser business upstream is MOCK; `bash scripts/dev/test-focused.sh TestLiveSettingsHTTP ./tests/foundation ./internal/httpapi` separately verifies the actual Go adapter on REAL_PG. PR mode selection discovers this browser mode from the runner registry; no extra selector allowlist is needed. No automatic-reminder switch is shipped.

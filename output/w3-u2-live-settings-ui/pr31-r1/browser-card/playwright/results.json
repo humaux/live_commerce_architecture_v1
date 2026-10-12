@@ -1,0 +1,524 @@
+{
+  "config": {
+    "argv": [
+      "/opt/homebrew/lib/python3.14/site-packages/nodejs_wheel/bin/node",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-browser-regressions/node_modules/.pnpm/@playwright+test@1.63.0/node_modules/@playwright/test/cli.js",
+      "test",
+      "--config=playwright.config.ts",
+      "--project=live-settings",
+      "--list"
+    ],
+    "configFile": "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-browser-regressions/playwright.config.ts",
+    "rootDir": "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-browser-regressions/tests/admin",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {},
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-browser-regressions/output/playwright/pr31-browser-regressions/playwright/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "live-settings",
+        "name": "live-settings",
+        "testDir": "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-browser-regressions/tests/admin",
+        "testIgnore": [],
+        "testMatch": [
+          "live-settings.spec.ts"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-browser-regressions/output/playwright/pr31-browser-regressions/playwright/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "live-settings.spec.ts",
+      "file": "live-settings.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "manual reminders template and restriction real clicks zh-TW-1440",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "live-settings",
+              "projectName": "live-settings",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "9469f302ec04ac4bc9aa-9bb0f3355a0fba72faf6",
+          "file": "live-settings.spec.ts",
+          "line": 101,
+          "column": 3
+        },
+        {
+          "title": "manual reminders template and restriction real clicks zh-TW-390",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "live-settings",
+              "projectName": "live-settings",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "9469f302ec04ac4bc9aa-b718a163b1d1750f50c2",
+          "file": "live-settings.spec.ts",
+          "line": 101,
+          "column": 3
+        },
+        {
+          "title": "manual reminders template and restriction real clicks zh-CN-1440",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "live-settings",
+              "projectName": "live-settings",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "9469f302ec04ac4bc9aa-b01536bd95164c1e8def",
+          "file": "live-settings.spec.ts",
+          "line": 101,
+          "column": 3
+        },
+        {
+          "title": "manual reminders template and restriction real clicks zh-CN-390",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "live-settings",
+              "projectName": "live-settings",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "9469f302ec04ac4bc9aa-0e9f70141aef6876257e",
+          "file": "live-settings.spec.ts",
+          "line": 101,
+          "column": 3
+        },
+        {
+          "title": "manual reminders template and restriction real clicks en-1440",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "live-settings",
+              "projectName": "live-settings",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "9469f302ec04ac4bc9aa-5e41410600f360fc3c9e",
+          "file": "live-settings.spec.ts",
+          "line": 101,
+          "column": 3
+        },
+        {
+          "title": "manual reminders template and restriction real clicks en-390",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "live-settings",
+              "projectName": "live-settings",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "9469f302ec04ac4bc9aa-f2d46312747ef5ac937c",
+          "file": "live-settings.spec.ts",
+          "line": 101,
+          "column": 3
+        },
+        {
+          "title": "scene selector real click when scene absent",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "live-settings",
+              "projectName": "live-settings",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "9469f302ec04ac4bc9aa-30fdaefa096249deca7e",
+          "file": "live-settings.spec.ts",
+          "line": 187,
+          "column": 1
+        },
+        {
+          "title": "409 is visible and never auto overwrites newer settings",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "live-settings",
+              "projectName": "live-settings",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "9469f302ec04ac4bc9aa-8927b2d9c6d195df624b",
+          "file": "live-settings.spec.ts",
+          "line": 211,
+          "column": 1
+        },
+        {
+          "title": "UNKNOWN retry keeps exact key and body, effect once",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "live-settings",
+              "projectName": "live-settings",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "9469f302ec04ac4bc9aa-f835b293e56d0852f54b",
+          "file": "live-settings.spec.ts",
+          "line": 230,
+          "column": 1
+        },
+        {
+          "title": "store selector discards private old-store rows",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "live-settings",
+              "projectName": "live-settings",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "9469f302ec04ac4bc9aa-fb16805729d30d98df09",
+          "file": "live-settings.spec.ts",
+          "line": 245,
+          "column": 1
+        },
+        {
+          "title": "native hidden page clears private rows and rejects late response",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "live-settings",
+              "projectName": "live-settings",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "9469f302ec04ac4bc9aa-bd9bb5dae7cadb1c53e9",
+          "file": "live-settings.spec.ts",
+          "line": 253,
+          "column": 1
+        },
+        {
+          "title": "read-only signed merchant cannot write; CSRF denies owner command",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "live-settings",
+              "projectName": "live-settings",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "9469f302ec04ac4bc9aa-5f333939a51de95bbf14",
+          "file": "live-settings.spec.ts",
+          "line": 270,
+          "column": 1
+        },
+        {
+          "title": "split signed staff sees reminder result without report read and local send404",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "live-settings",
+              "projectName": "live-settings",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "9469f302ec04ac4bc9aa-eacf9f0d2ea34a5f5b15",
+          "file": "live-settings.spec.ts",
+          "line": 310,
+          "column": 1
+        },
+        {
+          "title": "scene picker loads page21 and targets reminders and blocklist",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "live-settings",
+              "projectName": "live-settings",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "9469f302ec04ac4bc9aa-53833e85d97f7f7b3f32",
+          "file": "live-settings.spec.ts",
+          "line": 337,
+          "column": 1
+        },
+        {
+          "title": "scene21 direct link shows authoritative title and selectable option",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "live-settings",
+              "projectName": "live-settings",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "9469f302ec04ac4bc9aa-f524823d87af7f169448",
+          "file": "live-settings.spec.ts",
+          "line": 362,
+          "column": 1
+        },
+        {
+          "title": "unmounted reminder report stays local while settings and blocklist work",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "live-settings",
+              "projectName": "live-settings",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "9469f302ec04ac4bc9aa-a51967fc94c660b2cd52",
+          "file": "live-settings.spec.ts",
+          "line": 375,
+          "column": 1
+        },
+        {
+          "title": "five sold-out delivery states real clicks and masked badges zh-TW-1440",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "live-settings",
+              "projectName": "live-settings",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "9469f302ec04ac4bc9aa-26833dde50dfa41c9c1d",
+          "file": "live-settings.spec.ts",
+          "line": 404,
+          "column": 3
+        },
+        {
+          "title": "five sold-out delivery states real clicks and masked badges zh-TW-390",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "live-settings",
+              "projectName": "live-settings",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "9469f302ec04ac4bc9aa-a73559725de640e92199",
+          "file": "live-settings.spec.ts",
+          "line": 404,
+          "column": 3
+        },
+        {
+          "title": "five sold-out delivery states real clicks and masked badges zh-CN-1440",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "live-settings",
+              "projectName": "live-settings",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "9469f302ec04ac4bc9aa-2bcbc818559511cf08d7",
+          "file": "live-settings.spec.ts",
+          "line": 404,
+          "column": 3
+        },
+        {
+          "title": "five sold-out delivery states real clicks and masked badges zh-CN-390",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "live-settings",
+              "projectName": "live-settings",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "9469f302ec04ac4bc9aa-e4dc7bada60f97f2d2c4",
+          "file": "live-settings.spec.ts",
+          "line": 404,
+          "column": 3
+        },
+        {
+          "title": "five sold-out delivery states real clicks and masked badges en-1440",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "live-settings",
+              "projectName": "live-settings",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "9469f302ec04ac4bc9aa-fc8f4f9f76569bb163a0",
+          "file": "live-settings.spec.ts",
+          "line": 404,
+          "column": 3
+        },
+        {
+          "title": "five sold-out delivery states real clicks and masked badges en-390",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "live-settings",
+              "projectName": "live-settings",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "9469f302ec04ac4bc9aa-c0816670e00920ce6bd7",
+          "file": "live-settings.spec.ts",
+          "line": 404,
+          "column": 3
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-09T17:40:25.562Z",
+    "duration": 28.18599999999998,
+    "expected": 0,
+    "skipped": 22,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

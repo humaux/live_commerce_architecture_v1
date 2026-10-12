@@ -1,0 +1,46 @@
+✔ restriction scope proof distinguishes store loss before read from a missing bundle (25.098917ms)
+✔ restriction scope proof distinguishes store loss during read from a missing bundle (2.970209ms)
+✔ restriction missing bundle retains local not_found only after fresh live-read proof (1.883084ms)
+✔ restriction upstream cannot forge the BFF-only store scope loss code (2.764125ms)
+✔ reminder route absence GET is local only after fresh store and permission proof (2.94375ms)
+✔ reminder route absence GET never aliases an initially revoked store (0.626666ms)
+✔ reminder route absence GET detects store loss at the fresh recheck (1.114166ms)
+✔ reminder route absence GET requires fresh complete method permissions (0.998042ms)
+✔ reminder route GET preserves JSON not_found and existing authorization failures (3.015417ms)
+✔ reminder route absence GET refuses unknown grants but accepts a current owner (1.583ms)
+✔ reminder route absence GET fails closed when fresh authentication cannot be proved (2.220666ms)
+✔ reminder route absence POST is local only after fresh store and permission proof (1.068208ms)
+✔ reminder route absence POST never aliases an initially revoked store (0.736125ms)
+✔ reminder route absence POST detects store loss at the fresh recheck (1.704416ms)
+✔ reminder route absence POST requires fresh complete method permissions (2.541292ms)
+✔ reminder route POST preserves JSON not_found and existing authorization failures (1.818791ms)
+✔ reminder route absence POST refuses unknown grants but accepts a current owner (1.677833ms)
+✔ reminder route absence POST fails closed when fresh authentication cannot be proved (1.856375ms)
+✔ successful reminder requests retain one store auth check and one command dispatch (1.210208ms)
+✔ reminder absence proof rejects arbitrary text, wrong media types and unbounded bodies (7.141958ms)
+✔ settings actual route permits only auth-scoped live reads/writes and keeps CAS receipt (5.043459ms)
+✔ bodyless reminder/DELETE, private blocklist projection and restricted followup copy are exact (5.185459ms)
+✔ real template publication rejects unknown fields and auth failures clear cookies even without JSON (2.305916ms)
+✔ template compatibility GET preserves a legal 120-rune BMP name (0.655917ms)
+✔ template compatibility POST forwards a legal 120-rune BMP name (0.93ms)
+✔ template compatibility GET preserves a legal 120-rune astral name (0.5795ms)
+✔ template compatibility POST forwards a legal 120-rune astral name (0.632583ms)
+✔ template compatibility GET preserves all 501 legal templates under the byte bound (2.474667ms)
+✔ template compatibility GET preserves all 5001 legal templates under the byte bound (10.745708ms)
+✔ template compatibility rejects 121-rune names on GET and before POST forwarding (2.330833ms)
+✔ template compatibility retains the response byte bound and item shape checks (4.695625ms)
+✔ success receipts must describe the exact requested command, otherwise the result remains unknown (1.588875ms)
+✔ W3-U2 Next proxy admits settings routes without weakening Studio raw-path guards (150.4725ms)
+✔ only frozen session-scoped manual operations are available (1.04925ms)
+✔ private notes and sold-out drafts respect rune limits and closed placeholders (0.263792ms)
+✔ restricted rows can never advertise copying, and checkout links cannot carry bearer data (0.455667ms)
+✔ three admin locales preserve the mandatory policy copy and real PR planner includes this new mode (5.43425ms)
+✔ live-settings is one inert registry entry with the existing admin/PG command (13.952167ms)
+ℹ tests 38
+ℹ suites 0
+ℹ pass 38
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 428.002709

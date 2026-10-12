@@ -1,0 +1,30 @@
+(node:71673) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✖ W3-U2 UNKNOWN rejects a stale fresh command and admits only exact receipt retry (21.961542ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 602.445292
+
+✖ failing tests:
+
+test at tests/admin/live-settings-hooks.test.ts:14:1
+✖ W3-U2 UNKNOWN rejects a stale fresh command and admits only exact receipt retry (21.961542ms)
+  AssertionError [ERR_ASSERTION]: UNKNOWN must not admit a new key from an old callback
+  
+  2 !== 1
+  
+      at TestContext.<anonymous> (/Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-hooks.test.ts:27:75)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

@@ -1,0 +1,32 @@
+✔ settings actual route permits only auth-scoped live reads/writes and keeps CAS receipt (32.514ms)
+✔ bodyless reminder/DELETE, private blocklist projection and restricted followup copy are exact (7.795541ms)
+✔ real template publication rejects unknown fields and auth failures clear cookies even without JSON (3.184709ms)
+✖ success receipts must describe the exact requested command, otherwise the result remains unknown (1.003041ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 3
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 120.874292
+
+✖ failing tests:
+
+test at tests/admin/live-settings-bff.test.ts:337:1
+✖ success receipts must describe the exact requested command, otherwise the result remains unknown (1.003041ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  200 !== 503
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-bff.test.ts:339:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 200,
+    expected: 503,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

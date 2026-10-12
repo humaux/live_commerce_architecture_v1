@@ -1,0 +1,14 @@
+{
+  "argv": [
+    "node",
+    "--test",
+    "--test-name-pattern=PR31 Studio pagination",
+    "tests/admin/live-settings-hooks.test.ts"
+  ],
+  "exit_code": 1,
+  "elapsed_seconds": 0.738,
+  "base_sha": "20b7ed27e50d142f771f65d821c11bc589d1e0ae",
+  "controller_sha256": "4f0172df8d999fd77bd43d6748eb8410becae6c2f23f42723b5d48dc5495657c",
+  "log": "output/w3-u2-live-settings-ui/round2-threads/red-studio-pagination.log",
+  "log_sha256": "551f3d3a2a8752fea8ba0495318330fbc1ec82d0ba0e5664e92fe238980554cd"
+}

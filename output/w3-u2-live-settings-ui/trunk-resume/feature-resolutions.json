@@ -1,0 +1,12 @@
+[
+  {
+    "path": "tests/admin/comment-stream-hooks.test.ts",
+    "resolution": "trunk plus only W3 restriction-check test",
+    "added_test_sha256": "cc77925f061ec33235267e1d826e668aba40baee24b514bf992e415755a4e27e"
+  },
+  {
+    "path": "apps/admin/components/BuyerPanel.tsx",
+    "resolution": "trunk full BuyerPanel + exact W3 delta from5f dependency",
+    "delta_sha256": "dfd506db78f2bfecdea69da58deacd56163d0f40acaf09f5e08ef058156f48dd"
+  }
+]

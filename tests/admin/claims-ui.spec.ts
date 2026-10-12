@@ -318,16 +318,16 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
   pass("planning-only Studio: scene detail loads, rehearsal panel and controls hidden (media_enabled=false)");
   await merchant.getByTestId("studio-open-claims").click();
   await expect(merchant.getByTestId("merchant-claims")).toBeVisible();
-  await expect(merchant.getByRole("heading", { level: 1, name: shellCopy.en.liveSettings })).toBeVisible();
+  await expect(merchant.getByRole("heading", { level: 1, name: shellCopy.en.claims })).toBeVisible();
   await expect(merchant.getByRole("heading", { level: 1 })).toHaveCount(1);
   await expect(merchant.locator(".claims-breadcrumb")).toHaveCount(0);
-  // The global settings route must let a merchant choose a scene rather than require a hidden query parameter.
+  // W3-U2 split the IA: /studio/claims is "Comment claims"; the separate /studio/settings is "Live settings". The claims route still lets a merchant choose a scene rather than require a hidden query parameter.
   await merchant.getByTestId("nav-claims").click();
   await expect(merchant.getByTestId("live-settings-entry")).toBeVisible();
   await expect(merchant.getByTestId("merchant-claims")).toHaveCount(0);
   await merchant.locator("#live-settings-picker").selectOption(session);
   await expect(merchant.getByTestId("merchant-claims")).toBeVisible();
-  await expect(merchant.getByRole("heading", { level: 1, name: shellCopy.en.liveSettings })).toBeVisible();
+  await expect(merchant.getByRole("heading", { level: 1, name: shellCopy.en.claims })).toBeVisible();
   await merchant.reload();
   await expect(merchant.getByTestId("merchant-claims")).toBeVisible();
   pass("global Live settings selects the server-listed scene through real clicks and keeps the deep link on reload");

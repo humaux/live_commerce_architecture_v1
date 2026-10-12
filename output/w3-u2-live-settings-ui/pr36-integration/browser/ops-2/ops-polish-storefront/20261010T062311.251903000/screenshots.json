@@ -1,0 +1,50 @@
+[
+  {
+    "File": "opp-pap-only-before-zh-TW-desktop.png",
+    "Sha256": "ed4572fe77a895ad70745abe0df5683e5b8a470979678bfa13bab2f19e8f0e94",
+    "Locale": "zh-TW",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "opp-pap-only-order-zh-TW-desktop.png",
+    "Sha256": "6fb9ea67b8fa8f3975525fe260e2517f62e83b6946f88138f8f3c9f813f551c3",
+    "Locale": "zh-TW",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "opp-pap-only-before-zh-TW-mobile.png",
+    "Sha256": "d1c99f9d54f7ff4d69491ec2694df89a3c2383f0437d99372017d18fd1084644",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "opp-pap-only-order-zh-TW-mobile.png",
+    "Sha256": "93f2633f22e464e7f7f07d7e631f762a149989396ad154decbdc7bbdb39fefb5",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "opp-pap-only-before-en-desktop.png",
+    "Sha256": "75e654c50bc58e82c4d38c1e29d091d1e671b9071f41923e8c58a58adf1731a5",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "opp-pap-only-order-en-desktop.png",
+    "Sha256": "e4ebb25ec8a5164b1900467bec6af47cf39eb97a74f6f02493e814ed86fb7faf",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "opp-pap-only-before-en-mobile.png",
+    "Sha256": "223e26d972abb860db08fe675cb06ba2b40c5b4a875f5fd4edbac5b38e9dea07",
+    "Locale": "en",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "opp-pap-only-order-en-mobile.png",
+    "Sha256": "056a1721dc9a64f0dd4ace5d1da1ffb4e4b98b3fbc7bce3a34b92cc041e37138",
+    "Locale": "en",
+    "Viewport": "mobile"
+  }
+]

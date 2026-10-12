@@ -1,0 +1,30 @@
+{
+  "task_id": "e0cab99c-sub-reminder-bff",
+  "parent_task_id": "e0cab99c-5ed3-4d22-a3cd-88700fb57c71",
+  "base_commit": "c9608348149f83d5d3433bf21b741ccc4f9dff13",
+  "commit": "43926e943cbb0a4ebbc3c7220aa60b24d3b16ea8",
+  "branch": "codex/pr31-reminder-bff",
+  "role": "UI/BFF implementer",
+  "configured_model": "gpt-6.1-sol",
+  "configured_reasoning": "high",
+  "actual_model": "UNKNOWN",
+  "worktree": "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-reminder-bff",
+  "write_paths": [
+    "apps/admin/lib/live-settings-proxy.ts",
+    "apps/admin/lib/live-settings-model.ts",
+    "tests/admin/live-settings-bff.test.ts"
+  ],
+  "source_sha256": {
+    "apps/admin/lib/live-settings-proxy.ts": "ccd2faea35baaaf2ac793f724bcc9b2df66d96f5292304b788752d6b536f136a",
+    "apps/admin/lib/live-settings-model.ts": "f239bf8e21bb1d63bb1340ce16dfd06b6dd2892cac3a694f16abbb0e4c0efc53",
+    "tests/admin/live-settings-bff.test.ts": "f0a162d031b2463faae6fbc1ad77eeca0aef5e0a262df002507baf5898246a3b"
+  },
+  "evidence_class": "MOCK",
+  "memory_id": "bd3b5db8-627d-4106-9045-190afe2a95c3",
+  "not_run": [
+    "independent review/re-run: parent owned",
+    "Go/PG/browser/build/full suite per card scope"
+  ],
+  "process_cleanup": "Node tests closed their synthetic HTTP listener; no surviving processes started by this card",
+  "cache_links": "Owned symlinks only, retained for parent rerun; no dependency installation/lockfile change"
+}
