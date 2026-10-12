@@ -76,7 +76,7 @@ if [[ $provider == anthropic ]]; then
   ((got)) || { echo "refused: could not lock $ledger (remove a stale $lock only if no anthropic run is active)" >&2; exit 2; }
   trap 'rmdir "$lock" 2>/dev/null' EXIT
   # An unreadable ledger or a non-numeric amount is not "nothing spent": refuse (the ledger was just created if absent).
-  spent=$(awk -F'\t' '$2 !~ /^-?[0-9]+([.][0-9]+)?$/ {bad=1} {s+=$2} END{if (bad) exit 3; printf "%.2f", s+0}' "$ledger") || { echo "refused: unreadable or corrupt ledger $ledger" >&2; exit 2; }
+  spent=$(awk -F'\t' '$2 !~ /^-?[0-9]+([.][0-9]+)?([eE][-+]?[0-9]+)?$/ {bad=1} {s+=$2} END{if (bad) exit 3; printf "%.2f", s+0}' "$ledger") || { echo "refused: unreadable or corrupt ledger $ledger" >&2; exit 2; }
   if python3 -c "import sys; sys.exit(0 if float('$spent')+float('$run_cap') > float('$cap') else 1)"; then
     echo "refused: Claude API spent \$$spent + run cap \$$run_cap would exceed budget \$$cap (ledger $ledger)" >&2; exit 2
   fi
@@ -173,7 +173,7 @@ if [[ $provider == deepseek ]] && [[ -n $(git -C "$wt" diff --name-only "$base_s
 fi
 if [[ $provider == anthropic ]]; then
   cost=$(python3 -c 'import json,sys;import math; c=json.load(open(sys.argv[1])).get("total_cost_usd"); assert type(c) in (int,float) and math.isfinite(c) and c>=0; print(c)' "$out/result.json" 2>/dev/null || echo "$run_cap")
-  adj=$(python3 -c "print(round(float('$cost')-float('$run_cap'),6))")
+  adj=$(python3 -c "print('%.6f' % (float('$cost')-float('$run_cap')))")
   printf '%s\t%s\t%s\t%s\n' "$(date '+%F %T')" "$adj" "$model actual=$cost" "$out" >>"$ledger"; chmod 600 "$ledger"
   echo "claude api: run cost \$$cost; total now \$$(awk -F'\t' '{s+=$2} END{printf "%.2f", s+0}' "$ledger") of \$$cap" >&2
 fi
