@@ -117,7 +117,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     concurrency:
-      group: gates-${{ github.ref }}-${{ matrix.mode }}-${{ github.event_name == 'workflow_dispatch' && inputs.extra_env || '' }}
+      # event_name separates run classes on the same ref: a nightly schedule (cancel-in-progress) must never cancel push verification.
+      group: gates-${{ github.event_name }}-${{ github.ref }}-${{ matrix.mode }}-${{ github.event_name == 'workflow_dispatch' && inputs.extra_env || '' }}
       # A push never cancels the running full suite (it would never finish under frequent merges); GitHub keeps only the newest pending run.
       cancel-in-progress: ${{ github.event_name != 'push' }}
     env:
