@@ -277,7 +277,7 @@ export function ProductDocumentForm({
     noteSaveAttempt();
   };
   const sectionButtons = sections.map((id) => (
-    <button type="button" aria-current={section === id ? "location" : undefined}
+    <button type="button" disabled={disabled} aria-current={section === id ? "location" : undefined}
       className={section === id ? "active" : undefined} key={id} aria-controls={id}
       onClick={() => focus(id)}>{c[id]}</button>
   ));
@@ -306,7 +306,7 @@ export function ProductDocumentForm({
         <section id="pe-readiness-section" hidden={narrowViewport && !readinessOpen}>
           <h2>{c.progress}</h2>
           <h3>{c.required}</h3>
-          <ProductReadiness c={c} items={requirements} focus={focus} activeSection={section} />
+          <ProductReadiness c={c} items={requirements} focus={focus} activeSection={section} disabled={disabled} />
           <p>
             {c.missing}: {requirements.filter((r) => !r.ok).length}
           </p>
@@ -315,6 +315,7 @@ export function ProductDocumentForm({
             c={c}
             focus={focus}
             activeSection={section}
+            disabled={disabled}
             items={[
               { key: "media", label: c.recommendedImages, ok: mainPhotoCount(photos) >= 3 },
               { key: "basics", label: c.description, ok: !!draft.description },

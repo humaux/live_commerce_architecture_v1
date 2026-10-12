@@ -1,10 +1,13 @@
 // Purpose: product document invariants and source ratchets for mobile editor presentation.
-// Depends on: node:test/assert, product-document/editor copy, actual ProductDocumentForm/CSS sources.
+// Depends on: node:test/assert/vm/module, TypeScript API, React SSR, product-document/editor copy and actual form/CSS sources.
 // Used by: test-node.sh; real visual geometry remains owned by product-editor browser acceptance.
 // PE12/13/14 model negatives. UI writes still require browser click + persisted readback.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { runInNewContext } from "node:vm";
+import ts from "typescript-api";
 import {
   newRow,
   syncMatrix,
@@ -181,4 +184,70 @@ test("mobile save status has its own row instead of a fixed narrow text cap", ()
   const status = mobile.match(/\.pe-savebar > span \{([^}]+)\}/)?.[1] ?? "";
   assert.doesNotMatch(status, /max-width:\s*90px/);
   assert.match(status, /flex-basis:\s*100%/);
+});
+
+test("empty mobile save status reserves the same line as the first dirty edit", () => {
+  const css = readFileSync(new URL("../../apps/admin/components/ProductDocument.css", import.meta.url), "utf8");
+  const mobile = css.slice(css.indexOf("@media (max-width: 680px)"));
+  const status = mobile.match(/\.pe-savebar > span \{([^}]+)\}/)?.[1] ?? "";
+  assert.match(status, /min-height:\s*1\.5em/);
+  assert.match(status, /line-height:\s*1\.5;/);
+  assert.doesNotMatch(mobile, /\.pe-savebar > span:empty\s*\{[^}]*display:\s*none/);
+});
+
+test("readiness cannot promise field focus while the actual destination is locked", () => {
+  // Execute the production component; only compilation/SSR replace the browser, not its props or markup.
+  const requireApp = createRequire(new URL("../../apps/admin/package.json", import.meta.url));
+  const React = requireApp("react"), { renderToStaticMarkup } = requireApp("react-dom/server");
+  const module = { exports: {} as Record<string, any> };
+  const source = ts.transpileModule(readFileSync(new URL("../../apps/admin/components/ProductReadiness.tsx", import.meta.url), "utf8"), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
+  }).outputText;
+  runInNewContext(source, { module, exports: module.exports, require: requireApp });
+  for (const disabled of [true, false]) {
+    const html = renderToStaticMarkup(React.createElement(module.exports.ProductReadiness, {
+      c: productEditorCopy.en, items: [{ key: "media", label: "Images", ok: false }],
+      activeSection: "basics", focus: () => {}, disabled,
+    }));
+    assert.equal(html.includes('disabled=""'), disabled);
+    assert.match(html, /aria-controls="media"/);
+  }
+  const form = readFileSync(new URL("../../apps/admin/components/ProductDocumentForm.tsx", import.meta.url), "utf8");
+  assert.equal((form.match(/<ProductReadiness\b[\s\S]*?disabled=\{disabled\}/g) ?? []).length, 2);
+  assert.match(form, /const sectionButtons = sections\.map\([\s\S]*?disabled=\{disabled\}/);
+});
+
+test("pane focus selects an enabled rendered control and rounds fractional reveal inside the clip", () => {
+  // Execute the real focus callback with browser-style scroll rounding, not a copied scroll formula.
+  for (const first of ["enabled", "disabled", "hidden"]) {
+  let scroll = 0, focused = false;
+  const root = {
+    get scrollTop() { return scroll; }, set scrollTop(n: number) { scroll = Math.round(n); },
+    scrollTo({ top }: { top: number }) { this.scrollTop = top; }, contains: () => true,
+    getBoundingClientRect: () => ({ top: 100, bottom: 260.5 }),
+  };
+  const control = {
+    focus: () => { focused = true; },
+    matches: () => false, getClientRects: () => [{}],
+    getBoundingClientRect: () => ({ top: 370 - scroll, bottom: 463.91 - scroll }),
+  };
+  const unavailable = { ...control, focus: () => {}, matches: () => first === "disabled",
+    getClientRects: () => first === "hidden" ? [] : [{}] };
+  const controls = first === "enabled" ? [control] : [unavailable, control];
+  const target = { getBoundingClientRect: () => ({ top: 300 - scroll }),
+    querySelector: () => controls[0], querySelectorAll: () => controls };
+  const refs = [null, root, null];
+  const react = { useRef: () => ({ current: refs.shift() }), useState: () => [false, () => {}],
+    useCallback: (fn: unknown) => fn, useEffect: () => {}, useLayoutEffect: () => {} };
+  const module = { exports: {} as Record<string, any> };
+  const source = ts.transpileModule(readFileSync(new URL("../../apps/admin/components/useProductEditorLayout.ts", import.meta.url), "utf8"), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS },
+  }).outputText;
+  runInNewContext(source, { module, exports: module.exports, require: () => react,
+    document: { getElementById: () => target }, HTMLDetailsElement: class {} });
+  module.exports.useProductEditorLayout(["media"], () => {}, "", false).focus("media");
+  assert.equal(focused, true, `the first ${first} control must not steal the destination`);
+  assert.ok(control.getBoundingClientRect().top >= root.getBoundingClientRect().top);
+  assert.ok(control.getBoundingClientRect().bottom <= root.getBoundingClientRect().bottom);
+  }
 });

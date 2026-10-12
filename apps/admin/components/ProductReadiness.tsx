@@ -1,5 +1,5 @@
 // Purpose: Renders the editor's required/recommended checklist and focuses the field a merchant clicks; no API or draft writes.
-// Depends on: lib/product-editor-copy (labels) and the parent's observed active section and focus callback.
+// Depends on: lib/product-editor-copy (labels) and the parent's field lock, observed active section and focus callback.
 // Used by: ProductDocumentForm (side panel on desktop, chips on mobile).
 // Shared required/recommended checklist rendering; no API or draft writes.
 import type { ProductEditorCopy } from "@/lib/product-editor-copy";
@@ -9,17 +9,21 @@ export function ProductReadiness({
   items,
   focus,
   activeSection,
+  disabled,
 }: {
   c: ProductEditorCopy;
   items: { key: string; label: string; ok: boolean }[];
   focus: (id: string) => void;
   activeSection: string;
+  disabled: boolean;
 }) {
   return items.map((item) => (
     <button
       className="pe-readiness"
       key={item.label}
       type="button"
+      // A disabled destination cannot accept focus while references or a receipt load.
+      disabled={disabled}
       aria-controls={item.key}
       aria-current={activeSection === item.key ? "location" : undefined}
       onClick={() => focus(item.key)}

@@ -1,71 +1,102 @@
-<!-- Purpose: VISUAL-POLISH-R1 source handoff with measured gates, screenshot provenance and outstanding visual acceptance.
-Depends on: owner base64ba8319, K2.8 findings over CI38207265014, shared format/UI and existing browser registry.
-Used by: integrator commit/K3 review/CI; this report does not claim unrun browser or screenshot acceptance. -->
+<!-- Purpose: VISUAL-POLISH-R1 delivery with reproducible red/green gates, source hashes, screenshot provenance and remaining CI scope.
+Depends on: integrator commit 582921b8, trunk merges 9d6b2ad6/3cfb1d22, shared formatter/TabStrip, production browser registry and synthetic PG fixtures.
+Used by: integrator PR/K3 review and CI; local BROWSER+REAL_PG acceptance is distinct from provider or production acceptance. -->
 # VISUAL-POLISH-R1 delivery
 
-READY for the integrator to commit the files. Full visual acceptance remains pending. Branch `unit/visual-polish-r1`, supplied base `64ba8319`; no author Git operation, push or PR. Primary Codex ui_worker; one ui_worker owned ads, one test_worker owned capture/tests, explorer and independent source reviews were read-only. Models/effort inherited; deployed variant not exposed. All writes used disjoint paths in the owner-provided worktree because Git metadata is read-only; no recursive delegation.
+READY: the local savebar/focus repair and all six final gates passed on merged baseline `3cfb1d22`. Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/visual-polish-r1`; branch: `unit/visual-polish-r1`. The integrator committed the original four fixes as `582921b8` and merged trunk as `9d6b2ad6`. Pre-commit fetch then received trunk `1200178c`; merge `3cfb1d22` preserves all six source hashes. The final merged-baseline command receipts are below; previous-baseline results remain historical. The owner authorized local product-editor/visual-lint runs, author commit and branch push. The earlier sandbox-only handoff is historical.
 
-## Changes and causes
+Primary: Codex UI worker (deployed model name/effort not exposed). Final independent source review: explorer `visual_focus_diagnosis`, gpt-6.1-sol, medium effort, read-only, same base; no recursive delegation or concurrent code writers. This patch owns the four product components, two product tests and this report. No Go, migration, OpenAPI, lockfile, shared formatter implementation or gate threshold change.
 
-1. **Ads money:** `AdsResults` already called `formatMinor`, but `ads-model.ts` owned another Intl currency formatter. That produces bare `$0` in zh-TW. `formatMinor` now delegates shared `money(locale,currency,minor)`, preserving x100 minor units and the existing fallback. Literal `$0` vs `NT$0` RED preceded the fix. All3locale/TWD-cent/whole/USD/HKD vectors pass. The existing ads browser matrix now includes1440/390 and asserts the TWD symbol before screenshots.
-2. **Mobile product sections:** reuse the same `TabStrip` and localized `presentationCopy` as orders, only at the existing <=900px breakpoint. Native scroll/hint lives inside the old navigation landmark; desktop buttons, focus/aria-controls and pane behavior stay intact. No new UI component. Shared active-tab scrolling follows the existing current section.
-3. **Save status:** the <=680px `max-width:90px` cap broke the unchanged localized phrase. The status now occupies its own full row; empty status is hidden, actions have their own wrapping row. No copy meaning changed. Structural regressions RED8/2 -> GREEN10/0; these prove source constraints, not rendered pixels.
-4. **Full-form capture:** the production editor deliberately reserves viewport space and scrolls `.pe-fields`. Document fullPage capture does not reveal this pane's remaining content. CI images are929px (TW/CN) and950px (en); en is also a current-pane capture, contrary to the review's complete-form hypothesis. Keep this intentional product layout. Visual-audit now adds bounded native-wheel viewport frames covering the entire visible pane, including tall section interiors, with hashes/geometry/contiguous ranges in index.json. Frozen/document-only motion, gaps, frame limits or inaccessible end fail required state coverage. It also reuses the full capture/lint pipeline at supplemental1440x900 for affected pages/all locales; original1586/390 primary matrix/counts and lint thresholds remain unchanged. Supplemental blockers/failures contribute to the owning verdict. Inner frames are screenshot coverage, not per-frame lint passes.
+## Result and roots
 
-Real product acceptance adds1440 without dropping old widths, six edit locale/width variants without extra writes, visible hint/status-row geometry, native scrolling to the final search control and per-section/end screenshots. The form remains797lines; no architecture allowance was widened.
+- Ads still uses shared `money()` through `formatMinor`, so zh-TW TWD shows `NT$`. The original literal `$0 !== NT$0` regression went red before that fix. The final visual corpus includes the actual zh-TW result page with `NT$0`; the integrator also reports meta-ads exit 0 on the supplied base.
+- Mobile section navigation reuses the existing TabStrip/localized scroll hint. The original localized save-status phrase occupies its own row.
+- **First edit layout shift:** hiding the empty status row changed footer height when dirty copy appeared. The mobile row now reserves the same line while empty. The 375px browser test asserts identical footer height and y before/after the first edit, retains the original focused-field-bottom assertion, and passes.
+- **Readiness focus:** the checklist could be clicked while its destination remained disabled during reference/receipt loading. Both checklist instances and section navigation now inherit the actual field lock.
+- **Pane reveal:** focus stays inside `.pe-fields`. Directional rounding and a 5px inset retain the existing 2px upload focus ring plus 3px offset inside the clip. The callback regression models fractional scroll rounding; those synthetic DOMRects are boundary-test data, not measurements from a browser trace.
+- **Populated-edit focus:** the first media control is a permanently disabled move-back button. The hook selects the first enabled, rendered control rather than leaving focus on the nav. The new callback regression covers enabled/disabled/hidden first controls.
+- The ~929px document screenshot was a viewport-bound editor with a separately scrolling field pane. The existing capture repair keeps document screenshots and adds native wheel frames with contiguous coverage/hash receipts; supplemental 1440px shots use the same lint pipeline. Product acceptance separately reaches the final search controls in new/edit views. The form is 798 lines; no architecture allowance was widened.
 
-## Actual commands and exits
+## Initial repaired baseline 9d6b2ad6: commands and exits
 
-All raw logs/status/hashes are in **main checkout** `/Volumes/data/live_commerce_architecture_v1/output/visual-polish-r1/`. `SOURCE.json` binds current source hashes and exact argv. No source changed during final gates.
+CWD for the following commands is the assigned worktree. Current raw logs and `.exit` files: `output/visual-polish-r1/savebar-r2/`. `final-source.json` binds the six source files to both final browser runs. No source changed during either final browser gate.
 
-| Command | Exit | Evidence/result |
+| Command/check | Exit | Evidence |
 |---|---:|---|
-| Money-focused Node test on unchanged formatter | 1 -> 0 | `ads-money-red.log` literal `$0 !== NT$0`; `ads-money-green.log`24/24 |
-| `node --test --experimental-strip-types tests/admin/product-document.test.ts` | 1 -> 0 | `product-mobile-red/green`:8 pass2 fail ->10 pass0 fail; structural only |
-| Capture baseline and supplemental guards | 1 -> 0 | `capture-red`, `capture-supplement-red` (when present), `capture-green`, `capture-receipt.json`; old single-shot strategy and missing1440 verdict fail; helper regression38/38 |
-| Focused Node money/product/capture/old lint/shard suites | 0 | `focused-node.status.json` exact argv;72/72, no skip |
-| `pnpm --filter @live-commerce/admin typecheck` | 0 | `admin-types.log/status.json` |
-| Strict `pnpm exec tsc` on changed browser specs/helpers | 0 | `spec-types-green.status.json` exact argv |
-| `bash scripts/dev/test-node.sh` | 1 | `test-node.log`: first batch452 pass/3 fail (team-bff listenEPERM, two deploy-prep Docker socket refusals). Later script batches NOT_RUN; never a full Node PASS |
-| `bash scripts/dev/check-gates.sh` | 0 | `check-gates-retry.status.json`: bounded300s run exited0 after252.56s. Initial120s wrapper had interrupted/missing completion status after cold Go check; its log retained, not counted as PASS |
-| `bash scripts/dev/test-local.sh --list` | 0 | `mode-list.log` |
-| Seven affected browser mode `--dry-run` commands | 0 each | `browser-gates.json` and mode-dry-run logs; metadata only, no browser/PG/build |
-| Current `planPr` API with explicit working sources | 0 | `pr-mode-plan.json`:52 browser modes selected; no Git source lookup. Broad plan is preserved for CI |
-| Impeccable detector on modified production targets | 0 | `impeccable-detector.log`:[]; one bounded detector pass, not visual proof |
-| `pnpm install --offline --frozen-lockfile` | 0 | Initial worktree lacked node_modules/tsc. Reused49 cached packages,0 downloads; setup-only initial tsc254 retained in `spec-types.log`, not acceptance RED |
-| Docker info / loopback listener preflights | 1 / 1 | `runtime-docker.log` socket denied; `runtime-listen.log` EPERM |
+| `node --test --experimental-strip-types tests/admin/product-document.test.ts tests/admin/shell-registry.test.ts` | 1 → 0 | `node-red/green`: reserved-row and real React SSR lock regressions; final focused result 24/24 |
+| Actual focus callback, fractional boundary case | 1 → 0 | `focus-rounding-red/green`; no copied production scroll formula |
+| Actual focus callback, populated edit | 1 → 0 | `edit-focus-red/green`; final product + shell 24/24 |
+| `bash scripts/dev/test-local.sh --browser-product-editor`, initial own rerun | 1 | `browser-product-editor.log`, run.feuvhMAu: readiness focus boundary; frozen CC12 passes |
+| Same mode after rounding fix | 1 | `browser-product-editor-green.log`, run.UNO7x4km: original readiness and 375px footer assertions pass; saved media navigation finds disabled first control |
+| Same mode, final frozen source | **0** | `browser-product-editor-final.log`, run.NPtQ2K6k: PE12–17 + mandatory frozen CC12 pass, real Go/isolated PG/production Next |
+| `bash scripts/dev/test-local.sh --browser-visual-lint` (full, unfiltered) | **0** | `browser-visual-lint.log`, run.PsUFKOdb: 348/348 primary shots; NOT_RUN 0; blocking 0 |
+| `bash scripts/dev/test-node.sh`, initial full run | 0 | `test-node.log`; before the final focus refinements |
+| Same command, concurrent intermediate rerun | 1 | `test-node-final.log`: unrelated inbox-review.test.ts never-settles subprocess hit its 10s timeout; test/timeout unchanged |
+| Same command, final serial rerun | **0** | `test-node-serial.log`; all script batches completed after browser runs |
+| `pnpm --filter @live-commerce/admin typecheck` | **0** | `typecheck-ready.log` on final source |
+| Strict browser-spec typecheck below | **0** | `spec-typecheck-ready.log` |
+| `bash scripts/dev/check-gates.sh` | **0** | `check-gates.log` and final `check-gates-ready.log`: all 83 modes documented, every tracked test run, headers/architecture/backend coverage pass; final contract-drift step 338.629s |
+| `node scripts/dev/pr-modes.mjs origin/r3/integration` | 0 | `pr-modes.json`: 53 selected entries, including foundation-shards and 52 browser modes |
+| `git fetch origin`; `git merge --no-edit origin/r3/integration` | 0; 0 | Before final checks; merge already up to date. Own remote branch absent (show-ref exit 128), so no nonexistent own-branch merge |
 
-## Screenshots and visual limits
-
-Before evidence: `before-manifest.json` contains24 copied, unmodified synthetic CI screenshots from run38207265014, all3locales at1586/390 for ads, new, new-variants and edit. They are prior-CI evidence, not a fresh base64ba8319 retake. No1440 before image exists. Representative files:
-
-- [Ads zh-TW390 before](/Volumes/data/live_commerce_architecture_v1/output/visual-polish-r1/before/ads/zh-TW-390x844.png)
-- [Product new zh-TW390 before](/Volumes/data/live_commerce_architecture_v1/output/visual-polish-r1/before/products-new/zh-TW-390x844.png)
-- [Product variants/save status zh-TW390 before](/Volumes/data/live_commerce_architecture_v1/output/visual-polish-r1/before/products-new-variants/zh-TW-390x844.png)
-- [Product edit en390 before](/Volumes/data/live_commerce_architecture_v1/output/visual-polish-r1/before/products-product/en-390x844.png)
-
-**After screenshots: NOT_RUN.** Docker and TCP listen restrictions prevent the real seeded Go/Next browser stack. No synthetic after image or resized-before image was substituted. CI after artifacts must include ads and product new/edit at all3locales1440/390, section/end captures and native inner-scroll frames. Visual index labels supplemental viewport/frame evidence separately rather than pretending it is one ordinary full-page image. Independent source audits found no concrete new P1/P2; runtime wheel/geometry/focus/axes remain NOT_RUN.
-
-## CI gates / integrator action
-
-Run these modes serially per localPG policy or on independent GitHub runners; the author did not start futile Next builds before the denied fixture. Normal runtime exits are **NOT_RUN**, not0:
+Exact strict spec command:
 
 ```sh
-bash scripts/dev/test-local.sh --browser-meta-ads
-bash scripts/dev/test-local.sh --browser-operations-ads
-bash scripts/dev/test-local.sh --browser-product-editor
-bash scripts/dev/test-local.sh --browser-catalog-core
-bash scripts/dev/test-local.sh --browser-catalog-media
-bash scripts/dev/test-local.sh --browser-product-media-v2
-LC_SWEEP_PAGES='/ads,/products/new,/products/[product]' bash scripts/dev/test-local.sh --browser-visual-lint
+pnpm exec tsc --noEmit --strict --skipLibCheck --target ES2023 --module esnext --moduleResolution bundler --esModuleInterop --allowImportingTsExtensions --typeRoots apps/admin/node_modules/@types --types node tests/admin/product-editor.acceptance.ts tests/admin/product-editor-layout.acceptance.ts tests/admin/ads.spec.ts
 ```
 
-The current PR planner also selects52 modes for these UI paths (`pr-mode-plan.json`); broader required CI selection is not reduced by this focused list. Re-run fullNode in a capable environment. The current browser assertions retain old locale/width coverage and explicitly add1440; visual-lint keeps default1586/390 and supplements affected pages1440. Source E3 is bounded to automated focused tests; full BROWSER/REAL_PG visual acceptance, after screenshots, providerSANDBOX/LIVE and deployment are NOT_RUN. Integrator commits/reviews/pushes; no author PR or push.
+The earlier original-four-fix Node/capture red/green receipts, 72 focused tests, and prior CI before-manifest remain under `/Volumes/data/live_commerce_architecture_v1/output/visual-polish-r1/`. They are historical evidence, not the final source fingerprint.
 
-## Skipped / not reproduced
+## Screenshots and coverage
 
-- Pill-versus-tab filter idiom: skipped by owner as a design choice; no filter redesign.
-- A zh-TW-only product page height/unreachable-form bug: not reproduced. Source and all locale screenshots identify intentional pane scrolling plus insufficient capture. Device/native real-scroll confirmation remains NOT_RUN until CI.
-- Other uncertain review impressions without a reproducer: no changes. Duplicate new/variants/edit truncation findings share the same capture root cause.
+Product gate: `output/playwright/run.7mQWsFR1/catalog-core/20261012T155800.411384000/product-ui-v2/`: 179 screenshots with `screenshots.json` hashes and `click-ledger.json`. New and saved edit views have all three locales at 1440/390, including section/end captures; old widths are retained.
 
-Modified source list and current hashes: `SOURCE.json` (12 source/test/script files) plus this DELIVERY.md. No Go, migration, OpenAPI, package lock or shared formatter implementation edit. All owned final wrappers exited; no CI/deploy/production action or background test was left running.
+Visual gate: `output/playwright/run.5B8hddOV/ui-visual-audit/20261012T160338Z/`: `lint.json`, `lint.md`, `index.json`, shots/crops. Primary corpus: 348/348 at 1586/390 across zh-TW, zh-CN, en; 540 PNGs in total including 12 affected-page 1440px shots and native inner-pane frames. No missing shot, load failure or state failure. R5 21 and R7 119 instances are warnings; blocking total is 0. Thresholds and assertions are unchanged.
+
+The current visual index records merged baseline `3cfb1d22` because the runs used frozen working changes before author commit; the source hashes below bind the tested changes. Original before corpus: 24 unmodified synthetic CI38207265014 shots at 1586/390; no original 1440 before image exists.
+
+Representative before/after:
+
+- [375px failing SEO before](/Volumes/data/live_commerce_architecture_v1/.worktrees/visual-polish-r1/output/playwright/run.9rtUABaI/catalog-core/20261012T142847.895897000/results/catalog-core-PE12-17-docum-0e9d3-st-actions-and-click-ledger/test-failed-1.png) → [375px SEO above stable footer after](/Volumes/data/live_commerce_architecture_v1/.worktrees/visual-polish-r1/output/playwright/run.7mQWsFR1/catalog-core/20261012T155800.411384000/product-ui-v2/editor-bottom-en-375.png).
+- [zh-TW product before](/Volumes/data/live_commerce_architecture_v1/output/visual-polish-r1/before/products-new/zh-TW-390x844.png) → [hint/full status after](/Volumes/data/live_commerce_architecture_v1/.worktrees/visual-polish-r1/output/playwright/run.7mQWsFR1/catalog-core/20261012T155800.411384000/product-ui-v2/editor-zh-TW-390-seo.png) and [saved edit scroll end](/Volumes/data/live_commerce_architecture_v1/.worktrees/visual-polish-r1/output/playwright/run.7mQWsFR1/catalog-core/20261012T155800.411384000/product-ui-v2/edit-zh-TW-390-scroll-end.png).
+- [zh-TW ads before](/Volumes/data/live_commerce_architecture_v1/output/visual-polish-r1/before/ads/zh-TW-390x844.png) → [NT$ metrics after](/Volumes/data/live_commerce_architecture_v1/.worktrees/visual-polish-r1/output/playwright/run.5B8hddOV/ui-visual-audit/20261012T160338Z/shots/admin/ads/zh-TW-390x844.png).
+
+Root inspected the actual final 375px SEO, zh-TW status/hint, native-pane and ads images. Independent source review found no concrete new P0/P1/P2; runtime acceptance belongs to the above gates, not that source review.
+
+## Tested source SHA256
+
+| File | SHA256 |
+|---|---|
+| apps/admin/components/ProductDocument.css | `77f9b59d608f99a2676a26092c9e47129bcaa1d84947cf57497bfae8ca7cb499` |
+| apps/admin/components/ProductReadiness.tsx | `c65cfe792f74373f81ffc0039ce81b61723c6eb42b76975b327c1225c94a64ae` |
+| apps/admin/components/ProductDocumentForm.tsx | `bc00d59041281de359593f2efb4591e91d42bf7d0b1c91650d51793b542112b2` |
+| apps/admin/components/useProductEditorLayout.ts | `374395ff2b0d7e53ecf65ca9a7558e9236b25c8ed934ea178cbf4c00c189615b` |
+| tests/admin/product-document.test.ts | `906161daed466ab751cd991bbe5ca1b4fc9785c77123e31c12bff5497a3413dc` |
+| tests/admin/product-editor.acceptance.ts | `bec9dbd63fe55c334eddca5e59821fe46f7ea0f8fa44d69c63b351cb04641d7a` |
+
+## CI gates, NOT_RUN and skipped scope
+
+Completed locally: `--browser-product-editor`, full `--browser-visual-lint`, test-node, admin/spec typechecks and check-gates. The integrator's supplied-base meta-ads exit 0 is attributed to the integrator; the author did not rerun that mode after this product-only patch.
+
+The planner's remaining modes, including meta-ads, operations-ads, catalog-core standalone, catalog-media, product-media-v2, click-sweep journeys and full foundation shards, are **NOT_RUN locally on final source** and remain CI scope. A visual-audit handoff through the sweep harness is not a click-journey PASS. Browser fixtures use synthetic data and MOCK identity/payments/carrier/Meta; provider SANDBOX/LIVE, production and deployment are NOT_RUN.
+
+Skipped: pill-versus-tab idiom (owner's design choice), uncertain impressions without a reproducer, and a separate zh-TW-only unreachable-page-height bug (not reproduced: pane scrolling now has real reachability/coverage evidence). No filter redesign, lint threshold adjustment, PR creation or deployment.
+
+Pre-commit fetch exited 0. The own remote branch is still absent, so there is no own-branch merge to perform. The fresh trunk merge exited 0 and created `3cfb1d22` (incoming `1200178c`, comment-label print UI); Node registry and comment-stream pages changed. All current-baseline gates below finished before author commit/push; previous-baseline command results above are retained. The author stages only the six source files and this report. Integrator opens the PR; no rebase/force-push. Raw evidence is kept locally.
+
+## Current merged baseline 3cfb1d22
+
+All final post-merge checks passed with unchanged six-file SHA256 fingerprints. Exact current receipts:
+
+| Command | Exit | Current evidence |
+|---|---:|---|
+| `bash scripts/dev/test-node.sh` | **0** | `postmerge-test-node.log/.exit`; includes trunk's newly registered comment-label tests |
+| `bash scripts/dev/test-local.sh --browser-product-editor` | **0** | `postmerge-browser-product-editor.log/.exit`; run.7mQWsFR1, PE12–17 + frozen CC12 |
+| `bash scripts/dev/test-local.sh --browser-visual-lint` | **0** | `postmerge-browser-visual-lint.log/.exit`; run.5B8hddOV, full unfiltered 348/348, NOT_RUN 0, blocking 0 |
+| `bash scripts/dev/check-gates.sh` | **0** | `postmerge-check-gates.log/.exit`; registry/headers/architecture/backend coverage |
+| `pnpm --filter @live-commerce/admin typecheck` | **0** | `postmerge-typecheck.log/.exit` |
+| Strict spec command printed above | **0** | `postmerge-spec-typecheck.log/.exit` |
+
+The two browser/PG modes ran serially. Non-PG check-gates ran beside the final visual capture after the full Node run finished. Source stayed frozen throughout. `postmerge-source.json` holds run/session receipts and the six hashes. Only the fixed, freshly merged baseline was revalidated; later unrelated trunk changes are left to CI. The author fetches and merges any own remote branch again before the final commit, without force-push.
+
+Evidence level: **E3, local BROWSER+REAL_PG with MOCK external services**. PR-wide CI, independent PR review and provider/production acceptance remain outstanding. No PR creation or deployment by the author.

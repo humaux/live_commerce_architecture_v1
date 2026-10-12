@@ -813,13 +813,12 @@
     padding: 10px 12px;
   }
   .pe-savebar > span {
-    /* Reserve a whole row for localized save status instead of breaking a phrase beside actions. */
+    /* Keep the clean row too: the first edit must not shrink the focused fields pane. */
     flex-basis: 100%;
     max-width: none;
     min-width: 0;
-  }
-  .pe-savebar > span:empty {
-    display: none;
+    min-height: 1.5em;
+    line-height: 1.5;
   }
   .pe-savebar > div {
     width: 100%;

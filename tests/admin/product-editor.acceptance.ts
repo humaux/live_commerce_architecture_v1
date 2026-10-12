@@ -520,13 +520,17 @@ export function registerProductEditorAcceptance() {
         .getByRole("button", { name: "Search engine listing", exact: true })
         .first()
         .click();
+      const cleanFooter = await page.locator(".pe-savebar").boundingBox();
       await page
         .getByTestId("product-seo-description")
         .fill("Keyboard and bottom-field reachability");
+      await expect(page.locator(".pe-savebar > span")).toHaveText(productEditorCopy.en.dirty);
       const lastField = await page
         .getByTestId("product-seo-description")
         .boundingBox();
       const footer = await page.locator(".pe-savebar").boundingBox();
+      expect(footer!.height, "first dirty edit keeps the reserved savebar height").toBe(cleanFooter!.height);
+      expect(footer!.y, "first dirty edit must not shrink the focused fields row").toBe(cleanFooter!.y);
       expect(lastField!.y + lastField!.height).toBeLessThanOrEqual(footer!.y);
       await shot("editor-bottom-en-375");
       await page.goto(url("en", "products?q=" + tag));
