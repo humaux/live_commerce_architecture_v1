@@ -26,6 +26,7 @@ import {
   readOrderPrefill,
   readOrderRestricted,
   createForBuyerOrder,
+  recoverForBuyerOrder,
   CreateOrderError,
 } from "@/lib/create-order-client";
 import {
@@ -109,6 +110,8 @@ export function CreateOrderDrawer({
     [error, setError] = useState("");
   const [uncertain, setUncertain] = useState(false),
     [guarded, setGuarded] = useState(false);
+  const [recoverable, setRecoverable] = useState(false),
+    [recoveryNote, setRecoveryNote] = useState("");
   const [result, setResult] = useState<Omit<
     ForBuyerResult,
     "buyer_link"
@@ -141,6 +144,8 @@ export function CreateOrderDrawer({
     setBusy(false);
     setError("");
     setUncertain(false);
+    setRecoverable(false);
+    setRecoveryNote("");
     setGuarded(false);
     setResult(null);
     setDuplicate(null);
@@ -334,6 +339,7 @@ export function CreateOrderDrawer({
     sending.current = true;
     setBusy(true);
     setError("");
+    setRecoverable(false);
     try {
       if (
         (await checkedBoundary(boundary)) !== boundary ||
@@ -380,6 +386,8 @@ export function CreateOrderDrawer({
           setUncertain(false);
         } else if (retainOrderAttempt(outcome, uncertain)) {
           setUncertain(true);
+          // A business 422 may precede receipt lookup. Recovery seals this original key; it never guesses absence.
+          setRecoverable(!outcome.uncertain && (outcome.status === 422 || outcome.code === "attempt_closed"));
         } else {
           attempt.current.finish();
           guard.current?.clear();
@@ -407,10 +415,37 @@ export function CreateOrderDrawer({
   }
   function newAttempt() {
     if (sending.current || result || duplicate || !attempt.current.startNew()) return;
-    setError(""); setUncertain(false);
+    setError(""); setUncertain(false); setRecoverable(false); setRecoveryNote("");
+  }
+  async function recover() {
+    const original = attempt.current.pending();
+    if (sending.current || !original || !uncertain || !recoverable || !boundary || !privacy.visible) return;
+    const ticket = privacy.fence.begin();
+    sending.current = true; setBusy(true);
+    try {
+      if ((await checkedBoundary(boundary)) !== boundary || !privacy.fence.current(ticket)) return;
+      const outcome = await recoverForBuyerOrder(store.id, original, boundary, ticket.signal);
+      if (!privacy.fence.current(ticket)) return;
+      if (!outcome.ok) {
+        if ([401, 403].includes(outcome.status)) { expire(); return; }
+        setError(outcome.code); return; // UNKNOWN keeps the same key/body and opaque guard, including a lost recovery response.
+      }
+      // Only the durable A16R seal can prove absence; bounded order lists and generic 422s cannot.
+      attempt.current.finish();
+      if (!guard.current?.clear()) { setGuarded(true); return; }
+      setError(""); setUncertain(false); setRecoverable(false);
+      if (outcome.value.state === "created") setDuplicate({ id: outcome.value.order_id });
+      else setRecoveryNote(c.recovered);
+    } catch (cause) {
+      if (privacy.fence.current(ticket) && denied(cause)) { expire(); return; }
+      if (privacy.fence.current(ticket)) setError("unavailable");
+    } finally {
+      if (privacy.fence.current(ticket)) { sending.current = false; setBusy(false); }
+    }
   }
   async function copy() {
-    if (copying.current || !result || !privacy.visible) return;
+    // A planned DM owns its sealed link. Regenerating would invalidate the URL it will send.
+    if (copying.current || !result || result.send.state !== "not_sent" || !privacy.visible) return;
     const ticket = privacy.fence.begin();
     copying.current = true;
     setCopyBusy(true);
@@ -504,6 +539,7 @@ export function CreateOrderDrawer({
         </p>
       )}
       {duplicate && <p>{c.duplicate}</p>}
+      {recoveryNote && <p role="status" data-testid="drawer-recovery-result">{recoveryNote}</p>}
       {orderId && (
         <a data-testid="drawer-view-order" href={orderHref}>
           {c.view}
@@ -524,7 +560,8 @@ export function CreateOrderDrawer({
               ? createOrderReason(locale, result.send.reason)
               : ""}
           </p>
-          {result.link_state === "configured" && (
+          {result.send.state === "queued" && <p data-testid="drawer-queued-link">{c.queuedLink}</p>}
+          {result.link_state === "configured" && result.send.state === "not_sent" && (
             <button
               type="button"
               data-testid="drawer-copy-link"
@@ -610,6 +647,10 @@ export function CreateOrderDrawer({
               {uncertain ? c.retry : c.create}
             </button>
             {attempt.current.resolved() && <button type="button" data-testid="drawer-new-attempt" disabled={busy} onClick={newAttempt}>{c.newAttempt}</button>}
+            {recoverable && uncertain && <>
+              <p>{c.recoverExplanation}</p>
+              <button type="button" data-testid="drawer-recover-attempt" disabled={busy} onClick={() => void recover()}>{c.recover}</button>
+            </>}
           </form>
         )
       )}

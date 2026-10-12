@@ -15,7 +15,7 @@ registerHooks({
     return next(specifier, context);
   },
 });
-const { readOrderPrefill, createForBuyerOrder, CreateOrderError } =
+const { readOrderPrefill, createForBuyerOrder, recoverForBuyerOrder, CreateOrderError } =
   await import("../../apps/admin/lib/create-order-client.ts");
 const { sessionBoundary } =
   await import("../../apps/admin/lib/settings-client.ts");
@@ -73,6 +73,43 @@ const value = {
 };
 const reply = (payload: unknown, status = 200) =>
   Response.json(payload, { status, headers: { "Cache-Control": "no-store" } });
+test("authoritative recovery sends the frozen receipt through the real session/CSRF seam and only accepts closed 200 results", async () => {
+  cookie = "A".repeat(43);
+  const boundary = await sessionBoundary(), attempt = { key: "synthetic-receipt", body };
+  let calls = 0;
+  for (const result of [{ state: "not_created" }, { state: "created", order_id: id }]) {
+    globalThis.fetch = async (input, init) => {
+      calls++;
+      assert.equal(String(input), `/api/stores/${id}/tools/orders/for-buyer/recover`);
+      assert.equal(init!.body, body);
+      assert.equal(new Headers(init!.headers).get("Idempotency-Key"), attempt.key);
+      assert.equal(new Headers(init!.headers).get("X-CSRF-Token"), cookie);
+      assert.equal(init!.credentials, "same-origin"); assert.equal(init!.cache, "no-store");
+      assert.equal(init!.referrerPolicy, "no-referrer"); assert.equal(init!.redirect, "error"); assert.ok(init!.signal);
+      return reply(result);
+    };
+    assert.deepEqual(await recoverForBuyerOrder(id, attempt, boundary), { ok: true, status: 200, value: result });
+  }
+  for (const response of [reply({ state: "not_created" }, 201), reply({ state: "not_created", order_id: id }), reply({ state: "created" }), reply({ state: "pending" }), new Response('{"state":"not_created"}', { headers: { "content-type": "application/json" } })]) {
+    globalThis.fetch = async () => { calls++; return response; };
+    assert.deepEqual(await recoverForBuyerOrder(id, attempt, boundary), { ok: false, code: "retry_later", status: 503, uncertain: true });
+  }
+  globalThis.fetch = async () => { calls++; throw new Error("PRIVATE_DIAGNOSTIC"); };
+  assert.deepEqual(await recoverForBuyerOrder(id, attempt, boundary), { ok: false, code: "retry_later", status: 503, uncertain: true });
+  assert.equal(calls, 8, "one network request per explicit action, including lost recovery responses");
+  globalThis.fetch = async () => { calls++; const r = reply({ state: "not_created" }); r.json = async () => { cookie = "B".repeat(43); return { state: "not_created" }; }; return r; };
+  await assert.rejects(recoverForBuyerOrder(id, attempt, boundary), e => e instanceof CreateOrderError && e.code === "unauthorized");
+  cookie = "A".repeat(43);
+});
+test("recovery transport auth loss outranks malformed private error bodies", async () => {
+  cookie = "A".repeat(43);
+  const boundary = await sessionBoundary();
+  for (const status of [401, 403]) {
+    globalThis.fetch = async () => new Response("PRIVATE_DIAGNOSTIC", { status });
+    assert.deepEqual(await recoverForBuyerOrder(id, { key: "synthetic-receipt", body }, boundary),
+      { ok: false, code: status === 401 ? "unauthorized" : "forbidden", status, uncertain: false });
+  }
+});
 test("real csrf/session helpers fence both reads and immutable receipt writes", async () => {
   const calls: { url: string; init: RequestInit }[] = [];
   globalThis.fetch = async (input, init) => {

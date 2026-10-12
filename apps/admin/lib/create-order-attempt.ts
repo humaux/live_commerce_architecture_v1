@@ -91,6 +91,6 @@ export function retainOrderAttempt(
     outcome.uncertain ||
     outcome.status >= 500 ||
     [401, 403].includes(outcome.status) ||
-    ["idempotency_conflict", "conflict", "not_found"].includes(outcome.code)
+    ["idempotency_conflict", "conflict", "not_found", "attempt_closed"].includes(outcome.code)
   );
 }

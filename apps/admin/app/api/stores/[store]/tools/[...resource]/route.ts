@@ -21,7 +21,7 @@ import {
 } from "@/lib/auth";
 import { fixtureSession } from "@/lib/backend";
 import { MAX_CSV_BYTES, parseImportResult, toolsRoute, validManualBody, validRegenerateBody, type ToolsRoute } from "@/lib/merchant-tools-model";
-import { validPrefillQuery, validForBuyerBody, parseOrderPrefill, parseForBuyerResult, forBuyerError } from "@/lib/create-order-model";
+import { validPrefillQuery, validForBuyerBody, parseOrderPrefill, parseForBuyerResult, parseForBuyerRecovery, forBuyerError } from "@/lib/create-order-model";
 import { trackingRoute, validTrackingQuery, parseTrackingPreview, parseTrackingCommit, type TrackingRoute } from "@/lib/tracking-import-model";
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -32,7 +32,7 @@ type Context = { params: Promise<{ store: string; resource: string[] }> };
 
 const budgets: Record<ToolsRoute | TrackingRoute, number> = {
   dashboard: 8000, export: 20000, "manual-options": 10000, "import-preview": 75000, "import-commit": 75000, "manual-place": 16000,
-  "manual-regenerate": 16000, "order-prefill": 16000, "for-buyer": 16000,
+  "manual-regenerate": 16000, "order-prefill": 16000, "for-buyer": 16000, "for-buyer-recover": 16000,
   "tracking-preview": 75000, "tracking-commit": 75000, "tracking-result": 20000,
 };
 
@@ -147,7 +147,7 @@ async function route(request: Request, context: Context) {
       } catch {
         return localError(400, "invalid_json");
       }
-      if (kind === "manual-regenerate" ? !validRegenerateBody(parsed) : kind === "for-buyer" ? !validForBuyerBody(parsed) : !validManualBody(parsed)) return localError(422, "invalid_request");
+      if (kind === "manual-regenerate" ? !validRegenerateBody(parsed) : kind === "for-buyer" || kind === "for-buyer-recover" ? !validForBuyerBody(parsed) : !validManualBody(parsed)) return localError(422, "invalid_request");
       init.body = text;
       init.headers = { "Content-Type": "application/json", "Idempotency-Key": key };
     }
@@ -155,12 +155,15 @@ async function route(request: Request, context: Context) {
 
   const response = await upstream(path + (tracking || kind === "order-prefill" ? search : ""), init, token, store, budgets[kind]);
   if (authConfig && response.status === 401) {
-    const denied = kind === "order-prefill" || kind === "for-buyer" ? localError(401, "unauthorized") : await safeError(response);
+    const denied = kind === "order-prefill" || kind === "for-buyer" || kind === "for-buyer-recover" ? localError(401, "unauthorized") : await safeError(response);
     clearAuthCookies(denied.headers);
     return denied;
   }
   const requestID = response.headers.get("x-request-id") ?? "";
-  if (kind === "order-prefill" || kind === "for-buyer") {
+  if (kind === "order-prefill" || kind === "for-buyer" || kind === "for-buyer-recover") {
+    // Revocation outranks a malformed/HTML body; never leave private drawer data visible as UNKNOWN.
+    if (response.status === 401 || response.status === 403)
+      return localError(response.status, response.status === 401 ? "unauthorized" : "forbidden");
     // A15/A16 (live-console-v1 §5): bounded, closed private replies; only an already-ordered pointer may survive errors.
     const data = await readCapped(response, 128 * 1024);
     if (
@@ -195,7 +198,7 @@ async function route(request: Request, context: Context) {
       return denied;
     }
     if (
-      kind === "order-prefill"
+      kind === "order-prefill" || kind === "for-buyer-recover"
         ? response.status !== 200
         : response.status !== 200 && response.status !== 201
     )
@@ -204,7 +207,7 @@ async function route(request: Request, context: Context) {
       const parsed =
         kind === "order-prefill"
           ? parseOrderPrefill(value)
-          : parseForBuyerResult(value);
+          : kind === "for-buyer-recover" ? parseForBuyerRecovery(value) : parseForBuyerResult(value);
       return Response.json(parsed, {
         status: response.status,
         headers: { ...nostore },

@@ -9,11 +9,13 @@ import {
   forBuyerError,
   parseOrderPrefill,
   parseForBuyerResult,
+  parseForBuyerRecovery,
   targetQuery,
   validForBuyerBody,
   type DrawerTarget,
   type OrderPrefill,
   type ForBuyerOutcome,
+  type ForBuyerRecovery,
 } from "./create-order-model.ts";
 
 /** Carries only a fixed safe transport code; no private upstream diagnostic text. */
@@ -146,7 +148,19 @@ export async function createForBuyerOrder(
   boundary: string,
   signal?: AbortSignal,
 ): Promise<ForBuyerOutcome> {
-  const resource = path(store, "orders/for-buyer");
+  return sendForBuyer(store, attempt, boundary, signal, "orders/for-buyer", parseForBuyerResult, [200, 201]);
+}
+/** Resolve/seal the original key explicitly; absence is authoritative only after the server's durable seal. */
+export async function recoverForBuyerOrder(
+  store: string, attempt: { key: string; body: string }, boundary: string, signal?: AbortSignal,
+): Promise<{ ok: true; value: ForBuyerRecovery; status: number } | Extract<ForBuyerOutcome, { ok: false }>> {
+  return sendForBuyer(store, attempt, boundary, signal, "orders/for-buyer/recover", parseForBuyerRecovery, [200]);
+}
+async function sendForBuyer<T>(
+  store: string, attempt: { key: string; body: string }, boundary: string, signal: AbortSignal | undefined,
+  endpoint: string, parse: (value: unknown) => T, accepted: readonly number[],
+): Promise<{ ok: true; value: T; status: number } | Extract<ForBuyerOutcome, { ok: false }>> {
+  const resource = path(store, endpoint);
   let body: unknown;
   try {
     body = JSON.parse(attempt.body);
@@ -158,14 +172,14 @@ export async function createForBuyerOrder(
   const csrf = csrfCookie();
   await fence(csrf, boundary);
   signal?.throwIfAborted();
-  const unknown: ForBuyerOutcome = {
+  const unknown: Extract<ForBuyerOutcome, { ok: false }> = {
     ok: false,
     code: "retry_later",
     status: 503,
     uncertain: true,
   };
   let response: Response;
-  // Calls A16 through the scoped tools BFF (live-console-v1 §5); same key/body on every explicit replay.
+  // Calls A16/A16R through the scoped tools BFF (live-console-v1 §5/§5.1.1); same key/body on every explicit replay.
   try {
     response = await fetch(resource, {
       method: "POST",
@@ -185,6 +199,11 @@ export async function createForBuyerOrder(
     await fence(csrf, boundary);
     return unknown;
   }
+  // Permission loss is authoritative even when an intermediary replaces the error body with HTML.
+  if (response.status === 401 || response.status === 403) {
+    await fence(csrf, boundary);
+    return { ok: false, code: response.status === 401 ? "unauthorized" : "forbidden", status: response.status, uncertain: false };
+  }
   let value: unknown;
   let malformed = false;
   try {
@@ -195,6 +214,7 @@ export async function createForBuyerOrder(
   }
   // A cookie change while parsing invalidates every private value, including a successful order response.
   await fence(csrf, boundary);
+  signal?.throwIfAborted();
   if (malformed) return unknown;
   if (!response.ok) {
     const coded = forBuyerError(response.status, value);
@@ -207,11 +227,11 @@ export async function createForBuyerOrder(
         response.status >= 500 || coded.code === "idempotency_conflict",
     };
   }
-  if (response.status !== 200 && response.status !== 201) return unknown;
+  if (!accepted.includes(response.status)) return unknown;
   try {
     return {
       ok: true,
-      value: parseForBuyerResult(value),
+      value: parse(value),
       status: response.status,
     };
   } catch {

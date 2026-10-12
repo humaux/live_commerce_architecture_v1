@@ -208,6 +208,39 @@ const result = () => ({
   live_price_reason: "no_conversation",
   send: { state: "not_sent", reason: "not_requested" },
 });
+test("A16R real BFF preserves the frozen body/key and accepts only an authoritative closed recovery result", async () => {
+  for (const state of [{ state: "not_created" }, { state: "created", order_id: customer }]) {
+    answer = { status: 200, body: JSON.stringify(state) };
+    const before = seen.length;
+    const recovered = await call("orders/for-buyer/recover", { method: "POST", body: body() });
+    assert.equal(recovered.status, 200);
+    assert.deepEqual(recovered.body, state);
+    assert.equal(seen.length, before + 1, "one upstream recovery command, never a retry");
+    assert.equal(seen.at(-1)?.url, `/v1/admin/stores/${store}/orders/for-buyer/recover`);
+    assert.equal(seen.at(-1)?.headers["idempotency-key"], "synthetic-receipt");
+    assert.deepEqual(JSON.parse(seen.at(-1)?.body ?? ""), body());
+  }
+  for (const malformed of [{ state: "not_created", order_id: customer }, { state: "created" },
+    { state: "not_created", buyer_link: "PRIVATE_CANARY" }, { state: "pending" }]) {
+    answer = { status: 200, body: JSON.stringify(malformed) };
+    assert.equal((await call("orders/for-buyer/recover", { method: "POST", body: body() })).status, 503,
+      "malformed or unsealed absence is UNKNOWN");
+  }
+  const before = seen.length;
+  for (const over of [{ query: "?key=wrong" }, { headers: { "x-csrf-token": "wrong" } },
+    { headers: { origin: "https://foreign.example.invalid" } }, { body: { ...body(), amount: 1 } }])
+    assert.notEqual((await call("orders/for-buyer/recover", { method: "POST", body: body(), ...over })).status, 200);
+  assert.equal(seen.length, before, "closed grammar/CSRF checks precede upstream");
+});
+test("A16R real BFF preserves malformed upstream 401/403 revocation before parsing private replies", async () => {
+  for (const status of [401, 403]) {
+    answer = { status, body: "PRIVATE_DIAGNOSTIC", contentType: "text/html" };
+    const revoked = await call("orders/for-buyer/recover", { method: "POST", body: body() });
+    assert.equal(revoked.status, status);
+    assert.equal(revoked.body.code, status === 401 ? "unauthorized" : "forbidden");
+    assert.equal(JSON.stringify(revoked.body).includes("PRIVATE_DIAGNOSTIC"), false);
+  }
+});
 test("A15 real Request exact XOR selectors, bearer/store authorization, private closed success", async () => {
   answer = { status: 200, body: JSON.stringify(prefill()) };
   const response = await call("inbox/order-prefill", {

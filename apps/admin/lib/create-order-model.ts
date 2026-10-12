@@ -98,6 +98,21 @@ export type ForBuyerOutcome =
       order_id?: string | null;
     };
 
+/** A16R absence means the old key was durably sealed; a created result carries only its scoped order pointer. */
+export type ForBuyerRecovery = { state: "not_created" } | { state: "created"; order_id: string };
+/** Reject unsealed/pending absence and every extra field, including buyer links. */
+export function parseForBuyerRecovery(value: unknown): ForBuyerRecovery {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw failure();
+  const v = value as Record<string, unknown>;
+  if (v.state === "not_created") {
+    object(value, ["state"]);
+    return { state: "not_created" };
+  }
+  object(value, ["state", "order_id"]);
+  if (v.state !== "created" || !id(v.order_id)) throw failure();
+  return { state: "created", order_id: v.order_id as string };
+}
+
 /** Closed server live-price explanations, plus a safe unknown fallback. */
 export const livePriceReasons = [
   "",
@@ -444,6 +459,7 @@ export const forBuyerErrors: Readonly<Record<number, readonly string[]>> = {
     "bundle_already_ordered",
     "bundle_buyer_mismatch",
     "capability",
+    "attempt_closed",
     "insufficient_inventory",
     "conflict",
     "idempotency_conflict",

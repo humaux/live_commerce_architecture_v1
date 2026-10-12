@@ -97,6 +97,11 @@ test("a definitive response unlocks only the explicit new-attempt action", () =>
   assert.notEqual(next.key, first.key);
   assert.equal(JSON.parse(next.body).customer.name, "edited");
 });
+test("attempt_closed retains its guard even on the first reply until authoritative recovery", async () => {
+  const { retainOrderAttempt } = await import("../../apps/admin/lib/create-order-attempt.ts");
+  for (const previouslyUncertain of [false, true])
+    assert.equal(retainOrderAttempt({ status: 409, code: "attempt_closed", uncertain: false }, previouslyUncertain), true);
+});
 
 test("a coded definitive refusal settles an UNKNOWN replay without relaxing ambiguous replies", async () => {
   const { retainOrderAttempt } = await import("../../apps/admin/lib/create-order-attempt.ts");
