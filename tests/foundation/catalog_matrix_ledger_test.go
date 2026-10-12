@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -266,14 +267,31 @@ func TestProductEditorMatrixLedgerEvidence(t *testing.T) {
 	if strings.Contains(string(delivery), "/Volumes/") || strings.Contains(string(delivery), "/private/tmp/") {
 		t.Error("delivery evidence must use repository-relative paths")
 	}
+	// Validate the run DELIVERY designates as current (PR #28 review): its tested source and the directory of its
+	// SOURCE.json link, never a fixed path that superseded artifacts could keep green.
+	sourceRe := regexp.MustCompile("Tested source: \\*\\*`([0-9a-f]{40})`\\*\\*")
+	dirRe := regexp.MustCompile(`\[SOURCE\.json\]\(([A-Za-z0-9._-]+)/SOURCE\.json\)`)
+	sourceMatch, dirMatch := sourceRe.FindSubmatch(delivery), dirRe.FindSubmatch(delivery)
+	if sourceMatch == nil || dirMatch == nil {
+		t.Fatal("DELIVERY.md must name the tested source commit and link its canonical SOURCE.json")
+	}
+	canonical := unit + string(dirMatch[1]) + "/browser/"
 	for _, name := range []string{"product-editor-click-ledger.json", "playwright.log", "browser-evidence.json"} {
-		data, err := os.ReadFile(unit + "browser/" + name)
+		data, err := os.ReadFile(canonical + name)
 		if err != nil {
 			t.Errorf("canonical browser evidence %s: %v", name, err)
 			continue
 		}
 		if len(strings.TrimSpace(string(data))) == 0 {
 			t.Errorf("canonical browser evidence %s is empty", name)
+		}
+		if name == "browser-evidence.json" {
+			var manifest struct {
+				Tested string `json:"tested_source_commit"`
+			}
+			if err := json.Unmarshal(data, &manifest); err != nil || manifest.Tested != string(sourceMatch[1]) {
+				t.Errorf("canonical browser manifest must bind DELIVERY's tested source %s, got %q", sourceMatch[1], manifest.Tested)
+			}
 		}
 		if name == "product-editor-click-ledger.json" {
 			if err := validateProductEditorMatrixLedger(data); err != nil {
