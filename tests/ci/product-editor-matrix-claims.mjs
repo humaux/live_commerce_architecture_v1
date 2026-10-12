@@ -12,6 +12,8 @@ export const sourceClock = 1770001234567;
 const key = (node) => {
   if (ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isNonNullExpression(node)) return key(node.expression);
   if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return ["string", node.text];
+  // Template fragments carry selector identity just as their interpolated operands do.
+  if (ts.isTemplateLiteralToken(node)) return [ts.SyntaxKind[node.kind], node.text];
   if (ts.isNumericLiteral(node)) return ["number", Number(node.text)];
   if (ts.isIdentifier(node)) return ["identifier", node.text];
   if (ts.isRegularExpressionLiteral(node)) return ["regexp", node.text];

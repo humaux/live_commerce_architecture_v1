@@ -15,7 +15,7 @@ const startMarker = "// Keep additional products after the frozen list-count che
 const endMarker = "// Controlled read-only ambiguity:";
 const actions = new Set(["click", "fill", "press", "check", "uncheck", "selectOption", "accept"]);
 const canonicalModes = ["dropped-write-count", "wrong-value-argument", "wrong-document-count", "dropped-reload", "dropped-persistence",
-  "wrong-checked-state", "wrong-ack-source", "dropped-archived-id", "dropped-code-stability", "snapshot-after-action"];
+  "wrong-checked-state", "wrong-ack-source", "dropped-archived-id", "dropped-code-stability", "snapshot-after-action", "fallback-sku-selector"];
 
 test("real Playwright ESM consumer collects the product-editor cases", () => {
   // Match brfPlaywright's generated-config seam, without starting any server or browser.
@@ -111,6 +111,7 @@ function canonicalFault(text, mode) {
     "wrong-checked-state": ['await expect(tracking).toBeChecked({ checked: state.untracked });', 'await expect(tracking).toBeChecked({ checked: !state.untracked });'],
     "wrong-ack-source": ['r.url().endsWith("/document")', 'r.url().endsWith("/not-document")'],
     "dropped-archived-id": ['await expect(savedMatrix.locator(`[data-sku-id="${whiteID}"]`)).toHaveCount(0);', ""],
+    "fallback-sku-selector": ['const savedBlack = savedMatrix.locator(`[data-sku-id="${blackID}"]`);', 'const savedBlack = savedMatrix.locator(`[data-sku-id="${blackID}"], [data-testid="matrix-row-0"]`);'],
   };
   if (mode === "dropped-persistence") {
     const after = region.indexOf('control: "saved row readback"');
