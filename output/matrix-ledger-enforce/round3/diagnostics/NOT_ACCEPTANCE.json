@@ -1,0 +1,14 @@
+{
+  "status": "INTERMEDIATE_DIAGNOSTIC_NOT_ACCEPTANCE",
+  "log": "output/matrix-ledger-enforce/round3/diagnostics/receiver-emitter-intermediate.log",
+  "log_sha256": "066d6eaf0763115a3928bf52968a6e0d8223674b0b809ca2eff57d6e2a09bdcc",
+  "producer_gate_hash": "NOT_CAPTURED",
+  "node_exit_code": "NOT_CAPTURED",
+  "outer_compound_shell_exit_code": 0,
+  "node_summary": {
+    "tests": 34,
+    "pass": 22,
+    "fail": 12
+  },
+  "reason": "Early undefined matcher-argument diagnostic before emitter correction. Not the isolated native RED proof. Current isolated red is ../native-missing-outcome.log bound by ../red-tests.json."
+}

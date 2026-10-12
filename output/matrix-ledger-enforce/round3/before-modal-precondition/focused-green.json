@@ -1,0 +1,11 @@
+{
+  "argv": [
+    "node",
+    "--test",
+    "tests/ci/product-editor-matrix-ledger.test.mjs"
+  ],
+  "exit_code": 0,
+  "elapsed_seconds": 3.064,
+  "gate_sha256": "099136e87e16831a44c408338edf75a33c6a821a72e1a24a37def493040ed1a9",
+  "spec_sha256": "73b44b28dabf9d1c8df44c0f0f9390fc6ad093fe63d0c8ac327c121b9f9a28ad"
+}

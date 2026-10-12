@@ -1,0 +1,132 @@
+{
+  "initial_regression": {
+    "argv": [
+      "node",
+      "--test",
+      "--test-name-pattern=unrelated-outcome|tautological-outcome",
+      "tests/ci/product-editor-matrix-ledger.test.mjs"
+    ],
+    "exit_code": 1,
+    "base_sha": "5e4e96b9bc5ce1e33185442d3173555ccec3dc79",
+    "gate_sha256": "5d9d006fb56a356b6389bba125ae3273b6568c81b28b7243f4da64d52bea680a",
+    "gate_snapshot": "output/matrix-ledger-enforce/round3/receiver-red-gate.source.txt",
+    "spec_sha256": "1ed0014ed4009a15a9cb1c84ed8d961821a7f43eb62865daed2685bcc90f3ae2",
+    "log": "output/matrix-ledger-enforce/round3/receiver-tests-red.log",
+    "log_sha256": "a8ab6767922c87e8861bcfc22e820b98b9b5a8b86000d6a11dba374cc7705535",
+    "modes": [
+      "unrelated-outcome",
+      "tautological-outcome"
+    ],
+    "spec_snapshot": "output/matrix-ledger-enforce/round3/receiver-red-spec.source.txt"
+  },
+  "final_gate_calibrations": [
+    {
+      "mode": "unrelated-outcome",
+      "argv": [
+        "node",
+        "--test",
+        "--test-name-pattern=every actual mobile",
+        "tests/ci/product-editor-matrix-ledger.test.mjs"
+      ],
+      "env": {
+        "LC_MATRIX_ACTION_MUTATION": "unrelated-outcome"
+      },
+      "gate_sha256": "099136e87e16831a44c408338edf75a33c6a821a72e1a24a37def493040ed1a9",
+      "spec_sha256": "9c2c883ee9677805dccbfcb47d0582984955a7ea9bbb4db3c88ce8f5a0ca37bc",
+      "mutation_copy": "output/matrix-ledger-enforce/round3/unrelated-outcome.source.txt",
+      "mutation_sha256": "4a9575b54299c8da98dd2345ab9e8c6f5baaa6b1e300884a25a8e3bbb32dea26",
+      "exit_code": 1,
+      "elapsed_seconds": 0.369,
+      "log": "output/matrix-ledger-enforce/round3/unrelated-outcome.log",
+      "log_sha256": "7eefedee0c579e48ec29d2e995b12a1cce7011510d5bce124e40e946898702b9"
+    },
+    {
+      "mode": "tautological-outcome",
+      "argv": [
+        "node",
+        "--test",
+        "--test-name-pattern=every actual mobile",
+        "tests/ci/product-editor-matrix-ledger.test.mjs"
+      ],
+      "env": {
+        "LC_MATRIX_ACTION_MUTATION": "tautological-outcome"
+      },
+      "gate_sha256": "099136e87e16831a44c408338edf75a33c6a821a72e1a24a37def493040ed1a9",
+      "spec_sha256": "9c2c883ee9677805dccbfcb47d0582984955a7ea9bbb4db3c88ce8f5a0ca37bc",
+      "mutation_copy": "output/matrix-ledger-enforce/round3/tautological-outcome.source.txt",
+      "mutation_sha256": "a9508342af779a66e16d5f4ba198187c001d1ab721ef9e3925ae9b1971d743ee",
+      "exit_code": 1,
+      "elapsed_seconds": 0.342,
+      "log": "output/matrix-ledger-enforce/round3/tautological-outcome.log",
+      "log_sha256": "b4cac4104118a0a64349acbb8d3817d729538d436e98160744d0f23bbdd961a0"
+    },
+    {
+      "mode": "nested-step",
+      "argv": [
+        "node",
+        "--test",
+        "--test-name-pattern=every actual mobile",
+        "tests/ci/product-editor-matrix-ledger.test.mjs"
+      ],
+      "env": {
+        "LC_MATRIX_ACTION_MUTATION": "nested-step"
+      },
+      "gate_sha256": "099136e87e16831a44c408338edf75a33c6a821a72e1a24a37def493040ed1a9",
+      "spec_sha256": "9c2c883ee9677805dccbfcb47d0582984955a7ea9bbb4db3c88ce8f5a0ca37bc",
+      "mutation_copy": "output/matrix-ledger-enforce/round3/nested-step.source.txt",
+      "mutation_sha256": "d162152543ab89156b5a915cc13ed3bf953154c69cef108f6d0ecdc4033afeb3",
+      "exit_code": 1,
+      "elapsed_seconds": 0.353,
+      "log": "output/matrix-ledger-enforce/round3/nested-step.log",
+      "log_sha256": "77d2b1b50edbada8a88f0d8e95e4c457b4743625d1d91232fda19932457509f4"
+    },
+    {
+      "mode": "native-missing-outcome",
+      "argv": [
+        "node",
+        "--test",
+        "--test-name-pattern=every actual mobile",
+        "tests/ci/product-editor-matrix-ledger.test.mjs"
+      ],
+      "env": {
+        "LC_MATRIX_ACTION_MUTATION": "native-missing-outcome"
+      },
+      "gate_sha256": "099136e87e16831a44c408338edf75a33c6a821a72e1a24a37def493040ed1a9",
+      "spec_sha256": "9c2c883ee9677805dccbfcb47d0582984955a7ea9bbb4db3c88ce8f5a0ca37bc",
+      "mutation_copy": "output/matrix-ledger-enforce/round3/native-missing-outcome.source.txt",
+      "mutation_sha256": "ed0e0c725ff1db48bf6183f9b1babbc88a97ab2906ebd9351a1ae89ded871839",
+      "exit_code": 1,
+      "elapsed_seconds": 0.346,
+      "log": "output/matrix-ledger-enforce/round3/native-missing-outcome.log",
+      "log_sha256": "3c0be2e486837a2176973a60771ff40c7b900d0806a95ed675f2d9e3da90ecd2"
+    },
+    {
+      "mode": "restored",
+      "argv": [
+        "node",
+        "--test",
+        "--test-name-pattern=every actual mobile",
+        "tests/ci/product-editor-matrix-ledger.test.mjs"
+      ],
+      "env": {},
+      "gate_sha256": "099136e87e16831a44c408338edf75a33c6a821a72e1a24a37def493040ed1a9",
+      "spec_sha256": "9c2c883ee9677805dccbfcb47d0582984955a7ea9bbb4db3c88ce8f5a0ca37bc",
+      "exit_code": 0,
+      "elapsed_seconds": 0.318,
+      "log": "output/matrix-ledger-enforce/round3/restored.log",
+      "log_sha256": "4310f9738cf5c62caff0cb4cc74e669dc67f026c0d22620209fe52372270bb8b"
+    }
+  ],
+  "gate_sha256": "099136e87e16831a44c408338edf75a33c6a821a72e1a24a37def493040ed1a9",
+  "spec_sha256": "9c2c883ee9677805dccbfcb47d0582984955a7ea9bbb4db3c88ce8f5a0ca37bc",
+  "modes": [
+    "unrelated-outcome",
+    "tautological-outcome",
+    "nested-step",
+    "native-missing-outcome",
+    "restored"
+  ],
+  "tested_source_commit": "ec94cb0502c657892ad649dc2ad4e8384cb03860",
+  "native_isolation": "Final gate: removal of only the replacement UUID assertion yields exactly native-outcome failures for zh-TW/zh-CN/en; no missing DOM-read findings.",
+  "historical_round2_red": "Old 7-test RED and intermediate native log are not current isolated acceptance; retained as historical/diagnostic only."
+}

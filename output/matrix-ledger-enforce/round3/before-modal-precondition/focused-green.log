@@ -1,0 +1,45 @@
+✔ real Playwright ESM consumer collects the product-editor cases (1454.718834ms)
+✔ every actual mobile control operation is enclosed by its recording callback (108.076917ms)
+✔ post-action outcome cannot be removed while the action and observed receipt remain (46.087834ms)
+✔ post-action outcome cannot be before while the action and observed receipt remain (42.101584ms)
+✔ post-action outcome cannot be after-return while the action and observed receipt remain (38.640292ms)
+✔ post-action outcome cannot be not-awaited while the action and observed receipt remain (33.791334ms)
+✔ post-action outcome cannot be unused-function while the action and observed receipt remain (35.150791ms)
+✔ post-action outcome cannot be nested-step while the action and observed receipt remain (35.887167ms)
+✔ post-action outcome cannot be unreachable-branch while the action and observed receipt remain (43.991167ms)
+✔ each checked state needs its own outcome before the next operation (51.817917ms)
+✔ an unrelated-outcome cannot certify the product-name fill (40.862917ms)
+✔ an tautological-outcome cannot certify the product-name fill (40.876708ms)
+✔ native acceptance cannot certify its earlier dialog message without the persisted replacement outcome (64.356917ms)
+✔ native acceptance cannot certify the already-enabled Save button (37.924209ms)
+✔ an unrelated effect cannot certify an axis-add action (35.759334ms)
+✔ an unresolved outcome cannot certify a known operated control (38.938333ms)
+✔ a literal locator swap cannot certify the original declared control (31.926125ms)
+✔ a lexical alias locator swap cannot certify the original declared control (34.650417ms)
+✔ a field factory locator swap cannot certify the original declared control (30.828583ms)
+✔ a row coordinate locator swap cannot certify the original declared control (33.135166ms)
+✔ a role label locator swap cannot certify the original declared control (28.727125ms)
+✔ a CSS ancestor locator swap cannot certify the original declared control (31.030708ms)
+✔ a unknown dynamic locator swap cannot certify the original declared control (10.448375ms)
+✔ lexical shadowing and mutable field reassignment fail closed (38.253167ms)
+✔ native confirmation cannot substitute its receiver (32.541958ms)
+✔ native confirmation cannot substitute its method (27.860625ms)
+✔ Escape cannot certify another key on the same receiver (31.960458ms)
+✔ a new bare click is rejected without running a browser (24.456917ms)
+✔ a different control cannot borrow an existing action's recording callback (46.039583ms)
+✔ a direct ledger push cannot bypass canonical recording (26.856417ms)
+✔ removing the recording wrapper rejects the enclosed real action (30.448875ms)
+✔ shared table has only complete meaningful unique declarations (0.330458ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (zh-TW) (0.849208ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (zh-CN) (0.308375ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (en) (0.257458ms)
+✔ failed assertion and missing observation cannot emit a PASS or satisfy completeness (0.178708ms)
+✔ in-flight action cannot masquerade as complete or admit a concurrent duplicate (0.305708ms)
+ℹ tests 37
+ℹ suites 0
+ℹ pass 37
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2862.297875

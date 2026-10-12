@@ -454,7 +454,7 @@
   },
   {
     "observed": {
-      "value": "peccca8d637bccbf mobile matrix zh-TW"
+      "value": "peccccba9482a5f2 mobile matrix zh-TW"
     },
     "page": "mobile matrix new",
     "row": "",
@@ -475,6 +475,20 @@
     "control": "axis-add-0",
     "action": "click",
     "expected": "Axis add creates local axis 1 without a document write",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount"
+        ]
+      }
+    ],
     "locale": "zh-TW",
     "width": 390,
     "actual": "PASS"
@@ -504,6 +518,29 @@
     "control": "axis-values-0",
     "action": "fill Enter",
     "expected": "Axis values commit White and Black chips locally without a document write",
+    "effects": [
+      {
+        "method": "press",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ],
+          [
+            "nth",
+            0
+          ],
+          [
+            "css",
+            ".pe-value-chips > span"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount",
+          "toContainText"
+        ]
+      }
+    ],
     "locale": "zh-TW",
     "width": 390,
     "actual": "PASS"
@@ -518,6 +555,20 @@
     "control": "axis-add-1",
     "action": "click",
     "expected": "Axis add creates local axis 2 without a document write",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount"
+        ]
+      }
+    ],
     "locale": "zh-TW",
     "width": 390,
     "actual": "PASS"
@@ -547,6 +598,29 @@
     "control": "axis-values-1",
     "action": "fill Enter",
     "expected": "Axis values commit S chip locally without a document write",
+    "effects": [
+      {
+        "method": "press",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ],
+          [
+            "nth",
+            1
+          ],
+          [
+            "css",
+            ".pe-value-chips > span"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount",
+          "toContainText"
+        ]
+      }
+    ],
     "locale": "zh-TW",
     "width": 390,
     "actual": "PASS"
@@ -625,7 +699,7 @@
   {
     "observed": {
       "visibleLabel": "貨號",
-      "value": "M1795815722-0-0"
+      "value": "M1803227439-0-0"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix new",
@@ -640,7 +714,7 @@
   {
     "observed": {
       "visibleLabel": "直播關鍵字",
-      "value": "M17958157220C0"
+      "value": "M18032274390C0"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix new",
@@ -741,7 +815,7 @@
   {
     "observed": {
       "visibleLabel": "貨號",
-      "value": "M1795815722-0-1"
+      "value": "M1803227439-0-1"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix new",
@@ -756,7 +830,7 @@
   {
     "observed": {
       "visibleLabel": "直播關鍵字",
-      "value": "M17958157220C1"
+      "value": "M18032274390C1"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix new",
@@ -785,7 +859,7 @@
   },
   {
     "observed": {
-      "editor": "http://127.0.0.1:62083/zh-TW/products/78c5a39b-c781-46d2-8172-a5079cf11203?store=27835779-cf4d-490e-b899-7b9fd2f33172",
+      "editor": "http://127.0.0.1:64729/zh-TW/products/beae270f-159d-4e9a-87b3-437546abeb18?store=cef83e14-87ca-439b-b5a3-bdf2bb47b27a",
       "visibleRows": 2
     },
     "page": "mobile matrix new",
@@ -793,6 +867,20 @@
     "control": "product-save-result/link",
     "action": "click",
     "expected": "Save result link opens the existing product editor with save enabled and both matrix rows present",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "product-save"
+          ]
+        ],
+        "matchers": [
+          "toBeEnabled"
+        ]
+      }
+    ],
     "locale": "zh-TW",
     "width": 390,
     "actual": "PASS"
@@ -839,8 +927,8 @@
       "compare": "100",
       "quantity": "5",
       "untracked": false,
-      "code": "M1795815722-0-0",
-      "keyword": "M17958157220C0"
+      "code": "M1803227439-0-0",
+      "keyword": "M18032274390C0"
     },
     "tier": "BROWSER+REAL_PG",
     "page": "mobile matrix new",
@@ -859,8 +947,8 @@
       "compare": "101",
       "quantity": "6",
       "untracked": true,
-      "code": "M1795815722-0-1",
-      "keyword": "M17958157220C1"
+      "code": "M1803227439-0-1",
+      "keyword": "M18032274390C1"
     },
     "tier": "BROWSER+REAL_PG",
     "page": "mobile matrix new",
@@ -881,6 +969,32 @@
     "control": "product-create",
     "action": "click reload",
     "expected": "One document write succeeds; both matrix rows and saved axes persist after reload",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "product-save-result"
+          ]
+        ],
+        "matchers": [
+          "toBeVisible"
+        ]
+      },
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "product-save"
+          ]
+        ],
+        "matchers": [
+          "toBeEnabled"
+        ]
+      }
+    ],
     "locale": "zh-TW",
     "width": 390,
     "actual": "PASS"
@@ -959,7 +1073,7 @@
   {
     "observed": {
       "visibleLabel": "貨號",
-      "value": "M1795815722-0-0"
+      "value": "M1803227439-0-0"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix edit",
@@ -974,7 +1088,7 @@
   {
     "observed": {
       "visibleLabel": "直播關鍵字",
-      "value": "M17958157220E0"
+      "value": "M18032274390E0"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix edit",
@@ -1075,7 +1189,7 @@
   {
     "observed": {
       "visibleLabel": "貨號",
-      "value": "M1795815722-0-1"
+      "value": "M1803227439-0-1"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix edit",
@@ -1090,7 +1204,7 @@
   {
     "observed": {
       "visibleLabel": "直播關鍵字",
-      "value": "M17958157220E1"
+      "value": "M18032274390E1"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix edit",
@@ -1159,8 +1273,8 @@
       "compare": "120",
       "quantity": "7",
       "untracked": true,
-      "code": "M1795815722-0-0",
-      "keyword": "M17958157220E0"
+      "code": "M1803227439-0-0",
+      "keyword": "M18032274390E0"
     },
     "tier": "BROWSER+REAL_PG",
     "page": "mobile matrix edit",
@@ -1179,8 +1293,8 @@
       "compare": "121",
       "quantity": "8",
       "untracked": false,
-      "code": "M1795815722-0-1",
-      "keyword": "M17958157220E1"
+      "code": "M1803227439-0-1",
+      "keyword": "M18032274390E1"
     },
     "tier": "BROWSER+REAL_PG",
     "page": "mobile matrix edit",
@@ -1220,11 +1334,11 @@
   },
   {
     "observed": {
-      "archivedSKU": "ea9c4441-f874-4083-8859-e8730445929a",
+      "archivedSKU": "891f0e71-39a4-461f-af13-ffeee1abd641",
       "white": "absent from active-only matrix by SKU ID and name",
       "visibleRows": 1,
       "black": {
-        "id": "914040ab-9f95-46e2-afee-8a20ddfa3c41",
+        "id": "d4296c1b-c257-4c42-8d7b-550fdcb46bfd",
         "price": "81",
         "compare": "121",
         "trackedQuantity": "8",
@@ -1244,7 +1358,7 @@
   },
   {
     "observed": {
-      "value": "peccca8d637bccbf mobile axis remove zh-TW"
+      "value": "peccccba9482a5f2 mobile axis remove zh-TW"
     },
     "page": "mobile axis remove",
     "row": "",
@@ -1265,6 +1379,20 @@
     "control": "axis-add-0",
     "action": "click",
     "expected": "Axis add creates local axis 1 without a document write",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount"
+        ]
+      }
+    ],
     "locale": "zh-TW",
     "width": 390,
     "actual": "PASS"
@@ -1294,6 +1422,29 @@
     "control": "axis-values-0",
     "action": "fill Enter",
     "expected": "Axis values commit White and Black chips locally without a document write",
+    "effects": [
+      {
+        "method": "press",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ],
+          [
+            "nth",
+            0
+          ],
+          [
+            "css",
+            ".pe-value-chips > span"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount",
+          "toContainText"
+        ]
+      }
+    ],
     "locale": "zh-TW",
     "width": 390,
     "actual": "PASS"
@@ -1308,6 +1459,20 @@
     "control": "axis-add-1",
     "action": "click",
     "expected": "Axis add creates local axis 2 without a document write",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount"
+        ]
+      }
+    ],
     "locale": "zh-TW",
     "width": 390,
     "actual": "PASS"
@@ -1337,6 +1502,29 @@
     "control": "axis-values-1",
     "action": "fill Enter",
     "expected": "Axis values commit S chip locally without a document write",
+    "effects": [
+      {
+        "method": "press",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ],
+          [
+            "nth",
+            1
+          ],
+          [
+            "css",
+            ".pe-value-chips > span"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount",
+          "toContainText"
+        ]
+      }
+    ],
     "locale": "zh-TW",
     "width": 390,
     "actual": "PASS"
@@ -1382,7 +1570,7 @@
   },
   {
     "observed": {
-      "value": "M1795815722-A0-0"
+      "value": "M1803227439-A0-0"
     },
     "page": "mobile axis remove",
     "row": "White / S",
@@ -1434,7 +1622,7 @@
   },
   {
     "observed": {
-      "value": "M1795815722-A0-1"
+      "value": "M1803227439-A0-1"
     },
     "page": "mobile axis remove",
     "row": "Black / S",
@@ -1447,7 +1635,7 @@
   },
   {
     "observed": {
-      "editor": "http://127.0.0.1:62083/zh-TW/products/ea0191d4-560f-4221-8312-b4f5f8665c44?store=27835779-cf4d-490e-b899-7b9fd2f33172",
+      "editor": "http://127.0.0.1:64729/zh-TW/products/e76d4083-15c7-44f4-914b-330ce80364fc?store=cef83e14-87ca-439b-b5a3-bdf2bb47b27a",
       "visibleRows": 2
     },
     "page": "mobile axis remove",
@@ -1455,6 +1643,20 @@
     "control": "product-save-result/link",
     "action": "click",
     "expected": "Save result link opens the existing product editor with save enabled and both matrix rows present",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "product-save"
+          ]
+        ],
+        "matchers": [
+          "toBeEnabled"
+        ]
+      }
+    ],
     "locale": "zh-TW",
     "width": 390,
     "actual": "PASS"
@@ -1462,8 +1664,8 @@
   {
     "observed": {
       "oldAxisIDs": [
-        "b9b858a3-e869-4065-8466-960e5157eaad",
-        "1a04e548-7389-43d1-9499-9a03d6252afb"
+        "c3666ca9-16a1-4b5a-8a90-fd962c29d88e",
+        "b5462241-894e-489a-9fdf-2ff3f14f9a23"
       ],
       "visibleRows": 2,
       "oneDocumentWrite": true
@@ -1474,6 +1676,32 @@
     "control": "product-create",
     "action": "click reload",
     "expected": "One create document write succeeds; both distinct persisted SKUs retain their entered prices, compare prices, quantities and codes",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "product-save-result"
+          ]
+        ],
+        "matchers": [
+          "toBeVisible"
+        ]
+      },
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "product-save"
+          ]
+        ],
+        "matchers": [
+          "toBeEnabled"
+        ]
+      }
+    ],
     "locale": "zh-TW",
     "width": 390,
     "actual": "PASS"
@@ -1495,6 +1723,20 @@
     "control": ".pe-axis-remove (Color axis 1)",
     "action": "real click",
     "expected": "Color axis is removed locally; only Size S remains; matrix changes from two rows to one S row without a document write",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount"
+        ]
+      }
+    ],
     "locale": "zh-TW",
     "width": 390,
     "actual": "PASS"
@@ -1547,6 +1789,20 @@
     "control": "bulk-open",
     "action": "click",
     "expected": "Bulk edit dialog opens; existing SKU code is unavailable as a bulk field",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "bulk-field"
+          ]
+        ],
+        "matchers": [
+          "toBeVisible"
+        ]
+      }
+    ],
     "locale": "zh-TW",
     "width": 390,
     "actual": "PASS"
@@ -1569,13 +1825,31 @@
   {
     "observed": {
       "message": "即將封存的規格",
-      "accepted": true
+      "accepted": true,
+      "beforeId": null,
+      "replacementSKU": "2dcd7ca0-565b-4101-a2f0-805700df8f7a"
     },
     "page": "mobile axis remove",
     "row": "",
     "control": "native archive confirmation",
     "action": "accept",
     "expected": "Native archive confirmation displays the localized archive warning and is accepted before the single document write",
+    "effects": [
+      {
+        "method": "accept",
+        "locator": [
+          [
+            "testId",
+            "matrix-row-0"
+          ]
+        ],
+        "matchers": [
+          "toHaveAttribute"
+        ],
+        "attribute": "data-sku-id",
+        "negated": false
+      }
+    ],
     "locale": "zh-TW",
     "width": 390,
     "actual": "PASS"
@@ -1589,11 +1863,11 @@
         "S"
       ],
       "archivedSKUs": [
-        "b9b858a3-e869-4065-8466-960e5157eaad",
-        "1a04e548-7389-43d1-9499-9a03d6252afb"
+        "c3666ca9-16a1-4b5a-8a90-fd962c29d88e",
+        "b5462241-894e-489a-9fdf-2ff3f14f9a23"
       ],
-      "activeSKU": "0e472d79-dee9-40e3-82af-f2dcb46698a9",
-      "generatedCode": "peccca8d637bccbf-mobile-axis-remove-zh-tw",
+      "activeSKU": "2dcd7ca0-565b-4101-a2f0-805700df8f7a",
+      "generatedCode": "peccccba9482a5f2-mobile-axis-remove-zh-tw",
       "row": "S",
       "price": "95",
       "compare": "145",
@@ -1613,7 +1887,7 @@
   },
   {
     "observed": {
-      "value": "peccca8d637bccbf mobile matrix zh-CN"
+      "value": "peccccba9482a5f2 mobile matrix zh-CN"
     },
     "page": "mobile matrix new",
     "row": "",
@@ -1634,6 +1908,20 @@
     "control": "axis-add-0",
     "action": "click",
     "expected": "Axis add creates local axis 1 without a document write",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount"
+        ]
+      }
+    ],
     "locale": "zh-CN",
     "width": 390,
     "actual": "PASS"
@@ -1663,6 +1951,29 @@
     "control": "axis-values-0",
     "action": "fill Enter",
     "expected": "Axis values commit White and Black chips locally without a document write",
+    "effects": [
+      {
+        "method": "press",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ],
+          [
+            "nth",
+            0
+          ],
+          [
+            "css",
+            ".pe-value-chips > span"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount",
+          "toContainText"
+        ]
+      }
+    ],
     "locale": "zh-CN",
     "width": 390,
     "actual": "PASS"
@@ -1677,6 +1988,20 @@
     "control": "axis-add-1",
     "action": "click",
     "expected": "Axis add creates local axis 2 without a document write",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount"
+        ]
+      }
+    ],
     "locale": "zh-CN",
     "width": 390,
     "actual": "PASS"
@@ -1706,6 +2031,29 @@
     "control": "axis-values-1",
     "action": "fill Enter",
     "expected": "Axis values commit S chip locally without a document write",
+    "effects": [
+      {
+        "method": "press",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ],
+          [
+            "nth",
+            1
+          ],
+          [
+            "css",
+            ".pe-value-chips > span"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount",
+          "toContainText"
+        ]
+      }
+    ],
     "locale": "zh-CN",
     "width": 390,
     "actual": "PASS"
@@ -1784,7 +2132,7 @@
   {
     "observed": {
       "visibleLabel": "货号",
-      "value": "M1795815722-1-0"
+      "value": "M1803227439-1-0"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix new",
@@ -1799,7 +2147,7 @@
   {
     "observed": {
       "visibleLabel": "直播关键字",
-      "value": "M17958157221C0"
+      "value": "M18032274391C0"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix new",
@@ -1900,7 +2248,7 @@
   {
     "observed": {
       "visibleLabel": "货号",
-      "value": "M1795815722-1-1"
+      "value": "M1803227439-1-1"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix new",
@@ -1915,7 +2263,7 @@
   {
     "observed": {
       "visibleLabel": "直播关键字",
-      "value": "M17958157221C1"
+      "value": "M18032274391C1"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix new",
@@ -1944,7 +2292,7 @@
   },
   {
     "observed": {
-      "editor": "http://127.0.0.1:62083/zh-CN/products/f4c29826-abbe-4c62-a3f3-b1d5329e26d6?store=27835779-cf4d-490e-b899-7b9fd2f33172",
+      "editor": "http://127.0.0.1:64729/zh-CN/products/80321563-1afa-4ab8-9df0-f9098be9ffeb?store=cef83e14-87ca-439b-b5a3-bdf2bb47b27a",
       "visibleRows": 2
     },
     "page": "mobile matrix new",
@@ -1952,6 +2300,20 @@
     "control": "product-save-result/link",
     "action": "click",
     "expected": "Save result link opens the existing product editor with save enabled and both matrix rows present",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "product-save"
+          ]
+        ],
+        "matchers": [
+          "toBeEnabled"
+        ]
+      }
+    ],
     "locale": "zh-CN",
     "width": 390,
     "actual": "PASS"
@@ -1998,8 +2360,8 @@
       "compare": "100",
       "quantity": "5",
       "untracked": false,
-      "code": "M1795815722-1-0",
-      "keyword": "M17958157221C0"
+      "code": "M1803227439-1-0",
+      "keyword": "M18032274391C0"
     },
     "tier": "BROWSER+REAL_PG",
     "page": "mobile matrix new",
@@ -2018,8 +2380,8 @@
       "compare": "101",
       "quantity": "6",
       "untracked": true,
-      "code": "M1795815722-1-1",
-      "keyword": "M17958157221C1"
+      "code": "M1803227439-1-1",
+      "keyword": "M18032274391C1"
     },
     "tier": "BROWSER+REAL_PG",
     "page": "mobile matrix new",
@@ -2040,6 +2402,32 @@
     "control": "product-create",
     "action": "click reload",
     "expected": "One document write succeeds; both matrix rows and saved axes persist after reload",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "product-save-result"
+          ]
+        ],
+        "matchers": [
+          "toBeVisible"
+        ]
+      },
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "product-save"
+          ]
+        ],
+        "matchers": [
+          "toBeEnabled"
+        ]
+      }
+    ],
     "locale": "zh-CN",
     "width": 390,
     "actual": "PASS"
@@ -2118,7 +2506,7 @@
   {
     "observed": {
       "visibleLabel": "货号",
-      "value": "M1795815722-1-0"
+      "value": "M1803227439-1-0"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix edit",
@@ -2133,7 +2521,7 @@
   {
     "observed": {
       "visibleLabel": "直播关键字",
-      "value": "M17958157221E0"
+      "value": "M18032274391E0"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix edit",
@@ -2234,7 +2622,7 @@
   {
     "observed": {
       "visibleLabel": "货号",
-      "value": "M1795815722-1-1"
+      "value": "M1803227439-1-1"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix edit",
@@ -2249,7 +2637,7 @@
   {
     "observed": {
       "visibleLabel": "直播关键字",
-      "value": "M17958157221E1"
+      "value": "M18032274391E1"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix edit",
@@ -2318,8 +2706,8 @@
       "compare": "120",
       "quantity": "7",
       "untracked": true,
-      "code": "M1795815722-1-0",
-      "keyword": "M17958157221E0"
+      "code": "M1803227439-1-0",
+      "keyword": "M18032274391E0"
     },
     "tier": "BROWSER+REAL_PG",
     "page": "mobile matrix edit",
@@ -2338,8 +2726,8 @@
       "compare": "121",
       "quantity": "8",
       "untracked": false,
-      "code": "M1795815722-1-1",
-      "keyword": "M17958157221E1"
+      "code": "M1803227439-1-1",
+      "keyword": "M18032274391E1"
     },
     "tier": "BROWSER+REAL_PG",
     "page": "mobile matrix edit",
@@ -2379,11 +2767,11 @@
   },
   {
     "observed": {
-      "archivedSKU": "16b12ed2-4091-404f-8bc8-edd72a66b44d",
+      "archivedSKU": "bbe194cb-4526-42d4-a279-ed5ca0954141",
       "white": "absent from active-only matrix by SKU ID and name",
       "visibleRows": 1,
       "black": {
-        "id": "f7664951-bb64-42c2-b4a7-6ee684d06c64",
+        "id": "31a84194-0e33-4f9c-80e5-0c3c9510d1c7",
         "price": "81",
         "compare": "121",
         "trackedQuantity": "8",
@@ -2403,7 +2791,7 @@
   },
   {
     "observed": {
-      "value": "peccca8d637bccbf mobile axis remove zh-CN"
+      "value": "peccccba9482a5f2 mobile axis remove zh-CN"
     },
     "page": "mobile axis remove",
     "row": "",
@@ -2424,6 +2812,20 @@
     "control": "axis-add-0",
     "action": "click",
     "expected": "Axis add creates local axis 1 without a document write",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount"
+        ]
+      }
+    ],
     "locale": "zh-CN",
     "width": 390,
     "actual": "PASS"
@@ -2453,6 +2855,29 @@
     "control": "axis-values-0",
     "action": "fill Enter",
     "expected": "Axis values commit White and Black chips locally without a document write",
+    "effects": [
+      {
+        "method": "press",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ],
+          [
+            "nth",
+            0
+          ],
+          [
+            "css",
+            ".pe-value-chips > span"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount",
+          "toContainText"
+        ]
+      }
+    ],
     "locale": "zh-CN",
     "width": 390,
     "actual": "PASS"
@@ -2467,6 +2892,20 @@
     "control": "axis-add-1",
     "action": "click",
     "expected": "Axis add creates local axis 2 without a document write",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount"
+        ]
+      }
+    ],
     "locale": "zh-CN",
     "width": 390,
     "actual": "PASS"
@@ -2496,6 +2935,29 @@
     "control": "axis-values-1",
     "action": "fill Enter",
     "expected": "Axis values commit S chip locally without a document write",
+    "effects": [
+      {
+        "method": "press",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ],
+          [
+            "nth",
+            1
+          ],
+          [
+            "css",
+            ".pe-value-chips > span"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount",
+          "toContainText"
+        ]
+      }
+    ],
     "locale": "zh-CN",
     "width": 390,
     "actual": "PASS"
@@ -2541,7 +3003,7 @@
   },
   {
     "observed": {
-      "value": "M1795815722-A1-0"
+      "value": "M1803227439-A1-0"
     },
     "page": "mobile axis remove",
     "row": "White / S",
@@ -2593,7 +3055,7 @@
   },
   {
     "observed": {
-      "value": "M1795815722-A1-1"
+      "value": "M1803227439-A1-1"
     },
     "page": "mobile axis remove",
     "row": "Black / S",
@@ -2606,7 +3068,7 @@
   },
   {
     "observed": {
-      "editor": "http://127.0.0.1:62083/zh-CN/products/76c117ca-4a49-4cbf-8e4f-feff0ddf253b?store=27835779-cf4d-490e-b899-7b9fd2f33172",
+      "editor": "http://127.0.0.1:64729/zh-CN/products/95254e34-5a39-404e-ba26-c5f5d2908936?store=cef83e14-87ca-439b-b5a3-bdf2bb47b27a",
       "visibleRows": 2
     },
     "page": "mobile axis remove",
@@ -2614,6 +3076,20 @@
     "control": "product-save-result/link",
     "action": "click",
     "expected": "Save result link opens the existing product editor with save enabled and both matrix rows present",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "product-save"
+          ]
+        ],
+        "matchers": [
+          "toBeEnabled"
+        ]
+      }
+    ],
     "locale": "zh-CN",
     "width": 390,
     "actual": "PASS"
@@ -2621,8 +3097,8 @@
   {
     "observed": {
       "oldAxisIDs": [
-        "8b538ad1-9b9f-4625-98d8-bdacc071c31c",
-        "2b590159-9718-443b-b401-67b2386369dc"
+        "ff9d5951-8f15-478b-a923-57398cb70ff0",
+        "aae83614-1aec-4979-8ceb-bbe02c016bd9"
       ],
       "visibleRows": 2,
       "oneDocumentWrite": true
@@ -2633,6 +3109,32 @@
     "control": "product-create",
     "action": "click reload",
     "expected": "One create document write succeeds; both distinct persisted SKUs retain their entered prices, compare prices, quantities and codes",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "product-save-result"
+          ]
+        ],
+        "matchers": [
+          "toBeVisible"
+        ]
+      },
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "product-save"
+          ]
+        ],
+        "matchers": [
+          "toBeEnabled"
+        ]
+      }
+    ],
     "locale": "zh-CN",
     "width": 390,
     "actual": "PASS"
@@ -2654,6 +3156,20 @@
     "control": ".pe-axis-remove (Color axis 1)",
     "action": "real click",
     "expected": "Color axis is removed locally; only Size S remains; matrix changes from two rows to one S row without a document write",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount"
+        ]
+      }
+    ],
     "locale": "zh-CN",
     "width": 390,
     "actual": "PASS"
@@ -2706,6 +3222,20 @@
     "control": "bulk-open",
     "action": "click",
     "expected": "Bulk edit dialog opens; existing SKU code is unavailable as a bulk field",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "bulk-field"
+          ]
+        ],
+        "matchers": [
+          "toBeVisible"
+        ]
+      }
+    ],
     "locale": "zh-CN",
     "width": 390,
     "actual": "PASS"
@@ -2728,13 +3258,31 @@
   {
     "observed": {
       "message": "即将封存的规格",
-      "accepted": true
+      "accepted": true,
+      "beforeId": null,
+      "replacementSKU": "8ee4ee16-1513-4c17-8112-139abb43dd53"
     },
     "page": "mobile axis remove",
     "row": "",
     "control": "native archive confirmation",
     "action": "accept",
     "expected": "Native archive confirmation displays the localized archive warning and is accepted before the single document write",
+    "effects": [
+      {
+        "method": "accept",
+        "locator": [
+          [
+            "testId",
+            "matrix-row-0"
+          ]
+        ],
+        "matchers": [
+          "toHaveAttribute"
+        ],
+        "attribute": "data-sku-id",
+        "negated": false
+      }
+    ],
     "locale": "zh-CN",
     "width": 390,
     "actual": "PASS"
@@ -2748,11 +3296,11 @@
         "S"
       ],
       "archivedSKUs": [
-        "8b538ad1-9b9f-4625-98d8-bdacc071c31c",
-        "2b590159-9718-443b-b401-67b2386369dc"
+        "ff9d5951-8f15-478b-a923-57398cb70ff0",
+        "aae83614-1aec-4979-8ceb-bbe02c016bd9"
       ],
-      "activeSKU": "f4b7956a-7eb3-4d3f-8c8f-68ccf951ad77",
-      "generatedCode": "peccca8d637bccbf-mobile-axis-remove-zh-cn",
+      "activeSKU": "8ee4ee16-1513-4c17-8112-139abb43dd53",
+      "generatedCode": "peccccba9482a5f2-mobile-axis-remove-zh-cn",
       "row": "S",
       "price": "95",
       "compare": "145",
@@ -2772,7 +3320,7 @@
   },
   {
     "observed": {
-      "value": "peccca8d637bccbf mobile matrix en"
+      "value": "peccccba9482a5f2 mobile matrix en"
     },
     "page": "mobile matrix new",
     "row": "",
@@ -2793,6 +3341,20 @@
     "control": "axis-add-0",
     "action": "click",
     "expected": "Axis add creates local axis 1 without a document write",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount"
+        ]
+      }
+    ],
     "locale": "en",
     "width": 390,
     "actual": "PASS"
@@ -2822,6 +3384,29 @@
     "control": "axis-values-0",
     "action": "fill Enter",
     "expected": "Axis values commit White and Black chips locally without a document write",
+    "effects": [
+      {
+        "method": "press",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ],
+          [
+            "nth",
+            0
+          ],
+          [
+            "css",
+            ".pe-value-chips > span"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount",
+          "toContainText"
+        ]
+      }
+    ],
     "locale": "en",
     "width": 390,
     "actual": "PASS"
@@ -2836,6 +3421,20 @@
     "control": "axis-add-1",
     "action": "click",
     "expected": "Axis add creates local axis 2 without a document write",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount"
+        ]
+      }
+    ],
     "locale": "en",
     "width": 390,
     "actual": "PASS"
@@ -2865,6 +3464,29 @@
     "control": "axis-values-1",
     "action": "fill Enter",
     "expected": "Axis values commit S chip locally without a document write",
+    "effects": [
+      {
+        "method": "press",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ],
+          [
+            "nth",
+            1
+          ],
+          [
+            "css",
+            ".pe-value-chips > span"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount",
+          "toContainText"
+        ]
+      }
+    ],
     "locale": "en",
     "width": 390,
     "actual": "PASS"
@@ -2943,7 +3565,7 @@
   {
     "observed": {
       "visibleLabel": "SKU code",
-      "value": "M1795815722-2-0"
+      "value": "M1803227439-2-0"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix new",
@@ -2958,7 +3580,7 @@
   {
     "observed": {
       "visibleLabel": "Live keyword",
-      "value": "M17958157222C0"
+      "value": "M18032274392C0"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix new",
@@ -3059,7 +3681,7 @@
   {
     "observed": {
       "visibleLabel": "SKU code",
-      "value": "M1795815722-2-1"
+      "value": "M1803227439-2-1"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix new",
@@ -3074,7 +3696,7 @@
   {
     "observed": {
       "visibleLabel": "Live keyword",
-      "value": "M17958157222C1"
+      "value": "M18032274392C1"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix new",
@@ -3103,7 +3725,7 @@
   },
   {
     "observed": {
-      "editor": "http://127.0.0.1:62083/en/products/c67ff23d-d739-469e-bdc6-74dcb79784bd?store=27835779-cf4d-490e-b899-7b9fd2f33172",
+      "editor": "http://127.0.0.1:64729/en/products/bcfdfe9d-6035-40f4-8d21-78bdb0a10776?store=cef83e14-87ca-439b-b5a3-bdf2bb47b27a",
       "visibleRows": 2
     },
     "page": "mobile matrix new",
@@ -3111,6 +3733,20 @@
     "control": "product-save-result/link",
     "action": "click",
     "expected": "Save result link opens the existing product editor with save enabled and both matrix rows present",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "product-save"
+          ]
+        ],
+        "matchers": [
+          "toBeEnabled"
+        ]
+      }
+    ],
     "locale": "en",
     "width": 390,
     "actual": "PASS"
@@ -3157,8 +3793,8 @@
       "compare": "100",
       "quantity": "5",
       "untracked": false,
-      "code": "M1795815722-2-0",
-      "keyword": "M17958157222C0"
+      "code": "M1803227439-2-0",
+      "keyword": "M18032274392C0"
     },
     "tier": "BROWSER+REAL_PG",
     "page": "mobile matrix new",
@@ -3177,8 +3813,8 @@
       "compare": "101",
       "quantity": "6",
       "untracked": true,
-      "code": "M1795815722-2-1",
-      "keyword": "M17958157222C1"
+      "code": "M1803227439-2-1",
+      "keyword": "M18032274392C1"
     },
     "tier": "BROWSER+REAL_PG",
     "page": "mobile matrix new",
@@ -3199,6 +3835,32 @@
     "control": "product-create",
     "action": "click reload",
     "expected": "One document write succeeds; both matrix rows and saved axes persist after reload",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "product-save-result"
+          ]
+        ],
+        "matchers": [
+          "toBeVisible"
+        ]
+      },
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "product-save"
+          ]
+        ],
+        "matchers": [
+          "toBeEnabled"
+        ]
+      }
+    ],
     "locale": "en",
     "width": 390,
     "actual": "PASS"
@@ -3277,7 +3939,7 @@
   {
     "observed": {
       "visibleLabel": "SKU code",
-      "value": "M1795815722-2-0"
+      "value": "M1803227439-2-0"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix edit",
@@ -3292,7 +3954,7 @@
   {
     "observed": {
       "visibleLabel": "Live keyword",
-      "value": "M17958157222E0"
+      "value": "M18032274392E0"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix edit",
@@ -3393,7 +4055,7 @@
   {
     "observed": {
       "visibleLabel": "SKU code",
-      "value": "M1795815722-2-1"
+      "value": "M1803227439-2-1"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix edit",
@@ -3408,7 +4070,7 @@
   {
     "observed": {
       "visibleLabel": "Live keyword",
-      "value": "M17958157222E1"
+      "value": "M18032274392E1"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix edit",
@@ -3477,8 +4139,8 @@
       "compare": "120",
       "quantity": "7",
       "untracked": true,
-      "code": "M1795815722-2-0",
-      "keyword": "M17958157222E0"
+      "code": "M1803227439-2-0",
+      "keyword": "M18032274392E0"
     },
     "tier": "BROWSER+REAL_PG",
     "page": "mobile matrix edit",
@@ -3497,8 +4159,8 @@
       "compare": "121",
       "quantity": "8",
       "untracked": false,
-      "code": "M1795815722-2-1",
-      "keyword": "M17958157222E1"
+      "code": "M1803227439-2-1",
+      "keyword": "M18032274392E1"
     },
     "tier": "BROWSER+REAL_PG",
     "page": "mobile matrix edit",
@@ -3538,11 +4200,11 @@
   },
   {
     "observed": {
-      "archivedSKU": "58aaa392-2a74-42ab-ba26-cc33aaa23ee9",
+      "archivedSKU": "c84843ad-3350-4348-a2e9-a8ff4dcbeff8",
       "white": "absent from active-only matrix by SKU ID and name",
       "visibleRows": 1,
       "black": {
-        "id": "50e55d07-cf4c-4d5d-9c31-447a80370bf5",
+        "id": "8083a8a0-2058-41b6-8db6-f99d60a7d341",
         "price": "81",
         "compare": "121",
         "trackedQuantity": "8",
@@ -3562,7 +4224,7 @@
   },
   {
     "observed": {
-      "value": "peccca8d637bccbf mobile axis remove en"
+      "value": "peccccba9482a5f2 mobile axis remove en"
     },
     "page": "mobile axis remove",
     "row": "",
@@ -3583,6 +4245,20 @@
     "control": "axis-add-0",
     "action": "click",
     "expected": "Axis add creates local axis 1 without a document write",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount"
+        ]
+      }
+    ],
     "locale": "en",
     "width": 390,
     "actual": "PASS"
@@ -3612,6 +4288,29 @@
     "control": "axis-values-0",
     "action": "fill Enter",
     "expected": "Axis values commit White and Black chips locally without a document write",
+    "effects": [
+      {
+        "method": "press",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ],
+          [
+            "nth",
+            0
+          ],
+          [
+            "css",
+            ".pe-value-chips > span"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount",
+          "toContainText"
+        ]
+      }
+    ],
     "locale": "en",
     "width": 390,
     "actual": "PASS"
@@ -3626,6 +4325,20 @@
     "control": "axis-add-1",
     "action": "click",
     "expected": "Axis add creates local axis 2 without a document write",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount"
+        ]
+      }
+    ],
     "locale": "en",
     "width": 390,
     "actual": "PASS"
@@ -3655,6 +4368,29 @@
     "control": "axis-values-1",
     "action": "fill Enter",
     "expected": "Axis values commit S chip locally without a document write",
+    "effects": [
+      {
+        "method": "press",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ],
+          [
+            "nth",
+            1
+          ],
+          [
+            "css",
+            ".pe-value-chips > span"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount",
+          "toContainText"
+        ]
+      }
+    ],
     "locale": "en",
     "width": 390,
     "actual": "PASS"
@@ -3700,7 +4436,7 @@
   },
   {
     "observed": {
-      "value": "M1795815722-A2-0"
+      "value": "M1803227439-A2-0"
     },
     "page": "mobile axis remove",
     "row": "White / S",
@@ -3752,7 +4488,7 @@
   },
   {
     "observed": {
-      "value": "M1795815722-A2-1"
+      "value": "M1803227439-A2-1"
     },
     "page": "mobile axis remove",
     "row": "Black / S",
@@ -3765,7 +4501,7 @@
   },
   {
     "observed": {
-      "editor": "http://127.0.0.1:62083/en/products/e0b7dcd8-2ee7-4e9b-8040-b66ce0e84913?store=27835779-cf4d-490e-b899-7b9fd2f33172",
+      "editor": "http://127.0.0.1:64729/en/products/20507d98-cd4d-493a-9862-4b09c27e3d09?store=cef83e14-87ca-439b-b5a3-bdf2bb47b27a",
       "visibleRows": 2
     },
     "page": "mobile axis remove",
@@ -3773,6 +4509,20 @@
     "control": "product-save-result/link",
     "action": "click",
     "expected": "Save result link opens the existing product editor with save enabled and both matrix rows present",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "product-save"
+          ]
+        ],
+        "matchers": [
+          "toBeEnabled"
+        ]
+      }
+    ],
     "locale": "en",
     "width": 390,
     "actual": "PASS"
@@ -3780,8 +4530,8 @@
   {
     "observed": {
       "oldAxisIDs": [
-        "50c7a14c-fe0e-41aa-a278-7885632fa508",
-        "b1808f65-0a84-4f96-ab9e-9c2ea05be990"
+        "05c05076-80fe-4fae-a729-b69577fde317",
+        "1b53e54b-da3f-4bdc-9bb4-7330beca8d4a"
       ],
       "visibleRows": 2,
       "oneDocumentWrite": true
@@ -3792,6 +4542,32 @@
     "control": "product-create",
     "action": "click reload",
     "expected": "One create document write succeeds; both distinct persisted SKUs retain their entered prices, compare prices, quantities and codes",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "product-save-result"
+          ]
+        ],
+        "matchers": [
+          "toBeVisible"
+        ]
+      },
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "product-save"
+          ]
+        ],
+        "matchers": [
+          "toBeEnabled"
+        ]
+      }
+    ],
     "locale": "en",
     "width": 390,
     "actual": "PASS"
@@ -3813,6 +4589,20 @@
     "control": ".pe-axis-remove (Color axis 1)",
     "action": "real click",
     "expected": "Color axis is removed locally; only Size S remains; matrix changes from two rows to one S row without a document write",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount"
+        ]
+      }
+    ],
     "locale": "en",
     "width": 390,
     "actual": "PASS"
@@ -3865,6 +4655,20 @@
     "control": "bulk-open",
     "action": "click",
     "expected": "Bulk edit dialog opens; existing SKU code is unavailable as a bulk field",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "bulk-field"
+          ]
+        ],
+        "matchers": [
+          "toBeVisible"
+        ]
+      }
+    ],
     "locale": "en",
     "width": 390,
     "actual": "PASS"
@@ -3887,13 +4691,31 @@
   {
     "observed": {
       "message": "Existing variants to archive",
-      "accepted": true
+      "accepted": true,
+      "beforeId": null,
+      "replacementSKU": "467d0227-0115-412a-829f-f735779742d2"
     },
     "page": "mobile axis remove",
     "row": "",
     "control": "native archive confirmation",
     "action": "accept",
     "expected": "Native archive confirmation displays the localized archive warning and is accepted before the single document write",
+    "effects": [
+      {
+        "method": "accept",
+        "locator": [
+          [
+            "testId",
+            "matrix-row-0"
+          ]
+        ],
+        "matchers": [
+          "toHaveAttribute"
+        ],
+        "attribute": "data-sku-id",
+        "negated": false
+      }
+    ],
     "locale": "en",
     "width": 390,
     "actual": "PASS"
@@ -3907,11 +4729,11 @@
         "S"
       ],
       "archivedSKUs": [
-        "50c7a14c-fe0e-41aa-a278-7885632fa508",
-        "b1808f65-0a84-4f96-ab9e-9c2ea05be990"
+        "05c05076-80fe-4fae-a729-b69577fde317",
+        "1b53e54b-da3f-4bdc-9bb4-7330beca8d4a"
       ],
-      "activeSKU": "889348af-6d04-4ba5-9fb7-c1fffd5dc031",
-      "generatedCode": "peccca8d637bccbf-mobile-axis-remove-en",
+      "activeSKU": "467d0227-0115-412a-829f-f735779742d2",
+      "generatedCode": "peccccba9482a5f2-mobile-axis-remove-en",
       "row": "S",
       "price": "95",
       "compare": "145",
