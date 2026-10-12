@@ -630,7 +630,9 @@ func runBrowserLiveConsole(t *testing.T, labels bool) {
 	cmd := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", spec, "--reporter=list", "--output="+filepath.Join(evidence, "results"))
 	if grep := os.Getenv("LC_BROWSER_CONSOLE_GREP"); grep != "" {
 		// Optional local focused-spec run; a filtered success is not acceptance of the full mode.
-		cmd.Args = append(cmd.Args, "--grep", grep)
+		// The workspace and labels subtests run different specs with the same grep; the non-target one matches
+		// nothing and must not fail the focused run (PR #40 review). Full-mode runs never pass this flag.
+		cmd.Args = append(cmd.Args, "--grep", grep, "--pass-with-no-tests")
 		t.Logf("FOCUSED_SPEC_ONLY: live-console grep=%q; full-mode acceptance remains NOT_RUN", grep)
 	}
 	cmd.Dir = root

@@ -10,7 +10,7 @@ import { environment, node, nodes, store, response } from "./inbox-review-host.t
 import type { StreamComment } from "../../apps/admin/src/features/live/comment-model.ts";
 import { commentLabelStrictFixture } from "./comment-label-strict-fixture.ts";
 const { jsx } = await import("react/jsx-runtime");
-const { CommentLabelPrint, CommentLabelAction } = await import("../../apps/admin/components/CommentLabelPrint.tsx");
+const { CommentLabelPrint, CommentLabelAction, CommentLabelToolbar } = await import("../../apps/admin/components/CommentLabelPrint.tsx");
 
 const acceptedRow = (): StreamComment => ({ ref: "123_456", seq: 1, parent_ref: null, author_name: "SYNTHETIC",
   created_at: "2030-01-01T00:00:00Z", text: "A1 1", is_page: false, has_attachment: false,
@@ -213,4 +213,28 @@ for (const status of [401, 403, 404]) test(`W3U3 denied ${status} resets busy an
   assert.equal(calls, 2, "running guard is reset too");
   assert.equal(denied, 2);
   assert.equal(prints, 0, "denied writes never invoke native print");
+});
+
+// PR #40 review P2: an unreachable A3 must not hold Print/Close for N × the 8 s write timeout. After the first
+// transport/5xx failure the batch stops recording and opens native print with the failure notice.
+test("W3U3 PR40 outage: first transport failure stops recording and still opens native print", async (t) => {
+  const env = environment(t);
+  const previousElement = (globalThis as any).HTMLElement;
+  class Element { nodeType = 1; focus() {} }
+  (globalThis as any).HTMLElement = Element;
+  Object.assign(env.document, { body: new Element(), activeElement: null });
+  t.after(() => { (globalThis as any).HTMLElement = previousElement; });
+  let calls = 0, prints = 0;
+  Object.assign(env.window, { print: () => prints++ });
+  globalThis.fetch = async () => { calls++; throw new TypeError("synthetic network outage"); };
+  const rows = ["101_1", "101_2", "101_3"].map((ref, i) => ({ ...acceptedRow(), ref, seq: i + 1 }));
+  const children = [jsx(CommentLabelToolbar, {}), ...rows.map((row) => jsx(CommentLabelAction, { row }))];
+  const h = env.mount(() => CommentLabelPrint({ locale: "en", store: store.id, session: "22222222-2222-4222-8222-222222222222", rows, allowed: true, active: true,
+    onDenied() {}, children }));
+  for (const row of rows) { node(h, (n) => n.props["data-testid"] === `comment-label-select-${row.ref}`).props.onChange(); h.flush(); }
+  node(h, (n) => n.props["data-testid"] === "comment-label-preview").props.onClick({ currentTarget: new Element() }); h.flush();
+  node(h, (n) => n.props["data-testid"] === "comment-label-print").props.onClick(); await h.settle();
+  assert.equal(calls, 1, "an outage costs one bounded attempt, not one timeout per selected label");
+  assert.equal(prints, 1, "native print still opens");
+  assert.equal(nodes(h.output).some((n) => n.props["data-testid"] === "comment-label-status"), true, "failure notice shown");
 });

@@ -80,7 +80,10 @@ export function CommentLabelPrint({ locale, store, session, rows, allowed, activ
           running.current = false; setBusy(false); onDenied(); return;
         }
         // A lost ACK retains its key in memory. A later explicit print never blindly repeats that fact.
-        if (e instanceof InboxError && e.status >= 400 && e.status < 500) pending.current.delete(ref);
+        if (e instanceof InboxError && e.status >= 400 && e.status < 500) { pending.current.delete(ref); continue; }
+        // Transport/5xx = outage: stop recording so Print/Close are not held for N × the write timeout;
+        // the remaining labels still print and show the failure notice (PR #40 review).
+        break;
       }
     }
     if (!valid()) {
