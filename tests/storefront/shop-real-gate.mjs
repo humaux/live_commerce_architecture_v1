@@ -177,6 +177,8 @@ try {
   // React streaming briefly keeps the finished segment in a hidden <div hidden id="S:…"> before swapping it in; only the visible chips are the UI.
   const categoryChips = p.getByTestId("collection-chips").filter({ visible: true });
   await expect(categoryChips).toBeVisible();
+  // After the streaming swap exactly one copy remains; a lasting (even hidden) duplicate still fails.
+  await expect(p.getByTestId("collection-chips")).toHaveCount(1);
   assert(await categoryChips.evaluate(el => el.scrollWidth <= el.clientWidth), "G4 chips scroll horizontally at 390px");
   assert(await noOverflow(p), "G4 list overflows at 390px");
   assert.equal(await p.getByTestId("product-card").count(), 24); // page size
