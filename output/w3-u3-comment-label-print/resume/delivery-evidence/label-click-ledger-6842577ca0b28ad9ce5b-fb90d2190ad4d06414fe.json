@@ -1,0 +1,12 @@
+[
+  {
+    "locale": "en",
+    "width": 1586,
+    "page": "/studio/console",
+    "control": "print after scoped grant revocation",
+    "operation": "click",
+    "expected": "Real A3 404 clears private labels; native print calls=0",
+    "actual": "Real A3 404 clears private labels; native print calls=0",
+    "result": "PASS"
+  }
+]

@@ -1,0 +1,286 @@
+✔ PR31 soldout badge en SUCCEEDED reflects confirmed delivery (12.645708ms)
+✔ PR31 soldout badge en ACKNOWLEDGED reflects confirmed delivery (0.933292ms)
+✖ PR31 soldout badge en READY reflects confirmed delivery (1.196333ms)
+✖ PR31 soldout badge en DISPATCHING reflects confirmed delivery (3.63775ms)
+✖ PR31 soldout badge en FAILED_FINAL reflects confirmed delivery (0.914666ms)
+✖ PR31 soldout badge en BLOCKED_POLICY reflects confirmed delivery (0.718167ms)
+✖ PR31 soldout badge en UNKNOWN reflects confirmed delivery (0.658458ms)
+✔ PR31 soldout badge zh-TW SUCCEEDED reflects confirmed delivery (0.593125ms)
+✔ PR31 soldout badge zh-TW ACKNOWLEDGED reflects confirmed delivery (0.577667ms)
+✖ PR31 soldout badge zh-TW READY reflects confirmed delivery (0.642791ms)
+✖ PR31 soldout badge zh-TW DISPATCHING reflects confirmed delivery (0.595542ms)
+✖ PR31 soldout badge zh-TW FAILED_FINAL reflects confirmed delivery (0.598375ms)
+✖ PR31 soldout badge zh-TW BLOCKED_POLICY reflects confirmed delivery (0.608458ms)
+✖ PR31 soldout badge zh-TW UNKNOWN reflects confirmed delivery (0.523ms)
+✔ PR31 soldout badge zh-CN SUCCEEDED reflects confirmed delivery (0.462625ms)
+✔ PR31 soldout badge zh-CN ACKNOWLEDGED reflects confirmed delivery (0.480459ms)
+✖ PR31 soldout badge zh-CN READY reflects confirmed delivery (0.46725ms)
+✖ PR31 soldout badge zh-CN DISPATCHING reflects confirmed delivery (0.485959ms)
+✖ PR31 soldout badge zh-CN FAILED_FINAL reflects confirmed delivery (0.537667ms)
+✖ PR31 soldout badge zh-CN BLOCKED_POLICY reflects confirmed delivery (0.575834ms)
+✖ PR31 soldout badge zh-CN UNKNOWN reflects confirmed delivery (0.627833ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 6
+ℹ fail 15
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 341.04075
+
+✖ failing tests:
+
+test at tests/admin/comment-stream-hooks.test.ts:415:12
+✖ PR31 soldout badge en READY reflects confirmed delivery (1.196333ms)
+  AssertionError [ERR_ASSERTION]: READY must not claim delivery before a confirmed success
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-soldout-status/tests/admin/comment-stream-hooks.test.ts:421:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:415:12
+✖ PR31 soldout badge en DISPATCHING reflects confirmed delivery (3.63775ms)
+  AssertionError [ERR_ASSERTION]: DISPATCHING must not claim delivery before a confirmed success
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-soldout-status/tests/admin/comment-stream-hooks.test.ts:421:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:415:12
+✖ PR31 soldout badge en FAILED_FINAL reflects confirmed delivery (0.914666ms)
+  AssertionError [ERR_ASSERTION]: FAILED_FINAL must not claim delivery before a confirmed success
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-soldout-status/tests/admin/comment-stream-hooks.test.ts:421:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:415:12
+✖ PR31 soldout badge en BLOCKED_POLICY reflects confirmed delivery (0.718167ms)
+  AssertionError [ERR_ASSERTION]: BLOCKED_POLICY must not claim delivery before a confirmed success
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-soldout-status/tests/admin/comment-stream-hooks.test.ts:421:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:415:12
+✖ PR31 soldout badge en UNKNOWN reflects confirmed delivery (0.658458ms)
+  AssertionError [ERR_ASSERTION]: UNKNOWN must not claim delivery before a confirmed success
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-soldout-status/tests/admin/comment-stream-hooks.test.ts:421:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:415:12
+✖ PR31 soldout badge zh-TW READY reflects confirmed delivery (0.642791ms)
+  AssertionError [ERR_ASSERTION]: READY must not claim delivery before a confirmed success
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-soldout-status/tests/admin/comment-stream-hooks.test.ts:421:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:415:12
+✖ PR31 soldout badge zh-TW DISPATCHING reflects confirmed delivery (0.595542ms)
+  AssertionError [ERR_ASSERTION]: DISPATCHING must not claim delivery before a confirmed success
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-soldout-status/tests/admin/comment-stream-hooks.test.ts:421:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:415:12
+✖ PR31 soldout badge zh-TW FAILED_FINAL reflects confirmed delivery (0.598375ms)
+  AssertionError [ERR_ASSERTION]: FAILED_FINAL must not claim delivery before a confirmed success
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-soldout-status/tests/admin/comment-stream-hooks.test.ts:421:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:415:12
+✖ PR31 soldout badge zh-TW BLOCKED_POLICY reflects confirmed delivery (0.608458ms)
+  AssertionError [ERR_ASSERTION]: BLOCKED_POLICY must not claim delivery before a confirmed success
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-soldout-status/tests/admin/comment-stream-hooks.test.ts:421:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:415:12
+✖ PR31 soldout badge zh-TW UNKNOWN reflects confirmed delivery (0.523ms)
+  AssertionError [ERR_ASSERTION]: UNKNOWN must not claim delivery before a confirmed success
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-soldout-status/tests/admin/comment-stream-hooks.test.ts:421:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:415:12
+✖ PR31 soldout badge zh-CN READY reflects confirmed delivery (0.46725ms)
+  AssertionError [ERR_ASSERTION]: READY must not claim delivery before a confirmed success
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-soldout-status/tests/admin/comment-stream-hooks.test.ts:421:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:415:12
+✖ PR31 soldout badge zh-CN DISPATCHING reflects confirmed delivery (0.485959ms)
+  AssertionError [ERR_ASSERTION]: DISPATCHING must not claim delivery before a confirmed success
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-soldout-status/tests/admin/comment-stream-hooks.test.ts:421:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:415:12
+✖ PR31 soldout badge zh-CN FAILED_FINAL reflects confirmed delivery (0.537667ms)
+  AssertionError [ERR_ASSERTION]: FAILED_FINAL must not claim delivery before a confirmed success
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-soldout-status/tests/admin/comment-stream-hooks.test.ts:421:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:415:12
+✖ PR31 soldout badge zh-CN BLOCKED_POLICY reflects confirmed delivery (0.575834ms)
+  AssertionError [ERR_ASSERTION]: BLOCKED_POLICY must not claim delivery before a confirmed success
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-soldout-status/tests/admin/comment-stream-hooks.test.ts:421:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:415:12
+✖ PR31 soldout badge zh-CN UNKNOWN reflects confirmed delivery (0.627833ms)
+  AssertionError [ERR_ASSERTION]: UNKNOWN must not claim delivery before a confirmed success
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-soldout-status/tests/admin/comment-stream-hooks.test.ts:421:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

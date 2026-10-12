@@ -1,0 +1,13 @@
+# PR31 sold-out badge round 1
+- Task: e0cab99c-5ed3-4d22-a3cd-88700fb57c71 / e0cab99c-sub-badge; comment 4231878523.
+- Base: 539f1cb8138975e27ef75cdaf0563f154117c698; branch codex/pr31-soldout-status; own worktree pr31-soldout-status.
+- Role: ui_worker; runtime model/effort UNKNOWN (inherited parent; no explicit override).
+- Changes: CommentStream.tsx only shows sold-out sent wording when existing commentSendState(state) is sent. Other states keep the existing neutral delivery status. Added per-row comment-soldout-sent-${ref} / comment-send-state-${ref} test IDs.
+- Tests: comment-stream-hooks.test.ts adds 21 actual-component VNode tests: three locales × SUCCEEDED / ACKNOWLEDGED / READY / DISPATCHING / FAILED_FINAL / BLOCKED_POLICY / UNKNOWN. Independent literal expected text. Existing assertions unchanged.
+- Red: focused matrix exit 1, 6 pass / 15 fail; red.log. Green: same command exit 0, 21/21; green-matrix.log. Focused hooks regression exit 0, 67/67; green-hooks.log. Exact commands and file/log SHA256 in evidence.json. git diff --check exit 0.
+- Evidence: E3 author-only MOCK hook host; parent independent verification pending. No browser, backend or platform acceptance claim.
+- No new backend state, API, dependencies or copy; no external action. No own process left running. Node cache link reuses parent dependencies.
+- NOT_RUN: full Node, typecheck/build, browser, Go/REAL_PG, independent review, SANDBOX/LIVE; parent owns final gates.
+- Browser seed: A2 marks.private_reply={kind:"out_of_stock",state:<enum>,blocked_reason:null}; use SUCCEEDED, READY, FAILED_FINAL, BLOCKED_POLICY, UNKNOWN for five groups. Success aliases ACKNOWLEDGED/sent; queued aliases DISPATCHING/queued. Keep existing valid row and page fields (epoch/items/reset/scan_exhausted/next/older_cursor/stream), only replace private_reply mark.
+- Head commit: 22f69f63c222d83cbd1f320643544d7fc5e0721c (only the two owned source/test paths committed).
+- Humaux fix memory: 0870db6c-a2dc-46a8-91c6-2c62479fc5b0; own sub-canvas updated under coord lock.

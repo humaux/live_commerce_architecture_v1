@@ -1,0 +1,11 @@
+{
+  "cases": 21,
+  "locales": [
+    "en",
+    "zh-CN",
+    "zh-TW"
+  ],
+  "link_sha256": "00112df79076fd751ebcbe010b222bae1c83066286e396e7cd98a55b8c76da9d",
+  "generation": 2,
+  "boundary": "production Next builds; signed MOCK IdP; MOCK manual ingress; synthetic buyer.example TLS edge; no provider or deployment acceptance"
+}

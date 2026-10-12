@@ -1,0 +1,8 @@
+{
+  "source_sha": "9e6282b79906d7a1c3b7821d6c80f89ced4f4acd",
+  "trunk_sha": "287e08aa6c694030333dd00797c0d3bbac15abc6",
+  "pr36_merge": "287e08aa6c694030333dd00797c0d3bbac15abc6",
+  "pre_merge_sha": "204178706a8ca3be039b0cf3209f38250daa2e38",
+  "run_root": "output/playwright/pr31-pr36-revalidation-20261010T051701Z",
+  "created_at": "2026-10-10T05:17:01.798348+00:00"
+}

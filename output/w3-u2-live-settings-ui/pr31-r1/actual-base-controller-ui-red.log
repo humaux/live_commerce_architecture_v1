@@ -1,0 +1,118 @@
+✖ PR31 split permissions actual reminder click retains queued receipt without unauthorized report GET (33.967125ms)
+✖ PR31 optional reminder GET 404 preserves healthy settings and blocklist (4.20475ms)
+✔ PR31 actual authorized reminder read 403 still tears down all private state (3.425708ms)
+✖ PR31 same settings destination preserves the actual scene selector (1.534708ms)
+✔ PR31 actual navigation synchronously clears old private state: /en/studio/settings?store=10000000-0000-4000-8000-000000000001&scene=00000000-0000-4000-8000-000000000021 (4.1095ms)
+✔ PR31 actual navigation synchronously clears old private state: /en/studio/settings?store=00000000-0000-4000-8000-000000000021 (1.129709ms)
+✔ PR31 actual navigation synchronously clears old private state: /zh-CN/studio/settings?store=10000000-0000-4000-8000-000000000001 (1.128791ms)
+✖ PR31 more than twenty scenes load through the actual selector and selected scene transport (1.195083ms)
+✖ PR31 deep linked later scene is a real titled option and empty placeholder cannot be selected (2.183583ms)
+✖ PR31 selected first-page scene disables the empty no-op option (2.119ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 4
+ℹ fail 6
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 605.452916
+
+✖ failing tests:
+
+test at tests/admin/live-settings-hooks.test.ts:33:1
+✖ PR31 split permissions actual reminder click retains queued receipt without unauthorized report GET (33.967125ms)
+  AssertionError [ERR_ASSERTION]: report permission must be checked before transport
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-controller-red/tests/admin/live-settings-hooks.test.ts:43:9)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-hooks.test.ts:48:1
+✖ PR31 optional reminder GET 404 preserves healthy settings and blocklist (4.20475ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  undefined !== 3
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-controller-red/tests/admin/live-settings-hooks.test.ts:51:9)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: 3,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-hooks.test.ts:61:1
+✖ PR31 same settings destination preserves the actual scene selector (1.534708ms)
+  AssertionError [ERR_ASSERTION]: actual component VNode found
+      at node (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-controller-red/tests/admin/inbox-review-host.test.ts:303:10)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-controller-red/tests/admin/live-settings-hooks.test.ts:65:25)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-hooks.test.ts:78:1
+✖ PR31 more than twenty scenes load through the actual selector and selected scene transport (1.195083ms)
+  AssertionError [ERR_ASSERTION]: actual component VNode found
+      at node (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-controller-red/tests/admin/inbox-review-host.test.ts:303:10)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-controller-red/tests/admin/live-settings-hooks.test.ts:82:8)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-hooks.test.ts:93:1
+✖ PR31 deep linked later scene is a real titled option and empty placeholder cannot be selected (2.183583ms)
+  AssertionError [ERR_ASSERTION]: actual component VNode found
+      at node (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-controller-red/tests/admin/inbox-review-host.test.ts:303:10)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-controller-red/tests/admin/live-settings-hooks.test.ts:96:15)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-hooks.test.ts:100:1
+✖ PR31 selected first-page scene disables the empty no-op option (2.119ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + undefined
+  - true
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-controller-red/tests/admin/live-settings-hooks.test.ts:103:9)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

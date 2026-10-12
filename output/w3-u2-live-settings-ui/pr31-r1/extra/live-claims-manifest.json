@@ -1,0 +1,23 @@
+{
+  "tested_source_commit": "0ff7ca92fea1e31607c16099ea5429b6dd882a7b",
+  "command": "LC_TEST_LOCK_WAIT=1800 LC_BROWSER_ENGINE=chromium LC_BROWSER_EVIDENCE_ROOT=\"$PWD/output/playwright/pr31-extra-browser-live-claims-1-20261009T190159\" bash scripts/dev/test-local.sh --browser-live-claims",
+  "exit": 0,
+  "run_directory": "output/playwright/live-claims-3523365820",
+  "evidence_class": "BROWSER Next admin/storefront +Go REAL_PG signedMOCKIdP/manualingress",
+  "files": {
+    "browser-current/live-claims/merchant-link-dialog-masked-replace-link.png": "b171f9b824793ecb0a02d65f768e7d03e8742d4b2a451d943556b730d9c1eff7",
+    "browser-current/live-claims/buyer-claim-zh-TW-390.png": "5ef349448924c48c591060cfc53cabb5d6b1862d7cf97f82451bbbb8ec05f5a5",
+    "browser-current/live-claims/buyer-claim-409-zh-TW-390.png": "6437df35b56c907d8973135829bdaa4021c95bcf049a065e093b05988e0a161d",
+    "browser-current/live-claims/playwright.log": "fd40afc7892d7708f4bf5675e80c4127fe957ffb029070ce343573767c3b0dee",
+    "browser-current/live-claims/result.json": "b2209c79a43f54239d5cd1e4680c0d852d73d8e852ca10dfe8e05d2670bfb5a0",
+    "browser-current/live-claims/buyer-claim-en-390.png": "8543d2d875663a27975a405cf5447f8f92159608509a4d7c22f1186b2d71c894",
+    "browser-current/live-claims/merchant-claims-source-bound-en.png": "319f9d8279a1eb70945b6c2141fea65874f8387e5d6c6cff0b027e559f975edc",
+    "browser-current/live-claims/merchant-claims-source-refused-zh-TW.png": "3f95b1c882a244d2d021a0d23a7edbadf02355b5c2996df8bbda8449771e8357",
+    "browser-current/live-claims/buyer-claim-404-zh-TW-390.png": "84afa281302a4daccd6602c6c505d289f0a5c5ebeb244c938d16630bf7e95d07",
+    "browser-current/live-claims/merchant-link-dialog-masked-create-link.png": "02e2fc9f1c7cbf1bb74604bf50b6912b3d9ae8655584dae456ca141b5bf06ff0",
+    "browser-current/live-claims/merchant-claims-390.png": "525ef3849b431d29604c920fbbc66140fb57d873ad2f0fb3377f9909746f75d8",
+    "browser-current/live-claims/buyer-claim-zh-CN-390.png": "2060a4893c3213690e293312b73867d21d3686dac53171736c2c1a6088891cb4",
+    "browser-current/live-claims/buyer-claim-added-zh-TW-390.png": "8bca6ccf2ec5d9f9d1f1bb2e8f82f31ac98a4ae6314f64e0a4edd6a18af5f708",
+    "browser-current/live-claims/merchant-claims-desktop.png": "e38be949528b486293519bcf0dd033a103fcdbb9ae31e559ba7360e56a5760d6"
+  }
+}

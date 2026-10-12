@@ -61,10 +61,14 @@ export function useCommentStream(
     }
     if (!visible || privacy.blocked.current) return;
     fence.invalidate(true);
+    const lifetime = fence.begin();
     const root = `live-sessions/${session}/comments`;
     const pageLimit = 50;
     const load = async (older = false) => {
-      if (!alive || inFlight.current || document.visibilityState !== "visible")
+      // A queued timer can run before React's passive cleanup. It must retain
+      // this effect's generation and never borrow a revealed page's new fence.
+      if (!alive || inFlight.current || privacy.blocked.current ||
+          !fence.current(lifetime) || document.visibilityState !== "visible")
         return;
       if (older && (!current.current.older || current.current.items.length >= COMMENT_MEMORY_CAP)) return;
       if (!older && deadline.current > Date.now()) {

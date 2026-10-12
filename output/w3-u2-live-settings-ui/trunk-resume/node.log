@@ -1,0 +1,257 @@
+✔ R10: a fixed or sticky bar covering main content after scrolling (4.563292ms)
+✔ R11: controls narrower than a usable width (1.332542ms)
+ℹ tests 452
+ℹ suites 0
+ℹ pass 452
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ merchant reason text translates ledger events and conceals unknown or prototype codes (0.093042ms)
+✔ ledger read navigation requires effective integration:read permission regardless of role (0.067166ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ Design version published_at cell uses Taipei at the year boundary (3.106291ms)
+✔ ManualOrder bank-transfer expiry uses Taipei at the year boundary (3.604916ms)
+ℹ tests 53
+ℹ suites 0
+ℹ pass 53
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ Design version published_at cell uses Taipei at the year boundary (2.895833ms)
+✔ ManualOrder bank-transfer expiry uses Taipei at the year boundary (4.175584ms)
+ℹ tests 53
+ℹ suites 0
+ℹ pass 53
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ orders-v2 rejects client count approximations, unbounded or extra response data (0.145625ms)
+✔ all three locales label every task queue, payment and delivery mode (0.289375ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 69.999542
+✔ numeric store IDs have no suggestion BFF or browser client (1.0845ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ PS1 production build validates config; public data is not bundled through NEXT_PUBLIC (0.812417ms)
+✔ PS review: admin image installs the manifests for its workspace dependencies before building (0.320083ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ audience-read is exactly the new local intention POST and never a data GET or queried write (0.241417ms)
+✔ route fails closed without ads:read and is not a duplicate navigation entry; locale keys match (0.108916ms)
+ℹ tests 37
+ℹ suites 0
+ℹ pass 37
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ no account id, key or approval shape is in any real body (0.395625ms)
+✔ the real statements display literally as signed contributions that add up to the server's net (12.434833ms)
+ℹ tests 48
+ℹ suites 0
+ℹ pass 48
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ PE14 no-op has no command fields and changed axes explicitly archive omitted variants (0.097416ms)
+✔ PE14 replacement SKU edit excludes create-only code from the strict patch grammar (0.211542ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ UNKNOWN retry 403 authorization loss requires reconciliation, not a fresh command (0.59325ms)
+✔ a conclusive command rejection stays distinct from authorization loss (0.7125ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ LC-U1 delayed copy completion cannot navigate after store switch or unmount (0.118459ms)
+✔ LC-U1 receipt fence survives cookie rotation; pending replay still has a separate session boundary (0.369083ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 27
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ reset invalidates old buffers and cursor before reread; older page cannot advance live cursor (0.108541ms)
+✔ filter resources have only authorised opaque ids; backoff is capped and success resets (0.060167ms)
+ℹ tests 75
+ℹ suites 0
+ℹ pass 75
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ SessionCopy resyncs closed same-ID titles, preserves open edits and cancels to latest draft (20.933333ms)
+✔ SessionCopy submit uses latest version; UNKNOWN request survives later draft/input changes (18.240333ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ M7 link response shape is closed (0.161542ms)
+✔ host prompt copy is the frozen text, verbatim (0.079125ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ a valid active zero-main product keeps an inline repair hint rather than a page error (3.192125ms)
+✔ a new product issues the image-axis stage only for a chosen axis (0.746625ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ an oversized phone JPEG is encoded below the cap after oriented scaling (0.559667ms)
+✔ a large transparent PNG stays alpha-capable and is never painted with an opaque matte (0.4645ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ MOU keeps native headed checks runnable on a Linux CI worker without DISPLAY (11.876417ms)
+✔ pick fixture serves the scoped parcel reads required by the orders page (5.010459ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ readOpenParcelGroups 503 preserves parent and local retry recovers actual DTOs (3.564458ms)
+✔ captured parent groups callback refuses hidden scope (1.882458ms)
+ℹ tests 30
+ℹ suites 0
+ℹ pass 30
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ P2 report products.csv real session/CSRF response is private and Vary Cookie (0.607375ms)
+✔ P2 report malformed query and wrong CSRF are rejected by actual helpers before upstream (0.3165ms)
+ℹ tests 118
+ℹ suites 0
+ℹ pass 118
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ order preview counts units while first CSV record numbers can exceed rows_total (0.081709ms)
+✔ commit receipt has exactly five keys and no extra customer cells (0.104416ms)
+ℹ tests 57
+ℹ suites 0
+ℹ pass 57
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ aggregate click: a route added to the registry after the shards ran cannot pass (the registry is re-read) (0.347458ms)
+✔ aggregate visual: honest shards pass; a missing shard, a missing shot, a blocking verdict and a registry route outside the universe each fail (4.699375ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ pack: deterministic, balanced to within the longest test, every name once (4.146167ms)
+✔ parseDurations: top-level lines only (0.217584ms)
+ℹ tests 42
+ℹ suites 0
+ℹ pass 42
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ a ticket from another store/page fence is never accepted (0.038834ms)
+✔ focus while already visible preserves the active epoch and the uncertain reply receipt (0.085917ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 24
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ quota recovery gives exact zh-CN comment-quota and DM-window instructions beside copy only (0.086834ms)
+✔ quota recovery gives exact en comment-quota and DM-window instructions beside copy only (0.089083ms)
+ℹ tests 125
+ℹ suites 0
+ℹ pass 125
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+✔ restricted rows can never advertise copying, and checkout links cannot carry bearer data (0.294334ms)
+✔ three admin locales preserve the mandatory policy copy and real PR planner includes this new mode (1.338792ms)
+✖ live-settings is one inert registry entry with the existing admin/PG command (13.004458ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 9
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 149.21275
+
+✖ failing tests:
+
+test at tests/admin/live-settings-model.test.ts:132:1
+✖ live-settings is one inert registry entry with the existing admin/PG command (13.004458ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /LC_BROWSER_LIVE_SETTINGS_ACCEPTANCE=1 GOTOOLCHAIN=go1\.27\.1 go test -race -tags browser -count=1 -timeout=780s -run '\^TestBrowserLiveSettingsUIRealChain\$'/. Input:
+
+  '# mode=--browser-live-settings build=admin fixture=pg\n' +
+    'lc_environment () \n' +
+    '{ \n' +
+    '    export LC_PLATFORM_HOST=platform.example.invalid LC_ADMIN_HOST=admin.example.invalid LC_COMPANY_CONTACT_EMAIL=contact@example.invalid\n' +
+    '}\n' +
+    'lc_environment\n' +
+    'lc_prepare () \n' +
+    '{ \n' +
+    '    test -f tests/admin/live-settings.spec.ts;\n' +
+    '    test -f tests/foundation/browser_live_settings_test.go;\n' +
+    "    grep -q '^func TestBrowserLiveSettingsUIRealChain' tests/foundation/browser_live_settings_test.go;\n" +
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',

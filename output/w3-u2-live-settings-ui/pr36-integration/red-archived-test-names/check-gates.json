@@ -1,0 +1,21 @@
+{
+  "name": "check-gates",
+  "argv": [
+    "bash",
+    "scripts/dev/check-gates.sh"
+  ],
+  "source_sha": "017c62b5336fbe82bc98c576bd0efbffd9ebc0d0",
+  "started_at": "2026-10-10T05:34:26.744467+00:00",
+  "timeout_seconds": 600,
+  "log": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-017c62b5/check-gates.log",
+  "unset_env": [
+    "CONTRACT_DRIFT_BASE",
+    "LC_HEADER_BASE"
+  ],
+  "pid": 46050,
+  "state": "finished",
+  "exit_code": 1,
+  "elapsed_seconds": 146.394,
+  "ended_at": "2026-10-10T05:36:53.139608+00:00",
+  "log_sha256": "d6543a19d2fa4f2d6e916f3d6cdbe3c8c928ddfce5c1d938335d53b3fa49d009"
+}

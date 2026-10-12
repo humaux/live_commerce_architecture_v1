@@ -1,0 +1,14 @@
+{
+  "tested_source_commit": "0ff7ca92fea1e31607c16099ea5429b6dd882a7b",
+  "exit": 0,
+  "command": "LC_TEST_LOCK_WAIT=1800 LC_BROWSER_ENGINE=chromium LC_BROWSER_EVIDENCE_ROOT=\"$PWD/output/playwright/pr31-extra-browser-ops-polish-2-20261009T185952\" bash scripts/dev/test-local.sh --browser-ops-polish",
+  "source_root": "output/playwright/pr31-extra-browser-ops-polish-2-20261009T185952",
+  "files": {
+    "browser-current/ops-2/ops-polish-storefront/screenshots.json": "178b612bd0ab65daccb4271254a6c4d46e4c44c9f67b9d6e4db6f3375d96ff38",
+    "browser-current/ops-2/ops-polish-storefront/opp-next.log": "c54156aefa43f5e7026b487afcf911d0ced0c0b8ea6d03a98064220f759eea26",
+    "browser-current/ops-2/ops-polish-storefront/cvs-pap-only.mjs.log": "bf54df00a55ae71f1247e78642ed6ff5ef7f545d94f06e4ce30fac213d711edb",
+    "browser-current/ops-2/ops-polish-admin/ops-op2-profile-9jX1ob.log": "b31adf7a40078a148a8b1a80b57271cc18aa4d076da568afba54cab6cbc78809",
+    "browser-current/ops-2/ops-polish-admin/playwright.log": "05aacfabe48854a82a7fdc712a00e5f5d4256699dba6fe44bdff963d02c7abc5",
+    "browser-current/ops-2/ops-polish-admin/admin-next.log": "596a48ca166856399c06ed684836590297f6b2479bbc3298f726a234bbc188e8"
+  }
+}

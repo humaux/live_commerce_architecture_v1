@@ -1,0 +1,11 @@
+# Test info
+
+- Name: live-console.spec.ts >> LC-U2a REAL_PG comment stream >> LCU2_404 real store grant revoked clears private view and selected buyer
+- Location: tests/admin/live-console.spec.ts:219:48
+
+# Error details
+
+```
+TimeoutError: page.waitForResponse: Timeout 15000ms exceeded while waiting for event "response"
+```
+

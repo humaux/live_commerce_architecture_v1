@@ -1,0 +1,24 @@
+=== RUN   TestBrowserLiveSettingsMockCommentsContract
+--- PASS: TestBrowserLiveSettingsMockCommentsContract (0.00s)
+=== RUN   TestBrowserLiveSettingsMockPR31Sources
+=== RUN   TestBrowserLiveSettingsMockPR31Sources/many-scenes
+=== RUN   TestBrowserLiveSettingsMockPR31Sources/reply-states
+=== RUN   TestBrowserLiveSettingsMockPR31Sources/missing-reminders
+--- PASS: TestBrowserLiveSettingsMockPR31Sources (0.00s)
+    --- PASS: TestBrowserLiveSettingsMockPR31Sources/many-scenes (0.00s)
+    --- PASS: TestBrowserLiveSettingsMockPR31Sources/reply-states (0.00s)
+    --- PASS: TestBrowserLiveSettingsMockPR31Sources/missing-reminders (0.00s)
+=== RUN   TestBrowserLiveSettingsMockUnmountedReminderWire
+=== RUN   TestBrowserLiveSettingsMockUnmountedReminderWire/GET
+    browser_live_settings_fixture_test.go:159: unmounted route must reproduce Go http.NotFound status, content type and exact plain body
+=== RUN   TestBrowserLiveSettingsMockUnmountedReminderWire/POST
+    browser_live_settings_fixture_test.go:159: unmounted route must reproduce Go http.NotFound status, content type and exact plain body
+--- FAIL: TestBrowserLiveSettingsMockUnmountedReminderWire (0.00s)
+    --- FAIL: TestBrowserLiveSettingsMockUnmountedReminderWire/GET (0.00s)
+    --- FAIL: TestBrowserLiveSettingsMockUnmountedReminderWire/POST (0.00s)
+=== RUN   TestBrowserLiveSettingsMockRequiresMerchantTemplate
+--- PASS: TestBrowserLiveSettingsMockRequiresMerchantTemplate (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	0.636s
+FAIL
+exit_code=1

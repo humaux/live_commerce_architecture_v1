@@ -1,0 +1,30 @@
+✖ PR31 scene selector has an explicit accessible label outside its option ancestry (32.831125ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 550.8865
+
+✖ failing tests:
+
+test at tests/admin/live-settings-hooks.test.ts:119:1
+✖ PR31 scene selector has an explicit accessible label outside its option ancestry (32.831125ms)
+  AssertionError [ERR_ASSERTION]: explicit label association requires an id
+  + actual - expected
+  
+  + 'undefined'
+  - 'string'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-hooks.test.ts:123:9)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'string',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

@@ -1,0 +1,2 @@
+error TS5108: Option 'moduleResolution=node10' has been removed. Please remove it from your configuration.
+exit_code=1

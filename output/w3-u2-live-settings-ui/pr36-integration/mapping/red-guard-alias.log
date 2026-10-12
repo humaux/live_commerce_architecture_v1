@@ -1,0 +1,11 @@
+=== RUN   TestBFFLiveSettingsMutations
+=== RUN   TestBFFLiveSettingsMutations/guard_bypass
+    bff_live_settings_test.go:145: unknown source accepted
+=== RUN   TestBFFLiveSettingsMutations/405_export
+    bff_live_settings_test.go:145: unknown source accepted
+--- FAIL: TestBFFLiveSettingsMutations (0.39s)
+    --- FAIL: TestBFFLiveSettingsMutations/guard_bypass (0.24s)
+    --- FAIL: TestBFFLiveSettingsMutations/405_export (0.16s)
+FAIL
+FAIL	livecommerce/scripts/dev/contractdrift	1.212s
+FAIL

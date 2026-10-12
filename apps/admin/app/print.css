@@ -1,0 +1,33 @@
+/* Purpose: W3-U3 screen preview and native label/A4 print media; isolate private labels from the console.
+ * Depends on: W0 control/color tokens and CommentLabelPrint's body portal; no fonts or external assets.
+ * Used by: CommentLabelPrint; paper rules apply only while a label sheet exists. */
+.comment-label-toolbar { margin-block:12px; }
+.comment-label-actions { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; }
+.comment-label-actions label { display:inline-flex; align-items:center; gap:8px; min-height:44px; }
+.comment-label-actions input[type=checkbox] { width:20px; height:20px; min-height:20px; accent-color:var(--ui-primary); }
+.comment-label-portal { box-sizing:border-box; width:min(820px,calc(100vw - 32px)); max-height:calc(100dvh - 32px); padding:24px; border:1px solid var(--ui-border); border-radius:12px; color:var(--ink,#142942); background:var(--ui-surface,#fff); }
+.comment-label-portal::backdrop { background:rgb(20 41 66 / 45%); }
+.comment-label-tools { margin-bottom:24px; }
+.comment-label-tools h2 { margin:0 0 8px; font-size:24px; }
+.comment-label-tools p { font-size:14px; line-height:1.55; }
+.comment-label-tools label { display:grid; gap:6px; width:fit-content; margin-bottom:16px; font-size:14px; }
+.comment-label-tools button,.comment-label-tools select { min-height:44px; padding:8px 12px; font:inherit; }
+.comment-label-sheet { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,60mm),1fr)); gap:12px; }
+.comment-label { box-sizing:border-box; width:60mm; height:40mm; max-width:100%; display:flex; flex-direction:column; gap:2mm; padding:3mm; border:1px solid #555; color:#111; background:#fff; font-size:9pt; line-height:1.2; overflow:hidden; }
+.comment-label-author { font-size:11pt; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.comment-label-keyword { font-size:13pt; font-weight:700; overflow-wrap:anywhere; }
+.comment-label time { font-variant-numeric:tabular-nums; }
+@media (max-width:480px) { .comment-label-portal { padding:16px; } }
+@media print {
+  @page w3-label { size:60mm 40mm; margin:0; }
+  @page w3-a4 { size:A4 portrait; margin:10mm; }
+  body:has(.comment-label-sheet) > :not(.comment-label-portal) { display:none !important; }
+  .comment-label-portal { display:block; position:static; width:auto; max-width:none; height:auto; max-height:none; margin:0; padding:0; border:0; overflow:visible; background:white; }
+  .comment-label-portal::backdrop,.comment-label-tools { display:none !important; }
+  .comment-label-sheet { display:block; }
+  .comment-label-sheet[data-paper=label] { page:w3-label; }
+  .comment-label-sheet[data-paper=a4] { page:w3-a4; display:grid; grid-template-columns:repeat(3,60mm); gap:5mm; }
+  .comment-label { width:60mm; height:40mm; max-width:none; break-inside:avoid; }
+  [data-paper=label] .comment-label { border:0; break-after:page; }
+  [data-paper=label] .comment-label:last-child { break-after:auto; }
+}

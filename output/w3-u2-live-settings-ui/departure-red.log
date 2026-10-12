@@ -1,0 +1,68 @@
+(node:80021) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ W3-U2 UNKNOWN rejects a stale fresh command and admits only exact receipt retry (12.029041ms)
+✖ W3-U2 captured command cannot dispatch after hide (1.447167ms)
+✖ W3-U2 captured command cannot dispatch after departure (1.070042ms)
+✖ W3-U2 captured command cannot dispatch after unmount (0.731584ms)
+✔ W3-U2 captured BuyerPanel add cannot dispatch after native hide (3.928292ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 2
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 307.096875
+
+✖ failing tests:
+
+test at tests/admin/live-settings-hooks.test.ts:32:63
+✖ W3-U2 captured command cannot dispatch after hide (1.447167ms)
+  AssertionError [ERR_ASSERTION]: revoked fence must refuse before any transport side effect
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (/Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-hooks.test.ts:39:9)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-hooks.test.ts:32:63
+✖ W3-U2 captured command cannot dispatch after departure (1.070042ms)
+  AssertionError [ERR_ASSERTION]: revoked fence must refuse before any transport side effect
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (/Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-hooks.test.ts:39:9)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-hooks.test.ts:32:63
+✖ W3-U2 captured command cannot dispatch after unmount (0.731584ms)
+  AssertionError [ERR_ASSERTION]: revoked fence must refuse before any transport side effect
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (/Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-hooks.test.ts:39:9)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

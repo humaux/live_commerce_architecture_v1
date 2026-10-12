@@ -19,8 +19,10 @@ import {
   type CommentFilter,
 } from "@/src/features/live/comment-model";
 import { useCommentStream } from "@/src/features/live/use-comment-stream";
+import { liveSettingsCopy } from "@/lib/live-settings-copy";
 import { BuyerPanel } from "./BuyerPanel";
 import { CommentReply } from "./CommentReply";
+import { CommentLabelPrint, CommentLabelToolbar, CommentLabelAction } from "./CommentLabelPrint";
 
 /** Keep stream/list/selection tied to one server-authorised store/session, with no identity guessing. */
 export function CommentStream({
@@ -145,6 +147,9 @@ export function CommentStream({
     } finally { if (generation === request.current) paging.current = false; }
   };
   return (
+    <CommentLabelPrint key={`${store.id}:${session}:${stream.resetGeneration}:${privacy.visible}:${privacy.revision}`}
+      locale={locale} store={store.id} session={session} rows={stream.buffer.items}
+      allowed={permitted(store, "live:manage")} active={privacy.visible && !privacy.blocked.current && !resource} onDenied={privacy.expire}>
     <div className="comment-workspace" data-testid="comment-workspace">
       <section
         className="comment-stream"
@@ -230,6 +235,7 @@ export function CommentStream({
           </>
         ) : (
           <>
+            <CommentLabelToolbar />
             {!rows.length && (
               <p role="status">{stream.busy ? c.loading : c.empty}</p>
             )}
@@ -261,8 +267,14 @@ export function CommentStream({
                   {row.marks.claim?.reason === "restricted" && (
                     <p className="comment-mark">{c.restricted}</p>
                   )}
+                  {row.marks.private_reply?.kind === "out_of_stock" &&
+                    commentSendState(row.marks.private_reply.state) === "sent" && (
+                      <p className="comment-mark" data-testid={`comment-soldout-sent-${row.ref}`}>
+                        {liveSettingsCopy(locale).replied}
+                      </p>
+                    )}
                   {row.marks.private_reply && (
-                    <p className="live-helper">
+                    <p className="live-helper" data-testid={`comment-send-state-${row.ref}`}>
                       {commentReason(locale, commentSendState(row.marks.private_reply.state))}
                     </p>
                   )}
@@ -273,6 +285,7 @@ export function CommentStream({
                   >
                     {c.select}
                   </button>
+                  <CommentLabelAction row={row} />
                 </li>
               ))}
             </ul>
@@ -309,6 +322,7 @@ export function CommentStream({
             key={`${store.id}:${bundle}`}
             store={store}
             bundleId={bundle}
+            sessionId={session}
             onUnauthorized={privacy.expire}
           />
         ) : (
@@ -316,5 +330,6 @@ export function CommentStream({
         )}
       </aside>
     </div>
+    </CommentLabelPrint>
   );
 }

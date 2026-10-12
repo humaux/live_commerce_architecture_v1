@@ -1,0 +1,21 @@
+Listing tests:
+  ledger.spec.ts:10:1 › approved ledger reproduction and mobile table remain usable
+  ledger.spec.ts:50:1 › locale routes preserve the scoped search and explicit choice
+  ledger.spec.ts:74:1 › lost mutation response retries original key and payload only once
+  ledger.spec.ts:118:1 › uncertain command survives closing a tab and storage denial sends no write
+  ledger.spec.ts:183:1 › stale balance fails closed and refresh enables a new command
+  ledger.spec.ts:237:1 › Add product leaves for the product editor; no inline create panel on the inventory page
+  ledger.spec.ts:250:1 › BFF rejects cross-store, foreign origin, route injection and oversized writes
+  ledger.spec.ts:291:1 › purchase-entry proxy only accepts the scoped GET locale query
+  ledger.spec.ts:339:1 › purchase-entry read failure says the product is unchanged, offers a refresh and sends no write
+  ledger.spec.ts:375:1 › stock adjustment denial reports permission without claiming the inventory was updated
+  ledger.spec.ts:411:1 › purchase controls recheck current state before copying or opening
+  ledger.spec.ts:478:3 › inventory tray has no overlap, clipping or overflow at 1366x768
+  ledger.spec.ts:478:3 › inventory tray has no overlap, clipping or overflow at 1586x992
+  ledger.spec.ts:478:3 › inventory tray has no overlap, clipping or overflow at 2000x1100
+  ledger.spec.ts:478:3 › inventory tray has no overlap, clipping or overflow at 375x812
+  ledger.spec.ts:534:1 › inventory tray keeps stock and read-only price; product editing lives on the product page
+  ledger.spec.ts:565:1 › rail has no hard-coded channel status and scrolls to Settings and Sign out at 1366x768
+  production.spec.ts:3:1 › production build has no env-bearer merchant session
+  visual-states.spec.ts:38:1 › ledger selection caret and scroll surface are authored and active
+Total: 19 tests in 3 files

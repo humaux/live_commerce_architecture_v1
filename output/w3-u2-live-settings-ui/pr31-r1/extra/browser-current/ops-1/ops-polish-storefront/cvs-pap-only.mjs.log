@@ -1,0 +1,5 @@
+browser engine: chromium
+PASS pay-at-pickup-only zh-TW/desktop: chain offered, no home option, no card radio, pay at pickup pre-selected, order placed
+PASS pay-at-pickup-only zh-TW/mobile: chain offered, no home option, no card radio, pay at pickup pre-selected, order placed
+PASS pay-at-pickup-only en/desktop: chain offered, no home option, no card radio, pay at pickup pre-selected, order placed
+PASS pay-at-pickup-only en/mobile: chain offered, no home option, no card radio, pay at pickup pre-selected, order placed

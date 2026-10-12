@@ -1,0 +1,51 @@
+[
+  {
+    "command": [
+      "bash",
+      "scripts/dev/test-node.sh"
+    ],
+    "exit": 0,
+    "source": "2d28bce7431d405170db586840147c588efca517",
+    "log": "output/w3-u2-live-settings-ui/trunk-resume/node-final.log",
+    "sha256": "2e565bb22853412fac048a7a7d69886660b24ad0c2153abc105281b53eb9a3b5",
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/output/w3-u2-live-settings-ui/trunk-resume/logs/node-final.log",
+    "raw_sha256": "d43d226ab3cc260656dfd5b483f989a552ba7617653dbef09ec9f24a852c4a16"
+  },
+  {
+    "command": [
+      "pnpm",
+      "typecheck:admin"
+    ],
+    "exit": 0,
+    "source": "2d28bce7431d405170db586840147c588efca517",
+    "log": "output/w3-u2-live-settings-ui/trunk-resume/typecheck.log",
+    "sha256": "b76113cf935fe4f136e762d124e40678d55b3f921077292e77e52c9d8d3b98ba",
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/output/w3-u2-live-settings-ui/trunk-resume/logs/typecheck.log",
+    "raw_sha256": "37fab15de17aa0ca1a1d3a45526b7890fbc4ca46e75454c0325fd964a5f448ef"
+  },
+  {
+    "command": [
+      "bash",
+      "scripts/dev/test-local.sh",
+      "--list"
+    ],
+    "exit": 0,
+    "source": "2d28bce7431d405170db586840147c588efca517",
+    "log": "output/w3-u2-live-settings-ui/trunk-resume/registry-list.log",
+    "sha256": "462cc214e71676c0cb82e06c4ccceb397bc612117ba19798dee00f5e64fb89f5",
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/output/w3-u2-live-settings-ui/trunk-resume/logs/registry-list.log",
+    "raw_sha256": "462cc214e71676c0cb82e06c4ccceb397bc612117ba19798dee00f5e64fb89f5"
+  },
+  {
+    "command": [
+      "bash",
+      "scripts/dev/check-gates.sh"
+    ],
+    "exit": 0,
+    "source": "2d28bce7431d405170db586840147c588efca517",
+    "log": "output/w3-u2-live-settings-ui/trunk-resume/check-gates.log",
+    "sha256": "0ff62848c8e2dc71c7088667e0e7d886fc4e342e57749b25701021de1e4bc95a",
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/output/w3-u2-live-settings-ui/trunk-resume/logs/check-gates.log",
+    "raw_sha256": "0ff62848c8e2dc71c7088667e0e7d886fc4e342e57749b25701021de1e4bc95a"
+  }
+]

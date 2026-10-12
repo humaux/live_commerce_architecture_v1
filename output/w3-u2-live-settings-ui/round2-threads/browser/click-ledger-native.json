@@ -1,0 +1,1 @@
+{"page":"/[locale]/studio/settings","rows":[{"control":"identity-signin","operation":"click","expected":"server-authenticated store selector","actual":"observed expected result","result":"PASS"}],"visibility":"native hidden -> visible","result":"PASS"}

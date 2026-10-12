@@ -1,0 +1,27 @@
+{
+  "failed_source_commit": "5b1da81ad6284e980a88b2c2ff68cac1cf0180b5",
+  "failed_cases": [
+    187,
+    362
+  ],
+  "actual_result": "20PASS2FAIL; disabled option retargeted to wrappinglabel.control enabledselect",
+  "sdk_path": "node_modules/.pnpm/playwright-core@1.63.0/node_modules/playwright-core/lib/coreBundle.js",
+  "sdk_sha256": "549070af3acabb3efcc4f55bfe6210f9f7c2fcf633cf7eaa59bfe60719969171",
+  "primary_source_excerpts": {
+    "retarget(node, behavior) {": "retarget(node, behavior) {\n    let element = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;\n    if (!element)\n      return null;\n    if (behavior === \"none\")\n      return element;\n    if (!element.matches(\"input, textarea, select\") && !element.isContentEditable) {\n      if (behavior === \"button-link\")\n        element = element.closest(\"button, [role=button], a, [role=link]\") || element;\n      else\n        element = element.closest(\"button, [role=button], [role=checkbox], [role=radio]\") || element;\n    }\n    if (behavior === \"follow-label\") {\n      if (!element.matches(\"a, input, textarea, button, select, [role=link], [role=button], [role=checkbox], [role=radio]\") && !element.isContentEditable) {\n        const enclosingLabel = element.closest(\"label\");\n        if (enclosingLabel && enclosingLabel.control)\n          element = enclosingLabel.control;\n      }\n    }\n    return element;\n  }\n  async checkElementStates(node, states) {\n    if (states.includes(\"stable\")) {\n      const stableResult = await this._checkElementIsStable(node);\n      if (stableResult === false)\n        return { missingState: \"stable\" };\n      if (stableResult === \"error:notconnected\")\n        return \"error:notconnected",
+    "function isNativelyDisabled(element)": "function isNativelyDisabled(element) {\n  const isNativeFormControl = [\"BUTTON\", \"INPUT\", \"SELECT\", \"TEXTAREA\", \"OPTION\", \"OPTGROUP\"].includes(elementSafeTagName(element));\n  return isNativeFormControl && (element.hasAttribute(\"disabled\") || belongsToDisabledOptGroup(element) || belongsToDisabledFieldSet(element));\n}\nfunction belongsToDisabledOptGroup(element) {\n  return elementSafeTagName(element) === \"OPTION\" && !!element.closest(\"OPTGROUP[DISABLED]\");\n}\nfunction belongsToDisabledFieldSet(element) {\n  const fieldSetElement = element == null ? void 0 : element.closest(\"FIELDSET[DISABLED]\");\n  if (!fieldSetElement)\n    return false;\n  const legendElement = fieldSetElement.querySelector(\":scope > LEGEND\");\n  return !legendElement || !legendElement.contains(element);\n}\nfunction hasExplicitAriaDisabled(element) {\n  if (!kAriaDisabledRoles.includes(getAriaRole(element) || \"\"))\n    return false;\n  return hasAriaDisabledInChain(element);\n}\nfunction hasAriaDisabledInChain(element) {\n  let result = cacheAriaDisabled == null ? void 0 : cacheAriaDisabled.get(element);\n  if (result === void 0) {\n    const attribute = (element.getAttribute(\"aria-disabled\") || \"\").toLowerCase();\n    if (attribute === \"true\") {\n      resu",
+    "elementState(node, state) {": "elementState(node, state) {\n    const element = this.retarget(node, [\"visible\", \"hidden\"].includes(state) ? \"none\" : \"follow-label\");\n    if (!element || !element.isConnected) {\n      if (state === \"hidden\")\n        return { matches: true, received: \"hidden\" };\n      return { matches: false, received: \"error:notconnected\" };\n    }\n    if (state === \"visible\" || state === \"hidden\") {\n      const visible = isElementVisible(element);\n      return {\n        matches: state === \"visible\" ? visible : !visible,\n        received: visible ? \"visible\" : \"hidden\"\n      };\n    }\n    if (state === \"disabled\" || state === \"enabled\") {\n      const disabled = getAriaDisabled(element);\n      return {\n        matches: state === \"disabled\" ? disabled : !disabled,\n        received: disabled ? \"disabled\" : \"enabled\"\n      };\n    }\n    if (state === \"editable\") {\n      const disabled = getAriaDisabled(element);\n      const readonly = getReadonly(element);\n      if (readonly === \"error\")\n        throw this.createStacklessError(\"Element is not an <input>, <textarea>, <select> or [contenteditable] and does not have a role allowing [aria-readonly]\");\n      return {\n        matches: !disabled && !readonly,\n        received: disabl"
+  },
+  "root_fix": "Explicit htmlFor/useId label outside option ancestry, identical existinggridlayout; originalbrowserwaits/assertionsunchanged",
+  "red_command": [
+    "node",
+    "--test",
+    "--test-reporter=spec",
+    "--experimental-strip-types",
+    "--test-name-pattern=explicit accessible label",
+    "tests/admin/live-settings-hooks.test.ts"
+  ],
+  "red_exit": 1,
+  "green_exit": 0,
+  "green_tests": 59
+}

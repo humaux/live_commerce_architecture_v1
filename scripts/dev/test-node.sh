@@ -29,6 +29,7 @@ node --test --experimental-strip-types tests/admin/product-document.test.ts test
 node --test --experimental-transform-types tests/admin/catalog-receipt.test.ts
 node --test --experimental-transform-types tests/admin/live-workspace.test.ts tests/admin/live-console-model.test.ts tests/admin/live-console-bff.test.ts
 node --test --experimental-strip-types tests/admin/comment-stream.test.ts tests/admin/comment-stream-hooks.test.ts
+node --test --experimental-strip-types tests/admin/comment-label-print.test.ts
 node --test --experimental-strip-types tests/admin/live-workspace-hooks.test.ts tests/admin/live-console-render.test.ts
 node --test --experimental-strip-types tests/admin/claims-backend-parity.test.ts tests/admin/claims-model.test.ts tests/admin/claims-request.test.ts
 if [[ -n "${COMMERCE_R04_LIVEKIT_BINARY:-}" ]]; then
@@ -68,5 +69,8 @@ node --test --experimental-strip-types tests/admin/inbox-privacy.test.ts tests/a
 node --test --experimental-strip-types tests/admin/inbox-customer-link.test.ts tests/admin/inbox-review.test.ts tests/admin/inbox-review-recovery.test.ts tests/admin/inbox-window.test.ts tests/admin/inbox-evidence.test.ts tests/admin/inbox-entry.test.ts tests/admin/inbox-browser-source.test.ts tests/admin/inbox-unknown.test.ts tests/admin/inbox-bundle-browser.test.ts tests/admin/inbox-discovery.test.ts tests/admin/inbox-credential-artifacts.test.ts tests/admin/inbox-shell-navigation.test.ts tests/admin/inbox-recovery-locale.test.ts tests/admin/inbox-browser-session.test.ts
 node --input-type=module -e 'import assert from "node:assert/strict"; import {readFileSync,existsSync} from "node:fs"; assert.ok(existsSync("tests/foundation/browser_inbox_ui_test.go")); assert.ok(existsSync("tests/admin/inbox-ui.spec.ts")); assert.ok(readFileSync("playwright.config.ts","utf8").includes(`"inbox": ["inbox-ui.spec.ts", "inbox-bundle-ui.spec.ts", "inbox-customer-ui.spec.ts"]`),"inbox authority suite missing"); assert.ok(readFileSync("scripts/dev/test-local.sh","utf8").includes("TestBrowserInboxUIRealChain"),"inbox Go gate missing"); assert.ok(readFileSync("docs/delivery/GATES.md","utf8").includes("--browser-inbox"),"inbox gate registry missing");'
 
+# W3-U2 actual BFF Request seams and closed command/copy policy.
+node --test --experimental-strip-types tests/admin/live-settings-bff.test.ts tests/admin/live-settings-model.test.ts
+node --test --experimental-transform-types tests/admin/live-settings-hooks.test.ts
 # Browser-run artifact isolation and regression write-root counterexamples.
 node --test tests/admin/browser-evidence.test.mjs tests/ci/browser-evidence-paths.test.mjs

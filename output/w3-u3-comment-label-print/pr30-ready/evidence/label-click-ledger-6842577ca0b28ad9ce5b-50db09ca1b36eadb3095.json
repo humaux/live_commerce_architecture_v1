@@ -1,0 +1,12 @@
+[
+  {
+    "locale": "en",
+    "width": 1586,
+    "page": "/studio/console",
+    "control": "print with lost acknowledgement",
+    "operation": "click print twice explicitly",
+    "expected": "Committed fact replays same key and print_count; no extra fact",
+    "actual": "{\"attempts\":2,\"sameKey\":true,\"counts\":[7,7],\"sameCount\":true,\"printCalls\":2}",
+    "result": "PASS"
+  }
+]

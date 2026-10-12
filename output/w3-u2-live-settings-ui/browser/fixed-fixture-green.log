@@ -1,0 +1,4 @@
+=== RUN   TestBrowserLiveSettingsMockRequiresMerchantTemplate
+--- PASS: TestBrowserLiveSettingsMockRequiresMerchantTemplate (0.00s)
+PASS
+ok  	livecommerce/tests/foundation	0.901s

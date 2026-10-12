@@ -1,0 +1,12 @@
+tests/admin/fixtures/native-device.ts(6,45): error TS2591: Cannot find name 'node:fs/promises'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+tests/admin/fixtures/native-device.ts(7,23): error TS2591: Cannot find name 'node:child_process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+tests/admin/fixtures/native-device.ts(22,11): error TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+tests/admin/fixtures/native-device.ts(32,24): error TS7006: Parameter 'error' implicitly has an 'any' type.
+tests/admin/ops-polish-model.test.ts(6,20): error TS2591: Cannot find name 'node:assert/strict'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+tests/admin/ops-polish-model.test.ts(7,22): error TS2591: Cannot find name 'node:test'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+tests/admin/ops-polish-model.test.ts(8,30): error TS2591: Cannot find name 'node:fs'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+tests/admin/ops-polish-model.test.ts(29,9): error TS18048: 'consumer' is possibly 'undefined'.
+tests/admin/ops-polish-model.test.ts(29,9): error TS2345: Argument of type 'Block | undefined' is not assignable to parameter of type 'Node'.
+  Type 'undefined' is not assignable to type 'Node'.
+tests/admin/ops-polish-model.test.ts(32,64): error TS2366: Function lacks ending return statement and return type does not include 'undefined'.
+tests/admin/ops-polish.spec.ts(11,17): error TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.

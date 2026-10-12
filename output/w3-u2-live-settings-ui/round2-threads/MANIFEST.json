@@ -1,0 +1,396 @@
+{
+  "source_sha": "d05ab56e1ce8124786a74d4bb80696c32967fd66",
+  "delivery_sha256": "aea9927734c33d0a58472e58d2938f29834431f6a2e94e40603402f7a682ddfd",
+  "files": [
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/SOURCE.json",
+      "sha256": "5de4a11d0feee54eb2d0eb6b83708e3bd2ec55a050c34d9e3f1f60954b57e14b",
+      "bytes": 7410
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/THREADS.json",
+      "sha256": "3e7abe23c87e2f62ab0cde620080575c2694a314ac48094313642f6fa6b1738d",
+      "bytes": 5274
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/THREADS.md",
+      "sha256": "d0c0cba9fe3e91a57fe93ec064eda4efbf6b33ecb92e8e125960d9ae4c48bb41",
+      "bytes": 2013
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/artifact-style-check.json",
+      "sha256": "5c3cabaf9931cedde786db6b19439e6d0f8ddbfbb64da671d48e4374ee7bdff6",
+      "bytes": 422
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/click-ledger-9469f302ec04ac4bc9aa-0e9f70141aef6876257e.json",
+      "sha256": "87135aebee630001233f85656445ce0d6c2455d6a3691a069817d99db43b0b61",
+      "bytes": 3692
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/click-ledger-9469f302ec04ac4bc9aa-26833dde50dfa41c9c1d.json",
+      "sha256": "91d14f5c031f5d1466a43b40a33e141a2543d827e5edb0e8a6f469c170ca1cfc",
+      "bytes": 1376
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/click-ledger-9469f302ec04ac4bc9aa-2bcbc818559511cf08d7.json",
+      "sha256": "50ec366df08015b147e50f3318fc7f2163fa43069476cffff4f4265780b5c40c",
+      "bytes": 1319
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/click-ledger-9469f302ec04ac4bc9aa-30fdaefa096249deca7e.json",
+      "sha256": "fb99cbea75c3ec40b2360559d4bcc20d2d78524da4af0a142ce41fcd24a7401c",
+      "bytes": 1644
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/click-ledger-9469f302ec04ac4bc9aa-53833e85d97f7f7b3f32.json",
+      "sha256": "1dbf11d26201010daf8d8544a9d5f0a3603ebf581988f7749c87d51a4da2ca56",
+      "bytes": 1469
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/click-ledger-9469f302ec04ac4bc9aa-5e41410600f360fc3c9e.json",
+      "sha256": "7efed38a1950bda274a10e658cfcd2eb4b776fd985bb493758e3cd5a1a70f448",
+      "bytes": 3692
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/click-ledger-9469f302ec04ac4bc9aa-5f333939a51de95bbf14.json",
+      "sha256": "09f9d4c64a281155c9fe0191a5f7eb6ef11df91c9ce48b4b6c92242c4fbd3aee",
+      "bytes": 461
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/click-ledger-9469f302ec04ac4bc9aa-8927b2d9c6d195df624b.json",
+      "sha256": "35cfc75f2db2920a816b4896a861eac770deb4a7e615e78e94cae61e423382db",
+      "bytes": 1064
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/click-ledger-9469f302ec04ac4bc9aa-9bb0f3355a0fba72faf6.json",
+      "sha256": "a51846bf95f46947a061a205f8ebb7fd00d7f804a103602dea91d7810b8263cb",
+      "bytes": 3692
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/click-ledger-9469f302ec04ac4bc9aa-a51967fc94c660b2cd52.json",
+      "sha256": "be8c1f790f2705b160ca23656dabe7746a9fd31eab05ea9e15f17b1e222f181e",
+      "bytes": 1525
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/click-ledger-9469f302ec04ac4bc9aa-a73559725de640e92199.json",
+      "sha256": "91d14f5c031f5d1466a43b40a33e141a2543d827e5edb0e8a6f469c170ca1cfc",
+      "bytes": 1376
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/click-ledger-9469f302ec04ac4bc9aa-b01536bd95164c1e8def.json",
+      "sha256": "1b58522141635501895894725d61307aac19d36a1d4262ae0892d2ee74b88b7b",
+      "bytes": 3692
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/click-ledger-9469f302ec04ac4bc9aa-b718a163b1d1750f50c2.json",
+      "sha256": "cf50abd2b20c0d0651ff5c4be3be251158d614e152bd5e88954ad790c43eb140",
+      "bytes": 3692
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/click-ledger-9469f302ec04ac4bc9aa-bd9bb5dae7cadb1c53e9.json",
+      "sha256": "66fa7504246c0ac164326b74498fe481a251b59d953a4e48f84a07e266610711",
+      "bytes": 91
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/click-ledger-9469f302ec04ac4bc9aa-c0816670e00920ce6bd7.json",
+      "sha256": "50ec366df08015b147e50f3318fc7f2163fa43069476cffff4f4265780b5c40c",
+      "bytes": 1319
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/click-ledger-9469f302ec04ac4bc9aa-e4dc7bada60f97f2d2c4.json",
+      "sha256": "50ec366df08015b147e50f3318fc7f2163fa43069476cffff4f4265780b5c40c",
+      "bytes": 1319
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/click-ledger-9469f302ec04ac4bc9aa-eacf9f0d2ea34a5f5b15.json",
+      "sha256": "036baba8e05a721b9e7a508f28c68f422fd3974da2b5d9b182a26f3733dd489c",
+      "bytes": 755
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/click-ledger-9469f302ec04ac4bc9aa-f2d46312747ef5ac937c.json",
+      "sha256": "49b59f2e67370c6d7c4f132022efb939f85c4ae93b211130e99a4ba91e3d5605",
+      "bytes": 3692
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/click-ledger-9469f302ec04ac4bc9aa-f524823d87af7f169448.json",
+      "sha256": "6d9d6dccfccbb8d1655a88a8b3a47081a921f3c5cb4dcd161c34077babc53f15",
+      "bytes": 638
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/click-ledger-9469f302ec04ac4bc9aa-f835b293e56d0852f54b.json",
+      "sha256": "53808365a130f56afd4e9b88b48f17d4f51a8498d1ab5efae480077ce2950788",
+      "bytes": 958
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/click-ledger-9469f302ec04ac4bc9aa-fb16805729d30d98df09.json",
+      "sha256": "138d76c8ec7957dee31e4240b58e8d3853112ba99bb1acbe2709cb774afb4cfb",
+      "bytes": 809
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/click-ledger-9469f302ec04ac4bc9aa-fc8f4f9f76569bb163a0.json",
+      "sha256": "50ec366df08015b147e50f3318fc7f2163fa43069476cffff4f4265780b5c40c",
+      "bytes": 1319
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/click-ledger-native.json",
+      "sha256": "0c7077f62ce12dc4d07a1c5cf56364d698e5429de2fcb109c2df341f57efef9f",
+      "bytes": 252
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/mock-receipts-9469f302ec04ac4bc9aa-0e9f70141aef6876257e.json",
+      "sha256": "69484aba4507937077bb68fca879034792bc4441f23b1c7512bfb09612697536",
+      "bytes": 1244
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/mock-receipts-9469f302ec04ac4bc9aa-26833dde50dfa41c9c1d.json",
+      "sha256": "da589e9e9e7b3300ed2ec51bdd48781c5d676f84822e876aa1652ab6eff7c45a",
+      "bytes": 187
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/mock-receipts-9469f302ec04ac4bc9aa-2bcbc818559511cf08d7.json",
+      "sha256": "ba4f9f85c816435e00ceee149101b27fdbf9bc296bff272afa39f0d425ae2f26",
+      "bytes": 187
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/mock-receipts-9469f302ec04ac4bc9aa-30fdaefa096249deca7e.json",
+      "sha256": "9b856ac286a9909d24e7c3e75637b79952dffa5e68294efe007ef62f7a4113ca",
+      "bytes": 187
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/mock-receipts-9469f302ec04ac4bc9aa-53833e85d97f7f7b3f32.json",
+      "sha256": "8bc379e72c979269148bc59bcad91d2c97de6a4af744012dd65a8f03a7ff254c",
+      "bytes": 390
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/mock-receipts-9469f302ec04ac4bc9aa-5e41410600f360fc3c9e.json",
+      "sha256": "928e879414920d653f7def0ebcd8e9da0dbd4a84646f670d658f8b3fde9cc4ac",
+      "bytes": 1244
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/mock-receipts-9469f302ec04ac4bc9aa-5f333939a51de95bbf14.json",
+      "sha256": "71706cd9aba332f99cf8aca41911abf17fbe3e40f8c1e4fec0374901b640ab15",
+      "bytes": 187
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/mock-receipts-9469f302ec04ac4bc9aa-8927b2d9c6d195df624b.json",
+      "sha256": "65eaf3c38c5eccc22dc81f206fc243fa4dca9893c7fdd56927026d594a851ee0",
+      "bytes": 598
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/mock-receipts-9469f302ec04ac4bc9aa-9bb0f3355a0fba72faf6.json",
+      "sha256": "addadb204835fdee88db6d3a968a86169cb7bf4929efa5be6a307c3d7c6daec6",
+      "bytes": 1243
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/mock-receipts-9469f302ec04ac4bc9aa-a51967fc94c660b2cd52.json",
+      "sha256": "5f2d2fd73fda196ac085849f2c5c690b7b1245ef567569b72055f384b20eba2f",
+      "bytes": 635
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/mock-receipts-9469f302ec04ac4bc9aa-a73559725de640e92199.json",
+      "sha256": "06bba2f59ab923b39945089257064d20ee1ccd1d785d92f026aaa67c20dba854",
+      "bytes": 187
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/mock-receipts-9469f302ec04ac4bc9aa-b01536bd95164c1e8def.json",
+      "sha256": "663c33d0d3fdc039b7a927ca079b0ba63c758e110f547485a44364ef25a88431",
+      "bytes": 1244
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/mock-receipts-9469f302ec04ac4bc9aa-b718a163b1d1750f50c2.json",
+      "sha256": "ea860a0adb078f9588b6cdf0c48a0655d639aa6c730f0c52d28f5d580d8ee244",
+      "bytes": 1243
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/mock-receipts-9469f302ec04ac4bc9aa-bd9bb5dae7cadb1c53e9.json",
+      "sha256": "85e13627532a322acfc8cc4c43cbdbecfca6d0ffa6825c5ffa7ef65ba82f2d9e",
+      "bytes": 186
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/mock-receipts-9469f302ec04ac4bc9aa-c0816670e00920ce6bd7.json",
+      "sha256": "347a0336d06bbb850d630a5299d9878c378035a00aa15f230ae2d2a1c395810a",
+      "bytes": 187
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/mock-receipts-9469f302ec04ac4bc9aa-e4dc7bada60f97f2d2c4.json",
+      "sha256": "501b75d834f4c3a5c5126341deed3aaaf164967328b7fd6dcf54c6e53eec6a50",
+      "bytes": 187
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/mock-receipts-9469f302ec04ac4bc9aa-eacf9f0d2ea34a5f5b15.json",
+      "sha256": "8c0b6f544f5ad6994b04e7da684974137ff26734357f278a2fd6b69e78bcabe4",
+      "bytes": 390
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/mock-receipts-9469f302ec04ac4bc9aa-f2d46312747ef5ac937c.json",
+      "sha256": "b19489e50693113467d1cf3a2e905667b63352cca6661be3af0af1316e5dc1d7",
+      "bytes": 1244
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/mock-receipts-9469f302ec04ac4bc9aa-f524823d87af7f169448.json",
+      "sha256": "9f78d24116719b93933237ee76f2de8a1759d0712401a4b87bd0d44916c88450",
+      "bytes": 187
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/mock-receipts-9469f302ec04ac4bc9aa-f835b293e56d0852f54b.json",
+      "sha256": "c7f68a051209d5255acaae25af88554343637cc6e6519bfef9a13eeacb7e8bb3",
+      "bytes": 595
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/mock-receipts-9469f302ec04ac4bc9aa-fb16805729d30d98df09.json",
+      "sha256": "d395d5cf4a47538713da9f94b68eb55a4a84bf6bfc8d74d138e9b7c25e95b37b",
+      "bytes": 186
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/mock-receipts-9469f302ec04ac4bc9aa-fc8f4f9f76569bb163a0.json",
+      "sha256": "4ba139c74c43b5aa6edbdf56a1bb525d41c45e46fb69b0975e47df496099594f",
+      "bytes": 187
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/mock-receipts.json",
+      "sha256": "121d9727d131c59ca712f87172f94a23410172c88272c239ea41cee8e91e4237",
+      "bytes": 232
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/playwright.log",
+      "sha256": "6b8dd09e364caada7ce0bbf03ad3011d468b1de6854fc8b0e6dbab2a8a2367ea",
+      "bytes": 10
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "bytes": 45
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/settings-en-1440.png",
+      "sha256": "d1a6cbb09b1c8d894ad904e8f60b3c07d796d856d478808b0d42ce238bdb9beb",
+      "bytes": 98586
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/settings-en-390.png",
+      "sha256": "44acaec0eec8f3eee290730157c8f459b6828ce327fba7dbde3893b56023fabe",
+      "bytes": 73565
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/settings-zh-CN-1440.png",
+      "sha256": "2b0677a69ff5a9f178cdcb8ff04ae6cc1e0e435fd1a37ce1468326b332048b0e",
+      "bytes": 108416
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/settings-zh-CN-390.png",
+      "sha256": "c228e76560ca76afd7b5fa1217862a7075797c17c369795f5bd45ced79132053",
+      "bytes": 85660
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/settings-zh-TW-1440.png",
+      "sha256": "a2b02c886056032569e6fa61c312b2d9f1cf35c430ad76d4a6b095e32e3ecdbb",
+      "bytes": 89065
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/settings-zh-TW-390.png",
+      "sha256": "27d2a6a39dfc3fc274fb6936fc12e1f4cf1cadd540ce048e874ac48939ab5ecf",
+      "bytes": 67796
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/soldout-states-en-1440.png",
+      "sha256": "0bc9a1611332aaa4f67ae0c7f690aa4f5ddde31515d8ebf087b8081d737132e1",
+      "bytes": 181042
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/soldout-states-en-390.png",
+      "sha256": "1e8cd05cecb4788d40af64c74d1f42d3d75c2fcb9492429403ddecc94951c942",
+      "bytes": 151806
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/soldout-states-zh-CN-1440.png",
+      "sha256": "dc530c95fa904754f1c54ca59fdbb9453e9b4b1b3b3b7218af6675c8b5052671",
+      "bytes": 180733
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/soldout-states-zh-CN-390.png",
+      "sha256": "ce4857fac97135dd23ef52dc40eda06f7d1c88cd1f507549181a4521b196e58e",
+      "bytes": 154704
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/soldout-states-zh-TW-1440.png",
+      "sha256": "7de283d4e6725a5fe8635d92a485d0002ae34dc163698b99d35008fec263f244",
+      "bytes": 187677
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/soldout-states-zh-TW-390.png",
+      "sha256": "7e73c4d347b4f97d8e1f1d7c37b162d748c1345490e72dde0ffed16056c7813c",
+      "bytes": 160574
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser/source.json",
+      "sha256": "222efb1f354b7d1a1f4ecf865dcc3142cce4b839e8777d2bcb7fdf721f8da3cb",
+      "bytes": 650
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser-evidence.json",
+      "sha256": "57407ffc8b7df1be18e44611f60eeb9068453a7c30b3838968580c64164afd96",
+      "bytes": 23695
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser-live-settings.log",
+      "sha256": "afca7f474e3dbb17b578b7efdb4a4f107e6d8c6a48d111c22a356986aa65e255",
+      "bytes": 7921
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/browser-run.json",
+      "sha256": "96f38b971c7fbdbbe97230d9c89184cafa830dc24c6c4a910fc1e93964c08773",
+      "bytes": 762
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/check-gates.log",
+      "sha256": "5cceed7173874743b88ee219a2b0a68bf0dd7bca8789862457359cd6c2fe9da4",
+      "bytes": 239482
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/focused-http-real-pg.json",
+      "sha256": "fd2d3a4603baa5247c2a2ee863fd92a0af1a272cfb8950bf7afab59b5c239e14",
+      "bytes": 635
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/focused-http-real-pg.log",
+      "sha256": "e06c132f7f417776b4ff2250c35cfaf123a6fc740002a7c9c5962669e65a136d",
+      "bytes": 3740
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/green-hooks.json",
+      "sha256": "bd8c840ce1e30ddd68d13cd11f0938d5e6c019a02bd657bf41db5a9880340eac",
+      "bytes": 471
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/green-hooks.log",
+      "sha256": "5a75f277ef7ce6d9a225f0b4535fe9704cf83eda822e5d5096548f0f181cd908",
+      "bytes": 2719
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/local-gates.json",
+      "sha256": "378f778839f9bef13e8c9fd6bc87c069c1e02df44595072b5232f7da38a28691",
+      "bytes": 2016
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/red-studio-pagination.json",
+      "sha256": "dad0459b91c129d3a46e54b4b1f5de16b0a2308d914c261bed7864396df678c1",
+      "bytes": 504
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/red-studio-pagination.log",
+      "sha256": "551f3d3a2a8752fea8ba0495318330fbc1ec82d0ba0e5664e92fe238980554cd",
+      "bytes": 8986
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/test-node.log",
+      "sha256": "7a22fa1a4d16e7c93427defe4d45306510124ea809790f302560fd5be990e5ab",
+      "bytes": 146256
+    },
+    {
+      "path": "output/w3-u2-live-settings-ui/round2-threads/typecheck.log",
+      "sha256": "37fab15de17aa0ca1a1d3a45526b7890fbc4ca46e75454c0325fd964a5f448ef",
+      "bytes": 310
+    }
+  ]
+}

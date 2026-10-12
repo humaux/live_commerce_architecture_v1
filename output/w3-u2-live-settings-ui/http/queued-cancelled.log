@@ -1,0 +1,7 @@
+command: bash scripts/dev/test-focused.sh 'TestLiveSettingsHTTP' ./tests/foundation ./internal/httpapi
+session: 76524
+owned waiting bash PID: 79436
+Observed: machine PG lock was held by unrelated lc-foundation-test-75748. No owned PG launched. Correctable fixture field typo was found before this pending run compiled.
+Action: kill -TERM 79436 (only owned waiting process), then poll original session.
+exit: 143
+Classification: CANCELLED DIAGNOSTIC ONLY; no runtime tests executed, not behavioral RED/PASS.

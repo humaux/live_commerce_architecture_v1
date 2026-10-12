@@ -1,0 +1,11 @@
+Listing tests:
+  comment-label-print.spec.ts:59:3 › W3U3 three label real A3 print zh-TW-1586
+  comment-label-print.spec.ts:59:3 › W3U3 three label real A3 print zh-TW-390
+  comment-label-print.spec.ts:59:3 › W3U3 three label real A3 print zh-CN-1586
+  comment-label-print.spec.ts:59:3 › W3U3 three label real A3 print zh-CN-390
+  comment-label-print.spec.ts:59:3 › W3U3 three label real A3 print en-1586
+  comment-label-print.spec.ts:59:3 › W3U3 three label real A3 print en-390
+  comment-label-print.spec.ts:151:1 › W3U3_404 real revoked store closes private labels before native print
+  comment-label-print.spec.ts:182:1 › W3U3 lost A3 acknowledgement retries the same fact key
+  comment-label-print.spec.ts:208:1 › W3U3 failed record still prints without claiming success; preview closes on reset
+Total: 9 tests in 1 file

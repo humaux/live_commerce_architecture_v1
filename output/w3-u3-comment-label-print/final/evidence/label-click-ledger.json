@@ -1,0 +1,38 @@
+[
+  {
+    "locale": "zh-TW",
+    "width": 1586,
+    "action": "select-three-preview-a4-print-small-close-refresh",
+    "count": 3
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "action": "select-three-preview-a4-print-small-close-refresh",
+    "count": 3
+  },
+  {
+    "locale": "zh-CN",
+    "width": 1586,
+    "action": "select-three-preview-a4-print-small-close-refresh",
+    "count": 3
+  },
+  {
+    "locale": "zh-CN",
+    "width": 390,
+    "action": "select-three-preview-a4-print-small-close-refresh",
+    "count": 3
+  },
+  {
+    "locale": "en",
+    "width": 1586,
+    "action": "select-three-preview-a4-print-small-close-refresh",
+    "count": 3
+  },
+  {
+    "locale": "en",
+    "width": 390,
+    "action": "select-three-preview-a4-print-small-close-refresh",
+    "count": 3
+  }
+]

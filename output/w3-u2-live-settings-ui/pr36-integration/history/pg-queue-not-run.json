@@ -1,0 +1,33 @@
+{
+  "name": "live-settings",
+  "argv": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-live-settings"
+  ],
+  "source_sha": "7737cb87d186c5b17ef582142c7766136660a41b",
+  "env": {
+    "LC_TEST_LOCK_WAIT": "1800",
+    "LC_BROWSER_ENGINE": "chromium",
+    "LC_HEADER_BASE": "origin/r3/integration",
+    "LC_BROWSER_EVIDENCE_ROOT": "$PWD/output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/browser-chain/live-settings-evidence"
+  },
+  "unset_env": [
+    "LC_BROWSER_CONSOLE_GREP",
+    "LC_BROWSER_SETTINGS_GREP",
+    "LC_CONSOLE_CALIBRATION",
+    "LC_OPS_POLISH_ONLY",
+    "CONTRACT_DRIFT_BASE"
+  ],
+  "started_at": "2026-10-10T06:23:55.765603+00:00",
+  "timeout_seconds": 3000,
+  "log": "output/w3-u2-live-settings-ui/pr36-integration/history/pg-queue-not-run.log",
+  "state": "finished",
+  "pid": 53772,
+  "exit_code": 2,
+  "elapsed_seconds": 1805.548,
+  "ended_at": "2026-10-10T06:54:01.315421+00:00",
+  "log_sha256": "0d7233460c1c7c8d06d2247cf6932b65581e7d4fa5907a2f179dda15887b3478",
+  "classification": "NOT_RUN: machine PG lock held by another live owner before tests",
+  "original_log": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/browser-chain/live-settings.log"
+}

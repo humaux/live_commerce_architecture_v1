@@ -481,13 +481,14 @@ case "$1" in
     lc_browsers=chromium
     lc_prepare() {
   test -f tests/admin/live-console.spec.ts
+  test -f tests/admin/comment-label-print.spec.ts
   test -f tests/foundation/browser_live_console_test.go
   grep -q '^func TestBrowserLiveConsoleRealChain' tests/foundation/browser_live_console_test.go
   mkdir -p output/playwright
     }
     lc_run() {
   LC_BROWSER_LIVE_CONSOLE_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.2 go test -race -tags browser -count=1 -timeout=780s -run '^TestBrowserLiveConsoleRealChain$' -v ./tests/foundation
-  printf 'PASS: LC-U1 MOCK Console and LC-U2a REAL_PG comment/inbox browser; MOCK Graph only, no LIVE provider acceptance.\n'
+  printf 'PASS: LC-U1 MOCK Console and LC-U2a REAL_PG comment/inbox plus W3-U3 real print facts/browser CSS; MOCK Graph only, no physical-printer or LIVE provider acceptance.\n'
     }
     ;;
   --browser-claim-checkout)
@@ -1567,6 +1568,23 @@ case "$1" in
   # unit shard / the whole-suite run, so a full run vets exactly once instead of once per shard.
   if [[ -z "${LC_FOUNDATION_RUN:-}${LC_FOUNDATION_SKIP:-}" ]]; then GOTOOLCHAIN=go1.27.2 go vet ./...; fi
   printf 'PASS: isolated real PostgreSQL foundation tests; fixture removed at exit.\n'
+    }
+    ;;
+  --browser-live-settings)
+    lc_build=admin
+    lc_fixture=pg
+    lc_covers="internal/ads internal/billing internal/catalog internal/claims internal/csvguard internal/customers internal/design internal/fulfillment internal/httpapi/accounts.go internal/httpapi/accounts_test.go internal/httpapi/ads.go internal/httpapi/ads_test.go internal/httpapi/billing.go internal/httpapi/billing_test.go internal/httpapi/blocklist.go internal/httpapi/blocklist_test.go internal/httpapi/claimsource.go internal/httpapi/claimsource_test.go internal/httpapi/cod.go internal/httpapi/collections.go internal/httpapi/customer_historical.go internal/httpapi/customer_tags.go internal/httpapi/customer_tags_test.go internal/httpapi/customers.go internal/httpapi/customers_test.go internal/httpapi/cvs.go internal/httpapi/cvs_test.go internal/httpapi/design.go internal/httpapi/design_test.go internal/httpapi/finance.go internal/httpapi/finance_test.go internal/httpapi/for_buyer_test.go internal/httpapi/images.go internal/httpapi/images_test.go internal/httpapi/imports.go internal/httpapi/imports_test.go internal/httpapi/inbox.go internal/httpapi/inbox_send.go internal/httpapi/inbox_send_test.go internal/httpapi/inbox_test.go internal/httpapi/keyword_tools.go internal/httpapi/keyword_tools_test.go internal/httpapi/live_console.go internal/httpapi/live_console_test.go internal/httpapi/live_flow.go internal/httpapi/live_flow_test.go internal/httpapi/live_lifecycle.go internal/httpapi/live_lifecycle_test.go internal/httpapi/live_stream.go internal/httpapi/live_stream_test.go internal/httpapi/merchanttools.go internal/httpapi/merchanttools_test.go internal/httpapi/meta_connect.go internal/httpapi/meta_health.go internal/httpapi/notify.go internal/httpapi/offline.go internal/httpapi/operations.go internal/httpapi/operations_test.go internal/httpapi/orders.go internal/httpapi/orders_test.go internal/httpapi/parcels.go internal/httpapi/parcels_test.go internal/httpapi/payment_card.go internal/httpapi/payment_card_test.go internal/httpapi/picklist.go internal/httpapi/picklist_test.go internal/httpapi/promotions.go internal/httpapi/refunds.go internal/httpapi/refunds_env_test.go internal/httpapi/refunds_test.go internal/httpapi/reminders.go internal/httpapi/reminders_test.go internal/httpapi/reports.go internal/httpapi/reports_test.go internal/httpapi/returns.go internal/httpapi/returns_test.go internal/httpapi/settings_discovery.go internal/httpapi/settlements.go internal/httpapi/settlements_test.go internal/httpapi/shipments.go internal/httpapi/shipments_test.go internal/httpapi/sold_out_settings.go internal/httpapi/sold_out_resolve_error_test.go internal/httpapi/sold_out_settings_test.go internal/httpapi/storefront.go internal/httpapi/storefront_test.go internal/httpapi/templates.go internal/httpapi/templates_test.go internal/inbox internal/integrations/accounts internal/integrations/core internal/integrations/psp/payuni internal/inventory internal/jobqueue internal/live internal/mail internal/merchantorders internal/merchanttools internal/metaconnect internal/migrationimport internal/msgtemplates internal/notify internal/payments internal/payments/platformstripe internal/payments/settlement internal/pricing internal/promotions internal/reporting internal/returns internal/storefrontadmin internal/storefrontdomains internal/storehandles internal/twcity"
+    lc_browsers=chromium
+    lc_prepare() {
+  test -f tests/admin/live-settings.spec.ts
+  test -f tests/foundation/browser_live_settings_test.go
+  grep -q '^func TestBrowserLiveSettingsUIRealChain' tests/foundation/browser_live_settings_test.go
+  node --test --experimental-strip-types tests/admin/live-settings-bff.test.ts tests/admin/live-settings-model.test.ts
+  mkdir -p output/playwright
+    }
+    lc_run() {
+  LC_BROWSER_LIVE_SETTINGS_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.2 go test -race -tags browser -count=1 -timeout=780s -run '^TestBrowserLiveSettingsUIRealChain$' -v ./tests/foundation
+  printf 'PASS: W3-U2 signed-session production Next/BFF clicks; MOCK business upstream, separate REAL_PG adapter gate required.\n'
     }
     ;;
   # APPEND MODES HERE
