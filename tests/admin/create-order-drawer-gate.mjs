@@ -317,6 +317,16 @@ try {
   record("unlinked warning/empty fields/zero","edit form","no customer guessing; quantity zero removes; valid catalog line re-added");cases++;
 
   current=`DU3-single-order-${locale}-${width}`;
+  const queued=locale==="en"&&width===1440;
+  let committed, originalLink="", regeneratePosts=0;
+  const observeRegenerate=request=>{if(request.method()==="POST"&&new URL(request.url()).pathname.endsWith("/orders/manual/regenerate-link")) regeneratePosts++;};
+  if(queued) {
+   // Fixture-only window control; acceptance itself remains real BuyerPanel/form clicks.
+   assert.equal((await fetch(`${api}/__test/drawer-queued-window`,{method:"POST"})).status,204);
+   await drawer.getByTestId("drawer-close").click();drawer=await openConversation(page,locale,fixture.Unlinked);
+   await addCatalog(drawer);await fillEmpty(drawer);await drawer.getByTestId("drawer-send-payment-link").check();
+   page.on("request",observeRegenerate);
+  }
   const before=await (await fetch(`${api}/__test/drawer-facts`)).json();
   const attempts=[];let armed=true;
   await page.route(`**${routePath}`,async route=>{
@@ -324,7 +334,9 @@ try {
    if(!armed && calibration==="new-key-on-retry" && locale==="en" && width===1440) headers["idempotency-key"]=crypto.randomUUID();
    const body=req.postData();attempts.push({key:headers["idempotency-key"],body});
    const real=await route.fetch({headers});
-   if(armed){armed=false;assert.equal(real.status(),201,"lost reply first commits through real Go");await real.dispose();await route.abort("failed");}
+   if(armed){armed=false;assert.equal(real.status(),201,"lost reply first commits through real Go");
+    if(queued){committed=await real.json();assert.equal(committed.send.state,"queued");assert(committed.send.operation_id);originalLink=committed.buyer_link;assert(typeof originalLink==="string");}
+    await real.dispose();await route.abort("failed");}
    else await route.fulfill({response:real});
   });
   await drawer.getByTestId("drawer-submit").click();
@@ -336,6 +348,26 @@ try {
   await expect(drawer.getByTestId("drawer-submit")).toBeEnabled();
   const replay=await submit(page,drawer);
   await expect(drawer.getByTestId("drawer-result")).toBeVisible();
+  if(queued) {
+   const value=await replay.json();assert.equal(value.buyer_link,null);assert.equal(value.link_state,"configured");
+   assert.equal(value.order_id,committed.order_id);assert.equal(value.send.state,"queued");assert.equal(value.send.operation_id,committed.send.operation_id);
+   await expect(drawer.getByTestId("drawer-send-result")).toContainText("queued");
+   const copy=drawer.getByTestId("drawer-copy-link"),copyBlocked=await copy.count()===0 || await copy.isDisabled();
+   // Retain the failure and continue the original matrix so PG14/29-case evidence remains comparable.
+   if(!copyBlocked){failed.push(current);ledger.push({case:current,control:"queued replay copy safety",action:"real submit retry then inspect control",actual:"FAIL copy enabled after queued replay with null buyer_link",status:"FAIL"});}
+   else record("queued replay copy safety","real submit retry then inspect control","queued result; copy absent/disabled; no regeneration");
+   await privateBoundary(page,originalLink);
+   const facts=await fetch(`${api}/__test/drawer-queued-facts`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({order_id:value.order_id,operation_id:value.send.operation_id,link:originalLink})});
+   assert.equal(facts.status,200);const dm=await facts.json();assert.deepEqual(dm,{operations:1,secrets:1,original_link:true,valid_links:1,regenerations:0});assert.equal(regeneratePosts,0);
+   results.push({case:current,queued_replay:true,copy_blocked:copyBlocked,regenerate_posts:regeneratePosts,...dm});
+   // Reload and click the persisted order, using a positive loaded table and detail sentinel.
+   await page.goto(`${origin}/${locale}/orders?store=${store}`);await page.reload();
+   await expect(page.getByTestId("orders-table")).toBeVisible();await expect(page.getByTestId(`order-row-${value.order_id}`)).toBeVisible();
+   await page.getByTestId(`order-expand-${value.order_id}`).click();await expect(page.getByTestId("order-detail")).toBeVisible();await expect(page.getByTestId("order-detail")).toHaveAttribute("aria-label",new RegExp(value.order_id));
+   record("queued order persistence","reload orders then click exact order","same persisted order row and visible detail");
+   await openConversation(page,locale,fixture.Unlinked);drawer=page.getByTestId("create-order-drawer");
+   page.off("request",observeRegenerate);originalLink="";
+  }
   await page.unroute(`**${routePath}`);
   const after=await (await fetch(`${api}/__test/drawer-facts`)).json();
   const factsReply=await fetch(`${api}/__test/drawer-request-facts`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({keys:attempts.map(a=>a.key)})});

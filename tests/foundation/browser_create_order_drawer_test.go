@@ -8,12 +8,19 @@ package foundation_test
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/jackc/pgx/v5"
+	"github.com/riverqueue/river"
+	"github.com/riverqueue/river/riverdriver/riverpgxv5"
+	"livecommerce/internal/merchanttools"
+	"livecommerce/internal/msgtemplates"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -72,13 +79,13 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	mustExec(t, e.p.f.owner, `INSERT INTO integration.bindings(tenant_id,store_id,id,principal_id,provider,external_asset_id) VALUES($1,$2,$3,$4,'facebook',$5)`, e.tenant(), e.store(), bindingID, e.p.f.principalA, pageID)
 	mustExec(t, e.p.f.owner, `INSERT INTO integration.meta_connections(tenant_id,store_id,page_id,page_name,fb_binding,scopes,status,connected_by,route_expires_at) VALUES($1,$2,$3,'LC-U3 MOCK Page',$4,ARRAY['pages_messaging'],'active',$5,clock_timestamp()+interval '1 day')`, e.tenant(), e.store(), pageID, bindingID, e.p.f.principalA)
 	mustExec(t, e.p.f.owner, `INSERT INTO integration.binding_capabilities(tenant_id,store_id,page_id,binding_id,provider,capability,state,reason,evidence,checked_at) VALUES($1,$2,$3,$4,'facebook','dm_session','ok','fixture_ok','MOCK',clock_timestamp())`, e.tenant(), e.store(), pageID, bindingID)
-	e.plan.closed = true // Synthetic closed-DM boundary only; all order/quote/hold writes use real Go/PG.
+	pageFixture := e2eMetaSetup(t, e.p.f) // Owned signed-ingress fixture; its payload key also opens the actual queued DM sender.
 	kr, err := inbox.LoadKeyring(func(n string) string {
 		switch n {
 		case "COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID":
 			return miKeyID
 		case "COMMERCE_META_PAYLOAD_KEYS_JSON":
-			return `{"keys":[{"id":"` + miKeyID + `","key_base64":"` + base64.StdEncoding.EncodeToString(randomBytes(32)) + `"}]}`
+			return `{"keys":[{"id":"` + miKeyID + `","key_base64":"` + base64.StdEncoding.EncodeToString(pageFixture.key) + `"}]}`
 		}
 		return ""
 	})
@@ -89,6 +96,17 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	sealKeys, openSend := mcnPageRing(t)
+	jobs, err := river.NewClient[pgx.Tx](riverpgxv5.New(e.p.f.runtime), &river.Config{Schema: "river"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc.EnableSend(sealKeys, jobs, msgtemplates.NewService())
+	e.fb, err = merchanttools.NewForBuyer(e.manual, svc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// No dispatcher starts: the real PG operation and sealed original link remain queued for inspection.
 	e.handler = httpapi.NewHandler(e.p.f.runtime, httpapi.Options{SessionStoreList: true, Studio: true, ClaimLabels: &e.h.labels, CVS: e.cvs, ManualOrders: e.manual, ForBuyer: e.fb, Inbox: svc, MetaHealth: &metaconnect.Health{Reader: metaconnect.TableReader{Fallback: metaconnect.SnapshotReader{}}}})
 	// Seed the customer's actual contact and most recent delivery via the ordinary real Place pipeline.
 	st, seed := e.post(e.token(), t04Key("drawer-history"), e.body(1, nil, "", false))
@@ -102,7 +120,7 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	// Reuse the signed Meta ingress/consumer/intake harness in this same trade store.
 	// Manual claims cannot be restricted: blocklist identity is Facebook/Instagram only (W3-05B).
 	e.grantCreator("integration:execute")
-	metaClaims := &mciEnv{t: t, h: e.h, page: e2eMetaSetup(t, e.p.f), pageAsset: pageID, pageBinding: bindingID, stopConsumer: mciNoop, consumerWorkers: 1}
+	metaClaims := &mciEnv{t: t, h: e.h, page: pageFixture, pageAsset: pageID, pageBinding: bindingID, stopConsumer: mciNoop, consumerWorkers: 1}
 	metaClaims.actor, err = meta.NewClaimsActorKey(randomBytes(32))
 	if err != nil {
 		t.Fatal(err)
@@ -180,6 +198,15 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 		mustExec(t, e.p.f.owner, `UPDATE social.conversations SET asset_id=$2 WHERE id=$1`, conv, pageID)
 		mustExec(t, e.p.f.owner, `UPDATE inbox.bundle_peers SET asset_id=$2 WHERE bundle_id=$1`, bundle, pageID)
 		unlinked := lcConversation(t, e.p.f, e.tenant(), e.store(), "page")
+		if len(fixtures) == 0 {
+			// Fixture preparation through signed Meta ingress, not a product UI substitute.
+			raw := []byte(fmt.Sprintf(`{"object":"page","entry":[{"id":%q,"time":123,"messaging":[{"sender":{"id":%q},"recipient":{"id":%q},"timestamp":%d,"message":{"mid":%q,"text":"SYNTHETIC request invoice"}}]}]}`, pageID, mciDigits(15), pageID, time.Now().UnixMilli(), "m."+randomUUID()))
+			ev := mcPost(t, metaClaims.page, pageID, raw)
+			mcAwait(t, metaClaims.page, ev)
+			if err := e.p.f.owner.QueryRow(ctx, `SELECT conversation_id::text FROM social.messages WHERE event_id=$1`, ev.id).Scan(&unlinked); err != nil {
+				t.Fatal(err)
+			}
+		}
 		mustExec(t, e.p.f.owner, `UPDATE inbox.conversation_state SET last_inbound_at=clock_timestamp()-interval '25 hours' WHERE conversation_id IN ($1,$2)`, conv, unlinked)
 		// Calls real A14 CAS; no direct customer_id update and no owner guessing.
 		b, _ := json.Marshal(map[string]any{"customer_id": customer, "expected_version": 0})
@@ -250,6 +277,61 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle("/v1/identity/", private)
 	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "POST" && r.URL.Path == "/__test/drawer-queued-window" {
+			// Only this owned synthetic conversation is opened, after the existing closed-window UI assertions.
+			_, err := e.p.f.owner.Exec(r.Context(), `UPDATE inbox.conversation_state SET last_inbound_at=clock_timestamp() WHERE conversation_id=$1`, fixtures[0].Unlinked)
+			if err != nil {
+				http.Error(w, "fixture control failed", 500)
+				return
+			}
+			w.WriteHeader(204)
+			return
+		}
+		if r.Method == "POST" && r.URL.Path == "/__test/drawer-queued-facts" {
+			var input struct {
+				OrderID     string `json:"order_id"`
+				OperationID string `json:"operation_id"`
+				Link        string `json:"link"`
+			}
+			dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 2048))
+			dec.DisallowUnknownFields()
+			if dec.Decode(&input) != nil {
+				http.Error(w, "invalid observation", 400)
+				return
+			}
+			u, err := url.Parse(input.Link)
+			if err != nil {
+				http.Error(w, "invalid observation", 400)
+				return
+			}
+			fragment, _ := url.ParseQuery(u.Fragment)
+			digest := sha256.Sum256([]byte(fragment.Get("t")))
+			var operations, links, regenerations int
+			var enc, sealed []byte
+			err = e.p.f.owner.QueryRow(r.Context(), `SELECT count(*) FROM integration.operations WHERE tenant_id=$1 AND store_id=$2 AND action='meta.dm_send' AND request->>'order_id'=$3`, e.tenant(), e.store(), input.OrderID).Scan(&operations)
+			if err == nil {
+				err = e.p.f.owner.QueryRow(r.Context(), `SELECT enc,sealed FROM inbox.send_secrets WHERE operation_id=$1`, input.OperationID).Scan(&enc, &sealed)
+			}
+			var plain []byte
+			if err == nil {
+				plain, err = openSend.OpenSend(e.tenant(), e.store(), input.OperationID, enc, sealed)
+			}
+			original := err == nil && strings.Contains(string(plain), input.Link)
+			clear(plain)
+			if err == nil {
+				err = e.p.f.owner.QueryRow(r.Context(), `SELECT count(*) FROM checkout.order_links WHERE order_id=$1 AND token_hash=$2 AND redeemed_at IS NULL AND expires_at>clock_timestamp()`, input.OrderID, digest[:]).Scan(&links)
+			}
+			if err == nil {
+				err = e.p.f.owner.QueryRow(r.Context(), `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='order.manual_link_regenerated'`, e.tenant(), e.store()).Scan(&regenerations)
+			}
+			if err != nil {
+				http.Error(w, "observation failed", 500)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{"operations": operations, "secrets": 1, "original_link": original, "valid_links": links, "regenerations": regenerations})
+			return
+		}
 		// Owned test-only switch after all owner contexts close; product handlers and grants stay real.
 		if r.Method == "POST" && r.URL.Path == "/__test/drawer-principal" {
 			var input struct {
