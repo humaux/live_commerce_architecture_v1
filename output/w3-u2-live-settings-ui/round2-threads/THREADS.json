@@ -1,0 +1,147 @@
+{
+  "source_sha": "d05ab56e1ce8124786a74d4bb80696c32967fd66",
+  "prior_static_audit": "95fbade6-f2a8-4168-8dab-b224581882ae",
+  "new_focused_review": "a44b8769-00d8-40c0-8300-439a0150d8b7",
+  "rows": [
+    {
+      "thread_id": "4231878479",
+      "status": "FIXED",
+      "sha": "3e5a9c4adb542c3de2c6dbf877488fd67858e50c",
+      "supporting_shas": [],
+      "reply": "Fixed in 3e5a9c4a: successful reminder receipts stay visible and report GETs require inbox:read; the regression asserts one POST and zero unauthorized GETs.",
+      "ancestry_checks": [
+        {
+          "sha": "3e5a9c4adb542c3de2c6dbf877488fd67858e50c",
+          "ancestor_exit_code": 0
+        }
+      ]
+    },
+    {
+      "thread_id": "4231878495",
+      "status": "FIXED",
+      "sha": "3e5a9c4adb542c3de2c6dbf877488fd67858e50c",
+      "supporting_shas": [
+        "c9608348149f83d5d3433bf21b741ccc4f9dff13"
+      ],
+      "reply": "Fixed in 3e5a9c4a and c9608348: same-address navigation preserves the privacy lifecycle, including an implicit default store; real scene/store/locale departures still clear synchronously.",
+      "ancestry_checks": [
+        {
+          "sha": "3e5a9c4adb542c3de2c6dbf877488fd67858e50c",
+          "ancestor_exit_code": 0
+        },
+        {
+          "sha": "c9608348149f83d5d3433bf21b741ccc4f9dff13",
+          "ancestor_exit_code": 0
+        }
+      ]
+    },
+    {
+      "thread_id": "4231878505",
+      "status": "FIXED",
+      "sha": "3e5a9c4adb542c3de2c6dbf877488fd67858e50c",
+      "supporting_shas": [],
+      "reply": "Fixed in 3e5a9c4a: the picker consumes next_cursor and merges paged choices, while deep links load the selected scene's authoritative detail.",
+      "ancestry_checks": [
+        {
+          "sha": "3e5a9c4adb542c3de2c6dbf877488fd67858e50c",
+          "ancestor_exit_code": 0
+        }
+      ]
+    },
+    {
+      "thread_id": "4232189503",
+      "status": "FIXED",
+      "sha": "3e5a9c4adb542c3de2c6dbf877488fd67858e50c",
+      "supporting_shas": [],
+      "reply": "Covered by 3e5a9c4a: page-two scenes are selectable and deep links display the selected scene's authoritative title.",
+      "ancestry_checks": [
+        {
+          "sha": "3e5a9c4adb542c3de2c6dbf877488fd67858e50c",
+          "ancestor_exit_code": 0
+        }
+      ]
+    },
+    {
+      "thread_id": "4231878513",
+      "status": "FIXED",
+      "sha": "afe0317aa834b4cffc3a09e5eaa6dec791c238d1",
+      "supporting_shas": [],
+      "reply": "Fixed in afe0317a: GET/POST preserve the 120-Unicode-rune name contract and legal lists beyond 500 rows under the existing 1 MiB bound; 121 runes remain rejected.",
+      "ancestry_checks": [
+        {
+          "sha": "afe0317aa834b4cffc3a09e5eaa6dec791c238d1",
+          "ancestor_exit_code": 0
+        }
+      ]
+    },
+    {
+      "thread_id": "4231878523",
+      "status": "FIXED",
+      "sha": "ac43103c28722fd98388fac95e67a09075c2dff3",
+      "supporting_shas": [],
+      "reply": "Fixed in ac43103c: the sold-out sent badge requires confirmed delivery; rendered-component and browser matrices cover pending, failed, blocked and UNKNOWN states without a sent badge.",
+      "ancestry_checks": [
+        {
+          "sha": "ac43103c28722fd98388fac95e67a09075c2dff3",
+          "ancestor_exit_code": 0
+        }
+      ]
+    },
+    {
+      "thread_id": "4232031441",
+      "status": "FIXED",
+      "sha": "3e5a9c4adb542c3de2c6dbf877488fd67858e50c",
+      "supporting_shas": [
+        "c9608348149f83d5d3433bf21b741ccc4f9dff13",
+        "dea6b6aa52b8bdb66ccf9f1c3231f7a961c67e42",
+        "5b1da81ad6284e980a88b2c2ff68cac1cf0180b5"
+      ],
+      "reply": "Fixed in 3e5a9c4a and hardened by c9608348/dea6b6aa/5b1da81a: proven unmounted reminder routes stay panel-local; actual permission or scope loss still clears private data.",
+      "ancestry_checks": [
+        {
+          "sha": "3e5a9c4adb542c3de2c6dbf877488fd67858e50c",
+          "ancestor_exit_code": 0
+        },
+        {
+          "sha": "c9608348149f83d5d3433bf21b741ccc4f9dff13",
+          "ancestor_exit_code": 0
+        },
+        {
+          "sha": "dea6b6aa52b8bdb66ccf9f1c3231f7a961c67e42",
+          "ancestor_exit_code": 0
+        },
+        {
+          "sha": "5b1da81ad6284e980a88b2c2ff68cac1cf0180b5",
+          "ancestor_exit_code": 0
+        }
+      ]
+    },
+    {
+      "thread_id": "4232031446",
+      "status": "FIXED",
+      "sha": "3e5a9c4adb542c3de2c6dbf877488fd67858e50c",
+      "supporting_shas": [],
+      "reply": "Fixed in 3e5a9c4a: the empty placeholder is disabled after a scene is selected, including first-page and deep-linked scenes.",
+      "ancestry_checks": [
+        {
+          "sha": "3e5a9c4adb542c3de2c6dbf877488fd67858e50c",
+          "ancestor_exit_code": 0
+        }
+      ]
+    },
+    {
+      "thread_id": "4246128710",
+      "status": "FIXED",
+      "sha": "d05ab56e1ce8124786a74d4bb80696c32967fd66",
+      "supporting_shas": [],
+      "reply": "Fixed in d05ab56e: Studio not-found now uses the shared scoped-404 fence/clear path; a late private read cannot repaint and an old callback cannot POST, while a 503 retains authorized state.",
+      "ancestry_checks": [
+        {
+          "sha": "d05ab56e1ce8124786a74d4bb80696c32967fd66",
+          "ancestor_exit_code": 0
+        }
+      ]
+    }
+  ],
+  "followups": []
+}
