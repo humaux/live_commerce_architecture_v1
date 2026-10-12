@@ -212,7 +212,7 @@ export function BuyerPanel({ store, conversationId, bundleId, onUnauthorized, on
     <h2>{c.buyer}</h2>
     {data && <button type="button" data-testid="buyer-create-order" disabled={!canCreate} onClick={() => setOrderOpen(true)}>{createOrderCopy[locale as Locale].title}</button>}
     {data && !canCreate && <p>{createOrderCopy[locale as Locale].permission}</p>}
-    {orderOpen && data && <CreateOrderDrawer key={scope} locale={locale as Locale} store={store} claimSessions={data.claims} conversationId={conversationId} bundleId={bundleId} onUnauthorized={privacy.expire} onClose={() => setOrderOpen(false)} />}
+    {orderOpen && data && <CreateOrderDrawer key={scope} locale={locale as Locale} store={store} claimSessions={data.claims} conversationId={conversationId} bundleId={bundleId} onUnauthorized={() => { privacy.expire(); callbacks.current.onUnauthorized?.(); }} onClose={() => setOrderOpen(false)} />}
     {!privacy.visible && <p className={styles.notice}>{privacy.blocked.current ? c.signedOut : c.hidden}</p>}
     {busy && !data && <p>{c.loading}</p>}
     {error && <p role="alert" className={`${styles.notice} ${styles.error}`}>{inboxError(locale, error)}</p>}

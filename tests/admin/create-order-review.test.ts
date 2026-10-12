@@ -130,3 +130,21 @@ test("PR32 granted catalog permission positively reaches real A15 and options se
   assert.ok(nodes(h.output).some(n => n.props["data-testid"] === "drawer-form"));
   assert.deepEqual(orderReads(calls).sort(), [`/api/stores/${store.id}/tools/inbox/order-prefill?bundle_id=${bundle}`, `/api/stores/${store.id}/tools/orders/manual/options`].sort());
 });
+
+// PR #32 review P1 (thread 4232390268): a drawer-only 401/403 must revoke the parent Inbox/Console too, not just
+// this BuyerPanel, or the parent keeps showing buyer names, messages and drafts after authority loss.
+test("PR32 drawer 401 propagates to the parent onUnauthorized", async t => {
+  const env = browserEnvironment(t), calls = network();
+  const fetch = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    if (!String(input).includes("/tools/inbox/order-prefill?")) return fetch(input, init);
+    calls.push(String(input)); return response({ code: "unauthorized" }, 401);
+  };
+  let parent = 0;
+  const h = env.mount(() => BuyerPanel({ store: allowedStore, conversationId: conversation.conversation_id, onUnauthorized() { parent++; } } as any));
+  await h.settle(); assert.ok(textOf(h.output).includes("SYNTHETIC_REVIEW_BUYER"), "A13 positively loaded");
+  node(h, n => n.props["data-testid"] === "buyer-create-order").props.onClick(); await h.settle();
+  assert.ok(calls.some(path => path.includes("/tools/inbox/order-prefill?")), "drawer issued A15");
+  assert.equal(parent, 1, "parent console/inbox scope is revoked");
+  assert.equal(textOf(h.output).includes("SYNTHETIC_REVIEW_BUYER"), false, "buyer facts cleared");
+});
