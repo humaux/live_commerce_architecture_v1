@@ -245,7 +245,12 @@ function assertGateParity(file, before, currentSource) {
   };
   const now = current.statements.find((n) => ts.isFunctionDeclaration(n) && n.name?.text === start.name.text);
   const assertions = (n, source) => ts.isCallExpression(n) && /^(assert|expect)(?:\.|\(|$)/.test(n.expression.getText(source));
-  assert.deepEqual(collect(current, current, assertions), collect(old, old, assertions), `${file}: original gate assertions changed`);
+  // Every baseline assertion must survive, in order (no weakening or removal); added assertions are allowed, since a
+  // later fix may legitimately strengthen a gate (e.g. waiting for the regenerated link to render).
+  const kept = collect(current, current, assertions), original = collect(old, old, assertions);
+  let at = 0;
+  for (const call of kept) if (at < original.length && call === original[at]) at++;
+  assert.equal(at, original.length, `${file}: original gate assertions changed (missing: ${original[at]})`);
   const envAssignment = (n, source) => ts.isExpressionStatement(n) && /^(?:env|childEnv)\./.test(text(n, source));
   assert.deepEqual(collect(current, now, envAssignment), collect(old, start, envAssignment), `${file}: environment assignment statements changed`);
   const readiness = (n, source) => ts.isIfStatement(n) && /\bstatus\b/.test(n.expression.getText(source));
