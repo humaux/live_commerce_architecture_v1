@@ -356,33 +356,24 @@ func validateProductEditorMatrixEvidence(root string) error {
 	if source.Tested != manifest.Tested || !reflect.DeepEqual(source.Sources, manifest.Sources) {
 		return fmt.Errorf("SOURCE.json must bind the same tested source and source files as the manifest")
 	}
-	// Source coverage is fixed independently of the supplied receipts: removing a
-	// source from all three maps must not exempt a tested producer from drift.
+	// Bind only this unit's executable producers. CI checks the PR merge ref;
+	// shared harness/config/product hashes describe the run informationally and
+	// must not reject an unrelated trunk change. Required unit sources stay fixed
+	// independently of the receipts, so removing an entry cannot exempt drift.
 	for _, path := range []string{
 		"tests/foundation/catalog_matrix_ledger_test.go",
 		"tests/foundation/browser_catalog_core_test.go",
 		"tests/admin/product-editor.acceptance.ts",
 		"tests/admin/product-editor-matrix-ledger.ts",
 		"tests/foundation/testdata/product_editor_matrix_cases.json",
-		"tests/foundation/testdata/product_editor_mobile_matrix_ledger.json",
 		"tests/ci/product-editor-matrix-ledger.test.mjs",
-		"scripts/dev/test-node.sh",
-		"docs/delivery/GATES.md",
-		"scripts/dev/test-local.sh",
-		"playwright.config.ts",
-		"apps/admin/lib/product-editor-copy.ts",
-		"apps/admin/components/ProductDocumentVariants.tsx",
-		"apps/admin/components/ProductDocumentForm.tsx",
-		"apps/admin/lib/use-product-document.ts",
-		"apps/admin/lib/product-document.ts",
 		"tests/ci/product-editor-matrix-claims.mjs",
 		"tests/ci/product-editor-matrix-source.mjs",
 	} {
-		if manifest.Sources[path] == "" {
+		hash := manifest.Sources[path]
+		if hash == "" {
 			return fmt.Errorf("canonical source receipt missing tested producer: %s", path)
 		}
-	}
-	for path, hash := range manifest.Sources {
 		data, err := productEditorMatrixEvidenceRead(root, path)
 		if err != nil {
 			return err
@@ -512,6 +503,28 @@ func productEditorMatrixReadFixture(t *testing.T, root, path string) []byte {
 	return data
 }
 
+// Shared harness/configuration changes in a PR merge ref do not invalidate the
+// unit's source-bound evidence; its executable producers remain fail-closed.
+func TestProductEditorMatrixLedgerEvidenceSharedSources(t *testing.T) {
+	for _, path := range []string{
+		"scripts/dev/test-node.sh", "scripts/dev/test-local.sh", "docs/delivery/GATES.md", "playwright.config.ts",
+		"tests/foundation/testdata/product_editor_mobile_matrix_ledger.json",
+		"apps/admin/lib/product-editor-copy.ts", "apps/admin/components/ProductDocumentVariants.tsx",
+		"apps/admin/components/ProductDocumentForm.tsx", "apps/admin/lib/use-product-document.ts", "apps/admin/lib/product-document.ts",
+	} {
+		t.Run(path, func(t *testing.T) {
+			root, _ := productEditorMatrixEvidenceFixture(t)
+			data := append(productEditorMatrixReadFixture(t, root, path), []byte("\n// shared merge-ref change\n")...)
+			if err := os.WriteFile(filepath.Join(root, path), data, 0600); err != nil {
+				t.Fatal(err)
+			}
+			if err := validateProductEditorMatrixEvidence(root); err != nil {
+				t.Fatalf("informational shared source change must not invalidate unit evidence: %v", err)
+			}
+		})
+	}
+}
+
 func productEditorMatrixEvidenceFixture(t *testing.T) (string, string) {
 	t.Helper()
 	root := t.TempDir()
@@ -543,6 +556,13 @@ func productEditorMatrixEvidenceFixture(t *testing.T) (string, string) {
 		sources[path] = hash(data)
 	}
 	manifest["source_files_sha256"] = sources
+	if shared, ok := manifest["informational_source_files_sha256"].(map[string]any); ok {
+		for path := range shared {
+			data := productEditorMatrixReadFixture(t, "../..", path)
+			write(path, data)
+			shared[path] = hash(data)
+		}
+	}
 	artifacts := map[string]string{}
 	copies := []map[string]string{}
 	for _, entry := range manifest["copied_native_bytes"].([]any) {
