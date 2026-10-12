@@ -2,14 +2,21 @@
 // Depends on: Playwright CDP, child_process and per-run filesystem evidence; requires an X display on Linux.
 // Used by: orders-ui.spec.ts and studio-ui.spec.ts; keeps startup diagnostics outside the temporary profile.
 
-import { chromium, expect, type Browser } from "@playwright/test";
+import { chromium, expect, test, type Browser } from "@playwright/test";
 import { mkdtemp, open, readFile, rm } from "node:fs/promises";
 import { spawn } from "node:child_process";
 
 // The default context and noDefaults are essential: Playwright's normal CDP
 // attachment captures focus and cannot observe a real tab becoming hidden.
 /** Start one native context, retain child diagnostics and remove only its temporary profile on close. */
+// A loaded CI runner can take >10 s to cold-start Chromium and publish DevToolsActivePort while the process is running
+// (seen twice: #31 live-console, #28 live-settings). nativePage extends the caller's timeout by this budget.
+const CDP_DEADLINE_MS = 30_000;
+
 export async function nativePage(evidence: string, profilePrefix: string) {
+  // The launch may spend up to CDP_DEADLINE_MS waiting for a cold Chromium; grant the calling test that budget on top
+  // of its own timeout so a slow start can never consume a caller's whole test budget (e.g. MOU03 at the 30 s default).
+  test.info().setTimeout(test.info().timeout + CDP_DEADLINE_MS);
   const profile = await mkdtemp(`${evidence}/${profilePrefix}`);
   let diagnostics: Awaited<ReturnType<typeof open>> | undefined;
   let child: ReturnType<typeof spawn>;
@@ -52,7 +59,7 @@ export async function nativePage(evidence: string, profilePrefix: string) {
   try {
     await diagnostics.close();
     let port = 0;
-    const deadline = performance.now() + 10_000;
+    const deadline = performance.now() + CDP_DEADLINE_MS;
     while (performance.now() < deadline && !exited()) {
       if (launchError) throw launchError;
       try { port = Number((await readFile(`${profile}/DevToolsActivePort`, "utf8")).split("\n")[0]); } catch { /* Chromium has not opened CDP yet. */ }
