@@ -1,0 +1,11 @@
+{
+  "argv": [
+    "node",
+    "--test",
+    "--test-name-pattern=every actual mobile",
+    "tests/ci/product-editor-matrix-ledger.test.mjs"
+  ],
+  "exit_code": 1,
+  "log": "output/matrix-ledger-enforce/round2-postconditions/native-postcondition-red.log",
+  "log_sha256": "3dd9c7f5cd8cfd19c02e2eddd481e8056d381d1b2c1eaf87b6c0fa1f2f482782"
+}

@@ -1,0 +1,13 @@
+{
+  "argv": [
+    "node",
+    "--test",
+    "--test-name-pattern=every actual mobile",
+    "tests/ci/product-editor-matrix-ledger.test.mjs"
+  ],
+  "exit_code": 1,
+  "log": "output/matrix-ledger-enforce/round2-postconditions/receiver-slice-diagnostic.log",
+  "log_sha256": "afc5fa61cc48a105aa9996e367f2120cc2bb65bf7ede2f13f45a81c109f620d6",
+  "original_log": "output/matrix-ledger-enforce/round2-postconditions/native-postcondition-red.log",
+  "classification": "Historical implementation diagnostic, not acceptance"
+}

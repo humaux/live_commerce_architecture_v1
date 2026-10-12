@@ -454,7 +454,7 @@
   },
   {
     "observed": {
-      "value": "pecc08ac6473cd7d mobile matrix zh-TW"
+      "value": "peccca8d637bccbf mobile matrix zh-TW"
     },
     "page": "mobile matrix new",
     "row": "",
@@ -625,7 +625,7 @@
   {
     "observed": {
       "visibleLabel": "貨號",
-      "value": "M1566585829-0-0"
+      "value": "M1795815722-0-0"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix new",
@@ -640,7 +640,7 @@
   {
     "observed": {
       "visibleLabel": "直播關鍵字",
-      "value": "M15665858290C0"
+      "value": "M17958157220C0"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix new",
@@ -741,7 +741,7 @@
   {
     "observed": {
       "visibleLabel": "貨號",
-      "value": "M1566585829-0-1"
+      "value": "M1795815722-0-1"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix new",
@@ -756,7 +756,7 @@
   {
     "observed": {
       "visibleLabel": "直播關鍵字",
-      "value": "M15665858290C1"
+      "value": "M17958157220C1"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix new",
@@ -785,7 +785,7 @@
   },
   {
     "observed": {
-      "editor": "http://127.0.0.1:53484/zh-TW/products/71f4ccbb-0802-4727-9013-e4189d12a117?store=ec193c47-a8e8-41f3-a343-4fad756d2bb9",
+      "editor": "http://127.0.0.1:62083/zh-TW/products/78c5a39b-c781-46d2-8172-a5079cf11203?store=27835779-cf4d-490e-b899-7b9fd2f33172",
       "visibleRows": 2
     },
     "page": "mobile matrix new",
@@ -839,8 +839,8 @@
       "compare": "100",
       "quantity": "5",
       "untracked": false,
-      "code": "M1566585829-0-0",
-      "keyword": "M15665858290C0"
+      "code": "M1795815722-0-0",
+      "keyword": "M17958157220C0"
     },
     "tier": "BROWSER+REAL_PG",
     "page": "mobile matrix new",
@@ -859,8 +859,8 @@
       "compare": "101",
       "quantity": "6",
       "untracked": true,
-      "code": "M1566585829-0-1",
-      "keyword": "M15665858290C1"
+      "code": "M1795815722-0-1",
+      "keyword": "M17958157220C1"
     },
     "tier": "BROWSER+REAL_PG",
     "page": "mobile matrix new",
@@ -959,7 +959,7 @@
   {
     "observed": {
       "visibleLabel": "貨號",
-      "value": "M1566585829-0-0"
+      "value": "M1795815722-0-0"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix edit",
@@ -974,7 +974,7 @@
   {
     "observed": {
       "visibleLabel": "直播關鍵字",
-      "value": "M15665858290E0"
+      "value": "M17958157220E0"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix edit",
@@ -1075,7 +1075,7 @@
   {
     "observed": {
       "visibleLabel": "貨號",
-      "value": "M1566585829-0-1"
+      "value": "M1795815722-0-1"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix edit",
@@ -1090,7 +1090,7 @@
   {
     "observed": {
       "visibleLabel": "直播關鍵字",
-      "value": "M15665858290E1"
+      "value": "M17958157220E1"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix edit",
@@ -1159,8 +1159,8 @@
       "compare": "120",
       "quantity": "7",
       "untracked": true,
-      "code": "M1566585829-0-0",
-      "keyword": "M15665858290E0"
+      "code": "M1795815722-0-0",
+      "keyword": "M17958157220E0"
     },
     "tier": "BROWSER+REAL_PG",
     "page": "mobile matrix edit",
@@ -1179,8 +1179,8 @@
       "compare": "121",
       "quantity": "8",
       "untracked": false,
-      "code": "M1566585829-0-1",
-      "keyword": "M15665858290E1"
+      "code": "M1795815722-0-1",
+      "keyword": "M17958157220E1"
     },
     "tier": "BROWSER+REAL_PG",
     "page": "mobile matrix edit",
@@ -1220,11 +1220,11 @@
   },
   {
     "observed": {
-      "archivedSKU": "78b5e54e-1b4f-48df-8d2c-514ef1de5a2f",
+      "archivedSKU": "ea9c4441-f874-4083-8859-e8730445929a",
       "white": "absent from active-only matrix by SKU ID and name",
       "visibleRows": 1,
       "black": {
-        "id": "59c6fb31-8434-4a0c-895d-5661cfc8bbd4",
+        "id": "914040ab-9f95-46e2-afee-8a20ddfa3c41",
         "price": "81",
         "compare": "121",
         "trackedQuantity": "8",
@@ -1244,7 +1244,7 @@
   },
   {
     "observed": {
-      "value": "pecc08ac6473cd7d mobile axis remove zh-TW"
+      "value": "peccca8d637bccbf mobile axis remove zh-TW"
     },
     "page": "mobile axis remove",
     "row": "",
@@ -1382,7 +1382,7 @@
   },
   {
     "observed": {
-      "value": "M1566585829-A0-0"
+      "value": "M1795815722-A0-0"
     },
     "page": "mobile axis remove",
     "row": "White / S",
@@ -1434,7 +1434,7 @@
   },
   {
     "observed": {
-      "value": "M1566585829-A0-1"
+      "value": "M1795815722-A0-1"
     },
     "page": "mobile axis remove",
     "row": "Black / S",
@@ -1447,7 +1447,7 @@
   },
   {
     "observed": {
-      "editor": "http://127.0.0.1:53484/zh-TW/products/db26a847-10e7-4934-8933-1f67743f1bd2?store=ec193c47-a8e8-41f3-a343-4fad756d2bb9",
+      "editor": "http://127.0.0.1:62083/zh-TW/products/ea0191d4-560f-4221-8312-b4f5f8665c44?store=27835779-cf4d-490e-b899-7b9fd2f33172",
       "visibleRows": 2
     },
     "page": "mobile axis remove",
@@ -1462,8 +1462,8 @@
   {
     "observed": {
       "oldAxisIDs": [
-        "94fdc289-312f-4f98-b793-8ccd45ac3c72",
-        "de7391b0-997f-4dfd-8dc6-8684336a94ba"
+        "b9b858a3-e869-4065-8466-960e5157eaad",
+        "1a04e548-7389-43d1-9499-9a03d6252afb"
       ],
       "visibleRows": 2,
       "oneDocumentWrite": true
@@ -1589,11 +1589,11 @@
         "S"
       ],
       "archivedSKUs": [
-        "94fdc289-312f-4f98-b793-8ccd45ac3c72",
-        "de7391b0-997f-4dfd-8dc6-8684336a94ba"
+        "b9b858a3-e869-4065-8466-960e5157eaad",
+        "1a04e548-7389-43d1-9499-9a03d6252afb"
       ],
-      "activeSKU": "2d466fca-6743-459a-8563-465f9a213ab7",
-      "generatedCode": "pecc08ac6473cd7d-mobile-axis-remove-zh-tw",
+      "activeSKU": "0e472d79-dee9-40e3-82af-f2dcb46698a9",
+      "generatedCode": "peccca8d637bccbf-mobile-axis-remove-zh-tw",
       "row": "S",
       "price": "95",
       "compare": "145",
@@ -1613,7 +1613,7 @@
   },
   {
     "observed": {
-      "value": "pecc08ac6473cd7d mobile matrix zh-CN"
+      "value": "peccca8d637bccbf mobile matrix zh-CN"
     },
     "page": "mobile matrix new",
     "row": "",
@@ -1784,7 +1784,7 @@
   {
     "observed": {
       "visibleLabel": "货号",
-      "value": "M1566585829-1-0"
+      "value": "M1795815722-1-0"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix new",
@@ -1799,7 +1799,7 @@
   {
     "observed": {
       "visibleLabel": "直播关键字",
-      "value": "M15665858291C0"
+      "value": "M17958157221C0"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix new",
@@ -1900,7 +1900,7 @@
   {
     "observed": {
       "visibleLabel": "货号",
-      "value": "M1566585829-1-1"
+      "value": "M1795815722-1-1"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix new",
@@ -1915,7 +1915,7 @@
   {
     "observed": {
       "visibleLabel": "直播关键字",
-      "value": "M15665858291C1"
+      "value": "M17958157221C1"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix new",
@@ -1944,7 +1944,7 @@
   },
   {
     "observed": {
-      "editor": "http://127.0.0.1:53484/zh-CN/products/c8e4992f-b7d2-4ebc-9f76-7828d390a983?store=ec193c47-a8e8-41f3-a343-4fad756d2bb9",
+      "editor": "http://127.0.0.1:62083/zh-CN/products/f4c29826-abbe-4c62-a3f3-b1d5329e26d6?store=27835779-cf4d-490e-b899-7b9fd2f33172",
       "visibleRows": 2
     },
     "page": "mobile matrix new",
@@ -1998,8 +1998,8 @@
       "compare": "100",
       "quantity": "5",
       "untracked": false,
-      "code": "M1566585829-1-0",
-      "keyword": "M15665858291C0"
+      "code": "M1795815722-1-0",
+      "keyword": "M17958157221C0"
     },
     "tier": "BROWSER+REAL_PG",
     "page": "mobile matrix new",
@@ -2018,8 +2018,8 @@
       "compare": "101",
       "quantity": "6",
       "untracked": true,
-      "code": "M1566585829-1-1",
-      "keyword": "M15665858291C1"
+      "code": "M1795815722-1-1",
+      "keyword": "M17958157221C1"
     },
     "tier": "BROWSER+REAL_PG",
     "page": "mobile matrix new",
@@ -2118,7 +2118,7 @@
   {
     "observed": {
       "visibleLabel": "货号",
-      "value": "M1566585829-1-0"
+      "value": "M1795815722-1-0"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix edit",
@@ -2133,7 +2133,7 @@
   {
     "observed": {
       "visibleLabel": "直播关键字",
-      "value": "M15665858291E0"
+      "value": "M17958157221E0"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix edit",
@@ -2234,7 +2234,7 @@
   {
     "observed": {
       "visibleLabel": "货号",
-      "value": "M1566585829-1-1"
+      "value": "M1795815722-1-1"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix edit",
@@ -2249,7 +2249,7 @@
   {
     "observed": {
       "visibleLabel": "直播关键字",
-      "value": "M15665858291E1"
+      "value": "M17958157221E1"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix edit",
@@ -2318,8 +2318,8 @@
       "compare": "120",
       "quantity": "7",
       "untracked": true,
-      "code": "M1566585829-1-0",
-      "keyword": "M15665858291E0"
+      "code": "M1795815722-1-0",
+      "keyword": "M17958157221E0"
     },
     "tier": "BROWSER+REAL_PG",
     "page": "mobile matrix edit",
@@ -2338,8 +2338,8 @@
       "compare": "121",
       "quantity": "8",
       "untracked": false,
-      "code": "M1566585829-1-1",
-      "keyword": "M15665858291E1"
+      "code": "M1795815722-1-1",
+      "keyword": "M17958157221E1"
     },
     "tier": "BROWSER+REAL_PG",
     "page": "mobile matrix edit",
@@ -2379,11 +2379,11 @@
   },
   {
     "observed": {
-      "archivedSKU": "c0e2a0ea-a094-434e-a9ba-073eea4f00d5",
+      "archivedSKU": "16b12ed2-4091-404f-8bc8-edd72a66b44d",
       "white": "absent from active-only matrix by SKU ID and name",
       "visibleRows": 1,
       "black": {
-        "id": "73030322-5d28-4892-bf66-86ccb0223ce1",
+        "id": "f7664951-bb64-42c2-b4a7-6ee684d06c64",
         "price": "81",
         "compare": "121",
         "trackedQuantity": "8",
@@ -2403,7 +2403,7 @@
   },
   {
     "observed": {
-      "value": "pecc08ac6473cd7d mobile axis remove zh-CN"
+      "value": "peccca8d637bccbf mobile axis remove zh-CN"
     },
     "page": "mobile axis remove",
     "row": "",
@@ -2541,7 +2541,7 @@
   },
   {
     "observed": {
-      "value": "M1566585829-A1-0"
+      "value": "M1795815722-A1-0"
     },
     "page": "mobile axis remove",
     "row": "White / S",
@@ -2593,7 +2593,7 @@
   },
   {
     "observed": {
-      "value": "M1566585829-A1-1"
+      "value": "M1795815722-A1-1"
     },
     "page": "mobile axis remove",
     "row": "Black / S",
@@ -2606,7 +2606,7 @@
   },
   {
     "observed": {
-      "editor": "http://127.0.0.1:53484/zh-CN/products/1ad08cbc-25f6-4e1f-92be-fe552f17dd23?store=ec193c47-a8e8-41f3-a343-4fad756d2bb9",
+      "editor": "http://127.0.0.1:62083/zh-CN/products/76c117ca-4a49-4cbf-8e4f-feff0ddf253b?store=27835779-cf4d-490e-b899-7b9fd2f33172",
       "visibleRows": 2
     },
     "page": "mobile axis remove",
@@ -2621,8 +2621,8 @@
   {
     "observed": {
       "oldAxisIDs": [
-        "a515f48e-085d-4b9f-a758-c40760fd5b03",
-        "dc8db597-d764-4282-b175-6ae8e6c0dee5"
+        "8b538ad1-9b9f-4625-98d8-bdacc071c31c",
+        "2b590159-9718-443b-b401-67b2386369dc"
       ],
       "visibleRows": 2,
       "oneDocumentWrite": true
@@ -2748,11 +2748,11 @@
         "S"
       ],
       "archivedSKUs": [
-        "a515f48e-085d-4b9f-a758-c40760fd5b03",
-        "dc8db597-d764-4282-b175-6ae8e6c0dee5"
+        "8b538ad1-9b9f-4625-98d8-bdacc071c31c",
+        "2b590159-9718-443b-b401-67b2386369dc"
       ],
-      "activeSKU": "00ef3e18-4a3d-4a41-b530-c625478f70ca",
-      "generatedCode": "pecc08ac6473cd7d-mobile-axis-remove-zh-cn",
+      "activeSKU": "f4b7956a-7eb3-4d3f-8c8f-68ccf951ad77",
+      "generatedCode": "peccca8d637bccbf-mobile-axis-remove-zh-cn",
       "row": "S",
       "price": "95",
       "compare": "145",
@@ -2772,7 +2772,7 @@
   },
   {
     "observed": {
-      "value": "pecc08ac6473cd7d mobile matrix en"
+      "value": "peccca8d637bccbf mobile matrix en"
     },
     "page": "mobile matrix new",
     "row": "",
@@ -2943,7 +2943,7 @@
   {
     "observed": {
       "visibleLabel": "SKU code",
-      "value": "M1566585829-2-0"
+      "value": "M1795815722-2-0"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix new",
@@ -2958,7 +2958,7 @@
   {
     "observed": {
       "visibleLabel": "Live keyword",
-      "value": "M15665858292C0"
+      "value": "M17958157222C0"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix new",
@@ -3059,7 +3059,7 @@
   {
     "observed": {
       "visibleLabel": "SKU code",
-      "value": "M1566585829-2-1"
+      "value": "M1795815722-2-1"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix new",
@@ -3074,7 +3074,7 @@
   {
     "observed": {
       "visibleLabel": "Live keyword",
-      "value": "M15665858292C1"
+      "value": "M17958157222C1"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix new",
@@ -3103,7 +3103,7 @@
   },
   {
     "observed": {
-      "editor": "http://127.0.0.1:53484/en/products/62372a8d-bf2f-4bc4-94e5-c3b03ffe66fb?store=ec193c47-a8e8-41f3-a343-4fad756d2bb9",
+      "editor": "http://127.0.0.1:62083/en/products/c67ff23d-d739-469e-bdc6-74dcb79784bd?store=27835779-cf4d-490e-b899-7b9fd2f33172",
       "visibleRows": 2
     },
     "page": "mobile matrix new",
@@ -3157,8 +3157,8 @@
       "compare": "100",
       "quantity": "5",
       "untracked": false,
-      "code": "M1566585829-2-0",
-      "keyword": "M15665858292C0"
+      "code": "M1795815722-2-0",
+      "keyword": "M17958157222C0"
     },
     "tier": "BROWSER+REAL_PG",
     "page": "mobile matrix new",
@@ -3177,8 +3177,8 @@
       "compare": "101",
       "quantity": "6",
       "untracked": true,
-      "code": "M1566585829-2-1",
-      "keyword": "M15665858292C1"
+      "code": "M1795815722-2-1",
+      "keyword": "M17958157222C1"
     },
     "tier": "BROWSER+REAL_PG",
     "page": "mobile matrix new",
@@ -3277,7 +3277,7 @@
   {
     "observed": {
       "visibleLabel": "SKU code",
-      "value": "M1566585829-2-0"
+      "value": "M1795815722-2-0"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix edit",
@@ -3292,7 +3292,7 @@
   {
     "observed": {
       "visibleLabel": "Live keyword",
-      "value": "M15665858292E0"
+      "value": "M17958157222E0"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix edit",
@@ -3393,7 +3393,7 @@
   {
     "observed": {
       "visibleLabel": "SKU code",
-      "value": "M1566585829-2-1"
+      "value": "M1795815722-2-1"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix edit",
@@ -3408,7 +3408,7 @@
   {
     "observed": {
       "visibleLabel": "Live keyword",
-      "value": "M15665858292E1"
+      "value": "M17958157222E1"
     },
     "persistence": "verified after UI save below",
     "page": "mobile matrix edit",
@@ -3477,8 +3477,8 @@
       "compare": "120",
       "quantity": "7",
       "untracked": true,
-      "code": "M1566585829-2-0",
-      "keyword": "M15665858292E0"
+      "code": "M1795815722-2-0",
+      "keyword": "M17958157222E0"
     },
     "tier": "BROWSER+REAL_PG",
     "page": "mobile matrix edit",
@@ -3497,8 +3497,8 @@
       "compare": "121",
       "quantity": "8",
       "untracked": false,
-      "code": "M1566585829-2-1",
-      "keyword": "M15665858292E1"
+      "code": "M1795815722-2-1",
+      "keyword": "M17958157222E1"
     },
     "tier": "BROWSER+REAL_PG",
     "page": "mobile matrix edit",
@@ -3538,11 +3538,11 @@
   },
   {
     "observed": {
-      "archivedSKU": "9523b95d-2719-47e9-b564-33a33a0cd56a",
+      "archivedSKU": "58aaa392-2a74-42ab-ba26-cc33aaa23ee9",
       "white": "absent from active-only matrix by SKU ID and name",
       "visibleRows": 1,
       "black": {
-        "id": "71e1f152-beb6-4915-833c-0c868cb48aee",
+        "id": "50e55d07-cf4c-4d5d-9c31-447a80370bf5",
         "price": "81",
         "compare": "121",
         "trackedQuantity": "8",
@@ -3562,7 +3562,7 @@
   },
   {
     "observed": {
-      "value": "pecc08ac6473cd7d mobile axis remove en"
+      "value": "peccca8d637bccbf mobile axis remove en"
     },
     "page": "mobile axis remove",
     "row": "",
@@ -3700,7 +3700,7 @@
   },
   {
     "observed": {
-      "value": "M1566585829-A2-0"
+      "value": "M1795815722-A2-0"
     },
     "page": "mobile axis remove",
     "row": "White / S",
@@ -3752,7 +3752,7 @@
   },
   {
     "observed": {
-      "value": "M1566585829-A2-1"
+      "value": "M1795815722-A2-1"
     },
     "page": "mobile axis remove",
     "row": "Black / S",
@@ -3765,7 +3765,7 @@
   },
   {
     "observed": {
-      "editor": "http://127.0.0.1:53484/en/products/f1366ab6-1e32-4d9a-82df-ac5190c9603c?store=ec193c47-a8e8-41f3-a343-4fad756d2bb9",
+      "editor": "http://127.0.0.1:62083/en/products/e0b7dcd8-2ee7-4e9b-8040-b66ce0e84913?store=27835779-cf4d-490e-b899-7b9fd2f33172",
       "visibleRows": 2
     },
     "page": "mobile axis remove",
@@ -3780,8 +3780,8 @@
   {
     "observed": {
       "oldAxisIDs": [
-        "80055b07-bb2c-4274-8cbe-0237e33a2388",
-        "e1c01857-0c7f-46d7-be81-faf09183c10c"
+        "50c7a14c-fe0e-41aa-a278-7885632fa508",
+        "b1808f65-0a84-4f96-ab9e-9c2ea05be990"
       ],
       "visibleRows": 2,
       "oneDocumentWrite": true
@@ -3907,11 +3907,11 @@
         "S"
       ],
       "archivedSKUs": [
-        "80055b07-bb2c-4274-8cbe-0237e33a2388",
-        "e1c01857-0c7f-46d7-be81-faf09183c10c"
+        "50c7a14c-fe0e-41aa-a278-7885632fa508",
+        "b1808f65-0a84-4f96-ab9e-9c2ea05be990"
       ],
-      "activeSKU": "cf6e1385-955e-4720-80a6-f3ed84087f97",
-      "generatedCode": "pecc08ac6473cd7d-mobile-axis-remove-en",
+      "activeSKU": "889348af-6d04-4ba5-9fb7-c1fffd5dc031",
+      "generatedCode": "peccca8d637bccbf-mobile-axis-remove-en",
       "row": "S",
       "price": "95",
       "compare": "145",

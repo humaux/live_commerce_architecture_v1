@@ -1,0 +1,11 @@
+{
+  "argv": [
+    "pnpm",
+    "typecheck:admin"
+  ],
+  "exit_code": 0,
+  "source_sha": "6533cb5d5064d27123eaeaac481e123aa26946f0",
+  "elapsed_seconds": 1.48,
+  "log": "output/matrix-ledger-enforce/round2-postconditions/typecheck.log",
+  "log_sha256": "c00ff4e6ec5ce52c4b0790c7ca968c30b9b2f3478ed09bbca43c9bc416c4c0f5"
+}

@@ -1,0 +1,79 @@
+[
+  {
+    "name": "test-node",
+    "argv": [
+      "bash",
+      "scripts/dev/test-node.sh"
+    ],
+    "source_sha": "6533cb5d5064d27123eaeaac481e123aa26946f0",
+    "env": {
+      "LC_HEADER_BASE": "origin/r3/integration"
+    },
+    "unset_env": [
+      "LC_MATRIX_ACTION_MUTATION",
+      "CONTRACT_DRIFT_BASE"
+    ],
+    "started_at": "2026-10-12T09:06:29.161597+00:00",
+    "timeout_seconds": 900,
+    "state": "finished",
+    "log": "output/matrix-ledger-enforce/round2-postconditions/test-node.log",
+    "pid": 42254,
+    "exit_code": 0,
+    "elapsed_seconds": 31.563,
+    "ended_at": "2026-10-12T09:07:00.724943+00:00",
+    "log_sha256": "5d0b5fb6af1acc20bad1c1b6edd5f49149d8fe859bcfdbfa12cdd8fa8b97dd7c"
+  },
+  {
+    "name": "ledger-go",
+    "argv": [
+      "go",
+      "test",
+      "./tests/foundation",
+      "-run",
+      "^TestProductEditorMatrixLedger",
+      "-count=1",
+      "-v"
+    ],
+    "source_sha": "6533cb5d5064d27123eaeaac481e123aa26946f0",
+    "env": {
+      "LC_HEADER_BASE": "origin/r3/integration"
+    },
+    "unset_env": [
+      "LC_MATRIX_ACTION_MUTATION",
+      "CONTRACT_DRIFT_BASE"
+    ],
+    "started_at": "2026-10-12T09:07:00.739060+00:00",
+    "timeout_seconds": 900,
+    "state": "finished",
+    "log": "output/matrix-ledger-enforce/round2-postconditions/ledger-go.log",
+    "pid": 45963,
+    "exit_code": 0,
+    "elapsed_seconds": 9.699,
+    "ended_at": "2026-10-12T09:07:10.438045+00:00",
+    "log_sha256": "af0b4ec44752e99cba57ed310239b9e4e990f43e1f1d2d6c8c10d2c7ac3a7b0e"
+  },
+  {
+    "name": "check-gates",
+    "argv": [
+      "bash",
+      "scripts/dev/check-gates.sh"
+    ],
+    "source_sha": "6533cb5d5064d27123eaeaac481e123aa26946f0",
+    "env": {
+      "LC_HEADER_BASE": "origin/r3/integration"
+    },
+    "unset_env": [
+      "LC_MATRIX_ACTION_MUTATION",
+      "CONTRACT_DRIFT_BASE"
+    ],
+    "started_at": "2026-10-12T09:07:10.449246+00:00",
+    "timeout_seconds": 900,
+    "state": "finished",
+    "log": "output/matrix-ledger-enforce/round2-postconditions/check-gates.log",
+    "pid": 46056,
+    "exit_code": 0,
+    "elapsed_seconds": 136.952,
+    "ended_at": "2026-10-12T09:09:27.401880+00:00",
+    "log_sha256": "00f426a1433ce207abfd24fbd243e768c83ed12e56999695369c2b484dea036d"
+  }
+]
