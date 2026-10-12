@@ -99,6 +99,22 @@ for (const copy of (fixturelessCollection ? [] : copies)) for (const width of [1
       await fullPanel(a, copy);
       await fullPanel(b, copy);
       await expect(a.getByTestId("customer-manual-link")).toHaveCount(0);
+      // PR #41 review P1: >25 seeded customers, so the real pager renders; click both controls and prove the list moves.
+      const values = async () => a.getByTestId("customer-link-choice").locator("option").evaluateAll(o => o.map(x => (x as HTMLOptionElement).value).filter(Boolean));
+      const first = await values();
+      expect(first).toContain(fixture.customer_a);
+      await expect(a.getByTestId("customer-page-first")).toHaveCount(0);
+      await a.getByTestId("customer-page-next").click();
+      await expect(a.getByTestId("customer-page-first")).toBeVisible();
+      await expect(a.getByTestId("buyer-panel")).toHaveAttribute("aria-busy", "false");
+      const second = await values();
+      expect(second.some(v => !first.includes(v)), "Next customers shows rows not on page one").toBe(true);
+      expect(second).not.toContain(fixture.customer_a);
+      await a.getByTestId("customer-page-first").click();
+      await expect(a.getByTestId("customer-page-first")).toHaveCount(0);
+      await expect(a.getByTestId("buyer-panel")).toHaveAttribute("aria-busy", "false");
+      expect(await values()).toEqual(first);
+      record(`customer pager ${copy.locale}/${width}`, "click Next customers then First page", "page two lists other customers; First page restores page one");
       await a.getByTestId("customer-link-choice").selectOption(fixture.customer_a);
       await b.getByTestId("customer-link-choice").selectOption(fixture.customer_b);
       const winning = await postLink(b, "customer-link-save", 200);

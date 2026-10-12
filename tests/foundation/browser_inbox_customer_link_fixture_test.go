@@ -36,6 +36,9 @@ type inboxCustomerLinkFixture struct {
 	ClaimTotalMinor int64  `json:"claim_total_minor"`
 }
 
+// inboxPagerCustomers exceeds the BuyerPanel customer page (limit 25) so a second page exists.
+const inboxPagerCustomers = 30
+
 // seedInboxCustomerLink prepares two real claimed orders and their customer projection without fabricating domain rows.
 // The inherited lbEnv store is USD; A13 has no currency field and its frozen UI contract formats the supplied minor value as TWD.
 func seedInboxCustomerLink(t *testing.T, e *lbEnv) inboxCustomerLinkFixture {
@@ -119,6 +122,28 @@ func seedInboxCustomerLink(t *testing.T, e *lbEnv) inboxCustomerLinkFixture {
 		}
 		return result
 	}
+	// PR #41 review P1: >25 active customers so INU10 clicks the real "Next customers"/"First page" pager. Seeded through
+	// the real merchant CSV import BEFORE the orders: the list is newest-activity first, so A and B stay on page one.
+	_, importer := lcPrincipal(t, f, f.tenantA, []string{f.storeA1}, "store:read", "customers:read", "customers:write", "customers:privacy")
+	var csv strings.Builder
+	csv.WriteString("顧客編號,姓名,手機,電子郵件,同意行銷,備註\n")
+	for i := 1; i <= inboxPagerCustomers; i++ {
+		csv.WriteString("LCU2B2-PG-" + strconv.Itoa(i) + ",LCU2B2 Synthetic Page " + strconv.Itoa(i) + ",09001" + strconv.Itoa(10000+i) + ",,否,\n")
+	}
+	t.Cleanup(func() {
+		for _, q := range []string{`DELETE FROM customers.import_profiles WHERE tenant_id=$1 AND owner_id IN (SELECT internal_id FROM migrationimport.external_ids WHERE tenant_id=$1 AND external_id LIKE 'LCU2B2-PG-%')`,
+			`DELETE FROM migrationimport.external_ids WHERE tenant_id=$1 AND external_id LIKE 'LCU2B2-PG-%'`, `DELETE FROM migrationimport.batches WHERE tenant_id=$1`} {
+			mustExec(t, f.owner, q, f.tenantA)
+		}
+	})
+	imp := mtAdmin{t: t, h: admin.h, store: f.storeA1, token: importer}
+	if w := imp.call("POST", "/imports/customers/commit?expected_apply_rows="+strconv.Itoa(inboxPagerCustomers), "", "text/csv", []byte(csv.String())); w.Code != 200 {
+		t.Fatalf("LCU2B2 pager import: status %d", w.Code)
+	}
+	// Owner fixture time travel (like cofAge): the imports sort OLDER than B's expired order (aged 73 h below), so page one
+	// is A, B and the newest imports, and the remaining imports form page two.
+	mustExec(t, f.owner, `UPDATE customers.import_profiles SET imported_at=clock_timestamp()-interval '100 hours'
+		WHERE tenant_id=$1 AND owner_id IN (SELECT internal_id FROM migrationimport.external_ids WHERE tenant_id=$1 AND external_id LIKE 'LCU2B2-PG-%')`, f.tenantA)
 	settings := call("GET", "/bank-transfer-settings", nil, 200)
 	call("PUT", "/bank-transfer-settings", map[string]any{"expected_version": settings["version"], "enabled": true, "allow_cvs": false,
 		"bank_name": "SYNTHETIC BANK", "branch": "MOCK", "account_name": "SYNTHETIC SHOP", "account_number": "0000000000", "window_hours": 72}, 200)

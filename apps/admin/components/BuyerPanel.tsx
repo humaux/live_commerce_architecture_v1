@@ -230,8 +230,8 @@ export function BuyerPanel({ store, conversationId, bundleId, onUnauthorized, on
         </select></label>
         {!choices.length && !busy && <p className={styles.meta}>{c.customerEmpty}</p>}
         <div className={styles.actions}>
-          {after && <button className={styles.button} disabled={busy || uncertain} onClick={() => void pageCustomers("")}>{c.customerFirst}</button>}
-          {next && <button className={styles.button} disabled={busy || uncertain} onClick={() => void pageCustomers(next)}>{c.customerNext}</button>}
+          {after && <button className={styles.button} data-testid="customer-page-first" disabled={busy || uncertain} onClick={() => void pageCustomers("")}>{c.customerFirst}</button>}
+          {next && <button className={styles.button} data-testid="customer-page-next" disabled={busy || uncertain} onClick={() => void pageCustomers(next)}>{c.customerNext}</button>}
         </div>
       </>}
       <div className={styles.actions}>
