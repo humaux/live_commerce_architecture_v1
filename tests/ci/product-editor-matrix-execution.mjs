@@ -10,7 +10,7 @@ export function matrixExecutionIssues({ node, workflow, registry }) {
   const active = (text) => text.replace(/\\\r?\n/g, " ").split(/\r?\n/)
     .map((line) => line.replace(/\s+#.*$/, "").trim()).filter((line) => line && !line.startsWith("#"));
   const nodeCommands = active(node).filter((line) => /^node\s/.test(line) && /\s--test(?:\s|$)/.test(line));
-  for (const name of ["product-editor-matrix-ledger.test.mjs", "product-editor-matrix-execution.test.mjs"]) {
+  for (const name of ["product-editor-matrix-ledger.test.mjs", "product-editor-matrix-execution.test.mjs", "product-editor-matrix-controls.test.mjs"]) {
     const token = `tests/ci/${name}`;
     if (!nodeCommands.some((line) => line.split(/\s+/).includes(token))) issues.push(`active node --test argv missing ${name}`);
   }

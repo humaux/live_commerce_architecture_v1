@@ -663,7 +663,7 @@ export function registerProductEditorAcceptance() {
       const mobileMatrixTag = `M${Date.now().toString().slice(-10)}`;
       for (const [localeIndex, locale] of (["zh-TW", "zh-CN", "en"] as const).entries()) {
         const c = productEditorCopy[locale];
-        const { step: matrixStep, assertComplete: matrixComplete } = createProductEditorMatrixLedger(ledger, locale);
+        const { step: matrixStep, assertComplete: matrixComplete, assertRenderedControls: matrixRendered } = createProductEditorMatrixLedger(ledger, locale);
         await page.goto(url(locale, "products/new"));
         await matrixStep({ page: "mobile matrix new", control: "product-name", action: "fill" }, async () => {
           const localWriteStart = writes.length;
@@ -1268,6 +1268,120 @@ export function registerProductEditorAcceptance() {
             };
           },
         );
+        // Cover every bulk action from the real DOM, then persist and reload the selected-row result.
+        const bulkWhite = page.getByTestId("matrix-row-0"), bulkBlack = page.getByTestId("matrix-row-1");
+        await matrixStep({"page":"mobile matrix bulk","row":"White / S","control":"matrix-select-0","action":"check"}, async () => {
+          const localWriteStart = writes.length;
+          await bulkWhite.getByTestId("matrix-select-0").check();
+          await expect(bulkWhite.getByTestId("matrix-select-0")).toBeChecked();
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Only White / S is selected; no document write" };
+        });
+        await matrixStep({"page":"mobile matrix bulk","row":"","control":"bulk-open","action":"click"}, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-open").click();
+          await expect(page.getByTestId("bulk-field")).toBeVisible();
+          const renderedBulkControls = await page.getByTestId("bulk-dialog").locator("select, input, button").evaluateAll(nodes => nodes.map(node => ({ control: node.getAttribute("data-testid"), tag: node.tagName.toLowerCase() })));
+          matrixRendered("mobile matrix bulk", renderedBulkControls);
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Bulk controls are rendered and independently checked against real DOM actions" };
+        });
+        await matrixStep({"page":"mobile matrix bulk","row":"","control":"bulk-value","action":"fill cancel"}, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-value").fill("777");
+          await expect(page.getByTestId("bulk-value")).toHaveValue("777");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Discardable bulk value 777 is visible; no document write" };
+        });
+        await matrixStep({"page":"mobile matrix bulk","row":"","control":"bulk-cancel","action":"click"}, async () => {
+          const localWriteStart = writes.length;
+          const bulkCancelBefore = await axisMatrix.locator("input, select").evaluateAll(nodes => nodes.map(node => ({ value: (node as HTMLInputElement).value, checked: (node as HTMLInputElement).checked ?? null, disabled: (node as HTMLInputElement).disabled })));
+          await page.getByTestId("bulk-cancel").click();
+          await expect(page.getByTestId("bulk-dialog")).toHaveCount(0);
+          await expect(bulkWhite.getByTestId("matrix-quantity-0")).toHaveValue("3");
+          await expect(bulkBlack.getByTestId("matrix-quantity-1")).toHaveValue("4");
+          expect(await axisMatrix.locator("input, select").evaluateAll(nodes => nodes.map(node => ({ value: (node as HTMLInputElement).value, checked: (node as HTMLInputElement).checked ?? null, disabled: (node as HTMLInputElement).disabled })))).toEqual(bulkCancelBefore);
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Cancel closes bulk; both original quantities remain 3 and 4; no document write" };
+        });
+        await matrixStep({"page":"mobile matrix bulk","row":"","control":"bulk-open","action":"click reopen"}, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-open").click();
+          await expect(page.getByTestId("bulk-field")).toBeVisible();
+          await expect(page.getByTestId("bulk-value")).toHaveValue("");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Reopened bulk is visible with empty value after Cancel; no document write" };
+        });
+        await matrixStep({"page":"mobile matrix bulk","row":"","control":"bulk-field","action":"select"}, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-field").selectOption("quantity");
+          await expect(page.getByTestId("bulk-field")).toHaveValue("quantity");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Quantity field selected; no document write" };
+        });
+        await matrixStep({"page":"mobile matrix bulk","row":"","control":"bulk-target","action":"select select"}, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-target").selectOption("all");
+          await expect(page.getByTestId("bulk-target")).toHaveValue("all");
+          await page.getByTestId("bulk-target").selectOption("selected");
+          await expect(page.getByTestId("bulk-target")).toHaveValue("selected");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Target changes all to selected; no document write" };
+        });
+        await matrixStep({"page":"mobile matrix bulk","row":"","control":"bulk-scope","action":"select select"}, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-scope").selectOption("empty");
+          await expect(page.getByTestId("bulk-scope")).toHaveValue("empty");
+          await page.getByTestId("bulk-scope").selectOption("all");
+          await expect(page.getByTestId("bulk-scope")).toHaveValue("all");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Scope changes empty to all; no document write" };
+        });
+        await matrixStep({"page":"mobile matrix bulk","row":"","control":"bulk-operation","action":"select select"}, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-operation").selectOption("subtract");
+          await expect(page.getByTestId("bulk-operation")).toHaveValue("subtract");
+          await page.getByTestId("bulk-operation").selectOption("add");
+          await expect(page.getByTestId("bulk-operation")).toHaveValue("add");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Operation changes subtract to add; no document write" };
+        });
+        await matrixStep({"page":"mobile matrix bulk","row":"","control":"bulk-value","action":"fill"}, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-value").fill("2");
+          await expect(page.getByTestId("bulk-value")).toHaveValue("2");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Bulk quantity increment 2 is visible; no document write" };
+        });
+        await matrixStep({"page":"mobile matrix bulk","row":"","control":"bulk-apply","action":"click"}, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-apply").click();
+          await expect(page.getByTestId("bulk-dialog")).toHaveCount(0);
+          await expect(bulkWhite.getByTestId("matrix-quantity-0")).toHaveValue("5");
+          await expect(bulkBlack.getByTestId("matrix-quantity-1")).toHaveValue("4");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Apply adds 2 only to selected White / S (3 to 5); Black / S stays 4; still local draft" };
+        });
+        await matrixStep({"page":"mobile matrix bulk","row":"","control":"product-save","action":"click reload"}, async () => {
+          const bulkSaveStart = writes.length;
+          const bulkSaved = page.waitForResponse(r => r.url().includes(`/api/stores/${store}/products/`) && r.url().endsWith("/document") && r.request().method() !== "GET");
+          await page.getByTestId("product-save").click();
+          await expect(page.getByTestId("product-save")).toBeEnabled();
+          expect((await bulkSaved).ok()).toBe(true);
+          await page.reload();
+          await expect(bulkWhite.getByTestId("matrix-quantity-0")).toHaveValue("5");
+          await expect(bulkBlack.getByTestId("matrix-quantity-1")).toHaveValue("4");
+          await expect(bulkWhite).toHaveAttribute("data-sku-id", oldAxisIDs[0]);
+          await expect(bulkBlack).toHaveAttribute("data-sku-id", oldAxisIDs[1]);
+          await expect(bulkWhite.getByTestId("new-price-0")).toHaveValue("90");
+          await expect(bulkBlack.getByTestId("new-price-1")).toHaveValue("91");
+          await expect(bulkWhite.getByTestId("matrix-compare-0")).toHaveValue("130");
+          await expect(bulkBlack.getByTestId("matrix-compare-1")).toHaveValue("131");
+          await expect(bulkWhite.getByTestId("matrix-code-0")).toHaveValue(`${mobileMatrixTag}-A${localeIndex}-0`);
+          await expect(bulkBlack.getByTestId("matrix-code-1")).toHaveValue(`${mobileMatrixTag}-A${localeIndex}-1`);
+          expect(writes.slice(bulkSaveStart).filter(r => r.path.endsWith("/document"))).toHaveLength(1);
+          return { observed: "Exactly one real document write succeeds; bulk quantity 5/4, SKU identities, prices, compare-at and codes persist on reload" };
+        });
         await expect(page.locator(".product-axis")).toHaveCount(2);
         const removeColor = page.locator(".product-axis").nth(0).locator(".pe-axis-remove");
         await expect(removeColor).toHaveAccessibleName(`${c.remove} ${c.axis} 1`);

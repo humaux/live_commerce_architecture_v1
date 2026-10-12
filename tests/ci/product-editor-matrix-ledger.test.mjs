@@ -254,7 +254,7 @@ function assertLocatorIdentity({ identity, locale, actions: operated, reads, met
       if (event.type !== "outcome" || !pendingOutcome || !event.receiver) continue;
       // Direct readbacks must describe that operation's state. In particular visibility
       // cannot replace a fill's value, nor a checkbox's checked-state assertion.
-      const direct = { fill: ["toHaveValue"], check: ["toBeChecked"], uncheck: ["toBeChecked"],
+      const direct = { fill: ["toHaveValue"], selectOption: ["toHaveValue"], check: ["toBeChecked"], uncheck: ["toBeChecked"],
         press: ["toHaveValue", "toHaveCount", "toBeHidden", "toBeFocused"],
         click: ["toBeEnabled", "toBeDisabled", "toBeVisible", "toBeHidden", "toHaveCount", "toHaveText", "toContainText"], accept: [] };
       const same = JSON.stringify(event.receiver) === JSON.stringify(pendingOutcome.receiver);
@@ -265,7 +265,7 @@ function assertLocatorIdentity({ identity, locale, actions: operated, reads, met
       if ((same && direct[pendingOutcome.method]?.includes(event.matcher)) || effect) pendingOutcome = undefined;
     }
     assert.ok(!pendingOutcome && events.some((event) => event.type === "observed"), "missing outcome assertion before the observed return");
-    const grammar = { fill: ["fill"], "fill Enter": ["fill", "press"], Escape: ["press"],
+    const grammar = { fill: ["fill"], "fill cancel": ["fill"], check: ["check"], select: ["selectOption"], "select select": ["selectOption", "selectOption"], "fill Enter": ["fill", "press"], Escape: ["press"],
       "check uncheck": ["check", "uncheck"], "uncheck check": ["uncheck", "check"], uncheck: ["uncheck"], accept: ["accept"] };
     let expectedMethods = grammar[declaration.action];
     if (declaration.action.includes("click")) expectedMethods = ["click"];

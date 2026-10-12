@@ -35,6 +35,18 @@ export function createProductEditorMatrixLedger(ledger: unknown[], locale: keyof
   const seen = new Set<string>();
   const pending = new Set<string>();
   return {
+    /** Compare the current production DOM with declarations; table-only completeness is insufficient. */
+    assertRenderedControls(page: string, controls: { control: string | null; tag: string }[]) {
+      if (!controls.length) throw new Error("No rendered bulk controls");
+      const rendered = new Set<string>();
+      for (const { control, tag } of controls) {
+        const verb = ({ select: "select", input: "fill", button: "click" } as Record<string, string>)[tag];
+        if (!control || !verb || rendered.has(control)) throw new Error("Unidentified or duplicate rendered bulk control");
+        rendered.add(control);
+        if (![...declared.values()].some(entry => entry.page === page && entry.control === control && entry.action.includes(verb)))
+          throw new Error(`Missing rendered ${tag} action ${control}`);
+      }
+    },
     /** Runs a real UI action plus DOM assertions, then records PASS for its declared canonical expectation. */
     async step(identity: Identity, perform: () => Promise<Observation>) {
       const id = key(identity), entry = declared.get(id);

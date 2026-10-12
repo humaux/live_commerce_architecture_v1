@@ -45,6 +45,7 @@ export function ProductBulkFill({
   return (
     <div
       className="pe-popover"
+      data-testid="bulk-dialog"
       role="region"
       aria-label={`${c.bulk} ${c[field]}`}
       onKeyDown={(e) => {
@@ -102,6 +103,7 @@ export function ProductBulkFill({
       <label>
         {c.bulk}
         <select
+          data-testid="bulk-scope"
           aria-label={c.bulk}
           value={scope}
           onChange={(e) => setScope(e.target.value as "all" | "empty")}
@@ -113,6 +115,7 @@ export function ProductBulkFill({
       <label>
         {c.set}
         <select
+          data-testid="bulk-operation"
           aria-label={c.set}
           value={operation}
           onChange={(e) =>
@@ -138,7 +141,7 @@ export function ProductBulkFill({
         />
       </label>
       <div className="pe-actions">
-        <button type="button" onClick={close}>
+        <button type="button" data-testid="bulk-cancel" onClick={close}>
           {c.cancel}
         </button>
         <button

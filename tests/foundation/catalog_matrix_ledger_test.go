@@ -372,6 +372,9 @@ func validateProductEditorMatrixEvidence(root string) error {
 		"tests/ci/product-editor-matrix-source.mjs",
 		"tests/ci/product-editor-matrix-execution.mjs",
 		"tests/ci/product-editor-matrix-execution.test.mjs",
+		"tests/ci/product-editor-matrix-controls.mjs",
+		"tests/ci/product-editor-matrix-controls.test.mjs",
+		"apps/admin/components/ProductBulkFill.tsx",
 	} {
 		hash := manifest.Sources[path]
 		if hash == "" {
