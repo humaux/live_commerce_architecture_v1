@@ -211,6 +211,12 @@ test("round 4: an inbox change selects the inbox modes INCLUDING live-console (i
   assert.ok(modes.length <= 20, `inbox is one domain; selected ${modes.length} modes (round 4 derives 15 incl. live-console; round 2 derived 14 + foundation)`);
 });
 
+// PR #39 r6 (Codex P2): inbox's classifier parses decrypted messages with meta.ParseStrict, which the route evidence
+// cannot see; DECODE_DEPS in derive-narrow-covers.mjs adds it so a parser change runs the real inbox click/read flow.
+test("a Meta message-parser change selects --browser-inbox (decode dependency)", () => {
+  assert.ok(planPr(["internal/integrations/meta/normalize.go"], usage).modes.includes("--browser-inbox"));
+});
+
 test("round 2 SHARED_BACKEND_PACKAGES: every entry carries a reason and selects all PG browser modes", async () => {
   const { SHARED_BACKEND_PACKAGES } = await import("../../scripts/dev/pr-modes.mjs");
   assert.ok(Object.keys(SHARED_BACKEND_PACKAGES).length >= 9, "round 2 classified 9 shared packages; this is a floor, not a ceiling");

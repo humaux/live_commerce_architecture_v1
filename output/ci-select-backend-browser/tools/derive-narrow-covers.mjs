@@ -1387,6 +1387,12 @@ const SPECS_ZERO_OK = {
   "--live-browser-input": "Go-only BRW SQL/executor + HTTP-subset gates (go test -run '^TestLiveBrowserInputBRW' + go vet -tags browser); no Playwright spec exists for this mode",
 };
 
+// Decode dependencies the URL/route evidence cannot see: a package the exercised domain calls to PARSE the data the
+// spec asserts (not deeper service coupling, which stays the nightly matrix's job). Each needs a written reason.
+const DECODE_DEPS = {
+  "--browser-inbox": { "internal/integrations/meta": "internal/inbox/classifier.go calls meta.ParseStrict on the decrypted messages inbox-ui.spec.ts opens and asserts (PR #39 r6)" },
+};
+
 for (const e of entries) {
   if (!universe.has(e.name)) continue;
   const body = `${e.prepare}\n${e.run}`;
@@ -1401,6 +1407,8 @@ for (const e of entries) {
     covers.add(pkg);
     if (ev) { const k = `${ev.path}|${pkg}`; if (evSeen.has(k)) return; evSeen.add(k); evidence.push(ev); }
   };
+
+  for (const [p, reason] of Object.entries(DECODE_DEPS[e.name] ?? {})) addCover(p, { path: `decode-dep:${p}`, handler: reason, package: p, via: "decode-dep" });
 
   // --- OWN Go files ---
   const testNames = [...new Set([...body.matchAll(/\bTest[A-Za-z0-9_]+/g)].map((m) => m[0]))];
