@@ -1,3 +1,6 @@
+// Purpose: merchant manual order pipeline, serialized with ForBuyer recovery across all step commits.
+// Depends on: buyer capability/checkout services, platform scope, command.Run and shared attempt locking.
+// Used by: merchanttools.ForBuyer and HTTP manual routes; I01/I02/I03/I06.
 // manual.go is the merchant-created ("manual", admin Create Order) order of contract G3. It adds NO checkout rule: the merchant's SKUs and
 // the customer's details go through the buyer path unchanged under a server-held buyer capability (buyer.Service.RegisterForTrustedStore
 // with a token derived by HMAC from the Idempotency-Key): storefront.SetCart -> CreateQuote (the server price, the request has no price
@@ -184,6 +187,7 @@ type ManualOrders struct {
 	buyerPool *pgxpool.Pool
 	checkout  *checkout.Service
 	secret    []byte
+	attempts  chan struct{} // bounded outer transaction admission; leaves pool capacity for inner pipeline steps
 }
 
 // NewManualOrders wires the pipeline. issuer must have been built with the 30-day capability TTL; secret (>= 32 bytes) keys the HMAC that
@@ -192,7 +196,12 @@ func NewManualOrders(pool *pgxpool.Pool, issuer *buyer.Service, buyerPool *pgxpo
 	if pool == nil || issuer == nil || buyerPool == nil || service == nil || len(secret) < 32 {
 		return nil, command.ErrInvalid
 	}
-	return &ManualOrders{pool: pool, issuer: issuer, buyerPool: buyerPool, checkout: service, secret: slices.Clone(secret)}, nil
+	// The attempt transaction retains one connection while its inner pipeline uses another.
+	if pool.Config().MaxConns < 2 {
+		return nil, command.ErrInvalid
+	}
+	capacity := int(pool.Config().MaxConns) / 2
+	return &ManualOrders{pool: pool, issuer: issuer, buyerPool: buyerPool, checkout: service, secret: slices.Clone(secret), attempts: make(chan struct{}, capacity)}, nil
 }
 
 // capability derives the buyer capability token of one (label, store, key): the same inputs always give the same token, so a retry after an
@@ -346,6 +355,19 @@ func (m *ManualOrders) Place(ctx context.Context, token, storeID, key string, in
 	if err != nil {
 		return ManualResult{}, false, err
 	}
+	if !attemptHeld(ctx, m, storeID, key) {
+		var out ManualResult
+		var replayed bool
+		err = m.withAttempt(ctx, token, storeID, key, manualOperation, in, false, func(c context.Context) error {
+			var inner error
+			out, replayed, inner = m.Place(c, token, storeID, key, in)
+			return inner
+		})
+		if err != nil {
+			return ManualResult{}, false, mapForBuyerError(err)
+		}
+		return out, replayed, nil
+	}
 	var receipt manualReceipt
 	var origin, state string
 	replayed := false
@@ -375,7 +397,7 @@ func (m *ManualOrders) Place(ctx context.Context, token, storeID, key string, in
 	// that the storefront exchanges for a fresh capability of the order's owner (checkout.redeem_order_link); the capability never leaves the server.
 	linkToken := m.capability("link", storeID, key)
 	if !replayed {
-		if receipt, err = m.pipeline(ctx, capability, storeID, key, in); err != nil {
+		if receipt, err = m.pipeline(ctx, token, capability, storeID, key, in); err != nil {
 			return ManualResult{}, false, classifyPipeline(ctx, err)
 		}
 		// One merchant transaction: receipt + source mark + audit. A failure here leaves a placed order with source=storefront until the
@@ -489,7 +511,7 @@ func readOrigin(ctx context.Context, tx pgx.Tx, token string, scope platform.Sco
 }
 
 // pipeline runs the buyer path. Every step has its own derived key so a retry replays what already finished.
-func (m *ManualOrders) pipeline(ctx context.Context, capability, storeID, key string, in ManualInput) (manualReceipt, error) {
+func (m *ManualOrders) pipeline(ctx context.Context, token, capability, storeID, key string, in ManualInput) (manualReceipt, error) {
 	var zero manualReceipt
 	if _, err := m.issuer.RegisterForTrustedStore(ctx, storeID, capability); err != nil {
 		return zero, err
@@ -570,9 +592,11 @@ func (m *ManualOrders) pipeline(ctx context.Context, capability, storeID, key st
 		return zero, err
 	}
 	// checkout.Service.Begin: the buyer begin path (begin_hold reserves stock, schedules the expiry job, applies the payment-mode rules).
-	placed, err := m.checkout.Begin(ctx, capability, storeID, stepKey(key, "begin"), checkout.Input{QuoteID: quote.ID, DestinationID: selected.ID,
+	placed, err := m.checkout.BeginFenced(ctx, capability, storeID, stepKey(key, "begin"), checkout.Input{QuoteID: quote.ID, DestinationID: selected.ID,
 		CartVersion: cart.Version, ServiceVersion: option.ServiceVersion, AllocationVersion: option.AllocationVersion, PaymentMode: in.PaymentMode,
-		BuyerEmail: in.Customer.Email})
+		BuyerEmail: in.Customer.Email}, func(c context.Context, s buyer.Scope) error {
+		return m.checkoutGuard(c, token, storeID, key, s.OwnerID)
+	})
 	if err != nil {
 		return zero, err
 	}
@@ -589,6 +613,8 @@ func classifyPipeline(ctx context.Context, err error) error {
 		return coded
 	case errors.As(err, &cvs):
 		return &Error{Status: cvs.Status, Code: cvs.Code}
+	case errors.Is(err, checkout.ErrAttemptClosed):
+		return &Error{Status: http.StatusConflict, Code: "attempt_closed"}
 	case errors.Is(err, platform.ErrUnauthorized), errors.Is(err, platform.ErrForbidden), errors.Is(err, platform.ErrScopeNotFound):
 		return err
 	case ctx.Err() != nil:

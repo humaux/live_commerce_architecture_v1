@@ -468,8 +468,7 @@ Messenger 確認，系統不會重送」). The auto first-reply state (M08 #4/#6
 3. `POST …/orders/for-buyer` (new) — body exactly `{items, customer, delivery, payment_mode, locale, for:
    {bundle_ids: [uuid] (0..5), conversation_id: uuid | null}, send_payment_link: bool}`; `Idempotency-Key` required.
    `for.bundle_ids` empty = a plain manual order (no live price). Server, in order:
-   a. **One live order per bundle** (reservation row, because Place spans several transactions and no lock can be
-      held across it). One merchant transaction inserts one row per bundle into `inbox.order_for_buyer(tenant_id,
+   a. **One live order per bundle** (reservation row, because Place spans several transactions; the attempt lock in §5.1.1 serializes only one store/key). One merchant transaction inserts one row per bundle into `inbox.order_for_buyer(tenant_id,
       store_id, bundle_id, request_id, idempotency_key_hash, order_id NULL, state text CHECK IN
       ('pending','placed','released'), conversation_id, principal_id, created_at)` (0125) with `UNIQUE (tenant_id,
       store_id, bundle_id) WHERE state IN ('pending','placed')`, bundles in sorted order. Before inserting it locks any
@@ -494,6 +493,37 @@ a replay (a) reads the order from `command.Run` (or the Place step receipts), (b
 reservation rows (`placed`, `order_id`), (c) if `send_payment_link` and no `meta.dm_send` exists for `(conversation, order_id)`, calls the
 **reused** `regenerate-link` logic (the previous buyer link is superseded) and plans the DM with the new link. A
 replay otherwise returns the same order and operation, with `buyer_link` null (as today).
+
+### 5.1.1 A16R authoritative recovery (LC-U3, frozen 2026-10-12)
+
+`POST …/orders/for-buyer/recover` takes the **same** original A16 JSON body and
+`Idempotency-Key`. Authority is `inventory:reserve` + `catalog:read` + `orders:read`
+under the authenticated store scope. It creates no order, stock hold, buyer link or DM.
+It answers 200 with exactly `{state:"created", order_id:uuid}` when the durable
+`checkout.begin` receipt exists, including a crash before the merchant receipt; otherwise
+exactly `{state:"not_created"}` only after committing a permanent closed-attempt receipt.
+No bearer links or customer data leave this endpoint. A pre-amendment partial checkout
+order without either the full original A16 receipt or the new canonical attempt binding
+remains UNKNOWN; a key alone cannot establish its original target/send/customer body.
+Recovery must be enabled only after every manual/for-buyer writer uses the shared attempt
+lock (drain requests from older binaries during rollout).
+
+Manual and for-buyer entry points serialize the entire pipeline and recovery under
+one server-scoped store/key advisory lock, held across the existing step transactions.
+An append-only `ops.command_results` request binding fixes the normalized request (including
+A16 target and send flag) before dynamic delivery/payment checks. The separate append-only
+recovery receipt never overwrites a successful merchant/checkout receipt. Resolution probes
+checkout with the server-derived buyer capability and begin step key; absence of an upper
+merchant receipt or a bounded order list is never absence authority. Missing/invalid scope,
+expired capability, timeout or database error retains UNKNOWN, without sealing.
+
+`not_created` permanently closes the original attempt. Late or concurrent original
+requests return `409 attempt_closed` before any pipeline writes. Different normalized
+request/kind on the same key returns `409 idempotency_conflict`. Recovery lost replies replay
+with the same body/key and return the committed result. `created` preserves the original
+order and never authorizes a replacement key; the UI opens that order. A business 422 by
+itself still does not establish absence. Recovery does not require `inbox:reply`, because
+it sends no message, even when the frozen A16 body requested a payment link.
 
 ### 5.2 Reused vs new
 

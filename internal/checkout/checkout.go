@@ -55,6 +55,9 @@ import (
 var checkoutKey = regexp.MustCompile(`^[A-Za-z0-9_.:-]{8,128}$`)
 var errCheckoutDatabase = errors.New("checkout database unavailable")
 
+// ErrAttemptClosed is a merchant recovery fence, checked atomically before Begin's order/stock writes.
+var ErrAttemptClosed = errors.New("checkout attempt closed")
+
 const holdDuration = 15 * time.Minute
 
 // A bank_transfer hold lasts the merchant's window (6..168 h, checkout.bank_transfer_settings); Go does not know the window before
@@ -238,6 +241,19 @@ func New(ctx context.Context, checkoutPool *pgxpool.Pool, jobs *river.Client[pgx
 // Begin authenticates before the private receipt lookup. An exact replay
 // returns its saved IDs without extending an expired hold or rechecking market.
 func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Input) (Result, error) {
+	return s.begin(ctx, token, storeID, key, in, nil)
+}
+
+// BeginFenced runs the merchant closure guard under the exact Begin lock, retained through the order/stock COMMIT.
+// Its private merchant capability never leaves the server; ordinary public buyer owners use Begin.
+func (s *Service) BeginFenced(ctx context.Context, token, storeID, key string, in Input, guard func(context.Context, buyer.Scope) error) (Result, error) {
+	if guard == nil {
+		return Result{}, command.ErrInvalid
+	}
+	return s.begin(ctx, token, storeID, key, in, guard)
+}
+
+func (s *Service) begin(ctx context.Context, token, storeID, key string, in Input, guard func(context.Context, buyer.Scope) error) (Result, error) {
 	if ctx == nil || s == nil || s.pool == nil || s.jobs == nil || !checkoutKey.MatchString(key) || !validInput(in) {
 		return Result{}, command.ErrInvalid
 	}
@@ -258,6 +274,11 @@ func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Inpu
 	err = buyer.WithScope(ctx, s.pool, token, storeID, func(callCtx context.Context, tx pgx.Tx, scope buyer.Scope) error {
 		if err := advisory(callCtx, tx, "checkout.begin|"+scope.TenantID+"|"+scope.StoreID+"|"+scope.OwnerID+"|"+key); err != nil {
 			return err
+		}
+		if guard != nil {
+			if err := guard(callCtx, scope); err != nil {
+				return err
+			}
 		}
 		saved, found, err := readReceipt(callCtx, tx, scope, key, digest)
 		if err != nil {
@@ -640,7 +661,7 @@ func safeError(ctx context.Context, err error) error {
 		return ctx.Err()
 	}
 	for _, known := range []error{command.ErrInvalid, command.ErrConflict, command.ErrNotFound,
-		command.ErrInsufficient, buyer.ErrUnauthorized} {
+		command.ErrInsufficient, buyer.ErrUnauthorized, ErrAttemptClosed, platform.ErrUnauthorized, platform.ErrForbidden, platform.ErrScopeNotFound} {
 		if errors.Is(err, known) {
 			return known
 		}

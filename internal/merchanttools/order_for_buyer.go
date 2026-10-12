@@ -126,6 +126,22 @@ func validateTarget(t ForBuyerTarget) (ForBuyerTarget, error) {
 	return t, nil
 }
 
+// forBuyerRequest is the single normalized full A16 request used by placement, binding and recovery receipts.
+type forBuyerRequest struct {
+	Manual ManualInput    `json:"manual"`
+	For    ForBuyerTarget `json:"for"`
+	Send   bool           `json:"send_payment_link"`
+}
+
+func normalizeForBuyer(in ForBuyerInput) (ManualInput, ForBuyerTarget, forBuyerRequest, error) {
+	manual, err := ValidateManual(ManualInput{Items: in.Items, Customer: in.Customer, Delivery: in.Delivery, PaymentMode: in.PaymentMode, Locale: in.Locale})
+	if err != nil {
+		return manual, ForBuyerTarget{}, forBuyerRequest{}, err
+	}
+	target, err := validateTarget(in.For)
+	return manual, target, forBuyerRequest{Manual: manual, For: target, Send: in.SendPaymentLink}, err
+}
+
 // pickOrigins derives the cart-line origins from the granted bundles' claim lines: per requested SKU the first line (bundle, keyword order) whose
 // offer has a live price and whose claimed quantity and remaining live quantity both cover the requested quantity. A line that does not qualify
 // stays at the catalog price (fail closed; carryOrigins would drop it anyway). skipped counts requested SKUs that had a claim line but none
@@ -159,20 +175,23 @@ func (f *ForBuyer) Place(ctx context.Context, token, storeID, key string, in For
 		return ForBuyerResult{}, false, ErrManualDisabled
 	}
 	m := f.manual
-	manualIn, err := ValidateManual(ManualInput{Items: in.Items, Customer: in.Customer, Delivery: in.Delivery, PaymentMode: in.PaymentMode, Locale: in.Locale})
+	manualIn, target, request, err := normalizeForBuyer(in)
 	if err != nil {
 		return ForBuyerResult{}, false, err
 	}
-	target, err := validateTarget(in.For)
-	if err != nil {
-		return ForBuyerResult{}, false, err
+	if !attemptHeld(ctx, m, storeID, key) {
+		var out ForBuyerResult
+		var replayed bool
+		err = m.withAttempt(ctx, token, storeID, key, forBuyerOperation, request, false, func(c context.Context) error {
+			var inner error
+			out, replayed, inner = f.Place(c, token, storeID, key, in)
+			return inner
+		})
+		if err != nil {
+			return ForBuyerResult{}, false, mapForBuyerError(err)
+		}
+		return out, replayed, nil
 	}
-	// Canonical request of the receipt: its non-text fields only (the pay-link text never exists here; PII leaves only as a hash).
-	request := struct {
-		Manual ManualInput    `json:"manual"`
-		For    ForBuyerTarget `json:"for"`
-		Send   bool           `json:"send_payment_link"`
-	}{manualIn, target, in.SendPaymentLink}
 
 	var receipt forBuyerReceipt
 	var linkState string

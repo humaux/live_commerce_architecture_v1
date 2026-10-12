@@ -1,3 +1,6 @@
+// Purpose: merchant-tools HTTP transport, including strict A16R frozen-body recovery.
+// Depends on: merchanttools services, platform authentication and CVS/studio transport gates.
+// Used by: cmd/api via NewHandler and the admin tools BFF; I01/I02/I11.
 // merchanttools.go owns the merchant HTTP adapter of contracts/storefront-v2.md section G: GET dashboard, GET products/export.csv,
 // POST products/import/{preview,commit} and GET orders/manual/options, POST orders/manual. Each handler is the Go endpoint; the admin BFF
 // (apps/admin/app/api/stores/[store]/tools/[...resource]/route.ts) mirrors them under /api/stores/{store}/tools/.
@@ -356,6 +359,20 @@ func registerForBuyerRoutes(mux *http.ServeMux, forBuyer *merchanttools.ForBuyer
 		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 		defer cancel()
 		out, err := forBuyer.Prefill(ctx, bearerToken(r), r.PathValue("store_id"), conversation, bundle)
+		if err != nil {
+			respondForBuyerError(w, err)
+			return
+		}
+		respond(w, http.StatusOK, out)
+	}))
+	mux.HandleFunc("POST "+base+"/orders/for-buyer/recover", cvsRoute(http.MethodPost, true, func(w http.ResponseWriter, r *http.Request) {
+		in, ok := cvsStrictBody[merchanttools.ForBuyerInput](w, r, forBuyerFields, nil)
+		if !ok {
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 14*time.Second)
+		defer cancel()
+		out, err := forBuyer.Recover(ctx, bearerToken(r), r.PathValue("store_id"), r.Header.Get("Idempotency-Key"), in)
 		if err != nil {
 			respondForBuyerError(w, err)
 			return

@@ -226,6 +226,7 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		// storefront-v2 section G (unit merchant-tools): manual (merchant-created) orders and the product CSV export. Placement refusals reuse the
 		// 0088/CVS codes above (bank_transfer_unavailable, pay_at_pickup_unavailable, insufficient_inventory, idempotency_conflict, export_too_large).
 		"manual_order_unavailable": "Creating orders from the admin is not available on this deployment.",
+		"attempt_closed":           "This order attempt was closed after confirming no order was created.",
 		"cvs_entry_unavailable":    "This convenience-store service needs the store to be chosen from the map.",
 		// product-editor §f (unit product-core, internal/catalog coded.go): the A6 document command refusals. Every catalog
 		// code must be listed here or the merchant sees "internal" (catalogClassify checks *catalog.Error first).
