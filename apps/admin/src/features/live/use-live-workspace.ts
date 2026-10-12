@@ -51,7 +51,12 @@ export function useLiveRead<T>(scope: string, enabled: boolean, read: (signal: A
     if (channel) channel.onmessage = (event) => { if (event.data?.type === "logout") logout(); };
     document.addEventListener("visibilitychange", visibility);
     window.addEventListener("commerce-session-logout", logout); window.addEventListener("storage", storage); window.addEventListener("focus", focus);
-    if (!signedOut) { clear(); void load(); }
+    if (!signedOut) {
+      // Ordinary same-authority refresh must not unmount stock editors and erase a draft.
+      // Scope/enable/session changes and visibility/logout still discard private data.
+      if (!enabled || document.visibilityState !== "visible" || view.scope !== scope || cookie.current !== csrfCookie()) clear();
+      void load();
+    }
     return () => { alive = false; ++epoch; request?.abort(); clearTimeout(timer); channel?.close(); document.removeEventListener("visibilitychange", visibility); window.removeEventListener("commerce-session-logout", logout); window.removeEventListener("storage", storage); window.removeEventListener("focus", focus); };
   }, [scope, enabled, revision, poll]);
   const refresh = useCallback(() => bump((n) => n + 1), []);

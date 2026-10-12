@@ -348,8 +348,31 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     await page.getByTestId("live-console-refresh").click();
     await page.getByTestId(`live-offer-toggle-${offer}`).click();
     await expect.poll(async () => (await facts(request)).scenes[scene]!.Active).toBe(true);
+    await expect(page.getByTestId(`live-offer-toggle-${offer}`)).toBeChecked();
 
     await page.getByTestId(`live-stock-${offer}`).fill("17");
+    if (locale === "en" && size.width === 390) {
+      // Hold only the next real A1 response: ordinary refresh must not unmount the edited row.
+      const input = await page.getByTestId(`live-stock-${offer}`).elementHandle();
+      let held = false, release!: () => void;
+      let heldRequest: import("@playwright/test").Request | undefined;
+      const pending = new Promise<void>(resolve => { release = resolve; });
+      await page.route(`**/api/stores/${store}/live-sessions/${scene}/console`, async route => {
+        heldRequest = route.request();
+        const actual = await route.fetch(); held = true;
+        await pending; await route.fulfill({ response: actual });
+      }, { times: 1 });
+      const response = page.waitForResponse(reply => reply.request() === heldRequest, { timeout: 15_000 });
+      try {
+        await page.getByTestId("live-console-refresh").click();
+        await expect.poll(() => held, { timeout: 15_000, message: "LC-U1 edited-stock refresh must reach its actual A1 response" }).toBe(true);
+        await expect(page.getByTestId(`live-stock-${offer}`)).toHaveValue("17");
+        expect(await input!.evaluate(element => element.isConnected)).toBe(true);
+      } finally { release(); await input?.dispose(); }
+      await (await response).finished();
+      await expect(page.getByTestId(`live-stock-${offer}`)).toHaveValue("17");
+      await expect(page.getByTestId(`live-stock-save-${offer}`)).toBeEnabled();
+    }
     await page.getByTestId(`live-stock-save-${offer}`).click();
     await expect.poll(async () => (await facts(request)).scenes[scene]!.Stock).toBe(17);
     const stockReceipt = (await facts(request)).receipts.at(-1)!;

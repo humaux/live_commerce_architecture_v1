@@ -101,6 +101,35 @@ test("secondary reads are mount/refresh only, independent from A1 and non-fatal"
   h.view.refresh(); await flush(); assert.equal(reads, 2);
 });
 
+test("same-scope refresh retains the mounted editor while its replacement read is pending", async (t) => {
+  const f = fixture(); let reads = 0, release!: (value: unknown) => void;
+  const h = f.mount(() => f.hooks.useLiveRead(scope, true, async () => ++reads === 1
+    ? { stock: 12 } : new Promise(resolve => { release = resolve; })));
+  t.after(f.stop); await flush(); assert.equal(h.view.data.stock, 12);
+  h.view.refresh(); await flush(); assert.equal(reads, 2, "replacement read really started");
+  assert.equal(h.view.data?.stock, 12, "data:null would unmount OfferRow and discard the merchant draft");
+  assert.equal(h.view.boundary, "session-one");
+  release({ stock: 12 }); await flush(); assert.equal(h.view.data.stock, 12);
+});
+
+test("pending same-scope refresh still conceals on disable, scope change and logout", async (t) => {
+  for (const loss of ["disable", "scope", "logout"]) {
+    const f = fixture(); let reads = 0, release!: (value: unknown) => void, enabled = true, selected = scope;
+    const h = f.mount(() => f.hooks.useLiveRead(selected, enabled, async () => ++reads === 1
+      ? { title: "PRIVATE" } : new Promise(resolve => { release = resolve; })));
+    await flush(); assert.equal(h.view.data.title, "PRIVATE");
+    h.view.refresh(); await flush(); assert.equal(reads, 2);
+    const oldRelease = release; t.after(f.stop);
+    if (loss === "disable") { enabled = false; h.render(); }
+    else if (loss === "scope") { selected = `${scope}:other`; h.render(); }
+    else f.window.dispatchEvent(new Event("commerce-session-logout"));
+    await flush(); assert.equal(h.view.data, null, loss);
+    oldRelease({ title: "OLD_PRIVATE" }); await flush();
+    assert.notEqual(h.view.data?.title, "OLD_PRIVATE", "late old refresh cannot revive private data");
+    f.stop();
+  }
+});
+
 test("UNKNOWN journal restores the exact key/method/path/body and explicit retry after reload", async (t) => {
   const f = fixture(); f.setExecute(async () => { throw new f.studio.StudioError("uncertain"); });
   let h = f.mount(() => f.hooks.useLiveCommand(scope, "session-one", () => {})); t.after(f.stop); await flush();
