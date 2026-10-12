@@ -386,8 +386,9 @@ export function CreateOrderDrawer({
           setUncertain(false);
         } else if (retainOrderAttempt(outcome, uncertain)) {
           setUncertain(true);
-          // A business 422 may precede receipt lookup. Recovery seals this original key; it never guesses absence.
-          setRecoverable(!outcome.uncertain && (outcome.status === 422 || outcome.code === "attempt_closed"));
+          // Any retained definitive refusal can precede replay lookup (including lost inbox:reply).
+          // Recovery uses the frozen key/body and requires its own authority; it never guesses absence.
+          setRecoverable(!outcome.uncertain);
         } else {
           attempt.current.finish();
           guard.current?.clear();

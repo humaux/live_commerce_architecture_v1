@@ -269,6 +269,23 @@ for (const resolution of ["created", "unknown", "unauthorized"] as const) {
     }
   });
 }
+for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
+  test(`PR32 ${locale} retained UNKNOWN then capability409 exposes authoritative recovery with the original request`, async t => {
+    let placed = 0;
+    const { h, writes } = await recoveryForm(t, locale, path => path.endsWith("/recover")
+      ? response({ state: "created", order_id: offer })
+      : ++placed === 1 ? response({ code: "retry_later" }, 503) : response({ code: "capability" }, 409));
+    const recover = node(h, n => n.props["data-testid"] === "drawer-recover-attempt");
+    assert.equal(recover.props.disabled, false, "reply capability is not required for the recovery read");
+    recover.props.onClick(); await h.settle();
+    assert.equal(writes.length, 3);
+    assert.ok(writes[2].path.endsWith("/orders/for-buyer/recover"));
+    assert.ok(writes.every(w => w.key === writes[0].key && w.body === writes[0].body));
+    assert.ok(node(h, n => n.props["data-testid"] === "drawer-view-order").props.href.includes(offer));
+    assert.equal(nodes(h.output).some(n => n.props["data-testid"] === "drawer-new-attempt"), false);
+    assert.equal(node(h, n => n.props["data-testid"] === "drawer-close").props.disabled, false);
+  });
+}
 test("PR32 lost seal reply then attempt_closed can recover the same durable receipt without a new key", async t => {
   let placed = 0;
   const { h, writes } = await recoveryForm(t, "en", path => path.endsWith("/recover")

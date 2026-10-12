@@ -348,7 +348,7 @@ func TestLiveConsoleRecoveryCheckoutReceiptWithoutMerchantReceipt(t *testing.T) 
 	id := placed["order_id"]
 	// Privileged fixture models the crash gap after checkout's durable order/receipt commit,
 	// before either merchant receipt. Never deletes a checkout receipt, order or stock row.
-	mustExec(t, e.p.f.owner, `DELETE FROM ops.command_results WHERE store_id=$1 AND idempotency_key=$2 AND operation IN ('merchanttools.order.manual','merchanttools.order.for_buyer')`, e.store(), key)
+	mustExec(t, e.p.f.owner, `DELETE FROM ops.command_results WHERE store_id=$1 AND idempotency_key=$2 AND operation IN ('merchanttools.order.manual','merchanttools.order.for_buyer','merchanttools.order.for_buyer.completed')`, e.store(), key)
 	// Dynamic payment policy changes before retry; the unchanged body now fails pre-Begin.
 	mustExec(t, e.p.f.owner, `UPDATE checkout.bank_transfer_settings SET enabled=false WHERE store_id=$1`, e.store())
 	before, held := e.orders(), e.reserved()
@@ -357,12 +357,20 @@ func TestLiveConsoleRecoveryCheckoutReceiptWithoutMerchantReceipt(t *testing.T) 
 		t.Fatalf("need actual dynamic 422: %d %v", st, out)
 	}
 	st, out = lcrRecover(t, e, e.token(), key, body)
-	if st != 200 || out["state"] != "created" || out["order_id"] != id || len(out) != 2 {
-		t.Fatalf("orphan recovery: %d %v", st, out)
+	if st != 503 || out["code"] != "retry_later" || out["order_id"] != nil {
+		t.Fatalf("incomplete orphan must retain UNKNOWN: %d %v", st, out)
+	}
+	mustExec(t, e.p.f.owner, `UPDATE checkout.bank_transfer_settings SET enabled=true WHERE store_id=$1`, e.store())
+	st, out = e.post(e.token(), key, body)
+	if st != 200 || out["order_id"] != id {
+		// The removed upper receipt is completed again; this is a fresh upper response for the same checkout order.
+		if st != 201 || out["order_id"] != id {
+			t.Fatalf("explicit orphan replay: %d %v", st, out)
+		}
 	}
 	st, out = lcrRecover(t, e, e.token(), key, body)
-	if st != 200 || out["order_id"] != id {
-		t.Fatalf("lost created reply: %d %v", st, out)
+	if st != 200 || out["state"] != "created" || out["order_id"] != id || len(out) != 2 {
+		t.Fatalf("completed orphan recovery: %d %v", st, out)
 	}
 	if e.orders() != before || e.reserved() != held || e.plan.planned() != 0 {
 		t.Fatal("created recovery changed money/stock/DM")
@@ -488,11 +496,20 @@ func TestLiveConsoleRecoveryPlacementWinsConcurrentSeal(t *testing.T) {
 		t.Fatal("gap hook failed to abort original response")
 	}
 	result := <-recovered
-	if result.status != 200 || result.out["state"] != "created" || len(result.out) != 2 {
-		t.Fatalf("concurrent committed recovery: %d %v", result.status, result.out)
+	if result.status != 503 || result.out["code"] != "retry_later" || result.out["order_id"] != nil {
+		t.Fatalf("concurrent partial must remain UNKNOWN: %d %v", result.status, result.out)
 	}
 	if e.orders() != 1 || e.reserved() != 2 || e.plan.planned() != 0 {
 		t.Fatal("concurrent recovery changed committed stock/order/DM")
+	}
+	e.fb.FaultAfterPlace = nil
+	status, placed := e.post(e.token(), key, body)
+	if status != 201 {
+		t.Fatalf("explicit partial replay status=%d", status)
+	}
+	status, final := lcrRecover(t, e, e.token(), key, body)
+	if status != 200 || final["state"] != "created" || final["order_id"] != placed["order_id"] {
+		t.Fatal("recovery finalized before full completion or lost its order")
 	}
 }
 

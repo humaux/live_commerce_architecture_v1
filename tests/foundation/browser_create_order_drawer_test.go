@@ -131,7 +131,7 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	}
 	miRoute(t, metaClaims.page, pageID, e.tenant(), e.store(), bindingID)
 	var metaSessions []string
-	// Only our six session sources, intake rows and restrictions are owned by this fixture.
+	// Only our eight session sources, intake rows and restrictions are owned by this fixture.
 	t.Cleanup(func() {
 		for _, session := range metaSessions {
 			for _, query := range []string{
@@ -158,7 +158,7 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	metaClaims.startConsumer(t)
 	t.Cleanup(func() { metaClaims.stopConsumer() })
 	fixtures := []drawerFixture{}
-	for i := 0; i < 6; i++ {
+	for i := 0; i < 8; i++ {
 		session, _ := e.session("A1", ltgLive, 5)
 		metaSessions = append(metaSessions, session)
 		metaClaims.session, metaClaims.postID = session, pageID+"_"+mciDigits(10)
@@ -193,6 +193,9 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 			t.Fatal("drawer Meta claim must be accepted")
 		}
 		bundle, conv := claim.bundleID, lcConversation(t, e.p.f, e.tenant(), e.store(), "page")
+		if i >= 6 {
+			conv = drawerPartialConversation(t, e, metaClaims, pageID)
+		}
 		e.linkPeer(bundle, conv)
 		e.h.closeWindow(t, session)
 		mustExec(t, e.p.f.owner, `UPDATE social.conversations SET asset_id=$2 WHERE id=$1`, conv, pageID)
@@ -224,6 +227,12 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 		}
 		fixtures = append(fixtures, drawerFixture{conv, unlinked, bundle})
 	}
+	partialFixture := fixtures[6]
+	mustExec(t, e.p.f.owner, `UPDATE inbox.conversation_state SET last_inbound_at=clock_timestamp() WHERE conversation_id=$1`, partialFixture.Linked)
+	partialFault := newDrawerPartialFault(t, e, partialFixture.Bundle, openSend.OpenSend)
+	capabilityFixture := fixtures[7]
+	mustExec(t, e.p.f.owner, `UPDATE inbox.conversation_state SET last_inbound_at=clock_timestamp() WHERE conversation_id=$1`, capabilityFixture.Linked)
+	capabilityControl := newDrawerCapabilityControl(t, e, capabilityFixture.Bundle, openSend.OpenSend)
 	// The second harness has its own payload key; it must exclusively own the shared consumer queue.
 	metaClaims.stopConsumer()
 	// The existing signed-ingress/real-poller fixture proves the direct CommentStream trigger over real A2.
@@ -279,6 +288,9 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle("/v1/identity/", private)
 	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if partialFault.handle(w, r) || capabilityControl.handleCapability(w, r) {
+			return
+		}
 		if r.Method == "POST" && r.URL.Path == "/__test/drawer-bank-transfer" {
 			// Disclosed fault on this harness's synthetic settings only, after the real UI has loaded valid options.
 			var input struct {
@@ -482,7 +494,9 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	raw, _ := json.Marshal(fixtures)
+	raw, _ := json.Marshal(fixtures[:6])
+	partialRaw, _ := json.Marshal(partialFixture)
+	capabilityRaw, _ := json.Marshal(capabilityFixture)
 	cmd := exec.CommandContext(ctx, "node", "tests/admin/create-order-drawer-gate.mjs")
 	cmd.Dir = root
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
@@ -493,7 +507,7 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	}()
 	cmd.Env = browserEnvironment(map[string]string{
 		"COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1", "COMMERCE_PUBLIC_ORIGIN": origin, "COMMERCE_API_ORIGIN": api.URL, "COMMERCE_OIDC_ISSUER": idp.server.URL, "COMMERCE_BFF_KEY": bffKey,
-		"LC_DRAWER_EVIDENCE": evidence, "LC_DRAWER_PORT": port, "LC_DRAWER_STORE": e.store(), "LC_DRAWER_FIXTURES": string(raw), "LC_DRAWER_SKU": e.money, "LC_DRAWER_SKU_CODE": skuCode, "LC_DRAWER_HOME": e.homeKey, "LC_DRAWER_CVS": cvsKey,
+		"LC_DRAWER_CAPABILITY_FIXTURE": string(capabilityRaw), "LC_DRAWER_PARTIAL_FIXTURE": string(partialRaw), "LC_DRAWER_EVIDENCE": evidence, "LC_DRAWER_PORT": port, "LC_DRAWER_STORE": e.store(), "LC_DRAWER_FIXTURES": string(raw), "LC_DRAWER_SKU": e.money, "LC_DRAWER_SKU_CODE": skuCode, "LC_DRAWER_HOME": e.homeKey, "LC_DRAWER_CVS": cvsKey,
 		"LC_DRAWER_COMMENT_STORE": cf.storeA1, "LC_DRAWER_COMMENT_SCENE": comments.e.session, "LC_DRAWER_COMMENT_REF": fmt.Sprint(comments.ids["claim_ref"]), "LC_DRAWER_CALIBRATION": calibration,
 	})
 	log := browserLog(t, filepath.Join(evidence, "browser.log"))
@@ -504,16 +518,22 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	if err := e.p.f.owner.QueryRow(ctx, `SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2 AND source='merchant_manual'`, e.tenant(), e.store()).Scan(&orders); err != nil {
 		t.Fatal(err)
 	}
-	// One history + twelve drawer orders + one manual UNKNOWN/edit/replay order, each additionally bound to its request receipts.
-	pg, _ := json.Marshal(map[string]any{"orders": orders, "expected": 14, "single_order": orders == 14})
+	// Preserve the original PG14 assertion separately; the seventh and eighth bundles each add exactly one order.
+	var legacyOrders int
+	if err := e.p.f.owner.QueryRow(ctx, `SELECT count(*) FROM checkout.orders o WHERE o.tenant_id=$1 AND o.store_id=$2 AND o.source='merchant_manual' AND NOT EXISTS(SELECT 1 FROM inbox.order_for_buyer b WHERE b.tenant_id=o.tenant_id AND b.store_id=o.store_id AND b.bundle_id=ANY($3::uuid[]) AND b.order_id=o.id)`, e.tenant(), e.store(), []string{partialFixture.Bundle, capabilityFixture.Bundle}).Scan(&legacyOrders); err != nil {
+		t.Fatal(err)
+	}
+	partialFault.readback(t, evidence, runErr == nil)
+	capabilityControl.readback(t, evidence, runErr == nil)
+	pg, _ := json.Marshal(map[string]any{"orders": orders, "expected": 16, "single_order": orders == 16, "legacy_orders": legacyOrders, "legacy_expected": 14, "legacy_single_order": legacyOrders == 14})
 	if err := os.WriteFile(filepath.Join(evidence, "pg-readback.json"), pg, 0600); err != nil {
 		t.Fatal(err)
 	}
 	if runErr != nil {
-		t.Fatalf("drawer browser gate failed: %v; PG orders=%d expected=14; evidence=%s", runErr, orders, evidence)
+		t.Fatalf("drawer browser gate failed: %v; PG orders=%d expected=16; evidence=%s", runErr, orders, evidence)
 	}
-	if orders != 14 {
-		t.Fatalf("drawer single-order PG readback orders=%d expected=14; evidence=%s", orders, evidence)
+	if orders != 16 || legacyOrders != 14 {
+		t.Fatalf("drawer single-order PG readback orders=%d expected=16 legacy_orders=%d expected=14; evidence=%s", orders, legacyOrders, evidence)
 	}
 	for _, fx := range fixtures {
 		if n := e.count(`SELECT count(*) FROM inbox.order_for_buyer WHERE store_id=$1 AND bundle_id=$2 AND state='placed'`, e.store(), fx.Bundle); n != 1 {
@@ -528,9 +548,9 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 		Cases  int      `json:"cases"`
 		Failed []string `json:"failed"`
 	}
-	// Keep the original exact 26 cases, plus each of the three new narrow-role locale cases.
-	if json.Unmarshal(data, &result) != nil || result.Cases != 29 || len(result.Failed) != 0 {
-		t.Fatalf("drawer exact 29-case matrix result missing; evidence=%s", evidence)
+	// Keep all original 29 cases and the partial and capability recovery cases.
+	if json.Unmarshal(data, &result) != nil || result.Cases != 31 || len(result.Failed) != 0 {
+		t.Fatalf("drawer exact 31-case matrix result missing; evidence=%s", evidence)
 	}
 	ledgerBytes, err := os.ReadFile(filepath.Join(evidence, "click-ledger.json"))
 	if err != nil {
@@ -551,5 +571,17 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 			t.Fatalf("drawer narrow-role locale %s requires exactly one real click verdict, got %d; evidence=%s", locale, matches, evidence)
 		}
 	}
+	for _, control := range []string{"partial Begin fault", "partial A16R authority", "partial original retry persistence"} {
+		matches := 0
+		for _, row := range ledger {
+			if row.Case == "DU3-partial-begin-recovery" && row.Control == control && row.Status == "PASS" {
+				matches++
+			}
+		}
+		if matches != 1 {
+			t.Fatalf("partial case requires exactly one %s click verdict, got %d; evidence=%s", control, matches, evidence)
+		}
+	}
+	checkCapabilityLedger(t, ledger, evidence)
 	t.Logf("PASS LC-U3 real browser/Go/PG matrix cases=%d orders=%d; evidence=%s", result.Cases, orders, evidence)
 }

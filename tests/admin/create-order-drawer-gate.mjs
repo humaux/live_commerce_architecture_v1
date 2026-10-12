@@ -3,6 +3,8 @@
 // Used by: TestBrowserManualOrderLink after unchanged legacy cases; no trace/HAR/body/clipboard logging.
 // Invariants: I02/I03/I06/I09/I11; only fixed case names, status/counts and synthetic screenshots enter evidence.
 import assert from "node:assert/strict";
+import { runCapabilityRecovery } from "./create-order-capability-recovery.mjs";
+import { runPartialRecovery } from "./create-order-partial-recovery.mjs";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { createWriteStream } from "node:fs";
@@ -16,7 +18,9 @@ const evidence=process.env.LC_DRAWER_EVIDENCE, store=process.env.LC_DRAWER_STORE
 const skuCode=process.env.LC_DRAWER_SKU_CODE;
 const fixtures=JSON.parse(process.env.LC_DRAWER_FIXTURES), home=process.env.LC_DRAWER_HOME, cvs=process.env.LC_DRAWER_CVS;
 const calibration=process.env.LC_DRAWER_CALIBRATION||"";
-assert(evidence && store && sku && home && fixtures.length===6);
+const partialFixture=JSON.parse(process.env.LC_DRAWER_PARTIAL_FIXTURE);
+const capabilityFixture=JSON.parse(process.env.LC_DRAWER_CAPABILITY_FIXTURE);
+assert(evidence && store && sku && home && fixtures.length===6 && partialFixture.Linked && partialFixture.Bundle);
 await mkdir(evidence,{recursive:true});
 const ledger=[], failed=[], results=[];
 let browser, child, cases=0, current="DU3-setup";
@@ -503,6 +507,23 @@ try {
   const restored=await fetch(`${api}/__test/drawer-principal`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({limited:false})});
   assert.equal(restored.status,204,"restore owned fixture identity");
  }
+ assert.equal(cases,29,"preserve every original case before adding partial recovery");
+ current="DU3-partial-begin-recovery";
+ const partialContext=await browser.newContext(ctxOpts({ignoreHTTPSErrors:true,viewport:{width:1440,height:900}})),partialPage=await partialContext.newPage();
+ try {
+  await partialPage.goto(`${origin}/en`);await partialPage.getByRole("button",{name:"Sign in with identity service",exact:true}).click();
+  await expect(partialPage.getByTestId("dashboard-page")).toBeVisible();
+  await runPartialRecovery({page:partialPage,api,origin,store,cvs,sku,fixture:partialFixture,routePath,openConversation,record,results});
+  cases++;
+ } finally {await partialContext.close();}
+ assert.equal(cases,30,"preserve partial recovery and every original case before capability recovery");
+ current="DU3-capability-after-unknown-recovery";
+ const capabilityContext=await browser.newContext(ctxOpts({ignoreHTTPSErrors:true,viewport:{width:1440,height:900}})),capabilityPage=await capabilityContext.newPage();
+ try {
+  await capabilityPage.goto(`${origin}/en`);await capabilityPage.getByRole("button",{name:"Sign in with identity service",exact:true}).click();
+  await expect(capabilityPage.getByTestId("dashboard-page")).toBeVisible();
+  await runCapabilityRecovery({page:capabilityPage,api,origin,store,home,sku,fixture:capabilityFixture,routePath,openConversation,record,results});cases++;
+ } finally {await capabilityContext.close();}
 } catch (error) {
  const coordinate=String(error?.stack||"").match(/create-order-drawer-gate\.mjs:(\d+):(\d+)/);
  failed.push(current);ledger.push({case:current,control:"scenario",action:"run",actual:coordinate?`assertion failed at create-order-drawer-gate.mjs:${coordinate[1]}:${coordinate[2]}`:"assertion failed; private diagnostics suppressed",status:"FAIL"});

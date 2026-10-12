@@ -254,6 +254,10 @@ func (f *ForBuyer) Place(ctx context.Context, token, storeID, key string, in For
 	if err != nil {
 		return ForBuyerResult{}, false, err
 	}
+	// The inner A16 receipt predates DM planning. Recovery must not finalize a partially committed pipeline.
+	if err = f.complete(ctx, token, storeID, key, request, out.OrderID); err != nil {
+		return ForBuyerResult{}, false, mapForBuyerError(err)
+	}
 	return out, receiptReplayed, nil
 }
 
@@ -433,6 +437,9 @@ func mapForBuyerError(err error) error {
 		return fb
 	case errors.As(err, &coded): // a refusal this file raised itself (409 capability) or a pipeline refusal already coded
 		return coded
+	case errors.Is(err, command.ErrConflict):
+		// Whole-attempt binding now detects this before claims reservation; preserve the A16 domain error contract.
+		return &claims.ForBuyerError{Status: http.StatusConflict, Code: "idempotency_conflict"}
 	}
 	return mapReceiptError(err)
 }

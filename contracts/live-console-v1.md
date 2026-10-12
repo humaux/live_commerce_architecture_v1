@@ -499,8 +499,15 @@ replay otherwise returns the same order and operation, with `buyer_link` null (a
 `POST /v1/admin/stores/{store_id}/orders/for-buyer/recover` takes the **same** original A16 JSON body and
 `Idempotency-Key`. Authority is `inventory:reserve` + `catalog:read` + `orders:read`
 under the authenticated store scope. It creates no order, stock hold, buyer link or DM.
-It answers 200 with exactly `{state:"created", order_id:uuid}` when the durable
-`checkout.begin` receipt exists, including a crash before the merchant receipt; otherwise
+It answers 200 with exactly `{state:"created", order_id:uuid}` only when the durable
+`checkout.begin` receipt **and** the full A16 completion receipt exist and agree on the order.
+The append-only `merchanttools.order.for_buyer.completed` receipt binds the original canonical
+A16 body and key to `{order_id}`; it commits only after manual source/link/audit, bundle
+bookkeeping and the requested DM planning (or definitive `not_sent`) have completed.
+A Begin-only order, or an inner A16 receipt preceding DM planning, returns `503 retry_later`
+with no definitive recovery receipt or closure. The drawer retains its frozen body/key and
+requires an explicit same-key placement retry to finish the idempotent pipeline. An older
+`created` recovery receipt alone cannot bypass this completion proof. Otherwise it answers
 exactly `{state:"not_created"}` only after committing a permanent closed-attempt receipt.
 No bearer links or customer data leave this endpoint. A pre-amendment partial checkout
 order without either the full original A16 receipt or the new canonical attempt binding

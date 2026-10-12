@@ -1,7 +1,7 @@
 // Purpose: serialize merchant manual/for-buyer attempts across all pipeline transactions and authoritative A16R recovery.
 // Depends on: platform scoped transactions, command.Run append-only ops.command_results, checkout durable Begin receipts.
 // Used by: ManualOrders.Place, ForBuyer.Place and ForBuyer.Recover; no external provider calls.
-// Invariants: I01/I02/I03/I06/I11; absence is final only after a durable seal, with original placement excluded.
+// Invariants: I01/I02/I03/I06/I11; absence requires a durable seal; created requires post-DM A16 completion.
 package merchanttools
 
 import (
@@ -19,6 +19,7 @@ import (
 const attemptOperation = "merchanttools.order.attempt"
 const recoveryOperation = "merchanttools.order.attempt.recovery"
 const checkoutClosureOperation = "merchanttools.order.checkout.closed"
+const forBuyerCompleteOperation = "merchanttools.order.for_buyer.completed"
 const attemptBudget = 14 * time.Second
 
 type attemptContextKey struct{}
@@ -35,6 +36,31 @@ type attemptRequest struct {
 type OrderRecovery struct {
 	State   string `json:"state"`
 	OrderID string `json:"order_id,omitempty"`
+}
+
+type forBuyerCompletion struct {
+	OrderID string `json:"order_id"`
+}
+
+// complete records only the final pipeline boundary, after sendPayLink has returned a durable or definitive result.
+// Failure retains UNKNOWN; a same-key Place replay completes the marker without redoing committed side effects.
+func (f *ForBuyer) complete(ctx context.Context, token, store, key string, request any, orderID string) error {
+	return platform.WithScope(ctx, f.manual.pool, token, store, manualPermission, func(tx pgx.Tx, scope platform.Scope) error {
+		if err := requireCatalog(ctx, tx, scope, token); err != nil {
+			return err
+		}
+		var saved forBuyerCompletion
+		if err := command.Run(ctx, tx, scope, forBuyerCompleteOperation, key, request, &saved, func() error {
+			saved.OrderID = orderID
+			return nil
+		}); err != nil {
+			return err
+		}
+		if !command.ValidID(saved.OrderID) || saved.OrderID != orderID {
+			return command.ErrConflict
+		}
+		return nil
+	})
 }
 
 func attemptHeld(ctx context.Context, m *ManualOrders, store, key string) bool {
@@ -180,6 +206,17 @@ func (f *ForBuyer) Recover(ctx context.Context, token, store, key string, in For
 			}
 			resolved := OrderRecovery{State: "not_created"}
 			if found {
+				// Begin commits before source/link, bundle bookkeeping and DM. Only Place may mark their completion;
+				// a missing final receipt must keep the drawer's frozen request available for explicit replay.
+				var completed forBuyerCompletion
+				if err = command.Run(callCtx, tx, scope, forBuyerCompleteOperation, key, request, &completed, func() error {
+					return ErrUnavailable
+				}); err != nil {
+					return err
+				}
+				if !command.ValidID(completed.OrderID) || completed.OrderID != result.OrderID {
+					return command.ErrConflict
+				}
 				resolved = OrderRecovery{State: "created", OrderID: result.OrderID}
 			} else {
 				binding := struct {
