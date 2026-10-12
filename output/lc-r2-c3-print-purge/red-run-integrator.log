@@ -1,0 +1,46 @@
+=== RUN   TestClaimsRetentionLCR2C3xPrintPurge
+=== RUN   TestClaimsRetentionLCR2C3xPrintPurge/c3x-age-enforced
+    claims_retention_lc_r2_test.go:145: C3x enforced: print_receipts=0, want 3 (counts: bundles=0 comment_events=0 conversations=0 enforced=1 intake=0 links=0 messages=0 more=0 operations=0)
+    claims_retention_lc_r2_test.go:145: C3x enforced: prints=0, want 3 (counts: bundles=0 comment_events=0 conversations=0 enforced=1 intake=0 links=0 messages=0 more=0 operations=0)
+    claims_retention_lc_r2_test.go:145: C3x enforced: bundle_peers=0, want 1 (counts: bundles=0 comment_events=0 conversations=0 enforced=1 intake=0 links=0 messages=0 more=0 operations=0)
+    claims_retention_lc_r2_test.go:151: the aged print fact survives (live-console-v1 §10 C3-extended)
+    claims_retention_lc_r2_test.go:154: the aged live.comment.print receipt survives (it must be purged with the fact)
+    claims_retention_lc_r2_test.go:157: an aged print fact of another store/tenant survives (the class is platform-level like C1-C6)
+    claims_retention_lc_r2_test.go:160: an aged live.comment.print receipt of another store/tenant survives
+    claims_retention_lc_r2_test.go:163: the aged inbox.bundle_peers link survives
+    claims_retention_lc_r2_test.go:188: run row counts[prints]=<nil>, want 3
+    claims_retention_lc_r2_test.go:188: run row counts[print_receipts]=<nil>, want 3
+    claims_retention_lc_r2_test.go:188: run row counts[bundle_peers]=<nil>, want 1
+    claims_retention_lc_r2_test.go:189: run row counts[print_receipts]=<nil>, want 0
+    claims_retention_lc_r2_test.go:189: run row counts[bundle_peers]=<nil>, want 0
+    claims_retention_lc_r2_test.go:189: run row counts[prints]=<nil>, want 0
+    claims_retention_lc_r2_test.go:196: C3x capped: prints=0, want 1 (counts: bundles=0 comment_events=0 conversations=0 enforced=1 intake=0 links=0 messages=0 more=0 operations=0)
+    claims_retention_lc_r2_test.go:196: C3x capped: more=0, want 1 (counts: bundles=0 comment_events=0 conversations=0 enforced=1 intake=0 links=0 messages=0 more=0 operations=0)
+    claims_retention_lc_r2_test.go:198: p_limit=1 did not leave exactly one aged print fact
+    claims_retention_lc_r2_test.go:201: C3x final: prints=0, want 1 (counts: bundles=0 comment_events=0 conversations=0 enforced=1 intake=0 links=0 messages=0 more=0 operations=0)
+=== RUN   TestClaimsRetentionLCR2C3xPrintPurge/c3x-report-only
+    claims_retention_lc_r2_test.go:227: C3x report-only: prints=0, want 1 (counts: bundles=0 comment_events=0 conversations=0 enforced=0 intake=0 links=0 messages=0 more=0 operations=0)
+    claims_retention_lc_r2_test.go:227: C3x report-only: print_receipts=0, want 1 (counts: bundles=0 comment_events=0 conversations=0 enforced=0 intake=0 links=0 messages=0 more=0 operations=0)
+    claims_retention_lc_r2_test.go:227: C3x report-only: bundle_peers=0, want 1 (counts: bundles=0 comment_events=0 conversations=0 enforced=0 intake=0 links=0 messages=0 more=0 operations=0)
+    claims_retention_lc_r2_test.go:237: run row counts[print_receipts]=<nil>, want 1
+    claims_retention_lc_r2_test.go:237: run row counts[bundle_peers]=<nil>, want 1
+    claims_retention_lc_r2_test.go:237: run row counts[prints]=<nil>, want 1
+=== RUN   TestClaimsRetentionLCR2C3xPrintPurge/c2-deidentify-drops-peer-links
+    claims_retention_lc_r2_test.go:255: the de-identified bundle's peer link survives (live-console-v1 §10 C3-extended: bundle_peers also on C2)
+    claims_retention_lc_r2_test.go:266: run row counts[bundle_peers]=<nil>, want 0
+=== RUN   TestClaimsRetentionLCR2C3xPrintPurge/rd4-erasure-deletes-peer-links
+    claims_retention_lc_r2_test.go:294: RD4 erasure: bundle_peers=0, want 2 (counts: bundles=2 comment_events=0 conversations=0 intake=0 lines=0 links=0 messages=0 operations=0)
+    claims_retention_lc_r2_test.go:297: the erased actor's peer links survive (live-console-v1 §10 RD4)
+    claims_retention_lc_r2_test.go:315: actor_erased counts map[bundles:2 comment_events:0 conversations:0 intake:0 lines:0 links:0 messages:0 operations:0] lack bundle_peers=2
+=== RUN   TestClaimsRetentionLCR2C3xPrintPurge/rd4-peer-link-only-not-pt404
+    claims_retention_lc_r2_test.go:343: peer-link-only erasure: counts= held=false err=retention_not_found (a counted bundle_peers delete must not PT404)
+--- FAIL: TestClaimsRetentionLCR2C3xPrintPurge (1.57s)
+    --- FAIL: TestClaimsRetentionLCR2C3xPrintPurge/c3x-age-enforced (0.04s)
+    --- FAIL: TestClaimsRetentionLCR2C3xPrintPurge/c3x-report-only (0.01s)
+    --- FAIL: TestClaimsRetentionLCR2C3xPrintPurge/c2-deidentify-drops-peer-links (0.01s)
+    --- FAIL: TestClaimsRetentionLCR2C3xPrintPurge/rd4-erasure-deletes-peer-links (0.02s)
+    --- FAIL: TestClaimsRetentionLCR2C3xPrintPurge/rd4-peer-link-only-not-pt404 (0.01s)
+FAIL
+FAIL	livecommerce/tests/foundation	2.601s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

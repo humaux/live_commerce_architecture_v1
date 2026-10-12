@@ -50,6 +50,12 @@ const cells: { n: number; locale: Locale; viewport: Viewport }[] = [
 // 30000 minor = 300.00 normal price, 20000 = 200.00 live price, quantity 2 on the claim and 1 on the direct purchase.
 const live = { total: "400", unit: "200", normalTotal: "600", normalUnit: "300" };
 const has = (n: string) => new RegExp(`(^|[^0-9.,])${n}(\\.00)?([^0-9]|$)`);
+// Negative price checks scan whole sections, which also show fixture ids built from random hex: the order UUID
+// ("2ef200c7-…"), the SKU code "LT<n>-<TAG>" and the product name "Live tools product <n> <TAG>". Remove exactly those
+// fixture formats first so an id never reads as a price (PR #33 flake: "must not show 200" matched UUID "…f200c…").
+// Positive checks and the amount matcher are unchanged; no rendered amount can match these id formats.
+const withoutFixtureIds = (s: string) =>
+  s.replace(/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}/gi, " ").replace(/\bLT\d+-[0-9A-Z]+\b/g, " ").replace(/Live tools product \d+ [0-9A-Z]+/g, " ");
 
 async function act(name: string, body: Record<string, unknown> = {}) {
   const response = await fetch(`${control}/act?name=${name}`, { method: "POST", headers: { "X-Gate-Key": controlKey, "content-type": "application/json" }, body: JSON.stringify(body) });
@@ -88,7 +94,7 @@ async function checkoutPayAtPickup(page: Page, locale: Locale, viewport: Viewpor
   await expect(page.getByTestId("address-section")).toBeVisible();
   const quoted = page.locator(".quotation");
   await expect(quoted, `${label}: the quotation shows the ${expectTotal} total`).toContainText(has(expectTotal));
-  expect(await quoted.innerText(), `${label}: the quotation must not show ${notTotal}`).not.toMatch(has(notTotal));
+  expect(withoutFixtureIds(await quoted.innerText()), `${label}: the quotation must not show ${notTotal}`).not.toMatch(has(notTotal));
   await page.getByTestId("cvs-recipient-name").fill("王小明");
   await page.getByTestId("cvs-recipient-phone").fill("0912345678");
   await page.getByTestId("cvs-entered-code").fill("123456");
@@ -106,7 +112,7 @@ async function checkoutPayAtPickup(page: Page, locale: Locale, viewport: Viewpor
   await expect(page.getByTestId("order-collection")).toHaveAttribute("data-state", "PENDING");
   expect(await page.getByTestId("pay-order").count(), "a pay-at-pickup order has no card step").toBe(0);
   await expect(page.getByTestId("order-section")).toContainText(has(expectTotal));
-  expect(await page.getByTestId("order-section").innerText(), `${label}: the order page must not show ${notTotal}`).not.toMatch(has(notTotal));
+  expect(withoutFixtureIds(await page.getByTestId("order-section").innerText()), `${label}: the order page must not show ${notTotal}`).not.toMatch(has(notTotal));
   await shot(page, `${label}-order`, locale, viewport);
   return order;
 }
@@ -231,7 +237,7 @@ for (const cell of cells) {
       await expect(line).toContainText(run.sku_code);
       await expect(line).toContainText(`${claim.quantity} 2`);
       await expect(line, "the claim page shows the LIVE price (2 x 200)").toContainText(has(live.total));
-      expect(await line.innerText(), "the claim page must not show the normal total").not.toMatch(has(live.normalTotal));
+      expect(withoutFixtureIds(await line.innerText()), "the claim page must not show the normal total").not.toMatch(has(live.normalTotal));
       expect(new URL(buyer.url()).hash).toBe("");
       await shot(buyer, "buyer-claim-live-price", locale, viewport);
       await buyer.getByTestId("claim-add").click();
@@ -252,7 +258,7 @@ for (const cell of cells) {
         await expect(line.getByTestId("cart-line-total"), `${label}: the line total uses the live price (2 x 200)`).toContainText(has(live.total));
         const subtotal = scope.getByTestId("cart-subtotal");
         await expect(subtotal, `${label}: the subtotal uses the live price`).toContainText(has(live.total));
-        expect(await subtotal.innerText(), `${label}: the subtotal must not show the normal total`).not.toMatch(has(live.normalTotal));
+        expect(withoutFixtureIds(await subtotal.innerText()), `${label}: the subtotal must not show the normal total`).not.toMatch(has(live.normalTotal));
       };
       // The cart page loads the cart fresh (CartProvider GET /api/buyer/cart), so assert it first, then the
       // drawer from the same page (the claim page keeps its own cart state and the drawer would lag it).

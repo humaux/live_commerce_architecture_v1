@@ -51,3 +51,11 @@ test("main writes matrix / sweep_n / visual_n to GITHUB_OUTPUT", () => {
   assert.match(text, /^matrix=\[\{"mode":"--browser-click-sweep@1\/10","art":"gate-browser-click-sweep_1_10"\}/);
   assert.match(text, /\nsweep_n=10\nvisual_n=0\n$/);
 });
+
+// PR #39 r7 (Codex P2): the nightly schedule shares the ref and mode names with post-merge push runs and has
+// cancel-in-progress on; without the event in the group it would cancel push verification jobs.
+test("gate job concurrency group separates run classes by event", () => {
+  const wf = readFileSync(new URL("../../.github/workflows/gates.yml", import.meta.url), "utf8");
+  const group = /^\s+group: gates-.*matrix\.mode.*$/m.exec(wf)?.[0] ?? "";
+  assert.match(group, /\$\{\{ github\.event_name \}\}/, "gate job concurrency group must include github.event_name");
+});

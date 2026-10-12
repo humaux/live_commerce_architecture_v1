@@ -32,6 +32,9 @@ var allowedCounts = map[string]bool{
 	"comment_events": true, "messages": true, "conversations": true, "more": true, "busy": true,
 	"lines": true, "replayed": true, "tombstones": true, "inserted": true, "social_deferred": true,
 	"blocked_actors": true, // 0154 (W3-05B): restricted-buyer entries removed by an actor erasure
+	// 0169 (LC-R2): C3x counts — comment-print facts, their live.comment.print receipts, DM peer links
+	// (run_retention batches; bundle_peers is also counted by an actor erasure's RD4 hook).
+	"prints": true, "print_receipts": true, "bundle_peers": true,
 }
 
 // Counts is a set of row counts (booleans as 0/1). Every formatting path prints numbers only.

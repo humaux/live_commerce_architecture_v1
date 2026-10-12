@@ -1,0 +1,10 @@
+=== RUN   TestClaimsRetentionCRP02Schema
+=== RUN   TestClaimsRetentionCRP02Schema/writer-policy-behaviour
+    claims_retention_test.go:3452: writer comment_prints: lock-only UPDATE cannot change first_printed_at: err=<nil> (SQLSTATE ""), want SQLSTATE 42501
+    claims_retention_test.go:3452: writer comment_prints: lock-only UPDATE cannot even rewrite the same value: err=<nil> (SQLSTATE ""), want SQLSTATE 42501
+--- FAIL: TestClaimsRetentionCRP02Schema (3.17s)
+    --- FAIL: TestClaimsRetentionCRP02Schema/writer-policy-behaviour (0.41s)
+FAIL
+FAIL	livecommerce/tests/foundation	3.979s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

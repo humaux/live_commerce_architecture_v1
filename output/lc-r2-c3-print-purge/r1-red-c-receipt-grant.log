@@ -1,0 +1,12 @@
+=== RUN   TestClaimsRetentionCRP02Schema
+=== RUN   TestClaimsRetentionCRP02Schema/writer-policy-behaviour
+    claims_retention_test.go:3452: writer command_results: SELECT * needs every column: err=<nil> (SQLSTATE ""), want SQLSTATE 42501
+    claims_retention_test.go:3452: writer command_results: response unreadable: err=<nil> (SQLSTATE ""), want SQLSTATE 42501
+    claims_retention_test.go:3452: writer command_results: request_hash unreadable: err=<nil> (SQLSTATE ""), want SQLSTATE 42501
+    claims_retention_test.go:3452: writer command_results: principal_id unreadable: err=<nil> (SQLSTATE ""), want SQLSTATE 42501
+--- FAIL: TestClaimsRetentionCRP02Schema (1.52s)
+    --- FAIL: TestClaimsRetentionCRP02Schema/writer-policy-behaviour (0.31s)
+FAIL
+FAIL	livecommerce/tests/foundation	2.281s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

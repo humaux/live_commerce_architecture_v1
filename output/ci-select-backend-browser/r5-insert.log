@@ -1,0 +1,51 @@
+rewrite --browser-meta-health-ui: 36 -> 50 packages
+rewrite --browser-tracking-backfill: 27 -> 67 packages
+rewrite --browser-click-sweep: 106 -> 108 packages
+rewrite --browser-visual-lint: 106 -> 108 packages
+rewrite --browser-identity: 12 -> 110 packages
+rewrite --browser-buyer-comms: 54 -> 53 packages
+rewrite --browser-checkout-offline: 90 -> 89 packages
+rewrite --browser-home-cod: 90 -> 89 packages
+rewrite --browser-promotions: 75 -> 74 packages
+rewrite --browser-admin-legacy: 5 -> 35 packages
+rewrite --browser-buyer: 50 -> 49 packages
+rewrite --browser-merchant-buyer: 56 -> 55 packages
+rewrite --browser-manual-order: 72 -> 71 packages
+rewrite --browser-merchant-orders-bff: 112 -> 111 packages
+rewrite --browser-merchant-orders-ui: 116 -> 115 packages
+rewrite --browser-studio-bff: 111 -> 110 packages
+rewrite --browser-claim-checkout: 47 -> 46 packages
+rewrite --browser-live-claims: 77 -> 76 packages
+rewrite --browser-order: 50 -> 49 packages
+rewrite --browser-payment: 50 -> 49 packages
+rewrite --browser-refund-fulfilment: 69 -> 68 packages
+rewrite --browser-customers-billing: 118 -> 117 packages
+rewrite --browser-card-payments: 116 -> 115 packages
+rewrite --browser-meta-ads: 117 -> 116 packages
+rewrite --browser-ads-attribution: 60 -> 59 packages
+rewrite --browser-cvs: 70 -> 75 packages
+rewrite --browser-catalog-media: 116 -> 115 packages
+rewrite --browser-storefront-publish: 64 -> 63 packages
+rewrite --browser-store-domains: 116 -> 115 packages
+rewrite --browser-storefront: 82 -> 81 packages
+rewrite --browser-webkit: 78 -> 82 packages
+rewrite --browser-e2e: 92 -> 91 packages
+rewrite --browser-design: 64 -> 63 packages
+rewrite --browser-ops-polish: 85 -> 84 packages
+rewrite --browser-meta-connect: 66 -> 65 packages
+rewrite --browser-product-editor: 41 -> 40 packages
+rewrite --browser-catalog-core: 41 -> 40 packages
+rewrite --browser-returns-ui: 57 -> 56 packages
+rewrite --browser-product-media-v2: 62 -> 61 packages
+rewrite --browser-reports: 111 -> 110 packages
+rewrite --browser-migration-import: 74 -> 73 packages
+insert-narrow-covers: rewritten=41 unchanged=10 (browser universe=51); file written
+✔ output/ci-select-backend-browser/tools/insert-narrow-covers.mjs (60.470542ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 64.270833

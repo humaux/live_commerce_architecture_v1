@@ -1,4 +1,4 @@
-// Purpose: LC-U2b independent real-click inbox, authority and privacy acceptance.
+// Purpose: LC-U2b inbox acceptance plus LC-U2b2 customer-link denial for the real live_operator session.
 // Depends on: real Next/BFF/Go/PG fixture, signed MOCK OIDC, native-device.ts; LC_BROWSER_INBOX_* env.
 // Used by: browser_inbox_ui_test.go via --browser-inbox on GitHub runners; live Meta remains NOT_RUN.
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
@@ -493,9 +493,9 @@ test("INU05 native hide clears private thread; visible return reauthorizes befor
 });
 
 const localeCases = [
-  { locale: "zh-TW", title: "訊息", send: "送出回覆", buyer: "買家資料", back: "返回對話列表" },
-  { locale: "zh-CN", title: "消息", send: "发送回复", buyer: "买家资料", back: "返回对话列表" },
-  { locale: "en", title: "Messages", send: "Send reply", buyer: "Buyer details", back: "Back to conversations" },
+  { locale: "zh-TW", linkPermission: "連結顧客需要回覆與顧客讀取權限。", title: "訊息", send: "送出回覆", buyer: "買家資料", back: "返回對話列表" },
+  { locale: "zh-CN", linkPermission: "连接顾客需要回复与顾客读取权限。", title: "消息", send: "发送回复", buyer: "买家资料", back: "返回对话列表" },
+  { locale: "en", linkPermission: "Linking needs reply and customer read access.", title: "Messages", send: "Send reply", buyer: "Buyer details", back: "Back to conversations" },
 ] as const;
 
 async function switchLocale(page: Page, locale: (typeof localeCases)[number]["locale"]) {
@@ -532,6 +532,12 @@ for (const copy of localeCases) {
       await open(page, ids.open);
       await expect(page.getByTestId("inbox-thread")).toContainText(dm);
       await expect(page.getByTestId("buyer-panel")).toBeVisible();
+      // The real signed live_operator fixture has inbox:reply but not customers:read. UI must explain that boundary.
+      await expect(page.getByTestId("customer-link-save")).toBeDisabled();
+      await expect(page.getByTestId("customer-link-remove")).toBeDisabled();
+      await expect(page.getByTestId("buyer-panel")).toContainText(copy.linkPermission);
+      await expect(page.getByTestId("customer-link-choice")).toHaveCount(0);
+      record(`customer-link permission ${copy.locale}/${width}`, "open real live_operator conversation", "link controls disabled with localized customer-read reason; no customer picker");
       // G-UI8 audit [READ/MEASURE]: geometry after real locale/filter/row clicks.
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       await page.screenshot({ path: resolve(evidence, `inbox-${copy.locale}-${width}.png`), fullPage: true });

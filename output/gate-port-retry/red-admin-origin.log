@@ -1,0 +1,6 @@
+=== RUN   TestBrowserAdminRelayOwnsExplicitOrigin
+    browser_admin_relay_test.go:79: another fixture stole the explicit public admin port before Next startup
+--- FAIL: TestBrowserAdminRelayOwnsExplicitOrigin (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	1.093s
+FAIL

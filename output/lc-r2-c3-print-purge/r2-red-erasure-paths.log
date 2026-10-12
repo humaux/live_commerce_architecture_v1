@@ -1,0 +1,29 @@
+=== RUN   TestClaimsRetentionLCR2C3xPrintPurge
+=== RUN   TestClaimsRetentionLCR2C3xPrintPurge/c3x-age-enforced
+=== RUN   TestClaimsRetentionLCR2C3xPrintPurge/c3x-report-only
+=== RUN   TestClaimsRetentionLCR2C3xPrintPurge/c2-deidentify-drops-peer-links
+=== RUN   TestClaimsRetentionLCR2C3xPrintPurge/rd4-erasure-deletes-peer-links
+=== RUN   TestClaimsRetentionLCR2C3xPrintPurge/rd4-peer-link-only-not-pt404
+=== RUN   TestClaimsRetentionLCR2C3xPrintPurge/rd4-comment-ref-erasure-derives-peer-links
+    claims_retention_lc_r2_test.go:401: comment-ref erasure: bundle_peers=0, want 2 (counts: bundles=2 comment_events=0 conversations=0 intake=1 lines=0 links=0 messages=0 operations=0)
+    claims_retention_lc_r2_test.go:404: the erased actor's peer links survive a comment-ref erasure (this path passes p_peer_keys=NULL)
+    claims_retention_lc_r2_test.go:423: actor_erased counts map[bundles:2 comment_events:0 conversations:0 intake:1 lines:0 links:0 messages:0 operations:0] lack bundle_peers=2
+=== RUN   TestClaimsRetentionLCR2C3xPrintPurge/rd4-bundle-selector-erasure-derives-peer-links
+    claims_retention_lc_r2_test.go:451: bundle-selector erasure: bundle_peers=0, want 1 (counts: bundles=1 comment_events=0 conversations=0 intake=0 lines=0 links=0 messages=0 operations=0)
+    claims_retention_lc_r2_test.go:454: the erased bundle's peer link survives a bundle-selector erasure (single-bundle mode passes p_peer_keys=NULL)
+=== RUN   TestClaimsRetentionLCR2C3xPrintPurge/rd4-replay-derives-peer-links
+    claims_retention_lc_r2_test.go:507: the replayed actor's peer links survive (replay_actor_erasures passes p_peer_keys=NULL)
+    claims_retention_lc_r2_test.go:510: the replayed manual bundle's peer link survives
+--- FAIL: TestClaimsRetentionLCR2C3xPrintPurge (3.81s)
+    --- PASS: TestClaimsRetentionLCR2C3xPrintPurge/c3x-age-enforced (0.06s)
+    --- PASS: TestClaimsRetentionLCR2C3xPrintPurge/c3x-report-only (0.02s)
+    --- PASS: TestClaimsRetentionLCR2C3xPrintPurge/c2-deidentify-drops-peer-links (0.02s)
+    --- PASS: TestClaimsRetentionLCR2C3xPrintPurge/rd4-erasure-deletes-peer-links (0.02s)
+    --- PASS: TestClaimsRetentionLCR2C3xPrintPurge/rd4-peer-link-only-not-pt404 (0.01s)
+    --- FAIL: TestClaimsRetentionLCR2C3xPrintPurge/rd4-comment-ref-erasure-derives-peer-links (0.02s)
+    --- FAIL: TestClaimsRetentionLCR2C3xPrintPurge/rd4-bundle-selector-erasure-derives-peer-links (0.01s)
+    --- FAIL: TestClaimsRetentionLCR2C3xPrintPurge/rd4-replay-derives-peer-links (0.02s)
+FAIL
+FAIL	livecommerce/tests/foundation	4.597s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
