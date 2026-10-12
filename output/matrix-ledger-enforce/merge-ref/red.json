@@ -1,0 +1,24 @@
+{
+  "phase": "RED before scope fix",
+  "merged_commit": "64fc88fe44afa418037f36fc4398fa4c9720a5c2",
+  "trunk": "1200178c5ffe3decaee09077e2bb8b7f59ea715c",
+  "gate_sha256": "e4a334a85004e95111c90a193c48613d1b69dc8a555bc3f36d775b26f300647a",
+  "argv": [
+    "go",
+    "test",
+    "./tests/foundation",
+    "-run",
+    "^TestProductEditorMatrixLedgerEvidenceSharedSources$",
+    "-count=1",
+    "-v"
+  ],
+  "timeout_seconds": 300,
+  "runner_pid": 61177,
+  "started_at_utc": "2026-10-12T16:03:47.054315+00:00",
+  "log": "output/matrix-ledger-enforce/merge-ref/red.log",
+  "status": "COMPLETED",
+  "pid": 61205,
+  "exit_code": 1,
+  "elapsed_seconds": 53.516,
+  "log_sha256": "c023c31b01ed13e10ce89db6a72a3278b123a003ffe9abc9d54bbb0eab8c8e39"
+}

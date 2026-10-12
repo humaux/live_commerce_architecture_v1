@@ -1,0 +1,11 @@
+{
+  "path": "/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/lc-test-pg.lock",
+  "exists": true,
+  "checked_at_utc": "2026-10-12T16:06:24.371240+00:00",
+  "pid": "48924",
+  "pid_mtime_age_seconds": 190.56,
+  "heartbeat": "",
+  "heartbeat_mtime_age_seconds": 10.382,
+  "ps_exit": 0,
+  "pid_status": "48924 04:56 bash scripts/dev/test-local.sh --browser-visual-lint"
+}
