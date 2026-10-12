@@ -1,0 +1,14 @@
+{
+  "command": [
+    "go",
+    "test",
+    "./tests/foundation",
+    "-run",
+    "^TestProductEditorMatrixLedgerEvidence(RunOutcome|SharedSources|Corruption)$",
+    "-count=1",
+    "-v"
+  ],
+  "exit": 1,
+  "seconds": 1.876,
+  "log_sha256": "467cb68da0267b770013230e8cc2a96a03aa8005c600eced8712c241b91e2df4"
+}

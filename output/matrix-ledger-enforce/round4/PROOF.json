@@ -1,0 +1,38 @@
+{
+  "source_commit": "2d9edcab7392cd886af975979f5c551745accfbc",
+  "base_commit": "c81533c26a067422141dcb9d3a0f775d09078027",
+  "source_review": {
+    "memory_id": "de8791f4-0dc5-465e-973a-ce8916253d8e",
+    "level": "E1",
+    "limits": "read-only source; no independent browser/PG/full gate reruns; bounded command shapes only"
+  },
+  "worker": {
+    "role": "test_worker",
+    "model": "gpt-6.1-sol",
+    "reasoning": "medium",
+    "base_commit": "c81533c26a067422141dcb9d3a0f775d09078027",
+    "worktree": ".worktrees/pr28-r4-js-proof",
+    "ownership": [
+      "tests/ci/product-editor-matrix-claims.mjs",
+      "tests/ci/product-editor-matrix-ledger.test.mjs"
+    ],
+    "actual_red_exit": 1,
+    "actual_green_exit": 0,
+    "parent_focused_exit": 0,
+    "metadata_note": "Received worker DELIVERY mislabeled role/model inheritance; task card actual configuration is recorded here."
+  },
+  "calibration_hooks": "CI presence, including empty strings, forbids both hook variables. No browser calibration or test filtering used.",
+  "independent_artifact_audit": {
+    "agent_role": "test_worker",
+    "configured_model": "gpt-6.1-sol",
+    "configured_reasoning": "medium",
+    "runtime_variant_effort": "not independently exposed",
+    "task_id": "945871d1-sub-artifact",
+    "memory_id": "c46b0d5e-8335-4d04-bba6-d47e4375e98f",
+    "level": "E3 deterministic artifact acceptance and actual focused Go test; no independent full browser, PG, external Claude/K3 or CI approval",
+    "verdict": "PASS",
+    "checks_passed": 33,
+    "indexed_artifacts_at_audit": 64,
+    "receipt": "output/matrix-ledger-enforce/round4/audit/command-receipt.json"
+  }
+}

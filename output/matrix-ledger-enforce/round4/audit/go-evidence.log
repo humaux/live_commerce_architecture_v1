@@ -1,0 +1,57 @@
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/pe-failed
+    catalog_matrix_evidence_test.go:327: rejected rehashed pe-failed: canonical run outcome pe-last-run.json must be passed with explicit empty failedTests
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/cc12-failed
+    catalog_matrix_evidence_test.go:327: rejected rehashed cc12-failed: canonical run outcome cc12-last-run.json must be passed with explicit empty failedTests
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/failed-tests
+    catalog_matrix_evidence_test.go:327: rejected rehashed failed-tests: canonical run outcome pe-last-run.json must be passed with explicit empty failedTests
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/missing-failed-tests
+    catalog_matrix_evidence_test.go:327: rejected rehashed missing-failed-tests: canonical run outcome pe-last-run.json must be passed with explicit empty failedTests
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/null-failed-tests
+    catalog_matrix_evidence_test.go:327: rejected rehashed null-failed-tests: canonical run outcome pe-last-run.json must be passed with explicit empty failedTests
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/log-failed
+    catalog_matrix_evidence_test.go:327: rejected rehashed log-failed: canonical run outcome playwright.log: must finish exactly 12 passed cases, got 11
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/cc12-log-failed
+    catalog_matrix_evidence_test.go:327: rejected rehashed cc12-log-failed: canonical run outcome cc12-playwright.log: must finish exactly 2 passed cases, got 1
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/log-skipped
+    catalog_matrix_evidence_test.go:327: rejected rehashed log-skipped: canonical run outcome playwright.log: must finish exactly 12 passed cases, got 11
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/log-flaky
+    catalog_matrix_evidence_test.go:327: rejected rehashed log-flaky: canonical run outcome playwright.log: must finish exactly 12 passed cases, got 11
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/log-incomplete
+    catalog_matrix_evidence_test.go:327: rejected rehashed log-incomplete: canonical run outcome playwright.log: must finish exactly 12 passed cases, got 11
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/log-extra-failed
+    catalog_matrix_evidence_test.go:327: rejected rehashed log-extra-failed: canonical run outcome playwright.log: unexpected failed cases: 1
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/log-extra-skipped
+    catalog_matrix_evidence_test.go:327: rejected rehashed log-extra-skipped: canonical run outcome playwright.log: unexpected skipped cases: 1
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/log-extra-flaky
+    catalog_matrix_evidence_test.go:327: rejected rehashed log-extra-flaky: canonical run outcome playwright.log: unexpected flaky cases: 1
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/missing-summary
+    catalog_matrix_evidence_test.go:327: rejected rehashed missing-summary: canonical run outcome playwright.log: must contain one completed passing summary
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/manifest-passed
+    catalog_matrix_evidence_test.go:327: rejected rehashed manifest-passed: canonical manifest passed count PE_and_review must be 12
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/manifest-skipped
+    catalog_matrix_evidence_test.go:327: rejected rehashed manifest-skipped: canonical manifest must record zero skipped cases
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/manifest-ledger
+    catalog_matrix_evidence_test.go:327: rejected rehashed manifest-ledger: canonical manifest ledger counts must match the exact validated PASS ledger
+--- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome (0.22s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/pe-failed (0.02s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/cc12-failed (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/failed-tests (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/missing-failed-tests (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/null-failed-tests (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/log-failed (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/cc12-log-failed (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/log-skipped (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/log-flaky (0.02s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/log-incomplete (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/log-extra-failed (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/log-extra-skipped (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/log-extra-flaky (0.02s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/missing-summary (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/manifest-passed (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/manifest-skipped (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/manifest-ledger (0.01s)
+=== RUN   TestProductEditorMatrixLedgerEvidence
+--- PASS: TestProductEditorMatrixLedgerEvidence (0.00s)
+PASS
+ok  	livecommerce/tests/foundation	0.816s
