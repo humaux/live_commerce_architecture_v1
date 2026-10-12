@@ -108,6 +108,7 @@ export function registerProductEditorAcceptance() {
       for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
         for (const [width, height] of [
           [1366, 768],
+          [1440, 900],
           [1586, 992],
           [390, 844],
           [375, 812],
@@ -183,7 +184,7 @@ export function registerProductEditorAcceptance() {
           await page.getByTestId("product-keyword").fill("P12");
           await assertProductEditorReservedLayout(
             page,
-            (width === 1586 || width === 390)
+            (width === 1440 || width === 1586 || width === 390)
               ? (section) => shot(`editor-${locale}-${width}-${section}`)
               : undefined,
           );
@@ -646,6 +647,23 @@ export function registerProductEditorAcceptance() {
           "one patch per save, stock0 persists, twelve-SKU popover and focus return",
         actual: "PASS",
       });
+      // Same saved document: verify edit navigation/status at the requested six locale/viewports,
+      // with only a local unsaved draft and no new transaction or count-changing fixture.
+      for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const [width, height] of [[1440, 900], [390, 844]]) {
+        await page.setViewportSize({ width, height });
+        await page.goto(url(locale, "products/" + id));
+        await expect(page.getByTestId("product-form")).toBeVisible();
+        const beforeVisual = writes.length;
+        await page.getByTestId("product-name").fill(`${tag} unsaved visual ${locale}`);
+        await expect(page.locator(".pe-savebar > span")).toHaveText(productEditorCopy[locale].dirty);
+        await assertProductEditorReservedLayout(page, section => shot(`edit-${locale}-${width}-${section}`));
+        await fit();
+        expect(writes.length).toBe(beforeVisual);
+        await shot(`edit-${locale}-${width}`);
+        ledger.push({ page: "edit", locale, width, control: "section tabs/save status/native pane wheel",
+          action: "open saved document, local draft, click sections, scroll to final search control",
+          expected: "hint/status visible, full pane reachable, no new write", actual: "PASS" });
+      }
       // Keep additional products after the frozen list-count checks. This uses
       // the same isolated PG fixture; every write goes through a real UI save.
       await page.setViewportSize({ width: 390, height: 844 });

@@ -491,10 +491,10 @@ test("MA09a report: three separate blocks with window, timezone and fetched_at, 
   await noSecrets(page);
 });
 
-test("MA09a three locales, desktop 1586x992 and 390 px: no horizontal scroll, screenshots hashed", async ({ page }) => {
+test("MA09a three locales, desktop 1440x992 and 390 px: no horizontal scroll, screenshots hashed", async ({ page }) => {
   await signedLogin(page);
   for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
-    for (const viewport of [{ name: "desktop", width: 1586, height: 992 }, { name: "mobile", width: 390, height: 844 }] as const) {
+    for (const viewport of [{ name: "desktop", width: 1440, height: 992 }, { name: "mobile", width: 390, height: 844 }] as const) {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.goto(`/${locale}/ads?store=${store}&draft=${firstDraft}`);
       await expect(page.getByRole("heading", { level: 1 })).toHaveText(adsCopy[locale].title);
@@ -507,6 +507,9 @@ test("MA09a three locales, desktop 1586x992 and 390 px: no horizontal scroll, sc
       await page.getByTestId("ads-report").scrollIntoViewIfNeeded();
       await page.getByTestId("ads-report-load").click();
       await expect(page.getByTestId("ads-block-delivery")).toBeVisible();
+      // The harness account is TWD. Literal symbols catch a zh-TW-only bare-$ regression.
+      await expect(page.getByTestId("ads-block-delivery").locator("dl dd").nth(0)).toHaveText(/^NT\$[\d,.]+$/);
+      await expect(page.getByTestId("ads-block-reported").locator("dl dd").nth(1)).toHaveText(/^NT\$[\d,.]+$/);
       await shot(page, "ads-report", locale, viewport.name);
     }
   }

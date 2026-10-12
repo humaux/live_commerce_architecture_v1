@@ -748,10 +748,12 @@
     overflow-y: auto;
   }
   .pe-index nav {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    gap: 4px;
+    display: block;
+  }
+  /* The shared TabStrip owns horizontal scrolling; its hint stays outside the clip. */
+  .pe-index nav > div {
+    margin-bottom: 0;
+    border-bottom: 0;
   }
   .pe-index nav button {
     width: auto;
@@ -811,7 +813,16 @@
     padding: 10px 12px;
   }
   .pe-savebar > span {
-    max-width: 90px;
+    /* Reserve a whole row for localized save status instead of breaking a phrase beside actions. */
+    flex-basis: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+  .pe-savebar > span:empty {
+    display: none;
+  }
+  .pe-savebar > div {
+    width: 100%;
   }
   .pe-two {
     grid-template-columns: minmax(0, 1fr);

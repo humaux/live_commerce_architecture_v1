@@ -1,3 +1,6 @@
+// Purpose: product document invariants and source ratchets for mobile editor presentation.
+// Depends on: node:test/assert, product-document/editor copy, actual ProductDocumentForm/CSS sources.
+// Used by: test-node.sh; real visual geometry remains owned by product-editor browser acceptance.
 // PE12/13/14 model negatives. UI writes still require browser click + persisted readback.
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -164,4 +167,18 @@ test("PR #1 4212540352: pre-publish missing-items list collapses behind a real t
   const media = css.indexOf("@media (max-width: 900px)");
   const rule = css.indexOf(".pe-readiness-toggle {", media);
   assert.ok(rule > media, "toggle styles must live in the ≤900px block");
+});
+
+// Structural regressions complement the real browser geometry assertions; they do not prove pixels.
+test("mobile product sections reuse the existing hinted TabStrip", () => {
+  const form = readFileSync(new URL("../../apps/admin/components/ProductDocumentForm.tsx", import.meta.url), "utf8");
+  assert.match(form, /<TabStrip[^>]*previousLabel=\{presentationCopy\[locale\]\.previous\}/);
+  assert.match(form, /nextLabel=\{presentationCopy\[locale\]\.next\}/);
+});
+test("mobile save status has its own row instead of a fixed narrow text cap", () => {
+  const css = readFileSync(new URL("../../apps/admin/components/ProductDocument.css", import.meta.url), "utf8");
+  const mobile = css.slice(css.indexOf("@media (max-width: 680px)"));
+  const status = mobile.match(/\.pe-savebar > span \{([^}]+)\}/)?.[1] ?? "";
+  assert.doesNotMatch(status, /max-width:\s*90px/);
+  assert.match(status, /flex-basis:\s*100%/);
 });

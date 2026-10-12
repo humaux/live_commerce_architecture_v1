@@ -1,5 +1,5 @@
 // Purpose: Strict frozen ADS DTO parsing and display-only input hints.
-// Depends on: packages/format Taipei date helpers; contracts/meta-ads-v1.md.
+// Depends on: packages/format money and Taipei date helpers; contracts/meta-ads-v1.md.
 // Used by: ads-client.ts, ADS components and pure node tests.
 // Admin ads model: strict parsers for the frozen ads DTOs plus the pure money/date/draft-input rules.
 // Read by components/Ads.tsx and lib/ads-client.ts; BFF `/api/stores/{store}/ads/*`
@@ -8,7 +8,7 @@
 // trip; Go re-runs every rule (§5.2) and its code wins. An unknown enum is a parse error, never guessed.
 // Depends only on packages/format (relative .ts import, like promotions-model) so `node --test --experimental-strip-types` can import it (tests/admin/ads-model.test.ts).
 
-import { instantToTaipei, taipeiToInstant } from "../../../packages/format/src/index.ts";
+import { instantToTaipei, money, taipeiToInstant } from "../../../packages/format/src/index.ts";
 
 export class AdsParseError extends Error {
   constructor(what: string) {
@@ -385,11 +385,11 @@ export function minorToWhole(minor: number): string {
   const rest = minor % 100;
   return rest === 0 ? String(whole) : `${whole}.${String(rest).padStart(2, "0")}`;
 }
-// Display only. Every ads currency here (TWD/USD/HKD) is x100 minor (contract §3), unlike lib/client.ts money().
+/** Display frozen minor-unit amounts with shared currency symbols; never supplies a business amount. */
 export function formatMinor(locale: string, currency: string, minor: number): string {
   try {
-    const digits = minor % 100 === 0 ? 0 : 2; // whole amounts read "NT$300", fractional ones "US$12.50" (never "12.5")
-    return new Intl.NumberFormat(locale, { style: "currency", currency, minimumFractionDigits: digits, maximumFractionDigits: digits }).format(minor / 100);
+    // TWD/USD/HKD are x100 minor (§3). Shared money keeps TWD unambiguous even in zh-TW.
+    return money(locale, currency, minor);
   } catch {
     return `${minorToWhole(minor)} ${currency}`;
   }

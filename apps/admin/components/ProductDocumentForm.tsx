@@ -1,9 +1,11 @@
 // Purpose: product create/edit form, readiness and document save flow; committed media state comes from ProductMediaManager.
-// Depends on: React/Next; use-product-document and catalog-v2/images clients (admin BFF → Go catalog); product-document draft/money helpers; ProductDocumentVariants, ProductBulkFill, ProductReadiness, useProductEditorLayout and product-editor-copy.
+// Depends on: React/Next; TabStrip/presentation-copy, use-product-document and catalog-v2/images clients (admin BFF → Go catalog); product-document draft/money helpers; ProductDocumentVariants, ProductBulkFill, ProductReadiness, useProductEditorLayout and product-editor-copy.
 // Used by: ProductEditor (routes /[locale]/products/new and /[locale]/products/[product]).
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { TabStrip } from "@live-commerce/ui";
+import { presentationCopy } from "@/lib/presentation-copy";
 import type { Locale } from "@live-commerce/i18n";
 import type { Store, ProductImageList } from "@/lib/model";
 import { currencySign } from "@/lib/client";
@@ -274,6 +276,11 @@ export function ProductDocumentForm({
     );
     noteSaveAttempt();
   };
+  const sectionButtons = sections.map((id) => (
+    <button type="button" aria-current={section === id ? "location" : undefined}
+      className={section === id ? "active" : undefined} key={id} aria-controls={id}
+      onClick={() => focus(id)}>{c[id]}</button>
+  ));
   return (
     <form
       ref={editor}
@@ -286,17 +293,8 @@ export function ProductDocumentForm({
     >
       <aside className="pe-index">
         <nav aria-label={c.progress}>
-          {sections.map((id) => (
-            <button
-              type="button"
-              aria-current={section === id ? "location" : undefined}
-              key={id}
-              aria-controls={id}
-              onClick={() => focus(id)}
-            >
-              {c[id]}
-            </button>
-          ))}
+          {narrowViewport ? <TabStrip label={c.progress} previousLabel={presentationCopy[locale].previous}
+            nextLabel={presentationCopy[locale].next} data-testid="product-section-tabs">{sectionButtons}</TabStrip> : sectionButtons}
         </nav>
         {/* Readiness accordion (comment 4212540352): real button with a visible label in all locales; >900px renders no toggle at all, desktop layout unchanged. */}
         {narrowViewport && (
