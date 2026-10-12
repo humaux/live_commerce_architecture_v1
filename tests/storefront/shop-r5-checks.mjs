@@ -17,8 +17,11 @@ export async function checkR5({ browser, api, origin, raw, evidence }) {
     api.state.emptyCollectionSlug = "tableware";
     await p.goto(`${origin}/en/products`);
     await p.waitForLoadState("networkidle");
-    const chips = p.getByTestId("collection-chips");
+    // React streaming briefly keeps the finished segment in a hidden <div hidden id="S:…"> before swapping it in; only the visible chips are the UI.
+    const chips = p.getByTestId("collection-chips").filter({ visible: true });
     await expect(chips).toBeVisible();
+    // After the streaming swap exactly one copy remains; a lasting (even hidden) duplicate still fails.
+    await expect(p.getByTestId("collection-chips")).toHaveCount(1);
     await expect(chips.locator('a[href$="/collections/home-fragrance"]')).toHaveCount(1);
     for (const slug of ["knitwear", "tableware"]) await expect(chips.locator(`a[href$="/collections/${slug}"]`)).toHaveCount(0);
     assert(await chips.evaluate(el => el.scrollWidth <= el.clientWidth), "G4 chips have no horizontal scrolling at 390px");
