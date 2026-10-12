@@ -1,0 +1,16 @@
+[
+  {
+    "mutation": "coverage",
+    "red_exit": 1,
+    "green_exit": 0,
+    "restored_sha256": "9ad164e4173457b90f5e66133371bd96979830c216c5882ac2ca0324f563db51",
+    "byte_exact_restore": true
+  },
+  {
+    "mutation": "retry",
+    "red_exit": 1,
+    "green_exit": 0,
+    "restored_sha256": "723865511e9d1733479209c98187035ce9765afe6af283d3d52aff4f1f301126",
+    "byte_exact_restore": true
+  }
+]

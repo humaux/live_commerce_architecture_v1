@@ -1,0 +1,328 @@
+✔ round 3: the real Git inventory includes a new route before git add (74.640584ms)
+✔ round 3: a new httpapi file is unclassified until explicitly covered (92.11225ms)
+✔ round 3: split packages cannot be re-widened by an ancestor lc_covers entry (19.511583ms)
+✔ round 3: stale file entries fail independently of a valid sibling package (17.731042ms)
+✔ round 3: foundation-only file coverage does not classify a transport file (21.058958ms)
+✔ every real internal package directory is classified (covered by lc_covers or BACKEND_ONLY-listed) (25.423458ms)
+✔ a new unclassified package fails the gate until covered or explicitly BACKEND_ONLY (30.346958ms)
+✔ BACKEND_ONLY_PACKAGES entries are internal packages with a real one-line reason (0.219083ms)
+✔ every browser-universe mode declares lc_covers; a Go-running one must not declare it empty (33.675916ms)
+✔ covers entries must match a real internal package directory; parent prefixes are legal, stale entries are red (29.916292ms)
+✔ round 2: a package no lc_covers entry reaches fails until SHARED or BACKEND_ONLY classifies it (mechanism, synthetic lists) (0.386041ms)
+✔ round 2 precedence: a covers entry inside BACKEND_ONLY, or a package both SHARED and BACKEND_ONLY, is a contradiction the gate must fail (0.134ms)
+✔ round 4: the tracked derivation records the clicked bank-transfer write chain and flags no write-gap mode (13.510625ms)
+✔ round 2: the real SHARED and BACKEND_ONLY entries classify with no lc_covers entry anywhere (explicit lists suffice) (0.216666ms)
+✖ round 5: covers-derivation.json records the dispatcher wiring, the orders read chain and the ledger write chain (3.883709ms)
+✖ round 5: the tracked derivation discovers the bare and suite-named specs (specs>0, drivers>0) (0.335584ms)
+✖ round 5 sweep: every real Go browser mode discovers a spec, or is explicitly explained (SPECS-ZERO allowlist) (0.753667ms)
+✔ reject quoted screenshot path (5.716125ms)
+✔ reject computed writer (0.795292ms)
+✔ reject renamed import (0.794208ms)
+✔ reject local writer alias (0.688958ms)
+✔ reject quoted reporter (0.481958ms)
+✔ reject openSync write (0.792166ms)
+✔ reject open write (0.825875ms)
+✔ reject URL writer (1.073291ms)
+✔ reject bound writer (0.85725ms)
+✔ reject bound path (0.88075ms)
+✔ reject direct (0.581041ms)
+✔ reject alias (0.552666ms)
+✔ reject split join (0.208084ms)
+✔ reject template (1.01625ms)
+✔ reject helper (1.483625ms)
+✔ reject copy destination (0.177708ms)
+✔ reject reporter (0.240625ms)
+✔ reject traversal (0.112959ms)
+✔ reject tracked nonoutput (0.47275ms)
+✔ allow read-only open (1.793916ms)
+✔ allow read-only URL open (0.860916ms)
+✔ allow historical read (0.773667ms)
+✔ allow copy source (0.440292ms)
+✔ allow comment (0.702708ms)
+✔ allow string data (0.233459ms)
+✔ allow run directory (0.320084ms)
+✔ Go Join aliases flag writes but not read-only history or comments (2.820041ms)
+✔ producer discovery covers acceptance suites and helpers, not documentation/artifacts (0.230916ms)
+✔ synthetic Go historical fixtures stay inside t.TempDir; real CopyFS destinations are audited (1.959542ms)
+✔ Go OpenFile rejects create/write flags but preserves historical read-only descriptors (2.616166ms)
+ci-plan: 10 job(s); click-sweep x10 (aggregate)
+  --browser-click-sweep@1/10  -> artifact gate-browser-click-sweep_1_10
+  --browser-click-sweep@2/10  -> artifact gate-browser-click-sweep_2_10
+  --browser-click-sweep@3/10  -> artifact gate-browser-click-sweep_3_10
+  --browser-click-sweep@4/10  -> artifact gate-browser-click-sweep_4_10
+  --browser-click-sweep@5/10  -> artifact gate-browser-click-sweep_5_10
+  --browser-click-sweep@6/10  -> artifact gate-browser-click-sweep_6_10
+  --browser-click-sweep@7/10  -> artifact gate-browser-click-sweep_7_10
+  --browser-click-sweep@8/10  -> artifact gate-browser-click-sweep_8_10
+  --browser-click-sweep@9/10  -> artifact gate-browser-click-sweep_9_10
+  --browser-click-sweep@10/10  -> artifact gate-browser-click-sweep_10_10
+✔ the full sweep and the full visual lint fan out into every shard and ask for the aggregate (3.0375ms)
+✔ foundation-shards = the unit shard + every plan group; the serial `foundation` mode is untouched (0.890792ms)
+✔ an explicit shard re-run (or a partial list) never claims the whole-run aggregate (0.121583ms)
+✔ duplicates collapse, artifact names are safe and unique, bad input is refused (1.029291ms)
+✔ main writes matrix / sweep_n / visual_n to GITHUB_OUTPUT (2.835625ms)
+✔ mode discovery has no Docker/build dependency and includes the existing universe (67.072875ms)
+✔ dry-run resolves a mode without executing dependencies and keeps its command environment (128.714042ms)
+✔ one appended case is discovered and dispatched; malformed and duplicate registry entries fail closed (92.761125ms)
+✔ registry discovery cannot silently lose indented, aliased or unrecognised Bash case arms (10.957208ms)
+✔ ordinary and sharded browser jobs require only Chromium; default mixed modes keep WebKit (12.579792ms)
+✔ explicit WebKit calibration takes the union without dropping Chromium (2.295875ms)
+✔ every current browser arm declares requirements; unknown or missing declarations fail closed (65.527584ms)
+✔ coverage assertion derives mixed Go roots and catches a new mode reusing them (82.639875ms)
+✔ installer retries transient dependency failure at most three times under root timeouts (3035.865083ms)
+✔ persistent dependency failure stops after three attempts and never downloads browsers (1778.942084ms)
+✔ mixed engine installer preserves both dependencies and both binaries; first success needs no retry (1651.869375ms)
+✔ invalid browser set cannot invoke dependency installer or browser downloads (342.24825ms)
+✔ dependency CLI resolves from the directly declared package in the frozen pnpm installation (1750.076042ms)
+✔ workflow keeps the overall fifteen-minute bound and partitions cache by planned engine set (2.124541ms)
+✔ docs, contracts, deploy files and node-test dirs run foundation-shards only (2.526584ms)
+✔ node tests of deploy scripts and of the CI planner are backend-only (they cannot change a browser) (1.613583ms)
+✔ internal/ is NOT backend-only any more: a package no mode declares falls to the conservative PG rule (CI-SELECT) (7.823916ms)
+✔ a UI path adds the whole browser set, including click-sweep and visual-lint (55.005209ms)
+✔ docs-only and output-only diffs keep the single required check (foundation-shards) (1.045791ms)
+✔ internal/live/stream.go selects --browser-live-console (PR #30 root cause) (3.590542ms)
+✔ round 3: the real PR #30 diff selects live-console without the shared-httpapi explosion (104.902875ms)
+✔ round 3: live_stream transport alone selects live-console but not CVS (3.964333ms)
+✔ round 3: handler.go and unknown httpapi files remain conservative (10.6715ms)
+✔ round 3: a file-level lc_covers entry is exact, not its sibling directory (9.262834ms)
+✔ round 3: a nonbrowser exact-file declaration cannot replace browser acceptance (5.060084ms)
+✔ round 4: a nonbrowser PACKAGE declaration is never browser acceptance (uniform universe guard, K3 P2) (9.191959ms)
+✔ round 4: --browser-checkout-offline covers internal/merchantorders (its spec clicks bank-transfer confirm/reject, K3 P2 example) (4.839917ms)
+✔ round 4: --browser-catalog-core and --browser-product-editor cover internal/catalog (their spec performs admin product/collection writes) (2.55975ms)
+✔ round 4: --browser-ops-polish covers the admin order-feed and finance domains OP2/OP3 read (K3 P2 example c) (4.624166ms)
+✔ internal/integrations/metareply/x.go selects --browser-live-console (PR #24 root cause) (2.91825ms)
+✔ round 2 narrowness: internal/live/stream.go does NOT select unrelated domains such as --browser-cvs (3.804292ms)
+✔ round 2 evidence: a metareply change selects exactly the modes whose harnesses drive MetaReply (live console + e2e) (2.223041ms)
+✔ round 4: an inbox change selects the inbox modes INCLUDING live-console (its buyer panel reads inbox routes) but stays one domain (1.95ms)
+✔ round 2 SHARED_BACKEND_PACKAGES: every entry carries a reason and selects all PG browser modes (46.158875ms)
+✔ round 2 data invariant: SHARED packages are subtracted from lc_covers (they select all PG modes anyway) (1.876084ms)
+✔ round 2 BACKEND_ONLY_PACKAGES: the real cmd/worker-only entries select no browser mode (5.43925ms)
+✔ round 2: the conservative rules reach the Go-booting 48th mode (--browser-tracking-backfill) (10.492667ms)
+✔ a new migration selects every PG-fixture browser mode (the modes run on the migrated schema) (1.86275ms)
+✔ docs-only and contracts-only diffs still select no browser mode (0.079375ms)
+✔ cmd/ changes select every PG-fixture browser mode (the modes drive the binaries cmd/ builds) (1.892709ms)
+✔ shared platform packages select every PG-fixture browser mode (5.996125ms)
+✔ an internal package no mode declares selects every PG-fixture browser mode until the gate classifies it (2.830125ms)
+✔ lc_covers is registry DATA: declaring modes are selected by prefix match, non-declaring modes are not (6.225708ms)
+✔ backend changes never select the node-only browser modes (no Go harness, no PG fixture) (9.116334ms)
+✔ BACKEND_ONLY_PACKAGES is explicit classified data; listed packages select no browser mode (mechanism, synthetic list) (5.559834ms)
+✔ a registry without lc_covers data (historical source) stays maximally conservative (0.271417ms)
+✖ round 5: an ecpayroute-only change selects the CVS browser gates (thread 4236971117) (0.408167ms)
+✖ round 5: an orders.go-only or merchantorders-only change selects --browser-tracking-backfill (thread 4236972349) (2.898291ms)
+✖ round 5: an inventory-only or live_console.go-only change selects --browser-admin-legacy (thread 4236972354) (2.059333ms)
+✔ legacy browser_* paths still select all browsers; a known untagged foundation file stays backend-only (1.170542ms)
+✔ legacy deploy prefixes remain selected and unrelated paths do not select smoke (11.324334ms)
+✔ the browser set is release-gate's browser-mode universe minus the documented exclusions (88.843125ms)
+✔ every real browser-tagged foundation file selects registry browser modes, including non-browser names (116.568209ms)
+✔ tagged runner discovery follows registry additions, command arrays and line continuations (1.961333ms)
+✔ deploy smoke is selected for its workflow, verdict/helpers and executable test inputs (3.560041ms)
+✔ new selection never drops legacy modes or deploy for any tracked path (2781.565916ms)
+✔ CLI classifies merge-base and explicit head, including removed tags, deleted files and renames (575.707458ms)
+✔ CLI selects modes the base added after divergence when the checkout is the PR merge (PR #22 review P1) (240.956417ms)
+✔ CLI reads the merge checkout's source when the base adds a browser tag after the fork (PR #22 review P1) (201.588708ms)
+✔ CLI explicit head and stdin include tags outside the checkout and uncommitted tag removals (215.055584ms)
+✔ compound/legacy tags and unknown source are conservative; known untagged source stays backend-only (7.432917ms)
+✔ explicit-head CLI derives tagged runner modes from that head's real registry (174.621042ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "架构.md" (142.955417ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "internal/示例.go" (179.138166ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "tests/foundation/plain\tname_test.go" (159.64875ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, " deploy/scripts/synthetic-smoke.sh" (139.930625ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "架构.md" (149.830208ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "internal/示例.go" (150.106083ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "tests/foundation/plain\tname_test.go" (151.903875ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, " deploy/scripts/synthetic-smoke.sh" (139.845125ms)
+✔ stdin unions legacy trimming without trimming the source lookup path (82.817792ms)
+✔ parser: only compiled, correctly-shaped Test functions of untagged _test.go files (7.381625ms)
+✔ the real plan: every top-level test of tests/foundation runs in exactly one group (610.937583ms)
+✔ a new test (in no list) still runs, exactly once, in the catch-all group; the same name with no catch-all is red (844.676666ms)
+✔ a test listed in two groups is red; drift beyond the limit is red (854.657292ms)
+✔ regexes: anchored explicit lists; the catch-all skips exactly everyone else's tests (0.584333ms)
+✔ pack: deterministic, balanced to within the longest test, every name once (4.070667ms)
+✔ parseDurations: top-level lines only (0.233375ms)
+ℹ tests 130
+ℹ suites 0
+ℹ pass 124
+ℹ fail 6
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9033.315583
+
+✖ failing tests:
+
+test at tests/ci/backend-coverage.test.mjs:219:1
+✖ round 5: covers-derivation.json records the dispatcher wiring, the orders read chain and the ledger write chain (3.883709ms)
+  AssertionError [ERR_ASSERTION]: --browser-cvs must carry go-fixture-import evidence for ecpayroute (startDispatcher -> ecpayroute.Routes)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/tests/ci/backend-coverage.test.mjs:225:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/backend-coverage.test.mjs:240:1
+✖ round 5: the tracked derivation discovers the bare and suite-named specs (specs>0, drivers>0) (0.335584ms)
+  AssertionError [ERR_ASSERTION]: --browser-tracking-backfill still discovers no spec/driver: {"own":1,"specs":0,"drivers":0} (thread 4236972349)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/tests/ci/backend-coverage.test.mjs:251:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/backend-coverage.test.mjs:259:1
+✖ round 5 sweep: every real Go browser mode discovers a spec, or is explicitly explained (SPECS-ZERO allowlist) (0.753667ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /^SPECS-ZERO-OK --live-browser-input:/m. Input:
+  
+  '--browser-inbox: own=1 specs=2 urls=12 ui-flow drivers=5 entries=6 candidates=13 matched=13 covers=13\n' +
+    '--browser-meta-health-ui: own=1 specs=0 urls=0 ui-flow drivers=0 entries=0 candidates=0 matched=0 covers=6\n' +
+    '--browser-tracking-backfill: own=1 specs=0 urls=0 ui-flow drivers=0 entries=0 candidates=0 matched=0 covers=6\n' +
+    '--browser-platform-site: node-only (no Go harness file; lc_fixture=none) — covers=[] by definition\n' +
+    '--browser-admin-shell: node-only (no Go harness file; lc_fixture=none) — covers=[] by definition\n' +
+    '--browser-click-sweep: own=2 specs=6 urls=7 ui-flow drivers=11 entries=29 candidates=53 matched=49 covers=37\n' +
+    '--browser-visual-lint: own=2 specs=7 urls=6 ui-flow drivers=11 entries=29 candidates=53 matched=49 covers=37\n' +
+    '--browser-identity: INFO builds/runs cmd/api (direct internal imports: internal/ads, internal/attribution, internal/billing, internal/buyer, internal/buyerhttp, internal/checkout, internal/claims, internal/fulfillment, internal/httpapi, internal/httperror, internal/identity, internal/identityhttp, internal/inbox, internal/integrations/accounts, internal/integrations/core, internal/integrations/meta, internal/integrations/meta/oauth, internal/integrations/meta/pagetoken, internal/integrations/meta_ads, internal/integrations/metabridge, internal/integrations/psp/stripe, internal/integrations/shipping/ecpay, internal/live, internal/mail, internal/merchanttools, internal/metaconnect, internal/msgtemplates, internal/oidclogin, internal/payments, internal/payments/stripewebhook, internal/platform, internal/tlsask)\n' +
+    '--browser-identity: own=2 specs=1 urls=4 ui-flow drivers=1 entries=0 candidates=0 matched=0 covers=9\n' +
+    '--browser-buyer-comms: own=2 specs=1 urls=28 ui-flow drivers=3 entries=14 candidates=14 matched=10 covers=18\n' +
+    '--browser-checkout-offline: own=1 specs=2 urls=7 ui-flow drivers=4 entries=27 candidates=55 matched=51 covers=31\n' +
+    '--browser-home-cod: own=2 specs=2 urls=13 ui-flow drivers=4 entries=30 candidates=69 matched=65 covers=31\n' +
+    '--browser-promotions: own=1 specs=1 urls=4 ui-flow drivers=2 entries=18 candidates=28 matched=24 covers=23\n' +
+    '--browser-password-auth: own=2 specs=3 urls=19 ui-flow drivers=4 entries=14 candidates=19 matched=19 covers=15\n' +
+    '--browser-admin-legacy: INFO builds/runs cmd/admin-fixture (direct internal imports: internal/catalog, internal/httpapi, internal/inventory, internal/platform)\n' +
+    '--browser-admin-legacy: own=1 specs=0 urls=2 ui-flow drivers=0 entries=0 candidates=0 matched=0 covers=8\n' +
+    '--browser-buyer: own=2 specs=2 urls=12 ui-flow drivers=4 entries=15 candidates=13 matched=9 covers=16\n' +
+    '--browser-merchant-buyer: own=1 specs=1 urls=8 ui-flow drivers=4 entries=11 candidates=28 matched=25 covers=19\n' +
+    '--browser-manual-order: own=1 specs=3 urls=9 ui-flow drivers=4 entries=13 candidates=30 matched=30 covers=22\n' +
+    '--browser-merchant-orders-bff: own=1 specs=4 urls=16 ui-flow drivers=4 entries=2 candidates=1 matched=1 covers=36\n' +
+    '--browser-merchant-orders-ui: own=1 specs=8 urls=14 ui-flow drivers=9 entries=24 candidates=41 matched=41 covers=40\n' +
+    '--browser-input-delivery: own=1 specs=4 urls=7 ui-flow drivers=4 entries=2 candidates=0 matched=0 covers=11\n' +
+    '--browser-studio-bff: own=1 specs=3 urls=12 ui-flow drivers=3 entries=2 candidates=1 matched=1 covers=35\n' +
+    '--browser-studio-ui: INFO builds/runs cmd/media-worker (direct internal imports: internal/integrations/livekit, internal/jobqueue, internal/live, internal/platform)\n' +
+    '--browser-studio-ui: own=1 specs=1 urls=7 ui-flow drivers=2 entries=6 candidates=12 matched=12 covers=13\n' +
+    '--browser-live-console: own=3 specs=1 urls=9 ui-flow drivers=3 entries=10 candidates=17 matched=17 covers=16\n' +
+    '--browser-claim-checkout: own=1 specs=1 urls=7 ui-flow drivers=3 entries=13 candidates=17 matched=13 covers=14\n' +
+    '--browser-live-claims: own=1 specs=5 urls=10 ui-flow drivers=5 entries=21 candidates=41 matched=37 covers=25\n' +
+    '--browser-order: own=2 specs=1 urls=8 ui-flow drivers=3 entries=13 candidates=15 matched=11 covers=16\n' +
+    '--browser-payment: own=1 specs=1 urls=7 ui-flow drivers=3 entries=10 candidates=15 matched=11 covers=16\n' +
+    '--browser-refund-fulfilment: own=1 specs=5 urls=10 ui-flow drivers=6 entries=19 candidates=40 matched=36 covers=23\n' +
+    '--browser-customers-billing: UNMAPPED /v1/platform/stripe/webhook (from tests/foundation/browser_customers_billing_test.go)\n' +
+    '--browser-customers-billing: UNMAPPED /v1/checkout/sessions (from tests/foundation/browser_customers_billing_test.go)\n' +
+    '--browser-customers-billing: UNMAPPED /v1/billing_portal/sessions (from tests/foundation/browser_customers_billing_test.go)\n' +
+    '--browser-customers-billing: own=2 specs=13 urls=15 ui-flow drivers=17 entries=44 candidates=62 matched=58 covers=42\n' +
+    '--browser-card-payments: own=2 specs=8 urls=7 ui-flow drivers=9 entries=21 candidates=31 matched=27 covers=37\n' +
+    '--browser-meta-ads: own=1 specs=6 urls=10 ui-flow drivers=6 entries=17 candidates=27 matched=24 covers=41\n' +
+    '--browser-ads-attribution: own=1 specs=4 urls=4 ui-flow drivers=6 entries=28 candidates=32 matched=28 covers=21\n' +
+    '--browser-cvs: own=1 specs=4 urls=8 ui-flow drivers=6 entries=23 candidates=47 matched=43 covers=24\n' +
+    '--browser-catalog-media: own=1 specs=1 urls=5 ui-flow drivers=2 entries=12 candidates=19 matched=16 covers=40\n' +
+    '--browser-storefront-publish: INFO builds/runs cmd/store-admin (direct internal imports: internal/command, internal/domains, internal/platform, internal/storefrontadmin, internal/storehandles)\n' +
+    '--browser-storefront-publish: own=1 specs=5 urls=9 ui-flow drivers=7 entries=21 candidates=34 matched=31 covers=22\n' +
+    '--browser-store-domains: UNMAPPED /api/onboarding/handle-suggest (from tests/storefront/store-domains-gate.mjs)\n' +
+    '--browser-store-domains: own=1 specs=2 urls=11 ui-flow drivers=3 entries=10 candidates=20 matched=17 covers=40\n' +
+    '--browser-storefront: INFO builds/runs cmd/store-admin (direct internal imports: internal/command, internal/domains, internal/platform, internal/storefrontadmin, internal/storehandles)\n' +
+    '--browser-storefront: own=3 specs=3 urls=10 ui-flow drivers=6 entries=31 candidates=49 matched=37 covers=27\n' +
+    '--browser-webkit: own=8 specs=8 urls=30 ui-flow drivers=11 entries=23 candidates=46 matched=42 covers=28\n' +
+    '--browser-e2e: own=2 specs=2 urls=8 ui-flow drivers=2 entries=32 candidates=49 matched=45 covers=32\n' +
+    '--live-browser-input: own=6 specs=0 urls=1 ui-flow drivers=0 entries=0 candidates=2 matched=2 covers=6\n' +
+    '--browser-design: INFO builds/runs cmd/store-admin (direct internal imports: internal/command, internal/domains, internal/platform, internal/storefrontadmin, internal/storehandles)\n' +
+    '--browser-design: own=3 specs=5 urls=13 ui-flow drivers=7 entries=21 candidates=38 matched=31 covers=22\n' +
+    '--browser-ops-polish: own=1 specs=3 urls=3 ui-flow drivers=5 entries=27 candidates=49 matched=45 covers=25\n' +
+    '--browser-meta-connect: own=2 specs=4 urls=3 ui-flow drivers=4 entries=9 candidates=32 matched=32 covers=18\n' +
+    '--browser-product-editor: own=1 specs=1 urls=10 ui-flow drivers=8 entries=14 candidates=28 matched=28 covers=18\n' +
+    '--browser-catalog-core: own=1 specs=1 urls=10 ui-flow drivers=8 entries=14 candidates=28 matched=28 covers=18\n' +
+    '--browser-returns-ui: own=1 specs=3 urls=2 ui-flow drivers=3 entries=8 candidates=10 matched=10 covers=17\n' +
+    '--browser-picklist: node-only (no Go harness file; lc_fixture=none) — covers=[] by definition\n' +
+    '--browser-operations-ads: own=1 specs=1 urls=0 ui-flow drivers=1 entries=7 candidates=19 matched=19 covers=14\n' +
+    '--browser-product-media-v2: own=2 specs=1 urls=7 ui-flow drivers=1 entries=18 candidates=31 matched=27 covers=22\n' +
+    '--browser-reports: own=1 specs=3 urls=7 ui-flow drivers=3 entries=14 candidates=17 matched=17 covers=35\n' +
+    '--browser-migration-import: own=1 specs=8 urls=9 ui-flow drivers=10 entries=24 candidates=16 matched=16 covers=20\n' +
+    'internal/csvguard: consumer-import join into 34 mode(s) via internal/merchantorders, internal/migrationimport, internal/payments/settlement, internal/reporting\n' +
+    'internal/jobqueue: consumer-import join into 36 mode(s) via internal/checkout, internal/payments, internal/payments/stripewebhook\n' +
+    'internal/mail: consumer-import join into 39 mode(s) via internal/identity, internal/notify\n' +
+    'internal/storehandles: consumer-import join into 19 mode(s) via internal/storefrontadmin\n' +
+    'internal/twcity: consumer-import join into 28 mode(s) via internal/customers, internal/migrationimport\n' +
+    'internal/integrations/psp/payuni: consumer-import join into 38 mode(s) via internal/checkout, internal/integrations/accounts, internal/payments\n' +
+    'internal/integrations/shipping/ecpay: consumer-import join into 37 mode(s) via internal/checkout, internal/fulfillment\n' +
+    'FILE internal/httpapi/accounts.go: --browser-card-payments --browser-catalog-media --browser-checkout-offline --browser-click-sweep --browser-customers-billing --browser-e2e --browser-home-cod --browser-identity --browser-merchant-orders-bff --browser-merchant-orders-ui --browser-meta-ads --browser-meta-connect --browser-password-auth --browser-reports --browser-store-domains --browser-studio-bff --browser-visual-lint --browser-webkit\n' +
+    'FILE internal/httpapi/ads.go: --browser-ads-attribution --browser-card-payments --browser-catalog-core --browser-catalog-media --browser-checkout-offline --browser-click-sweep --browser-customers-billing --browser-cvs --browser-design --browser-e2e --browser-home-cod --browser-inbox --browser-live-claims --browser-live-console --browser-manual-order --browser-merchant-buyer --browser-merchant-orders-bff --browser-merchant-orders-ui --browser-meta-ads --browser-meta-connect --browser-meta-health-ui --browser-migration-import --browser-operations-ads --browser-ops-polish --browser-password-auth --browser-product-editor --browser-product-media-v2 --browser-promotions --browser-refund-fulfilment --browser-reports --browser-returns-ui --browser-store-domains --browser-storefront --browser-storefront-publish --browser-studio-bff --browser-studio-ui --browser-visual-lint --browser-webkit\n' +
+    'FILE internal/httpapi/billing.go: --browser-card-payments --browser-catalog-media --browser-click-sweep --browser-customers-billing --browser-merchant-orders-bff --b'... 85525 more characters
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/tests/ci/backend-coverage.test.mjs:266:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '--browser-inbox: own=1 specs=2 urls=12 ui-flow drivers=5 entries=6 candidates=13 matched=13 covers=13\n--browser-meta-health-ui: own=1 specs=0 urls=0 ui-flow drivers=0 entries=0 candidates=0 matched=0 covers=6\n--browser-tracking-backfill: own=1 specs=0 urls=0 ui-flow drivers=0 entries=0 candidates=0 matched=0 covers=6\n--browser-platform-site: node-only (no Go harness file; lc_fixture=none) — covers=[] by definition\n--browser-admin-shell: node-only (no Go harness file; lc_fixture=none) — covers=[] by definition\n--browser-click-sweep: own=2 specs=6 urls=7 ui-flow drivers=11 entries=29 candidates=53 matched=49 covers=37\n--browser-visual-lint: own=2 specs=7 urls=6 ui-flow drivers=11 entries=29 candidates=53 matched=49 covers=37\n--browser-identity: INFO builds/runs cmd/api (direct internal imports: internal/ads, internal/attribution, internal/billing, internal/buyer, internal/buyerhttp, internal/checkout, internal/claims, internal/fulfillment, internal/httpapi, internal/httperror, internal/identity, internal/identityhttp, internal/inbox, internal/integrations/accounts, internal/integrations/core, internal/integrations/meta, internal/integrations/meta/oauth, internal/integrations/meta/pagetoken, internal/integrations/meta_ads, internal/integrations/metabridge, internal/integrations/psp/stripe, internal/integrations/shipping/ecpay, internal/live, internal/mail, internal/merchanttools, internal/metaconnect, internal/msgtemplates, internal/oidclogin, internal/payments, internal/payments/stripewebhook, internal/platform, internal/tlsask)\n--browser-identity: own=2 specs=1 urls=4 ui-flow drivers=1 entries=0 candidates=0 matched=0 covers=9\n--browser-buyer-comms: own=2 specs=1 urls=28 ui-flow drivers=3 entries=14 candidates=14 matched=10 covers=18\n--browser-checkout-offline: own=1 specs=2 urls=7 ui-flow drivers=4 entries=27 candidates=55 matched=51 covers=31\n--browser-home-cod: own=2 specs=2 urls=13 ui-flow drivers=4 entries=30 candidates=69 matched=65 covers=31\n--browser-promotions: own=1 specs=1 urls=4 ui-flow drivers=2 entries=18 candidates=28 matched=24 covers=23\n--browser-password-auth: own=2 specs=3 urls=19 ui-flow drivers=4 entries=14 candidates=19 matched=19 covers=15\n--browser-admin-legacy: INFO builds/runs cmd/admin-fixture (direct internal imports: internal/catalog, internal/httpapi, internal/inventory, internal/platform)\n--browser-admin-legacy: own=1 specs=0 urls=2 ui-flow drivers=0 entries=0 candidates=0 matched=0 covers=8\n--browser-buyer: own=2 specs=2 urls=12 ui-flow drivers=4 entries=15 candidates=13 matched=9 covers=16\n--browser-merchant-buyer: own=1 specs=1 urls=8 ui-flow drivers=4 entries=11 candidates=28 matched=25 covers=19\n--browser-manual-order: own=1 specs=3 urls=9 ui-flow drivers=4 entries=13 candidates=30 matched=30 covers=22\n--browser-merchant-orders-bff: own=1 specs=4 urls=16 ui-flow drivers=4 entries=2 candidates=1 matched=1 covers=36\n--browser-merchant-orders-ui: own=1 specs=8 urls=14 ui-flow drivers=9 entries=24 candidates=41 matched=41 covers=40\n--browser-input-delivery: own=1 specs=4 urls=7 ui-flow drivers=4 entries=2 candidates=0 matched=0 covers=11\n--browser-studio-bff: own=1 specs=3 urls=12 ui-flow drivers=3 entries=2 candidates=1 matched=1 covers=35\n--browser-studio-ui: INFO builds/runs cmd/media-worker (direct internal imports: internal/integrations/livekit, internal/jobqueue, internal/live, internal/platform)\n--browser-studio-ui: own=1 specs=1 urls=7 ui-flow drivers=2 entries=6 candidates=12 matched=12 covers=13\n--browser-live-console: own=3 specs=1 urls=9 ui-flow drivers=3 entries=10 candidates=17 matched=17 covers=16\n--browser-claim-checkout: own=1 specs=1 urls=7 ui-flow drivers=3 entries=13 candidates=17 matched=13 covers=14\n--browser-live-claims: own=1 specs=5 urls=10 ui-flow drivers=5 entries=21 candidates=41 matched=37 covers=25\n--browser-order: own=2 specs=1 urls=8 ui-flow drivers=3 entries=13 candidates=15 matched=11 covers=16\n--browser-payment: own=1 specs=1 urls=7 ui-flow drivers=3 entries=10 candidates=15 matched=11 covers=16\n--browser-refund-fulfilment: own=1 specs=5 urls=10 ui-flow drivers=6 entries=19 candidates=40 matched=36 covers=23\n--browser-customers-billing: UNMAPPED /v1/platform/stripe/webhook (from tests/foundation/browser_customers_billing_test.go)\n--browser-customers-billing: UNMAPPED /v1/checkout/sessions (from tests/foundation/browser_customers_billing_test.go)\n--browser-customers-billing: UNMAPPED /v1/billing_portal/sessions (from tests/foundation/browser_customers_billing_test.go)\n--browser-customers-billing: own=2 specs=13 urls=15 ui-flow drivers=17 entries=44 candidates=62 matched=58 covers=42\n--browser-card-payments: own=2 specs=8 urls=7 ui-flow drivers=9 entries=21 candidates=31 matched=27 covers=37\n--browser-meta-ads: own=1 specs=6 urls=10 ui-flow drivers=6 entries=17 candidates=27 matched=24 covers=41\n--browser-ads-attribution: own=1 specs=4 urls=4 ui-flow drivers=6 entries=28 candidates=32 matched=28 covers=21\n--browser-cvs: own=1 specs=4 urls=8 ui-flow drivers=6 entries=23 candidates=47 matched=43 covers=24\n--browser-catalog-media: own=1 specs=1 urls=5 ui-flow drivers=2 entries=12 candidates=19 matched=16 covers=40\n--browser-storefront-publish: INFO builds/runs cmd/store-admin (direct internal imports: internal/command, internal/domains, internal/platform, internal/storefrontadmin, internal/storehandles)\n--browser-storefront-publish: own=1 specs=5 urls=9 ui-flow drivers=7 entries=21 candidates=34 matched=31 covers=22\n--browser-store-domains: UNMAPPED /api/onboarding/handle-suggest (from tests/storefront/store-domains-gate.mjs)\n--browser-store-domains: own=1 specs=2 urls=11 ui-flow drivers=3 entries=10 candidates=20 matched=17 covers=40\n--browser-storefront: INFO builds/runs cmd/store-admin (direct internal imports: internal/command, internal/domains, internal/platform, internal/storefrontadmin, internal/storehandles)\n--browser-storefront: own=3 specs=3 urls=10 ui-flow drivers=6 entries=31 candidates=49 matched=37 covers=27\n--browser-webkit: own=8 specs=8 urls=30 ui-flow drivers=11 entries=23 candidates=46 matched=42 covers=28\n--browser-e2e: own=2 specs=2 urls=8 ui-flow drivers=2 entries=32 candidates=49 matched=45 covers=32\n--live-browser-input: own=6 specs=0 urls=1 ui-flow drivers=0 entries=0 candidates=2 matched=2 covers=6\n--browser-design: INFO builds/runs cmd/store-admin (direct internal imports: internal/command, internal/domains, internal/platform, internal/storefrontadmin, internal/storehandles)\n--browser-design: own=3 specs=5 urls=13 ui-flow drivers=7 entries=21 candidates=38 matched=31 covers=22\n--browser-ops-polish: own=1 specs=3 urls=3 ui-flow drivers=5 entries=27 candidates=49 matched=45 covers=25\n--browser-meta-connect: own=2 specs=4 urls=3 ui-flow drivers=4 entries=9 candidates=32 matched=32 covers=18\n--browser-product-editor: own=1 specs=1 urls=10 ui-flow drivers=8 entries=14 candidates=28 matched=28 covers=18\n--browser-catalog-core: own=1 specs=1 urls=10 ui-flow drivers=8 entries=14 candidates=28 matched=28 covers=18\n--browser-returns-ui: own=1 specs=3 urls=2 ui-flow drivers=3 entries=8 candidates=10 matched=10 covers=17\n--browser-picklist: node-only (no Go harness file; lc_fixture=none) — covers=[] by definition\n--browser-operations-ads: own=1 specs=1 urls=0 ui-flow drivers=1 entries=7 candidates=19 matched=19 covers=14\n--browser-product-media-v2: own=2 specs=1 urls=7 ui-flow drivers=1 entries=18 candidates=31 matched=27 covers=22\n--browser-reports: own=1 specs=3 urls=7 ui-flow drivers=3 entries=14 candidates=17 matched=17 covers=35\n--browser-migration-import: own=1 specs=8 urls=9 ui-flow drivers=10 entries=24 candidates=16 matched=16 covers=20\ninternal/csvguard: consumer-import join into 34 mode(s) via internal/merchantorders, internal/migrationimport, internal/payments/settlement, internal/reporting\ninternal/jobqueue: consumer-import join into 36 mode(s) via internal/checkout, internal/payments, internal/payments/stripewebhook\ninternal/mail: consumer-import join into 39 mode(s) via internal/identity, internal/notify\ninternal/storehandles: consumer-import join into 19 mode(s) via internal/storefrontadmin\ninternal/twcity: consumer-import join into 28 mode(s) via internal/customers, internal/migrationimport\ninternal/integrations/psp/payuni: consumer-import join into 38 mode(s) via internal/checkout, internal/integrations/accounts, internal/payments\ninternal/integrations/shipping/ecpay: consumer-import join into 37 mode(s) via internal/checkout, internal/fulfillment\nFILE internal/httpapi/accounts.go: --browser-card-payments --browser-catalog-media --browser-checkout-offline --browser-click-sweep --browser-customers-billing --browser-e2e --browser-home-cod --browser-identity --browser-merchant-orders-bff --browser-merchant-orders-ui --browser-meta-ads --browser-meta-connect --browser-password-auth --browser-reports --browser-store-domains --browser-studio-bff --browser-visual-lint --browser-webkit\nFILE internal/httpapi/ads.go: --browser-ads-attribution --browser-card-payments --browser-catalog-core --browser-catalog-media --browser-checkout-offline --browser-click-sweep --browser-customers-billing --browser-cvs --browser-design --browser-e2e --browser-home-cod --browser-inbox --browser-live-claims --browser-live-console --browser-manual-order --browser-merchant-buyer --browser-merchant-orders-bff --browser-merchant-orders-ui --browser-meta-ads --browser-meta-connect --browser-meta-health-ui --browser-migration-import --browser-operations-ads --browser-ops-polish --browser-password-auth --browser-product-editor --browser-product-media-v2 --browser-promotions --browser-refund-fulfilment --browser-reports --browser-returns-ui --browser-store-domains --browser-storefront --browser-storefront-publish --browser-studio-bff --browser-studio-ui --browser-visual-lint --browser-webkit\nFILE internal/httpapi/billing.go: --browser-card-payments --browser-catalog-media --browser-click-sweep --browser-customers-billing --browser-merchant-orders-bff --b'... 85525 more characters,
+    expected: /^SPECS-ZERO-OK --live-browser-input:/m,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at tests/ci/pr-modes.test.mjs:328:1
+✖ round 5: an ecpayroute-only change selects the CVS browser gates (thread 4236971117) (0.408167ms)
+  AssertionError [ERR_ASSERTION]: ecpayroute is not backend-only: the CVS browser gates boot the real ecpayroute.Routes dispatcher
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/tests/ci/pr-modes.test.mjs:330:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/pr-modes.test.mjs:343:1
+✖ round 5: an orders.go-only or merchantorders-only change selects --browser-tracking-backfill (thread 4236972349) (2.898291ms)
+  AssertionError [ERR_ASSERTION]: internal/httpapi/orders.go must select --browser-tracking-backfill (tracking-backfill.spec.ts drives the orders read chain): foundation-shards,--browser-click-sweep,--browser-visual-lint,--browser-buyer-comms,--browser-checkout-offline,--browser-home-cod,--browser-promotions,--browser-password-auth,--browser-merchant-buyer,--browser-manual-order,--browser-merchant-orders-bff,--browser-merchant-orders-ui,--browser-studio-bff,--browser-studio-ui,--browser-claim-checkout,--browser-refund-fulfilment,--browser-customers-billing,--browser-card-payments,--browser-meta-ads,--browser-cvs,--browser-catalog-media,--browser-storefront-publish,--browser-store-domains,--browser-storefront,--browser-webkit,--browser-e2e,--browser-design,--browser-ops-polish,--browser-returns-ui,--browser-reports,--browser-migration-import
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/tests/ci/pr-modes.test.mjs:346:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/pr-modes.test.mjs:357:1
+✖ round 5: an inventory-only or live_console.go-only change selects --browser-admin-legacy (thread 4236972354) (2.059333ms)
+  AssertionError [ERR_ASSERTION]: internal/inventory/x.go must select --browser-admin-legacy (ledger suite -> /en/inventory -> Ledger.tsx:396 inventory/adjustments): foundation-shards,--browser-click-sweep,--browser-visual-lint,--browser-promotions,--browser-merchant-buyer,--browser-merchant-orders-bff,--browser-merchant-orders-ui,--browser-studio-bff,--browser-live-console,--browser-customers-billing,--browser-card-payments,--browser-meta-ads,--browser-catalog-media,--browser-storefront-publish,--browser-store-domains,--browser-storefront,--browser-webkit,--browser-e2e,--browser-design,--browser-product-editor,--browser-catalog-core,--browser-product-media-v2,--browser-reports
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/tests/ci/pr-modes.test.mjs:360:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

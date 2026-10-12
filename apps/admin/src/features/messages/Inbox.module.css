@@ -31,7 +31,8 @@
 }
 .toolbar select,
 .composer select,
-.panel input {
+.panel input,
+.panel select {
   border: 1px solid #bac7d1;
   border-radius: 5px;
   padding: 9px;
@@ -271,3 +272,7 @@
     max-height: 420px;
   }
 }
+
+/* Opaque session references and long merchant names must wrap within the 390px panel. */
+.panel select { width: 100%; min-width: 0; }
+.panel li { overflow-wrap: anywhere; }

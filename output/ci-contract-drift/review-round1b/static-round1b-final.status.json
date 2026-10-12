@@ -1,0 +1,21 @@
+{
+  "name": "static-round1b-final",
+  "command": [
+    "bash",
+    "-c",
+    "set -e\nbash scripts/dev/check-gates.sh\ngo vet ./scripts/dev/contractdrift\nbash scripts/dev/check-pkgdocs.sh\nbash scripts/dev/depmap.sh --check\nbash scripts/dev/test-local.sh --list"
+  ],
+  "timeout": 600,
+  "head": "df9bf2b6b53c17ca2fdf767586deb756dc4476a5",
+  "exit_code": 0,
+  "source_sha256": "48e1035694d1554075f1b7e655d637ad43190800621d2a7688a4115191075877",
+  "source_after": "48e1035694d1554075f1b7e655d637ad43190800621d2a7688a4115191075877",
+  "source_unchanged": true,
+  "historical_output_sha256": "64c9dc24ef9e88247d3d25001be140fd9a11805b4ef3fab63906d25a20ff12d1",
+  "historical_output_after": "64c9dc24ef9e88247d3d25001be140fd9a11805b4ef3fab63906d25a20ff12d1",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": true,
+  "tracked_status_clean_after": true,
+  "elapsed_seconds": 119.293
+}

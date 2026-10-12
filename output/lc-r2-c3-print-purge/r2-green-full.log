@@ -1,0 +1,259 @@
+=== RUN   TestClaimsRetentionCRP10SourceGuards
+=== RUN   TestClaimsRetentionCRP10SourceGuards/definer-callers-only-in-internal-retention
+=== RUN   TestClaimsRetentionCRP10SourceGuards/actor-key-loaded-only-by-meta-worker-and-retention-admin
+=== RUN   TestClaimsRetentionCRP10SourceGuards/operator-dsn-name-only-in-retention-admin
+=== RUN   TestClaimsRetentionCRP10SourceGuards/retention-code-has-no-network-and-no-new-import
+=== RUN   TestClaimsRetentionCRP10SourceGuards/regression-cheap-items
+--- PASS: TestClaimsRetentionCRP10SourceGuards (1.33s)
+    --- PASS: TestClaimsRetentionCRP10SourceGuards/definer-callers-only-in-internal-retention (0.01s)
+    --- PASS: TestClaimsRetentionCRP10SourceGuards/actor-key-loaded-only-by-meta-worker-and-retention-admin (0.06s)
+    --- PASS: TestClaimsRetentionCRP10SourceGuards/operator-dsn-name-only-in-retention-admin (0.13s)
+    --- PASS: TestClaimsRetentionCRP10SourceGuards/retention-code-has-no-network-and-no-new-import (0.00s)
+    --- PASS: TestClaimsRetentionCRP10SourceGuards/regression-cheap-items (0.77s)
+=== RUN   TestClaimsRetentionLCR2C3xPrintPurge
+=== RUN   TestClaimsRetentionLCR2C3xPrintPurge/c3x-age-enforced
+=== RUN   TestClaimsRetentionLCR2C3xPrintPurge/c3x-report-only
+=== RUN   TestClaimsRetentionLCR2C3xPrintPurge/c2-deidentify-drops-peer-links
+=== RUN   TestClaimsRetentionLCR2C3xPrintPurge/rd4-erasure-deletes-peer-links
+=== RUN   TestClaimsRetentionLCR2C3xPrintPurge/rd4-peer-link-only-not-pt404
+=== RUN   TestClaimsRetentionLCR2C3xPrintPurge/rd4-comment-ref-erasure-derives-peer-links
+=== RUN   TestClaimsRetentionLCR2C3xPrintPurge/rd4-bundle-selector-erasure-derives-peer-links
+=== RUN   TestClaimsRetentionLCR2C3xPrintPurge/rd4-replay-derives-peer-links
+--- PASS: TestClaimsRetentionLCR2C3xPrintPurge (4.26s)
+    --- PASS: TestClaimsRetentionLCR2C3xPrintPurge/c3x-age-enforced (0.08s)
+    --- PASS: TestClaimsRetentionLCR2C3xPrintPurge/c3x-report-only (0.02s)
+    --- PASS: TestClaimsRetentionLCR2C3xPrintPurge/c2-deidentify-drops-peer-links (0.01s)
+    --- PASS: TestClaimsRetentionLCR2C3xPrintPurge/rd4-erasure-deletes-peer-links (0.02s)
+    --- PASS: TestClaimsRetentionLCR2C3xPrintPurge/rd4-peer-link-only-not-pt404 (0.01s)
+    --- PASS: TestClaimsRetentionLCR2C3xPrintPurge/rd4-comment-ref-erasure-derives-peer-links (0.03s)
+    --- PASS: TestClaimsRetentionLCR2C3xPrintPurge/rd4-bundle-selector-erasure-derives-peer-links (0.02s)
+    --- PASS: TestClaimsRetentionLCR2C3xPrintPurge/rd4-replay-derives-peer-links (0.02s)
+=== RUN   TestClaimsRetentionCRP03ReportOnly
+--- PASS: TestClaimsRetentionCRP03ReportOnly (0.51s)
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C1-links
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C2-claim-identity
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C2-more-at-limit
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C3-intake
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C4-reply-ledger
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C4-a14-send-actions
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C5-social
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C6-run-log
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/meta-actor-new-session-gets-a-new-bundle
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/buyer-token-and-issue-link
+--- PASS: TestClaimsRetentionCRP04EnforcedPurge (9.56s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C1-links (0.02s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C2-claim-identity (0.06s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C2-more-at-limit (0.01s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C3-intake (0.01s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C4-reply-ledger (0.04s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C4-a14-send-actions (0.02s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C5-social (0.57s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C6-run-log (0.02s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/meta-actor-new-session-gets-a-new-bundle (8.28s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/buyer-token-and-issue-link (0.44s)
+=== RUN   TestClaimsRetentionCRP13UnknownRedaction
+=== RUN   TestClaimsRetentionCRP13UnknownRedaction/A1.4-unknown-redaction
+--- PASS: TestClaimsRetentionCRP13UnknownRedaction (0.12s)
+    --- PASS: TestClaimsRetentionCRP13UnknownRedaction/A1.4-unknown-redaction (0.05s)
+=== RUN   TestClaimsRetentionCRP05Concurrency
+=== RUN   TestClaimsRetentionCRP05Concurrency/held-row-locks-skip
+=== RUN   TestClaimsRetentionCRP05Concurrency/reopen-in-flight
+=== RUN   TestClaimsRetentionCRP05Concurrency/advisory-key-busy-and-erase-blocking
+=== RUN   TestClaimsRetentionCRP05Concurrency/lock-timeout-is-busy-and-commits-nothing
+=== RUN   TestClaimsRetentionCRP05Concurrency/F5-non-terminal-inbox-job-keeps-row
+=== RUN   TestClaimsRetentionCRP05Concurrency/parked-run-vs-real-operations
+=== RUN   TestClaimsRetentionCRP05Concurrency/parked-run-vs-intake-apply
+--- PASS: TestClaimsRetentionCRP05Concurrency (6.95s)
+    --- PASS: TestClaimsRetentionCRP05Concurrency/held-row-locks-skip (0.33s)
+    --- PASS: TestClaimsRetentionCRP05Concurrency/reopen-in-flight (0.04s)
+    --- PASS: TestClaimsRetentionCRP05Concurrency/advisory-key-busy-and-erase-blocking (0.26s)
+    --- PASS: TestClaimsRetentionCRP05Concurrency/lock-timeout-is-busy-and-commits-nothing (4.30s)
+    --- PASS: TestClaimsRetentionCRP05Concurrency/F5-non-terminal-inbox-job-keeps-row (0.44s)
+    --- PASS: TestClaimsRetentionCRP05Concurrency/parked-run-vs-real-operations (0.67s)
+    --- PASS: TestClaimsRetentionCRP05Concurrency/parked-run-vs-intake-apply (0.82s)
+=== RUN   TestClaimsRetentionCRP06Erasure
+=== RUN   TestClaimsRetentionCRP06Erasure/selector-a-across-two-stores
+    claims_retention_test.go:2490: selector_digest = sha256(a|object|asset|hex(sha256(key)))
+=== RUN   TestClaimsRetentionCRP06Erasure/selector-b-comment-id
+=== RUN   TestClaimsRetentionCRP06Erasure/selector-c-meta-bundle
+=== RUN   TestClaimsRetentionCRP06Erasure/selector-c-manual-bundle
+=== RUN   TestClaimsRetentionCRP06Erasure/a14-send-actions-erasure
+=== RUN   TestClaimsRetentionCRP06Erasure/holds
+=== RUN   TestClaimsRetentionCRP06Erasure/reserved-labels
+=== RUN   TestClaimsRetentionCRP06Erasure/real-pipeline-peer-and-comment-keys
+--- PASS: TestClaimsRetentionCRP06Erasure (11.37s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/selector-a-across-two-stores (0.57s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/selector-b-comment-id (0.22s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/selector-c-meta-bundle (0.21s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/selector-c-manual-bundle (0.02s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/a14-send-actions-erasure (0.21s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/holds (1.48s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/reserved-labels (0.46s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/real-pipeline-peer-and-comment-keys (7.90s)
+=== RUN   TestClaimsRetentionCRP02Schema
+=== RUN   TestClaimsRetentionCRP02Schema/fresh-database
+    claims_retention_test.go:3550: customers.apply_erasure (0078) present in this lane: true; CB05 is exercised by the customers-billing lane (NOT_RUN here)
+=== RUN   TestClaimsRetentionCRP02Schema/non-retention-roles-denied
+=== RUN   TestClaimsRetentionCRP02Schema/writer-policy-behaviour
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_operator_(two_retention_authorities)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_payment_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_payment_live_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_expiry_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_ads_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_claims_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_legacy_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_runtime
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_claims_intake
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_meta_consumer
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_integration_writer
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_definer_owner
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_with_SET_ROLE
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_definer_owner_alone
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_definer_owner_with_SET
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(payment_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(payment_live_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(expiry_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(ads_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(claims_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(legacy_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_the_runtime_pool
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_the_owner_pool
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_job
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_payment_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_payment_live_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_expiry_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_ads_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_claims_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_legacy_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_runtime
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_meta_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_definer_owner
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_with_SET_ROLE
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_definer_owner_alone
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(payment_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(payment_live_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(expiry_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(ads_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(claims_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(legacy_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_the_runtime_pool
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_the_owner_pool
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_payment_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_payment_live_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_expiry_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_ads_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_claims_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_checkout_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_buyer_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_buyer_issuer_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_ingress_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_consumer_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_claims_intake_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_media_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_media_executor_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_media_recovery_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_stripe_ingress_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/constraints-and-policy-api
+=== RUN   TestClaimsRetentionCRP02Schema/populated-upgrade
+--- PASS: TestClaimsRetentionCRP02Schema (8.41s)
+    --- PASS: TestClaimsRetentionCRP02Schema/fresh-database (0.27s)
+    --- PASS: TestClaimsRetentionCRP02Schema/non-retention-roles-denied (0.81s)
+    --- PASS: TestClaimsRetentionCRP02Schema/writer-policy-behaviour (0.29s)
+    --- PASS: TestClaimsRetentionCRP02Schema/pool-validators (2.58s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_operator_(two_retention_authorities) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_payment_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_payment_live_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_expiry_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_ads_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_claims_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_legacy_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_runtime (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_claims_intake (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_meta_consumer (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_integration_writer (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_definer_owner (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_with_SET_ROLE (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_definer_owner_alone (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_definer_owner_with_SET (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(payment_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(payment_live_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(expiry_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(ads_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(claims_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(legacy_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_the_runtime_pool (0.01s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_the_owner_pool (0.01s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_job (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_payment_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_payment_live_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_expiry_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_ads_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_claims_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_legacy_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_runtime (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_meta_worker (0.03s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_definer_owner (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_with_SET_ROLE (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_definer_owner_alone (0.03s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(payment_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(payment_live_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(expiry_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(ads_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(claims_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(legacy_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_the_runtime_pool (0.00s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_the_owner_pool (0.00s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_payment_worker_rejects_retention_reach (0.09s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_payment_live_worker_rejects_retention_reach (0.09s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_expiry_worker_rejects_retention_reach (0.10s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_ads_worker_rejects_retention_reach (0.09s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_claims_worker_rejects_retention_reach (0.09s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_checkout_rejects_retention_reach (0.09s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_buyer_rejects_retention_reach (0.08s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_buyer_issuer_rejects_retention_reach (0.09s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_ingress_rejects_retention_reach (0.09s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_consumer_rejects_retention_reach (0.08s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_worker_rejects_retention_reach (0.10s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_claims_intake_rejects_retention_reach (0.09s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_media_worker_rejects_retention_reach (0.11s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_media_executor_rejects_retention_reach (0.13s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_media_recovery_rejects_retention_reach (0.19s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_stripe_ingress_rejects_retention_reach (0.12s)
+    --- PASS: TestClaimsRetentionCRP02Schema/constraints-and-policy-api (0.10s)
+    --- PASS: TestClaimsRetentionCRP02Schema/populated-upgrade (4.35s)
+=== RUN   TestClaimsRetentionCRP07Privacy
+--- PASS: TestClaimsRetentionCRP07Privacy (17.52s)
+=== RUN   TestClaimsRetentionCRP08RestoreReplay
+=== RUN   TestClaimsRetentionCRP08RestoreReplay/red-restore-without-replay-keeps-the-key
+=== RUN   TestClaimsRetentionCRP08RestoreReplay/green-replay-from-log-rows-ignoring-the-hold
+=== RUN   TestClaimsRetentionCRP08RestoreReplay/replay-removes-pending-intake-and-redacts-nonterminal-operations
+=== RUN   TestClaimsRetentionCRP08RestoreReplay/green-replay-from-an-external-tombstone-file-via-the-cli
+--- PASS: TestClaimsRetentionCRP08RestoreReplay (5.70s)
+    --- PASS: TestClaimsRetentionCRP08RestoreReplay/red-restore-without-replay-keeps-the-key (0.38s)
+    --- PASS: TestClaimsRetentionCRP08RestoreReplay/green-replay-from-log-rows-ignoring-the-hold (0.18s)
+    --- PASS: TestClaimsRetentionCRP08RestoreReplay/replay-removes-pending-intake-and-redacts-nonterminal-operations (0.15s)
+    --- PASS: TestClaimsRetentionCRP08RestoreReplay/green-replay-from-an-external-tombstone-file-via-the-cli (1.93s)
+=== RUN   TestClaimsRetentionCRP09Worker
+=== RUN   TestClaimsRetentionCRP09Worker/start-registers-one-job-and-runs-on-the-job-login
+=== RUN   TestClaimsRetentionCRP09Worker/batch-loop-stops
+=== RUN   TestClaimsRetentionCRP09Worker/database-fault-is-a-river-retry-with-earlier-batches-committed
+=== RUN   TestClaimsRetentionCRP09Worker/refuses-to-start-with-a-bad-retention-dsn
+=== RUN   TestClaimsRetentionCRP09Worker/deploy-config-carries-the-job-dsn-only
+--- PASS: TestClaimsRetentionCRP09Worker (36.01s)
+    --- PASS: TestClaimsRetentionCRP09Worker/start-registers-one-job-and-runs-on-the-job-login (6.91s)
+    --- PASS: TestClaimsRetentionCRP09Worker/batch-loop-stops (6.20s)
+    --- PASS: TestClaimsRetentionCRP09Worker/database-fault-is-a-river-retry-with-earlier-batches-committed (21.59s)
+    --- PASS: TestClaimsRetentionCRP09Worker/refuses-to-start-with-a-bad-retention-dsn (0.54s)
+    --- PASS: TestClaimsRetentionCRP09Worker/deploy-config-carries-the-job-dsn-only (0.00s)
+=== RUN   TestLiveConsoleLCN05PrintAndMarks
+--- PASS: TestLiveConsoleLCN05PrintAndMarks (0.27s)
+=== RUN   TestLiveConsoleLCN05PrintIdempotencyKey
+--- PASS: TestLiveConsoleLCN05PrintIdempotencyKey (0.37s)
+=== RUN   TestR2IntegrationUpgradeFromReleaseHead
+--- PASS: TestR2IntegrationUpgradeFromReleaseHead (6.63s)
+PASS
+ok  	livecommerce/tests/foundation	111.196s
+test-focused: top-level PASS=14 FAIL=0 SKIP=0 exit=0

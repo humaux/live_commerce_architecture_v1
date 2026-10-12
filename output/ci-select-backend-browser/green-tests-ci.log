@@ -1,0 +1,104 @@
+✔ every real internal package directory is classified (covered by lc_covers or BACKEND_ONLY-listed) (34.561334ms)
+✔ a new unclassified package fails the gate until covered or explicitly BACKEND_ONLY (24.252ms)
+✔ BACKEND_ONLY_PACKAGES entries are internal packages with a real one-line reason (0.266667ms)
+✔ every browser-universe mode declares lc_covers; a Go-running one must not declare it empty (31.34025ms)
+✔ covers entries must match a real internal package directory; parent prefixes are legal, stale entries are red (22.468375ms)
+node:internal/modules/package_json_reader:301
+  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+        ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'typescript-api' imported from /Volumes/data/live_commerce_architecture_v1/.worktrees/ci-select-backend-browser/scripts/dev/check-browser-evidence.mjs
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:301:9)
+    at packageResolve (node:internal/modules/esm/resolve:764:81)
+    at moduleResolve (node:internal/modules/esm/resolve:855:18)
+    at defaultResolve (node:internal/modules/esm/resolve:988:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:697:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:714:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:746:52)
+    at #resolve (node:internal/modules/esm/loader:679:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:599:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:162:33) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v24.15.0
+✖ tests/ci/browser-evidence-paths.test.mjs (58.281792ms)
+ci-plan: 10 job(s); click-sweep x10 (aggregate)
+  --browser-click-sweep@1/10  -> artifact gate-browser-click-sweep_1_10
+  --browser-click-sweep@2/10  -> artifact gate-browser-click-sweep_2_10
+  --browser-click-sweep@3/10  -> artifact gate-browser-click-sweep_3_10
+  --browser-click-sweep@4/10  -> artifact gate-browser-click-sweep_4_10
+  --browser-click-sweep@5/10  -> artifact gate-browser-click-sweep_5_10
+  --browser-click-sweep@6/10  -> artifact gate-browser-click-sweep_6_10
+  --browser-click-sweep@7/10  -> artifact gate-browser-click-sweep_7_10
+  --browser-click-sweep@8/10  -> artifact gate-browser-click-sweep_8_10
+  --browser-click-sweep@9/10  -> artifact gate-browser-click-sweep_9_10
+  --browser-click-sweep@10/10  -> artifact gate-browser-click-sweep_10_10
+✔ the full sweep and the full visual lint fan out into every shard and ask for the aggregate (1.55ms)
+✔ foundation-shards = the unit shard + every plan group; the serial `foundation` mode is untouched (0.767375ms)
+✔ an explicit shard re-run (or a partial list) never claims the whole-run aggregate (0.122791ms)
+✔ duplicates collapse, artifact names are safe and unique, bad input is refused (0.397875ms)
+✔ main writes matrix / sweep_n / visual_n to GITHUB_OUTPUT (2.030083ms)
+✔ mode discovery has no Docker/build dependency and includes the existing universe (50.203333ms)
+✔ dry-run resolves a mode without executing dependencies and keeps its command environment (95.013167ms)
+✔ one appended case is discovered and dispatched; malformed and duplicate registry entries fail closed (82.070708ms)
+✔ registry discovery cannot silently lose indented, aliased or unrecognised Bash case arms (13.372875ms)
+✔ docs, contracts, deploy files and node-test dirs run foundation-shards only (3.35425ms)
+✔ node tests of deploy scripts and of the CI planner are backend-only (they cannot change a browser) (1.845208ms)
+✔ internal/ is NOT backend-only any more: a package no mode declares falls to the conservative PG rule (CI-SELECT) (3.074875ms)
+✔ a UI path adds the whole browser set, including click-sweep and visual-lint (33.087583ms)
+✔ docs-only and output-only diffs keep the single required check (foundation-shards) (0.702333ms)
+✔ internal/live/stream.go selects --browser-live-console (PR #30 root cause) (2.433417ms)
+✔ internal/integrations/metareply/x.go selects --browser-live-console (PR #24 root cause) (1.976333ms)
+✔ a new migration selects every PG-fixture browser mode (the modes run on the migrated schema) (2.111167ms)
+✔ docs-only and contracts-only diffs still select no browser mode (0.146375ms)
+✔ cmd/ changes select every PG-fixture browser mode (the modes drive the binaries cmd/ builds) (3.563334ms)
+✔ shared platform packages select every PG-fixture browser mode (5.936125ms)
+✔ an internal package no mode declares selects every PG-fixture browser mode until the gate classifies it (2.312917ms)
+✔ lc_covers is registry DATA: declaring modes are selected by prefix match, non-declaring modes are not (8.068667ms)
+✔ backend changes never select the node-only browser modes (no Go harness, no PG fixture) (7.993291ms)
+✔ BACKEND_ONLY_PACKAGES is explicit classified data; listed packages select no browser mode (mechanism, synthetic list) (5.437042ms)
+✔ a registry without lc_covers data (historical source) stays maximally conservative (0.326ms)
+✔ legacy browser_* paths still select all browsers; a known untagged foundation file stays backend-only (1.1355ms)
+✔ legacy deploy prefixes remain selected and unrelated paths do not select smoke (6.083375ms)
+✔ the browser set is release-gate's browser-mode universe minus the documented exclusions (94.58525ms)
+✔ every real browser-tagged foundation file selects registry browser modes, including non-browser names (238.374417ms)
+✔ tagged runner discovery follows registry additions, command arrays and line continuations (1.932292ms)
+✔ deploy smoke is selected for its workflow, verdict/helpers and executable test inputs (4.026166ms)
+✔ new selection never drops legacy modes or deploy for any tracked path (2698.907667ms)
+✔ CLI classifies merge-base and explicit head, including removed tags, deleted files and renames (493.924209ms)
+✔ CLI selects modes the base added after divergence when the checkout is the PR merge (PR #22 review P1) (249.156208ms)
+✔ CLI reads the merge checkout's source when the base adds a browser tag after the fork (PR #22 review P1) (235.013125ms)
+✔ CLI explicit head and stdin include tags outside the checkout and uncommitted tag removals (220.085125ms)
+✔ compound/legacy tags and unknown source are conservative; known untagged source stays backend-only (7.417125ms)
+✔ explicit-head CLI derives tagged runner modes from that head's real registry (189.567667ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "架构.md" (162.884917ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "internal/示例.go" (168.026208ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "tests/foundation/plain\tname_test.go" (193.658125ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, " deploy/scripts/synthetic-smoke.sh" (176.318458ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "架构.md" (165.982667ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "internal/示例.go" (169.417208ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "tests/foundation/plain\tname_test.go" (181.451333ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, " deploy/scripts/synthetic-smoke.sh" (175.3975ms)
+✔ stdin unions legacy trimming without trimming the source lookup path (100.526709ms)
+✔ parser: only compiled, correctly-shaped Test functions of untagged _test.go files (7.425917ms)
+✔ the real plan: every top-level test of tests/foundation runs in exactly one group (735.002334ms)
+✔ a new test (in no list) still runs, exactly once, in the catch-all group; the same name with no catch-all is red (917.947083ms)
+✔ a test listed in two groups is red; drift beyond the limit is red (863.936666ms)
+✔ regexes: anchored explicit lists; the catch-all skips exactly everyone else's tests (0.394375ms)
+✔ pack: deterministic, balanced to within the longest test, every name once (5.351583ms)
+✔ parseDurations: top-level lines only (0.247042ms)
+ℹ tests 60
+ℹ suites 0
+ℹ pass 59
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6103.188833
+
+✖ failing tests:
+
+test at tests/ci/browser-evidence-paths.test.mjs:1:1
+✖ tests/ci/browser-evidence-paths.test.mjs (58.281792ms)
+  'test failed'

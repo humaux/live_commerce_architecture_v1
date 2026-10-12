@@ -1,0 +1,18 @@
+✔ ordinary and sharded browser jobs require only Chromium; default mixed modes keep WebKit (3.84825ms)
+✔ explicit WebKit calibration takes the union without dropping Chromium (0.997875ms)
+✔ every current browser arm declares requirements; unknown or missing declarations fail closed (20.791291ms)
+✔ coverage assertion derives mixed Go roots and catches a new mode reusing them (67.82175ms)
+✔ installer retries transient dependency failure at most three times under root timeouts (2217.901917ms)
+✔ persistent dependency failure stops after three attempts and never downloads browsers (2283.864583ms)
+✔ mixed engine installer preserves both dependencies and both binaries; first success needs no retry (1946.9615ms)
+✔ invalid browser set cannot invoke dependency installer or browser downloads (348.145291ms)
+✔ dependency CLI resolves from the directly declared package in the frozen pnpm installation (1832.675458ms)
+✔ workflow keeps the overall fifteen-minute bound and partitions cache by planned engine set (0.357375ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8785.646875

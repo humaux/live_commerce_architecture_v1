@@ -1,0 +1,34 @@
+TAP version 13
+# Subtest: the real publish-mode registry runs every public-admin ownership regression as well as the existing browser test
+not ok 1 - the real publish-mode registry runs every public-admin ownership regression as well as the existing browser test
+  ---
+  duration_ms: 13.221875
+  type: 'test'
+  location: '/Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/tests/ci/next-startup.test.mjs:157:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    the CI mode omits TestBrowserAdminRelayOwnsExplicitOrigin
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/tests/ci/next-startup.test.mjs:163:12)
+    Test.runInAsyncScope (node:async_hooks:227:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 242.182958
