@@ -1,0 +1,25 @@
+{
+  "name": "r1-money-copy-browser-red-20261012",
+  "timeout": 900,
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-manual-order"
+  ],
+  "env": {
+    "LC_DRAWER_CALIBRATION": "",
+    "LC_LIVE_CONSOLE_GREP": ""
+  },
+  "head": "6840a124d3c9581a343e10889fb0ea4977bdfe7f",
+  "exit_code": 1,
+  "source_sha256": "90e0f0682d0b0f5f7c638ff2762e960c4d7634d3f0017df9446fcfaa0c320611",
+  "source_after": "90e0f0682d0b0f5f7c638ff2762e960c4d7634d3f0017df9446fcfaa0c320611",
+  "source_unchanged": true,
+  "historical_output_sha256": "db160928ba5c729bcc496372403007bc47cc0295b5071bc8d2082154abbc9452",
+  "historical_output_after": "db160928ba5c729bcc496372403007bc47cc0295b5071bc8d2082154abbc9452",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 136.15
+}

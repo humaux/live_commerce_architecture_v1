@@ -1,0 +1,25 @@
+{
+  "name": "r1-money-key-calibration-r2-20261013",
+  "timeout": 900,
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-manual-order"
+  ],
+  "env": {
+    "LC_DRAWER_CALIBRATION": "new-key-on-retry",
+    "LC_LIVE_CONSOLE_GREP": ""
+  },
+  "head": "273ecd458e3a1d759b6cad7b6583e151cf424fe4",
+  "exit_code": 1,
+  "source_sha256": "9ecd532c412a9029adf35e46c8800231d64b8640056b9ebc086d18b8ff98a666",
+  "source_after": "9ecd532c412a9029adf35e46c8800231d64b8640056b9ebc086d18b8ff98a666",
+  "source_unchanged": true,
+  "historical_output_sha256": "db160928ba5c729bcc496372403007bc47cc0295b5071bc8d2082154abbc9452",
+  "historical_output_after": "db160928ba5c729bcc496372403007bc47cc0295b5071bc8d2082154abbc9452",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": true,
+  "tracked_status_clean_after": true,
+  "elapsed_seconds": 111.684
+}

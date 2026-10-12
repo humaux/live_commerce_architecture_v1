@@ -1,0 +1,22 @@
+{
+  "name": "r1-money-recovery-ui-red-20261012",
+  "timeout": 120,
+  "command": [
+    "node",
+    "--test",
+    "--experimental-strip-types",
+    "tests/admin/create-order-review.test.ts"
+  ],
+  "head": "8a0ec7520b6b7b40ca992520c79ea3f17a2f82f7",
+  "exit_code": 1,
+  "source_sha256": "eabc8f40707331050363664689f66bf60c15077ce3a560cfce308249d98ecc99",
+  "source_after": "eabc8f40707331050363664689f66bf60c15077ce3a560cfce308249d98ecc99",
+  "source_unchanged": true,
+  "historical_output_sha256": "db160928ba5c729bcc496372403007bc47cc0295b5071bc8d2082154abbc9452",
+  "historical_output_after": "db160928ba5c729bcc496372403007bc47cc0295b5071bc8d2082154abbc9452",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 5.232
+}

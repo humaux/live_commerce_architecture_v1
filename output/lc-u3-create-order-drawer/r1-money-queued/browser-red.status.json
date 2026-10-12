@@ -1,0 +1,14 @@
+{
+  "command": "bash scripts/dev/test-local.sh --browser-manual-order",
+  "exit_code": -9,
+  "elapsed_seconds": 287.4393253326416,
+  "base_commit": "8a0ec7520b6b7b40ca992520c79ea3f17a2f82f7",
+  "acceptance": "NOT_RUN",
+  "reason": "Machine PG lock held by another TestBrowserClickSweep; owned waiting runner terminated without acquiring lock or running browser fixture",
+  "evidence_level": "E1 only",
+  "source_hashes": {
+    "tests/admin/create-order-drawer-gate.mjs": "170d5e4e55dec5950069859814d0363c498cd3d591f542dc203af4cecd84bf44",
+    "tests/foundation/browser_create_order_drawer_test.go": "242014dcdb4bb8cdc27f7085487752db7dd0cad8350414dc9201253148fcf211",
+    "apps/admin/components/CreateOrderDrawer.tsx": "0fc2ba7044af34a7f43515a452b1dd96ae9ac9fbe0f590132e31a36448876d00"
+  }
+}

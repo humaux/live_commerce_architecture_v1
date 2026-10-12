@@ -1,0 +1,21 @@
+{
+  "name": "r1-money-pg-final-20261013",
+  "timeout": 900,
+  "command": [
+    "bash",
+    "scripts/dev/test-focused.sh",
+    "^Test(LiveConsoleRecovery|LiveConsoleOrderForBuyer(Resume|ConcurrentStaff)|MerchantToolsManualOrder)$|^TestLiveConsoleRecovery"
+  ],
+  "head": "6840a124d3c9581a343e10889fb0ea4977bdfe7f",
+  "exit_code": 0,
+  "source_sha256": "9ecd532c412a9029adf35e46c8800231d64b8640056b9ebc086d18b8ff98a666",
+  "source_after": "9ecd532c412a9029adf35e46c8800231d64b8640056b9ebc086d18b8ff98a666",
+  "source_unchanged": true,
+  "historical_output_sha256": "db160928ba5c729bcc496372403007bc47cc0295b5071bc8d2082154abbc9452",
+  "historical_output_after": "db160928ba5c729bcc496372403007bc47cc0295b5071bc8d2082154abbc9452",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 127.115
+}

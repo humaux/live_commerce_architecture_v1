@@ -1,0 +1,11 @@
+{
+  "file": "apps/admin/components/CreateOrderDrawer.tsx",
+  "original_sha256": "5640a8f15e94f4ed6b9eaf7500c506c49a48b138e0166f53e668c8c9b3a500ba",
+  "mutation_sha256": "5df8696ea5be6ff94d9114843976a6e52b1aa118590dd06040faf854f44f3c6b",
+  "removed": [
+    "copy handler not_sent guard",
+    "copy render not_sent condition"
+  ],
+  "tests_changed": false,
+  "restored_sha256": "5640a8f15e94f4ed6b9eaf7500c506c49a48b138e0166f53e668c8c9b3a500ba"
+}

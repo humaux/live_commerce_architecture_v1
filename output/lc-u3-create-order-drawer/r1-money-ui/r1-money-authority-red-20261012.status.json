@@ -1,0 +1,25 @@
+{
+  "name": "r1-money-authority-red-20261012",
+  "timeout": 120,
+  "command": [
+    "node",
+    "--test",
+    "--experimental-transform-types",
+    "tests/admin/create-order-client.test.ts",
+    "tests/admin/create-order-bff.test.ts",
+    "tests/admin/create-order-review.test.ts",
+    "tests/admin/create-order-attempt.test.ts"
+  ],
+  "head": "ae19eee92777bcc4aa072e241072738c9343537d",
+  "exit_code": 1,
+  "source_sha256": "b4b0f947bfdffcafd4c35a86c2555479966d54e8fa07555cf2ab5f2ad6091136",
+  "source_after": "b4b0f947bfdffcafd4c35a86c2555479966d54e8fa07555cf2ab5f2ad6091136",
+  "source_unchanged": true,
+  "historical_output_sha256": "db160928ba5c729bcc496372403007bc47cc0295b5071bc8d2082154abbc9452",
+  "historical_output_after": "db160928ba5c729bcc496372403007bc47cc0295b5071bc8d2082154abbc9452",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 4.572
+}

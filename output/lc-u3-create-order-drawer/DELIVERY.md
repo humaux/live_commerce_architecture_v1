@@ -1,5 +1,58 @@
 # LC-U3 create-order drawer delivery
 
+## PR32 money-path follow-up — READY, local E3 (2026-10-13)
+
+This section supersedes the old uncommitted/Git-readonly handoffs below. The owner authorized the necessary backend/contract/REAL_PG expansion and a push of **only** `unit/lc-u3-create-order-drawer`. No GitHub thread reply or resolution was made.
+
+- Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer`; pulled remote `8a0ec752` and preserved the integrator's parent revocation and SCOPE-404 changes.
+- Final source commit: **`273ecd458e3a1d759b6cad7b6583e151cf424fe4`**. The final evidence commit changes only this delivery and owned receipts. All normal root gates bind the exact same tracked-source SHA256 **`9ecd532c412a9029adf35e46c8800231d64b8640056b9ebc086d18b8ff98a666`** (run HEAD `6840a124` plus the four-file delta committed as `273ecd45`). Each wrapper verifies unchanged source, tracked status and historical output throughout the run.
+- Implementer: Codex-3 UI/BFF/integration. Exact parent runtime model/effort: **NOT_EXPOSED**. Backend worker configured `gpt-6.1-sol/high`, test worker `gpt-6.1-sol/medium`, read-only seam reviewer `gpt-6.1-sol/high`; selectors are configuration, not inferred runtime identities. Separate child worktrees, at most two writers, no recursive delegation. Root independently reviewed the seam and reran REAL_PG.
+- Exact allowed write paths: [`r1-money-final/allowed-write-paths.json`](r1-money-final/allowed-write-paths.json), 26 source/contract/registry files plus this delivery and its four owned receipt directories. File hashes: [`r1-money-final/source-files.sha256.json`](r1-money-final/source-files.sha256.json). Owner `output/ext-agents/`, paused backups and historical output were preserved. No migration, grant, go.mod, lockfile or dependency changes.
+
+### Findings and resulting behavior
+
+- **4232390274:** a queued replay with `buyer_link=null` previously offered copy, which regenerated and invalidated the URL inside the queued DM. The copy control is hidden and the handler refuses regeneration unless `result.send.state === 'not_sent'`; three locales show the queued-link notice. Real replay proves zero regeneration and an original valid sealed URL after order reload.
+- **4249176849:** the same fix enforces the exact `not_sent` rule at both render and action boundaries. The shared queued-copy red→green below covers both threads. Planned `meta.dm_send` remains untouched.
+- **4232390282:** an arbitrary business 422 cannot prove that an earlier UNKNOWN request created no order. Additive A16R `POST /v1/admin/stores/{store_id}/orders/for-buyer/recover` receives the **original frozen body and key** through the real BFF/client seams. Strict authoritative 200 `created` returns the existing order; strict `not_created` commits a closure seal before the UI frees OrderGuard and permits explicit new intent. No blind new key on 422, UNKNOWN, network failure, malformed reply, 5xx or lost recovery response.
+
+The server binds canonical full body/kind before work and serializes the complete attempt. The absence seal and original checkout share the exact Begin lock: recovery retains it through seal COMMIT, and both ManualOrder/for-buyer money writers check the closure under the lock through checkout COMMIT. A lost outer connection cannot let a late writer create an order after a seal. Post-wait permission/store/session checks prevent stale reads. Normalization clones shared input before validating; recovery can seal invalid recipient/payment input without re-running that failed business validation. The Quote remains the only price.
+
+### Root gates on frozen final source
+
+All logs/status JSON below are committed in [`r1-money-final/`](r1-money-final/). Raw logs in all four receipt directories are stored as byte-preserving `.log.gz`; decode with `gzip -cd`. [`RAW-LOGS.sha256.json`](r1-money-final/RAW-LOGS.sha256.json) verifies the original decoded bytes; older child manifests retain their original `.log` names/hashes. Original uncompressed run files remain in their ignored run directories. Status records include exact command, outer timeout, exit, HEAD, source hash and historical-output hash. Outer wrapper time includes the machine-wide PG queue; product/test deadlines are unchanged.
+
+| Command | Exit | Actual result / run ID |
+| --- | --- | --- |
+| `bash scripts/dev/test-node.sh` | **0** | **1557 pass, 0 fail/skip**, 31 invocations; `r1-money-node-final-20261013` |
+| `cd apps/admin && pnpm exec tsc --noEmit -p .` | **0** | `r1-money-tsc-final-20261013` |
+| `bash scripts/dev/check-gates.sh` | **0** | `r1-money-gates-final-20261013`; 83 documented modes, 1277 tests in 10 shards, HTTP coverage and evidence/header ratchets |
+| `go run ./scripts/dev/contractdrift` | **0** | `r1-money-contract-final-20261013`; **errors=0, warnings=362** historical baseline; Go281/contract149/BFF304 |
+| `bash scripts/dev/test-focused.sh '^Test(LiveConsoleRecovery\|LiveConsoleOrderForBuyer(Resume\|ConcurrentStaff)\|MerchantToolsManualOrder)$\|^TestLiveConsoleRecovery'` | **0** | `r1-money-pg-final-20261013`; **PASS=16 FAIL=0 SKIP=0**, Go39.539s; disposable REAL_PG |
+| `go test -race ./internal/merchanttools ./internal/checkout ./internal/httpapi ./internal/httperror` | **0** | `r1-money-go-race-final-20261013`; all four packages |
+| `go vet ./...` | **0** | `r1-money-go-vet-final-20261013` |
+| `go vet -tags browser ./tests/foundation` | **0** | `r1-money-browser-vet-final-20261013` |
+| `go build ./...` | **0** | `r1-money-go-build-final-20261013` |
+| `bash scripts/dev/test-local.sh --browser-manual-order` | **0** | `r1-money-browser-final-20261013`; **Drawer29 + legacy10, PG14/14**, Go72.396s; no grep/calibration |
+| `LC_DRAWER_CALIBRATION=new-key-on-retry bash scripts/dev/test-local.sh --browser-manual-order` | **1, expected RED** | `r1-money-key-calibration-r2-20261013`; full29, only `DU3-single-order-en-1440` fails; same body/different key, replay201, request orders2/receipts2, **PG15/14** |
+| `bash scripts/dev/test-local.sh --list`; `node scripts/dev/pr-modes.mjs origin/r3/integration`; `git diff --check` | **0** | 84 registry entries including foundation; 54 selected modes; syntax/whitespace unchanged |
+
+REAL_PG names: 13 `TestLiveConsoleRecovery*` tests, `TestLiveConsoleOrderForBuyerResume`, `TestLiveConsoleOrderForBuyerConcurrentStaff`, `TestMerchantToolsManualOrder`; full names and causal backend reds in [`r1-money-backend/DELIVERY.md`](r1-money-backend/DELIVERY.md). Root rerun includes connection loss, six post-wait authority variants, two-connection admission, invalid recipient/payment, missing merchant/checkout receipts, legacy ambiguity and both concurrent ordering outcomes.
+
+### Red → green and real-click receipts
+
+- Copy unit red: three locale failures against actual pre-fix component; green17/17. Real browser mutation removed only the copy render/action `not_sent` guards: `r1-money-copy-browser-red3-20261012` **exit1, full29, exactly one queued-copy failure, PG14/14**. Exact component backup restored to SHA256 `5640a8f15e94f4ed6b9eaf7500c506c49a48b138e0166f53e668c8c9b3a500ba`; normal final run above **exit0**. [`copy-browser-red/result.json`](r1-money-final/copy-browser-red/result.json) versus [`browser-green/result.json`](r1-money-final/browser-green/result.json): queued positive result, copy blocked, regeneration POST0, sealed operations1/secrets1/original_link=true/valid_links1/regenerations0, real persisted order reload/detail click. Both threads share this counterexample.
+- Recovery reds: actual UI/BFF/client tests fail before A16R; authority/lost-reply counterexamples remain strict. REAL_PG reds demonstrate a late order after an unsafe seal, stale authority returning a private ID, invalid recipient/payment recovery refusal and shared-input race; final root16 pass. Browser drops the first real bank-transfer refusal response, replays exact key/body, positively observes real 422, clicks recovery, reads a durable not_created seal with zero order/success receipt, then explicitly starts new intent and reloads. Click ledger: [`browser-green/click-ledger.json`](r1-money-final/browser-green/click-ledger.json).
+- Original key calibration stays separate from queued-copy assertions so a deliberately new key reaches the named exact-order failure rather than aborting on `buyer_link` shape. All normal queued assertions remain enabled. [`key-calibration-red/result.json`](r1-money-final/key-calibration-red/result.json) and independent [`pg-readback.json`](r1-money-final/key-calibration-red/pg-readback.json) prove the duplicate.
+- Preserved non-acceptance failures: first copy browser run stopped on bank-only home option disappearing (`invalid_request` instead of exact bank refusal); the next hit the target plus compared JSON-escaped `&` rather than decoded sealed text. Fixed only fixtures, preserving asserted codes/counts. One normal run stopped while waiting for a foreign live PG lock: **NOT_RUN**, wrapper child exit -9. First key calibration timed out applying migration0119 at the existing20s setup limit, browser **NOT_RUN**; fixture cleanup verified, high host load observed, then one unchanged rerun reached the expected target RED. These logs are retained, never counted as product red/green. No threshold, assertion, product timeout, PG bound or retry policy was loosened.
+
+### CI gates, limits and lifecycle
+
+Changed existing browser spec/harness: `tests/admin/create-order-drawer-gate.mjs`, `tests/foundation/browser_create_order_drawer_test.go`, owned by **`--browser-manual-order`**; no new mode/fixture family. Exact selector output is [`r1-money-final/pr-modes.json`](r1-money-final/pr-modes.json): **54 modes**, of which the normal manual-order mode was run here. Remaining selector modes and **full foundation/G07 required for checkout changes: NOT_RUN locally**, for CI/independent review. Integrator's earlier live-console/inbox passes predate this backend delta and are not reused as its acceptance.
+
+**E3: automatic local BROWSER + disposable REAL_PG, with signed MOCK IdP/Meta ingress/edge; no dispatcher, provider, SANDBOX/LIVE or production acceptance.** Independent source seam review E1 found no specific P0/P1 in the final reviewed seam. New backend expansion still requires independent money-path review and CI before merge. Fleet rollout must drain older unfenced writers before enabling recovery; legacy partial orders without the canonical binding, expired capabilities and inconsistent receipts remain UNKNOWN. Own runners/fixtures are cleaned; original failed proof, exact rollback backup and owner evidence retained. Shared state updates use Humaux locks; changed Go/TS/JS indexed and recovery/attempt rationale linked.
+
+## Historical receipts — superseded as current handoff instructions
+
 ## PR32第一轮三P2未提交交接 — READY（2026-10-12）
 
 - 最新裁决：**所有修改保持未提交**，集成方负责commit、`git merge FETCH_HEAD`、合并后最终门禁和push。Codex-3本轮没有fetch/add/commit/merge/push，暂存区为空，HEAD保持`7d03d087f0b7fa629d6f49f18c4974835bea3d47`。READY仅指当前工作树可供复核／提交，不代表PR已合并。

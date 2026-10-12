@@ -1,0 +1,21 @@
+{
+  "command": "bash scripts/dev/test-local.sh --browser-manual-order",
+  "exit_code": 1,
+  "elapsed_seconds": 161.10552501678467,
+  "base_commit": "8a0ec7520b6b7b40ca992520c79ea3f17a2f82f7",
+  "test_commit": "efcb3e6f4cb04b0c5db73c1659de135de285a169",
+  "source_hashes": {
+    "tests/admin/create-order-drawer-gate.mjs": "170d5e4e55dec5950069859814d0363c498cd3d591f542dc203af4cecd84bf44",
+    "tests/foundation/browser_create_order_drawer_test.go": "242014dcdb4bb8cdc27f7085487752db7dd0cad8350414dc9201253148fcf211",
+    "apps/admin/components/CreateOrderDrawer.tsx": "0fc2ba7044af34a7f43515a452b1dd96ae9ac9fbe0f590132e31a36448876d00"
+  },
+  "acceptance": "FAIL_FIXTURE_BEFORE_QUEUED",
+  "failed_case": "DU3-unlinked-en-1440",
+  "failed_assertion": "create-order-drawer-gate.mjs:292:64 send-payment-link expected disabled",
+  "cases": 3,
+  "pg_orders": 3,
+  "pg_expected": 14,
+  "queued_copy_red": "NOT_RUN",
+  "fixture_reason": "signed DM supplied a capability-enabled asset to formerly incapable Unlinked before original disabled assertion; corrected asset switch is armed only in queued-window fixture endpoint",
+  "runtime_evidence": "output/playwright/create-order-drawer-2747511510"
+}

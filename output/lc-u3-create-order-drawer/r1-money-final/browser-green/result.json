@@ -1,0 +1,121 @@
+{
+  "cases": 29,
+  "failed": [],
+  "results": [
+    {
+      "case": "DU3-manual-unknown-draft-edit",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-en-1440",
+      "order_id": "8527057f-9722-4ceb-8d9a-0af5fe099e83"
+    },
+    {
+      "case": "DU3-single-order-en-1440",
+      "queued_observation": {
+        "operations": 1,
+        "original_link": true,
+        "regenerations": 0,
+        "secrets": 1,
+        "valid_links": 1
+      }
+    },
+    {
+      "case": "DU3-single-order-en-1440",
+      "queued_replay": true,
+      "copy_blocked": true,
+      "regenerate_posts": 0,
+      "operations": 1,
+      "original_link": true,
+      "regenerations": 0,
+      "secrets": 1,
+      "valid_links": 1
+    },
+    {
+      "case": "DU3-single-order-en-1440",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-en-390",
+      "order_id": "20fac14c-b140-4ac9-8b07-dba9a26dcb3c"
+    },
+    {
+      "case": "DU3-single-order-en-390",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-zh-TW-1440",
+      "order_id": "63ca0cdf-d4c5-4871-aa6e-fc03db3e6de5"
+    },
+    {
+      "case": "DU3-single-order-zh-TW-1440",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-zh-TW-390",
+      "order_id": "244a80f7-24fd-4a92-9c6a-e83567bd0607"
+    },
+    {
+      "case": "DU3-single-order-zh-TW-390",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-zh-CN-1440",
+      "order_id": "99d29348-d292-4344-ab89-3e07af578019"
+    },
+    {
+      "case": "DU3-single-order-zh-CN-1440",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-zh-CN-390",
+      "order_id": "36c87f5e-4653-4389-b10e-37d1385189aa"
+    },
+    {
+      "case": "DU3-single-order-zh-CN-390",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "name": "r1-money-recovery-bff-red-20261012",
+  "timeout": 120,
+  "command": [
+    "node",
+    "--test",
+    "--experimental-strip-types",
+    "tests/admin/create-order-bff.test.ts"
+  ],
+  "head": "8a0ec7520b6b7b40ca992520c79ea3f17a2f82f7",
+  "exit_code": 1,
+  "source_sha256": "080d766fb6e96a4bfa2fee12ede123ba07003f5e543d172ff8086fd1f03cc18c",
+  "source_after": "080d766fb6e96a4bfa2fee12ede123ba07003f5e543d172ff8086fd1f03cc18c",
+  "source_unchanged": true,
+  "historical_output_sha256": "db160928ba5c729bcc496372403007bc47cc0295b5071bc8d2082154abbc9452",
+  "historical_output_after": "db160928ba5c729bcc496372403007bc47cc0295b5071bc8d2082154abbc9452",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 1.359
+}

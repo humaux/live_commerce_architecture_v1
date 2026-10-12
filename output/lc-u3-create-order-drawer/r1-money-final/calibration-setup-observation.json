@@ -1,0 +1,8 @@
+{
+  "time_utc": "2026-10-12T16:40:54Z",
+  "observed_setup_error": "apply 0119_live_console_inbox.sql: timeout: context deadline exceeded; 20.01s before browser",
+  "load_average": "0:40  up 2 days, 10:55, 1 user, load averages: 15.38 21.05 20.61",
+  "fixture_containers_after_cleanup": [],
+  "source_changed": false,
+  "retry_plan": "one unchanged rerun after verified cleanup; no timeout, assertion, resource-bound or PG-lock override"
+}
