@@ -1389,11 +1389,16 @@ export function registerProductEditorAcceptance() {
             },
             async () => {
               expect(dialog.message()).toBe(c.archiveRows);
+              // Axis removal creates an idless draft row. Only an accepted, persisted
+              // replacement can acquire the server-issued SKU identity in the UI.
+              const beforeId = await remaining.getAttribute("data-sku-id");
+              expect(beforeId).toBeNull();
               await dialog.accept();
               expect((await axisSaved).ok()).toBe(true);
-              // Accepting the dialog must visibly finish the pending save before recording PASS.
-              await expect(page.getByTestId("product-save")).toBeEnabled();
-              return { observed: { message: dialog.message(), accepted: true } };
+              await expect(remaining).toHaveAttribute("data-sku-id", /^[0-9a-f-]{36}$/);
+              const replacementSKU = await remaining.getAttribute("data-sku-id");
+              expect(oldAxisIDs).not.toContain(replacementSKU);
+              return { observed: { message: dialog.message(), accepted: true, beforeId, replacementSKU } };
             },
           );
           return acceptedConfirmation;

@@ -57,6 +57,9 @@ if (process.env.LC_MATRIX_ACTION_MUTATION === "swap-native-locator") spec = swap
 if (process.env.LC_MATRIX_ACTION_MUTATION === "swap-native-method") spec = swapNative(spec, "dialog.check()");
 if (process.env.LC_MATRIX_ACTION_MUTATION === "swap-press-key") spec = swapPressKey(spec);
 if (process.env.LC_MATRIX_ACTION_MUTATION === "removed-postcondition") spec = changePostcondition(spec, "removed");
+if (["unrelated-outcome", "tautological-outcome", "nested-step"].includes(process.env.LC_MATRIX_ACTION_MUTATION))
+  spec = changePostcondition(spec, process.env.LC_MATRIX_ACTION_MUTATION);
+if (process.env.LC_MATRIX_ACTION_MUTATION === "native-missing-outcome") spec = nativePostcondition(spec, "");
 
 function changePostcondition(text, mode) {
   const start = text.indexOf(startMarker), assertion = 'await expect(page.getByTestId("product-name")).toHaveValue(`${tag} mobile matrix ${locale}`);';
@@ -73,11 +76,20 @@ function changePostcondition(text, mode) {
     return without.slice(0, after) + "\n" + assertion + without.slice(after);
   }
   const replacement = { removed: "", "not-awaited": assertion.replace("await ", ""),
+    "unrelated-outcome": 'await expect(page.getByTestId("product-slug")).toBeVisible();',
+    "tautological-outcome": 'await expect(page.getByTestId("product-name")).toBeVisible();',
     "unused-function": `const unusedOutcome = async () => { ${assertion} };`,
     "nested-step": `await matrixStep({ page: "mobile matrix new", control: "product-name", action: "fill" }, async () => {
       await page.getByTestId("product-name").fill("nested action"); ${assertion} return { observed: "nested only" }; });`,
     "unreachable-branch": `if (false) { ${assertion} }` }[mode];
   assert.ok(replacement !== undefined, "known assertion mutation");
+  return text.slice(0, at) + replacement + text.slice(at + assertion.length);
+}
+function nativePostcondition(text, replacement) {
+  const start = text.indexOf("await dialog.accept();", text.indexOf(startMarker));
+  const assertion = 'await expect(remaining).toHaveAttribute("data-sku-id", /^[0-9a-f-]{36}$/);';
+  const at = text.indexOf(assertion, start);
+  assert.ok(at > start, "mutation targets the accepted replacement's persisted UI identity");
   return text.slice(0, at) + replacement + text.slice(at + assertion.length);
 }
 
@@ -184,7 +196,7 @@ function locatorIdentities(source, start, end) {
   const host = ts.createCompilerHost({ noResolve: true });
   host.getSourceFile = (name) => name === specPath ? source : undefined;
   const checker = ts.createProgram([specPath], { noResolve: true }, host).getTypeChecker();
-  const needed = new Set(), steps = new Map(), reads = new Map(), outcomes = new Set();
+  const needed = new Set(), steps = new Map(), reads = new Map(), outcomes = new Map();
   const inRegion = (node) => node.getStart(source) >= start && node.getEnd() <= end;
   const call = (node, name) => ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === name;
   const unwrap = (node) => ts.isAwaitExpression(node) || ts.isParenthesizedExpression(node) ? unwrap(node.expression) : node;
@@ -294,7 +306,19 @@ function locatorIdentities(source, start, end) {
     let expectation = matcher.expression.expression;
     if (ts.isPropertyAccessExpression(expectation) && expectation.name.text === "not") expectation = expectation.expression;
     if (!call(expectation, "expect") || !expectation.arguments[0]) return;
-    outcomes.add(node);
+    const receiver = expectation.arguments[0], previous = new Set(needed);
+    let resolved = true;
+    try { need(receiver); }
+    catch {
+      // A supplemental assertion may use an awaited SKU ID outside the pure slice.
+      // It cannot certify an action. Keep the known dependencies uncontaminated.
+      resolved = false;
+      for (const dependency of needed) if (!previous.has(dependency)) needed.delete(dependency);
+    }
+    outcomes.set(node, { receiver: resolved ? receiver : undefined,
+      matcher: matcher.expression.name.text,
+      negated: ts.isPropertyAccessExpression(matcher.expression.expression) && matcher.expression.expression.name.text === "not",
+      attribute: matcher.arguments[0] && ts.isStringLiteral(matcher.arguments[0]) ? matcher.arguments[0].text : undefined });
   });
   // Conditions and iteration sources are dependencies too. The original lexical scopes,
   // row indices, locale data and field.label/control pairs survive the slice unchanged.
@@ -342,7 +366,10 @@ function locatorIdentities(source, start, end) {
     }
     const found = [];
     walk(expression, (child) => { if (reads.has(child)) found.push(`__read(${text(reads.get(child))});`); });
-    if (outcomes.has(node)) found.push("__outcome();");
+    if (outcomes.has(node)) {
+      const outcome = outcomes.get(node);
+      found.push(`__outcome(${outcome.receiver ? text(outcome.receiver) : "undefined"}, ${JSON.stringify(outcome.matcher)}, ${outcome.negated}, ${JSON.stringify(outcome.attribute)});`);
+    }
     // The real native-dialog handler is assigned rather than invoked in the spec.
     // Trace its body with an inert Dialog, retaining the actual parameter binding.
     if (ts.isBinaryExpression(expression) && ts.isArrowFunction(expression.right)) {
@@ -382,15 +409,15 @@ function locatorIdentities(source, start, end) {
     assert.ok(stack.length, "source action must belong to a matrix step");
     assert.ok(receiver && Array.isArray(receiver.segments), "unknown/dynamic source locator");
     stack.at(-1)[method ? "actions" : "reads"].push(receiver.segments);
-    if (method) { stack.at(-1).methods.push(method); stack.at(-1).keys.push(key); stack.at(-1).events.push("action"); }
+    if (method) { stack.at(-1).methods.push(method); stack.at(-1).keys.push(key); stack.at(-1).events.push({ type: "action", receiver: receiver.segments, method }); }
   };
   try {
     runInNewContext(code, {
       page: locator(), productEditorCopy, tag: "MOCK-source-gate",
       __dialog: locator([["nativeDialog"]]),
       __action: record, __read: (receiver) => record(receiver),
-      __outcome: () => stack.at(-1).events.push("outcome"),
-      __observed: () => stack.at(-1).events.push("observed"),
+      __outcome: (receiver, matcher, negated, attribute) => stack.at(-1).events.push({ type: "outcome", receiver: receiver?.segments, matcher, negated, attribute }),
+      __observed: () => stack.at(-1).events.push({ type: "observed" }),
       __step: (identity, locale, body) => {
         const entry = { identity, locale, actions: [], reads: [], methods: [], keys: [], events: [] };
         stack.push(entry); body(); stack.pop(); records.push(entry);
@@ -420,14 +447,25 @@ function assertLocatorIdentity({ identity, locale, actions: operated, reads, met
   assert.ok(declaration, "undeclared identity");
   // Reuse canonical action vocabulary rather than maintaining a per-case method list.
   if (operated.length) {
-    let pendingOutcome = false;
+    let pendingOutcome;
     for (const event of events) {
-      if (event === "action" || event === "observed")
+      if (event.type === "action" || event.type === "observed")
         assert.ok(!pendingOutcome, "missing outcome assertion after action and before the next action or observed return");
-      if (event === "action") pendingOutcome = true;
-      if (event === "outcome") pendingOutcome = false;
+      if (event.type === "action") pendingOutcome = event;
+      if (event.type !== "outcome" || !pendingOutcome || !event.receiver) continue;
+      // Direct readbacks must describe that operation's state. In particular visibility
+      // cannot replace a fill's value, nor a checkbox's checked-state assertion.
+      const direct = { fill: ["toHaveValue"], check: ["toBeChecked"], uncheck: ["toBeChecked"],
+        press: ["toHaveValue", "toHaveCount", "toBeHidden", "toBeFocused"],
+        click: ["toBeEnabled", "toBeDisabled", "toBeVisible", "toBeHidden", "toHaveCount", "toHaveText", "toContainText"], accept: [] };
+      const same = JSON.stringify(event.receiver) === JSON.stringify(pendingOutcome.receiver);
+      const effect = (declaration.effects ?? []).some((target) => target.method === pendingOutcome.method &&
+        JSON.stringify(target.locator) === JSON.stringify(event.receiver) && target.matchers.includes(event.matcher) &&
+        (target.attribute === undefined || target.attribute === event.attribute) &&
+        (target.negated === undefined || target.negated === event.negated));
+      if ((same && direct[pendingOutcome.method]?.includes(event.matcher)) || effect) pendingOutcome = undefined;
     }
-    assert.ok(!pendingOutcome && events.includes("observed"), "missing outcome assertion before the observed return");
+    assert.ok(!pendingOutcome && events.some((event) => event.type === "observed"), "missing outcome assertion before the observed return");
     const grammar = { fill: ["fill"], "fill Enter": ["fill", "press"], Escape: ["press"],
       "check uncheck": ["check", "uncheck"], "uncheck check": ["uncheck", "check"], uncheck: ["uncheck"], accept: ["accept"] };
     let expectedMethods = grammar[declaration.action];
@@ -485,13 +523,30 @@ test("each checked state needs its own outcome before the next operation", () =>
   assert.ok(spec.includes(assertion));
   assert.ok(uncoveredActions(spec.replace(assertion, "")).some((line) => line.includes("missing outcome assertion")));
 });
-test("native acceptance cannot certify its earlier dialog message without the visible save outcome", () => {
-  const start = spec.indexOf("await dialog.accept();", spec.indexOf(startMarker));
-  const assertion = 'await expect(page.getByTestId("product-save")).toBeEnabled();';
-  const at = spec.indexOf(assertion, start);
-  assert.ok(at > start);
-  const missing = spec.slice(0, at) + spec.slice(at + assertion.length);
+for (const mode of ["unrelated-outcome", "tautological-outcome"]) {
+  test(`an ${mode} cannot certify the product-name fill`, () => {
+    assert.ok(uncoveredActions(changePostcondition(spec, mode)).some((line) => line.includes("missing outcome assertion")));
+  });
+}
+test("native acceptance cannot certify its earlier dialog message without the persisted replacement outcome", () => {
+  const missing = nativePostcondition(spec, "");
   assert.ok(uncoveredActions(missing).some((line) => line.includes("native archive confirmation") && line.includes("missing outcome assertion")));
+});
+test("native acceptance cannot certify the already-enabled Save button", () => {
+  const weak = nativePostcondition(spec, 'await expect(page.getByTestId("product-save")).toBeEnabled();');
+  assert.ok(uncoveredActions(weak).some((line) => line.includes("native archive confirmation") && line.includes("missing outcome assertion")));
+});
+test("an unrelated effect cannot certify an axis-add action", () => {
+  const assertion = 'await expect(page.locator(".product-axis")).toHaveCount(i + 1);';
+  assert.ok(spec.includes(assertion));
+  const unrelated = spec.replace(assertion, 'await expect(page.getByTestId("product-slug")).toBeVisible();');
+  assert.ok(uncoveredActions(unrelated).some((line) => line.includes("axis-add-") && line.includes("missing outcome assertion")));
+});
+test("an unresolved outcome cannot certify a known operated control", () => {
+  const assertion = 'await expect(page.getByTestId("product-name")).toHaveValue(`${tag} mobile matrix ${locale}`);';
+  assert.ok(spec.includes(assertion));
+  const unknown = spec.replace(assertion, 'await expect(unknownOutcomeFactory()).toHaveValue("unknown");');
+  assert.ok(uncoveredActions(unknown).some((line) => line.includes("missing outcome assertion")));
 });
 
 for (const [name, mutate] of [["literal", swapLocator], ["lexical alias", swapAlias], ["field factory", swapField],
@@ -570,10 +625,31 @@ for (const entry of cases) {
 test("shared table has only complete meaningful unique declarations", () => {
   const identities = new Set();
   for (const entry of cases) {
-    assert.deepEqual(Object.keys(entry).sort(), ["action", "control", "expected", "page", "row"]);
-    for (const [field, value] of Object.entries(entry)) {
+    assert.deepEqual(Object.keys(entry).filter((key) => key !== "effects").sort(), ["action", "control", "expected", "page", "row"]);
+    for (const [field, value] of Object.entries(entry).filter(([key]) => key !== "effects")) {
       assert.equal(typeof value, "string");
       if (field !== "row") assert.ok(value.trim().length > 0);
+    }
+    if (entry.effects) {
+      assert.ok(Array.isArray(entry.effects) && entry.effects.length > 0);
+      for (const effect of entry.effects) {
+        assert.ok(["click", "press", "accept"].includes(effect.method));
+        assert.ok(Array.isArray(effect.locator) && effect.locator.length > 0);
+        for (const segment of effect.locator) {
+          assert.equal(segment.length, 2);
+          assert.ok(["testId", "css", "nth"].includes(segment[0]));
+          if (segment[0] === "nth") assert.ok(Number.isInteger(segment[1]) && segment[1] >= 0);
+          else assert.ok(typeof segment[1] === "string" && segment[1].length > 0);
+        }
+        assert.ok(effect.matchers.length > 0 && effect.matchers.every((matcher) =>
+          ["toHaveCount", "toContainText", "toBeEnabled", "toBeVisible", "toHaveAttribute"].includes(matcher)));
+        if (effect.attribute !== undefined) {
+          assert.ok(effect.matchers.every((matcher) => matcher === "toHaveAttribute"));
+          assert.equal(typeof effect.attribute, "string");
+          assert.equal(typeof effect.negated, "boolean");
+        }
+        assert.ok(Object.keys(effect).every((key) => ["method", "locator", "matchers", "attribute", "negated"].includes(key)));
+      }
     }
     assert.ok(entry.expected.length > 25, "canonical expectations describe checked behavior");
     const identity = JSON.stringify([entry.page, entry.row, entry.control, entry.action]);

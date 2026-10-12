@@ -144,7 +144,33 @@
     "row": "",
     "control": "product-create",
     "action": "click reload",
-    "expected": "One document write succeeds; both matrix rows and saved axes persist after reload"
+    "expected": "One document write succeeds; both matrix rows and saved axes persist after reload",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "product-save-result"
+          ]
+        ],
+        "matchers": [
+          "toBeVisible"
+        ]
+      },
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "product-save"
+          ]
+        ],
+        "matchers": [
+          "toBeEnabled"
+        ]
+      }
+    ]
   },
   {
     "page": "mobile matrix edit",
@@ -298,7 +324,21 @@
     "row": "",
     "control": ".pe-axis-remove (Color axis 1)",
     "action": "real click",
-    "expected": "Color axis is removed locally; only Size S remains; matrix changes from two rows to one S row without a document write"
+    "expected": "Color axis is removed locally; only Size S remains; matrix changes from two rows to one S row without a document write",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount"
+        ]
+      }
+    ]
   },
   {
     "page": "mobile axis remove",
@@ -319,7 +359,21 @@
     "row": "",
     "control": "axis-add-0",
     "action": "click",
-    "expected": "Axis add creates local axis 1 without a document write"
+    "expected": "Axis add creates local axis 1 without a document write",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount"
+        ]
+      }
+    ]
   },
   {
     "page": "mobile matrix new",
@@ -333,14 +387,51 @@
     "row": "",
     "control": "axis-values-0",
     "action": "fill Enter",
-    "expected": "Axis values commit White and Black chips locally without a document write"
+    "expected": "Axis values commit White and Black chips locally without a document write",
+    "effects": [
+      {
+        "method": "press",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ],
+          [
+            "nth",
+            0
+          ],
+          [
+            "css",
+            ".pe-value-chips > span"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount",
+          "toContainText"
+        ]
+      }
+    ]
   },
   {
     "page": "mobile matrix new",
     "row": "",
     "control": "axis-add-1",
     "action": "click",
-    "expected": "Axis add creates local axis 2 without a document write"
+    "expected": "Axis add creates local axis 2 without a document write",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount"
+        ]
+      }
+    ]
   },
   {
     "page": "mobile matrix new",
@@ -354,14 +445,51 @@
     "row": "",
     "control": "axis-values-1",
     "action": "fill Enter",
-    "expected": "Axis values commit S chip locally without a document write"
+    "expected": "Axis values commit S chip locally without a document write",
+    "effects": [
+      {
+        "method": "press",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ],
+          [
+            "nth",
+            1
+          ],
+          [
+            "css",
+            ".pe-value-chips > span"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount",
+          "toContainText"
+        ]
+      }
+    ]
   },
   {
     "page": "mobile matrix new",
     "row": "",
     "control": "product-save-result/link",
     "action": "click",
-    "expected": "Save result link opens the existing product editor with save enabled and both matrix rows present"
+    "expected": "Save result link opens the existing product editor with save enabled and both matrix rows present",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "product-save"
+          ]
+        ],
+        "matchers": [
+          "toBeEnabled"
+        ]
+      }
+    ]
   },
   {
     "page": "mobile axis remove",
@@ -375,7 +503,21 @@
     "row": "",
     "control": "axis-add-0",
     "action": "click",
-    "expected": "Axis add creates local axis 1 without a document write"
+    "expected": "Axis add creates local axis 1 without a document write",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount"
+        ]
+      }
+    ]
   },
   {
     "page": "mobile axis remove",
@@ -389,14 +531,51 @@
     "row": "",
     "control": "axis-values-0",
     "action": "fill Enter",
-    "expected": "Axis values commit White and Black chips locally without a document write"
+    "expected": "Axis values commit White and Black chips locally without a document write",
+    "effects": [
+      {
+        "method": "press",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ],
+          [
+            "nth",
+            0
+          ],
+          [
+            "css",
+            ".pe-value-chips > span"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount",
+          "toContainText"
+        ]
+      }
+    ]
   },
   {
     "page": "mobile axis remove",
     "row": "",
     "control": "axis-add-1",
     "action": "click",
-    "expected": "Axis add creates local axis 2 without a document write"
+    "expected": "Axis add creates local axis 2 without a document write",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount"
+        ]
+      }
+    ]
   },
   {
     "page": "mobile axis remove",
@@ -410,14 +589,51 @@
     "row": "",
     "control": "axis-values-1",
     "action": "fill Enter",
-    "expected": "Axis values commit S chip locally without a document write"
+    "expected": "Axis values commit S chip locally without a document write",
+    "effects": [
+      {
+        "method": "press",
+        "locator": [
+          [
+            "css",
+            ".product-axis"
+          ],
+          [
+            "nth",
+            1
+          ],
+          [
+            "css",
+            ".pe-value-chips > span"
+          ]
+        ],
+        "matchers": [
+          "toHaveCount",
+          "toContainText"
+        ]
+      }
+    ]
   },
   {
     "page": "mobile axis remove",
     "row": "",
     "control": "product-save-result/link",
     "action": "click",
-    "expected": "Save result link opens the existing product editor with save enabled and both matrix rows present"
+    "expected": "Save result link opens the existing product editor with save enabled and both matrix rows present",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "product-save"
+          ]
+        ],
+        "matchers": [
+          "toBeEnabled"
+        ]
+      }
+    ]
   },
   {
     "page": "mobile matrix edit",
@@ -494,7 +710,33 @@
     "row": "",
     "control": "product-create",
     "action": "click reload",
-    "expected": "One create document write succeeds; both distinct persisted SKUs retain their entered prices, compare prices, quantities and codes"
+    "expected": "One create document write succeeds; both distinct persisted SKUs retain their entered prices, compare prices, quantities and codes",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "product-save-result"
+          ]
+        ],
+        "matchers": [
+          "toBeVisible"
+        ]
+      },
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "product-save"
+          ]
+        ],
+        "matchers": [
+          "toBeEnabled"
+        ]
+      }
+    ]
   },
   {
     "page": "mobile axis remove",
@@ -522,7 +764,21 @@
     "row": "",
     "control": "bulk-open",
     "action": "click",
-    "expected": "Bulk edit dialog opens; existing SKU code is unavailable as a bulk field"
+    "expected": "Bulk edit dialog opens; existing SKU code is unavailable as a bulk field",
+    "effects": [
+      {
+        "method": "click",
+        "locator": [
+          [
+            "testId",
+            "bulk-field"
+          ]
+        ],
+        "matchers": [
+          "toBeVisible"
+        ]
+      }
+    ]
   },
   {
     "page": "mobile axis remove",
@@ -536,6 +792,22 @@
     "row": "",
     "control": "native archive confirmation",
     "action": "accept",
-    "expected": "Native archive confirmation displays the localized archive warning and is accepted before the single document write"
+    "expected": "Native archive confirmation displays the localized archive warning and is accepted before the single document write",
+    "effects": [
+      {
+        "method": "accept",
+        "locator": [
+          [
+            "testId",
+            "matrix-row-0"
+          ]
+        ],
+        "matchers": [
+          "toHaveAttribute"
+        ],
+        "attribute": "data-sku-id",
+        "negated": false
+      }
+    ]
   }
 ]
