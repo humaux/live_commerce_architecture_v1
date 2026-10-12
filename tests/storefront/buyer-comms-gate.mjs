@@ -1,3 +1,6 @@
+// Purpose: buyer-comms-gate.mjs startup uses bounded shared bind-race recovery; gate assertions are unchanged.
+// Depends on: tests/helpers/next-startup.mjs and existing app/fixture/edge imports below.
+// Used by: its scripts/dev/test-local.sh browser mode; GATE-PORT acceptance.
 // BC gate (unit buyer-comms, independent R4 tests; contracts/storefront-v2.md §E4, §E5): a buyer places a bank_transfer order WITH an e-mail in the
 // real storefront shell, the placed mail is captured by the loopback SMTP FAKE (the Go test runs the real notify worker and the real SMTP adapter
 // against internal/mail/mailtest), and a FRESH browser (no cookie) does the guest lookup with the order number FROM THE MAIL + the e-mail: it sees the
@@ -10,6 +13,7 @@
 // X-Forwarded-For from the per-context X-Gate-Client header (the BFF reads one valid IP literal from it for the per-IP lookup limit).
 // BFF routes exercised: /api/buyer/{session,checkout-options,quotes,destination,checkout,orders/{id},orders/{id}/bank-transfer,orders/lookup} and the
 // refused ones (/orders, /orders/{id}/bank-transfer/proof, /privacy/export, /privacy/erasure, /cart).
+import { startNextWithPortRetry, nextAttemptLog } from "../helpers/next-startup.mjs";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import http from "node:http";
@@ -55,20 +59,23 @@ function relay(port, req, body) {
   });
 }
 async function startNext() {
-  const log = createWriteStream(path.join(evidence, "next.log"), { flags: "wx", mode: 0o600 });
-  logs.push(log); await once(log, "open");
-  const probe = net.createServer(); const port = await listen(probe); await new Promise((r) => probe.close(r));
-  const childEnv = { ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1" };
-  for (const name of Object.keys(childEnv)) if (name.startsWith("LC_BC_")) delete childEnv[name];
-  const child = spawn(process.execPath, [path.join(root, "apps/storefront/node_modules/next/dist/bin/next"), "start", "--hostname", "127.0.0.1", "--port", String(port)],
-    { cwd: path.join(root, "apps/storefront"), env: childEnv, stdio: ["ignore", log, log] });
-  children.add(child);
-  for (let i = 0; i < 400; i++) {
-    if (child.exitCode !== null) throw new Error("Next exited before readiness");
-    try { const r = await relay(port, { url: "/api/buyer/session", method: "GET", headers: { host: HOST } }, Buffer.alloc(0)); if (r.status === 200) return { port, child }; } catch { /* not up yet */ }
-    await pause(100);
-  }
-  throw new Error("Next readiness timeout");
+  return startNextWithPortRetry({}, async ({ port, attempt, track }) => {
+    const log = createWriteStream(nextAttemptLog(path.join(evidence, "next.log"), attempt), { flags: "wx", mode: 0o600 });
+    logs.push(log); await once(log, "open");
+    const childEnv = { ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1" };
+    for (const name of Object.keys(childEnv)) if (name.startsWith("LC_BC_")) delete childEnv[name];
+    const child = spawn(process.execPath, [path.join(root, "apps/storefront/node_modules/next/dist/bin/next"), "start", "--hostname", "127.0.0.1", "--port", String(port)],
+      { cwd: path.join(root, "apps/storefront"), env: childEnv, stdio: ["ignore", log, log] });
+    track(child, log);
+    children.add(child);
+    for (let i = 0; i < 400; i++) {
+      if (child.exitCode !== null) throw new Error("Next exited before readiness");
+      try { const r = await relay(port, { url: "/api/buyer/session", method: "GET", headers: { host: HOST } }, Buffer.alloc(0)); if (r.status === 200) return { port, child }; } catch { /* not up yet */ }
+      await pause(100);
+    }
+    throw new Error("Next readiness timeout");
+
+  });
 }
 async function newContext(mobile, locale) {
   const ip = `100.64.${(++ipSeq >> 8) & 255}.${ipSeq & 255}`;

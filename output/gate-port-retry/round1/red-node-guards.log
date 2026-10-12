@@ -1,0 +1,164 @@
+TAP version 13
+# Subtest: an automatic port stolen after reservation retries and reaches the owned listener
+ok 1 - an automatic port stolen after reservation retries and reaches the owned listener
+  ---
+  duration_ms: 92.571125
+  type: 'test'
+  ...
+# Subtest: the exact old publish-gate startNext fails on the same forced real port handoff
+ok 2 - the exact old publish-gate startNext fails on the same forced real port handoff
+  ---
+  duration_ms: 90.063916
+  type: 'test'
+  ...
+# Subtest: a caller-specified occupied port fails without allocation or retry
+ok 3 - a caller-specified occupied port fails without allocation or retry
+  ---
+  duration_ms: 56.566708
+  type: 'test'
+  ...
+# Subtest: a non-bind startup crash is not retried
+ok 4 - a non-bind startup crash is not retried
+  ---
+  duration_ms: 39.7775
+  type: 'test'
+  ...
+# Subtest: persistent automatic bind collisions stop after three total launches
+ok 5 - persistent automatic bind collisions stop after three total launches
+  ---
+  duration_ms: 108.0575
+  type: 'test'
+  ...
+# Subtest: a readiness rejection while the child is alive preserves the original error and never retries
+ok 6 - a readiness rejection while the child is alive preserves the original error and never retries
+  ---
+  duration_ms: 32.132625
+  type: 'test'
+  ...
+# Subtest: a failure before spawning is not retried
+ok 7 - a failure before spawning is not retried
+  ---
+  duration_ms: 0.582625
+  type: 'test'
+  ...
+# Subtest: ready admin registration uses the authenticated Go fixture seam once, with no restart on a lost acknowledgement
+ok 8 - ready admin registration uses the authenticated Go fixture seam once, with no restart on a lost acknowledgement
+  ---
+  duration_ms: 4.456083
+  type: 'test'
+  ...
+# Subtest: the real publish-mode registry runs every public-admin ownership regression as well as the existing browser test
+ok 9 - the real publish-mode registry runs every public-admin ownership regression as well as the existing browser test
+  ---
+  duration_ms: 13.452333
+  type: 'test'
+  ...
+# Subtest: the catalog-media and manual-order registries run their gate together with the freed-port handoff regression
+not ok 10 - the catalog-media and manual-order registries run their gate together with the freed-port handoff regression
+  ---
+  duration_ms: 9.352542
+  type: 'test'
+  location: '/Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/tests/ci/next-startup.test.mjs:167:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    --browser-catalog-media omits the freed-port handoff regression
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/tests/ci/next-startup.test.mjs:174:12)
+    Test.runInAsyncScope (node:async_hooks:227:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: the converted catalog-media and manual-order Go fixtures no longer free the public admin port (static red/green)
+not ok 11 - the converted catalog-media and manual-order Go fixtures no longer free the public admin port (static red/green)
+  ---
+  duration_ms: 10.371833
+  type: 'test'
+  location: '/Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/tests/ci/next-startup.test.mjs:184:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    tests/foundation/browser_catalog_media_test.go: the explicit-port handoff survives
+    
+    true !== false
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/tests/ci/next-startup.test.mjs:203:12)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: connectFixtureAdmin keeps one bounded attempt with a CI-host-tolerant timeout
+not ok 12 - connectFixtureAdmin keeps one bounded attempt with a CI-host-tolerant timeout
+  ---
+  duration_ms: 0.64425
+  type: 'test'
+  location: '/Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/tests/ci/next-startup.test.mjs:208:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /AbortSignal\.timeout\(5000\)/. Input:
+    
+    'export async function connectFixtureAdmin(port, control, key) {\n' +
+      '  if (!Number.isInteger(port) || port < 1 || port > 65535 || !/^http:\\/\\/127\\.0\\.0\\.1:\\d+$/.test(control) || !key)\n' +
+      '    throw new Error("invalid fixture admin registration");\n' +
+      '  const response = await fetch(`${control}/admin-upstream`, {\n' +
+      '    method: "POST", headers: { "X-Gate-Key": key, "Content-Type": "application/json" },\n' +
+      '    body: JSON.stringify({ port }), signal: AbortSignal.timeout(1000),\n' +
+      '  });\n' +
+      '  if (response.status !== 204) throw new Error(`fixture admin registration refused (${response.status})`);\n' +
+      '}'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    export async function connectFixtureAdmin(port, control, key) {
+      if (!Number.isInteger(port) || port < 1 || port > 65535 || !/^http:\/\/127\.0\.0\.1:\d+$/.test(control) || !key)
+        throw new Error("invalid fixture admin registration");
+      const response = await fetch(`${control}/admin-upstream`, {
+        method: "POST", headers: { "X-Gate-Key": key, "Content-Type": "application/json" },
+        body: JSON.stringify({ port }), signal: AbortSignal.timeout(1000),
+      });
+      if (response.status !== 204) throw new Error(`fixture admin registration refused (${response.status})`);
+    }
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/gate-port-retry/tests/ci/next-startup.test.mjs:213:10)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: all eleven gate adapters preserve original assertions, readiness loops and predicates, spawn and environment statements
+ok 13 - all eleven gate adapters preserve original assertions, readiness loops and predicates, spawn and environment statements
+  ---
+  duration_ms: 201.263583
+  type: 'test'
+  ...
+# Subtest: the parity guard rejects a dropped env.PORT and a changed or relocated readiness predicate (red mutations)
+ok 14 - the parity guard rejects a dropped env.PORT and a changed or relocated readiness predicate (red mutations)
+  ---
+  duration_ms: 27.051458
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 11
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 923.522708
