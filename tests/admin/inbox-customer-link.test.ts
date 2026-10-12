@@ -22,7 +22,7 @@ const button = (host: Host, id: string) => node(host, n => n.props["data-testid"
 function click(host: Host, id: string) { const b = button(host, id); assert.equal(b.props.disabled, false); b.props.onClick(); host.flush(); }
 function pick(host: Host) { const n = selected(host); assert.equal(n.props.disabled, false); n.props.onChange({ target: { value: customerID } }); host.flush(); }
 const ready = (host: Host) => host.output.props["aria-busy"] === false && textOf(host.output).includes("MOCK_INBOX_BUYER");
-function server(options: { conflict?: boolean; gone?: boolean; unknown?: boolean; omittedOrders?: boolean; dangling?: boolean } = {}) {
+function server(options: { conflict?: boolean; gone?: boolean; unknown?: boolean; lostAck?: boolean; omittedOrders?: boolean; dangling?: boolean } = {}) {
   const calls: { path: string; method: string; body: any; key: string | null }[] = [];
   let version = 0, linked: string | null = options.dangling ? customerID : null, failure = false;
   const concurrentID = "60000000-0000-4000-8000-000000000006";
@@ -40,8 +40,9 @@ function server(options: { conflict?: boolean; gone?: boolean; unknown?: boolean
       if (options.gone) return response({ code: "not_found" }, 404);
       if (options.conflict && !failure) { failure = true; version = 6; linked = concurrentID; return response({ code: "version_conflict" }, 409); }
       if (options.unknown && !failure) { failure = true; throw new TypeError("synthetic lost acknowledgement"); }
-      assert.equal(body.expected_version, version);
+      if (body.expected_version !== version) return response({ code: "version_conflict" }, 409); // real A14: no idempotent replay
       linked = body.customer_id; version++;
+      if (options.lostAck && !failure) { failure = true; throw new TypeError("synthetic lost acknowledgement after commit"); }
       return response({ customer_id: linked, version });
     }
     throw new Error("unexpected synthetic route");
@@ -76,6 +77,7 @@ test("a 404 on the linked customer read keeps the authorized A13 panel and shows
   await host.waitFor(() => ready(host), "A13 stays visible after a dangling linked customer");
   const link = node(host, n => n.props["data-testid"] === "customer-manual-link");
   assert.match(textOf(link), /Manually linked/);
+  assert.equal(textOf(link).includes("·"), false, "a gone customer must not render a fallback name");
   assert.doesNotMatch(textOf(host.output), /unavailable in the current store/);
   assert.equal(selected(host).props.disabled, false, "the merchant can relink or unlink");
 });
@@ -102,6 +104,18 @@ test("A14 uncertain transport preserves the original key/body and permits only e
   await host.waitFor(() => ready(host) && textOf(host.output).includes("Manually linked"), "same command completed");
   assert.deepEqual(wire.writes()[1].body, wire.writes()[0].body);
   assert.equal(wire.writes()[1].key, wire.writes()[0].key);
+});
+
+test("A14 lost acknowledgement after commit: explicit retry reconciles to success without a misleading conflict", async t => {
+  const env = environment(t), wire = server({ lostAck: true });
+  const host = env.mount(() => BuyerPanel({ store, conversationId: conversation.conversation_id }));
+  await host.waitFor(() => ready(host), "buyer loaded"); pick(host); click(host, "customer-link-save");
+  await host.waitFor(() => !host.output.props["aria-busy"] && wire.writes().length === 1, "uncertain result");
+  click(host, "customer-link-retry");
+  await host.waitFor(() => ready(host) && textOf(host.output).includes("Manually linked"), "reconciled committed link");
+  assert.equal(wire.writes().length, 1, "a committed command is reconciled by reading A13/A9, not resent");
+  assert.doesNotMatch(textOf(host.output), /changed/i, "no version_conflict notice for our own committed write");
+  assert.ok(textOf(host.output).includes(customer.display_name));
 });
 
 for (const permissions of [["inbox:read", "inbox:reply"], ["inbox:read", "customers:read"]]) {
@@ -163,4 +177,35 @@ test("customer-page post-parse session change clears previously visible buyer an
   assert.equal(textOf(host.output).includes("MOCK_INBOX_BUYER"), false);
   assert.equal(textOf(host.output).includes(customer.display_name), false);
   assert.equal(nodes(host.output).some(n => n.type === "select"), false);
+});
+
+// PR #41 review (P1): each read's 401/403 revokes at once. A pending sibling read (customer page) must not delay
+// it, and a sibling failure that arrives first must not swallow it.
+test("A13 403 revokes immediately while the customer page read is still pending", async t => {
+  const env = environment(t); server(); const fetch = globalThis.fetch; let expired = 0, release: () => void = () => {};
+  globalThis.fetch = async (input, init) => {
+    const path = String(input);
+    if (path.includes("/customers?")) { await new Promise<void>(r => { release = r; }); return response({ items: [customer], next_cursor: "" }); }
+    if (path.includes("/buyer-panel?")) return response({ code: "forbidden" }, 403);
+    return fetch(input, init);
+  };
+  const host = env.mount(() => BuyerPanel({ store, conversationId: conversation.conversation_id, onUnauthorized() { expired++; } }));
+  await host.waitFor(() => expired === 1, "A13 403 revoked without waiting for the customer page");
+  release(); await host.settle();
+  assert.equal(expired, 1); assert.equal(textOf(host.output).includes("MOCK_INBOX_BUYER"), false);
+});
+
+// PR #41 review (P2): the CAS version must never be newer than the link identity shown, so A9 is read BEFORE A13.
+// A concurrent relink between the two reads can then only produce a safe 409, never unlink someone else's link.
+test("A9 link_version is read before A13 so the CAS version is never newer than the displayed link", async t => {
+  const env = environment(t); server(); const fetch = globalThis.fetch; const order: string[] = [];
+  globalThis.fetch = async (input, init) => {
+    const path = String(input);
+    if (path.includes("/messages?")) { order.push("a9:start"); await new Promise(r => setTimeout(r, 20)); order.push("a9:end"); }
+    if (path.includes("/buyer-panel?")) order.push("a13:start");
+    return fetch(input, init);
+  };
+  const host = env.mount(() => BuyerPanel({ store, conversationId: conversation.conversation_id }));
+  await host.waitFor(() => ready(host), "buyer loaded");
+  assert.ok(order.indexOf("a9:end") >= 0 && order.indexOf("a9:end") < order.indexOf("a13:start"), `A13 started before A9 settled: ${order.join(",")}`);
 });

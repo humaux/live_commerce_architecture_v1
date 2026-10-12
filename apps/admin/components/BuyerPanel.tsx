@@ -54,6 +54,7 @@ export function BuyerPanel({ store, conversationId, bundleId, onUnauthorized, on
   const [value, setValue] = useState<{ scope: string; data: BuyerData } | null>(null);
   const [version, setVersion] = useState<number | null>(null);
   const [linkedName, setLinkedName] = useState<string | null>(null);
+  const [linkedGone, setLinkedGone] = useState(false); // linked customer 404: show the link status only, never a fallback name
   const [choices, setChoices] = useState<Choice[]>([]);
   const [customer, setCustomer] = useState<Choice | null>(null);
   const [after, setAfter] = useState("");
@@ -65,7 +66,7 @@ export function BuyerPanel({ store, conversationId, bundleId, onUnauthorized, on
   const inFlight = useRef(false), goneScope = useRef<string | null>(null);
   const callbacks = useRef({ onUnauthorized, onLinked }); callbacks.current = { onUnauthorized, onLinked };
   const clear = useCallback(() => {
-    setValue(null); setVersion(null); setLinkedName(null); setChoices([]); setCustomer(null);
+    setValue(null); setVersion(null); setLinkedName(null); setLinkedGone(false); setChoices([]); setCustomer(null);
     setAfter(""); setNext(""); setError(null); setBusy(false); setUncertain(false);
     pending.current.clear(); inFlight.current = false;
   }, []);
@@ -84,35 +85,43 @@ export function BuyerPanel({ store, conversationId, bundleId, onUnauthorized, on
     }
     setError(problem.code);
   }, [scope, privacy.fence, privacy.expire, clear]);
+  // Every read revokes on its OWN 401/403 the moment it settles: a pending or earlier-failing sibling read must
+  // neither delay nor swallow an authority loss (PR #41 review P1). fail() is fenced, so later calls are no-ops.
+  const guard = useCallback(<T,>(read: Promise<T>, ticket: Ticket) => read.catch((cause: unknown) => {
+    if (cause instanceof InboxError && [401, 403].includes(cause.status)) fail(cause, ticket);
+    throw cause;
+  }), [fail]);
   const facts = useCallback(async (ticket: Ticket) => {
     const query = conversationId ? `conversation_id=${encodeURIComponent(conversationId)}` : `bundle_id=${encodeURIComponent(bundleId!)}`;
-    const [result, header] = await Promise.all([
-      inboxRead<BuyerData>(store.id, `inbox/buyer-panel?${query}`, ticket.signal),
-      conversationId ? inboxRead<Thread>(store.id, `inbox/conversations/${conversationId}/messages?limit=1`, ticket.signal) : null,
-    ]);
+    // A9 strictly BEFORE A13: the CAS version may then be older than the link shown (a safe 409), never newer
+    // (unlinking a link the merchant never saw). A14 compares only the version (0119 customer_link).
+    const header = conversationId ? await guard(inboxRead<Thread>(store.id, `inbox/conversations/${conversationId}/messages?limit=1`, ticket.signal), ticket) : null;
+    if (!privacy.fence.current(ticket)) return;
+    const result = await guard(inboxRead<BuyerData>(store.id, `inbox/buyer-panel?${query}`, ticket.signal), ticket);
     if (!privacy.fence.current(ticket)) return;
     // Missing orders is an authoritative withheld projection, not an empty list.
     if (!result || !Array.isArray(result.claims) || (result.orders !== undefined && !Array.isArray(result.orders)))
       throw new InboxError("unavailable", 503);
-    let name: string | null = null;
+    let name: string | null = null, gone = false;
     if (result.linked_customer_id && canReadCustomers) {
       // A 404 here means only the linked customer is gone (e.g. erased); the conversation's A13 facts stay authorized,
       // so show the link without a name instead of taking the panel's 404 scope-loss latch. 401/403 still revoke.
       try {
-        name = (await customerRead(() => readCustomer(store.id, result.linked_customer_id!, ticket.signal))).display_name;
+        name = (await guard(customerRead(() => readCustomer(store.id, result.linked_customer_id!, ticket.signal)), ticket)).display_name;
       } catch (cause) {
         if (!(cause instanceof InboxError && cause.status === 404)) throw cause;
+        gone = true;
       }
     }
     if (!privacy.fence.current(ticket)) return;
-    setValue({ scope, data: result }); setVersion(header ? versionOf(header) : null); setLinkedName(name);
-  }, [scope, store.id, conversationId, bundleId, canReadCustomers, privacy.fence]);
+    setValue({ scope, data: result }); setVersion(header ? versionOf(header) : null); setLinkedName(name); setLinkedGone(gone);
+  }, [scope, store.id, conversationId, bundleId, canReadCustomers, privacy.fence, guard]);
   const customerPage = useCallback(async (cursor: string, ticket: Ticket) => {
     // Pick from bounded existing pages. No merchant-entered name or phone is put in a query/URL.
-    const result = await customerRead(() => readCustomers(store.id, "", cursor, ticket.signal));
+    const result = await guard(customerRead(() => readCustomers(store.id, "", cursor, ticket.signal)), ticket);
     if (!privacy.fence.current(ticket)) return;
     setChoices(result.items.filter(row => row.active).map(choiceOf)); setAfter(cursor); setNext(result.next_cursor);
-  }, [store.id, privacy.fence]);
+  }, [store.id, privacy.fence, guard]);
   const reload = useCallback(async () => {
     if (inFlight.current || !privacy.visible || privacy.blocked.current || goneScope.current === scope) return;
     inFlight.current = true; setBusy(true); setError(null); setVersion(null);
@@ -146,6 +155,23 @@ export function BuyerPanel({ store, conversationId, bundleId, onUnauthorized, on
     const command = retry ? pending.current.pending()! : pending.current.prepare({ customer_id: unlink ? null : customer!.customer_id, expected_version: version });
     const ticket = privacy.fence.begin(); inFlight.current = true; setBusy(true); setError(null);
     try {
+      if (retry) {
+        // A14 keeps no idempotent replay: if the uncertain write committed, A9 has moved past expected_version and a
+        // resend could only 409. Reconcile from A13/A9 first; resend the same body/key only while A9 is unchanged.
+        const header = await guard(inboxRead<Thread>(store.id, `inbox/conversations/${conversationId}/messages?limit=1`, ticket.signal), ticket);
+        if (!privacy.fence.current(ticket)) return;
+        const now = await guard(inboxRead<BuyerData>(store.id, `inbox/buyer-panel?conversation_id=${encodeURIComponent(conversationId!)}`, ticket.signal), ticket);
+        if (!privacy.fence.current(ticket)) return;
+        const current = versionOf(header);
+        if (current !== command.body.expected_version) {
+          pending.current.clear(); setUncertain(false); setVersion(null);
+          const ours = current !== null && current > Number(command.body.expected_version) && (now?.linked_customer_id ?? null) === command.body.customer_id;
+          if (ours) setCustomer(null); else setError("version_conflict");
+          await facts(ticket);
+          if (ours && privacy.fence.current(ticket)) callbacks.current.onLinked?.();
+          return;
+        }
+      }
       // A14 uses only the independent A9 CAS version. An uncertain retry retains its original body and key.
       const receipt = await inboxWrite<{ customer_id: string | null; version: number }>(store.id,
         `inbox/conversations/${conversationId}/customer-link`, command.body, command.key, ticket.signal);
@@ -194,7 +220,7 @@ export function BuyerPanel({ store, conversationId, bundleId, onUnauthorized, on
         </li>)}</ul> : <p className={styles.meta}>{c.noOrders}</p>}
       {conversationId && <>
       <h3>{c.customer}</h3>
-      {data.linked_customer_id && <p className={styles.meta} data-testid="customer-manual-link">{c.linked}{canReadCustomers ? ` · ${linkedName ?? c.unnamed}` : ""}</p>}
+      {data.linked_customer_id && <p className={styles.meta} data-testid="customer-manual-link">{c.linked}{canReadCustomers && !linkedGone ? ` · ${linkedName ?? c.unnamed}` : ""}</p>}
       {canLink && <>
         <label>{c.customerChoice}<select data-testid="customer-link-choice" value={customer?.customer_id ?? ""} disabled={busy || version === null || uncertain}
           onChange={event => setCustomer(options.find(row => row.customer_id === event.target.value) ?? null)}>
