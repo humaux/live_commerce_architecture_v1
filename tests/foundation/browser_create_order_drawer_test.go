@@ -321,7 +321,20 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 		}
 		if r.Method == "POST" && r.URL.Path == "/__test/drawer-queued-window" {
 			// Only this owned synthetic conversation is opened, after the existing closed-window UI assertions.
-			_, err := e.p.f.owner.Exec(r.Context(), `UPDATE social.conversations SET asset_id=$2 WHERE id=$1`, fixtures[0].Unlinked, pageID)
+			var input struct {
+				Open bool `json:"open"`
+			}
+			dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 256))
+			dec.DisallowUnknownFields()
+			if dec.Decode(&input) != nil {
+				http.Error(w, "invalid fixture control", 400)
+				return
+			}
+			asset := "1234567890" // Restore the original unavailable capability before this fixture's later reuse.
+			if input.Open {
+				asset = pageID
+			}
+			_, err := e.p.f.owner.Exec(r.Context(), `UPDATE social.conversations SET asset_id=$2 WHERE id=$1`, fixtures[0].Unlinked, asset)
 			if err == nil {
 				_, err = e.p.f.owner.Exec(r.Context(), `UPDATE inbox.conversation_state SET last_inbound_at=clock_timestamp() WHERE conversation_id=$1`, fixtures[0].Unlinked)
 			}
@@ -361,7 +374,15 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 			if err == nil {
 				plain, err = openSend.OpenSend(e.tenant(), e.store(), input.OperationID, enc, sealed)
 			}
-			original := err == nil && strings.Contains(string(plain), input.Link)
+			// Sealed JSON escapes ampersands in URLs; compare its decoded text, never its wire encoding.
+			var message struct {
+				Text string `json:"text"`
+			}
+			if err == nil {
+				err = json.Unmarshal(plain, &message)
+			}
+			original := err == nil && strings.Contains(message.Text, input.Link)
+			message.Text = ""
 			clear(plain)
 			if err == nil {
 				err = e.p.f.owner.QueryRow(r.Context(), `SELECT count(*) FROM checkout.order_links WHERE order_id=$1 AND token_hash=$2 AND redeemed_at IS NULL AND expires_at>clock_timestamp()`, input.OrderID, digest[:]).Scan(&links)

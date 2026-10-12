@@ -79,7 +79,17 @@ async function definitiveRefusal(page,form,{requestPath,submitId,errorId,newAtte
  const observe=request=>{if(request.method()==="POST"){const pathname=new URL(request.url()).pathname;if(pathname===requestPath) posts++;if(pathname===`${requestPath}/recover`) recoveryPosts++;}};
  page.on("request",observe);
  const attempts=[];
- if(unknownFirst) assert.equal((await fetch(`${api}/__test/drawer-bank-transfer`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({enabled:false})})).status,204);
+ if(unknownFirst) {
+  // This CVS option remains available via pay_at_pickup when bank transfer is disabled.
+  // A bank-only home row disappears entirely and returns invalid_request instead of this exact mode refusal.
+  await form.getByTestId("drawer-option").selectOption(cvs);
+  await form.getByTestId("drawer-store-code").fill("123456");
+  await form.getByTestId("drawer-store-name").fill("SYNTHETIC Pickup");
+  await form.getByTestId("drawer-store-address").fill("1 Synthetic Pickup Road");
+  await form.getByTestId("drawer-mode-bank_transfer").check();
+  await expect(form.getByTestId(submitId)).toBeEnabled();
+  assert.equal((await fetch(`${api}/__test/drawer-bank-transfer`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({enabled:false})})).status,204);
+ }
  // This owned settings fault occurs after valid options/Quote loaded; the product request itself remains byte-identical.
  // UNKNOWN drops only the reply to the merchant's frozen request. The separate 422 case mutates quantity at the network edge.
  await page.route(`**${requestPath}`,async route=>{
@@ -333,12 +343,14 @@ try {
   record("unlinked warning/empty fields/zero","edit form","no customer guessing; quantity zero removes; valid catalog line re-added");cases++;
 
   current=`DU3-single-order-${locale}-${width}`;
-  const queued=locale==="en"&&width===1440;
+  // Keep the original new-key calibration isolated from queued replay assertions:
+  // a deliberately new key creates a second link, which must reach the exact-order verdict below.
+  const queued=locale==="en"&&width===1440&&calibration!=="new-key-on-retry";
   let committed, originalLink="", regeneratePosts=0;
   const observeRegenerate=request=>{if(request.method()==="POST"&&new URL(request.url()).pathname.endsWith("/orders/manual/regenerate-link")) regeneratePosts++;};
   if(queued) {
    // Fixture-only window control; acceptance itself remains real BuyerPanel/form clicks.
-   assert.equal((await fetch(`${api}/__test/drawer-queued-window`,{method:"POST"})).status,204);
+   assert.equal((await fetch(`${api}/__test/drawer-queued-window`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({open:true})})).status,204);
    await drawer.getByTestId("drawer-close").click();drawer=await openConversation(page,locale,fixture.Unlinked);
    await addCatalog(drawer);await fillEmpty(drawer);await drawer.getByTestId("drawer-send-payment-link").check();
    page.on("request",observeRegenerate);
@@ -374,13 +386,14 @@ try {
    else record("queued replay copy safety","real submit retry then inspect control","queued result; copy absent/disabled; no regeneration");
    await privateBoundary(page,originalLink);
    const facts=await fetch(`${api}/__test/drawer-queued-facts`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({order_id:value.order_id,operation_id:value.send.operation_id,link:originalLink})});
-   assert.equal(facts.status,200);const dm=await facts.json();assert.deepEqual(dm,{operations:1,secrets:1,original_link:true,valid_links:1,regenerations:0});assert.equal(regeneratePosts,0);
+   assert.equal(facts.status,200);const dm=await facts.json();results.push({case:current,queued_observation:dm});assert.deepEqual(dm,{operations:1,secrets:1,original_link:true,valid_links:1,regenerations:0});assert.equal(regeneratePosts,0);
    results.push({case:current,queued_replay:true,copy_blocked:copyBlocked,regenerate_posts:regeneratePosts,...dm});
    // Reload and click the persisted order, using a positive loaded table and detail sentinel.
    await page.goto(`${origin}/${locale}/orders?store=${store}`);await page.reload();
    await expect(page.getByTestId("orders-table")).toBeVisible();await expect(page.getByTestId(`order-row-${value.order_id}`)).toBeVisible();
    await page.getByTestId(`order-expand-${value.order_id}`).click();await expect(page.getByTestId("order-detail")).toBeVisible();await expect(page.getByTestId("order-detail")).toHaveAttribute("aria-label",new RegExp(value.order_id));
    record("queued order persistence","reload orders then click exact order","same persisted order row and visible detail");
+   assert.equal((await fetch(`${api}/__test/drawer-queued-window`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({open:false})})).status,204);
    await openConversation(page,locale,fixture.Unlinked);drawer=page.getByTestId("create-order-drawer");
    page.off("request",observeRegenerate);originalLink="";
   }
