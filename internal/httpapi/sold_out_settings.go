@@ -6,9 +6,11 @@ package httpapi
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"livecommerce/internal/claims"
@@ -51,7 +53,7 @@ func registerSoldOutSettingsRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 				// msgtemplates.resolve (0121): tenant/store and publish version are verified by the existing definer.
 				resolved, err := templates.Resolve(ctx, tx, in.TemplateID, in.TemplateVersion)
 				if err != nil {
-					return err
+					return soldOutResolveError(err)
 				}
 				if resolved.Fixed {
 					return command.ErrInvalid
@@ -64,4 +66,22 @@ func registerSoldOutSettingsRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 		})(w, r)
 	}))
 	mux.HandleFunc(base, studioRoute("", false, nil))
+}
+
+// soldOutResolveError translates msgtemplates.resolve's fixed definer codes (passed through by msgtemplates.databaseError)
+// into the domain errors claimsClassify maps: without it a mid-request live:manage revocation (PT403) became a 503, and
+// the settings client kept a futile UNKNOWN receipt for a write that had definitely rolled back.
+func soldOutResolveError(err error) error {
+	var pg *pgconn.PgError
+	if errors.As(err, &pg) {
+		switch pg.Code {
+		case "PT403":
+			return platform.ErrForbidden
+		case "PT404":
+			return command.ErrNotFound
+		case "PT409", "PT422": // PT409 = a fixed template id, which PUT may never select (W3-U2 ruling)
+			return command.ErrInvalid
+		}
+	}
+	return err
 }
