@@ -1372,6 +1372,10 @@ export function registerProductEditorAcceptance() {
         });
         await expect(remaining.getByRole("checkbox", { name: c.untracked, exact: true })).not.toBeChecked();
         await expect(remaining.getByTestId("matrix-active-0")).toBeChecked();
+        // Read before opening window.confirm: an open native dialog can block DOM evaluation.
+        // Only an accepted, persisted replacement can acquire a server-issued SKU identity.
+        const beforeId = await remaining.getAttribute("data-sku-id");
+        expect(beforeId).toBeNull();
         const axisSaved = page.waitForResponse(
           (r) =>
             r.url().includes(`/api/stores/${store}/products/`) &&
@@ -1389,9 +1393,6 @@ export function registerProductEditorAcceptance() {
             },
             async () => {
               expect(dialog.message()).toBe(c.archiveRows);
-              // Axis removal creates an idless draft row. Only an accepted, persisted
-              // replacement can acquire the server-issued SKU identity in the UI.
-              const beforeId = await remaining.getAttribute("data-sku-id");
               expect(beforeId).toBeNull();
               await dialog.accept();
               expect((await axisSaved).ok()).toBe(true);
