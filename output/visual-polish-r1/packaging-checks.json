@@ -41,5 +41,8 @@
       "retained_png": 88
     }
   ],
-  "verification_tool_sha256": "d193d8fe739856c04a3b284e1fbb135f56a9240c52cb03c2bd3883cdea1db7fa"
+  "verification_tool_sha256": "d193d8fe739856c04a3b284e1fbb135f56a9240c52cb03c2bd3883cdea1db7fa",
+  "independent_evidence_review": "REVIEW-evidence.md",
+  "precommit_fetch_exit": 0,
+  "precommit_own_merge_exit": 0
 }
