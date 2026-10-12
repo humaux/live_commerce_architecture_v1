@@ -3,7 +3,7 @@
 // Used by: test-node; component evidence complements, and does not replace, real browser/PG drawer acceptance.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { environment, store, conversation, response, nodes, node, textOf, BuyerPanel } from "./inbox-review-host.test.ts";
+import { environment, store, conversation, response, nodes, node, textOf, BuyerPanel, thread } from "./inbox-review-host.test.ts";
 const { CreateOrderDrawer } = await import("../../apps/admin/components/CreateOrderDrawer.tsx");
 const { CommentStream } = await import("../../apps/admin/components/CommentStream.tsx");
 const { createOrderCopy } = await import("../../apps/admin/lib/create-order-copy.ts");
@@ -48,6 +48,9 @@ function network(claims = [claim(otherOffer, otherSession), claim(offer, session
     const path = String(input);
     calls.push(path);
     if (path.includes("/inbox/buyer-panel?")) return response(panel(claims));
+    // Trunk BuyerPanel (LC-U2b2) reads the A9 CAS header before A13 and pages existing customers when it can link.
+    if (/\/inbox\/conversations\/[^/]+\/messages\?limit=1$/.test(path)) return response(thread);
+    if (path.includes("/customers?")) return response({ items: [], next_cursor: "" });
     if (path.includes("/tools/inbox/order-prefill?")) return response(prefill);
     if (path.endsWith("/tools/orders/manual/options")) return response({ options: [] });
     if (path.includes("/claims/blocklist/check?")) return response({ restricted: true });
@@ -66,7 +69,10 @@ for (const outcome of [{ status: 400, code: "invalid_json" }, { status: 415, cod
 }
 for (const target of ["conversation", "bundle"] as const) {
   test(`PR32 ${target} blocklist check uses the ordered offer session, not the first A13 claim`, async t => {
-    const env = browserEnvironment(t), calls = network();
+    // A13 by bundle_id reads only that bundle's claims (0165 v_bundles := ARRAY[p_bundle]) and a bundle has one session,
+    // so mixed sessions are only real for a conversation (bundle_peers). The bundle variant keeps one session with the
+    // ordered offer second; W3-U2 BuyerRestriction checks the same bundle session, so assert the set of checked URLs.
+    const env = browserEnvironment(t), calls = network(target === "conversation" ? undefined : [claim(otherOffer, session), claim(offer, session)]);
     const h = env.mount(() => BuyerPanel({ store: allowedStore, ...(target === "conversation" ? { conversationId: conversation.conversation_id } : { bundleId: bundle }) } as any));
     await h.settle();
     assert.ok(textOf(h.output).includes("SYNTHETIC_REVIEW_BUYER"), "A13 positively loaded");
@@ -74,7 +80,7 @@ for (const target of ["conversation", "bundle"] as const) {
     assert.equal(button.props.disabled, false);
     button.props.onClick(); await h.settle();
     assert.ok(nodes(h.output).some(n => n.props["data-testid"] === "drawer-form"), "actual nested A15/options form loaded");
-    assert.deepEqual(calls.filter(path => path.includes("/claims/blocklist/check?")),
+    assert.deepEqual([...new Set(calls.filter(path => path.includes("/claims/blocklist/check?")))],
       [`/api/stores/${store.id}/live-sessions/${session}/claims/blocklist/check?bundle_id=${bundle}`]);
     assert.equal(textOf(node(h, n => n.props["data-testid"] === "drawer-blocklist-warning")), createOrderCopy.en.restricted);
   });
