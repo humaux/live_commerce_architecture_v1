@@ -96,8 +96,13 @@ export function BuyerPanel({ store, conversationId, bundleId, onUnauthorized, on
       throw new InboxError("unavailable", 503);
     let name: string | null = null;
     if (result.linked_customer_id && canReadCustomers) {
-      const current = await customerRead(() => readCustomer(store.id, result.linked_customer_id!, ticket.signal));
-      name = current.display_name;
+      // A 404 here means only the linked customer is gone (e.g. erased); the conversation's A13 facts stay authorized,
+      // so show the link without a name instead of taking the panel's 404 scope-loss latch. 401/403 still revoke.
+      try {
+        name = (await customerRead(() => readCustomer(store.id, result.linked_customer_id!, ticket.signal))).display_name;
+      } catch (cause) {
+        if (!(cause instanceof InboxError && cause.status === 404)) throw cause;
+      }
     }
     if (!privacy.fence.current(ticket)) return;
     setValue({ scope, data: result }); setVersion(header ? versionOf(header) : null); setLinkedName(name);

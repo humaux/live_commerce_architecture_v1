@@ -78,7 +78,8 @@ async function fullPanel(page: Page, copy: typeof copies[number]) {
 for (const copy of (fixturelessCollection ? [] : copies)) for (const width of [1440, 390]) {
   test(`INU10 ${copy.locale}/${width} full A13 and real two-page customer-link CAS`, async ({ browser, request }) => {
     test.setTimeout(90000);
-    const contexts = await Promise.all([browser.newContext({ viewport: { width, height: 900 } }), browser.newContext({ viewport: { width, height: 900 } })]);
+    // Sign in at desktop width like INU06 (the 390 shell keeps its nav in the mobile menu), then assert at the target width.
+    const contexts = await Promise.all([browser.newContext({ viewport: { width: 1440, height: 900 } }), browser.newContext({ viewport: { width: 1440, height: 900 } })]);
     const [a, b] = await Promise.all(contexts.map(context => context.newPage()));
     const logs: string[] = [];
     const requestedURLs: string[] = []; // In-memory history survives reload; never persisted in evidence.
@@ -91,6 +92,10 @@ for (const copy of (fixturelessCollection ? [] : copies)) for (const width of [1
       await actor(request, "qualified");
       await enter(a, copy.locale);
       await enter(b, copy.locale);
+      for (const page of [a, b]) {
+        await page.setViewportSize({ width, height: 900 });
+        await expect(page.getByTestId("buyer-panel")).toBeVisible();
+      }
       await fullPanel(a, copy);
       await fullPanel(b, copy);
       await expect(a.getByTestId("customer-manual-link")).toHaveCount(0);

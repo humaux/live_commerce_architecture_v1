@@ -104,3 +104,15 @@ Changes: `tests/admin/inbox-customer-ui.spec.ts` and this delivery file. Require
 All logs and receipts are in main checkout `output/lc-u2b2-customer-link/`. Discovery repair has E3 automated red/green evidence bound to current file hashes. Full Node is environment-blocked; new real-PG seed/browser-normal/exact-INU05 calibration, click sweep and visual lint remain NOT_RUN locally, and are required from the integrator runner for full unit acceptance. No Git mutation, commit, synchronization or push was performed by the implementer. A read-only child reviewer accidentally used git rev-parse/diff despite the literal no-Git instruction; no Git state was changed and that activity stopped.
 
 Independent source review found no new P1/P2: fixtureless actual execution remains fail-closed, six real cases/calibration branches unchanged, and runtime-only synthetic fixture configuration introduces no new URL/log/storage sink. This was a source review, not independent runtime PASS (Humaux6dd07533). All owned check processes finished; awaiting integrator commit/push and runtime acceptance.
+
+## Integrator round (2026-10-12): positive browser gate executed
+Evidence level: BROWSER MOCK, real PG + Go + Next standalone, Chromium. Local only; PR CI pending.
+- `--browser-inbox` exit 0, Playwright 19/19, with all six INU10 variants (zh-TW/zh-CN/en × 1440/390). Evidence: `output/playwright/inbox-ui/20261012T050916.780062000`.
+- Fixture fixes (test-only):
+  - GET `/bank-transfer-settings` carried an Idempotency-Key, which cvsRoute rejects with 422.
+  - One idempotency key was reused across commands; there is now one key per command.
+  - The CANCELLED order now comes from the real transfer-window expiry (`checkout.expire_held`). An AWAITING_TRANSFER bank-transfer order is not merchant-cancellable (0162).
+- INU10 390 variants sign in at 1440 and then resize, as INU06 does: the 390 shell keeps its nav in the mobile menu.
+- Shared `lcPurgeSessions` deletes `claims.live_price_uses` before `claims.lines` (FK 23503 at cleanup).
+- K3 P2 fix (BuyerPanel): a 404 on the linked-customer read shows the link without a name and keeps the authorized A13 panel. Red→green node test `a 404 on the linked customer read…`, 11/11.
+- Gates: tsc 0 · test-node 0 · check-gates 0 · browser-inbox 0.

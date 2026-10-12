@@ -9,6 +9,7 @@ package foundation_test
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -85,22 +86,32 @@ func seedInboxCustomerLink(t *testing.T, e *lbEnv) inboxCustomerLinkFixture {
 	}
 	t.Cleanup(pool.Close)
 	service := bcService(t, pool)
-	adapter := &tcvEnv{t: t, p: psHarness{bcHarness: bcHarness{cqHarness: h.cqHarness}}, svc: service}
+	adapter := &tcvEnv{t: t, p: psHarness{bcHarness: bcHarness{cqHarness: h.cqHarness, expiry: waOpen(t, f, waExpiry, platform.WorkerExpiry)}}, svc: service}
 	manual := mtManualOrders(t, adapter)
 	forBuyer, err := merchanttools.NewForBuyer(manual, e.svc)
 	if err != nil {
 		t.Fatal(err)
 	}
 	admin := mtAdmin{t: t, h: httpapi.NewHandler(f.runtime, httpapi.Options{ManualOrders: manual, ForBuyer: forBuyer}), store: f.storeA1, token: token}
+	seq := 0
 	call := func(method, path string, body any, want int) map[string]any {
 		t.Helper()
 		var raw []byte
 		if body != nil {
 			raw, _ = json.Marshal(body)
 		}
-		w := admin.call(method, path, t04Key("inu-seed"), "application/json", raw)
+		key, ctype := "", "" // GET carries no key/body: cvsRoute rejects a key on unkeyed routes (422)
+		if body != nil {
+			seq++ // one key per command: a reused key with a different payload is an idempotency conflict
+			key, ctype = t04Key("inu-seed-"+strconv.Itoa(seq)), "application/json"
+		}
+		w := admin.call(method, path, key, ctype, raw)
 		if w.Code != want {
-			t.Fatalf("LCU2B2 fixture %s %s: status %d, want %d", method, path, w.Code, want)
+			body := w.Body.String() // a bounded error envelope (code/details); success payloads never reach here
+			if len(body) > 300 {
+				body = body[:300]
+			}
+			t.Fatalf("LCU2B2 fixture %s %s: status %d %s, want %d", method, path, w.Code, body, want)
 		}
 		var result map[string]any
 		if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
@@ -142,7 +153,12 @@ func seedInboxCustomerLink(t *testing.T, e *lbEnv) inboxCustomerLinkFixture {
 			call("POST", "/orders/"+order+"/bank-transfer/confirm", map[string]any{}, 200)
 			out.CustomerA, out.ConfirmedNumber = customer, "LC-"+strings.ToUpper(strings.ReplaceAll(order, "-", ""))
 		} else {
-			call("POST", "/orders/"+order+"/cancel", map[string]any{"expected_state": "AWAITING_TRANSFER", "reason": "SYNTHETIC fixture cancellation"}, 200)
+			// An AWAITING_TRANSFER bank-transfer order is not merchant-cancellable (0162: offline refund path); the real way it
+			// becomes CANCELLED is the window expiry, run exactly as the River worker does after aging the window out.
+			adapter.cofAge(order, 73)
+			if disposition, _ := adapter.cofExpire(order); disposition != "EXPIRED" {
+				t.Fatalf("LCU2B2 fixture expiry: %s", disposition)
+			}
 			out.CustomerB, out.CancelledNumber = customer, "LC-"+strings.ToUpper(strings.ReplaceAll(order, "-", ""))
 		}
 		// Assert the product customer projection under real runtime RLS, not an owner SELECT or hand-written DTO.

@@ -22,9 +22,9 @@ const button = (host: Host, id: string) => node(host, n => n.props["data-testid"
 function click(host: Host, id: string) { const b = button(host, id); assert.equal(b.props.disabled, false); b.props.onClick(); host.flush(); }
 function pick(host: Host) { const n = selected(host); assert.equal(n.props.disabled, false); n.props.onChange({ target: { value: customerID } }); host.flush(); }
 const ready = (host: Host) => host.output.props["aria-busy"] === false && textOf(host.output).includes("MOCK_INBOX_BUYER");
-function server(options: { conflict?: boolean; gone?: boolean; unknown?: boolean; omittedOrders?: boolean } = {}) {
+function server(options: { conflict?: boolean; gone?: boolean; unknown?: boolean; omittedOrders?: boolean; dangling?: boolean } = {}) {
   const calls: { path: string; method: string; body: any; key: string | null }[] = [];
-  let version = 0, linked: string | null = null, failure = false;
+  let version = 0, linked: string | null = options.dangling ? customerID : null, failure = false;
   const concurrentID = "60000000-0000-4000-8000-000000000006";
   globalThis.fetch = async (input, init) => {
     const path = String(input), method = init?.method ?? "GET";
@@ -34,6 +34,7 @@ function server(options: { conflict?: boolean; gone?: boolean; unknown?: boolean
     if (path.includes("/messages?")) return response({ ...thread, link_version: version, binding_id: bindingA });
     if (path.includes("/customers?")) return response({ items: [customer], next_cursor: "" });
     if (path.endsWith(`/customers/${concurrentID}`)) return response({ ...customer, customer_id: concurrentID, display_name: "MOCK_CONCURRENT_CUSTOMER", orders: [], claims: [], consent_history: [], privacy_actions: [], tags_revision: "a".repeat(64), notes: [] });
+    if (options.dangling && path.endsWith(`/customers/${customerID}`)) return response({ code: "not_found" }, 404);
     if (path.endsWith(`/customers/${customerID}`)) return response({ ...customer, orders: [], claims: [], consent_history: [], privacy_actions: [], tags_revision: "a".repeat(64), notes: [] });
     if (path.endsWith("/customer-link")) {
       if (options.gone) return response({ code: "not_found" }, 404);
@@ -67,6 +68,16 @@ test("A14 takes A9 version zero; CAS keeps the choice and refreshes before expli
   await host.waitFor(() => ready(host) && wire.writes().length === 3 && !textOf(host.output).includes("Manually linked"), "unlink authoritative refresh");
   assert.deepEqual(wire.writes()[2].body, { customer_id: null, expected_version: 7 });
   assert.ok(wire.calls.every(c => !c.path.includes(customer.display_name)), "customer names never enter URLs");
+});
+
+test("a 404 on the linked customer read keeps the authorized A13 panel and shows the link without a name", async t => {
+  const env = environment(t); server({ dangling: true });
+  const host = env.mount(() => BuyerPanel({ store, conversationId: conversation.conversation_id }));
+  await host.waitFor(() => ready(host), "A13 stays visible after a dangling linked customer");
+  const link = node(host, n => n.props["data-testid"] === "customer-manual-link");
+  assert.match(textOf(link), /Manually linked/);
+  assert.doesNotMatch(textOf(host.output), /unavailable in the current store/);
+  assert.equal(selected(host).props.disabled, false, "the merchant can relink or unlink");
 });
 
 test("A14 404 tears down the buyer, choice and customer list, including late focus", async t => {
