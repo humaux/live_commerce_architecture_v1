@@ -1390,6 +1390,7 @@ export function registerProductEditorAcceptance() {
             async () => {
               expect(dialog.message()).toBe(c.archiveRows);
               await dialog.accept();
+              expect((await axisSaved).ok()).toBe(true);
               // Accepting the dialog must visibly finish the pending save before recording PASS.
               await expect(page.getByTestId("product-save")).toBeEnabled();
               return { observed: { message: dialog.message(), accepted: true } };
