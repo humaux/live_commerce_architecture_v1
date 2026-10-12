@@ -1,17 +1,23 @@
 // Purpose: serialize merchant manual/for-buyer attempts across all pipeline transactions and authoritative A16R recovery.
-// Depends on: platform scoped transactions, command.Run append-only ops.command_results, checkout durable Begin receipts.
+// Depends on: platform scoped transactions, command.Run append-only ops.command_results, checkout durable Begin receipts,
+//
+//	claims.for_buyer_request / for_buyer_release for A16R's original reservation cleanup.
+//
 // Used by: ManualOrders.Place, ForBuyer.Place and ForBuyer.Recover; no external provider calls.
 // Invariants: I01/I02/I03/I06/I11; absence requires a durable seal; created requires post-DM A16 completion.
 package merchanttools
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"livecommerce/internal/checkout"
+	"livecommerce/internal/claims"
 	"livecommerce/internal/command"
 	"livecommerce/internal/platform"
 )
@@ -159,9 +165,15 @@ func (f *ForBuyer) Recover(ctx context.Context, token, store, key string, in For
 		return OrderRecovery{}, ErrManualDisabled
 	}
 	request := canonicalForBuyer(in)
+	canonical, err := json.Marshal(request)
+	if err != nil {
+		return OrderRecovery{}, &Error{Status: http.StatusUnprocessableEntity, Code: "invalid_request"}
+	}
+	keyHash := sha256.Sum256([]byte("order-for-buyer|" + store + "|" + key))
+	requestHash := sha256.Sum256(canonical) // exactly the original placeOrder canonical body, without the attempt envelope
 	m := f.manual
 	var out OrderRecovery
-	err := m.withAttempt(ctx, token, store, key, forBuyerOperation, request, true, func(callCtx context.Context) error {
+	err = m.withAttempt(ctx, token, store, key, forBuyerOperation, request, true, func(callCtx context.Context) error {
 		return platform.WithScope(callCtx, m.pool, token, store, manualPermission, func(tx pgx.Tx, scope platform.Scope) error {
 			if err := requireCatalog(callCtx, tx, scope, token); err != nil {
 				return err
@@ -219,6 +231,17 @@ func (f *ForBuyer) Recover(ctx context.Context, token, store, key string, in For
 				}
 				resolved = OrderRecovery{State: "created", OrderID: result.OrderID}
 			} else {
+				// Calls claims.for_buyer_request / for_buyer_release (live-console-v1 §5.1.1) under the original Begin lock.
+				// Keep cleanup outside command callbacks: a legacy not_created receipt must repair its pending rows on replay.
+				pendingRequest, lookupErr := claims.RequestForBuyer(callCtx, tx, keyHash[:], requestHash[:], issued.Scope.OwnerID)
+				if lookupErr != nil {
+					return lookupErr
+				}
+				if pendingRequest != nil {
+					if err = claims.ReleaseForBuyer(callCtx, tx, *pendingRequest); err != nil {
+						return err
+					}
+				}
 				binding := struct {
 					OwnerID string `json:"owner_id"`
 				}{issued.Scope.OwnerID}

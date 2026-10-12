@@ -2,9 +2,9 @@
 // claims definers that reserve the bundles, evaluate the fail-closed buyer comparison, write the single-use grants, bind a grant to its quote and
 // report the live-priced lines of a placed order. It decides nothing: every rule (peer comparison, permission, 15-minute expiry, single use,
 // quantity ceiling) lives in SQL (migration 0129 + claims.live_prices / consume_live_prices); a Go caller can only ask.
-// Depends on: SQL claims.for_buyer_lines / for_buyer_begin / for_buyer_finish / for_buyer_release (merchant transaction on commerce_runtime) and
+// Depends on: SQL claims.for_buyer_lines / for_buyer_begin / for_buyer_request / for_buyer_finish / for_buyer_release (merchant transaction on commerce_runtime) and
 //   claims.bind_merchant_origin_grant (buyer transaction on commerce_buyer_runtime), internal/command, internal/platform, pgx.
-// Used by: internal/merchanttools/order_for_buyer.go (A15 prefill, A16 for-buyer order).
+// Used by: internal/merchanttools/order_for_buyer.go (A15 prefill, A16 for-buyer order), order_attempt.go (A16R recovery).
 // Invariants: I05/I08 (no price crosses this file: a live price still comes only from claims.live_prices into the Quote), live-console-v1 §5.1
 //   one live order per bundle, §5.3 fail-closed eligibility. Status: MOCK (REAL_PG gates LCN12/LPC01-06).
 
@@ -142,6 +142,16 @@ func FinishForBuyer(ctx context.Context, tx pgx.Tx, request, order string) ([]Gr
 		return nil, forBuyerError(err)
 	}
 	return out, nil
+}
+
+// RequestForBuyer validates all original key/body/private-owner reservation rows and reads their request while pending rows remain, else nil.
+// Calls claims.for_buyer_request (live-console-v1 §5.1.1) in the scoped merchant recovery transaction; it writes nothing.
+func RequestForBuyer(ctx context.Context, tx pgx.Tx, keyHash, requestHash []byte, buyerOwner string) (*string, error) {
+	var request *string
+	if err := tx.QueryRow(ctx, `SELECT claims.for_buyer_request($1::bytea,$2::bytea,$3::uuid)::text`, keyHash, requestHash, buyerOwner).Scan(&request); err != nil {
+		return nil, forBuyerError(err)
+	}
+	return request, nil
 }
 
 // ReleaseForBuyer gives the bundles of a refused placement back and expires its unconsumed grants. Calls claims.for_buyer_release (0129) in the

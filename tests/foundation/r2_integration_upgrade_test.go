@@ -80,8 +80,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0166 (W3-U4 open parcel-group read + server-masked merge suggestions) follows merged 0165: 90 -> 91.
 	// 0167 (Stripe A6 terminal observations) adds one: 91 -> 92.
 	// 0169 (LC-R2 C3x purge of comment prints, their A3 receipts and inbox bundle peers) adds one: 92 -> 93.
-	if len(r2) != 93 {
-		t.Fatalf("R2 migration set = %d files %v, want 93", len(r2), r2)
+	// 0170 (LC-U3 A16R original reservation lookup, runtime EXECUTE only) adds one: 93 -> 94.
+	if len(r2) != 94 {
+		t.Fatalf("R2 migration set = %d files %v, want 94", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

@@ -400,7 +400,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				"live.comment_poll_sources", "live.console_source", "live.console_marks", "live.comment_print",
 				// 0129 (LC-B6): the seven for-buyer definers it owns.
 				"claims.for_buyer_scope", "claims.for_buyer_peer_state", "claims.for_buyer_lines", "claims.for_buyer_begin", "claims.for_buyer_finish",
-				"claims.for_buyer_release", "claims.bind_merchant_origin_grant",
+				"claims.for_buyer_release", "claims.bind_merchant_origin_grant", "claims.for_buyer_request", // A16R §5.1.1: original reservation lookup only.
 				// 0147 (W6-02B): the two report seams it owns (EXECUTE: commerce_auth only).
 				"claims.report_order_bundles", "claims.report_funnel_bundles"})
 		lcSameSet(t, "schema claims ACL", lcStrings(t, f.owner, `SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END||' '||a.privilege_type
@@ -478,6 +478,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			"for_buyer_finish": {args: "p_request uuid, p_order uuid", result: "TABLE(bundle_id uuid, offer_id uuid, sku_id uuid, quantity bigint, live_price_minor bigint)", volatility: "v",
 				acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
 			"for_buyer_release":          {args: "p_request uuid", result: "integer", volatility: "v", acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
+			"for_buyer_request":          {args: "p_key_hash bytea, p_request_hash bytea, p_buyer uuid", result: "uuid", volatility: "s", acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
 			"bind_merchant_origin_grant": {args: "p_quote uuid", result: "integer", volatility: "v", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_buyer_runtime"},
 			// 0110 ACL ruling: one narrow internal read capability, no new table grants.
 			"order_live_sources": {args: "p_tenant uuid, p_store uuid, p_orders uuid[]", result: "TABLE(order_id uuid, session_id uuid)",
@@ -591,8 +592,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		// 0148 (LC-B7) adds exactly one: console_session_facts.
 		// 0165 (LC-B3b) adds exactly three: buyer_panel_claims, orders_of_bundles, session_peer_linked.
 		// 0129 (LC-B6) adds exactly seven: for_buyer_scope, for_buyer_peer_state, for_buyer_lines, for_buyer_begin, for_buyer_finish, for_buyer_release, bind_merchant_origin_grant.
-		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 46 {
-			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its forty-six (incl. two 0147 report seams) functions (previous twenty-one + two 0118 attribution seams + four 0123 comment read-through definers + one 0130 pick-list seam + seven 0129 for-buyer definers + one 0148 console facts helper + five 0154 blocklist definers/predicates + three 0165 buyer-panel projections)", n)
+		// A16R §5.1.1 adds exactly one read-only original-request getter, with no table grants.
+		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 47 {
+			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its forty-seven (incl. two 0147 report seams) functions (previous twenty-one + two 0118 attribution seams + four 0123 comment read-through definers + one 0130 pick-list seam + seven 0129 for-buyer definers + one A16R original-request getter + one 0148 console facts helper + five 0154 blocklist definers/predicates + three 0165 buyer-panel projections)", n)
 		}
 		denied := lcStrings(t, f.owner, `SELECT r.rolname||' '||p.proname FROM pg_roles r CROSS JOIN pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 			WHERE n.nspname='claims' AND r.rolname LIKE 'commerce\_%' AND has_function_privilege(r.oid,p.oid,'EXECUTE')
@@ -619,6 +621,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			       OR (r.rolname='commerce_runtime' AND p.proname IN ('block_actor','unblock_actor','list_blocked_actors','actor_restricted_for_bundle'))
 			       -- 0129 (LC-B6): the merchant transaction calls the four for-buyer definers and the peer-state helper; the buyer pool binds the grant.
 			       OR (r.rolname='commerce_runtime' AND p.proname IN ('for_buyer_peer_state','for_buyer_lines','for_buyer_begin','for_buyer_finish','for_buyer_release'))
+			       OR (r.rolname='commerce_runtime' AND p.oid='claims.for_buyer_request(bytea,bytea,uuid)'::regprocedure)
 			       OR (r.rolname='commerce_buyer_runtime' AND p.proname='bind_merchant_origin_grant')
 			       -- claims-retention-purge-v1 §4: owner, job and operator rows (§6 clause 1)
 			       OR (r.rolname='commerce_retention_writer' AND p.proname IN ('run_retention','erase_actor','apply_actor_erasure','set_retention_policy','retention_status','replay_actor_erasures','links_not_purged'))

@@ -542,6 +542,26 @@ link exposing its owner. The merchant pool requires at least two connections (ou
 and inner scoped work); the constructor rejects smaller pools and admits at most half the
 pool as outer attempts.
 
+An attempt may have committed A16 reservation rows and unconsumed live-price grants before
+checkout Begin. Only after the original locked Begin lookup proves absence, recovery calls
+`claims.for_buyer_request(p_key_hash bytea,p_request_hash bytea,p_buyer uuid) RETURNS uuid`
+with the same SHA-256 `order-for-buyer|store|key`, canonical A16 JSON body hash and
+server-issued private buyer owner used by placement. This read-only definer requires the
+authenticated merchant scope, no buyer GUC, read committed isolation and `inventory:reserve`.
+Every matching tenant/store/key row, including placed or released history, must agree on one
+request id, body hash and buyer owner, otherwise `PT409 idempotency_conflict`. It returns
+that request id only while pending rows remain, otherwise NULL, so repeated recovery does
+not retimestamp already-expired grants. The stored
+principal is not a filter: another currently authorized merchant can recover the same attempt.
+When a request exists, the existing `claims.for_buyer_release` releases only its eligible
+pending reservations and expires its unconsumed grants in the **same** scoped transaction
+as both receipts. Cleanup runs outside receipt callbacks so old `not_created` receipt replays
+also repair residual reservations. Any lookup/release/seal error rolls the transaction back;
+found Begin (created or UNKNOWN) never authorizes release. Recovery never reserves bundles,
+issues grants or starts Begin. The new definer has pinned `search_path=pg_catalog`, owner
+`commerce_claims_writer`, PUBLIC revoked, and EXECUTE only for `commerce_runtime` plus its owner;
+it adds no table or RLS grants.
+
 `not_created` permanently closes the original attempt. Late or concurrent original
 requests return `409 attempt_closed` before checkout money writes. Different normalized
 request/kind on the same key returns `409 idempotency_conflict`. Recovery lost replies replay
