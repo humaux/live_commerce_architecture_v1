@@ -1,5 +1,5 @@
-// Purpose: counterexamples for continuous native product-pane screenshot coverage.
-// Depends on: the real captureInnerScrollFrames helper; a fake Playwright transport and temporary output.
+// Purpose: counterexamples for continuous product-pane evidence and fail-closed supplemental capture verdicts.
+// Depends on: Node test/fs/crypto/vm, visual capture/lint helpers and the actual visual-audit task/verdict; synthetic transport and temporary output.
 // Used by: scripts/dev/test-node.sh; DB-free tests do not claim browser acceptance.
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -7,8 +7,10 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import test from "node:test";
+import { runInNewContext } from "node:vm";
 import { captureInnerScrollFrames, supplementalViewportFor, foldSupplementalCapture } from "./visual-scroll-capture.mjs";
 import { VISUAL_VIEWPORTS } from "./sweep-shard-lib.mjs";
+import { RULES, BLOCKING, BLOCKING_KINDS } from "./visual-lint-lib.mjs";
 
 function transport({ height = 3200, client = 600, top = 0, frozen = false, windowOnly = false, visible = client, count = 1 } = {}) {
   const actions = [];
@@ -115,4 +117,63 @@ test("supplemental capture failure cannot hide behind an existing successful pri
     assert.equal(parent.stateFailed, true);
     assert.ok(parent.issues.some((issue) => issue.includes("1440x900")));
   }
+});
+
+// Execute the actual runner task and verdict, including its pool's swallowed task-error behavior.
+// Only browser/capture transport is fake; supplemental folding and G-UI9 aggregation are real.
+async function supplementalTaskVerdict(failure) {
+  const source = await readFile(new URL("./visual-audit.mjs", import.meta.url), "utf8"), results = [], closed = [], errors = [];
+  const between = (start, end) => source.slice(source.indexOf(start), source.indexOf(end, source.indexOf(start)));
+  const transport = {
+    browser: { newContext: async (options) => {
+      const extra = options.viewport.width === 1440;
+      if (extra && failure === "newContext") throw new Error("injected supplemental newContext rejection");
+      return { addInitScript: async () => {}, route: async () => {},
+        newPage: async () => { if (extra && failure === "newPage") throw new Error("injected supplemental newPage rejection"); return {}; },
+        close: async () => { closed.push(extra ? "supplemental" : "primary"); } };
+    } },
+    capture: async (_context, unit, captures = results) => {
+      if (unit.supplementalViewport && failure === "emptyCapture") return;
+      const rec = { ...unit, size: `${unit.v.size.width}x${unit.v.size.height}`, file: unit.supplementalViewport ? "1440.png" : "primary.png", ok: true, status: 200,
+        counts: {}, groups: {}, blockingCounts: {}, blocking: 0, violations: [], issues: [] };
+      captures.push(rec); return rec;
+    },
+    adminOrigin: "http://admin.example.invalid", HOST: "store.example.invalid", INIT_SCRIPT: "", monitor: () => ({}),
+    supplementalViewportFor, foldSupplementalCapture, RULES, BLOCKING, BLOCKING_KINDS, assert, results, URL,
+  };
+  const adminTask = runInNewContext([
+    source.match(/const sizeOf = .*;/)[0], source.match(/const ctxOptions = .*;/)[0],
+    between("const newContext =", "const loginState ="), between("const adminTask =", "const bridge ="), "adminTask",
+  ].join("\n"), transport);
+  await adminTask({}, { id: "products-new", route: "/products/new", state: "new", auth: true, url: () => "http://admin.example.invalid/en/products/new" }, "en", VISUAL_VIEWPORTS[0])()
+    .catch((error) => errors.push(error.message)); // same as pool(); primary-only missing coverage previously stayed green.
+  assert.equal(results.length, 1, `primary capture must succeed before injecting: ${errors.join("; ")}`);
+  const key = (r) => `${r.app}|${r.id}|${r.locale}|${r.size}`;
+  const verdict = runInNewContext(`${between("const have =", "const report =")}\n({ exitCode, reasons, missing, stateFailures });`,
+    { ...transport, key, expected: [results[0]], universe: [results[0]], exitCode: 0 });
+  return { ...verdict, results, closed, errors };
+}
+
+test("G-UI9 fails closed when the required 1440 newContext rejects despite a successful primary shot", async (t) => {
+  const r = await supplementalTaskVerdict("newContext");
+  assert.equal(r.results.length, 1); assert.equal(r.results[0].file, "primary.png"); assert.equal(r.missing.length, 0);
+  assert.equal(r.exitCode, 1, "G-UI9 must be RED even though the primary matrix is complete");
+  assert.equal(r.stateFailures.length, 1);
+  assert.ok(r.results[0].issues.some((s) => s.includes("1440x900") && s.includes("injected supplemental newContext rejection")), "explicit supplemental setup reason is retained");
+  assert.equal(r.errors.length, 0, "failure is folded rather than swallowed by the task pool");
+  assert.deepEqual(r.closed, ["primary"]);
+  t.diagnostic(`Injected G-UI9 exit=${r.exitCode}: ${r.reasons.join("; ")}; ${r.results[0].issues.join("; ")}`);
+});
+
+test("supplemental setup/absent capture failures close allocated contexts and still fail G-UI9", async () => {
+  for (const failure of ["newPage", "emptyCapture"]) {
+    const r = await supplementalTaskVerdict(failure);
+    assert.equal(r.exitCode, 1); assert.equal(r.stateFailures.length, 1); assert.equal(r.errors.length, 0);
+    assert.ok(r.results[0].issues.some((s) => s.includes("1440x900")));
+    assert.deepEqual(r.closed, ["primary", "supplemental"]);
+  }
+  const green = await supplementalTaskVerdict();
+  assert.equal(green.exitCode, 0); assert.equal(green.results.length, 1);
+  assert.equal(green.results[0].supplemental[0].file, "1440.png");
+  assert.deepEqual(green.closed, ["primary", "supplemental"]);
 });

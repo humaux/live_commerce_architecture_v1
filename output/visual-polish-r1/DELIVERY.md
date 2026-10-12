@@ -1,9 +1,45 @@
 <!-- Purpose: VISUAL-POLISH-R1 delivery with reproducible red/green gates, source hashes, screenshot provenance and remaining CI scope.
-Depends on: integrator commit 582921b8, trunk merges 9d6b2ad6/3cfb1d22, shared formatter/TabStrip, production browser registry and synthetic PG fixtures.
+Depends on: integrator commit 582921b8, trunk merges 9d6b2ad6/3cfb1d22/b9f80810, shared formatter/TabStrip, visual capture/verdict helpers, production browser registry and synthetic PG fixtures.
 Used by: integrator PR/K3 review and CI; local BROWSER+REAL_PG acceptance is distinct from provider or production acceptance. -->
 # VISUAL-POLISH-R1 delivery
 
-READY: the local savebar/focus repair and all six final gates passed on merged baseline `3cfb1d22`. Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/visual-polish-r1`; branch: `unit/visual-polish-r1`. The integrator committed the original four fixes as `582921b8` and merged trunk as `9d6b2ad6`. Pre-commit fetch then received trunk `1200178c`; merge `3cfb1d22` preserves all six source hashes. The final merged-baseline command receipts are below; previous-baseline results remain historical. The owner authorized local product-editor/visual-lint runs, author commit and branch push. The earlier sandbox-only handoff is historical.
+## PR #43 round 1 — 4250866065
+
+READY: required supplemental context/setup failures now fail the owning G-UI9 verdict. Branch `unit/visual-polish-r1`, worktree `/Volumes/data/live_commerce_architecture_v1/.worktrees/visual-polish-r1`; tested baseline `b9f808102fa56d9b050aea30cdc5ca2ca5940d5f` (own remote merged first, then trunk `fef79203`). The two source hashes below bind this uncommitted test run to the final commit. Final commit/push/comment receipts are in `r43-4250866065/`; do not resolve review thread 4250866065.
+
+The old supplemental `newContext()` ran outside the protected capture block. Its rejection escaped to the task pool, which only logged it; the successful primary shot satisfied primary-only coverage. The task now protects creation and capture together, records the 1440 failure reason, closes any allocated context and always folds a record into the primary result. Partial context initialization also closes before rethrowing. An absent capture record is an explicit failure. No product UI, primary matrix, lint threshold, Go or registry changes.
+
+Red/green drives the **actual runner's setup, admin task and G-UI9 aggregation**, with synthetic browser/capture transport and real supplemental folding. Before the fix, injecting the required 1440 `newContext` rejection left the actual verdict at **0**, so the new regression failed (`node-red.log`, exit **1**, 10 pass / 2 fail). After the fix the injected verdict is **1**, with `supplemental 1440x900: context-error: injected supplemental newContext rejection`; the regression command passes. Setup rejection, absent capture and normal success/cleanup also pass. This is DB-free fault injection, separate from the full normal browser gate. The initial VM harness omitted `URL`; its exit 1 is preserved as `node-harness-setup.log` and is **not** the regression red evidence.
+
+All logs/exit receipts below are under `output/visual-polish-r1/r43-4250866065/`:
+
+| Command | Exit | Evidence |
+| --- | --- | --- |
+| `node --test tests/ui/visual-scroll-capture.test.mjs` before source fix | **1** | `node-red.log/.exit`: old actual G-UI9 verdict 0 differs from required 1 |
+| `node --experimental-strip-types --test tests/ui/visual-scroll-capture.test.mjs tests/ui/visual-lint-lib.test.mjs tests/ui/sweep-shard-lib.test.mjs` | **0** | `node-green-final.log/.exit`, 40/40; explicit injected verdict/reason diagnostic |
+| `bash scripts/dev/test-node.sh` | **0** | `test-node.log/.exit`; optional LiveKit-binary media test NOT_RUN (see below) |
+| `bash scripts/dev/test-local.sh --browser-visual-lint` | **0** | `browser-visual-lint.log/.exit`; full unfiltered normal G-UI9 |
+| `bash scripts/dev/check-gates.sh` | **0** | `check-gates.log/.exit`, 83 modes / every tracked test registered |
+| `pnpm --filter @live-commerce/admin typecheck` | **0** | `typecheck.log/.exit` |
+| `bash scripts/dev/test-local.sh --list`; `node --check` both changed MJS files; `git diff --check` | **0** | `mode-list.log`; direct checks |
+| `node scripts/dev/pr-modes.mjs origin/r3/integration` | **0** | `pr-modes.json`: 53 selected entries, deploy false; broader CI remains integrator scope |
+
+Current normal browser evidence: [`lint.json`](../playwright/run.rtxlAF0q/ui-visual-audit/20261012T175953Z/lint.json), [`index.json`](../playwright/run.rtxlAF0q/ui-visual-audit/20261012T175953Z/index.json), [`lint.md`](../playwright/run.rtxlAF0q/ui-visual-audit/20261012T175953Z/lint.md). **348/348** primary shots, **NOT_RUN 0**, **blocking 0**; all three locales at 1586/390, **12 required 1440 supplements** with files/SHA256 independently checked, 540 PNG files under `shots/`. R5 21 / R7 119 remain warnings; no threshold changes. `visual-verification.json` preserves these checks. The reused Go sweep harness passing here proves G-UI9, not click-journey acceptance.
+
+Frozen source SHA256 (unchanged during the gate):
+
+| File | SHA256 |
+| --- | --- |
+| `tests/ui/visual-audit.mjs` | `321065f166a2761467c8712d1f9d8879ed0d3cc515094f14828816e91df143f9` |
+| `tests/ui/visual-scroll-capture.test.mjs` | `1cf6d1a8bcb8481c65d19cd69e7bc1e25701067d4041e86f29b9a0a8cc8a58a5` |
+
+Primary: Codex author (deployed model/effort not exposed), owns the two MJS files and this report. Independent read-only explorer `r43_supplemental_review`: gpt-6.1-sol / medium, base `b9f80810`, no recursive delegation, writes or runtime; reviewed the same hashes and found no blocking gaps (E1 source review). Humaux fix records the root and evidence. Code indexing accepted both files but reported 0 indexed files/entities; exact `tests/ui/visual-audit.mjs::main` link was not found (**NOT_LINKED**). Source pointers and stored rationale remain available; no graph success is claimed.
+
+Evidence: **E3 local BROWSER + REAL_PG with MOCK external services**, plus DB-free injected actual-verdict regression. NOT_RUN: broader planner-selected modes (including full foundation / click-sweep / product-editor on this gate-only revision), independent runtime rerun and provider/production acceptance. Full Node explicitly skips `tests/media/r04-input-runner.test.mjs` because `COMMERCE_R04_LIVEKIT_BINARY` is unset. No product Go touched; separate focused Go gate is not applicable. Existing unrelated P2 FOLLOWUPS remain deferred. Push only the authorized unit branch, never force-push, and leave the review thread unresolved.
+
+## Historical savebar/focus delivery — 91b9a6a8
+
+The local savebar/focus repair and all six prior gates passed on merged baseline `3cfb1d22`. Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/visual-polish-r1`; branch: `unit/visual-polish-r1`. The integrator committed the original four fixes as `582921b8` and merged trunk as `9d6b2ad6`. Pre-commit fetch then received trunk `1200178c`; merge `3cfb1d22` preserves all six source hashes. The prior merged-baseline command receipts are below. The owner authorized local product-editor/visual-lint runs, author commit and branch push. The earlier sandbox-only handoff is historical.
 
 Primary: Codex UI worker (deployed model name/effort not exposed). Final independent source review: explorer `visual_focus_diagnosis`, gpt-6.1-sol, medium effort, read-only, same base; no recursive delegation or concurrent code writers. This patch owns the four product components, two product tests and this report. No Go, migration, OpenAPI, lockfile, shared formatter implementation or gate threshold change.
 

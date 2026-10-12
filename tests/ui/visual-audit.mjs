@@ -298,12 +298,17 @@ export async function main() {
   // ---- the three apps ------------------------------------------------------------------------------------------------------------------------------------------
   const newContext = async (v, locale, extra = {}, withMonitor = true) => {
     const c = await browser.newContext(ctxOptions(v, locale, extra));
-    await c.addInitScript(INIT_SCRIPT);
-    const mon = withMonitor ? monitor(c, { allowedHosts: new Set([new URL(adminOrigin).host, HOST]) }) : null;
-    // /orders/cvs-print auto-posts a signed form to ECPay top-level; the harness cancels that navigation (registered after the monitor, so it runs first) so the
-    // page's own document stays on screen instead of the monitor's "blocked external" stub. No request leaves the stack.
-    if (withMonitor) await c.route((u) => /(^|\.)ecpay\.com\.tw$/i.test(u.hostname), (route) => route.abort("aborted"));
-    return { c, mon, page: await c.newPage() };
+    try {
+      await c.addInitScript(INIT_SCRIPT);
+      const mon = withMonitor ? monitor(c, { allowedHosts: new Set([new URL(adminOrigin).host, HOST]) }) : null;
+      // /orders/cvs-print auto-posts a signed form to ECPay top-level; the harness cancels that navigation (registered after the monitor, so it runs first) so the
+      // page's own document stays on screen instead of the monitor's "blocked external" stub. No request leaves the stack.
+      if (withMonitor) await c.route((u) => /(^|\.)ecpay\.com\.tw$/i.test(u.hostname), (route) => route.abort("aborted"));
+      return { c, mon, page: await c.newPage() };
+    } catch (error) {
+      await c.close().catch(() => {}); // A failed setup never returns its context to the task's cleanup.
+      throw error;
+    }
   };
   const loginState = async () => {
     const c = await browser.newContext({ viewport: { width: 1440, height: 900 } });
@@ -322,12 +327,19 @@ export async function main() {
     try { primary = await capture(s, unit); } finally { await s.c.close().catch(() => {}); }
     const supplemental = supplementalViewportFor(unit);
     if (supplemental) {
-      const extra = await newContext(supplemental, locale, u.auth ? { storageState: state } : {}), captures = [];
+      let extra, record;
       // Reuse the same navigation, real preparation, collect/evaluate, crops, R10 and native pane capture at the owner-required width.
       // A private capture array keeps the primary route matrix/count intact; its lint blockers still contribute to the owning verdict.
-      try { await capture(extra, { ...unit, v: supplemental, supplementalViewport: true }, captures); }
-      finally { await extra.c.close().catch(() => {}); }
-      foldSupplementalCapture(primary, captures[0]);
+      try {
+        extra = await newContext(supplemental, locale, u.auth ? { storageState: state } : {});
+        record = await capture(extra, { ...unit, v: supplemental, supplementalViewport: true }, []);
+        if (!record) throw new Error("supplemental-capture-returned-no-record");
+      } catch (error) {
+        // The pool logs task errors but primary-only coverage cannot detect a missing required supplement.
+        record = { locale, viewport: supplemental.name, size: sizeOf(supplemental), failed: true,
+          issues: [`${extra ? "capture" : "context"}-error: ${String(error.message ?? error).split("\n")[0].slice(0, 200)}`] };
+      } finally { await extra?.c.close().catch(() => {}); }
+      foldSupplementalCapture(primary, record);
     }
   };
   const bridge = async (context) => { // the platform site is served by Host: a context bridge keeps the real host names without DNS or TLS (tests/admin/platform-runner.mjs)
@@ -437,7 +449,7 @@ export async function main() {
     if (blockingInstances) reasons.push(`${blockingInstances} blocking violation instances (${BLOCKING.join("/")} and R7 clipped controls)`);
     if (missing.length) reasons.push(`${missing.length} enumerated shots missing`);
     if (loadFailures.length) reasons.push(`${loadFailures.length} pages answered HTTP >= 400`);
-    if (stateFailures.length) reasons.push(`${stateFailures.length} page states or required inner-scroll coverage were not reached`);
+    if (stateFailures.length) reasons.push(`${stateFailures.length} page states, required inner-scroll coverage or supplemental captures were not reached`);
     exitCode = reasons.length ? 1 : 0;
     const report = {
       generated: new Date().toISOString(), commit, out: path.relative(root, out), thresholds: T, rules: RULES, blocking: BLOCKING, blockingKinds: BLOCKING_KINDS,
