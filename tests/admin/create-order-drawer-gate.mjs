@@ -75,20 +75,20 @@ async function addCatalog(drawer,prefix="drawer") {
 }
 async function definitiveRefusal(page,form,{requestPath,submitId,errorId,newAttemptId,editDraft=false,unknownFirst=false}) {
  const before=await (await fetch(`${api}/__test/drawer-facts`)).json();
- let posts=0;
- const observe=request=>{if(request.method()==="POST"&&new URL(request.url()).pathname===requestPath) posts++;};
+ let posts=0,recoveryPosts=0;
+ const observe=request=>{if(request.method()==="POST"){const pathname=new URL(request.url()).pathname;if(pathname===requestPath) posts++;if(pathname===`${requestPath}/recover`) recoveryPosts++;}};
  page.on("request",observe);
  const attempts=[];
- if(unknownFirst) await form.getByTestId(`drawer-quantity-${sku}`).fill("1000");
+ if(unknownFirst) assert.equal((await fetch(`${api}/__test/drawer-bank-transfer`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({enabled:false})})).status,204);
+ // This owned settings fault occurs after valid options/Quote loaded; the product request itself remains byte-identical.
  // UNKNOWN drops only the reply to the merchant's frozen request. The separate 422 case mutates quantity at the network edge.
  await page.route(`**${requestPath}`,async route=>{
   attempts.push({key:route.request().headers()["idempotency-key"],body:route.request().postData()});
   const body=JSON.parse(route.request().postData());
-  if(unknownFirst) assert.equal(body.items[0].quantity,1000,"real UI supplied the immutable inventory-refused intent");
-  else body.items[0].quantity=0;
+  if(!unknownFirst) body.items[0].quantity=0;
   const real=await route.fetch(unknownFirst?{}:{postData:JSON.stringify(body)});
-  assert.equal(real.status(),unknownFirst?409:422,"real BFF/Go must refuse invalid quantity or insufficient inventory");
-  if(unknownFirst) assert.equal((await real.json()).code,"insufficient_inventory","actual checkout refusal after durable receipt lookup");
+  assert.equal(real.status(),422,"real BFF/Go must refuse invalid quantity or unavailable bank transfer");
+  if(unknownFirst) assert.equal((await real.json()).code,"bank_transfer_unavailable","actual business refusal before receipt lookup");
   if(unknownFirst&&attempts.length===1) { await real.dispose();await route.abort("failed");return; }
   await route.fulfill({response:real});
  });
@@ -100,8 +100,21 @@ async function definitiveRefusal(page,form,{requestPath,submitId,errorId,newAtte
   await expect(form.getByTestId(submitId)).toBeEnabled();
  }
  const [refusal]=await Promise.all([page.waitForResponse(r=>r.request().method()==="POST"&&new URL(r.url()).pathname===requestPath),form.getByTestId(submitId).click()]);
- assert.equal(refusal.status(),unknownFirst?409:422);assert(refusal.headers()["cache-control"]?.includes("no-store"));
+ assert.equal(refusal.status(),422);assert(refusal.headers()["cache-control"]?.includes("no-store"));
  await expect(form.getByTestId(errorId)).toBeVisible();
+ if(unknownFirst) {
+  await expect(form.getByTestId("drawer-close")).toBeDisabled();await expect(form.getByTestId(newAttemptId)).toHaveCount(0);
+  await expect(form.getByTestId("drawer-recover-attempt")).toBeVisible();
+  const recoveryPath=`${requestPath}/recover`;
+  const [recovery]=await Promise.all([page.waitForResponse(r=>r.request().method()==="POST"&&new URL(r.url()).pathname===recoveryPath),form.getByTestId("drawer-recover-attempt").click()]);
+  assert.equal(recovery.status(),200);assert(recovery.headers()["cache-control"]?.includes("no-store"));assert.deepEqual(await recovery.json(),{state:"not_created"});
+  assert.equal(recovery.request().headers()["idempotency-key"],attempts[0].key,"A16R retains original key");assert.equal(recovery.request().postData(),attempts[0].body,"A16R retains original body");
+  await expect(form.getByTestId("drawer-recovery-result")).toBeVisible();
+  const seals=await fetch(`${api}/__test/drawer-recovery-facts`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({key:attempts[0].key})});
+  assert.equal(seals.status,200);assert.deepEqual(await seals.json(),{not_created_seals:1},"exact original-key durable absence seal in PG");
+  assert.equal((await fetch(`${api}/__test/drawer-bank-transfer`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({enabled:true})})).status,204);
+  record("A16R recovery","UNKNOWN/business 422/recover click","same key/body; real durable not_created seal; recovery result; no new order");
+ }
  await expect(form.getByTestId(newAttemptId)).toBeVisible();
  if(editDraft) {
   await form.getByTestId("mo-name").fill("SYNTHETIC Refused Draft");
@@ -124,10 +137,11 @@ async function definitiveRefusal(page,form,{requestPath,submitId,errorId,newAtte
  await expect(form.getByTestId(submitId)).toBeEnabled();
  const after=await (await fetch(`${api}/__test/drawer-facts`)).json();
  assert.equal(posts,unknownFirst?2:1,"explicit new-attempt action must not POST");
+ assert.equal(recoveryPosts,unknownFirst?1:0,"only explicit recovery click may POST A16R; new-attempt is local");
  assert.equal(after.orders,before.orders,"explicit new-attempt action creates zero orders");
  page.off("request",observe);
- record(newAttemptId,unknownFirst?"real UNKNOWN/409 then explicit click":"real 422 then explicit click","zero merchant-manual order delta; submit remains disabled after refusal/draft edit; new-attempt enables without network write");
- if(unknownFirst) { record("UNKNOWN then coded refusal","abort real inventory 409/replay/click new attempt","same key/body; zero PG orders/receipts; OrderGuard released; close enabled");cases++; }
+ record(newAttemptId,unknownFirst?"real UNKNOWN/business 422/recovery then explicit click":"real 422 then explicit click","zero merchant-manual order delta; submit remains disabled after refusal/draft edit; new-attempt enables without network write");
+ if(unknownFirst) { record("UNKNOWN then coded refusal","abort real business 422/replay/click recovery/click new attempt","same key/body; zero PG orders/receipts; OrderGuard released; close enabled");cases++; }
 }
 async function privateBoundary(page,link="") {
  // G-UI8 audit [READ/MEASURE]: read private DOM/storage/resource surfaces; never persist their contents.
@@ -308,6 +322,8 @@ try {
   if(locale==="en"&&width===1440) {
    await definitiveRefusal(page,drawer,{requestPath:routePath,submitId:"drawer-submit",errorId:"drawer-error",newAttemptId:"drawer-new-attempt",unknownFirst:true});
    await drawer.getByTestId("drawer-close").click();
+   const afterRecovery=await (await fetch(`${api}/__test/drawer-facts`)).json();
+   await page.reload();assert.equal((await (await fetch(`${api}/__test/drawer-facts`)).json()).orders,afterRecovery.orders,"reload after recovery/new attempt creates no order");
    drawer=await openConversation(page,locale,fixture.Unlinked);
    await addCatalog(drawer);await fillEmpty(drawer);
    await expect(drawer.getByTestId("drawer-submit")).toBeEnabled();

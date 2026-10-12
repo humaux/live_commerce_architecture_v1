@@ -206,6 +206,8 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 			if err := e.p.f.owner.QueryRow(ctx, `SELECT conversation_id::text FROM social.messages WHERE event_id=$1`, ev.id).Scan(&unlinked); err != nil {
 				t.Fatal(err)
 			}
+			// Preserve the original no-capability Unlinked A15 assertion until the queued case explicitly arms it.
+			mustExec(t, e.p.f.owner, `UPDATE social.conversations SET asset_id='1234567890' WHERE id=$1`, unlinked)
 		}
 		mustExec(t, e.p.f.owner, `UPDATE inbox.conversation_state SET last_inbound_at=clock_timestamp()-interval '25 hours' WHERE conversation_id IN ($1,$2)`, conv, unlinked)
 		// Calls real A14 CAS; no direct customer_id update and no owner guessing.
@@ -277,9 +279,52 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle("/v1/identity/", private)
 	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "POST" && r.URL.Path == "/__test/drawer-bank-transfer" {
+			// Disclosed fault on this harness's synthetic settings only, after the real UI has loaded valid options.
+			var input struct {
+				Enabled bool `json:"enabled"`
+			}
+			dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 128))
+			dec.DisallowUnknownFields()
+			if dec.Decode(&input) != nil {
+				http.Error(w, "invalid fixture control", 400)
+				return
+			}
+			result, err := e.p.f.owner.Exec(r.Context(), `UPDATE checkout.bank_transfer_settings SET enabled=$3,version=version+1,updated_at=clock_timestamp() WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store(), input.Enabled)
+			if err != nil || result.RowsAffected() != 1 {
+				http.Error(w, "fixture control failed", 500)
+				return
+			}
+			w.WriteHeader(204)
+			return
+		}
+		if r.Method == "POST" && r.URL.Path == "/__test/drawer-recovery-facts" {
+			var input struct {
+				Key string `json:"key"`
+			}
+			dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 256))
+			dec.DisallowUnknownFields()
+			if dec.Decode(&input) != nil || !regexp.MustCompile(`^[A-Za-z0-9_-]{8,128}$`).MatchString(input.Key) {
+				http.Error(w, "invalid observation", 400)
+				return
+			}
+			var seals int
+			err := e.p.f.owner.QueryRow(r.Context(), `SELECT count(*) FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND operation='merchanttools.order.attempt.recovery' AND idempotency_key=$4 AND response='{"state":"not_created"}'::jsonb`, e.tenant(), e.store(), e.p.f.principalA, input.Key).Scan(&seals)
+			if err != nil {
+				http.Error(w, "observation failed", 500)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("Cache-Control", "no-store")
+			_ = json.NewEncoder(w).Encode(map[string]int{"not_created_seals": seals})
+			return
+		}
 		if r.Method == "POST" && r.URL.Path == "/__test/drawer-queued-window" {
 			// Only this owned synthetic conversation is opened, after the existing closed-window UI assertions.
-			_, err := e.p.f.owner.Exec(r.Context(), `UPDATE inbox.conversation_state SET last_inbound_at=clock_timestamp() WHERE conversation_id=$1`, fixtures[0].Unlinked)
+			_, err := e.p.f.owner.Exec(r.Context(), `UPDATE social.conversations SET asset_id=$2 WHERE id=$1`, fixtures[0].Unlinked, pageID)
+			if err == nil {
+				_, err = e.p.f.owner.Exec(r.Context(), `UPDATE inbox.conversation_state SET last_inbound_at=clock_timestamp() WHERE conversation_id=$1`, fixtures[0].Unlinked)
+			}
 			if err != nil {
 				http.Error(w, "fixture control failed", 500)
 				return
