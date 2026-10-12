@@ -1,0 +1,167 @@
+✖ reminder route absence GET is local only after fresh store and permission proof (32.277083ms)
+✔ reminder route absence GET never aliases an initially revoked store (2.975458ms)
+✖ reminder route absence GET detects store loss at the fresh recheck (1.353334ms)
+✖ reminder route absence GET requires fresh complete method permissions (1.169042ms)
+✔ reminder route GET preserves JSON not_found and existing authorization failures (2.56975ms)
+✖ reminder route absence GET fails closed when fresh authentication cannot be proved (0.775167ms)
+✖ reminder route absence POST is local only after fresh store and permission proof (0.839584ms)
+✔ reminder route absence POST never aliases an initially revoked store (0.599417ms)
+✖ reminder route absence POST detects store loss at the fresh recheck (0.649125ms)
+✖ reminder route absence POST requires fresh complete method permissions (0.718125ms)
+✔ reminder route POST preserves JSON not_found and existing authorization failures (2.400958ms)
+✖ reminder route absence POST fails closed when fresh authentication cannot be proved (0.665792ms)
+✔ reminder absence proof rejects arbitrary text, wrong media types and unbounded bodies (4.770833ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 5
+ℹ fail 8
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 178.423375
+
+✖ failing tests:
+
+test at tests/admin/live-settings-bff.test.ts:193:3
+✖ reminder route absence GET is local only after fresh store and permission proof (32.277083ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  503 !== 404
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-reminder-bff/tests/admin/live-settings-bff.test.ts:197:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 503,
+    expected: 404,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-bff.test.ts:215:3
+✖ reminder route absence GET detects store loss at the fresh recheck (1.353334ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  503 !== 404
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-reminder-bff/tests/admin/live-settings-bff.test.ts:220:14)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 503,
+    expected: 404,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-bff.test.ts:224:3
+✖ reminder route absence GET requires fresh complete method permissions (1.169042ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  503 !== 403
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-reminder-bff/tests/admin/live-settings-bff.test.ts:233:16)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 503,
+    expected: 403,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-bff.test.ts:252:3
+✖ reminder route absence GET fails closed when fresh authentication cannot be proved (0.775167ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  503 !== 401
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-reminder-bff/tests/admin/live-settings-bff.test.ts:258:16)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 503,
+    expected: 401,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-bff.test.ts:193:3
+✖ reminder route absence POST is local only after fresh store and permission proof (0.839584ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  503 !== 404
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-reminder-bff/tests/admin/live-settings-bff.test.ts:197:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 503,
+    expected: 404,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-bff.test.ts:215:3
+✖ reminder route absence POST detects store loss at the fresh recheck (0.649125ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  503 !== 404
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-reminder-bff/tests/admin/live-settings-bff.test.ts:220:14)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 503,
+    expected: 404,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-bff.test.ts:224:3
+✖ reminder route absence POST requires fresh complete method permissions (0.718125ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  503 !== 403
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-reminder-bff/tests/admin/live-settings-bff.test.ts:233:16)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 503,
+    expected: 403,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-bff.test.ts:252:3
+✖ reminder route absence POST fails closed when fresh authentication cannot be proved (0.665792ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  503 !== 401
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-reminder-bff/tests/admin/live-settings-bff.test.ts:258:16)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 503,
+    expected: 401,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

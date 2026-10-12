@@ -1,0 +1,72 @@
+✖ restriction scope proof distinguishes store loss before read from a missing bundle (33.789666ms)
+✖ restriction scope proof distinguishes store loss during read from a missing bundle (5.345417ms)
+✖ restriction missing bundle retains local not_found only after fresh live-read proof (4.33025ms)
+✔ restriction upstream cannot forge the BFF-only store scope loss code (3.814292ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 1
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 263.225125
+
+✖ failing tests:
+
+test at tests/admin/live-settings-bff.test.ts:194:59
+✖ restriction scope proof distinguishes store loss before read from a missing bundle (33.789666ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'not_found'
+  - 'store_scope_lost'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-bff.test.ts:201:37)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'not_found',
+    expected: 'store_scope_lost',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-bff.test.ts:194:59
+✖ restriction scope proof distinguishes store loss during read from a missing bundle (5.345417ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'not_found'
+  - 'store_scope_lost'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-bff.test.ts:201:37)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'not_found',
+    expected: 'store_scope_lost',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-bff.test.ts:205:1
+✖ restriction missing bundle retains local not_found only after fresh live-read proof (4.33025ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  3 !== 4
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-bff.test.ts:208:74)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 3,
+    expected: 4,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

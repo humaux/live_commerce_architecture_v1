@@ -1,0 +1,69 @@
+{
+  "task_id": "e0cab99c-5ed3-4d22-a3cd-88700fb57c71",
+  "subtask_id": "e0cab99c-sub-badge",
+  "comment_id": "4231878523",
+  "base_commit": "539f1cb8138975e27ef75cdaf0563f154117c698",
+  "branch": "codex/pr31-soldout-status",
+  "role": "ui_worker",
+  "model": "UNKNOWN (inherited parent runtime)",
+  "reasoning": "UNKNOWN (inherited parent runtime)",
+  "evidence_class": "MOCK",
+  "source_sha256": {
+    "apps/admin/components/CommentStream.tsx": "fff6d125638223aeb31adea43d63fdcd4d0ec4fc9d2491d90eaddc7ab813911f",
+    "tests/admin/comment-stream-hooks.test.ts": "a35860732e83ccf29a9163ebc0b63c9445642d8f1405d4c8c71fd6ec7969c636"
+  },
+  "red_source_sha256": {
+    "apps/admin/components/CommentStream.tsx": "55c2d6518f04a90dd4a23fd4c0f64de0fe10e3bb437613cfea019c723f21f823",
+    "tests/admin/comment-stream-hooks.test.ts": "a35860732e83ccf29a9163ebc0b63c9445642d8f1405d4c8c71fd6ec7969c636"
+  },
+  "commands": [
+    {
+      "command": "node --test --experimental-strip-types --test-name-pattern='PR31 soldout badge' tests/admin/comment-stream-hooks.test.ts",
+      "phase": "red",
+      "exit": 1,
+      "tests": 21,
+      "pass": 6,
+      "fail": 15,
+      "log": "red.log"
+    },
+    {
+      "command": "node --test --experimental-strip-types --test-name-pattern='PR31 soldout badge' tests/admin/comment-stream-hooks.test.ts",
+      "phase": "green",
+      "exit": 0,
+      "tests": 21,
+      "pass": 21,
+      "fail": 0,
+      "log": "green-matrix.log"
+    },
+    {
+      "command": "node --test --experimental-strip-types tests/admin/comment-stream-hooks.test.ts",
+      "phase": "green-regression",
+      "exit": 0,
+      "tests": 67,
+      "pass": 67,
+      "fail": 0,
+      "log": "green-hooks.log"
+    },
+    {
+      "command": "git diff --check",
+      "phase": "structure",
+      "exit": 0
+    }
+  ],
+  "not_run": [
+    "full Node gate",
+    "typecheck",
+    "build",
+    "browser screenshots",
+    "Go/REAL_PG",
+    "independent acceptance",
+    "SANDBOX/LIVE"
+  ],
+  "log_sha256": {
+    "red.log": "f7081db8fec10e847ddd38f61f6b96f3dce5b902f650616fdb626703c2b0879a",
+    "green-hooks.log": "7150a0b84a3efce065cf4b1cb417d0c17974172d41fa3ba90a9325b2a82f0aec",
+    "green-matrix.log": "9b114f10b0029bfae4197956632341b4c07ffc75c4bf1cf30fe21c531e2c269f"
+  },
+  "head_commit": "22f69f63c222d83cbd1f320643544d7fc5e0721c",
+  "humaux_fix_memory_id": "0870db6c-a2dc-46a8-91c6-2c62479fc5b0"
+}

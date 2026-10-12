@@ -102,7 +102,8 @@ test("round 3: the real PR #30 diff selects live-console without the shared-http
   // merging tf.bareSpecs (thread 4236972349) gives --browser-identity its own harness's auth-real/settings-real
   // specs, whose import closure reaches internal/live + internal/inbox, so the round-3 FILE join for
   // live_stream.go gains exactly identity (25 -> 26 FILE modes). CVS stays excluded (next test).
-  assert.ok(modes.length <= 27, `PR #30 must be domain-scoped, not all 48 browsers: ${modes.length}`);
+  // W3-U2 (+1): --browser-live-settings clicks comment rows served by live_stream.go:39 (covers-derivation.json evidence).
+  assert.ok(modes.length <= 28, `PR #30 must be domain-scoped, not all 48 browsers: ${modes.length}`);
 });
 
 test("round 3: live_stream transport alone selects live-console but not CVS", () => {
@@ -116,7 +117,8 @@ test("round 3: live_stream transport alone selects live-console but not CVS", ()
   // Round 5: 26 FILE modes + foundation = 27 — the bareSpecs merge adds --browser-identity (auth-real/
   // settings-real specs -> settings wizard import closure -> internal/live, internal/inbox), evidence-backed in
   // covers-derivation.json; the CVS exclusion above is what this test really guards, and it still holds.
-  assert.ok(modes.length <= 27, `live_stream transport selected ${modes.length} modes (round 5 derives 26 FILE modes + foundation)`);
+  // W3-U2 (+1): --browser-live-settings clicks comment rows served by live_stream.go:39 (covers-derivation.json evidence).
+  assert.ok(modes.length <= 28, `live_stream transport selected ${modes.length} modes (W3-U2 derives 27 FILE modes + foundation)`);
 });
 
 test("round 3: handler.go and unknown httpapi files remain conservative", () => {

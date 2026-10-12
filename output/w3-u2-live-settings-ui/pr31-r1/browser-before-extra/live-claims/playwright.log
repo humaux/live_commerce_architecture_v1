@@ -1,0 +1,29 @@
+
+Running 1 test using 1 worker
+
+(node:8992) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS planning-only Studio: scene detail loads, rehearsal panel and controls hidden (media_enabled=false)
+PASS global Live settings selects the server-listed scene through real clicks and keeps the deep link on reload
+PASS signed MOCK IdP merchant opens Studio › Claims for the scene with the bind-a-post banner
+PASS Refresh facts: busy label while the reads run, then 'Facts refreshed at hh:mm:ss' (D03)
+PASS ADM15/16: five offer fields have readable widths and aligned tops; live hint and unclipped actions have separate rows
+PASS window opened; A1/B2 offers bound to real SKUs (full-width keyword canonicalized); frozen host prompts
+PASS manual A1, A1+2 (sets, not adds), B2 and invalid text recorded with per-reason counters
+PASS one-time link masked by default, copied, discarded on close and never stored
+PASS buyer preview in en, zh-CN and zh-TW: fragment dropped, no-referrer, 390px without overflow
+PASS stale claim → 409 copy with cart link, explicit reload, then cart holds A1×3 and B2×1
+PASS bound buyer re-opens the link with nothing pending; merchant sees binding and applied lines
+PASS unknown and rotated-out tokens show the 404 copy, a missing token the reopen copy, across locales; the new link still serves the bound buyer
+PASS tokens never in a URL, Referer, log, storage or other route; no inventory, quote or order effect
+PASS comment source: defaults reply off / collecting on, platform select shown for a Facebook + Instagram store, empty/space input refused in the browser
+PASS comment source (Go + PG): page_token_missing for a private reply without a Page token; first bind sends the exact five-key body; banner, platform, unverified label and intake counts come from Go
+PASS comment source (Go + PG): deactivating re-saves the stored Facebook id with its platform and the version CAS; the banner falls back to the bind prompt
+PASS comment source: all seven refusal codes plus forbidden and an unknown 409 are worded in en, zh-CN and zh-TW (MOCK answers)
+PASS comment source (Go + PG): unknown result locks the form; retry reuses the same Idempotency-Key and bytes and Go's replay applies once
+PASS comment source (Go + PG): a bare id is binding_ambiguous without the platform and re-binds to the Instagram media with it
+PASS comment source: an unavailable source read is isolated to its own section (MOCK 503)
+PASS merchant claims page fits a 390px viewport without page errors
+  ✓  1 tests/admin/claims-ui.spec.ts:295:1 › KC16 Studio › Claims → one-time link → buyer cart, three locales, MOCK ingress (10.8s)
+
+  1 passed (11.5s)

@@ -1,0 +1,12 @@
+{
+  "run.json": "78c2387e8c11e1fa3bd0a3cc16b1b267937c3ae757606011ee49a18e676950e9",
+  "contractdrift.log": "607f71e8c7b07a2d21126ae95995da0249dd314c22991e26dcb16359958cc719",
+  "contractdrift.json": "e0193bb0877f186651ed314c5844dcce127014ee8dd7112219ffccb2c2780f97",
+  "test-node.log": "2a7ffebf7c1d04c05974ba6be503d15c69325d4e0d86266e26d604a0cf6dce63",
+  "test-node.json": "3db4bd2a9e7489eb319aa558a14fe5bf20dd502d30b2fba282c5a46bfb6613d6",
+  "check-gates.log": "7d1aba13a39d42f40d83deea336ad839ae998aeae931d30f628c60142dfc263e",
+  "check-gates.json": "7f64961f9ce46a15c5374697b61888a8433a80df2feae07f6757fbc0bafad164",
+  "local-gates.json": "20bfa07862e991c92ff6fea86a89414af8e2cc35ab54727973b162894538fcdf",
+  "registry-green.log": "6ffb4777523218b0b9787b355b94990ddc9d2e50391766dd2124b5d6e22db9d3",
+  "registry-green.json": "6728b85829fbd88595dd52737f6ea19eb1564543a2a8c78c57c5f4790e5728fa"
+}

@@ -46,7 +46,7 @@ export function WorkspaceFrame({
   active: string;
   locked?: boolean;
   onSection?: (section: string) => void;
-  onBeforeNavigate?: () => boolean;
+  onBeforeNavigate?: (destination?: string) => boolean;
   children: ReactNode;
 }) {
   const c = shellCopy[locale],
@@ -155,13 +155,12 @@ export function WorkspaceFrame({
     media.addEventListener("change", close);
     return () => media.removeEventListener("change", close);
   }, [pathname, close]);
-  const before = () => !locked && (!onBeforeNavigate || onBeforeNavigate());
+  const before = (destination?: string) => !locked && (!onBeforeNavigate || onBeforeNavigate(destination));
   function navigate(path: string) {
-    if (!before()) return;
+    const destination = `/${locale}${path === "/" ? "" : path}${storeParam ? `?store=${encodeURIComponent(storeParam)}` : ""}`;
+    if (!before(destination)) return;
     close();
-    router.push(
-      `/${locale}${path === "/" ? "" : path}${storeParam ? `?store=${encodeURIComponent(storeParam)}` : ""}`,
-    );
+    router.push(destination);
   }
   useEffect(() => {
     if (

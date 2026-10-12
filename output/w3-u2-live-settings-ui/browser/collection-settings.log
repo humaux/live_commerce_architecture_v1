@@ -1,0 +1,14 @@
+Listing tests:
+  [live-settings] › live-settings.spec.ts:95:3 › manual reminders template and restriction real clicks zh-TW-1440
+  [live-settings] › live-settings.spec.ts:95:3 › manual reminders template and restriction real clicks zh-TW-390
+  [live-settings] › live-settings.spec.ts:95:3 › manual reminders template and restriction real clicks zh-CN-1440
+  [live-settings] › live-settings.spec.ts:95:3 › manual reminders template and restriction real clicks zh-CN-390
+  [live-settings] › live-settings.spec.ts:95:3 › manual reminders template and restriction real clicks en-1440
+  [live-settings] › live-settings.spec.ts:95:3 › manual reminders template and restriction real clicks en-390
+  [live-settings] › live-settings.spec.ts:181:1 › scene selector real click when scene absent
+  [live-settings] › live-settings.spec.ts:187:1 › 409 is visible and never auto overwrites newer settings
+  [live-settings] › live-settings.spec.ts:197:1 › UNKNOWN retry keeps exact key and body, effect once
+  [live-settings] › live-settings.spec.ts:212:1 › store selector discards private old-store rows
+  [live-settings] › live-settings.spec.ts:220:1 › native hidden page clears private rows and rejects late response
+  [live-settings] › live-settings.spec.ts:237:1 › read-only signed merchant cannot write; CSRF denies owner command
+Total: 12 tests in 1 file

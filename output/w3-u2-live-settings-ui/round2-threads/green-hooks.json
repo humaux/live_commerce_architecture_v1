@@ -1,0 +1,13 @@
+{
+  "argv": [
+    "node",
+    "--test",
+    "tests/admin/live-settings-hooks.test.ts"
+  ],
+  "exit_code": 0,
+  "elapsed_seconds": 0.776,
+  "controller_sha256": "2937d283341582253d4d1d420a22fe651a36a0006555115b8e4f80cab4e5a80c",
+  "test_sha256": "46cc13b98bdca7ee3e59bc1d3feea6abfba26512f05fdacafbfdbc0b4433cbfe",
+  "log": "output/w3-u2-live-settings-ui/round2-threads/green-hooks.log",
+  "log_sha256": "5a75f277ef7ce6d9a225f0b4535fe9704cf83eda822e5d5096548f0f181cd908"
+}

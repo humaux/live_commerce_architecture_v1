@@ -1,0 +1,199 @@
+{
+  "class": "MOCK",
+  "scene": "bd4312b5-b971-4bc7-929f-09524cc5ab52",
+  "copied": "dee7bfad-d15e-4a6a-86dd-ace4b7195c2b",
+  "receipts": [
+    {
+      "scene": "bd4312b5-b971-4bc7-929f-09524cc5ab52",
+      "action": "lifecycle",
+      "key_hash": "e0e849f708397c3136605a5a69b4e5836267904c49294c9329d1d4d27ee0cb69",
+      "body_hash": "92f1b4b8d275626060aedf3d4c17325d05d51f679acfa8d02442672e462e7e3b",
+      "status": 200,
+      "effect": true,
+      "input": {
+        "action": "start",
+        "expected_version": 1
+      }
+    },
+    {
+      "scene": "bd4312b5-b971-4bc7-929f-09524cc5ab52",
+      "action": "80dc398c-5e4e-4c03-9c81-e99b70af53f6",
+      "key_hash": "6756079c97c411eb0e853a331f542ebc6b99a6bc2c6438287e3d2badf631129d",
+      "body_hash": "86876bea583f5364c4d8f6ddd3ee7907f167ad985e3dc7651b1b985c18e2932a",
+      "status": 200,
+      "effect": true,
+      "input": {
+        "active": false,
+        "expected_version": 1,
+        "max_quantity_per_claim": 10
+      }
+    },
+    {
+      "scene": "bd4312b5-b971-4bc7-929f-09524cc5ab52",
+      "action": "80dc398c-5e4e-4c03-9c81-e99b70af53f6",
+      "key_hash": "70211d4944a9a0a0b811e663f401b90492e584ffe566c134a55d7f260b837f87",
+      "body_hash": "dd86380268ecccba2d6bb2d88931e8a2a7ea2e7067dcb707b06c1fbb5587e16f",
+      "status": 200,
+      "effect": true,
+      "input": {
+        "active": true,
+        "expected_version": 2,
+        "max_quantity_per_claim": 10
+      }
+    },
+    {
+      "scene": "bd4312b5-b971-4bc7-929f-09524cc5ab52",
+      "action": "adjustments",
+      "key_hash": "28afd0916896d3b1e132e1bb64c068562eb83caeb38b07aa535d02b1dcb320fc",
+      "body_hash": "2be1bb30821221b0bdeea8d1f3bac7248493bbfe7b95c3b93252d756906b0313",
+      "status": 200,
+      "effect": true,
+      "input": {
+        "delta": 5,
+        "expected_version": 1,
+        "reason": "live_console_edit",
+        "sku_id": "bea16838-ccb3-46e5-a532-b041f0921196",
+        "warehouse_id": "66b3dc58-52d7-48f1-a7fa-416ba6f6362a"
+      }
+    },
+    {
+      "scene": "bd4312b5-b971-4bc7-929f-09524cc5ab52",
+      "action": "adjustments",
+      "key_hash": "e055f583eb749abf65e08376e4c0c778cea012c4a0c5088a60d1f7226eb62252",
+      "body_hash": "fff5cedcc4a1f4cc34e5f2626c6ca30a9c29a21b9f0e4f4b1ee1d6477aba0bf4",
+      "status": 200,
+      "effect": true,
+      "input": {
+        "delta": 1,
+        "expected_version": 2,
+        "reason": "live_console_edit",
+        "sku_id": "bea16838-ccb3-46e5-a532-b041f0921196",
+        "warehouse_id": "66b3dc58-52d7-48f1-a7fa-416ba6f6362a"
+      }
+    },
+    {
+      "scene": "bd4312b5-b971-4bc7-929f-09524cc5ab52",
+      "action": "adjustments",
+      "key_hash": "55442300e251c2c08dcb30c9b5f3c80ff3abf63bf3232afc4af2f442dc6b5420",
+      "body_hash": "a6a6652ea59d3dfa53f5d225eec788b58696633dcd4fbce1fafd3fa7a4886ec3",
+      "status": 200,
+      "effect": true,
+      "input": {
+        "delta": 2,
+        "expected_version": 3,
+        "reason": "live_console_edit",
+        "sku_id": "bea16838-ccb3-46e5-a532-b041f0921196",
+        "warehouse_id": "66b3dc58-52d7-48f1-a7fa-416ba6f6362a"
+      }
+    },
+    {
+      "scene": "bd4312b5-b971-4bc7-929f-09524cc5ab52",
+      "action": "adjustments",
+      "key_hash": "33b974c0bcc7e22e36c79bcfb62b8485c2b18247de091bd8d11f4c88135a6ee3",
+      "body_hash": "f991b369d522702075ff4698cd295d26c5b4807528502c8064a5c894db863d54",
+      "status": 200,
+      "effect": true,
+      "input": {
+        "delta": 3,
+        "expected_version": 4,
+        "reason": "live_console_edit",
+        "sku_id": "bea16838-ccb3-46e5-a532-b041f0921196",
+        "warehouse_id": "66b3dc58-52d7-48f1-a7fa-416ba6f6362a"
+      }
+    },
+    {
+      "scene": "bd4312b5-b971-4bc7-929f-09524cc5ab52",
+      "action": "recommend",
+      "key_hash": "268ae9b0f1218f5d5bb4f746fea64b8a8633f4409753497ca9ece89c55baad60",
+      "body_hash": "1107884a1be41eae13574778dd8b79788b963830635c8af1c45bacd58f385066",
+      "status": 200,
+      "effect": true,
+      "input": {
+        "expected_version": 3,
+        "post_comment": false
+      }
+    },
+    {
+      "scene": "bd4312b5-b971-4bc7-929f-09524cc5ab52",
+      "action": "80dc398c-5e4e-4c03-9c81-e99b70af53f6",
+      "key_hash": "693e5db161ac5129da593c109c27618c1224f7cf96da5ef2a38f6f0d3e59cf8a",
+      "body_hash": "0260fe881641d037e593cda89ff51c96d92f0f0ef73904f8c11556b528ed90f9",
+      "status": 409,
+      "effect": false,
+      "input": {
+        "active": false,
+        "expected_version": 3,
+        "max_quantity_per_claim": 10
+      }
+    },
+    {
+      "scene": "bd4312b5-b971-4bc7-929f-09524cc5ab52",
+      "action": "80dc398c-5e4e-4c03-9c81-e99b70af53f6",
+      "key_hash": "88d5e843c73e8289fe0ab35369c69b696e46269a98abb4d4c6a92224d6e662df",
+      "body_hash": "cae1e34200bf857224ee2dd964ab2acc767bbbb7179e12aeadf9b0d318b20313",
+      "status": 200,
+      "effect": true,
+      "input": {
+        "active": false,
+        "expected_version": 4,
+        "max_quantity_per_claim": 10
+      }
+    },
+    {
+      "scene": "bd4312b5-b971-4bc7-929f-09524cc5ab52",
+      "action": "80dc398c-5e4e-4c03-9c81-e99b70af53f6",
+      "key_hash": "64bc3794676b31b1faa83b4fc527ea4ea92829cc2e7db7bd17e22166efff5962",
+      "body_hash": "5d0272013854dc430995d0582093a91505f1905772e43794b383b093c542fc32",
+      "status": 503,
+      "effect": true,
+      "input": {
+        "active": true,
+        "expected_version": 5,
+        "max_quantity_per_claim": 10
+      }
+    },
+    {
+      "scene": "bd4312b5-b971-4bc7-929f-09524cc5ab52",
+      "action": "80dc398c-5e4e-4c03-9c81-e99b70af53f6",
+      "key_hash": "64bc3794676b31b1faa83b4fc527ea4ea92829cc2e7db7bd17e22166efff5962",
+      "body_hash": "5d0272013854dc430995d0582093a91505f1905772e43794b383b093c542fc32",
+      "status": 200,
+      "effect": false,
+      "input": {
+        "active": true,
+        "expected_version": 5,
+        "max_quantity_per_claim": 10
+      }
+    },
+    {
+      "scene": "bd4312b5-b971-4bc7-929f-09524cc5ab52",
+      "action": "lifecycle",
+      "key_hash": "8cba86f888de41bff5a3264c976d3ddb3088b9eb049939e792ee7c38565f50d4",
+      "body_hash": "64cb906ea8f1c515f6861b3d06facd7096fc23cea582dc73dac634b57671cc50",
+      "status": 200,
+      "effect": true,
+      "input": {
+        "action": "end",
+        "expected_version": 2
+      }
+    },
+    {
+      "scene": "bd4312b5-b971-4bc7-929f-09524cc5ab52",
+      "action": "copy",
+      "key_hash": "efe5b5072f881765605c6e8b94a21ca111ca3753e158c71b2bdad6356dd1da99",
+      "body_hash": "e57632d94804505f302129196e670affecf7dcfcee502da8221ee0ef78dec03c",
+      "status": 200,
+      "effect": true,
+      "input": {
+        "expected_version": 1,
+        "scheduled_at": null,
+        "title": "LC-U1 copied en-390"
+      }
+    }
+  ],
+  "cadence": [
+    1791572118499,
+    1791572123521,
+    1791572128544
+  ]
+}

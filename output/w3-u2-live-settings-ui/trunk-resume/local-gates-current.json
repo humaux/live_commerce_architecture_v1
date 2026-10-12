@@ -1,0 +1,51 @@
+[
+  {
+    "command": [
+      "bash",
+      "scripts/dev/test-node.sh"
+    ],
+    "exit": 0,
+    "source": "9fbe930193e1fd194e63e395155f78abe37e1e80",
+    "log": "output/w3-u2-live-settings-ui/trunk-resume/node-current.log",
+    "sha256": "570cdbdc63d632ec58b9c8158104270c8ee7d3fde9bb8501842690b254c7255c",
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/output/w3-u2-live-settings-ui/trunk-resume/logs/node-current.log",
+    "raw_sha256": "2f93af33811a7339ce9d882b4ba8f9290f0dfb7b9cefe17333f0f28c4bdb997f"
+  },
+  {
+    "command": [
+      "pnpm",
+      "typecheck:admin"
+    ],
+    "exit": 0,
+    "source": "9fbe930193e1fd194e63e395155f78abe37e1e80",
+    "log": "output/w3-u2-live-settings-ui/trunk-resume/typecheck-current.log",
+    "sha256": "b76113cf935fe4f136e762d124e40678d55b3f921077292e77e52c9d8d3b98ba",
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/output/w3-u2-live-settings-ui/trunk-resume/logs/typecheck-current.log",
+    "raw_sha256": "37fab15de17aa0ca1a1d3a45526b7890fbc4ca46e75454c0325fd964a5f448ef"
+  },
+  {
+    "command": [
+      "bash",
+      "scripts/dev/test-local.sh",
+      "--list"
+    ],
+    "exit": 0,
+    "source": "9fbe930193e1fd194e63e395155f78abe37e1e80",
+    "log": "output/w3-u2-live-settings-ui/trunk-resume/registry-list-current.log",
+    "sha256": "462cc214e71676c0cb82e06c4ccceb397bc612117ba19798dee00f5e64fb89f5",
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/output/w3-u2-live-settings-ui/trunk-resume/logs/registry-list-current.log",
+    "raw_sha256": "462cc214e71676c0cb82e06c4ccceb397bc612117ba19798dee00f5e64fb89f5"
+  },
+  {
+    "command": [
+      "bash",
+      "scripts/dev/check-gates.sh"
+    ],
+    "exit": 0,
+    "source": "9fbe930193e1fd194e63e395155f78abe37e1e80",
+    "log": "output/w3-u2-live-settings-ui/trunk-resume/check-gates-current.log",
+    "sha256": "5b1dd8acd62f8b5bd742d1784cfa56be63cec79ce26714a8c830ab164e4235b3",
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/output/w3-u2-live-settings-ui/trunk-resume/logs/check-gates-current.log",
+    "raw_sha256": "5b1dd8acd62f8b5bd742d1784cfa56be63cec79ce26714a8c830ab164e4235b3"
+  }
+]

@@ -1,0 +1,23 @@
+{
+  "tested_source_commit": "5b1da81ad6284e980a88b2c2ff68cac1cf0180b5",
+  "argv": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-live-settings"
+  ],
+  "command": "LC_TEST_LOCK_WAIT=300 LC_BROWSER_ENGINE=chromium LC_BROWSER_EVIDENCE_ROOT=\"$PWD/output/playwright/pr31-r1-browser-live-settings-20261009T174621\" bash scripts/dev/test-local.sh --browser-live-settings",
+  "environment": {
+    "LC_TEST_LOCK_WAIT": "300",
+    "LC_BROWSER_ENGINE": "chromium",
+    "LC_BROWSER_EVIDENCE_ROOT": "output/playwright/pr31-r1-browser-live-settings-20261009T174621"
+  },
+  "timeout_seconds": 1800,
+  "started_utc": "2026-10-09T17:46:21.272164+00:00",
+  "log": "output/w3-u2-live-settings-ui/pr31-r1/browser-live-settings.log",
+  "failure_match": "FAIL|Error:|Timeout|ledger rejected",
+  "wake": "exec completion and poll<=60s",
+  "pid": 78952,
+  "exit": 1,
+  "ended_utc": "2026-10-09T17:47:50.238146+00:00",
+  "log_sha256": "f47a1539483668d5c44f66a69037e015f07c1ca46a4279e40056e8ce76ce0980"
+}

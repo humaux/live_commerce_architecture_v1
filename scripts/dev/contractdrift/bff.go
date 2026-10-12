@@ -8,6 +8,7 @@
 // admin stores catchall: /api/stores/[store]/X -> /v1/admin/stores/{}/X.
 // admin tools catchall: /api/stores/[store]/tools/X -> same prefix + X (tools stripped).
 // admin reports/picklist/customer/import leaves: closed helper admission + same store prefix.
+// admin live-settings leaves: settingsResource tuple grammar + exact per-leaf path; helper sink methods.
 // admin identity: privateIdentity suffix -> /v1/identity/suffix, always POST; GET callback -> POST.
 // admin meta/ads leaves: callBackend suffix -> store prefix (server-selected store).
 // admin stores list: authenticatedStores -> GET /v1/admin/stores.
@@ -181,13 +182,27 @@ func bffExports(m *bffModule) map[string]bool {
 		if t[i].text != "export" {
 			continue
 		}
-		j := i + 1
-		for j < len(t) && j < i+5 {
+		if i+1 < len(t) && t[i+1].text == "{" {
+			end := bffClose(t, i+1)
+			if end < 0 {
+				continue
+			}
+			for _, entry := range bffSplit(t[i+2:end], ",") {
+				if len(entry) == 1 && bffHTTP(entry[0].text) {
+					out[entry[0].text] = true
+				}
+				if len(entry) == 3 && entry[1].text == "as" && bffHTTP(entry[2].text) {
+					out[entry[2].text] = true
+				}
+			}
+			i = end
+			continue
+		}
+		for j := i + 1; j < len(t) && j < i+5; j++ {
 			if bffHTTP(t[j].text) {
 				out[t[j].text] = true
 				break
 			}
-			j++
 		}
 	}
 	return out

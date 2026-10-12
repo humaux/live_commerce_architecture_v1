@@ -1,0 +1,30 @@
+(node:71021) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✖ W3-U2 restriction check 404 first expires all console views and rejects late A8 (16.166458ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 297.22675
+
+✖ failing tests:
+
+test at tests/admin/comment-stream-hooks.test.ts:400:1
+✖ W3-U2 restriction check 404 first expires all console views and rejects late A8 (16.166458ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  false !== true
+  
+      at TestContext.<anonymous> (/Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/comment-stream-hooks.test.ts:419:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

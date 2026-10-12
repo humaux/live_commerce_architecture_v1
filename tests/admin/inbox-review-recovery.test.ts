@@ -443,7 +443,7 @@ for (const options of [{ missingSession: true }, { noBundle: true }]) {
   });
 }
 
-// B1 fixtures use actual existing binding_id/provider/capability/state fields, with no invented conversation binding.
+// LC-B3b supplies the exact conversation binding; unrelated Pages never grant or remove its capability.
 const bindingA = "70000000-0000-4000-8000-000000000007",
   bindingB = "80000000-0000-4000-8000-000000000008";
 function cap(binding_id: string, state: string, provider = "facebook", capability = "dm_session") {
@@ -488,20 +488,19 @@ for (const rows of [
   [cap(bindingA, "ok"), cap(bindingB, "missing_permission", "facebook", "read_comment")],
   [cap(bindingA, "review_required"), cap(bindingB, "ok")],
 ]) {
-  test(`review2 P2 multiple same-provider bindings advisory only (${rows.map((r) => `${r.capability}:${r.state}`).join(",")})`, async (t) => {
+  test(`LC-U2b2 multiple same-provider bindings select exact A9 binding (${rows.map((r) => `${r.capability}:${r.state}`).join(",")})`, async (t) => {
     const env = environment(t);
     setHealth(health(rows));
     transport(() => response(thread));
     const host = mountThread(env);
     await threadReady(host);
     change(host, "reply-text", "MOCK_SCOPED_REPLY");
-    assert.equal(node(host, (n) => n.props["data-testid"] === "reply-send").props.disabled, false, "unrelated Page state cannot block current conversation");
-    assert.ok(advisory(host), "ambiguity has a visible advisory instead of inferred binding authority");
-    assert.ok(textOf(advisory(host)).trim().length > 0);
-    assert.equal(textOf(host.output).includes("App-role test accounts only"), false, "ambiguous binding cannot infer a scoped review-only badge");
+    assert.equal(node(host, (n) => n.props["data-testid"] === "reply-send").props.disabled, !["ok", "review_required"].includes(rows[0].state), "only the exact conversation binding controls reply");
+    assert.equal(!!advisory(host), false, "A9 binding removes the old ambiguity heuristic");
+    assert.equal(textOf(host.output).includes("App-role test accounts only"), rows[0].state === "review_required", "review badge comes from the exact binding");
   });
 }
-test("review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit", async (t) => {
+test("review2 P2 actual scoped A12 409 capability refusal remains visible after exact-binding submit", async (t) => {
   const env = environment(t);
   setHealth(health([cap(bindingA, "ok"), cap(bindingB, "missing_permission")]));
   const calls = transport(

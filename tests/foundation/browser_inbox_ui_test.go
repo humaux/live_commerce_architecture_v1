@@ -12,6 +12,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -32,7 +33,7 @@ import (
 	"livecommerce/internal/oidclogin"
 )
 
-const inboxFailureCasePattern = `(?m)^[\t ]*[0-9]+\)[\t ]+(?:tests/admin/)?inbox-(?:bundle-)?ui\.spec\.ts:([0-9]{1,6}):([0-9]{1,6})[\t ]+›[\t ]+(INU[0-9]{2})\b`
+const inboxFailureCasePattern = `(?m)^[\t ]*[0-9]+\)[\t ]+(?:tests/admin/)?inbox-(?:(?:bundle|customer)-)?ui\.spec\.ts:([0-9]{1,6}):([0-9]{1,6})[\t ]+›[\t ]+(INU[0-9]{2})\b`
 const inboxFailureCountPattern = `(?m)^[\t ]*([0-9]{1,6}) (failed|passed|skipped|timed out|interrupted)\b`
 
 // inboxPlaywrightFailureSummary discards titles, assertions and DOM text before anything enters the Go/CI log.
@@ -52,6 +53,8 @@ func inboxPlaywrightFailureSummary(output []byte) []string {
 		file := "inbox-ui.spec.ts"
 		if strings.Contains(string(match[0]), "inbox-bundle-ui.spec.ts") {
 			file = "inbox-bundle-ui.spec.ts"
+		} else if strings.Contains(string(match[0]), "inbox-customer-ui.spec.ts") {
+			file = "inbox-customer-ui.spec.ts"
 		}
 		add(fmt.Sprintf("failed %s (%s:%s:%s)", match[3], file, match[1], match[2]))
 	}
@@ -74,8 +77,8 @@ func TestBrowserInboxUIRealChain(t *testing.T) {
 	t.Run("failure_diagnostics", func(t *testing.T) {
 		const private = "SYNTHETIC_PRIVATE_DM_NAME_PSID"
 		output := []byte("  1) tests/admin/inbox-ui.spec.ts:450:1 › INU05 hidden thread " + private + " INU99 inbox-ui.spec.ts:999:9 › INU98\n    Error: " + private + "\n    1 failed " + private + "\n    7 passed (2m)\n  2) tests/admin/other.spec.ts:8:1 › INU99 " + private + "\n")
-		output = append(output, []byte("  3) tests/admin/inbox-bundle-ui.spec.ts:32:1 › INU09 "+private+"\n")...)
-		want := "1 failed\n7 passed\nfailed INU05 (inbox-ui.spec.ts:450:1)\nfailed INU09 (inbox-bundle-ui.spec.ts:32:1)"
+		output = append(output, []byte("  3) tests/admin/inbox-bundle-ui.spec.ts:32:1 › INU09 "+private+"\n  4) tests/admin/inbox-customer-ui.spec.ts:90:1 › INU10 "+private+"\n")...)
+		want := "1 failed\n7 passed\nfailed INU05 (inbox-ui.spec.ts:450:1)\nfailed INU09 (inbox-bundle-ui.spec.ts:32:1)\nfailed INU10 (inbox-customer-ui.spec.ts:90:1)"
 		if got := strings.Join(inboxPlaywrightFailureSummary(output), "\n"); got != want {
 			t.Fatal("failure summary differs or admits private text")
 		}
@@ -106,6 +109,7 @@ func TestBrowserInboxUIRealChain(t *testing.T) {
 		return lcPerson(t, f, f.tenantA, f.storeA1, filtered...)
 	}
 	operator, _ := rolePerson("live_operator")
+	qualified, _ := lcPerson(t, f, f.tenantA, f.storeA1, "inbox:read", "inbox:reply", "customers:read", "orders:read", "integration:read")
 	_, viewerToken := rolePerson("viewer")
 	_, readerToken := lcPerson(t, f, f.tenantA, f.storeA1, "inbox:read")
 	for _, permission := range []string{"store:read", "inbox:read", "inbox:reply"} {
@@ -129,6 +133,8 @@ func TestBrowserInboxUIRealChain(t *testing.T) {
 	ids["instagram"] = e.postIGDM(t, "900007320003", "SYNTHETIC-INSTAGRAM-DM", time.Now())
 	ids["retry"] = e.postDM(t, "900007320004", "SYNTHETIC-INBOX-RETRY-INBOUND", time.Now())
 	ids["foreign"] = lcConversation(t, f, f.tenantA, f.storeA2, "page")
+	customerFixture := seedInboxCustomerLink(t, e)
+	graphBeforeBrowser := e.g.count()
 	// Isolate recovery from mciSetup's unused claim window; 0122 permits several OPEN windows per store.
 	e.h.closeWindow(t, e.session)
 	// Real commands create the bundle; only its unavailable-private-reply flag is owner fixture setup.
@@ -195,8 +201,37 @@ func TestBrowserInboxUIRealChain(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle("/v1/identity/", private)
 	mux.Handle("/", httpapi.NewHandler(f.runtime, httpapi.Options{SessionStoreList: true, Studio: true, ClaimLabels: &e.h.labels, Inbox: e.svc, MetaHealth: &metaconnect.Health{}}))
+	controlKey := randomToken()
 	var reads, writes, stripped atomic.Int64
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/__test/inbox-actor" {
+			// Test-only identity selection; browser still obtains its session through signed OIDC.
+			if r.Method != "POST" || r.Header.Get("X-Inbox-Fixture-Key") != controlKey {
+				http.Error(w, "forbidden", 403)
+				return
+			}
+			var input struct {
+				Mode string `json:"mode"`
+			}
+			dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 128))
+			dec.DisallowUnknownFields()
+			if dec.Decode(&input) != nil || dec.Decode(&struct{}{}) != io.EOF {
+				http.Error(w, "invalid", 422)
+				return
+			}
+			principal, ok := map[string]string{"operator": operator, "qualified": qualified}[input.Mode]
+			if !ok {
+				http.Error(w, "invalid", 422)
+				return
+			}
+			if _, err := f.owner.Exec(r.Context(), `UPDATE identity.external_identities SET principal_id=$2 WHERE issuer=$1 AND subject='browser-subject'`, idp.server.URL, principal); err != nil {
+				http.Error(w, "unavailable", 503)
+				return
+			}
+			w.Header().Set("Cache-Control", "no-store")
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
 		if r.Method == "POST" && r.URL.Path == "/__test/inbox-bundle-facts" {
 			// Read-only claims.links/ops.command_results observation. Digests are never returned or logged.
 			var input struct {
@@ -316,6 +351,10 @@ func TestBrowserInboxUIRealChain(t *testing.T) {
 		t.Fatalf("Next readiness failed; evidence=%s", evidence)
 	}
 	fixtureJSON, _ := json.Marshal(ids)
+	customerJSON, err := json.Marshal(customerFixture)
+	if err != nil {
+		t.Fatal("customer fixture encoding failed")
+	}
 	playwrightLog := filepath.Join(evidence, "playwright.log")
 	log := browserLog(t, playwrightLog)
 	browser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
@@ -323,7 +362,7 @@ func TestBrowserInboxUIRealChain(t *testing.T) {
 		browser.Args = append(browser.Args, "--grep", "INU09 flagged bundle")
 	}
 	browser.Dir = root
-	browser.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "inbox", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_EVIDENCE": evidence, "LC_BROWSER_INBOX_STORE": f.storeA1, "LC_BROWSER_INBOX_OTHER_STORE": f.storeA2, "LC_BROWSER_INBOX_IDS": string(fixtureJSON), "LC_BROWSER_INBOX_BUYER_ORIGIN": e.origin, "LC_BROWSER_INBOX_READER_TOKEN": readerToken, "LC_BROWSER_INBOX_VIEWER_TOKEN": viewerToken, "LC_INBOX_CALIBRATION": calibration, "LC_INBOX_BUNDLE_CALIBRATION": bundleCalibration, "FORCE_COLOR": "0", "NO_COLOR": "1"})
+	browser.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "inbox", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_EVIDENCE": evidence, "LC_BROWSER_INBOX_STORE": f.storeA1, "LC_BROWSER_INBOX_OTHER_STORE": f.storeA2, "LC_BROWSER_INBOX_IDS": string(fixtureJSON), "LC_BROWSER_INBOX_CUSTOMER_FIXTURE": string(customerJSON), "LC_BROWSER_INBOX_CONTROL_KEY": controlKey, "LC_BROWSER_INBOX_BUYER_ORIGIN": e.origin, "LC_BROWSER_INBOX_READER_TOKEN": readerToken, "LC_BROWSER_INBOX_VIEWER_TOKEN": viewerToken, "LC_INBOX_CALIBRATION": calibration, "LC_INBOX_BUNDLE_CALIBRATION": bundleCalibration, "FORCE_COLOR": "0", "NO_COLOR": "1"})
 	browser.Stdout, browser.Stderr = log, log
 	runErr := browser.Run()
 	closeErr := log.Close()
@@ -399,11 +438,11 @@ func TestBrowserInboxUIRealChain(t *testing.T) {
 		e.run(t, operation)
 		e.awaitOp(t, operation, "SUCCEEDED", 10*time.Second, "completed")
 	}
-	if e.g.count() != 2 {
-		t.Fatalf("fake Graph send count=%d", e.g.count())
+	if e.g.count()-graphBeforeBrowser != 2 {
+		t.Fatalf("fake Graph browser send delta=%d", e.g.count()-graphBeforeBrowser)
 	}
 	for index, expected := range []string{psid, "900007320004"} {
-		recipient, ok := e.g.all()[index].body["recipient"].(map[string]any)
+		recipient, ok := e.g.all()[graphBeforeBrowser+index].body["recipient"].(map[string]any)
 		if !ok || recipient["id"] != expected {
 			t.Fatal("fake Graph recipient differs from the signed inbound conversation")
 		}
@@ -413,7 +452,7 @@ func TestBrowserInboxUIRealChain(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, sentinel := range []string{dm, name, psid, "SYNTHETIC-INBOX-REPLY-7c32", "SYNTHETIC-INBOX-ACK-LOST-7c32"} {
+		for _, sentinel := range []string{dm, name, psid, "SYNTHETIC-INBOX-REPLY-7c32", "SYNTHETIC-INBOX-ACK-LOST-7c32", customerFixture.NameA, customerFixture.NameB} {
 			if strings.Contains(string(data), sentinel) {
 				t.Fatalf("I11 leak in %s", filename)
 			}

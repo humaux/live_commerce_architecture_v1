@@ -1,3 +1,6 @@
+// Purpose: exercise real inbox send planners/workers and scoped read models against synthetic Graph.
+// Depends on: mciEnv, real PG/runtime scopes, metareply routes and loopback Graph.
+// Used by: LC-B4 foundation gates and the signed inbox browser fixture.
 package foundation_test
 
 // Real-PG gates of LC-B4 (contracts/live-console-v1.md §3.3-3.7, §4, Amendment 1 A1.1/A1.3/P2-1..5): LCN06 (DM), LCN07 (private-reply
@@ -47,11 +50,12 @@ type lbReq struct {
 }
 
 type lbGraph struct {
-	srv  *httptest.Server
-	mu   sync.Mutex
-	reqs []lbReq
-	mode string // ok | 100 | 5xx | garbled | hang
-	seq  int
+	srv              *httptest.Server
+	mu               sync.Mutex
+	reqs             []lbReq
+	mode             string // ok | 100 | 5xx | garbled | hang
+	seq              int
+	privateRecipient string // optional synthetic private-reply PSID; read/written under mu
 }
 
 func newLbGraph(t *testing.T) *lbGraph {
@@ -65,6 +69,7 @@ func newLbGraph(t *testing.T) *lbGraph {
 		g.seq++
 		n := g.seq
 		mode := g.mode
+		privateRecipient := g.privateRecipient
 		g.reqs = append(g.reqs, lbReq{method: r.Method, path: r.URL.Path, body: body, raw: string(raw)})
 		g.mu.Unlock()
 		switch mode {
@@ -81,7 +86,10 @@ func newLbGraph(t *testing.T) *lbGraph {
 				rcp, _ := body["recipient"].(map[string]any)
 				id, _ := rcp["id"].(string)
 				if id == "" {
-					id = "9000" + fmt.Sprint(n) // a comment_id private reply answers with the buyer's PSID
+					id = privateRecipient
+					if id == "" {
+						id = "9000" + fmt.Sprint(n)
+					} // comment_id replies return the buyer PSID
 				}
 				_, _ = w.Write([]byte(fmt.Sprintf(`{"recipient_id":%q,"message_id":"m_SYNTH_%d"}`, id, n)))
 				return

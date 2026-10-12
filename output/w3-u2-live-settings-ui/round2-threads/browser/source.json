@@ -1,0 +1,11 @@
+{
+  "evidence_class": "BROWSER MOCK business + REAL_PG signed authorization",
+  "git_commit": "d05ab56e1ce8124786a74d4bb80696c32967fd66",
+  "provider_live": "NOT_RUN",
+  "source_sha256": {
+    "playwright.config.ts": "87b55103f6bb3f7d192af64bb73563fb0a2ebdf1050b1e94211a1c7c8fb32b6e",
+    "tests/admin/live-settings.spec.ts": "94e0b562cf7402a8e30b76e237ed1f38824f51ac06d2b1743e028fbc6522e711",
+    "tests/foundation/browser_live_settings_fixture_test.go": "898d27f641f35dfacf6e64ec7c12784329be629d17293c800c7fb2158b9177ab",
+    "tests/foundation/browser_live_settings_test.go": "09538998c46d75ed6ec3c47f61303f2c1faecee74676873b5c18e732f663d03d"
+  }
+}

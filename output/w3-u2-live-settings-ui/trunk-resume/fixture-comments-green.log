@@ -1,0 +1,6 @@
+=== RUN   TestBrowserLiveSettingsMockCommentsContract
+--- PASS: TestBrowserLiveSettingsMockCommentsContract (0.00s)
+=== RUN   TestBrowserLiveSettingsMockRequiresMerchantTemplate
+--- PASS: TestBrowserLiveSettingsMockRequiresMerchantTemplate (0.00s)
+PASS
+ok  	livecommerce/tests/foundation	1.407s

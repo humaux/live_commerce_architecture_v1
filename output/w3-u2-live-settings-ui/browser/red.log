@@ -1,0 +1,11 @@
+=== RUN   TestBrowserLiveSettingsUIRealChain
+    browser_live_settings_test.go:219: FOCUSED_SPEC_ONLY; full-mode acceptance NOT_RUN
+    browser_live_settings_test.go:227: 1 failed
+        failed live-settings.spec.ts:97:3
+        
+    browser_live_settings_test.go:261: live settings browser failed: exit status 1; evidence=/Volumes/data/live_commerce_architecture_v1/output/playwright/live-settings/20261009T043939.558027000Z
+--- FAIL: TestBrowserLiveSettingsUIRealChain (14.25s)
+FAIL
+FAIL	livecommerce/tests/foundation	15.729s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

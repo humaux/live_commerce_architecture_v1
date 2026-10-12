@@ -1,0 +1,96 @@
+✖ PR31 reminder scope 404 clears already loaded private sections (14.024333ms)
+✖ PR31 old run callback cannot borrow a revealed page's new fence (0.334584ms)
+✖ PR31 old save callback cannot borrow a revealed page's new fence (0.080667ms)
+✖ PR31 old copy callback cannot borrow a revealed page's new fence (0.069833ms)
+✖ PR31 old page callback cannot borrow a revealed page's new fence (0.075792ms)
+✖ PR31 old loadMoreSessions callback cannot borrow a revealed page's new fence (0.078666ms)
+✔ PR31 normal visible focus preserves captured command admission and UNKNOWN receipt (3.694709ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 1
+ℹ fail 6
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 362.150166
+
+✖ failing tests:
+
+test at tests/admin/live-settings-hooks.test.ts:159:1
+✖ PR31 reminder scope 404 clears already loaded private sections (14.024333ms)
+  AssertionError [ERR_ASSERTION]: a store/session refusal is not an absent optional route
+  + actual - expected
+  
+  + {
+  +   enabled: true,
+  +   template_id: 'merchant-reply',
+  +   template_version: 1,
+  +   version: 3
+  + }
+  - null
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-hooks.test.ts:166:9)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { enabled: true, template_id: 'merchant-reply', template_version: 1, version: 3 },
+    expected: null,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-hooks.test.ts:171:78
+✖ PR31 old run callback cannot borrow a revealed page's new fence (0.334584ms)
+  TypeError: Cannot set property navigator of #<Object> which has only a getter
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-hooks.test.ts:173:22)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+
+test at tests/admin/live-settings-hooks.test.ts:171:78
+✖ PR31 old save callback cannot borrow a revealed page's new fence (0.080667ms)
+  TypeError: Cannot set property navigator of #<Object> which has only a getter
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-hooks.test.ts:173:22)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+
+test at tests/admin/live-settings-hooks.test.ts:171:78
+✖ PR31 old copy callback cannot borrow a revealed page's new fence (0.069833ms)
+  TypeError: Cannot set property navigator of #<Object> which has only a getter
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-hooks.test.ts:173:22)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+
+test at tests/admin/live-settings-hooks.test.ts:171:78
+✖ PR31 old page callback cannot borrow a revealed page's new fence (0.075792ms)
+  TypeError: Cannot set property navigator of #<Object> which has only a getter
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-hooks.test.ts:173:22)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+
+test at tests/admin/live-settings-hooks.test.ts:171:78
+✖ PR31 old loadMoreSessions callback cannot borrow a revealed page's new fence (0.078666ms)
+  TypeError: Cannot set property navigator of #<Object> which has only a getter
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-hooks.test.ts:173:22)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)

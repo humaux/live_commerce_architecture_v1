@@ -1,0 +1,26 @@
+{
+  "tested_source_commit": "0ff7ca92fea1e31607c16099ea5429b6dd882a7b",
+  "argv": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-ops-polish"
+  ],
+  "command": "LC_TEST_LOCK_WAIT=1800 LC_BROWSER_ENGINE=chromium LC_BROWSER_EVIDENCE_ROOT=\"$PWD/output/playwright/pr31-extra-browser-ops-polish-2-20261009T185952\" bash scripts/dev/test-local.sh --browser-ops-polish",
+  "mode": "--browser-ops-polish",
+  "repetition": 2,
+  "environment": {
+    "LC_TEST_LOCK_WAIT": "1800",
+    "LC_BROWSER_ENGINE": "chromium",
+    "LC_BROWSER_EVIDENCE_ROOT": "output/playwright/pr31-extra-browser-ops-polish-2-20261009T185952"
+  },
+  "timeout_seconds": 3000,
+  "started_utc": "2026-10-09T18:59:52.935449+00:00",
+  "log": "output/w3-u2-live-settings-ui/pr31-r1/extra/browser-ops-polish-2.log",
+  "failure_match": "FAIL|Error:|Timeout|NOT_RUN",
+  "wake": "exec completion; parentpoll<=60s",
+  "pid": 74576,
+  "exit": 0,
+  "ended_utc": "2026-10-09T19:01:09.404671+00:00",
+  "log_sha256": "83fb7e5b80f3e4555c7cd06468b36a5ffce59a582660c4bfc4b17d2623778104",
+  "exec_session_id": 45520
+}

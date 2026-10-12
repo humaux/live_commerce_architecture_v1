@@ -1,0 +1,32 @@
+{
+  "name": "console-2",
+  "argv": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-live-console"
+  ],
+  "source_sha": "7737cb87d186c5b17ef582142c7766136660a41b",
+  "env": {
+    "LC_TEST_LOCK_WAIT": "1800",
+    "LC_BROWSER_ENGINE": "chromium",
+    "LC_HEADER_BASE": "origin/r3/integration",
+    "LC_BROWSER_EVIDENCE_ROOT": "$PWD/output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/browser-chain/console-2-evidence"
+  },
+  "unset_env": [
+    "LC_BROWSER_CONSOLE_GREP",
+    "LC_BROWSER_SETTINGS_GREP",
+    "LC_CONSOLE_CALIBRATION",
+    "LC_OPS_POLISH_ONLY",
+    "CONTRACT_DRIFT_BASE"
+  ],
+  "started_at": "2026-10-10T06:03:46.436721+00:00",
+  "timeout_seconds": 3000,
+  "log": "output/w3-u2-live-settings-ui/pr36-integration/runs/console-2.log",
+  "state": "finished",
+  "pid": 39356,
+  "exit_code": 0,
+  "elapsed_seconds": 709.74,
+  "ended_at": "2026-10-10T06:15:36.178807+00:00",
+  "log_sha256": "bc0cd3b63265e265680e7a61dae33a85f1c831655898ee23f0a592198ec57517",
+  "original_log": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/browser-chain/console-2.log"
+}

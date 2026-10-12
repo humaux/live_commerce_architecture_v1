@@ -1,0 +1,10 @@
+{
+  "argv": [
+    "node",
+    "--test",
+    "--experimental-strip-types",
+    "--test-name-pattern=reminder route|reminder absence",
+    "tests/admin/live-settings-bff.test.ts"
+  ],
+  "exit_code": 0
+}

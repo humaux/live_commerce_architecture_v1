@@ -1,0 +1,30 @@
+{
+  "source_sha": "7737cb87d186c5b17ef582142c7766136660a41b",
+  "checked_at": "2026-10-10T07:57:52.024681+00:00",
+  "commands": [
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--cached",
+        "--check"
+      ],
+      "exit_code": 2,
+      "findings": 1526,
+      "files": 14,
+      "classification": "Byte-identical native forensic .log whitespace only."
+    },
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--cached",
+        "--check",
+        "--",
+        ":!*.log"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "source_edits": 0
+}

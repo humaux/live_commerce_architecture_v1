@@ -1,0 +1,28 @@
+[
+  {
+    "path": "scripts/dev/pr-modes.mjs",
+    "resolution": "latest trunk (W3 zero delta versus original PR22 base)",
+    "sha256": "54fa1d04b73ff35d771a3df646ffdbc8a2b88780b04833a0edca7b322edd271c"
+  },
+  {
+    "path": "tests/ci/mode-registry.test.mjs",
+    "resolution": "latest trunk (W3 zero delta versus original PR22 base)",
+    "sha256": "5c4cb94e0d0c9f914333275dca26a055c15e8a7050638e44ba044e78b99b6d79"
+  },
+  {
+    "path": "tests/ci/pr-modes.test.mjs",
+    "resolution": "latest trunk (W3 zero delta versus original PR22 base)",
+    "sha256": "bb18bdba10915fc73295e9a9360dde1ee9f9e03cba351126e3df7eddcfbeebd8"
+  },
+  {
+    "path": "scripts/dev/test-local.sh",
+    "resolution": "exact trunk registry plus original W3 one live-settings arm",
+    "arm_sha256": "350f174787d58c6dee9c706a36a6168b3512dcffcecbcf4c052f37c986681108",
+    "sha256": "bdf48af1691dd3eae33adf05d8ef2182c5dc3b1d08ca8704874deeb14e664ee0"
+  },
+  {
+    "path": "apps/admin/proxy.ts",
+    "resolution": "retain W3 settings closed grammar plus automatically merged trunk guards",
+    "sha256": "d4309d80c179d8e1e39c33787ba91dafec7504e17304b47266a37e6bfb8e4f31"
+  }
+]

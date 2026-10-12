@@ -22,12 +22,13 @@ const suites: Record<string, string[]> = {
   "merchant-orders-bff": ["orders-bff.spec.ts"],
   "merchant-orders-ui": ["orders-ui.spec.ts"],
   "parcel-merge-ui": ["parcel-merge.spec.ts"],
-  "inbox": ["inbox-ui.spec.ts", "inbox-bundle-ui.spec.ts"],
+  "inbox": ["inbox-ui.spec.ts", "inbox-bundle-ui.spec.ts", "inbox-customer-ui.spec.ts"],
   "studio-ui": ["studio-ui.spec.ts"],
   // KC16: admin + storefront Next, Go and PG are started by browser_live_claims_test.go.
   "live-claims": ["claims-ui.spec.ts"],
   // LC-U1: real signed session/BFF; Console upstream and receipts explicitly MOCK.
   "live-console": ["live-console.spec.ts"],
+  "live-settings": ["live-settings.spec.ts"],
   // SDB (unit store-design): started by tests/foundation/browser_store_design_test.go.
   "store-design": ["design.spec.ts"],
   "product-media-v2": ["product-media-v2.spec.ts"],
@@ -53,6 +54,7 @@ export default defineConfig({
     ["json", { outputFile: `${evidence}/results.json` }],
   ],
   outputDir: `${evidence}/test-results`,
+  projects: suite === "live-settings" ? [{ name: "live-settings" }] : undefined,
   use: {
     ...safari,
     baseURL: "http://127.0.0.1:3100",
