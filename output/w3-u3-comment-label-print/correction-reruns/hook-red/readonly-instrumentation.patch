@@ -1,0 +1,219 @@
+diff --git a/apps/admin/src/features/live/use-comment-stream.ts b/apps/admin/src/features/live/use-comment-stream.ts
+index 4510219d..f2f88335 100644
+--- a/apps/admin/src/features/live/use-comment-stream.ts
++++ b/apps/admin/src/features/live/use-comment-stream.ts
+@@ -14,6 +14,12 @@ import {
+   type CommentBuffer,
+ } from "./comment-model";
+ 
++// TEMP W3-U3 authorised READ/MEASURE: timing/fence flags and closed errors only; removed after diagnosis.
++function observeComment(fence: object, kind: string, values: Record<string, unknown> = {}) {
++  const observer = typeof window === "undefined" ? undefined : (window as unknown as { lcScopeObservation?: { record: (value: Record<string, unknown>) => void; identify: (value: object) => number } }).lcScopeObservation;
++  observer?.record({ kind: `a2-${kind}`, owner: observer.identify(fence), visibility: document.visibilityState, ...values });
++}
++
+ /** Read the stream only in the visible authorised scope; reset clears before a fresh request. */
+ export function useCommentStream(
+   store: string,
+@@ -38,6 +44,7 @@ export function useCommentStream(
+   const related = useRef(clearRelated), marksReadAt = useRef(0);
+   related.current = clearRelated;
+   const clear = useCallback(() => {
++    observeComment(privacy.fence, "clear", { count: current.current.items.length });
+     current.current = emptyComments();
+     setBuffer(current.current);
+     select(null);
+@@ -52,6 +59,7 @@ export function useCommentStream(
+   const loader = useRef<(older: boolean) => Promise<void>>(async () => {});
+   const resetSelection = useRef(0);
+   useEffect(() => {
++    observeComment(fence, "effect", { enabled, visible, blocked: privacy.blocked.current, revision, reset: resetSelection.current });
+     let alive = true,
+       timer: ReturnType<typeof setTimeout> | undefined;
+     if (!enabled) {
+@@ -64,6 +72,7 @@ export function useCommentStream(
+     const root = `live-sessions/${session}/comments`;
+     const pageLimit = 50;
+     const load = async (older = false) => {
++      observeComment(fence, "load", { alive, inFlight: inFlight.current, older, blocked: privacy.blocked.current, dueIn: Math.max(0, deadline.current - Date.now()) });
+       if (!alive || inFlight.current || document.visibilityState !== "visible")
+         return;
+       if (older && (!current.current.older || current.current.items.length >= COMMENT_MEMORY_CAP)) return;
+@@ -88,6 +97,7 @@ export function useCommentStream(
+           await inboxRead<unknown>(store, `${root}?${query}`, ticket.signal),
+         );
+         if (!alive || !fence.current(ticket)) return;
++        observeComment(fence, "page", { count: page.items.length, reset: page.reset, ticketCurrent: fence.current(ticket) });
+         let next = applyCommentPage(current.current, page, older);
+         let rebuilt = false;
+         // Only the existing 10s HEAD window is evidence for deletions; incremental/history
+@@ -168,6 +178,7 @@ export function useCommentStream(
+         deadline.current = 0;
+         setError("");
+       } catch (e) {
++        observeComment(fence, "caught", { alive, ticketCurrent: fence.current(ticket), status: e instanceof InboxError ? e.status : null, code: e instanceof InboxError ? e.code : "stream_unavailable" });
+         if (!alive || !fence.current(ticket)) return;
+         const code = e instanceof InboxError ? e.code : "stream_unavailable";
+         // A scoped 404 also means the store/resource is no longer authorised. Retaining
+@@ -190,17 +201,20 @@ export function useCommentStream(
+         );
+         setError(code);
+       } finally {
++        observeComment(fence, "finally", { alive, ticketCurrent: fence.current(ticket), delay, blocked: privacy.blocked.current });
+         if (alive) inFlight.current = false;
+         if (alive && fence.current(ticket)) {
+           setBusy(false);
+           deadline.current = Date.now() + delay;
+           timer = setTimeout(() => void load(), delay);
++          observeComment(fence, "scheduled", { delay });
+         }
+       }
+     };
+     loader.current = load;
+     void load();
+     return () => {
++      observeComment(fence, "cleanup", { inFlight: inFlight.current });
+       alive = false;
+       clearTimeout(timer);
+       fence.invalidate(false);
+diff --git a/apps/admin/src/features/messages/use-privacy.ts b/apps/admin/src/features/messages/use-privacy.ts
+index cbd0f9b8..4870fc50 100644
+--- a/apps/admin/src/features/messages/use-privacy.ts
++++ b/apps/admin/src/features/messages/use-privacy.ts
+@@ -7,6 +7,12 @@ import { flushSync } from "react-dom";
+ import { csrfCookie, sessionBoundary } from "../../../lib/settings-client";
+ import { InboxFence } from "./privacy";
+ 
++// TEMP W3-U3 authorised READ/MEASURE: only safety flags, never scope ids/cookies/private content.
++function observePrivacy(fence: object, kind: string, values: Record<string, unknown> = {}) {
++  const observer = typeof window === "undefined" ? undefined : (window as unknown as { lcScopeObservation?: { record: (value: Record<string, unknown>) => void; identify: (value: object) => number } }).lcScopeObservation;
++  observer?.record({ kind: `privacy-${kind}`, owner: observer.identify(fence), visibility: document.visibilityState, ...values });
++}
++
+ /** Bind a private component to visible-page and session lifetime; reveal always starts a fresh read. */
+ export function useInboxPrivacy(clear: () => void, calibration = false) {
+   const fence = useRef(new InboxFence());
+@@ -16,12 +22,14 @@ export function useInboxPrivacy(clear: () => void, calibration = false) {
+   const [departing, setDeparting] = useState(false);
+   const [revision, setRevision] = useState(0);
+   const expire = useCallback(() => {
++    observePrivacy(fence.current, "expire", { alreadyBlocked: blocked.current });
+     blocked.current = true;
+     fence.current.invalidate(false);
+     clear();
+     setVisible(false);
+   }, [clear]);
+   const suspend = useCallback(() => {
++    observePrivacy(fence.current, "suspend");
+     fence.current.revoke();
+     clear();
+     setVisible(false);
+@@ -29,8 +37,10 @@ export function useInboxPrivacy(clear: () => void, calibration = false) {
+   }, [clear]);
+   useEffect(() => {
+     const cookie = csrfCookie();
++    observePrivacy(fence.current, "effect", { cookiePresent: !!cookie });
+     let current = true;
+     const hide = () => {
++      observePrivacy(fence.current, "hide");
+       // CI calibration is fixture-only and deliberately violates the real hide assertion.
+       if (calibration) return;
+       hidden.current = true;
+@@ -41,6 +51,7 @@ export function useInboxPrivacy(clear: () => void, calibration = false) {
+       });
+     };
+     const reveal = () => {
++      observePrivacy(fence.current, "reveal", { hidden: hidden.current, blocked: blocked.current });
+       if (
+         !hidden.current ||
+         blocked.current ||
+@@ -48,6 +59,7 @@ export function useInboxPrivacy(clear: () => void, calibration = false) {
+       )
+         return;
+       if (csrfCookie() !== cookie) {
++        observePrivacy(fence.current, "reveal-cookie-changed");
+         expire();
+         return;
+       }
+@@ -60,17 +72,20 @@ export function useInboxPrivacy(clear: () => void, calibration = false) {
+     const visibility = () =>
+       document.visibilityState === "hidden" ? hide() : reveal();
+     const focus = () => {
++      observePrivacy(fence.current, "focus", { hidden: hidden.current, blocked: blocked.current });
+       if (hidden.current) {
+         reveal();
+         return;
+       }
+       if (blocked.current) return;
+       if (csrfCookie() !== cookie) {
++        observePrivacy(fence.current, "focus-cookie-changed");
+         expire();
+         return;
+       }
+       // A normal focus must preserve the active send/receipt; only a changed session revokes it.
+       void sessionBoundary(cookie).catch(() => {
++        observePrivacy(fence.current, "focus-boundary-rejected", { current });
+         if (current) expire();
+       });
+     };
+@@ -95,6 +110,7 @@ export function useInboxPrivacy(clear: () => void, calibration = false) {
+     window.addEventListener("commerce-session-logout", expire);
+     if (document.visibilityState === "hidden") hide();
+     return () => {
++      observePrivacy(fence.current, "cleanup");
+       current = false;
+       fence.current.invalidate(false);
+       document.removeEventListener("visibilitychange", visibility);
+diff --git a/tests/admin/live-console.spec.ts b/tests/admin/live-console.spec.ts
+index 60ff2e92..2152273e 100644
+--- a/tests/admin/live-console.spec.ts
++++ b/tests/admin/live-console.spec.ts
+@@ -90,8 +90,31 @@ async function phase(page: Page, value: string) {
+ test.describe("LC-U2a REAL_PG comment stream",()=>{
+   // Comment text/name/PSIDs may not enter automatic failure artifacts, even in synthetic fixtures.
+   const reads=new WeakMap<Page,Record<string,unknown>[]>();
++  const scoped=new WeakMap<Page,Record<string,unknown>[]>();
+   test.beforeEach(async({page})=>{
+     const rows:Record<string,unknown>[]=[];reads.set(page,rows);
++    const network:Record<string,unknown>[]=[],started=performance.now();scoped.set(page,network);
++    const category=(url:string)=>{const path=new URL(url).pathname;return path.endsWith("/comments")?"A2":path.endsWith("/inbox/conversations")?"A8":path.endsWith("/inbox/buyer-panel")?"A13":path.endsWith("/message-templates")?"templates":path.endsWith("/console")?"A1":path.startsWith("/api/stores/")?"other_scoped":null;};
++    const record=(value:Record<string,unknown>)=>{network.push({at:Math.round(performance.now()-started),...value});if(network.length>512)network.shift();};
++    page.on("request",r=>{const name=category(r.url());if(name)record({kind:"start",category:name});});
++    page.on("response",r=>{const name=category(r.url());if(name)record({kind:"end",category:name,status:r.status()});});
++    page.on("requestfailed",r=>{const name=category(r.url());if(name)record({kind:"rejected",category:name,aborted:r.failure()?.errorText.includes("ERR_ABORTED")===true});});
++    page.on("pageerror",error=>record({kind:"pageerror",name:error.name}));
++    // READ/MEASURE only: no fetch monkey-patch or product state changes.
++    // Store route categories/status/visibility, never URL ids, cookies, names or comment text.
++    await page.addInitScript(()=>{
++      const started=performance.now(),events:Record<string,unknown>[]=[];
++      const record=(value:Record<string,unknown>)=>{events.push({at:Math.round(performance.now()-started),...value});if(events.length>256)events.shift();};
++      const state=()=>({visibility:document.visibilityState,refreshDisabled:document.querySelector<HTMLButtonElement>('[data-testid="comment-refresh"]')?.disabled??null,
++        stream:!!document.querySelector('[data-testid="comment-workspace"]'),buyer:!!document.querySelector('[data-testid="buyer-panel"]')});
++      const owners=new WeakMap<object,number>();let nextOwner=0;
++      const identify=(value:object)=>{if(!owners.has(value))owners.set(value,++nextOwner);return owners.get(value)!;};
++      Object.assign(window,{lcScopeObservation:{events,state,record,identify}});
++      document.addEventListener("visibilitychange",()=>record({kind:"visibility",...state()}));
++      window.addEventListener("focus",()=>record({kind:"focus",...state()}));
++      let previous="";
++      new MutationObserver(()=>{const value=state(),encoded=JSON.stringify(value);if(encoded!==previous){previous=encoded;record({kind:"dom",...value});}}).observe(document,{subtree:true,childList:true,attributes:true,attributeFilter:["disabled","data-testid"]});
++    });
+     page.on("response",async r=>{
+       if(!new URL(r.url()).pathname.endsWith("/comments"))return;
+       let value:any;try{value=await r.json();}catch{value={};}
+@@ -99,7 +122,15 @@ test.describe("LC-U2a REAL_PG comment stream",()=>{
+         code:["not_found","no_source","forbidden","stream_unavailable","invalid_request","invalid_cursor"].includes(value.code)?value.code:null});
+     });
+   });
+-  test.afterEach(async({page},info)=>{await writeFile(`${evidence}/comment-reads-${info.testId.replace(/[^a-zA-Z0-9_-]/g,"")}.json`,JSON.stringify(reads.get(page)??[]));});
++  test.afterEach(async({page},info)=>{
++    const id=info.testId.replace(/[^a-zA-Z0-9_-]/g,"");
++    await writeFile(`${evidence}/comment-reads-${id}.json`,JSON.stringify(reads.get(page)??[]));
++    const observation=await page.evaluate(()=>{
++      const value=(window as unknown as {lcScopeObservation?:{events:Record<string,unknown>[];state:()=>Record<string,unknown>}}).lcScopeObservation;
++      return value?{events:value.events,final:value.state()}:null;
++    }).catch(()=>null);
++    await writeFile(`${evidence}/comment-scope-${id}.json`,JSON.stringify({network:scoped.get(page)??[],document:observation}));
++  });
+   for(const [li,locale] of locales.entries())for(const [wi,size] of streamSizes.entries()) {
+     test(`pagination filters buyer and one-shot replies ${locale}-${size.width}`,async({page,request})=>{
+       const c=commentCopy(locale);await page.setViewportSize(size);await login(page);await page.goto(route(locale,comments.session));

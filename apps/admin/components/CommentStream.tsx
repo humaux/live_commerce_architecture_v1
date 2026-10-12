@@ -24,6 +24,7 @@ import { CreateOrderDrawer } from "./CreateOrderDrawer";
 import { createOrderCopy } from "@/lib/create-order-copy";
 import { BuyerPanel } from "./BuyerPanel";
 import { CommentReply } from "./CommentReply";
+import { CommentLabelPrint, CommentLabelToolbar, CommentLabelAction } from "./CommentLabelPrint";
 
 /** Keep stream/list/selection tied to one server-authorised store/session, with no identity guessing. */
 export function CommentStream({
@@ -150,6 +151,9 @@ export function CommentStream({
     } finally { if (generation === request.current) paging.current = false; }
   };
   return (
+    <CommentLabelPrint key={`${store.id}:${session}:${stream.resetGeneration}:${privacy.visible}:${privacy.revision}`}
+      locale={locale} store={store.id} session={session} rows={stream.buffer.items}
+      allowed={permitted(store, "live:manage")} active={privacy.visible && !privacy.blocked.current && !resource} onDenied={privacy.expire}>
     <div className="comment-workspace" data-testid="comment-workspace">
       {privacy.visible && orderBundle && orderBundle.generation === stream.resetGeneration && <CreateOrderDrawer key={`${store.id}:${session}:${orderBundle.id}`} locale={locale} store={store} sessionId={session} bundleId={orderBundle.id} onUnauthorized={privacy.expire} onClose={() => setOrderBundle(null)} />}
       <section
@@ -236,6 +240,7 @@ export function CommentStream({
           </>
         ) : (
           <>
+            <CommentLabelToolbar />
             {!rows.length && (
               <p role="status">{stream.busy ? c.loading : c.empty}</p>
             )}
@@ -286,6 +291,7 @@ export function CommentStream({
                     {c.select}
                   </button>
                   {row.marks.claim?.bundle_id && <><button type="button" data-testid={`comment-create-order-${row.ref}`} disabled={!permitted(store,"inventory:reserve") || !permitted(store,"orders:read") || !permitted(store,"catalog:read")} onClick={() => setOrderBundle({id:row.marks.claim!.bundle_id!,generation:stream.resetGeneration})}>{createOrderCopy[locale].title}</button>{(!permitted(store,"inventory:reserve") || !permitted(store,"orders:read") || !permitted(store,"catalog:read")) && <p>{createOrderCopy[locale].permission}</p>}</>}
+                  <CommentLabelAction row={row} />
                 </li>
               ))}
             </ul>
@@ -330,5 +336,6 @@ export function CommentStream({
         )}
       </aside>
     </div>
+    </CommentLabelPrint>
   );
 }

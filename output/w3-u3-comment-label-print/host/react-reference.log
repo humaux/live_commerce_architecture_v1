@@ -1,0 +1,2 @@
+The provided key is an unsupported type Symbol. This value must be coerced to a string before using it here.
+{"react":"19.3.0","providerAlias":true,"keys":[{"input":"object","key":null},{"input":"undefined","key":null},{"input":"number","key":"0"},{"input":"string","key":"x"},{"input":"symbol","error":"TypeError"}]}

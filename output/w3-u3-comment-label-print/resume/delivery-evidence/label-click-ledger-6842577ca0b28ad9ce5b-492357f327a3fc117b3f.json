@@ -1,0 +1,12 @@
+[
+  {
+    "locale": "en",
+    "width": 1586,
+    "page": "/studio/console",
+    "control": "single print; close; single preview",
+    "operation": "click with aborted network then reset epoch",
+    "expected": "Physical print remains available, no false new badge; preview clears on real reset",
+    "actual": "Physical print remains available, no false new badge; preview clears on real reset",
+    "result": "PASS"
+  }
+]
