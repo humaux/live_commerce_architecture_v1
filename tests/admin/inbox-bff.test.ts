@@ -531,3 +531,38 @@ test("real M7 response keeps no-referrer after matching Next production header r
     assert.equal(effective.get("referrer-policy"), "no-referrer", "global Next header rules must not replace M7 privacy policy");
   }
 });
+
+test("LC-U2b2 A14 exact route/keys and real BFF CSRF errors preserve closed CAS/404 refusals", async () => {
+  const path = `${base}/customer-link`;
+  for (const method of ["GET", "PUT", "PATCH", "DELETE"]) {
+    const n = seen.length;
+    assert.equal((await call(path, { method })).status, 405);
+    assert.equal(seen.length, n, "non-POST must not reach upstream");
+  }
+  for (const body of [
+    { customer_id: customer }, { expected_version: 0 },
+    { customer_id: customer, expected_version: null }, { customer_id: customer, expected_version: "0" },
+    { customer_id: customer, expected_version: -1 }, { customer_id: customer, expected_version: 0.5 },
+    { customer_id: customer, expected_version: 0, owner_id: customer },
+    { customer_id: "MOCK_NAME_NOT_ID", expected_version: 0 },
+  ]) {
+    const n = seen.length;
+    assert.equal((await call(path, { method: "POST", body })).status, 422);
+    assert.equal(seen.length, n, "invalid link request must not reach upstream");
+  }
+  for (const [status, code] of [[409, "version_conflict"], [404, "not_found"]] as const) {
+    answer = { status, body: JSON.stringify({ code, customer_name: "MOCK_UPSTREAM_PRIVATE_DETAIL" }) };
+    const result = await call(path, { method: "POST", body: { customer_id: null, expected_version: 0 } });
+    assert.equal(result.status, status);
+    assert.equal(result.body.code, code);
+    assert.deepEqual(Object.keys(result.body).sort(), ["code", "details", "message", "request_id", "retryable"]);
+    assert.deepEqual(result.body.details, {});
+    assert.equal(result.body.message, status === 404 ? "Resource not found." : "Request failed.");
+    assert.equal(JSON.stringify(result.body).includes("MOCK_UPSTREAM_PRIVATE_DETAIL"), false, "real auth error envelope never forwards private upstream details");
+    assert.match(result.headers.get("cache-control") ?? "", /no-store/);
+  }
+  const n = seen.length;
+  assert.equal((await call(path, { method: "POST", body: { customer_id: customer, expected_version: 0 }, headers: { "x-csrf-token": "" } })).status, 403);
+  assert.equal((await call(path, { method: "POST", body: { customer_id: customer, expected_version: 0 }, headers: { origin: "https://foreign.example.invalid" } })).status, 403);
+  assert.equal(seen.length, n, "real CSRF/origin guard runs before the link endpoint");
+});

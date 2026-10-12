@@ -1,0 +1,58 @@
+rewrite --browser-inbox: 70 -> 5 packages
+rewrite --browser-meta-health-ui: 70 -> 4 packages
+rewrite --browser-tracking-backfill: 70 -> 2 packages
+rewrite --browser-click-sweep: 70 -> 20 packages
+rewrite --browser-visual-lint: 70 -> 20 packages
+rewrite --browser-identity: 70 -> 4 packages
+rewrite --browser-buyer-comms: 70 -> 19 packages
+rewrite --browser-checkout-offline: 70 -> 19 packages
+rewrite --browser-home-cod: 70 -> 22 packages
+rewrite --browser-promotions: 70 -> 15 packages
+rewrite --browser-password-auth: 70 -> 8 packages
+rewrite --browser-admin-legacy: 70 -> 2 packages
+rewrite --browser-buyer: 70 -> 16 packages
+rewrite --browser-merchant-buyer: 70 -> 5 packages
+rewrite --browser-manual-order: 70 -> 12 packages
+rewrite --browser-merchant-orders-bff: 70 -> 35 packages
+rewrite --browser-merchant-orders-ui: 70 -> 39 packages
+rewrite --browser-input-delivery: 70 -> 4 packages
+rewrite --browser-studio-bff: 70 -> 34 packages
+rewrite --browser-studio-ui: 70 -> 2 packages
+rewrite --browser-live-console: 70 -> 6 packages
+rewrite --browser-claim-checkout: 70 -> 8 packages
+rewrite --browser-live-claims: 70 -> 18 packages
+rewrite --browser-order: 70 -> 16 packages
+rewrite --browser-payment: 70 -> 16 packages
+rewrite --browser-refund-fulfilment: 70 -> 12 packages
+rewrite --browser-customers-billing: 70 -> 41 packages
+rewrite --browser-card-payments: 70 -> 39 packages
+rewrite --browser-meta-ads: 70 -> 40 packages
+rewrite --browser-ads-attribution: 70 -> 17 packages
+rewrite --browser-cvs: 70 -> 7 packages
+rewrite --browser-catalog-media: 70 -> 36 packages
+rewrite --browser-storefront-publish: 70 -> 10 packages
+rewrite --browser-store-domains: 70 -> 36 packages
+rewrite --browser-storefront: 70 -> 15 packages
+rewrite --browser-webkit: 70 -> 21 packages
+rewrite --browser-e2e: 70 -> 24 packages
+rewrite --live-browser-input: 70 -> 2 packages
+rewrite --browser-design: 70 -> 11 packages
+rewrite --browser-ops-polish: 70 -> 2 packages
+rewrite --browser-meta-connect: 70 -> 36 packages
+rewrite --browser-product-editor: 70 -> 9 packages
+rewrite --browser-catalog-core: 70 -> 9 packages
+rewrite --browser-returns-ui: 70 -> 14 packages
+rewrite --browser-operations-ads: 70 -> 2 packages
+rewrite --browser-product-media-v2: 70 -> 5 packages
+rewrite --browser-reports: 70 -> 34 packages
+rewrite --browser-migration-import: 70 -> 15 packages
+insert-narrow-covers: rewritten=48 unchanged=3 (browser universe=51); file written
+✔ output/ci-select-backend-browser/tools/insert-narrow-covers.mjs (48.91125ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 53.191583

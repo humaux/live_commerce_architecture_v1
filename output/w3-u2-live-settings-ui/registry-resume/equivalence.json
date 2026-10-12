@@ -1,0 +1,16 @@
+{
+  "unchanged_existing_entries": 83,
+  "total_entries": 84,
+  "added": [
+    "--browser-live-settings"
+  ],
+  "removed": [],
+  "compared": [
+    "name",
+    "build",
+    "fixture",
+    "prepare",
+    "run"
+  ],
+  "note": "Parser body also includes the trailing append marker on the prior last entry. Command-function and metadata fields are byte-identical."
+}

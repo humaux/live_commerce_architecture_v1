@@ -224,7 +224,7 @@ function createPortal(children: any, containerInfo: any, key: unknown = null) {
 }
 const defaultHealth = {
   pages: [
-    { capabilities: [{ binding_id: "MOCK_BINDING", provider: "facebook", capability: "dm_session", state: "ok" }] },
+    { capabilities: [{ binding_id: "70000000-0000-4000-8000-000000000007", provider: "facebook", capability: "dm_session", state: "ok" }] },
   ],
 };
 const runtime = {
@@ -380,6 +380,8 @@ const conversation = {
   linked_customer_id: null,
 };
 const thread = {
+  binding_id: "70000000-0000-4000-8000-000000000007",
+  link_version: 0,
   has_unknown_outbound: false,
   items: [
     {

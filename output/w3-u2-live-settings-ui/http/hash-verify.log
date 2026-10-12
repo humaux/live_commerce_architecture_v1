@@ -1,0 +1,6 @@
+internal/httpapi/sold_out_settings.go: OK
+internal/httpapi/sold_out_settings_test.go: OK
+internal/httpapi/claims.go: OK
+internal/claims/sold_out_reply.go: OK
+tests/foundation/live_settings_http_test.go: OK
+contracts/live-settings-openapi.json: OK

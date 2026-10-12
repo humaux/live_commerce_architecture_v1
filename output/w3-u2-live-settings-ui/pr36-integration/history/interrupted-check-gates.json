@@ -1,0 +1,21 @@
+{
+  "name": "check-gates",
+  "argv": [
+    "bash",
+    "scripts/dev/check-gates.sh"
+  ],
+  "source_sha": "7737cb87d186c5b17ef582142c7766136660a41b",
+  "started_at": "2026-10-10T05:43:00.556355+00:00",
+  "timeout_seconds": 600,
+  "log": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/check-gates.log",
+  "env": {
+    "LC_HEADER_BASE": "origin/r3/integration",
+    "LC_TEST_LOCK_WAIT": "1800"
+  },
+  "unset_env": [
+    "CONTRACT_DRIFT_BASE"
+  ],
+  "pid": 64358,
+  "state": "running",
+  "classification": "UNKNOWN: interrupted recording; use completed check-gates retry in runs/check-gates.json"
+}

@@ -48,8 +48,10 @@ export type Thread = {
   mode: "auto" | "human";
   takeover_generation: number;
   human_until: string | null;
+  link_version?: number | null;
+  binding_id?: string | null;
 };
-/** A13 server facts; wiring the separate A9 link_version into A14 remains a follow-up. */
+/** A13 server facts; A14 authority comes separately from A9, never from an inferred customer identity. */
 export type BuyerData = {
   display_name?: string | null;
   platform: string;

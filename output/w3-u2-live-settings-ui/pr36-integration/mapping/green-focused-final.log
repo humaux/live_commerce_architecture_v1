@@ -1,0 +1,26 @@
+=== RUN   TestBFFLiveSettingsRealLeaves
+--- PASS: TestBFFLiveSettingsRealLeaves (0.15s)
+=== RUN   TestBFFLocalExportAliases
+--- PASS: TestBFFLocalExportAliases (0.00s)
+=== RUN   TestBFFLiveSettingsMutations
+=== RUN   TestBFFLiveSettingsMutations/extra_sink
+=== RUN   TestBFFLiveSettingsMutations/changed_method
+=== RUN   TestBFFLiveSettingsMutations/changed_path
+=== RUN   TestBFFLiveSettingsMutations/guard_bypass
+=== RUN   TestBFFLiveSettingsMutations/guard_removed
+=== RUN   TestBFFLiveSettingsMutations/unknown_admission
+=== RUN   TestBFFLiveSettingsMutations/unknown_leaf
+=== RUN   TestBFFLiveSettingsMutations/extra_passed_fetch
+=== RUN   TestBFFLiveSettingsMutations/405_export
+--- PASS: TestBFFLiveSettingsMutations (1.76s)
+    --- PASS: TestBFFLiveSettingsMutations/extra_sink (0.21s)
+    --- PASS: TestBFFLiveSettingsMutations/changed_method (0.18s)
+    --- PASS: TestBFFLiveSettingsMutations/changed_path (0.19s)
+    --- PASS: TestBFFLiveSettingsMutations/guard_bypass (0.25s)
+    --- PASS: TestBFFLiveSettingsMutations/guard_removed (0.19s)
+    --- PASS: TestBFFLiveSettingsMutations/unknown_admission (0.18s)
+    --- PASS: TestBFFLiveSettingsMutations/unknown_leaf (0.20s)
+    --- PASS: TestBFFLiveSettingsMutations/extra_passed_fetch (0.18s)
+    --- PASS: TestBFFLiveSettingsMutations/405_export (0.18s)
+PASS
+ok  	livecommerce/scripts/dev/contractdrift	2.262s

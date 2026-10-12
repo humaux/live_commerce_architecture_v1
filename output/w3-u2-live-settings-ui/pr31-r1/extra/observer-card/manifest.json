@@ -1,0 +1,94 @@
+{
+  "task_id": "e0cab99c-sub-observer-tests",
+  "parent_task_id": "e0cab99c-5ed3-4d22-a3cd-88700fb57c71",
+  "base_commit": "2c4d2f5320d9172e6f0094341bb81f7c9ccb1093",
+  "head_commit": "0d9e0044a7e5f36dd8c9aee8fa099cb9b3d5ddac",
+  "branch": "codex/pr31-observer-tests",
+  "worktree": "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-observer-tests",
+  "role": "test_worker responsibility",
+  "configured_model": "gpt-6.1 high per parent card",
+  "actual_model": "UNKNOWN",
+  "write_paths": [
+    "tests/admin/comment-stream-hooks.test.ts",
+    "tests/admin/live-console.spec.ts"
+  ],
+  "evidence_mode": "MOCK",
+  "evidence_level": "E3 for observer only; product defects remain RED",
+  "commands": [
+    {
+      "command": "git worktree add -b codex/pr31-observer-tests .worktrees/pr31-observer-tests 2c4d2f5320d9172e6f0094341bb81f7c9ccb1093",
+      "exit_code": 0
+    },
+    {
+      "command": "pnpm install --offline --frozen-lockfile",
+      "exit_code": 0,
+      "evidence": "deps.log"
+    },
+    {
+      "command": "node --test --experimental-strip-types --test-name-pattern='PR31|W3-U2 restriction' tests/admin/comment-stream-hooks.test.ts",
+      "exit_code": 1,
+      "evidence": "environment-red.log",
+      "classification": "ENVIRONMENT_ERROR before offline install"
+    },
+    {
+      "command": "node --test --experimental-strip-types --test-name-pattern='PR31|W3-U2 restriction' tests/admin/comment-stream-hooks.test.ts",
+      "exit_code": 1,
+      "evidence": "red.log",
+      "pass": 22,
+      "fail": 3,
+      "classification": "MOCK real-source counterexamples"
+    },
+    {
+      "command": "node --test --experimental-strip-types --test-name-pattern='PR31 actual restriction GET|W3-U2 restriction' tests/admin/comment-stream-hooks.test.ts",
+      "exit_code": 0,
+      "evidence": "observer-green.log",
+      "pass": 2,
+      "fail": 0
+    },
+    {
+      "command": "node --test --experimental-strip-types tests/admin/live-console-render.test.ts",
+      "exit_code": 0,
+      "evidence": "render-green.log",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "command": "node --test --experimental-strip-types --test-name-pattern='PR31 restriction bundle|PR31 terminal denial' tests/admin/comment-stream-hooks.test.ts",
+      "exit_code": 1,
+      "evidence": "product-red.log",
+      "pass": 0,
+      "fail": 2
+    },
+    {
+      "command": "node --test --experimental-strip-types tests/admin/comment-stream-hooks.test.ts tests/admin/live-console-render.test.ts",
+      "exit_code": 1,
+      "evidence": "focused-baseline.log",
+      "pass": 72,
+      "fail": 2
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    },
+    {
+      "command": "git commit -m 'test(admin): prove scoped restriction observer and local 404 isolation'",
+      "exit_code": 0,
+      "head_commit": "0d9e0044a7e5f36dd8c9aee8fa099cb9b3d5ddac"
+    }
+  ],
+  "unresolved": [
+    "healthy missing/purged restriction bundle404 globally revokes console",
+    "queued A2 timer admits a read before passive cleanup after terminal privacy expiry"
+  ],
+  "not_run": [
+    "parent production changes green",
+    "independent parent acceptance",
+    "REAL_PG/browser --browser-live-console",
+    "Go tests/build/full suite",
+    "SANDBOX",
+    "LIVE"
+  ],
+  "memory_id": "e76d3a02-9657-4fec-b033-704a098a84d8",
+  "memory_title": "[research] PR31 observer real GET red-green and two product counterexamples",
+  "canvas_agent_id": "e0cab99c-sub-observer-tests"
+}

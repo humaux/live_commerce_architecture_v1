@@ -19,6 +19,7 @@ import {
   type CommentFilter,
 } from "@/src/features/live/comment-model";
 import { useCommentStream } from "@/src/features/live/use-comment-stream";
+import { liveSettingsCopy } from "@/lib/live-settings-copy";
 import { BuyerPanel } from "./BuyerPanel";
 import { CommentReply } from "./CommentReply";
 import { CommentLabelPrint, CommentLabelToolbar, CommentLabelAction } from "./CommentLabelPrint";
@@ -266,8 +267,14 @@ export function CommentStream({
                   {row.marks.claim?.reason === "restricted" && (
                     <p className="comment-mark">{c.restricted}</p>
                   )}
+                  {row.marks.private_reply?.kind === "out_of_stock" &&
+                    commentSendState(row.marks.private_reply.state) === "sent" && (
+                      <p className="comment-mark" data-testid={`comment-soldout-sent-${row.ref}`}>
+                        {liveSettingsCopy(locale).replied}
+                      </p>
+                    )}
                   {row.marks.private_reply && (
-                    <p className="live-helper">
+                    <p className="live-helper" data-testid={`comment-send-state-${row.ref}`}>
                       {commentReason(locale, commentSendState(row.marks.private_reply.state))}
                     </p>
                   )}
@@ -315,6 +322,7 @@ export function CommentStream({
             key={`${store.id}:${bundle}`}
             store={store}
             bundleId={bundle}
+            sessionId={session}
             onUnauthorized={privacy.expire}
           />
         ) : (

@@ -1,0 +1,1592 @@
+{
+  "source_sha": "7737cb87d186c5b17ef582142c7766136660a41b",
+  "source_manifest_sha256": "07a69001c6c2f2cdf59a11be898768043cedcfc738265806834d69c8b9234e0d",
+  "evidence_level": "E3 author-run automated tests; audits E1, new CI/K3 NOT_RUN",
+  "runs": [
+    {
+      "name": "test-node",
+      "argv": [
+        "bash",
+        "scripts/dev/test-node.sh"
+      ],
+      "source_sha": "7737cb87d186c5b17ef582142c7766136660a41b",
+      "started_at": "2026-10-10T05:42:25.284810+00:00",
+      "timeout_seconds": 600,
+      "log": "output/w3-u2-live-settings-ui/pr36-integration/runs/test-node.log",
+      "env": {
+        "LC_HEADER_BASE": "origin/r3/integration",
+        "LC_TEST_LOCK_WAIT": "1800"
+      },
+      "unset_env": [
+        "CONTRACT_DRIFT_BASE"
+      ],
+      "pid": 60673,
+      "state": "finished",
+      "exit_code": 0,
+      "elapsed_seconds": 35.182,
+      "ended_at": "2026-10-10T05:43:00.466772+00:00",
+      "log_sha256": "fea442e5a8b461d2f7ca98f497df2fdf3c3948e68a0e0ba22a1101c8c4c2d29e",
+      "original_log": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/test-node.log"
+    },
+    {
+      "name": "typecheck",
+      "argv": [
+        "pnpm",
+        "typecheck:admin"
+      ],
+      "source_sha": "7737cb87d186c5b17ef582142c7766136660a41b",
+      "started_at": "2026-10-10T05:42:25.283432+00:00",
+      "timeout_seconds": 600,
+      "log": "output/w3-u2-live-settings-ui/pr36-integration/runs/typecheck.log",
+      "env": {
+        "LC_HEADER_BASE": "origin/r3/integration",
+        "LC_TEST_LOCK_WAIT": "1800"
+      },
+      "unset_env": [
+        "CONTRACT_DRIFT_BASE"
+      ],
+      "pid": 60672,
+      "state": "finished",
+      "exit_code": 0,
+      "elapsed_seconds": 3.646,
+      "ended_at": "2026-10-10T05:42:28.929057+00:00",
+      "log_sha256": "37fab15de17aa0ca1a1d3a45526b7890fbc4ca46e75454c0325fd964a5f448ef",
+      "original_log": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/typecheck.log"
+    },
+    {
+      "name": "registry-list",
+      "argv": [
+        "bash",
+        "scripts/dev/test-local.sh",
+        "--list"
+      ],
+      "source_sha": "7737cb87d186c5b17ef582142c7766136660a41b",
+      "started_at": "2026-10-10T05:43:00.475861+00:00",
+      "timeout_seconds": 600,
+      "log": "output/w3-u2-live-settings-ui/pr36-integration/runs/registry-list.log",
+      "env": {
+        "LC_HEADER_BASE": "origin/r3/integration",
+        "LC_TEST_LOCK_WAIT": "1800"
+      },
+      "unset_env": [
+        "CONTRACT_DRIFT_BASE"
+      ],
+      "pid": 64354,
+      "state": "finished",
+      "exit_code": 0,
+      "elapsed_seconds": 0.075,
+      "ended_at": "2026-10-10T05:43:00.550413+00:00",
+      "log_sha256": "462cc214e71676c0cb82e06c4ccceb397bc612117ba19798dee00f5e64fb89f5",
+      "original_log": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/registry-list.log"
+    },
+    {
+      "name": "check-gates",
+      "argv": [
+        "bash",
+        "scripts/dev/check-gates.sh"
+      ],
+      "source_sha": "7737cb87d186c5b17ef582142c7766136660a41b",
+      "env": {
+        "LC_TEST_LOCK_WAIT": "1800",
+        "LC_BROWSER_ENGINE": "chromium",
+        "LC_HEADER_BASE": "origin/r3/integration",
+        "LC_BROWSER_EVIDENCE_ROOT": "$PWD/output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/browser-chain/check-gates-evidence"
+      },
+      "unset_env": [
+        "LC_BROWSER_CONSOLE_GREP",
+        "LC_BROWSER_SETTINGS_GREP",
+        "LC_CONSOLE_CALIBRATION",
+        "LC_OPS_POLISH_ONLY",
+        "CONTRACT_DRIFT_BASE"
+      ],
+      "started_at": "2026-10-10T05:55:19.521599+00:00",
+      "timeout_seconds": 600,
+      "log": "output/w3-u2-live-settings-ui/pr36-integration/runs/check-gates.log",
+      "state": "finished",
+      "pid": 28495,
+      "exit_code": 0,
+      "elapsed_seconds": 137.527,
+      "ended_at": "2026-10-10T05:57:37.049252+00:00",
+      "log_sha256": "a26f3e818af5b85ca504f7f05aafd56e003c3dfa6ceef1e327dccec176b58340",
+      "original_log": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/browser-chain/check-gates.log"
+    },
+    {
+      "name": "http-real-pg",
+      "argv": [
+        "bash",
+        "scripts/dev/test-focused.sh",
+        "TestLiveSettingsHTTP|TestScopeRevokeMidTransactionBecomesScopeNotFound|TestScopeSupportGrantRevokedMidTransactionBecomesScopeNotFound|TestScopeRecheckFailureKeepsDenial",
+        "./tests/foundation",
+        "./internal/httpapi",
+        "./internal/platform"
+      ],
+      "source_sha": "7737cb87d186c5b17ef582142c7766136660a41b",
+      "env": {
+        "LC_TEST_LOCK_WAIT": "1800",
+        "LC_BROWSER_ENGINE": "chromium",
+        "LC_HEADER_BASE": "origin/r3/integration",
+        "LC_BROWSER_EVIDENCE_ROOT": "$PWD/output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/browser-chain/http-real-pg-evidence"
+      },
+      "unset_env": [
+        "LC_BROWSER_CONSOLE_GREP",
+        "LC_BROWSER_SETTINGS_GREP",
+        "LC_CONSOLE_CALIBRATION",
+        "LC_OPS_POLISH_ONLY",
+        "CONTRACT_DRIFT_BASE"
+      ],
+      "started_at": "2026-10-10T05:57:37.096645+00:00",
+      "timeout_seconds": 2400,
+      "log": "output/w3-u2-live-settings-ui/pr36-integration/runs/http-real-pg.log",
+      "state": "finished",
+      "pid": 33796,
+      "exit_code": 0,
+      "elapsed_seconds": 7.925,
+      "ended_at": "2026-10-10T05:57:45.022235+00:00",
+      "log_sha256": "95175ba561a012ff40311965c8650d91b67b0d4870cb93722616f1ee63cb4503",
+      "original_log": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/browser-chain/http-real-pg.log"
+    },
+    {
+      "name": "console-1",
+      "argv": [
+        "bash",
+        "scripts/dev/test-local.sh",
+        "--browser-live-console"
+      ],
+      "source_sha": "7737cb87d186c5b17ef582142c7766136660a41b",
+      "env": {
+        "LC_TEST_LOCK_WAIT": "1800",
+        "LC_BROWSER_ENGINE": "chromium",
+        "LC_HEADER_BASE": "origin/r3/integration",
+        "LC_BROWSER_EVIDENCE_ROOT": "$PWD/output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/browser-chain/console-1-evidence"
+      },
+      "unset_env": [
+        "LC_BROWSER_CONSOLE_GREP",
+        "LC_BROWSER_SETTINGS_GREP",
+        "LC_CONSOLE_CALIBRATION",
+        "LC_OPS_POLISH_ONLY",
+        "CONTRACT_DRIFT_BASE"
+      ],
+      "started_at": "2026-10-10T05:57:45.071482+00:00",
+      "timeout_seconds": 3000,
+      "log": "output/w3-u2-live-settings-ui/pr36-integration/runs/console-1.log",
+      "state": "finished",
+      "pid": 33855,
+      "exit_code": 0,
+      "elapsed_seconds": 361.289,
+      "ended_at": "2026-10-10T06:03:46.350961+00:00",
+      "log_sha256": "4db814e880cc0291333a69d40a86393287040a0ae6b046bd9f6c84208d7a69b7",
+      "original_log": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/browser-chain/console-1.log"
+    },
+    {
+      "name": "console-2",
+      "argv": [
+        "bash",
+        "scripts/dev/test-local.sh",
+        "--browser-live-console"
+      ],
+      "source_sha": "7737cb87d186c5b17ef582142c7766136660a41b",
+      "env": {
+        "LC_TEST_LOCK_WAIT": "1800",
+        "LC_BROWSER_ENGINE": "chromium",
+        "LC_HEADER_BASE": "origin/r3/integration",
+        "LC_BROWSER_EVIDENCE_ROOT": "$PWD/output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/browser-chain/console-2-evidence"
+      },
+      "unset_env": [
+        "LC_BROWSER_CONSOLE_GREP",
+        "LC_BROWSER_SETTINGS_GREP",
+        "LC_CONSOLE_CALIBRATION",
+        "LC_OPS_POLISH_ONLY",
+        "CONTRACT_DRIFT_BASE"
+      ],
+      "started_at": "2026-10-10T06:03:46.436721+00:00",
+      "timeout_seconds": 3000,
+      "log": "output/w3-u2-live-settings-ui/pr36-integration/runs/console-2.log",
+      "state": "finished",
+      "pid": 39356,
+      "exit_code": 0,
+      "elapsed_seconds": 709.74,
+      "ended_at": "2026-10-10T06:15:36.178807+00:00",
+      "log_sha256": "bc0cd3b63265e265680e7a61dae33a85f1c831655898ee23f0a592198ec57517",
+      "original_log": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/browser-chain/console-2.log"
+    },
+    {
+      "name": "ops-1",
+      "argv": [
+        "bash",
+        "scripts/dev/test-local.sh",
+        "--browser-ops-polish"
+      ],
+      "source_sha": "7737cb87d186c5b17ef582142c7766136660a41b",
+      "env": {
+        "LC_TEST_LOCK_WAIT": "1800",
+        "LC_BROWSER_ENGINE": "chromium",
+        "LC_HEADER_BASE": "origin/r3/integration",
+        "LC_BROWSER_EVIDENCE_ROOT": "$PWD/output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/browser-chain/ops-1-evidence"
+      },
+      "unset_env": [
+        "LC_BROWSER_CONSOLE_GREP",
+        "LC_BROWSER_SETTINGS_GREP",
+        "LC_CONSOLE_CALIBRATION",
+        "LC_OPS_POLISH_ONLY",
+        "CONTRACT_DRIFT_BASE"
+      ],
+      "started_at": "2026-10-10T06:15:36.305078+00:00",
+      "timeout_seconds": 3000,
+      "log": "output/w3-u2-live-settings-ui/pr36-integration/runs/ops-1.log",
+      "state": "finished",
+      "pid": 48088,
+      "exit_code": 0,
+      "elapsed_seconds": 409.389,
+      "ended_at": "2026-10-10T06:22:25.694648+00:00",
+      "log_sha256": "31e7b034745432ba0c494410f24ffba25d215d4700968c9d5204c9ce06c66ef0",
+      "original_log": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/browser-chain/ops-1.log"
+    },
+    {
+      "name": "ops-2",
+      "argv": [
+        "bash",
+        "scripts/dev/test-local.sh",
+        "--browser-ops-polish"
+      ],
+      "source_sha": "7737cb87d186c5b17ef582142c7766136660a41b",
+      "env": {
+        "LC_TEST_LOCK_WAIT": "1800",
+        "LC_BROWSER_ENGINE": "chromium",
+        "LC_HEADER_BASE": "origin/r3/integration",
+        "LC_BROWSER_EVIDENCE_ROOT": "$PWD/output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/browser-chain/ops-2-evidence"
+      },
+      "unset_env": [
+        "LC_BROWSER_CONSOLE_GREP",
+        "LC_BROWSER_SETTINGS_GREP",
+        "LC_CONSOLE_CALIBRATION",
+        "LC_OPS_POLISH_ONLY",
+        "CONTRACT_DRIFT_BASE"
+      ],
+      "started_at": "2026-10-10T06:22:25.831568+00:00",
+      "timeout_seconds": 3000,
+      "log": "output/w3-u2-live-settings-ui/pr36-integration/runs/ops-2.log",
+      "state": "finished",
+      "pid": 52867,
+      "exit_code": 0,
+      "elapsed_seconds": 89.808,
+      "ended_at": "2026-10-10T06:23:55.640369+00:00",
+      "log_sha256": "1df5d350b59fa58f2ea64570e66bbca6647cda9175a687b73d719066c8d18320",
+      "original_log": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/browser-chain/ops-2.log"
+    },
+    {
+      "name": "live-settings",
+      "argv": [
+        "bash",
+        "scripts/dev/test-local.sh",
+        "--browser-live-settings"
+      ],
+      "source_sha": "7737cb87d186c5b17ef582142c7766136660a41b",
+      "env": {
+        "LC_TEST_LOCK_WAIT": "1800",
+        "LC_BROWSER_ENGINE": "chromium",
+        "LC_HEADER_BASE": "origin/r3/integration",
+        "LC_BROWSER_EVIDENCE_ROOT": "$PWD/output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence"
+      },
+      "unset_env": [
+        "LC_BROWSER_CONSOLE_GREP",
+        "LC_BROWSER_SETTINGS_GREP",
+        "LC_CONSOLE_CALIBRATION",
+        "LC_OPS_POLISH_ONLY",
+        "CONTRACT_DRIFT_BASE"
+      ],
+      "started_at": "2026-10-10T07:46:03.773286+00:00",
+      "timeout_seconds": 3000,
+      "log": "output/w3-u2-live-settings-ui/pr36-integration/runs/live-settings.log",
+      "state": "finished",
+      "pid": 50176,
+      "exit_code": 0,
+      "elapsed_seconds": 38.141,
+      "ended_at": "2026-10-10T07:46:41.914107+00:00",
+      "log_sha256": "132f41074769a5f01eb0bc2862a941561651773c9c6bd3659a0c6043310ba359",
+      "original_log": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings.log"
+    },
+    {
+      "name": "live-claims",
+      "argv": [
+        "bash",
+        "scripts/dev/test-local.sh",
+        "--browser-live-claims"
+      ],
+      "source_sha": "7737cb87d186c5b17ef582142c7766136660a41b",
+      "env": {
+        "LC_TEST_LOCK_WAIT": "1800",
+        "LC_BROWSER_ENGINE": "chromium",
+        "LC_HEADER_BASE": "origin/r3/integration",
+        "LC_BROWSER_EVIDENCE_ROOT": "$PWD/output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-claims-evidence"
+      },
+      "unset_env": [
+        "LC_BROWSER_CONSOLE_GREP",
+        "LC_BROWSER_SETTINGS_GREP",
+        "LC_CONSOLE_CALIBRATION",
+        "LC_OPS_POLISH_ONLY",
+        "CONTRACT_DRIFT_BASE"
+      ],
+      "started_at": "2026-10-10T07:46:41.988740+00:00",
+      "timeout_seconds": 3000,
+      "log": "output/w3-u2-live-settings-ui/pr36-integration/runs/live-claims.log",
+      "state": "finished",
+      "pid": 56977,
+      "exit_code": 0,
+      "elapsed_seconds": 26.825,
+      "ended_at": "2026-10-10T07:47:08.813979+00:00",
+      "log_sha256": "e38339a8e35e13516d32e8396897c73ea8dae2f9bbabad1079f2e5f7b5fb4694",
+      "original_log": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-claims.log"
+    },
+    {
+      "name": "contractdrift-post",
+      "argv": [
+        "go",
+        "run",
+        "./scripts/dev/contractdrift"
+      ],
+      "source_sha": "7737cb87d186c5b17ef582142c7766136660a41b",
+      "env": {
+        "LC_TEST_LOCK_WAIT": "1800",
+        "LC_BROWSER_ENGINE": "chromium",
+        "LC_HEADER_BASE": "origin/r3/integration",
+        "LC_BROWSER_EVIDENCE_ROOT": "$PWD/output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/contractdrift-post-evidence"
+      },
+      "unset_env": [
+        "LC_BROWSER_CONSOLE_GREP",
+        "LC_BROWSER_SETTINGS_GREP",
+        "LC_CONSOLE_CALIBRATION",
+        "LC_OPS_POLISH_ONLY",
+        "CONTRACT_DRIFT_BASE"
+      ],
+      "started_at": "2026-10-10T07:47:08.942077+00:00",
+      "timeout_seconds": 600,
+      "log": "output/w3-u2-live-settings-ui/pr36-integration/runs/contractdrift-post.log",
+      "state": "finished",
+      "pid": 59011,
+      "exit_code": 0,
+      "elapsed_seconds": 1.852,
+      "ended_at": "2026-10-10T07:47:10.793982+00:00",
+      "log_sha256": "79e501bcac2ac9abc8ecd5267c1e22e776a8176f576657f9330de426a3c9015a",
+      "original_log": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/contractdrift-post.log"
+    }
+  ],
+  "native": {
+    "live_settings_passed": 22,
+    "live_settings_skipped": 0,
+    "live_settings_per_test_ledgers": 22,
+    "live_settings_masked_synthetic_screenshots": 12,
+    "claims_cases": 21,
+    "claims_skipped": 0,
+    "scope_revocation_receipts": [
+      {
+        "path": "browser/console-1/live-console-3015325301/grant-revocation-all.json",
+        "class": "REAL_PG",
+        "view": "all",
+        "status": 404,
+        "privateRows": 0,
+        "buyerPanel": 0,
+        "sessionRetained": true,
+        "postLossReads": 0
+      },
+      {
+        "path": "browser/console-1/live-console-3015325301/grant-revocation-private.json",
+        "class": "REAL_PG",
+        "view": "private",
+        "status": 404,
+        "privateRows": 0,
+        "buyerPanel": 0,
+        "sessionRetained": true,
+        "postLossReads": 0
+      },
+      {
+        "path": "browser/console-2/live-console-2879311949/grant-revocation-all.json",
+        "class": "REAL_PG",
+        "view": "all",
+        "status": 404,
+        "privateRows": 0,
+        "buyerPanel": 0,
+        "sessionRetained": true,
+        "postLossReads": 0
+      },
+      {
+        "path": "browser/console-2/live-console-2879311949/grant-revocation-private.json",
+        "class": "REAL_PG",
+        "view": "private",
+        "status": 404,
+        "privateRows": 0,
+        "buyerPanel": 0,
+        "sessionRetained": true,
+        "postLossReads": 0
+      }
+    ],
+    "claims_playwright_driver_tests": 1
+  },
+  "copied_provenance": [
+    {
+      "path": "browser/console-1/live-console-3015325301/comment-reads-a80c934079c9585d1976-0a333c185d7a371b1c67.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/comment-reads-a80c934079c9585d1976-0a333c185d7a371b1c67.json",
+      "sha256": "bcace205d000d57d81ae119dbb31d11493989cafed02d032c34ed696509dae46",
+      "original_sha256": "bcace205d000d57d81ae119dbb31d11493989cafed02d032c34ed696509dae46"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/comment-reads-a80c934079c9585d1976-14f0898b3d1815c9849e.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/comment-reads-a80c934079c9585d1976-14f0898b3d1815c9849e.json",
+      "sha256": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca",
+      "original_sha256": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/comment-reads-a80c934079c9585d1976-3d3910468fb56fefde4c.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/comment-reads-a80c934079c9585d1976-3d3910468fb56fefde4c.json",
+      "sha256": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca",
+      "original_sha256": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/comment-reads-a80c934079c9585d1976-465f31901bfb8f31579d.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/comment-reads-a80c934079c9585d1976-465f31901bfb8f31579d.json",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "original_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/comment-reads-a80c934079c9585d1976-47e7084f508de19ef5c4.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/comment-reads-a80c934079c9585d1976-47e7084f508de19ef5c4.json",
+      "sha256": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca",
+      "original_sha256": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/comment-reads-a80c934079c9585d1976-5d8fd238c8503a789658.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/comment-reads-a80c934079c9585d1976-5d8fd238c8503a789658.json",
+      "sha256": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca",
+      "original_sha256": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/comment-reads-a80c934079c9585d1976-61d7b48945678aaee328.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/comment-reads-a80c934079c9585d1976-61d7b48945678aaee328.json",
+      "sha256": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca",
+      "original_sha256": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/comment-reads-a80c934079c9585d1976-8f49d3733c112574279b.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/comment-reads-a80c934079c9585d1976-8f49d3733c112574279b.json",
+      "sha256": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca",
+      "original_sha256": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/comment-reads-a80c934079c9585d1976-a239e690a38cf837fc90.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/comment-reads-a80c934079c9585d1976-a239e690a38cf837fc90.json",
+      "sha256": "0b01b423d38e09305fdaafcd6e7b4cb4938e2a67878ea99ed25684e260daee61",
+      "original_sha256": "0b01b423d38e09305fdaafcd6e7b4cb4938e2a67878ea99ed25684e260daee61"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/comment-reads-a80c934079c9585d1976-b3bb7b219294e20a3028.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/comment-reads-a80c934079c9585d1976-b3bb7b219294e20a3028.json",
+      "sha256": "0b7f7870b2a877f3d5bfbe9e42edcde2baf53caf1ade07f70fd3b808059f0f8c",
+      "original_sha256": "0b7f7870b2a877f3d5bfbe9e42edcde2baf53caf1ade07f70fd3b808059f0f8c"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/comment-reads-a80c934079c9585d1976-c542a18a1edfe73f2896.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/comment-reads-a80c934079c9585d1976-c542a18a1edfe73f2896.json",
+      "sha256": "0b01b423d38e09305fdaafcd6e7b4cb4938e2a67878ea99ed25684e260daee61",
+      "original_sha256": "0b01b423d38e09305fdaafcd6e7b4cb4938e2a67878ea99ed25684e260daee61"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/comment-reads-a80c934079c9585d1976-e2a525683cff6075bcaf.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/comment-reads-a80c934079c9585d1976-e2a525683cff6075bcaf.json",
+      "sha256": "029c7a31e7774a9f038cd94970250f32268ec8f3cfeb69e00734ea71852809b5",
+      "original_sha256": "029c7a31e7774a9f038cd94970250f32268ec8f3cfeb69e00734ea71852809b5"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/en-1586-receipts.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/en-1586-receipts.json",
+      "sha256": "b5c12630487efa50aedb4a626fe15fc050853d3bbec0974c05252fbf16dc10f3",
+      "original_sha256": "b5c12630487efa50aedb4a626fe15fc050853d3bbec0974c05252fbf16dc10f3"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/en-390-receipts.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/en-390-receipts.json",
+      "sha256": "ca5a6b71699cb7320fef51eb12157f1d9400cf2e96c1939beb12035e9a995f8c",
+      "original_sha256": "ca5a6b71699cb7320fef51eb12157f1d9400cf2e96c1939beb12035e9a995f8c"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/grant-revocation-all.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/grant-revocation-all.json",
+      "sha256": "51cc99d6ce213356afb403484993e70d2cca6c77890a533b79743b2b3fc20644",
+      "original_sha256": "51cc99d6ce213356afb403484993e70d2cca6c77890a533b79743b2b3fc20644"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/grant-revocation-private.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/grant-revocation-private.json",
+      "sha256": "6ec12f53e4093d0ec3f19fe0cf483a64ba8d50a9d3dcc61652a928dca8829c86",
+      "original_sha256": "6ec12f53e4093d0ec3f19fe0cf483a64ba8d50a9d3dcc61652a928dca8829c86"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/mock-receipts.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/mock-receipts.json",
+      "sha256": "a928c7331131cb55fbc5606393e9c295af5dcd9ff1b8a1be9a5c1f1a8ccf4fd7",
+      "original_sha256": "a928c7331131cb55fbc5606393e9c295af5dcd9ff1b8a1be9a5c1f1a8ccf4fd7"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/native-hidden-read-counts.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/native-hidden-read-counts.json",
+      "sha256": "1f78f0298133810928b002a27daae87266ec01e629a74b992165a1f6ef9e3835",
+      "original_sha256": "1f78f0298133810928b002a27daae87266ec01e629a74b992165a1f6ef9e3835"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/playwright.log",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/playwright.log",
+      "sha256": "9ea9d46b482017b0f67e2c2ea1fa7a30e426c882bae66e8b4d9efb7b695935aa",
+      "original_sha256": "9ea9d46b482017b0f67e2c2ea1fa7a30e426c882bae66e8b4d9efb7b695935aa"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/results/.last-run.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "original_sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/scope-reads-a80c934079c9585d1976-0a333c185d7a371b1c67.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/scope-reads-a80c934079c9585d1976-0a333c185d7a371b1c67.json",
+      "sha256": "cc43406ea9c4254bb56a88427af3654fdb0ade7a128ccc9cef8ae26e9d6f1b0c",
+      "original_sha256": "cc43406ea9c4254bb56a88427af3654fdb0ade7a128ccc9cef8ae26e9d6f1b0c"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/scope-reads-a80c934079c9585d1976-14f0898b3d1815c9849e.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/scope-reads-a80c934079c9585d1976-14f0898b3d1815c9849e.json",
+      "sha256": "b965a478617b4df44ea512cb3e7418e6cc2151279faf283a779da25e4144956b",
+      "original_sha256": "b965a478617b4df44ea512cb3e7418e6cc2151279faf283a779da25e4144956b"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/scope-reads-a80c934079c9585d1976-3d3910468fb56fefde4c.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/scope-reads-a80c934079c9585d1976-3d3910468fb56fefde4c.json",
+      "sha256": "b965a478617b4df44ea512cb3e7418e6cc2151279faf283a779da25e4144956b",
+      "original_sha256": "b965a478617b4df44ea512cb3e7418e6cc2151279faf283a779da25e4144956b"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/scope-reads-a80c934079c9585d1976-465f31901bfb8f31579d.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/scope-reads-a80c934079c9585d1976-465f31901bfb8f31579d.json",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "original_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/scope-reads-a80c934079c9585d1976-47e7084f508de19ef5c4.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/scope-reads-a80c934079c9585d1976-47e7084f508de19ef5c4.json",
+      "sha256": "b965a478617b4df44ea512cb3e7418e6cc2151279faf283a779da25e4144956b",
+      "original_sha256": "b965a478617b4df44ea512cb3e7418e6cc2151279faf283a779da25e4144956b"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/scope-reads-a80c934079c9585d1976-5d8fd238c8503a789658.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/scope-reads-a80c934079c9585d1976-5d8fd238c8503a789658.json",
+      "sha256": "b965a478617b4df44ea512cb3e7418e6cc2151279faf283a779da25e4144956b",
+      "original_sha256": "b965a478617b4df44ea512cb3e7418e6cc2151279faf283a779da25e4144956b"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/scope-reads-a80c934079c9585d1976-61d7b48945678aaee328.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/scope-reads-a80c934079c9585d1976-61d7b48945678aaee328.json",
+      "sha256": "b965a478617b4df44ea512cb3e7418e6cc2151279faf283a779da25e4144956b",
+      "original_sha256": "b965a478617b4df44ea512cb3e7418e6cc2151279faf283a779da25e4144956b"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/scope-reads-a80c934079c9585d1976-8f49d3733c112574279b.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/scope-reads-a80c934079c9585d1976-8f49d3733c112574279b.json",
+      "sha256": "b965a478617b4df44ea512cb3e7418e6cc2151279faf283a779da25e4144956b",
+      "original_sha256": "b965a478617b4df44ea512cb3e7418e6cc2151279faf283a779da25e4144956b"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/scope-reads-a80c934079c9585d1976-a239e690a38cf837fc90.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/scope-reads-a80c934079c9585d1976-a239e690a38cf837fc90.json",
+      "sha256": "0f0072c298acd9c1adf59ff24d8c344372ccfd1989b14aa8a00a29814ca8736e",
+      "original_sha256": "0f0072c298acd9c1adf59ff24d8c344372ccfd1989b14aa8a00a29814ca8736e"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/scope-reads-a80c934079c9585d1976-b3bb7b219294e20a3028.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/scope-reads-a80c934079c9585d1976-b3bb7b219294e20a3028.json",
+      "sha256": "e34bee3193d803a586ef91431ad22221f95efad6424c7b4fc4dc0492f3ddbb85",
+      "original_sha256": "e34bee3193d803a586ef91431ad22221f95efad6424c7b4fc4dc0492f3ddbb85"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/scope-reads-a80c934079c9585d1976-c542a18a1edfe73f2896.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/scope-reads-a80c934079c9585d1976-c542a18a1edfe73f2896.json",
+      "sha256": "4c05b32e217333aa5f1c86a1ad146df8e571e1ec769a31a70c7a12f234ac0b0e",
+      "original_sha256": "4c05b32e217333aa5f1c86a1ad146df8e571e1ec769a31a70c7a12f234ac0b0e"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/scope-reads-a80c934079c9585d1976-e2a525683cff6075bcaf.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/scope-reads-a80c934079c9585d1976-e2a525683cff6075bcaf.json",
+      "sha256": "15b15952d9fb694404887e6ef8a452d06a1d3850b85596745e0afc8ac2080012",
+      "original_sha256": "15b15952d9fb694404887e6ef8a452d06a1d3850b85596745e0afc8ac2080012"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/zh-CN-1586-receipts.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/zh-CN-1586-receipts.json",
+      "sha256": "3f529c673e0ed8a1bcd4717e837aa2cb0985bbd259f0a340e3508f901e3c0cdf",
+      "original_sha256": "3f529c673e0ed8a1bcd4717e837aa2cb0985bbd259f0a340e3508f901e3c0cdf"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/zh-CN-390-receipts.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/zh-CN-390-receipts.json",
+      "sha256": "c3d7ed472de9dcf1a1ce0541d7c471df17f316ee7c4ee735ee403ada49f9a767",
+      "original_sha256": "c3d7ed472de9dcf1a1ce0541d7c471df17f316ee7c4ee735ee403ada49f9a767"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/zh-TW-1586-receipts.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/zh-TW-1586-receipts.json",
+      "sha256": "3fb1e17bf5349fe89e29a6ad11fb62797a7bc81e73c088545ae1ab5e19e7beff",
+      "original_sha256": "3fb1e17bf5349fe89e29a6ad11fb62797a7bc81e73c088545ae1ab5e19e7beff"
+    },
+    {
+      "path": "browser/console-1/live-console-3015325301/zh-TW-390-receipts.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-1/live-console-3015325301/zh-TW-390-receipts.json",
+      "sha256": "b181297fea8231f2358aaecf99cff1e85054eba14bafad430578d5df3570b01b",
+      "original_sha256": "b181297fea8231f2358aaecf99cff1e85054eba14bafad430578d5df3570b01b"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/comment-reads-a80c934079c9585d1976-0a333c185d7a371b1c67.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/comment-reads-a80c934079c9585d1976-0a333c185d7a371b1c67.json",
+      "sha256": "bcace205d000d57d81ae119dbb31d11493989cafed02d032c34ed696509dae46",
+      "original_sha256": "bcace205d000d57d81ae119dbb31d11493989cafed02d032c34ed696509dae46"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/comment-reads-a80c934079c9585d1976-14f0898b3d1815c9849e.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/comment-reads-a80c934079c9585d1976-14f0898b3d1815c9849e.json",
+      "sha256": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca",
+      "original_sha256": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/comment-reads-a80c934079c9585d1976-3d3910468fb56fefde4c.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/comment-reads-a80c934079c9585d1976-3d3910468fb56fefde4c.json",
+      "sha256": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca",
+      "original_sha256": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/comment-reads-a80c934079c9585d1976-465f31901bfb8f31579d.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/comment-reads-a80c934079c9585d1976-465f31901bfb8f31579d.json",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "original_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/comment-reads-a80c934079c9585d1976-47e7084f508de19ef5c4.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/comment-reads-a80c934079c9585d1976-47e7084f508de19ef5c4.json",
+      "sha256": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca",
+      "original_sha256": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/comment-reads-a80c934079c9585d1976-5d8fd238c8503a789658.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/comment-reads-a80c934079c9585d1976-5d8fd238c8503a789658.json",
+      "sha256": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca",
+      "original_sha256": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/comment-reads-a80c934079c9585d1976-61d7b48945678aaee328.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/comment-reads-a80c934079c9585d1976-61d7b48945678aaee328.json",
+      "sha256": "e1f115895cd8dae95f47dc51e809729dac76a3d68e9df7a4f0d4e3d73343c0c6",
+      "original_sha256": "e1f115895cd8dae95f47dc51e809729dac76a3d68e9df7a4f0d4e3d73343c0c6"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/comment-reads-a80c934079c9585d1976-8f49d3733c112574279b.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/comment-reads-a80c934079c9585d1976-8f49d3733c112574279b.json",
+      "sha256": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca",
+      "original_sha256": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/comment-reads-a80c934079c9585d1976-a239e690a38cf837fc90.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/comment-reads-a80c934079c9585d1976-a239e690a38cf837fc90.json",
+      "sha256": "0b01b423d38e09305fdaafcd6e7b4cb4938e2a67878ea99ed25684e260daee61",
+      "original_sha256": "0b01b423d38e09305fdaafcd6e7b4cb4938e2a67878ea99ed25684e260daee61"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/comment-reads-a80c934079c9585d1976-b3bb7b219294e20a3028.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/comment-reads-a80c934079c9585d1976-b3bb7b219294e20a3028.json",
+      "sha256": "0b7f7870b2a877f3d5bfbe9e42edcde2baf53caf1ade07f70fd3b808059f0f8c",
+      "original_sha256": "0b7f7870b2a877f3d5bfbe9e42edcde2baf53caf1ade07f70fd3b808059f0f8c"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/comment-reads-a80c934079c9585d1976-c542a18a1edfe73f2896.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/comment-reads-a80c934079c9585d1976-c542a18a1edfe73f2896.json",
+      "sha256": "93bbc020953e915048d050543e941b405e46618c80c6e46bc68c47fb4eb769ed",
+      "original_sha256": "93bbc020953e915048d050543e941b405e46618c80c6e46bc68c47fb4eb769ed"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/comment-reads-a80c934079c9585d1976-e2a525683cff6075bcaf.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/comment-reads-a80c934079c9585d1976-e2a525683cff6075bcaf.json",
+      "sha256": "029c7a31e7774a9f038cd94970250f32268ec8f3cfeb69e00734ea71852809b5",
+      "original_sha256": "029c7a31e7774a9f038cd94970250f32268ec8f3cfeb69e00734ea71852809b5"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/en-1586-receipts.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/en-1586-receipts.json",
+      "sha256": "3d21365d45dba556539202b5a636f52f3d5c54b12eed60c1f3c71aad009d5fdf",
+      "original_sha256": "3d21365d45dba556539202b5a636f52f3d5c54b12eed60c1f3c71aad009d5fdf"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/en-390-receipts.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/en-390-receipts.json",
+      "sha256": "a85623a6ca81d2062d04882e4f0afd85fbbd762e2139050a919fb84c354b9fe7",
+      "original_sha256": "a85623a6ca81d2062d04882e4f0afd85fbbd762e2139050a919fb84c354b9fe7"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/grant-revocation-all.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/grant-revocation-all.json",
+      "sha256": "51cc99d6ce213356afb403484993e70d2cca6c77890a533b79743b2b3fc20644",
+      "original_sha256": "51cc99d6ce213356afb403484993e70d2cca6c77890a533b79743b2b3fc20644"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/grant-revocation-private.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/grant-revocation-private.json",
+      "sha256": "6ec12f53e4093d0ec3f19fe0cf483a64ba8d50a9d3dcc61652a928dca8829c86",
+      "original_sha256": "6ec12f53e4093d0ec3f19fe0cf483a64ba8d50a9d3dcc61652a928dca8829c86"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/mock-receipts.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/mock-receipts.json",
+      "sha256": "e74cc365e7cad1ae5f6f958dbcd6c89903cf480d36d2a91e7e02165d0b61cc89",
+      "original_sha256": "e74cc365e7cad1ae5f6f958dbcd6c89903cf480d36d2a91e7e02165d0b61cc89"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/native-hidden-read-counts.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/native-hidden-read-counts.json",
+      "sha256": "83b8851e9a0435884e4d1b55dd1187aa684eb5223725c27c76b88c8bdb1c166d",
+      "original_sha256": "83b8851e9a0435884e4d1b55dd1187aa684eb5223725c27c76b88c8bdb1c166d"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/playwright.log",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/playwright.log",
+      "sha256": "9ea9d46b482017b0f67e2c2ea1fa7a30e426c882bae66e8b4d9efb7b695935aa",
+      "original_sha256": "9ea9d46b482017b0f67e2c2ea1fa7a30e426c882bae66e8b4d9efb7b695935aa"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/results/.last-run.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "original_sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/scope-reads-a80c934079c9585d1976-0a333c185d7a371b1c67.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/scope-reads-a80c934079c9585d1976-0a333c185d7a371b1c67.json",
+      "sha256": "fa3b2de4bec465c7aa0dcd35007e3ea085ed33237e23bae3b9f5537bc3d3928d",
+      "original_sha256": "fa3b2de4bec465c7aa0dcd35007e3ea085ed33237e23bae3b9f5537bc3d3928d"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/scope-reads-a80c934079c9585d1976-14f0898b3d1815c9849e.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/scope-reads-a80c934079c9585d1976-14f0898b3d1815c9849e.json",
+      "sha256": "490d60b1d67ec80bda5dfb0a146e327b628d4d1c79bab6196566ae09e58a6295",
+      "original_sha256": "490d60b1d67ec80bda5dfb0a146e327b628d4d1c79bab6196566ae09e58a6295"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/scope-reads-a80c934079c9585d1976-3d3910468fb56fefde4c.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/scope-reads-a80c934079c9585d1976-3d3910468fb56fefde4c.json",
+      "sha256": "490d60b1d67ec80bda5dfb0a146e327b628d4d1c79bab6196566ae09e58a6295",
+      "original_sha256": "490d60b1d67ec80bda5dfb0a146e327b628d4d1c79bab6196566ae09e58a6295"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/scope-reads-a80c934079c9585d1976-465f31901bfb8f31579d.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/scope-reads-a80c934079c9585d1976-465f31901bfb8f31579d.json",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "original_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/scope-reads-a80c934079c9585d1976-47e7084f508de19ef5c4.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/scope-reads-a80c934079c9585d1976-47e7084f508de19ef5c4.json",
+      "sha256": "490d60b1d67ec80bda5dfb0a146e327b628d4d1c79bab6196566ae09e58a6295",
+      "original_sha256": "490d60b1d67ec80bda5dfb0a146e327b628d4d1c79bab6196566ae09e58a6295"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/scope-reads-a80c934079c9585d1976-5d8fd238c8503a789658.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/scope-reads-a80c934079c9585d1976-5d8fd238c8503a789658.json",
+      "sha256": "490d60b1d67ec80bda5dfb0a146e327b628d4d1c79bab6196566ae09e58a6295",
+      "original_sha256": "490d60b1d67ec80bda5dfb0a146e327b628d4d1c79bab6196566ae09e58a6295"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/scope-reads-a80c934079c9585d1976-61d7b48945678aaee328.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/scope-reads-a80c934079c9585d1976-61d7b48945678aaee328.json",
+      "sha256": "a8b85e7ca80bb5d80a1ecc04293f9581044dd708ea5164d1540ca6581b17b873",
+      "original_sha256": "a8b85e7ca80bb5d80a1ecc04293f9581044dd708ea5164d1540ca6581b17b873"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/scope-reads-a80c934079c9585d1976-8f49d3733c112574279b.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/scope-reads-a80c934079c9585d1976-8f49d3733c112574279b.json",
+      "sha256": "490d60b1d67ec80bda5dfb0a146e327b628d4d1c79bab6196566ae09e58a6295",
+      "original_sha256": "490d60b1d67ec80bda5dfb0a146e327b628d4d1c79bab6196566ae09e58a6295"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/scope-reads-a80c934079c9585d1976-a239e690a38cf837fc90.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/scope-reads-a80c934079c9585d1976-a239e690a38cf837fc90.json",
+      "sha256": "720fdee6adb5f4430b9914a435ba75708ad8b3378cd33af3b71b75b62490739a",
+      "original_sha256": "720fdee6adb5f4430b9914a435ba75708ad8b3378cd33af3b71b75b62490739a"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/scope-reads-a80c934079c9585d1976-b3bb7b219294e20a3028.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/scope-reads-a80c934079c9585d1976-b3bb7b219294e20a3028.json",
+      "sha256": "7a5afbd367962bc13cf4a565cf3b8a8a7a85515b72d7bfdf2b674eb7e7ee1aea",
+      "original_sha256": "7a5afbd367962bc13cf4a565cf3b8a8a7a85515b72d7bfdf2b674eb7e7ee1aea"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/scope-reads-a80c934079c9585d1976-c542a18a1edfe73f2896.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/scope-reads-a80c934079c9585d1976-c542a18a1edfe73f2896.json",
+      "sha256": "fda629a9a40b876098b01efdf58cd8b2a5e60e9543e7ab2b37ac0cd45ea59a4e",
+      "original_sha256": "fda629a9a40b876098b01efdf58cd8b2a5e60e9543e7ab2b37ac0cd45ea59a4e"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/scope-reads-a80c934079c9585d1976-e2a525683cff6075bcaf.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/scope-reads-a80c934079c9585d1976-e2a525683cff6075bcaf.json",
+      "sha256": "c700092791216b033c80ff6a54196d859cccf1f07f552dbd470a04df70afefec",
+      "original_sha256": "c700092791216b033c80ff6a54196d859cccf1f07f552dbd470a04df70afefec"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/zh-CN-1586-receipts.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/zh-CN-1586-receipts.json",
+      "sha256": "06f1f28af94b0bb09489ceb3e82d7a9b73a178600dec10a627b67ab4978223bc",
+      "original_sha256": "06f1f28af94b0bb09489ceb3e82d7a9b73a178600dec10a627b67ab4978223bc"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/zh-CN-390-receipts.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/zh-CN-390-receipts.json",
+      "sha256": "a2da8d521b6823dbf5ef29115d711bb91960b5b3351dac3c470954e0f4314618",
+      "original_sha256": "a2da8d521b6823dbf5ef29115d711bb91960b5b3351dac3c470954e0f4314618"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/zh-TW-1586-receipts.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/zh-TW-1586-receipts.json",
+      "sha256": "9952d6c2777d42102466b206c327e7eef2c9cfecfd6a6b416179a5d0471f5e08",
+      "original_sha256": "9952d6c2777d42102466b206c327e7eef2c9cfecfd6a6b416179a5d0471f5e08"
+    },
+    {
+      "path": "browser/console-2/live-console-2879311949/zh-TW-390-receipts.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/console-2/live-console-2879311949/zh-TW-390-receipts.json",
+      "sha256": "e1baf78e5793d852e76e3860cad0aed4fb119ec4c7e60d68d08c93a92cf02442",
+      "original_sha256": "e1baf78e5793d852e76e3860cad0aed4fb119ec4c7e60d68d08c93a92cf02442"
+    },
+    {
+      "path": "browser/ops-1/ops-polish-admin/20261010T062150.760307000/playwright.log",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/ops-1/ops-polish-admin/20261010T062150.760307000/playwright.log",
+      "sha256": "9e404be68d1dbd397b263e815d30d898f4f961b6b128ef66a8c641194d3e7f7e",
+      "original_sha256": "9e404be68d1dbd397b263e815d30d898f4f961b6b128ef66a8c641194d3e7f7e"
+    },
+    {
+      "path": "browser/ops-1/ops-polish-admin/20261010T062150.760307000/results/.last-run.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/ops-1/ops-polish-admin/20261010T062150.760307000/results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "original_sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "path": "browser/ops-1/ops-polish-storefront/20261010T062142.092019000/screenshots.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/ops-1/ops-polish-storefront/20261010T062142.092019000/screenshots.json",
+      "sha256": "e5f65d6fe66b7a7a3a17e3080970d279c0891dc7c99fb06966115887b01394af",
+      "original_sha256": "e5f65d6fe66b7a7a3a17e3080970d279c0891dc7c99fb06966115887b01394af"
+    },
+    {
+      "path": "browser/ops-2/ops-polish-admin/20261010T062322.396488000/playwright.log",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/ops-2/ops-polish-admin/20261010T062322.396488000/playwright.log",
+      "sha256": "5a3262ae7d12cf343f306e8e9610285993c756783f0df796ac58432325e663a1",
+      "original_sha256": "5a3262ae7d12cf343f306e8e9610285993c756783f0df796ac58432325e663a1"
+    },
+    {
+      "path": "browser/ops-2/ops-polish-admin/20261010T062322.396488000/results/.last-run.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/ops-2/ops-polish-admin/20261010T062322.396488000/results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "original_sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "path": "browser/ops-2/ops-polish-storefront/20261010T062311.251903000/screenshots.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/browser/ops-2/ops-polish-storefront/20261010T062311.251903000/screenshots.json",
+      "sha256": "b85e38cda1c7044b2141d54580efb2e9463dac8d3d21598fe2005ce52820fdf6",
+      "original_sha256": "b85e38cda1c7044b2141d54580efb2e9463dac8d3d21598fe2005ce52820fdf6"
+    },
+    {
+      "path": "runs/console-1.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/runs/console-1.json",
+      "sha256": "7406dab98e5a2b76f898bfb28029ff4626c4bb4492e69046c5796fe0d9154a8a",
+      "original_sha256": "b0099e094603ffa9fa4cf6d182ec937ef7cfaa9eaefb84a869035ae680a20186"
+    },
+    {
+      "path": "runs/console-1.log",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/runs/console-1.log",
+      "sha256": "4db814e880cc0291333a69d40a86393287040a0ae6b046bd9f6c84208d7a69b7",
+      "original_sha256": "4db814e880cc0291333a69d40a86393287040a0ae6b046bd9f6c84208d7a69b7"
+    },
+    {
+      "path": "runs/console-2.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/runs/console-2.json",
+      "sha256": "04f6341766539e18039a5e529228d29d86ae77adcee16a1b9dabc1e91dacfdbd",
+      "original_sha256": "22c00c8311afd20e25f567edfdf74e8328f54c9c1875678250f924cd53a828a3"
+    },
+    {
+      "path": "runs/console-2.log",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/runs/console-2.log",
+      "sha256": "bc0cd3b63265e265680e7a61dae33a85f1c831655898ee23f0a592198ec57517",
+      "original_sha256": "bc0cd3b63265e265680e7a61dae33a85f1c831655898ee23f0a592198ec57517"
+    },
+    {
+      "path": "runs/ops-1.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/runs/ops-1.json",
+      "sha256": "35603ac9e32fbf95173c4824d3a4e311ac09f67eba106ecdb75e629342da391c",
+      "original_sha256": "fbc88535cdceeac9f9dbf41a191a824b4d5b8669b0d238c544140a75838cef37"
+    },
+    {
+      "path": "runs/ops-1.log",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/runs/ops-1.log",
+      "sha256": "31e7b034745432ba0c494410f24ffba25d215d4700968c9d5204c9ce06c66ef0",
+      "original_sha256": "31e7b034745432ba0c494410f24ffba25d215d4700968c9d5204c9ce06c66ef0"
+    },
+    {
+      "path": "runs/ops-2.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/runs/ops-2.json",
+      "sha256": "0f8a6db2ff0e56ee6dc8edf22098125a90a5950e683861352829b4191883a864",
+      "original_sha256": "f0914d5f6133f55c80fad41679ac00290eafee7fabb8852ce132ea4677e83574"
+    },
+    {
+      "path": "runs/ops-2.log",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/canonical-staging/runs/ops-2.log",
+      "sha256": "1df5d350b59fa58f2ea64570e66bbca6647cda9175a687b73d719066c8d18320",
+      "original_sha256": "1df5d350b59fa58f2ea64570e66bbca6647cda9175a687b73d719066c8d18320"
+    },
+    {
+      "path": "browser/live-settings/click-ledger-9469f302ec04ac4bc9aa-0e9f70141aef6876257e.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/click-ledger-9469f302ec04ac4bc9aa-0e9f70141aef6876257e.json",
+      "sha256": "7d4fb94ddc6c739806805f2d79aafbd3b6d4860c7a84a432fa6df5dfb63cbbc6",
+      "original_sha256": "7d4fb94ddc6c739806805f2d79aafbd3b6d4860c7a84a432fa6df5dfb63cbbc6"
+    },
+    {
+      "path": "browser/live-settings/click-ledger-9469f302ec04ac4bc9aa-26833dde50dfa41c9c1d.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/click-ledger-9469f302ec04ac4bc9aa-26833dde50dfa41c9c1d.json",
+      "sha256": "50ec366df08015b147e50f3318fc7f2163fa43069476cffff4f4265780b5c40c",
+      "original_sha256": "50ec366df08015b147e50f3318fc7f2163fa43069476cffff4f4265780b5c40c"
+    },
+    {
+      "path": "browser/live-settings/click-ledger-9469f302ec04ac4bc9aa-2bcbc818559511cf08d7.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/click-ledger-9469f302ec04ac4bc9aa-2bcbc818559511cf08d7.json",
+      "sha256": "91d14f5c031f5d1466a43b40a33e141a2543d827e5edb0e8a6f469c170ca1cfc",
+      "original_sha256": "91d14f5c031f5d1466a43b40a33e141a2543d827e5edb0e8a6f469c170ca1cfc"
+    },
+    {
+      "path": "browser/live-settings/click-ledger-9469f302ec04ac4bc9aa-30fdaefa096249deca7e.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/click-ledger-9469f302ec04ac4bc9aa-30fdaefa096249deca7e.json",
+      "sha256": "aa20f011fca60408325fd931ea1b2bfca2d4d7002725987c8764ef1cc7341308",
+      "original_sha256": "aa20f011fca60408325fd931ea1b2bfca2d4d7002725987c8764ef1cc7341308"
+    },
+    {
+      "path": "browser/live-settings/click-ledger-9469f302ec04ac4bc9aa-53833e85d97f7f7b3f32.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/click-ledger-9469f302ec04ac4bc9aa-53833e85d97f7f7b3f32.json",
+      "sha256": "52297a30cc8d8d816b187fa5805b776f26a81a4081e0c44bed2fca265cd99604",
+      "original_sha256": "52297a30cc8d8d816b187fa5805b776f26a81a4081e0c44bed2fca265cd99604"
+    },
+    {
+      "path": "browser/live-settings/click-ledger-9469f302ec04ac4bc9aa-5e41410600f360fc3c9e.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/click-ledger-9469f302ec04ac4bc9aa-5e41410600f360fc3c9e.json",
+      "sha256": "fd08220d6509042a9031ef5bacf2a07943ae99ad87deb48b1d7606343fbd4006",
+      "original_sha256": "fd08220d6509042a9031ef5bacf2a07943ae99ad87deb48b1d7606343fbd4006"
+    },
+    {
+      "path": "browser/live-settings/click-ledger-9469f302ec04ac4bc9aa-5f333939a51de95bbf14.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/click-ledger-9469f302ec04ac4bc9aa-5f333939a51de95bbf14.json",
+      "sha256": "de62b244e8bc6ab5382e70146bffad1121a12b722385ed13ba2feeb8dc5a8f8e",
+      "original_sha256": "de62b244e8bc6ab5382e70146bffad1121a12b722385ed13ba2feeb8dc5a8f8e"
+    },
+    {
+      "path": "browser/live-settings/click-ledger-9469f302ec04ac4bc9aa-8927b2d9c6d195df624b.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/click-ledger-9469f302ec04ac4bc9aa-8927b2d9c6d195df624b.json",
+      "sha256": "f4a9f45b64317ff2e9f58b4ba9efde17096788f5a392181675814836f737623a",
+      "original_sha256": "f4a9f45b64317ff2e9f58b4ba9efde17096788f5a392181675814836f737623a"
+    },
+    {
+      "path": "browser/live-settings/click-ledger-9469f302ec04ac4bc9aa-9bb0f3355a0fba72faf6.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/click-ledger-9469f302ec04ac4bc9aa-9bb0f3355a0fba72faf6.json",
+      "sha256": "4ae0ee71b88930b3f679e7faef619837e223e8b939ad15dfa6dc2a1ae4faf34f",
+      "original_sha256": "4ae0ee71b88930b3f679e7faef619837e223e8b939ad15dfa6dc2a1ae4faf34f"
+    },
+    {
+      "path": "browser/live-settings/click-ledger-9469f302ec04ac4bc9aa-a51967fc94c660b2cd52.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/click-ledger-9469f302ec04ac4bc9aa-a51967fc94c660b2cd52.json",
+      "sha256": "35c81ae0762a038fc110d72a0885955380b488959dc459d2387cea7f1a489e85",
+      "original_sha256": "35c81ae0762a038fc110d72a0885955380b488959dc459d2387cea7f1a489e85"
+    },
+    {
+      "path": "browser/live-settings/click-ledger-9469f302ec04ac4bc9aa-a73559725de640e92199.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/click-ledger-9469f302ec04ac4bc9aa-a73559725de640e92199.json",
+      "sha256": "91d14f5c031f5d1466a43b40a33e141a2543d827e5edb0e8a6f469c170ca1cfc",
+      "original_sha256": "91d14f5c031f5d1466a43b40a33e141a2543d827e5edb0e8a6f469c170ca1cfc"
+    },
+    {
+      "path": "browser/live-settings/click-ledger-9469f302ec04ac4bc9aa-b01536bd95164c1e8def.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/click-ledger-9469f302ec04ac4bc9aa-b01536bd95164c1e8def.json",
+      "sha256": "ddfbbcf50cf26aa1d623bfad5fb088a6e2056746d14feb962e3775ea7c4614a3",
+      "original_sha256": "ddfbbcf50cf26aa1d623bfad5fb088a6e2056746d14feb962e3775ea7c4614a3"
+    },
+    {
+      "path": "browser/live-settings/click-ledger-9469f302ec04ac4bc9aa-b718a163b1d1750f50c2.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/click-ledger-9469f302ec04ac4bc9aa-b718a163b1d1750f50c2.json",
+      "sha256": "4801c1853987ac7da9d417b03b05296d2ef07cfc7eabaf9857f075869981193e",
+      "original_sha256": "4801c1853987ac7da9d417b03b05296d2ef07cfc7eabaf9857f075869981193e"
+    },
+    {
+      "path": "browser/live-settings/click-ledger-9469f302ec04ac4bc9aa-bd9bb5dae7cadb1c53e9.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/click-ledger-9469f302ec04ac4bc9aa-bd9bb5dae7cadb1c53e9.json",
+      "sha256": "66fa7504246c0ac164326b74498fe481a251b59d953a4e48f84a07e266610711",
+      "original_sha256": "66fa7504246c0ac164326b74498fe481a251b59d953a4e48f84a07e266610711"
+    },
+    {
+      "path": "browser/live-settings/click-ledger-9469f302ec04ac4bc9aa-c0816670e00920ce6bd7.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/click-ledger-9469f302ec04ac4bc9aa-c0816670e00920ce6bd7.json",
+      "sha256": "50ec366df08015b147e50f3318fc7f2163fa43069476cffff4f4265780b5c40c",
+      "original_sha256": "50ec366df08015b147e50f3318fc7f2163fa43069476cffff4f4265780b5c40c"
+    },
+    {
+      "path": "browser/live-settings/click-ledger-9469f302ec04ac4bc9aa-e4dc7bada60f97f2d2c4.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/click-ledger-9469f302ec04ac4bc9aa-e4dc7bada60f97f2d2c4.json",
+      "sha256": "50ec366df08015b147e50f3318fc7f2163fa43069476cffff4f4265780b5c40c",
+      "original_sha256": "50ec366df08015b147e50f3318fc7f2163fa43069476cffff4f4265780b5c40c"
+    },
+    {
+      "path": "browser/live-settings/click-ledger-9469f302ec04ac4bc9aa-eacf9f0d2ea34a5f5b15.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/click-ledger-9469f302ec04ac4bc9aa-eacf9f0d2ea34a5f5b15.json",
+      "sha256": "ace8488cff854b8cb0d665d0ce2b23efd3ba4638b00fcc8da7a78088f7cf79c6",
+      "original_sha256": "ace8488cff854b8cb0d665d0ce2b23efd3ba4638b00fcc8da7a78088f7cf79c6"
+    },
+    {
+      "path": "browser/live-settings/click-ledger-9469f302ec04ac4bc9aa-f2d46312747ef5ac937c.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/click-ledger-9469f302ec04ac4bc9aa-f2d46312747ef5ac937c.json",
+      "sha256": "65879e57b2f35c37b63278d236eb327201dd6252404daa99e914a2b8b065dd34",
+      "original_sha256": "65879e57b2f35c37b63278d236eb327201dd6252404daa99e914a2b8b065dd34"
+    },
+    {
+      "path": "browser/live-settings/click-ledger-9469f302ec04ac4bc9aa-f524823d87af7f169448.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/click-ledger-9469f302ec04ac4bc9aa-f524823d87af7f169448.json",
+      "sha256": "0ff06cb9b3ba2d87ed59cf96c606f2c2cb10716366119bff637e205940a81be9",
+      "original_sha256": "0ff06cb9b3ba2d87ed59cf96c606f2c2cb10716366119bff637e205940a81be9"
+    },
+    {
+      "path": "browser/live-settings/click-ledger-9469f302ec04ac4bc9aa-f835b293e56d0852f54b.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/click-ledger-9469f302ec04ac4bc9aa-f835b293e56d0852f54b.json",
+      "sha256": "bc72556c26b7871dce59163f32af64dd8776b2ac13d831648b5ad5176ae2cd77",
+      "original_sha256": "bc72556c26b7871dce59163f32af64dd8776b2ac13d831648b5ad5176ae2cd77"
+    },
+    {
+      "path": "browser/live-settings/click-ledger-9469f302ec04ac4bc9aa-fb16805729d30d98df09.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/click-ledger-9469f302ec04ac4bc9aa-fb16805729d30d98df09.json",
+      "sha256": "a245f0c7e0aeab6c04cfbd6eee37da6c2ced094a3bb19c6ba765ae30f930b3a3",
+      "original_sha256": "a245f0c7e0aeab6c04cfbd6eee37da6c2ced094a3bb19c6ba765ae30f930b3a3"
+    },
+    {
+      "path": "browser/live-settings/click-ledger-9469f302ec04ac4bc9aa-fc8f4f9f76569bb163a0.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/click-ledger-9469f302ec04ac4bc9aa-fc8f4f9f76569bb163a0.json",
+      "sha256": "91d14f5c031f5d1466a43b40a33e141a2543d827e5edb0e8a6f469c170ca1cfc",
+      "original_sha256": "91d14f5c031f5d1466a43b40a33e141a2543d827e5edb0e8a6f469c170ca1cfc"
+    },
+    {
+      "path": "browser/live-settings/click-ledger-native.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/click-ledger-native.json",
+      "sha256": "0c7077f62ce12dc4d07a1c5cf56364d698e5429de2fcb109c2df341f57efef9f",
+      "original_sha256": "0c7077f62ce12dc4d07a1c5cf56364d698e5429de2fcb109c2df341f57efef9f"
+    },
+    {
+      "path": "browser/live-settings/mock-receipts-9469f302ec04ac4bc9aa-0e9f70141aef6876257e.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/mock-receipts-9469f302ec04ac4bc9aa-0e9f70141aef6876257e.json",
+      "sha256": "adb11d53cf20b7a6b4637c43bed0c7a7ca4d9110d73ead0111a2df64b5aedec6",
+      "original_sha256": "adb11d53cf20b7a6b4637c43bed0c7a7ca4d9110d73ead0111a2df64b5aedec6"
+    },
+    {
+      "path": "browser/live-settings/mock-receipts-9469f302ec04ac4bc9aa-26833dde50dfa41c9c1d.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/mock-receipts-9469f302ec04ac4bc9aa-26833dde50dfa41c9c1d.json",
+      "sha256": "a1a05e588898dacaa98cb51cf1278dfa53c7404cd42c972179e204385523484e",
+      "original_sha256": "a1a05e588898dacaa98cb51cf1278dfa53c7404cd42c972179e204385523484e"
+    },
+    {
+      "path": "browser/live-settings/mock-receipts-9469f302ec04ac4bc9aa-2bcbc818559511cf08d7.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/mock-receipts-9469f302ec04ac4bc9aa-2bcbc818559511cf08d7.json",
+      "sha256": "f38797c5e114b0a6febbd99ed9421e61af8c8e3bbcbbcc2c60a270c540fb53e2",
+      "original_sha256": "f38797c5e114b0a6febbd99ed9421e61af8c8e3bbcbbcc2c60a270c540fb53e2"
+    },
+    {
+      "path": "browser/live-settings/mock-receipts-9469f302ec04ac4bc9aa-30fdaefa096249deca7e.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/mock-receipts-9469f302ec04ac4bc9aa-30fdaefa096249deca7e.json",
+      "sha256": "7b1c455a98a37d1e30965d88ae2beb51c85252c26fc12297cfe8146637f70c1d",
+      "original_sha256": "7b1c455a98a37d1e30965d88ae2beb51c85252c26fc12297cfe8146637f70c1d"
+    },
+    {
+      "path": "browser/live-settings/mock-receipts-9469f302ec04ac4bc9aa-53833e85d97f7f7b3f32.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/mock-receipts-9469f302ec04ac4bc9aa-53833e85d97f7f7b3f32.json",
+      "sha256": "f8bcb568d4d9a6f17189e1ffd3fcb5d0f948c44e3f2ec6c481fa6507251b1162",
+      "original_sha256": "f8bcb568d4d9a6f17189e1ffd3fcb5d0f948c44e3f2ec6c481fa6507251b1162"
+    },
+    {
+      "path": "browser/live-settings/mock-receipts-9469f302ec04ac4bc9aa-5e41410600f360fc3c9e.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/mock-receipts-9469f302ec04ac4bc9aa-5e41410600f360fc3c9e.json",
+      "sha256": "28fb3185bea4e497b507fe013619275ba2b172c7d29117ef30f58f6729b54782",
+      "original_sha256": "28fb3185bea4e497b507fe013619275ba2b172c7d29117ef30f58f6729b54782"
+    },
+    {
+      "path": "browser/live-settings/mock-receipts-9469f302ec04ac4bc9aa-5f333939a51de95bbf14.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/mock-receipts-9469f302ec04ac4bc9aa-5f333939a51de95bbf14.json",
+      "sha256": "7b79800a67b200932ea41e990d0f2c9b29d5e4b568b1a9452295611ef31a4126",
+      "original_sha256": "7b79800a67b200932ea41e990d0f2c9b29d5e4b568b1a9452295611ef31a4126"
+    },
+    {
+      "path": "browser/live-settings/mock-receipts-9469f302ec04ac4bc9aa-8927b2d9c6d195df624b.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/mock-receipts-9469f302ec04ac4bc9aa-8927b2d9c6d195df624b.json",
+      "sha256": "e93a247ba57cabf339b86e8d6afb3d63818b03cfa27105d579e8aabb99ce17a2",
+      "original_sha256": "e93a247ba57cabf339b86e8d6afb3d63818b03cfa27105d579e8aabb99ce17a2"
+    },
+    {
+      "path": "browser/live-settings/mock-receipts-9469f302ec04ac4bc9aa-9bb0f3355a0fba72faf6.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/mock-receipts-9469f302ec04ac4bc9aa-9bb0f3355a0fba72faf6.json",
+      "sha256": "f65285b0f0c23c9669bfccea655708f5486514e442b892ba7bce6cb0e888f516",
+      "original_sha256": "f65285b0f0c23c9669bfccea655708f5486514e442b892ba7bce6cb0e888f516"
+    },
+    {
+      "path": "browser/live-settings/mock-receipts-9469f302ec04ac4bc9aa-a51967fc94c660b2cd52.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/mock-receipts-9469f302ec04ac4bc9aa-a51967fc94c660b2cd52.json",
+      "sha256": "2aa039486975bdc19469a35f379c0db455cbae2ca529558f2ab9b88af3450ab5",
+      "original_sha256": "2aa039486975bdc19469a35f379c0db455cbae2ca529558f2ab9b88af3450ab5"
+    },
+    {
+      "path": "browser/live-settings/mock-receipts-9469f302ec04ac4bc9aa-a73559725de640e92199.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/mock-receipts-9469f302ec04ac4bc9aa-a73559725de640e92199.json",
+      "sha256": "cbaeb02932fbd1ceba1c929cb5d800efc07064b8ecb7fc31b99879db4389987b",
+      "original_sha256": "cbaeb02932fbd1ceba1c929cb5d800efc07064b8ecb7fc31b99879db4389987b"
+    },
+    {
+      "path": "browser/live-settings/mock-receipts-9469f302ec04ac4bc9aa-b01536bd95164c1e8def.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/mock-receipts-9469f302ec04ac4bc9aa-b01536bd95164c1e8def.json",
+      "sha256": "b63274f5f62e47117db16d5ceff67cc11be37b1bd6f99311a5bbb53d30b433bd",
+      "original_sha256": "b63274f5f62e47117db16d5ceff67cc11be37b1bd6f99311a5bbb53d30b433bd"
+    },
+    {
+      "path": "browser/live-settings/mock-receipts-9469f302ec04ac4bc9aa-b718a163b1d1750f50c2.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/mock-receipts-9469f302ec04ac4bc9aa-b718a163b1d1750f50c2.json",
+      "sha256": "26a911af337b81f200c06c0c849787ab51c28eba7b49566dde161bdaf2e1ed9f",
+      "original_sha256": "26a911af337b81f200c06c0c849787ab51c28eba7b49566dde161bdaf2e1ed9f"
+    },
+    {
+      "path": "browser/live-settings/mock-receipts-9469f302ec04ac4bc9aa-bd9bb5dae7cadb1c53e9.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/mock-receipts-9469f302ec04ac4bc9aa-bd9bb5dae7cadb1c53e9.json",
+      "sha256": "179f672a9d26bcbc11fc725309dc8fe5b0049f04252777698d61ae6704d21ee9",
+      "original_sha256": "179f672a9d26bcbc11fc725309dc8fe5b0049f04252777698d61ae6704d21ee9"
+    },
+    {
+      "path": "browser/live-settings/mock-receipts-9469f302ec04ac4bc9aa-c0816670e00920ce6bd7.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/mock-receipts-9469f302ec04ac4bc9aa-c0816670e00920ce6bd7.json",
+      "sha256": "b2bcdc43dcec4fa10f032bb28c58c100916e089a4dbb5332d0e5a12cfd242b65",
+      "original_sha256": "b2bcdc43dcec4fa10f032bb28c58c100916e089a4dbb5332d0e5a12cfd242b65"
+    },
+    {
+      "path": "browser/live-settings/mock-receipts-9469f302ec04ac4bc9aa-e4dc7bada60f97f2d2c4.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/mock-receipts-9469f302ec04ac4bc9aa-e4dc7bada60f97f2d2c4.json",
+      "sha256": "585cda5675c18586e3c7ba8db0bb5f28d7a593c0550b9a95be3c20e7768757f3",
+      "original_sha256": "585cda5675c18586e3c7ba8db0bb5f28d7a593c0550b9a95be3c20e7768757f3"
+    },
+    {
+      "path": "browser/live-settings/mock-receipts-9469f302ec04ac4bc9aa-eacf9f0d2ea34a5f5b15.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/mock-receipts-9469f302ec04ac4bc9aa-eacf9f0d2ea34a5f5b15.json",
+      "sha256": "83483bb727ca4e047e6fc6dac2c873761adf078801ed42e681847067559f727d",
+      "original_sha256": "83483bb727ca4e047e6fc6dac2c873761adf078801ed42e681847067559f727d"
+    },
+    {
+      "path": "browser/live-settings/mock-receipts-9469f302ec04ac4bc9aa-f2d46312747ef5ac937c.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/mock-receipts-9469f302ec04ac4bc9aa-f2d46312747ef5ac937c.json",
+      "sha256": "9a1eae4eb974f5c812ddcff7fc10c849a37a35c102999303d0f90cc8f89b0996",
+      "original_sha256": "9a1eae4eb974f5c812ddcff7fc10c849a37a35c102999303d0f90cc8f89b0996"
+    },
+    {
+      "path": "browser/live-settings/mock-receipts-9469f302ec04ac4bc9aa-f524823d87af7f169448.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/mock-receipts-9469f302ec04ac4bc9aa-f524823d87af7f169448.json",
+      "sha256": "4f08fc53465d5a8d9712ac8d46bad8ed3b1f0b2a6d13823f6e364d7e3c422e56",
+      "original_sha256": "4f08fc53465d5a8d9712ac8d46bad8ed3b1f0b2a6d13823f6e364d7e3c422e56"
+    },
+    {
+      "path": "browser/live-settings/mock-receipts-9469f302ec04ac4bc9aa-f835b293e56d0852f54b.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/mock-receipts-9469f302ec04ac4bc9aa-f835b293e56d0852f54b.json",
+      "sha256": "42af6310c082a0476aa7dc6bb13994b620c6a165e303c72a340319c21aefcbee",
+      "original_sha256": "42af6310c082a0476aa7dc6bb13994b620c6a165e303c72a340319c21aefcbee"
+    },
+    {
+      "path": "browser/live-settings/mock-receipts-9469f302ec04ac4bc9aa-fb16805729d30d98df09.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/mock-receipts-9469f302ec04ac4bc9aa-fb16805729d30d98df09.json",
+      "sha256": "d395d5cf4a47538713da9f94b68eb55a4a84bf6bfc8d74d138e9b7c25e95b37b",
+      "original_sha256": "d395d5cf4a47538713da9f94b68eb55a4a84bf6bfc8d74d138e9b7c25e95b37b"
+    },
+    {
+      "path": "browser/live-settings/mock-receipts-9469f302ec04ac4bc9aa-fc8f4f9f76569bb163a0.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/mock-receipts-9469f302ec04ac4bc9aa-fc8f4f9f76569bb163a0.json",
+      "sha256": "510da57bd3f6b7218ddcb170c8f992ed7174daf12d0a775fbba92d54db2014c4",
+      "original_sha256": "510da57bd3f6b7218ddcb170c8f992ed7174daf12d0a775fbba92d54db2014c4"
+    },
+    {
+      "path": "browser/live-settings/mock-receipts.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/mock-receipts.json",
+      "sha256": "2a186230fc7a62b2b0f8c0eb8722c52fdbad643e4c46a6c074dab2d5cdcfe9dd",
+      "original_sha256": "2a186230fc7a62b2b0f8c0eb8722c52fdbad643e4c46a6c074dab2d5cdcfe9dd"
+    },
+    {
+      "path": "browser/live-settings/playwright.log",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/playwright.log",
+      "sha256": "6b8dd09e364caada7ce0bbf03ad3011d468b1de6854fc8b0e6dbab2a8a2367ea",
+      "original_sha256": "6b8dd09e364caada7ce0bbf03ad3011d468b1de6854fc8b0e6dbab2a8a2367ea"
+    },
+    {
+      "path": "browser/live-settings/results/.last-run.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "original_sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "path": "browser/live-settings/settings-en-1440.png",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/settings-en-1440.png",
+      "sha256": "09053e83c551ae5416e33ef74b391b0105ff024b7600112e76b0f7faacd3eb2e",
+      "original_sha256": "09053e83c551ae5416e33ef74b391b0105ff024b7600112e76b0f7faacd3eb2e"
+    },
+    {
+      "path": "browser/live-settings/settings-en-390.png",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/settings-en-390.png",
+      "sha256": "83e2d173edb9c33709c692fcd812fb5c8c8bc4482d8e7bd858846c8cdc550d58",
+      "original_sha256": "83e2d173edb9c33709c692fcd812fb5c8c8bc4482d8e7bd858846c8cdc550d58"
+    },
+    {
+      "path": "browser/live-settings/settings-zh-CN-1440.png",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/settings-zh-CN-1440.png",
+      "sha256": "7406660d529c98cecf8113d272b4d7443ae17b9044077f5899852b98b3b0dc3f",
+      "original_sha256": "7406660d529c98cecf8113d272b4d7443ae17b9044077f5899852b98b3b0dc3f"
+    },
+    {
+      "path": "browser/live-settings/settings-zh-CN-390.png",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/settings-zh-CN-390.png",
+      "sha256": "09caa50679a24933f7fb7657d4bd7d001580104ff64b81c82b217e00b3b921b9",
+      "original_sha256": "09caa50679a24933f7fb7657d4bd7d001580104ff64b81c82b217e00b3b921b9"
+    },
+    {
+      "path": "browser/live-settings/settings-zh-TW-1440.png",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/settings-zh-TW-1440.png",
+      "sha256": "6a954887c4d2696ad4ddfd5caa53ad9b6ba836f0343c37f47288eca7b429aadc",
+      "original_sha256": "6a954887c4d2696ad4ddfd5caa53ad9b6ba836f0343c37f47288eca7b429aadc"
+    },
+    {
+      "path": "browser/live-settings/settings-zh-TW-390.png",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/settings-zh-TW-390.png",
+      "sha256": "53380391b25aaab7edaca5d8e85eb29d1a4a6671f56e9c25ef79095dc6b3b001",
+      "original_sha256": "53380391b25aaab7edaca5d8e85eb29d1a4a6671f56e9c25ef79095dc6b3b001"
+    },
+    {
+      "path": "browser/live-settings/soldout-states-en-1440.png",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/soldout-states-en-1440.png",
+      "sha256": "0bc9a1611332aaa4f67ae0c7f690aa4f5ddde31515d8ebf087b8081d737132e1",
+      "original_sha256": "0bc9a1611332aaa4f67ae0c7f690aa4f5ddde31515d8ebf087b8081d737132e1"
+    },
+    {
+      "path": "browser/live-settings/soldout-states-en-390.png",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/soldout-states-en-390.png",
+      "sha256": "1e8cd05cecb4788d40af64c74d1f42d3d75c2fcb9492429403ddecc94951c942",
+      "original_sha256": "1e8cd05cecb4788d40af64c74d1f42d3d75c2fcb9492429403ddecc94951c942"
+    },
+    {
+      "path": "browser/live-settings/soldout-states-zh-CN-1440.png",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/soldout-states-zh-CN-1440.png",
+      "sha256": "dc530c95fa904754f1c54ca59fdbb9453e9b4b1b3b3b7218af6675c8b5052671",
+      "original_sha256": "dc530c95fa904754f1c54ca59fdbb9453e9b4b1b3b3b7218af6675c8b5052671"
+    },
+    {
+      "path": "browser/live-settings/soldout-states-zh-CN-390.png",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/soldout-states-zh-CN-390.png",
+      "sha256": "ce4857fac97135dd23ef52dc40eda06f7d1c88cd1f507549181a4521b196e58e",
+      "original_sha256": "ce4857fac97135dd23ef52dc40eda06f7d1c88cd1f507549181a4521b196e58e"
+    },
+    {
+      "path": "browser/live-settings/soldout-states-zh-TW-1440.png",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/soldout-states-zh-TW-1440.png",
+      "sha256": "7de283d4e6725a5fe8635d92a485d0002ae34dc163698b99d35008fec263f244",
+      "original_sha256": "7de283d4e6725a5fe8635d92a485d0002ae34dc163698b99d35008fec263f244"
+    },
+    {
+      "path": "browser/live-settings/soldout-states-zh-TW-390.png",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/soldout-states-zh-TW-390.png",
+      "sha256": "7e73c4d347b4f97d8e1f1d7c37b162d748c1345490e72dde0ffed16056c7813c",
+      "original_sha256": "7e73c4d347b4f97d8e1f1d7c37b162d748c1345490e72dde0ffed16056c7813c"
+    },
+    {
+      "path": "browser/live-settings/source.json",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings-evidence/live-settings/20261010T074619.187696000Z/source.json",
+      "sha256": "347b4d67d8ccb79a73455ec84de1c6a05e8f42e13260027a712288f1d494f4d0",
+      "original_sha256": "347b4d67d8ccb79a73455ec84de1c6a05e8f42e13260027a712288f1d494f4d0"
+    },
+    {
+      "path": "browser/live-claims/playwright.log",
+      "source": "output/playwright/live-claims-2725675277/playwright.log",
+      "sha256": "1bd2fc625f442294d16525a32c990c2042133ec2cb8a02fa7fd669747f77f342",
+      "original_sha256": "1bd2fc625f442294d16525a32c990c2042133ec2cb8a02fa7fd669747f77f342"
+    },
+    {
+      "path": "browser/live-claims/result.json",
+      "source": "output/playwright/live-claims-2725675277/result.json",
+      "sha256": "03112f370e2112efe3c394c7e8e673844b3faf23b1662f49e775f45b046424f8",
+      "original_sha256": "03112f370e2112efe3c394c7e8e673844b3faf23b1662f49e775f45b046424f8"
+    },
+    {
+      "path": "browser/live-claims/results/.last-run.json",
+      "source": "output/playwright/live-claims-2725675277/results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "original_sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "path": "runs/test-node.log",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/test-node.log",
+      "sha256": "fea442e5a8b461d2f7ca98f497df2fdf3c3948e68a0e0ba22a1101c8c4c2d29e",
+      "original_sha256": "fea442e5a8b461d2f7ca98f497df2fdf3c3948e68a0e0ba22a1101c8c4c2d29e"
+    },
+    {
+      "path": "runs/typecheck.log",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/typecheck.log",
+      "sha256": "37fab15de17aa0ca1a1d3a45526b7890fbc4ca46e75454c0325fd964a5f448ef",
+      "original_sha256": "37fab15de17aa0ca1a1d3a45526b7890fbc4ca46e75454c0325fd964a5f448ef"
+    },
+    {
+      "path": "runs/registry-list.log",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/registry-list.log",
+      "sha256": "462cc214e71676c0cb82e06c4ccceb397bc612117ba19798dee00f5e64fb89f5",
+      "original_sha256": "462cc214e71676c0cb82e06c4ccceb397bc612117ba19798dee00f5e64fb89f5"
+    },
+    {
+      "path": "runs/check-gates.log",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/browser-chain/check-gates.log",
+      "sha256": "a26f3e818af5b85ca504f7f05aafd56e003c3dfa6ceef1e327dccec176b58340",
+      "original_sha256": "a26f3e818af5b85ca504f7f05aafd56e003c3dfa6ceef1e327dccec176b58340"
+    },
+    {
+      "path": "runs/http-real-pg.log",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/browser-chain/http-real-pg.log",
+      "sha256": "95175ba561a012ff40311965c8650d91b67b0d4870cb93722616f1ee63cb4503",
+      "original_sha256": "95175ba561a012ff40311965c8650d91b67b0d4870cb93722616f1ee63cb4503"
+    },
+    {
+      "path": "runs/console-1.log",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/browser-chain/console-1.log",
+      "sha256": "4db814e880cc0291333a69d40a86393287040a0ae6b046bd9f6c84208d7a69b7",
+      "original_sha256": "4db814e880cc0291333a69d40a86393287040a0ae6b046bd9f6c84208d7a69b7"
+    },
+    {
+      "path": "runs/console-2.log",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/browser-chain/console-2.log",
+      "sha256": "bc0cd3b63265e265680e7a61dae33a85f1c831655898ee23f0a592198ec57517",
+      "original_sha256": "bc0cd3b63265e265680e7a61dae33a85f1c831655898ee23f0a592198ec57517"
+    },
+    {
+      "path": "runs/ops-1.log",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/browser-chain/ops-1.log",
+      "sha256": "31e7b034745432ba0c494410f24ffba25d215d4700968c9d5204c9ce06c66ef0",
+      "original_sha256": "31e7b034745432ba0c494410f24ffba25d215d4700968c9d5204c9ce06c66ef0"
+    },
+    {
+      "path": "runs/ops-2.log",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/browser-chain/ops-2.log",
+      "sha256": "1df5d350b59fa58f2ea64570e66bbca6647cda9175a687b73d719066c8d18320",
+      "original_sha256": "1df5d350b59fa58f2ea64570e66bbca6647cda9175a687b73d719066c8d18320"
+    },
+    {
+      "path": "runs/live-settings.log",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-settings.log",
+      "sha256": "132f41074769a5f01eb0bc2862a941561651773c9c6bd3659a0c6043310ba359",
+      "original_sha256": "132f41074769a5f01eb0bc2862a941561651773c9c6bd3659a0c6043310ba359"
+    },
+    {
+      "path": "runs/live-claims.log",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/live-claims.log",
+      "sha256": "e38339a8e35e13516d32e8396897c73ea8dae2f9bbabad1079f2e5f7b5fb4694",
+      "original_sha256": "e38339a8e35e13516d32e8396897c73ea8dae2f9bbabad1079f2e5f7b5fb4694"
+    },
+    {
+      "path": "runs/contractdrift-post.log",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/remaining-browser-0744/contractdrift-post.log",
+      "sha256": "79e501bcac2ac9abc8ecd5267c1e22e776a8176f576657f9330de426a3c9015a",
+      "original_sha256": "79e501bcac2ac9abc8ecd5267c1e22e776a8176f576657f9330de426a3c9015a"
+    },
+    {
+      "path": "history/pg-queue-not-run.log",
+      "source": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/final-7737cb87/browser-chain/live-settings.log",
+      "sha256": "0d7233460c1c7c8d06d2247cf6932b65581e7d4fa5907a2f179dda15887b3478",
+      "original_sha256": "0d7233460c1c7c8d06d2247cf6932b65581e7d4fa5907a2f179dda15887b3478"
+    },
+    {
+      "path": "mapping/fix1-focused.exit",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/fix1-focused.exit",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "original_sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "path": "mapping/fix1-focused.log",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/fix1-focused.log",
+      "sha256": "bbf61dec1ac1ea3fba073a6111f2dc6a40a08e0212220a9749b2d61f9bdf0103",
+      "original_sha256": "bbf61dec1ac1ea3fba073a6111f2dc6a40a08e0212220a9749b2d61f9bdf0103"
+    },
+    {
+      "path": "mapping/fix2-focused.exit",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/fix2-focused.exit",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "original_sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "path": "mapping/fix2-focused.log",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/fix2-focused.log",
+      "sha256": "16bc4f960f045f6472ba4d709e29100a1943d03e4a98a738593fe16fd2d06922",
+      "original_sha256": "16bc4f960f045f6472ba4d709e29100a1943d03e4a98a738593fe16fd2d06922"
+    },
+    {
+      "path": "mapping/green-cli.exit",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/green-cli.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "original_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "mapping/green-cli.log",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/green-cli.log",
+      "sha256": "79e501bcac2ac9abc8ecd5267c1e22e776a8176f576657f9330de426a3c9015a",
+      "original_sha256": "79e501bcac2ac9abc8ecd5267c1e22e776a8176f576657f9330de426a3c9015a"
+    },
+    {
+      "path": "mapping/green-focused-final.exit",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/green-focused-final.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "original_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "mapping/green-focused-final.log",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/green-focused-final.log",
+      "sha256": "4de248592f5e1b0bd328a79527421e0d28f7a7e4407b890acfbd0fa519b86e0a",
+      "original_sha256": "4de248592f5e1b0bd328a79527421e0d28f7a7e4407b890acfbd0fa519b86e0a"
+    },
+    {
+      "path": "mapping/green-focused.exit",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/green-focused.exit",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "original_sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "path": "mapping/green-focused.log",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/green-focused.log",
+      "sha256": "67d03375377205d421bca050c29fc1c64887f2e3cac401e132a0b9888fbb4a6e",
+      "original_sha256": "67d03375377205d421bca050c29fc1c64887f2e3cac401e132a0b9888fbb4a6e"
+    },
+    {
+      "path": "mapping/green-review-cli.exit",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/green-review-cli.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "original_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "mapping/green-review-cli.log",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/green-review-cli.log",
+      "sha256": "79e501bcac2ac9abc8ecd5267c1e22e776a8176f576657f9330de426a3c9015a",
+      "original_sha256": "79e501bcac2ac9abc8ecd5267c1e22e776a8176f576657f9330de426a3c9015a"
+    },
+    {
+      "path": "mapping/green-review-focused.exit",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/green-review-focused.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "original_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "mapping/green-review-focused.log",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/green-review-focused.log",
+      "sha256": "8e990d0b63593caed6a4a4248f344b0bcede8668a4442b1de0beb9533c46fdbc",
+      "original_sha256": "8e990d0b63593caed6a4a4248f344b0bcede8668a4442b1de0beb9533c46fdbc"
+    },
+    {
+      "path": "mapping/red-cli.exit",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/red-cli.exit",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "original_sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "path": "mapping/red-cli.log",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/red-cli.log",
+      "sha256": "607f71e8c7b07a2d21126ae95995da0249dd314c22991e26dcb16359958cc719",
+      "original_sha256": "607f71e8c7b07a2d21126ae95995da0249dd314c22991e26dcb16359958cc719"
+    },
+    {
+      "path": "mapping/red-guard-alias.exit",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/red-guard-alias.exit",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "original_sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "path": "mapping/red-guard-alias.log",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/red-guard-alias.log",
+      "sha256": "a268e3ecb7d666a8880f9e7ddd06c491faf0cb30b22d742d179e2eee7369b10d",
+      "original_sha256": "a268e3ecb7d666a8880f9e7ddd06c491faf0cb30b22d742d179e2eee7369b10d"
+    },
+    {
+      "path": "mapping/red-review-mutants.exit",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/red-review-mutants.exit",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "original_sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "path": "mapping/red-review-mutants.log",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/red-review-mutants.log",
+      "sha256": "1068ea7102956f95ed4a09f56e0af3f7287fff6e64974d6a5b47d6d9384c60dc",
+      "original_sha256": "1068ea7102956f95ed4a09f56e0af3f7287fff6e64974d6a5b47d6d9384c60dc"
+    },
+    {
+      "path": "mapping/red-tests.exit",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/red-tests.exit",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "original_sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "path": "mapping/red-tests.log",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/red-tests.log",
+      "sha256": "64660bab28bf86badf1cbff9350bcb9c4efca743807522f5f84f227d1fa71576",
+      "original_sha256": "64660bab28bf86badf1cbff9350bcb9c4efca743807522f5f84f227d1fa71576"
+    },
+    {
+      "path": "mapping/source-hashes.txt",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/source-hashes.txt",
+      "sha256": "a8593ff5be0f69985e8cde3ed9c7dc0a9f65d7679e78a9dc69c418eac997cd73",
+      "original_sha256": "a8593ff5be0f69985e8cde3ed9c7dc0a9f65d7679e78a9dc69c418eac997cd73"
+    },
+    {
+      "path": "mapping/whole-review-tests.exit",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/whole-review-tests.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "original_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "mapping/whole-review-tests.log",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/whole-review-tests.log",
+      "sha256": "a7d44c97e0a3f4c5659e30d41df8f284a6e75d4a8710301b1e73162fa6738a9a",
+      "original_sha256": "a7d44c97e0a3f4c5659e30d41df8f284a6e75d4a8710301b1e73162fa6738a9a"
+    },
+    {
+      "path": "mapping/whole-tests.exit",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/whole-tests.exit",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "original_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "mapping/whole-tests.log",
+      "source": ".worktrees/pr31-drift-mapping/output/pr31-drift-mapping/whole-tests.log",
+      "sha256": "efee58ece906f3df7b97f06e095dc16b6effb2366c2ee43e426edc66cf61cd8e",
+      "original_sha256": "efee58ece906f3df7b97f06e095dc16b6effb2366c2ee43e426edc66cf61cd8e"
+    }
+  ],
+  "not_run": [
+    "Full foundation-shards",
+    "Other selected browser modes",
+    "Remote current-head CI and K3",
+    "Provider SANDBOX/LIVE and production deployment"
+  ],
+  "final_artifact_check": {
+    "argv": [
+      "bash",
+      "scripts/dev/check-gates.sh"
+    ],
+    "source_sha": "7737cb87d186c5b17ef582142c7766136660a41b",
+    "started_at": "2026-10-10T07:55:08.868087+00:00",
+    "env": {
+      "LC_HEADER_BASE": "origin/r3/integration"
+    },
+    "purpose": "Final staged artifact filenames and headers; runtime source unchanged",
+    "timeout_seconds": 600,
+    "state": "finished",
+    "log": "output/w3-u2-live-settings-ui/pr36-integration/final-artifact-check.log",
+    "pid": 74090,
+    "exit_code": 0,
+    "elapsed_seconds": 124.891,
+    "ended_at": "2026-10-10T07:57:13.748675+00:00",
+    "log_sha256": "235d4912cbb255aea027132e096d6ff4925b22ccf2815e4d901983dae499dd87"
+  }
+}

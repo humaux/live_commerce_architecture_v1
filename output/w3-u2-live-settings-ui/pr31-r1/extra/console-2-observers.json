@@ -1,0 +1,64 @@
+{
+  "tested_source_commit": "0ff7ca92fea1e31607c16099ea5429b6dd882a7b",
+  "source_directory": "output/playwright/pr31-extra-browser-live-console-2-20261009T184558/live-console-4131858000",
+  "first_denials": [
+    {
+      "file": "browser-current/console-2/scope-reads-a80c934079c9585d1976-a239e690a38cf837fc90.json",
+      "first404": {
+        "path": "/api/stores/ca5981af-77c1-4886-bbf1-4451a7cd9292/inbox/buyer-panel",
+        "category": "buyer-panel",
+        "status": 404,
+        "method": "GET"
+      }
+    },
+    {
+      "file": "browser-current/console-2/scope-reads-a80c934079c9585d1976-c542a18a1edfe73f2896.json",
+      "first404": {
+        "path": "/api/stores/ca5981af-77c1-4886-bbf1-4451a7cd9292/live-sessions/fed8fd63-3843-4cd3-a100-4d209e87483e/claims/blocklist/check",
+        "category": "restriction",
+        "status": 404,
+        "method": "GET"
+      }
+    }
+  ],
+  "all_runtime_assertions": "unchanged fullmode PASS",
+  "files": {
+    "browser-current/console-2/grant-revocation-all.json": "51cc99d6ce213356afb403484993e70d2cca6c77890a533b79743b2b3fc20644",
+    "browser-current/console-2/mock-receipts.json": "a7f0f3542ec1504453b4b164614036fa02f565c25631dbf6441b23681d3b4e60",
+    "browser-current/console-2/scope-reads-a80c934079c9585d1976-5d8fd238c8503a789658.json": "7ed6cce02be12131910f9d542a96955d04319b00f8307b3cf82f1cdf5da83825",
+    "browser-current/console-2/next.log": "594728111a4df26c4b79b6f47998f2dcc9a81777991aa8e4467dd3c65686a76a",
+    "browser-current/console-2/console-native-i7uTaD.log": "c626e6231fa25398be95a952f31e13310468115f47940e620dae078cd5ddf2c5",
+    "browser-current/console-2/playwright.log": "9ea9d46b482017b0f67e2c2ea1fa7a30e426c882bae66e8b4d9efb7b695935aa",
+    "browser-current/console-2/comment-reads-a80c934079c9585d1976-465f31901bfb8f31579d.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "browser-current/console-2/comment-reads-a80c934079c9585d1976-3d3910468fb56fefde4c.json": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca",
+    "browser-current/console-2/comment-reads-a80c934079c9585d1976-5d8fd238c8503a789658.json": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca",
+    "browser-current/console-2/scope-reads-a80c934079c9585d1976-465f31901bfb8f31579d.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "browser-current/console-2/scope-reads-a80c934079c9585d1976-3d3910468fb56fefde4c.json": "7ed6cce02be12131910f9d542a96955d04319b00f8307b3cf82f1cdf5da83825",
+    "browser-current/console-2/en-1586-receipts.json": "fe7ec542461b76840ed19238d1ff3cb9e5b96deacec4c1ed147f213fff4090aa",
+    "browser-current/console-2/comment-reads-a80c934079c9585d1976-47e7084f508de19ef5c4.json": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca",
+    "browser-current/console-2/comment-reads-a80c934079c9585d1976-a239e690a38cf837fc90.json": "0b01b423d38e09305fdaafcd6e7b4cb4938e2a67878ea99ed25684e260daee61",
+    "browser-current/console-2/comment-reads-a80c934079c9585d1976-0a333c185d7a371b1c67.json": "bcace205d000d57d81ae119dbb31d11493989cafed02d032c34ed696509dae46",
+    "browser-current/console-2/comment-reads-a80c934079c9585d1976-e2a525683cff6075bcaf.json": "029c7a31e7774a9f038cd94970250f32268ec8f3cfeb69e00734ea71852809b5",
+    "browser-current/console-2/comment-reads-a80c934079c9585d1976-14f0898b3d1815c9849e.json": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca",
+    "browser-current/console-2/scope-reads-a80c934079c9585d1976-8f49d3733c112574279b.json": "7ed6cce02be12131910f9d542a96955d04319b00f8307b3cf82f1cdf5da83825",
+    "browser-current/console-2/zh-CN-1586-receipts.json": "cac623f46d2989f35af6eed1e7bb1939bd4c81e78ba91e4337d88cd8149f500d",
+    "browser-current/console-2/zh-CN-390-receipts.json": "82b204b35c9d4c4b19ab6328b9bd4432170c7ef8b1108c23593adbb4f5b30ae4",
+    "browser-current/console-2/scope-reads-a80c934079c9585d1976-b3bb7b219294e20a3028.json": "660a722b578695850c8a45f60e785884310d3f7a8d36c0913c45c422fe90088e",
+    "browser-current/console-2/zh-TW-1586-receipts.json": "aeffe7e18ed6c81ef596fad61bc42b5fa05edec3f9cbebcd50686ffc9be034a5",
+    "browser-current/console-2/comment-reads-a80c934079c9585d1976-c542a18a1edfe73f2896.json": "93bbc020953e915048d050543e941b405e46618c80c6e46bc68c47fb4eb769ed",
+    "browser-current/console-2/native-hidden-read-counts.json": "1f78f0298133810928b002a27daae87266ec01e629a74b992165a1f6ef9e3835",
+    "browser-current/console-2/comment-reads-a80c934079c9585d1976-61d7b48945678aaee328.json": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca",
+    "browser-current/console-2/en-390-receipts.json": "2b9578a953ec8b14ff0304b67420235c24ff9b0f92d01f5f77eb3e4012cf717d",
+    "browser-current/console-2/scope-reads-a80c934079c9585d1976-14f0898b3d1815c9849e.json": "7ed6cce02be12131910f9d542a96955d04319b00f8307b3cf82f1cdf5da83825",
+    "browser-current/console-2/comment-reads-a80c934079c9585d1976-8f49d3733c112574279b.json": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca",
+    "browser-current/console-2/scope-reads-a80c934079c9585d1976-a239e690a38cf837fc90.json": "14152964a4aa7fa560825de27fc63de8510230b9703c3e9e48ff22cb2013fb03",
+    "browser-current/console-2/scope-reads-a80c934079c9585d1976-0a333c185d7a371b1c67.json": "d8268d3df84ed8a933f93e75edb3371b302fb366dffc49d2f07cd0c13444e522",
+    "browser-current/console-2/scope-reads-a80c934079c9585d1976-47e7084f508de19ef5c4.json": "7ed6cce02be12131910f9d542a96955d04319b00f8307b3cf82f1cdf5da83825",
+    "browser-current/console-2/scope-reads-a80c934079c9585d1976-e2a525683cff6075bcaf.json": "527f5253eb6b7b7bd2ad4fbcc06ff6a54d79dde87640678c04cfaf59d2347e08",
+    "browser-current/console-2/grant-revocation-private.json": "6ec12f53e4093d0ec3f19fe0cf483a64ba8d50a9d3dcc61652a928dca8829c86",
+    "browser-current/console-2/scope-reads-a80c934079c9585d1976-61d7b48945678aaee328.json": "7ed6cce02be12131910f9d542a96955d04319b00f8307b3cf82f1cdf5da83825",
+    "browser-current/console-2/scope-reads-a80c934079c9585d1976-c542a18a1edfe73f2896.json": "a8c9c1d42c802a2677af6c3ae4d603a00d9010d6b65b78e90fe52e560d96ad2c",
+    "browser-current/console-2/comment-reads-a80c934079c9585d1976-b3bb7b219294e20a3028.json": "0b7f7870b2a877f3d5bfbe9e42edcde2baf53caf1ade07f70fd3b808059f0f8c",
+    "browser-current/console-2/zh-TW-390-receipts.json": "4ffdd18ce2e98fdc898e62391fb75261d685e53c09d0ffd69a0540e8975fdab8"
+  }
+}

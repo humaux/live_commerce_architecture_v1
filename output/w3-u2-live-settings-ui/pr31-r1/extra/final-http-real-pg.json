@@ -1,0 +1,21 @@
+{
+  "tested_source_commit": "0ff7ca92fea1e31607c16099ea5429b6dd882a7b",
+  "argv": [
+    "bash",
+    "scripts/dev/test-focused.sh",
+    "TestLiveSettingsHTTP",
+    "./tests/foundation",
+    "./internal/httpapi"
+  ],
+  "command": "LC_TEST_LOCK_WAIT=1800 bash scripts/dev/test-focused.sh 'TestLiveSettingsHTTP' ./tests/foundation ./internal/httpapi",
+  "timeout_seconds": 3000,
+  "log": "output/w3-u2-live-settings-ui/pr31-r1/extra/final-http-real-pg.log",
+  "started_utc": "2026-10-09T19:04:01.108786+00:00",
+  "failure_match": "FAIL|NOT_RUN|Error",
+  "wake": "exec completion/poll<=60s",
+  "pid": 83402,
+  "exit": 0,
+  "ended_utc": "2026-10-09T19:04:12.459769+00:00",
+  "log_sha256": "d1f8a6a13c181b724da2931f4448c87c2ac9d91f7c26eb0d4a862d8322d1eb63",
+  "exec_session_id": 18056
+}

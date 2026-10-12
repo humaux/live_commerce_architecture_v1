@@ -1,3 +1,6 @@
+// Purpose: shop-gate.mjs startup uses bounded shared bind-race recovery; gate assertions are unchanged.
+// Depends on: tests/helpers/next-startup.mjs and existing app/fixture/edge imports below.
+// Used by: its scripts/dev/test-local.sh browser mode; GATE-PORT acceptance.
 // SF gate (MOCK tier): the buyer storefront shell in a real browser against the production Next build (or `next dev` with
 // LC_SHOP_MODE=dev for iteration), a contract-shaped fake of the Go buyer API (tests/storefront/shop-fake-api.mjs, MOCK) and a
 // self-signed https edge that preserves the virtual host shop.example (the BFF derives the store origin from Host). Not the real
@@ -5,6 +8,7 @@
 // gates, and the tester's production-shape run once catalog-core + store-design are merged).
 // Env: LC_SHOP_EVIDENCE (dir for logs, required), LC_SHOP_SHOTS (optional dir: screenshots of every page at 390 and 1280),
 // LC_BROWSER_ENGINE=chromium|webkit (tests/storefront/browser-engine.mjs), LC_SHOP_MODE=start|dev.
+import { startNextWithPortRetry, nextAttemptLog } from "../helpers/next-startup.mjs";
 import assert from "node:assert/strict";
 import http from "node:http";
 import https from "node:https";
@@ -35,30 +39,33 @@ let browser, edge, proxy, cases = 0;
 const pass = (name) => { cases++; console.log(`PASS ${name}`); };
 const key = () => randomBytes(32).toString("base64url");
 async function listen(server) { server.listen(0, "127.0.0.1"); await once(server, "listening"); return server.address().port; }
-async function freePort() { const s = net.createServer(); const p = await listen(s); await new Promise((r) => s.close(r)); return p; }
 
 const bffKey = key();
 const api = createFakeApi({ bffKey });
 const apiPort = await api.listen();
 
 async function startNext() {
-  const port = await freePort();
-  const log = createWriteStream(path.join(evidence, `next-${Date.now()}.log`), { flags: "wx", mode: 0o600 });
-  logs.push(log); await once(log, "open");
-  const bin = path.join(root, "apps/storefront/node_modules/next/dist/bin/next");
-  const args = mode === "dev" ? [bin, "dev", "--hostname", "127.0.0.1", "--port", String(port)] : [bin, "start", "--hostname", "127.0.0.1", "--port", String(port)];
-  const child = spawn(process.execPath, args, {
-    cwd: path.join(root, "apps/storefront"),
-    env: { ...process.env, NODE_ENV: mode === "dev" ? "development" : "production", NEXT_TELEMETRY_DISABLED: "1", COMMERCE_BUYER_WEB_ENABLED: "1", COMMERCE_BUYER_API_ORIGIN: `http://127.0.0.1:${apiPort}`, COMMERCE_BUYER_BFF_KEY: bffKey, COMMERCE_BUYER_COOKIE_KEY: key(), COMMERCE_BUYER_SESSION_TTL: "3600" },
-    stdio: ["ignore", log, log],
+  return startNextWithPortRetry({}, async ({ port, attempt, track }) => {
+
+    const log = createWriteStream(nextAttemptLog(path.join(evidence, `next-${Date.now()}.log`), attempt), { flags: "wx", mode: 0o600 });
+    logs.push(log); await once(log, "open");
+    const bin = path.join(root, "apps/storefront/node_modules/next/dist/bin/next");
+    const args = mode === "dev" ? [bin, "dev", "--hostname", "127.0.0.1", "--port", String(port)] : [bin, "start", "--hostname", "127.0.0.1", "--port", String(port)];
+    const child = spawn(process.execPath, args, {
+      cwd: path.join(root, "apps/storefront"),
+      env: { ...process.env, NODE_ENV: mode === "dev" ? "development" : "production", NEXT_TELEMETRY_DISABLED: "1", COMMERCE_BUYER_WEB_ENABLED: "1", COMMERCE_BUYER_API_ORIGIN: `http://127.0.0.1:${apiPort}`, COMMERCE_BUYER_BFF_KEY: bffKey, COMMERCE_BUYER_COOKIE_KEY: key(), COMMERCE_BUYER_SESSION_TTL: "3600" },
+      stdio: ["ignore", log, log],
+    });
+    track(child, log);
+    children.add(child);
+    for (let i = 0; i < 400; i++) {
+      if (child.exitCode !== null) throw new Error("Next exited before readiness");
+      try { const r = await relay(port, { url: "/robots.txt", method: "GET", headers: { host: HOST } }, Buffer.alloc(0)); if (r.status === 200) return { port, child }; } catch { /* not up yet */ }
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    throw new Error("Next readiness timeout");
+
   });
-  children.add(child);
-  for (let i = 0; i < 400; i++) {
-    if (child.exitCode !== null) throw new Error("Next exited before readiness");
-    try { const r = await relay(port, { url: "/robots.txt", method: "GET", headers: { host: HOST } }, Buffer.alloc(0)); if (r.status === 200) return { port, child }; } catch { /* not up yet */ }
-    await new Promise((r) => setTimeout(r, 100));
-  }
-  throw new Error("Next readiness timeout");
 }
 // Raw http keeps the virtual Host exactly as the browser sent it (Node fetch would rewrite it).
 function relay(port, req, body) {

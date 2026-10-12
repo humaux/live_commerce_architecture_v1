@@ -1,0 +1,126 @@
+✖ PR31 reminder scope 404 clears already loaded private sections (21.84925ms)
+✖ PR31 old run callback cannot borrow a revealed page's new fence (3.474458ms)
+✖ PR31 old save callback cannot borrow a revealed page's new fence (2.417708ms)
+✖ PR31 old copy callback cannot borrow a revealed page's new fence (1.472833ms)
+✖ PR31 old page callback cannot borrow a revealed page's new fence (1.797709ms)
+✖ PR31 old loadMoreSessions callback cannot borrow a revealed page's new fence (1.962042ms)
+✔ PR31 normal visible focus preserves captured command admission and UNKNOWN receipt (2.54325ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 1
+ℹ fail 6
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 397.114833
+
+✖ failing tests:
+
+test at tests/admin/live-settings-hooks.test.ts:159:1
+✖ PR31 reminder scope 404 clears already loaded private sections (21.84925ms)
+  AssertionError [ERR_ASSERTION]: a store/session refusal is not an absent optional route
+  + actual - expected
+  
+  + {
+  +   enabled: true,
+  +   template_id: 'merchant-reply',
+  +   template_version: 1,
+  +   version: 3
+  + }
+  - null
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-hooks.test.ts:166:9)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { enabled: true, template_id: 'merchant-reply', template_version: 1, version: 3 },
+    expected: null,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-hooks.test.ts:171:78
+✖ PR31 old run callback cannot borrow a revealed page's new fence (3.474458ms)
+  AssertionError [ERR_ASSERTION]: a captured callback cannot resend the discarded draft/command
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-hooks.test.ts:196:9)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-hooks.test.ts:171:78
+✖ PR31 old save callback cannot borrow a revealed page's new fence (2.417708ms)
+  AssertionError [ERR_ASSERTION]: a captured callback cannot resend the discarded draft/command
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-hooks.test.ts:196:9)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-hooks.test.ts:171:78
+✖ PR31 old copy callback cannot borrow a revealed page's new fence (1.472833ms)
+  AssertionError [ERR_ASSERTION]: a captured callback cannot copy a discarded private link
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-hooks.test.ts:197:9)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-hooks.test.ts:171:78
+✖ PR31 old page callback cannot borrow a revealed page's new fence (1.797709ms)
+  AssertionError [ERR_ASSERTION]: a captured callback cannot start stale pagination
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-hooks.test.ts:198:9)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-hooks.test.ts:171:78
+✖ PR31 old loadMoreSessions callback cannot borrow a revealed page's new fence (1.962042ms)
+  AssertionError [ERR_ASSERTION]: a captured callback cannot start stale pagination
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-hooks.test.ts:198:9)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

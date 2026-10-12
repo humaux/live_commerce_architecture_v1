@@ -1,0 +1,21 @@
+✔ reminder route absence GET is local only after fresh store and permission proof (20.242167ms)
+✔ reminder route absence GET never aliases an initially revoked store (1.229208ms)
+✔ reminder route absence GET detects store loss at the fresh recheck (2.34525ms)
+✔ reminder route absence GET requires fresh complete method permissions (2.2695ms)
+✔ reminder route GET preserves JSON not_found and existing authorization failures (2.94275ms)
+✔ reminder route absence GET fails closed when fresh authentication cannot be proved (2.959167ms)
+✔ reminder route absence POST is local only after fresh store and permission proof (1.729333ms)
+✔ reminder route absence POST never aliases an initially revoked store (0.816875ms)
+✔ reminder route absence POST detects store loss at the fresh recheck (0.8615ms)
+✔ reminder route absence POST requires fresh complete method permissions (1.851583ms)
+✔ reminder route POST preserves JSON not_found and existing authorization failures (1.771166ms)
+✔ reminder route absence POST fails closed when fresh authentication cannot be proved (3.70925ms)
+✔ reminder absence proof rejects arbitrary text, wrong media types and unbounded bodies (8.865083ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 135.77175

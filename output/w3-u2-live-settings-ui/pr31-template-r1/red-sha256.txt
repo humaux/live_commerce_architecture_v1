@@ -1,0 +1,2 @@
+b574da7baa5f2f0ba2e9a9c9e009cbfacde76fae5dda23cdb0fe6ad95acb469b  apps/admin/lib/live-settings-model.ts
+1ea5be0d92581b36dab5a811d07f0433db774c8cdc03a786e114052dd5ca0662  tests/admin/live-settings-bff.test.ts

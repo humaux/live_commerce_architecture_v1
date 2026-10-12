@@ -1,0 +1,71 @@
+{
+  "tested_source_commit": "0ff7ca92fea1e31607c16099ea5429b6dd882a7b",
+  "source_directory": "output/playwright/pr31-extra-browser-live-console-1-20261009T183926/live-console-2785238461",
+  "first_denials": [
+    {
+      "file": "browser-current/console-1/scope-reads-a80c934079c9585d1976-a239e690a38cf837fc90.json",
+      "first404": {
+        "path": "/api/stores/a6fe37ae-4709-4a4e-9cbc-48dcb59345e4/inbox/buyer-panel",
+        "category": "buyer-panel",
+        "status": 404,
+        "method": "GET"
+      },
+      "denied_paths": [
+        "/api/stores/a6fe37ae-4709-4a4e-9cbc-48dcb59345e4/inbox/buyer-panel",
+        "/api/stores/a6fe37ae-4709-4a4e-9cbc-48dcb59345e4/live-sessions/283445e6-e398-4f73-8ad3-013f76d89258/comments"
+      ]
+    },
+    {
+      "file": "browser-current/console-1/scope-reads-a80c934079c9585d1976-c542a18a1edfe73f2896.json",
+      "first404": {
+        "path": "/api/stores/a6fe37ae-4709-4a4e-9cbc-48dcb59345e4/live-sessions/283445e6-e398-4f73-8ad3-013f76d89258/claims/blocklist/check",
+        "category": "restriction",
+        "status": 404,
+        "method": "GET"
+      },
+      "denied_paths": [
+        "/api/stores/a6fe37ae-4709-4a4e-9cbc-48dcb59345e4/live-sessions/283445e6-e398-4f73-8ad3-013f76d89258/claims/blocklist/check"
+      ]
+    }
+  ],
+  "all_runtime_assertions": "unchanged full mode PASS",
+  "files": {
+    "browser-current/console-1/grant-revocation-all.json": "51cc99d6ce213356afb403484993e70d2cca6c77890a533b79743b2b3fc20644",
+    "browser-current/console-1/mock-receipts.json": "c7671e14fb44db3c612ba276c5da453e7931ddc3e2a588bdf367dff0c8daad74",
+    "browser-current/console-1/console-native-1jgONS.log": "e79ddcb56d625bee0c7c2a1e2211efa651c28719ed0ddee4ce2b4c1fe2b60b50",
+    "browser-current/console-1/scope-reads-a80c934079c9585d1976-5d8fd238c8503a789658.json": "39b271e19536b87e643185160d798c3433cecf1a279c102851b3c6ed7c442604",
+    "browser-current/console-1/next.log": "4093600eb58b87ba804ce9d9eca71873593cf40beaccdba41fc8e3f896ac052a",
+    "browser-current/console-1/playwright.log": "9ea9d46b482017b0f67e2c2ea1fa7a30e426c882bae66e8b4d9efb7b695935aa",
+    "browser-current/console-1/comment-reads-a80c934079c9585d1976-465f31901bfb8f31579d.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "browser-current/console-1/comment-reads-a80c934079c9585d1976-3d3910468fb56fefde4c.json": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca",
+    "browser-current/console-1/comment-reads-a80c934079c9585d1976-5d8fd238c8503a789658.json": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca",
+    "browser-current/console-1/scope-reads-a80c934079c9585d1976-465f31901bfb8f31579d.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "browser-current/console-1/scope-reads-a80c934079c9585d1976-3d3910468fb56fefde4c.json": "39b271e19536b87e643185160d798c3433cecf1a279c102851b3c6ed7c442604",
+    "browser-current/console-1/en-1586-receipts.json": "0fc607fc77a769b6eb82e5391d2b74fb5fd7da141a5184254d866249f9917f7b",
+    "browser-current/console-1/comment-reads-a80c934079c9585d1976-47e7084f508de19ef5c4.json": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca",
+    "browser-current/console-1/comment-reads-a80c934079c9585d1976-a239e690a38cf837fc90.json": "0b01b423d38e09305fdaafcd6e7b4cb4938e2a67878ea99ed25684e260daee61",
+    "browser-current/console-1/comment-reads-a80c934079c9585d1976-0a333c185d7a371b1c67.json": "bcace205d000d57d81ae119dbb31d11493989cafed02d032c34ed696509dae46",
+    "browser-current/console-1/comment-reads-a80c934079c9585d1976-e2a525683cff6075bcaf.json": "029c7a31e7774a9f038cd94970250f32268ec8f3cfeb69e00734ea71852809b5",
+    "browser-current/console-1/comment-reads-a80c934079c9585d1976-14f0898b3d1815c9849e.json": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca",
+    "browser-current/console-1/scope-reads-a80c934079c9585d1976-8f49d3733c112574279b.json": "39b271e19536b87e643185160d798c3433cecf1a279c102851b3c6ed7c442604",
+    "browser-current/console-1/zh-CN-1586-receipts.json": "139a9b981475f4d514a8a7d6811252131e7f3338e1ba73f74d0c22de0d221431",
+    "browser-current/console-1/zh-CN-390-receipts.json": "c57eba16f23e7a7fcb8a81de414d3b53f4a4663e40b1340c4808779e044fa2a0",
+    "browser-current/console-1/scope-reads-a80c934079c9585d1976-b3bb7b219294e20a3028.json": "3a7cfc6ec89405dbcbdf827ac6267749187d80e152b71c6080284e823cedde91",
+    "browser-current/console-1/zh-TW-1586-receipts.json": "d145f78d34f0b2890182205b8c7d0bd693f1eb8985a9de0334fbd0be2a7cd206",
+    "browser-current/console-1/comment-reads-a80c934079c9585d1976-c542a18a1edfe73f2896.json": "93bbc020953e915048d050543e941b405e46618c80c6e46bc68c47fb4eb769ed",
+    "browser-current/console-1/native-hidden-read-counts.json": "1f78f0298133810928b002a27daae87266ec01e629a74b992165a1f6ef9e3835",
+    "browser-current/console-1/comment-reads-a80c934079c9585d1976-61d7b48945678aaee328.json": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca",
+    "browser-current/console-1/en-390-receipts.json": "e167db9d2a01b664eb2aae0563b6de49936cbfdbd7f07f63653f4f357004cf2c",
+    "browser-current/console-1/scope-reads-a80c934079c9585d1976-14f0898b3d1815c9849e.json": "39b271e19536b87e643185160d798c3433cecf1a279c102851b3c6ed7c442604",
+    "browser-current/console-1/comment-reads-a80c934079c9585d1976-8f49d3733c112574279b.json": "8849c12a40193d787fa8b46e0851f99921d7b645d44082e6c8f9e220d3fc5dca",
+    "browser-current/console-1/scope-reads-a80c934079c9585d1976-a239e690a38cf837fc90.json": "385d8d4be599b794383aeefff7b1ef937c35ec406008c1d6450365f74a799b3c",
+    "browser-current/console-1/scope-reads-a80c934079c9585d1976-0a333c185d7a371b1c67.json": "a9cd86994264d0960c61a3d5df1f9e2fc4d337e69d9bdf07e42869faf48475d6",
+    "browser-current/console-1/scope-reads-a80c934079c9585d1976-47e7084f508de19ef5c4.json": "39b271e19536b87e643185160d798c3433cecf1a279c102851b3c6ed7c442604",
+    "browser-current/console-1/scope-reads-a80c934079c9585d1976-e2a525683cff6075bcaf.json": "c7a3e0e27670d9c678c79685fdcd29c5c313810dd8d78d72c0615cd03024e774",
+    "browser-current/console-1/grant-revocation-private.json": "6ec12f53e4093d0ec3f19fe0cf483a64ba8d50a9d3dcc61652a928dca8829c86",
+    "browser-current/console-1/scope-reads-a80c934079c9585d1976-61d7b48945678aaee328.json": "39b271e19536b87e643185160d798c3433cecf1a279c102851b3c6ed7c442604",
+    "browser-current/console-1/scope-reads-a80c934079c9585d1976-c542a18a1edfe73f2896.json": "3efc0f30413585ec0e0de732e5f57510705dd55834ebfc6958d7fe7637787e9a",
+    "browser-current/console-1/comment-reads-a80c934079c9585d1976-b3bb7b219294e20a3028.json": "0b7f7870b2a877f3d5bfbe9e42edcde2baf53caf1ade07f70fd3b808059f0f8c",
+    "browser-current/console-1/zh-TW-390-receipts.json": "0a7bd12dd9f6faf84281e29a0e50d5d6a03f1321c9040768e33bbde6d808cd5a"
+  }
+}

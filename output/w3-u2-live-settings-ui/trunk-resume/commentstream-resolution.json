@@ -1,0 +1,5 @@
+{
+  "path": "apps/admin/components/CommentStream.tsx",
+  "resolution": "latest trunk plus only W3 copy import/out_of_stock mark/sessionId prop",
+  "source_sha256": "55c2d6518f04a90dd4a23fd4c0f64de0fe10e3bb437613cfea019c723f21f823"
+}

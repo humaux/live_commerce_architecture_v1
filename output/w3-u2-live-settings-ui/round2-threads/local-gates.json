@@ -1,0 +1,71 @@
+[
+  {
+    "name": "typecheck",
+    "argv": [
+      "pnpm",
+      "typecheck:admin"
+    ],
+    "source_sha": "d05ab56e1ce8124786a74d4bb80696c32967fd66",
+    "env": {
+      "LC_HEADER_BASE": "origin/r3/integration"
+    },
+    "unset_env": [
+      "CONTRACT_DRIFT_BASE"
+    ],
+    "started_at": "2026-10-12T10:14:22.055912+00:00",
+    "timeout_seconds": 900,
+    "state": "finished",
+    "log": "output/w3-u2-live-settings-ui/round2-threads/typecheck.log",
+    "pid": 27796,
+    "exit_code": 0,
+    "elapsed_seconds": 1.515,
+    "ended_at": "2026-10-12T10:14:23.571372+00:00",
+    "log_sha256": "37fab15de17aa0ca1a1d3a45526b7890fbc4ca46e75454c0325fd964a5f448ef"
+  },
+  {
+    "name": "test-node",
+    "argv": [
+      "bash",
+      "scripts/dev/test-node.sh"
+    ],
+    "source_sha": "d05ab56e1ce8124786a74d4bb80696c32967fd66",
+    "env": {
+      "LC_HEADER_BASE": "origin/r3/integration"
+    },
+    "unset_env": [
+      "CONTRACT_DRIFT_BASE"
+    ],
+    "started_at": "2026-10-12T10:14:23.582098+00:00",
+    "timeout_seconds": 900,
+    "state": "finished",
+    "log": "output/w3-u2-live-settings-ui/round2-threads/test-node.log",
+    "pid": 27842,
+    "exit_code": 0,
+    "elapsed_seconds": 37.232,
+    "ended_at": "2026-10-12T10:15:00.814036+00:00",
+    "log_sha256": "7a22fa1a4d16e7c93427defe4d45306510124ea809790f302560fd5be990e5ab"
+  },
+  {
+    "name": "check-gates",
+    "argv": [
+      "bash",
+      "scripts/dev/check-gates.sh"
+    ],
+    "source_sha": "d05ab56e1ce8124786a74d4bb80696c32967fd66",
+    "env": {
+      "LC_HEADER_BASE": "origin/r3/integration"
+    },
+    "unset_env": [
+      "CONTRACT_DRIFT_BASE"
+    ],
+    "started_at": "2026-10-12T10:15:00.840216+00:00",
+    "timeout_seconds": 900,
+    "state": "finished",
+    "log": "output/w3-u2-live-settings-ui/round2-threads/check-gates.log",
+    "pid": 31714,
+    "exit_code": 0,
+    "elapsed_seconds": 186.488,
+    "ended_at": "2026-10-12T10:18:07.329119+00:00",
+    "log_sha256": "5cceed7173874743b88ee219a2b0a68bf0dd7bca8789862457359cd6c2fe9da4"
+  }
+]

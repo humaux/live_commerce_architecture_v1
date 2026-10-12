@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "apps/admin/node_modules/.bin/tsc",
+    "--noEmit",
+    "--incremental",
+    "false",
+    "-p",
+    "apps/admin/tsconfig.json"
+  ],
+  "exit_code": "NOT_RUN",
+  "error": "FileNotFoundError: binary in root cache, not admin cache; corrected to root node_modules/typescript/bin/tsc"
+}

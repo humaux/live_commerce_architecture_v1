@@ -1,0 +1,18 @@
+# PR31 reminder BFF privacy card
+- task_id: e0cab99c-sub-reminder-bff; parent e0cab99c-5ed3-4d22-a3cd-88700fb57c71
+- base_commit: c9608348149f83d5d3433bf21b741ccc4f9dff13
+- commit: 43926e943cbb0a4ebbc3c7220aa60b24d3b16ea8; branch codex/pr31-reminder-bff; no push
+- Owned changes: apps/admin/lib/live-settings-proxy.ts; apps/admin/lib/live-settings-model.ts; tests/admin/live-settings-bff.test.ts.
+- Implementation: only exact bounded Go text/plain missing-route 404 plus fresh authenticated store/method grants produces internal reminders_unavailable. Initial/fresh scope loss and JSON not_found preserve global not_found. Missing grants deny403; unknown authentication denies; upstream JSON internal-code forgery is rejected. Normal success remains one store lookup, one command; only401 clears cookies.
+- Internal interface: only the parent-frozen reminders_unavailable code; no Go/OpenAPI changes.
+- RED: node --test --experimental-strip-types '--test-name-pattern=reminder route|reminder absence' tests/admin/live-settings-bff.test.ts -> exit1, 8FAIL/5PASS (red.log/red.json).
+- GREEN focused same argv -> exit0, 13PASS/0FAIL (green-focused.log).
+- GREEN final: node --test --experimental-strip-types tests/admin/live-settings-bff.test.ts tests/admin/live-settings-model.test.ts tests/admin/live-settings-proxy.test.ts -> exit0, 34PASS/0FAIL (green.log).
+- Typecheck: node node_modules/typescript/bin/tsc --noEmit --incremental false -p apps/admin/tsconfig.json -> exit0 (typecheck.log). First attempted admin/.bin path was unavailable (NOT_RUN); recorded in typecheck-initial-path.json; root cached compiler used, no installation.
+- git diff --check -> exit0 (diff-check.log).
+- Evidence: commands.json exact argv/exits; metadata.json binds final source hashes and current commit; red.json binds pre-fix source and test hashes; logs uncompressed.
+- Evidence level: E3 focused MOCK Request/HTTP tests; author evidence only. Parent independently reviews/re-runs before acceptance.
+- NOT_RUN: Go/PG/browser/build/full suite, per card instructions. CI gates/integration gates remain parent-owned.
+- Humaux: fix stored as [fix] PR31 reminders unavailable BFF requires fresh scope proof, id bd3b5db8-627d-4106-9045-190afe2a95c3; own subcanvas only. No recursive delegation.
+- Runtime model UNKNOWN; configured gpt-6.1-sol/high. No P0/P1 observed in bounded diff; independent verdict pending. No local backend capability guarantee beyond exact absent-route response.
+- Cleanup: server closed by test.after; no persistent process/container/port. Owned cache symlinks retained for parent rerun. No fixture files with PII/secrets, no dependency/lock changes.

@@ -1,0 +1,26 @@
+{
+  "tested_source_commit": "5b1da81ad6284e980a88b2c2ff68cac1cf0180b5",
+  "hashes": {
+    "apps/admin/lib/live-settings-controller.ts": "4f0172df8d999fd77bd43d6748eb8410becae6c2f23f42723b5d48dc5495657c",
+    "apps/admin/lib/live-settings-proxy.ts": "ccd2faea35baaaf2ac793f724bcc9b2df66d96f5292304b788752d6b536f136a",
+    "apps/admin/lib/live-settings-model.ts": "f239bf8e21bb1d63bb1340ce16dfd06b6dd2892cac3a694f16abbb0e4c0efc53",
+    "apps/admin/lib/live-settings-client.ts": "10aa1f0cd59ab92150ecdf550ee4a3e36fc8b2a4b00309023fe73cf79616c38b",
+    "apps/admin/lib/live-settings-copy.ts": "1da4172b704f9686628088e04a9fab86338044a02924b328ab5c5825747ee9ff",
+    "apps/admin/components/LiveSettings.tsx": "de2d2a4126f70679efbc0371718cbb0f048c3974792675f197f2945515cd6404",
+    "apps/admin/components/WorkspaceFrame.tsx": "3e87de2d48d756e6726b22e338ff2bc4cbef18aed639fd7873b3a7d875a0bdd8",
+    "apps/admin/components/CommentStream.tsx": "fff6d125638223aeb31adea43d63fdcd4d0ec4fc9d2491d90eaddc7ab813911f",
+    "internal/httpapi/sold_out_settings.go": "158e64692146f70e7b34741487003140d8192fd969af7ef2707c42e129f48b4d",
+    "tests/admin/live-settings-hooks.test.ts": "8b09f235356a519434d1ad399e954720c899d0bec795e06557b10e4394874105",
+    "tests/admin/live-settings-bff.test.ts": "f0a162d031b2463faae6fbc1ad77eeca0aef5e0a262df002507baf5898246a3b",
+    "tests/admin/live-settings.spec.ts": "94e0b562cf7402a8e30b76e237ed1f38824f51ac06d2b1743e028fbc6522e711",
+    "tests/admin/comment-stream-hooks.test.ts": "a35860732e83ccf29a9163ebc0b63c9445642d8f1405d4c8c71fd6ec7969c636",
+    "tests/admin/claims-ui.spec.ts": "67c620807e50fbc29fe696fc21fc9d7ada17d16f7a6a8e374dc71dcc2ad7baf5",
+    "tests/foundation/browser_live_settings_test.go": "09538998c46d75ed6ec3c47f61303f2c1faecee74676873b5c18e732f663d03d",
+    "tests/foundation/browser_live_settings_fixture_test.go": "898d27f641f35dfacf6e64ec7c12784329be629d17293c800c7fb2158b9177ab",
+    "tests/foundation/live_settings_http_test.go": "4bfcff183ef070f3f5f034a823bb612e064099c2dad8265f7c78c37fa9065758",
+    "scripts/dev/test-local.sh": "a1dcf48cd6cdb58f99c4ac9d8e1e1bd26a3d1ceeb1b32cfb951f17eb7bdce377",
+    "scripts/dev/test-node.sh": "cce0fd4ab385d5d1093cb2f31fda7dde25b49f5a84edef7ab6149e29850325f5",
+    "playwright.config.ts": "d4b978c3b06f170092a62ab7ea6e3396f539e18297efc35783a581b8356bd092",
+    "docs/delivery/GATES.md": "2aaa18e775128fed71ff2bda04145d7a9ab6b60523d0a409c596166cf94f96e0"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "commands": [
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--cached",
+        "--check"
+      ],
+      "exit_code": 2,
+      "raw_log_whitespace_findings": 256,
+      "classification": "Only byte-identical native forensic logs"
+    },
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--cached",
+        "--check",
+        "--",
+        ":!*.log"
+      ],
+      "exit_code": 0
+    }
+  ]
+}

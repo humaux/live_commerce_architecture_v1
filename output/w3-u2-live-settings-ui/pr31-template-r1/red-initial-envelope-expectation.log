@@ -1,0 +1,154 @@
+$ node --test --experimental-strip-types --test-name-pattern=template compatibility tests/admin/live-settings-bff.test.ts
+✖ template compatibility GET preserves a legal 120-rune BMP name (29.748583ms)
+✖ template compatibility POST forwards a legal 120-rune BMP name (2.959292ms)
+✖ template compatibility GET preserves a legal 120-rune astral name (1.630875ms)
+✖ template compatibility POST forwards a legal 120-rune astral name (1.063916ms)
+✖ template compatibility GET preserves all 501 legal templates under the byte bound (1.959334ms)
+✖ template compatibility GET preserves all 5001 legal templates under the byte bound (7.295125ms)
+✔ template compatibility rejects 121-rune names on GET and before POST forwarding (4.9045ms)
+✖ template compatibility retains the response byte bound and item shape checks (6.891542ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 1
+ℹ fail 7
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 196.609084
+
+✖ failing tests:
+
+test at tests/admin/live-settings-bff.test.ts:348:3
+✖ template compatibility GET preserves a legal 120-rune BMP name (29.748583ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  503 !== 200
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-template-compat/tests/admin/live-settings-bff.test.ts:352:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 503,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-bff.test.ts:356:3
+✖ template compatibility POST forwards a legal 120-rune BMP name (2.959292ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  422 !== 200
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-template-compat/tests/admin/live-settings-bff.test.ts:361:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 422,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-bff.test.ts:348:3
+✖ template compatibility GET preserves a legal 120-rune astral name (1.630875ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  503 !== 200
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-template-compat/tests/admin/live-settings-bff.test.ts:352:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 503,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-bff.test.ts:356:3
+✖ template compatibility POST forwards a legal 120-rune astral name (1.063916ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  422 !== 200
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-template-compat/tests/admin/live-settings-bff.test.ts:361:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 422,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-bff.test.ts:367:3
+✖ template compatibility GET preserves all 501 legal templates under the byte bound (1.959334ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  503 !== 200
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-template-compat/tests/admin/live-settings-bff.test.ts:375:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 503,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-bff.test.ts:367:3
+✖ template compatibility GET preserves all 5001 legal templates under the byte bound (7.295125ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  503 !== 200
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-template-compat/tests/admin/live-settings-bff.test.ts:375:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 503,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/live-settings-bff.test.ts:392:1
+✖ template compatibility retains the response byte bound and item shape checks (6.891542ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+    {
+      code: 'retry_later',
+  +   details: {},
+  +   message: 'Temporarily unavailable.',
+  +   request_id: 'ec17bdbf01684ef99650b0e21aa0ac9a',
+  +   retryable: true
+    }
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-template-compat/tests/admin/live-settings-bff.test.ts:401:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { code: 'retry_later', message: 'Temporarily unavailable.', request_id: 'ec17bdbf01684ef99650b0e21aa0ac9a', retryable: true, details: {} },
+    expected: { code: 'retry_later' },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+EXIT_CODE=1

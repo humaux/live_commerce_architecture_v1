@@ -1,0 +1,15 @@
+
+Running 8 tests using 1 worker
+
+(node:75071) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/admin/ops-polish.spec.ts:80:1 › OP2 live order feed: 20 s poll, no overlap, pause when hidden, new marker, (N) title, filters kept (26.6s)
+  ✓  2 tests/admin/ops-polish.spec.ts:194:3 › OP2 new marker and title count in zh-TW (5.6s)
+  ✓  3 tests/admin/ops-polish.spec.ts:194:3 › OP2 new marker and title count in zh-CN (4.3s)
+  ✓  4 tests/admin/ops-polish.spec.ts:251:3 › OP4 Studio subtitle is neutral and the dead nav entries are gone in en (711ms)
+  ✓  5 tests/admin/ops-polish.spec.ts:251:3 › OP4 Studio subtitle is neutral and the dead nav entries are gone in zh-CN (702ms)
+  ✓  6 tests/admin/ops-polish.spec.ts:251:3 › OP4 Studio subtitle is neutral and the dead nav entries are gone in zh-TW (762ms)
+  ✓  7 tests/admin/ops-polish.spec.ts:265:1 › OP4 the same nav on the orders page (1.3s)
+  ✓  8 tests/admin/ops-polish.spec.ts:274:1 › OP3 finance page shows a separate pay-at-pickup column in every locale; CSV link carries it (1.2s)
+
+  8 passed (42.6s)

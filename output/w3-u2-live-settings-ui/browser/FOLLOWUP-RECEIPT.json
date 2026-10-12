@@ -1,0 +1,63 @@
+{
+  "task_id": "662ad08e-sub-browser",
+  "base_commit": "8c14a6416c15252bbe1502c0ec4d13f66c4de51e",
+  "initial_base_commit": "894990131cd7e13fe907693e295f64d99087df15",
+  "head_commit": "fd00246b1a4073d89c9980e651108aefc803ade0",
+  "changed_paths": [
+    "tests/admin/live-settings.spec.ts",
+    "tests/foundation/browser_live_settings_fixture_test.go"
+  ],
+  "summary": "MOCK PUT now rejects all fixed IDs and requires exact published merchant ID/version. Conflict UI case fills a valid merchant draft and asserts successful publish/exact receipt plus original PUT409,version4,onePUT and nooverwrite-on-reload; no thresholds/assertions removed. Added DB-free negative fixture regression.",
+  "source_sha256": {
+    "playwright.config.ts": "14ac90fb7d1b6038d1fa0525cdb0bf289921260a9ce15c4f13323ed743587ac1",
+    "tests/admin/live-settings.spec.ts": "232df0e60f2626aa0839ed643537409a69cdc8ac4387cd4f8575d30db3c93b8d",
+    "tests/foundation/browser_live_settings_test.go": "112b8f6f70f564337f326d789d3cebb7c8858029c4cfa734b376fdce5cda379d",
+    "tests/foundation/browser_live_settings_fixture_test.go": "306e6286a2148dfa428433d953f08c59d687854533bfc4d89b93039f7d693ec2"
+  },
+  "commands": [
+    {
+      "command": "GOTOOLCHAIN=go1.27.1 go test -tags browser -run '^TestBrowserLiveSettingsMockRequiresMerchantTemplate$' -count=1 -v ./tests/foundation",
+      "phase": "RED",
+      "exit_code": 1,
+      "evidence": "fixed-fixture-red.log",
+      "cause": "fixture accepted fixed PUT200 instead of422"
+    },
+    {
+      "command": "GOTOOLCHAIN=go1.27.1 go test -tags browser -run '^TestBrowserLiveSettingsMockRequiresMerchantTemplate$' -count=1 -v ./tests/foundation",
+      "phase": "GREEN",
+      "exit_code": 0,
+      "evidence": "fixed-fixture-green.log",
+      "PASS": 1,
+      "FAIL": 0
+    },
+    {
+      "command": "pnpm exec tsc --noEmit --strict --target ES2023 --module ESNext --moduleResolution bundler --lib dom,esnext --skipLibCheck --esModuleInterop --typeRoots apps/admin/node_modules/@types --types node tests/admin/live-settings.spec.ts",
+      "exit_code": 0,
+      "evidence": "fixed-spec-tsc.log"
+    },
+    {
+      "command": "bash scripts/dev/check-headers.sh",
+      "exit_code": 0,
+      "evidence": "fixed-headers.log"
+    },
+    {
+      "command": "LC_BROWSER_SUITE=live-settings LC_BROWSER_PUBLIC_ORIGIN=http://127.0.0.1:1 LC_BROWSER_API_ORIGIN=http://127.0.0.1:2 LC_BROWSER_EVIDENCE=/tmp LC_BROWSER_SETTINGS_CONTROL=collection-only LC_BROWSER_SETTINGS_FIXTURE='{}' pnpm exec playwright test --list",
+      "exit_code": 0,
+      "evidence": "fixed-collection.log",
+      "collected": 12
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ],
+  "evidence_class": "E3 DB-free MOCK fixture regression; E1 browser spec structure",
+  "not_run": [
+    "updated-source real browser",
+    "PostgreSQL",
+    "Next build",
+    "full browser GREEN",
+    "provider LIVE"
+  ],
+  "prior_evidence": "Original missing-page RED remains historical at old four-file hashes; it is not current-source green acceptance. Original logs/receipt preserved."
+}

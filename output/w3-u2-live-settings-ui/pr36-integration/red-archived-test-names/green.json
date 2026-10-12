@@ -1,0 +1,13 @@
+{
+  "argv": [
+    "bash",
+    "scripts/dev/check-gates.sh"
+  ],
+  "exit_code": 0,
+  "session_id": 37281,
+  "source_parent": "017c62b5336fbe82bc98c576bd0efbffd9ebc0d0",
+  "artifact_renames": "renames.json",
+  "log": "output/w3-u2-live-settings-ui/pr36-integration/red-archived-test-names/green.log",
+  "log_sha256": "917f3027678d955a3d2555ae5179de2cec5d8258f6aaa03f9bd8170c023deba1",
+  "result": "83 modes all documented; every tracked test run; unchanged source snapshot hashes"
+}

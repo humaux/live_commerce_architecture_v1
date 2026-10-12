@@ -1,0 +1,29 @@
+$ node --test --experimental-strip-types tests/admin/live-settings-bff.test.ts tests/admin/live-settings-model.test.ts
+✔ settings actual route permits only auth-scoped live reads/writes and keeps CAS receipt (23.837292ms)
+✔ bodyless reminder/DELETE, private blocklist projection and restricted followup copy are exact (5.551834ms)
+✔ real template publication rejects unknown fields and auth failures clear cookies even without JSON (3.078917ms)
+✔ template compatibility GET preserves a legal 120-rune BMP name (0.985ms)
+✔ template compatibility POST forwards a legal 120-rune BMP name (0.873917ms)
+✔ template compatibility GET preserves a legal 120-rune astral name (0.61075ms)
+✔ template compatibility POST forwards a legal 120-rune astral name (0.709334ms)
+✔ template compatibility GET preserves all 501 legal templates under the byte bound (2.041917ms)
+✔ template compatibility GET preserves all 5001 legal templates under the byte bound (12.910292ms)
+✔ template compatibility rejects 121-rune names on GET and before POST forwarding (3.874042ms)
+✔ template compatibility retains the response byte bound and item shape checks (4.776917ms)
+✔ success receipts must describe the exact requested command, otherwise the result remains unknown (1.190792ms)
+✔ W3-U2 Next proxy admits settings routes without weakening Studio raw-path guards (57.46525ms)
+✔ only frozen session-scoped manual operations are available (1.093083ms)
+✔ private notes and sold-out drafts respect rune limits and closed placeholders (0.274833ms)
+✔ restricted rows can never advertise copying, and checkout links cannot carry bearer data (0.5935ms)
+✔ three admin locales preserve the mandatory policy copy and real PR planner includes this new mode (2.401167ms)
+✔ live-settings is one inert registry entry with the existing admin/PG command (11.820334ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 206.322041
+
+EXIT_CODE=0
