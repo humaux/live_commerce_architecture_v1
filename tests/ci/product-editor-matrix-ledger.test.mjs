@@ -3,11 +3,16 @@
 // Used by: test-node / product-editor matrix coverage gate; no browser, network or PostgreSQL is started.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { locatorIdentities } from "./product-editor-matrix-source.mjs";
 import ts from "typescript-api";
+import { canonicalClaims } from "./product-editor-matrix-claims.mjs";
+
+// Fault injection is local-only, including present-but-empty CI or hook values.
+if (Object.hasOwn(process.env, "CI") && ["LC_MATRIX_ACTION_MUTATION", "LC_MATRIX_MUTATION_SNAPSHOT"].some((name) => Object.hasOwn(process.env, name)))
+  throw new Error("matrix mutation hooks are forbidden when CI is present");
 
 const specPath = "tests/admin/product-editor.acceptance.ts";
 let spec = readFileSync(specPath, "utf8");
@@ -301,6 +306,38 @@ function assertLocatorIdentity({ identity, locale, actions: operated, reads, met
     assert.ok(control.startsWith("saved ") || identity.action === "verify existing SKU code disabled", "declared operation is missing");
     assert.ok(reads.some((receiver) => JSON.stringify(receiver) === JSON.stringify(expected)), `missing declared DOM read ${JSON.stringify(expected)}`);
   }
+}
+
+// Exercise the shipped signature API, preserving harmless parentheses while rejecting changed operators.
+for (const [left, right] of [["!x", "~x"], ["!x", "+x"], ["++x", "--x"], ["x++", "x--"]]) {
+  test(`canonical unary signature distinguishes ${left} from ${right}`, () => {
+    const { signature } = canonicalClaims(undefined, undefined, new Map(), [], {});
+    const expression = (text) => ts.createSourceFile("unary.ts", text, ts.ScriptTarget.Latest, true).statements[0].expression;
+    assert.notEqual(signature(expression(left)), signature(expression(right)));
+    assert.equal(signature(expression(left)), signature(expression(`(${left})`)));
+  });
+}
+for (const ci of ["true", ""]) for (const hook of ["LC_MATRIX_ACTION_MUTATION", "LC_MATRIX_MUTATION_SNAPSHOT"]) {
+  for (const value of ["", "enabled"]) test(`CI hook refusal: CI=${JSON.stringify(ci)} ${hook}=${JSON.stringify(value)}`, () => {
+    const unit = "output/matrix-ledger-enforce/round4-js";
+    mkdirSync(unit, { recursive: true });
+    const dir = mkdtempSync(path.join(unit, "ci-hook-")), snapshot = path.join(dir, "injected.source.txt");
+    // Never inherit a parent's fault hook into this actual Node gate process.
+    const env = { ...process.env };
+    for (const name of ["NODE_TEST_CONTEXT", "CI", "LC_MATRIX_ACTION_MUTATION", "LC_MATRIX_MUTATION_SNAPSHOT"]) delete env[name];
+    env.CI = ci;
+    env[hook] = value === "" ? "" : hook === "LC_MATRIX_MUTATION_SNAPSHOT" ? snapshot : "bare-click";
+    try {
+      const result = spawnSync(process.execPath, ["--test", "--test-isolation=none", "--test-name-pattern=__no_matching_matrix_test__", "tests/ci/product-editor-matrix-ledger.test.mjs"], {
+        cwd: process.cwd(), encoding: "utf8", timeout: 15000, env,
+      });
+      assert.ifError(result.error);
+      assert.equal(result.status, 1, result.stdout + result.stderr);
+      assert.match(result.stdout + result.stderr, /matrix mutation hooks are forbidden when CI is present/);
+      assert.doesNotMatch(result.stdout, /real Playwright ESM consumer collects/);
+      assert.equal(existsSync(snapshot), false, "CI must not write a snapshot");
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
 }
 
 test("every actual mobile control operation is enclosed by its recording callback", () => {

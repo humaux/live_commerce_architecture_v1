@@ -362,6 +362,7 @@ func validateProductEditorMatrixEvidence(root string) error {
 	// independently of the receipts, so removing an entry cannot exempt drift.
 	for _, path := range []string{
 		"tests/foundation/catalog_matrix_ledger_test.go",
+		"tests/foundation/catalog_matrix_evidence_test.go",
 		"tests/foundation/browser_catalog_core_test.go",
 		"tests/admin/product-editor.acceptance.ts",
 		"tests/admin/product-editor-matrix-ledger.ts",
@@ -369,6 +370,8 @@ func validateProductEditorMatrixEvidence(root string) error {
 		"tests/ci/product-editor-matrix-ledger.test.mjs",
 		"tests/ci/product-editor-matrix-claims.mjs",
 		"tests/ci/product-editor-matrix-source.mjs",
+		"tests/ci/product-editor-matrix-execution.mjs",
+		"tests/ci/product-editor-matrix-execution.test.mjs",
 	} {
 		hash := manifest.Sources[path]
 		if hash == "" {
@@ -399,6 +402,7 @@ func validateProductEditorMatrixEvidence(root string) error {
 			return err
 		}
 	}
+	native := map[string][]byte{}
 	for _, name := range []string{"product-editor-click-ledger.json", "playwright.log", "cc12-playwright.log", "pe-last-run.json", "cc12-last-run.json"} {
 		path := canonical + name
 		if !seen[path] {
@@ -416,8 +420,9 @@ func validateProductEditorMatrixEvidence(root string) error {
 				return fmt.Errorf("canonical browser ledger: %w", err)
 			}
 		}
+		native[name] = data
 	}
-	return nil
+	return validateProductEditorMatrixRunOutcome(manifestData, native)
 }
 
 func productEditorMatrixEvidenceHash(path string, data []byte, expected string) error {
@@ -444,148 +449,4 @@ func productEditorMatrixEvidenceRead(root, path string) ([]byte, error) {
 		return nil, fmt.Errorf("canonical evidence/source symlink escapes checkout: %s", path)
 	}
 	return os.ReadFile(full)
-}
-
-// TestProductEditorMatrixLedgerEvidenceCorruption exercises the real validator
-// with isolated filesystem mutations, never the delivered evidence in place.
-func TestProductEditorMatrixLedgerEvidenceCorruption(t *testing.T) {
-	for _, mutation := range []string{"playwright-log", "cc12-log", "ledger", "manifest", "source", "gate-source"} {
-		t.Run(mutation, func(t *testing.T) {
-			root, canonical := productEditorMatrixEvidenceFixture(t)
-			if err := validateProductEditorMatrixEvidence(root); err != nil {
-				t.Fatalf("untampered isolated evidence: %v", err)
-			}
-			path := canonical + "/playwright.log"
-			var data []byte
-			switch mutation {
-			case "playwright-log":
-				data = []byte("arbitrary text is not Playwright evidence\n")
-			case "cc12-log":
-				path = canonical + "/cc12-playwright.log"
-				data = []byte("arbitrary CC12 log\n")
-			case "ledger":
-				path = canonical + "/product-editor-click-ledger.json"
-				data = productEditorMatrixReadFixture(t, root, path)
-				data = append(data, '\n') // Valid unchanged row semantics still require exact native bytes.
-			case "manifest":
-				path = canonical + "/browser-evidence.json"
-				var manifest map[string]any
-				if err := json.Unmarshal(productEditorMatrixReadFixture(t, root, path), &manifest); err != nil {
-					t.Fatal(err)
-				}
-				manifest["scope"] = "edited while retaining the tested source commit"
-				data, _ = json.Marshal(manifest)
-			case "source", "gate-source":
-				path = "tests/admin/product-editor.acceptance.ts"
-				if mutation == "gate-source" {
-					path = "tests/foundation/catalog_matrix_ledger_test.go"
-				}
-				data = append(productEditorMatrixReadFixture(t, root, path), []byte("\n// changed after the recorded run\n")...)
-			}
-			if err := os.WriteFile(filepath.Join(root, path), data, 0600); err != nil {
-				t.Fatal(err)
-			}
-			if err := validateProductEditorMatrixEvidence(root); err == nil {
-				t.Fatalf("%s corruption must reject canonical evidence", mutation)
-			} else {
-				t.Logf("rejected %s: %v", mutation, err)
-			}
-		})
-	}
-}
-
-func productEditorMatrixReadFixture(t *testing.T, root, path string) []byte {
-	t.Helper()
-	data, err := os.ReadFile(filepath.Join(root, path))
-	if err != nil {
-		t.Fatal(err)
-	}
-	return data
-}
-
-// Shared harness/configuration changes in a PR merge ref do not invalidate the
-// unit's source-bound evidence; its executable producers remain fail-closed.
-func TestProductEditorMatrixLedgerEvidenceSharedSources(t *testing.T) {
-	for _, path := range []string{
-		"scripts/dev/test-node.sh", "scripts/dev/test-local.sh", "docs/delivery/GATES.md", "playwright.config.ts",
-		"tests/foundation/testdata/product_editor_mobile_matrix_ledger.json",
-		"apps/admin/lib/product-editor-copy.ts", "apps/admin/components/ProductDocumentVariants.tsx",
-		"apps/admin/components/ProductDocumentForm.tsx", "apps/admin/lib/use-product-document.ts", "apps/admin/lib/product-document.ts",
-	} {
-		t.Run(path, func(t *testing.T) {
-			root, _ := productEditorMatrixEvidenceFixture(t)
-			data := append(productEditorMatrixReadFixture(t, root, path), []byte("\n// shared merge-ref change\n")...)
-			if err := os.WriteFile(filepath.Join(root, path), data, 0600); err != nil {
-				t.Fatal(err)
-			}
-			if err := validateProductEditorMatrixEvidence(root); err != nil {
-				t.Fatalf("informational shared source change must not invalidate unit evidence: %v", err)
-			}
-		})
-	}
-}
-
-func productEditorMatrixEvidenceFixture(t *testing.T) (string, string) {
-	t.Helper()
-	root := t.TempDir()
-	const canonical = "output/matrix-ledger-enforce/fixture/browser"
-	delivery := productEditorMatrixReadFixture(t, "../..", "output/matrix-ledger-enforce/DELIVERY.md")
-	dir := regexp.MustCompile(`\[SOURCE\.json\]\(([A-Za-z0-9._-]+)/SOURCE\.json\)`).FindSubmatch(delivery)
-	if dir == nil {
-		t.Fatal("fixture needs DELIVERY's current canonical evidence directory")
-	}
-	var manifest map[string]any
-	if err := json.Unmarshal(productEditorMatrixReadFixture(t, "../..", "output/matrix-ledger-enforce/"+string(dir[1])+"/browser/browser-evidence.json"), &manifest); err != nil {
-		t.Fatal(err)
-	}
-	write := func(path string, data []byte) {
-		t.Helper()
-		full := filepath.Join(root, path)
-		if err := os.MkdirAll(filepath.Dir(full), 0700); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(full, data, 0600); err != nil {
-			t.Fatal(err)
-		}
-	}
-	hash := func(data []byte) string { return fmt.Sprintf("%x", sha256.Sum256(data)) }
-	sources := map[string]string{}
-	for path := range manifest["source_files_sha256"].(map[string]any) {
-		data := productEditorMatrixReadFixture(t, "../..", path)
-		write(path, data)
-		sources[path] = hash(data)
-	}
-	manifest["source_files_sha256"] = sources
-	if shared, ok := manifest["informational_source_files_sha256"].(map[string]any); ok {
-		for path := range shared {
-			data := productEditorMatrixReadFixture(t, "../..", path)
-			write(path, data)
-			shared[path] = hash(data)
-		}
-	}
-	artifacts := map[string]string{}
-	copies := []map[string]string{}
-	for _, entry := range manifest["copied_native_bytes"].([]any) {
-		old := entry.(map[string]any)
-		name := filepath.Base(old["canonical"].(string))
-		path := canonical + "/" + name
-		data := productEditorMatrixReadFixture(t, "../..", old["canonical"].(string))
-		write(path, data)
-		artifacts[path] = hash(data)
-		copies = append(copies, map[string]string{"canonical": path, "source_native": "fixture-only/" + name, "sha256": hash(data)})
-	}
-	manifest["copied_native_bytes"] = copies
-	data, err := json.Marshal(manifest)
-	if err != nil {
-		t.Fatal(err)
-	}
-	write(canonical+"/browser-evidence.json", data)
-	artifacts[canonical+"/browser-evidence.json"] = hash(data)
-	source, _ := json.Marshal(map[string]any{"tested_source_commit": manifest["tested_source_commit"], "source_files_sha256": sources})
-	write("output/matrix-ledger-enforce/fixture/SOURCE.json", source)
-	artifacts["output/matrix-ledger-enforce/fixture/SOURCE.json"] = hash(source)
-	index, _ := json.Marshal(map[string]any{"tested_source_commit": manifest["tested_source_commit"], "source_files_sha256": sources, "artifacts_sha256": artifacts})
-	write("output/matrix-ledger-enforce/fixture/ARTIFACTS.json", index)
-	write("output/matrix-ledger-enforce/DELIVERY.md", []byte(fmt.Sprintf("Tested source: **`%s`**\n[SOURCE.json](fixture/SOURCE.json)\n", manifest["tested_source_commit"])))
-	return root, canonical
 }
