@@ -238,3 +238,25 @@ test("W3U3 PR40 outage: first transport failure stops recording and still opens 
   assert.equal(prints, 1, "native print still opens");
   assert.equal(nodes(h.output).some((n) => n.props["data-testid"] === "comment-label-status"), true, "failure notice shown");
 });
+
+// PR #40 review P2: 429/408 are throttle/timeout, not definitive. Stop like an outage instead of N more writes.
+for (const status of [408, 429]) test(`W3U3 PR40 ${status} stops the batch like an outage`, async (t) => {
+  const env = environment(t);
+  const previousElement = (globalThis as any).HTMLElement;
+  class Element { nodeType = 1; focus() {} }
+  (globalThis as any).HTMLElement = Element;
+  Object.assign(env.document, { body: new Element(), activeElement: null });
+  t.after(() => { (globalThis as any).HTMLElement = previousElement; });
+  let calls = 0, prints = 0;
+  Object.assign(env.window, { print: () => prints++ });
+  globalThis.fetch = async () => { calls++; return response({ code: status === 429 ? "rate_limited" : "timeout" }, status); };
+  const rows = ["102_1", "102_2", "102_3"].map((ref, i) => ({ ...acceptedRow(), ref, seq: i + 1 }));
+  const children = [jsx(CommentLabelToolbar, {}), ...rows.map((row) => jsx(CommentLabelAction, { row }))];
+  const h = env.mount(() => CommentLabelPrint({ locale: "en", store: store.id, session: "22222222-2222-4222-8222-222222222222", rows, allowed: true, active: true,
+    onDenied() {}, children }));
+  for (const row of rows) { node(h, (n) => n.props["data-testid"] === `comment-label-select-${row.ref}`).props.onChange(); h.flush(); }
+  node(h, (n) => n.props["data-testid"] === "comment-label-preview").props.onClick({ currentTarget: new Element() }); h.flush();
+  node(h, (n) => n.props["data-testid"] === "comment-label-print").props.onClick(); await h.settle();
+  assert.equal(calls, 1, `${status} costs one attempt, not one per label`);
+  assert.equal(prints, 1, "native print still opens");
+});
