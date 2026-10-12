@@ -99,6 +99,8 @@ func lcPurgeSessions(t *testing.T, f *testFixture, principal string) {
 	t.Helper()
 	const sessions = `SELECT id FROM live.sessions WHERE principal_id=$1`
 	for _, q := range []string{
+		// a live-price order (checkout for-buyer) records its use against the bundle's line; it must go before claims.lines
+		`DELETE FROM claims.live_price_uses WHERE bundle_id IN (SELECT id FROM claims.bundles WHERE session_id IN (` + sessions + `))`,
 		`DELETE FROM claims.links WHERE bundle_id IN (SELECT id FROM claims.bundles WHERE session_id IN (` + sessions + `))`,
 		`DELETE FROM claims.events WHERE session_id IN (` + sessions + `)`,
 		`DELETE FROM claims.lines WHERE session_id IN (` + sessions + `)`,

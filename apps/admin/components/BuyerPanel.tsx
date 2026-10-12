@@ -1,283 +1,248 @@
-// Purpose: independently fetch and render one scoped buyer panel with permission-gated orders/linking.
-// Depends on: React, next/navigation, @live-commerce/format, frozen A13/A14 and private request/session lifetime.
-// Used by: Inbox now and the later live console; no dependency on console or inbox selection state.
+// Purpose: render scoped A13 buyer facts and explicit A14 customer links using the independent A9 CAS version.
+// Depends on: React, next/navigation, @live-commerce/format, inbox/customers clients, session boundaries and InboxFence.
+// Used by: Inbox and the later live console; names, choices and retry receipts remain only in visible authorised memory.
+// BFF /api/stores/{store}/inbox/{buyer-panel,conversations/{id}/{messages,customer-link}} -> httpapi/inbox.go; customers[/id] -> httpapi/customers.go.
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import type { Store } from "@/lib/model";
 import { displayTime, money } from "@live-commerce/format";
-import type { BuyerData } from "@/lib/inbox-types";
+import type { BuyerData, Thread } from "@/lib/inbox-types";
 import { inboxRead, inboxWrite, InboxError } from "@/lib/inbox-client";
+import { readCustomer, readCustomers, ReadError } from "@/lib/customers-client";
+import { csrfCookie, sessionBoundary } from "@/lib/settings-client";
+import type { Customer } from "@/lib/customers-model";
 import { inboxCopy, inboxError } from "@/src/features/messages/copy";
-import { permitted } from "@/src/features/messages/privacy";
+import { permitted, ReplyReceipt, type InboxFence } from "@/src/features/messages/privacy";
 import { useInboxPrivacy } from "@/src/features/messages/use-privacy";
 import styles from "@/src/features/messages/Inbox.module.css";
 
-/** Fetch exactly one conversation or bundle; hidden/obsolete scopes discard all buyer fields and drafts. */
-export function BuyerPanel({
-  store,
-  conversationId,
-  bundleId,
-  onUnauthorized,
-  onOrder,
-  onLinked,
-}: {
-  store: Store;
-  conversationId?: string;
-  bundleId?: string;
-  onUnauthorized?: () => void;
-  onOrder?: (orderId: string) => void;
-  onLinked?: () => void;
+type Choice = Pick<Customer, "customer_id" | "display_name" | "phone_last3">;
+type Ticket = ReturnType<InboxFence["begin"]>;
+const choiceOf = ({ customer_id, display_name, phone_last3 }: Customer): Choice => ({ customer_id, display_name, phone_last3 });
+const versionOf = (header: Thread) => typeof header.link_version === "number" && Number.isSafeInteger(header.link_version) && header.link_version >= 0 ? header.link_version : null;
+// Reuse the existing customer API and validators; add the inbox's post-parse session fence without new BFF paths.
+async function customerRead<T>(read: () => Promise<T>): Promise<T> {
+  try {
+    const csrf = csrfCookie();
+    let boundary: string;
+    // sessionBoundary throws a plain Error on cookie change: classify both checks as authority loss.
+    try { boundary = await sessionBoundary(csrf); } catch { throw new InboxError("unauthorized", 401); }
+    const value = await read();
+    try { if (await sessionBoundary(csrf) !== boundary) throw new Error(); }
+    catch { throw new InboxError("unauthorized", 401); }
+    return value;
+  } catch (error) {
+    if (error instanceof InboxError) throw error;
+    if (error instanceof ReadError) {
+      const codes = { "signed-out": ["unauthorized", 401], forbidden: ["forbidden", 403], "not-found": ["not_found", 404], unavailable: ["unavailable", 503] } as const;
+      const [code, status] = codes[error.code]; throw new InboxError(code, status);
+    }
+    throw new InboxError("unavailable", 503);
+  }
+}
+
+/** Fetch one conversation or bundle; linking never infers identity from names, claim owners or purchase history. */
+export function BuyerPanel({ store, conversationId, bundleId, onUnauthorized, onOrder, onLinked }: {
+  store: Store; conversationId?: string; bundleId?: string; onUnauthorized?: () => void;
+  onOrder?: (orderId: string) => void; onLinked?: () => void;
 }) {
-  const params = useParams<{ locale: string }>(),
-    locale = params?.locale ?? "zh-TW",
-    c = inboxCopy(locale);
+  const params = useParams<{ locale: string }>(), locale = params?.locale ?? "zh-TW", c = inboxCopy(locale);
   const scope = `${store.id}:${conversationId ?? ""}:${bundleId ?? ""}`;
-  const [value, setValue] = useState<{ scope: string; data: BuyerData } | null>(
-    null,
-  );
+  const canReadCustomers = permitted(store, "customers:read");
+  const canLink = !!conversationId && permitted(store, "inbox:reply") && canReadCustomers;
+  const [value, setValue] = useState<{ scope: string; data: BuyerData } | null>(null);
+  const [version, setVersion] = useState<number | null>(null);
+  const [linkedName, setLinkedName] = useState<string | null>(null);
+  const [linkedGone, setLinkedGone] = useState(false); // linked customer 404: show the link status only, never a fallback name
+  const [choices, setChoices] = useState<Choice[]>([]);
+  const [customer, setCustomer] = useState<Choice | null>(null);
+  const [after, setAfter] = useState("");
+  const [next, setNext] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [customer, setCustomer] = useState("");
   const [busy, setBusy] = useState(false);
-  const [revision, setRevision] = useState(0);
-  const callbacks = useRef({ onUnauthorized, onLinked });
-  callbacks.current = { onUnauthorized, onLinked };
+  const [uncertain, setUncertain] = useState(false);
+  const pending = useRef(new ReplyReceipt());
+  const inFlight = useRef(false), goneScope = useRef<string | null>(null);
+  const callbacks = useRef({ onUnauthorized, onLinked }); callbacks.current = { onUnauthorized, onLinked };
   const clear = useCallback(() => {
-    setValue(null);
-    setError(null);
-    setCustomer("");
-    setBusy(false);
+    setValue(null); setVersion(null); setLinkedName(null); setLinkedGone(false); setChoices([]); setCustomer(null);
+    setAfter(""); setNext(""); setError(null); setBusy(false); setUncertain(false);
+    pending.current.clear(); inFlight.current = false;
   }, []);
   const privacy = useInboxPrivacy(clear);
   const data = value?.scope === scope && privacy.visible ? value.data : null;
+  const fail = useCallback((cause: unknown, ticket: Ticket) => {
+    if (!privacy.fence.current(ticket)) return;
+    const problem = cause instanceof InboxError ? cause : new InboxError("unavailable", 503);
+    // 401/403 revoke the parent scope. A 404 stays local: A13 also answers not_found for a retention-purged or missing
+    // selection, and a real scope loss reaches the A2/A8 polls within one interval (PR #18 r4).
+    if (problem.status === 404) {
+      goneScope.current = scope;
+      privacy.fence.invalidate(true); clear();
+    } else if ([401, 403].includes(problem.status)) {
+      privacy.expire(); callbacks.current.onUnauthorized?.();
+    }
+    setError(problem.code);
+  }, [scope, privacy.fence, privacy.expire, clear]);
+  // Every read revokes on its OWN 401/403 the moment it settles: a pending or earlier-failing sibling read must
+  // neither delay nor swallow an authority loss (PR #41 review P1). fail() is fenced, so later calls are no-ops.
+  const guard = useCallback(<T,>(read: Promise<T>, ticket: Ticket) => read.catch((cause: unknown) => {
+    if (cause instanceof InboxError && [401, 403].includes(cause.status)) fail(cause, ticket);
+    throw cause;
+  }), [fail]);
+  const facts = useCallback(async (ticket: Ticket) => {
+    const query = conversationId ? `conversation_id=${encodeURIComponent(conversationId)}` : `bundle_id=${encodeURIComponent(bundleId!)}`;
+    // A9 strictly BEFORE A13: the CAS version may then be older than the link shown (a safe 409), never newer
+    // (unlinking a link the merchant never saw). A14 compares only the version (0119 customer_link).
+    const header = conversationId ? await guard(inboxRead<Thread>(store.id, `inbox/conversations/${conversationId}/messages?limit=1`, ticket.signal), ticket) : null;
+    if (!privacy.fence.current(ticket)) return;
+    const result = await guard(inboxRead<BuyerData>(store.id, `inbox/buyer-panel?${query}`, ticket.signal), ticket);
+    if (!privacy.fence.current(ticket)) return;
+    // Missing orders is an authoritative withheld projection, not an empty list.
+    if (!result || !Array.isArray(result.claims) || (result.orders !== undefined && !Array.isArray(result.orders)))
+      throw new InboxError("unavailable", 503);
+    let name: string | null = null, gone = false;
+    if (result.linked_customer_id && canReadCustomers) {
+      // A 404 here means only the linked customer is gone (e.g. erased); the conversation's A13 facts stay authorized,
+      // so show the link without a name instead of taking the panel's 404 scope-loss latch. 401/403 still revoke.
+      try {
+        name = (await guard(customerRead(() => readCustomer(store.id, result.linked_customer_id!, ticket.signal)), ticket)).display_name;
+      } catch (cause) {
+        if (!(cause instanceof InboxError && cause.status === 404)) throw cause;
+        gone = true;
+      }
+    }
+    if (!privacy.fence.current(ticket)) return;
+    setValue({ scope, data: result }); setVersion(header ? versionOf(header) : null); setLinkedName(name); setLinkedGone(gone);
+  }, [scope, store.id, conversationId, bundleId, canReadCustomers, privacy.fence, guard]);
+  const customerPage = useCallback(async (cursor: string, ticket: Ticket) => {
+    // Pick from bounded existing pages. No merchant-entered name or phone is put in a query/URL.
+    const result = await guard(customerRead(() => readCustomers(store.id, "", cursor, ticket.signal)), ticket);
+    if (!privacy.fence.current(ticket)) return;
+    setChoices(result.items.filter(row => row.active).map(choiceOf)); setAfter(cursor); setNext(result.next_cursor);
+  }, [store.id, privacy.fence, guard]);
+  const reload = useCallback(async () => {
+    if (inFlight.current || !privacy.visible || privacy.blocked.current || goneScope.current === scope) return;
+    inFlight.current = true; setBusy(true); setError(null); setVersion(null);
+    const ticket = privacy.fence.begin();
+    try {
+      // Settle both: a customer-list failure must not mask an A13 401/403, which revokes the console scope.
+      const lost = (await Promise.allSettled([facts(ticket), canLink ? customerPage("", ticket) : null]))
+        .flatMap(r => r.status === "rejected" ? [r.reason] : []);
+      if (lost.length) throw lost.find(e => e instanceof InboxError && [401, 403].includes(e.status)) ?? lost[0];
+    }
+    catch (cause) { fail(cause, ticket); }
+    finally { if (privacy.fence.current(ticket)) { inFlight.current = false; setBusy(false); } }
+  }, [scope, privacy.visible, privacy.blocked, privacy.fence, facts, customerPage, canLink, fail]);
   useEffect(() => {
     clear();
-    if (
-      !privacy.visible ||
-      privacy.blocked.current ||
-      !permitted(store, "inbox:read") ||
-      !!conversationId === !!bundleId
-    )
-      return;
-    privacy.fence.invalidate(true);
-    const ticket = privacy.fence.begin();
-    setBusy(true);
-    const query = conversationId
-      ? `conversation_id=${encodeURIComponent(conversationId)}`
-      : `bundle_id=${encodeURIComponent(bundleId!)}`;
-    void inboxRead<BuyerData>(
-      store.id,
-      `inbox/buyer-panel?${query}`,
-      ticket.signal,
-    )
-      .then((result) => {
-        if (privacy.fence.current(ticket)) setValue({ scope, data: result });
-      })
-      .catch((cause) => {
-        if (!privacy.fence.current(ticket)) return;
-        // 401/403 revoke the parent scope. A 404 stays local: A13 also answers not_found for a retention-purged or missing
-        // selection, and a real scope loss reaches the A2/A8 polls within one interval (PR #18 r4).
-        if (cause instanceof InboxError && [401, 403].includes(cause.status)) {
-          privacy.expire();
-          callbacks.current.onUnauthorized?.();
-        } else if (cause instanceof InboxError && cause.status === 404) clear();
-        setError(cause instanceof InboxError ? cause.code : "unavailable");
-      })
-      .finally(() => {
-        if (privacy.fence.current(ticket)) setBusy(false);
-      });
+    if (!privacy.visible || privacy.blocked.current || !permitted(store, "inbox:read") || !!conversationId === !!bundleId || goneScope.current === scope) return;
+    privacy.fence.invalidate(true); void reload();
     return () => privacy.fence.invalidate(false);
-  }, [
-    store,
-    scope,
-    conversationId,
-    bundleId,
-    privacy.visible,
-    privacy.revision,
-    privacy.fence,
-    privacy.blocked,
-    privacy.expire,
-    clear,
-    revision,
-  ]);
-  // A13 supplies no version; wiring LC-B3b's A9 link_version here is a separate follow-up.
-  // Never guess zero or derive it from a linked customer id.
-  const version =
-    data &&
-    "version" in data &&
-    Number.isSafeInteger(data.version) &&
-    (data.version as number) >= 0
-      ? (data.version as number)
-      : null;
-  const canLink =
-    !!conversationId &&
-    permitted(store, "inbox:reply") &&
-    permitted(store, "customers:read");
-  const link = async (unlink = false) => {
-    if (
-      !canLink ||
-      version === null ||
-      busy ||
-      (!unlink &&
-        !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(customer))
-    )
-      return;
-    const ticket = privacy.fence.begin();
-    setBusy(true);
-    setError(null);
+  }, [store, scope, conversationId, bundleId, privacy.visible, privacy.revision, privacy.blocked, privacy.fence, clear, reload]);
+
+  async function pageCustomers(cursor: string) {
+    if (!canLink || inFlight.current || pending.current.pending()) return;
+    inFlight.current = true; setBusy(true); const ticket = privacy.fence.begin();
+    try { await customerPage(cursor, ticket); }
+    catch (cause) { fail(cause, ticket); }
+    finally { if (privacy.fence.current(ticket)) { inFlight.current = false; setBusy(false); } }
+  }
+  async function link(unlink = false, retry = false) {
+    if (!canLink || inFlight.current || !data || goneScope.current === scope || privacy.blocked.current) return;
+    if (retry ? !pending.current.pending() : pending.current.pending() || version === null || (!unlink && !customer)) return;
+    const command = retry ? pending.current.pending()! : pending.current.prepare({ customer_id: unlink ? null : customer!.customer_id, expected_version: version });
+    const ticket = privacy.fence.begin(); inFlight.current = true; setBusy(true); setError(null);
     try {
-      // Calls A14 with a server-provided version only; no inference or automatic retry.
-      await inboxWrite(
-        store.id,
-        `inbox/conversations/${conversationId}/customer-link`,
-        { customer_id: unlink ? null : customer, expected_version: version },
-        crypto.randomUUID(),
-        ticket.signal,
-      );
+      if (retry) {
+        // A14 keeps no idempotent replay: if the uncertain write committed, A9 has moved past expected_version and a
+        // resend could only 409. Reconcile from A13/A9 first; resend the same body/key only while A9 is unchanged.
+        const header = await guard(inboxRead<Thread>(store.id, `inbox/conversations/${conversationId}/messages?limit=1`, ticket.signal), ticket);
+        if (!privacy.fence.current(ticket)) return;
+        const now = await guard(inboxRead<BuyerData>(store.id, `inbox/buyer-panel?conversation_id=${encodeURIComponent(conversationId!)}`, ticket.signal), ticket);
+        if (!privacy.fence.current(ticket)) return;
+        const current = versionOf(header);
+        if (current !== command.body.expected_version) {
+          pending.current.clear(); setUncertain(false); setVersion(null);
+          const ours = current !== null && current > Number(command.body.expected_version) && (now?.linked_customer_id ?? null) === command.body.customer_id;
+          if (ours) setCustomer(null); else setError("version_conflict");
+          await facts(ticket);
+          if (ours && privacy.fence.current(ticket)) callbacks.current.onLinked?.();
+          return;
+        }
+      }
+      // A14 uses only the independent A9 CAS version. An uncertain retry retains its original body and key.
+      const receipt = await inboxWrite<{ customer_id: string | null; version: number }>(store.id,
+        `inbox/conversations/${conversationId}/customer-link`, command.body, command.key, ticket.signal);
       if (!privacy.fence.current(ticket)) return;
-      setCustomer("");
-      setRevision((value) => value + 1);
-      callbacks.current.onLinked?.();
+      if (receipt.customer_id !== command.body.customer_id || !Number.isSafeInteger(receipt.version) || receipt.version <= Number(command.body.expected_version))
+        throw new InboxError("retry_later", 503);
+      pending.current.clear(); setUncertain(false); setCustomer(null); setVersion(null);
+      await facts(ticket);
+      if (privacy.fence.current(ticket)) callbacks.current.onLinked?.();
     } catch (cause) {
       if (!privacy.fence.current(ticket)) return;
       const code = cause instanceof InboxError ? cause.code : "unavailable";
-      if (cause instanceof InboxError && cause.status === 404) {
-        privacy.fence.invalidate(true);
-        clear();
+      pending.current.failed(code); setUncertain(pending.current.pending() !== null);
+      fail(cause, ticket);
+      if (code === "version_conflict") {
+        // Refresh the winning link AND its A9 version. Otherwise unlink could target a new customer
+        // while the panel still describes the old one. The merchant's selection remains untouched.
+        setVersion(null);
+        try { await facts(ticket); } catch (refreshError) { fail(refreshError, ticket); }
       }
-      setError(code);
-      if (cause instanceof InboxError && [401, 403].includes(cause.status)) {
-        privacy.expire();
-        callbacks.current.onUnauthorized?.();
-      }
-      if (code === "version_conflict") setRevision((value) => value + 1);
-    } finally {
-      if (privacy.fence.current(ticket)) setBusy(false);
-    }
-  };
-  return (
-    <aside className={styles.panel} data-testid="buyer-panel" aria-busy={busy}>
-      <h2>{c.buyer}</h2>
-      {!privacy.visible && (
-        <p className={styles.notice}>
-          {privacy.blocked.current ? c.signedOut : c.hidden}
-        </p>
-      )}
-      {busy && !data && <p>{c.loading}</p>}
-      {error && (
-        <p role="alert" className={`${styles.notice} ${styles.error}`}>
-          {inboxError(locale, error)}
-        </p>
-      )}
-      {data && (
-        <>
-          <dl>
-            <dt>{c.buyer}</dt>
-            <dd>{data.display_name ?? c.unnamed}</dd>
-            <dt>{c.window}</dt>
-            <dd>
-              {data.platform}
-              {data.window_open_until && (
-                <> · {displayTime(locale, data.window_open_until)}</>
-              )}
-            </dd>
-            <dt>{c.ordinal}</dt>
-            <dd>
-              {data.purchase_ordinal > 0 ? data.purchase_ordinal : c.noOrdinal}
-            </dd>
-          </dl>
-          {data.link_pending_manual && (
-            <p className={styles.notice}>{c.manual}</p>
-          )}
-          {data.auto_reply && (
-            <p className={styles.badge}>
-              {data.auto_reply.send_state === "unknown"
-                ? c.uncertain
-                : (c[data.auto_reply.send_state as "queued"] ?? c.unknown)}
-            </p>
-          )}
-          <h3>{c.claims}</h3>
-          {data.claims.length ? (
-            <ul>
-              {data.claims.map((claim, index) => (
-                <li key={index}>
-                  {claim.keyword} × {claim.quantity}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className={styles.meta}>{c.noClaims}</p>
-          )}
-          {data.claims.length > 0 && (
-            <p>
-              {c.total}: {money(locale, store.currency, data.claim_total_minor)}
-            </p>
-          )}
-          <h3>{c.orders}</h3>
-          {permitted(store, "orders:read") && data.orders !== undefined ? (
-            data.orders.length ? (
-              <ul>
-                {data.orders.map((order) => (
-                  <li key={order.order_id}>
-                    {onOrder ? (
-                      <button
-                        className={styles.button}
-                        onClick={() => onOrder(order.order_id)}
-                      >
-                        {order.number}
-                      </button>
-                    ) : (
-                      order.number
-                    )}{" "}
-                    · {order.state} ·{" "}
-                    {money(locale, store.currency, order.total_minor)}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className={styles.meta}>{c.noOrders}</p>
-            )
-          ) : (
-            <p className={styles.meta}>{c.noOrdersPermission}</p>
-          )}
-          <h3>{c.customer}</h3>
-          {data.linked_customer_id && <p className={styles.meta}>{c.linked}</p>}
-          {canLink && (
-            <>
-              <label>
-                {c.customerId}
-                <input
-                  value={customer}
-                  disabled={busy || version === null}
-                  onChange={(event) => setCustomer(event.target.value)}
-                  autoComplete="off"
-                />
-              </label>
-              <div className={styles.actions}>
-                <button
-                  className={styles.button}
-                  disabled={version === null || busy || !customer}
-                  onClick={() => void link()}
-                >
-                  {c.link}
-                </button>
-                <button
-                  className={styles.button}
-                  disabled={
-                    version === null || busy || !data.linked_customer_id
-                  }
-                  onClick={() => void link(true)}
-                >
-                  {c.unlink}
-                </button>
-              </div>
-              {version === null && (
-                <p className={styles.notice}>{c.versionMissing}</p>
-              )}
-            </>
-          )}
-        </>
-      )}
-    </aside>
-  );
+    } finally { if (privacy.fence.current(ticket)) { inFlight.current = false; setBusy(false); } }
+  }
+  const options = customer && !choices.some(row => row.customer_id === customer.customer_id) ? [customer, ...choices] : choices;
+  return <aside className={styles.panel} data-testid="buyer-panel" aria-busy={busy}>
+    <h2>{c.buyer}</h2>
+    {!privacy.visible && <p className={styles.notice}>{privacy.blocked.current ? c.signedOut : c.hidden}</p>}
+    {busy && !data && <p>{c.loading}</p>}
+    {error && <p role="alert" className={`${styles.notice} ${styles.error}`}>{inboxError(locale, error)}</p>}
+    {error && !busy && !uncertain && goneScope.current !== scope && privacy.visible && <button className={styles.button} onClick={() => void reload()}>{c.refresh}</button>}
+    {data && <>
+      <dl><dt>{c.buyer}</dt><dd>{data.display_name ?? c.unnamed}</dd>
+        <dt>{c.window}</dt><dd>{data.platform}{data.window_open_until && <> · {displayTime(locale, data.window_open_until)}</>}</dd>
+        <dt>{c.ordinal}</dt><dd>{c.ordinalValue.replace("{n}", String(data.purchase_ordinal))}</dd></dl>
+      {data.link_pending_manual && <p className={styles.notice}>{c.manual}</p>}
+      {data.auto_reply && <p className={styles.badge}>{c.autoReply}: {c[data.auto_reply.send_state as "queued"] ?? c.unknown}</p>}
+      <h3>{c.claims}</h3>
+      {data.claims.length ? <ul>{data.claims.map((claim, index) => <li key={`${claim.session_id}:${claim.offer_id}:${index}`}>
+        {claim.keyword} × {claim.quantity}<br /><span className={styles.meta}>{c.claimSession}: {claim.session_id}</span>
+      </li>)}</ul> : <p className={styles.meta}>{c.noClaims}</p>}
+      <p>{c.total}: {money(locale, "TWD", data.claim_total_minor)}</p>
+      <h3>{c.orders}</h3>
+      {!permitted(store, "orders:read") ? <p className={styles.meta}>{c.noOrdersPermission}</p> : data.orders === undefined ?
+        <p className={styles.meta}>{c.ordersWithheld}</p> : data.orders.length ? <ul>{data.orders.map(order => <li key={order.order_id}>
+          {onOrder ? <button className={styles.button} onClick={() => onOrder(order.order_id)}>{order.number}</button> : order.number}
+          {" "}· {order.state} · {money(locale, store.currency, order.total_minor)}
+        </li>)}</ul> : <p className={styles.meta}>{c.noOrders}</p>}
+      {conversationId && <>
+      <h3>{c.customer}</h3>
+      {data.linked_customer_id && <p className={styles.meta} data-testid="customer-manual-link">{c.linked}{canReadCustomers && !linkedGone ? ` · ${linkedName ?? c.unnamed}` : ""}</p>}
+      {canLink && <>
+        <label>{c.customerChoice}<select data-testid="customer-link-choice" value={customer?.customer_id ?? ""} disabled={busy || version === null || uncertain}
+          onChange={event => setCustomer(options.find(row => row.customer_id === event.target.value) ?? null)}>
+          <option value="">{c.customerChoice}</option>{options.map(row => <option key={row.customer_id} value={row.customer_id}>
+            {row.display_name ?? c.unnamed}{row.phone_last3 ? ` · …${row.phone_last3}` : ""}
+          </option>)}
+        </select></label>
+        {!choices.length && !busy && <p className={styles.meta}>{c.customerEmpty}</p>}
+        <div className={styles.actions}>
+          {after && <button className={styles.button} data-testid="customer-page-first" disabled={busy || uncertain} onClick={() => void pageCustomers("")}>{c.customerFirst}</button>}
+          {next && <button className={styles.button} data-testid="customer-page-next" disabled={busy || uncertain} onClick={() => void pageCustomers(next)}>{c.customerNext}</button>}
+        </div>
+      </>}
+      <div className={styles.actions}>
+        <button className={styles.button} data-testid="customer-link-save" disabled={!canLink || version === null || busy || uncertain || !customer} onClick={() => void link()}>{c.link}</button>
+        <button className={styles.button} data-testid="customer-link-remove" disabled={!canLink || version === null || busy || uncertain || !data.linked_customer_id} onClick={() => void link(true)}>{c.unlink}</button>
+        {uncertain && <button className={styles.button} data-testid="customer-link-retry" disabled={busy} onClick={() => void link(false, true)}>{c.customerRetry}</button>}
+      </div>
+      {!canLink && <p className={styles.notice}>{c.customerPermission}</p>}
+      {canLink && version === null && <p className={styles.notice}>{c.versionMissing}</p>}
+      {uncertain && <p role="status" className={styles.notice}>{c.customerUncertain}</p>}
+      </>}
+    </>}
+  </aside>;
 }

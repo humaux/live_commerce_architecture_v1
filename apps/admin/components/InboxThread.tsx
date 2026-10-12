@@ -83,17 +83,11 @@ export function InboxThread({
               ? "instagram"
               : "facebook"),
       ) ?? [];
-  const bindingCount = new Set(providerRows.map((cap) => cap.binding_id)).size;
-  const rows = providerRows.filter((cap) => cap.capability === "dm_session");
-  const advisory = bindingCount > 1;
-  // A9 has no binding id yet: several bindings are advice only; A12 and Check scope the final refusal.
-  const capable =
-    advisory || (bindingCount === 1 && rows.length > 0 &&
-    rows.every((cap) => cap.state === "ok" || cap.state === "review_required"));
-  const review = !advisory && rows.some((cap) => cap.state === "review_required");
-  const capabilityCode =
-    rows.find((cap) => cap.state !== "ok" && cap.state !== "review_required")
-      ?.state ?? "noCapability";
+  // A9 identifies the exact enabled binding used by plan_dm. An unrelated healthy Page is no authority.
+  const rows = providerRows.filter((cap) => !!thread?.binding_id && cap.binding_id === thread.binding_id && cap.capability === "dm_session");
+  const capable = rows.length > 0 && rows.every((cap) => cap.state === "ok" || cap.state === "review_required");
+  const review = capable && rows.some((cap) => cap.state === "review_required");
+  const capabilityCode = rows.find((cap) => cap.state !== "ok" && cap.state !== "review_required")?.state ?? "noCapability";
   const hardDeadline = thread ? Date.parse(thread.window_open_until) : NaN;
   const sendDeadline = hardDeadline - replyWindowSafetyMs;
   const now = Date.now();
@@ -442,11 +436,6 @@ export function InboxThread({
         </p>
       )}
       {review && <p className={styles.badge}>{c.review}</p>}
-      {reply && advisory && (
-        <p className={styles.notice} data-testid="inbox-capability-advisory" role="status">
-          {c.capabilityAdvisory}
-        </p>
-      )}
       <form
         className={styles.composer}
         onSubmit={(event) => {
