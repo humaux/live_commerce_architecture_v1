@@ -1,0 +1,43 @@
+✔ Host subset: nested Provider and React19 context shadow defaults without sibling leakage (8.31325ms)
+✔ Host subset: provider updates reach stable children and separate roots keep their own values (0.201042ms)
+✔ Host subset: render errors restore context and hook ownership (0.201ms)
+✔ Host subset: portal children inherit logical context and retain handlers/state (0.36325ms)
+✔ Host subset: portal target/key changes remount children and removal runs cleanup (0.125541ms)
+✔ Host subset: createPortal rejects invalid DOM targets rather than swallowing children (0.086709ms)
+✔ W3U3 PR40 rejected positive-quantity claims expose no printable output or actions (0.6595ms)
+✔ W3U3 PR40 rejected mark refresh removes an already previewed label (3.873125ms)
+✔ W3U3 PR40 close restores opener focus after native modal closes (0.433958ms)
+✔ W3U3 PR40 escape restores opener focus after native modal closes (0.241ms)
+✔ W3U3 PR40 after print restores opener focus after native modal closes (11.073042ms)
+✔ W3U3 PR40 focus returns to the triggering button even when it was not the active element (0.215083ms)
+✖ W3U3 PR40 two-column A4 calibration fails only after the FAIL ledger is saved (8.923375ms)
+✔ W3U3 PR40 normal three-column A4 persists PASS without a teardown failure (6.228875ms)
+✔ W3U3 ledger actual comes from an independent observation (2.25375ms)
+✔ W3U3 ledger records failed observed criteria rather than constant PASS (3.449791ms)
+✔ W3U3 denied 401 resets busy and running without remount (2.462583ms)
+✔ W3U3 denied 403 resets busy and running without remount (1.249791ms)
+✔ W3U3 denied 404 resets busy and running without remount (1.108375ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 18
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 275.287625
+
+✖ failing tests:
+
+test at tests/admin/comment-label-print.test.ts:121:1
+✖ W3U3 PR40 two-column A4 calibration fails only after the FAIL ledger is saved (8.923375ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u3-comment-label-print/tests/admin/comment-label-print.test.ts:124:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /paper selector/,
+    operator: 'rejects',
+    diff: 'simple'
+  }

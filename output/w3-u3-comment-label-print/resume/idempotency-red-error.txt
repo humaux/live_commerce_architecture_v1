@@ -1,0 +1,15 @@
+# Test info
+
+- Name: comment-label-print.spec.ts >> W3U3 lost A3 acknowledgement retries the same fact key
+- Location: tests/admin/comment-label-print.spec.ts:138:1
+
+# Error details
+
+```
+Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 7
+Received: 8
+```
+
+# Test source

@@ -1,0 +1,23 @@
+# Test info
+
+- Name: comment-label-print.spec.ts >> W3U3_404 real revoked store closes private labels before native print
+- Location: tests/admin/comment-label-print.spec.ts:112:1
+
+# Error details
+
+```
+Error: expect(locator).toHaveCount(expected) failed
+
+Locator:  getByTestId('comment-label')
+Expected: 0
+Received: 1
+Timeout:  10000ms
+
+Call log:
+  - Expect "toHaveCount" getByTestId('comment-label') with timeout 10000ms
+  - waiting for getByTestId('comment-label')
+    24 × locator resolved to 1 element
+       - unexpected value "1"
+
+```
+

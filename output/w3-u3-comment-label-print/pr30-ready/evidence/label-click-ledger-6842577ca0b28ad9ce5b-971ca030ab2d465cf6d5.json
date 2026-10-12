@@ -1,0 +1,72 @@
+[
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "page": "/studio/console",
+    "control": "keyword filter",
+    "operation": "click",
+    "expected": "Three actual claimed keyword comments visible",
+    "actual": "{\"beforeRows\":50,\"filteredRows\":3}",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "page": "/studio/console",
+    "control": "three checkboxes",
+    "operation": "check; uncheck first; recheck first",
+    "expected": "Selection counts 3→2→3",
+    "actual": "{\"checkedCounts\":[3,2,3]}",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "page": "/studio/console",
+    "control": "preview labels",
+    "operation": "click",
+    "expected": "Three exact synthetic names/keywords/quantities/time/session labels",
+    "actual": "{\"labelCount\":3,\"nameMatches\":3,\"keywordQuantityMatches\":3,\"sessionMatches\":3,\"nonemptyTimes\":3}",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "page": "/studio/console",
+    "control": "paper selector",
+    "operation": "A4→label→A4; reload and reopen",
+    "expected": "Print media 60×40mm / A4 three columns; A4 preference survives reload",
+    "actual": "{\"selectedValues\":[\"a4\",\"label\",\"a4\"],\"a4\":{\"paper\":\"a4\",\"labelCount\":3,\"printControlVisible\":false,\"streamVisible\":false,\"headingVisible\":false,\"columns\":3},\"widthPx\":226.765625,\"heightPx\":151.171875,\"restoredPaper\":\"a4\"}",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "page": "/studio/console",
+    "control": "print",
+    "operation": "click",
+    "expected": "Three exact {} A3 requests, three unique keys, confirmed badges survive A2 reload",
+    "actual": "{\"writeCount\":3,\"statuses\":[200,200,200],\"emptyBodyCount\":3,\"uniqueKeyCount\":3,\"uuidKeyCount\":3,\"printCalls\":1,\"badgeMatchesBeforeReload\":3,\"badgeMatchesAfterReload\":3}",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "page": "/studio/console",
+    "control": "close preview",
+    "operation": "click",
+    "expected": "Dialog closes; console remains usable",
+    "actual": "{\"labelsAfterClose\":0,\"streamVisible\":true}",
+    "result": "PASS"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "page": "/studio/console",
+    "control": "single label",
+    "operation": "click",
+    "expected": "One label opens with restored paper preference",
+    "actual": "{\"labelCount\":1,\"restoredPaper\":\"a4\"}",
+    "result": "PASS"
+  }
+]
