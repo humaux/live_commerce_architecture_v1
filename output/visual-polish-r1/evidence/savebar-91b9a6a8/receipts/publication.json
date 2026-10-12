@@ -1,0 +1,23 @@
+{
+  "purpose": "Record authorized branch publication and gate-to-commit binding",
+  "depends_on": "postmerge-source.json and actual Git receipts",
+  "used_by": "integrator PR and VISUAL-POLISH-R1 handoff",
+  "sha": "91b9a6a8131a1f2315cb35ed78da68a517338b96",
+  "remote_sha": "91b9a6a8131a1f2315cb35ed78da68a517338b96",
+  "branch": "unit/visual-polish-r1",
+  "commit_exit": 0,
+  "push_exit": 0,
+  "fetch_exit": 0,
+  "verify_exit": 0,
+  "gate_exits": {
+    "test-node": 0,
+    "browser-product-editor": 0,
+    "browser-visual-lint": 0,
+    "check-gates": 0,
+    "typecheck": 0,
+    "spec-typecheck": 0
+  },
+  "pr_created": false,
+  "deployed": false,
+  "tracked_worktree": "clean; raw savebar-r2 evidence intentionally untracked"
+}

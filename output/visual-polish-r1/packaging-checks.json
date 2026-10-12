@@ -1,0 +1,45 @@
+{
+  "purpose": "Actual evidence-packaging validation receipts; browser source unchanged.",
+  "depends_on": "verify-evidence.mjs, source hashes and copied runtime evidence.",
+  "used_by": "PR43 review and DELIVERY.",
+  "runtime_rerun": "NOT_RUN packaging-only; original runtime logs retained",
+  "commands": [
+    {
+      "command": "node --experimental-strip-types --test tests/ui/visual-scroll-capture.test.mjs tests/ui/visual-lint-lib.test.mjs tests/ui/sweep-shard-lib.test.mjs",
+      "exit": 0,
+      "log": "packaging-node.log",
+      "tests": 40
+    },
+    {
+      "command": "pnpm --filter @live-commerce/admin typecheck",
+      "exit": 0,
+      "log": "packaging-typecheck.log"
+    },
+    {
+      "command": "node output/visual-polish-r1/verify-evidence.mjs (required supplemental file temporarily absent)",
+      "exit": 1,
+      "log": "evidence-missing-image-red.log",
+      "calibration": "expected missing-file failure; binary restored in finally"
+    },
+    {
+      "command": "node output/visual-polish-r1/verify-evidence.mjs (published provenance SHA injected as zeros)",
+      "exit": 1,
+      "log": "evidence-provenance-red.log",
+      "calibration": "expected provenance hash mismatch; manifest restored in finally"
+    },
+    {
+      "command": "bash scripts/dev/check-gates.sh",
+      "exit": 0,
+      "log": "packaging-gates.log",
+      "modes": 83
+    },
+    {
+      "command": "node output/visual-polish-r1/verify-evidence.mjs --tracked",
+      "exit": 0,
+      "log": "verification-green.log",
+      "retained_files": 169,
+      "retained_png": 88
+    }
+  ],
+  "verification_tool_sha256": "d193d8fe739856c04a3b284e1fbb135f56a9240c52cb03c2bd3883cdea1db7fa"
+}

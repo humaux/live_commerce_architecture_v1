@@ -1,0 +1,46 @@
+✔ G-UI8 storefront pages and the sweep's STOREFRONT_ROUTES are the same set (1.956125ms)
+✔ parseShard: i/N, empty means unsharded, anything malformed throws (0.219917ms)
+✔ assignShards: deterministic, every key owned once, near-balanced (LPT bound) (0.885375ms)
+✔ planClick: for every N the shards partition the whole universe (every registry route x variant, storefront walk, journey) (1.512792ms)
+✔ planClick at N=10 keeps every shard within ~1.3x of the mean planned cost (0.141208ms)
+✔ aggregate click: honest shards pass for several N (2.3805ms)
+✔ aggregate click: a missing shard, a dropped page row, a lost journey, a failing row, a stale known defect and a missing platform marker are each a failure (3.182958ms)
+✔ aggregate click: a route added to the registry after the shards ran cannot pass (the registry is re-read) (0.353291ms)
+✔ aggregate visual: honest shards pass; a missing shard, a missing shot, a blocking verdict and a registry route outside the universe each fail (4.613292ms)
+✔ artifact discovery finds nested run evidence and retains platform marker refusal (3.380875ms)
+✔ thresholds are the named constants of the brief (0.989042ms)
+✔ R1: document wider than the viewport, and the outermost element past the edge (0.206583ms)
+✔ R2: label tops, control tops and control heights of one visual row (0.414917ms)
+✔ R2: what is one row and what is not (0.127375ms)
+✔ R2: a button beside a field has to line up with its control (0.148292ms)
+✔ R3: a row made tall by stacked controls, a control wider than its cell (0.373458ms)
+✔ R3: a matrix whose EVERY row is doubled by a stacked stock cell (the median cannot see it) (0.537167ms)
+✔ R4: small text, helper text apart, icons and duplicates excepted (0.108833ms)
+✔ R5: tap targets on the 390 viewport only (0.38425ms)
+✔ R6: interactive elements and text boxes that overlap (0.23375ms)
+✔ R7: text clipped inside a control or label (either side), and select values that do not fit (0.531375ms)
+✔ R8: the same visible label twice in one list (0.116375ms)
+✔ evaluate() tags severity, selectRecords() keeps distinct groups first and counts every instance (0.325333ms)
+✔ R9: text and controls flush to the screen edge at 390 (0.218917ms)
+✔ R6/R9 judge the visible (ancestor-clipped) rectangle, not the raw one (integrator ruling 2026-10-05) (0.117542ms)
+✔ R10: a fixed or sticky bar covering main content after scrolling (0.247ms)
+✔ R11: controls narrower than a usable width (0.154166ms)
+✔ native wheel frames cover tall section interiors, not just section headings (8.910416ms)
+✔ a frozen pane fails instead of claiming complete evidence (1.607292ms)
+✔ document-only wheel movement does not prove that the nested pane scrolled (1.545416ms)
+✔ frame bound fails visibly and retains partial shots (1.657ms)
+✔ initial offset is rewound using native input before shooting (4.342041ms)
+✔ a hidden final slice is not mistaken for a reached end (3.133458ms)
+✔ a short pane is captured once without unnecessary scrolling (1.498208ms)
+✔ a missing required product pane fails, never skips a page (0.781041ms)
+✔ 1440 supplement covers only affected desktop admin routes without replacing the primary matrix (0.446667ms)
+✔ supplemental 1440 blockers are folded into the real owning verdict without inflating primary captures (0.175375ms)
+✔ supplemental capture failure cannot hide behind an existing successful primary screenshot (0.104958ms)
+ℹ tests 38
+ℹ suites 0
+ℹ pass 38
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 107.685917

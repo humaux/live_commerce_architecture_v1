@@ -1,0 +1,386 @@
+[
+  {
+    "unit": "ads",
+    "locale": "zh-TW",
+    "requested_size": "1586x992",
+    "actual_png": {
+      "width": 1586,
+      "height": 2225
+    },
+    "file": "before/ads/zh-TW-1586x992.png",
+    "source_file": "./output/visual-review/38207265014/dl/11729364559/run.lXs5gS1H/ui-visual-audit/20261012T062327Z/shots/admin/ads/zh-TW-1586x992.png",
+    "source_ci_run": "38207265014",
+    "sha256": "a932967d0176173db9895ed83ba58294a78f05fd95988d99284d68c252a59afd",
+    "status": "BEFORE from CI; not a current-source runtime retake",
+    "bytes": 299743,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "unit": "ads",
+    "locale": "zh-TW",
+    "requested_size": "390x844",
+    "actual_png": {
+      "width": 390,
+      "height": 3043
+    },
+    "file": "before/ads/zh-TW-390x844.png",
+    "source_file": "./output/visual-review/38207265014/dl/11730079000/run.6zBJ2ZiZ/ui-visual-audit/20261012T062912Z/shots/admin/ads/zh-TW-390x844.png",
+    "source_ci_run": "38207265014",
+    "sha256": "c655fafe28902b46156e2ebdd26ff8693d9d5336b835af9ea44d1bf1330f949f",
+    "status": "BEFORE from CI; not a current-source runtime retake",
+    "bytes": 264082,
+    "retention": "COMMITTED"
+  },
+  {
+    "unit": "ads",
+    "locale": "zh-CN",
+    "requested_size": "1586x992",
+    "actual_png": {
+      "width": 1586,
+      "height": 2225
+    },
+    "file": "before/ads/zh-CN-1586x992.png",
+    "source_file": "./output/visual-review/38207265014/dl/11729364559/run.lXs5gS1H/ui-visual-audit/20261012T062327Z/shots/admin/ads/zh-CN-1586x992.png",
+    "source_ci_run": "38207265014",
+    "sha256": "37a77785a05f3139bece92bfd601062ec422d7f7327db3dc7954243b8df22624",
+    "status": "BEFORE from CI; not a current-source runtime retake",
+    "bytes": 284272,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "unit": "ads",
+    "locale": "zh-CN",
+    "requested_size": "390x844",
+    "actual_png": {
+      "width": 390,
+      "height": 3043
+    },
+    "file": "before/ads/zh-CN-390x844.png",
+    "source_file": "./output/visual-review/38207265014/dl/11730079000/run.6zBJ2ZiZ/ui-visual-audit/20261012T062912Z/shots/admin/ads/zh-CN-390x844.png",
+    "source_ci_run": "38207265014",
+    "sha256": "abbb333d730c2fea6642d287a6604cf59004e3945a97370c08f0b80cbc1513cf",
+    "status": "BEFORE from CI; not a current-source runtime retake",
+    "bytes": 250723,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "unit": "ads",
+    "locale": "en",
+    "requested_size": "1586x992",
+    "actual_png": {
+      "width": 1586,
+      "height": 2216
+    },
+    "file": "before/ads/en-1586x992.png",
+    "source_file": "./output/visual-review/38207265014/dl/11729364559/run.lXs5gS1H/ui-visual-audit/20261012T062327Z/shots/admin/ads/en-1586x992.png",
+    "source_ci_run": "38207265014",
+    "sha256": "c53846ce6c5bbc4d3aedb896dca0ff72c34b1410fb4628e9f91eb62516b4bb1f",
+    "status": "BEFORE from CI; not a current-source runtime retake",
+    "bytes": 242832,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "unit": "ads",
+    "locale": "en",
+    "requested_size": "390x844",
+    "actual_png": {
+      "width": 390,
+      "height": 3132
+    },
+    "file": "before/ads/en-390x844.png",
+    "source_file": "./output/visual-review/38207265014/dl/11730079000/run.6zBJ2ZiZ/ui-visual-audit/20261012T062912Z/shots/admin/ads/en-390x844.png",
+    "source_ci_run": "38207265014",
+    "sha256": "122fc9191cb2c88cbab7f397eab91ffa86c7f47e32011727e964d52c092898d2",
+    "status": "BEFORE from CI; not a current-source runtime retake",
+    "bytes": 212996,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "unit": "products-new",
+    "locale": "zh-TW",
+    "requested_size": "1586x992",
+    "actual_png": {
+      "width": 1586,
+      "height": 1085
+    },
+    "file": "before/products-new/zh-TW-1586x992.png",
+    "source_file": "./output/visual-review/38207265014/dl/11730297317/run.qDa5eDZD/ui-visual-audit/20261012T062544Z/shots/admin/products-new/zh-TW-1586x992.png",
+    "source_ci_run": "38207265014",
+    "sha256": "06792f27265510a91c05cb056f53ba9eb04d25bbeddee89c4da6563a3c2ea825",
+    "status": "BEFORE from CI; not a current-source runtime retake",
+    "bytes": 136039,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "unit": "products-new",
+    "locale": "zh-TW",
+    "requested_size": "390x844",
+    "actual_png": {
+      "width": 390,
+      "height": 929
+    },
+    "file": "before/products-new/zh-TW-390x844.png",
+    "source_file": "./output/visual-review/38207265014/dl/11728449911/run.H6WDDhDs/ui-visual-audit/20261012T055449Z/shots/admin/products-new/zh-TW-390x844.png",
+    "source_ci_run": "38207265014",
+    "sha256": "5bc683fba98ce984283dc67a56bfea284312e4de6461c38591f802cf95934257",
+    "status": "BEFORE from CI; not a current-source runtime retake",
+    "bytes": 56333,
+    "retention": "COMMITTED"
+  },
+  {
+    "unit": "products-new",
+    "locale": "zh-CN",
+    "requested_size": "1586x992",
+    "actual_png": {
+      "width": 1586,
+      "height": 1085
+    },
+    "file": "before/products-new/zh-CN-1586x992.png",
+    "source_file": "./output/visual-review/38207265014/dl/11729364559/run.lXs5gS1H/ui-visual-audit/20261012T062327Z/shots/admin/products-new/zh-CN-1586x992.png",
+    "source_ci_run": "38207265014",
+    "sha256": "596d88aacb68ed63c5df83a08829bb9cb2ef0bc563a73942977df52ddc0b31cf",
+    "status": "BEFORE from CI; not a current-source runtime retake",
+    "bytes": 132540,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "unit": "products-new",
+    "locale": "zh-CN",
+    "requested_size": "390x844",
+    "actual_png": {
+      "width": 390,
+      "height": 929
+    },
+    "file": "before/products-new/zh-CN-390x844.png",
+    "source_file": "./output/visual-review/38207265014/dl/11730079000/run.6zBJ2ZiZ/ui-visual-audit/20261012T062912Z/shots/admin/products-new/zh-CN-390x844.png",
+    "source_ci_run": "38207265014",
+    "sha256": "86e13b573f0ef13f0d942548c8af28b167c6a23d2ec86f5c81ca155d0a6fc2bf",
+    "status": "BEFORE from CI; not a current-source runtime retake",
+    "bytes": 55575,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "unit": "products-new",
+    "locale": "en",
+    "requested_size": "1586x992",
+    "actual_png": {
+      "width": 1586,
+      "height": 1085
+    },
+    "file": "before/products-new/en-1586x992.png",
+    "source_file": "./output/visual-review/38207265014/dl/11730297317/run.qDa5eDZD/ui-visual-audit/20261012T062544Z/shots/admin/products-new/en-1586x992.png",
+    "source_ci_run": "38207265014",
+    "sha256": "2b51b58a4afcb47518921ee43f054fd0244e32093716322a7f5f68d9bb71b6ad",
+    "status": "BEFORE from CI; not a current-source runtime retake",
+    "bytes": 126773,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "unit": "products-new",
+    "locale": "en",
+    "requested_size": "390x844",
+    "actual_png": {
+      "width": 390,
+      "height": 950
+    },
+    "file": "before/products-new/en-390x844.png",
+    "source_file": "./output/visual-review/38207265014/dl/11728449911/run.H6WDDhDs/ui-visual-audit/20261012T055449Z/shots/admin/products-new/en-390x844.png",
+    "source_ci_run": "38207265014",
+    "sha256": "d48a6ae3a84d683b0110d2d9ea093660e26f31544bc6044b35ad408bc9a00453",
+    "status": "BEFORE from CI; not a current-source runtime retake",
+    "bytes": 50521,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "unit": "products-new-variants",
+    "locale": "zh-TW",
+    "requested_size": "1586x992",
+    "actual_png": {
+      "width": 1586,
+      "height": 1085
+    },
+    "file": "before/products-new-variants/zh-TW-1586x992.png",
+    "source_file": "./output/visual-review/38207265014/dl/11729364559/run.lXs5gS1H/ui-visual-audit/20261012T062327Z/shots/admin/products-new-variants/zh-TW-1586x992.png",
+    "source_ci_run": "38207265014",
+    "sha256": "501089faa07679c722bee7b1892c27d0c75907b013e08a452d4bbe5b9ad22640",
+    "status": "BEFORE from CI; not a current-source runtime retake",
+    "bytes": 129283,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "unit": "products-new-variants",
+    "locale": "zh-TW",
+    "requested_size": "390x844",
+    "actual_png": {
+      "width": 390,
+      "height": 929
+    },
+    "file": "before/products-new-variants/zh-TW-390x844.png",
+    "source_file": "./output/visual-review/38207265014/dl/11730079000/run.6zBJ2ZiZ/ui-visual-audit/20261012T062912Z/shots/admin/products-new-variants/zh-TW-390x844.png",
+    "source_ci_run": "38207265014",
+    "sha256": "fc4a361df41fec15230c030e17757e5869011cc0612037b2a08c92c0656cd7ab",
+    "status": "BEFORE from CI; not a current-source runtime retake",
+    "bytes": 51721,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "unit": "products-new-variants",
+    "locale": "zh-CN",
+    "requested_size": "1586x992",
+    "actual_png": {
+      "width": 1586,
+      "height": 1085
+    },
+    "file": "before/products-new-variants/zh-CN-1586x992.png",
+    "source_file": "./output/visual-review/38207265014/dl/11730297317/run.qDa5eDZD/ui-visual-audit/20261012T062544Z/shots/admin/products-new-variants/zh-CN-1586x992.png",
+    "source_ci_run": "38207265014",
+    "sha256": "a589d5b087cdc479536a570ea24a9a5e78bb2d6d9b7a1b0ffe98d90a8e30a6d5",
+    "status": "BEFORE from CI; not a current-source runtime retake",
+    "bytes": 124755,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "unit": "products-new-variants",
+    "locale": "zh-CN",
+    "requested_size": "390x844",
+    "actual_png": {
+      "width": 390,
+      "height": 929
+    },
+    "file": "before/products-new-variants/zh-CN-390x844.png",
+    "source_file": "./output/visual-review/38207265014/dl/11728449911/run.H6WDDhDs/ui-visual-audit/20261012T055449Z/shots/admin/products-new-variants/zh-CN-390x844.png",
+    "source_ci_run": "38207265014",
+    "sha256": "4a7c3e8142791fab59aed6baa607e0e06339d166374fcab316fa12e3231bc444",
+    "status": "BEFORE from CI; not a current-source runtime retake",
+    "bytes": 50200,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "unit": "products-new-variants",
+    "locale": "en",
+    "requested_size": "1586x992",
+    "actual_png": {
+      "width": 1586,
+      "height": 1085
+    },
+    "file": "before/products-new-variants/en-1586x992.png",
+    "source_file": "./output/visual-review/38207265014/dl/11729364559/run.lXs5gS1H/ui-visual-audit/20261012T062327Z/shots/admin/products-new-variants/en-1586x992.png",
+    "source_ci_run": "38207265014",
+    "sha256": "8bf05ca0bcbf28b092546e27061d9c5063d422c34eb664f92c02d1bd7da0af7b",
+    "status": "BEFORE from CI; not a current-source runtime retake",
+    "bytes": 120834,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "unit": "products-new-variants",
+    "locale": "en",
+    "requested_size": "390x844",
+    "actual_png": {
+      "width": 390,
+      "height": 950
+    },
+    "file": "before/products-new-variants/en-390x844.png",
+    "source_file": "./output/visual-review/38207265014/dl/11730079000/run.6zBJ2ZiZ/ui-visual-audit/20261012T062912Z/shots/admin/products-new-variants/en-390x844.png",
+    "source_ci_run": "38207265014",
+    "sha256": "7697b66624bccad54420a400ecfc2c29b5e10b59f23c5c298bffc9da8405922b",
+    "status": "BEFORE from CI; not a current-source runtime retake",
+    "bytes": 44737,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "unit": "products-product",
+    "locale": "zh-TW",
+    "requested_size": "1586x992",
+    "actual_png": {
+      "width": 1586,
+      "height": 1085
+    },
+    "file": "before/products-product/zh-TW-1586x992.png",
+    "source_file": "./output/visual-review/38207265014/dl/11729364559/run.lXs5gS1H/ui-visual-audit/20261012T062327Z/shots/admin/products-product/zh-TW-1586x992.png",
+    "source_ci_run": "38207265014",
+    "sha256": "b6b33a1e7320db76a85fd48ed45c17a9a038ff314aef65cf1ae7d030bc3fa806",
+    "status": "BEFORE from CI; not a current-source runtime retake",
+    "bytes": 137049,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "unit": "products-product",
+    "locale": "zh-TW",
+    "requested_size": "390x844",
+    "actual_png": {
+      "width": 390,
+      "height": 929
+    },
+    "file": "before/products-product/zh-TW-390x844.png",
+    "source_file": "./output/visual-review/38207265014/dl/11730079000/run.6zBJ2ZiZ/ui-visual-audit/20261012T062912Z/shots/admin/products-product/zh-TW-390x844.png",
+    "source_ci_run": "38207265014",
+    "sha256": "529fd9629c96a9d517fdc3d5d24ba31149a5e042c304f6f14207b70884ea6bb3",
+    "status": "BEFORE from CI; not a current-source runtime retake",
+    "bytes": 63756,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "unit": "products-product",
+    "locale": "zh-CN",
+    "requested_size": "1586x992",
+    "actual_png": {
+      "width": 1586,
+      "height": 1085
+    },
+    "file": "before/products-product/zh-CN-1586x992.png",
+    "source_file": "./output/visual-review/38207265014/dl/11730297317/run.qDa5eDZD/ui-visual-audit/20261012T062544Z/shots/admin/products-product/zh-CN-1586x992.png",
+    "source_ci_run": "38207265014",
+    "sha256": "0b38b4aea433e86cad5389f21c231e7cd454eb0e7e07f225b65880ad9929e561",
+    "status": "BEFORE from CI; not a current-source runtime retake",
+    "bytes": 134377,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "unit": "products-product",
+    "locale": "zh-CN",
+    "requested_size": "390x844",
+    "actual_png": {
+      "width": 390,
+      "height": 929
+    },
+    "file": "before/products-product/zh-CN-390x844.png",
+    "source_file": "./output/visual-review/38207265014/dl/11728449911/run.H6WDDhDs/ui-visual-audit/20261012T055449Z/shots/admin/products-product/zh-CN-390x844.png",
+    "source_ci_run": "38207265014",
+    "sha256": "4311686bd46c5998359c00ee587254daebafb1131d36cb6ba282b090fa51a468",
+    "status": "BEFORE from CI; not a current-source runtime retake",
+    "bytes": 63282,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "unit": "products-product",
+    "locale": "en",
+    "requested_size": "1586x992",
+    "actual_png": {
+      "width": 1586,
+      "height": 1085
+    },
+    "file": "before/products-product/en-1586x992.png",
+    "source_file": "./output/visual-review/38207265014/dl/11729364559/run.lXs5gS1H/ui-visual-audit/20261012T062327Z/shots/admin/products-product/en-1586x992.png",
+    "source_ci_run": "38207265014",
+    "sha256": "acd355138c20b2ceeab3f6ac0373436b06e2f9a914896ec6df97f9cbacb1ac62",
+    "status": "BEFORE from CI; not a current-source runtime retake",
+    "bytes": 133400,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "unit": "products-product",
+    "locale": "en",
+    "requested_size": "390x844",
+    "actual_png": {
+      "width": 390,
+      "height": 950
+    },
+    "file": "before/products-product/en-390x844.png",
+    "source_file": "./output/visual-review/38207265014/dl/11730079000/run.6zBJ2ZiZ/ui-visual-audit/20261012T062912Z/shots/admin/products-product/en-390x844.png",
+    "source_ci_run": "38207265014",
+    "sha256": "d1ccd04dfb9881fff06f5817809bd485a86183cefcb111c9007182ecc5351485",
+    "status": "BEFORE from CI; not a current-source runtime retake",
+    "bytes": 50768,
+    "retention": "HASH_ONLY"
+  }
+]

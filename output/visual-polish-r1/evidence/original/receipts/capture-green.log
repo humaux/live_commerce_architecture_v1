@@ -1,0 +1,16 @@
+✔ native wheel frames cover tall section interiors, not just section headings (5.634542ms)
+✔ a frozen pane fails instead of claiming complete evidence (1.331959ms)
+✔ document-only wheel movement does not prove that the nested pane scrolled (1.245875ms)
+✔ frame bound fails visibly and retains partial shots (1.620125ms)
+✔ initial offset is rewound using native input before shooting (2.6855ms)
+✔ a hidden final slice is not mistaken for a reached end (2.729458ms)
+✔ a short pane is captured once without unnecessary scrolling (1.074167ms)
+✔ a missing required product pane fails, never skips a page (0.642333ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 62.221125

@@ -1,0 +1,824 @@
+[
+  {
+    "file": "crops/admin/ads/en-390x844-R7-1.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/ads/zh-CN-390x844-R7-1.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/ads/zh-TW-390x844-R7-1.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/ads-attribution/en-390x844-R7-1.png",
+    "sha256": "775f46d9110721454f385032612153cfc1df74177d11353480514e11fa9e01b3",
+    "bytes": 2766,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/ads-attribution/en-390x844-R7-2.png",
+    "sha256": "8325bdcd5dbca06baac6973202d988c32121fbd2cd79f0baec83f288274482a3",
+    "bytes": 1263,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/ads-attribution/zh-CN-390x844-R7-1.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/ads-attribution/zh-TW-390x844-R7-1.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/billing/en-390x844-R7-1.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/billing/zh-CN-390x844-R7-1.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/billing/zh-TW-390x844-R7-1.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/collections/en-390x844-R7-1.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/collections/zh-CN-390x844-R7-1.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/collections/zh-TW-390x844-R7-1.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/customers/en-390x844-R7-1.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/customers/zh-CN-390x844-R7-1.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/customers/zh-TW-390x844-R7-1.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/customers-customer/en-390x844-R5-1.png",
+    "sha256": "21109bab5749347d95f5ca6c22a378a04bcfcdf57f51c3360343a777e87bd0be",
+    "bytes": 2046,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/customers-customer/en-390x844-R7-2.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/customers-customer/en-390x844-R7-3.png",
+    "sha256": "eed047547db21f23efc5f3dee77cacef2f32347af6372be14751313aba7d5898",
+    "bytes": 625,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/customers-customer/zh-CN-390x844-R5-1.png",
+    "sha256": "f36a2052c6f1e2655ec8617db949a2a45a706065c52f018c5c5b53bdf8743829",
+    "bytes": 2662,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/customers-customer/zh-CN-390x844-R7-2.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/customers-customer/zh-TW-390x844-R5-1.png",
+    "sha256": "36f56bd2bf47d0fbada2a4a589a4ff05cbf096a6f5c755c7b800bdce2eeab9f5",
+    "bytes": 2733,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/customers-customer/zh-TW-390x844-R7-2.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/customers-import/en-390x844-R7-1.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/customers-import/zh-CN-390x844-R7-1.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/customers-import/zh-TW-390x844-R7-1.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/design/en-390x844-R7-1.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/design/en-390x844-R7-2.png",
+    "sha256": "2ff93cf21fd8846a403f3c4e252523b64dc5737e42c508fc570471e8c96857de",
+    "bytes": 319,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/design/zh-CN-390x844-R7-1.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/design/zh-TW-390x844-R7-1.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/finance/en-390x844-R7-1.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/finance/zh-CN-390x844-R7-1.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/finance/zh-TW-390x844-R7-1.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/finance-reports/en-390x844-R7-1.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/finance-reports/en-390x844-R7-2.png",
+    "sha256": "50f717eeec7ab88e398a038d5b5aba710cbe7981c60c76824d436e41efffdbeb",
+    "bytes": 2307,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/finance-reports/zh-CN-390x844-R7-1.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/finance-reports/zh-TW-390x844-R7-1.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/home/en-390x844-R7-1.png",
+    "sha256": "775f46d9110721454f385032612153cfc1df74177d11353480514e11fa9e01b3",
+    "bytes": 2766,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/home/zh-CN-390x844-R7-1.png",
+    "sha256": "4b7e9c2d36d31d1c9a3ac70c986e1e647a8ae5a72b87583bae0c6c945cacd401",
+    "bytes": 3029,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/home/zh-CN-390x844-R7-2.png",
+    "sha256": "2f0bae6a2ff3ff05681496096ef6432a3980cbb4c5fd9173e30ab82c019c3eab",
+    "bytes": 354,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/home/zh-TW-390x844-R7-1.png",
+    "sha256": "f990bbff04ad181570bb0d711f72482becf7a56710fbc78f14f302c6438b094b",
+    "bytes": 3290,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/home/zh-TW-390x844-R7-2.png",
+    "sha256": "2f0bae6a2ff3ff05681496096ef6432a3980cbb4c5fd9173e30ab82c019c3eab",
+    "bytes": 354,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/inventory/en-390x844-R7-1.png",
+    "sha256": "33f028389978431966ade83d8259f326fbc42d93b2332698b3948c58d634e965",
+    "bytes": 2780,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/inventory/zh-CN-390x844-R7-1.png",
+    "sha256": "3810188a1788c36ad2aad05cf8607f1e8cabaaf8e30dc4cb14a72c1253f58d5f",
+    "bytes": 3041,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/inventory/zh-TW-390x844-R7-1.png",
+    "sha256": "5d3b417f9d397e5984f0e37b0b557a0a18d6eaa8b57601748944109aac1be7e9",
+    "bytes": 3304,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/messages/en-390x844-R7-1.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/messages/zh-CN-390x844-R7-1.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/messages/zh-TW-390x844-R7-1.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/orders/en-390x844-R5-1.png",
+    "sha256": "e4cef508b69b20f3affb5ba631a11706c6e1cd92929b5df3418599937b9bb82a",
+    "bytes": 3253,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/orders/en-390x844-R7-2.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/orders/en-390x844-R7-3.png",
+    "sha256": "cb85d5e1e8aaeeda42dc45ac0ae395a0daab6773c22da14689c1153f53d0ad31",
+    "bytes": 2188,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/orders/zh-CN-390x844-R5-1.png",
+    "sha256": "d4e572ca7a06a7bb037bf30ff9b239e62b2296d0cbc3e4dae4d2abb9121c8093",
+    "bytes": 2506,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/orders/zh-CN-390x844-R7-2.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/orders/zh-CN-390x844-R7-3.png",
+    "sha256": "ca0ec86a214cdbb5aab13258fde4daf1cf7d3d6265dd641dccb4f74ca954ecea",
+    "bytes": 182,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/orders/zh-TW-390x844-R5-1.png",
+    "sha256": "3bc04934e4d4451322a94c17c71819c05e01be83225e5e2bd141d1c8946cb325",
+    "bytes": 2751,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/orders/zh-TW-390x844-R7-2.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/orders/zh-TW-390x844-R7-3.png",
+    "sha256": "ca0ec86a214cdbb5aab13258fde4daf1cf7d3d6265dd641dccb4f74ca954ecea",
+    "bytes": 182,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/orders-cvs-print/en-390x844-R7-1.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/orders-cvs-print/zh-CN-390x844-R7-1.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/orders-cvs-print/zh-TW-390x844-R7-1.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/orders-new/en-390x844-R7-1.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/orders-new/zh-CN-390x844-R7-1.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/orders-new/zh-TW-390x844-R7-1.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/products/en-390x844-R7-1.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/products/zh-CN-390x844-R7-1.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/products/zh-TW-390x844-R7-1.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/products-import/en-390x844-R7-1.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/products-import/zh-CN-390x844-R7-1.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/products-import/zh-TW-390x844-R7-1.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/products-new/en-390x844-R7-1.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/products-new/en-390x844-R7-2.png",
+    "sha256": "7b8264bf3a9aa6d0311e245fc45fb67dc2993f7e852c0a0f878adc7fc6c1b414",
+    "bytes": 1334,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/products-new/zh-CN-390x844-R7-1.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/products-new/zh-CN-390x844-R7-2.png",
+    "sha256": "9f0e87bdda826106f9ce0233b5d8eae83d27fd7d7e01dad4ddd2f6ce24a894f3",
+    "bytes": 865,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/products-new/zh-TW-390x844-R7-1.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/products-new/zh-TW-390x844-R7-2.png",
+    "sha256": "b8f8da4aa12f1e6e612e3f0a7c6206a33a05040b1d19ca846bcc24d31a654fc2",
+    "bytes": 883,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/products-new-variants/en-390x844-R7-1.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/products-new-variants/en-390x844-R7-2.png",
+    "sha256": "9764188ceb1281d8dad1df1e3d7694f8e04dce9b270f08eab8f6c41b053010f6",
+    "bytes": 2296,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/products-new-variants/zh-CN-390x844-R7-1.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/products-new-variants/zh-CN-390x844-R7-2.png",
+    "sha256": "9a7fa2033760ea3951f222828ec24eecbb35b93ce4f282f2840b46503d099216",
+    "bytes": 557,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/products-new-variants/zh-TW-390x844-R7-1.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/products-new-variants/zh-TW-390x844-R7-2.png",
+    "sha256": "554103c30467ecd0db3c5cb7075ff3e678f38a17113537f922bdd2e3c7c45678",
+    "bytes": 559,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/products-product/en-390x844-R7-1.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/products-product/en-390x844-R7-2.png",
+    "sha256": "e1d4211334d1749e2ce923084e96226817018756d4602f10b3cdd8dfc4ed635e",
+    "bytes": 1471,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/products-product/zh-CN-390x844-R7-1.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/products-product/zh-CN-390x844-R7-2.png",
+    "sha256": "b19c2eca66988b7e03ac876541b4cc7fef2a0cc72742d0de0fd855e2d2eff540",
+    "bytes": 567,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/products-product/zh-TW-390x844-R7-1.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/products-product/zh-TW-390x844-R7-2.png",
+    "sha256": "0e947234cd854667254a8340868c0eecd0347c06cf27b614e3e98c6d32147396",
+    "bytes": 568,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/promotions/en-390x844-R7-1.png",
+    "sha256": "775f46d9110721454f385032612153cfc1df74177d11353480514e11fa9e01b3",
+    "bytes": 2766,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/promotions/en-390x844-R7-2.png",
+    "sha256": "4670f740576bfbd1a11fab857bfce6a772f2aeebb79850b093f7ab709199f8e9",
+    "bytes": 1512,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/promotions/zh-CN-390x844-R7-1.png",
+    "sha256": "4b7e9c2d36d31d1c9a3ac70c986e1e647a8ae5a72b87583bae0c6c945cacd401",
+    "bytes": 3029,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/promotions/zh-CN-390x844-R7-2.png",
+    "sha256": "e2680f48982ff0e8af4a0fbaee6cccf25e5bbad271b244874c5d345a7db83918",
+    "bytes": 355,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/promotions/zh-TW-390x844-R7-1.png",
+    "sha256": "f990bbff04ad181570bb0d711f72482becf7a56710fbc78f14f302c6438b094b",
+    "bytes": 3290,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/promotions/zh-TW-390x844-R7-2.png",
+    "sha256": "af4371da43b94780025836fd8cb3dbb611acb7179fac15e65d0734f3b69be180",
+    "bytes": 358,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/returns/en-390x844-R7-1.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/returns/zh-CN-390x844-R7-1.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/returns/zh-TW-390x844-R7-1.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/settings/en-390x844-R5-1.png",
+    "sha256": "4fb1fdd1cfb52f864620d343755b1766fbb6722429bb4e532792d99a60c3b773",
+    "bytes": 3146,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/settings/en-390x844-R5-2.png",
+    "sha256": "8747aba8f4214450d0a8cfdfcd52b3d63df873a996f85ce54009be2c2fc6cff4",
+    "bytes": 3845,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/settings/en-390x844-R7-3.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/settings/zh-CN-390x844-R5-1.png",
+    "sha256": "db997c568062b6231016d6472af4d001a7f174c5183ff2f60813e01c508c803a",
+    "bytes": 2193,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/settings/zh-CN-390x844-R5-2.png",
+    "sha256": "8293d18777704c799de7f3335aeb95169af0ef1af9cac6bd827a54379530dfbb",
+    "bytes": 3546,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/settings/zh-CN-390x844-R7-3.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/settings/zh-TW-390x844-R5-1.png",
+    "sha256": "82ff40d4471c386ac57d7efc6ca742f07de0c1f59055b39bea525a075dd8f3de",
+    "bytes": 2235,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/settings/zh-TW-390x844-R5-2.png",
+    "sha256": "1d58913410fbbd170f42bd1f4abbfdf045a54b797ac1fb8da28cd1304643888d",
+    "bytes": 3565,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/settings/zh-TW-390x844-R7-3.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/settings-operations/en-390x844-R5-1.png",
+    "sha256": "18a19470987d294305f08a0e5bdb2aad0f0b7615e010de885e666b90bc062b0a",
+    "bytes": 2375,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/settings-operations/en-390x844-R7-2.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/settings-operations/zh-CN-390x844-R5-1.png",
+    "sha256": "7b54c6dd2dc65a9ea70dbf440c2fb5275031d0e8bec7de7f8695144743030f76",
+    "bytes": 1883,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/settings-operations/zh-CN-390x844-R7-2.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/settings-operations/zh-TW-390x844-R5-1.png",
+    "sha256": "0d5330a4707b78be97a00fe9993cf191a9ab957c70cf09da579b0f4a366ce8c1",
+    "bytes": 2007,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/settings-operations/zh-TW-390x844-R7-2.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/settings-payments-card/en-390x844-R5-1.png",
+    "sha256": "5a3ee42d5e9058466e6c667a7c79dec46f746e5eb3934147dd9424a05a1e64ec",
+    "bytes": 3227,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/settings-payments-card/en-390x844-R7-2.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/settings-payments-card/zh-CN-390x844-R5-1.png",
+    "sha256": "0bb0bbca94f9aaff54df10723463e185314d6535ffcf5a74c9ead1705e418ecf",
+    "bytes": 2168,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/settings-payments-card/zh-CN-390x844-R7-2.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/settings-payments-card/zh-TW-390x844-R5-1.png",
+    "sha256": "c034258bb3b0a307e39facab901164bfe1aae9f9b59e87da0ff64cd0b96ee0fd",
+    "bytes": 2229,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/settings-payments-card/zh-TW-390x844-R7-2.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/settings-settlements/en-390x844-R7-1.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/settings-settlements/zh-CN-390x844-R7-1.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/settings-settlements/zh-TW-390x844-R7-1.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/studio/en-390x844-R7-1.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/studio/zh-CN-390x844-R7-1.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/studio/zh-TW-390x844-R7-1.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/studio-claims/en-390x844-R7-1.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/studio-claims/zh-CN-390x844-R7-1.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/studio-claims/zh-TW-390x844-R7-1.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/studio-console/en-390x844-R7-1.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/studio-console/en-390x844-R7-2.png",
+    "sha256": "f9eced030a3ada5c17438b326a11c9de98b33d49ad438c528b65b26de697ce98",
+    "bytes": 1365,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/studio-console/zh-CN-390x844-R7-1.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/studio-console/zh-TW-390x844-R7-1.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/studio-settings/en-390x844-R7-1.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "bytes": 2608,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/studio-settings/zh-CN-390x844-R7-1.png",
+    "sha256": "ccc659d56f989b6ca59e627c3136c13927283de2d8817c091025af55fdbc831b",
+    "bytes": 2864,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/studio-settings/zh-TW-390x844-R7-1.png",
+    "sha256": "13915319556898baf1ee76acac06d1f8c3de1bdc3097876de2731fd93d7aa1b3",
+    "bytes": 3116,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/team/en-390x844-R7-1.png",
+    "sha256": "775f46d9110721454f385032612153cfc1df74177d11353480514e11fa9e01b3",
+    "bytes": 2766,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/team/zh-CN-390x844-R7-1.png",
+    "sha256": "3810188a1788c36ad2aad05cf8607f1e8cabaaf8e30dc4cb14a72c1253f58d5f",
+    "bytes": 3041,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/team/zh-CN-390x844-R7-2.png",
+    "sha256": "c7e404e1b354be2450937ee144174d5081f4d2f9d081adcdea859b2c7cab0aa0",
+    "bytes": 357,
+    "retention": "HASH_ONLY"
+  },
+  {
+    "file": "crops/admin/team/zh-TW-390x844-R7-1.png",
+    "sha256": "f990bbff04ad181570bb0d711f72482becf7a56710fbc78f14f302c6438b094b",
+    "bytes": 3290,
+    "retention": "HASH_ONLY"
+  }
+]

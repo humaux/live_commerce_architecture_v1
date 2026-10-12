@@ -1,0 +1,69 @@
+✔ PE13 Cartesian matrix is local, preserves edits and deduplicates values (3.289458ms)
+✔ PE13 bulk quantity skips negative rows without modifying them (0.186083ms)
+✔ PE12 untracked document uses whole currency and per-order cap, never quantity (33.356458ms)
+✔ PE14 missing readback is not guessed or silently cleared by full replacement (0.240917ms)
+✔ bulk status accepts explicit per-item results, never empty or duplicated confirmations (0.742166ms)
+✔ matrix refuses over 100 SKUs before expansion (0.151625ms)
+✔ PR #1 4212540344: per-row matrix labels reappear where the matrix header is not visible (≤900px), desktop untouched (2.34725ms)
+✔ PR #1 4212540352: pre-publish missing-items list collapses behind a real toggle at ≤900px instead of being removed (1.696792ms)
+✔ mobile product sections reuse the existing hinted TabStrip (0.280667ms)
+✔ mobile save status has its own row instead of a fixed narrow text cap (0.350458ms)
+✖ empty mobile save status reserves the same line as the first dirty edit (0.805833ms)
+✖ readiness cannot promise field focus while the actual destination is locked (115.736459ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 10
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 733.853583
+
+✖ failing tests:
+
+test at tests/admin/product-document.test.ts:189:1
+✖ empty mobile save status reserves the same line as the first dirty edit (0.805833ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /min-height:\s*1\.5em/. Input:
+
+  '\n' +
+    '    /* Reserve a whole row for localized save status instead of breaking a phrase beside actions. */\n' +
+    '    flex-basis: 100%;\n' +
+    '    max-width: none;\n' +
+    '    min-width: 0;\n' +
+    '  '
+
+      at TestContext.<anonymous> (file://./tests/admin/product-document.test.ts:193:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '\n    /* Reserve a whole row for localized save status instead of breaking a phrase beside actions. */\n    flex-basis: 100%;\n    max-width: none;\n    min-width: 0;\n  ',
+    expected: /min-height:\s*1\.5em/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at tests/admin/product-document.test.ts:198:1
+✖ readiness cannot promise field focus while the actual destination is locked (115.736459ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  false !== true
+
+      at TestContext.<anonymous> (file://./tests/admin/product-document.test.ts:212:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

@@ -1,0 +1,7 @@
+{
+  "base": "b9f808102fa56d9b050aea30cdc5ca2ca5940d5f",
+  "files": {
+    "tests/ui/visual-audit.mjs": "321065f166a2761467c8712d1f9d8879ed0d3cc515094f14828816e91df143f9",
+    "tests/ui/visual-scroll-capture.test.mjs": "1cf6d1a8bcb8481c65d19cd69e7bc1e25701067d4041e86f29b9a0a8cc8a58a5"
+  }
+}
