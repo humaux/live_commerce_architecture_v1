@@ -1,5 +1,31 @@
 # LC-U3 create-order drawer delivery
 
+## PR32 merge1200178c — READY, local E3 (2026-10-13)
+
+This is the current handoff; earlier sections retain their historical evidence. The money-path fixes were committed and pushed as `09bf1158bacaeb383a97074aa2772f6732da0aee` before this merge. Following the owner's instruction, fetched `origin r3/integration` and **merged FETCH_HEAD without rebasing**. Merge commit **`48102a4ed4d1309060a7ad2940fcb614da27197c`**, parents `09bf1158` and `1200178c5ffe3decaee09077e2bb8b7f59ea715c`.
+
+- `CommentStream.tsx` retains the catalog/order/inventory permission gate, create-order entry, reset and parent privacy revocation, plus trunk's label-print provider, toolbar and row actions. Printing uses the same active-session/privacy fence. The conflicting inbox component host retains both React hook/context/portal sets. `playwright.config.ts` retains both `live-console.spec.ts` and `comment-label-print.spec.ts`; every Node test entry from both parents is retained. Registry layout remains intact.
+- Source SHA256 **`214fff07d38bf7dcc86e5652bfdca064a95849a02b6e21ff26179fdf4c5f9b64`** binds all six runs below. Each run started and finished with clean tracked status and identical source/historical-output hashes. The final delivery commit changes only this document and these owned receipts, preserving that source digest.
+- The merged tree's entire `internal/` delta from `09bf1158` is empty. The eight checked money-path files, including drawer, attempt, checkout and browser assertions, are byte-identical: [`merge120-money-unchanged.json`](merge-1200178c/merge120-money-unchanged.json). Earlier red→green and calibration evidence remains below; no new behavioral workaround, retry, timeout increase or weakened assertion was introduced for this merge.
+- Implementer: Codex-3; parent runtime model/effort **NOT_EXPOSED**. Read-only audit helper configured `gpt-6-luna/medium`, own canvas only, no recursive delegation. Allowed resolution paths: `apps/admin/components/CommentStream.tsx`, `tests/admin/inbox-review-host.test.ts`; auto-merged suite/registry changes retain both parents. Delivery write paths: this file and `output/lc-u3-create-order-drawer/merge-1200178c/`. Owner `output/ext-agents/`, paused backups and historical output remain untouched.
+
+| Exact command | Exit | Current merged-head result / run ID |
+| --- | --- | --- |
+| `cd apps/admin && pnpm exec tsc --noEmit -p .` | **0** | `merge120-tsc-20261013`, 1.718s |
+| `bash scripts/dev/test-node.sh` | **0** | `merge120-node-20261013`, **1642 pass, 0 fail/cancelled/skipped**, 32 invocations, 41.766s |
+| `bash scripts/dev/check-gates.sh` | **0** | `merge120-gates-20261013`, 208.138s; includes contract drift **errors=0, warnings=362** historical baseline, 83 documented modes, registry/header/evidence/backend ratchets and 1277 tests in 10 shards |
+| `bash scripts/dev/test-local.sh --browser-manual-order` | **0** | `merge120-manual-order-20261013`, 133.476s; **Drawer29 + legacy10, REAL_PG14/14**, 111 passing drawer click rows |
+| `bash scripts/dev/test-local.sh --browser-live-console` | **0** | `merge120-live-console-20261013`, 425.885s; workspace368.57s and labels35.89s, **52 label click rows PASS** |
+| `bash scripts/dev/test-local.sh --browser-inbox` | **0** | `merge120-inbox-20261013`, 107.859s; real inbox chain/I11 credential verification, **61 click rows PASS** |
+
+The browser modes ran sequentially, unfiltered, with known grep/calibration variables cleared. Existing ignored wrapper supplies only outer process bounds (120/300/600/900s), `GOFLAGS=-p=1`, process-group cleanup and source/status checks; test deadlines are unchanged. Exact commands, environment overrides, timing and hashes are in [`gates.json`](merge-1200178c/gates.json). Lossless `.log.gz` records preserve original bytes; [`RAW-LOGS.sha256.json`](merge-1200178c/RAW-LOGS.sha256.json) verifies decoded logs. [`FILES.sha256.json`](merge-1200178c/FILES.sha256.json) verifies the retained receipt files.
+
+Current live-console evidence comes from **`output/playwright/run.uaBuE0HH/live-console-2176389442`** (workspace) and **`live-console-3713550877`** (labels), as identified by this run's log. No old top-level run supplies this acceptance. Both unchanged LCU2_404 cases produce real 404, privateRows=0, buyerPanel=0, sessionRetained=true and postLossReads=0. Native hidden state leaves server reads31→31. Receipts: [`live-console/`](merge-1200178c/live-console/). Inbox's native visibility receipt confirms private state cleared and revalidation on return. Queued-copy and 422 recovery real-click/readback receipts are in [`manual/`](merge-1200178c/manual/). Original full artifacts remain ignored; retained label/inbox ledgers omit raw actual/expected strings, with original hashes and transformations in [`receipt-provenance.json`](merge-1200178c/receipt-provenance.json).
+
+Auxiliary `test-local.sh --list` and `pr-modes` checks exit0: 84 registry entries including foundation; selector returns54 modes. **Other51 selector modes, full foundation/G07 and optional LiveKit Node suite: NOT_RUN in this batch.** Earlier focused PG/race/vet/build results belong to their original SHA, not fresh runs here. Source-only whitespace check against trunk is0; a whole-merge whitespace check reports inherited trunk raw-log whitespace, preserved byte-for-byte rather than rewritten.
+
+**E3: automatic local browser + disposable REAL_PG with signed MOCK IdP/Meta/console/edge; no LIVE provider, physical-printer or production acceptance.** All six requested modes are green on the merged source. Own gate processes have exited; independent review and merged-head CI remain pending. Authorized push is only to `unit/lc-u3-create-order-drawer`; no GitHub thread reply/resolution or trunk push.
+
 ## PR32 money-path follow-up — READY, local E3 (2026-10-13)
 
 This section supersedes the old uncommitted/Git-readonly handoffs below. The owner authorized the necessary backend/contract/REAL_PG expansion and a push of **only** `unit/lc-u3-create-order-drawer`. No GitHub thread reply or resolution was made.

@@ -1,0 +1,21 @@
+{
+  "name": "merge120-tsc-20261013",
+  "command": [
+    "bash",
+    "-lc",
+    "cd apps/admin && pnpm exec tsc --noEmit -p ."
+  ],
+  "timeout": 120,
+  "head": "48102a4ed4d1309060a7ad2940fcb614da27197c",
+  "exit_code": 0,
+  "source_sha256": "214fff07d38bf7dcc86e5652bfdca064a95849a02b6e21ff26179fdf4c5f9b64",
+  "source_after": "214fff07d38bf7dcc86e5652bfdca064a95849a02b6e21ff26179fdf4c5f9b64",
+  "source_unchanged": true,
+  "historical_output_sha256": "a2be0f36abe76a4c726036a6bdddfc307f462e961da469f7499418e8e7aecd4b",
+  "historical_output_after": "a2be0f36abe76a4c726036a6bdddfc307f462e961da469f7499418e8e7aecd4b",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": true,
+  "tracked_status_clean_after": true,
+  "elapsed_seconds": 1.718
+}

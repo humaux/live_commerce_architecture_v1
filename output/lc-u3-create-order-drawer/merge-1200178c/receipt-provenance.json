@@ -1,0 +1,127 @@
+[
+  {
+    "original": "output/playwright/create-order-drawer-1273978036/result.json",
+    "original_sha256": "f924e9e0f9b6a4494bebbce6d183ced0c549e0bf06ce2f8da43904bdc3523cda",
+    "retained": "manual/result.json",
+    "transformation": "byte-identical"
+  },
+  {
+    "original": "output/playwright/create-order-drawer-1273978036/click-ledger.json",
+    "original_sha256": "6cdaa26f1737c37bc6e1b455ce878e139983aa9f3705ca00b5231f2f1c04a2d0",
+    "retained": "manual/click-ledger.json",
+    "transformation": "byte-identical"
+  },
+  {
+    "original": "output/playwright/create-order-drawer-1273978036/pg-readback.json",
+    "original_sha256": "8e7bda9d7e1a99b6209b206305fd6a8e42df4650489ad156dfc344ea4e822503",
+    "retained": "manual/pg-readback.json",
+    "transformation": "byte-identical"
+  },
+  {
+    "original": "output/playwright/manual-order-link-3270438101/result.json",
+    "original_sha256": "18fa455835bebc149ec817bd62e75b38857d66162e94962ba73f04c25fb71384",
+    "retained": "legacy/result.json",
+    "transformation": "byte-identical"
+  },
+  {
+    "original": "output/playwright/run.uaBuE0HH/live-console-2176389442/grant-revocation-all.json",
+    "original_sha256": "51cc99d6ce213356afb403484993e70d2cca6c77890a533b79743b2b3fc20644",
+    "retained": "live-console/grant-revocation-all.json",
+    "transformation": "byte-identical"
+  },
+  {
+    "original": "output/playwright/run.uaBuE0HH/live-console-2176389442/grant-revocation-private.json",
+    "original_sha256": "6ec12f53e4093d0ec3f19fe0cf483a64ba8d50a9d3dcc61652a928dca8829c86",
+    "retained": "live-console/grant-revocation-private.json",
+    "transformation": "byte-identical"
+  },
+  {
+    "original": "output/playwright/run.uaBuE0HH/live-console-2176389442/native-hidden-read-counts.json",
+    "original_sha256": "1f78f0298133810928b002a27daae87266ec01e629a74b992165a1f6ef9e3835",
+    "retained": "live-console/native-hidden-read-counts.json",
+    "transformation": "byte-identical"
+  },
+  {
+    "original": "output/playwright/run.uaBuE0HH/live-console-3713550877/label-click-ledger-6842577ca0b28ad9ce5b-0a37413c73567e212c15.json",
+    "original_sha256": "c84772f44145d94ef55e4a05dc1e10a1fbdc6b0ddd1880fe190734085ee26442",
+    "retained": "live-console/label-click-ledger.redacted.json",
+    "rows": 8,
+    "transformation": "omit actual/expected strings; combine rows"
+  },
+  {
+    "original": "output/playwright/run.uaBuE0HH/live-console-3713550877/label-click-ledger-6842577ca0b28ad9ce5b-2177a37ed61f437f0cb4.json",
+    "original_sha256": "243c04d9858d7891155a981edbd8de6e3c7437bea5523736407ba83670876d38",
+    "retained": "live-console/label-click-ledger.redacted.json",
+    "rows": 8,
+    "transformation": "omit actual/expected strings; combine rows"
+  },
+  {
+    "original": "output/playwright/run.uaBuE0HH/live-console-3713550877/label-click-ledger-6842577ca0b28ad9ce5b-492357f327a3fc117b3f.json",
+    "original_sha256": "68cf4a126bde8c44593fa54312465558b464c614bc687dc74dd5150ed91fc27d",
+    "retained": "live-console/label-click-ledger.redacted.json",
+    "rows": 1,
+    "transformation": "omit actual/expected strings; combine rows"
+  },
+  {
+    "original": "output/playwright/run.uaBuE0HH/live-console-3713550877/label-click-ledger-6842577ca0b28ad9ce5b-50db09ca1b36eadb3095.json",
+    "original_sha256": "08ddf4ef706cf8aaebaa5c9bf5e79b5655d96a2ca8fec69470dc039e0d218878",
+    "retained": "live-console/label-click-ledger.redacted.json",
+    "rows": 1,
+    "transformation": "omit actual/expected strings; combine rows"
+  },
+  {
+    "original": "output/playwright/run.uaBuE0HH/live-console-3713550877/label-click-ledger-6842577ca0b28ad9ce5b-971ca030ab2d465cf6d5.json",
+    "original_sha256": "82410e50768fdc72f3969fc5279b49b60e2995eff3e35d1f3b9a614bc86afc77",
+    "retained": "live-console/label-click-ledger.redacted.json",
+    "rows": 8,
+    "transformation": "omit actual/expected strings; combine rows"
+  },
+  {
+    "original": "output/playwright/run.uaBuE0HH/live-console-3713550877/label-click-ledger-6842577ca0b28ad9ce5b-a70934920c83c87a12b1.json",
+    "original_sha256": "6e65152ef7e27c929dc5a5418931d82973f978cfe1436365e14ccd62eddf54e1",
+    "retained": "live-console/label-click-ledger.redacted.json",
+    "rows": 1,
+    "transformation": "omit actual/expected strings; combine rows"
+  },
+  {
+    "original": "output/playwright/run.uaBuE0HH/live-console-3713550877/label-click-ledger-6842577ca0b28ad9ce5b-bd46d9f6a70f04484610.json",
+    "original_sha256": "12298a664e3e150ee133c8e17ab33a6a4a4a31cc67aa0b5485ccff9e5ff1a79d",
+    "retained": "live-console/label-click-ledger.redacted.json",
+    "rows": 8,
+    "transformation": "omit actual/expected strings; combine rows"
+  },
+  {
+    "original": "output/playwright/run.uaBuE0HH/live-console-3713550877/label-click-ledger-6842577ca0b28ad9ce5b-cb6c53d9c3a3facba3d5.json",
+    "original_sha256": "073575a1a17d29bae117086bd9a1d9435c8992049fba40fa0613af5d781dc509",
+    "retained": "live-console/label-click-ledger.redacted.json",
+    "rows": 8,
+    "transformation": "omit actual/expected strings; combine rows"
+  },
+  {
+    "original": "output/playwright/run.uaBuE0HH/live-console-3713550877/label-click-ledger-6842577ca0b28ad9ce5b-e410b87403402d35b4a9.json",
+    "original_sha256": "3a3557da73a81a9aaa08cb3ac73baa97d8ac2dc1f70b4c1b26efac39ba448c25",
+    "retained": "live-console/label-click-ledger.redacted.json",
+    "rows": 8,
+    "transformation": "omit actual/expected strings; combine rows"
+  },
+  {
+    "original": "output/playwright/run.uaBuE0HH/live-console-3713550877/label-click-ledger-6842577ca0b28ad9ce5b-fb90d2190ad4d06414fe.json",
+    "original_sha256": "2e26bb566395b748d630352cd209c7a63142d1cf723ad91e8ab5727389bea24d",
+    "retained": "live-console/label-click-ledger.redacted.json",
+    "rows": 1,
+    "transformation": "omit actual/expected strings; combine rows"
+  },
+  {
+    "original": "output/playwright/inbox-ui/20261012T172115.077444000/click-ledger.json",
+    "original_sha256": "c5884530e67e585ea2aec1baf18f29aca34a1a2d3cd27d155f2deadeaba1ecb2",
+    "retained": "inbox/click-ledger.redacted.json",
+    "rows": 61,
+    "transformation": "omit actual/expected strings"
+  },
+  {
+    "original": "output/playwright/inbox-ui/20261012T172115.077444000/native-visibility.json",
+    "original_sha256": "35891068c230b2e7c36765bf5430173c6f7cd74b8633b32887778e8ff7fcb9f3",
+    "retained": "inbox/native-visibility.json",
+    "transformation": "byte-identical"
+  }
+]

@@ -1,0 +1,13 @@
+{
+  "hashes": {
+    "apps/admin/components/CreateOrderDrawer.tsx": "5640a8f15e94f4ed6b9eaf7500c506c49a48b138e0166f53e668c8c9b3a500ba",
+    "apps/admin/lib/create-order-attempt.ts": "96359db4fc475bd797a7c9db63c9e05bf4e634177868d5c7b443f80f48c0bc0d",
+    "tests/admin/create-order-drawer-gate.mjs": "707e07b10887469140d7583281eb6c2410590c9b0f9335e7372453a7c459f658",
+    "tests/foundation/browser_create_order_drawer_test.go": "700204868f0e506c7af670ee94d1b24f783a6b9d1aefe571a296d23156cbc05b",
+    "internal/merchanttools/order_attempt.go": "16ba8fd5344f25cf1a13a0eaae987a845d331f4da4db605ce00fc82cf3870084",
+    "internal/merchanttools/order_for_buyer.go": "2758f7680f2bd0ece4cf430ed63ab5bd81c029f8a030b1f0e34b31e37d1ce36e",
+    "internal/merchanttools/manual.go": "d90931f69ace203e9b577685a0e3bf5b0ca5a7ad9ae673b73444ee748a8b1db4",
+    "internal/checkout/checkout.go": "1589cee9f5e390c9a9e60ab4cf0c7df5e8cc42995459d1ab6114e16a24ae131b"
+  },
+  "all_internal_delta": []
+}

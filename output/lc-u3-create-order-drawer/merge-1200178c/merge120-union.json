@@ -1,0 +1,46 @@
+{
+  "merge_sha": "48102a4ed4d1309060a7ad2940fcb614da27197c",
+  "parents": [
+    "09bf1158bacaeb383a97074aa2772f6732da0aee",
+    "1200178c5ffe3decaee09077e2bb8b7f59ea715c"
+  ],
+  "source_sha256": "214fff07d38bf7dcc86e5652bfdca064a95849a02b6e21ff26179fdf4c5f9b64",
+  "resolved_conflicts": [
+    "apps/admin/components/CommentStream.tsx",
+    "tests/admin/inbox-review-host.test.ts"
+  ],
+  "both_entry_paths_retained": true,
+  "playwright_suite_union": [
+    "live-console.spec.ts",
+    "comment-label-print.spec.ts"
+  ],
+  "test_node_union": true,
+  "node_counts": {
+    "tests": 1642,
+    "pass": 1642,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "optional_media_not_run": [
+    "NOT_RUN: tests/media/r04-input-runner.test.mjs (COMMERCE_R04_LIVEKIT_BINARY unset)"
+  ],
+  "gate_plan": {
+    "merge120-tsc-20261013": 120,
+    "merge120-node-20261013": 300,
+    "merge120-gates-20261013": 600,
+    "merge120-manual-order-20261013": 900,
+    "merge120-live-console-20261013": 900,
+    "merge120-inbox-20261013": 900
+  },
+  "outer_timeout_only": true,
+  "test_assertions_bounds_unchanged": true,
+  "wake": "root tool polling <=60s; integrator receives READY handoff",
+  "source_files_sha256": {
+    "apps/admin/components/CommentStream.tsx": "cdd116c07b9c76d70f2316c7611773c3ab668de3c017d1eb5c7eabff7dc38cb9",
+    "tests/admin/inbox-review-host.test.ts": "ae01fe18790a62307e1812428d5ae8f8146e521efb4d2ca06d8641b647c5f903",
+    "playwright.config.ts": "659853d6b0a627aec3235c6ad91c999b72d3c2a4e85579f3b84c0b631c5695d0",
+    "scripts/dev/test-node.sh": "1f0061144b0fa801f3f792bb5bcfb039ffb4509a534d18483e42e797c6d2b75e",
+    "scripts/dev/test-local.sh": "dbc1cf1b6d62a831b760837806f9e472e5b8bf93e0ebec1b6a94235c15b063e7"
+  }
+}
