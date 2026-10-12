@@ -1,0 +1,14 @@
+{
+  "base_commit": "2c4d2f5320d9172e6f0094341bb81f7c9ccb1093",
+  "argv": [
+    "node",
+    "--test",
+    "--experimental-strip-types",
+    "--test-name-pattern=PR31|W3-U2 restriction",
+    "tests/admin/comment-stream-hooks.test.ts"
+  ],
+  "exit_code": 1,
+  "mode": "MOCK",
+  "pass": 22,
+  "fail": 3
+}

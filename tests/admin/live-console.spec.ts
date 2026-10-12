@@ -90,8 +90,17 @@ async function phase(page: Page, value: string) {
 test.describe("LC-U2a REAL_PG comment stream",()=>{
   // Comment text/name/PSIDs may not enter automatic failure artifacts, even in synthetic fixtures.
   const reads=new WeakMap<Page,Record<string,unknown>[]>();
+  const scopeReads=new WeakMap<Page,Record<string,unknown>[]>();
   test.beforeEach(async({page})=>{
     const rows:Record<string,unknown>[]=[];reads.set(page,rows);
+    const scoped:Record<string,unknown>[]=[];scopeReads.set(page,scoped);
+    page.on("response",r=>{
+      const path=new URL(r.url()).pathname;
+      const category=path===`/api/stores/${store}/live-sessions/${comments.session}/claims/blocklist/check`?"restriction":
+        path.endsWith("/comments")?"comments":path.endsWith("/inbox/conversations")?"conversations":
+        path.endsWith("/inbox/buyer-panel")?"buyer-panel":path.endsWith("/message-templates")?"templates":null;
+      if(category)scoped.push({path,category,status:r.status(),method:r.request().method()});
+    });
     page.on("response",async r=>{
       if(!new URL(r.url()).pathname.endsWith("/comments"))return;
       let value:any;try{value=await r.json();}catch{value={};}
@@ -99,7 +108,11 @@ test.describe("LC-U2a REAL_PG comment stream",()=>{
         code:["not_found","no_source","forbidden","stream_unavailable","invalid_request","invalid_cursor"].includes(value.code)?value.code:null});
     });
   });
-  test.afterEach(async({page},info)=>{await writeFile(`${evidence}/comment-reads-${info.testId.replace(/[^a-zA-Z0-9_-]/g,"")}.json`,JSON.stringify(reads.get(page)??[]));});
+  test.afterEach(async({page},info)=>{
+    const id=info.testId.replace(/[^a-zA-Z0-9_-]/g,"");
+    await writeFile(`${evidence}/comment-reads-${id}.json`,JSON.stringify(reads.get(page)??[]));
+    await writeFile(`${evidence}/scope-reads-${id}.json`,JSON.stringify(scopeReads.get(page)??[]));
+  });
   for(const [li,locale] of locales.entries())for(const [wi,size] of streamSizes.entries()) {
     test(`pagination filters buyer and one-shot replies ${locale}-${size.width}`,async({page,request})=>{
       const c=commentCopy(locale);await page.setViewportSize(size);await login(page);await page.goto(route(locale,comments.session));
@@ -230,9 +243,10 @@ test.describe("LC-U2a REAL_PG comment stream",()=>{
     try {
       const denied=page.waitForResponse(r=>{
         const path=new URL(r.url()).pathname;
-        // Any scoped read may observe the loss first (an in-flight buyer-panel or template read now expires like the A2/A8 polls);
+        // Any scoped read may observe the loss first, including the selected buyer's exact GET restriction check;
         // the assertions below still require every private view cleared, the login kept and zero reads afterwards.
-        return r.status()===404&&(path.endsWith("/comments")||path.endsWith("/inbox/conversations")||path.endsWith("/inbox/buyer-panel")||path.endsWith("/message-templates"));
+        return r.status()===404&&(path.endsWith("/comments")||path.endsWith("/inbox/conversations")||path.endsWith("/inbox/buyer-panel")||path.endsWith("/message-templates")||
+          (r.request().method()==="GET"&&path===`/api/stores/${store}/live-sessions/${comments.session}/claims/blocklist/check`));
       },{timeout:15000});
       // FIXTURE/SETUP: only this synthetic store/principal grant is deleted in PG; no response interception.
       await fault(request,comments.session,"grant_revoke");await denied;

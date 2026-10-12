@@ -1,0 +1,98 @@
+{
+  "task_id": "e0cab99c-sub-browser",
+  "parent_task_id": "e0cab99c-5ed3-4d22-a3cd-88700fb57c71",
+  "base_commit": "3e5a9c4adb542c3de2c6dbf877488fd67858e50c",
+  "role": "browser regression test owner; runtime role/model/reasoning UNKNOWN",
+  "worktree": "/Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-browser-regressions",
+  "branch": "codex/pr31-browser-regressions",
+  "write_paths": [
+    "tests/admin/live-settings.spec.ts",
+    "tests/foundation/browser_live_settings_fixture_test.go",
+    "tests/foundation/browser_live_settings_test.go"
+  ],
+  "source_sha256": {
+    "tests/admin/live-settings.spec.ts": "94e0b562cf7402a8e30b76e237ed1f38824f51ac06d2b1743e028fbc6522e711",
+    "tests/foundation/browser_live_settings_fixture_test.go": "cc3963a0ecbeb819fb2f85b751a72f775c8b32ec7621653dec868de4a365c1cf",
+    "tests/foundation/browser_live_settings_test.go": "09538998c46d75ed6ec3c47f61303f2c1faecee74676873b5c18e732f663d03d"
+  },
+  "classification": "MOCK fixture; browser collection E1; actual BROWSER/REAL_PG NOT_RUN by worker",
+  "commands": [
+    {
+      "command": "GOTOOLCHAIN=go1.27.2 go test -tags browser -count=1 -timeout=120s -run '^TestBrowserLiveSettingsMock' -v ./tests/foundation",
+      "phase": "fixture red-before sources",
+      "exit_code": 1,
+      "log": "fixture-red.log"
+    },
+    {
+      "command": "GOTOOLCHAIN=go1.27.2 go test -tags browser -count=1 -timeout=120s -run '^TestBrowserLiveSettingsMock' -v ./tests/foundation",
+      "phase": "fixture final green",
+      "exit_code": 0,
+      "log": "fixture-green-final.log"
+    },
+    {
+      "command": "pnpm exec playwright test --config=playwright.config.ts --project=live-settings --list (LC_BROWSER_SUITE=live-settings and collection-only fixture env)",
+      "exit_code": 0,
+      "log": "collection-final.log",
+      "expected_cases": 22
+    },
+    {
+      "command": "pnpm exec tsc --noEmit --strict --skipLibCheck --target es2022 --moduleResolution node --module commonjs tests/admin/live-settings.spec.ts",
+      "exit_code": 1,
+      "log": "types.log",
+      "reason": "TS current removed node10 argument"
+    },
+    {
+      "command": "pnpm exec tsc --noEmit --strict --skipLibCheck --target es2022 --moduleResolution bundler --module esnext tests/admin/live-settings.spec.ts",
+      "exit_code": 1,
+      "log": "types-bundler.log",
+      "reason": "existing admin Node type root not supplied by standalone invocation"
+    },
+    {
+      "command": "pnpm exec tsc --noEmit --strict --skipLibCheck --target es2022 --moduleResolution bundler --module esnext --types node --typeRoots apps/admin/node_modules/@types tests/admin/live-settings.spec.ts",
+      "exit_code": 0,
+      "log": "types-node.log"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ],
+  "evidence_sha256": {
+    "collection.log": "7d16ad1c8d6cb7cdeaa0dd4a686fdcbdc4552247a2f799f992abb0e8145a3fac",
+    "types.log": "07cb57b9999def3363a595297ba5d15212e206e78bf0223d3a660fc7dd51eaeb",
+    "fixture-green.log": "f6209ce6a09bf547e54c52d60534b304eea6562357d8a2040a3542a8bc2f4a6a",
+    "collection-final.log": "7d16ad1c8d6cb7cdeaa0dd4a686fdcbdc4552247a2f799f992abb0e8145a3fac",
+    "types-bundler.log": "a0274d6618cf21bcab413600a9e2da8d68c084ebe188720a9408bc3a1686047b",
+    "types-node.log": "bde294368bfed77c2cddf8cec271d398aee9cdbab3b26e1059281bd33adb0120",
+    "fixture-green-final.log": "c614e9e135068371f9ad34afea4cd66f117115cc74d4028837fd1e993332de41",
+    "fixture-red.log": "6f9e7e7e78a3ef024a07968702f722318ba9c7a0284f4af9bba7501942b2ab1b"
+  },
+  "expected_browser_cases": {
+    "existing": 12,
+    "new": 10,
+    "new_matrix": [
+      "split real signed staff no inbox:read: POST200/noGET/result, then optional route POST404 local",
+      "scene paging actual control and scene21 resource selection",
+      "scene21 actual detail deep-link title",
+      "missing report404 preserves actionable sold-out settings and blocklist",
+      "five delivery states at three locales x two viewport widths"
+    ]
+  },
+  "not_run": [
+    "actual browser clicks and masked screenshots",
+    "REAL_PG signed staff integration",
+    "production build",
+    "full Go/Node suites",
+    "independent parent acceptance"
+  ],
+  "unresolved": [
+    "Humaux MCP tools unavailable: memory_store/subcanvas NOT_RUN; parent must store handoff",
+    "new browser cases require parent optional-store same-nav and local reminder POST404 source fixes",
+    "Parent paused PR31 for PR28 priority; BFF404 route-absent versus scope-loss distinction pending before browser acceptance; missing-reminders fixture may need contract adjustment after pause"
+  ],
+  "cleanup": "Removed only two own symlinks to shared root/admin dependency caches; no server/browser/PG process started; failed logs retained in untracked output/playwright",
+  "notes": [
+    "Initial shell wrapper used reserved zsh status name and returned1 after test RED; repeated same red command with rc and retained regression red log. No failed test/fixture removed or thresholds relaxed."
+  ],
+  "head_commit": "4d36136210b1cf571b1a3884d0eb90ed03ea5c94"
+}

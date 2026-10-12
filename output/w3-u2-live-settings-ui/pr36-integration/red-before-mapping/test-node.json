@@ -1,0 +1,17 @@
+{
+  "name": "test-node",
+  "argv": [
+    "bash",
+    "scripts/dev/test-node.sh"
+  ],
+  "source_sha": "9e6282b79906d7a1c3b7821d6c80f89ced4f4acd",
+  "started_at": "2026-10-10T05:17:28.429790+00:00",
+  "timeout_seconds": 600,
+  "log": "output/playwright/pr31-pr36-revalidation-20261010T051701Z/test-node.log",
+  "pid": 99127,
+  "state": "finished",
+  "exit_code": 1,
+  "elapsed_seconds": 31.652,
+  "ended_at": "2026-10-10T05:18:00.082483+00:00",
+  "log_sha256": "2a7ffebf7c1d04c05974ba6be503d15c69325d4e0d86266e26d604a0cf6dce63"
+}

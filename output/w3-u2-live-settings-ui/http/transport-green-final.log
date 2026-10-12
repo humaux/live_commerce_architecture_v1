@@ -1,0 +1,36 @@
+=== RUN   TestLiveSettingsHTTPFullRouterTransport
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/no_bearer
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/query
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/empty_query
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/GET_body
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/GET_key
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/HEAD
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/POST
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/missing_key
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/duplicate_key
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/unknown_field
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/null_boolean
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/top_null
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/missing_boolean
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/duplicate_field
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/negative_CAS
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/zero_template_version
+--- PASS: TestLiveSettingsHTTPFullRouterTransport (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/no_bearer (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/query (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/empty_query (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/GET_body (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/GET_key (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/HEAD (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/POST (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/missing_key (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/duplicate_key (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/unknown_field (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/null_boolean (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/top_null (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/missing_boolean (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/duplicate_field (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/negative_CAS (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/zero_template_version (0.00s)
+PASS
+ok  	livecommerce/internal/httpapi	2.291s

@@ -1,0 +1,95 @@
+{
+  "source_commit": "078e792034ec7476912beac53dca131ad2997cbe",
+  "registry_dependency": "76224b283a9f0b4009225c2b87c2103b5cee7e94",
+  "pr22_state_at_validation": "OPEN",
+  "trunk_at_validation": "50086616",
+  "commands": [
+    {
+      "command": "node --test --experimental-strip-types tests/admin/live-settings-model.test.ts (before registry entry)",
+      "exit": 1,
+      "log": "red.log",
+      "sha256": "7109c0283a5325a988ebea34747b49b2ac449857787bf04c67ca1d3df1e39bea",
+      "node_pass": 3,
+      "top_pass": 0,
+      "top_fail": 0,
+      "top_skip": 0
+    },
+    {
+      "command": "node --test --experimental-strip-types tests/admin/live-settings-model.test.ts tests/ci/mode-registry.test.mjs tests/ci/pr-modes.test.mjs",
+      "exit": 0,
+      "log": "green.log",
+      "sha256": "3eea27bfcb9b922f00195288e97cfc7894d69c5712050ffe9e2fdfc707206b9f",
+      "node_pass": 33,
+      "top_pass": 0,
+      "top_fail": 0,
+      "top_skip": 0
+    },
+    {
+      "command": "bash scripts/dev/test-node.sh",
+      "exit": 0,
+      "log": "node.log",
+      "sha256": "638f2fdd2e17b15ff94211b618a3f905cb92ae16d6728ecb45327fbb5f509c84",
+      "node_pass": 1219,
+      "top_pass": 0,
+      "top_fail": 0,
+      "top_skip": 0
+    },
+    {
+      "command": "pnpm typecheck:admin",
+      "exit": 0,
+      "log": "typecheck.log",
+      "sha256": "37fab15de17aa0ca1a1d3a45526b7890fbc4ca46e75454c0325fd964a5f448ef",
+      "node_pass": 0,
+      "top_pass": 0,
+      "top_fail": 0,
+      "top_skip": 0
+    },
+    {
+      "command": "bash scripts/dev/check-gates.sh",
+      "exit": 0,
+      "log": "check-gates.log",
+      "sha256": "f00a73f77d12b9495e194abef47a2abf1ab02129b87b655ae3cdb50ad0066426",
+      "node_pass": 13,
+      "top_pass": 0,
+      "top_fail": 0,
+      "top_skip": 0
+    },
+    {
+      "command": "bash scripts/dev/test-local.sh --browser-live-settings",
+      "exit": 0,
+      "log": "browser.log",
+      "sha256": "3f8e4105eb74fc7a1e6a87b7582e7cca1d4e365fdd1ad148cc8e98cb740caf97",
+      "node_pass": 10,
+      "top_pass": 1,
+      "top_fail": 0,
+      "top_skip": 0
+    },
+    {
+      "command": "bash scripts/dev/test-focused.sh 'TestLiveSettingsHTTP' ./tests/foundation ./internal/httpapi",
+      "exit": 0,
+      "log": "real-pg.log",
+      "sha256": "24e7839cf87c3ac98e89bb9e198855e101bd6e2764b0d82bac2d2c88c1cf64aa",
+      "node_pass": 0,
+      "top_pass": 2,
+      "top_fail": 0,
+      "top_skip": 0
+    },
+    {
+      "command": "bash scripts/dev/check-gates.sh (with delivery evidence staged)",
+      "exit": 0,
+      "log": "check-gates-packaged.log",
+      "sha256": "2fdc4427c99c9176f6c5007e19a866129d0ab326c3e1bfc125b4944615e037ee"
+    }
+  ],
+  "equivalence": "equivalence.json",
+  "static_commands": [
+    {
+      "command": "bash -n scripts/dev/test-local.sh",
+      "exit": 0
+    },
+    {
+      "command": "83 existing mode prepare/run/build/fixture byte equality vs registry dependency; only live-settings added",
+      "exit": 0
+    }
+  ]
+}

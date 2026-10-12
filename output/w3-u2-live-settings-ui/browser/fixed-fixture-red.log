@@ -1,0 +1,6 @@
+=== RUN   TestBrowserLiveSettingsMockRequiresMerchantTemplate
+    browser_live_settings_fixture_test.go:39: fixed template status=200 want422
+--- FAIL: TestBrowserLiveSettingsMockRequiresMerchantTemplate (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	1.029s
+FAIL

@@ -1,0 +1,86 @@
+{
+  "tested_source_commit": "0ff7ca92fea1e31607c16099ea5429b6dd882a7b",
+  "source_hashes": {
+    "apps/admin/lib/live-settings-controller.ts": "4f0172df8d999fd77bd43d6748eb8410becae6c2f23f42723b5d48dc5495657c",
+    "apps/admin/lib/live-settings-proxy.ts": "45da3cdfba23518c75bcc2743928a693d1cb2358bafa63cacd7dab8802e4ee73",
+    "apps/admin/lib/live-settings-model.ts": "6b15b39157e19b04eb19fe47609ec2caf9d60b8bb64b09ebf62478f4917a1374",
+    "apps/admin/lib/live-settings-client.ts": "10aa1f0cd59ab92150ecdf550ee4a3e36fc8b2a4b00309023fe73cf79616c38b",
+    "apps/admin/lib/live-settings-copy.ts": "1da4172b704f9686628088e04a9fab86338044a02924b328ab5c5825747ee9ff",
+    "apps/admin/components/LiveSettings.tsx": "29e9fa7087f65585c6f61e1d97270b7a9f750e8aea8e4910f7de3ed2adaa3c53",
+    "apps/admin/components/WorkspaceFrame.tsx": "3e87de2d48d756e6726b22e338ff2bc4cbef18aed639fd7873b3a7d875a0bdd8",
+    "apps/admin/components/CommentStream.tsx": "fff6d125638223aeb31adea43d63fdcd4d0ec4fc9d2491d90eaddc7ab813911f",
+    "internal/httpapi/sold_out_settings.go": "158e64692146f70e7b34741487003140d8192fd969af7ef2707c42e129f48b4d",
+    "tests/admin/live-settings-hooks.test.ts": "f91bf0e475af4c630e42a064ec337da0eac488a7c3177313ad0b38e10467b764",
+    "tests/admin/live-settings-bff.test.ts": "a6de772eeddc01166fe2112aa68c2147c1e39851f2d714c3118393290d636381",
+    "tests/admin/live-settings.spec.ts": "94e0b562cf7402a8e30b76e237ed1f38824f51ac06d2b1743e028fbc6522e711",
+    "tests/admin/comment-stream-hooks.test.ts": "bddbe074a9e8724ea5b50fbbadcf12a50e2a0fda3ff45a59afe9585526c43a05",
+    "tests/admin/claims-ui.spec.ts": "67c620807e50fbc29fe696fc21fc9d7ada17d16f7a6a8e374dc71dcc2ad7baf5",
+    "tests/foundation/browser_live_settings_test.go": "09538998c46d75ed6ec3c47f61303f2c1faecee74676873b5c18e732f663d03d",
+    "tests/foundation/browser_live_settings_fixture_test.go": "898d27f641f35dfacf6e64ec7c12784329be629d17293c800c7fb2158b9177ab",
+    "tests/foundation/live_settings_http_test.go": "4bfcff183ef070f3f5f034a823bb612e064099c2dad8265f7c78c37fa9065758",
+    "scripts/dev/test-local.sh": "a1dcf48cd6cdb58f99c4ac9d8e1e1bd26a3d1ceeb1b32cfb951f17eb7bdce377",
+    "scripts/dev/test-node.sh": "cce0fd4ab385d5d1093cb2f31fda7dde25b49f5a84edef7ab6149e29850325f5",
+    "playwright.config.ts": "d4b978c3b06f170092a62ab7ea6e3396f539e18297efc35783a581b8356bd092",
+    "docs/delivery/GATES.md": "2aaa18e775128fed71ff2bda04145d7a9ab6b60523d0a409c596166cf94f96e0",
+    "apps/admin/components/BuyerPanel.tsx": "9116854af47cd0839523e3e540318306f0b26365fe11de172e229e7eec7fc43c",
+    "apps/admin/src/features/live/use-comment-stream.ts": "3aadbcce05b1b4540181245c04f71d4cb1bcb9c99bff9f0fec1a6e83455cb079",
+    "tests/admin/live-console.spec.ts": "893a040874ed3fef88b7524f49634f2530f84ed26d3aafcaf35bda36c851bdc7",
+    "tests/admin/ops-polish.spec.ts": "3d6ef5ed76f805730684621766aaf7aaa3a18383e9992bcbdf32adc841fce5d2",
+    "tests/admin/ops-polish-model.test.ts": "a98ebf77dbf005f6cb5c43e1a30e5add834b1fcc775a05dd10990f77ae4cf99d"
+  },
+  "six_modes": [
+    {
+      "mode": "--browser-live-console",
+      "repetition": 1,
+      "exit": 0,
+      "command": "LC_TEST_LOCK_WAIT=1800 LC_BROWSER_ENGINE=chromium LC_BROWSER_EVIDENCE_ROOT=\"$PWD/output/playwright/pr31-extra-browser-live-console-1-20261009T183926\" bash scripts/dev/test-local.sh --browser-live-console",
+      "log": "output/w3-u2-live-settings-ui/pr31-r1/extra/browser-live-console-1.log"
+    },
+    {
+      "mode": "--browser-live-console",
+      "repetition": 2,
+      "exit": 0,
+      "command": "LC_TEST_LOCK_WAIT=1800 LC_BROWSER_ENGINE=chromium LC_BROWSER_EVIDENCE_ROOT=\"$PWD/output/playwright/pr31-extra-browser-live-console-2-20261009T184558\" bash scripts/dev/test-local.sh --browser-live-console",
+      "log": "output/w3-u2-live-settings-ui/pr31-r1/extra/browser-live-console-2.log"
+    },
+    {
+      "mode": "--browser-ops-polish",
+      "repetition": 1,
+      "exit": 0,
+      "command": "LC_TEST_LOCK_WAIT=1800 LC_BROWSER_ENGINE=chromium LC_BROWSER_EVIDENCE_ROOT=\"$PWD/output/playwright/pr31-extra-browser-ops-polish-1-20261009T185825\" bash scripts/dev/test-local.sh --browser-ops-polish",
+      "log": "output/w3-u2-live-settings-ui/pr31-r1/extra/browser-ops-polish-1.log"
+    },
+    {
+      "mode": "--browser-ops-polish",
+      "repetition": 2,
+      "exit": 0,
+      "command": "LC_TEST_LOCK_WAIT=1800 LC_BROWSER_ENGINE=chromium LC_BROWSER_EVIDENCE_ROOT=\"$PWD/output/playwright/pr31-extra-browser-ops-polish-2-20261009T185952\" bash scripts/dev/test-local.sh --browser-ops-polish",
+      "log": "output/w3-u2-live-settings-ui/pr31-r1/extra/browser-ops-polish-2.log"
+    },
+    {
+      "mode": "--browser-live-settings",
+      "repetition": 1,
+      "exit": 0,
+      "command": "LC_TEST_LOCK_WAIT=1800 LC_BROWSER_ENGINE=chromium LC_BROWSER_EVIDENCE_ROOT=\"$PWD/output/playwright/pr31-extra-browser-live-settings-1-20261009T190109\" bash scripts/dev/test-local.sh --browser-live-settings",
+      "log": "output/w3-u2-live-settings-ui/pr31-r1/extra/browser-live-settings-1.log"
+    },
+    {
+      "mode": "--browser-live-claims",
+      "repetition": 1,
+      "exit": 0,
+      "command": "LC_TEST_LOCK_WAIT=1800 LC_BROWSER_ENGINE=chromium LC_BROWSER_EVIDENCE_ROOT=\"$PWD/output/playwright/pr31-extra-browser-live-claims-1-20261009T190159\" bash scripts/dev/test-local.sh --browser-live-claims",
+      "log": "output/w3-u2-live-settings-ui/pr31-r1/extra/browser-live-claims-1.log"
+    }
+  ],
+  "provider_live": "NOT_RUN",
+  "canonical_current": "output/w3-u2-live-settings-ui/pr31-r1/extra/browser-current",
+  "source_reviews": [
+    "606a5a3d/7fc9efa7 earlierE1",
+    "pr31_extra_security currentE1SOURCE_ONLY no runtime rerun; Humauxunavailableparentrecords"
+  ],
+  "first_observers": [
+    "console-1-observers.json",
+    "console-2-observers.json"
+  ],
+  "postrun_source_changes": "none"
+}

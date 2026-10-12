@@ -16,6 +16,10 @@ func (s *bffScanner) leaf(m *bffModule) {
 		refs = append(refs, s.backendRefs(m)...)
 	}
 	exports := bffExports(m)
+	if len(bffCalls(m, m.tokens, "liveSettingsProxy")) > 0 {
+		s.liveSettings(m, refs...)
+		return
+	}
 	name := m.name
 	if strings.Contains(name, "/stores/[store]/[...resource]/") {
 		defer func() { s.filterMethods(m, before); s.forwardingMethod(m, before) }()

@@ -1,0 +1,14 @@
+✔ OP4 actual browser assertion keeps the exact four-route live inventory (10.292292ms)
+✔ finance rows with the two pay-at-pickup keys parse and stay separate from captured and net (0.410667ms)
+✔ a pickup-only day (no captured money) is a valid row whose captured and net stay zero (0.12375ms)
+✔ the older 7-key row (before the column) still parses with zero pickup money (0.058542ms)
+✔ a half pair, a negative or a non-integer pickup value is refused, never shown (0.238791ms)
+✔ Studio subtitle is neutral production wording in all three locales (0.140084ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 207.850916

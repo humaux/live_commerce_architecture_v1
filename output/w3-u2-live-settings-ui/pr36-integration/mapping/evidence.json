@@ -1,0 +1,89 @@
+{
+  "task_id": "35a92743-sub-drift / PR31-CI-DRIFT",
+  "base_commit": "9e6282b79906d7a1c3b7821d6c80f89ced4f4acd",
+  "head_commit": "f60d71d4ca653be8784871bfb0dc6da3c389266f",
+  "branch": "unit/pr31-drift-mapping",
+  "worktree": ".worktrees/pr31-drift-mapping",
+  "role": "CI-DRIFT mapping implementation child",
+  "actual_model": "UNKNOWN (parent inherited)",
+  "reasoning": "UNKNOWN (parent inherited)",
+  "changes": [
+    "scripts/dev/contractdrift/bff.go",
+    "scripts/dev/contractdrift/bff_adapters.go",
+    "scripts/dev/contractdrift/bff_ts.go",
+    "scripts/dev/contractdrift/bff_live_settings.go",
+    "scripts/dev/contractdrift/bff_live_settings_test.go"
+  ],
+  "source_sha256": {
+    "scripts/dev/contractdrift/bff.go": "a6abee464ee88df1f209be22daedc007c28cc245ad97e6047936a6359b355e2f",
+    "scripts/dev/contractdrift/bff_adapters.go": "d4b5a7e3f76ef68abbd2d3a3c8614686fccebe8e74acf5704311531380694434",
+    "scripts/dev/contractdrift/bff_ts.go": "e328a5acefd820f07429618586149781ef19c0b3ad38e38153da9865cd637b64",
+    "scripts/dev/contractdrift/bff_live_settings.go": "dc8e9bcd175adfed0e88a9e53c8651bb5a0605e43c3916b2a1c79f7adc9b8c5f",
+    "scripts/dev/contractdrift/bff_live_settings_test.go": "12d72d2cb8cbf181bf0011cf8823af13438eb1077680c80fd52a4a7f53dbb8b5"
+  },
+  "runs": [
+    {
+      "command": "go test ./scripts/dev/contractdrift -run 'TestBFF(LiveSettings|LocalExport)' -count=1 -v",
+      "exit_code": 1,
+      "log": "output/w3-u2-live-settings-ui/pr36-integration/mapping/red-tests.log"
+    },
+    {
+      "command": "go run ./scripts/dev/contractdrift",
+      "exit_code": 1,
+      "log": "output/w3-u2-live-settings-ui/pr36-integration/mapping/red-cli.log"
+    },
+    {
+      "command": "go test ./scripts/dev/contractdrift -run 'TestBFFLiveSettingsMutations/(guard_bypass|405_export)' -count=1 -v",
+      "exit_code": 1,
+      "log": "output/w3-u2-live-settings-ui/pr36-integration/mapping/red-guard-alias.log"
+    },
+    {
+      "command": "go test ./scripts/dev/contractdrift -run 'TestBFFLiveSettingsMutations/(nested|computed|unknown_computed)' -count=1 -v",
+      "exit_code": 1,
+      "log": "output/w3-u2-live-settings-ui/pr36-integration/mapping/red-review-mutants.log"
+    },
+    {
+      "command": "go test ./scripts/dev/contractdrift -run 'TestBFF(LiveSettings|LocalExport)' -count=1 -v",
+      "exit_code": 0,
+      "log": "output/w3-u2-live-settings-ui/pr36-integration/mapping/green-review-focused.log"
+    },
+    {
+      "command": "go test ./scripts/dev/contractdrift -count=1 -timeout=8m",
+      "exit_code": 0,
+      "log": "output/w3-u2-live-settings-ui/pr36-integration/mapping/whole-review-tests.log"
+    },
+    {
+      "command": "go run ./scripts/dev/contractdrift",
+      "exit_code": 0,
+      "log": "output/w3-u2-live-settings-ui/pr36-integration/mapping/green-review-cli.log"
+    }
+  ],
+  "other_commands": [
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    },
+    {
+      "command": "git diff --exit-code -- scripts/dev/contractdrift/baseline.json",
+      "exit_code": 0
+    },
+    {
+      "command": "git commit -m 'fix(contractdrift): derive live-settings BFF admission and export aliases'",
+      "exit_code": 0
+    }
+  ],
+  "evidence_level": "E3 author-run source scanner tests bound to exact source_sha256; parent independent acceptance pending",
+  "not_run": [
+    "Node/full product gates/browser/REAL_PG/provider sandbox/live: parent integration responsibility"
+  ],
+  "unresolved": [
+    "No unresolved source-mapping blocker observed in final focused tests/CLI; legacy warnings362 retained.",
+    "Supported adapter grammar is intentionally finite; edits outside proven shapes emit UNRESOLVED.",
+    "Exact runtime model/effort UNKNOWN."
+  ],
+  "memory_id": "3c3a5e79-c44d-48ac-9e37-daccbd612bc3",
+  "canvas": "35a92743-sub-drift updated=1 conflicts=[]; mermaid payload required, prior list-only updates were rejected",
+  "original_evidence_sha256": "ad73fdaa2fda1b267e849abb2f5fb2a7ca206efc8ef53b7201f47731c22dd998",
+  "parent_source_sha": "7737cb87d186c5b17ef582142c7766136660a41b",
+  "parent_cherry_pick": "017c62b5336fbe82bc98c576bd0efbffd9ebc0d0"
+}

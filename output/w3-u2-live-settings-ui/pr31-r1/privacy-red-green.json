@@ -1,0 +1,22 @@
+{
+  "baseline_commit": "c9608348",
+  "argv": [
+    "node",
+    "--test",
+    "--test-reporter=spec",
+    "--experimental-strip-types",
+    "--test-name-pattern=PR31 reminder scope 404|borrow a revealed|normal visible focus",
+    "tests/admin/live-settings-hooks.test.ts"
+  ],
+  "red_exit": 1,
+  "green_exit": 0,
+  "red_log": "output/w3-u2-live-settings-ui/pr31-r1/privacy-red.log",
+  "green_log": "output/w3-u2-live-settings-ui/pr31-r1/privacy-green.log",
+  "fixture_diagnostic": "output/w3-u2-live-settings-ui/pr31-r1/privacy-fixture-diagnostic.log",
+  "diagnostic_note": "First callback test attempt hit Node24 navigator getter; renderer descriptor fixture corrected before genuine RED. No assertions removed. Genuine RED6FAIL/1protectivePASS then7/7GREEN.",
+  "root_cause": "allreminder404 aliases store-scope loss; captured callbacks borrow a new generation after hide/reveal",
+  "hashes": {
+    "apps/admin/lib/live-settings-controller.ts": "4f0172df8d999fd77bd43d6748eb8410becae6c2f23f42723b5d48dc5495657c",
+    "tests/admin/live-settings-hooks.test.ts": "8b09f235356a519434d1ad399e954720c899d0bec795e06557b10e4394874105"
+  }
+}

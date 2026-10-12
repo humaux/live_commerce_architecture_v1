@@ -1,0 +1,36 @@
+(node:80190) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ PR18 R2 scoped404 a2 clears both private views and stops recovery reads (23.20225ms)
+✔ PR18 R2 scoped404 a8 clears both private views and stops recovery reads (3.369584ms)
+✔ PR18 R2 scoped404 older clears both private views and stops recovery reads (2.530292ms)
+✔ PR18 A8 clears names synchronously and keeps loaded older pages through a head poll (2.869459ms)
+✔ PR18 A8 hides clear before effects even without pagination (1.118375ms)
+✔ PR18 quiet A2 stream refreshes delayed claim marks without a new sequence or user refresh (2.034417ms)
+✔ PR18 late claim automatically exposes keyword view and the reused BuyerPanel (4.596625ms)
+✔ K3 A8 private polls every 10s, backs off, resets, pauses hidden and stops off-filter (7.622125ms)
+✔ K3 A8 unreplied polls every 10s, backs off, resets, pauses hidden and stops off-filter (6.505375ms)
+✔ K3 pasted tab is refused with invalid_text copy before any reply POST (3.795833ms)
+✔ real SQL UNKNOWN mark blocks public-mode switching without a local receipt (0.682875ms)
+✔ PR18 unknown public receipt has the correct cross-comment fence (1.549ms)
+✔ PR18 queued public receipt has the correct cross-comment fence (1.030125ms)
+✔ actual A2 hook fake clock: 3/6/12/24/30 backoff, success reset, hide clears and stops, 403 locks (3.249541ms)
+✔ actual reset clears selected buyer and rereads without the old epoch cursor (1.086042ms)
+✔ reply hints, coded error, UNKNOWN and capability state execute the actual composer (1.146542ms)
+✔ PR18 R2 templates read 404 denies the composer (0.533667ms)
+✔ PR18 R2 buyer-panel read 404 expires the panel and reports unauthorized (0.508958ms)
+✔ W3-U2 restriction check 404 first expires all console views and rejects late A8 (2.436583ms)
+(node:80191) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ W3-U2 UNKNOWN rejects a stale fresh command and admits only exact receipt retry (37.6945ms)
+✔ W3-U2 captured command cannot dispatch after hide (1.228ms)
+✔ W3-U2 captured command cannot dispatch after departure (0.959042ms)
+✔ W3-U2 captured command cannot dispatch after unmount (0.751084ms)
+✔ W3-U2 captured BuyerPanel add cannot dispatch after native hide (2.644375ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 24
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 717.5315

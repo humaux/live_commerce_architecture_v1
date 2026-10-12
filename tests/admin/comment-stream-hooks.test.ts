@@ -3,6 +3,9 @@
 // Used by: test-node; complements real Go/PG browser gates rather than replacing them.
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
+import ts from "typescript-api";
 const stored = new Map<string, string>();
 Object.assign(globalThis, {
   sessionStorage: {
@@ -404,6 +407,23 @@ const page = (epoch = 1, items = [row], reset = false) => ({
     video_embeddable: true,
   },
 });
+// PR31: delivery wording is checked on the actual rendered component, not a duplicate mapping.
+for(const [locale,replied,states] of [
+  ["en","Sold-out reply sent",["Sent","Queued","Failed","Blocked","Delivery uncertain"]],
+  ["zh-TW","沒貨已回覆",["已傳送","排隊中","傳送失敗","已阻擋","結果未確認"]],
+  ["zh-CN","没货已回复",["已发送","排队中","发送失败","已阻止","结果未确认"]],
+] as const)for(const [state,index] of [
+  ["SUCCEEDED",0],["ACKNOWLEDGED",0],["READY",1],["DISPATCHING",1],
+  ["FAILED_FINAL",2],["BLOCKED_POLICY",3],["UNKNOWN",4],
+] as const)test(`PR31 soldout badge ${locale} ${state} reflects confirmed delivery`,async t=>{
+  const env=environment(t);
+  const item={...row,marks:{...row.marks,private_reply:{kind:"out_of_stock",state,blocked_reason:null},private_reply_available:false}};
+  globalThis.fetch=async()=>response(page(1,[item] as any));
+  const h=env.mount(()=>CommentStream({store,session:sid,locale,platform:"facebook",capabilities:{}} as any));await h.settle();
+  const rendered=node(h,n=>n.props["data-testid"]===`comment-row-${row.ref}`);
+  assert.equal(nodes(rendered).filter(n=>n.type==="p"&&textOf(n)===replied).length,index===0?1:0,`${state} must not claim delivery before a confirmed success`);
+  assert.ok(nodes(rendered).some(n=>n.type==="p"&&n.props.className==="live-helper"&&textOf(n)===states[index]),"the existing delivery-state warning remains visible");
+});
 test("PR18 P1 IG earliest50 refresh preserves100 rows selection and private draft",async t=>{
   const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-09T00:00:00Z")});
   const igRows=Array.from({length:100},(_,i)=>({...row,ref:String(i+1),seq:i+1,text:`Synthetic IG ${i+1}`,created_at:new Date(Date.parse(row.created_at)+1000*i).toISOString()}));
@@ -707,4 +727,123 @@ for(const [status,lost] of [[404,0],[403,1]] as const)test(`PR18 buyer-panel rea
   globalThis.fetch=async input=>String(input).includes("buyer-panel?")?response({code:status===404?"not_found":"forbidden"},status):response({items:[]});
   const h=env.mount(()=>BuyerPanel({store,conversationId:sid,onUnauthorized(){lost_++;}} as any));
   await h.settle();assert.equal(lost_,lost);assert.equal(textOf(h.output).includes("SYNTHETIC"),false);
+});
+
+// A BFF-proven missing store grant is global; ordinary missing/purged bundle 404 is tested separately below.
+test("W3-U2 restriction check 404 first expires all console views and rejects late A8", async t => {
+  const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-09T01:00:00Z")});
+  let deny!:(value:Response)=>void, late!:(value:Response)=>void, reads=0, hold=false;
+  const claim={status:"ACCEPTED",reason:null,offer_id:sid,keyword:"A1",quantity:1,bundle_id:sid};
+  const a8=()=>response({items:[{conversation_id:sid,bundle_id:sid,platform:"facebook",display_name:"SYNTHETIC_A8_NAME",last_at:"2026-10-09T01:00:00Z",unreplied:true}],next_cursor:"",unread_total:1});
+  globalThis.fetch=async input=>{
+    const url=String(input);reads++;
+    if(url.includes("blocklist/check"))return new Promise<Response>(resolve=>{deny=resolve;});
+    if(url.includes("buyer-panel?"))return response({display_name:"SYNTHETIC_PANEL",platform:"facebook",purchase_ordinal:1,claims:[],claim_total_minor:0,orders:[],link_pending_manual:false});
+    if(url.includes("message-templates"))return response({items:[]});
+    if(url.includes("inbox/conversations"))return hold?new Promise<Response>(resolve=>{late=resolve;}):a8();
+    return response(page(1,[{...row,author_name:"SYNTHETIC_A2_NAME",marks:{...row.marks,claim}}]));
+  };
+  const h=env.mount(()=>CommentStream({store,session:sid,locale:"en",platform:"facebook",capabilities:{}} as any));await h.settle();
+  node(h,n=>n.props["data-testid"]==="comment-filter-private").props.onClick();await h.settle();
+  node(h,n=>n.type==="button"&&textOf(n).includes("SYNTHETIC_A8_NAME")).props.onClick();await h.settle();
+  assert.ok(textOf(h.output).includes("SYNTHETIC_PANEL"));assert.equal(typeof deny,"function");
+  hold=true;t.mock.timers.tick(10000);await h.settle();assert.equal(typeof late,"function");
+  deny(response({code:"store_scope_lost"},404));await h.settle();
+  assert.equal(node(h,n=>n.props["data-testid"]==="comment-refresh").props.disabled,true);
+  assert.equal(/SYNTHETIC_(PANEL|A8_NAME|A2_NAME|COMMENT)/.test(textOf(h.output)),false);
+  const stopped=reads;late(a8());await h.settle();env.window.dispatchEvent(new Event("focus"));t.mock.timers.tick(90000);await h.settle();
+  assert.equal(reads,stopped);assert.equal(/SYNTHETIC_(PANEL|A8_NAME|A2_NAME|COMMENT)/.test(textOf(h.output)),false);
+});
+
+// Extract ONLY the actual browser observer, as in live-console-render's AST/VM gates; never copy its matcher.
+function grantLossObserver() {
+  const source=ts.createSourceFile("live-console.spec.ts",readFileSync("tests/admin/live-console.spec.ts","utf8"),ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
+  let predicate:any;
+  const findWaiter=(n:any)=>{
+    if(ts.isCallExpression(n)&&ts.isPropertyAccessExpression(n.expression)&&n.expression.name.text==="waitForResponse") {
+      assert.equal(predicate,undefined,"one actual LCU2_404 observer");predicate=n.arguments[0];
+      const options=n.arguments[1];
+      assert.ok(ts.isObjectLiteralExpression(options));
+      assert.equal(options.properties.find((p:any)=>p.name?.getText(source)==="timeout")?.initializer?.text,"15000");
+    }
+    ts.forEachChild(n,findWaiter);
+  };
+  const walk=(n:any)=>{
+    if(ts.isCallExpression(n)&&n.expression.getText(source)==="test"&&n.arguments[0]?.getText(source).includes("LCU2_404 real store grant revoked"))findWaiter(n.arguments[1]);
+    else ts.forEachChild(n,walk);
+  };
+  walk(source);assert.ok(predicate&&ts.isArrowFunction(predicate),"actual browser grant-loss response predicate found");
+  const compiled=ts.transpileModule(`const observer=${predicate.getText(source)};observer;`,{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
+  return runInNewContext(compiled,{URL,store:store.id,comments:{session:sid}}) as (r:any)=>boolean;
+}
+
+test("PR31 actual restriction GET is accepted by the LCU2_404 observer with strict scope negatives",async t=>{
+  const env=environment(t);let reply!:(value:Response)=>void;
+  const requests:{path:string;method:string;hasBody:boolean}[]=[];
+  globalThis.fetch=async(input,init)=>{
+    const path=new URL(String(input),"https://synthetic.invalid").pathname;
+    if(path.endsWith("/claims/blocklist/check")) {
+      requests.push({path,method:init?.method??"GET",hasBody:init?.body!=null});
+      return new Promise<Response>(resolve=>{reply=resolve;});
+    }
+    return response({display_name:"SYNTHETIC_OBSERVER_PANEL",platform:"facebook",purchase_ordinal:1,claims:[],claim_total_minor:0,orders:[],link_pending_manual:false});
+  };
+  const h=env.mount(()=>BuyerPanel({store,bundleId:sid,sessionId:sid}));await h.settle();
+  assert.deepEqual(requests,[{path:`/api/stores/${store.id}/live-sessions/${sid}/claims/blocklist/check`,method:"GET",hasBody:false}],"metadata comes from the real BuyerRestriction read, with no body or buyer fields");
+  const result=response({code:"store_scope_lost"},404);reply(result);await h.settle();
+  const observer=grantLossObserver(), request=requests[0];
+  t.diagnostic(JSON.stringify({path:request.path,category:"restriction",method:request.method,status:result.status}));
+  const emitted=(path=request.path,method=request.method,status=result.status)=>({url:()=>`https://synthetic.invalid${path}`,status:()=>status,request:()=>({method:()=>method})});
+  assert.equal(observer(emitted()),true,"the browser must observe the actual nested scoped 404 that can precede A2/A8");
+  for(const [path,method,status] of [
+    [request.path.replace(store.id,"30000000-0000-4000-8000-000000000003"),"GET",404],
+    [request.path.replace(sid,"40000000-0000-4000-8000-000000000004"),"GET",404],
+    [`${request.path}/other`,"GET",404],
+    [request.path,"POST",404],
+    [request.path,"GET",403],
+    [request.path,"GET",200],
+  ] as const)assert.equal(observer(emitted(path,method,status)),false,`wrong scope/path/method/status rejected: ${path} ${method} ${status}`);
+  for(const tail of ["comments","inbox/conversations","inbox/buyer-panel","message-templates"])
+    assert.equal(observer(emitted(`/api/stores/${store.id}/${tail}`)),true,`original observer arm preserved: ${tail}`);
+});
+
+test("PR31 restriction bundle not_found keeps healthy console polls and clears only selected buyer private state",async t=>{
+  const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-09T01:00:00Z")});
+  let missing!:(value:Response)=>void,a2=0,a8=0,panels=0;
+  const claim={status:"ACCEPTED",reason:null,offer_id:sid,keyword:"A1",quantity:1,bundle_id:sid};
+  globalThis.fetch=async input=>{
+    const url=String(input);
+    if(url.includes("blocklist/check"))return new Promise<Response>(resolve=>{missing=resolve;});
+    if(url.includes("buyer-panel?")){panels++;return response({display_name:"SYNTHETIC_PURGED_PANEL",platform:"facebook",purchase_ordinal:1,claims:[],claim_total_minor:0,orders:[],link_pending_manual:false});}
+    if(url.includes("message-templates"))return response({items:[]});
+    if(url.includes("inbox/conversations")){a8++;return response({items:[{conversation_id:sid,bundle_id:sid,platform:"facebook",display_name:"SYNTHETIC_HEALTHY_A8",last_at:"2026-10-09T01:00:00Z",unreplied:true}],next_cursor:"",unread_total:1});}
+    a2++;return response(page(1,[{...row,author_name:"SYNTHETIC_HEALTHY_A2",marks:{...row.marks,claim}}]));
+  };
+  const h=env.mount(()=>CommentStream({store,session:sid,locale:"en",platform:"facebook",capabilities:{}} as any));await h.settle();
+  node(h,n=>n.props["data-testid"]==="comment-filter-private").props.onClick();await h.settle();
+  node(h,n=>n.type==="button"&&textOf(n).includes("SYNTHETIC_HEALTHY_A8")).props.onClick();await h.settle();
+  assert.equal(panels,1);assert.ok(textOf(h.output).includes("SYNTHETIC_PURGED_PANEL"));assert.equal(typeof missing,"function");
+  missing(response({code:"not_found"},404));await h.settle();
+  assert.equal(node(h,n=>n.props["data-testid"]==="comment-refresh").props.disabled,false,"healthy server scope stays enabled after bundle-only 404");
+  assert.ok(textOf(h.output).includes("SYNTHETIC_HEALTHY_A8"));assert.equal(textOf(h.output).includes("SYNTHETIC_PURGED_PANEL"),false);
+  const retained=(host:any):boolean=>host.slots.some((s:any)=>s.value?.data?.display_name==="SYNTHETIC_PURGED_PANEL")||[...host.children.values()].some((child:any)=>retained(child.host));
+  assert.equal(retained(h),false,"buyer private state cleared from actual child hook storage");
+  const before=[a2,a8];t.mock.timers.tick(10000);await h.settle();
+  assert.ok(a2>before[0]&&a8>before[1],"both healthy A2/A8 polls continue");
+  node(h,n=>n.props["data-testid"]==="comment-filter-all").props.onClick();await h.settle();
+  assert.ok(textOf(h.output).includes("SYNTHETIC_HEALTHY_A2"));assert.ok(textOf(h.output).includes("SYNTHETIC_COMMENT"));
+  assert.equal(panels,1,"local unavailable does not blindly reread the gone buyer");
+});
+
+test("PR31 terminal denial admits no queued A2 timer read before passive cleanup",async t=>{
+  const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-09T01:00:00Z")});
+  let reads=0;globalThis.fetch=async()=>{reads++;return response(page());};
+  const h=env.mount(()=>useCommentStream(store.id,sid,true));await h.settle();assert.equal(reads,1);
+  const splice=h.effects.splice;h.effects.splice=(()=>[]) as typeof splice;
+  try {
+    h.output.privacy.expire();h.flush();
+    assert.equal(h.output.privacy.blocked.current,true);assert.equal(h.output.buffer.items.length,0);
+    const stopped=reads;t.mock.timers.tick(3000);await h.settle();
+    assert.equal(reads,stopped,"the already scheduled A2 callback must check terminal admission before fetching");
+  } finally {h.effects.splice=splice;h.dirty=true;await h.settle();}
 });

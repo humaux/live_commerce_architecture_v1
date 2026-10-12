@@ -273,6 +273,21 @@ func (r *bffReader) load(name string) (*bffModule, error) {
 					from = j
 				}
 			}
+			// Local export aliases are runtime bindings, just like const GET = handle.
+			// Preserve every alias and its export span for graph and method accounting.
+			if from < 0 && t[i].text == "export" && len(frag) > 2 && frag[1].text == "{" {
+				endList := bffClose(frag, 1)
+				if endList >= 0 {
+					for _, entry := range bffSplit(frag[2:endList], ",") {
+						if len(entry) == 3 && entry[1].text == "as" && entry[0].kind == "ident" && entry[2].kind == "ident" {
+							alias := entry[2].text
+							m.imports[alias] = [2]string{name, entry[0].text}
+							m.importRefs[alias] = m.ref(entry)
+							m.bindingRefs[alias] = []location{m.ref(entry)}
+						}
+					}
+				}
+			}
 			if from > 0 {
 				source := bffUnquote(frag[from+1])
 				file := r.importPath(name, source)

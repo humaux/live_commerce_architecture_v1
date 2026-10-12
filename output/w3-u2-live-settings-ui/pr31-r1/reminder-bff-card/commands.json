@@ -1,0 +1,36 @@
+[
+  {
+    "name": "green",
+    "argv": [
+      "node",
+      "--test",
+      "--experimental-strip-types",
+      "tests/admin/live-settings-bff.test.ts",
+      "tests/admin/live-settings-model.test.ts",
+      "tests/admin/live-settings-proxy.test.ts"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "typecheck",
+    "argv": [
+      "node",
+      "node_modules/typescript/bin/tsc",
+      "--noEmit",
+      "--incremental",
+      "false",
+      "-p",
+      "apps/admin/tsconfig.json"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "diff-check",
+    "argv": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "exit_code": 0
+  }
+]

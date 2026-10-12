@@ -1,0 +1,20 @@
+{
+  "ours": "b06df8288b2807bafadd951c042163189eb74805",
+  "trunk": "4ff99766e1a4b9f7b7f6931444f8f71dacc7ea09",
+  "pure_dependency_exact": [
+    "apps/admin/components/CommentReply.tsx",
+    "apps/admin/src/features/live/comment-model.ts",
+    "apps/admin/src/features/live/comment-receipt.ts",
+    "apps/admin/src/features/live/use-comment-stream.ts",
+    "tests/admin/comment-stream.test.ts",
+    "tests/admin/live-console.spec.ts",
+    "tests/foundation/browser_live_console_comments_fixture_test.go",
+    "tests/foundation/browser_live_console_test.go",
+    "scripts/dev/pr-modes.mjs",
+    "tests/ci/mode-registry.test.mjs",
+    "tests/ci/pr-modes.test.mjs"
+  ],
+  "registry_trunk_bytes_exact_except_one_W3_arm": true,
+  "Go_toolchain_arm_aligned": "1.27.2",
+  "A13_404_local_retained": true
+}

@@ -1,0 +1,47 @@
+✖ OP4 actual browser assertion keeps the exact four-route live inventory (11.499667ms)
+✔ finance rows with the two pay-at-pickup keys parse and stay separate from captured and net (0.446208ms)
+✔ a pickup-only day (no captured money) is a valid row whose captured and net stay zero (0.123625ms)
+✔ the older 7-key row (before the column) still parses with zero pickup money (0.077958ms)
+✔ a half pair, a negative or a non-integer pickup value is refused, never shown (0.248084ms)
+✔ Studio subtitle is neutral production wording in all three locales (0.141125ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 5
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 248.65875
+
+✖ failing tests:
+
+test at tests/admin/ops-polish-model.test.ts:13:1
+✖ OP4 actual browser assertion keeps the exact four-route live inventory (11.499667ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      'nav-group-overview',
+      'nav-group-live',
+      'nav-studio',
+      'nav-live-console',
+      'nav-claims',
+  -   'nav-live-settings',
+      'nav-orders',
+      'nav-group-catalog',
+      'nav-group-marketing',
+      'nav-group-storefront',
+      'nav-group-finance',
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-ops-nav/tests/admin/ops-polish-model.test.ts:43:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'nav-group-overview', 'nav-group-live', 'nav-studio', 'nav-live-console', 'nav-claims', 'nav-orders', 'nav-group-catalog', 'nav-group-marketing', 'nav-group-storefront', 'nav-group-finance', 'nav-group-settings' ],
+    expected: [ 'nav-group-overview', 'nav-group-live', 'nav-studio', 'nav-live-console', 'nav-claims', 'nav-live-settings', 'nav-orders', 'nav-group-catalog', 'nav-group-marketing', 'nav-group-storefront', 'nav-group-finance', 'nav-group-settings' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

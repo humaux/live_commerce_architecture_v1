@@ -1,0 +1,150 @@
+✔ restriction scope proof distinguishes store loss before read from a missing bundle (21.781958ms)
+✔ restriction scope proof distinguishes store loss during read from a missing bundle (2.991125ms)
+✔ restriction missing bundle retains local not_found only after fresh live-read proof (2.365292ms)
+✔ restriction upstream cannot forge the BFF-only store scope loss code (2.092959ms)
+✔ reminder route absence GET is local only after fresh store and permission proof (2.186209ms)
+✔ reminder route absence GET never aliases an initially revoked store (0.541417ms)
+✔ reminder route absence GET detects store loss at the fresh recheck (0.948208ms)
+✔ reminder route absence GET requires fresh complete method permissions (1.481834ms)
+✔ reminder route GET preserves JSON not_found and existing authorization failures (5.324209ms)
+✔ reminder route absence GET refuses unknown grants but accepts a current owner (1.652583ms)
+✔ reminder route absence GET fails closed when fresh authentication cannot be proved (2.1225ms)
+✔ reminder route absence POST is local only after fresh store and permission proof (0.925125ms)
+✔ reminder route absence POST never aliases an initially revoked store (0.439ms)
+✔ reminder route absence POST detects store loss at the fresh recheck (3.548542ms)
+✔ reminder route absence POST requires fresh complete method permissions (3.053583ms)
+✔ reminder route POST preserves JSON not_found and existing authorization failures (1.877375ms)
+✔ reminder route absence POST refuses unknown grants but accepts a current owner (3.680417ms)
+✔ reminder route absence POST fails closed when fresh authentication cannot be proved (3.108833ms)
+✔ successful reminder requests retain one store auth check and one command dispatch (2.878417ms)
+✔ reminder absence proof rejects arbitrary text, wrong media types and unbounded bodies (6.841709ms)
+✔ settings actual route permits only auth-scoped live reads/writes and keeps CAS receipt (5.51125ms)
+✔ bodyless reminder/DELETE, private blocklist projection and restricted followup copy are exact (16.702916ms)
+✔ real template publication rejects unknown fields and auth failures clear cookies even without JSON (2.638ms)
+✔ template compatibility GET preserves a legal 120-rune BMP name (0.635375ms)
+✔ template compatibility POST forwards a legal 120-rune BMP name (1.133458ms)
+✔ template compatibility GET preserves a legal 120-rune astral name (0.860167ms)
+✔ template compatibility POST forwards a legal 120-rune astral name (0.693542ms)
+✔ template compatibility GET preserves all 501 legal templates under the byte bound (3.997208ms)
+✔ template compatibility GET preserves all 5001 legal templates under the byte bound (11.802375ms)
+✔ template compatibility rejects 121-rune names on GET and before POST forwarding (4.004792ms)
+✔ template compatibility retains the response byte bound and item shape checks (5.634125ms)
+✔ success receipts must describe the exact requested command, otherwise the result remains unknown (1.6315ms)
+✔ W3-U2 Next proxy admits settings routes without weakening Studio raw-path guards (39.8145ms)
+✔ only frozen session-scoped manual operations are available (1.178334ms)
+✔ private notes and sold-out drafts respect rune limits and closed placeholders (0.296334ms)
+✔ restricted rows can never advertise copying, and checkout links cannot carry bearer data (0.723334ms)
+✔ three admin locales preserve the mandatory policy copy and real PR planner includes this new mode (1.401125ms)
+✔ live-settings is one inert registry entry with the existing admin/PG command (16.149625ms)
+ℹ tests 38
+ℹ suites 0
+ℹ pass 38
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 282.1605
+
+> live-commerce-workspace@ build:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 97ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1706ms
+  Running TypeScript ...
+  Finished TypeScript in 326ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/15) ...
+  Generating static pages using 9 workers (3/15) 
+  Generating static pages using 9 workers (7/15) 
+  Generating static pages using 9 workers (11/15) 
+✓ Generating static pages using 9 workers (15/15) in 64ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/ads
+├ ƒ /[locale]/ads/attribution
+├ ƒ /[locale]/billing
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/customers
+├ ƒ /[locale]/customers/[customer]
+├ ƒ /[locale]/customers/import
+├ ƒ /[locale]/design
+├ ƒ /[locale]/finance
+├ ƒ /[locale]/finance/reports
+├ ƒ /[locale]/inventory
+├ ƒ /[locale]/invite/[token]
+├ ƒ /[locale]/messages
+├ ƒ /[locale]/orders
+├ ƒ /[locale]/orders/cvs-print
+├ ƒ /[locale]/orders/new
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[product]
+├ ƒ /[locale]/products/import
+├ ƒ /[locale]/promotions
+├ ƒ /[locale]/reset
+├ ƒ /[locale]/returns
+├ ƒ /[locale]/settings
+├ ƒ /[locale]/settings/operations
+├ ƒ /[locale]/settings/payments/card
+├ ƒ /[locale]/settings/settlements
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/studio
+├ ƒ /[locale]/studio/claims
+├ ƒ /[locale]/studio/console
+├ ƒ /[locale]/studio/settings
+├ ƒ /[locale]/team
+├ ƒ /api/ads/meta/callback
+├ ƒ /api/ads/meta/connect
+├ ƒ /api/auth/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/password/login
+├ ƒ /api/auth/password/reset
+├ ƒ /api/auth/password/signup
+├ ƒ /api/auth/password/verify
+├ ƒ /api/meta/callback
+├ ƒ /api/meta/connect
+├ ƒ /api/onboarding/initial-store
+├ ƒ /api/stores
+├ ƒ /api/stores/[store]/[...resource]
+├ ƒ /api/stores/[store]/customers
+├ ƒ /api/stores/[store]/customers/[customer]/historical-orders
+├ ƒ /api/stores/[store]/customers/[customer]/notes
+├ ƒ /api/stores/[store]/customers/[customer]/notes/[note]
+├ ƒ /api/stores/[store]/customers/[customer]/tags
+├ ƒ /api/stores/[store]/customers/tags
+├ ƒ /api/stores/[store]/customers/tags/[tag]
+├ ƒ /api/stores/[store]/imports/[param]/[action]
+├ ƒ /api/stores/[store]/live-sessions/[session]/claims/blocklist
+├ ƒ /api/stores/[store]/live-sessions/[session]/claims/blocklist/check
+├ ƒ /api/stores/[store]/live-sessions/[session]/claims/blocklist/entries/[entry]
+├ ƒ /api/stores/[store]/live-sessions/[session]/reminders
+├ ƒ /api/stores/[store]/live-settings/sold-out-reply
+├ ƒ /api/stores/[store]/message-templates
+├ ƒ /api/stores/[store]/orders/export
+├ ƒ /api/stores/[store]/orders/pick-list
+├ ƒ /api/stores/[store]/reports/[report]
+├ ƒ /api/stores/[store]/shipments/cvs-batch
+├ ƒ /api/stores/[store]/tools/[...resource]
+├ ƒ /api/team/[action]
+├ ƒ /site/[locale]/[page]
+├ ƒ /site/robots.txt
+└ ƒ /site/sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packaged standalone admin server and static assets.
+NOT_RUN: PG test lock /var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T//lc-test-pg.lock still held by pid 53277 after 1800s

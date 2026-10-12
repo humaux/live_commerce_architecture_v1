@@ -1,0 +1,38 @@
+=== RUN   TestLiveSettingsHTTPFullRouterTransport
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/no_bearer
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/query
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/empty_query
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/GET_body
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/GET_key
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/HEAD
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/POST
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/missing_key
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/duplicate_key
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/unknown_field
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/null_boolean
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/top_null
+    sold_out_settings_test.go:42: want 400 got 422 {"code":"invalid_request","message":"Request validation failed.","request_id":"c0b49af1057a98065b7bf1e608ab3afa","retryable":false,"details":{}}
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/missing_boolean
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/duplicate_field
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/negative_CAS
+=== RUN   TestLiveSettingsHTTPFullRouterTransport/zero_template_version
+--- FAIL: TestLiveSettingsHTTPFullRouterTransport (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/no_bearer (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/query (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/empty_query (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/GET_body (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/GET_key (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/HEAD (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/POST (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/missing_key (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/duplicate_key (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/unknown_field (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/null_boolean (0.00s)
+    --- FAIL: TestLiveSettingsHTTPFullRouterTransport/top_null (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/missing_boolean (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/duplicate_field (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/negative_CAS (0.00s)
+    --- PASS: TestLiveSettingsHTTPFullRouterTransport/zero_template_version (0.00s)
+FAIL
+FAIL	livecommerce/internal/httpapi	0.673s
+FAIL

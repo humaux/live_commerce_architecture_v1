@@ -1,0 +1,80 @@
+$ node node_modules/typescript/bin/tsc --noEmit --incremental false -p apps/admin/tsconfig.json
+apps/admin/app/[locale]/ads/attribution/page.tsx(5,33): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/AdminPageHeader.tsx(8,28): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/Ads.tsx(29,29): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/Ads.tsx(30,35): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/AdsDraft.tsx(5,29): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/AdsDraft.tsx(15,8): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/AdsDraft.tsx(221,26): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/AdsDraft.tsx(231,26): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/AdsResults.tsx(5,29): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/AdsResults.tsx(10,32): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/AdsResults.tsx(11,25): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/AdsResults.tsx(112,26): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/AdsResults.tsx(122,26): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/Attribution.tsx(13,45): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/Attribution.tsx(180,28): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/Attribution.tsx(193,28): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/AttributionPanels.tsx(10,28): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/AttributionPanels.tsx(11,36): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/Billing.tsx(24,35): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/BuyerPanel.tsx(8,36): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/CardPayments.tsx(13,23): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/CodSettings.tsx(15,32): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/CollectionManager.tsx(21,28): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/CollectionManager.tsx(551,22): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/CommentStream.tsx(7,29): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/CustomerDetail.tsx(15,35): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/CustomerHistoricalOrders.tsx(7,28): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/CustomerHistoricalOrders.tsx(8,36): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/Customers.tsx(14,23): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/Dashboard.tsx(21,35): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/Design.tsx(20,29): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/Design.tsx(21,45): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/DesignField.tsx(13,38): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/DesignMedia.tsx(13,28): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/DesignMedia.tsx(148,24): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/Finance.tsx(25,41): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/Finance.tsx(107,26): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/Finance.tsx(112,26): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/Inbox.tsx(9,29): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/InboxThread.tsx(7,29): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/Ledger.tsx(16,23): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/LedgerTable.tsx(9,35): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/LiveConsole.tsx(8,36): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/LiveSettings.tsx(6,29): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/ManualOrder.tsx(16,29): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/ManualOrder.tsx(17,39): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/MerchantOrders.tsx(46,26): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/MetaConnect.tsx(18,23): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/OperationFacts.tsx(6,29): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/OperationsLedger.tsx(9,29): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/OrderDetailPanel.tsx(14,35): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/OrderListFilters.tsx(13,29): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/OrderListFilters.tsx(44,191): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/OrderListFilters.tsx(45,185): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/ProductImport.tsx(13,28): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/ProductImport.tsx(207,30): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/ProductList.tsx(22,45): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/ProductPhoto.tsx(14,28): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/ProductPhoto.tsx(271,20): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/ProductQuickEdit.tsx(16,30): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/Promotions.tsx(25,41): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/Promotions.tsx(164,173): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/Promotions.tsx(168,169): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/Reports.tsx(9,39): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/Reports.tsx(142,22): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/Reports.tsx(145,22): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/ReturnsList.tsx(13,35): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/ReturnsList.tsx(14,36): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/Settlements.tsx(11,35): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/StorefrontSettings.tsx(15,30): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/Studio.tsx(10,52): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/Studio.tsx(11,23): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/Studio.tsx(702,28): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/StudioClaims.tsx(29,66): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/Team.tsx(13,51): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/WorkspaceFrame.tsx(23,44): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/lib/attribution-format.ts(3,25): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+
+EXIT_CODE=1

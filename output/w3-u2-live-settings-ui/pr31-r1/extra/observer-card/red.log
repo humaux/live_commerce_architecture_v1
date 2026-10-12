@@ -1,0 +1,86 @@
+✔ PR31 soldout badge en SUCCEEDED reflects confirmed delivery (15.796417ms)
+✔ PR31 soldout badge en ACKNOWLEDGED reflects confirmed delivery (1.227708ms)
+✔ PR31 soldout badge en READY reflects confirmed delivery (0.813084ms)
+✔ PR31 soldout badge en DISPATCHING reflects confirmed delivery (0.697833ms)
+✔ PR31 soldout badge en FAILED_FINAL reflects confirmed delivery (0.66ms)
+✔ PR31 soldout badge en BLOCKED_POLICY reflects confirmed delivery (0.574ms)
+✔ PR31 soldout badge en UNKNOWN reflects confirmed delivery (0.573834ms)
+✔ PR31 soldout badge zh-TW SUCCEEDED reflects confirmed delivery (0.613959ms)
+✔ PR31 soldout badge zh-TW ACKNOWLEDGED reflects confirmed delivery (0.684166ms)
+✔ PR31 soldout badge zh-TW READY reflects confirmed delivery (0.748375ms)
+✔ PR31 soldout badge zh-TW DISPATCHING reflects confirmed delivery (0.552917ms)
+✔ PR31 soldout badge zh-TW FAILED_FINAL reflects confirmed delivery (0.457709ms)
+✔ PR31 soldout badge zh-TW BLOCKED_POLICY reflects confirmed delivery (0.436459ms)
+✔ PR31 soldout badge zh-TW UNKNOWN reflects confirmed delivery (0.417916ms)
+✔ PR31 soldout badge zh-CN SUCCEEDED reflects confirmed delivery (0.456167ms)
+✔ PR31 soldout badge zh-CN ACKNOWLEDGED reflects confirmed delivery (0.4695ms)
+✔ PR31 soldout badge zh-CN READY reflects confirmed delivery (0.595792ms)
+✔ PR31 soldout badge zh-CN DISPATCHING reflects confirmed delivery (0.660833ms)
+✔ PR31 soldout badge zh-CN FAILED_FINAL reflects confirmed delivery (0.732875ms)
+✔ PR31 soldout badge zh-CN BLOCKED_POLICY reflects confirmed delivery (0.538416ms)
+✔ PR31 soldout badge zh-CN UNKNOWN reflects confirmed delivery (0.435625ms)
+✔ W3-U2 restriction check 404 first expires all console views and rejects late A8 (4.258ms)
+✖ PR31 actual restriction GET is accepted by the LCU2_404 observer with strict scope negatives (13.421666ms)
+✖ PR31 restriction bundle not_found keeps healthy console polls and clears only selected buyer private state (2.98575ms)
+✖ PR31 terminal denial admits no queued A2 timer read before passive cleanup (1.295708ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 22
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 401.271458
+
+✖ failing tests:
+
+test at tests/admin/comment-stream-hooks.test.ts:780:1
+✖ PR31 actual restriction GET is accepted by the LCU2_404 observer with strict scope negatives (13.421666ms)
+  AssertionError [ERR_ASSERTION]: the browser must observe the actual nested scoped 404 that can precede A2/A8
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-observer-tests/tests/admin/comment-stream-hooks.test.ts:796:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:809:1
+✖ PR31 restriction bundle not_found keeps healthy console polls and clears only selected buyer private state (2.98575ms)
+  AssertionError [ERR_ASSERTION]: healthy server scope stays enabled after bundle-only 404
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-observer-tests/tests/admin/comment-stream-hooks.test.ts:826:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/comment-stream-hooks.test.ts:837:1
+✖ PR31 terminal denial admits no queued A2 timer read before passive cleanup (1.295708ms)
+  AssertionError [ERR_ASSERTION]: the already scheduled A2 callback must check terminal admission before fetching
+  
+  2 !== 1
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr31-observer-tests/tests/admin/comment-stream-hooks.test.ts:846:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

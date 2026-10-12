@@ -1,0 +1,28 @@
+✖ PR31 missing reminder POST is local even when staff cannot discover it with a report read (24.275792ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 385.476667
+
+✖ failing tests:
+
+test at tests/admin/live-settings-hooks.test.ts:55:1
+✖ PR31 missing reminder POST is local even when staff cannot discover it with a report read (24.275792ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  undefined !== 3
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/tests/admin/live-settings-hooks.test.ts:59:9)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: 3,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

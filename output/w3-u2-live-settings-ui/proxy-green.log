@@ -1,0 +1,45 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u2-live-settings-ui/apps/admin/lib/studio-client.ts:20
+  // 4xx answer, for callers that word specific refusals; never set for an unknown result.
+  constructor(readonly code: StudioErrorCode, readonly api = "", readonly retryAfterMs = 0, readonly status = 0) { super(code); }
+                       ^^^^^^^^^^^^^^^^^^^^^
+}
+
+SyntaxError [ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX]: TypeScript parameter property is not supported in strip-only mode
+    at parseTypeScript (node:internal/modules/typescript:68:40)
+    at processTypeScriptCode (node:internal/modules/typescript:146:42)
+    at stripTypeScriptModuleTypes (node:internal/modules/typescript:209:22)
+    at ModuleLoader.<anonymous> (node:internal/modules/esm/translators:641:29)
+    at #translate (node:internal/modules/esm/loader:451:20)
+    at afterLoad (node:internal/modules/esm/loader:507:29)
+    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:512:12)
+    at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:555:36)
+    at afterResolve (node:internal/modules/esm/loader:603:52)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:609:12) {
+  code: 'ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX'
+}
+
+Node.js v24.15.0
+✖ tests/admin/live-console-bff.test.ts (68.848542ms)
+✔ settings actual route permits only auth-scoped live reads/writes and keeps CAS receipt (26.629375ms)
+✔ bodyless reminder/DELETE, private blocklist projection and restricted followup copy are exact (6.748625ms)
+✔ real template publication rejects unknown fields and auth failures clear cookies even without JSON (2.124083ms)
+✔ success receipts must describe the exact requested command, otherwise the result remains unknown (1.333583ms)
+✔ W3-U2 Next proxy admits settings routes without weakening Studio raw-path guards (20.034833ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 5
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 143.864709
+
+✖ failing tests:
+
+test at tests/admin/live-console-bff.test.ts:1:1
+✖ tests/admin/live-console-bff.test.ts (68.848542ms)
+  'test failed'
