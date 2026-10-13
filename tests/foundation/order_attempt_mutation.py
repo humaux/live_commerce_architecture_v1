@@ -75,6 +75,43 @@ def main():
             "BEGIN\n -- Deferred NEW is the trusted inserted cart, not the final attempt version.\n",
             "BEGIN\n RETURN NULL;\n -- Deferred NEW is the trusted inserted cart, not the final attempt version.\n",
         )],
+        "finalize-from-begin": [(
+            "internal/orderattempt/executor.go",
+            "\tpayBinding := PayEntryBinding{TenantID: binding.TenantID, StoreID: binding.StoreID, OrderID: binding.AttemptID, Version: 1}\n",
+            '''\tif begun.OrderID != "" {
+\t\treceipt, marshalErr := json.Marshal(map[string]any{
+\t\t\t"state": "COMMITTED", "attempt_id": binding.AttemptID,
+\t\t\t"intent_generation": binding.Generation, "order_id": begun.OrderID,
+\t\t})
+\t\treturn ExecutionReceipt{State: "COMMITTED", Receipt: receipt}, marshalErr
+\t}
+\tpayBinding := PayEntryBinding{TenantID: binding.TenantID, StoreID: binding.StoreID, OrderID: binding.AttemptID, Version: 1}
+''',
+        )],
+        "expose-quote-helper": [(
+            "migrations/0179_order_attempt_quote_materialization.sql",
+            "GRANT EXECUTE ON FUNCTION storefront.order_attempt_materialize_quote(uuid,text) TO commerce_order_attempt_owner;\n",
+            "GRANT EXECUTE ON FUNCTION storefront.order_attempt_materialize_quote(uuid,text) TO commerce_order_attempt_owner;\n"
+            "GRANT EXECUTE ON FUNCTION storefront.order_attempt_materialize_quote(uuid,text) TO commerce_runtime;\n",
+        )],
+        "resume-placement-grants": [(
+            "migrations/0185_order_attempt_claim_execution.sql",
+            " v_deadline:=(v_binding->>'execute_by')::timestamptz; v_hash:=sha256(convert_to(v_selection::text,'UTF8'));\n",
+            " v_deadline:=(v_binding->>'execute_by')::timestamptz; v_hash:=sha256(convert_to(v_selection::text,'UTF8'));\n"
+            " IF NOT identity.principal_holds(v_tenant,v_store,v_principal,ARRAY['catalog:read','inventory:reserve']) THEN\n"
+            "  RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403';\n"
+            " END IF;\n",
+        )],
+        "merge-claim-origins": [(
+            "migrations/0179_order_attempt_quote_materialization.sql",
+            " FOR v_line IN SELECT value FROM jsonb_array_elements(v_lines)\n"
+            "  ORDER BY (value->>'sku_id')::uuid,(value->>'line_ordinal')::bigint LOOP\n",
+            " FOR v_line IN SELECT\n"
+            "  (jsonb_agg(value ORDER BY (value->>'line_ordinal')::bigint)->0)\n"
+            "   ||jsonb_build_object('quantity',sum((value->>'quantity')::bigint))\n"
+            "  FROM jsonb_array_elements(v_lines) GROUP BY (value->>'sku_id')::uuid\n"
+            "  ORDER BY (value->>'sku_id')::uuid LOOP\n",
+        )],
         "derive-current-owner": [(
             "migrations/0187_order_attempt_pay_entry.sql",
             "  AND x.owner_id=buyer_id AND x.id=p_attempt AND x.create_attempt_id=p_attempt\n",
