@@ -314,6 +314,7 @@ func TestOrderAttemptExecutionFencePrivateContext(t *testing.T) {
 	for _,role:=range []string{"commerce_buyer_writer","commerce_checkout_writer","commerce_claims_writer","commerce_inbox_writer"} {
 		t.Run(role,func(t *testing.T){
 			tx,exact:=oaFenceDomainTx(t,e,a,true)
+			if _,err:=tx.Exec(ctx,`SELECT set_config('app.tenant_id','caller-marker',true),set_config('app.store_id','caller-marker',true),set_config('app.principal_id','caller-marker',true)`); err!=nil { t.Fatal(err) }
 			if _,err:=tx.Exec(ctx,`SET LOCAL ROLE `+pgx.Identifier{role}.Sanitize()); err!=nil { t.Fatal(err) }
 			var raw []byte
 			err:=tx.QueryRow(ctx,`SELECT ops.order_attempt_execution_context($1,$2)`,a.AttemptID,string(exact)).Scan(&raw)
@@ -322,6 +323,8 @@ func TestOrderAttemptExecutionFencePrivateContext(t *testing.T) {
 			if err=json.Unmarshal(raw,&got); err!=nil { t.Fatal(err) }
 			got.Binding.AdmittedAt=got.Binding.AdmittedAt.UTC(); got.Binding.ExecuteBy=got.Binding.ExecuteBy.UTC()
 			if got.Binding.AttemptID!=a.AttemptID || got.Binding.Generation!=a.Generation || got.Plan.Binding()!=got.Binding || len(got.Plan.Calculation.Lines)!=2 { t.Fatal("domain accessor did not return trusted binding and exact parsed plan") }
+			var restored bool
+			if err=tx.QueryRow(ctx,`SELECT current_setting('app.tenant_id')='caller-marker' AND current_setting('app.store_id')='caller-marker' AND current_setting('app.principal_id')='caller-marker'`).Scan(&restored); err!=nil || !restored { t.Fatal("private execution context leaked GUC authority") }
 		})
 	}
 	for _,mode:=range []string{"old-xid","guc-only","altered-money","altered-owner","altered-facts","altered-hash","same-json-different-bytes","wrong-attempt"} {
@@ -381,6 +384,7 @@ func TestOrderAttemptExecutionFenceMetadataContext(t *testing.T) {
 	for _,role:=range []string{"commerce_buyer_writer","commerce_checkout_writer","commerce_claims_writer","commerce_inbox_writer"} {
 		t.Run(role,func(t *testing.T){
 			tx,_:=oaFenceDomainTx(t,e,a,true)
+			if _,err:=tx.Exec(ctx,`SELECT set_config('app.tenant_id','caller-marker',true),set_config('app.store_id','caller-marker',true),set_config('app.principal_id','caller-marker',true)`); err!=nil { t.Fatal(err) }
 			if _,err:=tx.Exec(ctx,`SET LOCAL ROLE `+pgx.Identifier{role}.Sanitize()); err!=nil { t.Fatal(err) }
 			var raw []byte
 			if err:=tx.QueryRow(ctx,`SELECT ops.order_attempt_fence_context($1,$2)`,a.AttemptID,a.Generation).Scan(&raw); err!=nil { t.Fatal(err) }
@@ -389,6 +393,8 @@ func TestOrderAttemptExecutionFenceMetadataContext(t *testing.T) {
 			if err:=json.Unmarshal(raw,&got); err!=nil { t.Fatal(err) }
 			if err:=json.Unmarshal(raw,&fields); err!=nil { t.Fatal(err) }
 			if len(fields)!=12 || got.Schema!=1 || got.AttemptID!=a.AttemptID || got.ScopeID!=a.ScopeID || got.Generation!=a.Generation || got.TenantID!=e.tenant() || got.StoreID!=e.store() || got.PrincipalID!=e.p.f.principalA || got.BuyerOwnerID=="" || got.RequestHash==([32]byte{}) || got.FactsDigest==([32]byte{}) || !got.AdmittedAt.Add(15*time.Minute).Equal(got.ExecuteBy) { t.Fatal("metadata context must expose exact stored binding without plaintext/ciphertext/receipt") }
+			var restored bool
+			if err:=tx.QueryRow(ctx,`SELECT current_setting('app.tenant_id')='caller-marker' AND current_setting('app.store_id')='caller-marker' AND current_setting('app.principal_id')='caller-marker'`).Scan(&restored); err!=nil || !restored { t.Fatal("private metadata context leaked GUC authority") }
 		})
 	}
 	for _,mode:=range []string{"old-xid","guc-only","wrong-generation","terminal"} {
