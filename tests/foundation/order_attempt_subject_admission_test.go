@@ -92,6 +92,8 @@ func TestOrderAttemptSubjectsExplicitNativeLink(t *testing.T) {
 	}
 	selection["for"] = map[string]any{"bundle_ids": []string{}, "conversation_id": randomUUID(), "customer_id": owner}
 	oaSubjectReject(t, tx, `SELECT customers.order_attempt_sources($1::jsonb)`, []any{oaSubjectJSON(t, selection)}, "PT404", "not_found")
+	selection["for"] = map[string]any{"bundle_ids": []string{}, "conversation_id": randomUUID()}
+	oaSubjectReject(t, tx, `SELECT customers.order_attempt_sources($1::jsonb)`, []any{oaSubjectJSON(t, selection)}, "PT404", "not_found")
 	selection["for"] = map[string]any{"bundle_ids": []string{}, "conversation_id": conv, "customer_id": randomUUID()}
 	oaSubjectReject(t, tx, `SELECT customers.order_attempt_sources($1::jsonb)`, []any{oaSubjectJSON(t, selection)}, "PT404", "not_found")
 	selection["for"] = map[string]any{"bundle_ids": []string{}, "conversation_id": nil, "customer_id": owner}
@@ -156,8 +158,26 @@ func TestOrderAttemptSubjectsPrivateOwnerExactBinding(t *testing.T) {
 	}
 	oaStateExec(t, tx, `SET LOCAL ROLE commerce_order_attempt_owner`)
 	oaSubjectReject(t, tx, `SELECT buyer.order_attempt_bind_owner($1::uuid,$2::jsonb)`, []any{attempt, oaSubjectJSON(t, selection)}, "PT409", "owner_conflict")
+	oaStateExec(t, tx, `SELECT set_config('app.store_id',$1,true)`, e.p.f.storeA2)
+	oaSubjectReject(t, tx, `SELECT buyer.order_attempt_bind_owner($1::uuid,$2::jsonb)`, []any{attempt, oaSubjectJSON(t, selection)}, "PT404", "attempt_not_found")
+	oaStateExec(t, tx, `SELECT set_config('app.store_id',$1,true)`, e.store())
 	selection["customer"].(map[string]any)["name"] = "Changed synthetic buyer"
 	oaSubjectReject(t, tx, `SELECT buyer.order_attempt_bind_owner($1::uuid,$2::jsonb)`, []any{attempt, oaSubjectJSON(t, selection)}, "PT409", "idempotency_conflict")
+}
+
+func TestOrderAttemptSubjectsActualRuntimeCannotCall(t *testing.T) {
+	e := lbuNew(t)
+	tx, err := e.p.f.runtime.Begin(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(context.Background())
+	// A runtime can set arbitrary GUCs; those cannot grant access to internal helpers.
+	oaStateExec(t, tx, `SELECT set_config('app.tenant_id',$1,true),set_config('app.store_id',$2,true),set_config('app.principal_id',$3,true)`, e.tenant(), e.store(), e.p.f.principalA)
+	raw := oaSubjectJSON(t, oaFactsSelection(e))
+	oaSubjectReject(t, tx, `SELECT customers.order_attempt_sources($1::jsonb)`, []any{raw}, "42501", "")
+	oaSubjectReject(t, tx, `SELECT buyer.order_attempt_bind_owner($1::uuid,$2::jsonb)`, []any{randomUUID(), raw}, "42501", "")
+	oaSubjectReject(t, tx, `SELECT inbox.order_attempt_customer_link($1::uuid,$2::uuid)`, []any{randomUUID(), randomUUID()}, "42501", "")
 }
 
 func TestOrderAttemptSubjectsExistingOwnerAndProvenance(t *testing.T) {
