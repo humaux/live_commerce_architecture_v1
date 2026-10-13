@@ -10,11 +10,32 @@
   retention. Backend separate from paused PR #32.
 - Current artifact: native C1 admission, complete single-transaction C2,
   inline/River execution and periodic sweep. Their scoped CI receipts below
-  do not constitute complete OA-1 acceptance: A2 retirement, cancellation and
+  do not constitute complete OA-1 acceptance: A2 retirement is verified below;
   privacy compatibility, the remaining crash/mutation matrix and final gates
   are still under verification. The public placement path is not enabled.
 
 ## Evidence
+
+Current acceptance index (OA-1 implementation; the detailed receipts retain
+their tested SHA below):
+
+| Contract | Native/model oracle |
+| --- | --- |
+| §6a atomic admission/execution | `TestOrderAttemptC1CrashBeforeCommit`, `TestOrderAttemptExecutorCrashBarrierMatrix`, `TestOrderAttemptMatrixCVSPickupCrash`, both `*CommitAcknowledgementLoss` tests, `TestOrderAttemptExecutorNativeCommitAndLostResponseReplay` |
+| §6b/c server identity and replay | `TestOrderAttemptServiceConcurrentFreshKeysOneCAS`, `TestOrderAttemptMatrixTerminalCASRace`, `TestOrderAttemptTerminalIdentityReplay`, `TestOrderAttemptCrossClient*`; retained same-key terminal receipts and explicit next-generation CAS |
+| §6d/k owner and key custody | `TestOrderAttemptMatrixConfiguredRotationPreservesAdmittedOwner`, `TestOrderAttemptExecutorPlanRotationAndMissingOriginalKey`, `TestOrderAttemptKeyRetirement*`, exact schema/materialization ACL tests and actual runtime/worker first-fence barriers |
+| §6e privacy prerequisites | `TestOrderAttemptErasure*`, native D-S2/ads erasure compatibility and populated historical upgrade. Full retention/legacy cutover remains OA-3. |
+| §6f cancellation compatibility | `TestOrderAttemptNativeCancel*`, `TestOrderAttemptCancelNativeCommittedRecovery`, native expiry tests; no renewed stock or credential on replay |
+| §6i liveness and errors | `TestOrderAttemptSweep*`, `TestOrderAttemptDeadlineExecution*`, `TestOrderAttemptExecutorAbortClassification`, actual enabled/disabled worker process and discarded-job periodic recovery |
+| §6j frozen facts | `TestOrderAttemptFrozenExecutor*`, `TestOrderAttemptCrossClientSameBuyerIndependentCarts`, native quote/destination/allocation/claim origin tests |
+| §6k process composition | `TestOrderAttemptProcessAPIRejectsSplitBuyerPools`, `TestOrderAttemptProcessWorkerRejectsSplitParticipantPools`, `TestOrderAttemptWorkerRealConsumerRacesInline` |
+| 4259504799 continuation | `TestOrderAttemptNotificationResume*`: worker completes without placement-session/grant re-entry; current messaging refusal becomes VOID |
+| §6l local C2 prerequisite | `TestOrderAttemptNotificationNoBindingVoidNativeAndRollback`, `TestOrderAttemptNotificationReadyNativeActualCrypto`, strict NULL-operation CHECKs. Dispatch/lease sweep/reminder/CAS and M2a/M4/M7 remain OA-2. |
+| Go model / testing.F | `TestOrderAttemptModelSeeds`, `TestOrderAttemptModelOracleMutations`, `FuzzOrderAttemptModel`; explicitly MODEL_ONLY |
+
+Public A15/A16/recovery adapters, browser pre-admission (§6h), 90-day retention
+and legacy partial cutover (§6m) remain OA-3. OA-1 does not activate the new
+placement route before OA-2/OA-3 can enforce those boundaries.
 
 | Revision | CI run | Gate | Result |
 | --- | --- | --- | --- |
@@ -166,7 +187,8 @@ so a future job-pointer update cannot reintroduce that dependency.
 - §2/§6j frozen destination and no browser side effects →
   `TestOrderAttemptDestination*`: home/CVS native rows, immutable source facts,
   enabled service barrier, private helper ACL and attempt namespace isolation.
-- Remaining §6 matrix and mutation proofs: NOT_RUN / implementation pending;
+- Historical checkpoint (superseded by the later CI receipts below): remaining
+  §6 matrix and mutation proofs were NOT_RUN / implementation pending;
   planned mapping is in the unit brief. No schema-only or MODEL_ONLY result
   is described as REAL_PG placement acceptance.
 
@@ -202,10 +224,12 @@ test, three negative subcases). API startup now uses the existing physical
 advisory-lock probe for merchant→issuer, merchant→buyer and merchant→checkout.
 The expiry producer borrows that exact checkout pool. No extra role grants.
 
-The worker repair helpers in 0191/post-River0025 follow CI47's native missing
-helper RED. The exact upgrade count is 114; reserved 0190 is not yet present.
+At this historical checkpoint, the worker repair helpers in 0191/post-River0025
+followed CI47's native missing-helper RED. The then-current count was 114;
+0190 was reserved. The current integrated count is 118, recorded below.
 Eight real-PG crash barriers were added tests-first in `cd32362f0`, with a full
-combined claims/READY control. They remain NOT_RUN until the next CI result.
+combined claims/READY control. They were NOT_RUN at this checkpoint; CI50 below
+supplies their native result.
 All local execution remains NOT_RUN by owner directive; no complete OA1 claim.
 
 CI50 `38462169006` is registered at `159de6e18` for the native notification,
@@ -344,8 +368,9 @@ deadline CI82 `38469249744`; owner-derivation mutation CI83 `38469282415`; final
 deadline-check mutation CI84 `38469287812`. All run on isolated GitHub runners
 with unchanged per-case and workflow budgets; root reads their jobs/logs.
 
-Root migrations now include 0192 erasure lock-prefix and 0193 native cancel
-compatibility (upgrade pin 117); 0194 A2 remains pending integration. The admin
+Historical pre-A2 checkpoint: 0192 erasure lock-prefix and 0193 native cancel
+compatibility used upgrade pin 117. This is superseded by integrated 0194 and
+pin 118 below. The admin
 credential follows the existing external-operator provisioning pattern: it is
 not a deployed core login or a secret mounted into API/claims-worker. Final
 numbering, metadata, whole-unit gates and independent review remain required.
@@ -388,3 +413,53 @@ rejected CANCELLED replay; 92 `38471182736` exact ERASED unit FIRST. Existing
 workflow/per-case deadlines are unchanged. All local runtime/tests remain
 **NOT_RUN (owner CI-only directive)**. Whole-unit acceptance and independent
 review remain incomplete.
+
+## A2 and matrix receipts through CI96
+
+| CI run / source / job | Exact result and evidence |
+| --- | --- |
+| 82 `38469249744` / `bb3dba04a` / `115546788286` | **GREEN**, `PASS=2 FAIL=0 SKIP=0 exit=0`. Native C2 finishes before the unchanged deadline, or crosses the real 15-minute clock (904.95 s) and rolls back. `deadline-competition-green-ci82.log`. |
+| 85 `38470325208` / `d806d7745`; 86 `38470330821` / `d806d7745`; 89 `38470591029` / `8161d6792` | 0194 setup fails with `0A000`: a policy cannot depend on a shared `regrole` constant. Behavioral **NOT_RUN**, including both mutations. `key-retirement-ci85.log`, `key-retirement-mutation-ci86.log`, `cancel-revocation-mutation-ci89.log`. `0efc46e81` replaces the membership predicate with the same exact-role check via `pg_roles`; authority is unchanged. |
+| 87 `38470580829` / `8161d6792` / `115551643716` | External admin credential-custody **GREEN**, `PASS=1 FAIL=0 exit=0`; `key-admin-custody-green-ci87.log`. Separate model job `115551643813`: 30-second fuzz **MODEL_ONLY GREEN** (74,005 executions, seven corpus entries); backend classification **RED**, 74/78 node cases pass and four identify the new unclassified package. `56cb13ffc` adds the shared executor to the existing conservative shared-backend classification, preserving broad coverage. `model-classification-ci87.log`. |
+| 88 `38470585873` / `8161d6792` / `115551827528` | **Causal RED**, `PASS=0 FAIL=1 exit=1`: injecting the admin login into the core deployment list violates the isolated credential-custody assertions. `key-admin-custody-mutation-ci88.log`. |
+| 92 `38471182736` / `435448289` / `115552043574` | Test-FIRST unit **RED** at `TestAdmissionFailureExactErasedOwner`: native `PT422/ERASED` is mapped to unavailable. Other real-PG packages stop at the same 0194 setup problem and are not behavior proof. `erased-error-unit-red-ci92.log`. The mapping repair is `73d95f008`; the migration setup repair is `0efc46e81`. |
+| 95 `38472123118` / `0efc46e81` / `115553705187` | A2/native admission **GREEN**, `PASS=17 FAIL=0 SKIP=0 exit=0`: exact admin grants, both lock race orders, cross-store PENDING references, admitted-version binding, retained replay and permanent unmarked key-loss cleanup. `key-retirement-green-ci95.log`. |
+| 96 `38472127865` / `0efc46e81` / `115553752820` | A2-M1 **causal RED**, `PASS=0 FAIL=1 SKIP=0 exit=1`: removing C1's in-lock retirement check fails the fixed `PT409/plan_key_retired` refusal assertion. `key-retirement-mutation-ci96.log`. |
+
+Root canceled its own CI90, CI91 and CI94 after confirming their source had
+the same setup failure; these are **NOT_RUN**, not causal mutation results.
+CI93 was canceled before acceptance to avoid replacing the pending test-FIRST
+unit run. No other lane's run or local process was stopped.
+
+Current-source registrations on `008b52dec` (root-monitored, **pending**, no
+PASS claim): CI97 `38472994627` C1 crash/cross-principal barriers plus model,
+fuzz, formatter and generated metadata; CI98 `38473112949` full OA1 focused
+suite and legacy privacy/upgrade; CI99 `38473118535` M2b; CI100 `38473121014`
+erase-before-seal; CI101 `38473126804` reject-CANCELLED; CI102 `38473180467`
+unit restoration; CI103 `38473185280` finalize-from-Begin; CI104 `38473190215`
+expose quote helper; CI105 `38473195477` resume through placement gates;
+CI106 `38473201544` merge claim origins. Existing workflow and per-test bounds
+remain unchanged. CI alone applies mutations to disposable checkouts; the
+working branch retains the original assertions and production code.
+
+## Current matrix and mutation results
+
+| Run / source / job | Result |
+| --- | --- |
+| CI84 `38469287812` / `422d4a355` / `115547129468` | Removed final-deadline check **causal RED**, `PASS=0 FAIL=1 exit=1`, after the real 907.30-second crossing. `final-deadline-mutation-ci84.log`; normal CI82 retains the original deadline assertions. |
+| CI97 `38472994627` / `008b52dec` / `115556684233` | Native C1 precommit termination and independent same-buyer carts **PASS**. `PASS=2 FAIL=1`: the third test incorrectly expected the pending bundle code after C2 had exhausted its claim quantity. `27a20b227` keeps the exact pending refusal, adds a positive remaining=0/placed=1/uses=1 sentinel, then asserts the exact settled internal conflict. No product mapping changes or public OA3 error-code claim. `c1-crossclient-first-ci97.log`. |
+| CI97 / `008b52dec` / `115556684272` | **GREEN** model seeds `PASS=2 FAIL=0 exit=0`; timed fuzz 305,937 executions/nine corpus entries (MODEL_ONLY); backend/pr-modes Node 78/78; formatter exit 0 with an empty patch. `model-classification-green-ci97.log`. CI-produced dependency map and shard plan applied as artifacts; temporary authoring steps removed in `728db61e6`. |
+| CI98 `38473112949` / `008b52dec` / `115557144033` | Privacy/upgrade `PASS=2 FAIL=2 exit=1`: exact migration pin omitted three post-River files; historical fixture also failed to hold those dependent files. `privacy-upgrade-ci98.log`. `9dd635f1c` adds one exact comment/pin increment per file: **121**, not 118. Fixture repair and restoration CI follow; all checksum/upgrade assertions remain. |
+| CI99 `38473118535` / `008b52dec` / `115557138716` | M2b **causal RED**, `PASS=0 FAIL=1`: native cancel no longer revokes the credential, with unchanged version/material/lifetime oracle. `cancel-revocation-mutation-ci99.log`. |
+| CI100 `38473121014` / `008b52dec` / `115557160731` | Erase-before-seal **causal RED**, `PASS=0 FAIL=1`: native erasure cannot settle the pending attempt. `erase-before-seal-mutation-ci100.log`. |
+| CI101 `38473126804` / `008b52dec` / `115557159688` | Reject-CANCELLED **causal RED**, `PASS=0 FAIL=1`: all three native cancelled commercial states fail their terminal replay. `cancelled-replay-mutation-ci101.log`. |
+| CI103 `38473185280` / `008b52dec` / `115557348063` | Finalize-from-Begin **causal RED**, `PASS=0 FAIL=1`: incomplete C2 cannot commit through either actual executor login. `begin-finalization-mutation-ci103.log`. |
+| CI104 `38473190215` / `008b52dec` / `115557388173` | Exposed internal quote helper **causal RED**, `PASS=0 FAIL=1`: exact ACL oracle rejects the runtime grant. `quote-authority-mutation-ci104.log`. |
+| CI105 `38473195477` / `008b52dec` / `115557366344` | Resume via placement permissions **causal RED**, `PASS=0 FAIL=1`: all three durable continuation cases fail with forbidden. `placement-resume-mutation-ci105.log`. |
+| CI106 `38473201544` / `008b52dec` / `115557450204` | Merge claim origins **causal RED**, `PASS=0 FAIL=1`: native frozen money/origin/stock readback rejects the collapsed SKU lines. `merged-origins-mutation-ci106.log`. |
+
+Fresh fetch before PR preparation confirms trunk `256e9740`, root maximum
+0169 and post-River maximum 0022. This unit uses root **0170–0194** and
+post-River **0023–0025**. The public route remains disabled; final whole-unit
+CI and independent review are still pending. All local runtime execution is
+**NOT_RUN (owner CI-only directive)**.
