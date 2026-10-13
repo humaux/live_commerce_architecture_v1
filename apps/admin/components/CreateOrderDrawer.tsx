@@ -489,7 +489,7 @@ export function CreateOrderDrawer({
   }
   async function copy() {
     // A planned DM owns its sealed link. Regenerating would invalidate the URL it will send.
-    if (copying.current || !result || result.send.state !== "not_sent" || ["link_unavailable", "order_cancelled"].includes(result.send.reason) || !privacy.visible) return;
+    if (copying.current || !result || result.commercial_state === "CANCELLED" || result.send.state !== "not_sent" || ["link_unavailable", "order_cancelled"].includes(result.send.reason) || !privacy.visible) return;
     const ticket = privacy.fence.begin();
     copying.current = true;
     setCopyBusy(true);
@@ -593,9 +593,10 @@ export function CreateOrderDrawer({
       )}
       {result ? (
         <section data-testid="drawer-result" aria-live="polite">
-          <h3>{c.success}</h3>
+          <h3>{result.commercial_state === "CANCELLED" ? c.cancelled : c.success}</h3>
           <p>{money(locale, result.currency, result.total_minor)}</p>
-          <p>{c.expires} · {displayTime(locale, result.expires_at)}</p>
+          {result.commercial_state === "CANCELLED" ? <p role="status" data-testid="drawer-cancelled">{createOrderReason(locale, "order_cancelled")}</p>
+            : <p>{c.expires} · {displayTime(locale, result.expires_at)}</p>}
           <p data-testid="drawer-live-result">
             {result.live_price === "applied" ? c.applied : c.notApplied}{" "}
             {createOrderReason(locale, result.live_price_reason)}
@@ -607,7 +608,7 @@ export function CreateOrderDrawer({
               : ""}
           </p>
           {(result.send.state === "queued" || result.send.reason === "link_unavailable") && <p data-testid="drawer-queued-link">{c.queuedLink}</p>}
-          {result.link_state === "configured" && result.send.state === "not_sent" && !["link_unavailable", "order_cancelled"].includes(result.send.reason) && (
+          {result.commercial_state !== "CANCELLED" && result.link_state === "configured" && result.send.state === "not_sent" && !["link_unavailable", "order_cancelled"].includes(result.send.reason) && (
             <button
               type="button"
               data-testid="drawer-copy-link"

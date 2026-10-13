@@ -26,7 +26,7 @@ import { toolsCopy } from "@/lib/merchant-tools-copy";
 import { emptyManualForm, type ManualFormLine, type ManualFormValues } from "@/lib/manual-order-form";
 import { OrderAttempt, OrderGuard, retainOrderAttempt } from "@/lib/create-order-attempt";
 import { recoverManualOrder, recoverPendingOrder, CreateOrderError } from "@/lib/create-order-client";
-import { createOrderCopy } from "@/lib/create-order-copy";
+import { createOrderCopy, createOrderReason } from "@/lib/create-order-copy";
 import { useInboxPrivacy } from "@/src/features/messages/use-privacy";
 import { ManualOrderFormFields } from "./ManualOrderFormFields";
 import { WorkspaceFrame } from "./WorkspaceFrame";
@@ -143,7 +143,7 @@ export function ManualOrder({
       if (scope !== guardScope.current || !privacy.fence.current(ticket)) return;
       if (outcome.ok) {
         attempt.current.finish(); guard.current?.clear(); setUncertain(false);
-        setCodDue(outcome.value.payment_mode === "cash_on_delivery" ? outcome.value.total_minor + (attemptOption.current?.cod_surcharge_minor ?? 0) : null);
+        setCodDue(outcome.value.commercial_state !== "CANCELLED" && outcome.value.payment_mode === "cash_on_delivery" ? outcome.value.total_minor + (attemptOption.current?.cod_surcharge_minor ?? 0) : null);
         setPlaced(outcome.value); return;
       }
       // The production transport's pre-fetch fence proves only a fresh intent was never sent.
@@ -232,7 +232,7 @@ export function ManualOrder({
     setRegenFailure(""); regen.current = null;
   }
   async function regenerate() {
-    if (!store || !placed || regenBusy || revoked || !privacy.visible || placed.link_state !== "configured") return;
+    if (!store || !placed || placed.commercial_state === "CANCELLED" || regenBusy || revoked || !privacy.visible || placed.link_state !== "configured") return;
     const ticket = privacy.fence.begin(), scope = guardScope.current;
     const body = { order_id: placed.order_id, locale: attempt.current.pending() ? JSON.parse(attempt.current.pending()!.body).locale : buyerLocale };
     const text = JSON.stringify(body);
@@ -286,15 +286,16 @@ export function ManualOrder({
         </section>}
         {privacy.visible && recoveredOrder && store && <section className="mt-card" data-testid="manual-order-recovery-status"><h2>{c.created}</h2><Link data-testid="manual-order-recovered-order" href={`/${locale}/orders?store=${store.id}&order=${recoveredOrder}`}>{recoveryCopy.view}</Link></section>}
         {privacy.visible && placed && store && (
-          <section className="mt-card" data-testid="manual-order-result" aria-label={c.created}>
-            <h2>{c.created}</h2>
-            <p role="status"><Badge tone={placed.commercial_state === "CONFIRMED" ? "success" : "warning"}>{placed.commercial_state === "AWAITING_TRANSFER" ? c.waiting : placed.commercial_state === "AWAITING_COLLECTION" ? c.waitingCollection : c.confirmed}</Badge></p>
+          <section className="mt-card" data-testid="manual-order-result" aria-label={placed.commercial_state === "CANCELLED" ? recoveryCopy.cancelled : c.created}>
+            <h2>{placed.commercial_state === "CANCELLED" ? recoveryCopy.cancelled : c.created}</h2>
+            <p role="status"><Badge tone={placed.commercial_state === "CONFIRMED" ? "success" : "warning"}>{placed.commercial_state === "CANCELLED" ? recoveryCopy.cancelled : placed.commercial_state === "AWAITING_TRANSFER" ? c.waiting : placed.commercial_state === "AWAITING_COLLECTION" ? c.waitingCollection : c.confirmed}</Badge></p>
             <dl className="mt-stats">
               <div><dt>{c.orderId}</dt><dd style={{ fontSize: 14 }}>{placed.order_id.slice(0, 8)}</dd></div>
               <div><dt>{c.total}</dt><dd>{money(locale, placed.currency, placed.total_minor)}</dd></div>
               {codDue !== null && <div data-testid="manual-order-cod-due"><dt>{c.codDue}</dt><dd>{money(locale, placed.currency, codDue)}</dd></div>}
-              {placed.payment_mode === "bank_transfer" && <div><dt>{c.expires}</dt><dd style={{ fontSize: 14 }}>{displayTime(locale, placed.expires_at)}</dd></div>}
+              {placed.commercial_state !== "CANCELLED" && placed.payment_mode === "bank_transfer" && <div><dt>{c.expires}</dt><dd style={{ fontSize: 14 }}>{displayTime(locale, placed.expires_at)}</dd></div>}
             </dl>
+            {placed.commercial_state === "CANCELLED" ? <p role="status" data-testid="manual-order-cancelled">{createOrderReason(locale, "order_cancelled")}</p> : <>
             <h3>{c.linkTitle}</h3>
             {placed.buyer_link ? (
               <>
@@ -311,8 +312,9 @@ export function ManualOrder({
                 {regenFailure && <p className="mt-warn" role="alert" data-testid="manual-order-regen-error">{regenFailure}</p>}
               </>
             ) : placed.link_state === "configured" ? <><p className="mt-note">{c.replayLink}</p><button type="button" data-testid="manual-order-regenerate" disabled={regenBusy} onClick={() => void regenerate()}>{regenBusy ? c.regenerating : c.regenerate}</button>{regenFailure && <p role="alert">{regenFailure}</p>}</> : <p className="mt-warn">{c.noLink}</p>}
+            </>}
             <div className="mt-actions" style={{ marginTop: 16 }}>
-              <button type="button" className="primary" onClick={reset} data-testid="manual-order-another">{c.another}</button>
+              {placed.commercial_state !== "CANCELLED" && <button type="button" className="primary" onClick={reset} data-testid="manual-order-another">{c.another}</button>}
               <Link href={`/${locale}/orders${storeQuery}`}>{c.viewOrders}</Link>
             </div>
           </section>

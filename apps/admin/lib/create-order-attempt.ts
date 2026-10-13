@@ -7,7 +7,10 @@ import { forBuyerErrors } from "./create-order-model.ts";
 export class OrderAttempt {
   private value: Readonly<{ key: string; body: string }> | null = null;
   private definitive = false;
-  constructor(private key: () => string = () => crypto.randomUUID()) {}
+  private key: () => string;
+  constructor(key: () => string = () => crypto.randomUUID()) {
+    this.key = key;
+  }
   prepare(body: unknown) {
     return (this.value ??= Object.freeze({
       key: this.key(),
@@ -39,11 +42,13 @@ export class OrderAttempt {
 /** A stable store/principal flag survives re-login; unattributed legacy flags fail closed for the store. */
 export class OrderGuard {
   private key: string;
+  private storage: StoragePort;
   constructor(
-    private storage: StoragePort,
+    storage: StoragePort,
     store: string,
     scope: string,
   ) {
+    this.storage = storage;
     this.key = /^[a-f0-9]{64}$/.test(scope) ? `buyer-order-unresolved:v2:${store}:${scope}` : "";
     this.legacyPrefix = `buyer-order-unresolved:${store}:`;
   }

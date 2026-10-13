@@ -133,6 +133,7 @@ export const forBuyerSendReasons = [
   "no_conversation",
   "send_unavailable",
   "link_unavailable",
+  "order_cancelled",
   "window_closed",
   "order_cancelled",
   "capability",

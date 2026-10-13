@@ -134,19 +134,23 @@ export function parseManualOptions(value: unknown): ManualOption[] {
 }
 
 export type ManualResult = {
-  order_id: string; commercial_state: "AWAITING_TRANSFER" | "CONFIRMED" | "AWAITING_COLLECTION"; payment_mode: ManualPaymentMode; total_minor: number; currency: string;
+  order_id: string; commercial_state: "AWAITING_TRANSFER" | "CONFIRMED" | "AWAITING_COLLECTION" | "CANCELLED"; payment_mode: ManualPaymentMode; total_minor: number; currency: string;
   expires_at: string; buyer_link: string | null; link_state: "configured" | "storefront_unavailable" | "domain_selection_required"; source: "merchant_manual";
 };
 /** Parse a manual result; only A16 callers may opt into replay link redaction. */
 export function parseManualResult(value: unknown, options: { allowRedactedLink?: boolean } = {}): ManualResult {
   const v = object(value, ["order_id", "commercial_state", "payment_mode", "total_minor", "currency", "expires_at", "buyer_link", "link_state", "source"]);
+  const cancelled = v.commercial_state === "CANCELLED";
   if (typeof v.order_id !== "string" || !canonicalUUID.test(v.order_id) ||
-    !(manualPaymentModes as readonly string[]).includes(String(v.payment_mode)) || v.commercial_state !== placementState[v.payment_mode as ManualPaymentMode] ||
+    !(manualPaymentModes as readonly string[]).includes(String(v.payment_mode)) || (!cancelled && v.commercial_state !== placementState[v.payment_mode as ManualPaymentMode]) ||
     !money(v.total_minor) || !/^[A-Z]{3}$/.test(String(v.currency)) ||
     !isInstant(v.expires_at) || !["configured", "storefront_unavailable", "domain_selection_required"].includes(String(v.link_state)) ||
     v.source !== "merchant_manual") throw fail();
   // The link is an https URL whose fragment carries the order id and a 43-character capability; nothing else is accepted.
-  if (v.link_state === "configured" && !(options.allowRedactedLink && v.buyer_link === null)) {
+  // A recovered locked original order may be terminal. Cancellation never returns a usable payment capability.
+  if (cancelled) {
+    if (v.buyer_link !== null) throw fail();
+  } else if (v.link_state === "configured" && !(options.allowRedactedLink && v.buyer_link === null)) {
     if (typeof v.buyer_link !== "string" || v.buyer_link.length > 400) throw fail();
     const url = new URL(v.buyer_link);
     if (url.protocol !== "https:" || url.search !== "" || !/^#o=[0-9a-f-]{36}&t=[A-Za-z0-9_-]{43}$/.test(url.hash) || !url.hash.includes(v.order_id)) throw fail();
