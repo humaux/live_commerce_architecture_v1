@@ -39,6 +39,30 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
+      - name: Preserve evidence-validator formatting patch
+        if: github.event_name == 'pull_request' && github.head_ref == 'unit/matrix-coverage-v2-evidence'
+        run: |
+          mkdir -p output/matrix-coverage-v2-evidence/ci-format
+          gofmt -d tests/foundation/catalog_matrix_ledger_test.go tests/foundation/catalog_matrix_evidence_test.go > output/matrix-coverage-v2-evidence/ci-format/gofmt.patch
+      - name: Evidence-validator focused integrity controls
+        if: github.event_name == 'pull_request' && github.head_ref == 'unit/matrix-coverage-v2-evidence'
+        run: go test ./tests/foundation -run '^TestProductEditorMatrix' -count=1 -v
+      - name: Delivered patch whitespace
+        if: github.event_name == 'pull_request' && github.head_ref == 'unit/matrix-coverage-v2-evidence'
+        env:
+          PATCH_BASE: ${{ github.event.pull_request.base.sha }}
+          PATCH_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git diff --check "$PATCH_BASE..$PATCH_HEAD"
+          printf 'delivered patch checked: %s..%s\n' "$PATCH_BASE" "$PATCH_HEAD"
+      - name: Preserve evidence-validator CI diagnostics
+        if: always() && github.event_name == 'pull_request' && github.head_ref == 'unit/matrix-coverage-v2-evidence'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: matrix-evidence-format
+          path: output/matrix-coverage-v2-evidence/ci-format/
+          if-no-files-found: error
+          retention-days: 14
       - name: No key-shaped secret literals
         # Fake keys and synthetic DSNs with inline passwords must be split ("sk_" + "test_...",
         # DSN passwords in a separate const) so secret scanners never see a
