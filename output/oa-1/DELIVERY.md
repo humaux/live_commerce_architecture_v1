@@ -229,3 +229,59 @@ regressions. CI52 `38462848122` at `12625d15c` runs the independent model with a
 Root monitors both runs; unchanged workflow bounds. The temporary authoring
 steps produce evidence without changing the source used by ordinary gates and
 will be removed before the PR.
+
+CI51 `38462734896` at `2a8f3052a`, job `115521922484`: expiry **GREEN**, native
+`PASS=4 FAIL=0 SKIP=0 exit=0`, including the actual expiry worker, canonical
+order-lock barrier and unchanged storefront provenance controls.
+`expiry-compat-green-ci51.log` is the receipt.
+
+CI52 `38462848122` at `12625d15c`: model job `115522330047` **GREEN**, fixed
+`PASS=2 FAIL=0 SKIP=0 exit=0`, plus the actual 30-second `testing.F` campaign:
+186047 executions, seven corpus entries, no failure. This is **MODEL_ONLY**,
+not transaction proof. `shard:unit` job `115522330075` also completed GREEN;
+it includes the strict plan/pay key configuration tests. Logs are
+`model-fuzz-ci52.log` and `unit-key-config-green-ci52.log`.
+
+CI53 `38463120346` at `a21718187`, job `115523242905`: actual claims-worker
+startup **RED**, `PASS=0 FAIL=1 SKIP=0 exit=1`. The positive physical-database
+control passes; each of the three same-name independent clusters keeps running
+beyond the existing 14-second refusal envelope. The worker compared only
+`current_database()`. `8b90761a2` uses `platform.ValidateSameDatabase` for the
+existing worker→intake/retention/store-verification pairs. The shared worker
+pool remains the exact River producer/consumer pool. CI57 `38464543045` owns
+the subsequent result. Red log: `worker-probe-first-ci53.log`.
+
+CI54 `38464089312` at `cce0834b9`, job `115526550914`: **GREEN**
+`PASS=3 FAIL=0 SKIP=0 exit=0`. Actual complete C2 honors frozen unit/live price,
+policy, shipping and COD fees, preserves separate origins and the locked buyer
+cart; disabled SKU/service aborts leave zero effects. Real COMMITTED/ABORTED
+receipts are non-disclosing across principals and stable after relogin, a newer
+generation and scope retirement. `frozen-identity-green-ci54.log`.
+
+CI55 `38464375959` at `f957aafbf`, job `115527522821`: `PASS=3 FAIL=1 SKIP=0
+exit=1`. Native wire faults positively witness successful PG COMMIT and drop
+its acknowledgement for C1, C2 and the terminal recovery replay; all preserve
+one complete order and unchanged credential. Current notification refusals
+also pass the full worker write-set oracle. The late grant-revocation barrier
+proves complete rollback and PENDING custody, then fails because
+`notification_reprepare` is exposed as `order_attempt_conflict`. Fix
+`73c745928` maps this one known rollback disposition to retryable, without
+broadening abort rules. CI58 `38464813911` verifies it. Log:
+`ack-resume-first-ci55.log`.
+
+CI56 `38464446087` registers opt-in worker configuration tests FIRST on
+`f957aafbf`; root monitors it before accepting composition changes. Native
+product mutations at `ff84da1c1` are separately dispatched: M1 fee-version
+`38464950233`, M5 principal disclosure `38464954147`, M3 disabled sweep
+`38464957914`. The real consumer/inline race and first SQL-fence tests are
+FIRST in `ac9b51b8d`: normal CI `38465027466`, M6 lock-removal CI
+`38465032646`. These runs retain the unchanged test and workflow budgets;
+root owns monitoring. Injection records exact source SHA and before/after
+hashes in the CI artifact and never applies to ordinary PR runs.
+
+Current status remains **INCOMPLETE**: worker composition, cancellation/privacy
+compatibility, remaining contract matrix, product mutation restored-green
+proof and final full gates/independent review are still required. No local
+test/build/formatter/server/container was run. OA2/OA3 public activation remains
+disabled. Trunk `256e9740` is merged; root migration maximum remains 0169,
+while this unit currently adds 0170–0191 and post-River0023–0025 (upgrade115).

@@ -8,8 +8,8 @@ all execution and tests run in GitHub CI only. PR #32 stays untouched.
 ## Ownership and boundaries
 
 - Implementer: Codex-3; reasoning: high; current trunk base:
-  `228a1c877f63b2be0955060d03ed621a05f4bdcf`, fetched and merged in
-  `a354230555e572a5cb488f7847db938b5ffbaa1e`. The contract branch is no longer
+  `256e9740ced9c5de05a83f58eb9f4c79a231b7b2`, fetched and merged after the
+  earlier PR50 integration `a354230555e572a5cb488f7847db938b5ffbaa1e`. The contract branch is no longer
   the dependency base; all implementation and retained tests remain on this branch.
 - Worktree: `.worktrees/oa-1-order-attempt-core`; branch: `unit/oa-1-order-attempt-core`.
 - Allowed paths: this brief; `output/oa-1/`; new OA migrations under `migrations/`
