@@ -30,7 +30,7 @@ func TestOrderAttemptExecutionAtomicBoundary(t *testing.T) {
 	if err := partial.Commit(ctx); err == nil {
 		t.Fatal("partial C2 cart/quote committed while its authority remained PENDING")
 	} else {
-		oaStateCode(t, err, "23514")
+		oaFenceCode(t, nil, err, "23514")
 	}
 	var pending bool
 	var carts, quotes, orders int
