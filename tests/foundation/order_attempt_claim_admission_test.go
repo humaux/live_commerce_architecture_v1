@@ -5,6 +5,7 @@
 package foundation_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -13,6 +14,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"livecommerce/internal/claims"
+	"livecommerce/internal/orderattempt"
 )
 
 type oaClaimResult struct {
@@ -25,6 +28,7 @@ type oaClaimResult struct {
 		OfferID        string `json:"offer_id"`
 		SKUID          string `json:"sku_id"`
 		Quantity       int64  `json:"quantity"`
+		LineVersion    int64  `json:"line_version"`
 		LivePriceMinor *int64 `json:"live_price_minor"`
 	} `json:"lines"`
 }
@@ -56,6 +60,84 @@ func oaClaimCall(tx pgx.Tx, attempt string, selection map[string]any) (oaClaimRe
 		err = json.Unmarshal(output, &out)
 	}
 	return out, err
+}
+
+func TestOrderAttemptClaimAdmissionFrozenOriginVersion(t *testing.T) {
+	e := lbuNew(t)
+	ctx := context.Background()
+	session, first, b1, conversation := e.scenario()
+	// A real correction makes version differ from the nullable import marker.
+	e.h.open(t, session, claims.MatchExact)
+	corrected := e.h.accepted(t, session, b1, "", "A1+2")
+	e.h.closeWindow(t, session)
+	secondSession, second := e.session("B2", ltgLive+700, 5)
+	plain := e.h.accepted(t, secondSession, "", "version-"+t04Tag(), "B2+2")
+	e.h.closeWindow(t, secondSession)
+	e.linkPeer(plain.BundleID, conversation)
+	mustExec(t, e.p.f.owner, `UPDATE live.offers SET live_price_minor=NULL WHERE id=$1`, second.ID)
+	bundles := []string{b1, plain.BundleID}
+	offers := []string{first.ID, second.ID}
+	versions := []int64{corrected.LineVersion, plain.LineVersion}
+	for i := range bundles {
+		var current, accepted, applied int64
+		err := e.p.f.owner.QueryRow(ctx, `SELECT l.version,e.line_version,coalesce(l.applied_version,0)
+		 FROM claims.lines l JOIN claims.events e ON e.tenant_id=l.tenant_id AND e.store_id=l.store_id
+		 AND e.bundle_id=l.bundle_id AND e.offer_id=l.offer_id AND e.line_version=l.version AND e.outcome='ACCEPTED'
+		 WHERE l.tenant_id=$1 AND l.store_id=$2 AND l.bundle_id=$3 AND l.offer_id=$4`,
+			e.tenant(), e.store(), bundles[i], offers[i]).Scan(&current, &accepted, &applied)
+		if err != nil || current != versions[i] || accepted != current || current <= 0 || applied == current {
+			t.Fatalf("native accepted-version sentinel %d: current=%d accepted=%d applied=%d err=%v", i, current, accepted, applied, err)
+		}
+	}
+	selection := oaClaimSelection(e, bundles, offers, conversation)
+	req := oaMaterialRequest(t, e, selection)
+	keys := oaServiceKeys(t)
+	svc, err := orderattempt.NewService(e.p.f.runtime, keys)
+	if err != nil {
+		t.Fatal(err)
+	}
+	admitted, err := svc.Admit(ctx, e.token(), e.store(), req)
+	if err != nil || admitted.State != "PENDING" || admitted.Replay {
+		t.Fatalf("native C1 version sentinel: %+v err=%v", admitted, err)
+	}
+	plan, sealed := oaMaterialPlan(t, e, keys, admitted.AttemptID)
+	var facts struct {
+		Claims oaClaimResult `json:"claims"`
+	}
+	if err = json.Unmarshal(plan.Facts, &facts); err != nil || len(facts.Claims.Lines) != len(bundles) {
+		t.Fatalf("sealed claim facts shape: lines=%d err=%v", len(facts.Claims.Lines), err)
+	}
+	// Mutate the native claim through the same accepted-event writer after C1.
+	// The exact key replays the original ciphertext, even with a newer source.
+	e.h.open(t, session, claims.MatchExact)
+	newer := e.h.accepted(t, session, b1, "", "A1+3")
+	e.h.closeWindow(t, session)
+	var current, accepted int64
+	err = e.p.f.owner.QueryRow(ctx, `SELECT l.version,e.line_version FROM claims.lines l JOIN claims.events e
+	 ON e.tenant_id=l.tenant_id AND e.store_id=l.store_id AND e.bundle_id=l.bundle_id AND e.offer_id=l.offer_id
+	 AND e.line_version=l.version AND e.outcome='ACCEPTED'
+	 WHERE l.tenant_id=$1 AND l.store_id=$2 AND l.bundle_id=$3 AND l.offer_id=$4`, e.tenant(), e.store(), b1, first.ID).Scan(&current, &accepted)
+	if err != nil || newer.LineVersion != versions[0]+1 || current != newer.LineVersion || accepted != current {
+		t.Fatalf("post-C1 accepted correction sentinel: current=%d accepted=%d err=%v", current, accepted, err)
+	}
+	replay, err := svc.Admit(ctx, e.token(), e.store(), req)
+	if err != nil || !replay.Replay || replay.AttemptID != admitted.AttemptID || replay.Generation != admitted.Generation {
+		t.Fatalf("exact frozen-version replay: %+v err=%v", replay, err)
+	}
+	after, afterSealed := oaMaterialPlan(t, e, keys, replay.AttemptID)
+	if !bytes.Equal(plan.Facts, after.Facts) || sealed.Digest != afterSealed.Digest || !bytes.Equal(sealed.Ciphertext, afterSealed.Ciphertext) {
+		t.Fatal("accepted correction replaced the frozen plan")
+	}
+	for i, line := range facts.Claims.Lines {
+		item := selection["items"].([]map[string]any)[i]
+		if line.LineVersion != versions[i] || line.Ordinal != i+1 || line.OriginID != item["origin_id"] ||
+			line.BundleID != bundles[i] || line.OfferID != offers[i] || line.SKUID != e.money || line.Quantity != 2 {
+			t.Fatalf("C1 must freeze exact accepted origin version %d: version=%d want=%d", i, line.LineVersion, versions[i])
+		}
+		if (i == 0 && (line.LivePriceMinor == nil || *line.LivePriceMinor != ltgLive)) || (i == 1 && line.LivePriceMinor != nil) {
+			t.Fatalf("version proof must include live and no_live_price origins: line=%d", i)
+		}
+	}
 }
 
 // A native unfinished C1 candidate with an old admitted_at proves the grant does
