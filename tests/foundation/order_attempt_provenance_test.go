@@ -349,10 +349,16 @@ func TestOrderAttemptProvenanceNativeCartsAndOrigins(t *testing.T) {
 	if err := tx.QueryRow(ctx, `SELECT count(*) FROM buyer.capability_sessions WHERE tenant_id=$1 AND store_id=$2 AND owner_id=$3`, f.tenantA, f.storeA1, h.cap.Scope.OwnerID).Scan(&sessionsAfter); err != nil || sessionsAfter != sessionsBefore {
 		t.Fatalf("attempt storage minted a capability: before=%d after=%d err=%v", sessionsBefore, sessionsAfter, err)
 	}
+	// An unused valid creator keeps the FK oracle independent of the unique
+	// attempt/cart index: an existing cart could otherwise reject first as 23505.
+	unusedAttempt := randomUUID()
+	if _, err := tx.Exec(ctx, `INSERT INTO ops.order_attempt_creators(attempt_id,tenant_id,store_id,buyer_owner_id) VALUES($1,$2,$3,$4)`, unusedAttempt, f.tenantA, f.storeA1, h.cap.Scope.OwnerID); err != nil {
+		t.Fatal(err)
+	}
 	oaProvenanceRejected(t, tx, "23503", `INSERT INTO storefront.carts(tenant_id,store_id,owner_id,currency,version,cart_kind,create_attempt_id)
-	 VALUES($1,$2,$3,$4,1,'order_attempt',$5)`, f.tenantA, f.storeA1, randomUUID(), browser.Currency, attempts[0])
+	 VALUES($1,$2,$3,$4,1,'order_attempt',$5)`, f.tenantA, f.storeA1, randomUUID(), browser.Currency, unusedAttempt)
 	oaProvenanceRejected(t, tx, "23503", `INSERT INTO storefront.carts(tenant_id,store_id,owner_id,currency,version,cart_kind,create_attempt_id)
-	 VALUES($1,$2,$3,$4,1,'order_attempt',$5)`, f.tenantA, f.storeA2, h.cap.Scope.OwnerID, browser.Currency, attempts[0])
+	 VALUES($1,$2,$3,$4,1,'order_attempt',$5)`, f.tenantA, f.storeA2, h.cap.Scope.OwnerID, browser.Currency, unusedAttempt)
 	oaProvenanceRejected(t, tx, "23503", `INSERT INTO storefront.cart_lines(tenant_id,store_id,owner_id,cart_id,sku_id,quantity,cart_kind,create_attempt_id,line_ordinal,origin_kind,origin_id)
 	 VALUES($1,$2,$3,$4,$5,1,'order_attempt',$6,3,'claim',$7)`, f.tenantA, f.storeA1, h.cap.Scope.OwnerID, carts[0], h.stock.skus[0].ID, attempts[1], randomUUID())
 	oaProvenanceRejected(t, tx, "23505", `INSERT INTO storefront.cart_lines(tenant_id,store_id,owner_id,cart_id,sku_id,quantity,cart_kind,create_attempt_id,line_ordinal,origin_kind,origin_id)
