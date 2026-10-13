@@ -200,3 +200,41 @@ func TestOrderAttemptProvenanceCoordinatorNoDomainDML(t *testing.T) {
 		}
 	}
 }
+
+func TestOrderAttemptProvenanceEnteredStore(t *testing.T) {
+	f := fixture(t)
+	ctx := context.Background()
+	oaProvenanceFK(t, f, "fulfillment.pickup_versions", "ops.order_attempts",
+		[]string{"tenant_id", "store_id", "buyer_owner_id", "create_attempt_id"},
+		[]string{"tenant_id", "store_id", "buyer_owner_id", "attempt_id"}, false)
+	var expression string
+	if err := f.owner.QueryRow(ctx, `SELECT pg_get_expr(conbin,conrelid) FROM pg_constraint
+	 WHERE conrelid='fulfillment.pickup_versions'::regclass AND conname='pickup_versions_attempt_creator'
+	 AND contype='c' AND convalidated`).Scan(&expression); err != nil {
+		t.Fatalf("missing entered-store attempt provenance: %v", err)
+	}
+	for _, tc := range []struct {
+		kind           string
+		owner, attempt any
+		want           bool
+	}{
+		{"BUYER_ENTERED", nil, nil, true},
+		{"MANUAL_ATTESTED", nil, nil, true},
+		{"PROVIDER_DIRECTORY_VERIFIED", nil, nil, true},
+		{"BUYER_ENTERED", "00000000-0000-4000-8000-000000000001", "00000000-0000-4000-8000-000000000002", true},
+		{"BUYER_ENTERED", nil, "00000000-0000-4000-8000-000000000002", false},
+		{"BUYER_ENTERED", "00000000-0000-4000-8000-000000000001", nil, false},
+		{"MANUAL_ATTESTED", "00000000-0000-4000-8000-000000000001", "00000000-0000-4000-8000-000000000002", false},
+		{"PROVIDER_DIRECTORY_VERIFIED", "00000000-0000-4000-8000-000000000001", "00000000-0000-4000-8000-000000000002", false},
+	} {
+		data, err := json.Marshal(map[string]any{"verification_kind": tc.kind, "buyer_owner_id": tc.owner, "create_attempt_id": tc.attempt})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var accepted bool
+		query := fmt.Sprintf(`SELECT (%s) IS NOT FALSE FROM jsonb_populate_record(NULL::fulfillment.pickup_versions,$1::jsonb)`, expression)
+		if err := f.owner.QueryRow(ctx, query, string(data)).Scan(&accepted); err != nil || accepted != tc.want {
+			t.Errorf("entered-store creator %s owner=%v attempt=%v: accepted=%v want=%v err=%v", tc.kind, tc.owner, tc.attempt, accepted, tc.want, err)
+		}
+	}
+}
