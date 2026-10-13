@@ -58,6 +58,9 @@ func oaNotificationNative(t *testing.T, e *lbuEnv, send bool) (orderattempt.Admi
 	if _, err = oaPayEntryStoreCall(tx, a.AttemptID, plain, material.KeyVersion, material.Digest[:], material.Ciphertext); err != nil {
 		t.Fatalf("real pay-entry prerequisite before notification: %v", err)
 	}
+	// Begin/pay-entry use the checkout definer role; restore the fixture owner
+	// before fixture mutation or switching to the private notification coordinator.
+	oaStateExec(t,tx,`RESET ROLE`)
 	return a, tx, plain, conversation
 }
 
