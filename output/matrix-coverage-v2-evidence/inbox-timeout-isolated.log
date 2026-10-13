@@ -1,0 +1,33 @@
+✔ Host subset: nested Provider and React19 context shadow defaults without sibling leakage (3.837875ms)
+✔ Host subset: provider updates reach stable children and separate roots keep their own values (1.080541ms)
+✔ Host subset: render errors restore context and hook ownership (0.907833ms)
+✔ Host subset: portal children inherit logical context and retain handlers/state (1.232542ms)
+✔ Host subset: portal target/key changes remount children and removal runs cleanup (0.58925ms)
+✔ Host subset: createPortal rejects invalid DOM targets rather than swallowing children (0.3935ms)
+✔ P1-1 actual visible focus preserves pending ticket, selection, revision and real retry receipt (6.89075ms)
+✔ P1-1 actual unchanged-session pageshow checks without clearing; changed-session focus expires (1.734666ms)
+✔ P1-1 actual hide/reveal clears and requests fresh revision, never accepts obsolete completion (0.919375ms)
+✔ P1-1 changed-session visible focus expires even with a pending request (0.235875ms)
+✔ P1-2 actual A9 refresh 404 removes rendered DM and unsent draft (137.134375ms)
+✔ P1-2 actual send-finally A9 404 removes DM, draft and uncertain immutable receipt (22.995708ms)
+✔ actual uncertain send still retains exact receipt when A9 authority remains (0ms post-send A9) (170.676375ms)
+✔ actual uncertain send still retains exact receipt when A9 authority remains (50ms post-send A9) (125.602458ms)
+✔ actual A9 stale held completion cannot paint after component cleanup (9.492708ms)
+✔ P2 actual A14 404 clears buyer facts and customer draft (A9 authority) (8.859833ms)
+✔ safe authority errors remain the actual InboxError transport class (0.059333ms)
+✔ A9 missing link_version keeps A14 disabled even when A13 is available (1.515667ms)
+✔ P1-2 actual A11 takeover write 404 clears private state despite failing follow-up A9 (3.304417ms)
+✔ P1-2 actual A12 send write 404 clears private state despite failing follow-up A9 (1.70625ms)
+✔ A13 server orders omission remains distinct from authorized omitted data (1.047291ms)
+✔ A13 server orders omission remains distinct from authorized empty data (3.274042ms)
+✔ A13 server orders omission remains distinct from authorized populated data (4.651458ms)
+✔ PR18 host digest hardening sync-throw (704.863375ms)
+✔ PR18 host digest hardening never-settles (8817.884792ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 10875.261791
