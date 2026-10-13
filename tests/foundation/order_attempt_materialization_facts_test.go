@@ -181,6 +181,9 @@ func oaMaterialCVS(t *testing.T, e *lbuEnv, kind, code, mode string) map[string]
 	service, _, _ := e.service(kind, "MANUAL", 0)
 	e.cvsSettings(tcvAllChains, true, "20000", 20)
 	selection := oaFactsSelection(e)
+	// Existing ECPay recipient rules allow 4-10 wide characters. Use a synthetic
+	// valid name so pickup negatives reach the chain-code gate being tested.
+	selection["customer"].(map[string]any)["name"] = "TEST"
 	selection["delivery"] = map[string]any{"market_id": e.p.market.ID, "country": "TW", "service_code": service,
 		"cvs": map[string]any{"store_code": code, "store_name": "Synthetic store", "store_address": "Synthetic store address"}}
 	selection["payment_mode"] = mode
