@@ -1,5 +1,27 @@
 # LC-U3 create-order drawer delivery
 
+## WIP checkpoint — owner state-machine freeze (2026-10-13)
+
+**WIP / NOT READY. Attempt, recovery and pay-link implementation is paused by the owner pending the integrator's frozen state-machine contract and table-driven test matrix.** Existing source was committed and pushed at `dd349c3c8e4a1b6b4ff2cec296bb9b6dd2951bd4`; this checkpoint changes only DELIVERY. No new fix was started after the stop instruction, including the newly reported privacy, erasure, prefill-completeness or restriction-header findings. There are no local tests, builds, browsers, dev servers or PG runs in this checkpoint.
+
+Existing work: durable principal/store pending fence, original owner binding, settled transport-key replay, frozen-request partial completion, guarded link disclosure, CANCELLED rendering, linked email prefill, search-state reset, native strip-only constructors and exact migration pins are committed but not accepted as a complete system. The latest batch also fixes success-to503 mapping and premature historical settlement, filters superseded/insufficient claim origins, and repairs test fixtures without reducing exact money/auth/privacy assertions. Independent static review of the latest delta found no concrete finding (E1 only). These implementations remain candidates for the frozen contract; no thread is claimed fixed by this WIP handoff.
+
+Known evidence:65404c07 focused38403107942 failed (PASS45 / FAIL17 / exit1), Foundation38403053706 failed three drawer fixture cases, and full required38403054381 was cancelled for the correction batch. g10 reservation/typed-pending cases passed in that focused run; unchanged card job115315897105 passed, so the eb5 card failure did not reproduce, without establishing its cause. At the pause, source-dd349c3c8 Foundation38407020021, required38407020062 and focused+card38407018681 were queued; they are not PASS. A DELIVERY-only successor triggers fresh automatic current-head runs; completed earlier evidence applies only to its stated source. All local acceptance remains NOT_RUN(owner CI-only).
+
+Still-open inventory (implemented but unverified findings stay open):
+
+| Theme | Findings awaiting the frozen contract or CI acceptance |
+|---|---|
+| A — attempt/recovery authority |4257479294 cross-tab/re-login fence;4257479276 aged Begin-only completion;4258064775 original owner across key rotation;4258686743 lost recovery response/settled replay;4257479307 never-sent preflight;4258686722 recovered CANCELLED terminal state.|
+| A — erasure/privacy |4259170302 erased pending body strands the principal/store fence; g02 frozen D-S2 privacy-writer SELECT excess; TestAdsAttributionR3Erasure PT404. New findings are unmodified. Existing schema test currently expects the extra grants/UNKNOWN after erasure and must be redesigned against the frozen contract, not used to override the frozen list.|
+| B — pay-link/DM validity |4257479285 lock-established/window_closed disclosure;4256912975 superseded Place token;4256890998 exact reminder order identity/two-buyer batch;4257755379 link_unavailable copy/reminder state. Existing fixes require consolidated current acceptance.|
+| Prefill/completeness |4258064767 duplicate-SKU origin eligibility/catalog warning;4259170307 A15 LIMIT50 truncation without completeness signal. The latter is unmodified.|
+| Isolated drawer UI/read seams |4258064753 picker search busy state;4259170294 restriction success no-store header (unmodified); review summary linked-customer latest-order email prefill. These are the only owner-permitted follow-up scopes before the contract, and no new work starts in this checkpoint.|
+| Consolidated CI regressions |g07 TestLiveConsoleOrderForBuyerGrantsDoNotOutliveRequest/P2-3: latest eligible-origin and precise unused-grant fixture fix is unverified; g10 typed409/pending reservation currently passed at654, successor pending; Foundation strip-only import/fixture corrections require successor acceptance; R2 exact0171/0172 pin96 needs current CI.|
+| Trunk/other gate investigation |manual_fulfilment_guards shipments.go call-site diagnostic: both internal/merchantorders/shipments.go and internal/httpapi/shipments.go have no PR32 diff from origin/r3/integration, so this unit did not introduce that missing comment. Card primary readOrder failure is not reproduced on unchanged rerun and has no response trace; no assertion was relaxed.|
+
+No GitHub thread was resolved or replied to as fixed by this checkpoint. Previously integrator-resolved threads remain resolved. The pre-existing LC-B6 queued-DM-after-cancel finding stays in its separate unit. Migration0171/0172 and every failed artifact remain preserved. Await the owner contract; do not resume A/B patches from a heartbeat or a CI failure notification.
+
 ## PR32 r6 — server intent authority and settled recovery (2026-10-13)
 
 **E1 source assembled; current acceptance PENDING, not READY.** Source head before this delivery update: `1d0fd9f03`. Refetched integration `0bfe36e53acb694f4697521202e24f0790638941` (already an ancestor). All tests, builds, browser modes and gates run on GitHub CI under the owner's 2026-10-13 directive; no local acceptance command was run. Earlier sections are historical receipts and do not accept this new source.
