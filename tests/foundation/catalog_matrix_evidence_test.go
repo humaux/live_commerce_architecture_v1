@@ -214,6 +214,12 @@ func TestProductEditorMatrixLedgerEvidenceDriftIntegrity(t *testing.T) {
 					}
 				}
 				manifest["copied_native_bytes"] = copies
+	// Extra retained receipts model package membership without creating run evidence.
+	retained := productEditorMatrixReadFixture(t, "../..", "output/matrix-ledger-enforce/"+string(dir[1])+"/test-node.json")
+	for _, path := range []string{filepath.Dir(canonical) + "/test-node.json", canonical + "/retained/test-node.source.txt"} {
+		write(path, retained)
+		artifacts[path] = hash(retained)
+	}
 			case "copy-hash":
 				manifest["copied_native_bytes"].([]any)[0].(map[string]any)["sha256"] = strings.Repeat("0", 64)
 			case "unindexed-copy":
@@ -316,7 +322,7 @@ func TestProductEditorMatrixLedgerEvidenceProducerEvolution(t *testing.T) {
 // A changed declaration alone cannot excuse an omitted OLD producer. The
 // separately indexed frozen run receipt must corroborate the recorded source set.
 func TestProductEditorMatrixLedgerEvidenceRunReceipt(t *testing.T) {
-	for _, mutation := range []string{"old-producer-omitted", "missing", "unindexed", "tested-commit", "after-commit", "before-sources", "after-sources", "command", "exit", "missing-exit"} {
+	for _, mutation := range []string{"old-producer-omitted", "old-producer-omitted-everywhere", "missing", "unindexed", "tested-commit", "after-commit", "before-sources", "after-sources", "command", "exit", "missing-exit"} {
 		t.Run(mutation, func(t *testing.T) {
 			root, canonical := productEditorMatrixEvidenceFixture(t)
 			gate := "tests/foundation/catalog_matrix_ledger_test.go"
@@ -327,7 +333,7 @@ func TestProductEditorMatrixLedgerEvidenceRunReceipt(t *testing.T) {
 			index := productEditorMatrixJSONFixture(t, root, indexPath)
 			receipt := productEditorMatrixJSONFixture(t, root, path)
 			switch mutation {
-			case "old-producer-omitted":
+			case "old-producer-omitted", "old-producer-omitted-everywhere":
 				producer := "tests/admin/product-editor.acceptance.ts"
 				for _, boundPath := range []string{canonical + "/browser-evidence.json", evidence + "/SOURCE.json"} {
 					bound := productEditorMatrixJSONFixture(t, root, boundPath)
@@ -337,6 +343,10 @@ func TestProductEditorMatrixLedgerEvidenceRunReceipt(t *testing.T) {
 					index["artifacts_sha256"].(map[string]any)[boundPath] = fmt.Sprintf("%x", sha256.Sum256(data))
 				}
 				delete(index["source_files_sha256"].(map[string]any), producer)
+				if mutation == "old-producer-omitted-everywhere" {
+					delete(receipt["source_files_sha256"].(map[string]any), producer)
+					delete(receipt["source_files_sha256_after"].(map[string]any), producer)
+				}
 			case "missing":
 				if err := os.Remove(filepath.Join(root, path)); err != nil {
 					t.Fatal(err)
@@ -524,6 +534,7 @@ func productEditorMatrixReadFixture(t *testing.T, root, path string) []byte {
 // Shared harness/configuration changes in a PR merge ref do not invalidate the
 // unit's source-bound evidence; its executable producers remain fail-closed.
 func TestProductEditorMatrixLedgerEvidenceSharedSources(t *testing.T) {
+	productEditorMatrixEvidenceMembershipControls(t)
 	for _, path := range []string{
 		"scripts/dev/test-node.sh", "scripts/dev/test-local.sh", "docs/delivery/GATES.md", "playwright.config.ts",
 		"tests/foundation/testdata/product_editor_mobile_matrix_ledger.json",
@@ -543,6 +554,36 @@ func TestProductEditorMatrixLedgerEvidenceSharedSources(t *testing.T) {
 				t.Fatalf("informational shared source change must not invalidate unit evidence: %v", err)
 			}
 		})
+	}
+}
+
+// Removing a file and its mutable index entry together must not erase history.
+func productEditorMatrixEvidenceMembershipControls(t *testing.T) {
+	t.Helper()
+	for _, name := range []string{"test-node.json", "browser/retained/test-node.source.txt"} {
+		for _, changed := range []bool{false, true} {
+			t.Run(fmt.Sprintf("membership-deleted-%s-drift-%t", name, changed), func(t *testing.T) {
+				root, canonical := productEditorMatrixEvidenceFixture(t)
+				evidence := filepath.Dir(canonical)
+				path := evidence + "/" + name
+				if err := os.Remove(filepath.Join(root, path)); err != nil {
+					t.Fatal(err)
+				}
+				indexPath := evidence + "/ARTIFACTS.json"
+				index := productEditorMatrixJSONFixture(t, root, indexPath)
+				delete(index["artifacts_sha256"].(map[string]any), path)
+				data, _ := json.Marshal(index)
+				productEditorMatrixWriteFixture(t, root, indexPath, data)
+				if changed {
+					gate := "tests/foundation/catalog_matrix_ledger_test.go"
+					productEditorMatrixWriteFixture(t, root, gate, append(productEditorMatrixReadFixture(t, root, gate), '\n'))
+				}
+				var drift productEditorMatrixEvidenceDrift
+				if err := validateProductEditorMatrixEvidence(root); err == nil || errors.As(err, &drift) {
+					t.Fatalf("coordinated package deletion must fail before drift: %v", err)
+				}
+			})
+		}
 	}
 }
 
@@ -935,7 +976,7 @@ func productEditorMatrixRehashFixture(t *testing.T, root, canonical, path string
 // Identity controls keep summaries, final receipts and all hashes consistent.
 // Only the executed consumer file/title multiset may make these runs invalid.
 func TestProductEditorMatrixLedgerEvidenceRunIdentity(t *testing.T) {
-	for _, mutation := range []string{"frozen-record-missing", "frozen-record-unindexed", "frozen-label", "frozen-test-duplicate", "frozen-test-unbound", "frozen-blob", "frozen-table-bytes"} {
+	for _, mutation := range []string{"frozen-record-missing", "frozen-record-unindexed", "frozen-label", "frozen-test-duplicate", "frozen-test-unbound", "frozen-title-editor-rehashed", "frozen-title-review-rehashed", "frozen-title-feedback-rehashed", "frozen-title-cc12-rehashed", "frozen-blob", "frozen-table-bytes"} {
 		t.Run(mutation, func(t *testing.T) {
 			root, canonical := productEditorMatrixEvidenceFixture(t)
 			gate := "tests/foundation/catalog_matrix_ledger_test.go"
@@ -966,6 +1007,27 @@ func TestProductEditorMatrixLedgerEvidenceRunIdentity(t *testing.T) {
 					tests[0] = tests[1]
 				case "frozen-test-unbound":
 					record["test_identities"].(map[string]any)["playwright.log"].([]any)[0] = "tests/fake.spec.ts › invented passing case"
+				case "frozen-title-editor-rehashed", "frozen-title-review-rehashed", "frozen-title-feedback-rehashed", "frozen-title-cc12-rehashed":
+					log, position := "playwright.log", 0
+					switch mutation {
+					case "frozen-title-review-rehashed":
+						position = 2
+					case "frozen-title-feedback-rehashed":
+						position = 10
+					case "frozen-title-cc12-rehashed":
+						log = "cc12-playwright.log"
+					}
+					tests := record["test_identities"].(map[string]any)[log].([]any)
+					original := tests[position].(string)
+					parts := strings.SplitN(original, " › ", 2)
+					invented := parts[1] + " invented passing title"
+					tests[position] = parts[0] + " › " + invented
+					logPath := canonical + "/" + log
+					logData := strings.Replace(string(productEditorMatrixReadFixture(t, root, logPath)), " › "+parts[1]+" (", " › "+invented+" (", 1)
+					if !strings.Contains(logData, invented) {
+						t.Fatal("negative control must mutate the native title")
+					}
+					productEditorMatrixRehashFixture(t, root, canonical, logPath, []byte(logData))
 				case "frozen-blob":
 					record["git_blob_ids"].(map[string]any)[gate] = strings.Repeat("0", 40)
 				}
