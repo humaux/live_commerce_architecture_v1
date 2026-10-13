@@ -175,16 +175,22 @@ func TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure(t *testing.T) {
 	worker := miPool(t, e.p.f, "commerce_claims_worker")
 	_, foreignToken := lcPrincipal(t, e.p.f, e.tenant(), []string{e.store()}, "store:read", "orders:read")
 	ctx := context.Background()
-	for _, mode := range []string{"worker", "worker-auth", "runtime-no-auth", "foreign-principal", "foreign-store", "stale-generation", "missing"} {
+	for _, mode := range []string{"worker", "worker-null-store", "worker-wrong-store", "worker-auth", "runtime-no-auth", "runtime-null-store", "foreign-principal", "foreign-store", "stale-generation", "missing"} {
 		t.Run(mode, func(t *testing.T) {
 			pool, hash, store, id, generation, want := e.p.f.runtime, tokenHash(e.token()), e.store(), a.AttemptID, a.Generation, "PT404"
 			switch mode {
 			case "worker":
 				pool, hash, want = worker, nil, ""
+			case "worker-null-store":
+				pool, hash, want = worker, nil, ""
+			case "worker-wrong-store":
+				pool, hash, store = worker, nil, e.p.f.storeA2
 			case "worker-auth":
 				pool, want = worker, "PT400"
 			case "runtime-no-auth":
 				hash, want = nil, "PT400"
+			case "runtime-null-store":
+				want = "PT400"
 			case "foreign-principal":
 				hash = tokenHash(foreignToken)
 			case "foreign-store":
@@ -200,7 +206,14 @@ func TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer tx.Rollback(ctx)
-			raw, err := oaFenceCall(ctx, tx, hash, store, id, generation)
+			var requestedStore any = store
+			if mode == "worker-null-store" || mode == "runtime-null-store" {
+				// River carries only attempt_id and generation; actual worker login
+				// must locate the stored scope without any caller-selected GUC.
+				requestedStore = nil
+			}
+			var raw []byte
+			err = tx.QueryRow(ctx, `SELECT ops.lock_order_attempt($1,$2,$3,$4)`, hash, requestedStore, id, generation).Scan(&raw)
 			if want != "" {
 				oaFenceCode(t, raw, err, want)
 				return
