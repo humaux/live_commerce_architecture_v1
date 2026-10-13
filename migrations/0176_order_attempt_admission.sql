@@ -151,6 +151,17 @@ BEGIN
   UPDATE ops.order_attempts SET facts_digest=sha256(convert_to(facts::text,'UTF8'))
    WHERE ops.order_attempts.attempt_id=a.attempt_id RETURNING * INTO a;
  END IF;
+ IF replay THEN
+  -- A concurrent winner can become visible only after a subject/scope wait.
+  -- Refresh read authority at disclosure; placement revocation/revision drift
+  -- must not invalidate an existing attempt. This read takes no principal lock.
+  fresh_auth:=ops.authenticate_order_attempt(p_hash,p_store,ARRAY['orders:read']);
+  IF (fresh_auth->>'tenant_id')::uuid IS DISTINCT FROM a.tenant_id
+   OR (fresh_auth->>'store_id')::uuid IS DISTINCT FROM a.store_id
+   OR (fresh_auth->>'principal_id')::uuid IS DISTINCT FROM auth_principal THEN
+   RAISE EXCEPTION 'authorization_changed' USING ERRCODE='PT403';
+  END IF;
+ END IF;
  result:=jsonb_build_object('attempt_id',a.attempt_id,'scope_id',a.scope_id,'intent_generation',a.intent_generation,
   'tenant_id',a.tenant_id,'store_id',a.store_id,'principal_id',auth_principal,'buyer_owner_id',a.buyer_owner_id,
   'admitted_at',a.admitted_at,'execute_by',a.execute_by,'request_hash',encode(a.request_hash,'hex'),
