@@ -148,6 +148,28 @@ REVOKE ALL ON FUNCTION fulfillment.order_intent_begin(bytea,uuid,text) FROM PUBL
 GRANT EXECUTE ON FUNCTION fulfillment.order_intent_begin(bytea,uuid,text) TO commerce_runtime;
 COMMENT ON FUNCTION fulfillment.order_intent_begin(bytea,uuid,text) IS 'merchanttools: exact authenticated principal/store intent + private-owner Begin receipt/order lookup for replay; inventory:reserve and catalog:read reverified. No arbitrary order read, buyer capability expiry dependency or writes.';
 
+-- Replay price guidance comes from the immutable original Quote, never current claims or a new price calculation.
+CREATE FUNCTION fulfillment.order_intent_has_catalog_lines(p_hash bytea,p_store uuid,p_key text) RETURNS boolean
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE v record; v_lines jsonb;
+BEGIN
+ SELECT * INTO v FROM fulfillment.order_intent_begin(p_hash,p_store,p_key);
+ IF NOT FOUND THEN RAISE EXCEPTION 'unresolved checkout facts' USING ERRCODE='PT503'; END IF;
+ SELECT o.snapshot#>'{quote,lines}' INTO v_lines FROM checkout.orders o
+  JOIN ops.order_intents i ON i.tenant_id=o.tenant_id AND i.store_id=o.store_id AND i.buyer_owner_id=o.owner_id
+  WHERE i.tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid AND i.store_id=p_store
+   AND i.principal_id=nullif(current_setting('app.principal_id',true),'')::uuid AND i.idempotency_key=p_key AND o.id=v.order_id;
+ IF jsonb_typeof(v_lines) IS DISTINCT FROM 'array' THEN
+  RAISE EXCEPTION 'unresolved quote facts' USING ERRCODE='PT503'; END IF;
+ IF jsonb_array_length(v_lines) NOT BETWEEN 1 AND 50 THEN
+  RAISE EXCEPTION 'unresolved quote facts' USING ERRCODE='PT503'; END IF;
+ RETURN EXISTS(SELECT 1 FROM jsonb_array_elements(v_lines) line WHERE line->>'price_rule' IS DISTINCT FROM 'live_claim');
+END $$;
+ALTER FUNCTION fulfillment.order_intent_has_catalog_lines(bytea,uuid,text) OWNER TO commerce_checkout_writer;
+REVOKE ALL ON FUNCTION fulfillment.order_intent_has_catalog_lines(bytea,uuid,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION fulfillment.order_intent_has_catalog_lines(bytea,uuid,text) TO commerce_runtime;
+COMMENT ON FUNCTION fulfillment.order_intent_has_catalog_lines(bytea,uuid,text) IS 'merchanttools replay only: authenticated principal/store and exact original private-owner Begin prove the immutable Quote. Boolean catalog-price provenance, no current repricing, private snapshot disclosure or writes.';
+
 -- Only an admitted intent and its exact private-owner Begin commit can establish manual provenance beyond ten minutes.
 CREATE FUNCTION fulfillment.mark_order_intent_manual(p_hash bytea,p_store uuid,p_key text,p_order uuid,p_link bytea) RETURNS void
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -161,6 +183,10 @@ BEGIN
  PERFORM pg_advisory_xact_lock(hashtextextended('order-pay-link|'||i.tenant_id::text||'|'||p_store::text||'|'||p_order::text,0));
  PERFORM 1 FROM checkout.orders o WHERE o.tenant_id=i.tenant_id AND o.store_id=p_store AND o.owner_id=i.buyer_owner_id AND o.id=p_order FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'intent order not found' USING ERRCODE='PT409'; END IF;
+ -- Both waits can outlive a session/grant. A fresh statement rechecks the authenticated intent before any private write.
+ SELECT * INTO v FROM fulfillment.order_intent_begin(p_hash,p_store,p_key);
+ IF NOT FOUND OR v.order_id IS DISTINCT FROM p_order THEN RAISE EXCEPTION 'intent order not found' USING ERRCODE='PT409'; END IF;
+ v_now:=clock_timestamp();
  UPDATE checkout.orders SET source='merchant_manual' WHERE tenant_id=i.tenant_id AND store_id=p_store AND owner_id=i.buyer_owner_id AND id=p_order
   RETURNING commercial_state INTO v_state;
  IF v_state<>'CANCELLED' THEN
@@ -201,6 +227,17 @@ BEGIN
   OR nullif(current_setting('app.principal_id',true),'')::uuid IS DISTINCT FROM s.principal_id THEN
   RAISE EXCEPTION 'invalid scope' USING ERRCODE='PT404'; END IF;
  PERFORM pg_advisory_xact_lock(hashtextextended('order-pay-link|'||s.tenant_id::text||'|'||p_store::text||'|'||p_order::text,0));
+ -- Permission or session loss during the lock wait must not disclose the payment capability.
+ SELECT * INTO s FROM identity.resolve_access(p_hash,p_store,'inventory:reserve');
+ IF s.access_status='unauthorized' THEN RAISE EXCEPTION 'unauthorized' USING ERRCODE='PT401'; END IF;
+ IF s.access_status='not_found' THEN RAISE EXCEPTION 'not found' USING ERRCODE='PT404'; END IF;
+ IF s.access_status IS DISTINCT FROM 'ok' THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403'; END IF;
+ SELECT * INTO c FROM identity.resolve_access(p_hash,p_store,'catalog:read');
+ IF c.access_status IS DISTINCT FROM 'ok' OR c.principal_id IS DISTINCT FROM s.principal_id THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403'; END IF;
+ IF nullif(current_setting('app.tenant_id',true),'')::uuid IS DISTINCT FROM s.tenant_id
+  OR nullif(current_setting('app.store_id',true),'')::uuid IS DISTINCT FROM p_store
+  OR nullif(current_setting('app.principal_id',true),'')::uuid IS DISTINCT FROM s.principal_id THEN
+  RAISE EXCEPTION 'invalid scope' USING ERRCODE='PT404'; END IF;
  RETURN EXISTS(SELECT 1 FROM checkout.order_links l JOIN checkout.orders o
   ON o.tenant_id=l.tenant_id AND o.store_id=l.store_id AND o.owner_id=l.owner_id AND o.id=l.order_id
   WHERE l.tenant_id=s.tenant_id AND l.store_id=p_store AND l.order_id=p_order AND l.token_hash=p_link
