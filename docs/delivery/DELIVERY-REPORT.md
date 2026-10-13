@@ -12,11 +12,13 @@ Used by: owner and integrator when reviewing the release candidate; this report 
 | 编号 | CI 运行及实际范围 | 结果与限制 |
 | --- | --- | --- |
 | C1 | [38357392862](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38357392862)，候选 SHA `0bfe36e5`，push；`shard:unit`、`g01`–`g10` 和 `required` | SUCCESS。证明当前代码的所选 Go/真实 PG 测试；此 push **没有浏览器任务**，deploy 和 aggregate 是 SKIPPED，不能算部署或浏览器 PASS。 |
-| C2 | [38338136795](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38338136795)，祖先 SHA `5a54d41b`，schedule；下表列出的浏览器模式、click-sweep ×10、visual-lint ×4、aggregate、required | SUCCESS。全浏览器回归发生在该祖先版本；**不是候选 SHA 的完整重跑**。它没有真实 Stripe/ECPay/Meta 凭据，也不是 release-gate。 |
-| C3 | [38352001282](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38352001282)，[PR #28](https://github.com/humaux/live_commerce_architecture_v1/pull/28) head `3e97bd49`；`--browser-product-editor`、`--browser-catalog-core`、required；[Foundation 38352001264](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38352001264) | SUCCESS；PR 合入候选 SHA。覆盖新增商品矩阵台账检查；完整性仍受 [issue #45](https://github.com/humaux/live_commerce_architecture_v1/issues/45) 的明确缺口限制。 |
+| C2 | [38338136795](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38338136795)，合并前祖先 SHA `5a54d41b`，schedule；下表列出的浏览器模式、click-sweep ×10、visual-lint ×4、aggregate、required | SUCCESS，**合并前祖先证据，不是候选 SHA 的完整重跑**。该 [C2 SHA 的 gates.yml](https://github.com/humaux/live_commerce_architecture_v1/blob/5a54d41b7e86a72eeec2afbe1f7b0458daaf742b/.github/workflows/gates.yml#L9-L18) 未配置真实供应商凭据注入；这不是断言仓库或环境中不存在任何秘密。该 schedule **未执行 `--stripe-browser`**；需要 Stripe 测试 key 的 SANDBOX 步骤为 **NOT_RUN**，绿色 MOCK 模式不证明 SANDBOX。它也不是 release-gate。 |
+| C3 | [38352001282](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38352001282)，[PR #28](https://github.com/humaux/live_commerce_architecture_v1/pull/28) head `3e97bd49`；`--browser-product-editor`、`--browser-catalog-core`、required；[Foundation 38352001264](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38352001264) | SUCCESS，**合并前 PR-head 证据**。新增商品矩阵台账检查通过于 `3e97bd49`，不等于合并 SHA `0bfe36e5` 的浏览器 PASS；该合并 SHA 的商品编辑器/矩阵台账浏览器验收 **NOT_RUN（本报告）**。完整性还受 [issue #45](https://github.com/humaux/live_commerce_architecture_v1/issues/45) 限制。 |
 | RCG | 候选 SHA 的完整 release-gate CI run ID、各 tier 结果、artifact、独立验收 | **NOT_RUN／待集成方追加**。不得用 C1/C2/C3 替代。供应商 SANDBOX/LIVE 结果分别填入，缺项继续保留 NOT_RUN。 |
 
-下表的 `C2 / --browser-…` 指 C2 中该实际成功的 job；单元或 PR 说明交付归属，契约说明能力边界。旧契约的 DESIGN/NOT_RUN 标题不覆盖新的 CI 结果；旧 CI 的成功也不覆盖未来版本。模式的定义及限制见 [GATES](GATES.md)。
+下表的 `C2 / --browser-…` 指 C2 中该实际成功的 job；证据等级适用于所引用 CI 的 SHA，不能自动转移到合并后的候选 SHA。C2 早于 #28，不证明 #28 的新增矩阵台账；C3 是合并前 PR-head 证据。单元或 PR 说明交付归属，契约说明能力边界。旧契约的 DESIGN/NOT_RUN 标题不覆盖新的 CI 结果；旧 CI 的成功也不覆盖未来版本。模式的定义及限制见 [GATES](GATES.md)；缺 key 时的 Stripe 排除条件见 [C2 SHA 的 EXCLUDED_MODES](https://github.com/humaux/live_commerce_architecture_v1/blob/5a54d41b7e86a72eeec2afbe1f7b0458daaf742b/scripts/dev/pr-modes.mjs)。
+
+C2 的供应商子项另有明确日志边界：[RF11(b) 退款浏览器 job](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38338136795/job/115102886304)、[RF10 所在 g06](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38338136795/job/115102886740) 和 [CB10 所在 g04](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38338136795/job/115102886923) 均记录凭据/flag 依赖的 SANDBOX 子测试 **NOT_RUN**。这些不是 `--stripe-browser` 的执行收据；整个 schedule 没有该模式的 job，整体 SUCCESS 不能代替这些缺失验收。
 
 ## 业务能力清单
 
@@ -24,7 +26,7 @@ Used by: owner and integrator when reviewing the release candidate; this report 
 
 | 能力 | 已合入单元 / PR；契约来源 | 证据等级与 CI |
 | --- | --- | --- |
-| 商品新增/编辑、草稿/上架、slug/SEO、规格矩阵、批量 SKU、追踪或不追踪库存 | catalog-core、product-editor；[#16](https://github.com/humaux/live_commerce_architecture_v1/pull/16)、[#28](https://github.com/humaux/live_commerce_architecture_v1/pull/28)；[storefront-v2 §A](../../contracts/storefront-v2.md)、[catalog-inventory A6](../../contracts/catalog-inventory-v1.md) | **MOCK**：C2 / `--browser-catalog-core`、`--browser-product-editor`；C3 验证新增矩阵台账。issue #45 未关闭，不能宣称每个规格控件已完整点击。 |
+| 商品新增/编辑、草稿/上架、slug/SEO、规格矩阵、批量 SKU、追踪或不追踪库存 | catalog-core、product-editor；[#16](https://github.com/humaux/live_commerce_architecture_v1/pull/16)、[#28](https://github.com/humaux/live_commerce_architecture_v1/pull/28)；[storefront-v2 §A](../../contracts/storefront-v2.md)、[catalog-inventory A6](../../contracts/catalog-inventory-v1.md) | **MOCK（合并前证据）**：C2 / `--browser-catalog-core`、`--browser-product-editor` 是祖先版本的既有编辑能力；新增矩阵台账使用 C3 **合并前 PR-head** `3e97bd49` 证据。合并 SHA `0bfe36e5` 的这两项浏览器验收 **NOT_RUN（本报告）**。issue #45 未关闭，不能宣称每个规格控件已完整点击。 |
 | 主图、规格图、详情图、上传缩图、排序，以及商品/购物车图片展示 | catalog-media、[product-media-v2（PM-B/PM-U）](units/product-media-v2.md)；[catalog-inventory Product-media-v2 amendment](../../contracts/catalog-inventory-v1.md) | **MOCK**：C2 / `--browser-catalog-media`、`--browser-product-media-v2`，真实文件上传与应用/PG 回读。 |
 
 ### 订单（orders）
@@ -45,7 +47,7 @@ Used by: owner and integrator when reviewing the release candidate; this report 
 | 评论分页/筛选、私密/公开回复、UNKNOWN 防重复提交、买家删评论清除 | LC-U2a [#18](https://github.com/humaux/live_commerce_architecture_v1/pull/18)、LC-B4、[#24](https://github.com/humaux/live_commerce_architecture_v1/pull/24)；[live-console §§2–4](../../contracts/live-console-v1.md) | **MOCK**：C2 / `--browser-live-console`，真实 PG + 假 Graph；权限/消息窗口、真实平台发送分别需 LIVE 补证。 |
 | 评论标签打印、服务端幂等、打印记录保留期清理 | W3-U3 [#40](https://github.com/humaux/live_commerce_architecture_v1/pull/40)、[#30](https://github.com/humaux/live_commerce_architecture_v1/pull/30)、LC-R2 [#35](https://github.com/humaux/live_commerce_architecture_v1/pull/35)；[live-console §7.4、LC-R2 amendment](../../contracts/live-console-v1.md) | **MOCK**：C2 / `--browser-live-console`；C1 的打印/保留期 PG 测试。没有真实打印机验收。 |
 | 手动提醒、没货回复模板、限制买家名单 | W3-U2 [#31](https://github.com/humaux/live_commerce_architecture_v1/pull/31)；[W3-U2 已交付/排除范围](units/w3-u2-live-settings-ui.md) | **MOCK**：C2 / `--browser-live-settings`。自动定时提醒、匹配模拟器与店级默认匹配模式未由该 UI 单元交付。 |
-| 从控台/Inbox 评论直接打开建单抽屉（LC-U3） | [#32](https://github.com/humaux/live_commerce_architecture_v1/pull/32) 在本次查询时 **OPEN**；[live-console §5](../../contracts/live-console-v1.md) | **NOT_RUN（当前候选交付）**：未合入此快照；不将该 PR 的开发状态计为候选功能。 |
+| 从控台/Inbox 评论直接打开建单抽屉（LC-U3） | [#32](https://github.com/humaux/live_commerce_architecture_v1/pull/32) 查询于 **2026-10-13 10:15:42 UTC：OPEN**；[live-console §5](../../contracts/live-console-v1.md) | **NOT_RUN（当前候选交付）**：未合入此快照；不将该 PR 的开发状态计为候选功能。OPEN 是查询时状态，作范围或上线决定前须重查 PR/CI。 |
 
 ### 讯息收件匣（inbox）
 
@@ -62,7 +64,7 @@ Used by: owner and integrator when reviewing the release candidate; this report 
 | 配送地址、报价、库存保留、优惠码与买家订单恢复 | buyer-order-ui、promotions；[buyer-order-ui](../../contracts/buyer-order-ui-v1.md)、[storefront-v2 §F](../../contracts/storefront-v2.md) | **MOCK**：C2 / `--browser-order`、`--browser-promotions`、`--browser-payment`；C1 的交易/PG 测试。 |
 | 银行转账证明、确认/拒绝、逾时释放；宅配货到付款 | checkout-offline、home-cod；[storefront-v2 §C](../../contracts/storefront-v2.md)、[宅配 COD 裁决](units/home-cod.md) | **MOCK**：C2 / `--browser-checkout-offline`、`--browser-home-cod`。转账核对和物流收款是人工记录，无银行/宅配商接口证明。 |
 | 平台信用卡启用/停用、买家披露、按店结算单与明细 | W4-S1、W4-S2、[W4-U1](units/w4-u1-payment-activation-ui.md)、结算归属修复 [#4](https://github.com/humaux/live_commerce_architecture_v1/pull/4)；[stripe-platform-account §§0.3、3–6](../../contracts/stripe-platform-account-v1.md) | **MOCK**：C2 / `--browser-card-payments`；C1 的平台收款/结算 PG 测试。仅 allowlist 的同法人自有店可启用；第三方商户不开放。 |
-| Stripe 捕获、退款、UNKNOWN 查询对账与金额/目录漂移保护 | stripe-b1/b2、refund-core；[#20](https://github.com/humaux/live_commerce_architecture_v1/pull/20)；[stripe-psp §§9、14](../../contracts/stripe-psp-v1.md)、[stripe-refund §§5–9](../../contracts/stripe-refund-v1.md) | **MOCK**：C2 / `--browser-refund-fulfilment`、`--browser-e2e`；C1 的交易 PG 测试。真实 Stripe Checkout/3DS/webhook/退款的 **SANDBOX、LIVE 均 NOT_RUN（本报告）**。`--stripe-browser` 不在无凭据的普通 PR CI 集合。 |
+| Stripe 捕获、退款、UNKNOWN 查询对账与金额/目录漂移保护 | stripe-b1/b2、refund-core；[#20](https://github.com/humaux/live_commerce_architecture_v1/pull/20)；[stripe-psp §§9、14](../../contracts/stripe-psp-v1.md)、[stripe-refund §§5–9](../../contracts/stripe-refund-v1.md) | **MOCK**：C2 / `--browser-refund-fulfilment`、`--browser-e2e`；C1 的交易 PG 测试。真实 Stripe Checkout/3DS/webhook/退款的 **SANDBOX、LIVE 均 NOT_RUN（本报告）**。C2 schedule 未运行 `--stripe-browser` 的任何步骤；SP18 SANDBOX 需要测试 key，缺 key 时 NOT_RUN。它也不在无凭据的普通 PR CI 集合；绿色 MOCK job 不证明 SANDBOX。 |
 
 ### 超商与物流（CVS and logistics）
 
@@ -108,17 +110,17 @@ Used by: owner and integrator when reviewing the release candidate; this report 
 | 能力 | 已合入单元 / PR；契约来源 | 证据等级与 CI |
 | --- | --- | --- |
 | 商家身份/开店向导、支付/物流配置与能力状态 | merchant-settings、[#14](https://github.com/humaux/live_commerce_architecture_v1/pull/14)；[merchant-settings-http Routes / No capability upgrade](../../contracts/merchant-settings-http-v1.md)、[merchant-service-settings §§2–5](../../contracts/merchant-service-settings-v1.md) | **MOCK**：C2 / `--browser-identity`、`--browser-password-auth`、`--browser-customers-billing`。配置成功不能说明供应商 LIVE 已开通。 |
-| 平台订阅套餐/用量、欠费提醒、订阅 Checkout 与客户门户入口 | billing-core、customers-billing-ui；[customers-billing §0 BD1–BD6、§5 Admin screens](../../contracts/customers-billing-v1.md) | **MOCK**：C2 / `--browser-customers-billing`（托管 Checkout/portal 重定向由测试拦截）。欠费不阻断既有买家结账、退款或履约；真实平台订阅扣款、发票/门户 **SANDBOX / LIVE NOT_RUN**。 |
+| 平台订阅套餐/用量、欠费提醒、订阅 Checkout 与客户门户入口 | billing-core、customers-billing-ui；[customers-billing §0 BD1–BD6、§5 Admin screens](../../contracts/customers-billing-v1.md) | **MOCK**：C2 / `--browser-customers-billing`（托管 Checkout/portal 重定向由测试拦截）。欠费不阻断既有买家结账、退款或履约；真实平台订阅扣款、发票/门户 **SANDBOX / LIVE NOT_RUN**。C2 schedule 没有执行 `--stripe-browser`；需要测试 key 的 SANDBOX 步骤 NOT_RUN，不能由这个绿色 MOCK mode 推定通过。 |
 | Facebook/Instagram 自助连接/断开、重连提示、读留言/私讯/公开回复状态与“仅测试账号”限制 | meta-connect、W1-01B、W1-01U；[meta-claims-intake Merchant connect amendment](../../contracts/meta-claims-intake-v1.md)、[meta-connection-health §§3、5、7、11](../../contracts/meta-connection-health-v1.md) | **MOCK**：C2 / `--browser-meta-connect`、`--browser-meta-health-ui`；C1 的连接/健康 PG 测试。MCH12 LIVE_READ 与非应用角色授权 **NOT_RUN（本报告）**。 |
 
 ## 已知缺口与 FOLLOWUPS
 
-来源是集成方 `output/integrator/FOLLOWUPS.md` 的 2026-10-13 工作记录及其中的 PR/thread；该文件不是已提交的 release ledger，包含已修复旧条目。下表按主题摘要，**不把“被记录”写成“已完成”**；状态变化须用新 PR/CI 收据关闭。数据完整性或隐私问题按 [PROCESS §2](PROCESS.md#2-per-unit-software-engineering-flow) 与集成方收敛裁决提升处理优先级。
+输入来源之一是集成方 **本机未跟踪（untracked）的本地文件** `output/integrator/FOLLOWUPS.md`，取自 2026-10-13 工作记录。**它未随本报告提交，owner 无法通过本 PR 验证其原件；它不是已提交的 release ledger 或 CI 证据。** 下表将事项摘要写在报告内，并列出可核对的来源 PR/thread；仅有本地 K3 备注的条目是待核摘要，不能据此认定已修复或关闭。该本地文件包含已修复旧条目，**不把“被记录”写成“已完成”**；状态变化须用新 PR/CI 收据关闭。数据完整性或隐私问题按 [PROCESS §2](PROCESS.md#2-per-unit-software-engineering-flow) 与集成方收敛裁决提升处理优先级。
 
 | 缺口 / 后续工作 | 可核对来源与状态 |
 | --- | --- |
-| 商品编辑器控件完整性：删轴/删规格值按钮尚缺完整 inventory、390px 点击、回读与台账；Go/Node 参数别名、env 前缀、实际执行绑定、批量操作选项、未知 JSX 控件还有硬化项 | **OPEN [issue #45](https://github.com/humaux/live_commerce_architecture_v1/issues/45)**，P1 thread `4254703909`；owner 批准 #28 先合入不代表缺口消失。跟进 [#46](https://github.com/humaux/live_commerce_architecture_v1/pull/46)、[#47](https://github.com/humaux/live_commerce_architecture_v1/pull/47) 在快照查询时均 OPEN。 |
-| LC-U3 建单抽屉还未计入此候选；提醒付款链接重生的关联范围、Studio read-only 测试断言另有后续项 | [#32](https://github.com/humaux/live_commerce_architecture_v1/pull/32) OPEN；FOLLOWUPS “#32 LC-U3 delta”及 [live-console §5](../../contracts/live-console-v1.md)。 |
+| 商品编辑器控件完整性：删轴/删规格值按钮尚缺完整 inventory、390px 点击、回读与台账；Go/Node 参数别名、env 前缀、实际执行绑定、批量操作选项、未知 JSX 控件还有硬化项 | [issue #45](https://github.com/humaux/live_commerce_architecture_v1/issues/45) 查询于 **2026-10-13 10:16:50 UTC：OPEN**，P1 thread `4254703909`；owner 批准 #28 先合入不代表缺口消失。跟进 [#46](https://github.com/humaux/live_commerce_architecture_v1/pull/46)、[#47](https://github.com/humaux/live_commerce_architecture_v1/pull/47) 查询于 **2026-10-13 10:15:42 UTC：均 OPEN**。作范围、验收或上线决定前须重新查询 issue/PR 状态及对应 CI。 |
+| LC-U3 建单抽屉还未计入此候选；提醒付款链接重生的关联范围、Studio read-only 测试断言另有后续项 | [#32](https://github.com/humaux/live_commerce_architecture_v1/pull/32) 查询于 **2026-10-13 10:15:42 UTC：OPEN**；本地 FOLLOWUPS “#32 LC-U3 delta”及 [live-console §5](../../contracts/live-console-v1.md)。作决定前须重查 PR/CI。 |
 | Inbox/评论：前台列表与未读更新、历史清除恢复失败、651–1150px 买家面板布局、窄屏键盘焦点、打开后锚底/新消息提示；长列表客户关联/付款链接来源恢复有上限 | [#8](https://github.com/humaux/live_commerce_architecture_v1/pull/8) threads `4212543434/3438/3445/3452/3457`；origin 扫描 `4209444305`；[#12](https://github.com/humaux/live_commerce_architecture_v1/pull/12) link-pending 先取50条后过滤场次的记录。此报告未取得对应后续修复 CI，不宣称关闭。 |
 | 高流量 IG：同微秒 seq 游标、>1000 原始事件重建预算、刷新游标回退、HEAD 与增量窗口对齐；bridge 响应体上限、Strict Effects/backoff/UNKNOWN 恢复仍有后续 | [#18](https://github.com/humaux/live_commerce_architecture_v1/pull/18) FOLLOWUPS，threads `4226524062/4067/4071`、`4227138850`、`4230211367/1379`；[live-console §§2–4](../../contracts/live-console-v1.md)。不声称无限量会话或所有故障已验证。 |
 | 客户/包裹/控台 UX：长标签目录定位、长备注就近编辑、重复包裹组显示/逐项 busy/运单错误定位、库存保存后旧值闪回、IG 提示误用于 FB | [#3](https://github.com/humaux/live_commerce_architecture_v1/pull/3) `4212542070/2075`；[#2](https://github.com/humaux/live_commerce_architecture_v1/pull/2) `4212524352/4369/4378`；[#5](https://github.com/humaux/live_commerce_architecture_v1/pull/5) `4212525437`及 K3 后续。 |
@@ -149,6 +151,9 @@ FOLLOWUPS 中以下旧问题已有合入修复，不能继续当成“未实现�
 | 真钱扣款/退款、LIVE 密钥与 live-canary、平台店铺 allowlist/停收策略 | 本次文档/CI授权不包含这些动作；owner 定范围并批准，真实 canary 由 owner 操作。[stripe-live runbook §0/步骤6](../runbooks/stripe-live.md)、[stripe-platform-account AD-PF2/§7](../../contracts/stripe-platform-account-v1.md)。 |
 | 正式部署、真实数据删除、破坏性迁移/生产恢复、密码/密钥轮换 | 先批准影响面及回滚/备份，再交获授权运维执行；不得拿文档 PR 合并当生产批准。[AGENTS](../../AGENTS.md)、[deploy runbook §§5、7、10](../runbooks/deploy.md)。 |
 | 真实广告发布/消耗预算、真实客户私讯/公开回复、营销重播、购买物流面单 | CI 只使用合成数据及假平台；每项真实动作仍需明确批准，权限/同意/消息窗口不可跳过。[AGENTS](../../AGENTS.md)、[meta-ads §11](../../contracts/meta-ads-v1.md)、[live-console §§3–4](../../contracts/live-console-v1.md)、[deploy runbook §6.6](../runbooks/deploy.md)。 |
+| 向真实买家投递电子邮件或通知、重放生产通知队列 | 包括订单、付款、取货及售后通知；测试邮箱/SMTP fake 的成功不授权真实投递。启用真实通知通道或重放前，owner 须明确批准店铺、收件范围、消息和发送额度。[storefront-v2 §E](../../contracts/storefront-v2.md)、[deploy runbook §§2、4 的买家邮件开关](../runbooks/deploy.md)、[AGENTS](../../AGENTS.md)。 |
+| 接入、轮换或启用 ECPay LIVE 凭据，以及 LIVE 物流出单/购买真实面单 | 文档、MOCK 回调和选店测试不包含 LIVE 凭据操作或真实面单购买；须有独立 owner 批准，不能以 SANDBOX 配置或绿色 CI 代替。[deploy runbook §6.6](../runbooks/deploy.md)、[taiwan-cvs-logistics §13](../../contracts/taiwan-cvs-logistics-v1.md)、[AGENTS](../../AGENTS.md)。 |
+| 自定义域名的生产 DNS 与 TLS 切换 | 包括变更 DNS 记录、生产证书签发/续期配置、证书或边缘路由 cutover；须由 owner 批准域名、流量影响、窗口和回滚，再交获授权运维执行。MOCK 域名状态测试不授权生产切换。[published-storefront-resolver Writer (R3)](../../contracts/published-storefront-resolver-v1.md)、[deploy runbook §§2、4](../runbooks/deploy.md)、[AGENTS](../../AGENTS.md)。 |
 | Meta App Review、商家/平台合同与商业资格、生产域名/主机/备份方案 | owner 负责真实资质与批准；agent 不补造资格，也不收集 FB/IG 密码或绕过官方权限。[PROCESS §1](PROCESS.md#1-release-plan)、[merchant-onboarding §0](../runbooks/merchant-onboarding.md)、[AGENTS](../../AGENTS.md)。 |
 
 ## 待追加：release-gate CI 收据
