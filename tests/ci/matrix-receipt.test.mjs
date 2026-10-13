@@ -151,6 +151,32 @@ test("Go receipt derives the catch-all family and requires every actual pass eve
   assert.equal(goOutcome([...events, { Package: packageName, Test: family[0], Action: "pass" }], family).ok, false);
 });
 
+test("Go family cannot remove or rename the canonical historical-evidence test", () => {
+  const directory = resolve("output/matrix-coverage-v2-execution/probes/required-go-identity");
+  const { family } = goFamily();
+  const required = "TestProductEditorMatrixLedgerEvidence";
+  mkdirSync(directory, { recursive: true });
+  const put = (names) => writeFileSync(resolve(directory, "fixture_test.go"),
+    names.map((name) => `func ${name}(t *testing.T) {}`).join("\n"));
+  try {
+    put(family);
+    assert.deepEqual(goFamily(directory).family, family);
+    put(family.filter((name) => name !== required));
+    assert.throws(() => goFamily(directory), /required canonical evidence test/, "removed test cannot erase the browser backstop");
+    put(family.map((name) => name === required ? `${required}Renamed` : name));
+    assert.throws(() => goFamily(directory), /required canonical evidence test/, "renamed test cannot erase the browser backstop");
+  } finally { rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("Go outcomes reject a reduced family even when every remaining test passed", () => {
+  const family = goFamily().family.filter((name) => name !== "TestProductEditorMatrixLedgerEvidence");
+  const events = [{ Package: "livecommerce/tests/foundation", Action: "start" },
+    ...family.map((Test) => ({ Package: "livecommerce/tests/foundation", Test, Action: "pass" }))];
+  const reduced = goOutcome(events, family);
+  assert.equal(reduced.ok, false, "all remaining passes do not authorize dropping the mandatory evidence test");
+  assert.ok(reduced.violations.some((message) => /required canonical evidence test/.test(message)));
+});
+
 test("historical canonical skip needs exact real drift and cannot be a matching-source or wrong-reason skip", () => {
   const event = [{ Test: "TestProductEditorMatrixLedgerEvidence", Action: "skip" }];
   const drift = ["tests/admin/product-editor.acceptance.ts"];
