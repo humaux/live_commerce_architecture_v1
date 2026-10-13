@@ -681,8 +681,9 @@ try {
   const context=await browser.newContext(ctxOpts({ignoreHTTPSErrors:true,viewport:{width:1440,height:900}})),page=await context.newPage();
   const commandPath=kind==="drawer"?routePath:`/api/stores/${store}/tools/orders/manual`;
   const submitId=kind==="drawer"?"drawer-submit":"manual-order-submit",errorId=kind==="drawer"?"drawer-error":"manual-order-error";
-  let posts=0,first;
-  const observe=request=>{if(request.method()==="POST"&&new URL(request.url()).pathname===commandPath)posts++;};
+  const recoveryPath=`/api/stores/${store}/tools/orders/attempt/recover`;
+  let posts=0,recoveryPosts=0,first;
+  const observe=request=>{if(request.method()==="POST") {const pathname=new URL(request.url()).pathname;if(pathname===commandPath)posts++;if(pathname===recoveryPath)recoveryPosts++;}};
   const guardCount=()=>page.evaluate(()=>Object.keys(sessionStorage).filter(key=>key.startsWith("buyer-order-unresolved:")).length);
   const openEntry=async()=>{
    if(kind==="drawer") return openConversation(page,"en",fixtures[0].Unlinked);
@@ -716,13 +717,27 @@ try {
     if(kind==="manual") {await page.goto(`${origin}/en/orders/new?store=${store}`);await expect(page.getByTestId("manual-order-guard")).toBeVisible();await page.reload();await expect(page.getByTestId("manual-order-guard")).toBeVisible();await expect(page.getByTestId("manual-order-form")).toHaveCount(0);}
     else {await page.goto(`${origin}/en/messages?store=${store}`);await page.getByTestId(`conversation-${fixtures[0].Unlinked}`).click();await expect(page.getByTestId("buyer-panel")).toBeVisible();await page.getByTestId("buyer-create-order").click();await expect(page.getByTestId("drawer-unresolved-guard")).toBeVisible();await expect(page.getByTestId("drawer-form")).toHaveCount(0);await page.reload();await page.getByTestId(`conversation-${fixtures[0].Unlinked}`).click();await expect(page.getByTestId("buyer-panel")).toBeVisible();await page.getByTestId("buyer-create-order").click();await expect(page.getByTestId("drawer-unresolved-guard")).toBeVisible();}
     const exact=await fetch(`${api}/__test/${kind==="drawer"?"drawer":"manual"}-prefetch-request-facts`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({keys:[first.key]})});assert.equal(exact.status,200);assert.deepEqual(await exact.json(),{orders:1,receipts:1});
+    // The real completed pipeline owns no pending intent. Its response was lost, and this mount has no private receipt.
+    // Explicit recovery must ask the real server rather than erase the flag or replay an unrelated new draft.
+    const recoveryControl=page.getByTestId(kind==="drawer"?"drawer-recover-pending":"manual-order-recover-pending");
+    await expect(recoveryControl).toBeVisible();await expect(recoveryControl).toBeEnabled();assert.equal(recoveryPosts,0);
+    const [reconciled]=await Promise.all([page.waitForResponse(r=>r.request().method()==="POST"&&new URL(r.url()).pathname===recoveryPath),recoveryControl.click()]);
+    assert.equal(reconciled.status(),200);assert.deepEqual(await reconciled.json(),{state:"none"});
+    assert.equal(reconciled.request().postData(),"{}");assert.notEqual(reconciled.request().headers()["idempotency-key"],first.key,"recovery has a fresh action key, not a guessed order key");
+    assert(reconciled.headers()["cache-control"]?.includes("no-store"));
+    await expect(page.getByTestId(kind==="drawer"?"drawer-recovery-result":"manual-order-recovery-status")).toContainText("The server confirmed there is no pending order attempt.");
+    await expect(page.getByTestId(kind==="drawer"?"drawer-form":"manual-order-form")).toBeVisible();
+    assert.equal(await guardCount(),0,"only the successful real server recovery releases the old UX flag");assert.equal(posts,1);assert.equal(recoveryPosts,1);
+    await page.reload();form=await openEntry();await expect(form).toBeVisible();assert.equal(await guardCount(),0);
+    assert.equal((await (await fetch(`${api}/__test/drawer-facts`)).json()).orders-before.orders,1,"recover/reload cannot create another order");
+    record(`${kind} server pending recovery`,"restore/reload/click explicit recovery/reload real form","real200 none; request{} with fresh recovery-only key; guard0; no new order POST; exact original PG1 retained");
    } else {
     form=await openEntry();await addCatalog(form,kind==="drawer"?"drawer":"mo");await fillEmpty(form,kind==="drawer"?"drawer":"mo");await expect(form.getByTestId(submitId)).toBeEnabled();
     await page.reload();form=await openEntry();await expect(form).toBeVisible();assert.equal(await guardCount(),0,"no orphan UX guard after restore/reload");
    }
    assert.equal(posts,priorUnknown?1:0);
    record(`${kind} pre-fetch session fence`,"real submit/CSRF fault/restore/reload",priorUnknown?"one real lost201; retry sends0; UNKNOWN guard1 survives reload; exactone order":"new intent fetch0/order0; guard0 before privacy teardown; restored form survives reload");
-   results.push({case:current,prior_unknown:priorUnknown,posts,preflight_posts:0,guard_count:priorUnknown?1:0,pg_delta:priorUnknown?1:0,reload_persisted:true});cases++;
+   results.push({case:current,prior_unknown:priorUnknown,posts,preflight_posts:0,guard_count:priorUnknown?1:0,pg_delta:priorUnknown?1:0,reload_persisted:true,recovery_posts:recoveryPosts,recovery_state:priorUnknown?"none":null,final_guard_count:0});cases++;
   } finally {await page.unroute(`**${commandPath}`);page.off("request",observe);await closeContext(context);}
  }
  assert.equal(cases,40,"all36 prior cases plus drawer/manual fresh and UNKNOWN pre-dispatch fence clicks");

@@ -638,6 +638,8 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 		"DU3-manual-partial-recovery":    {"manual partial Begin fault", "manual partial authority", "manual partial retry persistence"},
 		"DU3-never-sent-key-validation":  {"never sent invalid key", "never sent close reopen persistence"},
 		"DU3-unknown-auth-relogin-guard": {"unknown real auth clear", "relogin stable unresolved guard", "reloaded stable unresolved guard", "guard scope and persisted order"},
+		"DU3-drawer-prefetch-fence-retained-unknown": {"drawer server pending recovery"},
+		"DU3-manual-prefetch-fence-retained-unknown": {"manual server pending recovery"},
 	} {
 		for _, control := range controls {
 			matches := 0
