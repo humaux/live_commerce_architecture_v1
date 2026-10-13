@@ -76,7 +76,7 @@ func oaFactsCandidate(t *testing.T, e *lbuEnv, selection map[string]any) (pgx.Tx
 	 VALUES($1,$2,$3,$4,1)`, scope, e.tenant(), e.store(), e.p.f.principalA)
 	oaStateExec(t, tx, `INSERT INTO ops.order_attempts(attempt_id,tenant_id,store_id,scope_id,intent_generation,
 	 transport_key_digest,request_hash,request_schema_version,buyer_owner_id,admission_provenance,admitted_at,execute_by,state)
-	 VALUES($1,$2,$3,$4,1,sha256($1::uuid::text::bytea),sha256(($6::jsonb)::text::bytea),1,$5,'{}',
+	 VALUES($1,$2,$3,$4,1,sha256($1::uuid::text::bytea),sha256(convert_to(($6::jsonb)::text,'UTF8')),1,$5,'{}',
 	 statement_timestamp(),statement_timestamp()+interval '15 minutes','PENDING')`, attempt, e.tenant(), e.store(), scope, owner, string(raw))
 	// No sealing or constraint disabling: the candidate and facts remain in C1's one Tx.
 	oaStateExec(t, tx, `SET LOCAL ROLE commerce_order_attempt_owner`)
@@ -165,6 +165,20 @@ func TestOrderAttemptFactsProvenanceAndRuntime(t *testing.T) {
 		oaStateExec(t, probe, `SET LOCAL ROLE `+role)
 		oaFactsReject(t, probe, attempt, selection, "42501", "")
 		_ = probe.Rollback(context.Background())
+	}
+}
+
+func TestOrderAttemptFactsEscapedCanonicalInput(t *testing.T) {
+	e := lbuNew(t)
+	selection := oaFactsSelection(e)
+	selection["customer"].(map[string]any)["name"] = `Synthetic "Buyer"`
+	selection["delivery"].(map[string]any)["home_address"].(map[string]any)["line1"] = `Synthetic \\ address`
+	// Canonical UTF8 hashing must preserve JSON escapes. Casting text to bytea
+	// would interpret those escapes before hashing or refuse legitimate input.
+	tx, attempt := oaFactsCandidate(t, e, selection)
+	out, err := oaFactsCall(tx, attempt, selection)
+	if err != nil || len(out.Lines) != 2 || out.Payment.Mode != "bank_transfer" {
+		t.Fatalf("escaped canonical selection refused: err=%v", err)
 	}
 }
 
