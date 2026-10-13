@@ -629,14 +629,14 @@ func productEditorMatrixEvidenceSourceRead(root, path string) ([]byte, error) {
 }
 
 type productEditorMatrixFrozenRecord struct {
-	Tested    string                          `json:"tested_source_commit"`
-	Snapshots map[string]string               `json:"source_snapshots"`
-	Hashes    map[string]string               `json:"source_files_sha256"`
-	Blobs     map[string]string               `json:"git_blob_ids"`
-	Locales   map[string]map[string]string    `json:"locale_labels"`
-	Tests     map[string][]string             `json:"test_identities"`
-	Cases     []productEditorMatrixLedgerCase `json:"-"`
-	MembershipHash string `json:"package_membership_sha256"`
+	Tested         string                          `json:"tested_source_commit"`
+	Snapshots      map[string]string               `json:"source_snapshots"`
+	Hashes         map[string]string               `json:"source_files_sha256"`
+	Blobs          map[string]string               `json:"git_blob_ids"`
+	Locales        map[string]map[string]string    `json:"locale_labels"`
+	Tests          map[string][]string             `json:"test_identities"`
+	Cases          []productEditorMatrixLedgerCase `json:"-"`
+	MembershipHash string                          `json:"package_membership_sha256"`
 }
 
 // New metadata is derived from the tested Git objects and observed native logs;
@@ -767,7 +767,7 @@ func productEditorMatrixFrozenMembership(root, evidence, tested, hash string, ar
 		return err
 	}
 	var membership struct {
-		Tested string `json:"tested_source_commit"`
+		Tested  string   `json:"tested_source_commit"`
 		Members []string `json:"package_members"`
 	}
 	if err := json.Unmarshal(data, &membership); err != nil {
@@ -852,10 +852,10 @@ func productEditorMatrixFrozenProducers(data []byte) ([]string, error) {
 // it never calls the current-title function or generates new browser evidence.
 func productEditorMatrixFrozenRunOracle(frozen map[string][]byte, tests map[string][]string) error {
 	consumerHashes := map[string]string{
-		"tests/admin/product-editor.acceptance.ts": "42c62c527424bc0d611c29f15ca9570330ee8a7fb2f4aeb2a5f9cbd3c8f44e69",
-		"tests/admin/product-review.acceptance.ts": "e9fb97fb23762ffede5ee3b755e88c88263bb5d458075b05b214e44766f077a4",
+		"tests/admin/product-editor.acceptance.ts":   "42c62c527424bc0d611c29f15ca9570330ee8a7fb2f4aeb2a5f9cbd3c8f44e69",
+		"tests/admin/product-review.acceptance.ts":   "e9fb97fb23762ffede5ee3b755e88c88263bb5d458075b05b214e44766f077a4",
 		"tests/admin/product-feedback.acceptance.ts": "ac098dafcd7f782901c87523878a37768cf6530a024dd1bf75999a908219a173",
-		"tests/admin/catalog-core.spec.ts": "18db7e6e25ddfc05bdd6b9fecc6f80b3bd47e92f1e31addddf6ff318c21da0d8",
+		"tests/admin/catalog-core.spec.ts":           "18db7e6e25ddfc05bdd6b9fecc6f80b3bd47e92f1e31addddf6ff318c21da0d8",
 	}
 	for path, hash := range consumerHashes {
 		if err := productEditorMatrixEvidenceHash(path, frozen[path], hash); err != nil {

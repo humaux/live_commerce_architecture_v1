@@ -1,0 +1,12 @@
+{
+  "ci_run_id": 38390303629,
+  "artifact_id": 11808197289,
+  "source_commit": "843d9d2e1587bdca89f0c97e6c2d12eb9860890b",
+  "raw_patch_sha256": "72ec1de95c707d2e917d8d10d169bd2c799b1884db8ac53a423d77dcd4c729b2",
+  "raw_bytes": 2949,
+  "apply_patch_sha256": "487b8bbdc573dae582b8d81c431837487edaa53324cd4478e1ecdd798ff255b9",
+  "header_change_only": "remove .orig from old-path header",
+  "git_apply_exit": 0,
+  "local_formatter": "NOT_RUN",
+  "ledger_source_sha256": "f03c5a72017e8e4e4534ae5f52bd9a20cad826d534a51b8484b97ce1b30f070d"
+}
