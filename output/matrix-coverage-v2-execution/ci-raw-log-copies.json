@@ -52,5 +52,17 @@
     "raw_bytes": 256394,
     "archive": "ci-red-38391591681.log.gz",
     "archive_sha256": "2cb31fc45493eb48b9414a2748aa403303ba92fb49117174a0ade6a82b254a44"
+  },
+  {
+    "run_id": 38392805174,
+    "source_head": "f9a57c52d5109ed12b34265cc63e53c62d4e5924",
+    "command": "gh run view 38392805174 --log-failed",
+    "exit_code": 0,
+    "conclusion": "failure",
+    "reason": "existing NODE_OPTIONS-cleared control now mutates newly added detector before final consumer",
+    "raw_sha256": "d62254362858136cd84bab83ab7779ef67ba1203a3d81eececa4081c1acf7631",
+    "raw_bytes": 255033,
+    "archive": "ci-red-38392805174.log.gz",
+    "archive_sha256": "f021f01f61cd7f1ec77c76e85f36baa1d532a32691c025a9fabdfffb296d2014"
   }
 ]

@@ -144,10 +144,14 @@ function foundationReceiptConsumer(text) {
   const foundation = jobs.length === 2
     ? /^  foundation:\s*\n([\s\S]*?)(?=^  [^ #\n]|^\S|$(?![\s\S]))/m.exec(jobs[1])?.[1] : null;
   const steps = (foundation || "").split(/^    steps:\s*$/m)[1] || "";
-  const consumers = steps.split(/(?=^      - )/m)
-    .filter((step) => /name: Verify current-run matrix execution receipts/.test(step));
+  const receiptSteps = steps.split(/(?=^      - )/m);
+  const consumers = receiptSteps.filter((step) => /name: Verify current-run matrix execution receipts/.test(step));
+  // The browser-need detector and the final consumer both execute receipt code.
+  // Keep the same clean Node environment at every existing receipt entry point.
+  const invocations = receiptSteps.filter((step) => step.includes("node scripts/dev/matrix-receipt-verify.mjs"));
   return consumers.length === 1 && alwaysReceiptConsumer(consumers[0]) &&
-    consumers[0].includes("env -u NODE_OPTIONS node scripts/dev/matrix-receipt-verify.mjs foundation");
+    consumers[0].includes("env -u NODE_OPTIONS node scripts/dev/matrix-receipt-verify.mjs foundation") &&
+    invocations.every((step) => step.includes("env -u NODE_OPTIONS node scripts/dev/matrix-receipt-verify.mjs"));
 }
 
 export function matrixExecutionIssues({ node, workflow, registry, receipt = readFileSync("scripts/dev/matrix-receipt.mjs", "utf8"), foundationWorkflow = readFileSync(".github/workflows/foundation.yml", "utf8") }) {
