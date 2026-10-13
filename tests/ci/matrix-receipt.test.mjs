@@ -94,7 +94,7 @@ function workflowArtifactPaths(workflow, visualLint) {
   const condition = visualLint
     ? /^\s*if:\s*always\(\)\s*&&\s*startsWith\(matrix\.mode, '--browser-visual-lint'\)/
     : /^\s*if:\s*always\(\)\s*&&\s*!startsWith\(matrix\.mode, '--browser-visual-lint'\)/;
-  const step = steps.find((block) => block.some((line) => line.includes("actions/upload-artifact@") && condition.test(line)));
+  const step = steps.find((block) => block.some((line) => line.includes("actions/upload-artifact@")) && block.some((line) => condition.test(line)));
   assert.ok(step, `workflow has the ${visualLint ? "visual" : "ordinary"} artifact upload`);
   const pathIndex = step.findIndex((line) => /^\s+path:\s*\|\s*$/.test(line));
   assert.notEqual(pathIndex, -1, "upload step declares a path list");
