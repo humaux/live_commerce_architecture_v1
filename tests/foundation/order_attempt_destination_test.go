@@ -235,15 +235,22 @@ func TestOrderAttemptDestinationExistingCartCannotAuthorizeMaterialization(t *te
 			a := oaDestinationAdmit(t, e, "home", "bank_transfer")
 			ctx := context.Background()
 			cart, session := randomUUID(), randomUUID()
-			// Disclosed native owner fixtures; no private helper is committed.
+			// A browser cart may exist independently. An earlier PENDING attempt
+			// cart must now be impossible at the native commit boundary (0182).
 			if browser {
 				mustExec(t, e.p.f.owner, `INSERT INTO buyer.capability_sessions(id,tenant_id,store_id,owner_id,token_hash,expires_at)
 				 SELECT $2::uuid,tenant_id,store_id,buyer_owner_id,sha256(convert_to(($2::uuid)::text,'UTF8')),clock_timestamp()+interval '1 hour' FROM ops.order_attempts WHERE attempt_id=$1`, a.AttemptID, session)
 				mustExec(t, e.p.f.owner, `INSERT INTO storefront.carts(tenant_id,store_id,owner_id,id,creator_session_id,currency,version)
 				 SELECT tenant_id,store_id,buyer_owner_id,$2::uuid,$3::uuid,'TWD',7 FROM ops.order_attempts WHERE attempt_id=$1`, a.AttemptID, cart, session)
 			} else {
-				mustExec(t, e.p.f.owner, `INSERT INTO storefront.carts(tenant_id,store_id,owner_id,id,creator_session_id,currency,version,cart_kind,create_attempt_id)
+				prior, err := e.p.f.owner.Begin(ctx)
+				if err != nil { t.Fatal(err) }
+				defer prior.Rollback(context.Background())
+				oaStateExec(t, prior, `INSERT INTO storefront.carts(tenant_id,store_id,owner_id,id,creator_session_id,currency,version,cart_kind,create_attempt_id)
 				 SELECT tenant_id,store_id,buyer_owner_id,$2::uuid,NULL,'TWD',1,'order_attempt',attempt_id FROM ops.order_attempts WHERE attempt_id=$1`, a.AttemptID, cart)
+				oaFenceCode(t, nil, prior.Commit(ctx), "23514")
+				var absent bool
+				if err = e.p.f.owner.QueryRow(ctx, `SELECT NOT EXISTS(SELECT 1 FROM storefront.carts WHERE id=$1)`, cart).Scan(&absent); err != nil || !absent { t.Fatalf("earlier pending cart escaped commit guard: %v", err) }
 			}
 			tx, plain := oaFenceDomainTx(t, e, a, true)
 			if _, err := tx.Exec(ctx, `SET LOCAL ROLE commerce_order_attempt_owner`); err != nil { t.Fatal(err) }
@@ -251,7 +258,9 @@ func TestOrderAttemptDestinationExistingCartCannotAuthorizeMaterialization(t *te
 			oaFenceCode(t, raw, err, "PT409")
 			if err = tx.Rollback(ctx); err != nil { t.Fatal(err) }
 			var unchanged bool
-			err = e.p.f.owner.QueryRow(ctx, `SELECT version=$2 AND NOT EXISTS(SELECT 1 FROM storefront.destination_snapshots WHERE cart_id=$1) FROM storefront.carts WHERE id=$1`, cart, map[bool]int{false:1,true:7}[browser]).Scan(&unchanged)
+			err = e.p.f.owner.QueryRow(ctx, `SELECT NOT EXISTS(SELECT 1 FROM storefront.destination_snapshots WHERE cart_id=$1)
+			 AND CASE WHEN $2::boolean THEN EXISTS(SELECT 1 FROM storefront.carts WHERE id=$1 AND version=7)
+			 ELSE NOT EXISTS(SELECT 1 FROM storefront.carts WHERE id=$1) END`, cart, browser).Scan(&unchanged)
 			if err != nil || !unchanged { t.Fatalf("rejected source cart changed: %v", err) }
 		})
 	}
