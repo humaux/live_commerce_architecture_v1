@@ -111,9 +111,17 @@ export async function runManualRecovery({page,api,origin,store,cvs,addCatalog,fi
   await page.unroute(`**${path}`);
   assert.equal((await counts()).orders-before.orders,1);
   const completed=await control("request-facts",{keys:[attempts[2].key]});assert.deepEqual(completed,{orders:1,receipts:1});
-  // Real view-orders link, reload, then expand the exact persisted row.
-  await page.getByTestId("manual-order-result").getByRole("link").click();await page.reload();
+  results.push({case:caseName,checkpoint:"manual_created",request_orders:1,request_receipts:1,pg_delta:1});
+  // A Next Link click can return before its client navigation commits. Wait for the real loaded order identity before reload.
+  const viewOrders=page.getByTestId("manual-order-result").getByRole("link");
+  await expect(viewOrders).toHaveAttribute("href",`/en/orders?store=${store}`);
+  await viewOrders.click();
+  await page.waitForURL(url=>url.pathname==="/en/orders"&&url.searchParams.get("store")===store);
   await expect(page.getByTestId("orders-table")).toBeVisible();await expect(page.getByTestId(`order-row-${value.order_id}`)).toBeVisible();
+  results.push({case:caseName,checkpoint:"orders_loaded",saved_row:true});
+  await page.reload();
+  await expect(page.getByTestId("orders-table")).toBeVisible();await expect(page.getByTestId(`order-row-${value.order_id}`)).toBeVisible();
+  results.push({case:caseName,checkpoint:"orders_reloaded",saved_row:true});
   await page.getByTestId(`order-expand-${value.order_id}`).click();await expect(page.getByTestId("order-detail")).toBeVisible();
   await expect(page.getByTestId("order-detail")).toHaveAttribute("aria-label",new RegExp(value.order_id));
   assert.deepEqual(await control("request-facts",{keys:[attempts[2].key]}),completed);assert.equal((await counts()).orders-before.orders,1);

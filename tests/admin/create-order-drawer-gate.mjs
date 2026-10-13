@@ -537,8 +537,9 @@ try {
  }
  assert.equal(cases,33,"exact additive ManualOrder recovery matrix");
 } catch (error) {
- const coordinate=String(error?.stack||"").match(/create-order-drawer-gate\.mjs:(\d+):(\d+)/);
- failed.push(current);ledger.push({case:current,control:"scenario",action:"run",actual:coordinate?`assertion failed at create-order-drawer-gate.mjs:${coordinate[1]}:${coordinate[2]}`:"assertion failed; private diagnostics suppressed",status:"FAIL"});
+ // Only allowlisted test file/line coordinates are retained; assertion messages may contain private request or DOM material.
+ const coordinate=String(error?.stack||"").match(/\b(create-order-(?:drawer-gate|manual-recovery|partial-recovery|capability-recovery)\.mjs):(\d+):(\d+)/);
+ failed.push(current);ledger.push({case:current,control:"scenario",action:"run",actual:coordinate?`assertion failed at ${coordinate[1]}:${coordinate[2]}:${coordinate[3]}`:"assertion failed; private diagnostics suppressed",status:"FAIL"});
 } finally {
  if(browser) await browser.close();
  if(child && child.exitCode===null) {child.kill("SIGTERM");await Promise.race([new Promise(resolve=>child.once("exit",resolve)),wait(1500)]);if(child.exitCode===null) child.kill("SIGKILL");}
