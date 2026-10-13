@@ -2,6 +2,9 @@
 
 package foundation_test
 
+// Purpose: exercise merchant card activation and buyer collector disclosure through real browser/API/PG boundaries.
+// Depends on: isolated pslEnv payment fixtures, buyerhttp, production Next builds and collector-buyer.mjs.
+// Used by: the --browser-card-payments CI gate; never contacts Stripe or a production database.
 // W4-U1 (docs/delivery/units/w4-u1-payment-activation-ui.md; contracts/stripe-platform-account-v1.md §0.3, §2, §3.3, §5, §6.4): real browsers.
 //
 // Stack: an isolated PG 18 container (rfx harness), the real payment worker and the independent Stripe fake (merchant A and the platform store
@@ -23,6 +26,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -30,6 +35,45 @@ import (
 	"livecommerce/internal/buyerhttp"
 	"livecommerce/internal/httpapi"
 )
+
+// cpbrResponse records status only: headers and response bodies can hold buyer credentials or addresses.
+type cpbrResponse struct {
+	http.ResponseWriter
+	status int
+}
+
+// WriteHeader forwards the original status and records its first emission.
+func (w *cpbrResponse) WriteHeader(status int) {
+	if w.status == 0 {
+		w.status = status
+	}
+	w.ResponseWriter.WriteHeader(status)
+}
+
+// Write forwards bytes unchanged without retaining private payloads.
+func (w *cpbrResponse) Write(body []byte) (int, error) {
+	if w.status == 0 {
+		w.status = http.StatusOK
+	}
+	return w.ResponseWriter.Write(body)
+}
+
+// cpbrRoute omits identifiers, queries and all credentials from the private request receipt.
+func cpbrRoute(r *http.Request) string {
+	if r.URL.Path == "/v1/buyer/session" {
+		return "session"
+	}
+	if r.URL.Path == "/v1/buyer/orders" {
+		return "orders-list"
+	}
+	if strings.HasPrefix(r.URL.Path, "/v1/buyer/orders/") {
+		if strings.HasSuffix(r.URL.Path, "/payment") {
+			return "order-payment"
+		}
+		return "order-detail"
+	}
+	return "other"
+}
 
 func cpbrRequire(t *testing.T) {
 	t.Helper()
@@ -51,14 +95,48 @@ func cpbrBuyerNode(t *testing.T, ctx context.Context, e *pslEnv, p psHarness, or
 	if err != nil {
 		t.Fatalf("buyer HTTP constructor: %v", err)
 	}
-	server := httptest.NewServer(handler)
-	t.Cleanup(server.Close)
 	mustExec(t, e.f.owner, `UPDATE catalog.products SET name='Synthetic browser collector product',description='Synthetic acceptance fixture' WHERE id=$1`, p.stock.product.ID)
+	statConn, err := e.f.owner.Acquire(ctx)
+	if err != nil {
+		t.Fatalf("acquire fixture capacity observer: %v", err)
+	}
+	defer statConn.Release()
+	var statMu sync.Mutex
+	var statWG sync.WaitGroup
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		started := time.Now()
+		receipt := &cpbrResponse{ResponseWriter: w}
+		handler.ServeHTTP(receipt, r)
+		elapsed := time.Since(started).Milliseconds()
+		method, route, status := r.Method, cpbrRoute(r), receipt.status
+		// Sample outside the response path so observer latency cannot manufacture a browser timeout.
+		statWG.Add(1)
+		go func() {
+			defer statWG.Done()
+			var used, maximum, userLimit int
+			// One owner-pool observer, never SQL text, role names, tokens or response bodies.
+			statMu.Lock()
+			queryCtx, cancel := context.WithTimeout(ctx, time.Second)
+			err := statConn.QueryRow(queryCtx, `SELECT count(*) FILTER (WHERE backend_type='client backend'),current_setting('max_connections')::int,
+				current_setting('max_connections')::int-current_setting('superuser_reserved_connections')::int-current_setting('reserved_connections')::int FROM pg_stat_activity`).Scan(&used, &maximum, &userLimit)
+			cancel()
+			statMu.Unlock()
+			t.Logf("CARD_PAY_TRACE phase=%s method=%s route=%s status=%d elapsed_ms=%d pg_used=%d pg_max=%d pg_user_limit=%d capacity_read_ok=%t buyer_cancelled_acquires=%d checkout_cancelled_acquires=%d", phase, method, route, status, elapsed, used, maximum, userLimit, err == nil, p.a.runtime.Stat().CanceledAcquireCount(), p.pool.Stat().CanceledAcquireCount())
+		}()
+	}))
+	t.Cleanup(server.Close)
+	defer func() {
+		server.Close()
+		statWG.Wait() // handlers and samples drain before releasing the capacity observer
+	}()
 	values := map[string]string{"COMMERCE_BUYER_WEB_ENABLED": "1", "COMMERCE_BUYER_API_ORIGIN": server.URL, "COMMERCE_BUYER_DEMO_LABEL": "1", "COMMERCE_BUYER_BFF_KEY": bffKey,
 		"COMMERCE_BUYER_COOKIE_KEY": base64.RawURLEncoding.EncodeToString(randomBytes(32)), "COMMERCE_BUYER_SESSION_TTL": "3600",
 		"LC_CD_EVIDENCE": evidence, "LC_CD_ORIGIN": storefrontOrigin, "LC_CD_ORDER": order, "LC_CD_BUYER_TOKEN": p.cap.Token, "LC_CD_EXPECT": expect, "LC_CD_PHASE": phase}
 	for k, v := range extra {
 		values[k] = v
+	}
+	if os.Getenv("LC_CARD_PAY_CONCURRENT") == "1" && phase == "primary" {
+		values["LC_CD_CONCURRENT"] = "8"
 	}
 	cmd := exec.CommandContext(ctx, "node", "tests/storefront/collector-buyer.mjs")
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}

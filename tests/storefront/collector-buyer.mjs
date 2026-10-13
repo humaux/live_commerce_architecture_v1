@@ -29,6 +29,9 @@ const env = (name) => {
 const root = process.cwd(), evidence = env("LC_CD_EVIDENCE"), origin = env("LC_CD_ORIGIN"), host = new URL(origin).host;
 const orderID = env("LC_CD_ORDER"), buyerToken = env("LC_CD_BUYER_TOKEN"), expectation = env("LC_CD_EXPECT"), phase = env("LC_CD_PHASE");
 const cookieKey = env("COMMERCE_BUYER_COOKIE_KEY");
+const concurrent = process.env.LC_CD_CONCURRENT === "8" ? 8 : 1;
+assert(!process.env.LC_CD_CONCURRENT || process.env.LC_CD_CONCURRENT === "8", "invalid concurrent fixture size");
+assert(concurrent === 1 || expectation === "primary", "concurrency applies only to the primary read-only case");
 assert(["unpaid", "paid", "primary"].includes(expectation));
 const displayName = expectation === "primary" ? "" : env("LC_CD_DISPLAY_NAME"), preview = expectation === "primary" ? "" : env("LC_CD_PREVIEW");
 const leak = /(?:acct_|sk_(?:live|test)_|rk_(?:live|test)_|pk_(?:live|test)_|whsec_)[A-Za-z0-9]/;
@@ -85,14 +88,20 @@ async function context(mobile) {
   return c;
 }
 const manifest = path.join(evidence, "screenshots.json");
+let manifestWrite = Promise.resolve();
 async function shot(page, name, locale, viewport) {
   const file = path.join(evidence, `${name}-${locale}-${viewport}.png`);
   await page.screenshot({ path: file, fullPage: true });
   // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `horizontal overflow at ${viewport} ${locale}`);
-  let list = []; try { list = JSON.parse(await readFile(manifest, "utf8")); } catch { /* first */ }
-  list.push({ File: path.basename(file), Sha256: createHash("sha256").update(await readFile(file)).digest("hex"), Locale: locale, Viewport: viewport });
-  await writeFile(manifest, JSON.stringify(list, null, 2));
+  // Independent contexts share one evidence manifest; serialize its read/append/write, not the buyer flows.
+  const hash = createHash("sha256").update(await readFile(file)).digest("hex");
+  manifestWrite = manifestWrite.then(async () => {
+    let list = []; try { list = JSON.parse(await readFile(manifest, "utf8")); } catch { /* first */ }
+    list.push({ File: path.basename(file), Sha256: hash, Locale: locale, Viewport: viewport });
+    await writeFile(manifest, JSON.stringify(list, null, 2));
+  });
+  await manifestWrite;
 }
 async function openOrder(page, locale) {
   await page.goto(`${origin}/${locale}/checkout`); // the order history lives on the checkout page (storefront shell)
@@ -100,6 +109,25 @@ async function openOrder(page, locale) {
   await page.locator(`button[data-order-id="${orderID}"]`).click();
   await expect(page.getByTestId("order-id")).toHaveText(orderID);
   await page.getByTestId("payment-status").waitFor({ timeout: 15_000 }); // the payment block renders after its own fetch
+}
+
+function trace(page, buyer) {
+  const classify = (request) => {
+    const url = new URL(request.url());
+    if (url.origin !== origin || !url.pathname.startsWith("/api/buyer/")) return null;
+    if (url.pathname === "/api/buyer/session") return "session";
+    if (url.pathname === "/api/buyer/orders") return "orders-list";
+    if (url.pathname.startsWith("/api/buyer/orders/")) return url.pathname.endsWith("/payment") ? "order-payment" : "order-detail";
+    return "other";
+  };
+  page.on("response", (response) => {
+    const route = classify(response.request());
+    if (route) console.log(JSON.stringify({ receipt: "CARD_PAY_BROWSER", buyer, route, status: response.status() }));
+  });
+  page.on("requestfailed", (request) => {
+    const route = classify(request);
+    if (route) console.log(JSON.stringify({ receipt: "CARD_PAY_BROWSER", buyer, route, failed: true }));
+  });
 }
 // the buyer payment view through the storefront BFF (the same request the page makes)
 async function paymentView(page) {
@@ -167,12 +195,25 @@ try {
   const locales = expectation === "unpaid" ? ["zh-TW", "zh-CN", "en"] : expectation === "paid" ? ["zh-TW", "en"] : ["en"];
   for (const locale of locales) {
     for (const mobile of expectation === "unpaid" ? [false, true] : [false]) {
-      const c = await context(mobile);
-      const page = await c.newPage();
-      await openOrder(page, locale);
-      await check(page, locale);
-      await shot(page, `collector-${expectation}`, locale, mobile ? "mobile" : "desktop");
-      await c.close();
+      // These are independent buyer contexts, each making one attempt, rather than retries of a failed flow.
+      const outcomes = await Promise.allSettled(Array.from({ length: concurrent }, async (_, buyer) => {
+        const c = await context(mobile);
+        const page = await c.newPage();
+        trace(page, buyer);
+        try {
+          await openOrder(page, locale);
+          await check(page, locale);
+          await shot(page, `collector-${expectation}${concurrent > 1 ? `-${buyer}` : ""}`, locale, mobile ? "mobile" : "desktop");
+        } catch (error) {
+          // Synthetic fixture only; preserve the original failure even if diagnostic capture also fails.
+          await page.screenshot({ path: path.join(evidence, `collector-failure-${phase}-${buyer}-${locale}.png`), fullPage: true }).catch(() => {});
+          throw error;
+        } finally {
+          await c.close();
+        }
+      }));
+      const failures = outcomes.filter((result) => result.status === "rejected");
+      if (failures.length) throw new AggregateError(failures.map((result) => result.reason), `collector ${expectation}: ${failures.length}/${concurrent} independent buyer flows failed`);
     }
   }
   console.log(`PASS collector-buyer ${expectation}: ${locales.join(", ")}`);
