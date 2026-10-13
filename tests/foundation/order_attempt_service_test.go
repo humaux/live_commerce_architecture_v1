@@ -88,7 +88,7 @@ func oaServiceAtomic(t *testing.T, live bool) {
 	 a.tenant_id::text,a.store_id::text,s.principal_id::text,a.buyer_owner_id::text,a.admitted_at,a.execute_by,
 	 a.request_hash,a.facts_digest,a.plan_digest,a.plan_key_version,a.plan_ciphertext,j.args,j.queue,j.priority,
 	 (SELECT count(*) FROM river.river_job z WHERE z.kind='order_attempt_v1' AND z.args->>'attempt_id'=a.attempt_id::text),
-	 (SELECT count(*) FROM checkout.orders o WHERE o.tenant_id=a.tenant_id AND o.store_id=a.store_id AND o.buyer_owner_id=a.buyer_owner_id),
+	 (SELECT count(*) FROM checkout.orders o WHERE o.tenant_id=a.tenant_id AND o.store_id=a.store_id AND o.owner_id=a.buyer_owner_id),
 	 (SELECT count(*) FROM storefront.carts c WHERE c.tenant_id=a.tenant_id AND c.store_id=a.store_id AND c.owner_id=a.buyer_owner_id)
 	 FROM ops.order_attempts a JOIN ops.order_attempt_scopes s USING(scope_id)
 	 JOIN river.river_job j ON j.id=a.execution_job_id AND j.id=a.enqueue_job_id WHERE a.attempt_id=$1`, got.AttemptID).
