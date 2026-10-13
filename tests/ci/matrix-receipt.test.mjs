@@ -68,6 +68,14 @@ function persistReceipt(directory, kind, mode, runId, events, command = [], job 
   writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`);
   return receiptPath;
 }
+function persistGateStepResult(directory, mode, runId, outcome = "success", job = "gate") {
+  const receiptPath = resolve(directory, `${mode.replace(/[^A-Za-z0-9_.-]/g, "_")}.gate.json`);
+  mkdirSync(dirname(receiptPath), { recursive: true });
+  const sourceCommit = spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).stdout.trim();
+  writeFileSync(receiptPath, `${JSON.stringify({ schema: "matrix-gate-step-receipt/v1", mode,
+    run_id: runId, job, step_name: "Gate", outcome, source_commit: sourceCommit }, null, 2)}\n`);
+  return receiptPath;
+}
 function historicalGoEvents({ reason } = {}) {
   const packageName = "livecommerce/tests/foundation";
   const { family } = goFamily();
@@ -278,6 +286,78 @@ test("required verifier accepts a source-drift skip only with a verified same-ru
   writeFileSync(resolve(root, "unrelated-ledger.json"), "not a receipt");
   const accepted = verify(runId);
   assert.equal(accepted.status, 0, `${accepted.stdout}\n${accepted.stderr}`);
+});
+
+test("required verifier requires one successful named Gate step receipt for every planned mode", () => {
+  const root = probePath("required-gate-mode-results");
+  const runId = "planned-gate-mode-probe";
+  const head = spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).stdout.trim();
+  const modes = ["shard:unit", `shard:${goFamily().shard}`, "--browser-catalog-core"];
+  const plan = JSON.stringify(modes.map((mode) => ({ mode })));
+  persistReceipt(resolve(root, "node"), "node", modes[0], runId, nodeEvents());
+  const family = goFamily().family;
+  const goEvents = [{ Package: "livecommerce/tests/foundation", Action: "start" },
+    ...family.map((Test) => ({ Package: "livecommerce/tests/foundation", Test, Action: "pass" }))];
+  persistReceipt(resolve(root, "go"), "go", modes[1], runId, goEvents);
+  const verify = () => spawnSync(process.execPath,
+    ["scripts/dev/matrix-receipt-verify.mjs", "required", root, runId, head, plan, "workflow_dispatch"],
+    { encoding: "utf8", env: { ...process.env, NODE_OPTIONS: "" } });
+
+  const missing = verify();
+  assert.equal(missing.status, 1, `${missing.stdout}\n${missing.stderr}`);
+  assert.match(missing.stderr, /Gate step.*receipt/i);
+
+  for (const mode of modes) persistGateStepResult(resolve(root, "gate-results"), mode, runId);
+  const complete = verify();
+  assert.equal(complete.status, 0, `${complete.stdout}\n${complete.stderr}`);
+
+  persistGateStepResult(resolve(root, "gate-results"), modes[2], runId, "skipped");
+  const skipped = verify();
+  assert.equal(skipped.status, 1, `${skipped.stdout}\n${skipped.stderr}`);
+  assert.match(skipped.stderr, /Gate step.*(skipped|outcome|receipt)/i);
+});
+
+test("Go execution receipts bind the actual race-enabled command", () => {
+  const root = probePath("go-race-command");
+  const runId = "go-race-command-probe";
+  const head = spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).stdout.trim();
+  const { family, shard } = goFamily();
+  const events = [{ Package: "livecommerce/tests/foundation", Action: "start" },
+    ...family.map((Test) => ({ Package: "livecommerce/tests/foundation", Test, Action: "pass" }))];
+  const command = ["GOTOOLCHAIN=go1.27.2", "go", "test", "-p", "1", "-race", "-count=1", "./tests/foundation"];
+  const receiptPath = persistReceipt(root, "go", `shard:${shard}`, runId, events, command);
+  const receipt = JSON.parse(readFileSync(receiptPath, "utf8"));
+  const context = { receiptPath, kind: "go", mode: `shard:${shard}`, runId, job: "gate", sourceCommit: head };
+  assert.deepEqual(verifyReceipt(receipt, context), []);
+
+  receipt.command = receipt.command.filter((argument) => argument !== "-race");
+  const errors = verifyReceipt(receipt, context);
+  assert.ok(errors.some((issue) => /-race/.test(issue)), errors.join("; "));
+});
+
+test("manual full foundation execution cannot bypass historical-skip browser verification", () => {
+  const root = probePath("manual-foundation-required");
+  const runId = "manual-foundation-probe";
+  const head = spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).stdout.trim();
+  const modes = ["foundation", "--browser-product-editor"];
+  const plan = JSON.stringify(modes.map((mode) => ({ mode })));
+  const goPath = persistReceipt(resolve(root, "go"), "go", "foundation", runId, historicalGoEvents());
+  assert.equal(JSON.parse(readFileSync(goPath, "utf8")).outcome.historical_skip?.ok, true);
+  for (const mode of modes) persistGateStepResult(resolve(root, "gate-results"), mode, runId);
+  const verify = () => spawnSync(process.execPath,
+    ["scripts/dev/matrix-receipt-verify.mjs", "required", root, runId, head, plan, "workflow_dispatch"],
+    { encoding: "utf8", env: { ...process.env, NODE_OPTIONS: "" } });
+
+  const missingBrowser = verify();
+  assert.equal(missingBrowser.status, 1, `${missingBrowser.stdout}\n${missingBrowser.stderr}`);
+  assert.match(missingBrowser.stderr, /same-run browser receipt/);
+
+  const browserEvents = ["TestBrowserCatalogCore", "TestBrowserCatalogCore/PE12-17-TWD", "TestBrowserCatalogCore/CC12-frozen"]
+    .map((Test) => ({ Package: "livecommerce/tests/foundation", Test, Action: "pass" }));
+  persistReceipt(resolve(root, "browser"), "browser", "--browser-product-editor", runId, browserEvents,
+    ["PRODUCT_EDITOR_ACCEPTANCE=1", "LC_BROWSER_CATALOG_CORE_ACCEPTANCE=1", "-tags", "browser", "-race", "-run", "^TestBrowserCatalogCore$", "./tests/foundation"]);
+  const withBrowser = verify();
+  assert.equal(withBrowser.status, 0, `${withBrowser.stdout}\n${withBrowser.stderr}`);
 });
 
 test("Foundation verifier requires fresh same-run browser proof only for a historical Go skip", () => {

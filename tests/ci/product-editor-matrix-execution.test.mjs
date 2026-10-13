@@ -38,6 +38,15 @@ for (const selector of ["RUN", "SKIP"]) {
     assert.ok(matrixExecutionIssues({ ...source, registry }).some((x) => x.includes("forward")));
   });
 }
+test("both authoritative Go foundation commands retain race instrumentation", () => {
+  const commands = source.registry.split(/\r?\n/).filter((line) =>
+    line.includes("go test -p 1 -race") && (line.includes("matrix-receipt.mjs go") || line.includes("GOTOOLCHAIN=go1.27.2 go test")));
+  assert.equal(commands.length, 2, "the serial foundation runner has two bound Go command branches");
+  for (const command of commands) {
+    const registry = source.registry.replace(command, command.replace(" -race", ""));
+    assert.ok(matrixExecutionIssues({ ...source, registry }).some((issue) => /-race/.test(issue)), command);
+  }
+});
 
 const nodeCommand = receiptCommand;
 for (const flag of ["--test-name-pattern", "--test-skip-pattern"]) {

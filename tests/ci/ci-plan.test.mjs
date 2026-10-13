@@ -47,6 +47,15 @@ test("actual canonical producer drift adds the browser backstop only when the co
   assert.ok(actual.includes(`shard:${realCatchAll}`));
 });
 
+test("manual foundation mode schedules the drift-aware browser backstop", () => {
+  const output = path.join(mkdtempSync(path.join(tmpdir(), "ci-plan-manual-foundation-")), "out");
+  main({ MODES: JSON.stringify(["foundation"]), GITHUB_OUTPUT: output });
+  const actual = JSON.parse(/^matrix=(.*)$/m.exec(readFileSync(output, "utf8"))[1]).map((entry) => entry.mode);
+  assert.ok(actual.includes("foundation"), "manual foundation execution remains available");
+  assert.equal(actual.includes("--browser-product-editor"), canonicalEvidenceDrift().length > 0,
+    "the documented manual full-Go mode must request same-run browser proof for canonical source drift");
+});
+
 test("an explicit shard re-run (or a partial list) never claims the whole-run aggregate", () => {
   assert.equal(expand(["--browser-click-sweep@3/10"], { groupIds }).sweepN, 0);
   const partial = expand(["--browser-click-sweep@1/3", "--browser-click-sweep@2/3"], { groupIds });
