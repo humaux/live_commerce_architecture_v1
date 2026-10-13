@@ -67,7 +67,7 @@ func TestOrderAttemptSubjectsExplicitNativeLink(t *testing.T) {
 	tx := oaSubjectTx(t, e)
 	owner, conv := randomUUID(), randomUUID()
 	oaStateExec(t, tx, `INSERT INTO buyer.owners(id,tenant_id,store_id) VALUES($1,$2,$3)`, owner, e.tenant(), e.store())
-	oaStateExec(t, tx, `INSERT INTO social.conversations(id,tenant_id,store_id,app_id,object,asset_id,peer_key) VALUES($1,$2,$3,'123456789','page','123456789','synthetic-oa-subject')`, conv, e.tenant(), e.store())
+	oaStateExec(t, tx, `INSERT INTO social.conversations(id,tenant_id,store_id,app_id,object,asset_id,peer_key) VALUES($1,$2,$3,'123456789','page','123456789',repeat(replace($1::uuid::text,'-',''),2))`, conv, e.tenant(), e.store())
 	oaStateExec(t, tx, `INSERT INTO inbox.conversation_state(tenant_id,store_id,conversation_id,customer_id) VALUES($1,$2,$3,$4)`, e.tenant(), e.store(), conv, owner)
 	selection := oaFactsSelection(e)
 	selection["for"] = map[string]any{"bundle_ids": []string{}, "conversation_id": conv, "customer_id": owner}
