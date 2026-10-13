@@ -93,8 +93,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0180 (OA1 fenced metadata-only abort) adds one: 103 -> 104.
 	// 0182 (OA1 deferred atomic execution commit guard) adds one: 104 -> 105.
 	// 0181 (OA1 frozen attempt destination) adds one: 105 -> 106.
-	if len(r2) != 106 {
-		t.Fatalf("R2 migration set = %d files %v, want 106", len(r2), r2)
+	// 0183 (OA1 locked catalog and native allocation facts) adds one: 106 -> 107.
+	if len(r2) != 107 {
+		t.Fatalf("R2 migration set = %d files %v, want 107", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
