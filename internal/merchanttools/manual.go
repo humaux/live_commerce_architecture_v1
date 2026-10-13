@@ -43,6 +43,7 @@ import (
 	"livecommerce/internal/command"
 	"livecommerce/internal/domains"
 	"livecommerce/internal/fulfillment"
+	"livecommerce/internal/inbox"
 	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
 	"livecommerce/internal/pricing"
@@ -458,15 +459,33 @@ func (m *ManualOrders) RegenerateLink(ctx context.Context, token, storeID, key s
 	if !command.ValidID(in.OrderID) || !slices.Contains(locales, in.Locale) {
 		return RegenerateResult{}, false, &Error{Status: http.StatusUnprocessableEntity, Code: "invalid_request"}
 	}
+	var out RegenerateResult
+	replayed := false
+	err := platform.WithScope(ctx, m.pool, token, storeID, manualPermission, func(tx pgx.Tx, scope platform.Scope) error {
+		var err error
+		out, replayed, err = m.regenerateLink(ctx, tx, scope, token, key, in)
+		return err
+	})
+	if err != nil {
+		var coded *Error
+		if errors.As(err, &coded) {
+			return RegenerateResult{}, false, coded
+		}
+		return RegenerateResult{}, false, mapReceiptError(err)
+	}
+	return out, replayed, nil
+}
+
+// regenerateLink shares issuance with ForBuyer's planner transaction, so no concurrent regeneration can stale its sealed URL.
+func (m *ManualOrders) regenerateLink(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key string, in ManualRegenerateInput) (RegenerateResult, bool, error) {
 	var receipt regenerateReceipt
 	var origin string
 	replayed := false
-	// The new link token is NOT the capability and NOT the old link: a fresh single-use secret derived from the key, exchanged by the storefront
-	// for a fresh capability of the order's owner (checkout.redeem_order_link); the old links are invalidated in SQL.
+	storeID := scope.StoreID
 	linkToken := m.capability("relink", storeID, key)
 	hash := sha256.Sum256([]byte(token))
 	linkHash := sha256.Sum256([]byte(linkToken))
-	err := platform.WithScope(ctx, m.pool, token, storeID, manualPermission, func(tx pgx.Tx, scope platform.Scope) error {
+	err := func() error {
 		if inner := requireCatalog(ctx, tx, scope, token); inner != nil {
 			return inner
 		}
@@ -477,6 +496,9 @@ func (m *ManualOrders) RegenerateLink(ctx context.Context, token, storeID, key s
 		}
 		if state != "configured" || !domains.ValidOrigin(origin) {
 			return ErrUnavailable // no published storefront origin: there is no buyer link to re-issue
+		}
+		if err := inbox.LockOrderPayLink(ctx, tx, scope, in.OrderID); err != nil {
+			return err
 		}
 		// Probe: any receipt of this key (command.Run replays it; nothing is written).
 		inner = command.Run(ctx, tx, scope, relinkOperation, key, in, &receipt, func() error { return errNeedWork })
@@ -489,6 +511,9 @@ func (m *ManualOrders) RegenerateLink(ctx context.Context, token, storeID, key s
 		if inner != nil {
 			return inner
 		}
+		if err := guardOrderPayLink(ctx, tx, scope, in.OrderID); err != nil {
+			return err
+		}
 		if replayed {
 			return nil
 		}
@@ -499,13 +524,30 @@ func (m *ManualOrders) RegenerateLink(ctx context.Context, token, storeID, key s
 			receipt = regenerateReceipt{OrderID: in.OrderID}
 			return command.Audit(ctx, tx, scope, "order.manual_link_regenerated")
 		})
-	})
+	}()
 	if err != nil {
-		return RegenerateResult{}, false, mapReceiptError(err)
+		return RegenerateResult{}, false, err
 	}
 	out := RegenerateResult{regenerateReceipt: receipt, Source: "merchant_manual"}
 	out.BuyerLink = origin + "/" + in.Locale + "/order-link#o=" + receipt.OrderID + "&t=" + linkToken
 	return out, replayed, nil
+}
+
+// guardOrderPayLink holds the same-order lock until commit and refuses any payment DM whose outcome can still deliver its sealed URL.
+// Legacy awaiting-payment reminder requests lack order_id; their store-wide refusal fails closed without exposing private claim origins.
+func guardOrderPayLink(ctx context.Context, tx pgx.Tx, scope platform.Scope, orderID string) error {
+	if err := inbox.LockOrderPayLink(ctx, tx, scope, orderID); err != nil {
+		return err
+	}
+	var pending bool
+	if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM integration.operations WHERE tenant_id=$1 AND store_id=$2 AND action='meta.dm_send'
+  AND (request->>'order_id'=$3 OR (request->>'message_type'='checkout_reminder' AND request->>'reminder_state'='awaiting_payment')) AND state IN ('READY','DISPATCHING','UNKNOWN','ACKNOWLEDGED'))`, scope.TenantID, scope.StoreID, orderID).Scan(&pending); err != nil {
+		return err
+	}
+	if pending {
+		return &Error{Status: http.StatusConflict, Code: "conflict"}
+	}
+	return nil
 }
 
 // requireCatalog is the second permission of a manual order: picking SKUs needs catalog:read, and identity.resolve_storefront_origin (the link

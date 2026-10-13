@@ -163,6 +163,13 @@ func (r *CheckoutReminders) issue(ctx context.Context, tx pgx.Tx, scope platform
 		if err := requireCatalog(ctx, tx, scope, token); err != nil {
 			return "", err
 		}
+		if err := guardOrderPayLink(ctx, tx, scope, c.OrderID); err != nil {
+			var coded *Error
+			if errors.As(err, &coded) && coded.Code == "conflict" {
+				return "", errLinkUnavailable
+			}
+			return "", err
+		}
 		linkToken := r.manual.capability("relink", scope.StoreID, buyerKey)
 		hash := sha256.Sum256([]byte(token))
 		linkHash := sha256.Sum256([]byte(linkToken))

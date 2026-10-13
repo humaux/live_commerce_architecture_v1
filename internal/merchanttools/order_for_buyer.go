@@ -471,34 +471,37 @@ func (f *ForBuyer) sendPayLink(ctx context.Context, token, storeID, key string, 
 	default:
 		return f.payLinkOutcome(err)
 	}
-	link := ""
-	if freshLink && buyerLink != nil {
-		link = *buyerLink
-	} else {
-		// A replay (the first link's plaintext is gone): the REUSED regenerate-link logic supersedes the old link and returns a new one
-		// (§5.1 replay clause c). Its key derives from the request key, so a second replay re-derives the same link.
-		regenerated, _, rerr := m.RegenerateLink(ctx, token, storeID, stepKey(key, "dm-relink"), ManualRegenerateInput{OrderID: orderID, Locale: locale})
-		if rerr != nil {
-			var coded *Error
-			if errors.As(rerr, &coded) && coded == ErrUnavailable {
-				return ForBuyerSend{State: "not_sent", Reason: "link_unavailable"}, nil
-			}
-			return ForBuyerSend{}, mapForBuyerError(rerr)
-		}
-		link = regenerated.BuyerLink
-	}
-	if link == "" {
-		return ForBuyerSend{State: "not_sent", Reason: "link_unavailable"}, nil
-	}
+	var issued string
 	err = platform.WithScope(ctx, m.pool, token, storeID, manualPermission, func(tx pgx.Tx, scope platform.Scope) error {
+		// Re-probe under the order lock: a concurrent same-key request may have finished after our first probe.
 		var inner error
-		planned, inner = f.planner.PlanOrderPayLink(ctx, tx, scope, key, conversation, orderID, link)
+		planned, inner = f.planner.PlanOrderPayLink(ctx, tx, scope, key, conversation, orderID, "")
+		if inner == nil {
+			return nil
+		}
+		if !errors.Is(inner, inbox.ErrPayLinkNotPlanned) {
+			return inner
+		}
+		// A new private key excludes legacy relink-only receipts from the former two-transaction implementation.
+		regenerated, _, inner := m.regenerateLink(ctx, tx, scope, token, stepKey(key, "dm-plan-link"), ManualRegenerateInput{OrderID: orderID, Locale: locale})
+		if inner != nil {
+			return inner
+		}
+		issued = regenerated.BuyerLink
+		planned, inner = f.planner.PlanOrderPayLink(ctx, tx, scope, key, conversation, orderID, issued)
 		return inner
 	})
-	if err != nil {
-		return f.payLinkOutcome(err)
+	if err == nil {
+		if freshLink && buyerLink != nil && issued != "" {
+			*buyerLink = issued
+		}
+		return ForBuyerSend{OperationID: planned.OperationID, State: planned.SendState}, nil
 	}
-	return ForBuyerSend{OperationID: planned.OperationID, State: planned.SendState}, nil
+	var coded *Error
+	if errors.As(err, &coded) && (coded == ErrUnavailable || coded.Code == "conflict") {
+		return ForBuyerSend{State: "not_sent", Reason: "link_unavailable"}, nil
+	}
+	return f.payLinkOutcome(err)
 }
 
 // payLinkOutcome maps a DM planner refusal to "not_sent" with a fixed reason; anything else is a retryable failure of the request.

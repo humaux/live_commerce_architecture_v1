@@ -30,6 +30,26 @@ const payLinkOperation = "inbox.dm.order_pay_link"
 // ErrPayLinkNotPlanned is the replay probe's answer (link == ""): no receipt of this key exists yet, nothing was written.
 var ErrPayLinkNotPlanned = errors.New("inbox: pay link not planned")
 
+// LockOrderPayLink serializes payment-DM planning and manual-order link invalidation in one merchant transaction.
+// It must precede command receipts, checkout order rows and inbox lcn-dup locks; the enclosing request bounds its wait.
+func LockOrderPayLink(ctx context.Context, tx pgx.Tx, scope platform.Scope, orderID string) error {
+	if !command.ValidID(orderID) {
+		return command.ErrInvalid
+	}
+	var timeout string
+	if err := tx.QueryRow(ctx, `SHOW lock_timeout`).Scan(&timeout); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(ctx, `SELECT set_config('lock_timeout','0',true)`); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, "order-pay-link|"+scope.TenantID+"|"+scope.StoreID+"|"+orderID); err != nil {
+		return err
+	}
+	_, err := tx.Exec(ctx, `SELECT set_config('lock_timeout',$1,true)`, timeout)
+	return err
+}
+
 // PlanOrderPayLink plans the pay-link DM of orderID in conversationID (inbox:reply, enforced by inbox.plan_dm). With link == "" it only probes:
 // it returns the saved SendOutput of an earlier run of the same key, a *SendError window_closed when the 24 h window is closed (so the caller
 // does not re-issue a link for nothing), or ErrPayLinkNotPlanned. With a link it runs the planner: receipt + River job + inbox.plan_dm (implicit
@@ -42,6 +62,9 @@ func (s *Service) PlanOrderPayLink(ctx context.Context, tx pgx.Tx, scope platfor
 	}
 	if !command.ValidID(conversationID) || !command.ValidID(orderID) {
 		return out, command.ErrInvalid
+	}
+	if err := LockOrderPayLink(ctx, tx, scope, orderID); err != nil {
+		return out, err
 	}
 	meta, err := s.conversationMeta(ctx, tx, conversationID)
 	if err != nil {
