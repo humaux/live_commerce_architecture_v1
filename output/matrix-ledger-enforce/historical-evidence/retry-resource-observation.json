@@ -1,0 +1,44 @@
+{
+  "observed_at": "2026-10-13T05:28:20Z",
+  "failed_owned_group": 17090,
+  "owned_processes_remaining": [],
+  "top_cpu_readonly": [
+    {
+      "pid": 1090,
+      "pgid": 1090,
+      "cpu": 60.0,
+      "comm": "/System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine"
+    },
+    {
+      "pid": 54526,
+      "pgid": 50257,
+      "cpu": 53.4,
+      "comm": "/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/TestReviewR1bAdminProxySinkValuesRealCLI2910196733/001/contractdrift"
+    },
+    {
+      "pid": 385,
+      "pgid": 385,
+      "cpu": 15.3,
+      "comm": "/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds"
+    },
+    {
+      "pid": 360,
+      "pgid": 360,
+      "cpu": 12.1,
+      "comm": "/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/FSEvents.framework/Versions/A/Support/fseventsd"
+    },
+    {
+      "pid": 1052,
+      "pgid": 1052,
+      "cpu": 9.6,
+      "comm": "/Applications/Docker.app/Contents/MacOS/com.docker.backend"
+    },
+    {
+      "pid": 53884,
+      "pgid": 53884,
+      "cpu": 7.3,
+      "comm": "/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared"
+    }
+  ],
+  "action": "Read only; no foreign process or lock touched; exact original check-gates retry with unchanged limits."
+}

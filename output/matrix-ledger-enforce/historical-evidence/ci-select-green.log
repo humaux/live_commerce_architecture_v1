@@ -1,0 +1,83 @@
+✔ matrix evidence producers always select the current live product-editor guard (12.650167ms)
+✔ matrix evidence producer discovery unions base, head and merge checkout (1.06075ms)
+✔ real matrix producer CLI outputs reach the CI job matrix (1545.471667ms)
+ℹ tests/foundation/catalog_matrix_ledger_test.go: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/foundation/catalog_matrix_evidence_test.go: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/foundation/browser_catalog_core_test.go: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/admin/product-editor.acceptance.ts: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/admin/product-editor-matrix-ledger.ts: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/foundation/testdata/product_editor_matrix_cases.json: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/ci/product-editor-matrix-ledger.test.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/ci/product-editor-matrix-claims.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/ci/product-editor-matrix-source.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/ci/product-editor-matrix-execution.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/ci/product-editor-matrix-execution.test.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/ci/product-editor-matrix-controls.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/ci/product-editor-matrix-controls.test.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ apps/admin/components/ProductBulkFill.tsx: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+✔ docs, contracts, deploy files and node-test dirs run foundation-shards only (0.330125ms)
+✔ node tests of deploy scripts and of the CI planner are backend-only (they cannot change a browser) (2.476583ms)
+✔ internal/ is NOT backend-only any more: a package no mode declares falls to the conservative PG rule (CI-SELECT) (4.850916ms)
+✔ a UI path adds the whole browser set, including click-sweep and visual-lint (44.904083ms)
+✔ docs-only and output-only diffs keep the single required check (foundation-shards) (1.201042ms)
+✔ internal/live/stream.go selects --browser-live-console (PR #30 root cause) (2.919166ms)
+✔ round 3: the real PR #30 diff selects live-console without the shared-httpapi explosion (29.107791ms)
+✔ round 3: live_stream transport alone selects live-console but not CVS (5.919542ms)
+✔ round 3: handler.go and unknown httpapi files remain conservative (8.077083ms)
+✔ round 3: a file-level lc_covers entry is exact, not its sibling directory (5.948833ms)
+✔ round 3: a nonbrowser exact-file declaration cannot replace browser acceptance (4.040667ms)
+✔ round 4: a nonbrowser PACKAGE declaration is never browser acceptance (uniform universe guard, K3 P2) (9.830083ms)
+✔ round 4: --browser-checkout-offline covers internal/merchantorders (its spec clicks bank-transfer confirm/reject, K3 P2 example) (3.4815ms)
+✔ round 4: --browser-catalog-core and --browser-product-editor cover internal/catalog (their spec performs admin product/collection writes) (2.194583ms)
+✔ round 4: --browser-ops-polish covers the admin order-feed and finance domains OP2/OP3 read (K3 P2 example c) (6.576042ms)
+✔ internal/integrations/metareply/x.go selects --browser-live-console (PR #24 root cause) (4.074375ms)
+✔ round 2 narrowness: internal/live/stream.go does NOT select unrelated domains such as --browser-cvs (4.560791ms)
+✔ round 2 evidence: a metareply change selects exactly the modes whose harnesses drive MetaReply (live console + e2e) (2.872125ms)
+✔ round 4: an inbox change selects the inbox modes INCLUDING live-console (its buyer panel reads inbox routes) but stays one domain (2.712458ms)
+✔ a Meta message-parser change selects --browser-inbox (decode dependency) (4.332667ms)
+✔ round 2 SHARED_BACKEND_PACKAGES: every entry carries a reason and selects all PG browser modes (43.742458ms)
+✔ round 2 data invariant: SHARED packages are subtracted from lc_covers (they select all PG modes anyway) (2.135667ms)
+✔ round 2 BACKEND_ONLY_PACKAGES: the real cmd/worker-only entries select no browser mode (4.590292ms)
+✔ round 2: the conservative rules reach the Go-booting 48th mode (--browser-tracking-backfill) (10.948ms)
+✔ a new migration selects every PG-fixture browser mode (the modes run on the migrated schema) (4.259542ms)
+✔ docs-only and contracts-only diffs still select no browser mode (0.780459ms)
+✔ cmd/ changes select every PG-fixture browser mode (the modes drive the binaries cmd/ builds) (7.933292ms)
+✔ shared platform packages select every PG-fixture browser mode (19.983417ms)
+✔ an internal package no mode declares selects every PG-fixture browser mode until the gate classifies it (2.841125ms)
+✔ lc_covers is registry DATA: declaring modes are selected by prefix match, non-declaring modes are not (7.277209ms)
+✔ backend changes never select the node-only browser modes (no Go harness, no PG fixture) (11.011709ms)
+✔ BACKEND_ONLY_PACKAGES is explicit classified data; listed packages select no browser mode (mechanism, synthetic list) (4.113208ms)
+✔ a registry without lc_covers data (historical source) stays maximally conservative (0.218417ms)
+✔ round 5: an ecpayroute-only change selects the CVS browser gates (thread 4236971117) (2.868666ms)
+✔ round 5: an orders.go-only or merchantorders-only change selects --browser-tracking-backfill (thread 4236972349) (5.153708ms)
+✔ round 5: an inventory-only or live_console.go-only change selects --browser-admin-legacy (thread 4236972354) (5.193166ms)
+✔ legacy browser_* paths still select all browsers; a known untagged foundation file stays backend-only (1.04775ms)
+✔ legacy deploy prefixes remain selected and unrelated paths do not select smoke (6.997917ms)
+✔ the browser set is release-gate's browser-mode universe minus the documented exclusions (136.329042ms)
+✔ every real browser-tagged foundation file selects registry browser modes, including non-browser names (380.49425ms)
+✔ tagged runner discovery follows registry additions, command arrays and line continuations (3.688708ms)
+✔ deploy smoke is selected for its workflow, verdict/helpers and executable test inputs (7.99725ms)
+✔ new selection never drops legacy modes or deploy for any tracked path (7710.840708ms)
+✔ CLI classifies merge-base and explicit head, including removed tags, deleted files and renames (603.325ms)
+✔ CLI selects modes the base added after divergence when the checkout is the PR merge (PR #22 review P1) (342.692334ms)
+✔ CLI reads the merge checkout's source when the base adds a browser tag after the fork (PR #22 review P1) (276.510417ms)
+✔ CLI explicit head and stdin include tags outside the checkout and uncommitted tag removals (272.623833ms)
+✔ compound/legacy tags and unknown source are conservative; known untagged source stays backend-only (12.03625ms)
+✔ explicit-head CLI derives tagged runner modes from that head's real registry (223.625875ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "架构.md" (193.414291ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "internal/示例.go" (225.802708ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "tests/foundation/plain\tname_test.go" (216.726333ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, " deploy/scripts/synthetic-smoke.sh" (180.44375ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "架构.md" (177.94025ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "internal/示例.go" (194.198958ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "tests/foundation/plain\tname_test.go" (202.789333ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, " deploy/scripts/synthetic-smoke.sh" (213.538542ms)
+✔ stdin unions legacy trimming without trimming the source lookup path (109.066167ms)
+ℹ tests 61
+ℹ suites 0
+ℹ pass 61
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 13618.520625

@@ -1,0 +1,8 @@
+matrix-execution: active Node gates and foundation CI selector forwarding bound
+--- FAIL: TestReviewR1bImportedSinkValuesRealCLI (80.73s)
+    review_ratchet_cli_test.go:30: CLI deadline: context deadline exceeded
+    --- FAIL: TestReviewR1bImportedSinkValuesRealCLI/wrapper (76.95s)
+        testing.go:2064: test executed panic(nil) or runtime.Goexit: subtest may have called FailNow on a parent test
+FAIL
+FAIL	livecommerce/scripts/dev/contractdrift	416.529s
+FAIL

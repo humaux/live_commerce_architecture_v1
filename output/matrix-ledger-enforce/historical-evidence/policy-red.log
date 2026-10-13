@@ -1,0 +1,34 @@
+=== RUN   TestProductEditorMatrixLedgerEvidenceHistoricalPolicy
+=== RUN   TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/matching
+    catalog_matrix_evidence_test.go:65: actual canonical child exit=0:
+        === RUN   TestProductEditorMatrixLedgerEvidence
+        --- PASS: TestProductEditorMatrixLedgerEvidence (0.00s)
+        PASS
+=== RUN   TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/drift-default
+    catalog_matrix_evidence_test.go:65: actual canonical child exit=1:
+        === RUN   TestProductEditorMatrixLedgerEvidence
+            catalog_matrix_ledger_test.go:265: SHA-256 mismatch for canonical evidence/source tests/admin/product-editor.acceptance.ts
+        --- FAIL: TestProductEditorMatrixLedgerEvidence (0.00s)
+        FAIL
+    catalog_matrix_evidence_test.go:67: want exit 0 and "--- SKIP: TestProductEditorMatrixLedgerEvidence"
+=== RUN   TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/drift-strict
+    catalog_matrix_evidence_test.go:65: actual canonical child exit=1:
+        === RUN   TestProductEditorMatrixLedgerEvidence
+            catalog_matrix_ledger_test.go:265: SHA-256 mismatch for canonical evidence/source tests/admin/product-editor.acceptance.ts
+        --- FAIL: TestProductEditorMatrixLedgerEvidence (0.00s)
+        FAIL
+    catalog_matrix_evidence_test.go:70: source drift must explicitly identify the historical record and changed file
+=== RUN   TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/tampered-matching
+    catalog_matrix_evidence_test.go:65: actual canonical child exit=1:
+        === RUN   TestProductEditorMatrixLedgerEvidence
+            catalog_matrix_ledger_test.go:265: SHA-256 mismatch for canonical evidence/source output/matrix-ledger-enforce/fixture/browser/playwright.log
+        --- FAIL: TestProductEditorMatrixLedgerEvidence (0.00s)
+        FAIL
+--- FAIL: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy (0.15s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/matching (0.05s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/drift-default (0.03s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/drift-strict (0.04s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/tampered-matching (0.03s)
+FAIL
+FAIL	livecommerce/tests/foundation	1.187s
+FAIL
