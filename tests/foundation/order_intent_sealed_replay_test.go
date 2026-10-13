@@ -24,6 +24,7 @@ func TestOrderIntentSealedRecoveryReplay(t *testing.T) {
 	for _, kind := range []string{"manual", "for_buyer"} {
 		t.Run(kind, func(t *testing.T) {
 			e := lbuNew(t)
+			orders, held, planned := e.count(`SELECT count(*) FROM checkout.orders WHERE store_id=$1`, e.store()), e.reserved(), e.plan.planned()
 			key := t04Key("ois-replay")
 			body := mnrBody(e, 1)
 			recover := mnrRecover
@@ -43,8 +44,8 @@ func TestOrderIntentSealedRecoveryReplay(t *testing.T) {
 			if mnrDefinitiveCount(e) != 2 || e.count(`SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='order.attempt_recovered'`, e.store()) != 1 {
 				t.Fatal("sealed replay recreated closure/recovery/audit")
 			}
-			if e.count(`SELECT count(*) FROM checkout.orders WHERE store_id=$1`, e.store()) != 0 || e.reserved() != 0 || e.plan.planned() != 0 {
-				t.Fatal("sealed replay changed money/stock/DM")
+			if gotOrders, gotHeld, gotPlanned := e.count(`SELECT count(*) FROM checkout.orders WHERE store_id=$1`, e.store()), e.reserved(), e.plan.planned(); gotOrders != orders || gotHeld != held || gotPlanned != planned {
+				t.Fatalf("sealed replay changed money/stock/DM: orders=%d want=%d held=%d want=%d planned=%d want=%d", gotOrders, orders, gotHeld, held, gotPlanned, planned)
 			}
 		})
 	}
@@ -54,6 +55,7 @@ func TestOrderIntentSealedRecoveryRequiresReceipts(t *testing.T) {
 	e := lbuNew(t)
 	for _, fault := range []string{"missing_closure", "missing_recovery", "wrong_closure_owner", "wrong_recovery_state"} {
 		t.Run(fault, func(t *testing.T) {
+			orders, held, planned := e.count(`SELECT count(*) FROM checkout.orders WHERE store_id=$1`, e.store()), e.reserved(), e.plan.planned()
 			key, body := t04Key("ois-proof"), mnrBody(e, 1)
 			status, out := mnrRecover(t, e, e.token(), key, body)
 			if status != 200 || out["state"] != "not_created" || len(out) != 1 {
@@ -81,8 +83,8 @@ func TestOrderIntentSealedRecoveryRequiresReceipts(t *testing.T) {
 			if e.count(`SELECT count(*) FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store()) != before {
 				t.Fatal("recovery fabricated a missing or corrected authoritative receipt")
 			}
-			if e.count(`SELECT count(*) FROM checkout.orders WHERE store_id=$1`, e.store()) != 0 || e.reserved() != 0 || e.plan.planned() != 0 {
-				t.Fatal("failed sealed proof changed money/stock/DM")
+			if gotOrders, gotHeld, gotPlanned := e.count(`SELECT count(*) FROM checkout.orders WHERE store_id=$1`, e.store()), e.reserved(), e.plan.planned(); gotOrders != orders || gotHeld != held || gotPlanned != planned {
+				t.Fatalf("failed sealed proof changed money/stock/DM: orders=%d want=%d held=%d want=%d planned=%d want=%d", gotOrders, orders, gotHeld, held, gotPlanned, planned)
 			}
 		})
 	}
