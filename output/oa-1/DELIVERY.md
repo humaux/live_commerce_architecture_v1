@@ -557,7 +557,7 @@ focused job are still running/queued, with no new failure yet; no full-run PASS
 is claimed. External scanner [PR #54](https://github.com/humaux/live_commerce_architecture_v1/pull/54)
 is OPEN at `bfcfa5eb`, so no rebase has started.
 
-### CI98 / CI114 consolidated triage, 2026-10-13 23:05 UTC
+### CI98 / CI114 consolidated triage, 2026-10-13 23:03 UTC
 
 CI98 [38473112949](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38473112949),
 job `115557144109`, source `008b52dec4b5e06b7f4a9017e0ff251365962849`,
@@ -601,3 +601,29 @@ server/PG execution remains **NOT_RUN (owner CI-only)**. Full PR required
 checks are still **BLOCKED(ci-drift-scanner, unit CI-DRIFT-FACTORY)**; PR54 is
 OPEN and no scanner, baseline or actual-pool probe was changed. Independent
 review is pending. **NOT READY**.
+
+CI115 [38481790718](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38481790718)
+was registered at 23:03 UTC on exact source
+`f079b80a30ea79b6f2a2f0f3fd8da75b0a518544`, with normal empty `extra_env`:
+`focused:^TestOrderAttempt` (complete OA1 native suite),
+`focused:^Test(CatalogCoreCC01|MetaConnectMultiPageUpgrade|LiveClaimsKC03Schema|CogTransferACL|LiveConsoleInboxMigration0122ExactACL)`
+(the five failed compatibility gates), and `focused:^TestOrderAttemptModel`
+(model seeds and CI-produced formatting/metadata artifacts).
+Plan `115585855242` is queued. All results are **PENDING**, not GREEN.
+The 15-minute same-thread heartbeat now watches CI115 and CI114, renews the
+lease and collects failures; original workflow/test bounds remain unchanged.
+
+Read-only Sweep fixture audit found two concrete durable contamination paths
+in `TestOrderAttemptClaimExecutionAvailabilityRefusals`: `/reservation` commits
+`state='released'` and `/request-hash` commits another custody digest, then only
+rolls back the separate C2 probe. Native abort rightly rejects both as
+`attempt_has_effects`. Test-only exact-original-field cleanup is prepared at
+child commit `9c8a7cf91f960f6151fca9c6d6a2ab80aa61a84a`, **not integrated or
+pushed**; CI115 must first establish the actual failed candidate. The native
+guard and all injected-failure assertions stay unchanged.
+
+Additional CI114 completed jobs `115569819826` (inbox) and `115569819936`
+(WebKit) are GREEN on the old `0bdb85d35` source; exact logs retained under
+`ci114-<job>-gate-browser-*.log`. `ci114-jobs-snapshot.json` records an explicitly
+partial job snapshot; it is not a final aggregate verdict. CI115 plan remains
+queued at collection. No acceptance or independent-review completion is claimed.

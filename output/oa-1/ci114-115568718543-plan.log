@@ -1,0 +1,276 @@
+﻿2026-10-13T22:18:38.6012603Z Current runner version: '2.337.0'
+2026-10-13T22:18:38.6037425Z ##[group]Runner Image Provisioner
+2026-10-13T22:18:38.6038761Z Hosted Compute Agent
+2026-10-13T22:18:38.6039439Z Version: 20261002.596
+2026-10-13T22:18:38.6040141Z Commit: c3d12f3313a95f25162a1503be624f3b0617f8c0
+2026-10-13T22:18:38.6040920Z Build Date: 2026-10-02T22:28:27Z
+2026-10-13T22:18:38.6041834Z Worker ID: {a4864ded-0fc9-49d4-8ccf-7743e771e84d}
+2026-10-13T22:18:38.6042692Z Region: northcentralus
+2026-10-13T22:18:38.6043308Z Cloud: Azure
+2026-10-13T22:18:38.6043920Z ##[endgroup]
+2026-10-13T22:18:38.6045425Z ##[group]Operating System
+2026-10-13T22:18:38.6046078Z Ubuntu
+2026-10-13T22:18:38.6046702Z 24.04.5
+2026-10-13T22:18:38.6047250Z LTS
+2026-10-13T22:18:38.6047780Z ##[endgroup]
+2026-10-13T22:18:38.6048745Z ##[group]Runner Image
+2026-10-13T22:18:38.6049486Z Image: ubuntu-24.04
+2026-10-13T22:18:38.6050189Z Version: 20261004.327.1
+2026-10-13T22:18:38.6051477Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/Ubuntu2404-Readme.md
+2026-10-13T22:18:38.6053146Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261004.327
+2026-10-13T22:18:38.6054152Z ##[endgroup]
+2026-10-13T22:18:38.6055394Z ##[group]GITHUB_TOKEN Permissions
+2026-10-13T22:18:38.6057365Z Contents: read
+2026-10-13T22:18:38.6058646Z Metadata: read
+2026-10-13T22:18:38.6059266Z ##[endgroup]
+2026-10-13T22:18:38.6061363Z Secret source: Actions
+2026-10-13T22:18:38.6062426Z Cache mode: write
+2026-10-13T22:18:38.6063356Z Prepare workflow directory
+2026-10-13T22:18:38.6404193Z Prepare all required actions
+2026-10-13T22:18:38.6451965Z Getting action download info
+2026-10-13T22:18:38.8938244Z Download action repository 'actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09' (SHA:fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09)
+2026-10-13T22:18:38.9855146Z Download action repository 'actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16' (SHA:924ae3a1cded613372ab5595356fb5720e22ba16)
+2026-10-13T22:18:39.5316897Z Complete job name: plan
+2026-10-13T22:18:39.6104565Z ##[group]Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+2026-10-13T22:18:39.6105665Z with:
+2026-10-13T22:18:39.6106119Z   persist-credentials: false
+2026-10-13T22:18:39.6106631Z   fetch-depth: 1
+2026-10-13T22:18:39.6107148Z   repository: humaux/live_commerce_architecture_v1
+2026-10-13T22:18:39.6111375Z   token: ***
+2026-10-13T22:18:39.6111821Z   ssh-strict: true
+2026-10-13T22:18:39.6112260Z   ssh-user: git
+2026-10-13T22:18:39.6112686Z   clean: true
+2026-10-13T22:18:39.6113130Z   sparse-checkout-cone-mode: true
+2026-10-13T22:18:39.6113655Z   fetch-tags: false
+2026-10-13T22:18:39.6114101Z   show-progress: true
+2026-10-13T22:18:39.6114550Z   lfs: false
+2026-10-13T22:18:39.6114958Z   submodules: false
+2026-10-13T22:18:39.6115407Z   set-safe-directory: true
+2026-10-13T22:18:39.6115907Z   allow-unsafe-pr-checkout: false
+2026-10-13T22:18:39.6116617Z ##[endgroup]
+2026-10-13T22:18:39.7206019Z Syncing repository: humaux/live_commerce_architecture_v1
+2026-10-13T22:18:39.7208496Z ##[group]Getting Git version info
+2026-10-13T22:18:39.7209578Z Working directory is '/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1'
+2026-10-13T22:18:39.7210902Z [command]/usr/bin/git version
+2026-10-13T22:18:39.7251255Z git version 2.55.0
+2026-10-13T22:18:39.7282200Z ##[endgroup]
+2026-10-13T22:18:39.7296685Z Temporarily overriding HOME='/home/runner/work/_temp/d979c256-2228-441c-89df-775dc6257f6f' before making global git config changes
+2026-10-13T22:18:39.7299538Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-13T22:18:39.7304487Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+2026-10-13T22:18:39.7374834Z Deleting the contents of '/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1'
+2026-10-13T22:18:39.7383075Z ##[group]Initializing the repository
+2026-10-13T22:18:39.7389686Z [command]/usr/bin/git init /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+2026-10-13T22:18:39.7473576Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-10-13T22:18:39.7475133Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-10-13T22:18:39.7476633Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-10-13T22:18:39.7478029Z hint: call:
+2026-10-13T22:18:39.7478850Z hint:
+2026-10-13T22:18:39.7479621Z hint: 	git config --global init.defaultBranch <name>
+2026-10-13T22:18:39.7480552Z hint:
+2026-10-13T22:18:39.7481425Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-10-13T22:18:39.7482995Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-10-13T22:18:39.7484172Z hint:
+2026-10-13T22:18:39.7484802Z hint: 	git branch -m <name>
+2026-10-13T22:18:39.7485525Z hint:
+2026-10-13T22:18:39.7486484Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-10-13T22:18:39.7491700Z Initialized empty Git repository in /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/.git/
+2026-10-13T22:18:39.7494436Z [command]/usr/bin/git remote add origin https://github.com/humaux/live_commerce_architecture_v1
+2026-10-13T22:18:39.7535923Z ##[endgroup]
+2026-10-13T22:18:39.7537149Z ##[group]Disabling automatic garbage collection
+2026-10-13T22:18:39.7539206Z [command]/usr/bin/git config --local gc.auto 0
+2026-10-13T22:18:39.7572670Z ##[endgroup]
+2026-10-13T22:18:39.7573908Z ##[group]Setting up auth
+2026-10-13T22:18:39.7580205Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-13T22:18:39.7614696Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-13T22:18:39.7977937Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-13T22:18:39.8017767Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-13T22:18:39.8283561Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-13T22:18:39.8324891Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-13T22:18:39.8577969Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-10-13T22:18:39.8621053Z ##[endgroup]
+2026-10-13T22:18:39.8621982Z ##[group]Fetching the repository
+2026-10-13T22:18:39.8631125Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +0bdb85d359aff8fd544086513e1daf4d879d91fe:refs/remotes/origin/unit/oa-1-order-attempt-core
+2026-10-13T22:18:47.7560722Z From https://github.com/humaux/live_commerce_architecture_v1
+2026-10-13T22:18:47.7563183Z  * [new ref]         0bdb85d359aff8fd544086513e1daf4d879d91fe -> origin/unit/oa-1-order-attempt-core
+2026-10-13T22:18:47.7567447Z ##[endgroup]
+2026-10-13T22:18:47.7569383Z ##[group]Determining the checkout info
+2026-10-13T22:18:47.7570830Z ##[endgroup]
+2026-10-13T22:18:47.7572582Z [command]/usr/bin/git sparse-checkout disable
+2026-10-13T22:18:47.7624455Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-10-13T22:18:47.7659260Z ##[group]Checking out the ref
+2026-10-13T22:18:47.7664002Z [command]/usr/bin/git checkout --progress --force -B unit/oa-1-order-attempt-core refs/remotes/origin/unit/oa-1-order-attempt-core
+2026-10-13T22:18:48.7860090Z Updating files:  47% (5665/11927)
+2026-10-13T22:18:48.7940326Z Updating files:  48% (5725/11927)
+2026-10-13T22:18:48.8014310Z Updating files:  49% (5845/11927)
+2026-10-13T22:18:48.8078313Z Updating files:  50% (5964/11927)
+2026-10-13T22:18:48.8162103Z Updating files:  51% (6083/11927)
+2026-10-13T22:18:48.8232109Z Updating files:  52% (6203/11927)
+2026-10-13T22:18:48.8303894Z Updating files:  53% (6322/11927)
+2026-10-13T22:18:48.8633891Z Updating files:  54% (6441/11927)
+2026-10-13T22:18:48.8888618Z Updating files:  55% (6560/11927)
+2026-10-13T22:18:48.9005063Z Updating files:  56% (6680/11927)
+2026-10-13T22:18:48.9231783Z Updating files:  57% (6799/11927)
+2026-10-13T22:18:48.9666708Z Updating files:  58% (6918/11927)
+2026-10-13T22:18:49.0126722Z Updating files:  59% (7037/11927)
+2026-10-13T22:18:49.0304073Z Updating files:  60% (7157/11927)
+2026-10-13T22:18:49.0386583Z Updating files:  61% (7276/11927)
+2026-10-13T22:18:49.0441774Z Updating files:  62% (7395/11927)
+2026-10-13T22:18:49.0798243Z Updating files:  63% (7515/11927)
+2026-10-13T22:18:49.0924067Z Updating files:  64% (7634/11927)
+2026-10-13T22:18:49.1169819Z Updating files:  65% (7753/11927)
+2026-10-13T22:18:49.1359179Z Updating files:  66% (7872/11927)
+2026-10-13T22:18:49.1521703Z Updating files:  67% (7992/11927)
+2026-10-13T22:18:49.1639850Z Updating files:  68% (8111/11927)
+2026-10-13T22:18:49.1901457Z Updating files:  69% (8230/11927)
+2026-10-13T22:18:49.1987711Z Updating files:  70% (8349/11927)
+2026-10-13T22:18:49.2291535Z Updating files:  71% (8469/11927)
+2026-10-13T22:18:49.2390959Z Updating files:  72% (8588/11927)
+2026-10-13T22:18:49.2574456Z Updating files:  73% (8707/11927)
+2026-10-13T22:18:49.3033201Z Updating files:  74% (8826/11927)
+2026-10-13T22:18:49.3183561Z Updating files:  75% (8946/11927)
+2026-10-13T22:18:49.3278070Z Updating files:  76% (9065/11927)
+2026-10-13T22:18:49.3456435Z Updating files:  77% (9184/11927)
+2026-10-13T22:18:49.3562112Z Updating files:  78% (9304/11927)
+2026-10-13T22:18:49.3693625Z Updating files:  79% (9423/11927)
+2026-10-13T22:18:49.3750374Z Updating files:  80% (9542/11927)
+2026-10-13T22:18:49.3871910Z Updating files:  81% (9661/11927)
+2026-10-13T22:18:49.3947977Z Updating files:  82% (9781/11927)
+2026-10-13T22:18:49.4074788Z Updating files:  83% (9900/11927)
+2026-10-13T22:18:49.4244694Z Updating files:  84% (10019/11927)
+2026-10-13T22:18:49.4361389Z Updating files:  85% (10138/11927)
+2026-10-13T22:18:49.4508806Z Updating files:  86% (10258/11927)
+2026-10-13T22:18:49.4575002Z Updating files:  87% (10377/11927)
+2026-10-13T22:18:49.4632150Z Updating files:  88% (10496/11927)
+2026-10-13T22:18:49.4703975Z Updating files:  89% (10616/11927)
+2026-10-13T22:18:49.4769152Z Updating files:  90% (10735/11927)
+2026-10-13T22:18:49.4895477Z Updating files:  91% (10854/11927)
+2026-10-13T22:18:49.5043597Z Updating files:  92% (10973/11927)
+2026-10-13T22:18:49.5240817Z Updating files:  93% (11093/11927)
+2026-10-13T22:18:49.5344130Z Updating files:  94% (11212/11927)
+2026-10-13T22:18:49.5454113Z Updating files:  95% (11331/11927)
+2026-10-13T22:18:49.5605288Z Updating files:  96% (11450/11927)
+2026-10-13T22:18:49.5757264Z Updating files:  97% (11570/11927)
+2026-10-13T22:18:49.5899154Z Updating files:  98% (11689/11927)
+2026-10-13T22:18:49.6031759Z Updating files:  99% (11808/11927)
+2026-10-13T22:18:49.6032176Z Updating files: 100% (11927/11927)
+2026-10-13T22:18:49.6032559Z Updating files: 100% (11927/11927), done.
+2026-10-13T22:18:49.6161970Z Switched to a new branch 'unit/oa-1-order-attempt-core'
+2026-10-13T22:18:49.6167477Z branch 'unit/oa-1-order-attempt-core' set up to track 'origin/unit/oa-1-order-attempt-core'.
+2026-10-13T22:18:49.6232864Z ##[endgroup]
+2026-10-13T22:18:49.6281553Z [command]/usr/bin/git log -1 --format=%H
+2026-10-13T22:18:49.6318194Z 0bdb85d359aff8fd544086513e1daf4d879d91fe
+2026-10-13T22:18:49.6328874Z ##[group]Removing auth
+2026-10-13T22:18:49.6332263Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-13T22:18:49.6365902Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-13T22:18:49.6622061Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-13T22:18:49.6654038Z http.https://github.com/.extraheader
+2026-10-13T22:18:49.6662730Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-10-13T22:18:49.6700854Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-13T22:18:49.6952035Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-13T22:18:49.6987494Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-13T22:18:49.7237737Z ##[endgroup]
+2026-10-13T22:18:49.7469585Z ##[group]Run printf '.github/workflows/gates.yml\n' | node scripts/dev/pr-modes.mjs --stdin >/dev/null
+2026-10-13T22:18:49.7470395Z [36;1mprintf '.github/workflows/gates.yml\n' | node scripts/dev/pr-modes.mjs --stdin >/dev/null[0m
+2026-10-13T22:18:49.7717021Z shell: /usr/bin/bash -e {0}
+2026-10-13T22:18:49.7717335Z ##[endgroup]
+2026-10-13T22:18:50.0539445Z pr-modes: 1 changed path(s) -> 53 mode(s)
+2026-10-13T22:18:50.0722311Z ##[group]Run node scripts/dev/ci-plan.mjs
+2026-10-13T22:18:50.0722652Z [36;1mnode scripts/dev/ci-plan.mjs[0m
+2026-10-13T22:18:50.0793531Z shell: /usr/bin/bash -e {0}
+2026-10-13T22:18:50.0793826Z env:
+2026-10-13T22:18:50.0798431Z   MODES: ["foundation-shards","--browser-inbox","--browser-meta-health-ui","--browser-tracking-backfill","--browser-platform-site","--browser-admin-shell","--browser-click-sweep","--browser-visual-lint","--browser-identity","--browser-buyer-comms","--browser-checkout-offline","--browser-home-cod","--browser-promotions","--browser-password-auth","--browser-admin-legacy","--browser-buyer","--browser-merchant-buyer","--browser-manual-order","--browser-merchant-orders-bff","--browser-merchant-orders-ui","--browser-input-delivery","--browser-studio-bff","--browser-studio-ui","--browser-live-console","--browser-claim-checkout","--browser-live-claims","--browser-order","--browser-payment","--browser-refund-fulfilment","--browser-customers-billing","--browser-card-payments","--browser-meta-ads","--browser-ads-attribution","--browser-cvs","--browser-catalog-media","--browser-storefront-publish","--browser-store-domains","--browser-storefront","--browser-webkit","--browser-e2e","--live-browser-input","--browser-design","--browser-ops-polish","--browser-meta-connect","--browser-product-editor","--browser-catalog-core","--browser-returns-ui","--browser-picklist","--browser-operations-ads","--browser-product-media-v2","--browser-reports","--browser-migration-import","--browser-live-settings"]
+2026-10-13T22:18:50.0802986Z ##[endgroup]
+2026-10-13T22:18:50.1203216Z ci-plan: 75 job(s); click-sweep x10 (aggregate); visual-lint x4 (aggregate)
+2026-10-13T22:18:50.1205221Z   shard:unit  -> artifact gate-shard_unit
+2026-10-13T22:18:50.1205746Z   shard:g01  -> artifact gate-shard_g01
+2026-10-13T22:18:50.1206140Z   shard:g02  -> artifact gate-shard_g02
+2026-10-13T22:18:50.1206569Z   shard:g03  -> artifact gate-shard_g03
+2026-10-13T22:18:50.1207183Z   shard:g04  -> artifact gate-shard_g04
+2026-10-13T22:18:50.1207582Z   shard:g05  -> artifact gate-shard_g05
+2026-10-13T22:18:50.1208210Z   shard:g06  -> artifact gate-shard_g06
+2026-10-13T22:18:50.1208674Z   shard:g07  -> artifact gate-shard_g07
+2026-10-13T22:18:50.1210302Z   shard:g08  -> artifact gate-shard_g08
+2026-10-13T22:18:50.1217453Z   shard:g09  -> artifact gate-shard_g09
+2026-10-13T22:18:50.1218407Z   shard:g10  -> artifact gate-shard_g10
+2026-10-13T22:18:50.1219051Z   --browser-inbox  -> artifact gate-browser-inbox
+2026-10-13T22:18:50.1219859Z   --browser-meta-health-ui  -> artifact gate-browser-meta-health-ui
+2026-10-13T22:18:50.1220641Z   --browser-tracking-backfill  -> artifact gate-browser-tracking-backfill
+2026-10-13T22:18:50.1221425Z   --browser-platform-site  -> artifact gate-browser-platform-site
+2026-10-13T22:18:50.1222119Z   --browser-admin-shell  -> artifact gate-browser-admin-shell
+2026-10-13T22:18:50.1223103Z   --browser-click-sweep@1/10  -> artifact gate-browser-click-sweep_1_10
+2026-10-13T22:18:50.1223602Z   --browser-click-sweep@2/10  -> artifact gate-browser-click-sweep_2_10
+2026-10-13T22:18:50.1224052Z   --browser-click-sweep@3/10  -> artifact gate-browser-click-sweep_3_10
+2026-10-13T22:18:50.1224490Z   --browser-click-sweep@4/10  -> artifact gate-browser-click-sweep_4_10
+2026-10-13T22:18:50.1224921Z   --browser-click-sweep@5/10  -> artifact gate-browser-click-sweep_5_10
+2026-10-13T22:18:50.1225357Z   --browser-click-sweep@6/10  -> artifact gate-browser-click-sweep_6_10
+2026-10-13T22:18:50.1225782Z   --browser-click-sweep@7/10  -> artifact gate-browser-click-sweep_7_10
+2026-10-13T22:18:50.1226211Z   --browser-click-sweep@8/10  -> artifact gate-browser-click-sweep_8_10
+2026-10-13T22:18:50.1226639Z   --browser-click-sweep@9/10  -> artifact gate-browser-click-sweep_9_10
+2026-10-13T22:18:50.1227085Z   --browser-click-sweep@10/10  -> artifact gate-browser-click-sweep_10_10
+2026-10-13T22:18:50.1227550Z   --browser-visual-lint@1/4  -> artifact gate-browser-visual-lint_1_4
+2026-10-13T22:18:50.1228522Z   --browser-visual-lint@2/4  -> artifact gate-browser-visual-lint_2_4
+2026-10-13T22:18:50.1228963Z   --browser-visual-lint@3/4  -> artifact gate-browser-visual-lint_3_4
+2026-10-13T22:18:50.1229474Z   --browser-visual-lint@4/4  -> artifact gate-browser-visual-lint_4_4
+2026-10-13T22:18:50.1229895Z   --browser-identity  -> artifact gate-browser-identity
+2026-10-13T22:18:50.1230330Z   --browser-buyer-comms  -> artifact gate-browser-buyer-comms
+2026-10-13T22:18:50.1230827Z   --browser-checkout-offline  -> artifact gate-browser-checkout-offline
+2026-10-13T22:18:50.1231250Z   --browser-home-cod  -> artifact gate-browser-home-cod
+2026-10-13T22:18:50.1231633Z   --browser-promotions  -> artifact gate-browser-promotions
+2026-10-13T22:18:50.1232057Z   --browser-password-auth  -> artifact gate-browser-password-auth
+2026-10-13T22:18:50.1232494Z   --browser-admin-legacy  -> artifact gate-browser-admin-legacy
+2026-10-13T22:18:50.1232888Z   --browser-buyer  -> artifact gate-browser-buyer
+2026-10-13T22:18:50.1233281Z   --browser-merchant-buyer  -> artifact gate-browser-merchant-buyer
+2026-10-13T22:18:50.1233708Z   --browser-manual-order  -> artifact gate-browser-manual-order
+2026-10-13T22:18:50.1234170Z   --browser-merchant-orders-bff  -> artifact gate-browser-merchant-orders-bff
+2026-10-13T22:18:50.1234692Z   --browser-merchant-orders-ui  -> artifact gate-browser-merchant-orders-ui
+2026-10-13T22:18:50.1235168Z   --browser-input-delivery  -> artifact gate-browser-input-delivery
+2026-10-13T22:18:50.1235581Z   --browser-studio-bff  -> artifact gate-browser-studio-bff
+2026-10-13T22:18:50.1236004Z   --browser-studio-ui  -> artifact gate-browser-studio-ui
+2026-10-13T22:18:50.1236409Z   --browser-live-console  -> artifact gate-browser-live-console
+2026-10-13T22:18:50.1236831Z   --browser-claim-checkout  -> artifact gate-browser-claim-checkout
+2026-10-13T22:18:50.1237241Z   --browser-live-claims  -> artifact gate-browser-live-claims
+2026-10-13T22:18:50.1237611Z   --browser-order  -> artifact gate-browser-order
+2026-10-13T22:18:50.1238123Z   --browser-payment  -> artifact gate-browser-payment
+2026-10-13T22:18:50.1238552Z   --browser-refund-fulfilment  -> artifact gate-browser-refund-fulfilment
+2026-10-13T22:18:50.1239025Z   --browser-customers-billing  -> artifact gate-browser-customers-billing
+2026-10-13T22:18:50.1239475Z   --browser-card-payments  -> artifact gate-browser-card-payments
+2026-10-13T22:18:50.1239868Z   --browser-meta-ads  -> artifact gate-browser-meta-ads
+2026-10-13T22:18:50.1240269Z   --browser-ads-attribution  -> artifact gate-browser-ads-attribution
+2026-10-13T22:18:50.1240669Z   --browser-cvs  -> artifact gate-browser-cvs
+2026-10-13T22:18:50.1241031Z   --browser-catalog-media  -> artifact gate-browser-catalog-media
+2026-10-13T22:18:50.1241525Z   --browser-storefront-publish  -> artifact gate-browser-storefront-publish
+2026-10-13T22:18:50.1242007Z   --browser-store-domains  -> artifact gate-browser-store-domains
+2026-10-13T22:18:50.1242828Z   --browser-storefront  -> artifact gate-browser-storefront
+2026-10-13T22:18:50.1243420Z   --browser-webkit  -> artifact gate-browser-webkit
+2026-10-13T22:18:50.1243951Z   --browser-e2e  -> artifact gate-browser-e2e
+2026-10-13T22:18:50.1244484Z   --live-browser-input  -> artifact gate-live-browser-input
+2026-10-13T22:18:50.1245071Z   --browser-design  -> artifact gate-browser-design
+2026-10-13T22:18:50.1245745Z   --browser-ops-polish  -> artifact gate-browser-ops-polish
+2026-10-13T22:18:50.1246463Z   --browser-meta-connect  -> artifact gate-browser-meta-connect
+2026-10-13T22:18:50.1246938Z   --browser-product-editor  -> artifact gate-browser-product-editor
+2026-10-13T22:18:50.1247372Z   --browser-catalog-core  -> artifact gate-browser-catalog-core
+2026-10-13T22:18:50.1247767Z   --browser-returns-ui  -> artifact gate-browser-returns-ui
+2026-10-13T22:18:50.1248322Z   --browser-picklist  -> artifact gate-browser-picklist
+2026-10-13T22:18:50.1248724Z   --browser-operations-ads  -> artifact gate-browser-operations-ads
+2026-10-13T22:18:50.1249207Z   --browser-product-media-v2  -> artifact gate-browser-product-media-v2
+2026-10-13T22:18:50.1249823Z   --browser-reports  -> artifact gate-browser-reports
+2026-10-13T22:18:50.1250249Z   --browser-migration-import  -> artifact gate-browser-migration-import
+2026-10-13T22:18:50.1250707Z   --browser-live-settings  -> artifact gate-browser-live-settings
+2026-10-13T22:18:50.1366517Z Post job cleanup.
+2026-10-13T22:18:50.2192529Z [command]/usr/bin/git version
+2026-10-13T22:18:50.2235841Z git version 2.55.0
+2026-10-13T22:18:50.2273318Z Temporarily overriding HOME='/home/runner/work/_temp/45982673-d859-4636-bdf9-c1dbf491dec6' before making global git config changes
+2026-10-13T22:18:50.2274798Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-13T22:18:50.2279792Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+2026-10-13T22:18:50.2320535Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-13T22:18:50.2359396Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-13T22:18:50.2642533Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-13T22:18:50.2680180Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-13T22:18:50.2959089Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-13T22:18:50.2999307Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-13T22:18:50.3477770Z Evaluate and set job outputs
+2026-10-13T22:18:50.3499195Z Set output 'matrix'
+2026-10-13T22:18:50.3500762Z Set output 'sweep_n'
+2026-10-13T22:18:50.3501407Z Set output 'visual_n'
+2026-10-13T22:18:50.3501713Z Set output 'deploy'
+2026-10-13T22:18:50.3502297Z Cleaning up orphan processes
