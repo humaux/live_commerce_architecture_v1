@@ -4,17 +4,77 @@
 package foundation_test
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
+
+// Exercise the actual canonical test entry point, including its SKIP/FAIL policy,
+// in an isolated checkout. Validator-only calls cannot prove testing.T.Skip.
+func TestProductEditorMatrixLedgerEvidenceHistoricalPolicy(t *testing.T) {
+	for _, tc := range []struct {
+		name, strict, mutation string
+		wantExit               int
+		want                   string
+	}{
+		{"matching", "1", "", 0, "--- PASS: TestProductEditorMatrixLedgerEvidence"},
+		{"drift-default", "", "source", 0, "--- SKIP: TestProductEditorMatrixLedgerEvidence"},
+		{"drift-strict", "1", "source", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
+		{"tampered-matching", "", "artifact", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root, canonical := productEditorMatrixEvidenceFixture(t)
+			path := "tests/admin/product-editor.acceptance.ts"
+			if tc.mutation == "artifact" {
+				path = canonical + "/playwright.log"
+			}
+			if tc.mutation != "" {
+				data := append(productEditorMatrixReadFixture(t, root, path), []byte("\n// isolated mutation\n")...)
+				if err := os.WriteFile(filepath.Join(root, path), data, 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			binary, err := os.Executable()
+			if err != nil {
+				t.Fatal(err)
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			cmd := exec.CommandContext(ctx, binary, "-test.run=^TestProductEditorMatrixLedgerEvidence$", "-test.v")
+			cmd.Dir = filepath.Join(root, "tests/foundation")
+			t.Setenv("LC_MATRIX_EVIDENCE_STRICT", tc.strict)
+			output, err := cmd.CombinedOutput()
+			code := 0
+			if err != nil {
+				if exit, ok := err.(*exec.ExitError); ok {
+					code = exit.ExitCode()
+				} else {
+					t.Fatal(err)
+				}
+			}
+			t.Logf("actual canonical child exit=%d:\n%s", code, output)
+			if code != tc.wantExit || !strings.Contains(string(output), tc.want) {
+				t.Fatalf("want exit %d and %q", tc.wantExit, tc.want)
+			}
+			if tc.mutation == "source" && !strings.Contains(string(output), "canonical evidence is historical (source drift: "+path+")") {
+				t.Fatal("source drift must explicitly identify the historical record and changed file")
+			}
+			if tc.mutation == "artifact" && (!strings.Contains(string(output), "SHA-256 mismatch") || strings.Contains(string(output), "--- SKIP:")) {
+				t.Fatal("matching-source byte tampering must fail, never skip")
+			}
+		})
+	}
+}
 
 // TestProductEditorMatrixLedgerEvidenceCorruption exercises the real validator
 // with isolated filesystem mutations, never the delivered evidence in place.
