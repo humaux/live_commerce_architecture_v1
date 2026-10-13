@@ -77,6 +77,15 @@ results because the newly required `Executor`/`NewExecutor` API was absent.
 This is API-only RED, not executed behavior proof; `executor-api-red-ci.log`
 retains the exact compile failure. Native behavior and mutation acceptance
 must execute after implementation. The existing workflow bound is unchanged.
+
+CI `38458877458` at `054d325f0` did **not** execute either requested gate:
+the temporary formatter evidence step treated Go 1.27's diff exit 1 as a
+step failure. `full-c2-first-ci.log` and `unit-first-ci.log` retain that setup
+failure. The generated formatting patch is tied to that exact SHA and applied
+without local formatter execution. The evidence collector now records this
+status; actual structural/format gates still test the unchanged checkout.
+This run proves neither C2 behavior nor a product red/green.
+
 The full C2 composite and terminal proof are in progress; notification helpers,
 Go executor, native expiry compatibility, worker/sweep and the complete matrix
 remain unverified. No OA-1 completion claim is made.

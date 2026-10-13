@@ -32,7 +32,7 @@ type PayEntryMaterial struct {
 }
 
 // String and GoString omit even encrypted material from incidental formatting.
-func (PayEntryMaterial) String() string { return "[order pay-entry material]" }
+func (PayEntryMaterial) String() string     { return "[order pay-entry material]" }
 func (m PayEntryMaterial) GoString() string { return m.String() }
 
 // PayEntryError exposes only a fixed classification, never key or token details.
@@ -41,7 +41,7 @@ type PayEntryError struct {
 }
 
 func (e *PayEntryError) Error() string { return e.code }
-func (e *PayEntryError) Code() string { return e.code }
+func (e *PayEntryError) Code() string  { return e.code }
 
 var (
 	ErrPayEntryInvalid        = &PayEntryError{code: "order_pay_entry_invalid"}
@@ -56,7 +56,7 @@ type PayEntryKeys struct {
 	keys          map[string]cipher.AEAD
 }
 
-func (PayEntryKeys) String() string { return "[order pay-entry keys]" }
+func (PayEntryKeys) String() string     { return "[order pay-entry keys]" }
 func (k PayEntryKeys) GoString() string { return k.String() }
 
 // NewPayEntryKeys reuses AES key validation and defensive copying, not plan

@@ -35,19 +35,23 @@ func TestOrderAttemptExecutionArithmetic(t *testing.T) {
 		t.Fatalf("real frozen C1 calculation rejected: %v", err)
 	}
 	mutations := map[string]func(*orderattempt.FrozenPlan){
-		"subtotal": func(p *orderattempt.FrozenPlan) { p.Calculation.SubtotalMinor++ },
-		"discount": func(p *orderattempt.FrozenPlan) { p.Calculation.DiscountMinor++ },
-		"shipping": func(p *orderattempt.FrozenPlan) { p.Calculation.ShippingMinor++ },
-		"shipping-tax": func(p *orderattempt.FrozenPlan) { p.Calculation.ShippingTaxMinor++ },
-		"tax": func(p *orderattempt.FrozenPlan) { p.Calculation.TaxMinor++ },
-		"total": func(p *orderattempt.FrozenPlan) { p.Calculation.TotalMinor++ },
+		"subtotal":      func(p *orderattempt.FrozenPlan) { p.Calculation.SubtotalMinor++ },
+		"discount":      func(p *orderattempt.FrozenPlan) { p.Calculation.DiscountMinor++ },
+		"shipping":      func(p *orderattempt.FrozenPlan) { p.Calculation.ShippingMinor++ },
+		"shipping-tax":  func(p *orderattempt.FrozenPlan) { p.Calculation.ShippingTaxMinor++ },
+		"tax":           func(p *orderattempt.FrozenPlan) { p.Calculation.TaxMinor++ },
+		"total":         func(p *orderattempt.FrozenPlan) { p.Calculation.TotalMinor++ },
 		"line-subtotal": func(p *orderattempt.FrozenPlan) { p.Calculation.Lines[0].SubtotalMinor++ },
 		"line-discount": func(p *orderattempt.FrozenPlan) { p.Calculation.Lines[0].DiscountMinor++ },
-		"line-tax": func(p *orderattempt.FrozenPlan) { p.Calculation.Lines[0].TaxMinor++ },
-		"line-total": func(p *orderattempt.FrozenPlan) { p.Calculation.Lines[0].TotalMinor++ },
-		"origins-swapped": func(p *orderattempt.FrozenPlan) { p.Calculation.Lines[0], p.Calculation.Lines[1] = p.Calculation.Lines[1], p.Calculation.Lines[0] },
+		"line-tax":      func(p *orderattempt.FrozenPlan) { p.Calculation.Lines[0].TaxMinor++ },
+		"line-total":    func(p *orderattempt.FrozenPlan) { p.Calculation.Lines[0].TotalMinor++ },
+		"origins-swapped": func(p *orderattempt.FrozenPlan) {
+			p.Calculation.Lines[0], p.Calculation.Lines[1] = p.Calculation.Lines[1], p.Calculation.Lines[0]
+		},
 		"origin-dropped": func(p *orderattempt.FrozenPlan) { p.Calculation.Lines = p.Calculation.Lines[:1] },
-		"origin-added": func(p *orderattempt.FrozenPlan) { p.Calculation.Lines = append(p.Calculation.Lines, p.Calculation.Lines[0]) },
+		"origin-added": func(p *orderattempt.FrozenPlan) {
+			p.Calculation.Lines = append(p.Calculation.Lines, p.Calculation.Lines[0])
+		},
 		"facts-invalid": func(p *orderattempt.FrozenPlan) { p.Facts = json.RawMessage(`{}`) },
 	}
 	for name, mutate := range mutations {

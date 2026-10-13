@@ -296,9 +296,19 @@ func TestOrderAttemptAllocationCatalogBeforeServiceBarrier(t *testing.T) {
 		t.Fatal(err)
 	}
 	done := make(chan error, 1)
-	go func() { defer close(done); _, _, callErr := oaAllocationCatalog(tx, a.AttemptID, plain); done <- callErr }()
-	defer func() { _ = holder.Rollback(context.Background()); select { case <-done: case <-ctx.Done(): } }()
-	ticker := time.NewTicker(10*time.Millisecond)
+	go func() {
+		defer close(done)
+		_, _, callErr := oaAllocationCatalog(tx, a.AttemptID, plain)
+		done <- callErr
+	}()
+	defer func() {
+		_ = holder.Rollback(context.Background())
+		select {
+		case <-done:
+		case <-ctx.Done():
+		}
+	}()
+	ticker := time.NewTicker(10 * time.Millisecond)
 	defer ticker.Stop()
 	for {
 		var blocked bool
@@ -309,9 +319,11 @@ func TestOrderAttemptAllocationCatalogBeforeServiceBarrier(t *testing.T) {
 			break
 		}
 		select {
-		case err = <-done: t.Fatalf("catalog bypassed held SKU: %v", err)
+		case err = <-done:
+			t.Fatalf("catalog bypassed held SKU: %v", err)
 		case <-ticker.C:
-		case <-ctx.Done(): t.Fatal("catalog did not reach actual SKU barrier")
+		case <-ctx.Done():
+			t.Fatal("catalog did not reach actual SKU barrier")
 		}
 	}
 	probe, err := e.p.f.owner.Begin(ctx)
@@ -329,8 +341,12 @@ func TestOrderAttemptAllocationCatalogBeforeServiceBarrier(t *testing.T) {
 		t.Fatal(err)
 	}
 	select {
-	case err = <-done: if err != nil { t.Fatalf("catalog after lock release: %v", err) }
-	case <-ctx.Done(): t.Fatal("catalog did not resume after native SKU release")
+	case err = <-done:
+		if err != nil {
+			t.Fatalf("catalog after lock release: %v", err)
+		}
+	case <-ctx.Done():
+		t.Fatal("catalog did not resume after native SKU release")
 	}
 }
 
@@ -363,11 +379,17 @@ func TestOrderAttemptAllocationPrivateInputDenials(t *testing.T) {
 			destination := oaAllocationDestination(t, tx, a, plain, quote)
 			attempt, want := a.AttemptID, "PT409"
 			switch change {
-			case "cart": quote.CartID = foreign.h.quote.CartID
-			case "quote": quote.QuoteID = foreign.h.quote.ID
-			case "destination": destination = foreign.h.destination.ID
-			case "attempt": attempt = randomUUID()
-			case "plaintext": plain = append([]byte(" "), plain...); want = "PT400"
+			case "cart":
+				quote.CartID = foreign.h.quote.CartID
+			case "quote":
+				quote.QuoteID = foreign.h.quote.ID
+			case "destination":
+				destination = foreign.h.destination.ID
+			case "attempt":
+				attempt = randomUUID()
+			case "plaintext":
+				plain = append([]byte(" "), plain...)
+				want = "PT400"
 			}
 			_, raw, err := oaAllocationCall(tx, attempt, plain, quote, destination)
 			oaFenceCode(t, raw, err, want)

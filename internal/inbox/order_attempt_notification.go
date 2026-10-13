@@ -28,55 +28,55 @@ var ErrOrderAttemptNotificationFormat = errors.New("inbox: order attempt notific
 var ErrOrderAttemptNotificationRecipient = errors.New("inbox: order attempt notification recipient invariant")
 
 type attemptNotificationThread struct {
-	EventID string `json:"event_id"`
-	KeyID string `json:"key_id"`
-	Nonce string `json:"nonce_hex"`
-	Ciphertext string `json:"ciphertext_hex"`
-	AppID string `json:"app_id"`
-	Object string `json:"object"`
-	AssetID string `json:"asset_id"`
-	EventKey string `json:"event_key"`
-	PayloadHash string `json:"payload_hash"`
-	TenantID string `json:"tenant_id"`
-	StoreID string `json:"store_id"`
-	RouteID string `json:"route_id"`
-	RouteEpoch int64 `json:"route_epoch"`
-	ServerSeq int64 `json:"server_seq"`
-	OccurredAt *time.Time `json:"occurred_at"`
-	Direction string `json:"direction"`
+	EventID     string     `json:"event_id"`
+	KeyID       string     `json:"key_id"`
+	Nonce       string     `json:"nonce_hex"`
+	Ciphertext  string     `json:"ciphertext_hex"`
+	AppID       string     `json:"app_id"`
+	Object      string     `json:"object"`
+	AssetID     string     `json:"asset_id"`
+	EventKey    string     `json:"event_key"`
+	PayloadHash string     `json:"payload_hash"`
+	TenantID    string     `json:"tenant_id"`
+	StoreID     string     `json:"store_id"`
+	RouteID     string     `json:"route_id"`
+	RouteEpoch  int64      `json:"route_epoch"`
+	ServerSeq   int64      `json:"server_seq"`
+	OccurredAt  *time.Time `json:"occurred_at"`
+	Direction   string     `json:"direction"`
 }
 
 type attemptNotificationPrepared struct {
-	State string `json:"state"`
-	TenantID string `json:"tenant_id"`
-	StoreID string `json:"store_id"`
-	OrderID string `json:"order_id"`
-	LinkVersion int64 `json:"link_version"`
-	ConversationID string `json:"conversation_id"`
-	BindingID string `json:"binding_id"`
-	TakeoverGeneration int64 `json:"takeover_generation"`
-	Platform string `json:"platform"`
-	TemplateID string `json:"template_id"`
-	TemplateVersion int64 `json:"template_version"`
-	TemplateBody string `json:"template_body"`
-	Origin string `json:"origin"`
-	Locale string `json:"locale"`
-	Thread attemptNotificationThread `json:"thread_row"`
+	State              string                    `json:"state"`
+	TenantID           string                    `json:"tenant_id"`
+	StoreID            string                    `json:"store_id"`
+	OrderID            string                    `json:"order_id"`
+	LinkVersion        int64                     `json:"link_version"`
+	ConversationID     string                    `json:"conversation_id"`
+	BindingID          string                    `json:"binding_id"`
+	TakeoverGeneration int64                     `json:"takeover_generation"`
+	Platform           string                    `json:"platform"`
+	TemplateID         string                    `json:"template_id"`
+	TemplateVersion    int64                     `json:"template_version"`
+	TemplateBody       string                    `json:"template_body"`
+	Origin             string                    `json:"origin"`
+	Locale             string                    `json:"locale"`
+	Thread             attemptNotificationThread `json:"thread_row"`
 }
 
 type attemptNotificationArtifact struct {
-	State string `json:"state"`
-	OperationID string `json:"operation_id"`
-	OutboundID string `json:"outbound_id"`
-	JobID int64 `json:"job_id"`
-	BodyHMAC string `json:"body_hmac_hex"`
-	KeyID string `json:"key_id"`
-	Nonce string `json:"nonce_hex"`
-	Ciphertext string `json:"ciphertext_hex"`
-	DispatchEnc string `json:"dispatch_enc_hex"`
+	State              string `json:"state"`
+	OperationID        string `json:"operation_id"`
+	OutboundID         string `json:"outbound_id"`
+	JobID              int64  `json:"job_id"`
+	BodyHMAC           string `json:"body_hmac_hex"`
+	KeyID              string `json:"key_id"`
+	Nonce              string `json:"nonce_hex"`
+	Ciphertext         string `json:"ciphertext_hex"`
+	DispatchEnc        string `json:"dispatch_enc_hex"`
 	DispatchCiphertext string `json:"dispatch_ciphertext_hex"`
-	TemplateID string `json:"template_id"`
-	TemplateVersion int64 `json:"template_version"`
+	TemplateID         string `json:"template_id"`
+	TemplateVersion    int64  `json:"template_version"`
 }
 
 // PrepareOrderAttemptNotification transforms only the internal SQL PREPARED DTO.

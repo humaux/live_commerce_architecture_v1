@@ -1,0 +1,723 @@
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	﻿2026-10-13T19:57:12.1824169Z Current runner version: '2.337.0'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1850610Z ##[group]Runner Image Provisioner
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1851606Z Hosted Compute Agent
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1852235Z Version: 20261002.596
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1852878Z Commit: c3d12f3313a95f25162a1503be624f3b0617f8c0
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1853661Z Build Date: 2026-10-02T22:28:27Z
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1854682Z Worker ID: {9e31e97a-c94a-4f1b-9bd1-108aff43fc49}
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1855426Z Region: westus
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1856089Z Cloud: Azure
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1856623Z ##[endgroup]
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1858637Z ##[group]Operating System
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1859338Z Ubuntu
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1859877Z 24.04.5
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1860462Z LTS
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1860975Z ##[endgroup]
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1861554Z ##[group]Runner Image
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1862219Z Image: ubuntu-24.04
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1862815Z Version: 20261004.327.1
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1864113Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/Ubuntu2404-Readme.md
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1866043Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261004.327
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1867032Z ##[endgroup]
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1868220Z ##[group]GITHUB_TOKEN Permissions
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1870147Z Contents: read
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1870766Z Metadata: read
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1871427Z ##[endgroup]
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1873625Z Secret source: Actions
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1875053Z Cache mode: write
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.1875795Z Prepare workflow directory
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.2453717Z Prepare all required actions
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.2503311Z Getting action download info
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.6221822Z Download action repository 'actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09' (SHA:fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:12.7103167Z Download action repository 'actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16' (SHA:924ae3a1cded613372ab5595356fb5720e22ba16)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.1876301Z Download action repository 'actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444' (SHA:a0853c24544627f65ddf259abe73b1d18a591444)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.3596170Z Download action repository 'actions/cache@caa296126883cff596d87d8935842f9db880ef25' (SHA:caa296126883cff596d87d8935842f9db880ef25)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.4570734Z Download action repository 'actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f' (SHA:b7c566a772e6b6bfb58ed0dc250532a479d7789f)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.6636754Z Complete job name: gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.7510896Z ##[group]Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.7512101Z with:
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.7512606Z   persist-credentials: false
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.7513175Z   fetch-depth: 0
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.7513737Z   repository: humaux/live_commerce_architecture_v1
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.7518047Z   token: ***
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.7518545Z   ssh-strict: true
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.7519031Z   ssh-user: git
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.7519523Z   clean: true
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.7520020Z   sparse-checkout-cone-mode: true
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.7520612Z   fetch-tags: false
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.7521107Z   show-progress: true
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.7521620Z   lfs: false
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.7522075Z   submodules: false
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.7522568Z   set-safe-directory: true
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.7523122Z   allow-unsafe-pr-checkout: false
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.7523965Z env:
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.7524921Z   GOTOOLCHAIN: go1.27.2
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.7525499Z   GOFLAGS: -mod=readonly
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.7526147Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.7527007Z   MODE: focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.7527804Z   LC_SWEEP_WORKERS: 1
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.7528304Z   EXTRA_ENV: 
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.7528755Z ##[endgroup]
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8555186Z Syncing repository: humaux/live_commerce_architecture_v1
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8558140Z ##[group]Getting Git version info
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8560443Z Working directory is '/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8562887Z [command]/usr/bin/git version
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8608045Z git version 2.55.0
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8630072Z ##[endgroup]
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8645206Z Temporarily overriding HOME='/home/runner/work/_temp/e7c023c8-4a9d-4f9d-85fc-669bb583548d' before making global git config changes
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8647961Z Adding repository directory to the temporary git global config as a safe directory
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8651669Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8702198Z Deleting the contents of '/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8706053Z ##[group]Initializing the repository
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8710737Z [command]/usr/bin/git init /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8815420Z hint: Using 'master' as the name for the initial branch. This default branch name
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8817719Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8819893Z hint: to use in all of your new repositories, which will suppress this warning,
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8821516Z hint: call:
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8822596Z hint:
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8823845Z hint: 	git config --global init.defaultBranch <name>
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8825769Z hint:
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8827453Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8829678Z hint: 'development'. The just-created branch can be renamed via this command:
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8833435Z hint:
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8834760Z hint: 	git branch -m <name>
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8835936Z hint:
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8837902Z hint: Disable this message with "git config set advice.defaultBranchName false"
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8840279Z Initialized empty Git repository in /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/.git/
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8842697Z [command]/usr/bin/git remote add origin https://github.com/humaux/live_commerce_architecture_v1
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8893711Z ##[endgroup]
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8895577Z ##[group]Disabling automatic garbage collection
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8898313Z [command]/usr/bin/git config --local gc.auto 0
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8935023Z ##[endgroup]
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8936533Z ##[group]Setting up auth
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8944965Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.8983651Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.9351861Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.9398363Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.9650966Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.9690622Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.9919213Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.9962919Z ##[endgroup]
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.9963824Z ##[group]Fetching the repository
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:13.9973652Z [command]/usr/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7769395Z From https://github.com/humaux/live_commerce_architecture_v1
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7772050Z  * [new branch]        checkout-go-20260924    -> origin/checkout-go-20260924
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7773510Z  * [new branch]        checkout-sql-20260924   -> origin/checkout-sql-20260924
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7774816Z  * [new branch]        claude/gallant-bohr-9rs3yo -> origin/claude/gallant-bohr-9rs3yo
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7776026Z  * [new branch]        codex/account-intake-http-20260924 -> origin/codex/account-intake-http-20260924
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7777227Z  * [new branch]        codex/admin-assets      -> origin/codex/admin-assets
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7778133Z  * [new branch]        codex/admin-fixture     -> origin/codex/admin-fixture
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7778737Z  * [new branch]        codex/admin-ledger      -> origin/codex/admin-ledger
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7779333Z  * [new branch]        codex/admin-ledger-tests -> origin/codex/admin-ledger-tests
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7779953Z  * [new branch]        codex/admin-pagination  -> origin/codex/admin-pagination
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7780580Z  * [new branch]        codex/admin-transport-tests -> origin/codex/admin-transport-tests
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7781241Z  * [new branch]        codex/buyer-history-backend -> origin/codex/buyer-history-backend
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7781856Z  * [new branch]        codex/catalog-inventory -> origin/codex/catalog-inventory
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7782511Z  * [new branch]        codex/catalog-inventory-tests -> origin/codex/catalog-inventory-tests
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7783452Z  * [new branch]        codex/commerce-buyer-payment-assembly-gate-20260925 -> origin/codex/commerce-buyer-payment-assembly-gate-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7785138Z  * [new branch]        codex/commerce-buyer-payment-browser-tests-20260925 -> origin/codex/commerce-buyer-payment-browser-tests-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7786650Z  * [new branch]        codex/commerce-buyer-payment-http-20260925 -> origin/codex/commerce-buyer-payment-http-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7787587Z  * [new branch]        codex/commerce-buyer-payment-pg-20260925 -> origin/codex/commerce-buyer-payment-pg-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7788532Z  * [new branch]        codex/commerce-buyer-payment-public-20260925 -> origin/codex/commerce-buyer-payment-public-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7789540Z  * [new branch]        codex/commerce-buyer-payment-public-tests-20260925 -> origin/codex/commerce-buyer-payment-public-tests-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7790595Z  * [new branch]        codex/commerce-buyer-payment-ui-controller-20260925 -> origin/codex/commerce-buyer-payment-ui-controller-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7791724Z  * [new branch]        codex/commerce-hosted-go-20260925 -> origin/codex/commerce-hosted-go-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7792519Z  * [new branch]        codex/commerce-hosted-pg-20260925 -> origin/codex/commerce-hosted-pg-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7793268Z  * [new branch]        codex/engineering-maintenance -> origin/codex/engineering-maintenance
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7793912Z  * [new branch]        codex/expiry-runtime-go -> origin/codex/expiry-runtime-go
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7795053Z  * [new branch]        codex/expiry-runtime-pg -> origin/codex/expiry-runtime-pg
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7795749Z  * [new branch]        codex/foundation-platform -> origin/codex/foundation-platform
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7796448Z  * [new branch]        codex/foundation-tests  -> origin/codex/foundation-tests
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7797225Z  * [new branch]        codex/locale-routing    -> origin/codex/locale-routing
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7797923Z  * [new branch]        codex/merchant-orders-bff -> origin/codex/merchant-orders-bff
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7799124Z  * [new branch]        codex/merchant-orders-bff-test -> origin/codex/merchant-orders-bff-test
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7800027Z  * [new branch]        codex/merchant-orders-go -> origin/codex/merchant-orders-go
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7800965Z  * [new branch]        codex/merchant-orders-pg -> origin/codex/merchant-orders-pg
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7802433Z  * [new branch]        codex/merchant-settings-http-20260924 -> origin/codex/merchant-settings-http-20260924
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7803469Z  * [new branch]        codex/oidclogin         -> origin/codex/oidclogin
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7804542Z  * [new branch]        codex/payment-capture-go-20260924 -> origin/codex/payment-capture-go-20260924
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7805328Z  * [new branch]        codex/payment-capture-sql-20260924 -> origin/codex/payment-capture-sql-20260924
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7806025Z  * [new branch]        codex/payment-query-20260924 -> origin/codex/payment-query-20260924
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7806769Z  * [new branch]        codex/payment-runtime-pg-gate-20260925 -> origin/codex/payment-runtime-pg-gate-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7807494Z  * [new branch]        codex/payment-start-20260924 -> origin/codex/payment-start-20260924
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7808219Z  * [new branch]        codex/payment-worker-runtime-20260925 -> origin/codex/payment-worker-runtime-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7809009Z  * [new branch]        codex/pr32-email-envelope-red -> origin/codex/pr32-email-envelope-red
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7809830Z  * [new branch]        codex/pr32-intent-ci-red -> origin/codex/pr32-intent-ci-red
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7810451Z  * [new branch]        codex/pr32-lock-scope-red -> origin/codex/pr32-lock-scope-red
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7811101Z  * [new branch]        codex/pr32-price-correct-red -> origin/codex/pr32-price-correct-red
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7811794Z  * [new branch]        codex/pr32-price-reason-red -> origin/codex/pr32-price-reason-red
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7812414Z  * [new branch]        codex/pr32-r5-red       -> origin/codex/pr32-r5-red
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7813089Z  * [new branch]        codex/pr32-recovery-replay-red -> origin/codex/pr32-recovery-replay-red
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7813791Z  * [new branch]        codex/pr32-reservation-red -> origin/codex/pr32-reservation-red
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7814788Z  * [new branch]        codex/pr32-server-intent-red -> origin/codex/pr32-server-intent-red
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7815506Z  * [new branch]        codex/pr32-settled-ui-red -> origin/codex/pr32-settled-ui-red
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7816310Z  * [new branch]        codex/published-resolver-go-20260925 -> origin/codex/published-resolver-go-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7817158Z  * [new branch]        codex/settings-discovery-20260924 -> origin/codex/settings-discovery-20260924
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7817974Z  * [new branch]        codex/settings-documenter-20260925 -> origin/codex/settings-documenter-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7818871Z  * [new branch]        codex/settings-ledger-regression-20260924 -> origin/codex/settings-ledger-regression-20260924
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7819874Z  * [new branch]        codex/settings-ui-20260924 -> origin/codex/settings-ui-20260924
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7820575Z  * [new branch]        codex/t03-browser-bff   -> origin/codex/t03-browser-bff
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7821244Z  * [new branch]        codex/t03-buyer-capability -> origin/codex/t03-buyer-capability
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7822037Z  * [new branch]        commerce/allocation-config-20260924 -> origin/commerce/allocation-config-20260924
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7823054Z  * [new branch]        commerce/browser-input-cleanup-fault-tests-20260927 -> origin/commerce/browser-input-cleanup-fault-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7824127Z  * [new branch]        commerce/browser-input-config-20260927 -> origin/commerce/browser-input-config-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7825576Z  * [new branch]        commerce/browser-input-config-tests-20260927 -> origin/commerce/browser-input-config-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7826674Z  * [new branch]        commerce/browser-input-delivery-acceptance-20260927 -> origin/commerce/browser-input-delivery-acceptance-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7827705Z  * [new branch]        commerce/browser-input-execution-20260927 -> origin/commerce/browser-input-execution-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7828736Z  * [new branch]        commerce/browser-input-execution-tests-20260927 -> origin/commerce/browser-input-execution-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7829791Z  * [new branch]        commerce/browser-input-fault-tests-20260927 -> origin/commerce/browser-input-fault-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7830987Z  * [new branch]        commerce/browser-input-holds-tests-20260927 -> origin/commerce/browser-input-holds-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7831954Z  * [new branch]        commerce/browser-input-http-tests-20260927 -> origin/commerce/browser-input-http-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7832988Z  * [new branch]        commerce/browser-input-plan-fault-tests-20260927 -> origin/commerce/browser-input-plan-fault-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7834032Z  * [new branch]        commerce/browser-input-studio-read-20260927 -> origin/commerce/browser-input-studio-read-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7835223Z  * [new branch]        commerce/browser-input-token-go-20260927 -> origin/commerce/browser-input-token-go-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7836115Z  * [new branch]        commerce/brw07-composite-go-20260928 -> origin/commerce/brw07-composite-go-20260928
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7836972Z  * [new branch]        commerce/brw07-composite-sql-20260928 -> origin/commerce/brw07-composite-sql-20260928
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7837790Z  * [new branch]        commerce/buyer-catalog-20260925 -> origin/commerce/buyer-catalog-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7838624Z  * [new branch]        commerce/buyer-design-record-20260925 -> origin/commerce/buyer-design-record-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7839497Z  * [new branch]        commerce/buyer-destination-20260924 -> origin/commerce/buyer-destination-20260924
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7840475Z  * [new branch]        commerce/buyer-history-browser-extension-20260925 -> origin/commerce/buyer-history-browser-extension-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7841539Z  * [new branch]        commerce/buyer-history-design-record-20260925 -> origin/commerce/buyer-history-design-record-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7842391Z  * [new branch]        commerce/buyer-http-20260925 -> origin/commerce/buyer-http-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7843127Z  * [new branch]        commerce/buyer-options-20260925 -> origin/commerce/buyer-options-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7844014Z  * [new branch]        commerce/buyer-order-design-record-20260925 -> origin/commerce/buyer-order-design-record-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7845146Z  * [new branch]        commerce/buyer-order-gate-20260925 -> origin/commerce/buyer-order-gate-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7845977Z  * [new branch]        commerce/buyer-projections-20260925 -> origin/commerce/buyer-projections-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7846793Z  * [new branch]        commerce/buyer-public-bff-20260925 -> origin/commerce/buyer-public-bff-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7847773Z  * [new branch]        commerce/buyer-registration-20260925 -> origin/commerce/buyer-registration-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7848594Z  * [new branch]        commerce/checkout-quote-20260920 -> origin/commerce/checkout-quote-20260920
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7849374Z  * [new branch]        commerce/delivery-config-20260920 -> origin/commerce/delivery-config-20260920
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7850165Z  * [new branch]        commerce/legacy-family-go-20260926 -> origin/commerce/legacy-family-go-20260926
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7851076Z  * [new branch]        commerce/legacy-family-integration-20260926 -> origin/commerce/legacy-family-integration-20260926
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7851993Z  * [new branch]        commerce/legacy-family-tests-20260926 -> origin/commerce/legacy-family-tests-20260926
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7852919Z  * [new branch]        commerce/legacy-maintenance-tests-20260926 -> origin/commerce/legacy-maintenance-tests-20260926
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7853846Z  * [new branch]        commerce/legacy-upgrade-tests-20260926 -> origin/commerce/legacy-upgrade-tests-20260926
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7854926Z  * [new branch]        commerce/live-draft-go-20260927 -> origin/commerce/live-draft-go-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7856031Z  * [new branch]        commerce/live-draft-tests-20260927 -> origin/commerce/live-draft-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7857323Z  * [new branch]        commerce/livekit-input-tests-20260927 -> origin/commerce/livekit-input-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7858232Z  * [new branch]        commerce/livekit-input-wire-20260927 -> origin/commerce/livekit-input-wire-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7859430Z  * [new branch]        commerce/livekit-material-go-20260927 -> origin/commerce/livekit-material-go-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7861116Z  * [new branch]        commerce/livekit-material-tests-20260927 -> origin/commerce/livekit-material-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7862542Z  * [new branch]        commerce/livekit-protocol-go-20260927 -> origin/commerce/livekit-protocol-go-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7863543Z  * [new branch]        commerce/livekit-protocol-tests-20260927 -> origin/commerce/livekit-protocol-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7864741Z  * [new branch]        commerce/livekit-room-go-20260927 -> origin/commerce/livekit-room-go-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7865845Z  * [new branch]        commerce/livekit-room-tests-20260927 -> origin/commerce/livekit-room-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7866994Z  * [new branch]        commerce/local-recovery-20260927 -> origin/commerce/local-recovery-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7868364Z  * [new branch]        commerce/local-recovery-independent-20260927 -> origin/commerce/local-recovery-independent-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7869359Z  * [new branch]        commerce/local-recovery-tests-20260927 -> origin/commerce/local-recovery-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7870320Z  * [new branch]        commerce/lri-additive-event-snapshot-20260927 -> origin/commerce/lri-additive-event-snapshot-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7871262Z  * [new branch]        commerce/media-authority-sql-20260927 -> origin/commerce/media-authority-sql-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7872147Z  * [new branch]        commerce/media-authority-tests-20260927 -> origin/commerce/media-authority-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7872996Z  * [new branch]        commerce/media-execution-20260927 -> origin/commerce/media-execution-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7873846Z  * [new branch]        commerce/media-execution-tests-20260927 -> origin/commerce/media-execution-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7875246Z  * [new branch]        commerce/media-input-source-20260927 -> origin/commerce/media-input-source-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7876094Z  * [new branch]        commerce/media-input-tests-20260927 -> origin/commerce/media-input-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7876927Z  * [new branch]        commerce/media-login-source-20260927 -> origin/commerce/media-login-source-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7877748Z  * [new branch]        commerce/media-login-tests-20260927 -> origin/commerce/media-login-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7878728Z  * [new branch]        commerce/media-plan-20260927 -> origin/commerce/media-plan-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7879528Z  * [new branch]        commerce/media-plan-tests-20260927 -> origin/commerce/media-plan-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7880409Z  * [new branch]        commerce/media-recovery-observer-20260927 -> origin/commerce/media-recovery-observer-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7881318Z  * [new branch]        commerce/media-recovery-tests-20260927 -> origin/commerce/media-recovery-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7882140Z  * [new branch]        commerce/media-runtime-20260927 -> origin/commerce/media-runtime-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7882953Z  * [new branch]        commerce/media-runtime-tests-20260927 -> origin/commerce/media-runtime-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7883732Z  * [new branch]        commerce/media-stop-20260927 -> origin/commerce/media-stop-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7885103Z  * [new branch]        commerce/media-stop-tests-20260927 -> origin/commerce/media-stop-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7886528Z  * [new branch]        commerce/merchant-buyer-joint-20260925 -> origin/commerce/merchant-buyer-joint-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7888021Z  * [new branch]        commerce/merchant-orders-c-tests-20260927 -> origin/commerce/merchant-orders-c-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7889556Z  * [new branch]        commerce/merchant-orders-c-ui-20260927 -> origin/commerce/merchant-orders-c-ui-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7891367Z  * [new branch]        commerce/merchant-purchase-entry-20260925 -> origin/commerce/merchant-purchase-entry-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7892974Z  * [new branch]        commerce/merchant-purchase-entry-ui-20260925 -> origin/commerce/merchant-purchase-entry-ui-20260925
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7894870Z  * [new branch]        commerce/meta-consumer-go-20260926 -> origin/commerce/meta-consumer-go-20260926
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7896646Z  * [new branch]        commerce/meta-consumer-prefixed-repro-20260926 -> origin/commerce/meta-consumer-prefixed-repro-20260926
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7898427Z  * [new branch]        commerce/meta-consumer-tests-20260926 -> origin/commerce/meta-consumer-tests-20260926
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7899909Z  * [new branch]        commerce/meta-inbox-go-20260926 -> origin/commerce/meta-inbox-go-20260926
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7901282Z  * [new branch]        commerce/meta-inbox-tests-20260926 -> origin/commerce/meta-inbox-tests-20260926
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7902790Z  * [new branch]        commerce/meta-isolation-go-20260926 -> origin/commerce/meta-isolation-go-20260926
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7904523Z  * [new branch]        commerce/meta-payload-20260926 -> origin/commerce/meta-payload-20260926
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7905711Z  * [new branch]        commerce/meta-payload-tests-20260926 -> origin/commerce/meta-payload-tests-20260926
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7906601Z  * [new branch]        commerce/meta-protocol-20260926 -> origin/commerce/meta-protocol-20260926
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7908044Z  * [new branch]        commerce/meta-protocol-tests-20260926 -> origin/commerce/meta-protocol-tests-20260926
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7909400Z  * [new branch]        commerce/meta-runtime-go-20260926 -> origin/commerce/meta-runtime-go-20260926
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7910942Z  * [new branch]        commerce/meta-runtime-isolation-tests-20260926 -> origin/commerce/meta-runtime-isolation-tests-20260926
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7912461Z  * [new branch]        commerce/meta-runtime-tests-20260926 -> origin/commerce/meta-runtime-tests-20260926
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7913700Z  * [new branch]        commerce/orders-native-visibility-tests-20260927 -> origin/commerce/orders-native-visibility-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7915517Z  * [new branch]        commerce/pickup-source-20260924 -> origin/commerce/pickup-source-20260924
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7916732Z  * [new branch]        commerce/pricing-20260920 -> origin/commerce/pricing-20260920
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7917857Z  * [new branch]        commerce/r04-local-input-20260927 -> origin/commerce/r04-local-input-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7918908Z  * [new branch]        commerce/r04-local-input-tests-20260927 -> origin/commerce/r04-local-input-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7919807Z  * [new branch]        commerce/seed-pool-lifetime-20260927 -> origin/commerce/seed-pool-lifetime-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7920718Z  * [new branch]        commerce/startup-diagnostics-20260927 -> origin/commerce/startup-diagnostics-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7921668Z  * [new branch]        commerce/studio-b-ui-20260927 -> origin/commerce/studio-b-ui-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7922482Z  * [new branch]        commerce/studio-bff-source-20260927 -> origin/commerce/studio-bff-source-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7923303Z  * [new branch]        commerce/studio-bff-tests-20260927 -> origin/commerce/studio-bff-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7924128Z  * [new branch]        commerce/studio-input-tests-20260927 -> origin/commerce/studio-input-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7925344Z  * [new branch]        commerce/studio-native-device-tests-20260927 -> origin/commerce/studio-native-device-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7926224Z  * [new branch]        commerce/studio-source-20260927 -> origin/commerce/studio-source-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7926969Z  * [new branch]        commerce/studio-tests-20260927 -> origin/commerce/studio-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7927731Z  * [new branch]        commerce/studio-ui-tests-20260927 -> origin/commerce/studio-ui-tests-20260927
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7928536Z  * [new branch]        commerce/t03-design-record-20260920 -> origin/commerce/t03-design-record-20260920
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7929473Z  * [new branch]        commerce/t06-dispatcher-20260920 -> origin/commerce/t06-dispatcher-20260920
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7930307Z  * [new branch]        commerce/t06-operation-service-20260920 -> origin/commerce/t06-operation-service-20260920
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7931065Z  * [new branch]        commerce/wizard-20260920 -> origin/commerce/wizard-20260920
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7931657Z  * [new branch]        int/lc-u1-shell         -> origin/int/lc-u1-shell
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7932271Z  * [new branch]        int/product-media-v2-ui -> origin/int/product-media-v2-ui
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7932937Z  * [new branch]        int/storefront-card-gutter -> origin/int/storefront-card-gutter
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7933605Z  * [new branch]        int/w1-01u-banner       -> origin/int/w1-01u-banner
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7934208Z  * [new branch]        int/w3-u1b-picklist-ui  -> origin/int/w3-u1b-picklist-ui
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7935065Z  * [new branch]        main                    -> origin/main
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7935686Z  * [new branch]        merchant-accounts-go-20260924 -> origin/merchant-accounts-go-20260924
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7936403Z  * [new branch]        payment-methods-go-20260924 -> origin/payment-methods-go-20260924
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7937071Z  * [new branch]        payuni-wire-go-20260924 -> origin/payuni-wire-go-20260924
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7937658Z  * [new branch]        r3/integration          -> origin/r3/integration
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7938341Z  * [new branch]        unit/browser-evidence-untracked -> origin/unit/browser-evidence-untracked
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7939099Z  * [new branch]        unit/cancel-closes-work-item -> origin/unit/cancel-closes-work-item
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7939828Z  * [new branch]        unit/cart-refresh-generation -> origin/unit/cart-refresh-generation
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7940500Z  * [new branch]        unit/ci-actions-node24  -> origin/unit/ci-actions-node24
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7941121Z  * [new branch]        unit/ci-browser-linux   -> origin/unit/ci-browser-linux
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7941742Z  * [new branch]        unit/ci-contract-drift  -> origin/unit/ci-contract-drift
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7942516Z  * [new branch]        unit/ci-dedupe-serial   -> origin/unit/ci-dedupe-serial
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7943212Z  * [new branch]        unit/ci-playwright-deps-cache -> origin/unit/ci-playwright-deps-cache
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7943877Z  * [new branch]        unit/ci-pr-gates        -> origin/unit/ci-pr-gates
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7944907Z  * [new branch]        unit/ci-pr-modes-coverage -> origin/unit/ci-pr-modes-coverage
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7945769Z  * [new branch]        unit/ci-select-backend-browser -> origin/unit/ci-select-backend-browser
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7946418Z  * [new branch]        unit/ci-speed           -> origin/unit/ci-speed
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7947012Z  * [new branch]        unit/delivery-report    -> origin/unit/delivery-report
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7947756Z  * [new branch]        unit/delivery-report-r2 -> origin/unit/delivery-report-r2
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7948400Z  * [new branch]        unit/deploy-prep-r3     -> origin/unit/deploy-prep-r3
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7949047Z  * [new branch]        unit/deploy-prep-r3-p2  -> origin/unit/deploy-prep-r3-p2
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7949686Z  * [new branch]        unit/e2e-price-regex    -> origin/unit/e2e-price-regex
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7950471Z  * [new branch]        unit/ext-agent-anthropic -> origin/unit/ext-agent-anthropic
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7951283Z  * [new branch]        unit/fix-ads-draft-midnight-flake -> origin/unit/fix-ads-draft-midnight-flake
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7952087Z  * [new branch]        unit/fix-manual-order-regen-race -> origin/unit/fix-manual-order-regen-race
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7952861Z  * [new branch]        unit/fix-merchant-buyer-pmv2 -> origin/unit/fix-merchant-buyer-pmv2
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7953532Z  * [new branch]        unit/fix-meta-ads-ma09a -> origin/unit/fix-meta-ads-ma09a
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7954642Z  * [new branch]        unit/fix-report-funnel-clock -> origin/unit/fix-report-funnel-clock
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7955667Z  * [new branch]        unit/fix-settings-real-flake -> origin/unit/fix-settings-real-flake
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7956672Z  * [new branch]        unit/fix-storefront-chips-stream -> origin/unit/fix-storefront-chips-stream
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7957507Z  * [new branch]        unit/fix-untracked-stripe-capture -> origin/unit/fix-untracked-stripe-capture
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7958235Z  * [new branch]        unit/followups-polish-1 -> origin/unit/followups-polish-1
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7958880Z  * [new branch]        unit/gate-dep-register  -> origin/unit/gate-dep-register
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7959501Z  * [new branch]        unit/gate-port-retry    -> origin/unit/gate-port-retry
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7960174Z  * [new branch]        unit/lc-a3-print-idempotency -> origin/unit/lc-a3-print-idempotency
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7960887Z  * [new branch]        unit/lc-b2-deletion-eviction -> origin/unit/lc-b2-deletion-eviction
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7961799Z  * [new branch]        unit/lc-b3b-buyer-panel -> origin/unit/lc-b3b-buyer-panel
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7962824Z  * [new branch]        unit/lc-b7-console-read -> origin/unit/lc-b7-console-read
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7963474Z  * [new branch]        unit/lc-r2-c3-print-purge -> origin/unit/lc-r2-c3-print-purge
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7964087Z  * [new branch]        unit/lc-u1-shell        -> origin/unit/lc-u1-shell
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7964860Z  * [new branch]        unit/lc-u2a-comment-stream -> origin/unit/lc-u2a-comment-stream
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7965785Z  * [new branch]        unit/lc-u2b-inbox-page  -> origin/unit/lc-u2b-inbox-page
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7966709Z  * [new branch]        unit/lc-u2b2-customer-link -> origin/unit/lc-u2b2-customer-link
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7967730Z  * [new branch]        unit/lc-u3-create-order-drawer -> origin/unit/lc-u3-create-order-drawer
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7968507Z  * [new branch]        unit/live-price-keep-on-pause -> origin/unit/live-price-keep-on-pause
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7969298Z  * [new branch]        unit/matrix-coverage-v2-evidence -> origin/unit/matrix-coverage-v2-evidence
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7970102Z  * [new branch]        unit/matrix-coverage-v2-execution -> origin/unit/matrix-coverage-v2-execution
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7970832Z  * [new branch]        unit/matrix-ledger-enforce -> origin/unit/matrix-ledger-enforce
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7971527Z  * [new branch]        unit/oa-1-order-attempt-core -> origin/unit/oa-1-order-attempt-core
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7972426Z  * [new branch]        unit/ops-01b-store-suspend -> origin/unit/ops-01b-store-suspend
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7973215Z  * [new branch]        unit/ops-02b-support-grant -> origin/unit/ops-02b-support-grant
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7974021Z  * [new branch]        unit/order-attempt-contract -> origin/unit/order-attempt-contract
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7974856Z  * [new branch]        unit/order-gate-bo01-race -> origin/unit/order-gate-bo01-race
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7975516Z  * [new branch]        unit/pay-rm1-remove-payuni -> origin/unit/pay-rm1-remove-payuni
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7976190Z  * [new branch]        unit/perf-dashboard-todos -> origin/unit/perf-dashboard-todos
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7976826Z  * [new branch]        unit/pr1-ui-followups   -> origin/unit/pr1-ui-followups
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7977508Z  * [new branch]        unit/product-media-v2-backend -> origin/unit/product-media-v2-backend
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7978197Z  * [new branch]        unit/ruleset-acceptance -> origin/unit/ruleset-acceptance
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7978836Z  * [new branch]        unit/scope-revoke-404   -> origin/unit/scope-revoke-404
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7979514Z  * [new branch]        unit/security-go-1272-xnet-060 -> origin/unit/security-go-1272-xnet-060
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7980192Z  * [new branch]        unit/settlement-resolve -> origin/unit/settlement-resolve
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7980838Z  * [new branch]        unit/storefront-image-cap -> origin/unit/storefront-image-cap
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7981440Z  * [new branch]        unit/tz-audit           -> origin/unit/tz-audit
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7982135Z  * [new branch]        unit/ux-harden-r1       -> origin/unit/ux-harden-r1
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7982721Z  * [new branch]        unit/visual-polish-r1   -> origin/unit/visual-polish-r1
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7983651Z  * [new branch]        unit/w3-03b-checkout-reminder -> origin/unit/w3-03b-checkout-reminder
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7985096Z  * [new branch]        unit/w3-04b-sold-out-reply -> origin/unit/w3-04b-sold-out-reply
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7986117Z  * [new branch]        unit/w3-05b-blocklist   -> origin/unit/w3-05b-blocklist
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7986771Z  * [new branch]        unit/w3-06b-keyword-tools -> origin/unit/w3-06b-keyword-tools
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7987435Z  * [new branch]        unit/w3-07b-parcel-merge -> origin/unit/w3-07b-parcel-merge
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7988047Z  * [new branch]        unit/w3-08b-returns     -> origin/unit/w3-08b-returns
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7988682Z  * [new branch]        unit/w3-u2-live-settings-ui -> origin/unit/w3-u2-live-settings-ui
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7989415Z  * [new branch]        unit/w3-u3-comment-label-print -> origin/unit/w3-u3-comment-label-print
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7990141Z  * [new branch]        unit/w3-u4-parcel-merge-ui -> origin/unit/w3-u4-parcel-merge-ui
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7990780Z  * [new branch]        unit/w3-u5-returns-ui   -> origin/unit/w3-u5-returns-ui
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7991460Z  * [new branch]        unit/w4-02b-payuni-activation -> origin/unit/w4-02b-payuni-activation
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7992162Z  * [new branch]        unit/w4-s1-platform-stripe -> origin/unit/w4-s1-platform-stripe
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7993013Z  * [new branch]        unit/w4-s2-platform-settlement -> origin/unit/w4-s2-platform-settlement
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7993784Z  * [new branch]        unit/w4-u1-payment-activation-ui -> origin/unit/w4-u1-payment-activation-ui
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7994879Z  * [new branch]        unit/w5-02b-customer-import -> origin/unit/w5-02b-customer-import
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7995624Z  * [new branch]        unit/w5-03b-order-history-import -> origin/unit/w5-03b-order-history-import
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7996360Z  * [new branch]        unit/w5-u1-import-wizard-ui -> origin/unit/w5-u1-import-wizard-ui
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7996990Z  * [new branch]        unit/w6-02b-reports     -> origin/unit/w6-02b-reports
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7997650Z  * [new branch]        unit/w6-05b-operations-ledger -> origin/unit/w6-05b-operations-ledger
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7998608Z  * [new branch]        unit/w6-06b-ads-unbind  -> origin/unit/w6-06b-ads-unbind
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.7999769Z  * [new branch]        unit/w6-u1-customers-reports-ui -> origin/unit/w6-u1-customers-reports-ui
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.8000559Z  * [new branch]        unit/w6-u2-ops-ledger-ads-ui -> origin/unit/w6-u2-ops-ledger-ads-ui
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.8002432Z [command]/usr/bin/git branch --list --remote origin/unit/oa-1-order-attempt-core
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.8003413Z   origin/unit/oa-1-order-attempt-core
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.8004739Z [command]/usr/bin/git rev-parse refs/remotes/origin/unit/oa-1-order-attempt-core
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.8005283Z 054d325f063654220e88fee1456e482e337f8c79
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.8006188Z ##[endgroup]
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.8006662Z ##[group]Determining the checkout info
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.8007170Z ##[endgroup]
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.8007502Z [command]/usr/bin/git sparse-checkout disable
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.8008436Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.8009485Z ##[group]Checking out the ref
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:19.8010408Z [command]/usr/bin/git checkout --progress --force -B unit/oa-1-order-attempt-core refs/remotes/origin/unit/oa-1-order-attempt-core
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:20.8166002Z Updating files:  50% (6002/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:20.8232929Z Updating files:  51% (6028/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:20.8313968Z Updating files:  52% (6146/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:20.8381916Z Updating files:  53% (6265/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:20.8542114Z Updating files:  54% (6383/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:20.8680200Z Updating files:  55% (6501/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:20.8830073Z Updating files:  56% (6619/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:20.9011929Z Updating files:  57% (6737/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:20.9481818Z Updating files:  58% (6856/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:20.9911118Z Updating files:  59% (6974/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:20.9998644Z Updating files:  60% (7092/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.0083581Z Updating files:  61% (7210/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.0140556Z Updating files:  62% (7328/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.0484028Z Updating files:  63% (7446/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.0594226Z Updating files:  64% (7565/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.0876625Z Updating files:  65% (7683/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.0997539Z Updating files:  66% (7801/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.1160617Z Updating files:  67% (7919/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.1277006Z Updating files:  68% (8037/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.1520758Z Updating files:  69% (8156/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.1605491Z Updating files:  70% (8274/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.1891323Z Updating files:  71% (8392/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.2002406Z Updating files:  72% (8510/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.2180201Z Updating files:  73% (8628/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.2610159Z Updating files:  74% (8747/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.2731081Z Updating files:  75% (8865/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.2821304Z Updating files:  76% (8983/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.2991218Z Updating files:  77% (9101/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.3094701Z Updating files:  78% (9219/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.3219641Z Updating files:  79% (9338/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.3277415Z Updating files:  80% (9456/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.3396785Z Updating files:  81% (9574/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.3472255Z Updating files:  82% (9692/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.3592375Z Updating files:  83% (9810/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.3752621Z Updating files:  84% (9928/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.3852440Z Updating files:  85% (10047/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.4007524Z Updating files:  86% (10165/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.4072393Z Updating files:  87% (10283/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.4129645Z Updating files:  88% (10401/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.4205992Z Updating files:  89% (10519/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.4270761Z Updating files:  90% (10638/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.4383720Z Updating files:  91% (10756/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.4532371Z Updating files:  92% (10874/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.4721832Z Updating files:  93% (10992/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.4828584Z Updating files:  94% (11110/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.4935013Z Updating files:  95% (11229/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.5085651Z Updating files:  96% (11347/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.5247338Z Updating files:  97% (11465/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.5394995Z Updating files:  98% (11583/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.5532324Z Updating files:  99% (11701/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.5532935Z Updating files: 100% (11819/11819)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.5533322Z Updating files: 100% (11819/11819), done.
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.5666896Z Switched to a new branch 'unit/oa-1-order-attempt-core'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.5672732Z branch 'unit/oa-1-order-attempt-core' set up to track 'origin/unit/oa-1-order-attempt-core'.
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.5767123Z ##[endgroup]
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.5799400Z [command]/usr/bin/git log -1 --format=%H
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.5829324Z 054d325f063654220e88fee1456e482e337f8c79
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.5839525Z ##[group]Removing auth
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.5843924Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.5878089Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.6116689Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.6145938Z http.https://github.com/.extraheader
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.6153922Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.6192922Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.6445215Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.6479466Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.6715487Z ##[endgroup]
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.6951649Z ##[group]Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.6952051Z with:
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.6952261Z   go-version-file: go.mod
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.6952498Z   cache: false
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.6952705Z   check-latest: false
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.6955226Z   token: ***
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.6955444Z env:
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.6955640Z   GOTOOLCHAIN: go1.27.2
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.6955873Z   GOFLAGS: -mod=readonly
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.6956156Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.6956598Z   MODE: focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.6956997Z   LC_SWEEP_WORKERS: 1
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.6957211Z   EXTRA_ENV: 
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.6957402Z ##[endgroup]
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.8252784Z Setup go version spec 1.27.2
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:21.8267109Z Attempting to download 1.27.2...
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:22.6361730Z matching 1.27.2...
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:22.6389503Z Acquiring 1.27.2 from https://github.com/actions/go-versions/releases/download/1.27.2-37875086547/go-1.27.2-linux-x64.tar.gz
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:23.1363361Z Extracting Go...
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:23.1481282Z [command]/usr/bin/tar xz --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/8a63a066-654c-4924-aa2b-3f79646849ac -f /home/runner/work/_temp/b564bb0b-04b1-4bc1-8b18-ed98295738e7
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:24.8736416Z Successfully extracted go to /home/runner/work/_temp/8a63a066-654c-4924-aa2b-3f79646849ac
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:24.8737234Z Adding to the cache ...
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.4816431Z Successfully cached go to /opt/hostedtoolcache/go/1.27.2/x64
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.4845585Z Added go to the path
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.4846269Z Successfully set up Go version 1.27.2
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.5050161Z go version go1.27.2 linux/amd64
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.5050391Z 
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.5050682Z ##[group]go env
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6420899Z AR='ar'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6421451Z CC='gcc'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6421985Z CGO_CFLAGS='-O2 -g'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6422583Z CGO_CPPFLAGS=''
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6423102Z CGO_CXXFLAGS='-O2 -g'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6423676Z CGO_ENABLED='1'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6424545Z CGO_FFLAGS='-O2 -g'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6425106Z CGO_LDFLAGS='-O2 -g'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6425625Z CXX='g++'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6426077Z GCCGO='gccgo'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6426607Z GO111MODULE=''
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6427188Z GOAMD64='v1'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6427683Z GOARCH='amd64'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6428218Z GOAUTH='netrc'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6428869Z GOBIN='/home/runner/go/bin'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6429703Z GOCACHE='/home/runner/.cache/go-build'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6430308Z GOCACHEPROG=''
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6430697Z GODEBUG=''
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6431104Z GOENV='/home/runner/.config/go/env'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6431600Z GOEXE=''
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6431979Z GOEXPERIMENT=''
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6432386Z GOFIPS140='off'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6432808Z GOFLAGS='-mod=readonly'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6434543Z GOGCCFLAGS='-fPIC -m64 -pthread -Wl,--no-gc-sections -fmessage-length=0 -ffile-prefix-map=/tmp/go-build3779731709=/tmp/go-build -gno-record-gcc-switches'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6436144Z GOHOSTARCH='amd64'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6436633Z GOHOSTOS='linux'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6437118Z GOINSECURE=''
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6438186Z GOMOD='/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/go.mod'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6439502Z GOMODCACHE='/home/runner/go/pkg/mod'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6440081Z GONOPROXY=''
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6440411Z GONOSUMDB=''
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6440733Z GOOS='linux'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6441357Z GOPACKAGESDRIVER=''
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6441739Z GOPATH='/home/runner/go'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6442139Z GOPRIVATE=''
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6442568Z GOPROXY='https://proxy.golang.org,direct'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6443143Z GOROOT='/opt/hostedtoolcache/go/1.27.2/x64'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6443685Z GOSUMDB='sum.golang.org'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6444095Z GOTELEMETRY='local'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6444840Z GOTELEMETRYDIR='/home/runner/.config/go/telemetry'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6445646Z GOTMPDIR=''
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6446055Z GOTOOLCHAIN='local'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6446627Z GOTOOLDIR='/opt/hostedtoolcache/go/1.27.2/x64/pkg/tool/linux_amd64'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6447268Z GOVCS=''
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6447603Z GOVERSION='go1.27.2'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6447958Z GOWORK=''
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6448309Z PKG_CONFIG='pkg-config'
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6448575Z 
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6449070Z ##[endgroup]
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6666380Z ##[group]Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6666795Z with:
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6667018Z   node-version: 24
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6667260Z   package-manager-cache: false
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6667510Z   always-auth: false
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6667725Z   check-latest: false
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6669941Z   token: ***
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6670144Z env:
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6670334Z   GOTOOLCHAIN: local
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6670565Z   GOFLAGS: -mod=readonly
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6670848Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6671270Z   MODE: focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6671663Z   LC_SWEEP_WORKERS: 1
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6671873Z   EXTRA_ENV: 
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.6672064Z ##[endgroup]
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.8136638Z Found in cache @ /opt/hostedtoolcache/node/24.21.0/x64
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.8140705Z (node:2441) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.8142030Z (Use `node --trace-deprecation ...` to show where the warning was created)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:32.8151898Z ##[group]Environment details
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:33.2161385Z node: v24.21.0
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:33.2161791Z npm: 11.19.0
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:33.2162168Z yarn: 1.22.22
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:33.2163048Z ##[endgroup]
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:33.2293694Z ##[group]Run corepack enable
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:33.2294033Z [36;1mcorepack enable[0m
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:33.2294724Z [36;1mpnpm install --frozen-lockfile --ignore-scripts[0m
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:33.2565936Z shell: /usr/bin/bash -e {0}
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:33.2566291Z env:
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:33.2566562Z   GOTOOLCHAIN: local
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:33.2566886Z   GOFLAGS: -mod=readonly
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:33.2567274Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:33.2567892Z   MODE: focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:33.2568480Z   LC_SWEEP_WORKERS: 1
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:33.2568776Z   EXTRA_ENV: 
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:33.2569048Z ##[endgroup]
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:33.3981281Z ! Corepack is about to download https://registry.npmjs.org/pnpm/-/pnpm-10.33.0.tgz
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:34.8059196Z Scope: all 6 workspace projects
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:34.8363274Z Lockfile is up to date, resolution step is skipped
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:34.8544134Z Progress: resolved 1, reused 0, downloaded 0, added 0
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:34.8670327Z Packages: +49
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:34.8695591Z +++++++++++++++++++++++++++++++++++++++++++++++++
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:35.8572216Z Progress: resolved 49, reused 0, downloaded 25, added 24
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:36.8615618Z Progress: resolved 49, reused 0, downloaded 42, added 42
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:37.8595051Z Progress: resolved 49, reused 0, downloaded 47, added 47
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:38.8587198Z Progress: resolved 49, reused 0, downloaded 48, added 48
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.2778378Z Progress: resolved 49, reused 0, downloaded 49, added 49, done
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.3657805Z 
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.3658504Z devDependencies:
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.3658997Z + @playwright/test 1.63.0
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.3659304Z + axe-core 4.13.0
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.3659860Z + livekit-client 2.22.3
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.3660105Z + prettier 3.9.8
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.3660343Z + typescript 7.0.2
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.3660659Z + typescript-api <- typescript 6.0.3
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.3660858Z 
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.3785913Z Done in 4.9s using pnpm v10.33.0
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.4333196Z ##[group]Run node scripts/dev/ci-playwright-browsers.mjs "$MODE"
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.4333720Z [36;1mnode scripts/dev/ci-playwright-browsers.mjs "$MODE"[0m
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.4398732Z shell: /usr/bin/bash -e {0}
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.4399002Z env:
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.4399204Z   GOTOOLCHAIN: local
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.4399447Z   GOFLAGS: -mod=readonly
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.4399742Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.4400202Z   MODE: focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.4400613Z   LC_SWEEP_WORKERS: 1
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.4400834Z   EXTRA_ENV: 
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.4401036Z ##[endgroup]
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.4781737Z ci-playwright: mode=focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry) browsers=none
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.4913017Z ##[group]Run docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.4913837Z [36;1mdocker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280[0m
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.4977933Z shell: /usr/bin/bash -e {0}
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.4978199Z env:
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.4978400Z   GOTOOLCHAIN: local
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.4978644Z   GOFLAGS: -mod=readonly
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.4978933Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.4979388Z   MODE: focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.4979809Z   LC_SWEEP_WORKERS: 1
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.4980030Z   EXTRA_ENV: 
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:39.4980233Z ##[endgroup]
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.2138739Z docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280: Pulling from library/postgres
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.4792368Z 6310eb16bf42: Pulling fs layer
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.4793195Z 6463c6b5c703: Pulling fs layer
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.4793857Z 8d6422da287d: Pulling fs layer
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.4794709Z 2fc0e69f8d7d: Pulling fs layer
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.4795268Z 5fa29c524b4e: Pulling fs layer
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.4795797Z ace4b5b96a91: Pulling fs layer
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.4796359Z af2a6480a058: Pulling fs layer
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.4796935Z 5ee6c6ca7fd9: Pulling fs layer
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.4797493Z c5694bff1357: Pulling fs layer
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.4797897Z aedab7177504: Pulling fs layer
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.4798198Z a4635eaec9b8: Pulling fs layer
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.4798503Z 46e663abc8f5: Pulling fs layer
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.4798802Z 1bb54e8f7727: Pulling fs layer
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.4799068Z ace4b5b96a91: Waiting
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.4799324Z af2a6480a058: Waiting
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.4799568Z 5ee6c6ca7fd9: Waiting
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.4799800Z c5694bff1357: Waiting
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.4800024Z 1bb54e8f7727: Waiting
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.4800267Z aedab7177504: Waiting
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.4800501Z a4635eaec9b8: Waiting
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.4800729Z 46e663abc8f5: Waiting
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.4800982Z 2fc0e69f8d7d: Waiting
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.4801222Z 5fa29c524b4e: Waiting
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.6850433Z 6463c6b5c703: Download complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.7202320Z 8d6422da287d: Verifying Checksum
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.7204803Z 8d6422da287d: Download complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.7774797Z 6310eb16bf42: Verifying Checksum
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.7775267Z 6310eb16bf42: Download complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.9311492Z 2fc0e69f8d7d: Verifying Checksum
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.9312499Z 2fc0e69f8d7d: Download complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.9675816Z 5fa29c524b4e: Verifying Checksum
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.9676602Z 5fa29c524b4e: Download complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.9912706Z ace4b5b96a91: Verifying Checksum
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:40.9913747Z ace4b5b96a91: Download complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:41.1498206Z af2a6480a058: Download complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:41.1921151Z 5ee6c6ca7fd9: Verifying Checksum
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:41.1922040Z 5ee6c6ca7fd9: Download complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:41.3693194Z aedab7177504: Verifying Checksum
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:41.3697186Z aedab7177504: Download complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:41.4140739Z a4635eaec9b8: Verifying Checksum
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:41.4141360Z a4635eaec9b8: Download complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:41.5667373Z c5694bff1357: Verifying Checksum
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:41.5667992Z c5694bff1357: Download complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:41.5809754Z 46e663abc8f5: Verifying Checksum
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:41.5810357Z 46e663abc8f5: Download complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:41.6388833Z 1bb54e8f7727: Verifying Checksum
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:41.6389460Z 1bb54e8f7727: Download complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:41.8586116Z 6310eb16bf42: Pull complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:43.7407117Z 6463c6b5c703: Pull complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:43.9084201Z 8d6422da287d: Pull complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:43.9477890Z 2fc0e69f8d7d: Pull complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:44.2492278Z 5fa29c524b4e: Pull complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:44.3177007Z ace4b5b96a91: Pull complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:44.3259680Z af2a6480a058: Pull complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:44.3375847Z 5ee6c6ca7fd9: Pull complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.4008964Z c5694bff1357: Pull complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.4363032Z aedab7177504: Pull complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.4453776Z a4635eaec9b8: Pull complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.4542492Z 46e663abc8f5: Pull complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.4634793Z 1bb54e8f7727: Pull complete
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.4670319Z Digest: sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.4678982Z Status: Downloaded newer image for postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.4688123Z docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.4746987Z ##[group]Run mkdir -p output/ci-gates
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.4747383Z [36;1mmkdir -p output/ci-gates[0m
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.4747976Z [36;1mgit rev-parse HEAD > output/ci-gates/formatter-source-sha.txt[0m
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.4748828Z [36;1mgofmt -d internal/orderattempt internal/inbox/order_attempt_notification.go tests/foundation/order_attempt*.go > output/ci-gates/oa1-gofmt.patch[0m
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.4811517Z shell: /usr/bin/bash -e {0}
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.4811796Z env:
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.4812007Z   GOTOOLCHAIN: local
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.4812259Z   GOFLAGS: -mod=readonly
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.4812554Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.4813036Z   MODE: focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.4813473Z   LC_SWEEP_WORKERS: 1
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.4813701Z   EXTRA_ENV: 
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.4813907Z ##[endgroup]
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5342306Z ##[error]Process completed with exit code 1.
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5394088Z ##[group]Run grep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log | head -200 || true
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5395361Z [36;1mgrep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log | head -200 || true[0m
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5457510Z shell: /usr/bin/bash -e {0}
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5457762Z env:
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5457953Z   GOTOOLCHAIN: local
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5458194Z   GOFLAGS: -mod=readonly
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5458478Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5458904Z   MODE: focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5459296Z   LC_SWEEP_WORKERS: 1
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5459509Z   EXTRA_ENV: 
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5459701Z ##[endgroup]
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5552731Z grep: output/ci-gates/*.log: No such file or directory
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5553673Z grep: output/playwright/*/ci-gates/*.log: No such file or directory
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5607592Z ##[group]Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5608024Z with:
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5608372Z   name: gate-focused_TestOrderAttempt_Notification_Settlement_Executor_Expiry
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5609025Z   path: output/ci-gates/
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	output/playwright/
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5609329Z   retention-days: 14
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5609554Z   if-no-files-found: ignore
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5609797Z   compression-level: 6
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5610014Z   overwrite: false
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5610233Z   include-hidden-files: false
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5610472Z env:
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5610655Z   GOTOOLCHAIN: local
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5610872Z   GOFLAGS: -mod=readonly
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5611137Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5611551Z   MODE: focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry)
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5611946Z   LC_SWEEP_WORKERS: 1
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5612156Z   EXTRA_ENV: 
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.5612371Z ##[endgroup]
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.7254018Z Multiple search paths detected. Calculating the least common ancestor of all paths
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.7267415Z The least common ancestor is /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output. This will be the root directory of the artifact
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.7269088Z With the provided path, there will be 2 files uploaded
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.7270063Z Artifact name is valid!
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:47.7270594Z Root directory input is valid!
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:48.1466156Z Beginning upload of artifact content to blob storage
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:48.5411704Z Uploaded bytes 40651
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:48.6178329Z Finished uploading artifact content to blob storage!
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:48.6179906Z SHA256 digest of uploaded artifact zip is 9da6e3b3e3ce0fbe3ba4b84e5fe6505cb44a39147dc6d9bc66c7acaaa09d0594
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:48.6181523Z Finalizing artifact upload
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:49.0572327Z Artifact gate-focused_TestOrderAttempt_Notification_Settlement_Executor_Expiry.zip successfully finalized. Artifact ID 11845401716
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:49.0575745Z Artifact gate-focused_TestOrderAttempt_Notification_Settlement_Executor_Expiry has been successfully uploaded! Final size is 40651 bytes. Artifact ID is 11845401716
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:49.0578356Z Artifact download URL: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38458877458/artifacts/11845401716
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:49.0774722Z Post job cleanup.
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:49.1635365Z [command]/usr/bin/git version
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:49.1674777Z git version 2.55.0
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:49.1721174Z Temporarily overriding HOME='/home/runner/work/_temp/645f90c3-9d98-4eae-b6ef-c48fce2f371e' before making global git config changes
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:49.1722825Z Adding repository directory to the temporary git global config as a safe directory
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:49.1728441Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:49.1771370Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:49.1809749Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:49.2089056Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:49.2126989Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:49.2397229Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:49.2435713Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+gate (focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry))	UNKNOWN STEP	2026-10-13T19:57:49.2874025Z Cleaning up orphan processes
