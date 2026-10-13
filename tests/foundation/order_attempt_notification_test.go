@@ -637,12 +637,12 @@ func TestOrderAttemptNotificationReadyNativeActualCrypto(t *testing.T) {
 		t.Fatalf("READY/replay exact effects n=%d op=%d job=%d outbound=%d secret=%d expiry=%d err=%v", notifications, operations, nativeJobs, outbounds, secrets, expiry, err)
 	}
 	// Validate only the notification constraint; the native partial C2 stays PENDING.
-	oaStateExec(t, tx, `SET CONSTRAINTS order_payment_notification_pair IMMEDIATE`)
-	oaStateExec(t, tx, `SET CONSTRAINTS order_payment_notification_pair DEFERRED`)
+	oaStateExec(t, tx, `SET CONSTRAINTS inbox.order_payment_notification_pair IMMEDIATE`)
+	oaStateExec(t, tx, `SET CONSTRAINTS inbox.order_payment_notification_pair DEFERRED`)
 	oaStateExec(t, tx, `SAVEPOINT oa_ready_job_shape`)
 	oaStateExec(t, tx, `UPDATE river.river_job SET args=args||jsonb_build_object('synthetic_extra',true) WHERE id=$1`, job)
 	oaStateExec(t, tx, `UPDATE inbox.order_payment_notifications SET worker_generation=worker_generation WHERE id=$1`, result.NotificationID)
-	_, pairErr := tx.Exec(context.Background(), `SET CONSTRAINTS order_payment_notification_pair IMMEDIATE`)
+	_, pairErr := tx.Exec(context.Background(), `SET CONSTRAINTS inbox.order_payment_notification_pair IMMEDIATE`)
 	var pairPG *pgconn.PgError
 	if !errors.As(pairErr, &pairPG) || pairPG.Code != "23514" {
 		t.Fatalf("deferred READY pair accepted a non-exact native job: %v", pairErr)
