@@ -1,0 +1,27 @@
+{
+  "code_commit": "eea9df08dda4268376ac8b905562ec2451ad67d6",
+  "merge_commit": "c2874c8a9ebaad3997fade0c8e004285bf970af6",
+  "fixture_commit": "ca2151fcc3e1bf6f501927aa86337d576e7e750b",
+  "current_source_sha256": "ef42e87789b0ebd41385cf3b3a71c308047e4c9345360851a09f864374e0686b",
+  "runtime_base_source_sha256": "25de15e7bffc2a9e15355067bfb51ffe657aaaea65c604faed73f9908c5b1619",
+  "source_difference": "tests/admin/inbox-ui.spec.ts only; all other2720 files byte-identical",
+  "evidence_class": "E3 local REAL_PG and real browser / signed MOCK services; CI/G07 and independent acceptance pending",
+  "node_totals": {
+    "tests": 1669,
+    "pass": 1669,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "invocations": 33
+  },
+  "privacy_scan": {
+    "files": 227,
+    "patterns": [
+      "JWT",
+      "buyer capability token URL",
+      "plaintext buyer_link/access_token/refresh_token/sealed_secret"
+    ],
+    "matches": 0
+  },
+  "preserved_owner_findings_sha256": "1e19b04a25cfb255b1d3a34f404178df7e4405c7b20fd6a24504377ecea1d23e"
+}

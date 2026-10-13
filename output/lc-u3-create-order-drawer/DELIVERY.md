@@ -1,8 +1,65 @@
 # LC-U3 create-order drawer delivery
 
-## PR32 r2 — tested fixes; pending migration allocation (NOT READY, 2026-10-13)
+## PR32 r2 — 0170 recovery cleanup and merged-head local handoff (2026-10-13)
 
-This checkpoint supersedes the READY statements below as the current batch status. **No push in this round.** Five open-thread fixes and the two reported CI failures have local E3 evidence. Open thread **4250501391** still has a causal REAL_PG RED and an uninstalled proposal; the batch is **not ready to merge or push**.
+**READY for CI and independent review, E3 in the tested local environment.** This section supersedes the historical allocation-blocked checkpoint below. The owner approved adding the migration (“新增吧”); unused **0170** was reserved under the coordination lock and committed as **`eea9df08dda4268376ac8b905562ec2451ad67d6`**. Merge **`c2874c8a9ebaad3997fade0c8e004285bf970af6`** incorporates FETCH_HEAD **`5a54d41b7e86a72eeec2afbe1f7b0458daaf742b`**, including #42–#44, with no rebase/conflict. Both CommentStream create-order/label-print entries and both suite lists survive. Additional commit **`ca2151fcc3e1bf6f501927aa86337d576e7e750b`** fixes only the existing INU03 fault fixture's lifecycle and adds its positive loaded-denial sentinel. The final evidence commit changes only this unit's delivery artifacts.
+
+Role: Codex-3, actual parent runtime model/effort **NOT_EXPOSED**; configured read-only audit helper `gpt-6.1-sol/high`, not a claim about its actual runtime identity. Exact allowed writes: [allowed-write-paths.json](r2-0170/allowed-write-paths.json). Owner findings remain untouched (`1e19b04a25cfb255b1d3a34f404178df7e4405c7b20fd6a24504377ecea1d23e`). No dependency/lockfile/OpenAPI changes, production operation or GitHub thread writes. Normal push is authorized only for `unit/lc-u3-create-order-drawer`.
+
+### Six thread replies
+
+- **4232390274:** queued redacted replay shows the queued state and hides copy; the handler cannot regenerate/supersede the queued payment DM's original valid URL.
+- **4249176849:** both rendering and handler permit regeneration only for `send.state === 'not_sent'`; the shared queued-copy red→green and current full drawer mode cover both threads.
+- **4232390282:** a 422 never proves absence. Explicit A16R uses the frozen original key/body and seals the original attempt under its checkout lock; only verified `not_created` unlocks a new intent. Pending cleanup is atomic with this seal.
+- **4250496779:** Begin alone is partial; recovery stays503 UNKNOWN until the post-bundle/post-DM completion receipt exists. Real pre-Place request termination plus explicit same-key retry completes source, link, bundles and one queued DM exactly once.
+- **4250747441:** every definitive response retaining the ambiguous attempt exposes recovery, including409 capability after actual `inbox:reply` revocation. Recovery does not need that reply grant; UNKNOWN/network/5xx still retain the frozen attempt and guard.
+- **4250501391:** scoped `claims.for_buyer_request` locates only the original pending request after validating **every** matching key row's canonical body/private buyer owner/request identity, including released tails. Existing release and no-order seal/recovery receipt share one transaction; unrelated pending and placed requests are preserved, and any seal failure rolls the release back.
+
+### Contract, DDL and red → green
+
+`contracts/live-console-v1.md` §5.1.1 defines A16R's original reservation cleanup. Migration0170 adds only the read-only STABLE getter: `SECURITY DEFINER SET search_path=pg_catalog`, owner `commerce_claims_writer`, PUBLIC revoke, exact `commerce_runtime` EXECUTE and COMMENT. No new table/RLS grant or HTTP/BFF route. KC03 pins exact owner/ACL/volatility; the historical R2 upgrade count is94 and its populated upgrade passes. Current merchant authority and tenant/store scope are server-resolved; no stored merchant principal is guessed.
+
+- Initial real CLI RED `r2-0170-lookup-red-20261013`: exit1, PASS0/FAIL7; getter absent and pending/grant remained despite a recovery seal. The first post-DDL run had one foreign-store fixture admission failure (PASS26/FAIL1), preserved as a fixture error; its authentic scope admission was fixed, with no assertion weakening, then PASS27/FAIL0/SKIP0.
+- Causal mutation **`r2-0170-multi-red-20261013`**, source `e0f0ba008ad38fd5f7eb40e309330901705b55d4988fb1ae5f3891d63c5f7a30`: skip only the release call after the real lookup. Both tests and all single/double-bundle subcases fail with pending1/2 and live grants1/2 despite seal/recovery1. Restore exact Go SHA256 `331034ee420356f78922e184f34bdf3b30717eef49b1de2568d27110a43eca5d`; green2 and the merged rerun each **PASS27 FAIL0 SKIP0 exit0**.
+- `r2-0170-multi-pg-green-20261013` exit1 was host PG startup/EOF failure, not product RED: assertions NOT_RUN. The unchanged-source green2 passes in52.356s. Both logs remain; no deadline/bound increase or assertion weakening.
+- Required merged inbox run exposed an unchanged trunk INU03 fixture race (18 other cases pass). Native trace: second real health GET begins60147.505, teardown60197.435, response60207.604, then body disposed. Shell/thread hooks both read health; all original business assertions had passed, and their broad regex also matched loading fallback. Fix preserves every assertion, adds exact rendered **“Meta permission is missing.”**, and `finally unrouteAll({behavior:'wait'})` drains handlers without suppressing errors. Full mode then passes; no retry or timeout change. Safe trace event receipt: [inbox-teardown-cause.json](r2-0170/inbox-teardown-cause.json).
+
+Earlier partial/capability/queued-copy/component/refresh causal reds and their exact restorations remain in [r2-partial-recovery/](r2-partial-recovery/) and preceding checkpoints. Current Drawer31/PG16 acceptance includes both new real fault flows and preserves legacy ManualOrder10; a fresh new-key calibration is **NOT_RUN** in this batch, and the already-calibrated key/model code is byte-identical.
+
+### Frozen-source local gates
+
+The merged runtime/Go gates bind HEADc2874c8a to source SHA256 **`25de15e7bffc2a9e15355067bfb51ffe657aaaea65c604faed73f9908c5b1619`**. The final inbox/static gates bind source **`ef42e87789b0ebd41385cf3b3a71c308047e4c9345360851a09f864374e0686b`**, committed as ca2151fc. Their only difference is `tests/admin/inbox-ui.spec.ts`: **all other2720 tracked source files are byte-identical**, documented in [handoff-source-difference.json](r2-0170/handoff-source-difference.json). Thus the earlier manual/console/Go evidence still binds their unchanged inputs. The inbox runtime was frozen WIP with exact final file hashes; static gates run on clean ca2151fc. Every wrapper verifies source/history/tracked status unchanged throughout; historical tracked output SHA256 **`f279a64ad2ec0b3247860704b1613042a2ce699e3a31a209587efefc19a81be0`**. No files read by gates were edited during execution.
+
+| Command | Exit | Result / run ID |
+| --- | --- | --- |
+| `pnpm --dir apps/admin exec tsc --noEmit -p .` | **0** | TypeScript strict; `r2-0170-handoff-tsc-20261013`, 49.153s |
+| `bash scripts/dev/test-node.sh` | **0** | 1669 PASS,0 FAIL/cancel/skip;33 invocations; `r2-0170-handoff-node-20261013`, 302.399s |
+| `bash scripts/dev/check-gates.sh` | **0** | drift, registry83+foundation, headers, evidence ratchet,1287 tests exactly once/10 shards; `r2-0170-handoff-gates-20261013`, 484.100s |
+| `go run ./scripts/dev/contractdrift` | **0** | errors=0 warnings=362; Go281/contract149/BFF304; `r2-0170-handoff-contract-20261013`, 10.260s |
+| `bash scripts/dev/test-focused.sh 'TestLiveConsoleRecovery|TestLiveConsoleOrderForBuyerKeyBoundToItsBody|TestLiveClaimsKC03|TestClaimsRetentionCRP02|TestR2IntegrationUpgradeFromReleaseHead'` | **0** | REAL_PG top-level PASS=27 FAIL=0 SKIP=0 exit=0; `r2-0170-merged-pg-20261013`, 54.104s |
+| `go vet ./...` | **0** | Go vet; `r2-0170-merged-vet-20261013`, 10.227s |
+| `go vet -tags browser ./tests/foundation` | **0** | browser harness vet; `r2-0170-merged-browser-vet-20261013`, 10.230s |
+| `go build ./...` | **0** | Go build; `r2-0170-merged-build-20261013`, 26.169s |
+| `bash scripts/dev/test-local.sh --browser-manual-order` | **0** | Drawer31/PG16/119 passing clicks + unchanged ManualOrder10; `r2-0170-merged-manual-20261013`, 86.612s |
+| `bash scripts/dev/test-local.sh --browser-live-console` | **0** | workspace23 + labels10; `r2-0170-merged-console-20261013`, 432.496s |
+| `bash scripts/dev/test-local.sh --browser-inbox` | **0** | 19 Playwright cases/61 passing clicks; I11 credential verification; `r2-0170-inbox-teardown-sentinel-green-20261013`, 141.902s |
+
+Exact commands, original deadlines plus wrapper outer bounds, exit codes and run IDs: [gates.json](r2-0170/gates.json). All three browser modes ran sequentially, unfiltered, with inherited grep/calibration/evidence-root overrides cleared. Optional LiveKit Node suite remains NOT_RUN. Registry `--list` has84 entries (83 modes plus foundation). Current selector returns54 modes: complete list in [pr-modes.json](r2-0170/pr-modes.json).
+
+Native current artifacts: Drawer `create-order-drawer-3537389737`, unchanged ManualOrder `manual-order-link-2770448506`; console `run.c9si9oe2/live-console-2278774177` and labels `live-console-2054767302`; inbox `20261013T035533.483522000`. Console workspace23 and labels10 pass; original LCU2_404 all/private each yield **actual404, privateRows0, buyerPanel0, sessionRetained=true, postLossReads0**. Native hidden read count31→31, visible return1. The real en390 held-A1 refresh retains input17/original node, saves delta5/version1, and reloads. Original g09 exact key/bundle error assertion passes without contract/test weakening. Counts/booleans in PG readbacks prove source/link/complete receipts/bundles/one DM/original valid sealed URL; no buyer token or DM plaintext is retained.
+
+### CI gates and limits
+
+**CI and independent final review remain pending.** All54 selector modes (including foundation-shards and the three locally run modes) remain selected; the other51 were NOT_RUN locally. Full **`bash scripts/dev/release-gate.sh --strict --only G07`** is mandatory for0170 per PROCESS §2.6, both unit acceptance and post-merge; it is **NOT_RUN locally**, reserved for GitHub per the owner's RAM-heavy gate rule. Focused27 and local E3 are not a claim that full G07/required CI/release is green. The integrator/reviewer owns independent acceptance; no author self-posted `review/independent` or resolved review threads.
+
+A partial pipeline beyond the original10-minute source-marker window remains UNKNOWN, with no blind new key or window expansion. This batch does not add speculative reconciliation. Evidence is disposable **REAL_PG + real browser with signed MOCK IdP/Meta/edge**, not LIVE messages, Linux CI, physical printer, production or merge clearance. Read-only source/artifact audit is E1, not an independent runtime rerun. Own gate processes exited and fixtures cleaned; pre-edit rollback backups and owner files are preserved.
+
+Integrity/provenance: [FILES.sha256.json](r2-0170/FILES.sha256.json), [RAW-LOGS.sha256.json](r2-0170/RAW-LOGS.sha256.json), [source-files.sha256.json](r2-0170/source-files.sha256.json), [receipt-provenance.json](r2-0170/receipt-provenance.json). Gzip logs decode byte-for-byte to original hashes. Ledger receipts omit raw actual/expected/error fields with explicit transformations and source hashes; causal trace receipt omits URLs/params/annotations. No evidence rewrite is presented as original raw output.
+
+
+## Historical checkpoint — allocation pending (superseded, 2026-10-13)
+
+This historical checkpoint recorded the earlier allocation-blocked status and is superseded by the current r2-0170 section above. **No push had occurred at this checkpoint.** Five open-thread fixes and the two reported CI failures have local E3 evidence. Open thread **4250501391** still has a causal REAL_PG RED and an uninstalled proposal; the batch is **not ready to merge or push**.
 
 Root commits: **`7b7cd89b`** (completed-pipeline recovery, exact legacy error type and retained-capability recovery), **`828255cb`** (stock draft survives an ordinary scoped refresh), **`827911163bf20415aa32c39e6c4e72995e6d5e76`** (merge FETCH_HEAD **`fef79203`**, including #42, without rebase or conflict). Existing CommentStream create-order and label-print entries, both Playwright suites and every Node list entry survive. `test-local.sh --list` exits0, 83 browser modes plus foundation.
 

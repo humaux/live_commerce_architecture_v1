@@ -1,0 +1,84 @@
+{
+  "original_archive": "output/playwright/inbox-ui/20261013T034539.989098000/results/inbox-ui-INU03-closed-mess-a14a9-e-sends-with-visible-reason/trace.zip",
+  "archive_sha256": "b817848fcd938110590edf66f7fd34e290f41f84a690ed053c3c2335e77ac200",
+  "trace_events": [
+    {
+      "type": "before",
+      "callId": "pw:api@65",
+      "title": "GET",
+      "startTime": 60147.505,
+      "stack": [
+        {
+          "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/tests/admin/inbox-ui.spec.ts",
+          "line": 300,
+          "column": 34
+        }
+      ]
+    },
+    {
+      "type": "before",
+      "callId": "hook@162",
+      "title": "After Hooks",
+      "startTime": 60197.149,
+      "stack": []
+    },
+    {
+      "type": "before",
+      "callId": "fixture@165",
+      "title": "Fixture \"context\"",
+      "startTime": 60197.435,
+      "stack": []
+    },
+    {
+      "type": "after",
+      "callId": "pw:api@65",
+      "endTime": 60207.604
+    },
+    {
+      "type": "before",
+      "callId": "expect@166",
+      "title": "Expect \"toBe\"",
+      "startTime": 60207.816,
+      "stack": [
+        {
+          "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/tests/admin/inbox-ui.spec.ts",
+          "line": 301,
+          "column": 31
+        }
+      ]
+    },
+    {
+      "type": "after",
+      "callId": "expect@166",
+      "endTime": 60207.84
+    },
+    {
+      "type": "error",
+      "message": "Error: apiResponse.json: Response has been disposed",
+      "stack": [
+        {
+          "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/tests/admin/inbox-ui.spec.ts",
+          "line": 302,
+          "column": 33
+        }
+      ]
+    },
+    {
+      "type": "after",
+      "callId": "fixture@165",
+      "endTime": 60210.051
+    },
+    {
+      "type": "error",
+      "message": "Error: apiRequestContext._wrapApiCall: Target page, context or browser has been closed",
+      "stack": []
+    },
+    {
+      "type": "after",
+      "callId": "hook@162",
+      "endTime": 60242.13
+    }
+  ],
+  "transformation": "selected causal events; removed URL, params and annotations; exact original archive hash retained",
+  "root_cause": "overlapping real shell and thread health fixture handlers outlive passing business assertions; context disposal before second response body read"
+}

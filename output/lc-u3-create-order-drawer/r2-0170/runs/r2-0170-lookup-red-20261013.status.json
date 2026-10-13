@@ -1,0 +1,21 @@
+{
+  "name": "r2-0170-lookup-red-20261013",
+  "command": [
+    "bash",
+    "scripts/dev/test-focused.sh",
+    "TestLiveConsoleRecoveryReservationLookup|TestLiveConsoleRecoveryHistoricalNotCreated|TestLiveConsoleRecoveryPendingReservation"
+  ],
+  "timeout": 600,
+  "head": "6d59fb95867aa41bcfa23eb3fb596e86c13562aa",
+  "exit_code": 1,
+  "source_sha256": "2a703953a53beaaea7cad749956cf6c1b1b179d99fd7fe7a6b9f602fd99f55b2",
+  "source_after": "2a703953a53beaaea7cad749956cf6c1b1b179d99fd7fe7a6b9f602fd99f55b2",
+  "source_unchanged": true,
+  "historical_output_sha256": "9c0aadafc078c5682a475c05c31df120e340b345fc6641524c76ed884acb609d",
+  "historical_output_after": "9c0aadafc078c5682a475c05c31df120e340b345fc6641524c76ed884acb609d",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 105.581
+}

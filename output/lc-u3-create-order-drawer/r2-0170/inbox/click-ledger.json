@@ -1,0 +1,368 @@
+[
+  {
+    "page": "Messages",
+    "control": "Copy claim link",
+    "action": "select flagged bundle; click copy twice; refresh",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "customer pager zh-TW/1440",
+    "action": "click Next customers then First page",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "link persistence zh-TW/1440",
+    "action": "select customer B, link, reload, reopen",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "A13 and CAS zh-TW/1440",
+    "action": "two signed pages race then explicit retry",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "unlink zh-TW/1440",
+    "action": "click unlink, reload, reopen",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "customer pager zh-TW/390",
+    "action": "click Next customers then First page",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "link persistence zh-TW/390",
+    "action": "select customer B, link, reload, reopen",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "A13 and CAS zh-TW/390",
+    "action": "two signed pages race then explicit retry",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "unlink zh-TW/390",
+    "action": "click unlink, reload, reopen",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "customer pager zh-CN/1440",
+    "action": "click Next customers then First page",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "link persistence zh-CN/1440",
+    "action": "select customer B, link, reload, reopen",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "A13 and CAS zh-CN/1440",
+    "action": "two signed pages race then explicit retry",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "unlink zh-CN/1440",
+    "action": "click unlink, reload, reopen",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "customer pager zh-CN/390",
+    "action": "click Next customers then First page",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "link persistence zh-CN/390",
+    "action": "select customer B, link, reload, reopen",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "A13 and CAS zh-CN/390",
+    "action": "two signed pages race then explicit retry",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "unlink zh-CN/390",
+    "action": "click unlink, reload, reopen",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "customer pager en/1440",
+    "action": "click Next customers then First page",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "link persistence en/1440",
+    "action": "select customer B, link, reload, reopen",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "A13 and CAS en/1440",
+    "action": "two signed pages race then explicit retry",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "unlink en/1440",
+    "action": "click unlink, reload, reopen",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "customer pager en/390",
+    "action": "click Next customers then First page",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "link persistence en/390",
+    "action": "select customer B, link, reload, reopen",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "A13 and CAS en/390",
+    "action": "two signed pages race then explicit retry",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "unlink en/390",
+    "action": "click unlink, reload, reopen",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "list refresh",
+    "action": "click Refresh",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "filter",
+    "action": "select Instagram",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "filter",
+    "action": "select Messenger/unreplied/live comment/all",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "conversation",
+    "action": "click open thread",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "thread refresh/older",
+    "action": "click Refresh then Older messages",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "takeover",
+    "action": "click then refresh/reopen",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "reply",
+    "action": "fill and click send then refresh/reopen",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "release",
+    "action": "click then refresh/reopen",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "reader admission",
+    "action": "open and refresh with inbox:read only",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "viewer denial",
+    "action": "navigate with catalogue viewer",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "ambiguous acknowledgment",
+    "action": "click send; committed response dropped; click Retry this submission",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "closed window",
+    "action": "open expired conversation",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "missing capability",
+    "action": "reload and open conversation",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "late response/store switch",
+    "action": "open pending A then B and switch shell store",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "native visibility",
+    "action": "activate another native tab then return",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "customer-link permission zh-TW/1440",
+    "action": "open real live_operator conversation",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "viewport zh-TW/1440",
+    "action": "select Messenger/open conversation",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "mobile back zh-TW",
+    "action": "click back",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "customer-link permission zh-TW/390",
+    "action": "open real live_operator conversation",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "viewport zh-TW/390",
+    "action": "select Messenger/open conversation",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "locale zh-TW/1440",
+    "action": "switch locale and open conversation",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "locale zh-TW/390",
+    "action": "switch locale and open conversation",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "customer-link permission zh-CN/1440",
+    "action": "open real live_operator conversation",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "viewport zh-CN/1440",
+    "action": "select Messenger/open conversation",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "mobile back zh-CN",
+    "action": "click back",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "customer-link permission zh-CN/390",
+    "action": "open real live_operator conversation",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "viewport zh-CN/390",
+    "action": "select Messenger/open conversation",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "locale zh-CN/1440",
+    "action": "switch locale and open conversation",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "locale zh-CN/390",
+    "action": "switch locale and open conversation",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "customer-link permission en/1440",
+    "action": "open real live_operator conversation",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "viewport en/1440",
+    "action": "select Messenger/open conversation",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "mobile back en",
+    "action": "click back",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "customer-link permission en/390",
+    "action": "open real live_operator conversation",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "viewport en/390",
+    "action": "select Messenger/open conversation",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "locale en/1440",
+    "action": "switch locale and open conversation",
+    "status": "PASS"
+  },
+  {
+    "page": "Messages",
+    "control": "locale en/390",
+    "action": "switch locale and open conversation",
+    "status": "PASS"
+  }
+]

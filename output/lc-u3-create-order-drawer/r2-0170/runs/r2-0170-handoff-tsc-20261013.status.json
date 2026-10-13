@@ -1,0 +1,26 @@
+{
+  "name": "r2-0170-handoff-tsc-20261013",
+  "command": [
+    "pnpm",
+    "--dir",
+    "apps/admin",
+    "exec",
+    "tsc",
+    "--noEmit",
+    "-p",
+    "."
+  ],
+  "timeout": 180,
+  "head": "ca2151fcc3e1bf6f501927aa86337d576e7e750b",
+  "exit_code": 0,
+  "source_sha256": "ef42e87789b0ebd41385cf3b3a71c308047e4c9345360851a09f864374e0686b",
+  "source_after": "ef42e87789b0ebd41385cf3b3a71c308047e4c9345360851a09f864374e0686b",
+  "source_unchanged": true,
+  "historical_output_sha256": "f279a64ad2ec0b3247860704b1613042a2ce699e3a31a209587efefc19a81be0",
+  "historical_output_after": "f279a64ad2ec0b3247860704b1613042a2ce699e3a31a209587efefc19a81be0",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": true,
+  "tracked_status_clean_after": true,
+  "elapsed_seconds": 49.153
+}

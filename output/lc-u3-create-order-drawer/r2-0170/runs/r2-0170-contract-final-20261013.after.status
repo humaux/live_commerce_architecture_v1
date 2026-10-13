@@ -1,0 +1,8 @@
+M  contracts/live-console-v1.md
+M  internal/claims/live_price_grant.go
+M  internal/merchanttools/order_attempt.go
+A  migrations/0170_lc_for_buyer_recovery_request.sql
+M  tests/foundation/live_claims_schema_test.go
+A  tests/foundation/live_console_order_recovery_lookup_test.go
+A  tests/foundation/live_console_order_recovery_pending_test.go
+M  tests/foundation/r2_integration_upgrade_test.go

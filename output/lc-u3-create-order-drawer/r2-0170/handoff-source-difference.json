@@ -1,0 +1,12 @@
+{
+  "base": "c2874c8a9ebaad3997fade0c8e004285bf970af6",
+  "changed_source_files": [
+    {
+      "path": "tests/admin/inbox-ui.spec.ts",
+      "base_sha256": "d12935f4fa8296c598a89862e2890970c31aa0226e1b43244fef5e6b3080e321",
+      "current_sha256": "24835735e009d316d9b75c55b6ebfb194c3f375c92a3dd04508581581633284e"
+    }
+  ],
+  "all_other_tracked_source_files_byte_identical": true,
+  "same_source_gate_count": 2720
+}

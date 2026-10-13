@@ -1,0 +1,10 @@
+[
+  {
+    "locale": "en",
+    "width": 1586,
+    "page": "/studio/console",
+    "control": "print after scoped grant revocation",
+    "operation": "click",
+    "result": "PASS"
+  }
+]

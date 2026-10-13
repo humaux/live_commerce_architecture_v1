@@ -1,0 +1,23 @@
+{
+  "name": "r2-0170-final-browser-vet-20261013",
+  "command": [
+    "go",
+    "vet",
+    "-tags",
+    "browser",
+    "./tests/foundation"
+  ],
+  "timeout": 180,
+  "head": "eea9df08dda4268376ac8b905562ec2451ad67d6",
+  "exit_code": 0,
+  "source_sha256": "d769d94949ac6d3848f8be87fa765e8e58c63700f14ad3a6a40786b72dd68118",
+  "source_after": "d769d94949ac6d3848f8be87fa765e8e58c63700f14ad3a6a40786b72dd68118",
+  "source_unchanged": true,
+  "historical_output_sha256": "9c0aadafc078c5682a475c05c31df120e340b345fc6641524c76ed884acb609d",
+  "historical_output_after": "9c0aadafc078c5682a475c05c31df120e340b345fc6641524c76ed884acb609d",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": true,
+  "tracked_status_clean_after": true,
+  "elapsed_seconds": 1.692
+}

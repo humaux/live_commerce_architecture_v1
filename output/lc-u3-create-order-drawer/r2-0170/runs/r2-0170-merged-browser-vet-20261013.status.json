@@ -1,0 +1,23 @@
+{
+  "name": "r2-0170-merged-browser-vet-20261013",
+  "command": [
+    "go",
+    "vet",
+    "-tags",
+    "browser",
+    "./tests/foundation"
+  ],
+  "timeout": 180,
+  "head": "c2874c8a9ebaad3997fade0c8e004285bf970af6",
+  "exit_code": 0,
+  "source_sha256": "25de15e7bffc2a9e15355067bfb51ffe657aaaea65c604faed73f9908c5b1619",
+  "source_after": "25de15e7bffc2a9e15355067bfb51ffe657aaaea65c604faed73f9908c5b1619",
+  "source_unchanged": true,
+  "historical_output_sha256": "f279a64ad2ec0b3247860704b1613042a2ce699e3a31a209587efefc19a81be0",
+  "historical_output_after": "f279a64ad2ec0b3247860704b1613042a2ce699e3a31a209587efefc19a81be0",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": true,
+  "tracked_status_clean_after": true,
+  "elapsed_seconds": 10.23
+}

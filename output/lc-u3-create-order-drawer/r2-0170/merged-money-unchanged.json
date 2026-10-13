@@ -1,0 +1,92 @@
+[
+  {
+    "path": "apps/admin/components/CreateOrderDrawer.tsx",
+    "sha256": "64c5ffadd8acedacfd5e1bbdbc6dc1a5b830a98690a2bbfc262cae31da23a3ef",
+    "equal_to_eea9df08": true
+  },
+  {
+    "path": "apps/admin/components/BuyerPanel.tsx",
+    "sha256": "c769ec4615476a985719dfe93d7f1fcc799877fb5530d215296f290df49d5c9e",
+    "equal_to_eea9df08": true
+  },
+  {
+    "path": "apps/admin/components/CommentStream.tsx",
+    "sha256": "cdd116c07b9c76d70f2316c7611773c3ab668de3c017d1eb5c7eabff7dc38cb9",
+    "equal_to_eea9df08": true
+  },
+  {
+    "path": "internal/merchanttools/order_attempt.go",
+    "sha256": "331034ee420356f78922e184f34bdf3b30717eef49b1de2568d27110a43eca5d",
+    "equal_to_eea9df08": true
+  },
+  {
+    "path": "internal/merchanttools/order_for_buyer.go",
+    "sha256": "be54cb0b3e01af6fd60118ff85d7bb401f323553472c68c74f4d2c0ab1b51ac9",
+    "equal_to_eea9df08": true
+  },
+  {
+    "path": "internal/claims/live_price_grant.go",
+    "sha256": "9cc13fbcc1ccf8f77ddbe0d71668abaccc65659011f402cbc2508c30b8f65a46",
+    "equal_to_eea9df08": true
+  },
+  {
+    "path": "migrations/0170_lc_for_buyer_recovery_request.sql",
+    "sha256": "1c69d5e018ef970d966c8528c79534415e34034353ac11bb04b73afcba6b880f",
+    "equal_to_eea9df08": true
+  },
+  {
+    "path": "contracts/live-console-v1.md",
+    "sha256": "01abc10f01ab310ad96a83f6346289e6911b6460835b2dde44e61bf75e877105",
+    "equal_to_eea9df08": true
+  },
+  {
+    "path": "tests/admin/create-order-drawer-gate.mjs",
+    "sha256": "2111810e19f7bafac266be6eef2153b22e356d16a652757341ac5f55cb37792c",
+    "equal_to_eea9df08": true
+  },
+  {
+    "path": "tests/admin/create-order-partial-recovery.mjs",
+    "sha256": "82eba53a581aef94f177b6d4aa04ee7b84047c1dfada2bccf71131a5d14ae62a",
+    "equal_to_eea9df08": true
+  },
+  {
+    "path": "tests/foundation/live_console_order_recovery_pending_test.go",
+    "sha256": "b04c95ebc28fe780e9d9e3f204016ab96015965c57048f62550609dbef582e5d",
+    "equal_to_eea9df08": true
+  },
+  {
+    "path": "tests/foundation/live_console_order_recovery_lookup_test.go",
+    "sha256": "268b21a02681176940d83e187dc89dc8731d1de1b54205d6a8951c9c14c7f443",
+    "equal_to_eea9df08": true
+  },
+  {
+    "path": "playwright.config.ts",
+    "sha256": "659853d6b0a627aec3235c6ad91c999b72d3c2a4e85579f3b84c0b631c5695d0",
+    "equal_to_eea9df08": true
+  },
+  {
+    "path": "apps/admin/lib/create-order-attempt.ts",
+    "sha256": "96359db4fc475bd797a7c9db63c9e05bf4e634177868d5c7b443f80f48c0bc0d",
+    "equal_to_eea9df08": true
+  },
+  {
+    "path": "apps/admin/lib/create-order-model.ts",
+    "sha256": "f014b3283ac0ff7b8afa7538da68efbb0eb354bd84e261dc121529c05c6cb581",
+    "equal_to_eea9df08": true
+  },
+  {
+    "path": "apps/admin/src/features/live/use-live-workspace.ts",
+    "sha256": "9af086d644ade9ce0f5912bce5a1a75d2d3a2124e6abcb230fd7a841898c1dbf",
+    "equal_to_eea9df08": true
+  },
+  {
+    "path": "tests/admin/live-console.spec.ts",
+    "sha256": "f4b604c0088e79b63d7f432e610a1702e3b9ab54f55681b2148b49d157d9a5e6",
+    "equal_to_eea9df08": true
+  },
+  {
+    "path": "tests/admin/live-workspace-hooks.test.ts",
+    "sha256": "331d4a77b4622434f0023fbcbd0ac6b2d55af61822e1b4fc2e5f9b74ae8bbe01",
+    "equal_to_eea9df08": true
+  }
+]
