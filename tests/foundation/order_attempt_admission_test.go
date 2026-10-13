@@ -50,7 +50,7 @@ func oaPrepare(tx pgx.Tx, e *lbuEnv, scope oaScopeReceipt, key string, selection
 	}
 	var result []byte
 	// Calls ops.prepare_order_attempt_admission, order-attempt-v1 §2 C1; no execution yet.
-	err = tx.QueryRow(context.Background(), `SELECT ops.prepare_order_attempt_admission($1,$2,$3,$4,$5,$6,$7::jsonb)`,
+	err = tx.QueryRow(context.Background(), `SELECT ops.prepare_order_attempt_admission($1,$2,$3,$4,$5,$6,$7::jsonb,'synthetic_v1'::text)`,
 		tokenHash(e.token()), e.store(), scope.ScopeID, scope.Generation, scope.AttemptID, tokenHash(key), string(raw)).Scan(&result)
 	var out oaAdmission
 	if err == nil {

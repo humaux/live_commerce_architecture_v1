@@ -99,7 +99,7 @@ func TestOrderAttemptAdmissionReplayRechecksReadAuthorityAfterScopeWait(t *testi
 			done := make(chan response, 1)
 			go func() {
 				var result []byte
-				err := waiter.QueryRow(ctx, `SELECT ops.prepare_order_attempt_admission($1,$2,$3,$4,$5,$6,$7::jsonb)`, tokenHash(e.token()), e.store(), scope.ScopeID, scope.Generation, scope.AttemptID, tokenHash(key), string(raw)).Scan(&result)
+				err := waiter.QueryRow(ctx, `SELECT ops.prepare_order_attempt_admission($1,$2,$3,$4,$5,$6,$7::jsonb,'synthetic_v1'::text)`, tokenHash(e.token()), e.store(), scope.ScopeID, scope.Generation, scope.AttemptID, tokenHash(key), string(raw)).Scan(&result)
 				done <- response{result, err}
 			}()
 			received := false
@@ -172,7 +172,7 @@ func oaReplayRequest(t *testing.T, e *lbuEnv, token, store string, scope oaScope
 		t.Fatal(err)
 	}
 	var result []byte
-	err = e.p.f.runtime.QueryRow(context.Background(), `SELECT ops.prepare_order_attempt_admission($1,$2,$3,$4,$5,$6,$7::jsonb)`,
+	err = e.p.f.runtime.QueryRow(context.Background(), `SELECT ops.prepare_order_attempt_admission($1,$2,$3,$4,$5,$6,$7::jsonb,'synthetic_v1'::text)`,
 		tokenHash(token), store, scope.ScopeID, scope.Generation, scope.AttemptID, tokenHash(key), string(raw)).Scan(&result)
 	var out oaAdmission
 	if err == nil {

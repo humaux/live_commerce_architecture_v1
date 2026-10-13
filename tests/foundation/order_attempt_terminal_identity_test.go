@@ -58,7 +58,7 @@ func TestOrderAttemptTerminalIdentityReplay(t *testing.T) {
 			_, foreignToken := lcPrincipal(t, e.p.f, e.tenant(), []string{e.store()}, "store:read", "orders:read")
 			key := sha256.Sum256([]byte(req.TransportKey))
 			var raw []byte
-			err = e.p.f.runtime.QueryRow(ctx, `SELECT ops.prepare_order_attempt_admission($1::bytea,$2::uuid,$3::uuid,$4::bigint,$5::uuid,$6::bytea,$7::jsonb)`,
+			err = e.p.f.runtime.QueryRow(ctx, `SELECT ops.prepare_order_attempt_admission($1::bytea,$2::uuid,$3::uuid,$4::bigint,$5::uuid,$6::bytea,$7::jsonb,'synthetic_v1'::text)`,
 				tokenHash(foreignToken), e.store(), req.ExpectedScopeID, req.ExpectedGeneration, req.PreviousAttemptID, key[:], string(req.Selection)).Scan(&raw)
 			var pgerr *pgconn.PgError
 			if !errors.As(err, &pgerr) || pgerr.Code != "PT409" || pgerr.Message != "idempotency_conflict" || pgerr.Detail != "" || pgerr.Hint != "" || len(raw) != 0 {

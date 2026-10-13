@@ -124,8 +124,8 @@ func (s *Service) Admit(ctx context.Context, merchantToken, store string, req Ad
 	authHash, keyDigest := sha256.Sum256([]byte(merchantToken)), sha256.Sum256([]byte(req.TransportKey))
 	var raw []byte
 	// SECURITY DEFINER: prepare authenticates the merchant/store, fences CAS and replay, and retains all admission locks in this runtime transaction.
-	err = tx.QueryRow(bounded, `SELECT ops.prepare_order_attempt_admission($1::bytea,$2::uuid,$3::uuid,$4::bigint,$5::uuid,$6::bytea,$7::jsonb)`,
-		authHash[:], store, req.ExpectedScopeID, req.ExpectedGeneration, req.PreviousAttemptID, keyDigest[:], string(req.Selection)).Scan(&raw)
+	err = tx.QueryRow(bounded, `SELECT ops.prepare_order_attempt_admission($1::bytea,$2::uuid,$3::uuid,$4::bigint,$5::uuid,$6::bytea,$7::jsonb,$8::text)`,
+		authHash[:], store, req.ExpectedScopeID, req.ExpectedGeneration, req.PreviousAttemptID, keyDigest[:], string(req.Selection), s.keys.activeVersion).Scan(&raw)
 	if err != nil {
 		return AdmissionReceipt{}, admissionFailure(err, false)
 	}
@@ -323,7 +323,7 @@ func admissionFailure(err error, committing bool) error {
 		case "PT409":
 			result.code = "order_attempt_conflict"
 			switch pgerr.Message {
-			case "intent_conflict", "idempotency_conflict", "bundle_reserved", "bundle_already_ordered":
+			case "intent_conflict", "idempotency_conflict", "bundle_reserved", "bundle_already_ordered", "plan_key_retired":
 				result.code = pgerr.Message
 			case "notification_reprepare":
 				// C2 rolled back after current notification authority changed.
