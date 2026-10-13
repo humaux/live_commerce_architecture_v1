@@ -2,7 +2,7 @@
 // Depends: OA1 0176/0023, lbuNew synthetic domain data and the real plan codec.
 // Used: OA1 CI only; no provider calls, HTTP activation or C2 claim is made.
 // Invariants: one admission transaction, safe opaque jobs, replay across sessions,
-// rollback on unavailable sealing keys and principal/store generation CAS.
+// rollback after native prepare when real sealing exceeds its bound, and principal/store generation CAS.
 package foundation_test
 
 import (
@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -173,19 +174,41 @@ func TestOrderAttemptServiceReplaySurvivesRelogin(t *testing.T) {
 func TestOrderAttemptServiceSealFailureRollsBackNativeAdmission(t *testing.T) {
 	e := lbuNew(t)
 	req := oaServiceRequest(t, e)
-	// A nonnil but unavailable keyring fails at the real Seal seam after prepare.
+	selection := oaFactsSelection(e)
+	items := make([]map[string]any, 24)
+	for i := range items {
+		items[i] = map[string]any{"sku_id": e.money, "quantity": 1, "ordinal": i + 1, "origin_id": randomUUID()}
+	}
+	selection["items"] = items
+	raw, err := json.Marshal(selection)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Selection = raw
+	var description string
+	if err := e.p.f.owner.QueryRow(context.Background(), `SELECT description FROM catalog.products
+	 WHERE tenant_id=$1 AND store_id=$2 AND id=$3`, e.tenant(), e.store(), e.p.stock.product.ID).Scan(&description); err != nil {
+		t.Fatal(err)
+	}
+	// Native facts repeat this legal 8,000-character description for each origin.
+	// Their raw JSON stays below admissionCalculation's 1 MiB bound; real Seal's
+	// json.Marshal HTML-escapes each '<' as six bytes, so descriptions alone occupy
+	// 24*8000*6 = 1,152,000 bytes and exceed its complete-plan bound after prepare.
+	// A valid active key version also passes A2's native admission key fence.
+	mustExec(t, e.p.f.owner, `UPDATE catalog.products SET description=$4
+	 WHERE tenant_id=$1 AND store_id=$2 AND id=$3`, e.tenant(), e.store(), e.p.stock.product.ID, strings.Repeat("<", 8000))
 	var priorOwners, priorJobs int
 	if err := e.p.f.owner.QueryRow(context.Background(), `SELECT
 	 (SELECT count(*) FROM buyer.owners WHERE tenant_id=$1 AND store_id=$2),
 	 (SELECT count(*) FROM river.river_job WHERE kind='order_attempt_v1')`, e.tenant(), e.store()).Scan(&priorOwners, &priorJobs); err != nil {
 		t.Fatal(err)
 	}
-	svc, err := orderattempt.NewService(e.p.f.runtime, &orderattempt.PlanKeys{})
+	svc, err := orderattempt.NewService(e.p.f.runtime, oaServiceKeys(t))
 	if err != nil {
 		t.Fatal(err)
 	}
 	_, err = svc.Admit(context.Background(), e.token(), e.store(), req)
-	if !errors.Is(err, orderattempt.ErrPlanKeyUnavailable) {
+	if !errors.Is(err, orderattempt.ErrPlanInvalid) {
 		t.Fatalf("real Seal fault: %v", err)
 	}
 	var attempts, creators, subjects, jobs, owners int
@@ -200,12 +223,11 @@ func TestOrderAttemptServiceSealFailureRollsBackNativeAdmission(t *testing.T) {
 	if err != nil || generation != req.ExpectedGeneration || attempts != 0 || creators != 0 || subjects != 0 || jobs != priorJobs || owners != priorOwners {
 		t.Fatalf("partial C1 after Seal failure: generation=%d attempts=%d creators=%d subjects=%d jobs=%d owners=%d err=%v", generation, attempts, creators, subjects, jobs, owners, err)
 	}
-	// The exact same CAS/key can now succeed, proving rollback also released fences.
-	good, err := orderattempt.NewService(e.p.f.runtime, oaServiceKeys(t))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err = good.Admit(context.Background(), e.token(), e.store(), req); err != nil {
+	// Restore only the native description: the exact body, CAS, transport key and
+	// valid ring now succeed, proving rollback also released the admission fences.
+	mustExec(t, e.p.f.owner, `UPDATE catalog.products SET description=$4
+	 WHERE tenant_id=$1 AND store_id=$2 AND id=$3`, e.tenant(), e.store(), e.p.stock.product.ID, description)
+	if _, err = svc.Admit(context.Background(), e.token(), e.store(), req); err != nil {
 		t.Fatalf("retry after known rollback: %v", err)
 	}
 }
