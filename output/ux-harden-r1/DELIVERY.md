@@ -3,7 +3,7 @@
      Used by: owner, integrator and independent PR reviewers. -->
 # UX-HARDEN-R1 delivery
 
-Status: PR #49 round 1 is in remediation. Earlier scoped GitHub CI covered UXH01–04, complete PE12–17/review/feedback acceptance, frozen CC12, and the REAL-stack storefront gate. New UXH05 and opt-in hint regressions await CI red evidence; the independent review is FAIL and final PR acceptance remains pending.
+Status: PR #49 round 1 root fixes are ready for CI. Genuine CI red evidence covers UXH05 in all three locales and the default TabStrip empty-hint regression. Earlier scoped green receipts remain historical; final current-head gates and independent acceptance are pending.
 
 - Branch: `unit/ux-harden-r1`; PR target: `r3/integration`.
 - Base after `git fetch origin`: `0bfe36e53acb694f4697521202e24f0790638941`.
@@ -18,7 +18,18 @@ Status: PR #49 round 1 is in remediation. Earlier scoped GitHub CI covered UXH01
 
 Independent review by Claude API `claude-sonnet-5-5` of `b379b0a8` is **FAIL**. The owner requires all five findings: a visible copy-based toggle test, UXH05 desktop-selected SEO visible after 901→390 resize, `reserveHint` opt-in for the editor only, all navigation labels in the three-locale copy, and a copy-based feedback locator. Final independent acceptance is pending.
 
-[Foundation run 38395845906](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38395845906), exact `b379b0a85bc632da056697f167c234a6f0aff953`, failed before Node units: the architecture gate reports `ProductDocumentForm.tsx: lines 801 > 0`. The red-test revision only compacts an unchanged import declaration to stay below the existing 800-line limit; no threshold, JSX or runtime behavior changes. This allows CI to reach the stale toggle assertion. UXH05 and the actual TabStrip SSR opt-in test are added before the behavioral fixes. Their CI outcomes remain **NOT_RUN** until receipts arrive; this architecture failure is not claimed as their red proof.
+[Foundation run 38395845906](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38395845906), exact `b379b0a85bc632da056697f167c234a6f0aff953`, failed before Node units: the architecture gate reports `ProductDocumentForm.tsx: lines 801 > 0`. Red revision `d53311489750d1d5d995d0f539db7f097f717a1d` compacts an unchanged import declaration below the existing 800-line limit, without changing thresholds or runtime behavior. It also adds UXH05 and the actual TabStrip SSR opt-in test before the fixes.
+
+| Exact d533 CI evidence | Result and portable receipt |
+| --- | --- |
+| [Foundation 38398316297](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38398316297), job `115299111934`, `scripts/dev/test-node.sh` | **RED**: actual SSR renders an empty hidden hint for default callers. [round1-red-hints.log](round1-red-hints.log). Architecture passes; the later stale-toggle test was **NOT_RUN** because the first Node batch stopped. |
+| [Gates 38398316937](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38398316937), job `115304672802`, `--browser-product-editor`, artifact `11822806813` | **RED**: UXH05 desktop-selected SEO remains outside the frame after 901→390 in zh-TW, zh-CN and en. [round1-red-resize.log](round1-red-resize.log). The selected state remains intact, but `scrollLeft=0` and `fullyVisible=false`; UXH01–04 still succeed. Later editor cases are **NOT_RUN**; frozen CC12 passes separately. |
+
+The round-1 batch makes hint reservation opt-in (`reserveHint=false` by default; only the editor opts in) and forces selected-tab reveal only on a non-overflowing→overflowing transition. Other resizes and unrelated mutations retain manual scrolling, and both observers disconnect on cleanup. Navigation/group/toggle copy is explicit in the closed three-locale `productEditorCopy`; the heading retains `progress`. Browser locators reference that copy and independently require four non-empty distinct names. The obsolete toggle source assertion is replaced with SSR of the actual production toggle JSX in each locale; it verifies visible text, rather than assuming the heading is its label. The feedback locator also uses the localized copy.
+
+Read-only delegate `/root/ux_shop_static` (`explorer`, `gpt-6.1-sol`, `medium`) reviewed the eight-file round-1 source diff against `d5331148`: E1, no concrete P0/P1/P2 or weakened geometry assertions. The SSR test executes a production JSX fragment; complete visibility remains a browser obligation. This source review is not final runtime acceptance.
+
+Fix CI outcomes are **NOT_RUN** until the new head has its own GitHub receipts. No local test, script, build or server was executed.
 
 ## Scope and acceptance
 
@@ -77,7 +88,7 @@ The red browser run reached the actual editor in zh-TW and reported all four fai
 | UXH04 | Hint row reserved 26.796875px with overflow and 0px without it | Always mount the localized hint row and hide it with `visibility`/`aria-hidden`, retaining its height. |
 | Existing storefront G4 | Timing follow-up; no separate deterministic red race is claimed | Wait for `networkidle` before measuring the 390px collection chips, matching the existing R5 check; original geometry assertions remain. |
 
-The selected-section reveal assertion remains unchanged. A read-only independent review by `/root/ux_shop_static` of the full `0bfe36e5..41cd06fd` unit found no concrete P0/P1/P2 or assertion weakening. This is independent source review, not production verification or a substitute for required PR checks. The hardening sequence runs once per page and locale; the existing reserved-layout assertions continue on each fixture. TabStrip hint reservation is scoped to TabStrip, leaving TableFrame behavior unchanged.
+The selected-section reveal assertion remains unchanged. A read-only independent review by `/root/ux_shop_static` of the full `0bfe36e5..41cd06fd` unit found no concrete P0/P1/P2 or assertion weakening; the later external review nevertheless found the round-1 issues above. The earlier source review is not final acceptance. The hardening sequence runs once per page and locale; the existing reserved-layout assertions continue on each fixture. In the round-1 fix, only the product editor opts into hint reservation; default TabStrip consumers and TableFrame retain their prior layouts.
 
 ## NOT_RUN
 

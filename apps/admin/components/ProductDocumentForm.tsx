@@ -286,9 +286,9 @@ export function ProductDocumentForm({
       }}
     >
       <aside className="pe-index">
-        <nav aria-label={locale === "en" ? "Product editor navigation" : locale === "zh-TW" ? "商品編輯導覽" : "商品编辑导航"}>
+        <nav aria-label={c.navigation}>
           {/* Keep the same section controls mounted across rotation; CSS owns the vertical/horizontal layout. */}
-          <TabStrip label={locale === "en" ? "Product editor sections" : locale === "zh-TW" ? "商品編輯區段" : "商品编辑区段"}
+          <TabStrip label={c.sections} reserveHint
             previousLabel={presentationCopy[locale].previous} nextLabel={presentationCopy[locale].next}
             className="pe-section-tabs" data-testid="product-section-tabs">{sectionButtons}</TabStrip>
         </nav>
@@ -296,7 +296,7 @@ export function ProductDocumentForm({
         {narrowViewport && (
           <button type="button" className="pe-readiness-toggle" aria-expanded={readinessOpen}
             aria-controls="pe-readiness-section" onClick={() => setReadinessOpen((open) => !open)}>
-            {locale === "en" ? "Show readiness checklist" : "查看完成度"}
+            {c.readinessToggle}
           </button>
         )}
         <section id="pe-readiness-section" hidden={narrowViewport && !readinessOpen}>

@@ -3,6 +3,7 @@
 // Used by: product-editor.acceptance.ts under --browser-product-editor; reads geometry and performs real nav clicks.
 import { expect, type Page } from "@playwright/test";
 import { presentationCopy } from "../../apps/admin/lib/presentation-copy";
+import { productEditorCopy } from "../../apps/admin/lib/product-editor-copy";
 
 // Run the additional interaction sequence once per locale on the caller's page;
 // the existing reserved-layout checks still run on every create/edit fixture.
@@ -11,12 +12,11 @@ const hardenedLocales = new WeakMap<Page, Set<string>>();
 /** Exercises UXH01–05 with native input and read-only browser measurements. */
 async function assertProductEditorHardening(page: Page) {
   const locale = new URL(page.url()).pathname.split("/")[1] as "zh-TW" | "zh-CN" | "en";
-  const labels = {
-    "zh-TW": { nav: "商品編輯導覽", group: "商品編輯區段", toggle: "查看完成度", heading: "完成度" },
-    "zh-CN": { nav: "商品编辑导航", group: "商品编辑区段", toggle: "查看完成度", heading: "完成度" },
-    en: { nav: "Product editor navigation", group: "Product editor sections", toggle: "Show readiness checklist", heading: "Readiness" },
-  }[locale];
-  expect(labels, "UXH01 supported editor locale").toBeTruthy();
+  const c = productEditorCopy[locale];
+  expect(c, "UXH01 supported editor locale").toBeTruthy();
+  const labels = { nav: c.navigation, group: c.sections, toggle: c.readinessToggle, heading: c.progress };
+  expect(Object.values(labels).every(label => label.trim().length > 0), "UXH01 visible localized labels").toBe(true);
+  expect(new Set(Object.values(labels)).size, "UXH01 four distinct accessible names").toBe(4);
   const seen = hardenedLocales.get(page) ?? new Set<string>();
   if (seen.has(locale)) return;
   const originalViewport = page.viewportSize()!;

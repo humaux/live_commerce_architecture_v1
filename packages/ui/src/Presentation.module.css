@@ -194,11 +194,11 @@
   font-size: var(--ui-text-helper);
   color: var(--ui-muted);
 }
-/* Only TabStrip reserves its complete localized hint row; TableFrame is unchanged. */
-.tabs > .scrollHint {
+/* Reservation is opt-in; existing TabStrip and TableFrame layouts are unchanged. */
+.reservedHint {
   min-height: 1.4em;
 }
-.tabs > .scrollHint[aria-hidden="true"] {
+.reservedHint[aria-hidden="true"] {
   visibility: hidden;
 }
 .filePicker {

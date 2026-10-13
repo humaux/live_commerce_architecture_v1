@@ -146,43 +146,56 @@ export function TabStrip({
   label,
   previousLabel,
   nextLabel,
+  reserveHint = false,
   ...props
 }: {
   children: ReactNode;
   label: string;
   previousLabel: string;
   nextLabel: string;
+  reserveHint?: boolean;
 } & HTMLAttributes<HTMLDivElement>) {
   const { ref, edges } = useScrollFrame();
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
     let previous: HTMLElement | null = null;
-    const reveal = () => {
+    let wasOverflowing = element.scrollWidth - element.clientWidth > 1;
+    const reveal = (force = false) => {
       const selected = element.querySelector<HTMLElement>(
         '[aria-selected="true"],[aria-pressed="true"],[aria-current="location"],.active',
       );
       // React recreates children while editing and polling; stable tab identity,
       // rather than JSX identity, decides when the user's scroll may change.
-      if (selected === previous) return;
+      if (!force && selected === previous) return;
       previous = selected;
       if (!selected) return;
       const outer = element.getBoundingClientRect(), inner = selected.getBoundingClientRect();
       if (inner.left < outer.left) element.scrollLeft -= outer.left - inner.left;
       else if (inner.right > outer.right) element.scrollLeft += inner.right - outer.right;
     };
-    const observer = new MutationObserver(reveal);
+    const observer = new MutationObserver(() => reveal());
     observer.observe(element, { childList: true, subtree: true, attributes: true,
       attributeFilter: ["aria-selected", "aria-pressed", "aria-current", "class"] });
     reveal();
-    return () => observer.disconnect();
+    const resize = new ResizeObserver(() => {
+      const overflowing = element.scrollWidth - element.clientWidth > 1;
+      // A responsive strip may overflow while the selected node stays identical.
+      // Reveal only on this transition; other resizes preserve manual scrolling.
+      if (overflowing && !wasOverflowing) reveal(true);
+      wasOverflowing = overflowing;
+    });
+    resize.observe(element);
+    return () => { observer.disconnect(); resize.disconnect(); };
   }, [ref]);
   return (
     <div className={s.tabs}>
       <div role="group" {...props} aria-label={props["aria-label"] ?? label} ref={ref} className={`${s.tabStrip} ${props.className ?? ""}`}>
         {children}
       </div>
-      <p className={s.scrollHint} aria-hidden={!(edges.before || edges.after)}>{previousLabel} · {nextLabel}</p>
+      {(reserveHint || edges.before || edges.after) && (
+        <p className={`${s.scrollHint} ${reserveHint ? s.reservedHint : ""}`} aria-hidden={!(edges.before || edges.after)}>{previousLabel} · {nextLabel}</p>
+      )}
     </div>
   );
 }
