@@ -1,0 +1,169 @@
+✔ matrix gates are executed through the actual current commands (11.802166ms)
+✔ incidental comment cannot replace the active Node product-editor-matrix-ledger.test.mjs argv (3.940958ms)
+✔ incidental comment cannot replace the active Node product-editor-matrix-execution.test.mjs argv (3.8945ms)
+✔ CI cannot append an evidence-test skip to the actual balanced dispatch (7.102583ms)
+✔ foundation go test must forward the actual RUN selector (3.594584ms)
+✔ foundation go test must forward the actual SKIP selector (3.708833ms)
+✔ required Node suites cannot retain filenames but add --test-name-pattern '^$' (2.7125ms)
+✔ required Node suites cannot retain filenames but add --test-name-pattern='.*' (2.047208ms)
+✔ required Node suites cannot retain filenames but add '--test-name-pattern=.*' (2.017209ms)
+✔ required Node suites cannot retain filenames but add --test-skip-pattern '^$' (2.255042ms)
+✔ required Node suites cannot retain filenames but add --test-skip-pattern='.*' (2.473167ms)
+✔ required Node suites cannot retain filenames but add '--test-skip-pattern=.*' (2.7095ms)
+✔ filters on a different Node command do not replace or filter the required suites (2.419167ms)
+✔ foundation command cannot retain forwarding but add -run '^$' (2.1835ms)
+✔ foundation command cannot retain forwarding but add -run=^$ (1.568125ms)
+✔ foundation command cannot retain forwarding but add -run='^$' (1.731375ms)
+✔ foundation command cannot retain forwarding but add '-run=^$' (1.590833ms)
+✔ foundation command cannot retain forwarding but add -skip '^TestProductEditorMatrix' (1.982208ms)
+✔ foundation command cannot retain forwarding but add -skip=^TestProductEditorMatrix (2.3865ms)
+✔ foundation command cannot retain forwarding but add -skip='^TestProductEditorMatrix' (2.149958ms)
+✔ foundation command cannot retain forwarding but add '-skip=^TestProductEditorMatrix' (1.544958ms)
+✔ foundation refuses Go filter alias --run '^$' (2.389625ms)
+✔ foundation refuses Go filter alias --run=^$ (1.59875ms)
+✔ foundation refuses Go filter alias --run='^$' (1.988708ms)
+✔ foundation refuses Go filter alias '--run=^$' (2.167958ms)
+✔ foundation refuses Go filter alias --skip '^$' (1.604708ms)
+✔ foundation refuses Go filter alias --skip=^$ (1.745625ms)
+✔ foundation refuses Go filter alias --skip='^$' (2.797167ms)
+✔ foundation refuses Go filter alias '--skip=^$' (2.116958ms)
+✔ foundation refuses Go filter alias -test.run '^$' (1.804166ms)
+✔ foundation refuses Go filter alias -test.run=^$ (2.220291ms)
+✔ foundation refuses Go filter alias -test.run='^$' (1.941459ms)
+✔ foundation refuses Go filter alias '-test.run=^$' (2.429209ms)
+✔ foundation refuses Go filter alias -test.skip '^$' (2.229542ms)
+✔ foundation refuses Go filter alias -test.skip=^$ (3.899959ms)
+✔ foundation refuses Go filter alias -test.skip='^$' (3.730125ms)
+✔ foundation refuses Go filter alias '-test.skip=^$' (2.940167ms)
+✔ unfiltered required Node command accepts literal env prefix  (3.361875ms)
+✔ required Node command refuses --test-only (3.746875ms)
+✔ required Node command refuses --test-only true (3.515416ms)
+✔ required Node command refuses --test-only=true (5.466417ms)
+✔ required Node command refuses '--test-only=true' (3.13075ms)
+✔ required Node command refuses --test-shard (4.192041ms)
+✔ required Node command refuses --test-shard 1/2 (4.404417ms)
+✔ required Node command refuses --test-shard=1/2 (2.7525ms)
+✔ required Node command refuses '--test-shard=1/2' (1.931ms)
+✔ required Node command refuses --test-concurrency (6.547041ms)
+✔ required Node command refuses --test-concurrency 1 (2.674375ms)
+✔ required Node command refuses --test-concurrency=1 (3.922083ms)
+✔ required Node command refuses '--test-concurrency=1' (3.8665ms)
+✔ required Node command refuses --test-name-pattern (3.393667ms)
+✔ required Node command refuses --test-name-pattern true (1.985208ms)
+✔ required Node command refuses --test-name-pattern=true (4.701958ms)
+✔ required Node command refuses '--test-name-pattern=true' (7.237083ms)
+✔ required Node command refuses --test-skip-pattern (4.1315ms)
+✔ required Node command refuses --test-skip-pattern true (6.38ms)
+✔ required Node command refuses --test-skip-pattern=true (6.624792ms)
+✔ required Node command refuses '--test-skip-pattern=true' (28.436375ms)
+✔ unfiltered required Node command accepts literal env prefix FOO=1  (1.779ms)
+✔ required Node command refuses FOO=1 --test-only (2.06275ms)
+✔ required Node command refuses FOO=1 --test-only true (2.277ms)
+✔ required Node command refuses FOO=1 --test-only=true (2.256833ms)
+✔ required Node command refuses FOO=1 '--test-only=true' (1.604875ms)
+✔ required Node command refuses FOO=1 --test-shard (4.542792ms)
+✔ required Node command refuses FOO=1 --test-shard 1/2 (3.510916ms)
+✔ required Node command refuses FOO=1 --test-shard=1/2 (3.618375ms)
+✔ required Node command refuses FOO=1 '--test-shard=1/2' (4.386166ms)
+✔ required Node command refuses FOO=1 --test-concurrency (7.556125ms)
+✔ required Node command refuses FOO=1 --test-concurrency 1 (3.045166ms)
+✔ required Node command refuses FOO=1 --test-concurrency=1 (7.111333ms)
+✔ required Node command refuses FOO=1 '--test-concurrency=1' (3.750417ms)
+✔ required Node command refuses FOO=1 --test-name-pattern (2.705459ms)
+✔ required Node command refuses FOO=1 --test-name-pattern true (4.539583ms)
+✔ required Node command refuses FOO=1 --test-name-pattern=true (1.873625ms)
+✔ required Node command refuses FOO=1 '--test-name-pattern=true' (1.622625ms)
+✔ required Node command refuses FOO=1 --test-skip-pattern (2.139208ms)
+✔ required Node command refuses FOO=1 --test-skip-pattern true (2.429583ms)
+✔ required Node command refuses FOO=1 --test-skip-pattern=true (1.98825ms)
+✔ required Node command refuses FOO=1 '--test-skip-pattern=true' (11.183375ms)
+✔ unfiltered required Node command accepts literal env prefix NODE_OPTIONS="--trace-warnings" FOO=1  (2.317541ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-only (1.581667ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-only true (2.445667ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-only=true (4.582083ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 '--test-only=true' (4.292958ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-shard (1.97375ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-shard 1/2 (2.755625ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-shard=1/2 (1.514792ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 '--test-shard=1/2' (6.947834ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-concurrency (2.974542ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-concurrency 1 (2.820417ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-concurrency=1 (2.234667ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 '--test-concurrency=1' (2.349792ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-name-pattern (2.142417ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-name-pattern true (2.779458ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-name-pattern=true (1.592083ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 '--test-name-pattern=true' (2.17375ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-skip-pattern (1.66075ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-skip-pattern true (1.87925ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-skip-pattern=true (1.594959ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 '--test-skip-pattern=true' (1.9335ms)
+✔ foundation workflow refuses remove test-node with filename retained (1.867417ms)
+✔ foundation workflow refuses comment test-node with filename retained (2.562125ms)
+✔ foundation workflow refuses wrong runner test-node with filename retained (1.907042ms)
+✔ foundation workflow refuses disabled step test-node with filename retained (1.515792ms)
+✔ foundation workflow refuses disabled expression test-node with filename retained (2.294625ms)
+✔ foundation workflow refuses unreachable block test-node with filename retained (1.527417ms)
+✔ foundation workflow accepts executable test-node run block (2.073666ms)
+✔ foundation workflow refuses remove test-local with filename retained (2.099042ms)
+✔ foundation workflow refuses comment test-local with filename retained (1.893416ms)
+✔ foundation workflow refuses wrong runner test-local with filename retained (1.910583ms)
+✔ foundation workflow refuses disabled step test-local with filename retained (2.649666ms)
+✔ foundation workflow refuses disabled expression test-local with filename retained (1.566042ms)
+✔ foundation workflow refuses unreachable block test-local with filename retained (2.199125ms)
+✔ foundation workflow accepts executable test-local run block (1.467958ms)
+✔ foundation job disabled despite both runner filenames retained (2.059625ms)
+✖ foundation job condition after steps still disables the runners (6.823958ms)
+✖ incidental go test text cannot replace the real foundation executable (2.0805ms)
+ℹ tests 117
+ℹ suites 0
+ℹ pass 115
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 554.387708
+
+✖ failing tests:
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:121:1
+✖ foundation job condition after steps still disables the runners (6.823958ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("foundation.yml")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:123:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:125:1
+✖ incidental go test text cannot replace the real foundation executable (2.0805ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, registry }).some((issue) => issue.includes("forward")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:127:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

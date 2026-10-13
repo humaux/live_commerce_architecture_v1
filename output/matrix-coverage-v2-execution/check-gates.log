@@ -1,0 +1,115 @@
+matrix-execution: active Node gates and foundation CI selector forwarding bound
+--- FAIL: TestReviewR1bImportedSinkValuesRealCLI (44.28s)
+    review_ratchet_cli_test.go:30: CLI deadline: context deadline exceeded
+    --- FAIL: TestReviewR1bImportedSinkValuesRealCLI/alias (42.55s)
+        testing.go:2064: test executed panic(nil) or runtime.Goexit: subtest may have called FailNow on a parent test
+panic: test timed out after 10m0s
+	running tests:
+		TestReviewR1BForcedTextDiffCLI (3s)
+		TestReviewR1BForcedTextDiffCLI/textconv (1s)
+
+goroutine 1863 [running]:
+testing.(*M).startAlarm.func1()
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/testing/testing.go:2961 +0x2c4
+created by time.goFunc
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/time/sleep.go:182 +0x38
+
+goroutine 1 [chan receive]:
+testing.(*T).Run(0x5149e42c4008, {0x102a76ec1?, 0x5149e42a9a88?}, 0x102cb6fc0)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/testing/testing.go:2268 +0x3cc
+testing.runTests.func1(0x5149e42c4008)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/testing/testing.go:2744 +0x38
+testing.tRunner(0x5149e42c4008, 0x5149e42a9bb8)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/testing/testing.go:2195 +0xc4
+testing.runTests({0x102a6e94e, 0xc}, {0x102a7b485, 0x26}, 0x5149e4178090, {0x102cda5e8, 0x43, 0x43}, {0x5149e42a9c58?, 0x5149e41fa400?, ...})
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/testing/testing.go:2742 +0x400
+testing.(*M).Run(0x5149e41ec8c0)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/testing/testing.go:2602 +0x578
+main.main()
+	_testmain.go:178 +0x80
+
+goroutine 1800 [chan receive]:
+testing.(*T).Run(0x5149e6abe248, {0x102a6d29b?, 0x5149e45e3f08?}, 0x5149e4178210)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/testing/testing.go:2268 +0x3cc
+livecommerce/scripts/dev/contractdrift.TestReviewR1BForcedTextDiffCLI(0x5149e6abe248)
+	/Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/scripts/dev/contractdrift/review_r1b_ratchet_cli_test.go:15 +0x78
+testing.tRunner(0x5149e6abe248, 0x102cb6fc0)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/testing/testing.go:2195 +0xc4
+created by testing.(*T).Run in goroutine 1
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/testing/testing.go:2260 +0x3b8
+
+goroutine 1861 [IO wait]:
+internal/poll.runtime_pollWait(0x150522a00, 0x72)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/runtime/netpoll.go:351 +0xa0
+internal/poll.(*pollDesc).wait(0x5149e4560000?, 0x5149e421aa00?, 0x1)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/internal/poll/fd_poll_runtime.go:84 +0x28
+internal/poll.(*pollDesc).waitRead(...)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/internal/poll/fd_poll_runtime.go:89
+internal/poll.(*FD).Read(0x5149e4560000, {0x5149e421aa00, 0x200, 0x200})
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/internal/poll/fd_unix.go:170 +0x22c
+os.(*File).read(...)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/os/file_posix.go:30
+os.(*File).Read(0x5149e460a370, {0x5149e421aa00?, 0x5149e42e7d28?, 0x0?})
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/os/file.go:144 +0x68
+bytes.(*Buffer).ReadFrom(0x5149e4533560, {0x102cb44f0, 0x5149e460a370})
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/bytes/buffer.go:229 +0x90
+io.copyBuffer({0x102cb4630, 0x5149e4533560}, {0x102cb44f0, 0x5149e460a370}, {0x0, 0x0, 0x0})
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/io/io.go:415 +0x14c
+io.Copy(...)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/io/io.go:388
+os.genericWriteTo(0x0?, {0x102cb4630?, 0x5149e4533560?})
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/os/file.go:295 +0x44
+os.(*File).WriteTo(0x5149e4d3e401?, {0x102cb4630?, 0x5149e4533560?})
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/os/file.go:273 +0x5c
+io.copyBuffer({0x102cb4630, 0x5149e4533560}, {0x102cb45b0, 0x5149e460a370}, {0x0, 0x0, 0x0})
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/io/io.go:411 +0x98
+io.Copy(...)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/io/io.go:388
+os/exec.(*Cmd).writerDescriptor.func1()
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/os/exec/exec.go:613 +0x40
+os/exec.(*Cmd).Start.func2(0x5149e43ae248?)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/os/exec/exec.go:768 +0x30
+created by os/exec.(*Cmd).Start in goroutine 1737
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/os/exec/exec.go:767 +0x6d8
+
+goroutine 1737 [syscall]:
+syscall.syscalln(0x1028ddae0, {0x5149e445faa8, 0x6, 0x6})
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/runtime/sys_darwin.go:27 +0x20
+syscall.syscall6(0x1e445fc78?, 0x150838298?, 0x104d530f8?, 0x90?, 0x5149e4200008?, 0x5149e6006ab0?, 0x5149e445fb48?)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/syscall/syscall_darwin.go:407 +0x28
+syscall.wait4(0x5149e445fb78?, 0x1028f70cc?, 0x90?, 0x102caf360?)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/syscall/zsyscall_darwin_arm64.go:44 +0x4c
+syscall.Wait4(0x102a882c8?, 0x5149e445fbb4, 0x5149e429db90?, 0x5149e4480d90?)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/syscall/syscall_bsd.go:144 +0x28
+os.(*Process).pidWait.func1(...)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/os/exec_unix.go:64
+os.ignoringEINTR2[...](...)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/os/file_posix.go:273
+os.(*Process).pidWait(0x5149e4554740)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/os/exec_unix.go:63 +0x9c
+os.(*Process).wait(0x0?)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/os/exec_unix.go:28 +0x24
+os.(*Process).Wait(...)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/os/exec.go:347
+os/exec.(*Cmd).Wait(0x5149e43bd520)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/os/exec/exec.go:944 +0x34
+os/exec.(*Cmd).Run(0x5149e43bd520)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/os/exec/exec.go:643 +0x38
+os/exec.(*Cmd).CombinedOutput(0x5149e43bd520)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/os/exec/exec.go:1061 +0x84
+livecommerce/scripts/dev/contractdrift.reviewCLI(0x5149e6abe6c8)
+	/Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/scripts/dev/contractdrift/review_ratchet_cli_test.go:21 +0xec
+livecommerce/scripts/dev/contractdrift.TestReviewR1BForcedTextDiffCLI.func1(0x5149e6abe6c8)
+	/Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/scripts/dev/contractdrift/review_r1b_ratchet_cli_test.go:36 +0x430
+testing.tRunner(0x5149e6abe6c8, 0x5149e4178210)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/testing/testing.go:2195 +0xc4
+created by testing.(*T).Run in goroutine 1800
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/testing/testing.go:2260 +0x3b8
+
+goroutine 1862 [select]:
+os/exec.(*Cmd).watchCtx(0x5149e43bd520, 0x5149e4480d90)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/os/exec/exec.go:808 +0x74
+created by os/exec.(*Cmd).Start in goroutine 1737
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/os/exec/exec.go:794 +0x6ac
+FAIL	livecommerce/scripts/dev/contractdrift	600.478s
+FAIL

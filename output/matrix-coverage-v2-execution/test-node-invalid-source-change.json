@@ -1,0 +1,9 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/test-node.sh"
+  ],
+  "exit_code": -15,
+  "seconds": 85.23388004302979,
+  "timeout_seconds": 600
+}

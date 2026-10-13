@@ -1,0 +1,300 @@
+✖ matrix gates are executed through the actual current commands (6.485042ms)
+✔ incidental comment cannot replace the active Node product-editor-matrix-ledger.test.mjs argv (1.700708ms)
+✔ incidental comment cannot replace the active Node product-editor-matrix-execution.test.mjs argv (1.690167ms)
+✔ CI cannot append an evidence-test skip to the actual balanced dispatch (4.194208ms)
+✔ foundation go test must forward the actual RUN selector (2.175125ms)
+✔ foundation go test must forward the actual SKIP selector (2.330875ms)
+✔ required Node suites cannot retain filenames but add --test-name-pattern '^$' (1.968167ms)
+✔ required Node suites cannot retain filenames but add --test-name-pattern='.*' (1.34575ms)
+✔ required Node suites cannot retain filenames but add '--test-name-pattern=.*' (1.497833ms)
+✔ required Node suites cannot retain filenames but add --test-skip-pattern '^$' (1.774ms)
+✔ required Node suites cannot retain filenames but add --test-skip-pattern='.*' (1.45975ms)
+✔ required Node suites cannot retain filenames but add '--test-skip-pattern=.*' (1.48425ms)
+✖ filters on a different Node command do not replace or filter the required suites (2.257333ms)
+✔ foundation command cannot retain forwarding but add -run '^$' (1.536583ms)
+✔ foundation command cannot retain forwarding but add -run=^$ (1.665917ms)
+✔ foundation command cannot retain forwarding but add -run='^$' (1.997583ms)
+✔ foundation command cannot retain forwarding but add '-run=^$' (1.407167ms)
+✔ foundation command cannot retain forwarding but add -skip '^TestProductEditorMatrix' (1.4845ms)
+✔ foundation command cannot retain forwarding but add -skip=^TestProductEditorMatrix (1.668375ms)
+✔ foundation command cannot retain forwarding but add -skip='^TestProductEditorMatrix' (1.344959ms)
+✔ foundation command cannot retain forwarding but add '-skip=^TestProductEditorMatrix' (1.399667ms)
+✔ foundation refuses Go filter alias --run '^$' (2.085583ms)
+✔ foundation refuses Go filter alias --run=^$ (1.511458ms)
+✔ foundation refuses Go filter alias --run='^$' (1.480333ms)
+✔ foundation refuses Go filter alias '--run=^$' (1.805417ms)
+✔ foundation refuses Go filter alias --skip '^$' (2.071625ms)
+✔ foundation refuses Go filter alias --skip=^$ (3.250875ms)
+✔ foundation refuses Go filter alias --skip='^$' (2.704042ms)
+✔ foundation refuses Go filter alias '--skip=^$' (2.318709ms)
+✔ foundation refuses Go filter alias -test.run '^$' (2.411166ms)
+✔ foundation refuses Go filter alias -test.run=^$ (1.654958ms)
+✔ foundation refuses Go filter alias -test.run='^$' (1.74525ms)
+✔ foundation refuses Go filter alias '-test.run=^$' (2.428708ms)
+✔ foundation refuses Go filter alias -test.skip '^$' (2.146875ms)
+✔ foundation refuses Go filter alias -test.skip=^$ (2.031333ms)
+✔ foundation refuses Go filter alias -test.skip='^$' (1.575375ms)
+✔ foundation refuses Go filter alias '-test.skip=^$' (1.74375ms)
+✖ unfiltered required Node command accepts literal env prefix  (1.9985ms)
+✔ required Node command refuses --test-only (1.918583ms)
+✔ required Node command refuses --test-only true (1.346542ms)
+✔ required Node command refuses --test-only=true (1.601458ms)
+✔ required Node command refuses '--test-only=true' (1.7685ms)
+✔ required Node command refuses --test-shard (1.456583ms)
+✔ required Node command refuses --test-shard 1/2 (1.385709ms)
+✔ required Node command refuses --test-shard=1/2 (1.405ms)
+✔ required Node command refuses '--test-shard=1/2' (1.425417ms)
+✔ required Node command refuses --test-concurrency (1.576084ms)
+✔ required Node command refuses --test-concurrency 1 (1.301708ms)
+✔ required Node command refuses --test-concurrency=1 (1.405125ms)
+✔ required Node command refuses '--test-concurrency=1' (1.249291ms)
+✔ required Node command refuses --test-name-pattern (1.278667ms)
+✔ required Node command refuses --test-name-pattern true (1.298666ms)
+✔ required Node command refuses --test-name-pattern=true (1.752958ms)
+✔ required Node command refuses '--test-name-pattern=true' (1.957333ms)
+✔ required Node command refuses --test-skip-pattern (1.340667ms)
+✔ required Node command refuses --test-skip-pattern true (1.269417ms)
+✔ required Node command refuses --test-skip-pattern=true (1.266459ms)
+✔ required Node command refuses '--test-skip-pattern=true' (1.22925ms)
+✖ unfiltered required Node command accepts literal env prefix FOO=1  (1.345416ms)
+✔ required Node command refuses FOO=1 --test-only (1.535667ms)
+✔ required Node command refuses FOO=1 --test-only true (1.22775ms)
+✔ required Node command refuses FOO=1 --test-only=true (1.459708ms)
+✔ required Node command refuses FOO=1 '--test-only=true' (1.197416ms)
+✔ required Node command refuses FOO=1 --test-shard (1.255167ms)
+✔ required Node command refuses FOO=1 --test-shard 1/2 (2.249166ms)
+✔ required Node command refuses FOO=1 --test-shard=1/2 (2.402416ms)
+✔ required Node command refuses FOO=1 '--test-shard=1/2' (1.359166ms)
+✔ required Node command refuses FOO=1 --test-concurrency (1.262375ms)
+✔ required Node command refuses FOO=1 --test-concurrency 1 (1.307375ms)
+✔ required Node command refuses FOO=1 --test-concurrency=1 (1.294334ms)
+✔ required Node command refuses FOO=1 '--test-concurrency=1' (1.231292ms)
+✔ required Node command refuses FOO=1 --test-name-pattern (1.202ms)
+✔ required Node command refuses FOO=1 --test-name-pattern true (1.675833ms)
+✔ required Node command refuses FOO=1 --test-name-pattern=true (1.234292ms)
+✔ required Node command refuses FOO=1 '--test-name-pattern=true' (1.186834ms)
+✔ required Node command refuses FOO=1 --test-skip-pattern (1.737916ms)
+✔ required Node command refuses FOO=1 --test-skip-pattern true (1.435125ms)
+✔ required Node command refuses FOO=1 --test-skip-pattern=true (1.412541ms)
+✔ required Node command refuses FOO=1 '--test-skip-pattern=true' (1.664083ms)
+✖ unfiltered required Node command accepts literal env prefix NODE_OPTIONS="--trace-warnings" FOO=1  (1.450208ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-only (1.560375ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-only true (1.546333ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-only=true (1.33825ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 '--test-only=true' (1.353375ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-shard (1.629ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-shard 1/2 (1.3605ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-shard=1/2 (1.805833ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 '--test-shard=1/2' (1.706333ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-concurrency (1.552083ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-concurrency 1 (1.302542ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-concurrency=1 (1.269958ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 '--test-concurrency=1' (1.506ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-name-pattern (1.232792ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-name-pattern true (1.258542ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-name-pattern=true (1.209292ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 '--test-name-pattern=true' (1.213584ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-skip-pattern (1.34825ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-skip-pattern true (1.564375ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-skip-pattern=true (1.6235ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 '--test-skip-pattern=true' (1.847208ms)
+✔ foundation workflow refuses remove test-node with filename retained (1.3475ms)
+✔ foundation workflow refuses comment test-node with filename retained (1.276333ms)
+✔ foundation workflow refuses wrong runner test-node with filename retained (1.265958ms)
+✔ foundation workflow refuses disabled step test-node with filename retained (1.343875ms)
+✔ foundation workflow refuses disabled expression test-node with filename retained (1.482792ms)
+✔ foundation workflow refuses unreachable block test-node with filename retained (1.302291ms)
+✖ foundation workflow accepts executable test-node run block (1.563208ms)
+✔ foundation workflow refuses remove test-local with filename retained (1.260416ms)
+✔ foundation workflow refuses comment test-local with filename retained (1.245ms)
+✔ foundation workflow refuses wrong runner test-local with filename retained (1.246125ms)
+✔ foundation workflow refuses disabled step test-local with filename retained (2.299084ms)
+✔ foundation workflow refuses disabled expression test-local with filename retained (1.352ms)
+✔ foundation workflow refuses unreachable block test-local with filename retained (1.258333ms)
+✖ foundation workflow accepts executable test-local run block (1.359084ms)
+✔ foundation job disabled despite both runner filenames retained (1.27875ms)
+✔ foundation job condition after steps still disables the runners (1.297834ms)
+✔ incidental go test text cannot replace the real foundation executable (1.31525ms)
+ℹ tests 117
+ℹ suites 0
+ℹ pass 110
+ℹ fail 7
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 283.492791
+
+✖ failing tests:
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:13:1
+✖ matrix gates are executed through the actual current commands (6.485042ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   'foundation go test must forward RUN, SKIP and package selectors without extra filters'
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:13:84)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'foundation go test must forward RUN, SKIP and package selectors without extra filters' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:50:1
+✖ filters on a different Node command do not replace or filter the required suites (2.257333ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   'foundation go test must forward RUN, SKIP and package selectors without extra filters'
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:52:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'foundation go test must forward RUN, SKIP and package selectors without extra filters' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:77:3
+✖ unfiltered required Node command accepts literal env prefix  (1.9985ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   'foundation go test must forward RUN, SKIP and package selectors without extra filters'
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:79:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'foundation go test must forward RUN, SKIP and package selectors without extra filters' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:77:3
+✖ unfiltered required Node command accepts literal env prefix FOO=1  (1.345416ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   'foundation go test must forward RUN, SKIP and package selectors without extra filters'
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:79:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'foundation go test must forward RUN, SKIP and package selectors without extra filters' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:77:3
+✖ unfiltered required Node command accepts literal env prefix NODE_OPTIONS="--trace-warnings" FOO=1  (1.450208ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   'foundation go test must forward RUN, SKIP and package selectors without extra filters'
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:79:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'foundation go test must forward RUN, SKIP and package selectors without extra filters' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:111:3
+✖ foundation workflow accepts executable test-node run block (1.563208ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   'foundation go test must forward RUN, SKIP and package selectors without extra filters'
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:113:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'foundation go test must forward RUN, SKIP and package selectors without extra filters' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:111:3
+✖ foundation workflow accepts executable test-local run block (1.359084ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   'foundation go test must forward RUN, SKIP and package selectors without extra filters'
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:113:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'foundation go test must forward RUN, SKIP and package selectors without extra filters' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

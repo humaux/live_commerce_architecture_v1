@@ -1,0 +1,11 @@
+{
+  "completed_groups_totals": {
+    "tests": 1471,
+    "pass": 1467,
+    "fail": 3,
+    "skipped": 0,
+    "cancelled": 1
+  },
+  "runner_aborted_on_failure": true,
+  "not_a_full_suite_pass": true
+}

@@ -1,5 +1,5 @@
 // Purpose: Bind matrix source/evidence gates to active Node and foundation CI commands, independently of receipt hashes.
-// Depends on: Node fs/url and the existing declarative mode parser; reads only repository source.
+// Depends on: Node fs/url, the existing declarative mode parser and foundation.yml job/step source; no shell evaluation.
 // Used by: check-gates.sh and matrix execution corruption tests; shared harness hashes remain informational.
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -30,19 +30,59 @@ function commandArgv(command) {
   return argv;
 }
 
-export function matrixExecutionIssues({ node, workflow, registry }) {
+// Assignment prefixes are shell metadata, not executable argv. Keep their values
+// literal: command substitutions and environment references are never evaluated.
+function executableArgv(command) {
+  const argv = commandArgv(command);
+  while (argv?.length && /^[A-Za-z_][A-Za-z0-9_]*=/.test(argv[0])) argv.shift();
+  return argv;
+}
+
+// Fail closed on the repository's small, indentation-based workflow subset.
+// A filename in a name/env/comment or a disabled/unreachable run is not a binding;
+// changed YAML/shell structure needs an explicit reviewed binding update.
+function foundationRunnerBound(text, runner, condition = null) {
+  const jobs = text.split(/^jobs:\s*$/m);
+  if (jobs.length !== 2) return false;
+  const blocks = [...jobs[1].matchAll(/^  foundation:\s*\n([\s\S]*?)(?=^  [^ #\n]|^\S|(?![\s\S]))/gm)];
+  if (blocks.length !== 1) return false;
+  const job = blocks[0][1];
+  const steps = job.split(/^    steps:\s*$/m);
+  if (steps.length !== 2 || /^    if:/m.test(job)) return false;
+  return steps[1].split(/^      - /m).slice(1).some((step) => {
+    const conditions = [...step.matchAll(/^(?:if:|        if:)\s*(.*)$/gm)];
+    if (conditions.length > 1 || (conditions.length && conditions[0][1] !== condition)) return false;
+    const runs = [...step.matchAll(/^(?:run:|        run:)\s*(.*)$/gm)];
+    if (runs.length !== 1) return false;
+    let command = runs[0][1];
+    if (command === "|" || command === "|-") {
+      const after = step.slice(runs[0].index + runs[0][0].length).split("\n");
+      const body = [];
+      for (const line of after) {
+        if (line.trim() && !line.startsWith("          ")) break;
+        if (line.trim() && !line.trim().startsWith("#")) body.push(line.trim());
+      }
+      if (body.length !== 1) return false;
+      command = body[0];
+    }
+    const argv = commandArgv(command);
+    return argv?.length === 2 && argv[0] === "bash" && argv[1] === `scripts/dev/${runner}.sh`;
+  });
+}
+
+export function matrixExecutionIssues({ node, workflow, registry, foundationWorkflow = readFileSync(".github/workflows/foundation.yml", "utf8") }) {
   const issues = [];
   const active = (text) => text.replace(/\\\r?\n/g, " ").split(/\r?\n/)
     .map((line) => line.replace(/\s+#.*$/, "").trim()).filter((line) => line && !line.startsWith("#"));
-  const nodeCommands = active(node).map(commandArgv).filter((argv) => argv?.[0] === "node" && argv.includes("--test"));
+  const nodeCommands = active(node).map(executableArgv).filter((argv) => argv?.[0] === "node" && argv.includes("--test"));
   const required = ["product-editor-matrix-ledger.test.mjs", "product-editor-matrix-execution.test.mjs", "product-editor-matrix-controls.test.mjs"];
   for (const name of required) {
     const token = `tests/ci/${name}`;
     if (!nodeCommands.some((argv) => argv.includes(token))) issues.push(`active node --test argv missing ${name}`);
   }
   if (nodeCommands.some((argv) => required.some((name) => argv.includes(`tests/ci/${name}`)) &&
-      argv.some((arg) => ["--test-name-pattern", "--test-skip-pattern"].includes(arg.split("=")[0]))))
-    issues.push("required matrix Node suites must not use test-name/test-skip filters");
+      argv.some((arg) => ["--test-name-pattern", "--test-skip-pattern", "--test-only", "--test-shard", "--test-concurrency"].includes(arg.split("=")[0]))))
+    issues.push("required matrix Node suites must not use test selection/concurrency filters");
   // Bind selectors to their real planner calls; a plan can cover every test yet
   // an extra exclusion at the live dispatch still prevents its execution.
   const dispatch = active(workflow).filter((line) => line.startsWith("shard:g[0-9][0-9]) "));
@@ -51,15 +91,21 @@ export function matrixExecutionIssues({ node, workflow, registry }) {
   const foundation = modeEntries(registry).find((entry) => entry.name === "foundation");
   const commands = active(foundation?.run ?? "").filter((line) => /(?:^|\s)go test\s/.test(line));
   const selectors = ['${LC_FOUNDATION_RUN:+-run "$LC_FOUNDATION_RUN"}', '${LC_FOUNDATION_SKIP:+-skip "$LC_FOUNDATION_SKIP"}', '${LC_FOUNDATION_PKGS:-./...}'];
-  const extraArgv = commandArgv(selectors.reduce((line, token) => line.replace(token, ""), commands[0] ?? ""));
+  const extraArgv = executableArgv(selectors.reduce((line, token) => line.replace(token, ""), commands[0] ?? ""));
   if (commands.length !== 1 || selectors.some((token) => !commands[0].includes(token)) ||
-      !extraArgv || extraArgv.some((arg) => ["-run", "-skip"].includes(arg.split("=")[0])))
+      !extraArgv || extraArgv[0] !== "go" || extraArgv[1] !== "test" || extraArgv.some((arg) => ["-run", "-skip", "--run", "--skip", "-test.run", "-test.skip"].includes(arg.split("=")[0])))
     issues.push("foundation go test must forward RUN, SKIP and package selectors without extra filters");
+  const goCondition = "${{ !(github.event_name == 'pull_request' && github.base_ref == 'r3/integration') }}";
+  for (const [runner, condition] of [["test-node", null], ["test-local", goCondition]]) {
+    if (!foundationRunnerBound(foundationWorkflow, runner, condition))
+      issues.push(`foundation.yml must execute scripts/dev/${runner}.sh in an enabled foundation workflow step`);
+  }
   return issues;
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const issues = matrixExecutionIssues({ node: readFileSync("scripts/dev/test-node.sh", "utf8"),
+    foundationWorkflow: readFileSync(".github/workflows/foundation.yml", "utf8"),
     workflow: readFileSync(".github/workflows/gates.yml", "utf8"), registry: readFileSync("scripts/dev/test-local.sh", "utf8") });
   for (const issue of issues) console.error(`matrix-execution: ${issue}`);
   if (issues.length) process.exitCode = 1;

@@ -1,0 +1,1880 @@
+✔ matrix gates are executed through the actual current commands (5.673208ms)
+✔ incidental comment cannot replace the active Node product-editor-matrix-ledger.test.mjs argv (2.03725ms)
+✔ incidental comment cannot replace the active Node product-editor-matrix-execution.test.mjs argv (4.12225ms)
+✔ CI cannot append an evidence-test skip to the actual balanced dispatch (1.577417ms)
+✔ foundation go test must forward the actual RUN selector (1.708833ms)
+✔ foundation go test must forward the actual SKIP selector (1.682084ms)
+✔ required Node suites cannot retain filenames but add --test-name-pattern '^$' (4.699083ms)
+✔ required Node suites cannot retain filenames but add --test-name-pattern='.*' (1.279875ms)
+✔ required Node suites cannot retain filenames but add '--test-name-pattern=.*' (1.319208ms)
+✔ required Node suites cannot retain filenames but add --test-skip-pattern '^$' (1.62825ms)
+✔ required Node suites cannot retain filenames but add --test-skip-pattern='.*' (1.332166ms)
+✔ required Node suites cannot retain filenames but add '--test-skip-pattern=.*' (1.453125ms)
+✔ filters on a different Node command do not replace or filter the required suites (1.465708ms)
+✔ foundation command cannot retain forwarding but add -run '^$' (1.36675ms)
+✔ foundation command cannot retain forwarding but add -run=^$ (1.276666ms)
+✔ foundation command cannot retain forwarding but add -run='^$' (1.378625ms)
+✔ foundation command cannot retain forwarding but add '-run=^$' (1.613375ms)
+✔ foundation command cannot retain forwarding but add -skip '^TestProductEditorMatrix' (1.699041ms)
+✔ foundation command cannot retain forwarding but add -skip=^TestProductEditorMatrix (1.550833ms)
+✔ foundation command cannot retain forwarding but add -skip='^TestProductEditorMatrix' (1.732792ms)
+✔ foundation command cannot retain forwarding but add '-skip=^TestProductEditorMatrix' (1.293458ms)
+✖ foundation refuses Go filter alias --run '^$' (5.378541ms)
+✖ foundation refuses Go filter alias --run=^$ (1.727458ms)
+✖ foundation refuses Go filter alias --run='^$' (1.339458ms)
+✖ foundation refuses Go filter alias '--run=^$' (1.2825ms)
+✖ foundation refuses Go filter alias --skip '^$' (2.130584ms)
+✖ foundation refuses Go filter alias --skip=^$ (1.382792ms)
+✖ foundation refuses Go filter alias --skip='^$' (1.313375ms)
+✖ foundation refuses Go filter alias '--skip=^$' (1.776708ms)
+✖ foundation refuses Go filter alias -test.run '^$' (1.458459ms)
+✖ foundation refuses Go filter alias -test.run=^$ (1.35775ms)
+✖ foundation refuses Go filter alias -test.run='^$' (1.277041ms)
+✖ foundation refuses Go filter alias '-test.run=^$' (1.521459ms)
+✖ foundation refuses Go filter alias -test.skip '^$' (1.654459ms)
+✖ foundation refuses Go filter alias -test.skip=^$ (1.483792ms)
+✖ foundation refuses Go filter alias -test.skip='^$' (2.991583ms)
+✖ foundation refuses Go filter alias '-test.skip=^$' (2.981792ms)
+✔ unfiltered required Node command accepts literal env prefix  (1.305792ms)
+✖ required Node command refuses --test-only (1.33125ms)
+✖ required Node command refuses --test-only true (1.2725ms)
+✖ required Node command refuses --test-only=true (1.330625ms)
+✖ required Node command refuses '--test-only=true' (1.753125ms)
+✖ required Node command refuses --test-shard (1.196625ms)
+✖ required Node command refuses --test-shard 1/2 (1.225666ms)
+✖ required Node command refuses --test-shard=1/2 (1.302375ms)
+✖ required Node command refuses '--test-shard=1/2' (1.203334ms)
+✖ required Node command refuses --test-concurrency (2.045917ms)
+✖ required Node command refuses --test-concurrency 1 (1.672584ms)
+✖ required Node command refuses --test-concurrency=1 (1.594ms)
+✖ required Node command refuses '--test-concurrency=1' (1.176875ms)
+✔ required Node command refuses --test-name-pattern (1.138875ms)
+✔ required Node command refuses --test-name-pattern true (1.119833ms)
+✔ required Node command refuses --test-name-pattern=true (1.132334ms)
+✔ required Node command refuses '--test-name-pattern=true' (1.139917ms)
+✔ required Node command refuses --test-skip-pattern (1.43025ms)
+✔ required Node command refuses --test-skip-pattern true (1.078458ms)
+✔ required Node command refuses --test-skip-pattern=true (1.089416ms)
+✔ required Node command refuses '--test-skip-pattern=true' (1.073875ms)
+✖ unfiltered required Node command accepts literal env prefix FOO=1  (2.31125ms)
+✖ required Node command refuses FOO=1 --test-only (1.522125ms)
+✖ required Node command refuses FOO=1 --test-only true (1.286667ms)
+✖ required Node command refuses FOO=1 --test-only=true (1.505834ms)
+✖ required Node command refuses FOO=1 '--test-only=true' (1.250417ms)
+✖ required Node command refuses FOO=1 --test-shard (1.207292ms)
+✖ required Node command refuses FOO=1 --test-shard 1/2 (1.214041ms)
+✖ required Node command refuses FOO=1 --test-shard=1/2 (1.260166ms)
+✖ required Node command refuses FOO=1 '--test-shard=1/2' (1.270334ms)
+✖ required Node command refuses FOO=1 --test-concurrency (1.593709ms)
+✖ required Node command refuses FOO=1 --test-concurrency 1 (1.238583ms)
+✖ required Node command refuses FOO=1 --test-concurrency=1 (1.19675ms)
+✖ required Node command refuses FOO=1 '--test-concurrency=1' (1.762709ms)
+✖ required Node command refuses FOO=1 --test-name-pattern (1.236667ms)
+✖ required Node command refuses FOO=1 --test-name-pattern true (1.531417ms)
+✖ required Node command refuses FOO=1 --test-name-pattern=true (1.275125ms)
+✖ required Node command refuses FOO=1 '--test-name-pattern=true' (1.492333ms)
+✖ required Node command refuses FOO=1 --test-skip-pattern (1.214875ms)
+✖ required Node command refuses FOO=1 --test-skip-pattern true (1.222458ms)
+✖ required Node command refuses FOO=1 --test-skip-pattern=true (1.1895ms)
+✖ required Node command refuses FOO=1 '--test-skip-pattern=true' (1.192208ms)
+✖ unfiltered required Node command accepts literal env prefix NODE_OPTIONS="--trace-warnings" FOO=1  (1.345292ms)
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-only (1.554041ms)
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-only true (1.227542ms)
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-only=true (1.259917ms)
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 '--test-only=true' (1.406875ms)
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-shard (1.239709ms)
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-shard 1/2 (1.217084ms)
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-shard=1/2 (1.245667ms)
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 '--test-shard=1/2' (1.508292ms)
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-concurrency (1.260542ms)
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-concurrency 1 (1.216666ms)
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-concurrency=1 (1.187333ms)
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 '--test-concurrency=1' (1.161458ms)
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-name-pattern (1.157375ms)
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-name-pattern true (1.461875ms)
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-name-pattern=true (1.182208ms)
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 '--test-name-pattern=true' (1.581125ms)
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-skip-pattern (1.622333ms)
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-skip-pattern true (1.308458ms)
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-skip-pattern=true (1.261625ms)
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 '--test-skip-pattern=true' (1.2575ms)
+✖ foundation workflow refuses remove test-node with filename retained (1.639208ms)
+✖ foundation workflow refuses comment test-node with filename retained (1.248792ms)
+✖ foundation workflow refuses wrong runner test-node with filename retained (1.262667ms)
+✖ foundation workflow refuses disabled step test-node with filename retained (1.3925ms)
+✖ foundation workflow refuses disabled expression test-node with filename retained (1.302209ms)
+✖ foundation workflow refuses unreachable block test-node with filename retained (1.287416ms)
+✔ foundation workflow accepts executable test-node run block (1.291792ms)
+✖ foundation workflow refuses remove test-local with filename retained (2.804209ms)
+✖ foundation workflow refuses comment test-local with filename retained (1.2895ms)
+✖ foundation workflow refuses wrong runner test-local with filename retained (1.33425ms)
+✖ foundation workflow refuses disabled step test-local with filename retained (1.429917ms)
+✖ foundation workflow refuses disabled expression test-local with filename retained (1.186167ms)
+✖ foundation workflow refuses unreachable block test-local with filename retained (1.158291ms)
+✔ foundation workflow accepts executable test-local run block (2.4555ms)
+✖ foundation job disabled despite both runner filenames retained (1.618833ms)
+ℹ tests 115
+ℹ suites 0
+ℹ pass 32
+ℹ fail 83
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 282.63725
+
+✖ failing tests:
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:69:5
+✖ foundation refuses Go filter alias --run '^$' (5.378541ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, registry }).some((issue) => issue.includes("forward")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:72:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:69:5
+✖ foundation refuses Go filter alias --run=^$ (1.727458ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, registry }).some((issue) => issue.includes("forward")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:72:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:69:5
+✖ foundation refuses Go filter alias --run='^$' (1.339458ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, registry }).some((issue) => issue.includes("forward")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:72:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:69:5
+✖ foundation refuses Go filter alias '--run=^$' (1.2825ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, registry }).some((issue) => issue.includes("forward")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:72:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:69:5
+✖ foundation refuses Go filter alias --skip '^$' (2.130584ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, registry }).some((issue) => issue.includes("forward")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:72:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:69:5
+✖ foundation refuses Go filter alias --skip=^$ (1.382792ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, registry }).some((issue) => issue.includes("forward")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:72:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:69:5
+✖ foundation refuses Go filter alias --skip='^$' (1.313375ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, registry }).some((issue) => issue.includes("forward")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:72:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:69:5
+✖ foundation refuses Go filter alias '--skip=^$' (1.776708ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, registry }).some((issue) => issue.includes("forward")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:72:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:69:5
+✖ foundation refuses Go filter alias -test.run '^$' (1.458459ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, registry }).some((issue) => issue.includes("forward")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:72:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:69:5
+✖ foundation refuses Go filter alias -test.run=^$ (1.35775ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, registry }).some((issue) => issue.includes("forward")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:72:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:69:5
+✖ foundation refuses Go filter alias -test.run='^$' (1.277041ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, registry }).some((issue) => issue.includes("forward")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:72:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:69:5
+✖ foundation refuses Go filter alias '-test.run=^$' (1.521459ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, registry }).some((issue) => issue.includes("forward")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:72:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:69:5
+✖ foundation refuses Go filter alias -test.skip '^$' (1.654459ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, registry }).some((issue) => issue.includes("forward")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:72:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:69:5
+✖ foundation refuses Go filter alias -test.skip=^$ (1.483792ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, registry }).some((issue) => issue.includes("forward")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:72:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:69:5
+✖ foundation refuses Go filter alias -test.skip='^$' (2.991583ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, registry }).some((issue) => issue.includes("forward")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:72:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:69:5
+✖ foundation refuses Go filter alias '-test.skip=^$' (2.981792ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, registry }).some((issue) => issue.includes("forward")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:72:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses --test-only (1.33125ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses --test-only true (1.2725ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses --test-only=true (1.330625ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses '--test-only=true' (1.753125ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses --test-shard (1.196625ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses --test-shard 1/2 (1.225666ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses --test-shard=1/2 (1.302375ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses '--test-shard=1/2' (1.203334ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses --test-concurrency (2.045917ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses --test-concurrency 1 (1.672584ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses --test-concurrency=1 (1.594ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses '--test-concurrency=1' (1.176875ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:77:3
+✖ unfiltered required Node command accepts literal env prefix FOO=1  (2.31125ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   'active node --test argv missing product-editor-matrix-ledger.test.mjs',
+  +   'active node --test argv missing product-editor-matrix-execution.test.mjs',
+  +   'active node --test argv missing product-editor-matrix-controls.test.mjs'
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:79:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'active node --test argv missing product-editor-matrix-ledger.test.mjs', 'active node --test argv missing product-editor-matrix-execution.test.mjs', 'active node --test argv missing product-editor-matrix-controls.test.mjs' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses FOO=1 --test-only (1.522125ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses FOO=1 --test-only true (1.286667ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses FOO=1 --test-only=true (1.505834ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses FOO=1 '--test-only=true' (1.250417ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses FOO=1 --test-shard (1.207292ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses FOO=1 --test-shard 1/2 (1.214041ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses FOO=1 --test-shard=1/2 (1.260166ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses FOO=1 '--test-shard=1/2' (1.270334ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses FOO=1 --test-concurrency (1.593709ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses FOO=1 --test-concurrency 1 (1.238583ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses FOO=1 --test-concurrency=1 (1.19675ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses FOO=1 '--test-concurrency=1' (1.762709ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses FOO=1 --test-name-pattern (1.236667ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses FOO=1 --test-name-pattern true (1.531417ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses FOO=1 --test-name-pattern=true (1.275125ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses FOO=1 '--test-name-pattern=true' (1.492333ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses FOO=1 --test-skip-pattern (1.214875ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses FOO=1 --test-skip-pattern true (1.222458ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses FOO=1 --test-skip-pattern=true (1.1895ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses FOO=1 '--test-skip-pattern=true' (1.192208ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:77:3
+✖ unfiltered required Node command accepts literal env prefix NODE_OPTIONS="--trace-warnings" FOO=1  (1.345292ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   'active node --test argv missing product-editor-matrix-ledger.test.mjs',
+  +   'active node --test argv missing product-editor-matrix-execution.test.mjs',
+  +   'active node --test argv missing product-editor-matrix-controls.test.mjs'
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:79:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'active node --test argv missing product-editor-matrix-ledger.test.mjs', 'active node --test argv missing product-editor-matrix-execution.test.mjs', 'active node --test argv missing product-editor-matrix-controls.test.mjs' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-only (1.554041ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-only true (1.227542ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-only=true (1.259917ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 '--test-only=true' (1.406875ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-shard (1.239709ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-shard 1/2 (1.217084ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-shard=1/2 (1.245667ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 '--test-shard=1/2' (1.508292ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-concurrency (1.260542ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-concurrency 1 (1.216666ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-concurrency=1 (1.187333ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 '--test-concurrency=1' (1.161458ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-name-pattern (1.157375ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-name-pattern true (1.461875ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-name-pattern=true (1.182208ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 '--test-name-pattern=true' (1.581125ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-skip-pattern (1.622333ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-skip-pattern true (1.308458ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-skip-pattern=true (1.261625ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:84:7
+✖ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 '--test-skip-pattern=true' (1.2575ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:87:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:104:5
+✖ foundation workflow refuses remove test-node with filename retained (1.639208ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("foundation.yml")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:108:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:104:5
+✖ foundation workflow refuses comment test-node with filename retained (1.248792ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("foundation.yml")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:108:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:104:5
+✖ foundation workflow refuses wrong runner test-node with filename retained (1.262667ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("foundation.yml")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:108:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:104:5
+✖ foundation workflow refuses disabled step test-node with filename retained (1.3925ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("foundation.yml")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:108:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:104:5
+✖ foundation workflow refuses disabled expression test-node with filename retained (1.302209ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("foundation.yml")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:108:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:104:5
+✖ foundation workflow refuses unreachable block test-node with filename retained (1.287416ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("foundation.yml")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:108:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:104:5
+✖ foundation workflow refuses remove test-local with filename retained (2.804209ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("foundation.yml")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:108:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:104:5
+✖ foundation workflow refuses comment test-local with filename retained (1.2895ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("foundation.yml")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:108:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:104:5
+✖ foundation workflow refuses wrong runner test-local with filename retained (1.33425ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("foundation.yml")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:108:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:104:5
+✖ foundation workflow refuses disabled step test-local with filename retained (1.429917ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("foundation.yml")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:108:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:104:5
+✖ foundation workflow refuses disabled expression test-local with filename retained (1.186167ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("foundation.yml")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:108:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:104:5
+✖ foundation workflow refuses unreachable block test-local with filename retained (1.158291ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("foundation.yml")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:108:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:116:1
+✖ foundation job disabled despite both runner filenames retained (1.618833ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("foundation.yml")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution/tests/ci/product-editor-matrix-execution.test.mjs:118:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

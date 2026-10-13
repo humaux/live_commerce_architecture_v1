@@ -7,6 +7,7 @@ import { readFileSync } from "node:fs";
 import { matrixExecutionIssues } from "./product-editor-matrix-execution.mjs";
 
 const source = { node: readFileSync("scripts/dev/test-node.sh", "utf8"),
+  foundationWorkflow: readFileSync(".github/workflows/foundation.yml", "utf8"),
   workflow: readFileSync(".github/workflows/gates.yml", "utf8"), registry: readFileSync("scripts/dev/test-local.sh", "utf8") };
 // The parent gate must first register this test; fixtures then use actual argv and registry contents.
 test("matrix gates are executed through the actual current commands", () => assert.deepEqual(matrixExecutionIssues(source), []));
@@ -62,3 +63,66 @@ for (const [flag, pattern] of [["-run", "^$"], ["-skip", "^TestProductEditorMatr
     });
   }
 }
+
+for (const flag of ["--run", "--skip", "-test.run", "-test.skip"]) {
+  for (const filter of [`${flag} '^$'`, `${flag}=^$`, `${flag}='^$'`, `'${flag}=^$'`]) {
+    test(`foundation refuses Go filter alias ${filter}`, () => {
+      const registry = source.registry.replace(goCommand, () => `${goCommand} ${filter}`);
+      assert.ok(registry.includes(`${goCommand} ${filter}`));
+      assert.ok(matrixExecutionIssues({ ...source, registry }).some((issue) => issue.includes("forward")));
+    });
+  }
+}
+for (const prefix of ["", "FOO=1 ", 'NODE_OPTIONS="--trace-warnings" FOO=1 ']) {
+  test(`unfiltered required Node command accepts literal env prefix ${prefix}`, () => {
+    const node = source.node.replace(nodeCommand, () => `${prefix}${nodeCommand}`);
+    assert.deepEqual(matrixExecutionIssues({ ...source, node }), []);
+  });
+  for (const flag of ["--test-only", "--test-shard", "--test-concurrency", "--test-name-pattern", "--test-skip-pattern"]) {
+    const value = flag === "--test-shard" ? "1/2" : flag === "--test-concurrency" ? "1" : "true";
+    for (const filter of [flag, `${flag} ${value}`, `${flag}=${value}`, `'${flag}=${value}'`]) {
+      test(`required Node command refuses ${prefix}${filter}`, () => {
+        const node = source.node.replace(nodeCommand, () => `${prefix}${nodeCommand} ${filter}`);
+        assert.ok(node.includes(`${prefix}${nodeCommand} ${filter}`));
+        assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")));
+      });
+    }
+  }
+}
+const goCondition = "${{ !(github.event_name == 'pull_request' && github.base_ref == 'r3/integration') }}";
+for (const runner of ["test-node", "test-local"]) {
+  const line = `        run: bash scripts/dev/${runner}.sh`;
+  assert.ok(source.foundationWorkflow.includes(line));
+  for (const [kind, replacement] of [
+    ["remove", `        name: retained scripts/dev/${runner}.sh`],
+    ["comment", `        # run: bash scripts/dev/${runner}.sh`],
+    ["wrong runner", `        run: echo scripts/dev/${runner}.sh`],
+    ["disabled step", `        if: false\n${line}`],
+    ["disabled expression", "        if: ${{ false }}\n" + line],
+    ["unreachable block", `        run: |\n          exit 0\n          bash scripts/dev/${runner}.sh`],
+  ]) {
+    test(`foundation workflow refuses ${kind} ${runner} with filename retained`, () => {
+      const foundationWorkflow = source.foundationWorkflow.replace(line, () => replacement)
+        .replace(`        if: ${goCondition}\n        if:`, "        if:");
+      assert.ok(foundationWorkflow.includes(`scripts/dev/${runner}.sh`));
+      assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("foundation.yml")));
+    });
+  }
+  test(`foundation workflow accepts executable ${runner} run block`, () => {
+    const foundationWorkflow = source.foundationWorkflow.replace(line, () => `        run: |\n          # actual runner\n          bash scripts/dev/${runner}.sh`);
+    assert.deepEqual(matrixExecutionIssues({ ...source, foundationWorkflow }), []);
+  });
+}
+test("foundation job disabled despite both runner filenames retained", () => {
+  const foundationWorkflow = source.foundationWorkflow.replace("  foundation:\n", "  foundation:\n    if: false\n");
+  assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("foundation.yml")));
+});
+
+test("foundation job condition after steps still disables the runners", () => {
+  const foundationWorkflow = source.foundationWorkflow.replace("\n# Local scripts", "\n    if: false\n\n# Local scripts");
+  assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("foundation.yml")));
+});
+test("incidental go test text cannot replace the real foundation executable", () => {
+  const registry = source.registry.replace(goCommand, () => goCommand.replace("go test ", "echo go test "));
+  assert.ok(matrixExecutionIssues({ ...source, registry }).some((issue) => issue.includes("forward")));
+});
