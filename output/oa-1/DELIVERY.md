@@ -535,3 +535,16 @@ Full OA1 CI98 `38473112949` on `008b52dec` is still being collected; its
 superseded post-commit cross-client assertion is already fixed by `27a20b227`.
 The pending full run is not claimed as a green job. Runtime acceptance remains
 blocked on the required PR plan and independent review.
+
+To continue the other gates without waiving the failed PR plan, CI
+[38476605638](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38476605638)
+is registered on exact source `0bdb85d359aff8fd544086513e1daf4d879d91fe`:
+existing `gates.yml`, `modes=["foundation-shards"]`,
+`full_browser_universe=true`, empty `extra_env`. The existing planner chooses
+the full foundation and browser universe; plan job `115568718543` is queued
+at registration. This supplemental run is **PENDING**, not acceptance of the
+still-failing PR required check. Original time budgets are unchanged.
+Same-thread `oa1-pr53-ci-continuation` heartbeat checks every 15 minutes,
+renews the lease, captures exact-SHA logs/results and monitors the external
+scanner merge before the authorized rebase. It stays quiet without a meaningful
+change; no local test, build, format or database execution is allowed.
