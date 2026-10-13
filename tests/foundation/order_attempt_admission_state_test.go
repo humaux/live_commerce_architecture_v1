@@ -47,7 +47,7 @@ func oaStateBegin(t *testing.T) oaStateFixture {
 	oaStateExec(t, tx, `INSERT INTO ops.order_attempts(attempt_id,tenant_id,store_id,scope_id,intent_generation,
 	 transport_key_digest,request_hash,request_schema_version,admission_finished,facts_digest,plan_digest,
 	 plan_ciphertext,plan_key_version,buyer_owner_id,admission_provenance,admitted_at,execute_by,state)
-	 VALUES($1,$2,$3,$4,1,sha256($1::text::bytea),sha256('synthetic request'::bytea),1,true,
+	 VALUES($1,$2,$3,$4,1,sha256($1::uuid::text::bytea),sha256('synthetic request'::bytea),1,true,
 	 sha256('synthetic facts'::bytea),sha256('synthetic plan'::bytea),decode(repeat('01',40),'hex'),
 	 'synthetic_v1',$5,'{}',statement_timestamp(),statement_timestamp()+interval '15 minutes','PENDING')`,
 		h.attempt, f.tenantA, f.storeA1, h.scope, h.owner)
@@ -91,7 +91,7 @@ func oaStateSettle(t *testing.T, tx pgx.Tx, attempt, state string) {
 	}
 	oaStateExec(t, tx, `UPDATE ops.order_attempts SET state=$2,order_id=$3::uuid,
 	 receipt=jsonb_build_object('state',$2::text,'attempt_id',attempt_id::text,'intent_generation',intent_generation)
-	  || CASE WHEN $3::uuid IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('order_id',$3::text) END,
+	  || CASE WHEN $3::uuid IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('order_id',$3::uuid::text) END,
 	 plan_ciphertext=NULL,plan_key_version=NULL,settled_at=clock_timestamp() WHERE attempt_id=$1`, attempt, state, order)
 }
 
@@ -138,7 +138,7 @@ func TestOrderAttemptAdmissionStateAllStateUniqueness(t *testing.T) {
 					oaStateReject(t, probe, "23505", `INSERT INTO ops.order_attempts(attempt_id,tenant_id,store_id,scope_id,intent_generation,
 					 transport_key_digest,request_hash,request_schema_version,admission_finished,facts_digest,plan_digest,
 					 plan_ciphertext,plan_key_version,buyer_owner_id,admission_provenance,admitted_at,execute_by,state)
-					 SELECT $2,tenant_id,store_id,scope_id,$3,CASE WHEN $4 THEN transport_key_digest ELSE sha256($2::text::bytea) END,
+					 SELECT $2,tenant_id,store_id,scope_id,$3,CASE WHEN $4 THEN transport_key_digest ELSE sha256($2::uuid::text::bytea) END,
 					 sha256('different request'::bytea),1,true,facts_digest,plan_digest,decode(repeat('02',40),'hex'),
 					 'synthetic_v1',buyer_owner_id,admission_provenance,admitted_at,execute_by,'PENDING'
 					 FROM ops.order_attempts WHERE attempt_id=$1`, h.attempt, id, generation, reuseKey)

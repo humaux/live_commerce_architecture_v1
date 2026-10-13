@@ -99,7 +99,7 @@ func TestOrderAttemptSchemaIncompleteAdmissionCannotCommit(t *testing.T) {
 		{`INSERT INTO ops.order_attempt_creators(attempt_id,tenant_id,store_id,buyer_owner_id) VALUES($1,$2,$3,$4)`, []any{attempt, f.tenantA, f.storeA1, owner}},
 		{`INSERT INTO ops.order_attempt_scopes(scope_id,tenant_id,store_id,principal_id,current_generation) VALUES($1,$2,$3,$4,1)`, []any{scope, f.tenantA, f.storeA1, f.principalA}},
 		{`INSERT INTO ops.order_attempts(attempt_id,tenant_id,store_id,scope_id,intent_generation,transport_key_digest,request_hash,request_schema_version,buyer_owner_id,admission_provenance,admitted_at,execute_by,state)
-		 VALUES($1,$2,$3,$4,1,sha256($1::text::bytea),sha256('synthetic-body'::bytea),1,$5,'{}',statement_timestamp(),statement_timestamp()+interval '15 minutes','PENDING')`, []any{attempt, f.tenantA, f.storeA1, scope, owner}},
+		 VALUES($1,$2,$3,$4,1,sha256($1::uuid::text::bytea),sha256('synthetic-body'::bytea),1,$5,'{}',statement_timestamp(),statement_timestamp()+interval '15 minutes','PENDING')`, []any{attempt, f.tenantA, f.storeA1, scope, owner}},
 		// A deferred invariant must not disappear when the public definer restores
 		// its caller's empty context before COMMIT; the row is the authority.
 		{`SELECT set_config('app.tenant_id','',true),set_config('app.store_id','',true)`, nil},

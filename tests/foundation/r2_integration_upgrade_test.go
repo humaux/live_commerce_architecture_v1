@@ -81,8 +81,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0167 (Stripe A6 terminal observations) adds one: 91 -> 92.
 	// 0169 (LC-R2 C3x purge of comment prints, their A3 receipts and inbox bundle peers) adds one: 92 -> 93.
 	// 0170 (OA-1 durable order-attempt identity and subject fences) adds one: 93 -> 94.
-	if len(r2) != 94 {
-		t.Fatalf("R2 migration set = %d files %v, want 94", len(r2), r2)
+	// 0171 (OA-1 attempt-owned domain provenance and per-origin carts) adds one: 94 -> 95.
+	if len(r2) != 95 {
+		t.Fatalf("R2 migration set = %d files %v, want 95", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
