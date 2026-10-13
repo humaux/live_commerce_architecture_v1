@@ -10,9 +10,10 @@
   retention. Backend separate from paused PR #32.
 - Current artifact: native C1 admission, complete single-transaction C2,
   inline/River execution and periodic sweep. Their scoped CI receipts below
-  do not constitute complete OA-1 acceptance: A2 retirement is verified below;
-  privacy compatibility, the remaining crash/mutation matrix and final gates
-  are still under verification. The public placement path is not enabled.
+  do not constitute complete OA-1 acceptance. A2 and focused privacy/upgrade
+  compatibility are verified below; the full suite remains under verification.
+  Draft PR #53's required plan is blocked by the existing opaque-handler
+  provenance boundary in CI-DRIFT. The public placement path is not enabled.
 
 ## Evidence
 
@@ -463,3 +464,36 @@ Fresh fetch before PR preparation confirms trunk `256e9740`, root maximum
 post-River **0023–0025**. The public route remains disabled; final whole-unit
 CI and independent review are still pending. All local runtime execution is
 **NOT_RUN (owner CI-only directive)**.
+
+## Draft PR #53 acceptance checkpoint
+
+Source `a047e48812139cb172794b04c8df13d2f7fea532`; draft
+[PR #53](https://github.com/humaux/live_commerce_architecture_v1/pull/53).
+
+| CI run / job | Exact result |
+| --- | --- |
+| CI102 `38473180467` / `115557351591`, source `008b52dec` | Unit shard **GREEN**, including restored `TestAdmissionFailureExactErasedOwner`. `unit-green-ci102.log`. |
+| CI107 `38474387657` / `115561516593`, source `a047e4881` | REAL_PG test result **PASS=31 FAIL=0 SKIP=0 exit=0**: cross-client barriers, C1 crash, A2, restored mutation targets, exact privacy ACL/erasure and populated historical upgrade. The **job failed** because the long focused regex produced a log filename exceeding the filesystem limit: `tee: … File name too long`. Test success is not workflow success. `restored-focused-ci107.log`. |
+| CI108 Foundation `38474388216` / `115561367494`; CI109 Gates `38474388284` / plan `115561367812`, source `a047e4881` | **FAIL**, contract drift `errors=71`: `TOUCHED UNRESOLVED` rooted in `cmd/api/buyer.go`'s `buildBuyerWithCVS`. Required browser/foundation matrix **NOT_RUN** because plan failed. `foundation-pr53-ci108.log`, `plan-pr53-ci109.log`. |
+
+The only change inside the buyer handler factory is the actual-pool physical
+database startup probe. CI-DRIFT retains the entire opaque factory span, then
+propagates it to 70 buyer route findings. Static diagnosis is **E1**, not a
+waiver of the gate. Keep the probe, baseline, route assertions and parser
+conservatism. A bounded handler-dependency parser enhancement needs its own
+adversarial tests and independent review; scheduling approval is pending.
+
+CI110 `38475039696` at `a047e4881` split the restoration into two shorter
+focused modes, with unchanged time bounds. Native job `115563672077` is
+**GREEN**, `PASS=27 FAIL=0 SKIP=0 exit=0`; `native-restored-green-ci110.log`.
+Privacy/upgrade job `115563672040` is **RED**, `PASS=4 FAIL=1 SKIP=0 exit=1`:
+the shortened `CustomersBillingCB02` selector also includes the existing
+COMMENT gate, which requires the owning package name. The new
+`customers.order_attempt_sources` COMMENT lacked `customers`; exact upgrade,
+ACL and erasure tests passed. `176ad6d01` adds that word, with no behavior or
+assertion changes. Red evidence: `privacy-upgrade-restored-ci110.log`.
+
+Full OA1 CI98 `38473112949` on `008b52dec` is still being collected; its
+superseded post-commit cross-client assertion is already fixed by `27a20b227`.
+The pending full run is not claimed as a green job. Runtime acceptance remains
+blocked on the required PR plan and independent review.
