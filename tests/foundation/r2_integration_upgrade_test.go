@@ -105,8 +105,11 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0193 (OA1 native cancellation provenance and credential invalidation) adds one: 115 -> 116.
 	// 0192 (OA1 native erasure subject/attempt prefix and private reconciliation) adds one: 116 -> 117.
 	// 0194 (OA1 A2 durable plan-key retirement and version-bound C1) adds one: 117 -> 118.
-	if len(r2) != 118 {
-		t.Fatalf("R2 migration set = %d files %v, want 118", len(r2), r2)
+	// post_river/0023 (OA1 execution job guards and native admission enqueue) adds one: 118 -> 119.
+	// post_river/0024 (OA1 attempt-owned checkout expiry job guard) adds one: 119 -> 120.
+	// post_river/0025 (OA1 fenced orphan execution job repair) adds one: 120 -> 121.
+	if len(r2) != 121 {
+		t.Fatalf("R2 migration set = %d files %v, want 121", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
