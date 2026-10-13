@@ -22,6 +22,7 @@ func TestOrderIntentReplayPreservesOriginalPriceReason(t *testing.T) {
 	}{{"fresh_mixed", false, true}, {"partial_mixed", true, true}, {"partial_all_live", true, false}} {
 		t.Run(tc.name, func(t *testing.T) {
 			e := lbuNew(t)
+			beforeOrders, beforeHeld := e.orders(), e.reserved()
 			session, liveOffer, bundle, conversation := e.scenario()
 			bundles := []string{bundle}
 			body := e.body(2, bundles, conversation, false)
@@ -32,7 +33,7 @@ func TestOrderIntentReplayPreservesOriginalPriceReason(t *testing.T) {
 				e.h.livePriceOffer(t, session, "B1", catalogSKU, 5, ltgLive)
 				// One B1 origin alone covers the requested aggregate, but two distinct B1 origins force catalog pricing.
 				e.h.accepted(t, session, bundle, "", "B1+2")
-				secondCatalogBundle = e.h.accepted(t, session, "", "extra-"+t04Tag(), "B1+1").BundleID
+				secondCatalogBundle = e.h.accepted(t, session, "", "extra-"+t04Tag(), "B1+2").BundleID
 				e.h.closeWindow(t, session)
 				e.linkPeer(secondCatalogBundle, conversation)
 				bundles = append(bundles, secondCatalogBundle)
@@ -51,13 +52,13 @@ func TestOrderIntentReplayPreservesOriginalPriceReason(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 			var order string
-			if err := e.p.f.owner.QueryRow(ctx, `SELECT order_id::text FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2
+			if err := e.p.f.owner.QueryRow(ctx, `SELECT response->>'order_id' FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2
  AND operation='merchanttools.order.manual' AND idempotency_key=$3`, e.tenant(), e.store(), key).Scan(&order); err != nil {
-				t.Fatal("barrier has no original completed manual receipt")
+				t.Fatalf("barrier has no original completed manual receipt: %v", err)
 			}
 			originalSnapshot, originalQuote := oiprReadSnapshot(t, e, order)
 			quoteCount := e.count(`SELECT count(*) FROM storefront.quotes WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store())
-			if e.orders() != 1 || e.reserved() != 2 || e.plan.planned() != 0 || e.count(`SELECT count(*) FROM claims.live_price_uses WHERE tenant_id=$1 AND store_id=$2
+			if e.orders() != beforeOrders+1 || e.reserved() != beforeHeld+2 || e.plan.planned() != 0 || e.count(`SELECT count(*) FROM claims.live_price_uses WHERE tenant_id=$1 AND store_id=$2
  AND order_id=$3 AND bundle_id=$4 AND offer_id=$5 AND quantity=2 AND unit_price_minor=$6`, e.tenant(), e.store(), order, bundle, liveOffer.ID, ltgLive) != 1 {
 				t.Fatal("original placement lacks its exact order, stock hold or consumed live-price provenance")
 			}
@@ -93,7 +94,7 @@ func TestOrderIntentReplayPreservesOriginalPriceReason(t *testing.T) {
 					t.Fatalf("original price reason replay %d: status=%d live=%v reason=%v code=%v", replay, status, out["live_price"], out["live_price_reason"], out["code"])
 				}
 				snapshot, quote := oiprReadSnapshot(t, e, order)
-				if !bytes.Equal(snapshot, originalSnapshot) || quote != originalQuote || e.orders() != 1 || e.reserved() != 2 || e.plan.planned() != 0 || e.count(`SELECT count(*) FROM storefront.quotes WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store()) != quoteCount {
+				if !bytes.Equal(snapshot, originalSnapshot) || quote != originalQuote || e.orders() != beforeOrders+1 || e.reserved() != beforeHeld+2 || e.plan.planned() != 0 || e.count(`SELECT count(*) FROM storefront.quotes WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store()) != quoteCount {
 					t.Fatal("price reason recovery rewrote its Quote or duplicated checkout, stock, Quote or DM")
 				}
 				if e.count(`SELECT count(*) FROM claims.live_price_uses WHERE tenant_id=$1 AND store_id=$2 AND order_id=$3 AND quantity=2 AND unit_price_minor=$4`, e.tenant(), e.store(), order, ltgLive) != 1 || e.count(`SELECT count(*) FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND operation='merchanttools.order.for_buyer'
