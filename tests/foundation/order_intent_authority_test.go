@@ -249,6 +249,8 @@ func TestOrderIntentAuthoritySchemaPrivacyAndScope(t *testing.T) {
 		{"fulfillment.mark_order_intent_manual(bytea,uuid,text,uuid,bytea)", "commerce_checkout_writer", "v", []string{"commerce_checkout_writer", "commerce_runtime"}},
 		{"fulfillment.order_pay_link_valid(bytea,uuid,uuid,bytea)", "commerce_checkout_writer", "v", []string{"commerce_checkout_writer", "commerce_runtime"}},
 		{"fulfillment.order_intent_legacy_owner(bytea,uuid,text,text)", "commerce_checkout_writer", "s", []string{"commerce_checkout_writer", "commerce_runtime"}},
+		{"buyer.order_intent_owner_active(uuid,uuid,uuid)", "commerce_buyer_writer", "s", []string{"commerce_buyer_writer", "commerce_checkout_writer"}},
+		{"claims.close_cancelled_for_buyer(bytea,bytea,uuid,uuid)", "commerce_claims_writer", "v", []string{"commerce_claims_writer", "commerce_runtime"}},
 		{"customers.erase_order_intent_payload(uuid,uuid,uuid)", "commerce_privacy_writer", "v", []string{"commerce_privacy_writer"}},
 	} {
 		var actualOwner, volatility string
@@ -365,6 +367,99 @@ func TestOrderIntentAuthoritySchemaPrivacyAndScope(t *testing.T) {
 	assertSettled()
 	if oiaVisibleIntent(t, e, e.token(), key) != 1 || oiaVisibleIntent(t, e, otherPrincipal, key) != 0 {
 		t.Fatal("erasure changed pending authority visibility across principals")
+	}
+}
+
+// A real expiry releases the hold before recovery: repairing an old Begin must never reopen stock or queue payment.
+func TestOrderIntentAuthorityCancelledBeginRecovery(t *testing.T) {
+	e := lbuNew(t)
+	beforeOrders, beforeHeld := e.count(`SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store()), e.reserved()
+	_, offer, bundle, conversation := e.scenario()
+	key, body := t04Key("intent-cancelled-begin"), e.body(2, []string{bundle}, conversation, true)
+	lcrPartialKill(t, e, key, body, "merchanttools.order.manual")
+	keyHash, beginKey := lcrpKeys(e, key)
+	var original string
+	oiaRead(t, e, `SELECT order_id::text FROM checkout.command_results WHERE tenant_id=$1 AND store_id=$2 AND operation='checkout.begin' AND idempotency_key=$3`, []any{e.tenant(), e.store(), beginKey}, &original)
+	if e.orders() != 0 || e.reserved() != beforeHeld+2 || e.plan.planned() != 0 || e.count(`SELECT count(*) FROM checkout.order_links WHERE tenant_id=$1 AND store_id=$2 AND order_id=$3`, e.tenant(), e.store(), original) != 0 {
+		t.Fatal("cancelled recovery fixture did not stop at the real Begin-only boundary")
+	}
+	lcrpRequireFacts(t, e, key, lcrpFacts{Pending: 1, ConsumedGrants: 1})
+	// Disclosed clock fixture ages only the actual order and reservation; the real expiry function performs cancellation.
+	e.cofAge(original, 73)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	var disposition string
+	if err := e.p.expiry.QueryRow(ctx, `SELECT disposition FROM checkout.expire_held($1,1)`, original).Scan(&disposition); err != nil {
+		cancel()
+		t.Fatal("actual expiry of the original Begin failed")
+	}
+	cancel()
+	if disposition != "EXPIRED" {
+		t.Fatalf("original Begin did not expire: disposition=%s", disposition)
+	}
+	var cancelled, historicalUse bool
+	oiaRead(t, e, `SELECT EXISTS(SELECT 1 FROM checkout.orders o
+ JOIN inventory.reservations r ON r.tenant_id=o.tenant_id AND r.store_id=o.store_id AND r.id=o.id
+ JOIN checkout.bank_transfers b ON b.tenant_id=o.tenant_id AND b.store_id=o.store_id AND b.order_id=o.id
+ WHERE o.tenant_id=$1 AND o.store_id=$2 AND o.id=$3 AND o.source='storefront' AND o.commercial_state='CANCELLED'
+ AND o.fulfillment_state='CANCELLED' AND r.state='EXPIRED' AND b.state='EXPIRED' AND o.created_at<clock_timestamp()-interval '10 minutes'),
+ EXISTS(SELECT 1 FROM claims.live_price_uses u JOIN checkout.orders o
+ ON o.tenant_id=u.tenant_id AND o.store_id=u.store_id AND o.id=u.order_id
+ JOIN claims.merchant_origin_grants g ON g.tenant_id=u.tenant_id AND g.store_id=u.store_id AND g.bundle_id=u.bundle_id AND g.quote_id=o.quote_id
+ WHERE u.tenant_id=$1 AND u.store_id=$2 AND u.order_id=$3 AND u.bundle_id=$4 AND u.offer_id=$5
+ AND u.quantity=2 AND u.unit_price_minor=$6 AND g.consumed_at IS NOT NULL)`,
+		[]any{e.tenant(), e.store(), original, bundle, offer.ID, ltgLive}, &cancelled, &historicalUse)
+	if !cancelled || !historicalUse || e.reserved() != beforeHeld {
+		t.Fatal("expiry fixture lost the exact cancelled order, consumed price or released hold")
+	}
+	status, unknown := lcrRecover(t, e, e.token(), key, body)
+	if status != 503 || unknown["code"] != "retry_later" || unknown["order_id"] != nil {
+		t.Fatal("Begin alone became definitive before explicit historical completion")
+	}
+	w := e.admin(e.token()).call("POST", "/orders/attempt/recover", "", "application/json", []byte(`{}`))
+	var recovered map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &recovered); err != nil || w.Code != 200 || recovered["state"] != "created" || recovered["order_id"] != original || len(recovered) != 2 {
+		t.Fatalf("generic recovery did not complete the original expired pipeline: status=%d", w.Code)
+	}
+	for i := 0; i < 2; i++ {
+		status, replay := e.post(e.token(), key, body)
+		send, _ := replay["send"].(map[string]any)
+		link, linkPresent := replay["buyer_link"]
+		if status != 200 || replay["order_id"] != original || replay["commercial_state"] != "CANCELLED" || replay["live_price"] != "applied" || !linkPresent || link != nil || send["state"] != "not_sent" || send["reason"] != "order_cancelled" {
+			t.Fatalf("cancelled replay changed history or offered payment: status=%d", status)
+		}
+		status, recovered = lcrRecover(t, e, e.token(), key, body)
+		if status != 200 || recovered["state"] != "created" || recovered["order_id"] != original || len(recovered) != 2 {
+			t.Fatal("completed cancelled pipeline did not retain exact recovery authority")
+		}
+	}
+	var settled bool
+	oiaRead(t, e, `SELECT count(*)=1 FROM ops.order_intents i JOIN checkout.orders o
+ ON o.tenant_id=i.tenant_id AND o.store_id=i.store_id AND o.id=i.order_id AND o.owner_id=i.buyer_owner_id
+ WHERE i.tenant_id=$1 AND i.store_id=$2 AND i.principal_id=$3 AND i.idempotency_key=$4
+ AND i.state='created' AND i.frozen_request IS NULL AND o.id=$5 AND o.source='merchant_manual' AND o.commercial_state='CANCELLED'`,
+		[]any{e.tenant(), e.store(), e.p.f.principalA, key, original}, &settled)
+	if !settled || e.orders() != 1 || e.reserved() != beforeHeld || e.plan.planned() != 0 || e.count(`SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store()) != beforeOrders+1 {
+		t.Fatal("cancelled intent completion duplicated an order/hold/DM or retained its private payload")
+	}
+	lcrpRequireFacts(t, e, key, lcrpFacts{Released: 1, ConsumedGrants: 1, Recoveries: 1})
+	if e.count(`SELECT count(*) FROM inbox.order_for_buyer WHERE tenant_id=$1 AND store_id=$2 AND idempotency_key_hash=$3 AND bundle_id=$4 AND conversation_id=$5 AND state='released' AND order_id IS NULL`, e.tenant(), e.store(), keyHash, bundle, conversation) != 1 || e.count(`SELECT count(*) FROM claims.live_price_uses WHERE tenant_id=$1 AND store_id=$2 AND order_id=$3 AND bundle_id=$4 AND offer_id=$5 AND quantity=2 AND unit_price_minor=$6`, e.tenant(), e.store(), original, bundle, offer.ID, ltgLive) != 1 {
+		t.Fatal("cancelled completion did not preserve and close exactly its original bundle history")
+	}
+	if e.count(`SELECT count(*) FROM checkout.order_links WHERE tenant_id=$1 AND store_id=$2 AND order_id=$3`, e.tenant(), e.store(), original) != 0 || e.count(`SELECT count(*) FROM inventory.ledger WHERE tenant_id=$1 AND store_id=$2 AND reservation_id=$3 AND kind='RELEASE' AND actor_kind='SYSTEM_EXPIRY'`, e.tenant(), e.store(), original) != 1 {
+		t.Fatal("cancelled replay created a payment link or duplicated the expiry release")
+	}
+	for _, operation := range []string{"merchanttools.order.manual", "merchanttools.order.for_buyer", "merchanttools.order.for_buyer.completed"} {
+		if e.count(`SELECT count(*) FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND idempotency_key=$4 AND operation=$5 AND response->>'order_id'=$6`, e.tenant(), e.store(), e.p.f.principalA, key, operation, original) != 1 {
+			t.Fatal("cancelled completion lost or duplicated an exact upper receipt")
+		}
+	}
+	for _, action := range []string{"order.manual_created", "order.for_buyer_created", "claims.merchant_origin_granted", "order.attempt_recovered"} {
+		if e.count(`SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND action=$4`, e.tenant(), e.store(), e.p.f.principalA, action) != 1 {
+			t.Fatal("cancelled replay lost or duplicated its historical completion audit")
+		}
+	}
+	if e.count(`SELECT count(*) FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND operation='inbox.dm.order_pay_link' AND idempotency_key=$3`, e.tenant(), e.store(), key) != 0 || e.count(`SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='order.link_regenerated'`, e.tenant(), e.store()) != 0 {
+		t.Fatal("cancelled recovery created a payment DM or rotated its link")
 	}
 }
 

@@ -171,6 +171,8 @@ var cbsFunctions = []cbsFn{
 	{"customers.export_tags_notes(uuid,uuid,uuid)", "commerce_privacy_writer", nil, true},
 	// W5-02B (0152): erasure hook of the customer import (EXECUTE nobody; the import definers live in schema migrationimport).
 	{"customers.erase_import_profile(uuid,uuid,uuid)", "commerce_privacy_writer", nil, false},
+	// 0172: exact owner/store erasure removes only pending private input, never its unresolved money fence.
+	{"customers.erase_order_intent_payload(uuid,uuid,uuid)", "commerce_privacy_writer", nil, false},
 	{"customers.export_import_profile(bytea,uuid,uuid)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
 	// W5-03B (0156): the historical-order archive reader (customers:read, volatile: it calls the authority fence).
 	{"customers.read_historical_orders(bytea,uuid,uuid,integer,timestamp with time zone,uuid)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
@@ -230,6 +232,9 @@ var cbsPrivacyFrozen = []cbsPriv{
 	{"buyer.owners", "SELECT", nil}, {"buyer.owners", "UPDATE", []string{"active"}}, {"buyer.owners", "INSERT", []string{"tenant_id", "store_id"}},
 	{"buyer.capability_sessions", "SELECT", nil}, {"buyer.capability_sessions", "UPDATE", []string{"revoked_at"}},
 	{"buyer.capability_events", "INSERT", nil},
+	// 0172: no key/hash/body read, settlement, owner rewrite or deletion authority for the privacy writer.
+	{"ops.order_intents", "SELECT", []string{"tenant_id", "store_id", "buyer_owner_id", "state"}},
+	{"ops.order_intents", "UPDATE", []string{"frozen_request"}},
 	{"storefront.destination_snapshots", "SELECT", nil},
 	{"storefront.destination_snapshots", "UPDATE", []string{"recipient_name", "phone", "region", "city", "postal_code", "line1", "line2"}},
 	{"checkout.orders", "SELECT", []string{"tenant_id", "store_id", "owner_id", "id", "destination_id", "commercial_state", "expires_at"}},
@@ -545,7 +550,7 @@ func TestCustomersBillingCB02Schema(t *testing.T) {
 			}
 			isWrite := p.cmd == "INSERT" || p.cmd == "UPDATE" || p.cmd == "ALL"
 			pii := map[string]bool{"checkout.orders": true, "claims.bundles": true, "storefront.destination_snapshots": true, "payments.stripe_sessions": true,
-				"payments.stripe_refunds": true, "payments.refund_facts": true, "ops.audit_events": true, "control.stores": true}[p.table]
+				"payments.stripe_refunds": true, "payments.refund_facts": true, "ops.audit_events": true, "ops.order_intents": true, "control.stores": true}[p.table]
 			if p.cmd == "ALL" && p.table != "" {
 				t.Errorf("privacy writer policy %s on %s is FOR ALL (a policy must name its command)", p.name, p.table)
 			}

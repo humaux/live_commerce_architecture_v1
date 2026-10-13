@@ -3999,6 +3999,11 @@ func crUpgradeAndPreconditions(t *testing.T) {
 		t.Fatal(err)
 	}
 	reminderOrderSum := fmt.Sprintf("%x", sha256.Sum256(reminderOrderBody))
+	intentBody, err := os.ReadFile("../../migrations/0172_order_intent_authority.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	intentSum := fmt.Sprintf("%x", sha256.Sum256(intentBody))
 	mustExec(t, owner, `CREATE TABLE public.lc_schema_migrations (version text PRIMARY KEY, checksum text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now())`)
 	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0071_claims_retention.sql',$1)`, sum)        // hold 0071 back
 	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0127_lc_r1_retention.sql',$1)`, r1Sum)       // hold 0127 back (its 55000 precondition needs 0071)
@@ -4021,8 +4026,10 @@ func crUpgradeAndPreconditions(t *testing.T) {
 	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0169_lc_r2_c3x_purge.sql',$1)`, lcR2Sum)
 	// Hold 0171 with its 0144 dependency: CREATE OR REPLACE must not synthesize the held-back planner ahead of its CREATE.
 	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0171_checkout_reminder_order_guard.sql',$1)`, reminderOrderSum)
+	// Hold 0172 with 0129: cancellation reconciliation reads the deferred for-buyer reservation/grant tables.
+	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0172_order_intent_authority.sql',$1)`, intentSum)
 	if err := migrations.Apply(ctx, owner); err != nil {
-		t.Fatalf("apply every migration but 0071, 0127, 0129, 0144, 0151, 0154, 0158, 0165, 0166, 0167, 0169 and 0171: %v", err)
+		t.Fatalf("apply every migration but 0071, 0127, 0129, 0144, 0151, 0154, 0158, 0165, 0166, 0167, 0169, 0171 and 0172: %v", err)
 	}
 	for _, q := range []string{`SELECT to_regclass('claims.retention_policy')::text`, `SELECT to_regclass('claims.retention_log')::text`} {
 		var got *string
@@ -4099,10 +4106,10 @@ func crUpgradeAndPreconditions(t *testing.T) {
 	// the operator renames the row (no auto-relabel of merchant data), the migration then applies (0071, then the
 	// 0127 A1.4 amendment that depends on it)
 	mustExec(t, owner, `UPDATE claims.bundles SET label='renamed-by-operator' WHERE id=$1`, reserved.id)
-	mustExec(t, owner, `DELETE FROM public.lc_schema_migrations WHERE version IN ('0127_lc_r1_retention.sql','0129_lc_b6_order_for_buyer.sql','0144_checkout_reminders.sql','0151_sold_out_reply.sql','0154_buyer_blocklist.sql','0158_live_price_keep_on_pause.sql','0165_lc_b3b_buyer_panel.sql','0166_open_parcel_groups.sql','0167_stripe_untracked_reservation.sql','0169_lc_r2_c3x_purge.sql','0171_checkout_reminder_order_guard.sql')`)
+	mustExec(t, owner, `DELETE FROM public.lc_schema_migrations WHERE version IN ('0127_lc_r1_retention.sql','0129_lc_b6_order_for_buyer.sql','0144_checkout_reminders.sql','0151_sold_out_reply.sql','0154_buyer_blocklist.sql','0158_live_price_keep_on_pause.sql','0165_lc_b3b_buyer_panel.sql','0166_open_parcel_groups.sql','0167_stripe_untracked_reservation.sql','0169_lc_r2_c3x_purge.sql','0171_checkout_reminder_order_guard.sql','0172_order_intent_authority.sql')`)
 	before = snap()
 	if err := migrations.Apply(ctx, owner); err != nil {
-		t.Fatalf("0071 + 0127 + 0129 + 0144 + 0151 + 0154 + 0158 + 0165 + 0166 + 0167 + 0169 + 0171 on the populated database: %v", err)
+		t.Fatalf("0071 + 0127 + 0129 + 0144 + 0151 + 0154 + 0158 + 0165 + 0166 + 0167 + 0169 + 0171 + 0172 on the populated database: %v", err)
 	}
 	afterFirst := crExplicitDigest(t, owner, "public.lc_schema_migrations", "applied_at")
 	if err := migrations.Apply(ctx, owner); err != nil {
@@ -4119,6 +4126,9 @@ func crUpgradeAndPreconditions(t *testing.T) {
 	}
 	if n := crCount(t, owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version='0171_checkout_reminder_order_guard.sql' AND checksum=$1`, reminderOrderSum); n != 1 {
 		t.Errorf("0171 ledger rows with the file checksum after populated upgrade: %d", n)
+	}
+	if n := crCount(t, owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version='0172_order_intent_authority.sql' AND checksum=$1`, intentSum); n != 1 {
+		t.Errorf("0172 ledger rows with the file checksum after populated upgrade: %d", n)
 	}
 	if n := crCount(t, owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version='0166_open_parcel_groups.sql' AND checksum=$1`, pgSum); n != 1 {
 		t.Errorf("0166 ledger rows with the file checksum after the populated upgrade: %d", n)
