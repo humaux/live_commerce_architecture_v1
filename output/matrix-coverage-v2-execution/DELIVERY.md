@@ -19,15 +19,21 @@
 - First broad Node attempt edited during execution: invalid for acceptance, stopped exact owned PIDs; test-node-invalid-source-change.log/.json/.exit (child -15, shell 241).
 - Premature broad Node start while focused regression was red: stopped exact owned PIDs; test-node-premature-focus-red.log/.json/.exit (child -15, shell 241). Not acceptance.
 - bash scripts/dev/test-node.sh → fixed-source exit 1 in155.09s: test-node.log/.json/.exit, unchanged=true. Failures: next-startup stolen-port fixture timed out after10000ms; three playwright-deps installer fixtures timed out/status null or zero retries. GROUP2 remains117/117. No failing test or threshold changed.
-- bash scripts/dev/check-gates.sh → exit 1 in611.30s; matrix-execution passed, unrelated TestReviewR1bImportedSinkValuesRealCLI/alias hit CLI deadline then contractdrift package timed out after10m. check-gates.log/.json/.exit; unchanged=true. Node/check-gates retry awaits parent's serialized resource slot.
+- bash scripts/dev/check-gates.sh → exit 1 in611.30s; matrix-execution passed, unrelated TestReviewR1bImportedSinkValuesRealCLI/alias hit CLI deadline then contractdrift package timed out after10m. check-gates.log/.json/.exit; unchanged=true. Both original commands passed in serialized retry; initial failures remain retained.
 - git diff --check → exit 0.
 - Resource snapshot: resource-observation.log (load25.78/30.90/29.03; command names only).
 
 ## Evidence and outstanding work
 
 - E3 for focused Node mutation gate on exact source-hashes.json; author self-check only. Independent review: NOT_RUN by this author.
-- Full Node gate and check-gates failed outside this task module; serialized retries/independent acceptance pending. Full browser/REAL_PG/full foundation/runtime/provider/SANDBOX/LIVE gates: NOT_RUN by this author, per assigned scope and shared resource ownership.
+- Initial full Node/check-gates failed outside this task module; original commands passed in the parent-assigned serialized retry. Independent acceptance remains pending. Full browser/REAL_PG/full foundation/runtime/provider/SANDBOX/LIVE gates: NOT_RUN by this author, per assigned scope and shared resource ownership.
 - Production/provider actions: none. No external credentials required; BLOCKED_EXTERNAL: none.
 - Integrator to-do: independent review/re-run, serialized Node retry and canonical browser acceptance/CI as appropriate; push and open focused PR. No author push/PR/merge.
 
 Final source hashes: implementation `b39b4377c1f1e9592ab351cfc500279f8eec2482f38764d1702663eeaf072811`; tests `1ee16f0d106bde822990826222ed29a2e3c663cb3182da9a314f7a664c01249e`. No source changes after focused GREEN.
+
+## Final serialized retry (source commit 6f46db7788acad1ee66da11eb6f27b3f738f3c3d)
+
+- bash scripts/dev/test-node.sh → exit 0, 144.138s, completed Node totals {'tests': 1786, 'pass': 1786, 'fail': 0, 'skipped': 0, 'cancelled': 0}: test-node-retry.log/.json/.exit, unchanged=true.
+- bash scripts/dev/check-gates.sh → exit 0, 293.167s: check-gates-retry.log/.json/.exit, unchanged=true.
+- No executable/test bytes changed since the final focused GREEN. Final receipt commit changes output only; no further retries. Local gates E3 within tested source environment. Browser/REAL_PG/independent review/CI remain NOT_RUN by author. No P0/P1 identified in scoped self-review; independent acceptance belongs to parent.

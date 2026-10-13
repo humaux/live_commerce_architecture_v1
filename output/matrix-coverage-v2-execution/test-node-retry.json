@@ -1,0 +1,19 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/test-node.sh"
+  ],
+  "commit": "6f46db7788acad1ee66da11eb6f27b3f738f3c3d",
+  "exit_code": 0,
+  "seconds": 144.13839101791382,
+  "timeout_seconds": 600,
+  "source_hashes": {
+    "tests/ci/product-editor-matrix-execution.mjs": "b39b4377c1f1e9592ab351cfc500279f8eec2482f38764d1702663eeaf072811",
+    "tests/ci/product-editor-matrix-execution.test.mjs": "1ee16f0d106bde822990826222ed29a2e3c663cb3182da9a314f7a664c01249e",
+    ".github/workflows/foundation.yml": "aa7e4f3659b15953749d7220bbf765f69202c136dde0ac1c34e266dd10bac44a",
+    ".github/workflows/gates.yml": "9bc46d8fc42e36253df350fb7f5bfaf644c0a37d70705d662461ecfbdd3f9100",
+    "scripts/dev/test-node.sh": "0f26a98ba27d98c34115e7bf1010f3a0832f090df3c97459c90ba55c3c3df4fc",
+    "scripts/dev/test-local.sh": "5a6dc083463197a9735038d85d87ecbecc474514e5f875dd5362f45457b2d0dd"
+  },
+  "unchanged": true
+}
