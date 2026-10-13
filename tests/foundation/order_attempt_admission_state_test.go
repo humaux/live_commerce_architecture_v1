@@ -45,12 +45,15 @@ func oaStateBegin(t *testing.T) oaStateFixture {
 	oaStateExec(t, tx, `INSERT INTO ops.order_attempt_scopes(scope_id,tenant_id,store_id,principal_id,current_generation)
 	 VALUES($1,$2,$3,$4,1)`, h.scope, f.tenantA, f.storeA1, f.principalA)
 	oaStateExec(t, tx, `INSERT INTO ops.order_attempts(attempt_id,tenant_id,store_id,scope_id,intent_generation,
-	 transport_key_digest,request_hash,request_schema_version,admission_finished,facts_digest,plan_digest,
-	 plan_ciphertext,plan_key_version,buyer_owner_id,admission_provenance,admitted_at,execute_by,state)
-	 VALUES($1,$2,$3,$4,1,sha256($1::uuid::text::bytea),sha256('synthetic request'::bytea),1,true,
-	 sha256('synthetic facts'::bytea),sha256('synthetic plan'::bytea),decode(repeat('01',40),'hex'),
-	 'synthetic_v1',$5,'{}',statement_timestamp(),statement_timestamp()+interval '15 minutes','PENDING')`,
+	 transport_key_digest,request_hash,request_schema_version,buyer_owner_id,admission_provenance,
+	 admitted_at,execute_by,state,enqueue_xid)
+	 VALUES($1,$2,$3,$4,1,sha256($1::uuid::text::bytea),sha256('synthetic request'::bytea),1,
+	 $5,'{}',statement_timestamp(),statement_timestamp()+interval '15 minutes','PENDING',pg_current_xact_id())`,
 		h.attempt, f.tenantA, f.storeA1, h.scope, h.owner)
+	// Native storage setup now includes the mandatory fresh River INSERT witness.
+	// This remains a storage fixture, not proof of authenticated C1 admission.
+	oaJobInsert(t, tx, h.attempt)
+	oaJobFinish(t, tx, h.attempt)
 	for _, kind := range []string{"customer", "buyer_owner", "private_owner"} {
 		oaStateExec(t, tx, `INSERT INTO ops.order_attempt_subjects(tenant_id,store_id,subject_kind,subject_id,attempt_id)
 		 VALUES($1,$2,$3,$4,$5)`, f.tenantA, f.storeA1, kind, randomUUID(), h.attempt)

@@ -3,8 +3,10 @@
 - Branch: `unit/oa-1-order-attempt-core`; base: `55e98ba0434557e94e3b7c9e31ff0e98352623b1`.
 - Implementer: Codex-3; reasoning: high. Allowed paths and boundaries:
   `docs/delivery/units/oa-1-order-attempt-core.md`.
-- Contract: frozen order-attempt-v1 at `5e6ef2e97fabd587936be8bd5c951767017b4ed5`;
-  no amendment. Backend separate from paused PR #32.
+- Contract: frozen order-attempt-v1 plus reviewed A1/A1.1 at
+  `cb4256f37586aad5139f1216fc92d6226fa70003`, merged in `0f1060a72`.
+  Retired scopes reject fresh CAS, but preserve authorized exact replay during
+  retention. Backend separate from paused PR #32.
 - Current artifact: independent schema/authority acceptance tests and storage;
   production admission/execution is not implemented or enabled.
 
@@ -18,6 +20,10 @@
 | `1e616d320` | [38426867350](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38426867350) | storage identity/authority/incomplete-admission + model | `PASS=4 FAIL=1 SKIP=0 exit=1`; incomplete-admission fixture stopped before commit with SQLSTATE 42P08 (UUID/text parameter inference). Not behavioral proof; fixed explicit UUID cast, assertions unchanged. Job `115399906105`, `storage-first-ci.log` |
 | `68ba72cc9` | [38428406310](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38428406310) | storage/provenance/state/model/authority | `PASS=16 FAIL=4 SKIP=0 exit=1`; actual storage commit and state tests PASS; three authority tests RED on absent C1 entries, one provenance RED on missing direct ledger/session FK. Job `115404898781`, `storage-provenance-authority-ci.log`. Exact FK added; assertions unchanged. |
 | `14065204e` | [38429245975](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38429245975) | `focused:^TestOrderAttemptFacts` | RED: `PASS=0 FAIL=6 SKIP=0 exit=1`; successful REAL_PG setup, coordinator has no checkout access and facts function is absent. Job `115406897065`, `facts-red-ci.log`. |
+| `2dc37d8cc` | [38430215747](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38430215747) | OA focused seams | `PASS=7 FAIL=25 SKIP=0 exit=1`; two model and five codec tests passed. PG setup failed on 0173 PL/pgSQL CASE parsing (42601), so PG behavior was NOT_RUN. Job `115410251105`, `admission-seams-first-ci.log`. Parenthesized IF-contained CASE conditions in `fa6a57dd7`; assertions unchanged. |
+| `b54e4ee0b` | [38430742365](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38430742365) | real C1 preparation | `PASS=0 FAIL=2 SKIP=0 exit=1`; same migration setup failure, not causal C1 proof. Job `115412090363`, `admission-first-ci.log`. |
+| `ce14e8892` | [38432101298](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38432101298) | `focused:^TestOrderAttempt` | `PASS=32 FAIL=18 SKIP=0 exit=1`; storage/provenance/authority/facts and codec/model pass; absent C1, subject and job helpers are causal RED. One subject isolation fixture has a wrong tenant/store pair (23503) before its assertion; corrected separately, not counted as isolation proof. Job `115416759643`, `c1-seams-red-ci.log`. |
+| `4f1d17643` | [38432782403](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38432782403) | A1 retirement/schema baseline | PENDING at dispatch; tests-only scope re-enablement, partial uniqueness, principal barriers and pending retirement refusal. No green claim. |
 
 CI is the only execution environment. Local tests/builds/gates/server/PG:
 **NOT_RUN(owner CI-only directive)**. Static source review does not prove C2.

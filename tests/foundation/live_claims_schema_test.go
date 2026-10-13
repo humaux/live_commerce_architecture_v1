@@ -263,6 +263,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		add(wr, "claims.lines", "UPDATE", "applied_version")
 		// live-tools 0092: claims.live_prices / preview_live_prices read the offer SKU and live price.
 		add(wr, "live.offers", "SELECT", "tenant_id", "store_id", "id", "session_id", "keyword", "active", "sku_id", "live_price_minor")
+		// 0175: exact lock-only column for the C1 claim-origin FOR SHARE path.
+		add(wr, "live.offers", "UPDATE", "active")
 		add(wr, "identity.sessions", "SELECT", "token_hash", "principal_id", "audience", "revoked_at", "expires_at")
 		// 0105 (R4S-01): the consumption ledger (written only by claims.consume_live_prices), order state for the held-use sum
 		// and the buyer's own quote lines (no order snapshot, no destination, no PII).

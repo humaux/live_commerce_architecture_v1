@@ -84,8 +84,10 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0171 (OA-1 attempt-owned domain provenance and per-origin carts) adds one: 94 -> 95.
 	// 0172 (OA-1 authenticated admission scope and private context) adds one: 95 -> 96.
 	// 0173 (OA-1 locked admission catalog and delivery/payment facts) adds one: 96 -> 97.
-	if len(r2) != 97 {
-		t.Fatalf("R2 migration set = %d files %v, want 97", len(r2), r2)
+	// 0175 (OA-1 claim-origin admission and deadline-bound reservations) adds one: 97 -> 98.
+	// 0177 (OA-1 legacy claim paths exclude attempt-owned reservations/grants) adds one: 98 -> 99.
+	if len(r2) != 99 {
+		t.Fatalf("R2 migration set = %d files %v, want 99", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
