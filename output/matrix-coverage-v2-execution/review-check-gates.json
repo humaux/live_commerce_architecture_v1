@@ -1,0 +1,14 @@
+{
+  "command": "bash scripts/dev/check-gates.sh",
+  "exit_code": 0,
+  "tap_totals": {
+    "tests": 13,
+    "tests_summaries": 1,
+    "pass": 13,
+    "pass_summaries": 1,
+    "fail": 0,
+    "fail_summaries": 1,
+    "skipped": 0,
+    "skipped_summaries": 1
+  }
+}

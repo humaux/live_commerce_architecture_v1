@@ -1,0 +1,14 @@
+{
+  "command": "bash scripts/dev/test-node.sh",
+  "exit_code": 0,
+  "tap_totals": {
+    "tests": 1812,
+    "tests_summaries": 30,
+    "pass": 1812,
+    "pass_summaries": 30,
+    "fail": 0,
+    "fail_summaries": 30,
+    "skipped": 0,
+    "skipped_summaries": 30
+  }
+}
