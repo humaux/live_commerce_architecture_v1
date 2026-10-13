@@ -214,12 +214,7 @@ func TestProductEditorMatrixLedgerEvidenceDriftIntegrity(t *testing.T) {
 					}
 				}
 				manifest["copied_native_bytes"] = copies
-	// Extra retained receipts model package membership without creating run evidence.
-	retained := productEditorMatrixReadFixture(t, "../..", "output/matrix-ledger-enforce/"+string(dir[1])+"/test-node.json")
-	for _, path := range []string{filepath.Dir(canonical) + "/test-node.json", canonical + "/retained/test-node.source.txt"} {
-		write(path, retained)
-		artifacts[path] = hash(retained)
-	}
+
 			case "copy-hash":
 				manifest["copied_native_bytes"].([]any)[0].(map[string]any)["sha256"] = strings.Repeat("0", 64)
 			case "unindexed-copy":
@@ -664,6 +659,12 @@ func productEditorMatrixEvidenceFixture(t *testing.T) (string, string) {
 		copies = append(copies, map[string]string{"canonical": path, "source_native": "fixture-only/" + name, "sha256": hash(data)})
 	}
 	manifest["copied_native_bytes"] = copies
+	// Extra retained receipts model package membership without creating run evidence.
+	retained := productEditorMatrixReadFixture(t, "../..", "output/matrix-ledger-enforce/"+string(dir[1])+"/test-node.json")
+	for _, path := range []string{filepath.Dir(canonical) + "/test-node.json", canonical + "/retained/test-node.source.txt"} {
+		write(path, retained)
+		artifacts[path] = hash(retained)
+	}
 	// MODEL_ONLY frozen metadata and source snapshots rebind the copied fixture,
 	// never native delivered evidence. Its case source remains the sole table.
 	frozen := productEditorMatrixJSONFixture(t, "../..", "output/matrix-ledger-enforce/"+string(dir[1])+"/FROZEN-IDENTITIES.json")
