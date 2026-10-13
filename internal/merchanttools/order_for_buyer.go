@@ -6,7 +6,7 @@
 // Depends on: ManualOrders (manual.go: Place, RegenerateLink, Options, hooks), internal/claims (live_price_grant.go: claims.for_buyer_* and
 //   claims.bind_merchant_origin_grant), internal/inbox (PlanOrderPayLink via PayLinkPlanner), internal/customers + internal/merchantorders
 //   (the linked customer's newest order, read-only), internal/command (receipts, audit), internal/platform, internal/storefront (ClaimOrigin),
-//   ops.order_intents (original owner under RLS), fulfillment.order_intent_begin/order_pay_link_valid (0172),
+//   ops.order_intents (original owner under RLS), fulfillment.order_intent_begin/order_pay_link_valid and claims.close_cancelled_for_buyer (0172),
 //   catalog.skus/products and control.stores (read-only, commerce_runtime under RLS).
 // Used by: internal/httpapi/merchanttools.go (routes A15/A16); cmd/api builds it beside the ManualOrders pipeline and the inbox service.
 // Invariants: I05/I08 (no client price: the body has no price key; the live price is decided by claims.live_prices), I03 (stock only through
@@ -260,7 +260,7 @@ func (f *ForBuyer) Place(ctx context.Context, token, storeID, key string, in For
 	if err != nil {
 		return ForBuyerResult{}, false, err
 	}
-	if out.Send.State == "not_sent" && (out.Send.Reason == "link_unavailable" || out.Send.Reason == "window_closed") {
+	if out.Send.State == "not_sent" && (out.Send.Reason == "link_unavailable" || out.Send.Reason == "window_closed" || out.Send.Reason == "order_cancelled") {
 		// A competing reminder may have superseded Place's URL before DM planning. Never return that dead token.
 		out.BuyerLink = nil
 	}
@@ -284,17 +284,18 @@ func (f *ForBuyer) Place(ctx context.Context, token, storeID, key string, in For
 	return out, receiptReplayed, nil
 }
 
-// placeOrder is steps 3a-3d: reserve + grant (merchant tx), the unchanged Place pipeline with the server-only origins and the grant binding, then
-// one merchant transaction that records the reservation rows, the for-buyer receipt and the audit. A definitive Place refusal gives the bundles
-// back; an uncertain one leaves them pending (the same key resumes; a pending row without an order expires after 15 minutes).
+// placeOrder is steps 3a-3d: reserve + grant (merchant tx), Place with server-only origins/grant binding, then reservation/receipt/audit.
+// A known Begin resumes its immutable intent without new pricing/grants; cancellation closes only the original bundle bookkeeping.
+// A definitive Place refusal gives bundles back; uncertainty retains the intent even if uncommitted bundle reservations expire.
 func (f *ForBuyer) placeOrder(ctx context.Context, token, storeID, key string, manualIn ManualInput, target ForBuyerTarget,
 	request any) (ManualResult, string, string, bool, error) {
 	m := f.manual
 	var zero ManualResult
-	_, committed, err := m.committedIntent(ctx, token, storeID, key)
+	original, committed, err := m.committedIntent(ctx, token, storeID, key)
 	if err != nil {
 		return zero, "", "", false, mapForBuyerError(err)
 	}
+	cancelled := committed && original.CommercialState == "CANCELLED"
 	buyerOwner := ""
 	if len(target.BundleIDs) > 0 {
 		// The original intent's private owner is immutable across signing-key rotation and buyer capability expiry.
@@ -320,6 +321,10 @@ func (f *ForBuyer) placeOrder(ctx context.Context, token, storeID, key string, m
 		if committed {
 			if len(target.BundleIDs) == 0 {
 				begun.Reason = "no_bundle"
+				return nil
+			}
+			// The cancelled-original closure proves and releases its exact reservations later, even if they already expired/released.
+			if cancelled {
 				return nil
 			}
 			// Calls claims.for_buyer_request (0170): an established Begin resumes only original reservations, never renews grants.
@@ -382,8 +387,13 @@ func (f *ForBuyer) placeOrder(ctx context.Context, token, storeID, key string, m
 		return command.Run(ctx, tx, scope, forBuyerOperation, key, request, &receipt, func() error {
 			if len(target.BundleIDs) > 0 {
 				var inner error
-				// Calls claims.for_buyer_finish (0129; §5.1 3d): the rows become placed; the ledger rows say whether the live price was applied.
-				if granted, inner = claims.FinishForBuyer(ctx, tx, begun.RequestID, placed.OrderID); inner != nil {
+				if cancelled {
+					granted, inner = closeCancelledForBuyer(ctx, tx, keyHash[:], requestHash[:], buyerOwner, placed.OrderID)
+				} else {
+					// Calls claims.for_buyer_finish (0129; §5.1 3d): the rows become placed; the ledger rows say whether the live price was applied.
+					granted, inner = claims.FinishForBuyer(ctx, tx, begun.RequestID, placed.OrderID)
+				}
+				if inner != nil {
 					return inner
 				}
 			}
@@ -413,6 +423,30 @@ func (f *ForBuyer) placeOrder(ctx context.Context, token, storeID, key string, m
 		return zero, "", "", false, mapForBuyerError(err)
 	}
 	return placed, receipt.LivePrice, receipt.LivePriceReason, placedReplayed, nil
+}
+
+// closeCancelledForBuyer completes only the original cancelled intent's claim bookkeeping; the definer proves its exact owner/Begin.
+// It releases original pending reservations, expires unconsumed grants and returns historical consumed prices, never a new price or grant.
+func closeCancelledForBuyer(ctx context.Context, tx pgx.Tx, keyHash, requestHash []byte, owner, orderID string) ([]claims.GrantedLine, error) {
+	rows, err := tx.Query(ctx, `SELECT bundle_id::text,offer_id::text,sku_id::text,quantity,live_price_minor FROM claims.close_cancelled_for_buyer($1,$2,$3::uuid,$4::uuid)`,
+		keyHash, requestHash, owner, orderID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	granted := []claims.GrantedLine{}
+	for rows.Next() {
+		var line claims.GrantedLine
+		var price *int64
+		if err := rows.Scan(&line.BundleID, &line.OfferID, &line.SKUID, &line.Quantity, &price); err != nil {
+			return nil, err
+		}
+		if price != nil {
+			line.LivePriceMinor = *price
+		}
+		granted = append(granted, line)
+	}
+	return granted, rows.Err()
 }
 
 // notAppliedReason names why no live price applied when no ledger row exists: the definer's reason when no grant was written, else the grant
@@ -497,6 +531,37 @@ func mapForBuyerError(err error) error {
 func (f *ForBuyer) sendPayLink(ctx context.Context, token, storeID, key string, in ForBuyerInput, target ForBuyerTarget, locale, orderID string,
 	buyerLink *string, freshLink bool) (ForBuyerSend, error) {
 	m := f.manual
+	if in.SendPaymentLink {
+		original, committed, err := m.committedIntent(ctx, token, storeID, key)
+		if err != nil {
+			return ForBuyerSend{}, mapForBuyerError(err)
+		}
+		if committed && original.CommercialState == "CANCELLED" {
+			// No planner or relink on a cancelled original order. A historical receipt may only report the existing DM.
+			out := ForBuyerSend{State: "not_sent", Reason: "order_cancelled"}
+			err := platform.WithScope(ctx, m.pool, token, storeID, manualPermission, func(tx pgx.Tx, scope platform.Scope) error {
+				var raw []byte
+				err := tx.QueryRow(ctx, `SELECT response FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND operation='inbox.dm.order_pay_link' AND idempotency_key=$3`,
+					scope.TenantID, scope.StoreID, key).Scan(&raw)
+				if errors.Is(err, pgx.ErrNoRows) {
+					return nil
+				}
+				if err != nil {
+					return err
+				}
+				var existing inbox.SendOutput
+				if err := json.Unmarshal(raw, &existing); err != nil {
+					return err
+				}
+				out = ForBuyerSend{OperationID: existing.OperationID, State: existing.SendState}
+				return nil
+			})
+			if err != nil {
+				return ForBuyerSend{}, mapForBuyerError(err)
+			}
+			return out, nil
+		}
+	}
 	switch {
 	case !in.SendPaymentLink:
 		return ForBuyerSend{State: "not_sent", Reason: "not_requested"}, nil
