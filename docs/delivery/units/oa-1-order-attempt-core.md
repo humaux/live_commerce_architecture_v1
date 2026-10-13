@@ -57,6 +57,17 @@ no-op hooks or synthetic capability sessions to pass a gate.
 - Pricing uses the existing pure Go pricing calculation in C1. C2 materializes
   the accepted plan and rechecks only the frozen contract's safety predicates.
 
+The first execution seam is
+`ops.lock_order_attempt(auth_hash bytea, store_id uuid, attempt_id uuid,
+intent_generation bigint) RETURNS jsonb`. Runtime supplies current merchant
+read authentication; the actual claims-worker login supplies NULL auth hash.
+The first locking statement is the attempt row. It returns the immutable
+binding and encrypted plan only for the exact admitted generation; terminal
+rows return their stored receipt without reapplying placement gates. Worker
+access never admits a new attempt. A protected transaction-ID witness binds
+later private execution helpers to this held fence; caller-set GUCs do not.
+This internal parameter choice implements §1/§3, not a new public HTTP API.
+
 ## Required evidence
 
 | Clause | Acceptance surface |
