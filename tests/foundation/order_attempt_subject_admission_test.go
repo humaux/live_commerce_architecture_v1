@@ -96,11 +96,21 @@ func TestOrderAttemptSubjectsExplicitNativeLink(t *testing.T) {
 	oaSubjectReject(t, tx, `SELECT customers.order_attempt_sources($1::jsonb)`, []any{oaSubjectJSON(t, selection)}, "PT404", "not_found")
 	selection["for"] = map[string]any{"bundle_ids": []string{}, "conversation_id": conv, "customer_id": randomUUID()}
 	oaSubjectReject(t, tx, `SELECT customers.order_attempt_sources($1::jsonb)`, []any{oaSubjectJSON(t, selection)}, "PT404", "not_found")
+	otherOwner := randomUUID()
+	oaStateExec(t, tx, `RESET ROLE`)
+	oaStateExec(t, tx, `INSERT INTO buyer.owners(id,tenant_id,store_id) VALUES($1,$2,$3)`, otherOwner, e.tenant(), e.store())
+	oaStateExec(t, tx, `SET LOCAL ROLE commerce_order_attempt_owner`)
+	selection["for"] = map[string]any{"bundle_ids": []string{}, "conversation_id": conv, "customer_id": otherOwner}
+	oaSubjectReject(t, tx, `SELECT customers.order_attempt_sources($1::jsonb)`, []any{oaSubjectJSON(t, selection)}, "PT404", "not_found")
 	selection["for"] = map[string]any{"bundle_ids": []string{}, "conversation_id": nil, "customer_id": owner}
 	oaStateExec(t, tx, `RESET ROLE`)
 	oaStateExec(t, tx, `UPDATE buyer.owners SET active=false WHERE id=$1`, owner)
 	oaStateExec(t, tx, `SET LOCAL ROLE commerce_order_attempt_owner`)
 	oaSubjectReject(t, tx, `SELECT customers.order_attempt_sources($1::jsonb)`, []any{oaSubjectJSON(t, selection)}, "PT422", "ERASED")
+	oaStateExec(t, tx, `RESET ROLE`)
+	oaStateExec(t, tx, `DELETE FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission='customers:read'`, e.tenant(), e.store(), e.p.f.principalA)
+	oaStateExec(t, tx, `SET LOCAL ROLE commerce_order_attempt_owner`)
+	oaSubjectReject(t, tx, `SELECT customers.order_attempt_sources($1::jsonb)`, []any{oaSubjectJSON(t, selection)}, "PT403", "forbidden")
 }
 
 func TestOrderAttemptSubjectsScopeAndSelection(t *testing.T) {
