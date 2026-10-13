@@ -296,8 +296,7 @@ BEGIN
  IF mode IN ('pay_at_pickup','cash_on_delivery') AND (
   (SELECT count(*) FROM checkout.orders o WHERE o.tenant_id=tenant AND o.store_id=store AND o.payment_mode=mode
    AND o.collection_state='PENDING' AND o.fulfillment_state='MANUAL_UNASSIGNED')>=
-    CASE WHEN mode='pay_at_pickup' THEN (payment->>'max_open')::integer
-     ELSE coalesce((SELECT c.pay_at_pickup_max_open FROM fulfillment.cvs_store_settings c WHERE c.tenant_id=tenant AND c.store_id=store),20) END
+    coalesce((SELECT c.pay_at_pickup_max_open FROM fulfillment.cvs_store_settings c WHERE c.tenant_id=tenant AND c.store_id=store),20)
   OR EXISTS(SELECT 1 FROM checkout.orders o WHERE o.tenant_id=tenant AND o.store_id=store AND o.owner_id=owner_id
    AND o.payment_mode=mode AND o.collection_state='PENDING' AND o.fulfillment_state='MANUAL_UNASSIGNED')) THEN
   RAISE EXCEPTION 'offline_order_limit' USING ERRCODE='PT429'; END IF;

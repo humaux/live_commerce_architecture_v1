@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"reflect"
+	"sort"
 	"testing"
 	"time"
 
@@ -62,6 +63,8 @@ func oaBeginPrepared(t *testing.T, e *lbuEnv, a orderattempt.AdmissionReceipt) (
 	// after catalog but before pickup/destination and any warehouse/balance locks.
 	ids, _, err := oaAllocationCatalog(tx, a.AttemptID, plain)
 	if err != nil || len(ids) == 0 { t.Fatalf("catalog safety prerequisite: %v", err) }
+	if !sort.StringsAreSorted(ids) { t.Fatal("catalog IDs are not in deterministic lock order") }
+	for i := 1; i < len(ids); i++ { if ids[i-1] == ids[i] { t.Fatal("catalog returned duplicate origin SKU IDs") } }
 	var offline []byte
 	err = tx.QueryRow(context.Background(), `SELECT checkout.order_attempt_lock_offline_safety($1::uuid,$2::text)`, a.AttemptID, string(plain)).Scan(&offline)
 	if err != nil { t.Fatalf("native offline settings lock before destination/inventory: %v", err) }
