@@ -1,0 +1,50 @@
+{
+  "source_contract_test": [
+    "apps/admin/components/CreateOrderDrawer.tsx",
+    "apps/admin/components/ManualOrder.tsx",
+    "apps/admin/lib/auth.ts",
+    "apps/admin/lib/create-order-attempt.ts",
+    "apps/admin/lib/create-order-client.ts",
+    "apps/admin/lib/model.ts",
+    "contracts/merchant-browser-auth-v1.md",
+    "contracts/storefront-v2.md",
+    "internal/inbox/send_order.go",
+    "internal/merchanttools/checkout_reminders.go",
+    "internal/merchanttools/manual.go",
+    "internal/merchanttools/order_for_buyer.go",
+    "internal/platform/session_stores.go",
+    "tests/admin/auth-real.spec.ts",
+    "tests/admin/create-order-attempt.test.ts",
+    "tests/admin/create-order-bff.test.ts",
+    "tests/admin/create-order-capability-recovery.mjs",
+    "tests/admin/create-order-client.test.ts",
+    "tests/admin/create-order-drawer-gate.mjs",
+    "tests/admin/create-order-manual-recovery.mjs",
+    "tests/admin/create-order-partial-recovery.mjs",
+    "tests/admin/create-order-review.test.ts",
+    "tests/admin/inbox-review-host.test.ts",
+    "tests/admin/manual-order-recovery.test.ts",
+    "tests/admin/studio-ui.spec.ts",
+    "tests/foundation/browser_create_order_drawer_test.go",
+    "tests/foundation/browser_create_order_manual_recovery_test.go",
+    "tests/foundation/browser_create_order_partial_test.go",
+    "tests/foundation/browser_identity_integration_test.go",
+    "tests/foundation/queued_order_link_test.go"
+  ],
+  "delivery": [
+    "output/lc-u3-create-order-drawer/DELIVERY.md",
+    "output/lc-u3-create-order-drawer/r4-final-money/**"
+  ],
+  "excluded": [
+    "output/ext-agents/**",
+    "migrations/**",
+    "go.mod",
+    "go.sum",
+    "pnpm-lock.yaml"
+  ],
+  "owner_authorized_trunk_merge": {
+    "commit": "5a51ea2cd1a9665e3d6dfb7c6bb3588e735ed020",
+    "trunk": "0bfe36e53acb694f4697521202e24f0790638941",
+    "method": "git merge FETCH_HEAD, no rebase; every node input and both UI/suite intents kept"
+  }
+}

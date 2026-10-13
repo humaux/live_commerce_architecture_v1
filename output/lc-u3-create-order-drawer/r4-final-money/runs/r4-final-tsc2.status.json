@@ -1,0 +1,26 @@
+{
+  "name": "r4-final-tsc2",
+  "command": [
+    "pnpm",
+    "-C",
+    "apps/admin",
+    "exec",
+    "tsc",
+    "--noEmit",
+    "-p",
+    "."
+  ],
+  "timeout": 300,
+  "head": "0da382fa514257b601bfc605d1b233f0ed0e6df5",
+  "exit_code": 0,
+  "source_sha256": "b43a414e5be6ffba6f9c6b6002bad2b1afeaa6e30c1e1986f100b52ccd48aab0",
+  "source_after": "b43a414e5be6ffba6f9c6b6002bad2b1afeaa6e30c1e1986f100b52ccd48aab0",
+  "source_unchanged": true,
+  "historical_output_sha256": "b06d9b4acd69a2c92e0c31696e503ae59f7cdb171f68e7afd236f1e2cf605cba",
+  "historical_output_after": "b06d9b4acd69a2c92e0c31696e503ae59f7cdb171f68e7afd236f1e2cf605cba",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 2.853
+}

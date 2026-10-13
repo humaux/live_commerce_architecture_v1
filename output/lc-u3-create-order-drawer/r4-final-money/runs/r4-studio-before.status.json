@@ -1,0 +1,21 @@
+{
+  "name": "r4-studio-before",
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-studio-ui"
+  ],
+  "timeout": 900,
+  "head": "dd6ca9037be0f0269435f77ed8a7f30c53118db5",
+  "exit_code": 1,
+  "source_sha256": "0b33b8f56a5fd4dd20d59a2ea68d0e20047702726c3f634493177bb9a407dd82",
+  "source_after": "0b33b8f56a5fd4dd20d59a2ea68d0e20047702726c3f634493177bb9a407dd82",
+  "source_unchanged": true,
+  "historical_output_sha256": "b06d9b4acd69a2c92e0c31696e503ae59f7cdb171f68e7afd236f1e2cf605cba",
+  "historical_output_after": "b06d9b4acd69a2c92e0c31696e503ae59f7cdb171f68e7afd236f1e2cf605cba",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": true,
+  "tracked_status_clean_after": true,
+  "elapsed_seconds": 119.682
+}

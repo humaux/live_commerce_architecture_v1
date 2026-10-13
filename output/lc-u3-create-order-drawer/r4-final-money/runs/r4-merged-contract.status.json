@@ -1,0 +1,24 @@
+{
+  "name": "r4-merged-contract",
+  "command": [
+    "go",
+    "run",
+    "./scripts/dev/contractdrift"
+  ],
+  "timeout": 900,
+  "env": {
+    "GOTOOLCHAIN": "go1.27.2"
+  },
+  "head": "5a51ea2cd1a9665e3d6dfb7c6bb3588e735ed020",
+  "exit_code": 0,
+  "source_sha256": "9498ad4df311a9e6e6bac6704d74aed0066cb905fb47a252e9f22e30b3216e39",
+  "source_after": "9498ad4df311a9e6e6bac6704d74aed0066cb905fb47a252e9f22e30b3216e39",
+  "source_unchanged": true,
+  "historical_output_sha256": "e9e79b86d29733d66e28822f796489aa9e69814fa00ab294cd7121f8bac6c2d4",
+  "historical_output_after": "e9e79b86d29733d66e28822f796489aa9e69814fa00ab294cd7121f8bac6c2d4",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": true,
+  "tracked_status_clean_after": true,
+  "elapsed_seconds": 26.469
+}

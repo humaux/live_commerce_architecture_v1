@@ -1,0 +1,1820 @@
+{
+  "files": [
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-a-browser-red-20261013.status.json",
+      "source_sha256": "8f31128669861a89b8155370d03e3d813e150d40d298aa5abec32c614d9f98ea",
+      "retained": "runs/r4-a-browser-red-20261013.status.json",
+      "retained_sha256": "8f31128669861a89b8155370d03e3d813e150d40d298aa5abec32c614d9f98ea",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-a-browser-red-20261013.log",
+      "source_sha256": "cb870a81d9887d26fa42d94019c166f766a9fec9e09c6650f825353a0c843102",
+      "retained": "logs/r4-a-browser-red-20261013.log.gz",
+      "retained_sha256": "b484812caf87be5cdc565db5afb3006dc845f5ad42246871577a9ff19c3ea845",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-a-go-green1.status.json",
+      "source_sha256": "e112cefe13500472cd51b50732d81e1085b95b2c7019fbd628f2f341976dc599",
+      "retained": "runs/r4-a-go-green1.status.json",
+      "retained_sha256": "e112cefe13500472cd51b50732d81e1085b95b2c7019fbd628f2f341976dc599",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-a-go-green1.log",
+      "source_sha256": "bcd5c4c4d34bdf92814cb0215de753987ce3a5e346542e138045a38cf7c96752",
+      "retained": "logs/r4-a-go-green1.log.gz",
+      "retained_sha256": "265c51f95e4789eb29becc15a0b30601559ab18442250c8956526e523281add2",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-a-go-green2.status.json",
+      "source_sha256": "cf009778883cd1720a6b691a2082735fcb9bd1e0bac9743853522c0874ee70fa",
+      "retained": "runs/r4-a-go-green2.status.json",
+      "retained_sha256": "cf009778883cd1720a6b691a2082735fcb9bd1e0bac9743853522c0874ee70fa",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-a-go-green2.log",
+      "source_sha256": "6ae3af0e0bc777170ca4266be8eb5ac57da6a300a9f77a138e86afe93cd19961",
+      "retained": "logs/r4-a-go-green2.log.gz",
+      "retained_sha256": "582d9c14c4aab5a08d5a5c5937cc334db8fffc9ff57be2eefde7ef78c361f5f1",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-a-go-red.status.json",
+      "source_sha256": "a0a4668b09af43a3eaedbedd4132dabbf8c950d57a32df00d9e900a0de9253d7",
+      "retained": "runs/r4-a-go-red.status.json",
+      "retained_sha256": "a0a4668b09af43a3eaedbedd4132dabbf8c950d57a32df00d9e900a0de9253d7",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-a-go-red.log",
+      "source_sha256": "788bd4aad67377a7adb2847afb249265f64a6a012ee8e4f6f29fdf683b72c3a1",
+      "retained": "logs/r4-a-go-red.log.gz",
+      "retained_sha256": "7dd1f03110a2bfc5db9ab9e41227516fda3b5d8a87875a45835bb2e294d69506",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-a-node-red.status.json",
+      "source_sha256": "26dc390b9ff5acb6ba1d685e7e9b9f311213209ac71fbb7ee4b8b3f888b8273a",
+      "retained": "runs/r4-a-node-red.status.json",
+      "retained_sha256": "26dc390b9ff5acb6ba1d685e7e9b9f311213209ac71fbb7ee4b8b3f888b8273a",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-a-node-red.log",
+      "source_sha256": "2cd8a0b3a228ae715dbaf2b1642cb4cc2c9afeadfaa764a9ba5ef282ce3728bc",
+      "retained": "logs/r4-a-node-red.log.gz",
+      "retained_sha256": "2b864089de63489831196323471778b77072d3b1f11e3a70918cd750077d76cd",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-a-scope-bff-green.status.json",
+      "source_sha256": "23862318f494764859a3b9b852d8e3fc4ec07c5624bd63b9289eb51f2d04ec13",
+      "retained": "runs/r4-a-scope-bff-green.status.json",
+      "retained_sha256": "23862318f494764859a3b9b852d8e3fc4ec07c5624bd63b9289eb51f2d04ec13",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-a-scope-bff-green.log",
+      "source_sha256": "71713633e895a0e51e8ce712c64fdefa50b095d141502074d3170549fc46ba48",
+      "retained": "logs/r4-a-scope-bff-green.log.gz",
+      "retained_sha256": "b1417c9f01f06554fefcc558b60bcd10d90811eeab3ce50e54bb6b0935c06d9a",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-a-scope-bff-red.status.json",
+      "source_sha256": "cc262e8cca069ce3d6c1b3e1b46d20172ed810c523c0d385107a3f09f3bf6675",
+      "retained": "runs/r4-a-scope-bff-red.status.json",
+      "retained_sha256": "cc262e8cca069ce3d6c1b3e1b46d20172ed810c523c0d385107a3f09f3bf6675",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-a-scope-bff-red.log",
+      "source_sha256": "869cd1b7ec832f979d2289e11cadfecbc897da57ef145df756f5a7c19bf3442f",
+      "retained": "logs/r4-a-scope-bff-red.log.gz",
+      "retained_sha256": "db6b7a6d00e572bf470f4c2054f165e3733cc15ee035f407aa1830a13fbac783",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-ab-node-green1.status.json",
+      "source_sha256": "889e780d7b7a70bb3efae79aacc11f406705c6cfe381cb86df11cea2744639fb",
+      "retained": "runs/r4-ab-node-green1.status.json",
+      "retained_sha256": "889e780d7b7a70bb3efae79aacc11f406705c6cfe381cb86df11cea2744639fb",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-ab-node-green1.log",
+      "source_sha256": "857e07676d8b7304b4c76cef814210818452c1ebd50ece3499c3902bacae2143",
+      "retained": "logs/r4-ab-node-green1.log.gz",
+      "retained_sha256": "83241d1b3acb8c727fd656b7604b53960c18c3d088125b921529a05b4ca2d677",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-ab-node-green2.status.json",
+      "source_sha256": "285e180ca1deb1c112e4f56d697a2cefb79d5e444298708547908a38a1b44b2f",
+      "retained": "runs/r4-ab-node-green2.status.json",
+      "retained_sha256": "285e180ca1deb1c112e4f56d697a2cefb79d5e444298708547908a38a1b44b2f",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-ab-node-green2.log",
+      "source_sha256": "d5c9c29873494755cd68140e210cd0aa0656b5a71820db1a6f82e4d2c39f7ce4",
+      "retained": "logs/r4-ab-node-green2.log.gz",
+      "retained_sha256": "1815aa3c77b0b99ecc2edd8300e2e5201879399fea931d78026fa00dc0779f31",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-ab-tsc.status.json",
+      "source_sha256": "6c70671188cad4572104e17f8e54f6c5921c53463587ca9449fb963b5923f30f",
+      "retained": "runs/r4-ab-tsc.status.json",
+      "retained_sha256": "6c70671188cad4572104e17f8e54f6c5921c53463587ca9449fb963b5923f30f",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-ab-tsc.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retained": "logs/r4-ab-tsc.log.gz",
+      "retained_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-ab-tsc2.status.json",
+      "source_sha256": "0087ba8e9e27ceaec0b18bc619e517f07edd046850d30996fa1b5212ecbb2abf",
+      "retained": "runs/r4-ab-tsc2.status.json",
+      "retained_sha256": "0087ba8e9e27ceaec0b18bc619e517f07edd046850d30996fa1b5212ecbb2abf",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-ab-tsc2.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retained": "logs/r4-ab-tsc2.log.gz",
+      "retained_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-b-browser-red-20261013.status.json",
+      "source_sha256": "6606e05fde110ce5e2299ad98e867118901aef927bfc5663e4fc68350add06f1",
+      "retained": "runs/r4-b-browser-red-20261013.status.json",
+      "retained_sha256": "6606e05fde110ce5e2299ad98e867118901aef927bfc5663e4fc68350add06f1",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-b-browser-red-20261013.log",
+      "source_sha256": "5d21211c35d1e6d7549be01593665702994c0760310dcc03c10f009cdf6a6620",
+      "retained": "logs/r4-b-browser-red-20261013.log.gz",
+      "retained_sha256": "bb20f3ef329ed30404e0e37e5b0ec8dce8a197fa7d54ea97d4e8b798d613f6e4",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-b-node-red.status.json",
+      "source_sha256": "815b9ab323ece0c51117e83ad9270735e4e56a1b03d881a57c255fea6ae280f9",
+      "retained": "runs/r4-b-node-red.status.json",
+      "retained_sha256": "815b9ab323ece0c51117e83ad9270735e4e56a1b03d881a57c255fea6ae280f9",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-b-node-red.log",
+      "source_sha256": "8b000413928d5db5e2b2be93bd7ebfb62cb8b3a70e87b9d2f0b8adeec238ceed",
+      "retained": "logs/r4-b-node-red.log.gz",
+      "retained_sha256": "cab5b58d22bd56ad9e4874f72688ba79b44e20d5bd1de482975048f0159f19e0",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-browser-vet2.status.json",
+      "source_sha256": "39a0d65eaaf03560084f451699481b88deb703cde4acce3eecf84037fa7464a2",
+      "retained": "runs/r4-final-browser-vet2.status.json",
+      "retained_sha256": "39a0d65eaaf03560084f451699481b88deb703cde4acce3eecf84037fa7464a2",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-browser-vet2.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retained": "logs/r4-final-browser-vet2.log.gz",
+      "retained_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-build.status.json",
+      "source_sha256": "abccbd8f8116b260ee1ec6f696e57739dc9dfb1598ebb465df58ae862ab90cee",
+      "retained": "runs/r4-final-build.status.json",
+      "retained_sha256": "abccbd8f8116b260ee1ec6f696e57739dc9dfb1598ebb465df58ae862ab90cee",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-build.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retained": "logs/r4-final-build.log.gz",
+      "retained_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-gates.status.json",
+      "source_sha256": "fe77acb01e563037f2ab986c4c884631e06f0ceb3c61f128e20fff0208bf582f",
+      "retained": "runs/r4-final-gates.status.json",
+      "retained_sha256": "fe77acb01e563037f2ab986c4c884631e06f0ceb3c61f128e20fff0208bf582f",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-gates.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retained": "logs/r4-final-gates.log.gz",
+      "retained_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-gates2.status.json",
+      "source_sha256": "3327bcf6f58ad9f18a31d01be05481ff1819fb2c86f620cac86bc569b5490bfd",
+      "retained": "runs/r4-final-gates2.status.json",
+      "retained_sha256": "3327bcf6f58ad9f18a31d01be05481ff1819fb2c86f620cac86bc569b5490bfd",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-gates2.log",
+      "source_sha256": "79e7b8e7fac719b0884414e58c4da5112d3d18128ae399abd4212ca4a31ecac8",
+      "retained": "logs/r4-final-gates2.log.gz",
+      "retained_sha256": "21424b0cbe831674a42de37ba8b03bf78d1f52f3a68f2346dd85ff4144c03d16",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-gates3.status.json",
+      "source_sha256": "dc6c1736a8e361fa8b697b6981638e29acefa801bb42adbed1ef45a25062b803",
+      "retained": "runs/r4-final-gates3.status.json",
+      "retained_sha256": "dc6c1736a8e361fa8b697b6981638e29acefa801bb42adbed1ef45a25062b803",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-gates3.log",
+      "source_sha256": "21b65d34210498c2e6e389e5386e2232334650f1cf0d5eb88992855d58c7ea50",
+      "retained": "logs/r4-final-gates3.log.gz",
+      "retained_sha256": "050aa783f867343b2f171cb396979be24d0a11210a36c8dfc2a98951eca89cef",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-go.status.json",
+      "source_sha256": "5e9804b126549567ea6f3f65f0a8fc1db89275b31e980fcc08a1526425c4d218",
+      "retained": "runs/r4-final-go.status.json",
+      "retained_sha256": "5e9804b126549567ea6f3f65f0a8fc1db89275b31e980fcc08a1526425c4d218",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-go.log",
+      "source_sha256": "94e9fbeed465f542804a07ba2cf2649eae14d3254cd3e70de8ea3ca7b0b0a2cc",
+      "retained": "logs/r4-final-go.log.gz",
+      "retained_sha256": "30484d04ba3f4fea95eb6dbb01f7f915cbabfa54c618b2378070fb2100711fa3",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-node.status.json",
+      "source_sha256": "a300357a1af639879f897fd86f7ee7995671bdc2ad1c79cc06fcefacfc679b60",
+      "retained": "runs/r4-final-node.status.json",
+      "retained_sha256": "a300357a1af639879f897fd86f7ee7995671bdc2ad1c79cc06fcefacfc679b60",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-node.log",
+      "source_sha256": "78699901c0db80eac3dfdf9e476f5d46b3e4f0a82fc552a5ec78430747c729e1",
+      "retained": "logs/r4-final-node.log.gz",
+      "retained_sha256": "12789c1706aaa8981b4ab4d44ab7b9625ba2cafb49997b3b1464163cf8c1270b",
+      "transformation": [
+        "redact 1 private request-header lines",
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-node2.status.json",
+      "source_sha256": "2270b8e6bca3ef75c0dc1e41c6409bfa9fc43a7a19f7c14c917cd9c430d8eb06",
+      "retained": "runs/r4-final-node2.status.json",
+      "retained_sha256": "2270b8e6bca3ef75c0dc1e41c6409bfa9fc43a7a19f7c14c917cd9c430d8eb06",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-node2.log",
+      "source_sha256": "07d6510b7a9d9aa592dd9c4ab6974687176a8710309ef87ff7d8edd9d8ee03f0",
+      "retained": "logs/r4-final-node2.log.gz",
+      "retained_sha256": "60aa75cfdbf05ce2639cbda10e3bf6b99e3894181077fa193ff6980b51c3e29e",
+      "transformation": [
+        "redact 1 private request-header lines",
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-node3.status.json",
+      "source_sha256": "da8ef669e3eba43d1a79f9fe5bdcaa5ec79a3db0db930640061f7ffe9acd56ca",
+      "retained": "runs/r4-final-node3.status.json",
+      "retained_sha256": "da8ef669e3eba43d1a79f9fe5bdcaa5ec79a3db0db930640061f7ffe9acd56ca",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-node3.log",
+      "source_sha256": "96a9aa9fa435947d9eca74a48399296ef765c8a942f1da19dee68ee6e19de295",
+      "retained": "logs/r4-final-node3.log.gz",
+      "retained_sha256": "b209fcc85a237aab2c595110d18e2550f816d5f3ba3b2378fba8a12a46019911",
+      "transformation": [
+        "redact 1 private request-header lines",
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-node4.status.json",
+      "source_sha256": "507132345c3ed6fe2a9345e816d7cb386045834019d1d091b8adf07cb00bedb9",
+      "retained": "runs/r4-final-node4.status.json",
+      "retained_sha256": "507132345c3ed6fe2a9345e816d7cb386045834019d1d091b8adf07cb00bedb9",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-node4.log",
+      "source_sha256": "4ab8677c97b542b09ed0d001df307f6a3c15238edd07ba9c736770076512db80",
+      "retained": "logs/r4-final-node4.log.gz",
+      "retained_sha256": "f638e29cb1d663ac2b9103cf0f0bf5748f48dc208976ea4d816f929ef90bf196",
+      "transformation": [
+        "redact 1 private request-header lines",
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-node5.status.json",
+      "source_sha256": "42b63f03c91aa3a9f9cff6ee74579dadf6e68e8e868dd32ae2bc27add9eea40a",
+      "retained": "runs/r4-final-node5.status.json",
+      "retained_sha256": "42b63f03c91aa3a9f9cff6ee74579dadf6e68e8e868dd32ae2bc27add9eea40a",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-node5.log",
+      "source_sha256": "a2684d230da8237a71f7050f28bc4cd615e211c6f13ac8357e1d672bb10c290e",
+      "retained": "logs/r4-final-node5.log.gz",
+      "retained_sha256": "07669a90f0f1bbe371470fd39127562f87f11b5d91608c138ca35bd3cae934df",
+      "transformation": [
+        "redact 1 private request-header lines",
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-tsc.status.json",
+      "source_sha256": "c5ceb9ad9dcd267320f7a5b7acab17f5e611bc379c9f5d630c2002826525b16a",
+      "retained": "runs/r4-final-tsc.status.json",
+      "retained_sha256": "c5ceb9ad9dcd267320f7a5b7acab17f5e611bc379c9f5d630c2002826525b16a",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-tsc.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retained": "logs/r4-final-tsc.log.gz",
+      "retained_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-tsc2.status.json",
+      "source_sha256": "4520e2bf5eccc3a1eb54f95c917c7ea67f1a93ebc89ad239aa53b7874cac5fea",
+      "retained": "runs/r4-final-tsc2.status.json",
+      "retained_sha256": "4520e2bf5eccc3a1eb54f95c917c7ea67f1a93ebc89ad239aa53b7874cac5fea",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-tsc2.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retained": "logs/r4-final-tsc2.log.gz",
+      "retained_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-tsc3.status.json",
+      "source_sha256": "3dae10a7a75e8bc524f1f30903fcb0afbedb18d19272d811da667cf7d8321955",
+      "retained": "runs/r4-final-tsc3.status.json",
+      "retained_sha256": "3dae10a7a75e8bc524f1f30903fcb0afbedb18d19272d811da667cf7d8321955",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-tsc3.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retained": "logs/r4-final-tsc3.log.gz",
+      "retained_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-vet-browser.status.json",
+      "source_sha256": "70c6a4f807d5fbadbc6715a1d032501e5676b928b0b12f7764b433d78289abfb",
+      "retained": "runs/r4-final-vet-browser.status.json",
+      "retained_sha256": "70c6a4f807d5fbadbc6715a1d032501e5676b928b0b12f7764b433d78289abfb",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-final-vet-browser.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retained": "logs/r4-final-vet-browser.log.gz",
+      "retained_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-full-manual-green1.status.json",
+      "source_sha256": "c83f983bd0e80edc7acc56c43cf134264a3a563ef1a639bc65f0c908ef88516e",
+      "retained": "runs/r4-full-manual-green1.status.json",
+      "retained_sha256": "c83f983bd0e80edc7acc56c43cf134264a3a563ef1a639bc65f0c908ef88516e",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-full-manual-green1.log",
+      "source_sha256": "cc83656fd630560ceda7f4ab35e907609b95a9cd62a088b4b29034891bc1cc98",
+      "retained": "logs/r4-full-manual-green1.log.gz",
+      "retained_sha256": "75047bb6d07eed2df22cadd3c25e2b266cbb72a880ecb402f91e2b5e61630cb7",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-full-manual-green2.status.json",
+      "source_sha256": "dd54eaf5985ad6b2d82fb8327e3668d84c5e67a8f5657e188dd32bd764cb0502",
+      "retained": "runs/r4-full-manual-green2.status.json",
+      "retained_sha256": "dd54eaf5985ad6b2d82fb8327e3668d84c5e67a8f5657e188dd32bd764cb0502",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-full-manual-green2.log",
+      "source_sha256": "7dd44abf63df4deeb0a5b765610936848f2df2887ec2093232ac82d94c2929ba",
+      "retained": "logs/r4-full-manual-green2.log.gz",
+      "retained_sha256": "137c52cc2566936b9b7672e6ae20062853d237ff4b6c75ac91dd0c310658e951",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-full-manual-green3.status.json",
+      "source_sha256": "6d0d3a951a837930cb5de032ed90f4e117c20d547ad127f3d566256227839338",
+      "retained": "runs/r4-full-manual-green3.status.json",
+      "retained_sha256": "6d0d3a951a837930cb5de032ed90f4e117c20d547ad127f3d566256227839338",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-full-manual-green3.log",
+      "source_sha256": "183bcb9a7e942d755fd4fdb892b6738f01d4e183a935f19f9da5e39668375bd6",
+      "retained": "logs/r4-full-manual-green3.log.gz",
+      "retained_sha256": "b8d7675d1ae95a428436d869c9fa6fecd3fb289b7d0d8a8f32ee1fcffdf9a3c3",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-full-manual-green4.status.json",
+      "source_sha256": "e6180b6289f3d31a353fa7468af7b6ee447914455ecc03abc8759c47730a3454",
+      "retained": "runs/r4-full-manual-green4.status.json",
+      "retained_sha256": "e6180b6289f3d31a353fa7468af7b6ee447914455ecc03abc8759c47730a3454",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-full-manual-green4.log",
+      "source_sha256": "8780e07bf2c95232362c95be115a2153e06056e615d2716e646e47c87feeab0c",
+      "retained": "logs/r4-full-manual-green4.log.gz",
+      "retained_sha256": "6a6dc8d82bf63316b576bbef6394f821999c1c5aa0b49c3674b35b825cbc7fff",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-browser-vet-d69.status.json",
+      "source_sha256": "1f43083af35d078cc39a8af3d98965b31a3dcfe03c222b11e46208222ed249c7",
+      "retained": "runs/r4-merged-browser-vet-d69.status.json",
+      "retained_sha256": "1f43083af35d078cc39a8af3d98965b31a3dcfe03c222b11e46208222ed249c7",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-browser-vet-d69.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retained": "logs/r4-merged-browser-vet-d69.log.gz",
+      "retained_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-browser-vet.status.json",
+      "source_sha256": "abdb99930b7e90ccefbb1172c471f386b7c4cb664f7c61d03fee4f06ed6d03af",
+      "retained": "runs/r4-merged-browser-vet.status.json",
+      "retained_sha256": "abdb99930b7e90ccefbb1172c471f386b7c4cb664f7c61d03fee4f06ed6d03af",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-browser-vet.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retained": "logs/r4-merged-browser-vet.log.gz",
+      "retained_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-build-d69.status.json",
+      "source_sha256": "7d01b6ac8e534327e0f63869b6d2c44f248c4f2736475150331a8bea11634973",
+      "retained": "runs/r4-merged-build-d69.status.json",
+      "retained_sha256": "7d01b6ac8e534327e0f63869b6d2c44f248c4f2736475150331a8bea11634973",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-build-d69.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retained": "logs/r4-merged-build-d69.log.gz",
+      "retained_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-build.status.json",
+      "source_sha256": "b2a1ae3255aa87b70c3d6338df5eb0c3c4b60bda021440a0a1dc886e39c1d003",
+      "retained": "runs/r4-merged-build.status.json",
+      "retained_sha256": "b2a1ae3255aa87b70c3d6338df5eb0c3c4b60bda021440a0a1dc886e39c1d003",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-build.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retained": "logs/r4-merged-build.log.gz",
+      "retained_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-contract.status.json",
+      "source_sha256": "625aafddae747a76ffd692790b3ebe93c1d02bce6805f0e94612dd72b36efe2a",
+      "retained": "runs/r4-merged-contract.status.json",
+      "retained_sha256": "625aafddae747a76ffd692790b3ebe93c1d02bce6805f0e94612dd72b36efe2a",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-contract.log",
+      "source_sha256": "3883ae0f757b7aa5b802490c38fdc1e493ddb10f2dfb7c561675df7f7ac06656",
+      "retained": "logs/r4-merged-contract.log.gz",
+      "retained_sha256": "5bea52d9e764a7b7da9681bffaf582c7d50e50e48fc970ea723d64fd58919be8",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-drift-d69.status.json",
+      "source_sha256": "5882fab6e728ee6a2a70f6227c3e945654cafe00c4ca9fe7dcb47f7dba418e19",
+      "retained": "runs/r4-merged-drift-d69.status.json",
+      "retained_sha256": "5882fab6e728ee6a2a70f6227c3e945654cafe00c4ca9fe7dcb47f7dba418e19",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-drift-d69.log",
+      "source_sha256": "3883ae0f757b7aa5b802490c38fdc1e493ddb10f2dfb7c561675df7f7ac06656",
+      "retained": "logs/r4-merged-drift-d69.log.gz",
+      "retained_sha256": "5bea52d9e764a7b7da9681bffaf582c7d50e50e48fc970ea723d64fd58919be8",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-drift.status.json",
+      "source_sha256": "12efe7229db9e4f7e84d255f56e46e74f2fd5ac5fc0abcfef0efdfedba9586fc",
+      "retained": "runs/r4-merged-drift.status.json",
+      "retained_sha256": "12efe7229db9e4f7e84d255f56e46e74f2fd5ac5fc0abcfef0efdfedba9586fc",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-drift.log",
+      "source_sha256": "3883ae0f757b7aa5b802490c38fdc1e493ddb10f2dfb7c561675df7f7ac06656",
+      "retained": "logs/r4-merged-drift.log.gz",
+      "retained_sha256": "5bea52d9e764a7b7da9681bffaf582c7d50e50e48fc970ea723d64fd58919be8",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-gates-busy.status.json",
+      "source_sha256": "d5b0d30dbbef50fed54e62185420503f0877c1640295fb693f003f174d89c9b9",
+      "retained": "runs/r4-merged-gates-busy.status.json",
+      "retained_sha256": "d5b0d30dbbef50fed54e62185420503f0877c1640295fb693f003f174d89c9b9",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-gates-busy.log",
+      "source_sha256": "39459eef109739275be82b9571eeffb5f840cec782d6f03a6eaa6a08ad16a06a",
+      "retained": "logs/r4-merged-gates-busy.log.gz",
+      "retained_sha256": "5c780f96cb8034af3dabdd7912b5aa108919274d152963fffa2f5d0549ee5f42",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-gates-d69.status.json",
+      "source_sha256": "fc741c567b758b0186c0039b02b7ee535c8f00eacd0a95582bf631328d317a93",
+      "retained": "runs/r4-merged-gates-d69.status.json",
+      "retained_sha256": "fc741c567b758b0186c0039b02b7ee535c8f00eacd0a95582bf631328d317a93",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-gates-d69.log",
+      "source_sha256": "107f2e537e1e732e1e5c92752b2e92a1142768dae6c6323273b63bb666cd2b7e",
+      "retained": "logs/r4-merged-gates-d69.log.gz",
+      "retained_sha256": "4bae1e42f5ebadd5b507c7d2860263b78efa56ae4bf0417e80755050aed309ba",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-gates.status.json",
+      "source_sha256": "fe4cff318c4a6dd58ef7c0b3c1b1ae5253ecc02fa3beeabdc27eeae06a3f9ed5",
+      "retained": "runs/r4-merged-gates.status.json",
+      "retained_sha256": "fe4cff318c4a6dd58ef7c0b3c1b1ae5253ecc02fa3beeabdc27eeae06a3f9ed5",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-gates.log",
+      "source_sha256": "dbad80a7bc82bf3a001357fbe33b772ba5548d78d6f8bfe2a5ff2476a94a999c",
+      "retained": "logs/r4-merged-gates.log.gz",
+      "retained_sha256": "ec7554e27fa1da3ba4c254120069b826c3c0ddd5b7435157997ed4b3d327ade5",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-manual-busy.status.json",
+      "source_sha256": "edff8762442bbd24f01977cc96b0c9f9af1f2a181c6a655b76e63269936998b2",
+      "retained": "runs/r4-merged-manual-busy.status.json",
+      "retained_sha256": "edff8762442bbd24f01977cc96b0c9f9af1f2a181c6a655b76e63269936998b2",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-manual-busy.log",
+      "source_sha256": "85b1fc195e090040d7d8c8e43d390d28cb38d0518f4e4d698cf0eee9d600bcf3",
+      "retained": "logs/r4-merged-manual-busy.log.gz",
+      "retained_sha256": "50fd5c12014d882ef87cee86c093236aae2b6b6e50f776da28c57a7e312e508c",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-manual.status.json",
+      "source_sha256": "38be3d18c6c57b53bfb72ce48e8bdf5cec996b2a45134a0885176db32549261a",
+      "retained": "runs/r4-merged-manual.status.json",
+      "retained_sha256": "38be3d18c6c57b53bfb72ce48e8bdf5cec996b2a45134a0885176db32549261a",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-manual.log",
+      "source_sha256": "615554ba79b26313d114533e8fc0f564d14b0acbbdc3cbbe7fb86835a55fc8f0",
+      "retained": "logs/r4-merged-manual.log.gz",
+      "retained_sha256": "a5d86e9c2e7db8f95b8641816be7c7943a73b64864433f5d5ba04122d2fca66b",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-node-busy.status.json",
+      "source_sha256": "b2339ec739c34b76f1cf44e02c598942ac289c4777bcb6c1f02d9e9da5fa0b3f",
+      "retained": "runs/r4-merged-node-busy.status.json",
+      "retained_sha256": "b2339ec739c34b76f1cf44e02c598942ac289c4777bcb6c1f02d9e9da5fa0b3f",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-node-busy.log",
+      "source_sha256": "f0100a52fda87d28c94acc1df66a0915d59dd90c73615e827983fd3917f203c7",
+      "retained": "logs/r4-merged-node-busy.log.gz",
+      "retained_sha256": "37bd24cf3e288cf45fe1a3b28613078cc66daf71ca567bc05ed9aff893cca4ff",
+      "transformation": [
+        "redact 1 private request-header lines",
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-node-d69.status.json",
+      "source_sha256": "178a43cdcfe058898a60bf77d4aef35985fcb60b6e6be5a9224562293d186d10",
+      "retained": "runs/r4-merged-node-d69.status.json",
+      "retained_sha256": "178a43cdcfe058898a60bf77d4aef35985fcb60b6e6be5a9224562293d186d10",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-node-d69.log",
+      "source_sha256": "356a1bb76f24bac55b25d6fa04f027b0a0db2d95dd30cf67355861750169dea2",
+      "retained": "logs/r4-merged-node-d69.log.gz",
+      "retained_sha256": "573b566a70876e66b428df1a0200a4a263f57fb1013caf878742ecc2a320603a",
+      "transformation": [
+        "redact 1 private request-header lines",
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-node-native-busy.status.json",
+      "source_sha256": "4be60f361934bcfb57b61e57ef0df62e783e888b9f06558b5bfba7b9dd9889a3",
+      "retained": "runs/r4-merged-node-native-busy.status.json",
+      "retained_sha256": "4be60f361934bcfb57b61e57ef0df62e783e888b9f06558b5bfba7b9dd9889a3",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-node-native-busy.log",
+      "source_sha256": "8501a77f96ef11c6df9291fb699042906adcc9b072b7d0314b55c327970b8818",
+      "retained": "logs/r4-merged-node-native-busy.log.gz",
+      "retained_sha256": "c249456ab039f9d0f4b835d61d9609c4aa89bd5cfebc86bf447264164295ca6e",
+      "transformation": [
+        "redact 1 private request-header lines",
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-studio-setup-busy.status.json",
+      "source_sha256": "afeff01a33e19f0d6996d57c89f29f3a68a5c1eb1ec3d30915860a8425ac7d7f",
+      "retained": "runs/r4-merged-studio-setup-busy.status.json",
+      "retained_sha256": "afeff01a33e19f0d6996d57c89f29f3a68a5c1eb1ec3d30915860a8425ac7d7f",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-studio-setup-busy.log",
+      "source_sha256": "d8c78907cb918190560f05c616b205eabc9c81bf43040f10b9636bfc11b23493",
+      "retained": "logs/r4-merged-studio-setup-busy.log.gz",
+      "retained_sha256": "671ce8ea6a35ce8de6d45f0c12e7d447dcd0cc37f9d24d315ccf9ff2ca656b08",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-tsc-d69.status.json",
+      "source_sha256": "27020894e75cbaca05b890264b6df7d8cec3823e77b7e77c03f841ed73a3822b",
+      "retained": "runs/r4-merged-tsc-d69.status.json",
+      "retained_sha256": "27020894e75cbaca05b890264b6df7d8cec3823e77b7e77c03f841ed73a3822b",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-tsc-d69.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retained": "logs/r4-merged-tsc-d69.log.gz",
+      "retained_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-tsc.status.json",
+      "source_sha256": "753f65cf792531b8ed7e474aa7c8cb974217024fb3775bcad56689dfa9c95e30",
+      "retained": "runs/r4-merged-tsc.status.json",
+      "retained_sha256": "753f65cf792531b8ed7e474aa7c8cb974217024fb3775bcad56689dfa9c95e30",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-tsc.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retained": "logs/r4-merged-tsc.log.gz",
+      "retained_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-vet-d69.status.json",
+      "source_sha256": "2750cd5d8afd7f32b7f42c009cdb1953370efcc0471448f52eb722489aacc69f",
+      "retained": "runs/r4-merged-vet-d69.status.json",
+      "retained_sha256": "2750cd5d8afd7f32b7f42c009cdb1953370efcc0471448f52eb722489aacc69f",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-vet-d69.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retained": "logs/r4-merged-vet-d69.log.gz",
+      "retained_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-vet.status.json",
+      "source_sha256": "8c40b66be254fb7497c21885b2b47a51df71e89471e2e6e5dcb112a42ee02ec3",
+      "retained": "runs/r4-merged-vet.status.json",
+      "retained_sha256": "8c40b66be254fb7497c21885b2b47a51df71e89471e2e6e5dcb112a42ee02ec3",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merged-vet.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retained": "logs/r4-merged-vet.log.gz",
+      "retained_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-new-delta-tsc.status.json",
+      "source_sha256": "d592963fceb83a1872f1e02ede8db033e7a03ee6a440732fb5cd06dd4e95508d",
+      "retained": "runs/r4-new-delta-tsc.status.json",
+      "retained_sha256": "d592963fceb83a1872f1e02ede8db033e7a03ee6a440732fb5cd06dd4e95508d",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-new-delta-tsc.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retained": "logs/r4-new-delta-tsc.log.gz",
+      "retained_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-node-runtime-native.status.json",
+      "source_sha256": "83f41bcadbaf38a6ea9c75a0e133cb6bc044787d8e1efb0562bfa1731c20d169",
+      "retained": "runs/r4-node-runtime-native.status.json",
+      "retained_sha256": "83f41bcadbaf38a6ea9c75a0e133cb6bc044787d8e1efb0562bfa1731c20d169",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-node-runtime-native.log",
+      "source_sha256": "9d31c3ee7c44653bb58bc3b22156109337f555d966b58a1684e5fbd26a1eb52f",
+      "retained": "logs/r4-node-runtime-native.log.gz",
+      "retained_sha256": "bcf9a6b4075947368a5cff7b7b9b088d3dd72b54acbbbe998e4b16b1c4f127a4",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-node-runtime-quiet.status.json",
+      "source_sha256": "54fa24ec08133b6297fb04331f3cb06cacf8679d23002f6de33c5616d7adf10c",
+      "retained": "runs/r4-node-runtime-quiet.status.json",
+      "retained_sha256": "54fa24ec08133b6297fb04331f3cb06cacf8679d23002f6de33c5616d7adf10c",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-node-runtime-quiet.log",
+      "source_sha256": "47353af011b04c98d9a0bb01e84df7b5aace24311660440ae6316486c178f9af",
+      "retained": "logs/r4-node-runtime-quiet.log.gz",
+      "retained_sha256": "06a43b88b7e040e81d37d7a7ac4d252901a68af6d34f2479b73f58270c0758f5",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-pg-slot-watch.status.json",
+      "source_sha256": "85fdb725adb60c6e17d4abc01f69ed840ac170ffb9b928901d70d750ee65a66a",
+      "retained": "runs/r4-pg-slot-watch.status.json",
+      "retained_sha256": "85fdb725adb60c6e17d4abc01f69ed840ac170ffb9b928901d70d750ee65a66a",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-pg-slot-watch.log",
+      "source_sha256": "0f78befd5e56db5084cdf63359e27631e9e32c574ec1f9f577cbbb9a20fd5cf3",
+      "retained": "logs/r4-pg-slot-watch.log.gz",
+      "retained_sha256": "389764c732c57b54c90d90daf76bd2b8c5e46687622015c369ee10d164832b3a",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-studio-before.status.json",
+      "source_sha256": "f44999bee7cd57198b726ea0f541f534984e1a80faacb8928a12ec0548a736e9",
+      "retained": "runs/r4-studio-before.status.json",
+      "retained_sha256": "f44999bee7cd57198b726ea0f541f534984e1a80faacb8928a12ec0548a736e9",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-studio-before.log",
+      "source_sha256": "ce106d4d322151ac3834aeb2268efff05cb71d6a28d1933327ce1318da261403",
+      "retained": "logs/r4-studio-before.log.gz",
+      "retained_sha256": "ca01463e7943eb978b3eab630e6f2de471746865a12c91179672cb845f5986f7",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-studio-green.status.json",
+      "source_sha256": "e5c966f5c08ff9bfc1eedaf49ff7c79736f82c91d62d528233d50023c938ca7b",
+      "retained": "runs/r4-studio-green.status.json",
+      "retained_sha256": "e5c966f5c08ff9bfc1eedaf49ff7c79736f82c91d62d528233d50023c938ca7b",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-studio-green.log",
+      "source_sha256": "55e5dc83925368e0471f85e1951d522de8677603c6359594dc61dce337662068",
+      "retained": "logs/r4-studio-green.log.gz",
+      "retained_sha256": "29052ab85f8cd4496f56e480c3e0169226a5ec74e06bd9b991ee8c9dc7fb511c",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-view-order-browser-causal-red.status.json",
+      "source_sha256": "4975bbc70fd8e94b1145d592a89c14ecd02ed27087c8397ed89c0f83632acd68",
+      "retained": "runs/r4-view-order-browser-causal-red.status.json",
+      "retained_sha256": "4975bbc70fd8e94b1145d592a89c14ecd02ed27087c8397ed89c0f83632acd68",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-view-order-browser-causal-red.log",
+      "source_sha256": "71c4b6dd92e910870f4209560077d8d1b782315e46d70f7fe20a500e929086db",
+      "retained": "logs/r4-view-order-browser-causal-red.log.gz",
+      "retained_sha256": "1ba67c5978af0996bc510b4621e29bacf029ad5840f90347e24ac157caa5cf2c",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-view-order-browser-causal-red2.status.json",
+      "source_sha256": "81cf2525724ddaef78ec713df18921c8c4451bd3e4345f842dec016a4c81b66b",
+      "retained": "runs/r4-view-order-browser-causal-red2.status.json",
+      "retained_sha256": "81cf2525724ddaef78ec713df18921c8c4451bd3e4345f842dec016a4c81b66b",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-view-order-browser-causal-red2.log",
+      "source_sha256": "22529205444ea4c4837604dbc5a9a04713c98f99110840c8b8262e1da46aa6cc",
+      "retained": "logs/r4-view-order-browser-causal-red2.log.gz",
+      "retained_sha256": "27967d58a4c07b663ee2aa57e3bad06a685d764fb502ab26c01f1b3a459c3ab6",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-view-order-browser-causal-red3.status.json",
+      "source_sha256": "364edf5f709570bb49e44b3558035cbd90390806afd6ce8ee96b494dee935914",
+      "retained": "runs/r4-view-order-browser-causal-red3.status.json",
+      "retained_sha256": "364edf5f709570bb49e44b3558035cbd90390806afd6ce8ee96b494dee935914",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-view-order-browser-causal-red3.log",
+      "source_sha256": "320cb446dc21b62d284225d37b5c6a7cff4c5deb394a5dd9ebfa049ee627ed55",
+      "retained": "logs/r4-view-order-browser-causal-red3.log.gz",
+      "retained_sha256": "a26a9336c669d43794b89b45c4c1fe63a272b946ac51db3324a87b44fe408a53",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-view-order-browser-green.status.json",
+      "source_sha256": "562988c253846a3d3378a5005178c60140e3ef4da9cf288c90c9275ef544022d",
+      "retained": "runs/r4-view-order-browser-green.status.json",
+      "retained_sha256": "562988c253846a3d3378a5005178c60140e3ef4da9cf288c90c9275ef544022d",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-view-order-browser-green.log",
+      "source_sha256": "7ea27fb0021051cdee36d397be53ac9d97fe279374f378b2bfe9cf2cb327fe68",
+      "retained": "logs/r4-view-order-browser-green.log.gz",
+      "retained_sha256": "7583f4d3af48dc6cce228ce28a5a02479a8b10ac9726300eac4920f3c2ee4afe",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-view-order-browser-red.status.json",
+      "source_sha256": "ca9e98e8242600441959a4c90a36b6ae1a7bb93d396d7bfc5a893414ec7a4cee",
+      "retained": "runs/r4-view-order-browser-red.status.json",
+      "retained_sha256": "ca9e98e8242600441959a4c90a36b6ae1a7bb93d396d7bfc5a893414ec7a4cee",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-view-order-browser-red.log",
+      "source_sha256": "f053ac2e13d2356c5385bc770193e0563ced188bfcb037c69cd6825cac8ce73d",
+      "retained": "logs/r4-view-order-browser-red.log.gz",
+      "retained_sha256": "ff7d2f85a78fad5ea34e27a38665214ba2898a07d17bda431fc481984f3b91f1",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-view-order-node-green.status.json",
+      "source_sha256": "6ffb37913c478d3fed94e21abc3d32af9c6f41ec1515e205b515165f409aff46",
+      "retained": "runs/r4-view-order-node-green.status.json",
+      "retained_sha256": "6ffb37913c478d3fed94e21abc3d32af9c6f41ec1515e205b515165f409aff46",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-view-order-node-green.log",
+      "source_sha256": "8d171e928bbbbf5b8355e0b0497674a9276883c62f79f4a94179fca379f501b7",
+      "retained": "logs/r4-view-order-node-green.log.gz",
+      "retained_sha256": "a2c28231d84aa7b19dd66383cb82f90267c751a8e2536ced70cd922868add23c",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-view-order-node-red.status.json",
+      "source_sha256": "27cbd9de6bd8575bca351fff51014863e3ed7fe3e2638d703a702fb1eaeb504e",
+      "retained": "runs/r4-view-order-node-red.status.json",
+      "retained_sha256": "27cbd9de6bd8575bca351fff51014863e3ed7fe3e2638d703a702fb1eaeb504e",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-view-order-node-red.log",
+      "source_sha256": "a17a2bdb13e721f6aadaa39ab78bdf6974205d6b3ebb85a29addee2c20b9ef39",
+      "retained": "logs/r4-view-order-node-red.log.gz",
+      "retained_sha256": "1ab96b96afe414af6652913ce150d41bd2f3473af478a83097983516fab138c0",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-handoff-config.json",
+      "source_sha256": "713dd2f7d49ab417369fb4f1efd668bb695b7f2aadcd05e4ccf6b22d5bb0c03b",
+      "retained": "r4-handoff-config.json",
+      "retained_sha256": "713dd2f7d49ab417369fb4f1efd668bb695b7f2aadcd05e4ccf6b22d5bb0c03b",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-a-browser-mutation.json",
+      "source_sha256": "3cbc1ca647602054afcf88856a730678800d4aa3d18601adc4a3f908efcb23c4",
+      "retained": "r4-a-browser-mutation.json",
+      "retained_sha256": "3cbc1ca647602054afcf88856a730678800d4aa3d18601adc4a3f908efcb23c4",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-b-browser-mutation.json",
+      "source_sha256": "9fbc83cea687e583c42ebcd5e232c4c490f80582a6849492af11e9c603f6cc02",
+      "retained": "r4-b-browser-mutation.json",
+      "retained_sha256": "9fbc83cea687e583c42ebcd5e232c4c490f80582a6849492af11e9c603f6cc02",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-view-order-causal-mutation.json",
+      "source_sha256": "d78d3e05a3576fce1b1f82cb9a2b366cb4f8209653660183ac3017985cc6005c",
+      "retained": "r4-view-order-causal-mutation.json",
+      "retained_sha256": "d78d3e05a3576fce1b1f82cb9a2b366cb4f8209653660183ac3017985cc6005c",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-view-order-causal-restoration.json",
+      "source_sha256": "addd3b315c137e26e959186322b29133f4fbb78b97af2bc8ab9e5ce77e3f9b52",
+      "retained": "r4-view-order-causal-restoration.json",
+      "retained_sha256": "addd3b315c137e26e959186322b29133f4fbb78b97af2bc8ab9e5ce77e3f9b52",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-studio-cause.json",
+      "source_sha256": "34d82715ad742661e681d88f530792ad88029821f2847728a97a88d4ea740f4d",
+      "retained": "r4-studio-cause.json",
+      "retained_sha256": "34d82715ad742661e681d88f530792ad88029821f2847728a97a88d4ea740f4d",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-merge-union.json",
+      "source_sha256": "c37107df938f0485dcf5effca7d3803db4abecc7112b85c5f90aef3c63d851bf",
+      "retained": "r4-merge-union.json",
+      "retained_sha256": "c37107df938f0485dcf5effca7d3803db4abecc7112b85c5f90aef3c63d851bf",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-pr-modes.json",
+      "source_sha256": "f11132bee6bdeeaea720060318cda69300567012751afb2009c44dd49f0dd307",
+      "retained": "r4-pr-modes.json",
+      "retained_sha256": "f11132bee6bdeeaea720060318cda69300567012751afb2009c44dd49f0dd307",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-pr-modes-live.json",
+      "source_sha256": "f11132bee6bdeeaea720060318cda69300567012751afb2009c44dd49f0dd307",
+      "retained": "r4-pr-modes-live.json",
+      "retained_sha256": "f11132bee6bdeeaea720060318cda69300567012751afb2009c44dd49f0dd307",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-unchanged-acceptance-inputs.json",
+      "source_sha256": "8aa5b67e814cad16d94078b6d10bac976df722e4d7e439eb1ea926c78976d6f8",
+      "retained": "r4-unchanged-acceptance-inputs.json",
+      "retained_sha256": "8aa5b67e814cad16d94078b6d10bac976df722e4d7e439eb1ea926c78976d6f8",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-curation-rejection.json",
+      "source_sha256": "5716b35033714db382e04ebb514b4a552801b04d8479767ad4b8f548293cd1e6",
+      "retained": "r4-curation-rejection.json",
+      "retained_sha256": "5716b35033714db382e04ebb514b4a552801b04d8479767ad4b8f548293cd1e6",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-owned-orphan-cleanup.json",
+      "source_sha256": "8f530cc6688b3fade041bbb7804b28ba80ce7916d9d7776d0955c404847b5d10",
+      "retained": "r4-owned-orphan-cleanup.json",
+      "retained_sha256": "8f530cc6688b3fade041bbb7804b28ba80ce7916d9d7776d0955c404847b5d10",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-resource-snapshot.json",
+      "source_sha256": "497474135913be662d7d55457b06ee91c0af06a4aea0a93b97ef85c4b532d84a",
+      "retained": "r4-resource-snapshot.json",
+      "retained_sha256": "497474135913be662d7d55457b06ee91c0af06a4aea0a93b97ef85c4b532d84a",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-runtime.json",
+      "source_sha256": "4769c90ac999b6585c2e423cfb33033093bfbcc39f6fd91bddaf7f00b5ee14d1",
+      "retained": "r4-runtime.json",
+      "retained_sha256": "4769c90ac999b6585c2e423cfb33033093bfbcc39f6fd91bddaf7f00b5ee14d1",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-view-order-causal-mutation-before-drain.json",
+      "source_sha256": "cf0136102e9f3940601030697cb7d49d383e1d2378a8b46f5a066576ec0bd1ea",
+      "retained": "r4-view-order-causal-mutation-before-drain.json",
+      "retained_sha256": "cf0136102e9f3940601030697cb7d49d383e1d2378a8b46f5a066576ec0bd1ea",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-curation-policy-red.log",
+      "source_sha256": "6c4ad756455b8a784179fd29574818d42903f48986b531ddf2c4e90c1fe1751b",
+      "retained": "logs/r4-curation-policy-red.log.gz",
+      "retained_sha256": "89975596987dc85623d30a66d6ec814ff40365fba1297784970e530d844d06c2",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-curation-policy-green.log",
+      "source_sha256": "bcef92575bf0650571c3a76d5448661bc8da5e54f4e56136ffe6565d833e839c",
+      "retained": "logs/r4-curation-policy-green.log.gz",
+      "retained_sha256": "ef42a37d131915c17d7a2cf6ce92aa1ec5c93195bcd06dd4c24f030849e6d473",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-curation-incomplete-json-red.log",
+      "source_sha256": "bf2b6fe5296902ef3bb000b345e506b92563f3e971af31001981c7e6a9c8495b",
+      "retained": "logs/r4-curation-incomplete-json-red.log.gz",
+      "retained_sha256": "86631493e863000e90a34c27591cdfa9d3ab267b90aaffe72a5d8a3be7b49fd3",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-curation-incomplete-json-green.log",
+      "source_sha256": "9a8d829b3daa64ec4c09bc3160f58c41f26324b2fc410b047fd701237fa0930f",
+      "retained": "logs/r4-curation-incomplete-json-green.log.gz",
+      "retained_sha256": "95546afff072924b19b8a9564440dbcc79cb7eaf177f8ca0eac308a21044cf20",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/lc-u3-k3-p2/r4-registry.txt",
+      "source_sha256": "462cc214e71676c0cb82e06c4ccceb397bc612117ba19798dee00f5e64fb89f5",
+      "retained": "registry.txt",
+      "retained_sha256": "462cc214e71676c0cb82e06c4ccceb397bc612117ba19798dee00f5e64fb89f5",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-3247748512/result.json",
+      "source_sha256": "4d06c50bd2fdc65d04c69a4c3e45cb6aee4797bc6b7af1dd46cd2c0c3b8ff4c1",
+      "retained": "href-red/result.json",
+      "retained_sha256": "4d06c50bd2fdc65d04c69a4c3e45cb6aee4797bc6b7af1dd46cd2c0c3b8ff4c1",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-3247748512/click-ledger.json",
+      "source_sha256": "b5b6b8f2bcaa47b0c8869265feaedffa0f25eb712a493de07104776041c14721",
+      "retained": "href-red/click-ledger.json",
+      "retained_sha256": "f0ec8e54af2dba4039760fa57db8cb0f44ed2a5a860d4826367322f3333e3d57",
+      "transformation": [
+        "omit private values and raw request/token fields recursively"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-3247748512/pg-readback.json",
+      "source_sha256": "c5e1d8ad2b1ca2b152752596fc9ef4b6e697a0c801b58ef2600fb9678b4ae0cb",
+      "retained": "href-red/pg-readback.json",
+      "retained_sha256": "dc62768688db27a12568b2f23b89a9fb8d3feb6dc50431fcde44a61fd81cf9bd",
+      "transformation": [
+        "omit private values and raw request/token fields recursively"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-3247748512/manual-recovery-pg-readback.json",
+      "source_sha256": "7b9fe4cedbb72bffe7e5aa7efbe1b1fc04352254ffa66925c18082932c5755ab",
+      "retained": "href-red/manual-recovery-pg-readback.json",
+      "retained_sha256": "7b9fe4cedbb72bffe7e5aa7efbe1b1fc04352254ffa66925c18082932c5755ab",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-3247748512/partial-pg-readback.json",
+      "source_sha256": "7d3489cf2cc33d3323da37a3a502db13eeebf9dcc05664a1c43ff2b92955a7df",
+      "retained": "href-red/partial-pg-readback.json",
+      "retained_sha256": "7d3489cf2cc33d3323da37a3a502db13eeebf9dcc05664a1c43ff2b92955a7df",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-3247748512/capability-pg-readback.json",
+      "source_sha256": "7b14996c67c1658a2be0bc6fa9afd39fa4c4a4ba7e94a40454b26b45a308a4fd",
+      "retained": "href-red/capability-pg-readback.json",
+      "retained_sha256": "7b14996c67c1658a2be0bc6fa9afd39fa4c4a4ba7e94a40454b26b45a308a4fd",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-3247748512/browser.log",
+      "source_sha256": "ce35622311298039a16bb3a3d0c1e0a64d8734e8d167be6708b4b68b300d8bdb",
+      "retained": "href-red/browser.log.gz",
+      "retained_sha256": "823740cccf4f4b4a4bbf386add7b0486c88c45a37ca8eb649e81a7c0ae4f5fd6",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-3076455949/result.json",
+      "source_sha256": "68344cdeab18798b8eb8fb57e45607cec7864302629a82e7863421363d6b1cf6",
+      "retained": "guard-red/result.json",
+      "retained_sha256": "68344cdeab18798b8eb8fb57e45607cec7864302629a82e7863421363d6b1cf6",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-3076455949/click-ledger.json",
+      "source_sha256": "0d0e48c75a8cd1e643b3e26378ed71e8eadaffb734c9abd63d96ba42c5197b29",
+      "retained": "guard-red/click-ledger.json",
+      "retained_sha256": "ef7309a7349e848eb8fb69cc13cc529439e871bf39eca9f49a518609d2b8c0c2",
+      "transformation": [
+        "omit private values and raw request/token fields recursively"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-3076455949/pg-readback.json",
+      "source_sha256": "c6ffe3805463f78b0fa22c7a61d20970b19aebe2a4ad368a9c594baed394e8c6",
+      "retained": "guard-red/pg-readback.json",
+      "retained_sha256": "135fc677a9e351742a31c46a5b56ffdf51960e9abd7a176de13f94640b3018bc",
+      "transformation": [
+        "omit private values and raw request/token fields recursively"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-3076455949/manual-recovery-pg-readback.json",
+      "source_sha256": "2067fbee8f042669ad33c6422ee8118f91095dce5e53fa3f3657e94b82d62996",
+      "retained": "guard-red/manual-recovery-pg-readback.json",
+      "retained_sha256": "2067fbee8f042669ad33c6422ee8118f91095dce5e53fa3f3657e94b82d62996",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-3076455949/partial-pg-readback.json",
+      "source_sha256": "a5ad429e3e6c64f9580c9a8f0f4221fded4ab26077b25fba2b19cc445fb06a9c",
+      "retained": "guard-red/partial-pg-readback.json",
+      "retained_sha256": "a5ad429e3e6c64f9580c9a8f0f4221fded4ab26077b25fba2b19cc445fb06a9c",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-3076455949/capability-pg-readback.json",
+      "source_sha256": "a55e77b821672bfe4593f7096f67457edc24b2bc5e247ee5f55169585ddb2483",
+      "retained": "guard-red/capability-pg-readback.json",
+      "retained_sha256": "a55e77b821672bfe4593f7096f67457edc24b2bc5e247ee5f55169585ddb2483",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-3076455949/browser.log",
+      "source_sha256": "c83a08fb9be218878666b8398d73827b6f1030cf54eaddae5f012bc180bcf456",
+      "retained": "guard-red/browser.log.gz",
+      "retained_sha256": "c71e9e273882a3b7b9f9ff0f8f3ed396217e9e5d16f7a3a78fe90c1bb5a163a6",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-1502023920/result.json",
+      "source_sha256": "b12149e89e65be83dc3e5b13d1c572d757ca21b3a8a536bcd62c6b90c0444ba3",
+      "retained": "never-sent-red/result.json",
+      "retained_sha256": "b12149e89e65be83dc3e5b13d1c572d757ca21b3a8a536bcd62c6b90c0444ba3",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-1502023920/click-ledger.json",
+      "source_sha256": "d56010a086b1680ad8d84a233757978b404995445196b2336501498e9ede7fa0",
+      "retained": "never-sent-red/click-ledger.json",
+      "retained_sha256": "01ca03eb33fc77ff1a881507339527fc320aecc6905f85ecaa5e37d54d95c4ff",
+      "transformation": [
+        "omit private values and raw request/token fields recursively"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-1502023920/pg-readback.json",
+      "source_sha256": "aa9181a5d2165dc68362964f77631417bc6e7024a613addbbce603aabc9719c7",
+      "retained": "never-sent-red/pg-readback.json",
+      "retained_sha256": "e38e6a2d0e07c81892a8653ee451372a86729d3c1d700f859963229db8be3ec4",
+      "transformation": [
+        "omit private values and raw request/token fields recursively"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-1502023920/manual-recovery-pg-readback.json",
+      "source_sha256": "2067fbee8f042669ad33c6422ee8118f91095dce5e53fa3f3657e94b82d62996",
+      "retained": "never-sent-red/manual-recovery-pg-readback.json",
+      "retained_sha256": "2067fbee8f042669ad33c6422ee8118f91095dce5e53fa3f3657e94b82d62996",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-1502023920/partial-pg-readback.json",
+      "source_sha256": "a5ad429e3e6c64f9580c9a8f0f4221fded4ab26077b25fba2b19cc445fb06a9c",
+      "retained": "never-sent-red/partial-pg-readback.json",
+      "retained_sha256": "a5ad429e3e6c64f9580c9a8f0f4221fded4ab26077b25fba2b19cc445fb06a9c",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-1502023920/capability-pg-readback.json",
+      "source_sha256": "a55e77b821672bfe4593f7096f67457edc24b2bc5e247ee5f55169585ddb2483",
+      "retained": "never-sent-red/capability-pg-readback.json",
+      "retained_sha256": "a55e77b821672bfe4593f7096f67457edc24b2bc5e247ee5f55169585ddb2483",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-1502023920/browser.log",
+      "source_sha256": "c5f269f3e97e6d7e16e49bebcc5c73beabd86f7fec264293e80bae4fd4b393a0",
+      "retained": "never-sent-red/browser.log.gz",
+      "retained_sha256": "153ec2c358a28a1f90d42fb1b41f2baccb96c1eaa7d69175cc73742d9e363eda",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-4256920045/click-ledger.json",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retained": "manual-local-incomplete/click-ledger.json",
+      "retained_sha256": "bc981799ec4ecac33011a0b9319a9725941c752244daad40b245e10b1fbf4c06",
+      "transformation": [
+        "incomplete JSON: retain safe byte-count/hash metadata, no acceptance verdict"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-4256920045/pg-readback.json",
+      "source_sha256": "155d01aacdfeceb265ef9fe70222787e54fdcdbd6b4e78682b293c88b8ce3fee",
+      "retained": "manual-local-incomplete/pg-readback.json",
+      "retained_sha256": "9c6a5f7e83e7f92f149f8033fc8ade896436a7a1752f52f52a391a32d8c3477e",
+      "transformation": [
+        "omit private values and raw request/token fields recursively"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-4256920045/manual-recovery-pg-readback.json",
+      "source_sha256": "ba32b7395f59e04216287c3a4e686ca6769ae17fc19da83c9e66517ac5a53333",
+      "retained": "manual-local-incomplete/manual-recovery-pg-readback.json",
+      "retained_sha256": "ba32b7395f59e04216287c3a4e686ca6769ae17fc19da83c9e66517ac5a53333",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-4256920045/partial-pg-readback.json",
+      "source_sha256": "7d3489cf2cc33d3323da37a3a502db13eeebf9dcc05664a1c43ff2b92955a7df",
+      "retained": "manual-local-incomplete/partial-pg-readback.json",
+      "retained_sha256": "7d3489cf2cc33d3323da37a3a502db13eeebf9dcc05664a1c43ff2b92955a7df",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-4256920045/browser.log",
+      "source_sha256": "79589da271d6802285d1314a98669e163ef05d06cc910bb62ceb86d3df03b563",
+      "retained": "manual-local-incomplete/browser.log.gz",
+      "retained_sha256": "1d5cddd9d3db891eae5234707a6974345f35eb8c69aa353dab1e8b227a978238",
+      "transformation": [
+        "redact 6 private request-header lines",
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-4064889884/result.json",
+      "source_sha256": "7abd23c34ed6b19daa52786b59358f88e5fbd518ca8c8442d1a60b186d1a1587",
+      "retained": "manual-local-timeout/result.json",
+      "retained_sha256": "7abd23c34ed6b19daa52786b59358f88e5fbd518ca8c8442d1a60b186d1a1587",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-4064889884/click-ledger.json",
+      "source_sha256": "0ec9e40e9e9ab465eaa973a9c9edd1e3c9b5c0f1c04820651b64a4d7c1315565",
+      "retained": "manual-local-timeout/click-ledger.json",
+      "retained_sha256": "517fe69d79229f1a287c8f49751dde37ec5f0e1608da381248b8f0feb47f6483",
+      "transformation": [
+        "omit private values and raw request/token fields recursively"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/create-order-drawer-4064889884/browser.log",
+      "source_sha256": "7bf874f17ba806b4a6dcf2025e28742aa11d6db751ab0c461331c773641c727b",
+      "retained": "manual-local-timeout/browser.log.gz",
+      "retained_sha256": "e8e34783cff0c4d9c43c738446ed249ef048d54c571724a3e06ef9be805d0f2d",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/manual-order-link-566035218/result.json",
+      "source_sha256": "7abc15245c20d3584bfc5f19ec528c90bfe79bec415dc689837a783a1d4c6ba9",
+      "retained": "manual-legacy-local/result.json",
+      "retained_sha256": "7abc15245c20d3584bfc5f19ec528c90bfe79bec415dc689837a783a1d4c6ba9",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/manual-order-link-566035218/browser.log",
+      "source_sha256": "da828c6c60216ba997fa330bac1d14c204336c002681145322e842359ea6854a",
+      "retained": "manual-legacy-local/browser.log.gz",
+      "retained_sha256": "1df8c9d67e3850056fcdb2cd82c69668f13ee407949b45bc7288505a627099a1",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/studio-ui-20261013T063322.403649000/browser-summary.json",
+      "source_sha256": "0fb708f4b083c9e904f3ec132971006b28453e376ade72e9c8bb74bcb79e67bd",
+      "retained": "studio-historical-green/browser-summary.json",
+      "retained_sha256": "0fb708f4b083c9e904f3ec132971006b28453e376ade72e9c8bb74bcb79e67bd",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/output/playwright/studio-ui-20261013T063322.403649000/playwright.log",
+      "source_sha256": "0b0651ca935d8de8819ce3747f6b3d99a42a53acd8d9991d1829afdbb779e450",
+      "retained": "studio-historical-green/playwright.log.gz",
+      "retained_sha256": "322b05fc824a8e1697eccfe11f433341fb853c79c7a0d0e38d9790328796ec92",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lcu3-queued-link-guard/output/playwright/queued-link-backend/red.log",
+      "source_sha256": "fd01a7a52115612dc10ddbc64e1b1f2ade56827954daaab814bda05f02384be4",
+      "retained": "backend/red.log.gz",
+      "retained_sha256": "d0b9652d1496709ff858f6685cd90205253c3d090e32c7fb5cf3642c11ed9df8",
+      "transformation": [
+        "redact 3 buyer-link URLs",
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lcu3-queued-link-guard/output/playwright/queued-link-backend/red-added.log",
+      "source_sha256": "5223ab620631bc2fe763b03b9eb3951456effff785122b00ada88020b2fe5d00",
+      "retained": "backend/red-added.log.gz",
+      "retained_sha256": "ea4de045b6195611e007679b9edb874d6bde39911e6ca6b9bfeba3b963521e01",
+      "transformation": [
+        "redact 2 buyer-link URLs",
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lcu3-queued-link-guard/output/playwright/queued-link-backend/red-atomic.log",
+      "source_sha256": "0046c9b8643e49e6ade035def4ff3e201bcbb8151819e6cc3f901f6db23d6eef",
+      "retained": "backend/red-atomic.log.gz",
+      "retained_sha256": "4490b48ae9a92043e0990b62593c8e3808f056a5e785762f88c272f2e93dab36",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lcu3-queued-link-guard/output/playwright/queued-link-backend/red-atomic-seam.log",
+      "source_sha256": "2e63cdeb85b6cfee649eb1e3c991d50feacabd191a2364ce47c85a4af29d60bb",
+      "retained": "backend/red-atomic-seam.log.gz",
+      "retained_sha256": "5a8f7f226e9292f78cee93917dcbc3acef054036467934cbce7e1a81d6ab1c2c",
+      "transformation": [
+        "redact 1 buyer-link URLs",
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lcu3-queued-link-guard/output/playwright/queued-link-backend/green.log",
+      "source_sha256": "37078176a628f5dafe2c675b19e9fa9c3dbce1e064d7a8cff96ade50b622ccc8",
+      "retained": "backend/green.log.gz",
+      "retained_sha256": "28eaed143c6bc2f24e380833ec59b28f2d3306671dfcbc820a70bf0751f28624",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lcu3-queued-link-guard/output/playwright/queued-link-backend/green-final.log",
+      "source_sha256": "5132603f8aa518f071f55eecdc72fcb7594d108a257e3a741d73573408a2ea3b",
+      "retained": "backend/green-final.log.gz",
+      "retained_sha256": "682fffa6ebd6bdd27a8e64daba912c3a248af6fe9972e070556e24a14c766df3",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lcu3-queued-link-guard/output/playwright/queued-link-backend/green-complete.log",
+      "source_sha256": "9b75bb4c7f309e0db72eff1f3a829e9b2283627baee44da7aa3fd390e4bfffe2",
+      "retained": "backend/green-complete.log.gz",
+      "retained_sha256": "148711bd1044c6a1eca378fa5ce550eb605d05285186a8b9829e6a8b2ed61e15",
+      "transformation": [
+        "gzip mtime=0 lossless relative to sanitized content"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lcu3-queued-link-guard/output/playwright/queued-link-backend/SHA256.json",
+      "source_sha256": "4faf34c93487324a814756cb48f083b1b89126d5a14a050ee9ee11758f06ed76",
+      "retained": "backend/SHA256.json",
+      "retained_sha256": "4faf34c93487324a814756cb48f083b1b89126d5a14a050ee9ee11758f06ed76",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lcu3-queued-link-guard/output/playwright/queued-link-backend/commit-source.json",
+      "source_sha256": "f4da7bd7e0bdc9d4aadcd85bf3ee4f695c15957ad7059c68aeba570a63d73260",
+      "retained": "backend/commit-source.json",
+      "retained_sha256": "f4da7bd7e0bdc9d4aadcd85bf3ee4f695c15957ad7059c68aeba570a63d73260",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lcu3-queued-link-guard/output/playwright/queued-link-backend/green-complete-source.json",
+      "source_sha256": "279cbd941740f400ff4611f3efef0303d6888f2a5a9736321eb03116f4241b62",
+      "retained": "backend/green-complete-source.json",
+      "retained_sha256": "279cbd941740f400ff4611f3efef0303d6888f2a5a9736321eb03116f4241b62",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lcu3-queued-link-guard/output/playwright/queued-link-backend/green-final-source.json",
+      "source_sha256": "146f01e36bc523064d54d0cef636e0c90016211afc7884022d74722d03ba2f46",
+      "retained": "backend/green-final-source.json",
+      "retained_sha256": "146f01e36bc523064d54d0cef636e0c90016211afc7884022d74722d03ba2f46",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lcu3-queued-link-guard/output/playwright/queued-link-backend/green-source.json",
+      "source_sha256": "5a0e1b7a67101a4d824691c25bb59c7946137b8a773eed4b5c2565200e8d0206",
+      "retained": "backend/green-source.json",
+      "retained_sha256": "5a0e1b7a67101a4d824691c25bb59c7946137b8a773eed4b5c2565200e8d0206",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lcu3-queued-link-guard/output/playwright/queued-link-backend/red-added-source.json",
+      "source_sha256": "215f94f8981bf28bc00f382a4453d3103dd17596fbf0c5ee1e584dbb942190af",
+      "retained": "backend/red-added-source.json",
+      "retained_sha256": "215f94f8981bf28bc00f382a4453d3103dd17596fbf0c5ee1e584dbb942190af",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lcu3-queued-link-guard/output/playwright/queued-link-backend/red-atomic-seam-source.json",
+      "source_sha256": "e303cfa3096735b82019b697fe9e83e632bf232e4ca4873faa2854c1c3a6e999",
+      "retained": "backend/red-atomic-seam-source.json",
+      "retained_sha256": "e303cfa3096735b82019b697fe9e83e632bf232e4ca4873faa2854c1c3a6e999",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lcu3-queued-link-guard/output/playwright/queued-link-backend/red-atomic-source.json",
+      "source_sha256": "b48fdc55da33f4bfb9b3787b7c7e31479e856674c607a29e94664de5b597a950",
+      "retained": "backend/red-atomic-source.json",
+      "retained_sha256": "b48fdc55da33f4bfb9b3787b7c7e31479e856674c607a29e94664de5b597a950",
+      "transformation": [
+        "byte-identical"
+      ]
+    },
+    {
+      "source": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lcu3-queued-link-guard/output/playwright/queued-link-backend/red-source.json",
+      "source_sha256": "15188974e5ee200850035ae9bff5abdc21af0aa00f879cb9fccb05a90f31f5bc",
+      "retained": "backend/red-source.json",
+      "retained_sha256": "15188974e5ee200850035ae9bff5abdc21af0aa00f879cb9fccb05a90f31f5bc",
+      "transformation": [
+        "byte-identical"
+      ]
+    }
+  ],
+  "scope": "E3 local signed MOCK identity/Meta edges plus real disposable PG and browser; no LIVE acceptance",
+  "limitations": [
+    "Acceptance is isolated GitHub CI on the pushed head, currently PENDING; six current local structural gates passed.",
+    "Current host-contention runs are NOT_RUN(host-contention), raw exitcodes/logs retained; never product PASS or FAIL.",
+    "Latest localmanual teardown incomplete; CI will establish the current full36/PG21 verdict.",
+    "Historical Studio6/6 and focusedREAL_PG53 green are source-pinned prior evidence, not current fullCI acceptance.",
+    "Full G07 and final independent review NOT_RUN.",
+    "E3 causal/manual/PG evidence is signed MOCK identity/Meta plus real disposable PG only; no LIVE.",
+    "Two initial Vieworder fixture failures at unreachable completedreceipt422, earlier lockblocked/red2 attempts are not causal href reds.",
+    "Legacy reminderwithoutorder_id conservatively blocks regeneration store-wide; seededlegacyrepair/longlockwait counterexamplesNOT_RUN.",
+    "Task-owned8orphanNext services cleaned after exactPID/PPID1/cwd verification; otherprojectprocesses untouched."
+  ],
+  "readonly_audit_memory_id": "72bcc926-9b54-44b5-8d42-92811fd24037"
+}

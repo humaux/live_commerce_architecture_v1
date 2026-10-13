@@ -1,0 +1,8 @@
+{
+  "head": "c54f70dc2b2e17abcac52ea01e6e098f52d97773",
+  "restored_exact": true,
+  "file_sha256": "14b99536e0c449f8405118c9a78f09d2369ebc06cb1b2c7b7552286125c13323",
+  "last_run": "r4-view-order-browser-causal-red3",
+  "exit_code": 1,
+  "classification": "CAUSAL_RED: prior35passed, only DU3-manual-created-recovery fails helper187 afteractual200created and visiblelinkclicked"
+}

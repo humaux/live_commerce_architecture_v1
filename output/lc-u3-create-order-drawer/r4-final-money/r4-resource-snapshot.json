@@ -1,0 +1,21 @@
+{
+  "captured_at": "2026-10-13T08:43:09.139403+00:00",
+  "head": "c54f70dc2b2e17abcac52ea01e6e098f52d97773",
+  "load": "16:43  up 15:02, 1 user, load averages: 47.86 50.74 56.09",
+  "other_containers": [
+    "ordread2-pg Up 4 minutes postgres:18.6",
+    "rev45-pg Up 8 minutes postgres:18.6",
+    "pubsku-pg Up 8 minutes postgres:18.6",
+    "opensite-c22a-gate-98b9297f8729 Up 20 minutes postgres:18.6",
+    "fix43-pg Up 32 minutes postgres:18.6",
+    "opensite_h2d_38d494b517 Up 35 minutes postgres:18.6",
+    "opensite_h2e_bbcead0820 Up 46 minutes postgres:18.6",
+    "opensite_int22b_bfe3f24bd6 Up 46 minutes postgres:18.6",
+    "humaux-thread-qdrant Up 15 hours qdrant/qdrant:v1.19.0",
+    "humaux-thread-pg Up 15 hours postgres:18"
+  ],
+  "studio_classification": "NOT_RUN UI: second migration apply context20s expired; fixture setup failure, no product assertion",
+  "manual_classification": "native300s timeout; partial20cases failure atcatalog rowclick; original causeUNKNOWN",
+  "node_classification": "twofullgate failures at original10s never-settles child; diagnosispending; notPASS",
+  "ownership": "only verified8orphanNext exactownedPIDs stopped; no othertask resources altered"
+}

@@ -1,0 +1,22 @@
+{
+  "name": "r4-view-order-node-green",
+  "command": [
+    "node",
+    "--test",
+    "--experimental-strip-types",
+    "tests/admin/manual-order-recovery.test.ts"
+  ],
+  "timeout": 120,
+  "head": "8d367d1c34bb3841a99e572a285ce5e8233bcc91",
+  "exit_code": 0,
+  "source_sha256": "cfe1b9a89fae8229f99cf469ace639999cd0ad4202f37e5acbba2d7ce7586b66",
+  "source_after": "cfe1b9a89fae8229f99cf469ace639999cd0ad4202f37e5acbba2d7ce7586b66",
+  "source_unchanged": true,
+  "historical_output_sha256": "b06d9b4acd69a2c92e0c31696e503ae59f7cdb171f68e7afd236f1e2cf605cba",
+  "historical_output_after": "b06d9b4acd69a2c92e0c31696e503ae59f7cdb171f68e7afd236f1e2cf605cba",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 1.748
+}

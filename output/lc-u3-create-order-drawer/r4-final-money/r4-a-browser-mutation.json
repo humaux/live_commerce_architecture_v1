@@ -1,0 +1,6 @@
+{
+  "path": "apps/admin/components/CreateOrderDrawer.tsx",
+  "original_sha256": "ba0b0d612c488fbe587911b24a10ace2c700e643f9804b5238653ea73206dde1",
+  "mutation_sha256": "1b63467a1b8b6c0abcd62b3679d725c3133f22e2e8e5a100af4d11d983e0a8e9",
+  "mutation": "Pass only CSRF session digest instead of stable principal/store scope to guard; fixture/assertions/timeouts unchanged"
+}

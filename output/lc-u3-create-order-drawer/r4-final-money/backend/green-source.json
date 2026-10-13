@@ -1,0 +1,14 @@
+{
+  "head": "7e4b026238788d6b462237d8445a9c0c2d1ae2ea",
+  "status": " M contracts/storefront-v2.md\n M internal/inbox/send_order.go\n M internal/merchanttools/checkout_reminders.go\n M internal/merchanttools/manual.go\n M internal/merchanttools/order_for_buyer.go\n?? tests/foundation/queued_order_link_test.go\n",
+  "files": {
+    "internal/merchanttools/manual.go": "8b20140baebdc595d107c6a00f692dda6e0d40b1896b03d8d939408ee6aa601b",
+    "internal/merchanttools/checkout_reminders.go": "98340f5b430015ab1209404ac038bd2a34c1feeee04627c8c4dad8143f020ed5",
+    "internal/merchanttools/order_for_buyer.go": "13281b630d5735a8d7c769336a477153d71cf7c8585c5e97b8cc98d9e5b6992d",
+    "internal/inbox/send_order.go": "ff0514957af977876c33f87b54c09439fb626d93cf562a8c81f9322ffbc9c1aa",
+    "tests/foundation/queued_order_link_test.go": "aeee0b6f66bb20c45185ee478d5405810d92b702a214a3683907902d543f38b3",
+    "contracts/storefront-v2.md": "e74d295fbf76a88f58f5117ca9a13c444c1a3900ca591bc78c5c9f6c47a9f345"
+  },
+  "digest": "cda40bfe114cd71a42f89355037c654230ed9f503396d845e3757d92cee1eb1e",
+  "command": "bash scripts/dev/test-focused.sh '^(TestQueuedOrderLink|TestLiveConsoleOrderForBuyer|TestCheckoutReminderCR05|TestLiveConsoleOrderPayLink)' ./tests/foundation"
+}

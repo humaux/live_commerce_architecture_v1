@@ -1,0 +1,20 @@
+{
+  "name": "r4-final-gates2",
+  "command": [
+    "bash",
+    "scripts/dev/check-gates.sh"
+  ],
+  "timeout": 900,
+  "head": "0da382fa514257b601bfc605d1b233f0ed0e6df5",
+  "exit_code": 0,
+  "source_sha256": "0b33b8f56a5fd4dd20d59a2ea68d0e20047702726c3f634493177bb9a407dd82",
+  "source_after": "0b33b8f56a5fd4dd20d59a2ea68d0e20047702726c3f634493177bb9a407dd82",
+  "source_unchanged": true,
+  "historical_output_sha256": "b06d9b4acd69a2c92e0c31696e503ae59f7cdb171f68e7afd236f1e2cf605cba",
+  "historical_output_after": "b06d9b4acd69a2c92e0c31696e503ae59f7cdb171f68e7afd236f1e2cf605cba",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 211.017
+}

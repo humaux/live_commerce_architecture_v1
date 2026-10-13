@@ -1,0 +1,60 @@
+{
+  "source_memory_id": "b4c2664b-2d6b-4032-8977-577faf1ad987",
+  "scope": "READONLY CI trace plus pre-fix local browser. Test readiness races, not verified product permission regression.",
+  "ci": {
+    "run": 38350423098,
+    "job": 115141459674,
+    "artifact": 11790363347,
+    "checkout": "eb7ee0cb",
+    "trace_sha256": "f417e148ac561847b5af61756ba80b9d42a646bacc7f02b83b480026290f46d2",
+    "events": [
+      {
+        "ms": 3642.22,
+        "event": "helper reads Live group aria-expanded=false on overview"
+      },
+      {
+        "ms": 3648.663,
+        "event": "click dispatched on overview group"
+      },
+      {
+        "ms": 3728.141,
+        "event": "asynchronous authority fallback lands en/studio and expands selected Live group"
+      },
+      {
+        "ms": 3735.169,
+        "event": "pending old group click collapses selected Live group"
+      },
+      {
+        "ms": 3736.344,
+        "event": "nav-studio click waits with Live group collapsed"
+      }
+    ]
+  },
+  "local": {
+    "run": "r4-studio-before",
+    "trace_sha256": "a8243aedbd4eeb3ab4389fc329c548d5f7c3a91b26e98168ce74f755738fd683",
+    "events": [
+      {
+        "at": "tests/admin/studio-ui.spec.ts:223",
+        "event": "fill updates local value before saved receipt"
+      },
+      {
+        "at": "tests/admin/studio-ui.spec.ts:226",
+        "ms": 12350,
+        "event": "competing page closed before PATCH settled"
+      },
+      {
+        "time": "06:22:45.490Z",
+        "ms": 12337,
+        "event": "competing PATCH starts, aborted status=-1"
+      },
+      {
+        "time": "06:22:45.590Z",
+        "ms": 12435,
+        "event": "main PATCH succeeds200; no competing saved version exists"
+      }
+    ],
+    "cascade": "Scene remains DRAFT after first case aborts; readonly page displays disabled Start. Expired half not reached in failed round."
+  },
+  "fix": "Real A2 permission fallback positively loaded, then real A1 selection and dashboard loaded before nav. Competing PATCH200 and displayed server version increment proved before close. Existing permission/conflict/reload/native deadlines unchanged."
+}

@@ -1,0 +1,50 @@
+[
+  {
+    "pid": 7278,
+    "orphan_in_owned_worktree": true,
+    "signal": "SIGTERM",
+    "alive_after": false
+  },
+  {
+    "pid": 11200,
+    "orphan_in_owned_worktree": true,
+    "signal": "SIGTERM",
+    "alive_after": false
+  },
+  {
+    "pid": 39080,
+    "orphan_in_owned_worktree": true,
+    "signal": "SIGTERM",
+    "alive_after": false
+  },
+  {
+    "pid": 53153,
+    "orphan_in_owned_worktree": true,
+    "signal": "SIGTERM",
+    "alive_after": false
+  },
+  {
+    "pid": 56396,
+    "orphan_in_owned_worktree": true,
+    "signal": "SIGTERM",
+    "alive_after": false
+  },
+  {
+    "pid": 62304,
+    "orphan_in_owned_worktree": true,
+    "signal": "SIGTERM",
+    "alive_after": false
+  },
+  {
+    "pid": 89541,
+    "orphan_in_owned_worktree": true,
+    "signal": "SIGTERM",
+    "alive_after": false
+  },
+  {
+    "pid": 92399,
+    "orphan_in_owned_worktree": true,
+    "signal": "SIGTERM",
+    "alive_after": false
+  }
+]

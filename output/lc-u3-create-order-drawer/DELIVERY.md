@@ -1,5 +1,51 @@
 # LC-U3 create-order drawer delivery
 
+## PR32 r4 — CI acceptance handoff (2026-10-13)
+
+**READY for isolated GitHub CI; full current acceptance is PENDING.** Owner directed immediate unit-branch push and CI acceptance on 2026-10-13; local contention is not a product verdict. Source HEAD **c54f70dc2b2e17abcac52ea01e6e098f52d97773**, source SHA256 **894caba8911faf12be896603c5ab4fae898c47382026c1252d7ac9e95f3c00ac**. Merged trunk **0bfe36e53acb694f4697521202e24f0790638941** using merge **5a51ea2c**, no rebase; both UI actions, suites and all Node entries retained. This handoff adds only delivery evidence.
+
+- Implementer: Codex-3; family instruction GPT-6, actual runtime model/effort identifiers not exposed. Worktree `.worktrees/lc-u3-create-order-drawer`; branch `unit/lc-u3-create-order-drawer`. Exact allowed source/contract/test and delivery paths: [allowed-write-paths.json](r4-final-money/allowed-write-paths.json). Owner `output/ext-agents/**` excluded and preserved; no new migrations, ACLs, routes or dependencies in this delta.
+- Evidence level: **E3 for the source-pinned automated red/green and REAL_PG evidence below; current full browser/Node acceptance is delegated to CI, not claimed PASS**. Platform edges and identity are MOCK; PG and local browsers are real disposable environments. No LIVE or full G07 acceptance.
+
+Review replies / fixes:
+
+- **4254715306**: ManualOrder retains frozen request/key and uses authoritative A16R recovery or durable absence seal before a new attempt; partial/UNKNOWN still needs same-key completion. `TestManualRecoveryAbsentSeal`, `CreatedReadback`, `PartialBegin`, `AuthorityAfterWait`, `ConcurrentSeal` cover server recovery; actual UI/client/BFF and browser cases remain registered.
+- **Final review (a)**: unresolved guard is keyed by server-derived opaque tenant/store/principal scope, stable across 401 and re-login; no CSRF/token/PII is stored, and legacy/missing scope fails closed. Actual relogin browser causal RED and real-PG principal isolation evidence retained.
+- **Final review (b)**: explicit pre-dispatch `neverSent` validation settles/disarms only a fresh attempt; earlier UNKNOWN, network failure and server 422 remain retained. Actual zero-request browser causal RED and three-locale component/client green retained.
+- **Final review (c)**: regeneration and reminder planning share a transaction-level order lock and reject a queued/planned payment DM; ForBuyer signs and queues the exact new link atomically. Go red→green suite: `TestQueuedOrderLinkHTTPRegeneration`, `HTTPReminder`, `PlanningSerializesHTTP`, `ReminderSealHTTP`, `ForBuyerAtomicHTTP`, `UnknownHTTP` (full names share the prefix `TestQueuedOrderLink`). Child complete REAL_PG run20/20 and integrated focused53/53 are historical source-pinned proof; see retained statuses, not a claim of a new current-head local run.
+- **4254999659**: View order uses existing `/{locale}/orders?store={store.id}&order={id}`. Three-locale actual-source RED26/3→GREEN29/0. Genuine lost201→recovery200→visible-click causal browser RED has prior35 passing and only the wrong-path case failing; correct source restored exactly. New real case requires exact loaded order detail, reload persistence and one PG order. Completed receipt replays200 before option validation, so post-complete422 is unreachable; original UNKNOWN422 absence/partial cases were preserved.
+- **Studio regression**: asynchronous A2 fallback changed the navigation group between sampling and toggling; a competing editor was closed before its real PATCH committed. Fixtures now wait for positive A2/A1 loaded destinations and PATCH200/version increment. Product shell/permission code is unchanged; old mutation, conflict, permission and persistence assertions and deadlines are retained. Historical fixed Studio6/6 is retained; current Studio is CI-pending.
+
+Current local structure gates (each exit0, source/history/status unchanged; native logs and full commands in [gates.json](r4-final-money/gates.json)):
+
+| Command | Exit | Seconds |
+|---|---:|---:|
+| `pnpm -C apps/admin exec tsc --noEmit -p .` | 0 | 31.834 |
+| `bash scripts/dev/check-gates.sh` | 0 | 529.255 |
+| `go run ./scripts/dev/contractdrift` | 0 | 13.68 |
+| `go vet ./...` | 0 | 13.67 |
+| `go vet -tags browser ./tests/foundation` | 0 | 13.686 |
+| `go build ./...` | 0 | 59.528 |
+
+Local contention/incomplete runs (classification does not rewrite the raw native exit code):
+
+| Run / native evidence | Classification | Raw exit / detail |
+|---|---|---|
+| `r4-merged-studio-setup-busy` | NOT_RUN(host-contention) | 1; second migration apply exceeded the existing20s budget; UI assertions were not entered. |
+| `r4-merged-node-busy`, `r4-merged-node-native-busy` | NOT_RUN(host-contention) | 1; native PR18 never-settles subprocess exceeded10s, including nativeNode24.15/GOMAXPROCS2 run. |
+| `r4-merged-gates-busy` | NOT_RUN(host-contention) | 1; nativeGo600s; later identical current check-gates passed0. |
+| `r4-merged-manual-busy` | NOT_RUN(host-contention) | 1; nativeGo300s, partial20-case result; no complete36/PG21 acceptance. |
+| `r4-merged-manual` / `create-order-drawer-4256920045` | INCOMPLETE(local teardown; CI pending) | 1; `route.fetch` context disposed in capability helper24:26; PG16 expected21. Result missing and click-ledger empty: explicitly incomplete artifacts, not PASS. |
+| current live-console, inbox and focusedREAL_PG | NOT_RUN(current source; delegated to CI) | No additional local heavy runs after owner routing decision. |
+
+Exact status/log pointers are in [acceptance-status.json](r4-final-money/acceptance-status.json) and `r4-final-money/runs/` / `logs/`; raw hashes and any privacy transformations are in [receipt-provenance.json](r4-final-money/receipt-provenance.json). Source and historical output SHA before/after are included in every wrapper receipt. Malformed/empty artifacts retain an explicit INCOMPLETE marker, byte count and original hash. Signed MOCK cookies, CSRF, request keys, Authorization and buyer links are sanitized before retention; gzip is verified against decoded content hashes. Source files and all tracked acceptance inputs are hashed. Older sections and invalid/calibration/environment attempts retain their original evidence scope.
+
+CI gates: the real selector chooses **all54 modes** listed in [r4-pr-modes-live.json](r4-final-money/r4-pr-modes-live.json), including **--browser-studio-ui, --browser-manual-order (drawer36/PG21 plus legacy10), --browser-live-console and --browser-inbox**. None excluded; no budgets raised. GitHub Gates and Foundation run IDs will be registered in Humaux and the READY response after the normal unit-only push. CI and final independent delta review remain pending; no GitHub thread replies/resolves, production mutations or G07 run by this unit.
+
+Risks/limits: legacy reminder without order_id conservatively blocks store-wide regeneration; seeded legacy namespace repair and long lock-wait counterexamples NOT_RUN. Before/after source hashes, valid causal reds, incomplete runs and six current local green gates are separated explicitly. The old 422 created-flow and lock/teardown-blocked href attempts are not counted as valid link reds.
+
+---
+
 ## PR32 r3 — manual-order authoritative recovery, thread4254715306 (2026-10-13)
 
 **READY for CI and final independent review, E3 in the tested local environment.** This is the current handoff; older sections retain their original SHA and evidence scope. Base **`b1229fbda54e3aa4a1262387d864a20382ec90f0`**; unit and integration fetch/merge at task start were already current, integration **`5a54d41b7e86a72eeec2afbe1f7b0458daaf742b`**. Source commits: browser RED fixture `8d812b99`, backend `3aa35a7d`, UI/BFF `62ff64ef`, classified router test `5aaa72d8`, and loaded-orders/reload synchronization `187ca4d5`. Final gates bind exact source HEAD **`187ca4d56c4bddf7d123c3746c7ea05ec3bc8676`**; the handoff commit adds only this delivery and its evidence.

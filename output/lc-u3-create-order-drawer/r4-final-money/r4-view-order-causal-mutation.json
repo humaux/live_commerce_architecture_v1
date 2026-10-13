@@ -1,0 +1,9 @@
+{
+  "head": "c54f70dc2b2e17abcac52ea01e6e098f52d97773",
+  "file": "apps/admin/components/ManualOrder.tsx",
+  "original_sha256": "14b99536e0c449f8405118c9a78f09d2369ebc06cb1b2c7b7552286125c13323",
+  "mutated_sha256": "390ba294e07e6766069a7cbb070f481aa4a11dd395f6dda746bd220021b75517",
+  "mutation": "Only recovered View order href restored to nonexistent /orders/{id}; every key, response, permission and browser assertion unchanged",
+  "backup": "output/playwright/lc-u3-k3-p2/r4-view-order-causal-backup.tsx",
+  "source_head_when_backup_created": "d69a6744053355849f1388af8419e9bcd06f837c"
+}

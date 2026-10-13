@@ -1,0 +1,22 @@
+{
+  "name": "r4-a-scope-bff-red",
+  "command": [
+    "node",
+    "--test",
+    "--experimental-transform-types",
+    "tests/admin/create-order-bff.test.ts"
+  ],
+  "timeout": 120,
+  "head": "ca62f76dff4e1008fef46bcce1dc7427392d17d8",
+  "exit_code": 1,
+  "source_sha256": "ab18827d65b81326eff74f2292c07b1b09e1fb67d6c7d7584cd874d8a098d726",
+  "source_after": "ab18827d65b81326eff74f2292c07b1b09e1fb67d6c7d7584cd874d8a098d726",
+  "source_unchanged": true,
+  "historical_output_sha256": "b06d9b4acd69a2c92e0c31696e503ae59f7cdb171f68e7afd236f1e2cf605cba",
+  "historical_output_after": "b06d9b4acd69a2c92e0c31696e503ae59f7cdb171f68e7afd236f1e2cf605cba",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 0.891
+}

@@ -1,0 +1,33 @@
+{
+  "curator_sha256": "c3ad02bde15e30310fc1938b4f421b5d2ba6623301fa2faa066f19ad2205f10f",
+  "old_eligible_receipts": [
+    {
+      "name": "r4-final-node5",
+      "head": "8d367d1c34bb3841a99e572a285ce5e8233bcc91",
+      "source_sha256": "cfe1b9a89fae8229f99cf469ace639999cd0ad4202f37e5acbba2d7ce7586b66",
+      "exit_code": 0
+    },
+    {
+      "name": "r4-final-browser-vet2",
+      "head": "8d367d1c34bb3841a99e572a285ce5e8233bcc91",
+      "source_sha256": "cfe1b9a89fae8229f99cf469ace639999cd0ad4202f37e5acbba2d7ce7586b66",
+      "exit_code": 0
+    },
+    {
+      "name": "r4-final-build",
+      "head": "8d367d1c34bb3841a99e572a285ce5e8233bcc91",
+      "source_sha256": "cfe1b9a89fae8229f99cf469ace639999cd0ad4202f37e5acbba2d7ce7586b66",
+      "exit_code": 0
+    },
+    {
+      "name": "r4-final-gates3",
+      "head": "8d367d1c34bb3841a99e572a285ce5e8233bcc91",
+      "source_sha256": "cfe1b9a89fae8229f99cf469ace639999cd0ad4202f37e5acbba2d7ce7586b66",
+      "exit_code": 0
+    }
+  ],
+  "current_head_binding_rejects_old": true,
+  "complete_required_set_rejects_old": true,
+  "sensitive_field_projection_counterexample_rejected": true,
+  "scope": "E1 curator check only; no browser acceptance claim"
+}

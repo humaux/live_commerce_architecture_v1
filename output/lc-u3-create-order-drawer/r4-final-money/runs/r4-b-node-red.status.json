@@ -1,0 +1,23 @@
+{
+  "name": "r4-b-node-red",
+  "command": [
+    "node",
+    "--test",
+    "--experimental-transform-types",
+    "tests/admin/create-order-client.test.ts",
+    "tests/admin/create-order-review.test.ts"
+  ],
+  "timeout": 120,
+  "head": "7e4b026238788d6b462237d8445a9c0c2d1ae2ea",
+  "exit_code": 1,
+  "source_sha256": "9d7a1abb727f76153aef3222ee147e9d18072e94bae8b4121a977ab22b830abb",
+  "source_after": "9d7a1abb727f76153aef3222ee147e9d18072e94bae8b4121a977ab22b830abb",
+  "source_unchanged": true,
+  "historical_output_sha256": "b06d9b4acd69a2c92e0c31696e503ae59f7cdb171f68e7afd236f1e2cf605cba",
+  "historical_output_after": "b06d9b4acd69a2c92e0c31696e503ae59f7cdb171f68e7afd236f1e2cf605cba",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 1.438
+}

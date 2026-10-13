@@ -1,0 +1,21 @@
+{
+  "name": "r4-a-go-green2",
+  "command": [
+    "bash",
+    "scripts/dev/test-focused.sh",
+    "^TestBrowserSession(OrderGuardStableAcrossLogin|StoreListUsesLiveAuthority)$"
+  ],
+  "timeout": 900,
+  "head": "7e4b026238788d6b462237d8445a9c0c2d1ae2ea",
+  "exit_code": 0,
+  "source_sha256": "c7b61ed5a822234d6236638b5062046dbbb4761655ef278ca505895380340108",
+  "source_after": "c7b61ed5a822234d6236638b5062046dbbb4761655ef278ca505895380340108",
+  "source_unchanged": true,
+  "historical_output_sha256": "b06d9b4acd69a2c92e0c31696e503ae59f7cdb171f68e7afd236f1e2cf605cba",
+  "historical_output_after": "b06d9b4acd69a2c92e0c31696e503ae59f7cdb171f68e7afd236f1e2cf605cba",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 34.793
+}

@@ -1,0 +1,24 @@
+{
+  "name": "r4-full-manual-green1",
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-manual-order"
+  ],
+  "timeout": 900,
+  "env": {
+    "LC_DRAWER_CALIBRATION": ""
+  },
+  "head": "0da382fa514257b601bfc605d1b233f0ed0e6df5",
+  "exit_code": 1,
+  "source_sha256": "ba229c2fc13233d7ee8908d65131bbe811478e6c36ee5746ca7bd3bbecfbafa3",
+  "source_after": "ba229c2fc13233d7ee8908d65131bbe811478e6c36ee5746ca7bd3bbecfbafa3",
+  "source_unchanged": true,
+  "historical_output_sha256": "b06d9b4acd69a2c92e0c31696e503ae59f7cdb171f68e7afd236f1e2cf605cba",
+  "historical_output_after": "b06d9b4acd69a2c92e0c31696e503ae59f7cdb171f68e7afd236f1e2cf605cba",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": true,
+  "tracked_status_clean_after": true,
+  "elapsed_seconds": 139.583
+}

@@ -1,0 +1,860 @@
+[
+  {
+    "case": "DU3-manual-unknown-draft-edit",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-manual-unknown-draft-edit",
+    "control": "manual UNKNOWN draft edit retry",
+    "action": "commit/abort/fill/click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-manual-unknown-draft-edit",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-manual-unknown-draft-edit",
+    "control": "manual-order-new-attempt",
+    "action": "real 422 then explicit click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-en-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-en-1440",
+    "control": "exact restriction session",
+    "action": "real click with unrelated first A13 claim",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-en-1440",
+    "control": "blocklist warning",
+    "action": "open by real BuyerPanel click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-en-1440",
+    "control": "linked order/send/copy",
+    "action": "click +/- then create and copy",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-en-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-en-1440",
+    "control": "duplicate/view order",
+    "action": "submit again then click view",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-1440",
+    "control": "missing restriction session",
+    "action": "open zero-claims conversation",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-1440",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-1440",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-1440",
+    "control": "drawer-new-attempt",
+    "action": "real 422 then explicit click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-1440",
+    "control": "A16R recovery",
+    "action": "UNKNOWN/business 422/recover click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-1440",
+    "control": "drawer-new-attempt",
+    "action": "real UNKNOWN/business 422/recovery then explicit click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-1440",
+    "control": "UNKNOWN then coded refusal",
+    "action": "abort real business 422/replay/click recovery/click new attempt",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-1440",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-1440",
+    "control": "settled guard close/reopen",
+    "action": "click close then create",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-1440",
+    "control": "unlinked warning/empty fields/zero",
+    "action": "edit form",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-en-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-en-1440",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-en-1440",
+    "control": "UNKNOWN draft edit protection",
+    "action": "inspect native disabled fields",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-en-1440",
+    "control": "queued replay copy safety",
+    "action": "real submit retry then inspect control",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-en-1440",
+    "control": "queued order persistence",
+    "action": "reload orders then click exact order",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-en-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-en-1440",
+    "control": "UNKNOWN explicit retry",
+    "action": "commit/abort/click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-en-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-en-1440",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-en-1440",
+    "control": "CSRF session boundary",
+    "action": "rotate actual cookie then click submit",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-en-390",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-en-390",
+    "control": "blocklist warning",
+    "action": "open by real BuyerPanel click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-en-390",
+    "control": "linked order/send/copy",
+    "action": "click +/- then create and copy",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-en-390",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-en-390",
+    "control": "duplicate/view order",
+    "action": "submit again then click view",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-390",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-390",
+    "control": "missing restriction session",
+    "action": "open zero-claims conversation",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-390",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-390",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-390",
+    "control": "unlinked warning/empty fields/zero",
+    "action": "edit form",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-en-390",
+    "control": "UNKNOWN draft edit protection",
+    "action": "inspect native disabled fields",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-en-390",
+    "control": "UNKNOWN explicit retry",
+    "action": "commit/abort/click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-en-390",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-en-390",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-en-390",
+    "control": "CSRF session boundary",
+    "action": "rotate actual cookie then click submit",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-zh-TW-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-zh-TW-1440",
+    "control": "blocklist warning",
+    "action": "open by real BuyerPanel click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-zh-TW-1440",
+    "control": "linked order/send/copy",
+    "action": "click +/- then create and copy",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-zh-TW-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-zh-TW-1440",
+    "control": "duplicate/view order",
+    "action": "submit again then click view",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-TW-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-TW-1440",
+    "control": "missing restriction session",
+    "action": "open zero-claims conversation",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-TW-1440",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-TW-1440",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-TW-1440",
+    "control": "unlinked warning/empty fields/zero",
+    "action": "edit form",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-zh-TW-1440",
+    "control": "UNKNOWN draft edit protection",
+    "action": "inspect native disabled fields",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-zh-TW-1440",
+    "control": "UNKNOWN explicit retry",
+    "action": "commit/abort/click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-zh-TW-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-zh-TW-1440",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-zh-TW-1440",
+    "control": "CSRF session boundary",
+    "action": "rotate actual cookie then click submit",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-zh-TW-390",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-zh-TW-390",
+    "control": "blocklist warning",
+    "action": "open by real BuyerPanel click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-zh-TW-390",
+    "control": "linked order/send/copy",
+    "action": "click +/- then create and copy",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-zh-TW-390",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-zh-TW-390",
+    "control": "duplicate/view order",
+    "action": "submit again then click view",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-TW-390",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-TW-390",
+    "control": "missing restriction session",
+    "action": "open zero-claims conversation",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-TW-390",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-TW-390",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-TW-390",
+    "control": "unlinked warning/empty fields/zero",
+    "action": "edit form",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-zh-TW-390",
+    "control": "UNKNOWN draft edit protection",
+    "action": "inspect native disabled fields",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-zh-TW-390",
+    "control": "UNKNOWN explicit retry",
+    "action": "commit/abort/click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-zh-TW-390",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-zh-TW-390",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-zh-TW-390",
+    "control": "CSRF session boundary",
+    "action": "rotate actual cookie then click submit",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-zh-CN-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-zh-CN-1440",
+    "control": "blocklist warning",
+    "action": "open by real BuyerPanel click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-zh-CN-1440",
+    "control": "linked order/send/copy",
+    "action": "click +/- then create and copy",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-zh-CN-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-zh-CN-1440",
+    "control": "duplicate/view order",
+    "action": "submit again then click view",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-CN-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-CN-1440",
+    "control": "missing restriction session",
+    "action": "open zero-claims conversation",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-CN-1440",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-CN-1440",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-CN-1440",
+    "control": "unlinked warning/empty fields/zero",
+    "action": "edit form",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-zh-CN-1440",
+    "control": "UNKNOWN draft edit protection",
+    "action": "inspect native disabled fields",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-zh-CN-1440",
+    "control": "UNKNOWN explicit retry",
+    "action": "commit/abort/click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-zh-CN-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-zh-CN-1440",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-zh-CN-1440",
+    "control": "CSRF session boundary",
+    "action": "rotate actual cookie then click submit",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-zh-CN-390",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-zh-CN-390",
+    "control": "blocklist warning",
+    "action": "open by real BuyerPanel click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-zh-CN-390",
+    "control": "linked order/send/copy",
+    "action": "click +/- then create and copy",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-zh-CN-390",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-zh-CN-390",
+    "control": "duplicate/view order",
+    "action": "submit again then click view",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-CN-390",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-CN-390",
+    "control": "missing restriction session",
+    "action": "open zero-claims conversation",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-CN-390",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-CN-390",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-CN-390",
+    "control": "unlinked warning/empty fields/zero",
+    "action": "edit form",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-zh-CN-390",
+    "control": "UNKNOWN draft edit protection",
+    "action": "inspect native disabled fields",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-zh-CN-390",
+    "control": "UNKNOWN explicit retry",
+    "action": "commit/abort/click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-zh-CN-390",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-zh-CN-390",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-zh-CN-390",
+    "control": "CSRF session boundary",
+    "action": "rotate actual cookie then click submit",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-comment-trigger",
+    "control": "claimed comment direct create",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-no-catalog-en-390",
+    "control": "catalog permission entry gates",
+    "action": "real signed login/conversation click/reload/console navigation",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-no-catalog-zh-TW-390",
+    "control": "catalog permission entry gates",
+    "action": "real signed login/conversation click/reload/console navigation",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-no-catalog-zh-CN-390",
+    "control": "catalog permission entry gates",
+    "action": "real signed login/conversation click/reload/console navigation",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-partial-begin-recovery",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-partial-begin-recovery",
+    "control": "partial Begin fault",
+    "action": "submit/terminate exact PG waiter/drop actual reply",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-partial-begin-recovery",
+    "control": "partial A16R authority",
+    "action": "click recover",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-partial-begin-recovery",
+    "control": "partial original retry persistence",
+    "action": "restore bank/click original retry/close/reload/click exact order",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-capability-after-unknown-recovery",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-capability-after-unknown-recovery",
+    "control": "capability lost completed reply",
+    "action": "submit then drop actual201",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-capability-after-unknown-recovery",
+    "control": "capability A16R recovery",
+    "action": "revoke exact reply grant/retry/click recover",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-capability-after-unknown-recovery",
+    "control": "capability recovered order persistence",
+    "action": "close/reload/click exact order",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-manual-absence-recovery",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-manual-absence-recovery",
+    "control": "manual frozen refusal",
+    "action": "load options/disable bank/submit/drop reply/edit/retry",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-manual-absence-recovery",
+    "control": "manual absence seal and new intent",
+    "action": "click recover/probe closed replay/click new attempt",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-manual-absence-recovery",
+    "control": "manual new intent persistence",
+    "action": "restore bank/submit/click vieworders/reload/expand exact order",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-manual-partial-recovery",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-manual-partial-recovery",
+    "control": "manual partial Begin fault",
+    "action": "submit/terminate exact PG waiter/drop reply/edit/retry",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-manual-partial-recovery",
+    "control": "manual partial authority",
+    "action": "click recover",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-manual-partial-recovery",
+    "control": "manual partial retry persistence",
+    "action": "restore bank/submit/click vieworders/reload/expand exact order",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-never-sent-key-validation",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-never-sent-key-validation",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-never-sent-key-validation",
+    "control": "never sent invalid key",
+    "action": "inject one generator fault/click actual submit",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-never-sent-key-validation",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-never-sent-key-validation",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-never-sent-key-validation",
+    "control": "never sent close reopen persistence",
+    "action": "click close/create/fill/valid submit/vieworder/reload",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unknown-auth-relogin-guard",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unknown-auth-relogin-guard",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unknown-auth-relogin-guard",
+    "control": "unknown real auth clear",
+    "action": "real201/drop reply/remove session cookie/click original retry",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unknown-auth-relogin-guard",
+    "control": "relogin stable unresolved guard",
+    "action": "actual OIDC sign-in/newvalidCSRF/click buyer create",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unknown-auth-relogin-guard",
+    "control": "reloaded stable unresolved guard",
+    "action": "reload/click conversation/create",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unknown-auth-relogin-guard",
+    "control": "guard scope and persisted order",
+    "action": "click guard vieworders/otherstore comment create/close",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-manual-created-recovery",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-manual-created-recovery",
+    "control": "manual committed response loss",
+    "action": "submit/drop only actual201 reply/disable bank/edit draft",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-manual-created-recovery",
+    "control": "manual created authority",
+    "action": "click original recovery",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-manual-created-recovery",
+    "control": "scenario",
+    "action": "run",
+    "status": "FAIL"
+  }
+]

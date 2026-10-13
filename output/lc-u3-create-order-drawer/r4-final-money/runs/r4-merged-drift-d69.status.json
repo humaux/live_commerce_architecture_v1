@@ -1,0 +1,24 @@
+{
+  "name": "r4-merged-drift",
+  "command": [
+    "go",
+    "run",
+    "./scripts/dev/contractdrift"
+  ],
+  "timeout": 900,
+  "env": {
+    "GOTOOLCHAIN": "go1.27.2"
+  },
+  "head": "d69a6744053355849f1388af8419e9bcd06f837c",
+  "exit_code": 0,
+  "source_sha256": "bcd5f0c264a214a889a486aa00066b5583d826dcc6f7cb45b2f9765f9854ceb6",
+  "source_after": "bcd5f0c264a214a889a486aa00066b5583d826dcc6f7cb45b2f9765f9854ceb6",
+  "source_unchanged": true,
+  "historical_output_sha256": "e9e79b86d29733d66e28822f796489aa9e69814fa00ab294cd7121f8bac6c2d4",
+  "historical_output_after": "e9e79b86d29733d66e28822f796489aa9e69814fa00ab294cd7121f8bac6c2d4",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": true,
+  "tracked_status_clean_after": true,
+  "elapsed_seconds": 12.824
+}

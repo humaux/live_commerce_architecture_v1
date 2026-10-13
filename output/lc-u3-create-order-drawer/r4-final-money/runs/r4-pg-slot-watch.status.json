@@ -1,0 +1,21 @@
+{
+  "name": "r4-pg-slot-watch",
+  "command": [
+    "python3",
+    "-c",
+    "import os,pathlib,time; p=pathlib.Path(os.environ.get('TMPDIR','/tmp'))/'lc-test-pg.lock'; start=time.monotonic();\nwhile p.exists(): time.sleep(2)\nprint('shared PG slot became free after %.3f seconds' % (time.monotonic()-start))"
+  ],
+  "timeout": 3600,
+  "head": "d69a6744053355849f1388af8419e9bcd06f837c",
+  "exit_code": 0,
+  "source_sha256": "bcd5f0c264a214a889a486aa00066b5583d826dcc6f7cb45b2f9765f9854ceb6",
+  "source_after": "bcd5f0c264a214a889a486aa00066b5583d826dcc6f7cb45b2f9765f9854ceb6",
+  "source_unchanged": true,
+  "historical_output_sha256": "e9e79b86d29733d66e28822f796489aa9e69814fa00ab294cd7121f8bac6c2d4",
+  "historical_output_after": "e9e79b86d29733d66e28822f796489aa9e69814fa00ab294cd7121f8bac6c2d4",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": true,
+  "tracked_status_clean_after": true,
+  "elapsed_seconds": 1573.397
+}

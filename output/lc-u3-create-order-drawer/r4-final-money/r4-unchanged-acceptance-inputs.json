@@ -1,0 +1,72 @@
+{
+  "studio": {
+    "original_ref": "1d1cd94c",
+    "files": {
+      "apps/admin/components/WorkspaceFrame.tsx": {
+        "before_sha256": "3e87de2d48d756e6726b22e338ff2bc4cbef18aed639fd7873b3a7d875a0bdd8",
+        "current_sha256": "3e87de2d48d756e6726b22e338ff2bc4cbef18aed639fd7873b3a7d875a0bdd8",
+        "same": true
+      },
+      "apps/admin/components/Studio.tsx": {
+        "before_sha256": "079f4f33a7133d8d6ed4480be7f8e8180c2357f4f9609ca8a553cbca650a6b2e",
+        "current_sha256": "079f4f33a7133d8d6ed4480be7f8e8180c2357f4f9609ca8a553cbca650a6b2e",
+        "same": true
+      },
+      "tests/admin/studio-ui.spec.ts": {
+        "before_sha256": "24abe91c8041a92c97577236a2ed896f19de6cffe9fead5c59c1cd70bf0120af",
+        "current_sha256": "24abe91c8041a92c97577236a2ed896f19de6cffe9fead5c59c1cd70bf0120af",
+        "same": true
+      },
+      "tests/foundation/browser_studio_ui_test.go": {
+        "before_sha256": "b646bbd6d0c5a5b55ffa776d3e2bc34edd455eb1cefdbc1edf8c0cb157aa56b3",
+        "current_sha256": "b646bbd6d0c5a5b55ffa776d3e2bc34edd455eb1cefdbc1edf8c0cb157aa56b3",
+        "same": true
+      },
+      "internal/platform/session_stores.go": {
+        "before_sha256": "7b45ba6454e29c7e928adeaa7acf20181294995b32a82d8d7ebd3a790f20dc89",
+        "current_sha256": "7b45ba6454e29c7e928adeaa7acf20181294995b32a82d8d7ebd3a790f20dc89",
+        "same": true
+      }
+    }
+  },
+  "focused_money": {
+    "original_ref": "dd6ca903",
+    "files": {
+      "internal/inbox/send_order.go": {
+        "before_sha256": "ff0514957af977876c33f87b54c09439fb626d93cf562a8c81f9322ffbc9c1aa",
+        "current_sha256": "ff0514957af977876c33f87b54c09439fb626d93cf562a8c81f9322ffbc9c1aa",
+        "same": true
+      },
+      "internal/merchanttools/manual.go": {
+        "before_sha256": "dda57ea76658cb91ddfcdc21f098ff778eec1042094de11469e3514c03a33c0f",
+        "current_sha256": "dda57ea76658cb91ddfcdc21f098ff778eec1042094de11469e3514c03a33c0f",
+        "same": true
+      },
+      "internal/merchanttools/order_for_buyer.go": {
+        "before_sha256": "4daf5f5d3f44ea0befb76b66b3b773993780cbcf94bcf79c83f2b7cb4e1d4f91",
+        "current_sha256": "4daf5f5d3f44ea0befb76b66b3b773993780cbcf94bcf79c83f2b7cb4e1d4f91",
+        "same": true
+      },
+      "internal/merchanttools/order_attempt.go": {
+        "before_sha256": "331034ee420356f78922e184f34bdf3b30717eef49b1de2568d27110a43eca5d",
+        "current_sha256": "331034ee420356f78922e184f34bdf3b30717eef49b1de2568d27110a43eca5d",
+        "same": true
+      },
+      "internal/merchanttools/checkout_reminders.go": {
+        "before_sha256": "98340f5b430015ab1209404ac038bd2a34c1feeee04627c8c4dad8143f020ed5",
+        "current_sha256": "98340f5b430015ab1209404ac038bd2a34c1feeee04627c8c4dad8143f020ed5",
+        "same": true
+      },
+      "internal/platform/session_stores.go": {
+        "before_sha256": "7b45ba6454e29c7e928adeaa7acf20181294995b32a82d8d7ebd3a790f20dc89",
+        "current_sha256": "7b45ba6454e29c7e928adeaa7acf20181294995b32a82d8d7ebd3a790f20dc89",
+        "same": true
+      },
+      "tests/foundation/queued_order_link_test.go": {
+        "before_sha256": "eebac37026bdca998e4f9706124325d5307879ffc48bcf9b70390f27b9825d43",
+        "current_sha256": "eebac37026bdca998e4f9706124325d5307879ffc48bcf9b70390f27b9825d43",
+        "same": true
+      }
+    }
+  }
+}

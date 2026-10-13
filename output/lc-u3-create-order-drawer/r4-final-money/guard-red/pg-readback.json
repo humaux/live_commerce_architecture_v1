@@ -1,0 +1,13 @@
+{
+  "final_observed_keys": 2,
+  "final_request_orders": 2,
+  "final_request_receipts": 2,
+  "legacy_expected": 14,
+  "legacy_orders": 14,
+  "legacy_single_order": true,
+  "orders": 20,
+  "prior_expected": 18,
+  "prior_orders": 18,
+  "prior_single_order": true,
+  "single_order": true
+}

@@ -1,0 +1,10 @@
+{
+  "node_version": "v24.15.0",
+  "node_executable": "/Users/luolimo/.local/share/fnm/node-versions/v24.15.0/installation/bin/node",
+  "node_sha256": "3200fbd9f7fd4410426dd541e10d1ab829d3472f270d743c7fabd1696c03fe32",
+  "package_engines": {
+    "node": ">=24 <25"
+  },
+  "timing_policy": "existing child10s, Go300s/600s and per-mode assertions retained; only outer watchdog900s",
+  "cleanup": "r4-owned-orphan-cleanup.json; eight exact owned orphanPIDs stopped; othertasks untouched"
+}

@@ -1,0 +1,28 @@
+{
+  "name": "r4-view-order-browser-causal-red3",
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-manual-order"
+  ],
+  "timeout": 900,
+  "env": {
+    "GOTOOLCHAIN": "go1.27.2",
+    "LC_DRAWER_CALIBRATION": "",
+    "LC_LCU2_GREP": "",
+    "PLAYWRIGHT_GREP": "",
+    "LC_BROWSER_ENGINE": "chromium"
+  },
+  "head": "c54f70dc2b2e17abcac52ea01e6e098f52d97773",
+  "exit_code": 1,
+  "source_sha256": "b7a1f32e313d8415bc37f2d36f7400de1db49d80afad3b000b23819b836fad09",
+  "source_after": "b7a1f32e313d8415bc37f2d36f7400de1db49d80afad3b000b23819b836fad09",
+  "source_unchanged": true,
+  "historical_output_sha256": "e9e79b86d29733d66e28822f796489aa9e69814fa00ab294cd7121f8bac6c2d4",
+  "historical_output_after": "e9e79b86d29733d66e28822f796489aa9e69814fa00ab294cd7121f8bac6c2d4",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 257.286
+}

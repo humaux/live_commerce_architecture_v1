@@ -1,0 +1,114 @@
+{
+  "environment": "GitHub CI isolated runners; owner 2026-10-13 directs immediate push",
+  "ci_status": "PENDING",
+  "source_head": "c54f70dc2b2e17abcac52ea01e6e098f52d97773",
+  "local_pass_runs": [
+    "r4-merged-tsc",
+    "r4-merged-gates",
+    "r4-merged-drift",
+    "r4-merged-vet",
+    "r4-merged-browser-vet",
+    "r4-merged-build"
+  ],
+  "local_not_run": [
+    {
+      "classification": "NOT_RUN(host-contention)",
+      "run": "r4-merged-studio-setup-busy",
+      "raw_exit": 1,
+      "reason": "second migration apply exceeded original20s; all UI assertions not entered"
+    },
+    {
+      "classification": "NOT_RUN(host-contention)",
+      "run": "r4-merged-node-busy",
+      "raw_exit": 1,
+      "reason": "native PR18 subprocess10s timeout; full current Node acceptance incomplete"
+    },
+    {
+      "classification": "NOT_RUN(host-contention)",
+      "run": "r4-merged-node-native-busy",
+      "raw_exit": 1,
+      "reason": "same native10s subprocess timeout using nativeNode24.15/GOMAXPROCS2"
+    },
+    {
+      "classification": "NOT_RUN(host-contention)",
+      "run": "r4-merged-gates-busy",
+      "raw_exit": 1,
+      "reason": "nativeGo600s timeout; subsequent identical currentcheckgates passed0"
+    },
+    {
+      "classification": "INCOMPLETE(local teardown; CI acceptance pending)",
+      "run": "r4-merged-manual",
+      "raw_exit": 1,
+      "reason": "route.fetch contextdisposed capability helper24:26, PG16 expected21; resultjson absent, no definitive product assertion verdict"
+    },
+    {
+      "classification": "NOT_RUN(current source; delegated to CI)",
+      "run": "r4-merged-console"
+    },
+    {
+      "classification": "NOT_RUN(current source; delegated to CI)",
+      "run": "r4-merged-inbox"
+    },
+    {
+      "classification": "NOT_RUN(current source; delegated to CI)",
+      "run": "r4-merged-go"
+    }
+  ],
+  "required_ci_modes": [
+    "foundation-shards",
+    "--browser-inbox",
+    "--browser-meta-health-ui",
+    "--browser-tracking-backfill",
+    "--browser-platform-site",
+    "--browser-admin-shell",
+    "--browser-click-sweep",
+    "--browser-visual-lint",
+    "--browser-identity",
+    "--browser-buyer-comms",
+    "--browser-checkout-offline",
+    "--browser-home-cod",
+    "--browser-promotions",
+    "--browser-password-auth",
+    "--browser-admin-legacy",
+    "--browser-buyer",
+    "--browser-merchant-buyer",
+    "--browser-manual-order",
+    "--browser-merchant-orders-bff",
+    "--browser-merchant-orders-ui",
+    "--browser-input-delivery",
+    "--browser-studio-bff",
+    "--browser-studio-ui",
+    "--browser-live-console",
+    "--browser-claim-checkout",
+    "--browser-live-claims",
+    "--browser-order",
+    "--browser-payment",
+    "--browser-refund-fulfilment",
+    "--browser-customers-billing",
+    "--browser-card-payments",
+    "--browser-meta-ads",
+    "--browser-ads-attribution",
+    "--browser-cvs",
+    "--browser-catalog-media",
+    "--browser-storefront-publish",
+    "--browser-store-domains",
+    "--browser-storefront",
+    "--browser-webkit",
+    "--browser-e2e",
+    "--live-browser-input",
+    "--browser-design",
+    "--browser-ops-polish",
+    "--browser-meta-connect",
+    "--browser-product-editor",
+    "--browser-catalog-core",
+    "--browser-returns-ui",
+    "--browser-picklist",
+    "--browser-operations-ads",
+    "--browser-product-media-v2",
+    "--browser-reports",
+    "--browser-migration-import",
+    "--browser-live-settings",
+    "--studio-backend"
+  ],
+  "rule": "No local contention, incomplete or historical run is a current acceptance PASS; preserve native exit codes."
+}

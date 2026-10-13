@@ -1,0 +1,21 @@
+{
+  "name": "r4-view-order-browser-red",
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-manual-order"
+  ],
+  "timeout": 900,
+  "head": "8d367d1c34bb3841a99e572a285ce5e8233bcc91",
+  "exit_code": 1,
+  "source_sha256": "7738c2c4c35e9721c9e842a485d866fe63520ce2ad83b85beaaa1b36f8aeaabe",
+  "source_after": "7738c2c4c35e9721c9e842a485d866fe63520ce2ad83b85beaaa1b36f8aeaabe",
+  "source_unchanged": true,
+  "historical_output_sha256": "b06d9b4acd69a2c92e0c31696e503ae59f7cdb171f68e7afd236f1e2cf605cba",
+  "historical_output_after": "b06d9b4acd69a2c92e0c31696e503ae59f7cdb171f68e7afd236f1e2cf605cba",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 149.894
+}

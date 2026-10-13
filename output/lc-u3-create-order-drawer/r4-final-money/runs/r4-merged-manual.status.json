@@ -1,0 +1,30 @@
+{
+  "name": "r4-merged-manual",
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-manual-order"
+  ],
+  "timeout": 900,
+  "env": {
+    "PATH": "/Users/luolimo/.local/share/fnm/node-versions/v24.15.0/installation/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
+    "GOTOOLCHAIN": "go1.27.2",
+    "LC_DRAWER_CALIBRATION": "",
+    "LC_LCU2_GREP": "",
+    "PLAYWRIGHT_GREP": "",
+    "LC_BROWSER_ENGINE": "chromium",
+    "GOMAXPROCS": "2"
+  },
+  "head": "c54f70dc2b2e17abcac52ea01e6e098f52d97773",
+  "exit_code": 1,
+  "source_sha256": "894caba8911faf12be896603c5ab4fae898c47382026c1252d7ac9e95f3c00ac",
+  "source_after": "894caba8911faf12be896603c5ab4fae898c47382026c1252d7ac9e95f3c00ac",
+  "source_unchanged": true,
+  "historical_output_sha256": "e9e79b86d29733d66e28822f796489aa9e69814fa00ab294cd7121f8bac6c2d4",
+  "historical_output_after": "e9e79b86d29733d66e28822f796489aa9e69814fa00ab294cd7121f8bac6c2d4",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": true,
+  "tracked_status_clean_after": true,
+  "elapsed_seconds": 676.205
+}

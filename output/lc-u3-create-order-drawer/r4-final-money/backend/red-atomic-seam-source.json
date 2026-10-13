@@ -1,0 +1,13 @@
+{
+  "head": "7e4b026238788d6b462237d8445a9c0c2d1ae2ea",
+  "status": " M contracts/storefront-v2.md\n?? tests/foundation/queued_order_link_test.go\n",
+  "files": {
+    "internal/merchanttools/manual.go": "d90931f69ace203e9b577685a0e3bf5b0ca5a7ad9ae673b73444ee748a8b1db4",
+    "internal/merchanttools/checkout_reminders.go": "79dc314081d2ddeb202f7300304b800b009a5877dcb1350564bdfdb8d3d2f6dd",
+    "internal/merchanttools/order_for_buyer.go": "be54cb0b3e01af6fd60118ff85d7bb401f323553472c68c74f4d2c0ab1b51ac9",
+    "internal/inbox/send_order.go": "afa0e907e7fb9b4c735bc1cdffa454a81be5edf467e75a3bd49422e2e3684e93",
+    "tests/foundation/queued_order_link_test.go": "75f892c9b99a0deb76bac2764eb7a43fdbbc08e7445397f28866a6c3d322a545",
+    "contracts/storefront-v2.md": "c152b7ee1785b57b92cb7323ba6a21130971c88b99bb750b2cce9994edf34016"
+  },
+  "command": "bash scripts/dev/test-focused.sh '^TestQueuedOrderLinkForBuyerAtomicHTTP$' ./tests/foundation"
+}

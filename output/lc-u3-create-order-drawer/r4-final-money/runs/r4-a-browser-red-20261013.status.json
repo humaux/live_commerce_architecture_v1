@@ -1,0 +1,24 @@
+{
+  "name": "r4-a-browser-red-20261013",
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-manual-order"
+  ],
+  "timeout": 900,
+  "env": {
+    "LC_DRAWER_CALIBRATION": ""
+  },
+  "head": "ca62f76dff4e1008fef46bcce1dc7427392d17d8",
+  "exit_code": 1,
+  "source_sha256": "396e9b1873487900b6a286afb4f56cec1dfdc40b30e4472163b15100594a5dc8",
+  "source_after": "396e9b1873487900b6a286afb4f56cec1dfdc40b30e4472163b15100594a5dc8",
+  "source_unchanged": true,
+  "historical_output_sha256": "b06d9b4acd69a2c92e0c31696e503ae59f7cdb171f68e7afd236f1e2cf605cba",
+  "historical_output_after": "b06d9b4acd69a2c92e0c31696e503ae59f7cdb171f68e7afd236f1e2cf605cba",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 67.984
+}
