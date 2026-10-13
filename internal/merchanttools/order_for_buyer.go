@@ -1,11 +1,12 @@
 // Purpose: A15/A16 of live-console-v1 §5 (LC-B6, 幫他建立訂單): the merchant creates the order FOR a buyer who will not click the pushed link,
-// then DMs the pay link. A thin wrapper over the UNCHANGED ManualOrders.Place pipeline: bundle reservation rows (one live order per bundle), the
+// then DMs the pay link. A thin wrapper over ManualOrders.Place and its durable server intent: bundle reservation rows (one live order per bundle), the
 // fail-closed merchant-attested live price (a single-use, quote-bound grant; the Quote stays the only price), an audit trail and an optional
 // order-pay-link/v1 DM. Resumable under the Idempotency-Key: a crash between Place, the reservation record and the DM is completed by a replay
 // with one order and one DM operation. GET order-prefill reads the claim lines and the explicitly linked customer; it never uses owner_id.
 // Depends on: ManualOrders (manual.go: Place, RegenerateLink, Options, hooks), internal/claims (live_price_grant.go: claims.for_buyer_* and
 //   claims.bind_merchant_origin_grant), internal/inbox (PlanOrderPayLink via PayLinkPlanner), internal/customers + internal/merchantorders
 //   (the linked customer's newest order, read-only), internal/command (receipts, audit), internal/platform, internal/storefront (ClaimOrigin),
+//   ops.order_intents (original owner under RLS), fulfillment.order_intent_begin/order_pay_link_valid (0172),
 //   catalog.skus/products and control.stores (read-only, commerce_runtime under RLS).
 // Used by: internal/httpapi/merchanttools.go (routes A15/A16); cmd/api builds it beside the ManualOrders pipeline and the inbox service.
 // Invariants: I05/I08 (no client price: the body has no price key; the live price is decided by claims.live_prices), I03 (stock only through
@@ -20,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/url"
 	"slices"
 	"sort"
 
@@ -143,25 +145,29 @@ func canonicalForBuyer(in ForBuyerInput) forBuyerRequest {
 	return forBuyerRequest{Manual: manual, For: normalizeTarget(in.For), Send: in.SendPaymentLink}
 }
 
-// pickOrigins derives the cart-line origins from the granted bundles' claim lines: per requested SKU the first line (bundle, keyword order) whose
-// offer has a live price and whose claimed quantity and remaining live quantity both cover the requested quantity. A line that does not qualify
+// pickOrigins derives a cart-line origin only when exactly one claim line matches its SKU and covers its quantity.
+// Multiple claim origins cannot be represented by the cart's one-origin-per-SKU shape, so that aggregate stays catalog priced.
+// A line that does not qualify
 // stays at the catalog price (fail closed; carryOrigins would drop it anyway). skipped counts requested SKUs that had a claim line but none
 // qualified. Pure: the Quote, not this, decides the price.
 func pickOrigins(items []ManualItem, lines []claims.ForBuyerLine) (origins map[string]storefront.ClaimOrigin, skipped int) {
 	origins = map[string]storefront.ClaimOrigin{}
 	for _, it := range items {
-		seen := false
+		matches := 0
+		var candidate claims.ForBuyerLine
 		for _, l := range lines {
 			if l.SKUID != it.SKUID {
 				continue
 			}
-			seen = true
-			if l.LivePriceMinor != nil && l.Quantity >= it.Quantity && l.LiveRemaining >= it.Quantity {
-				origins[it.SKUID] = storefront.ClaimOrigin{BundleID: l.BundleID, OfferID: l.OfferID, Quantity: l.Quantity}
+			matches++
+			candidate = l
+			if matches > 1 {
 				break
 			}
 		}
-		if _, ok := origins[it.SKUID]; seen && !ok {
+		if matches == 1 && candidate.LivePriceMinor != nil && candidate.Quantity >= it.Quantity && candidate.LiveRemaining >= it.Quantity {
+			origins[it.SKUID] = storefront.ClaimOrigin{BundleID: candidate.BundleID, OfferID: candidate.OfferID, Quantity: candidate.Quantity}
+		} else if matches > 0 {
 			skipped++
 		}
 	}
@@ -254,9 +260,22 @@ func (f *ForBuyer) Place(ctx context.Context, token, storeID, key string, in For
 	if err != nil {
 		return ForBuyerResult{}, false, err
 	}
-	if out.Send.State == "not_sent" && out.Send.Reason == "link_unavailable" {
+	if out.Send.State == "not_sent" && (out.Send.Reason == "link_unavailable" || out.Send.Reason == "window_closed") {
 		// A competing reminder may have superseded Place's URL before DM planning. Never return that dead token.
 		out.BuyerLink = nil
+	}
+	if out.BuyerLink != nil {
+		// The candidate may predate a competing planner. Only a locked exact-token validity proof permits its response.
+		link, parseErr := url.Parse(*out.BuyerLink)
+		var fragment url.Values
+		if parseErr == nil {
+			fragment, parseErr = url.ParseQuery(link.Fragment)
+		}
+		if parseErr != nil || len(fragment) != 2 || fragment.Get("o") != out.OrderID || fragment.Get("t") == "" {
+			out.BuyerLink = nil
+		} else if valid, proofErr := m.validOrderLink(ctx, token, storeID, out.OrderID, fragment.Get("t")); proofErr != nil || !valid {
+			out.BuyerLink = nil
+		}
 	}
 	// The inner A16 receipt predates DM planning. Recovery must not finalize a partially committed pipeline.
 	if err = f.complete(ctx, token, storeID, key, request, out.OrderID); err != nil {
@@ -272,14 +291,21 @@ func (f *ForBuyer) placeOrder(ctx context.Context, token, storeID, key string, m
 	request any) (ManualResult, string, string, bool, error) {
 	m := f.manual
 	var zero ManualResult
+	_, committed, err := m.committedIntent(ctx, token, storeID, key)
+	if err != nil {
+		return zero, "", "", false, mapForBuyerError(err)
+	}
 	buyerOwner := ""
 	if len(target.BundleIDs) > 0 {
-		// The capability owner of this order (RegisterForTrustedStore is idempotent per token hash; Place registers the same token again).
-		capability, err := m.issuer.RegisterForTrustedStore(ctx, storeID, m.capability("order", storeID, key))
+		// The original intent's private owner is immutable across signing-key rotation and buyer capability expiry.
+		err := platform.WithScope(ctx, m.pool, token, storeID, manualPermission, func(tx pgx.Tx, scope platform.Scope) error {
+			intent, err := readIntent(ctx, tx, scope, key)
+			buyerOwner = intent.Owner
+			return err
+		})
 		if err != nil {
 			return zero, "", "", false, classifyPipeline(ctx, err)
 		}
-		buyerOwner = capability.Scope.OwnerID
 	}
 	keyHash := sha256.Sum256([]byte("order-for-buyer|" + storeID + "|" + key))
 	canonical, err := json.Marshal(request)
@@ -291,6 +317,25 @@ func (f *ForBuyer) placeOrder(ctx context.Context, token, storeID, key string, m
 	var lines []claims.ForBuyerLine
 	err = platform.WithScope(ctx, m.pool, token, storeID, manualPermission, func(tx pgx.Tx, scope platform.Scope) error {
 		var inner error
+		if committed {
+			if len(target.BundleIDs) == 0 {
+				begun.Reason = "no_bundle"
+				return nil
+			}
+			// Calls claims.for_buyer_request (0170): an established Begin resumes only original reservations, never renews grants.
+			pending, lookupErr := claims.RequestForBuyer(ctx, tx, keyHash[:], requestHash[:], buyerOwner)
+			if lookupErr != nil {
+				return lookupErr
+			}
+			if pending == nil {
+				return ErrUnavailable
+			}
+			begun.RequestID = *pending
+			if target.ConversationID == nil {
+				begun.Reason = "no_conversation"
+			}
+			return nil
+		}
 		// Calls claims.for_buyer_begin (0129; live-console-v1 §5.1 3a+3b): reservation rows, fail-closed buyer comparison, grants.
 		if begun, inner = claims.BeginForBuyer(ctx, tx, keyHash[:], requestHash[:], target.ConversationID, target.BundleIDs, buyerOwner); inner != nil {
 			return inner
@@ -314,7 +359,7 @@ func (f *ForBuyer) placeOrder(ctx context.Context, token, storeID, key string, m
 
 	hooks := &pipelineHooks{}
 	skipped := 0
-	if begun.Reason == "" && len(target.BundleIDs) > 0 {
+	if !committed && begun.Reason == "" && len(target.BundleIDs) > 0 {
 		hooks.origins, skipped = pickOrigins(manualIn.Items, lines)
 		hooks.afterQuote = f.bindGrant
 	}
