@@ -133,6 +133,21 @@ func registerMerchantToolsRoutes(mux *http.ServeMux, pool *pgxpool.Pool, manual 
 		}
 		respond(w, status, result)
 	}))
+	mux.HandleFunc("POST "+base+"/orders/manual/recover", cvsRoute(http.MethodPost, true, func(w http.ResponseWriter, r *http.Request) {
+		in, ok := cvsStrictBody[merchanttools.ManualInput](w, r, manualOrderFields, nil)
+		if !ok {
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 14*time.Second)
+		defer cancel()
+		result, err := manual.Recover(ctx, bearerToken(r), r.PathValue("store_id"), r.Header.Get("Idempotency-Key"), in)
+		if err != nil {
+			status, code := toolsClassify(err)
+			respondError(w, status, code)
+			return
+		}
+		respond(w, http.StatusOK, result)
+	}))
 	mux.HandleFunc("POST "+base+"/orders/manual/regenerate-link", cvsRoute(http.MethodPost, true, func(w http.ResponseWriter, r *http.Request) {
 		in, ok := cvsStrictBody[merchanttools.ManualRegenerateInput](w, r, manualRegenerateFields, nil)
 		if !ok {
