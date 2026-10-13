@@ -755,3 +755,42 @@ CI118 GREEN. CI117's required job is RED and is not called a passed run.
 
 Local runtime/formatting remains NOT_RUN. The full native CI115 and external
 CI-DRIFT dependency are still pending; whole-unit status remains **NOT READY**.
+
+### Round-1 targeted acceptance, 2026-10-13 23:52 UTC
+
+Both review fixes have tests-first CI RED → native REAL_PG GREEN evidence.
+The product fix source is `7e06a76dc661ce8f8e673988f6517c3ad253b129`;
+the final notification fixture source is
+`55c401a23a765c829168d95d3067cc59de3b93cc`.
+
+| Finding / invariant | RED | GREEN / exact gate |
+| --- | --- | --- |
+| `4264535427`; cancelled bundle may admit a fresh key/generation while preserving the old terminal receipt; at most one live replacement. | CI116 `38484018646`, job `115593921495`, `cancel-readmission-red-ci116.log`; old admission refused the replacement. | CI117 `38485486491`, job `115598078177`, `cancel-readmission-green-ci117.log:729,736,738,741`: `TestOrderAttemptCancelReadmitFreshCAS` bank-transfer, pickup, COD, expiry and catalogue-only branches; `TestOrderAttemptCancelReadmitLegacyBegin`; `TestOrderAttemptCancelReadmitConcurrentPrincipals`. PASS=3 FAIL=0 SKIP=0, exit 0. |
+| `4264535438`; notification material must match the exact origin/version observed at finish, and retry seals current material. | CI116 `38484018646`, job `115593921556`, `notification-origin-red-ci116.log:735,737`: both drift cases incorrectly COMMITTED. | [CI118 `38486157297`](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38486157297/job/115600579438), job `115600579438`, `notification-green-ci118.log:733,734,735`: real job-insert barrier plus domain definers, `TestOrderAttemptNotificationOriginPin/switch_origin` and `/same_origin_version`, independently decrypted retry ciphertext. |
+| Existing native READY, current refusal, VOID, rollback/replay and actual crypto. | CI117 mixed notification result is retained above; no claim that its job passed. | Same CI118 job: `notification-green-ci118.log:725,740,745,779,782`, full `focused:^TestOrderAttemptNotification`: PASS=13 FAIL=0 SKIP=0, exit 0. Exact global external-job ID set remains unchanged across VOID/replay, plus existing order-scoped absence/receipt/audit/custody assertions. |
+
+CI118's model job `115600578832` and dispatch required job `115601903509`
+also passed. `ci118-final-jobs.json` records the completed run and tested SHA.
+Its source-pinned authoring artifacts in `ci118-authoring/ci-gates/` show
+formatter exit 0, an empty `oa1-gofmt.patch`, and dependency/shard metadata
+identical to committed files. After preserving these artifacts, the temporary
+OA1 CI authoring step was removed; normal required gates and all budgets remain
+unchanged. This evidence-only cleanup does not claim a new whole-source gate.
+
+Posted the two authorized replies with the fix SHA and red/green CI links:
+[4264535427 reply](https://github.com/humaux/live_commerce_architecture_v1/pull/53#discussion_r4265316281)
+and [4264535438 reply](https://github.com/humaux/live_commerce_architecture_v1/pull/53#discussion_r4265316490).
+Neither thread was resolved by the implementer. Exact payloads and API receipts
+are `reply-4264535427*.json` and `reply-4264535438*.json`.
+
+**E3: these two review regressions are complete in the CI-tested environment.**
+This supplemental dispatch does not substitute for PR required Foundation:
+`38476795409` at `54669331` remains
+**BLOCKED(ci-drift-scanner, unit CI-DRIFT-FACTORY)**, exact scanner evidence
+`foundation-review-head-red-ci.log:957,1083,1084` (`cmd/api/buyer.go:92,185,190`,
+71 TOUCHED UNRESOLVED, exit 1). Scanner, baseline and physical-pool probes are
+unchanged. PR54 is still OPEN, merge SHA absent. Full native CI115 job
+`115590604172` is still running against `f079b80a3`; current whole-unit gates
+and independent acceptance remain incomplete, **NOT READY**. Existing
+15-minute same-thread heartbeat monitors those runs/dependency. All local
+tests, builds, formatters and PG runs remain **NOT_RUN (owner CI-only)**.

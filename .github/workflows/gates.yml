@@ -184,22 +184,6 @@ jobs:
           key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-${{ steps.browsers.outputs.cache }}
       - name: Download pinned test image
         run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
-      # Temporary OA1 CI-only authoring receipt, removed after collecting artifacts.
-      # Do not format the tested checkout or replace any ordinary required gate.
-      - name: OA1 formatting and metadata evidence
-        if: ${{ github.event_name == 'workflow_dispatch' && github.ref_name == 'unit/oa-1-order-attempt-core' && matrix.mode == 'focused:^TestOrderAttemptModel' }}
-        run: |
-          mkdir -p output/ci-gates
-          git rev-parse HEAD > output/ci-gates/formatter-source-sha.txt
-          status=0
-          gofmt -d tests/foundation > output/ci-gates/oa1-gofmt.patch || status=$?
-          printf '%s\n' "$status" > output/ci-gates/formatter-exit.txt
-          [[ "$status" -le 1 ]]
-          bash scripts/dev/depmap.sh
-          cp docs/engineering/dependency-map.md output/ci-gates/oa1-dependency-map.md
-          node scripts/dev/shard-plan.mjs --write
-          cp scripts/dev/shard-plan.json output/ci-gates/oa1-shard-plan.json
-          git restore --source=HEAD -- docs/engineering/dependency-map.md scripts/dev/shard-plan.json
       - name: Gate
         run: |
           set -o pipefail
