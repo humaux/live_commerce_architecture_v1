@@ -271,8 +271,14 @@ func TestOrderAttemptBeginFrozenPricesFeesAndOfflineSettings(t *testing.T) {
 			if err:=json.Unmarshal(plan.Facts,&facts); err!=nil { t.Fatal(err) }
 			mustExec(t,e.p.f.owner,`UPDATE catalog.skus SET price_minor=price_minor+123,version=version+1 WHERE id=$1`,e.money)
 			service:=facts.Catalog.Service.Code
-			dsPolicy(t,e.p.cqHarness,e.svcs[service],1,237,true)
-			e.updateService(service,func(in *fulfillment.ServiceInput) { in.PolicyVersion=2; in.Visible=false; in.NameEN="Changed display" })
+			// The base home service lives in bcHarness; svcs contains only added CVS services.
+			in:=e.p.delivery
+			if facts.Catalog.Service.DeliveryKind!="home" { in=e.svcs[service] }
+			if in.Code!=service || in.MarketID!=facts.Catalog.Service.MarketID || in.Country!=facts.Catalog.Service.Country { t.Fatal("native service drift fixture does not match frozen admission") }
+			dsPolicy(t,e.p.cqHarness,in,1,237,true)
+			in.ExpectedVersion=facts.Catalog.Service.Version
+			in.PolicyVersion=2; in.Visible=false; in.NameEN="Changed display"
+			if out,err:=dsSet(e.p.cqHarness,t04Key("oa-begin-service-drift"),in); err!=nil || out.Version!=facts.Catalog.Service.Version+1 { t.Fatalf("native service drift sentinel: %+v %v",out,err) }
 			if mode=="bank_transfer" { mustExec(t,e.p.f.owner,`UPDATE checkout.bank_transfer_settings SET bank_name='Changed synthetic bank',account_number='999000111',window_hours=6,version=version+1 WHERE store_id=$1`,e.store()) }
 			if mode=="cash_on_delivery" { mustExec(t,e.p.f.owner,`UPDATE checkout.cash_on_delivery_settings SET surcharge_twd=99,version=version+1 WHERE store_id=$1`,e.store()) }
 			tx,plain,quote,destination,_,lines:=oaBeginPrepared(t,e,a)
