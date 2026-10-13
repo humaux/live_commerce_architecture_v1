@@ -1,5 +1,60 @@
 # LC-U3 create-order drawer delivery
 
+## PR32 r6 — server intent authority and settled recovery (2026-10-13)
+
+**E1 source assembled; current acceptance PENDING, not READY.** Source head before this delivery update: `5ab4211941449cac0a8cc2f9ee9f2af9a1cfa1ef`. Fetched and merged integration `0bfe36e53acb694f4697521202e24f0790638941` (already an ancestor). All tests, builds, browser modes and gates run on GitHub CI under the owner's 2026-10-13 directive; no local acceptance command was run. Earlier sections are historical receipts and do not accept this new source.
+
+- Implementer Codex-3; runtime model/effort NOT_EXPOSED. Isolated backend/UI/test writers and read-only reviewers used explicit GPT-6.1-sol high/medium where exposed. Main branch/worktree: `unit/lc-u3-create-order-drawer`, `.worktrees/lc-u3-create-order-drawer`. Scope expanded by owner approval to the necessary backend contract and migration repair.
+- Write paths: `apps/admin/components/{CreateOrderDrawer,ManualOrder,ManualOrderItemPicker}.tsx`; `apps/admin/lib/{create-order-attempt,create-order-client,create-order-model,create-order-copy,merchant-tools-client,merchant-tools-model,customers-client}.ts`; `apps/admin/app/api/stores/[store]/tools/[...resource]/route.ts`; `internal/merchanttools/{order_attempt,order_intent,order_intent_recovery,manual_recovery,order_for_buyer,manual}.go`; `internal/httpapi/merchanttools*.go`; `internal/httperror/{error.go,order_intent_test.go}`; `migrations/0172_order_intent_authority.sql`; `contracts/{live-console-v1,storefront-v2}.md`; corresponding `tests/admin/create-order*` / `manual-order-recovery.test.ts`, drawer/manual Go browser fixtures, and foundation intent/prefill/schema/retention/R2 tests; this DELIVERY and `r6-ci/` receipts. Owner `output/ext-agents/**` is preserved. Probe workflow diagnostics exist only on `codex/pr32-*-red` branches and are not merged into this PR.
+- Migration numbers: existing `0171` reminder identity plus new reserved `0172` durable attempt authority. Latest fetched integration max is `0169`; R2's exact migration count now has one explicit comment and increment for each of 0171 and 0172 (`94 → 95 → 96`), without relaxing equality. No dependency or lockfile change.
+- Contracts: live-console-v1 §5.1.2 and storefront-v2 G3 amendment. A new scoped generic recovery BFF/Go seam accepts exactly `{}` and an explicit transport key. Settled intent rows retain original owner/key/hash/order authority after private input erasure. The existing runtime receives narrowly scoped table/column and function grants; SECURITY DEFINER owners, `search_path`, PUBLIC revocation, exact ACL pins and privacy cleanup are retained.
+
+Review changes (source, pending current CI):
+
+| Thread | Root cause and repair |
+|---|---|
+| 4257479294 | Browser flags could not fence another tab/login. Commit one principal/store pending intent before money; reject every other key server-side. Client storage is UX only. |
+| 4257479276 | Begin-only repair depended on the old source window. Original durable owner/Begin proof now permits completion of the frozen pipeline at any age; expiry never revives holds, links or DM. |
+| 4257479307 | Pre-fetch session/CSRF refusal was classified as UNKNOWN. Explicit never-sent classification disarms only a fresh undispatched attempt; earlier UNKNOWN keeps its fence. |
+| 4257479285 / 4256912975 | Unestablished or superseded tokens escaped. Establish exact validity under the order lock; suppress links on window_closed, competing reminders, cancellation and every unestablished path. |
+| 4256890998 | Reminder plans lacked order identity. Prior 0171 exact order/bundle/journal guard remains; no store-wide legacy fallback. |
+| 4257755379 | Copy appeared for link_unavailable. Hide it and show reminder-in-flight; no regeneration can supersede a planned DM link. |
+| 4258064775 | Recovery rederived a private owner after secret rotation. Persist the original owner and recover only against its exact Begin; ambiguous legacy binding stays UNKNOWN. |
+| 4258064767 | Merged duplicate-SKU claim origins silently selected one live price. Preserve quantity while making every ambiguous merged origin catalog-only, with a visible three-locale pre-submit warning; no client pricing. |
+| 4258064753 | Search abort during picker expansion stranded its busy state. Reset the search state at expansion; actual component/client tests operate the controls. |
+| 4258686743 | A lost created recovery response became none. Persist recovery transport-key→original intent before effects; replay terminal state from exact upper/closure proofs. Clients retain that transport key across ambiguity. |
+| 4258686722 | CANCELLED recovered offline results were rejected. Strict null-link CANCELLED parsing and localized terminal rendering disable collection/link/payment controls. |
+| Review summary, email | Explicit linked customer latest-order email was dropped. Read through a narrow definer requiring both orders:read and customers:read; recheck permissions before publishing optional contact. |
+
+Independent source review identified two additional edge cases: waiting for the payment-link/order lock could outlive authority, so the 0172 definers recheck current scope after the wait; a committed mixed-price quote replay lost its catalog warning, so a scoped Boolean helper reads immutable original Quote provenance. Neither current claims nor client calculations reprice it.
+
+CI red evidence (native logs/artifacts; queued runs are not yet proof):
+
+| Run | Source / result |
+|---|---|
+| [38393555698](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38393555698) | Unchanged pre-fix product 05ac4f75: REAL_PG aged partial, cross-session fresh key, secret rotation and stale link targets, PASS0 FAIL4 SKIP0 exit1. |
+| [38396454675](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38396454675) | Actual full-router and origin tests plus UI copy, warning, picker and guard seams fail on unchanged product. Native client import initially failed before preflight assertions; that failure is not preflight proof. |
+| [38398217460](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38398217460) | Corrected probe executes actual client graph: changed/missing CSRF, async rotation and fresh pre-dispatch guards fail natively on unchanged product. Probe-only transform flag permits the old constructor; production test-node stays strip-only. |
+| [38399265598](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38399265598) | Before post-lock recheck: all six true PG wait/revoke cases accept invalid authority; PASS0 FAIL1 SKIP0 exit1, job115303389094. |
+| [38399874208](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38399874208) | Immutable mixed-price warning RED probe at779a8c599; PENDING. |
+| [38401137148](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38401137148) | CANCELLED/native-strip and same-key generic client/UI RED probe atc8038ff84; PENDING. |
+| [38401462373](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38401462373) | Lost real recovery HTTP response and later-intent target pin RED at e72fa444; PENDING. |
+| [38402253004](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38402253004) | Latest linked-customer email and public pending-envelope RED atce9b0fb70, actual owning packages; PENDING. |
+| [38402626357](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38402626357) | Exact typed pending refusal RED with independent reservation fixtures at731f4314b; PENDING. |
+
+CI regression triage at eb5f7e00:
+
+- Foundation38396909571: native strip-types reached ReadError's parameter property. Explicit fields now fix ReadError and both attempt/guard constructors; the suite keeps its original strip-only command.
+- Focused38396904363: PASS2 FAIL2 SKIP0 exit1; real aged partial/window_closed targets passed. Two sealed fixtures incorrectly assumed the seeded store had zero checkout orders. Exact before/after baseline comparisons replace that assumption; no money/stock/DM equality is relaxed. The original focused regex prefixes did not select all authority test names; final focused selection uses their actual names.
+- g10 job115298159472: attempt_pending was missing from the public error table, hence 409 internal. Register the typed code; isolate each reservation crash subtest and use another authorized principal for the original bundle-protection probe, retaining exact bundle_already_ordered/order ID/no-new-order assertions. The crash helper now proves its after-Place hook ran. An added same-principal HTTP case checks the exact durable fence and same-key completion.
+- Card-payments job115298159245, artifact11814201567: admin and derived storefront cases passed; primary desktop en failed loading order detail after View order, before collector assertions. Prior05ac used identical direct card/storefront source and passed. Missing network response trace prevents assigning a precise backend cause or a flake verdict. Raw artifact and log are retained under `r6-ci/card-triage/`; current CI must rerun this mode unchanged.
+
+CI gates: automatic Foundation (test-node, check-gates, package docs and vulnerability scan), full PR-selected Gates including all Go shards and `--browser-manual-order`, `--browser-live-console`, `--browser-inbox`, `--browser-studio-ui`, `--browser-card-payments`, plus every registry-selected browser/click/visual mode. Production Next builds provide TypeScript validation; no local tsc ran. An additional focused order-intent/for-buyer/schema/retention run and unchanged card rerun will be registered on the assembled SHA. Original budgets/assertions remain unchanged. G07/release, production, LIVE, real messages and pre-existing LC-B6 queued-DM-after-cancel changes remain outside scope.
+
+Completion/wake: GitHub run completion and the existing quiet thread heartbeat `pr36-lc-u3` track the current SHA; no new task is created. All outstanding review replies wait for current CI evidence and use the fix SHA; no thread is resolved by this implementer. No READY claim until the current required set is green.
+
+---
+
 ## PR32 r5 — order-scoped queued reminder links (2026-10-13)
 
 **Focused CI acceptance PASS30/30; complete PR required modes PENDING.** Code/test HEAD **`e9f07181`**, tested via pushed **`6490e5fd9d0d1ce21a782b8f3412b3fb23afadf2`**, includes product fix **`d563301ef21f7c09cdaa9a1277fc6f6bb05b4f5d`** and fixture corrections9f96ecf7/e9f07181, based on accepted unit head **`883eb869e378edbc00d5fb0a7c5a858c7b820170`** and its merged integration **`0bfe36e53acb694f4697521202e24f0790638941`**. This section supersedes the r4 store-wide legacy-guard limitation below. Owner's 2026-10-13 rule routes all new tests/builds/browser acceptance to GitHub CI; no local acceptance command has been restarted. This delivery/evidence successor changes no product or test source.
