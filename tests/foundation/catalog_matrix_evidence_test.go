@@ -69,9 +69,9 @@ func TestProductEditorMatrixLedgerEvidenceHistoricalPolicy(t *testing.T) {
 				}
 			}
 			if strings.HasPrefix(tc.mutation, "unindexed-") {
-				extra := filepath.Dir(canonical)+"/unindexed.txt"
+				extra := filepath.Dir(canonical) + "/unindexed.txt"
 				if strings.Contains(tc.mutation, "nested") {
-					extra = filepath.Dir(canonical)+"/nested/unindexed.txt"
+					extra = filepath.Dir(canonical) + "/nested/unindexed.txt"
 				}
 				if err := os.MkdirAll(filepath.Dir(filepath.Join(root, extra)), 0700); err != nil {
 					t.Fatal(err)
@@ -189,8 +189,10 @@ func TestProductEditorMatrixLedgerEvidenceDriftIntegrity(t *testing.T) {
 				}
 				if mutation == "missing-locale" {
 					kept := []productEditorMatrixLedgerRow{}
-					for _, row := range rows { if row.Locale != "en" {
-						kept = append(kept, row) }
+					for _, row := range rows {
+						if row.Locale != "en" {
+							kept = append(kept, row)
+						}
 					}
 					rows = kept
 				}
@@ -628,13 +630,13 @@ func productEditorMatrixEvidenceFixture(t *testing.T) (string, string) {
 	for path := range frozen["source_snapshots"].(map[string]any) {
 		data := productEditorMatrixReadFixture(t, "../..", path)
 		write(path, data)
-		snapshot := filepath.Dir(canonical)+"/frozen/"+path+".source.txt"
+		snapshot := filepath.Dir(canonical) + "/frozen/" + path + ".source.txt"
 		write(snapshot, data)
 		snapshots[path], frozenHashes[path], artifacts[snapshot], blobs[path] = snapshot, hash(data), hash(data), productEditorMatrixGitBlob(data)
 	}
 	frozen["source_files_sha256"], frozen["source_snapshots"], frozen["git_blob_ids"] = frozenHashes, snapshots, blobs
 	frozenData, _ := json.Marshal(frozen)
-	frozenPath := filepath.Dir(canonical)+"/FROZEN-IDENTITIES.json"
+	frozenPath := filepath.Dir(canonical) + "/FROZEN-IDENTITIES.json"
 	write(frozenPath, frozenData)
 	artifacts[frozenPath] = hash(frozenData)
 	manifest["frozen_identity_record_sha256"] = hash(frozenData)
@@ -935,7 +937,7 @@ func TestProductEditorMatrixLedgerEvidenceRunIdentity(t *testing.T) {
 			root, canonical := productEditorMatrixEvidenceFixture(t)
 			gate := "tests/foundation/catalog_matrix_ledger_test.go"
 			productEditorMatrixWriteFixture(t, root, gate, append(productEditorMatrixReadFixture(t, root, gate), '\n'))
-			path := filepath.Dir(canonical)+"/FROZEN-IDENTITIES.json"
+			path := filepath.Dir(canonical) + "/FROZEN-IDENTITIES.json"
 			record := productEditorMatrixJSONFixture(t, root, path)
 			switch mutation {
 			case "frozen-record-missing":
@@ -943,7 +945,7 @@ func TestProductEditorMatrixLedgerEvidenceRunIdentity(t *testing.T) {
 					t.Fatal(err)
 				}
 			case "frozen-record-unindexed":
-				indexPath := filepath.Dir(canonical)+"/ARTIFACTS.json"
+				indexPath := filepath.Dir(canonical) + "/ARTIFACTS.json"
 				index := productEditorMatrixJSONFixture(t, root, indexPath)
 				delete(index["artifacts_sha256"].(map[string]any), path)
 				data, _ := json.Marshal(index)
@@ -968,7 +970,7 @@ func TestProductEditorMatrixLedgerEvidenceRunIdentity(t *testing.T) {
 				// rather than an old metadata digest, must reject these mutations.
 				data, _ := json.Marshal(record)
 				productEditorMatrixRehashFixture(t, root, canonical, path, data)
-				for _, bound := range []string{canonical+"/browser-evidence.json", filepath.Dir(canonical)+"/SOURCE.json"} {
+				for _, bound := range []string{canonical + "/browser-evidence.json", filepath.Dir(canonical) + "/SOURCE.json"} {
 					value := productEditorMatrixJSONFixture(t, root, bound)
 					value["frozen_identity_record_sha256"] = fmt.Sprintf("%x", sha256.Sum256(data))
 					bytes, _ := json.Marshal(value)

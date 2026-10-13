@@ -6,8 +6,8 @@
   "author_provenance": "Explicit parent spawn metadata for NEW review repair author only; original author/root model and effort UNKNOWN",
   "evidence_level": "E1 STATIC SOURCE EDITS ONLY; compile/lint/tests/gates NOT_RUN locally; CI owned by parent",
   "source_files_sha256": {
-    "tests/foundation/catalog_matrix_ledger_test.go": "a14424b393163915296a576fcde497d6fe748002afc1b47ffc950849ec88269c",
-    "tests/foundation/catalog_matrix_evidence_test.go": "cd923b64bcd87a51d736e8cb3bfc0ce9da3057161582b001f633afc2e825052e"
+    "tests/foundation/catalog_matrix_ledger_test.go": "5f3fed0cbadc9efd9b7aa9979f82141ceeb0cfe21558c54009808a194e4f7b15",
+    "tests/foundation/catalog_matrix_evidence_test.go": "f80848fc47016ab53a40b327f1c56954878f5a3401391da7cad16a7c055c4e60"
   },
   "frozen_record_sha256": "afd55e756cbeec4a1787141bd37ac5a562a2187e10b16ba8871674b79289dec7",
   "static_read_whitespace_observations": [
@@ -100,9 +100,15 @@
       "scope": "read lookup only; corrected to historical-evidence; no tests run"
     },
     {
+      "command": "git apply -p0 output/matrix-coverage-v2-evidence/ci-format-38381067824/gofmt-apply.patch",
+      "exit_code": 0,
+      "scope": "file mutation using exact CI patch; no local formatter/check/test"
+    },
+    {
       "command": "local go/node/pnpm/playwright/devserver/PG/gate/formatter",
       "exit_code": "NOT_RUN",
       "scope": "owner CI-only restriction"
     }
-  ]
+  ],
+  "ci_formatter_patch": "output/matrix-coverage-v2-evidence/ci-format-38381067824/receipt.json"
 }

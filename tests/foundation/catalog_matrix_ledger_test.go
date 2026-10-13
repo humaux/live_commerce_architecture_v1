@@ -332,10 +332,10 @@ func validateProductEditorMatrixEvidence(root string) error {
 	evidence := unit + string(dirMatch[1])
 	canonical := evidence + "/browser/"
 	var manifest struct {
-		Tested  string            `json:"tested_source_commit"`
-		Sources map[string]string `json:"source_files_sha256"`
-		FrozenHash string `json:"frozen_identity_record_sha256"`
-		Copies  []struct {
+		Tested     string            `json:"tested_source_commit"`
+		Sources    map[string]string `json:"source_files_sha256"`
+		FrozenHash string            `json:"frozen_identity_record_sha256"`
+		Copies     []struct {
 			Canonical string `json:"canonical"`
 			SHA256    string `json:"sha256"`
 		} `json:"copied_native_bytes"`
@@ -425,9 +425,9 @@ func validateProductEditorMatrixEvidence(root string) error {
 		return err
 	}
 	var source struct {
-		Tested  string            `json:"tested_source_commit"`
-		Sources map[string]string `json:"source_files_sha256"`
-		FrozenHash string `json:"frozen_identity_record_sha256"`
+		Tested     string            `json:"tested_source_commit"`
+		Sources    map[string]string `json:"source_files_sha256"`
+		FrozenHash string            `json:"frozen_identity_record_sha256"`
 	}
 	sourcePath := evidence + "/SOURCE.json"
 	sourceData, err := productEditorMatrixEvidenceRead(root, sourcePath)
@@ -636,20 +636,20 @@ func productEditorMatrixEvidenceSourceRead(root, path string) ([]byte, error) {
 }
 
 type productEditorMatrixFrozenRecord struct {
-	Tested string `json:"tested_source_commit"`
-	Snapshots map[string]string `json:"source_snapshots"`
-	Hashes map[string]string `json:"source_files_sha256"`
-	Blobs map[string]string `json:"git_blob_ids"`
-	Locales map[string]map[string]string `json:"locale_labels"`
-	Tests map[string][]string `json:"test_identities"`
-	Cases []productEditorMatrixLedgerCase `json:"-"`
+	Tested    string                          `json:"tested_source_commit"`
+	Snapshots map[string]string               `json:"source_snapshots"`
+	Hashes    map[string]string               `json:"source_files_sha256"`
+	Blobs     map[string]string               `json:"git_blob_ids"`
+	Locales   map[string]map[string]string    `json:"locale_labels"`
+	Tests     map[string][]string             `json:"test_identities"`
+	Cases     []productEditorMatrixLedgerCase `json:"-"`
 }
 
 // New metadata is derived from the tested Git objects and observed native logs;
 // raw snapshots let validation work without a deep Git checkout or current labels.
 func productEditorMatrixFrozenEvidence(root, evidence, tested, frozenHash string, sources, artifacts map[string]string) (productEditorMatrixFrozenRecord, error) {
 	var record productEditorMatrixFrozenRecord
-	path := evidence+"/FROZEN-IDENTITIES.json"
+	path := evidence + "/FROZEN-IDENTITIES.json"
 	data, err := productEditorMatrixEvidenceRead(root, path)
 	if err != nil {
 		return record, err
