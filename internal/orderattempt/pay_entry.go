@@ -140,6 +140,8 @@ func validPayEntryBinding(b PayEntryBinding) bool {
 }
 
 func payEntryAAD(binding PayEntryBinding, version string, digest [32]byte) ([]byte, error) {
+	// CI-only red calibration: deliberately omit the order binding; restore next.
+	binding.OrderID = ""
 	return json.Marshal(struct {
 		Domain     string          `json:"domain"`
 		KeyVersion string          `json:"key_version"`
