@@ -375,6 +375,12 @@ Columns, in this order (import accepts any column order and ignores extra unknow
 
 #### G3 durable authority amendment (0172, 2026-10-13)
 
+A recovered placement may return `commercial_state: "CANCELLED"` for bank transfer,
+pickup payment or COD, always with `buyer_link: null`. The admin renders this terminal
+state without collection, payment-link copying or payment mutation. Recovery transports
+retain their separate idempotency key and replay the exact original settled order; they
+never clear a created intent to `none` after losing the first response.
+
 The shared manual/A16 authority and exact current-intent HTTP method/body/replies are
 defined once in `live-console-v1.md` §5.1.2. `ops.order_intents` binds the original
 principal/store and immutable key/hash/private owner; `pending|created|sealed` settlement

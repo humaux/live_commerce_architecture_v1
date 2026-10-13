@@ -635,6 +635,10 @@ source/link/audit receipt after 0094's ten-minute source window or options chang
 requires the exact stored owner, Begin receipt and locked order; a `CANCELLED` order gets no
 fresh usable payment link, hold revival or payment side effect. Its scoped order pointer may
 still identify the completed original order.
+Recovered placement results accept `commercial_state: "CANCELLED"` for every offline
+payment mode with `buyer_link: null`; the UI shows a terminal cancelled order and offers
+no collection, link-copy or payment mutation. Existing DM send/cancel behavior is outside
+this amendment and remains owned by LC-B6.
 
 `fulfillment.order_intent_begin` resolves the stored original owner even after derivation
 secret rotation; re-deriving an owner with the current secret is forbidden as recovery proof.

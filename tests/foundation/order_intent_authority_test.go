@@ -357,7 +357,7 @@ func TestOrderIntentAuthoritySchemaPrivacyAndScope(t *testing.T) {
 	if status != 409 || refused["code"] != "attempt_pending" || refused["order_id"] != nil {
 		t.Fatalf("erasure released pending authority for a new key: status=%d code=%v", status, refused["code"])
 	}
-	w := e.admin(e.token()).call("POST", "/orders/attempt/recover", "", "application/json", []byte(`{}`))
+	w := e.admin(e.token()).call("POST", "/orders/attempt/recover", t04Key("intent-erased-recovery"), "application/json", []byte(`{}`))
 	var recovered map[string]any
 	if err := json.Unmarshal(w.Body.Bytes(), &recovered); err != nil {
 		t.Fatal("generic erased-intent recovery returned invalid JSON")
@@ -417,7 +417,7 @@ func TestOrderIntentAuthorityCancelledBeginRecovery(t *testing.T) {
 	if status != 503 || unknown["code"] != "retry_later" || unknown["order_id"] != nil {
 		t.Fatal("Begin alone became definitive before explicit historical completion")
 	}
-	w := e.admin(e.token()).call("POST", "/orders/attempt/recover", "", "application/json", []byte(`{}`))
+	w := e.admin(e.token()).call("POST", "/orders/attempt/recover", t04Key("intent-cancelled-recovery"), "application/json", []byte(`{}`))
 	var recovered map[string]any
 	if err := json.Unmarshal(w.Body.Bytes(), &recovered); err != nil || w.Code != 200 || recovered["state"] != "created" || recovered["order_id"] != original || len(recovered) != 2 {
 		t.Fatalf("generic recovery did not complete the original expired pipeline: status=%d", w.Code)
