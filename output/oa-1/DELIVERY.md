@@ -213,3 +213,19 @@ expiry failures. It retains the existing `expire_held` ABI and exact expiry-only
 EXECUTE grant, takes the shared order advisory first, and carries the admitted
 creator through SYSTEM_EXPIRY release/event rows. Upgrade count becomes 115.
 The next CI run owns the result; source integration is not expiry acceptance.
+
+CI50 `38462169006`, job `115519994332`, at `159de6e18`: **GREEN**
+`PASS=31 FAIL=0 SKIP=0 exit=0` (E3 REAL_PG, scoped). The actual runtime/worker
+READY paths now satisfy the unchanged native transaction-xid guard. Eight
+witnessed backend terminations, complete combined claims/READY control, immutable
+replay, API physical-DB negatives, all native sweep repair/ACL/lock cases and the
+real startup/30-second periodic orphan recovery pass. Exact log:
+`full-c2-sweep-crash-process-ci50.log`.
+
+CI51 `38462734896` at `2a8f3052a` runs expiry compatibility and existing expiry
+regressions. CI52 `38462848122` at `12625d15c` runs the independent model with a
+30-second `testing.F` fuzz campaign, generated metadata evidence, and `shard:unit`
+(including strict keyring loading). These are registered, not yet accepted.
+Root monitors both runs; unchanged workflow bounds. The temporary authoring
+steps produce evidence without changing the source used by ordinary gates and
+will be removed before the PR.
