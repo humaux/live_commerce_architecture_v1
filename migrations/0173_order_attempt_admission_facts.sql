@@ -4,6 +4,8 @@
 -- Used by: commerce_order_attempt_owner admission coordinator in its existing pgx Tx.
 -- Invariants: I01/I02/I08, order-attempt-v1 §§1–2; no browser identity, no caller prices,
 -- no eligibility guesses, no stock writes; every explicit origin survives catalog lookup.
+-- Missing manual origins and entered-store provenance are frozen only in facts;
+-- the original selection/hash remains the transport replay authority.
 
 -- FOR SHARE needs an UPDATE privilege. It is confined to the existing NOLOGIN
 -- domain owner; WITH CHECK(false) prevents using this new privilege for row writes.
@@ -28,11 +30,12 @@ DECLARE
  v_items jsonb; v_item jsonb; v_delivery jsonb; v_customer jsonb; v_for jsonb;
  v_uuid_pattern constant text:='^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
  v_count integer; v_version bigint; v_parents jsonb; v_ordinals integer[]:='{}';
- v_keys text[]:='{}'; v_key text; v_field text; v_value text;
+ v_keys text[]:='{}'; v_key text; v_field text; v_value text; v_code_rx text; v_chains text[];
  v_market record; v_policy record; v_product record; v_sku record;
  v_service record; v_allocation record; v_profile record; v_payment record;
  v_market_json jsonb; v_policy_json jsonb; v_service_json jsonb;
  v_allocation_json jsonb; v_payment_json jsonb; v_lines jsonb; v_warehouses jsonb;
+ v_pickup_json jsonb:='null'::jsonb;
  v_result jsonb; v_home boolean; v_profiled boolean:=false;
 BEGIN
  -- Calls ops.order_attempt_admission_context, §2: exact authenticated candidate,
@@ -86,7 +89,8 @@ BEGIN
   v_ordinals:=array_append(v_ordinals,(v_item->>'ordinal')::integer);
   FOREACH v_field IN ARRAY ARRAY['origin_id','bundle_id','offer_id'] LOOP
    IF v_item ? v_field AND v_item->v_field<>'null'::jsonb AND
-    (jsonb_typeof(v_item->v_field)<>'string' OR coalesce(v_item->>v_field,'') !~ v_uuid_pattern) THEN
+    (jsonb_typeof(v_item->v_field)<>'string' OR coalesce(v_item->>v_field,'') !~ v_uuid_pattern
+     OR (v_field='origin_id' AND v_item->>v_field='00000000-0000-0000-0000-000000000000')) THEN
     RAISE EXCEPTION 'invalid_selection' USING ERRCODE='PT400';
    END IF;
   END LOOP;
@@ -179,7 +183,7 @@ BEGIN
   set_config('app.principal_id','',true),set_config('app.buyer_id',v_owner::text,true),set_config('app.buyer_session_id','',true);
 
  -- Lock order after the coordinator's claims prefix: market -> policy -> products
- -- sorted -> SKUs sorted -> service -> profile -> payment -> allocation. Both C1
+ -- sorted -> SKUs sorted -> service -> profile -> CVS settings -> payment -> allocation. Both C1
  -- and C2 must retain this order; the facts remain locked until the caller commits.
  SELECT id,code,name,currency,version,active INTO v_market FROM pricing.markets
   WHERE tenant_id=v_tenant AND store_id=v_store AND id=v_market_id FOR SHARE;
@@ -223,7 +227,9 @@ BEGIN
   'name',p.name,'description',p.description,'sku_version',s.version,'product_version',p.version,
   'quantity',(i.value->>'quantity')::bigint,'unit_price_minor',s.price_minor,'currency',s.currency,
   'inventory_tracked',s.inventory_tracked,'max_per_order',s.max_per_order,'ordinal',(i.value->>'ordinal')::integer)
-  || jsonb_strip_nulls(jsonb_build_object('origin_id',i.value->>'origin_id','bundle_id',i.value->>'bundle_id',
+  -- A missing manual origin gets its own server UUID once, inside the sealed C1
+  -- facts. Replay reads that plan; it never reruns this helper or edits selection.
+  || jsonb_strip_nulls(jsonb_build_object('origin_id',coalesce(i.value->>'origin_id',gen_random_uuid()::text),'bundle_id',i.value->>'bundle_id',
    'offer_id',i.value->>'offer_id')) ORDER BY (i.value->>'ordinal')::integer) INTO v_lines
   FROM jsonb_array_elements(v_items) i JOIN catalog.skus s ON s.id=(i.value->>'sku_id')::uuid
    AND s.tenant_id=v_tenant AND s.store_id=v_store JOIN catalog.products p
@@ -252,6 +258,29 @@ BEGIN
   v_profiled:=FOUND AND v_profile.qualified_credential_version IS NOT DISTINCT FROM v_profile.credential_version;
   -- This selection carries merchant-entered CVS data, not a provider directory proof.
   IF v_service.mode<>'MANUAL' OR v_profiled THEN RAISE EXCEPTION 'cvs_source_mismatch' USING ERRCODE='PT422'; END IF;
+  -- EnterStore 0073:803-816 applies these safety rules to every payment mode.
+  -- A missing settings row retains its existing all-chains default.
+  SELECT enabled_chains INTO v_chains FROM fulfillment.cvs_store_settings
+   WHERE tenant_id=v_tenant AND store_id=v_store FOR SHARE;
+  IF NOT FOUND THEN v_chains:=ARRAY['cvs_711','cvs_familymart','cvs_hilife','cvs_okmart']; END IF;
+  IF NOT v_service.delivery_kind=ANY(v_chains) THEN
+   RAISE EXCEPTION 'delivery_service_unavailable' USING ERRCODE='PT422';
+  END IF;
+  v_code_rx:=CASE v_service.delivery_kind WHEN 'cvs_711' THEN '^[0-9]{6}$'
+   WHEN 'cvs_familymart' THEN '^[0-9]{6}$' WHEN 'cvs_okmart' THEN '^[0-9]{4}$'
+   ELSE '^[0-9]{3,8}$' END;
+  IF v_delivery->'cvs'->>'store_code' !~ v_code_rx THEN
+   RAISE EXCEPTION 'bad_store_code' USING ERRCODE='PT422';
+  END IF;
+  -- No pickup row or capability is minted at C1. C2 materializes this exact
+  -- attempt-owned entered source, without a directory-verification claim.
+  v_pickup_json:=jsonb_build_object('kind',v_service.delivery_kind,
+   'namespace','attempt.'||(v_context->>'attempt_id'),'code',v_delivery->'cvs'->>'store_code',
+   'version',1,'country',v_country,'name',v_delivery->'cvs'->>'store_name',
+   'address',v_delivery->'cvs'->>'store_address','verification_kind','BUYER_ENTERED',
+   'attested_at',(v_context->>'admitted_at')::timestamptz,
+   'valid_until',(v_context->>'admitted_at')::timestamptz+interval '24 hours',
+   'create_attempt_id',v_context->>'attempt_id','buyer_owner_id',v_owner);
  END IF;
  IF v_mode='bank_transfer' THEN
   SELECT enabled,allow_cvs,window_hours,bank_name,branch,account_name,account_number,version INTO v_payment
@@ -306,7 +335,7 @@ BEGIN
  END IF;
  v_allocation_json:=(to_jsonb(v_allocation)-'warehouse_count')||jsonb_build_object('warehouse_ids',v_warehouses);
  v_result:=jsonb_build_object('market',v_market_json,'policy',v_policy_json,'lines',v_lines,
-  'service',v_service_json,'allocation',v_allocation_json,'payment',v_payment_json);
+  'service',v_service_json,'allocation',v_allocation_json,'payment',v_payment_json,'pickup',v_pickup_json);
  PERFORM set_config('app.tenant_id',v_old_tenant,true),set_config('app.store_id',v_old_store,true),
   set_config('app.principal_id',v_old_principal,true),set_config('app.buyer_id',v_old_buyer,true),set_config('app.buyer_session_id',v_old_session,true);
  RETURN v_result;
