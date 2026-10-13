@@ -52,6 +52,22 @@ its file has no difference from trunk. Trunk root migration maximum remains
 0169; the next root slots must be checked again before the PR. No local gates
 ran during the merge. This does not claim complete C2 or OA-1 acceptance.
 
+Further CI receipts (same assertions; no local execution):
+
+| SHA | CI run / native job | Result |
+| --- | --- | --- |
+| `829c39c0d` | [38450594745](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38450594745), `115480342107` | Causal RED `PASS=2 FAIL=4 SKIP=0 exit=1`: real C1 omitted accepted `line_version`; injected codec mutation removed order from AAD and broke wrong-order binding, independent AES oracle and valid ciphertext assertions. `codec-mutation-origin-version-red-ci.log`. Mutation restored in `41ea35dae`; version fixed in `e2fbab344`. |
+| `e2fbab344` | [38451230174](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38451230174), `115482543388` | GREEN `PASS=6 FAIL=0 SKIP=0 exit=0`: all five codec groups plus actual accepted-origin version. `codec-origin-version-green-ci.log`. |
+| `6b0188e36` | [38450817342](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38450817342), `115481095581` | Causal RED `PASS=0 FAIL=3 SKIP=0 exit=1`: actual runtime/worker C1 and fence succeeded; composite entry absent (42883). `composite-prepare-red-ci.log`. |
+| `1d8506bf8` | [38451519568](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38451519568), `115483469675` | `PASS=3 FAIL=1 SKIP=0 exit=1`: native Begin effects/rollback, forged allocation and exact ACL pass. Frozen-settings home fixture used an empty CVS-map entry and failed before Begin. `begin-first-ci.log`. |
+| `70c9e330f` | [38451701800](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38451701800), `115484125017` | `PASS=6 FAIL=1 SKIP=0 exit=1`: all three actual-login composite prepare groups pass, including native partial-COMMIT rejection and no placement re-gating. Same home fixture failure; not product acceptance for frozen-settings case. `composite-begin-first-ci.log`. |
+
+CI `38452442812` at `153343faa` first exercises the public composite Begin
+stage; CI `38452606460` at `26b1724fd` first exercises native claim completion
+and pay-entry storage. Both were registered on dispatch with the existing
+150-minute workflow bound; the parent reads their terminal logs. No full C2,
+worker/sweeper, notification bridge or OA-1 completion claim is made.
+
 CI is the only execution environment. Local tests/builds/gates/server/PG:
 **NOT_RUN(owner CI-only directive)**. Static source review does not prove C2.
 CI workflow gate timeout is 150 minutes; the parent tracks the run and reads
