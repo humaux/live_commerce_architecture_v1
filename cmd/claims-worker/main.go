@@ -72,6 +72,8 @@ type workerConfig struct {
 	ecpayCfg    ecpay.Config
 	ecpayKeys   *ecpay.Keyring
 	ecpayClient *ecpay.Client
+	// OA1 custody is loaded only when LC_ORDER_ATTEMPT_ENABLED=1.
+	orderAttempt orderAttemptConfig
 }
 
 func (workerConfig) String() string     { return "claimsWorkerConfig{redacted}" }
@@ -105,8 +107,8 @@ func validConsoleAddr(s string) bool {
 // metaPageAppIDPattern is the Meta app id shape (COMMERCE_META_PAGE_APP_ID, §4.2 P3).
 var metaPageAppIDPattern = regexp.MustCompile(`^[0-9]{1,40}$`)
 
-// loadConfig reads only the variables listed in doc.go: never K_actor, the Meta payload keyring or a
-// Stripe variable (the env sentinel test records every name asked for; MCI10 greps this package for them).
+// loadConfig reads only the variables listed in doc.go: never K_actor or a Stripe
+// variable. OA1 notification custody is opt-in and checked before pool startup.
 func loadConfig(getenv func(string) string) (workerConfig, error) {
 	var c workerConfig
 	if getenv == nil {
@@ -209,6 +211,9 @@ func loadConfig(getenv func(string) string) (workerConfig, error) {
 		if c.ecpayClient, err = ecpay.NewClient(env, nil); err != nil {
 			return workerConfig{}, errWorkerConfig
 		}
+	}
+	if c.orderAttempt, err = loadOrderAttemptConfig(getenv); err != nil {
+		return workerConfig{}, errWorkerConfig
 	}
 	return c, nil
 }
@@ -326,6 +331,14 @@ func run(ctx context.Context, getenv func(string) string) error {
 	if prober != nil {
 		river.AddWorker(workers, prober)
 	}
+	periodic := []*river.PeriodicJob{retention.PeriodicJob(), storefrontdomains.PeriodicJob(), metareply.ProbePeriodicJob()}
+	queues := map[string]river.QueueConfig{river.QueueDefault: {MaxWorkers: 4}}
+	if job, err := addOrderAttemptWorkers(c.orderAttempt, workerPool, workers); err != nil {
+		return err
+	} else if job != nil {
+		periodic = append(periodic, job)
+		queues["claims"] = river.QueueConfig{MaxWorkers: 4}
+	}
 	// Default queue of the main river schema: the only queue external_operation_v1 jobs use. A stuck job
 	// (crash mid-dispatch) is rescued after one minute so a reply is not stranded for River's default hour.
 	client, err := river.NewClient(riverpgxv5.New(workerPool), &river.Config{
@@ -333,8 +346,8 @@ func run(ctx context.Context, getenv func(string) string) error {
 		// U08: hourly + on start, unique per hour (retention.JobArgs.InsertOpts); inserted by commerce_claims_worker (IR-4).
 		// R5 store-domains (P0-2): once a minute + on start (storefrontdomains.PeriodicJob).
 		// W1-01B: the meta connection-health sweep every 5 min + on start (metareply.ProbePeriodicJob).
-		PeriodicJobs: []*river.PeriodicJob{retention.PeriodicJob(), storefrontdomains.PeriodicJob(), metareply.ProbePeriodicJob()},
-		Queues:       map[string]river.QueueConfig{river.QueueDefault: {MaxWorkers: 4}},
+		PeriodicJobs: periodic,
+		Queues:       queues,
 		Logger:       slog.New(slog.NewTextHandler(io.Discard, nil)),
 	})
 	if err != nil {
