@@ -1,0 +1,443 @@
+{
+  "task_id": "945871d1-sub-artifact",
+  "parent_task_id": "945871d1-23a6-431f-b460-be41577377ad",
+  "base_commit": "2d9edcab7392cd886af975979f5c551745accfbc",
+  "head_commit": "2d9edcab7392cd886af975979f5c551745accfbc",
+  "role": "independent artifact acceptance auditor",
+  "actual_model": "UNKNOWN runtime variant",
+  "reasoning": "UNKNOWN runtime effort",
+  "worktree": "/Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce",
+  "changed_paths": [
+    "output/playwright/pr28-round4-20261012T175300Z/audit/"
+  ],
+  "summary": "Read-only canonical/native/source integrity and outcome audit; independent DB-free gate. No product or canonical edits.",
+  "evidence_level": "E3 independent deterministic artifact checks and focused Go gate",
+  "verdict": "FIX",
+  "checks": [
+    {
+      "name": "frozen HEAD",
+      "pass": true,
+      "detail": "2d9edcab7392cd886af975979f5c551745accfbc"
+    },
+    {
+      "name": "SOURCE/index/manifest concordance tested_source_commit",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "SOURCE/index/manifest concordance source_files_sha256",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "SOURCE/index/manifest concordance informational_source_files_sha256",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "hard 11 exact frozen paths",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "hard 11 current bytes",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "informational 12 paths only",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "informational current observation",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "every artifact index entry",
+      "pass": true,
+      "detail": {
+        "checked": 64,
+        "mismatches": []
+      }
+    },
+    {
+      "name": "five native copies exact filenames",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "native canonical bytes playwright.log",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "native canonical bytes cc12-playwright.log",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "native canonical bytes product-editor-click-ledger.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "native canonical bytes pe-last-run.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "native canonical bytes cc12-last-run.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "native outcome playwright.log",
+      "pass": true,
+      "detail": {
+        "started": [
+          "12"
+        ],
+        "passed": [
+          "12"
+        ],
+        "case_passes": 12,
+        "bad_summaries": []
+      }
+    },
+    {
+      "name": "native outcome cc12-playwright.log",
+      "pass": true,
+      "detail": {
+        "started": [
+          "2"
+        ],
+        "passed": [
+          "2"
+        ],
+        "case_passes": 2,
+        "bad_summaries": []
+      }
+    },
+    {
+      "name": "explicit last run pe-last-run.json",
+      "pass": true,
+      "detail": {
+        "status": "passed",
+        "failedTests": []
+      }
+    },
+    {
+      "name": "explicit last run cc12-last-run.json",
+      "pass": true,
+      "detail": {
+        "status": "passed",
+        "failedTests": []
+      }
+    },
+    {
+      "name": "231 exact unique required PASS matrix identities",
+      "pass": false,
+      "detail": {
+        "required": 231,
+        "unique": 156,
+        "matrix_rows": 156,
+        "per_locale": {
+          "zh-TW": 52,
+          "zh-CN": 52,
+          "en": 52
+        }
+      }
+    },
+    {
+      "name": "SOURCE manifest ledger recomputation",
+      "pass": false,
+      "detail": {
+        "raw_rows": 286,
+        "required_unique_PASS": 231,
+        "identity_fields": [
+          "page",
+          "locale",
+          "width",
+          "row",
+          "control",
+          "action"
+        ],
+        "per_locale": {
+          "zh-TW": 52,
+          "zh-CN": 52,
+          "en": 52
+        },
+        "width": 390
+      }
+    },
+    {
+      "name": "SOURCE manifest counts",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "completed frozen receipt browser-run",
+      "pass": true,
+      "detail": {
+        "status": "COMPLETED",
+        "exit_code": 0,
+        "argv": [
+          "bash",
+          "scripts/dev/test-local.sh",
+          "--browser-product-editor"
+        ],
+        "source_commit": "2d9edcab7392cd886af975979f5c551745accfbc",
+        "source_unchanged": true,
+        "log_sha256": "f6a9c3e9043e24b010d2eac7e7a80ab296675c1de3f992c764e4a1c1e83e503e"
+      }
+    },
+    {
+      "name": "completed frozen receipt test-node",
+      "pass": true,
+      "detail": {
+        "status": "COMPLETED",
+        "exit_code": 0,
+        "argv": [
+          "bash",
+          "scripts/dev/test-node.sh"
+        ],
+        "source_commit": "2d9edcab7392cd886af975979f5c551745accfbc",
+        "source_unchanged": true,
+        "log_sha256": "3151ed8bc0c2cfc7278e44a07b52aa912ac97b3ec39562abf3313e83af057f7f"
+      }
+    },
+    {
+      "name": "completed frozen receipt typecheck",
+      "pass": true,
+      "detail": {
+        "status": "COMPLETED",
+        "exit_code": 0,
+        "argv": [
+          "pnpm",
+          "typecheck:admin"
+        ],
+        "source_commit": "2d9edcab7392cd886af975979f5c551745accfbc",
+        "source_unchanged": true,
+        "log_sha256": "c00ff4e6ec5ce52c4b0790c7ca968c30b9b2f3478ed09bbca43c9bc416c4c0f5"
+      }
+    },
+    {
+      "name": "completed frozen receipt go-vet",
+      "pass": true,
+      "detail": {
+        "status": "COMPLETED",
+        "exit_code": 0,
+        "argv": [
+          "go",
+          "vet",
+          "-tags",
+          "browser",
+          "./tests/foundation"
+        ],
+        "source_commit": "2d9edcab7392cd886af975979f5c551745accfbc",
+        "source_unchanged": true,
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "name": "completed frozen receipt check-gates",
+      "pass": true,
+      "detail": {
+        "status": "COMPLETED",
+        "exit_code": 0,
+        "argv": [
+          "bash",
+          "scripts/dev/check-gates.sh"
+        ],
+        "source_commit": "2d9edcab7392cd886af975979f5c551745accfbc",
+        "source_unchanged": true,
+        "log_sha256": "7a56ff8b65c521751116666cc2e09155641e170ffe83778b09d83b128848a8c1"
+      }
+    },
+    {
+      "name": "completed frozen receipt go-ledger",
+      "pass": true,
+      "detail": {
+        "status": null,
+        "exit_code": 0,
+        "argv": [
+          "go",
+          "test",
+          "./tests/foundation",
+          "-run",
+          "^TestProductEditorMatrixLedger",
+          "-count=1",
+          "-v"
+        ],
+        "source_commit": "2d9edcab7392cd886af975979f5c551745accfbc",
+        "source_unchanged": true,
+        "log_sha256": "db8185ba9a9b473a3364f70ea20c0c32c8f50c03fa7c49d83b1617264df8c486"
+      }
+    },
+    {
+      "name": "DELIVERY source designation",
+      "pass": false,
+      "detail": null
+    },
+    {
+      "name": "existing waits assertions unchanged tests/admin/product-editor.acceptance.ts",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "existing waits assertions unchanged tests/foundation/browser_catalog_core_test.go",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "independent DB-free Go gate",
+      "pass": true,
+      "detail": {
+        "command": [
+          "go",
+          "test",
+          "./tests/foundation",
+          "-run",
+          "^TestProductEditorMatrixLedgerEvidence($|RunOutcome$)",
+          "-count=1",
+          "-v"
+        ],
+        "exit_code": 0
+      }
+    },
+    {
+      "name": "hard sources unchanged after independent gate",
+      "pass": true,
+      "detail": null
+    }
+  ],
+  "source_before": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "2ad7a08878ddfd3a117bcc869661d58e2ac3e35b27248b3c2ce1b7e51e84cb10",
+    "tests/foundation/browser_catalog_core_test.go": "677c2903574f91f4b61445bb1a743ecd17404a196b92ad72a9e313b56b44ad45",
+    "tests/admin/product-editor.acceptance.ts": "9c2c883ee9677805dccbfcb47d0582984955a7ea9bbb4db3c88ce8f5a0ca37bc",
+    "tests/admin/product-editor-matrix-ledger.ts": "323eee50ca22baf00429bac778473563191e3aae96d43d725b68e2ec5b00e4c6",
+    "tests/foundation/testdata/product_editor_matrix_cases.json": "d07a76d8a5891a227be57d195b505714437dcd17401ab3e848d57c7f79d1022a",
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "fc5869a5c1d986f1efc80ee330f626a849a16828210435170137aa1563546525",
+    "tests/ci/product-editor-matrix-claims.mjs": "86cc2ea894433aefe150d312f02f757c932297d3c2b0c5f01f3a2a956cb50523",
+    "tests/ci/product-editor-matrix-source.mjs": "e6d26feb29c99ea258d9881cb2e44ece1445049497e578ebc778910e5d2569de",
+    "tests/foundation/catalog_matrix_evidence_test.go": "4804ffa0408e3b3ebc9617218db0ad2add593790ffb5bb8b3d128d21c7c1eefc",
+    "tests/ci/product-editor-matrix-execution.mjs": "ce6d0cdb3321abc05639d80851660301ccb77b73f2e9559c634d609b0d1450ee",
+    "tests/ci/product-editor-matrix-execution.test.mjs": "80158c2f645027f191305086259830257d5efbded73ec2165b6b86e0ce2010f8"
+  },
+  "source_after": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "2ad7a08878ddfd3a117bcc869661d58e2ac3e35b27248b3c2ce1b7e51e84cb10",
+    "tests/foundation/browser_catalog_core_test.go": "677c2903574f91f4b61445bb1a743ecd17404a196b92ad72a9e313b56b44ad45",
+    "tests/admin/product-editor.acceptance.ts": "9c2c883ee9677805dccbfcb47d0582984955a7ea9bbb4db3c88ce8f5a0ca37bc",
+    "tests/admin/product-editor-matrix-ledger.ts": "323eee50ca22baf00429bac778473563191e3aae96d43d725b68e2ec5b00e4c6",
+    "tests/foundation/testdata/product_editor_matrix_cases.json": "d07a76d8a5891a227be57d195b505714437dcd17401ab3e848d57c7f79d1022a",
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "fc5869a5c1d986f1efc80ee330f626a849a16828210435170137aa1563546525",
+    "tests/ci/product-editor-matrix-claims.mjs": "86cc2ea894433aefe150d312f02f757c932297d3c2b0c5f01f3a2a956cb50523",
+    "tests/ci/product-editor-matrix-source.mjs": "e6d26feb29c99ea258d9881cb2e44ece1445049497e578ebc778910e5d2569de",
+    "tests/foundation/catalog_matrix_evidence_test.go": "4804ffa0408e3b3ebc9617218db0ad2add593790ffb5bb8b3d128d21c7c1eefc",
+    "tests/ci/product-editor-matrix-execution.mjs": "ce6d0cdb3321abc05639d80851660301ccb77b73f2e9559c634d609b0d1450ee",
+    "tests/ci/product-editor-matrix-execution.test.mjs": "80158c2f645027f191305086259830257d5efbded73ec2165b6b86e0ce2010f8"
+  },
+  "receipts": {
+    "browser-run": {
+      "status": "COMPLETED",
+      "exit_code": 0,
+      "argv": [
+        "bash",
+        "scripts/dev/test-local.sh",
+        "--browser-product-editor"
+      ],
+      "source_commit": "2d9edcab7392cd886af975979f5c551745accfbc",
+      "source_unchanged": true,
+      "log_sha256": "f6a9c3e9043e24b010d2eac7e7a80ab296675c1de3f992c764e4a1c1e83e503e"
+    },
+    "test-node": {
+      "status": "COMPLETED",
+      "exit_code": 0,
+      "argv": [
+        "bash",
+        "scripts/dev/test-node.sh"
+      ],
+      "source_commit": "2d9edcab7392cd886af975979f5c551745accfbc",
+      "source_unchanged": true,
+      "log_sha256": "3151ed8bc0c2cfc7278e44a07b52aa912ac97b3ec39562abf3313e83af057f7f"
+    },
+    "typecheck": {
+      "status": "COMPLETED",
+      "exit_code": 0,
+      "argv": [
+        "pnpm",
+        "typecheck:admin"
+      ],
+      "source_commit": "2d9edcab7392cd886af975979f5c551745accfbc",
+      "source_unchanged": true,
+      "log_sha256": "c00ff4e6ec5ce52c4b0790c7ca968c30b9b2f3478ed09bbca43c9bc416c4c0f5"
+    },
+    "go-vet": {
+      "status": "COMPLETED",
+      "exit_code": 0,
+      "argv": [
+        "go",
+        "vet",
+        "-tags",
+        "browser",
+        "./tests/foundation"
+      ],
+      "source_commit": "2d9edcab7392cd886af975979f5c551745accfbc",
+      "source_unchanged": true,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "check-gates": {
+      "status": "COMPLETED",
+      "exit_code": 0,
+      "argv": [
+        "bash",
+        "scripts/dev/check-gates.sh"
+      ],
+      "source_commit": "2d9edcab7392cd886af975979f5c551745accfbc",
+      "source_unchanged": true,
+      "log_sha256": "7a56ff8b65c521751116666cc2e09155641e170ffe83778b09d83b128848a8c1"
+    },
+    "go-ledger": {
+      "status": null,
+      "exit_code": 0,
+      "argv": [
+        "go",
+        "test",
+        "./tests/foundation",
+        "-run",
+        "^TestProductEditorMatrixLedger",
+        "-count=1",
+        "-v"
+      ],
+      "source_commit": "2d9edcab7392cd886af975979f5c551745accfbc",
+      "source_unchanged": true,
+      "log_sha256": "db8185ba9a9b473a3364f70ea20c0c32c8f50c03fa7c49d83b1617264df8c486"
+    }
+  },
+  "actual_command": [
+    "go",
+    "test",
+    "./tests/foundation",
+    "-run",
+    "^TestProductEditorMatrixLedgerEvidence($|RunOutcome$)",
+    "-count=1",
+    "-v"
+  ],
+  "exit_code": 0,
+  "started_at": "2026-10-12T18:03:50.279120+00:00",
+  "elapsed_seconds": 4.096,
+  "go_log_sha256": "2d98a7b7d06c37eff0134dde859a6eaf1884902d9817534f133aabf55f8e4c18",
+  "limitations": [
+    "No browser/PG/provider/CI rerun; native browser receipts verified only.",
+    "No Claude/K3/CI approval claimed.",
+    "Shared 12 hashes informational, not hardened checkout acceptance.",
+    "Scope does not close existing documented followups."
+  ],
+  "unresolved": [
+    "231 exact unique required PASS matrix identities",
+    "SOURCE manifest ledger recomputation",
+    "DELIVERY source designation"
+  ]
+}

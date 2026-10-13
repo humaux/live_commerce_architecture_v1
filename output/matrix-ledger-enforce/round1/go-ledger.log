@@ -1,0 +1,78 @@
+=== RUN   TestT04DuplicateLedgerConflictHasNoBalanceSideEffect
+    catalog_inventory_test.go:368: LC_TEST_DATABASE_ALLOWED=1 is required; real-PG foundation test NOT_RUN
+--- SKIP: TestT04DuplicateLedgerConflictHasNoBalanceSideEffect (0.00s)
+=== RUN   TestCatalogLedgerProjectionPaginationAndBalanceTruth
+    catalog_ledger_test.go:35: LC_TEST_DATABASE_ALLOWED=1 is required; real-PG foundation test NOT_RUN
+--- SKIP: TestCatalogLedgerProjectionPaginationAndBalanceTruth (0.00s)
+=== RUN   TestCatalogLedgerSearchTreatsPercentAndUnderscoreLiterally
+    catalog_ledger_test.go:115: LC_TEST_DATABASE_ALLOWED=1 is required; real-PG foundation test NOT_RUN
+--- SKIP: TestCatalogLedgerSearchTreatsPercentAndUnderscoreLiterally (0.00s)
+=== RUN   TestCatalogLedgerCursorBindsWarehouseAndFilters
+    catalog_ledger_test.go:140: LC_TEST_DATABASE_ALLOWED=1 is required; real-PG foundation test NOT_RUN
+--- SKIP: TestCatalogLedgerCursorBindsWarehouseAndFilters (0.00s)
+=== RUN   TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix
+    catalog_ledger_test.go:212: LC_TEST_DATABASE_ALLOWED=1 is required; real-PG foundation test NOT_RUN
+--- SKIP: TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix (0.00s)
+=== RUN   TestProductEditorMatrixLedger
+=== RUN   TestProductEditorMatrixLedger/missing-expected
+=== RUN   TestProductEditorMatrixLedger/altered-expected
+=== RUN   TestProductEditorMatrixLedger/empty-expected
+=== RUN   TestProductEditorMatrixLedger/null-expected
+=== RUN   TestProductEditorMatrixLedger/wrong-type-expected
+=== RUN   TestProductEditorMatrixLedger/missing-matrix-click
+=== RUN   TestProductEditorMatrixLedger/missing-axis-remove
+=== RUN   TestProductEditorMatrixLedger/failed-row
+=== RUN   TestProductEditorMatrixLedger/missing-PASS
+=== RUN   TestProductEditorMatrixLedger/PASS-prefix-is-not-PASS
+=== RUN   TestProductEditorMatrixLedger/duplicate
+=== RUN   TestProductEditorMatrixLedger/unexpected-extra-control
+=== RUN   TestProductEditorMatrixLedger/wrong-locale
+=== RUN   TestProductEditorMatrixLedger/wrong-width
+=== RUN   TestProductEditorMatrixLedger/wrong-action
+=== RUN   TestProductEditorMatrixLedger/wrong-top-level-row
+=== RUN   TestProductEditorMatrixLedger/unknown-target-page
+=== RUN   TestProductEditorMatrixLedger/empty
+=== RUN   TestProductEditorMatrixLedger/null
+=== RUN   TestProductEditorMatrixLedger/invalid-json
+=== RUN   TestProductEditorMatrixLedger/object-instead-of-ledger
+--- PASS: TestProductEditorMatrixLedger (0.02s)
+    --- PASS: TestProductEditorMatrixLedger/missing-expected (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/altered-expected (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/empty-expected (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/null-expected (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/wrong-type-expected (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/missing-matrix-click (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/missing-axis-remove (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/failed-row (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/missing-PASS (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/PASS-prefix-is-not-PASS (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/duplicate (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/unexpected-extra-control (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/wrong-locale (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/wrong-width (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/wrong-action (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/wrong-top-level-row (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/unknown-target-page (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/empty (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/null (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/invalid-json (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/object-instead-of-ledger (0.00s)
+=== RUN   TestProductEditorMatrixLedgerEvidence
+--- PASS: TestProductEditorMatrixLedgerEvidence (0.00s)
+=== RUN   TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger
+    expiry_runtime_test.go:305: LC_TEST_DATABASE_ALLOWED=1 is required; real-PG foundation test NOT_RUN
+--- SKIP: TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger (0.00s)
+=== RUN   TestHomeCodReviewLedgerGuard
+    payment_start_test.go:60: LC_TEST_DATABASE_ALLOWED=1 is required; real-PG foundation test NOT_RUN
+--- SKIP: TestHomeCodReviewLedgerGuard (0.00s)
+=== RUN   TestLegacyRuntimeIsolationUpgradeRejectsTamperedLedger
+    legacy_runtime_upgrade_test.go:871: LC_TEST_DATABASE_ALLOWED=1 is required; real-PG foundation test NOT_RUN
+--- SKIP: TestLegacyRuntimeIsolationUpgradeRejectsTamperedLedger (0.00s)
+=== RUN   TestLiveToolsGateConsumptionLedgerACL
+    payment_start_test.go:60: LC_TEST_DATABASE_ALLOWED=1 is required; real-PG foundation test NOT_RUN
+--- SKIP: TestLiveToolsGateConsumptionLedgerACL (0.00s)
+=== RUN   TestT04MigrationRejectsNewerDatabaseLedger
+    t04_review_regressions_test.go:171: LC_TEST_DATABASE_ALLOWED=1 is required; real-PG foundation test NOT_RUN
+--- SKIP: TestT04MigrationRejectsNewerDatabaseLedger (0.00s)
+PASS
+ok  	livecommerce/tests/foundation	1.855s

@@ -1,0 +1,7 @@
+{
+  "command": "GOTOOLCHAIN=go1.27.2 go test -run ^TestProductEditorMatrixLedger$ -count=1 -v ./tests/foundation",
+  "exit": 1,
+  "classification": "TDD characterization seam preserves previous absence of ledger policy (return nil), not unchanged-browser-run claim",
+  "source_sha256": "e593d52448af57ca6d72d4f15147925b5ce490a8838c2fec9e7701d6c7855d47",
+  "fixture_sha256": "25b3e4be6f0d7f421f7fe26dde35bc5274798459d500180ee05d29f46d2e9b59"
+}

@@ -1,0 +1,5 @@
+{
+  "canonical_manifest": "output/matrix-ledger-enforce/browser/browser-evidence.json",
+  "tested_source_commit": "25bb988fff059217ab731ab922b05ca49ab4e5d7",
+  "prior_run": "historical round1 before PR23, superseded by round2"
+}

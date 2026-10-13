@@ -15,6 +15,9 @@
 # Usage: bash scripts/dev/check-gates.sh   (exit 1 on any finding)
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
+# Receipt filename references are not execution: bind the matrix Node argv and
+# real CI foundation selector forwarding independently of informational hashes.
+node tests/ci/product-editor-matrix-execution.mjs
 # PS1: changing platform domains must be configuration-only. Include all UI/legal
 # source files, never build output, documentation examples, or test fixtures.
 # git grep (always present here, unlike rg) over tracked files only: build output and node_modules are never tracked.

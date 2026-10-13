@@ -1,0 +1,47 @@
+{
+  "full_forensic_staging": {
+    "argv": [
+      "git",
+      "diff",
+      "--cached",
+      "--check"
+    ],
+    "exit_code": 2,
+    "log": "output/matrix-ledger-enforce/round3-canonical/staged-whitespace.log",
+    "note": "Raw producer whitespace is preserved for forensic snapshots/logs. This ancillary diagnostic does not alter or bypass any project gate."
+  },
+  "non_forensic_staging": {
+    "argv": [
+      "git",
+      "diff",
+      "--cached",
+      "--check",
+      "--",
+      "output/matrix-ledger-enforce/DELIVERY.md",
+      "output/matrix-ledger-enforce/round3-canonical/AUDIT.md",
+      "output/matrix-ledger-enforce/round3-canonical/SOURCE.json",
+      "output/matrix-ledger-enforce/round3-canonical/archived-iteration-red.json",
+      "output/matrix-ledger-enforce/round3-canonical/browser-run.json",
+      "output/matrix-ledger-enforce/round3-canonical/browser/browser-evidence.json",
+      "output/matrix-ledger-enforce/round3-canonical/browser/cc12-last-run.json",
+      "output/matrix-ledger-enforce/round3-canonical/browser/pe-last-run.json",
+      "output/matrix-ledger-enforce/round3-canonical/browser/product-editor-click-ledger.json",
+      "output/matrix-ledger-enforce/round3-canonical/final-mutations.json",
+      "output/matrix-ledger-enforce/round3-canonical/initial-red-tests.json",
+      "output/matrix-ledger-enforce/round3-canonical/local-gates.json",
+      "output/matrix-ledger-enforce/round3-canonical/pre-freeze-local-gates.json",
+      "output/matrix-ledger-enforce/round3-canonical/red-tests.json",
+      "output/matrix-ledger-enforce/round3-canonical/resume-red.json"
+    ],
+    "exit_code": 0
+  },
+  "source_commit_diff": {
+    "argv": [
+      "git",
+      "diff",
+      "--check",
+      "7f02bbea341646c0fd495b6a31611c3bc5420982..05c2af77a6f90cef0fc797520b2f6361d1635527"
+    ],
+    "exit_code": 0
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "task_id": "945871d1-sub-artifact",
+  "base_commit": "2d9edcab7392cd886af975979f5c551745accfbc",
+  "verdict": "PASS",
+  "commands": [
+    {
+      "command": "python3 output/playwright/pr28-round4-20261012T175300Z/audit/independent-audit.py",
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "go",
+        "test",
+        "./tests/foundation",
+        "-run",
+        "^TestProductEditorMatrixLedgerEvidence($|RunOutcome$)",
+        "-count=1",
+        "-v"
+      ],
+      "exit_code": 0,
+      "timeout_seconds": 120
+    }
+  ],
+  "audit_sha256": "957f645d2d285830cb8dff53e43311a06da35e576e0b74148a5be4275cfe41a3",
+  "evidence": [
+    "audit.json",
+    "go-evidence.log",
+    "independent-audit.py",
+    "initial-audit-harness-errors.json",
+    "second-audit-harness-errors.json"
+  ]
+}

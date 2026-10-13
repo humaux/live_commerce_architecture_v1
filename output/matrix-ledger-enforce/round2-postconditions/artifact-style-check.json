@@ -1,0 +1,28 @@
+{
+  "commands": [
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--cached",
+        "--check"
+      ],
+      "exit_code": 2,
+      "findings": 539,
+      "classification": "Only hash-preserved native raw logs and injected forensic source snapshot whitespace."
+    },
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--cached",
+        "--check",
+        "--",
+        ":!*.log",
+        ":!*.source.txt"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "checked_at": "2026-10-12T09:16:54.598808+00:00"
+}

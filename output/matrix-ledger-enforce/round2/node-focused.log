@@ -1,0 +1,31 @@
+✔ real Playwright ESM consumer collects the product-editor cases (903.989042ms)
+✔ every actual mobile control operation is enclosed by its recording callback (58.115875ms)
+✔ a literal locator swap cannot certify the original declared control (33.037542ms)
+✔ a lexical alias locator swap cannot certify the original declared control (32.328542ms)
+✔ a field factory locator swap cannot certify the original declared control (30.41975ms)
+✔ a row coordinate locator swap cannot certify the original declared control (25.36875ms)
+✔ a role label locator swap cannot certify the original declared control (26.849708ms)
+✔ a CSS ancestor locator swap cannot certify the original declared control (25.825541ms)
+✔ a unknown dynamic locator swap cannot certify the original declared control (10.908041ms)
+✔ lexical shadowing and mutable field reassignment fail closed (40.171708ms)
+✔ native confirmation cannot substitute its receiver (25.622917ms)
+✔ native confirmation cannot substitute its method (22.697667ms)
+✔ Escape cannot certify another key on the same receiver (25.236ms)
+✔ a new bare click is rejected without running a browser (17.867792ms)
+✔ a different control cannot borrow an existing action's recording callback (35.138541ms)
+✔ a direct ledger push cannot bypass canonical recording (25.193458ms)
+✔ removing the recording wrapper rejects the enclosed real action (21.510584ms)
+✔ shared table has only complete meaningful unique declarations (0.191125ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (zh-TW) (0.718625ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (zh-CN) (0.332583ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (en) (0.291583ms)
+✔ failed assertion and missing observation cannot emit a PASS or satisfy completeness (0.148333ms)
+✔ in-flight action cannot masquerade as complete or admit a concurrent duplicate (0.29ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1573.43225

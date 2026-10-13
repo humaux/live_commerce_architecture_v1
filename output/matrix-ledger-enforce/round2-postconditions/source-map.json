@@ -1,0 +1,100 @@
+{
+  "source": "tests/ci/product-editor-matrix-ledger.test.mjs",
+  "symbols": [
+    {
+      "name": "changePostcondition",
+      "line": 61
+    },
+    {
+      "name": "swapLocator",
+      "line": 84
+    },
+    {
+      "name": "swapAlias",
+      "line": 91
+    },
+    {
+      "name": "swapField",
+      "line": 95
+    },
+    {
+      "name": "swapRow",
+      "line": 99
+    },
+    {
+      "name": "swapRole",
+      "line": 103
+    },
+    {
+      "name": "swapScope",
+      "line": 108
+    },
+    {
+      "name": "unknownLocator",
+      "line": 112
+    },
+    {
+      "name": "swapNative",
+      "line": 115
+    },
+    {
+      "name": "swapPressKey",
+      "line": 120
+    },
+    {
+      "name": "extraControl",
+      "line": 126
+    },
+    {
+      "name": "visit",
+      "line": 129
+    },
+    {
+      "name": "uncoveredActions",
+      "line": 140
+    },
+    {
+      "name": "recordingCallback",
+      "line": 147
+    },
+    {
+      "name": "visit",
+      "line": 155
+    },
+    {
+      "name": "locatorIdentities",
+      "line": 180
+    },
+    {
+      "name": "pure",
+      "line": 193
+    },
+    {
+      "name": "need",
+      "line": 222
+    },
+    {
+      "name": "parentStep",
+      "line": 238
+    },
+    {
+      "name": "emit",
+      "line": 311
+    },
+    {
+      "name": "emitStep",
+      "line": 355
+    },
+    {
+      "name": "assertLocatorIdentity",
+      "line": 417
+    },
+    {
+      "name": "loadTS",
+      "line": 545
+    }
+  ],
+  "humaux_index": "2 files submitted; status reports1 file15entities; MJS symbol not returned by code_search, so this actual AST map preserves exact names/lines",
+  "linked_ui_entity": "registerProductEditorAcceptance",
+  "memory_id": "c4a0c044-c725-4520-ba43-460cfe54d2a6"
+}

@@ -1,0 +1,22 @@
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption/playwright-log
+    catalog_matrix_ledger_test.go:500: rejected playwright-log: SHA-256 mismatch for canonical evidence/source output/matrix-ledger-enforce/fixture/browser/playwright.log
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption/cc12-log
+    catalog_matrix_ledger_test.go:500: rejected cc12-log: SHA-256 mismatch for canonical evidence/source output/matrix-ledger-enforce/fixture/browser/cc12-playwright.log
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption/ledger
+    catalog_matrix_ledger_test.go:500: rejected ledger: SHA-256 mismatch for canonical evidence/source output/matrix-ledger-enforce/fixture/browser/product-editor-click-ledger.json
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption/manifest
+    catalog_matrix_ledger_test.go:500: rejected manifest: SHA-256 mismatch for canonical evidence/source output/matrix-ledger-enforce/fixture/browser/browser-evidence.json
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption/source
+    catalog_matrix_ledger_test.go:500: rejected source: SHA-256 mismatch for canonical evidence/source tests/admin/product-editor.acceptance.ts
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption/gate-source
+    catalog_matrix_ledger_test.go:500: rejected gate-source: SHA-256 mismatch for canonical evidence/source tests/foundation/catalog_matrix_ledger_test.go
+--- PASS: TestProductEditorMatrixLedgerEvidenceCorruption (0.14s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceCorruption/playwright-log (0.04s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceCorruption/cc12-log (0.02s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceCorruption/ledger (0.02s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceCorruption/manifest (0.02s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceCorruption/source (0.02s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceCorruption/gate-source (0.02s)
+PASS
+ok  	livecommerce/tests/foundation	0.849s

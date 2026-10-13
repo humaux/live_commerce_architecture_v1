@@ -1,0 +1,14 @@
+{
+  "argv": [
+    "node",
+    "--test",
+    "--test-name-pattern=every actual mobile",
+    "tests/ci/product-editor-matrix-ledger.test.mjs"
+  ],
+  "env": {
+    "LC_MATRIX_ACTION_MUTATION": "removed-postcondition"
+  },
+  "exit_code": 1,
+  "log": "output/matrix-ledger-enforce/round2-postconditions/injected-copy.log",
+  "log_sha256": "b533874e66f9f25d67ce73a2d530bdd57c1ecdf95c3a2844fdbe7f7bb90fee97"
+}

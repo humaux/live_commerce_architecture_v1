@@ -1,0 +1,16 @@
+{
+  "argv": [
+    "node",
+    "--test",
+    "--test-name-pattern=canonical expected claim rejects (reading the first|an immutable)",
+    "tests/ci/product-editor-matrix-ledger.test.mjs"
+  ],
+  "exit_code": 1,
+  "elapsed_seconds": 1.8277380466461182,
+  "source_sha256": {
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "e048ce87b9eb28eb18256c4d9807aa9be772b603a209bfd17a0ff852b6ce01fa",
+    "tests/ci/product-editor-matrix-claims.mjs": "a9814f68bb88d139155daf5e5addfe45448b135a63f263f8ba9dfdf5d7010726",
+    "tests/ci/product-editor-matrix-source.mjs": "8eaa6220a1513889cbd3ebfa2f1be2aeddbdc1adc8c313c8458a3a86052c23d6",
+    "tests/foundation/testdata/product_editor_matrix_cases.json": "a196e62ce6aa894db3d76bd3aa59a7e73dd48c514f9bad92603b25891c52555e"
+  }
+}

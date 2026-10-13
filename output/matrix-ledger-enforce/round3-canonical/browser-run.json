@@ -1,0 +1,45 @@
+{
+  "source_commit": "05c2af77a6f90cef0fc797520b2f6361d1635527",
+  "source_hashes": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "a3be2d3102f59cc6888389ff5b157558507a7bb89c4ac78003193d11da128a37",
+    "tests/foundation/browser_catalog_core_test.go": "677c2903574f91f4b61445bb1a743ecd17404a196b92ad72a9e313b56b44ad45",
+    "tests/admin/product-editor.acceptance.ts": "9c2c883ee9677805dccbfcb47d0582984955a7ea9bbb4db3c88ce8f5a0ca37bc",
+    "tests/admin/product-editor-matrix-ledger.ts": "323eee50ca22baf00429bac778473563191e3aae96d43d725b68e2ec5b00e4c6",
+    "tests/foundation/testdata/product_editor_matrix_cases.json": "d07a76d8a5891a227be57d195b505714437dcd17401ab3e848d57c7f79d1022a",
+    "tests/foundation/testdata/product_editor_mobile_matrix_ledger.json": "c3af74c89f8d9ea8b30299a3a5281eb0a3b41b8d47892f1a235e0affbf9dcc23",
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "310b363d1725993750106ef697c7f4264390a9faf7d8aab9589e6590320980ff",
+    "scripts/dev/test-node.sh": "72fcdb5577fe6b03c2771d25d560e1b59aa80856c78546ac85ccca1315d37685",
+    "docs/delivery/GATES.md": "3dae1ad0232209cba6ba322f813202b33c4a09a67f4434826e14bdc9afe59065",
+    "scripts/dev/test-local.sh": "540a8988d91990c2f189d12323d870e0e467951d70969e03efafa29366868a8e",
+    "playwright.config.ts": "11b84b5c5557d671c17dea8859a7d7d450f43fec134b27318b61c3923d01eb4a",
+    "apps/admin/lib/product-editor-copy.ts": "aff626c4a8a8a8c889ef5c4bfeeb77d5359df7a8692bc83f3162bae4d3aa0cc2",
+    "apps/admin/components/ProductDocumentVariants.tsx": "1ec1bf7b57e7a76ea10fee10620eebbd7b0e34b687d8b427b20fb5c20d6386a6",
+    "apps/admin/components/ProductDocumentForm.tsx": "a12b7e0172e5b145d3bf9ee3d0b92bdec98b88c9a1f06cdd09c1c170beb2b255",
+    "apps/admin/lib/use-product-document.ts": "98c13f78bc07bc00dcbfabfb52e8a25160556837a8a26440380064441e0fda93",
+    "apps/admin/lib/product-document.ts": "26287b066b2d1168e140c02cc35e51c265c65008deea519bcb398b008355fb78",
+    "tests/ci/product-editor-matrix-claims.mjs": "2ac67c3f99524e38e8bf448434f6cfa67e41f8fa28dbf55c37b4ff7a0b11c7a4",
+    "tests/ci/product-editor-matrix-source.mjs": "e6d26feb29c99ea258d9881cb2e44ece1445049497e578ebc778910e5d2569de"
+  },
+  "argv": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-product-editor"
+  ],
+  "env": {
+    "LC_BROWSER_EVIDENCE_ROOT": "output/playwright/pr28-canonical-20261012T142112Z",
+    "LC_TEST_LOCK_WAIT": "1800",
+    "LC_BROWSER_ENGINE": "chromium"
+  },
+  "env_resolution": "Evidence root represented worktree-relative; runner passes root.resolve() with this worktree cwd.",
+  "evidence_root": "output/playwright/pr28-canonical-20261012T142112Z",
+  "runner_pid": 41161,
+  "timeout_seconds": 2700,
+  "log": "output/matrix-ledger-enforce/round3-canonical/browser-product-editor.log",
+  "started_at_utc": "2026-10-12T14:21:12.228363+00:00",
+  "status": "COMPLETED",
+  "pid": 41180,
+  "exit_code": 0,
+  "elapsed_seconds": 181.158,
+  "ended_at_utc": "2026-10-12T14:24:13.393533+00:00",
+  "log_sha256": "c1c6cf8852bba2687c6ad91bccdcf97a493bc9ef64e50a6f4f861bc98bc3952f"
+}

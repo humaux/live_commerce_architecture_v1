@@ -1,0 +1,17 @@
+✔ actual rendered bulk controls have matching real actions in the canonical table (2.049917ms)
+✔ removing the Apply declaration is RED even when table and ledger agree (1.172459ms)
+✔ a new rendered control without a case is RED (0.855042ms)
+✔ Escape alone is not a select action (0.82325ms)
+✔ changing the production identity is RED (1.17675ms)
+✔ real recorder admits the actual rendered bulk inventory in all three locales (0.625167ms)
+✔ real recorder refuses an undeclared or anonymous production control and duplicates (0.374875ms)
+✔ actual DOM inventory is bound to the real imported recorder method (18.598917ms)
+✔ a swapped method or no-op shadow cannot donate a DOM inventory assertion (29.802583ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 322.924792

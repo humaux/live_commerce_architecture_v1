@@ -1,0 +1,23 @@
+{
+  "tested_source_commit": "25bb988fff059217ab731ab922b05ca49ab4e5d7",
+  "argv": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-product-editor"
+  ],
+  "command": "LC_TEST_LOCK_WAIT=300 LC_BROWSER_ENGINE=chromium LC_BROWSER_EVIDENCE_ROOT=\"$PWD/output/playwright/pr28-r2-20261009T172203\" bash scripts/dev/test-local.sh --browser-product-editor",
+  "environment": {
+    "LC_TEST_LOCK_WAIT": "300",
+    "LC_BROWSER_ENGINE": "chromium",
+    "LC_BROWSER_EVIDENCE_ROOT": "output/playwright/pr28-r2-20261009T172203"
+  },
+  "timeout_seconds": 2400,
+  "started_utc": "2026-10-09T17:22:03.331562+00:00",
+  "log": "output/matrix-ledger-enforce/round2/browser-product-editor.log",
+  "failure_match": "FAIL|Error:|Timeout|ledger rejected",
+  "wake": "exec session completion; poll at <=60s",
+  "pid": 50291,
+  "exit": 0,
+  "ended_utc": "2026-10-09T17:23:53.480618+00:00",
+  "log_sha256": "88376081a6b008eb2673a29ad3d80899b981836c9fec451463ba44667308c6bf"
+}

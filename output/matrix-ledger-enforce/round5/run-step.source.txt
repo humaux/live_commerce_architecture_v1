@@ -1,0 +1,26 @@
+# Purpose: run one authorized gate with a bounded owned process group and exact receipt.
+# Depends on: Python stdlib and the existing repository gate commands.
+# Used by: PR28 round5 local validation; never touches foreign processes or PG locks.
+import sys, os, json, time, hashlib, subprocess, signal
+from pathlib import Path
+name, limit, *command = sys.argv[1:]
+root = Path(__file__).resolve().parent
+paths = [p for p in ['apps/admin/components/ProductBulkFill.tsx','tests/admin/product-editor.acceptance.ts','tests/admin/product-editor-matrix-ledger.ts','tests/foundation/testdata/product_editor_matrix_cases.json','tests/foundation/catalog_matrix_ledger_test.go','tests/foundation/catalog_matrix_evidence_test.go','tests/foundation/browser_catalog_core_test.go','tests/ci/product-editor-matrix-ledger.test.mjs','tests/ci/product-editor-matrix-claims.mjs','tests/ci/product-editor-matrix-source.mjs','tests/ci/product-editor-matrix-execution.mjs','tests/ci/product-editor-matrix-execution.test.mjs','tests/ci/product-editor-matrix-controls.mjs','tests/ci/product-editor-matrix-controls.test.mjs']]
+def hashes(): return {p:hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in paths}
+def head(): return subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+record={'command':command,'timeout_seconds':int(limit),'started_at':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),'runner_pid':os.getpid(),'tested_source_commit':head(),'source_files_sha256':hashes(),'environment':{k:os.environ[k] for k in ['LC_BROWSER_ENGINE','LC_BROWSER_EVIDENCE_ROOT','LC_TEST_LOCK_WAIT'] if k in os.environ}}
+start=time.monotonic()
+with (root/(name+'.log')).open('w') as log:
+ proc=subprocess.Popen(command,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
+ record['child_pid']=proc.pid
+ (root/(name+'.runner.json')).write_text(json.dumps(record,indent=2)+'\n')
+ try: code=proc.wait(timeout=int(limit))
+ except subprocess.TimeoutExpired:
+  os.killpg(proc.pid,signal.SIGTERM)
+  try:proc.wait(timeout=10)
+  except subprocess.TimeoutExpired:os.killpg(proc.pid,signal.SIGKILL);proc.wait()
+  code=124
+ record.update(exit_code=code,duration_seconds=round(time.monotonic()-start,3),finished_at=time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),source_commit_after=head(),source_files_sha256_after=hashes())
+ (root/(name+'.json')).write_text(json.dumps(record,indent=2)+'\n')
+ print(json.dumps({'step':name,'exit_code':code,'seconds':record['duration_seconds'],'log':str(root/(name+'.log'))}))
+ sys.exit(code if code >= 0 else 128-code)

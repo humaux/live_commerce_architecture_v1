@@ -1,0 +1,17 @@
+{
+  "command": [
+    "node",
+    "--test",
+    "tests/ci/product-editor-matrix-execution.test.mjs"
+  ],
+  "exit_code": 1,
+  "base_commit": "f1f404a15d15f08d01269e1ec06a07df9de8d492",
+  "source_files_sha256": {
+    "tests/ci/product-editor-matrix-execution.mjs": "91f33d3a617cadafaee85988bb1329a26d56c8de26c2b612356355898242f493",
+    "tests/ci/product-editor-matrix-execution.test.mjs": "d6ec7eb04f7a438a70e0548adb6e0b210ef6c4873c83dcce2731420a34133a75"
+  },
+  "failed_controls": 12,
+  "passed_controls": 9,
+  "tests": 21,
+  "recorded_at": "2026-10-13T03:34:47.006725+00:00"
+}

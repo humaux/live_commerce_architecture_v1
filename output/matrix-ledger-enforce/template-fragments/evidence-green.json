@@ -1,0 +1,15 @@
+{
+  "argv": [
+    "go",
+    "test",
+    "./tests/foundation",
+    "-run",
+    "^TestProductEditorMatrixLedgerEvidenceCorruption$",
+    "-count=1",
+    "-v"
+  ],
+  "exit_code": 0,
+  "seconds": 28.482611874991562,
+  "gate_sha256": "7b8b6bc1deb4ec3fa887031db68600a3b2ef06378459e633f395315b414eb3d6",
+  "log_sha256": "c2cc85a48208f44a92a815ea04b20defc72207667899e5c6ca4c5c21b766699b"
+}

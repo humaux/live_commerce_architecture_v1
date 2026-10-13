@@ -1,0 +1,42 @@
+{
+  "raw_preservation": "Forensic logs and exact mutation/source snapshots retain producer bytes; they are excluded only from the secondary non-forensic whitespace diagnostic. No project test or check-gates rule is disabled.",
+  "runs": [
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--cached",
+        "--check"
+      ],
+      "exit_code": 2,
+      "log": "output/matrix-ledger-enforce/round3/whitespace-all-forensic.log",
+      "log_sha256": "84fa91474cb54b21e01d15c2cf64d9f93247509b55a8ef204f091abac7bee9e4"
+    },
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--cached",
+        "--check",
+        "--",
+        ".",
+        ":!*.log",
+        ":!*.source.txt"
+      ],
+      "exit_code": 0,
+      "log": "output/matrix-ledger-enforce/round3/whitespace-non-forensic.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "argv": [
+        "git",
+        "diff",
+        "5e4e96b9..HEAD",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "output/matrix-ledger-enforce/round3/whitespace-source-commits.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

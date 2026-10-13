@@ -1,0 +1,47 @@
+{
+  "source_commit": "2d9edcab7392cd886af975979f5c551745accfbc",
+  "source_hashes": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "2ad7a08878ddfd3a117bcc869661d58e2ac3e35b27248b3c2ce1b7e51e84cb10",
+    "tests/foundation/browser_catalog_core_test.go": "677c2903574f91f4b61445bb1a743ecd17404a196b92ad72a9e313b56b44ad45",
+    "tests/admin/product-editor.acceptance.ts": "9c2c883ee9677805dccbfcb47d0582984955a7ea9bbb4db3c88ce8f5a0ca37bc",
+    "tests/admin/product-editor-matrix-ledger.ts": "323eee50ca22baf00429bac778473563191e3aae96d43d725b68e2ec5b00e4c6",
+    "tests/foundation/testdata/product_editor_matrix_cases.json": "d07a76d8a5891a227be57d195b505714437dcd17401ab3e848d57c7f79d1022a",
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "fc5869a5c1d986f1efc80ee330f626a849a16828210435170137aa1563546525",
+    "tests/ci/product-editor-matrix-claims.mjs": "86cc2ea894433aefe150d312f02f757c932297d3c2b0c5f01f3a2a956cb50523",
+    "tests/ci/product-editor-matrix-source.mjs": "e6d26feb29c99ea258d9881cb2e44ece1445049497e578ebc778910e5d2569de",
+    "tests/foundation/catalog_matrix_evidence_test.go": "4804ffa0408e3b3ebc9617218db0ad2add593790ffb5bb8b3d128d21c7c1eefc",
+    "tests/ci/product-editor-matrix-execution.mjs": "ce6d0cdb3321abc05639d80851660301ccb77b73f2e9559c634d609b0d1450ee",
+    "tests/ci/product-editor-matrix-execution.test.mjs": "80158c2f645027f191305086259830257d5efbded73ec2165b6b86e0ce2010f8"
+  },
+  "informational_source_hashes": {
+    "tests/foundation/testdata/product_editor_mobile_matrix_ledger.json": "c3af74c89f8d9ea8b30299a3a5281eb0a3b41b8d47892f1a235e0affbf9dcc23",
+    "scripts/dev/test-node.sh": "f92943b12379f932b863bb5ba0b28d1b8c39b406947a09649af0d49958050adf",
+    "docs/delivery/GATES.md": "8d3c90e493883cc51b7973d21169853e9b2baeb9dbb62e1e24aff2a6e35a124e",
+    "scripts/dev/test-local.sh": "5a6dc083463197a9735038d85d87ecbecc474514e5f875dd5362f45457b2d0dd",
+    "playwright.config.ts": "659853d6b0a627aec3235c6ad91c999b72d3c2a4e85579f3b84c0b631c5695d0",
+    "apps/admin/lib/product-editor-copy.ts": "aff626c4a8a8a8c889ef5c4bfeeb77d5359df7a8692bc83f3162bae4d3aa0cc2",
+    "apps/admin/components/ProductDocumentVariants.tsx": "1ec1bf7b57e7a76ea10fee10620eebbd7b0e34b687d8b427b20fb5c20d6386a6",
+    "apps/admin/components/ProductDocumentForm.tsx": "a12b7e0172e5b145d3bf9ee3d0b92bdec98b88c9a1f06cdd09c1c170beb2b255",
+    "apps/admin/lib/use-product-document.ts": "98c13f78bc07bc00dcbfabfb52e8a25160556837a8a26440380064441e0fda93",
+    "apps/admin/lib/product-document.ts": "26287b066b2d1168e140c02cc35e51c265c65008deea519bcb398b008355fb78",
+    "scripts/dev/check-gates.sh": "2ec2678aad8cd56558161567ab764099ab0e96a9ff62b869c5a7c09d4f92a727",
+    ".github/workflows/gates.yml": "9bc46d8fc42e36253df350fb7f5bfaf644c0a37d70705d662461ecfbdd3f9100"
+  },
+  "runner_pid": 27100,
+  "argv": [
+    "bash",
+    "scripts/dev/test-node.sh"
+  ],
+  "timeout_seconds": 300,
+  "log": "output/matrix-ledger-enforce/round4/test-node.log",
+  "started_at_utc": "2026-10-12T17:55:08.449105+00:00",
+  "status": "COMPLETED",
+  "env": {},
+  "pid": 32287,
+  "exit_code": 0,
+  "elapsed_seconds": 44.26,
+  "ended_at_utc": "2026-10-12T17:55:52.709118+00:00",
+  "log_sha256": "3151ed8bc0c2cfc7278e44a07b52aa912ac97b3ec39562abf3313e83af057f7f",
+  "source_unchanged": true,
+  "informational_sources_unchanged": true
+}

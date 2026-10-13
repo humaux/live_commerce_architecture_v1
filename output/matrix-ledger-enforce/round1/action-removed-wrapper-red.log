@@ -1,0 +1,65 @@
+✖ every actual mobile control operation is enclosed by its recording callback (15.074125ms)
+✔ a new bare click is rejected without running a browser (8.7765ms)
+✖ a different control cannot borrow an existing action's recording callback (33.877292ms)
+✔ a direct ledger push cannot bypass canonical recording (6.883542ms)
+✔ removing the recording wrapper rejects the enclosed real action (5.492ms)
+✔ shared table has only complete meaningful unique declarations (0.473542ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (zh-TW) (1.12575ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (zh-CN) (0.391041ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (en) (0.425333ms)
+✔ failed assertion and missing observation cannot emit a PASS or satisfy completeness (0.289083ms)
+✔ in-flight action cannot masquerade as complete or admit a concurrent duplicate (1.604125ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 9
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 270.242167
+
+✖ failing tests:
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:76:1
+✖ every actual mobile control operation is enclosed by its recording callback (15.074125ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+  + [
+  +   '670: page.getByTestId("product-name").fill(`${tag} mobile matrix ${locale}`)'
+  + ]
+  - []
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-matrix-ledger-actions/tests/ci/product-editor-matrix-ledger.test.mjs:77:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ '670: page.getByTestId("product-name").fill(`${tag} mobile matrix ${locale}`)' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:85:1
+✖ a different control cannot borrow an existing action's recording callback (33.877292ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+    assert.ok(uncoveredActions(injected).some((line) => line.includes("distinct controls")))
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-matrix-ledger-actions/tests/ci/product-editor-matrix-ledger.test.mjs:87:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

@@ -1,0 +1,7 @@
+{
+  "pid": 27100,
+  "runner": "output/playwright/pr28-round4-20261012T175300Z/runner.py",
+  "runner_log": "output/playwright/pr28-round4-20261012T175300Z/runner.log",
+  "watch": "poll actual-gates.json and individual status/exit JSON; tool timer <=60sec",
+  "timeout_total_max_seconds": 3660
+}

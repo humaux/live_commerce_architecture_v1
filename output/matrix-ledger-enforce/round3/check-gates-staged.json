@@ -1,0 +1,17 @@
+{
+  "argv": [
+    "bash",
+    "scripts/dev/check-gates.sh"
+  ],
+  "source_commit": "ec94cb0502c657892ad649dc2ad4e8384cb03860",
+  "log": "output/matrix-ledger-enforce/round3/check-gates-staged.log",
+  "timeout_seconds": 900,
+  "runner_pid": 38198,
+  "status": "COMPLETED",
+  "started_at_utc": "2026-10-12T11:15:57.075911+00:00",
+  "pid": 38211,
+  "exit_code": 0,
+  "elapsed_seconds": 142.871,
+  "ended_at_utc": "2026-10-12T11:18:19.948127+00:00",
+  "log_sha256": "6bd9f5c13b3b0f810d88609571889a9c6da65ae3ffea2a0260b0c1098ac7e239"
+}

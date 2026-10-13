@@ -1,0 +1,85 @@
+{
+  "tested_source_commit": "e0fb76ce4034721a5429f701469a3e9fd4b756e7",
+  "merged_trunk_commit": "fef7920378c0b8cde843d22b27d33c62b07451b7",
+  "source_files_sha256": {
+    "apps/admin/components/ProductBulkFill.tsx": "6de889201888064efb4b055354cd07599cc605c7c25686009f84a5c8c4106c0f",
+    "tests/admin/product-editor.acceptance.ts": "22058c90fd04c9c5939b7db835802204ba664a9ac63aef85845d98437898eaed",
+    "tests/admin/product-editor-matrix-ledger.ts": "8f316ca5d61458e5c01f98891d784677998acca1240d1270311c0b4235e48e09",
+    "tests/foundation/testdata/product_editor_matrix_cases.json": "d380f3e06babf7a96b77fe4ff46ddf77b38d84da521c8f0f378704e7f0ebca0d",
+    "tests/foundation/catalog_matrix_ledger_test.go": "064d5bb7152eeb66ee63df28dfebc824c5c4c1e60dc2d2e28473c7b65b699292",
+    "tests/foundation/catalog_matrix_evidence_test.go": "f81717a6970a6cb2b4e149eb33d27c885bae1015ca2cd4468688cbe908f7f317",
+    "tests/foundation/browser_catalog_core_test.go": "7630208cfdee79f5c80297e82b6d927b7896e44c57c5b7f69d79b32ad405a29d",
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "a456714c2a6bb237a5f0fe19f17d87dbf8a0e2be33d7a3bb73ba1ccc62bab23c",
+    "tests/ci/product-editor-matrix-claims.mjs": "86cc2ea894433aefe150d312f02f757c932297d3c2b0c5f01f3a2a956cb50523",
+    "tests/ci/product-editor-matrix-source.mjs": "e6d26feb29c99ea258d9881cb2e44ece1445049497e578ebc778910e5d2569de",
+    "tests/ci/product-editor-matrix-execution.mjs": "16c2ea1f2db41bb8b4b7ab6c991fce370b79cbc7054cd0ecbcc9b0bb78d51fe1",
+    "tests/ci/product-editor-matrix-execution.test.mjs": "5bdd3529c62d223e442c2a8d72e3f15de95ce03f5a17c1a19989c9f3bf451c15",
+    "tests/ci/product-editor-matrix-controls.mjs": "d688d5822ac86c041f017af7c3361ac5bf48524ddcc29386dcd6ff9312abb617",
+    "tests/ci/product-editor-matrix-controls.test.mjs": "0fd469cca91a990972881b9fcf38961fab75c9f455c57d5b5842c7cf9168e132"
+  },
+  "informational_source_files_sha256": {
+    "tests/foundation/testdata/product_editor_mobile_matrix_ledger.json": "32efc349f9a75952df38a9e0f4526d579c3902629805cc44e65823da308a32ef",
+    "scripts/dev/test-node.sh": "4b377f7f792d6cccdab0f9644befbe6e9eb6191726d1aaefbe06cebf16ab2c78",
+    "docs/delivery/GATES.md": "8d3c90e493883cc51b7973d21169853e9b2baeb9dbb62e1e24aff2a6e35a124e",
+    "scripts/dev/test-local.sh": "5a6dc083463197a9735038d85d87ecbecc474514e5f875dd5362f45457b2d0dd",
+    "playwright.config.ts": "659853d6b0a627aec3235c6ad91c999b72d3c2a4e85579f3b84c0b631c5695d0",
+    "apps/admin/lib/product-editor-copy.ts": "aff626c4a8a8a8c889ef5c4bfeeb77d5359df7a8692bc83f3162bae4d3aa0cc2",
+    "apps/admin/components/ProductDocumentVariants.tsx": "1ec1bf7b57e7a76ea10fee10620eebbd7b0e34b687d8b427b20fb5c20d6386a6",
+    "apps/admin/components/ProductDocumentForm.tsx": "a12b7e0172e5b145d3bf9ee3d0b92bdec98b88c9a1f06cdd09c1c170beb2b255",
+    "apps/admin/lib/use-product-document.ts": "98c13f78bc07bc00dcbfabfb52e8a25160556837a8a26440380064441e0fda93",
+    "apps/admin/lib/product-document.ts": "26287b066b2d1168e140c02cc35e51c265c65008deea519bcb398b008355fb78",
+    "scripts/dev/check-gates.sh": "2ec2678aad8cd56558161567ab764099ab0e96a9ff62b869c5a7c09d4f92a727",
+    ".github/workflows/gates.yml": "9bc46d8fc42e36253df350fb7f5bfaf644c0a37d70705d662461ecfbdd3f9100"
+  },
+  "actual_passed_cases": {
+    "PE_and_review": 12,
+    "CC12_frozen": 2,
+    "skipped": 0
+  },
+  "ledger": {
+    "raw_rows": 322,
+    "required_unique_PASS": 267,
+    "identity_fields": [
+      "page",
+      "locale",
+      "width",
+      "row",
+      "control",
+      "action"
+    ],
+    "per_locale": {
+      "zh-TW": 89,
+      "zh-CN": 89,
+      "en": 89
+    },
+    "width": 390
+  },
+  "copied_native_bytes": [
+    {
+      "source_native": "output/playwright/pr28-filter-bindings-retry-20261013T0350Z/catalog-core/20261013T035028.755201000/playwright.log",
+      "canonical": "output/matrix-ledger-enforce/filter-bindings/browser/playwright.log",
+      "sha256": "0abce7d0e7a7f50885d33b2c3ab1efe3c030805954aaad036235d6b4284b67c2"
+    },
+    {
+      "source_native": "output/playwright/pr28-filter-bindings-retry-20261013T0350Z/catalog-core/20261013T035204.737231000/playwright.log",
+      "canonical": "output/matrix-ledger-enforce/filter-bindings/browser/cc12-playwright.log",
+      "sha256": "4885aea33d5457a9ef1fffe48f230e414667cf28cfb70b2126c77f0a92afa088"
+    },
+    {
+      "source_native": "output/playwright/pr28-filter-bindings-retry-20261013T0350Z/catalog-core/20261013T035028.755201000/product-editor-click-ledger.json",
+      "canonical": "output/matrix-ledger-enforce/filter-bindings/browser/product-editor-click-ledger.json",
+      "sha256": "b33f783e16c779f9eb61b4abb814dbff11e3d604cab181eeb69a98494cdb5f47"
+    },
+    {
+      "source_native": "output/playwright/pr28-filter-bindings-retry-20261013T0350Z/catalog-core/20261013T035028.755201000/results/.last-run.json",
+      "canonical": "output/matrix-ledger-enforce/filter-bindings/browser/pe-last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "source_native": "output/playwright/pr28-filter-bindings-retry-20261013T0350Z/catalog-core/20261013T035204.737231000/results/.last-run.json",
+      "canonical": "output/matrix-ledger-enforce/filter-bindings/browser/cc12-last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    }
+  ],
+  "scope": "Original full browser mode; fourteen owned executable hashes hard-bound, shared context informational. Exact Go consumer file/title and passed/no-failure/no-skip outcomes required."
+}

@@ -1,0 +1,8 @@
+{
+  "at_utc": "2026-10-12T16:20:39.201905+00:00",
+  "path": "/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/lc-test-pg.lock",
+  "pid": "73182",
+  "heartbeat_age_seconds": 25.613,
+  "ps": "73182 12:55 bash scripts/dev/test-local.sh --browser-product-editor",
+  "meaning": "Own original mode acquired the real PG lock after waiting for the prior live holder. No lock was removed or stolen."
+}

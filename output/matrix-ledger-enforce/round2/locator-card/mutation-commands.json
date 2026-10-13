@@ -1,0 +1,68 @@
+[
+  {
+    "command": "LC_MATRIX_ACTION_MUTATION=swap-locator node --test --test-name-pattern=every actual mobile tests/ci/product-editor-matrix-ledger.test.mjs",
+    "exit_code": 1,
+    "expected_exit": 1,
+    "evidence": "output/matrix-ledger-enforce/round2/locator-card/red-swap-locator.log"
+  },
+  {
+    "command": "LC_MATRIX_ACTION_MUTATION=swap-alias node --test --test-name-pattern=every actual mobile tests/ci/product-editor-matrix-ledger.test.mjs",
+    "exit_code": 1,
+    "expected_exit": 1,
+    "evidence": "output/matrix-ledger-enforce/round2/locator-card/red-swap-alias.log"
+  },
+  {
+    "command": "LC_MATRIX_ACTION_MUTATION=swap-field node --test --test-name-pattern=every actual mobile tests/ci/product-editor-matrix-ledger.test.mjs",
+    "exit_code": 1,
+    "expected_exit": 1,
+    "evidence": "output/matrix-ledger-enforce/round2/locator-card/red-swap-field.log"
+  },
+  {
+    "command": "LC_MATRIX_ACTION_MUTATION=swap-row node --test --test-name-pattern=every actual mobile tests/ci/product-editor-matrix-ledger.test.mjs",
+    "exit_code": 1,
+    "expected_exit": 1,
+    "evidence": "output/matrix-ledger-enforce/round2/locator-card/red-swap-row.log"
+  },
+  {
+    "command": "LC_MATRIX_ACTION_MUTATION=swap-role node --test --test-name-pattern=every actual mobile tests/ci/product-editor-matrix-ledger.test.mjs",
+    "exit_code": 1,
+    "expected_exit": 1,
+    "evidence": "output/matrix-ledger-enforce/round2/locator-card/red-swap-role.log"
+  },
+  {
+    "command": "LC_MATRIX_ACTION_MUTATION=swap-scope node --test --test-name-pattern=every actual mobile tests/ci/product-editor-matrix-ledger.test.mjs",
+    "exit_code": 1,
+    "expected_exit": 1,
+    "evidence": "output/matrix-ledger-enforce/round2/locator-card/red-swap-scope.log"
+  },
+  {
+    "command": "LC_MATRIX_ACTION_MUTATION=unknown-locator node --test --test-name-pattern=every actual mobile tests/ci/product-editor-matrix-ledger.test.mjs",
+    "exit_code": 1,
+    "expected_exit": 1,
+    "evidence": "output/matrix-ledger-enforce/round2/locator-card/red-unknown-locator.log"
+  },
+  {
+    "command": "LC_MATRIX_ACTION_MUTATION=bare-click node --test --test-name-pattern=every actual mobile tests/ci/product-editor-matrix-ledger.test.mjs",
+    "exit_code": 1,
+    "expected_exit": 1,
+    "evidence": "output/matrix-ledger-enforce/round2/locator-card/red-bare-click.log"
+  },
+  {
+    "command": "LC_MATRIX_ACTION_MUTATION=removed-wrapper node --test --test-name-pattern=every actual mobile tests/ci/product-editor-matrix-ledger.test.mjs",
+    "exit_code": 1,
+    "expected_exit": 1,
+    "evidence": "output/matrix-ledger-enforce/round2/locator-card/red-removed-wrapper.log"
+  },
+  {
+    "command": "LC_MATRIX_ACTION_MUTATION=extra-control node --test --test-name-pattern=every actual mobile tests/ci/product-editor-matrix-ledger.test.mjs",
+    "exit_code": 1,
+    "expected_exit": 1,
+    "evidence": "output/matrix-ledger-enforce/round2/locator-card/red-extra-control.log"
+  },
+  {
+    "command": "LC_MATRIX_ACTION_MUTATION=direct-push node --test --test-name-pattern=every actual mobile tests/ci/product-editor-matrix-ledger.test.mjs",
+    "exit_code": 1,
+    "expected_exit": 1,
+    "evidence": "output/matrix-ledger-enforce/round2/locator-card/red-direct-push.log"
+  }
+]

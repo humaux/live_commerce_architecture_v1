@@ -1,0 +1,260 @@
+{
+  "source": {
+    "tested_source": "b390ee7a43e5e2c42b6607ea76d1b95bb4ddcfd9",
+    "files": {
+      "tests/foundation/catalog_matrix_ledger_test.go": "747ab903ef3bb3fe9a10be7b60c30820868fdad00c84165b97b0c519442bf1be",
+      "tests/foundation/browser_catalog_core_test.go": "677c2903574f91f4b61445bb1a743ecd17404a196b92ad72a9e313b56b44ad45",
+      "tests/admin/product-editor.acceptance.ts": "8b880de2eb880f5674c309b34b6350f84e0c5972203215128d1c40a7f2380d9a",
+      "tests/foundation/testdata/product_editor_mobile_matrix_ledger.json": "25b3e4be6f0d7f421f7fe26dde35bc5274798459d500180ee05d29f46d2e9b59"
+    }
+  },
+  "local_gates": [
+    {
+      "command": [
+        "env",
+        "GOTOOLCHAIN=go1.27.2",
+        "go",
+        "test",
+        "-tags",
+        "browser",
+        "-run",
+        "^TestProductEditorMatrixLedger$",
+        "-count=1",
+        "-v",
+        "./tests/foundation"
+      ],
+      "exit": 0,
+      "source": "b390ee7a43e5e2c42b6607ea76d1b95bb4ddcfd9",
+      "log": "output/matrix-ledger-enforce/go-browser.log",
+      "sha256": "954cb9a8d59f6e75ae38a2151ac2f49034cb16435c3216d647ca74348229e1f1"
+    },
+    {
+      "command": [
+        "env",
+        "GOTOOLCHAIN=go1.27.2",
+        "go",
+        "vet",
+        "-tags",
+        "browser",
+        "./..."
+      ],
+      "exit": 0,
+      "source": "b390ee7a43e5e2c42b6607ea76d1b95bb4ddcfd9",
+      "log": "output/matrix-ledger-enforce/vet.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": [
+        "bash",
+        "scripts/dev/test-node.sh"
+      ],
+      "exit": 0,
+      "source": "b390ee7a43e5e2c42b6607ea76d1b95bb4ddcfd9",
+      "log": "output/matrix-ledger-enforce/node.log",
+      "sha256": "ad6f282cb7b6883ea84f611a6af45a1a47ad51ba203d72fd4413c1718a4385be"
+    },
+    {
+      "command": [
+        "pnpm",
+        "--filter",
+        "@live-commerce/admin",
+        "typecheck"
+      ],
+      "exit": 0,
+      "source": "b390ee7a43e5e2c42b6607ea76d1b95bb4ddcfd9",
+      "log": "output/matrix-ledger-enforce/typecheck.log",
+      "sha256": "cf9f71cac65bd70eb8b31d05c6ac5a8f83f2a0a2a0ca3e687314c034cd2184e8"
+    },
+    {
+      "command": [
+        "bash",
+        "scripts/dev/test-local.sh",
+        "--list"
+      ],
+      "exit": 0,
+      "source": "b390ee7a43e5e2c42b6607ea76d1b95bb4ddcfd9",
+      "log": "output/matrix-ledger-enforce/registry-list.log",
+      "sha256": "5e780dc27ce8a1089b7191e5aa0a0a800d2a9144d7aa53ef5ffe91b5bd9cfd66"
+    },
+    {
+      "command": [
+        "bash",
+        "scripts/dev/check-gates.sh"
+      ],
+      "exit": 0,
+      "source": "b390ee7a43e5e2c42b6607ea76d1b95bb4ddcfd9",
+      "log": "output/matrix-ledger-enforce/check-gates.log",
+      "sha256": "610a526f92a15212507fdb8a5d766615d10418400fc1ed3693f43f2dbe8aa688"
+    }
+  ],
+  "browser": {
+    "pe_run": "/Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/output/playwright/catalog-core/20261009T132934.505765000",
+    "primary": "/Volumes/data/live_commerce_architecture_v1/output/matrix-ledger-enforce/browser",
+    "source": "b390ee7a43e5e2c42b6607ea76d1b95bb4ddcfd9",
+    "command": "LC_TEST_LOCK_WAIT=300 LC_BROWSER_ENGINE=chromium bash scripts/dev/test-local.sh --browser-product-editor",
+    "exit": 0,
+    "matrix_rows": 141,
+    "files": {
+      "next.log": "8a29c641f20133a95fb83ff7a11ab84e720df364cf6d5ebc9454a75740209858",
+      "playwright.rf.config.ts": "cda38d9e450b87cf009991f8347b4860702fc23c3baf90d849fb4d5b96576f78",
+      "playwright.log": "d74ba3497717f96530f7a224d269df417587da6c41794f5a1a98cba1da6c2c6c",
+      "product-editor-click-ledger.json": "318783bc44206c121892847f9cd3b3c7bfd0d5ee4838a09bd80df23ecd10a26f",
+      "product-ui-output.txt": "1a27287a1473ba610951bdae1cb30f0370997fdb787bd43fc880545bfe5c3d05",
+      "results/.last-run.json": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    }
+  },
+  "calibration": [
+    {
+      "case": "missing",
+      "command": [
+        "env",
+        "GOTOOLCHAIN=go1.27.2",
+        "go",
+        "test",
+        "-overlay",
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/output/matrix-ledger-enforce/calibration-overlay.json",
+        "-run",
+        "^TestMatrixLedgerEvidenceProbe$",
+        "-count=1",
+        "-v",
+        "./tests/foundation"
+      ],
+      "env": {
+        "LC_MATRIX_LEDGER_PROBE_FILE": "/Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/output/matrix-ledger-enforce/calibration-missing.json"
+      },
+      "exit": 1,
+      "expected_exit": 1,
+      "input_sha256": "fe61c9575c958e35848ac95a6f94790781df178bc13d0bcf9c0316e65c9ebe77",
+      "log_sha256": "e7bbad8b00e86a4a50f1bf366c29c84bb1273577eef443f97315dd03964d723d",
+      "source": "b390ee7a43e5e2c42b6607ea76d1b95bb4ddcfd9"
+    },
+    {
+      "case": "failed",
+      "command": [
+        "env",
+        "GOTOOLCHAIN=go1.27.2",
+        "go",
+        "test",
+        "-overlay",
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/output/matrix-ledger-enforce/calibration-overlay.json",
+        "-run",
+        "^TestMatrixLedgerEvidenceProbe$",
+        "-count=1",
+        "-v",
+        "./tests/foundation"
+      ],
+      "env": {
+        "LC_MATRIX_LEDGER_PROBE_FILE": "/Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/output/matrix-ledger-enforce/calibration-failed.json"
+      },
+      "exit": 1,
+      "expected_exit": 1,
+      "input_sha256": "764bfb7de7f6207fd65bf1eeed599d55858ed77dcc95793be7f3cc51f0e7f181",
+      "log_sha256": "ba07620f9b7677cd1142cb5899a07e24f580e1df13723c181a711be9d34638b4",
+      "source": "b390ee7a43e5e2c42b6607ea76d1b95bb4ddcfd9"
+    },
+    {
+      "case": "valid",
+      "command": [
+        "env",
+        "GOTOOLCHAIN=go1.27.2",
+        "go",
+        "test",
+        "-overlay",
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/output/matrix-ledger-enforce/calibration-overlay.json",
+        "-run",
+        "^TestMatrixLedgerEvidenceProbe$",
+        "-count=1",
+        "-v",
+        "./tests/foundation"
+      ],
+      "env": {
+        "LC_MATRIX_LEDGER_PROBE_FILE": "/Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/output/matrix-ledger-enforce/calibration-valid.json"
+      },
+      "exit": 0,
+      "expected_exit": 0,
+      "input_sha256": "318783bc44206c121892847f9cd3b3c7bfd0d5ee4838a09bd80df23ecd10a26f",
+      "log_sha256": "6c8695be279e568cd37391d97e6920fc688db7342a8dbdf4a3981f8ea8b3517a",
+      "source": "b390ee7a43e5e2c42b6607ea76d1b95bb4ddcfd9"
+    }
+  ],
+  "prior_no_check_characterization": {
+    "command": "GOTOOLCHAIN=go1.27.2 go test -run ^TestProductEditorMatrixLedger$ -count=1 -v ./tests/foundation",
+    "exit": 1,
+    "classification": "TDD characterization seam preserves previous absence of ledger policy (return nil), not unchanged-browser-run claim",
+    "source_sha256": "e593d52448af57ca6d72d4f15147925b5ce490a8838c2fec9e7701d6c7855d47",
+    "fixture_sha256": "25b3e4be6f0d7f421f7fe26dde35bc5274798459d500180ee05d29f46d2e9b59"
+  },
+  "independent_E1_source_review": "9599c3b8-7978-47bd-8c57-9f4b0d02cae6",
+  "no_push": true,
+  "no_production": true,
+  "independent_E1_evidence_review": "a0317635-f12d-4ffe-b393-afd095b90cbd",
+  "log_normalization": "review-log-hashes.json",
+  "ci_planner": {
+    "modes": [
+      "foundation-shards",
+      "--browser-inbox",
+      "--browser-meta-health-ui",
+      "--browser-tracking-backfill",
+      "--browser-platform-site",
+      "--browser-admin-shell",
+      "--browser-click-sweep",
+      "--browser-visual-lint",
+      "--browser-identity",
+      "--browser-buyer-comms",
+      "--browser-checkout-offline",
+      "--browser-home-cod",
+      "--browser-promotions",
+      "--browser-password-auth",
+      "--browser-admin-legacy",
+      "--browser-buyer",
+      "--browser-merchant-buyer",
+      "--browser-manual-order",
+      "--browser-merchant-orders-bff",
+      "--browser-merchant-orders-ui",
+      "--browser-input-delivery",
+      "--browser-studio-bff",
+      "--browser-studio-ui",
+      "--browser-live-console",
+      "--browser-claim-checkout",
+      "--browser-live-claims",
+      "--browser-order",
+      "--browser-payment",
+      "--browser-refund-fulfilment",
+      "--browser-customers-billing",
+      "--browser-card-payments",
+      "--browser-meta-ads",
+      "--browser-ads-attribution",
+      "--browser-cvs",
+      "--browser-catalog-media",
+      "--browser-storefront-publish",
+      "--browser-store-domains",
+      "--browser-storefront",
+      "--browser-webkit",
+      "--browser-e2e",
+      "--live-browser-input",
+      "--browser-design",
+      "--browser-ops-polish",
+      "--browser-meta-connect",
+      "--browser-product-editor",
+      "--browser-catalog-core",
+      "--browser-returns-ui",
+      "--browser-picklist",
+      "--browser-operations-ads",
+      "--browser-product-media-v2",
+      "--browser-reports",
+      "--browser-migration-import",
+      "--studio-backend"
+    ],
+    "deploy": false
+  },
+  "fixture_cleanup": "all owned isolated stack processes closed; legacy generated artifacts archived/hash verified and reverted; no shared cache deletion",
+  "packaged_gate": {
+    "command": "bash scripts/dev/check-gates.sh",
+    "exit": 0,
+    "review_log": "output/matrix-ledger-enforce/packaged-gates.log",
+    "review_sha256": "df0919135fead4e1f03e7d60c2f77fda3ce8d49c6a593f60f618e237ab06b191",
+    "raw_log": "/Volumes/data/live_commerce_architecture_v1/output/matrix-ledger-enforce/packaged-gates.log",
+    "raw_sha256": "df0919135fead4e1f03e7d60c2f77fda3ce8d49c6a593f60f618e237ab06b191",
+    "normalization": "trailing whitespace only"
+  }
+}

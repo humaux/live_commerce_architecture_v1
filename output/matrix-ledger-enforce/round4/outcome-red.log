@@ -1,0 +1,44 @@
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/pe-failed
+    catalog_matrix_evidence_test.go:221: consistently rehashed pe-failed must reject the run outcome
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/cc12-failed
+    catalog_matrix_evidence_test.go:221: consistently rehashed cc12-failed must reject the run outcome
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/failed-tests
+    catalog_matrix_evidence_test.go:221: consistently rehashed failed-tests must reject the run outcome
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/missing-failed-tests
+    catalog_matrix_evidence_test.go:221: consistently rehashed missing-failed-tests must reject the run outcome
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/null-failed-tests
+    catalog_matrix_evidence_test.go:221: consistently rehashed null-failed-tests must reject the run outcome
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/log-failed
+    catalog_matrix_evidence_test.go:221: consistently rehashed log-failed must reject the run outcome
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/cc12-log-failed
+    catalog_matrix_evidence_test.go:221: consistently rehashed cc12-log-failed must reject the run outcome
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/log-skipped
+    catalog_matrix_evidence_test.go:221: consistently rehashed log-skipped must reject the run outcome
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/log-flaky
+    catalog_matrix_evidence_test.go:221: consistently rehashed log-flaky must reject the run outcome
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/log-incomplete
+    catalog_matrix_evidence_test.go:221: consistently rehashed log-incomplete must reject the run outcome
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/manifest-passed
+    catalog_matrix_evidence_test.go:221: consistently rehashed manifest-passed must reject the run outcome
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/manifest-skipped
+    catalog_matrix_evidence_test.go:221: consistently rehashed manifest-skipped must reject the run outcome
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/manifest-ledger
+    catalog_matrix_evidence_test.go:221: consistently rehashed manifest-ledger must reject the run outcome
+--- FAIL: TestProductEditorMatrixLedgerEvidenceRunOutcome (0.22s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceRunOutcome/pe-failed (0.03s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceRunOutcome/cc12-failed (0.02s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceRunOutcome/failed-tests (0.02s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceRunOutcome/missing-failed-tests (0.02s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceRunOutcome/null-failed-tests (0.01s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceRunOutcome/log-failed (0.01s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceRunOutcome/cc12-log-failed (0.01s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceRunOutcome/log-skipped (0.01s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceRunOutcome/log-flaky (0.02s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceRunOutcome/log-incomplete (0.02s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceRunOutcome/manifest-passed (0.02s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceRunOutcome/manifest-skipped (0.02s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceRunOutcome/manifest-ledger (0.02s)
+FAIL
+FAIL	livecommerce/tests/foundation	0.918s
+FAIL

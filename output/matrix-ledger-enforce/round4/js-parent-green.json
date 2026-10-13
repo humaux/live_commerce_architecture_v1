@@ -1,0 +1,11 @@
+{
+  "command": [
+    "node",
+    "--test",
+    "--test-name-pattern=canonical unary signature|CI hook refusal",
+    "tests/ci/product-editor-matrix-ledger.test.mjs"
+  ],
+  "exit": 0,
+  "seconds": 2.854,
+  "log_sha256": "814802164d1fd460b9dfeaf7e4577609c23d9ca727d05244f2e61a2cf4471705"
+}

@@ -1,0 +1,11 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/check-gates.sh"
+  ],
+  "mutation_path": "scripts/dev/test-node.sh",
+  "exit": 1,
+  "seconds": 0.389,
+  "restored_sha256": "f92943b12379f932b863bb5ba0b28d1b8c39b406947a09649af0d49958050adf",
+  "log_sha256": "fc6206fde91adfe302c26acc37785c860ccee9a2c8bb1977c3beb4f6c6c9fe65"
+}

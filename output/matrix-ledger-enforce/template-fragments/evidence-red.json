@@ -1,0 +1,17 @@
+{
+  "argv": [
+    "go",
+    "test",
+    "./tests/foundation",
+    "-run",
+    "^TestProductEditorMatrixLedgerEvidenceCorruption$",
+    "-count=1",
+    "-v"
+  ],
+  "exit_code": 1,
+  "seconds": 20.539885667007184,
+  "utc": "2026-10-12T15:01:45.767935+00:00",
+  "gate_sha256": "8715d94fa2c96c9426ef47f362328ca26b02926fc38d1a4f7eced344f9cd7ea5",
+  "log_sha256": "402ae906b0161bcd3725f8cd5c240f8b05bc3b3c71694ec71e82d6e47ca5e936",
+  "scope": "Isolated temporary checkout regression; baseline existing validation; tampered logs/ledger/manifest and changed tested sources must reject"
+}

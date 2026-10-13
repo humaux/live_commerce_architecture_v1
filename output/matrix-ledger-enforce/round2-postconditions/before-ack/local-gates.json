@@ -1,0 +1,54 @@
+[
+  {
+    "name": "test-node",
+    "argv": [
+      "bash",
+      "scripts/dev/test-node.sh"
+    ],
+    "source_sha": "8bfedec7e689192fa3d2e80f8e495c55c0f944e9",
+    "env": {
+      "LC_HEADER_BASE": "origin/r3/integration"
+    },
+    "unset_env": [
+      "LC_MATRIX_ACTION_MUTATION",
+      "CONTRACT_DRIFT_BASE"
+    ],
+    "started_at": "2026-10-12T08:58:09.294629+00:00",
+    "timeout_seconds": 900,
+    "state": "finished",
+    "log": "output/matrix-ledger-enforce/round2-postconditions/before-ack/test-node.log",
+    "pid": 22156,
+    "exit_code": 0,
+    "elapsed_seconds": 37.639,
+    "ended_at": "2026-10-12T08:58:46.933861+00:00",
+    "log_sha256": "d9b1166f59e94f136e50e1340b88b2271c96067734fe8e13ed4feb3d3a1e17af",
+    "original_log": "output/matrix-ledger-enforce/round2-postconditions/test-node.log",
+    "classification": "Historical source8bfedec7 before native ACK await"
+  },
+  {
+    "name": "check-gates",
+    "argv": [
+      "bash",
+      "scripts/dev/check-gates.sh"
+    ],
+    "source_sha": "8bfedec7e689192fa3d2e80f8e495c55c0f944e9",
+    "env": {
+      "LC_HEADER_BASE": "origin/r3/integration"
+    },
+    "unset_env": [
+      "LC_MATRIX_ACTION_MUTATION",
+      "CONTRACT_DRIFT_BASE"
+    ],
+    "started_at": "2026-10-12T08:58:46.946687+00:00",
+    "timeout_seconds": 900,
+    "state": "finished",
+    "log": "output/matrix-ledger-enforce/round2-postconditions/before-ack/check-gates.log",
+    "pid": 25965,
+    "exit_code": 0,
+    "elapsed_seconds": 133.849,
+    "ended_at": "2026-10-12T09:01:00.796213+00:00",
+    "log_sha256": "733478878df19e155a00039221ceedbf1be40a4549255275cbe8b7e0c5c1f9fd",
+    "original_log": "output/matrix-ledger-enforce/round2-postconditions/check-gates.log",
+    "classification": "Historical source8bfedec7 before native ACK await"
+  }
+]

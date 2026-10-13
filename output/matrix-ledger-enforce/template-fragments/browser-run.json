@@ -1,0 +1,47 @@
+{
+  "source_commit": "e15311a729fe085a0c19323ad3332cbef295991c",
+  "source_hashes": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "7b8b6bc1deb4ec3fa887031db68600a3b2ef06378459e633f395315b414eb3d6",
+    "tests/foundation/browser_catalog_core_test.go": "677c2903574f91f4b61445bb1a743ecd17404a196b92ad72a9e313b56b44ad45",
+    "tests/admin/product-editor.acceptance.ts": "9c2c883ee9677805dccbfcb47d0582984955a7ea9bbb4db3c88ce8f5a0ca37bc",
+    "tests/admin/product-editor-matrix-ledger.ts": "323eee50ca22baf00429bac778473563191e3aae96d43d725b68e2ec5b00e4c6",
+    "tests/foundation/testdata/product_editor_matrix_cases.json": "d07a76d8a5891a227be57d195b505714437dcd17401ab3e848d57c7f79d1022a",
+    "tests/foundation/testdata/product_editor_mobile_matrix_ledger.json": "c3af74c89f8d9ea8b30299a3a5281eb0a3b41b8d47892f1a235e0affbf9dcc23",
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "4700547960668f7281745d9411ae964e5ca8e8804fa29cc121fb9c2faeb31541",
+    "scripts/dev/test-node.sh": "72fcdb5577fe6b03c2771d25d560e1b59aa80856c78546ac85ccca1315d37685",
+    "docs/delivery/GATES.md": "3dae1ad0232209cba6ba322f813202b33c4a09a67f4434826e14bdc9afe59065",
+    "scripts/dev/test-local.sh": "540a8988d91990c2f189d12323d870e0e467951d70969e03efafa29366868a8e",
+    "playwright.config.ts": "11b84b5c5557d671c17dea8859a7d7d450f43fec134b27318b61c3923d01eb4a",
+    "apps/admin/lib/product-editor-copy.ts": "aff626c4a8a8a8c889ef5c4bfeeb77d5359df7a8692bc83f3162bae4d3aa0cc2",
+    "apps/admin/components/ProductDocumentVariants.tsx": "1ec1bf7b57e7a76ea10fee10620eebbd7b0e34b687d8b427b20fb5c20d6386a6",
+    "apps/admin/components/ProductDocumentForm.tsx": "a12b7e0172e5b145d3bf9ee3d0b92bdec98b88c9a1f06cdd09c1c170beb2b255",
+    "apps/admin/lib/use-product-document.ts": "98c13f78bc07bc00dcbfabfb52e8a25160556837a8a26440380064441e0fda93",
+    "apps/admin/lib/product-document.ts": "26287b066b2d1168e140c02cc35e51c265c65008deea519bcb398b008355fb78",
+    "tests/ci/product-editor-matrix-claims.mjs": "5537978ab895dae0d5cf6e59bc6780876e55564cd74924c26de2db5ae988d137",
+    "tests/ci/product-editor-matrix-source.mjs": "e6d26feb29c99ea258d9881cb2e44ece1445049497e578ebc778910e5d2569de"
+  },
+  "argv": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-product-editor"
+  ],
+  "env": {
+    "LC_BROWSER_EVIDENCE_ROOT": "output/playwright/pr28-integrity-repeat-20261012T151736Z",
+    "LC_TEST_LOCK_WAIT": "1800",
+    "LC_BROWSER_ENGINE": "chromium"
+  },
+  "env_resolution": "Root represented relative, passed as absolute path with worktree cwd.",
+  "evidence_root": "output/playwright/pr28-integrity-repeat-20261012T151736Z",
+  "runner_pid": 2716,
+  "timeout_seconds": 2700,
+  "log": "output/matrix-ledger-enforce/template-fragments/browser-product-editor.log",
+  "started_at_utc": "2026-10-12T15:17:36.695630+00:00",
+  "status": "COMPLETED",
+  "note": "Independent original full same-SHA repeat after readiness focus race; no Playwright retries, filtering or assertion changes.",
+  "pid": 2740,
+  "exit_code": 0,
+  "elapsed_seconds": 120.285,
+  "ended_at_utc": "2026-10-12T15:19:36.981558+00:00",
+  "source_unchanged": true,
+  "log_sha256": "4a1836711ad8a68f0df0313c6b473364bd5645c0f355eb9e526fb88b02e4da78"
+}

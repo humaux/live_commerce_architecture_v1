@@ -1,0 +1,14 @@
+{
+  "argv": [
+    "node",
+    "--test",
+    "tests/ci/product-editor-matrix-ledger.test.mjs"
+  ],
+  "exit_code": 0,
+  "seconds": 10.493342208006652,
+  "source_files_sha256": {
+    "tests/ci/product-editor-matrix-claims.mjs": "5537978ab895dae0d5cf6e59bc6780876e55564cd74924c26de2db5ae988d137",
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "4700547960668f7281745d9411ae964e5ca8e8804fa29cc121fb9c2faeb31541"
+  },
+  "log_sha256": "1ed0f10c299dfb156d317a8bcc3c3874dc83e2d63f415ae04228f48f812d5b28"
+}

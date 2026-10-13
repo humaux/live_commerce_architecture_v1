@@ -1,0 +1,66 @@
+{
+  "source_commit": "e15311a729fe085a0c19323ad3332cbef295991c",
+  "source_hashes": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "7b8b6bc1deb4ec3fa887031db68600a3b2ef06378459e633f395315b414eb3d6",
+    "tests/foundation/browser_catalog_core_test.go": "677c2903574f91f4b61445bb1a743ecd17404a196b92ad72a9e313b56b44ad45",
+    "tests/admin/product-editor.acceptance.ts": "9c2c883ee9677805dccbfcb47d0582984955a7ea9bbb4db3c88ce8f5a0ca37bc",
+    "tests/admin/product-editor-matrix-ledger.ts": "323eee50ca22baf00429bac778473563191e3aae96d43d725b68e2ec5b00e4c6",
+    "tests/foundation/testdata/product_editor_matrix_cases.json": "d07a76d8a5891a227be57d195b505714437dcd17401ab3e848d57c7f79d1022a",
+    "tests/foundation/testdata/product_editor_mobile_matrix_ledger.json": "c3af74c89f8d9ea8b30299a3a5281eb0a3b41b8d47892f1a235e0affbf9dcc23",
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "4700547960668f7281745d9411ae964e5ca8e8804fa29cc121fb9c2faeb31541",
+    "scripts/dev/test-node.sh": "72fcdb5577fe6b03c2771d25d560e1b59aa80856c78546ac85ccca1315d37685",
+    "docs/delivery/GATES.md": "3dae1ad0232209cba6ba322f813202b33c4a09a67f4434826e14bdc9afe59065",
+    "scripts/dev/test-local.sh": "540a8988d91990c2f189d12323d870e0e467951d70969e03efafa29366868a8e",
+    "playwright.config.ts": "11b84b5c5557d671c17dea8859a7d7d450f43fec134b27318b61c3923d01eb4a",
+    "apps/admin/lib/product-editor-copy.ts": "aff626c4a8a8a8c889ef5c4bfeeb77d5359df7a8692bc83f3162bae4d3aa0cc2",
+    "apps/admin/components/ProductDocumentVariants.tsx": "1ec1bf7b57e7a76ea10fee10620eebbd7b0e34b687d8b427b20fb5c20d6386a6",
+    "apps/admin/components/ProductDocumentForm.tsx": "a12b7e0172e5b145d3bf9ee3d0b92bdec98b88c9a1f06cdd09c1c170beb2b255",
+    "apps/admin/lib/use-product-document.ts": "98c13f78bc07bc00dcbfabfb52e8a25160556837a8a26440380064441e0fda93",
+    "apps/admin/lib/product-document.ts": "26287b066b2d1168e140c02cc35e51c265c65008deea519bcb398b008355fb78",
+    "tests/ci/product-editor-matrix-claims.mjs": "5537978ab895dae0d5cf6e59bc6780876e55564cd74924c26de2db5ae988d137",
+    "tests/ci/product-editor-matrix-source.mjs": "e6d26feb29c99ea258d9881cb2e44ece1445049497e578ebc778910e5d2569de"
+  },
+  "runner_pid": 17001,
+  "runs": [
+    {
+      "argv": [
+        "go",
+        "test",
+        "./tests/foundation",
+        "-run",
+        "^TestProductEditorMatrixLedger",
+        "-count=1",
+        "-v"
+      ],
+      "timeout_seconds": 300,
+      "log": "output/matrix-ledger-enforce/template-fragments/go-ledger.log",
+      "started_at_utc": "2026-10-12T15:22:14.182363+00:00",
+      "status": "COMPLETED",
+      "pid": 17013,
+      "exit_code": 0,
+      "elapsed_seconds": 5.339,
+      "ended_at_utc": "2026-10-12T15:22:19.521991+00:00",
+      "log_sha256": "b944aef1783c65e6eb621d4a1cf2c8a34e83501e955cdf08ecca7220c96c5138",
+      "source_unchanged": true
+    },
+    {
+      "argv": [
+        "go",
+        "vet",
+        "-tags",
+        "browser",
+        "./tests/foundation"
+      ],
+      "timeout_seconds": 300,
+      "log": "output/matrix-ledger-enforce/template-fragments/go-vet.log",
+      "started_at_utc": "2026-10-12T15:22:19.523236+00:00",
+      "status": "COMPLETED",
+      "pid": 17161,
+      "exit_code": 0,
+      "elapsed_seconds": 1.992,
+      "ended_at_utc": "2026-10-12T15:22:21.514837+00:00",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source_unchanged": true
+    }
+  ]
+}

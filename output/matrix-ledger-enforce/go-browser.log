@@ -1,0 +1,36 @@
+=== RUN   TestProductEditorMatrixLedger
+=== RUN   TestProductEditorMatrixLedger/missing-matrix-click
+=== RUN   TestProductEditorMatrixLedger/missing-axis-remove
+=== RUN   TestProductEditorMatrixLedger/failed-row
+=== RUN   TestProductEditorMatrixLedger/missing-PASS
+=== RUN   TestProductEditorMatrixLedger/PASS-prefix-is-not-PASS
+=== RUN   TestProductEditorMatrixLedger/duplicate
+=== RUN   TestProductEditorMatrixLedger/unexpected-extra-control
+=== RUN   TestProductEditorMatrixLedger/wrong-locale
+=== RUN   TestProductEditorMatrixLedger/wrong-width
+=== RUN   TestProductEditorMatrixLedger/wrong-action
+=== RUN   TestProductEditorMatrixLedger/wrong-top-level-row
+=== RUN   TestProductEditorMatrixLedger/unknown-target-page
+=== RUN   TestProductEditorMatrixLedger/empty
+=== RUN   TestProductEditorMatrixLedger/null
+=== RUN   TestProductEditorMatrixLedger/invalid-json
+=== RUN   TestProductEditorMatrixLedger/object-instead-of-ledger
+--- PASS: TestProductEditorMatrixLedger (0.01s)
+    --- PASS: TestProductEditorMatrixLedger/missing-matrix-click (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/missing-axis-remove (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/failed-row (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/missing-PASS (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/PASS-prefix-is-not-PASS (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/duplicate (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/unexpected-extra-control (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/wrong-locale (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/wrong-width (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/wrong-action (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/wrong-top-level-row (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/unknown-target-page (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/empty (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/null (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/invalid-json (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/object-instead-of-ledger (0.00s)
+PASS
+ok  	livecommerce/tests/foundation	1.382s

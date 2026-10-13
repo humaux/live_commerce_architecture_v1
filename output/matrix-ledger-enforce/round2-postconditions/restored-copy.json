@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "node",
+    "--test",
+    "--test-name-pattern=every actual mobile",
+    "tests/ci/product-editor-matrix-ledger.test.mjs"
+  ],
+  "env": {},
+  "exit_code": 0,
+  "log": "output/matrix-ledger-enforce/round2-postconditions/restored-copy.log",
+  "log_sha256": "ce944e5bf794274a8109ed46ac582588a2f8b5ef312d002fc7421d8a96460b3d"
+}

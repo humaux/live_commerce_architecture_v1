@@ -1,0 +1,11 @@
+{
+  "argv": [
+    "node",
+    "--test",
+    "tests/ci/product-editor-matrix-ledger.test.mjs"
+  ],
+  "env": {},
+  "exit_code": 0,
+  "log": "output/matrix-ledger-enforce/round2-postconditions/green-focused.log",
+  "log_sha256": "3430566e29c9a71f57accb3f559b69997af4e05dcc4112f40bbef0e2dd22ecad"
+}

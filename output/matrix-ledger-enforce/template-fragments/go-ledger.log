@@ -1,0 +1,68 @@
+=== RUN   TestProductEditorMatrixLedger
+=== RUN   TestProductEditorMatrixLedger/missing-expected
+=== RUN   TestProductEditorMatrixLedger/altered-expected
+=== RUN   TestProductEditorMatrixLedger/empty-expected
+=== RUN   TestProductEditorMatrixLedger/null-expected
+=== RUN   TestProductEditorMatrixLedger/wrong-type-expected
+=== RUN   TestProductEditorMatrixLedger/missing-matrix-click
+=== RUN   TestProductEditorMatrixLedger/missing-axis-remove
+=== RUN   TestProductEditorMatrixLedger/failed-row
+=== RUN   TestProductEditorMatrixLedger/missing-PASS
+=== RUN   TestProductEditorMatrixLedger/PASS-prefix-is-not-PASS
+=== RUN   TestProductEditorMatrixLedger/duplicate
+=== RUN   TestProductEditorMatrixLedger/unexpected-extra-control
+=== RUN   TestProductEditorMatrixLedger/wrong-locale
+=== RUN   TestProductEditorMatrixLedger/wrong-width
+=== RUN   TestProductEditorMatrixLedger/wrong-action
+=== RUN   TestProductEditorMatrixLedger/wrong-top-level-row
+=== RUN   TestProductEditorMatrixLedger/unknown-target-page
+=== RUN   TestProductEditorMatrixLedger/empty
+=== RUN   TestProductEditorMatrixLedger/null
+=== RUN   TestProductEditorMatrixLedger/invalid-json
+=== RUN   TestProductEditorMatrixLedger/object-instead-of-ledger
+--- PASS: TestProductEditorMatrixLedger (0.01s)
+    --- PASS: TestProductEditorMatrixLedger/missing-expected (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/altered-expected (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/empty-expected (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/null-expected (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/wrong-type-expected (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/missing-matrix-click (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/missing-axis-remove (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/failed-row (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/missing-PASS (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/PASS-prefix-is-not-PASS (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/duplicate (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/unexpected-extra-control (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/wrong-locale (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/wrong-width (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/wrong-action (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/wrong-top-level-row (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/unknown-target-page (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/empty (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/null (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/invalid-json (0.00s)
+    --- PASS: TestProductEditorMatrixLedger/object-instead-of-ledger (0.00s)
+=== RUN   TestProductEditorMatrixLedgerEvidence
+--- PASS: TestProductEditorMatrixLedgerEvidence (0.00s)
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption/playwright-log
+    catalog_matrix_ledger_test.go:500: rejected playwright-log: SHA-256 mismatch for canonical evidence/source output/matrix-ledger-enforce/fixture/browser/playwright.log
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption/cc12-log
+    catalog_matrix_ledger_test.go:500: rejected cc12-log: SHA-256 mismatch for canonical evidence/source output/matrix-ledger-enforce/fixture/browser/cc12-playwright.log
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption/ledger
+    catalog_matrix_ledger_test.go:500: rejected ledger: SHA-256 mismatch for canonical evidence/source output/matrix-ledger-enforce/fixture/browser/product-editor-click-ledger.json
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption/manifest
+    catalog_matrix_ledger_test.go:500: rejected manifest: SHA-256 mismatch for canonical evidence/source output/matrix-ledger-enforce/fixture/browser/browser-evidence.json
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption/source
+    catalog_matrix_ledger_test.go:500: rejected source: SHA-256 mismatch for canonical evidence/source tests/admin/product-editor.acceptance.ts
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption/gate-source
+    catalog_matrix_ledger_test.go:500: rejected gate-source: SHA-256 mismatch for canonical evidence/source tests/foundation/catalog_matrix_ledger_test.go
+--- PASS: TestProductEditorMatrixLedgerEvidenceCorruption (0.06s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceCorruption/playwright-log (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceCorruption/cc12-log (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceCorruption/ledger (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceCorruption/manifest (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceCorruption/source (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceCorruption/gate-source (0.01s)
+PASS
+ok  	livecommerce/tests/foundation	0.713s

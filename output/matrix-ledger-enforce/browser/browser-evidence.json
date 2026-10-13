@@ -1,0 +1,64 @@
+{
+  "tested_source_commit": "ec94cb0502c657892ad649dc2ad4e8384cb03860",
+  "evidence_class": "BROWSER + REAL_PG; synthetic MOCK identity/provider fixtures",
+  "source_files_sha256": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "a3be2d3102f59cc6888389ff5b157558507a7bb89c4ac78003193d11da128a37",
+    "tests/foundation/browser_catalog_core_test.go": "677c2903574f91f4b61445bb1a743ecd17404a196b92ad72a9e313b56b44ad45",
+    "tests/admin/product-editor.acceptance.ts": "9c2c883ee9677805dccbfcb47d0582984955a7ea9bbb4db3c88ce8f5a0ca37bc",
+    "tests/admin/product-editor-matrix-ledger.ts": "bca2b1bed9cc9810cf7225b8f67b42efb9fd7453c979909df6c802cb3d827f1d",
+    "tests/foundation/testdata/product_editor_matrix_cases.json": "1bf2b6be619fd7fb2f03989feeda402f79ba2c9466a031bfe6fb1cf47a362d4a",
+    "tests/foundation/testdata/product_editor_mobile_matrix_ledger.json": "c3af74c89f8d9ea8b30299a3a5281eb0a3b41b8d47892f1a235e0affbf9dcc23",
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "099136e87e16831a44c408338edf75a33c6a821a72e1a24a37def493040ed1a9",
+    "scripts/dev/test-node.sh": "72fcdb5577fe6b03c2771d25d560e1b59aa80856c78546ac85ccca1315d37685",
+    "docs/delivery/GATES.md": "3dae1ad0232209cba6ba322f813202b33c4a09a67f4434826e14bdc9afe59065",
+    "scripts/dev/test-local.sh": "540a8988d91990c2f189d12323d870e0e467951d70969e03efafa29366868a8e",
+    "playwright.config.ts": "11b84b5c5557d671c17dea8859a7d7d450f43fec134b27318b61c3923d01eb4a",
+    "apps/admin/lib/product-editor-copy.ts": "aff626c4a8a8a8c889ef5c4bfeeb77d5359df7a8692bc83f3162bae4d3aa0cc2",
+    "apps/admin/components/ProductDocumentVariants.tsx": "1ec1bf7b57e7a76ea10fee10620eebbd7b0e34b687d8b427b20fb5c20d6386a6",
+    "apps/admin/components/ProductDocumentForm.tsx": "a12b7e0172e5b145d3bf9ee3d0b92bdec98b88c9a1f06cdd09c1c170beb2b255",
+    "apps/admin/lib/use-product-document.ts": "98c13f78bc07bc00dcbfabfb52e8a25160556837a8a26440380064441e0fda93",
+    "apps/admin/lib/product-document.ts": "26287b066b2d1168e140c02cc35e51c265c65008deea519bcb398b008355fb78"
+  },
+  "source_snapshot": "output/matrix-ledger-enforce/round3/SOURCE.json",
+  "argv": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-product-editor"
+  ],
+  "env": {
+    "LC_BROWSER_EVIDENCE_ROOT": "output/playwright/pr28-r3-outcomes-20261012T110558Z"
+  },
+  "exit": 0,
+  "run_directory": "output/playwright/pr28-r3-outcomes-20261012T110558Z/catalog-core/20261012T110633.947398000",
+  "mandatory_cc12_directory": "output/playwright/pr28-r3-outcomes-20261012T110558Z/catalog-core/20261012T110736.933886000",
+  "ledger_rows": 286,
+  "required_rows": 231,
+  "rows_per_locale": {
+    "zh-TW": 77,
+    "zh-CN": 77,
+    "en": 77
+  },
+  "playwright_cases": {
+    "product_editor_review": 12,
+    "mandatory_CC12": 2,
+    "failed": 0,
+    "skipped": 0
+  },
+  "native_acceptance": {
+    "beforeId": "null for all three locales before opening confirm",
+    "after": "accepted, same-save ACK then server-issued replacement UUID in rendered row; excludes old IDs"
+  },
+  "files": {
+    "product-editor-click-ledger.json": "b67c5a22549112e8e206b3672a6607fee00c3396675dd890a2b19d8d50e81306",
+    "playwright.log": "e2cf7efa76a18c56532f90baaf941e632bf99596780032820506e9baabf80835",
+    "cc12-playwright.log": "adc5cc3736ccc270045a28c408e0d717f2600189be518ad7c56ed80cdc3e77a8"
+  },
+  "fixture": "tests/foundation/testdata/product_editor_mobile_matrix_ledger.json",
+  "fixture_sha256": "c3af74c89f8d9ea8b30299a3a5281eb0a3b41b8d47892f1a235e0affbf9dcc23",
+  "pass_semantics": "Actual same-run assertions; static gate requires each direct awaited outcome after its own action and before its receipt to resolve to exact operated receiver plus matcher class, or explicit method-specific effect target from the same77-case table. Existing receiver/method/key/read/identity guards preserved. Full matcher-operand formal equivalence is not claimed.",
+  "auxiliary_screenshots": "NOT_INCLUDED; runner screenshots auxiliary, no screenshot delivery claim",
+  "provider_live": "NOT_RUN",
+  "post_browser_source_change": "none",
+  "supersedes": "Current runtime evidence supersedes source6533 claims in previous canonical manifest; prior commits/round2 logs remain historical.",
+  "env_resolution": "LC_BROWSER_EVIDENCE_ROOT is represented portably as worktree-relative text here; the runner passed str(Path(value).resolve()) using the worktree cwd as the exact absolute environment value."
+}

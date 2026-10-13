@@ -1,0 +1,23 @@
+{
+  "phase": "GREEN fixed unit-owned binding",
+  "merged_commit": "64fc88fe44afa418037f36fc4398fa4c9720a5c2",
+  "gate_sha256": "0764673cb88ad0c0ac9141e689c914ccc66e9a95431497df53ed67f2170afae2",
+  "argv": [
+    "go",
+    "test",
+    "./tests/foundation",
+    "-run",
+    "^TestProductEditorMatrixLedgerEvidence(SharedSources|Corruption)$",
+    "-count=1",
+    "-v"
+  ],
+  "timeout_seconds": 300,
+  "runner_pid": 63959,
+  "started_at_utc": "2026-10-12T16:05:03.536563+00:00",
+  "log": "output/matrix-ledger-enforce/merge-ref/green.log",
+  "status": "COMPLETED",
+  "pid": 63976,
+  "exit_code": 0,
+  "elapsed_seconds": 23.647,
+  "log_sha256": "f4164854b4938c7a2a7804e64b6e0d1a7590fbaff264a1da2c98f2d727de13cf"
+}

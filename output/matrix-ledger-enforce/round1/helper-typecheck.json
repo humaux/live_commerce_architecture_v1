@@ -1,0 +1,23 @@
+{
+  "command": [
+    "pnpm",
+    "exec",
+    "tsc",
+    "--noEmit",
+    "--strict",
+    "--target",
+    "ES2023",
+    "--module",
+    "ESNext",
+    "--moduleResolution",
+    "Bundler",
+    "--resolveJsonModule",
+    "--esModuleInterop",
+    "--skipLibCheck",
+    "--typeRoots",
+    "node_modules/.pnpm/@types+node@24.13.6/node_modules/@types",
+    "tests/admin/product-editor-matrix-ledger.ts"
+  ],
+  "exit": 0,
+  "source_sha256": "bca2b1bed9cc9810cf7225b8f67b42efb9fd7453c979909df6c802cb3d827f1d"
+}

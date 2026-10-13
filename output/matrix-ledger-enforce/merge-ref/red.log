@@ -1,0 +1,35 @@
+=== RUN   TestProductEditorMatrixLedgerEvidenceSharedSources
+=== RUN   TestProductEditorMatrixLedgerEvidenceSharedSources/scripts/dev/test-node.sh
+    catalog_matrix_ledger_test.go:531: informational shared source change must not invalidate unit evidence: SHA-256 mismatch for canonical evidence/source scripts/dev/test-node.sh
+=== RUN   TestProductEditorMatrixLedgerEvidenceSharedSources/scripts/dev/test-local.sh
+    catalog_matrix_ledger_test.go:531: informational shared source change must not invalidate unit evidence: SHA-256 mismatch for canonical evidence/source scripts/dev/test-local.sh
+=== RUN   TestProductEditorMatrixLedgerEvidenceSharedSources/docs/delivery/GATES.md
+    catalog_matrix_ledger_test.go:531: informational shared source change must not invalidate unit evidence: SHA-256 mismatch for canonical evidence/source docs/delivery/GATES.md
+=== RUN   TestProductEditorMatrixLedgerEvidenceSharedSources/playwright.config.ts
+    catalog_matrix_ledger_test.go:531: informational shared source change must not invalidate unit evidence: SHA-256 mismatch for canonical evidence/source playwright.config.ts
+=== RUN   TestProductEditorMatrixLedgerEvidenceSharedSources/tests/foundation/testdata/product_editor_mobile_matrix_ledger.json
+    catalog_matrix_ledger_test.go:531: informational shared source change must not invalidate unit evidence: SHA-256 mismatch for canonical evidence/source tests/foundation/testdata/product_editor_mobile_matrix_ledger.json
+=== RUN   TestProductEditorMatrixLedgerEvidenceSharedSources/apps/admin/lib/product-editor-copy.ts
+    catalog_matrix_ledger_test.go:531: informational shared source change must not invalidate unit evidence: SHA-256 mismatch for canonical evidence/source apps/admin/lib/product-editor-copy.ts
+=== RUN   TestProductEditorMatrixLedgerEvidenceSharedSources/apps/admin/components/ProductDocumentVariants.tsx
+    catalog_matrix_ledger_test.go:531: informational shared source change must not invalidate unit evidence: SHA-256 mismatch for canonical evidence/source apps/admin/components/ProductDocumentVariants.tsx
+=== RUN   TestProductEditorMatrixLedgerEvidenceSharedSources/apps/admin/components/ProductDocumentForm.tsx
+    catalog_matrix_ledger_test.go:531: informational shared source change must not invalidate unit evidence: SHA-256 mismatch for canonical evidence/source apps/admin/components/ProductDocumentForm.tsx
+=== RUN   TestProductEditorMatrixLedgerEvidenceSharedSources/apps/admin/lib/use-product-document.ts
+    catalog_matrix_ledger_test.go:531: informational shared source change must not invalidate unit evidence: SHA-256 mismatch for canonical evidence/source apps/admin/lib/use-product-document.ts
+=== RUN   TestProductEditorMatrixLedgerEvidenceSharedSources/apps/admin/lib/product-document.ts
+    catalog_matrix_ledger_test.go:531: informational shared source change must not invalidate unit evidence: SHA-256 mismatch for canonical evidence/source apps/admin/lib/product-document.ts
+--- FAIL: TestProductEditorMatrixLedgerEvidenceSharedSources (0.28s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceSharedSources/scripts/dev/test-node.sh (0.04s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceSharedSources/scripts/dev/test-local.sh (0.02s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceSharedSources/docs/delivery/GATES.md (0.02s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceSharedSources/playwright.config.ts (0.02s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceSharedSources/tests/foundation/testdata/product_editor_mobile_matrix_ledger.json (0.02s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceSharedSources/apps/admin/lib/product-editor-copy.ts (0.02s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceSharedSources/apps/admin/components/ProductDocumentVariants.tsx (0.02s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceSharedSources/apps/admin/components/ProductDocumentForm.tsx (0.04s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceSharedSources/apps/admin/lib/use-product-document.ts (0.03s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceSharedSources/apps/admin/lib/product-document.ts (0.06s)
+FAIL
+FAIL	livecommerce/tests/foundation	1.494s
+FAIL

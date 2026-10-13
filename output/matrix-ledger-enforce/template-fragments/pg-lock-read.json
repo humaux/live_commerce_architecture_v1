@@ -1,0 +1,9 @@
+{
+  "path": "/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/lc-test-pg.lock",
+  "exists": true,
+  "checked_at": "2026-10-12T15:06:25.738191+00:00",
+  "pid": "61655",
+  "heartbeat_age_seconds": 13.51765513420105,
+  "pid_status": "61655 00:25 bash",
+  "ps_exit": 0
+}

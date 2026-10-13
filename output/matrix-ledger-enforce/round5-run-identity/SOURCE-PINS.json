@@ -1,0 +1,9 @@
+{
+  "tests/foundation/catalog_matrix_evidence_test.go": "2926912b0f20de526202d4f4fd7fa3f0f96423fadafdc318b6ec82f340069215",
+  "tests/admin/product-editor.acceptance.ts": "9c2c883ee9677805dccbfcb47d0582984955a7ea9bbb4db3c88ce8f5a0ca37bc",
+  "tests/admin/product-review.acceptance.ts": "e9fb97fb23762ffede5ee3b755e88c88263bb5d458075b05b214e44766f077a4",
+  "tests/admin/product-feedback.acceptance.ts": "ac098dafcd7f782901c87523878a37768cf6530a024dd1bf75999a908219a173",
+  "tests/admin/catalog-core.spec.ts": "18db7e6e25ddfc05bdd6b9fecc6f80b3bd47e92f1e31addddf6ff318c21da0d8",
+  "output/matrix-ledger-enforce/round4/browser/playwright.log": "cbb036f5b1de27225c71ab2281b802d01358612c1a8c674b38eb9a2866805a39",
+  "output/matrix-ledger-enforce/round4/browser/cc12-playwright.log": "4ee16256d353284e20722c5424dd5c43890ea051fe65688cc9db3f33117dc047"
+}

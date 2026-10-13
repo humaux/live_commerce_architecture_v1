@@ -3,9 +3,10 @@
 //   agent never picks modes). Always `foundation-shards`; any UI path adds every CI-runnable `--browser-*` mode of the test-local.sh mode registry; internal/, cmd/ and
 //   migrations/ changes select browser modes from the registry's lc_covers data (CI-SELECT, see the block below).
 //   Browser-tagged foundation inputs additionally select every real registry branch that compiles that tag (including non-browser-named modes).
+//   Canonical matrix producer changes always select the live product-editor guard, from the Go consumer's single source declaration.
 //   Deploy runtime, smoke workflow/helpers and deploy-test edits select deploy-smoke. Unknown/missing foundation Go sources conservatively select tagged runners.
 //   CLI unions legacy quoted/trimmed path classification; only raw paths are used for source lookup.
-// Depends on: test-local.sh case registry (lc_covers declarations; historical usage/dispatch fallback), Go build-constraint headers, git merge-base/head sources and NUL-delimited changed paths; env GITHUB_OUTPUT (modes, deploy).
+// Depends on: mode registry, Go build headers and matrix producer declaration, git base/head/checkout sources and changed paths; env GITHUB_OUTPUT (modes, deploy).
 // Used by: .github/workflows/gates.yml (plan job: pull_request diffs plus the schedule/workflow_dispatch full-browser-universe runs; the output feeds scripts/dev/ci-plan.mjs), tests/ci/pr-modes.test.mjs, tests/ci/backend-coverage.test.mjs.
 // Invariants: foundation-shards is ALWAYS present (so the one `required` check exists for docs-only PRs too); a mode is only ever dropped through EXCLUDED_MODES below.
 //
@@ -241,8 +242,23 @@ export function planPr(paths, source = readFileSync(path.join(root, "scripts/dev
     return !sources.length || sources.some(hasBrowserTag);
   });
   const needsBrowsers = tagged || paths.some((p) => !isBackendOnly(p));
+  // Historical refs may predate the declaration. Union all available base/head/
+  // checkout observations, so additions, removals and merge-ref drift stay guarded.
+  const producers = readSources("tests/foundation/catalog_matrix_ledger_test.go").flatMap(matrixEvidenceSources);
+  const matrix = paths.some((file) => producers.includes(file));
   // Backend-driven selections are always a subset of the full browser set, so UI-path plans keep their exact order.
-  return { modes: [...new Set(["foundation-shards", ...(needsBrowsers ? browserModes(source) : []), ...backendBrowserModes(paths, source), ...(tagged ? taggedFoundationModes(source) : [])])], deploy: paths.some(isDeploy) };
+  return { modes: [...new Set(["foundation-shards", ...(needsBrowsers ? browserModes(source) : []), ...backendBrowserModes(paths, source), ...(tagged ? taggedFoundationModes(source) : []), ...(matrix ? ["--browser-product-editor"] : [])])], deploy: paths.some(isDeploy) };
+}
+
+// Parse only the named literal Go data table, never executable code or unrelated
+// quoted strings. A malformed present declaration fails closed, not to an empty set.
+function matrixEvidenceSources(text) {
+  if (text === null || !/^[ \t]*var[ \t]+productEditorMatrixEvidenceSources\b/m.test(text)) return [];
+  const body = /^[ \t]*var[ \t]+productEditorMatrixEvidenceSources[ \t]*=[ \t]*\[\]string\{([^}]+)\}/m.exec(text)?.[1];
+  const paths = body?.trim().split(/\r?\n/).map((line) => /^\s*"([A-Za-z0-9_./-]+)",\s*$/.exec(line)?.[1]);
+  if (!paths?.length || paths.some((file) => !file || file.startsWith("/") || file.split("/").includes("..")) || new Set(paths).size !== paths.length)
+    throw new Error("invalid matrix evidence source declaration");
+  return paths;
 }
 
 /** CLI: `<base> [head=HEAD]` compares merge-base/head; `--stdin` reads worktree plus HEAD for uncommitted tag removals. */

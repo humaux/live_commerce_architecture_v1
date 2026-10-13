@@ -1,0 +1,5 @@
+=== RUN   TestMatrixLedgerEvidenceProbe
+    matrix_ledger_evidence_probe_test.go:12: PASS real predicate: 141 required unique identities
+--- PASS: TestMatrixLedgerEvidenceProbe (0.01s)
+PASS
+ok  	livecommerce/tests/foundation	0.556s

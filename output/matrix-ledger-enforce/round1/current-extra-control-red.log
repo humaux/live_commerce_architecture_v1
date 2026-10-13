@@ -1,0 +1,47 @@
+✔ real Playwright ESM consumer collects the product-editor cases (806.265916ms)
+✖ every actual mobile control operation is enclosed by its recording callback (11.968084ms)
+✔ a new bare click is rejected without running a browser (10.669666ms)
+✔ a different control cannot borrow an existing action's recording callback (28.406666ms)
+✔ a direct ledger push cannot bypass canonical recording (5.607167ms)
+✔ removing the recording wrapper rejects the enclosed real action (5.509084ms)
+✔ shared table has only complete meaningful unique declarations (0.427791ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (zh-TW) (1.117167ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (zh-CN) (0.381ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (en) (0.396167ms)
+✔ failed assertion and missing observation cannot emit a PASS or satisfy completeness (0.26675ms)
+✔ in-flight action cannot masquerade as complete or admit a concurrent duplicate (0.371208ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 11
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1091.63875
+
+✖ failing tests:
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:101:1
+✖ every actual mobile control operation is enclosed by its recording callback (11.968084ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+  + [
+  +   'one recording callback operates distinct controls: page.getByTestId("product-name"), page.getByTestId("unrecorded-second-control")'
+  + ]
+  - []
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/tests/ci/product-editor-matrix-ledger.test.mjs:102:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'one recording callback operates distinct controls: page.getByTestId("product-name"), page.getByTestId("unrecorded-second-control")' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

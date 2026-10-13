@@ -1,0 +1,37 @@
+✖ every actual mobile control operation is enclosed by its recording callback (71.1975ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 242.316
+
+✖ failing tests:
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:413:1
+✖ every actual mobile control operation is enclosed by its recording callback (71.1975ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   '670: page.getByTestId("product-name").fill(`${tag} mobile matrix ${locale}`)',
+  +   'identity mismatch: source declarations do not cover the shared table exactly (en): 76/77; missing ["mobile matrix new","","product-name","fill"]',
+  +   'identity mismatch: source declarations do not cover the shared table exactly (zh-TW): 76/77; missing ["mobile matrix new","","product-name","fill"]',
+  +   'identity mismatch: source declarations do not cover the shared table exactly (zh-CN): 76/77; missing ["mobile matrix new","","product-name","fill"]'
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-locator-binding/tests/ci/product-editor-matrix-ledger.test.mjs:414:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ '670: page.getByTestId("product-name").fill(`${tag} mobile matrix ${locale}`)', 'identity mismatch: source declarations do not cover the shared table exactly (en): 76/77; missing ["mobile matrix new","","product-name","fill"]', 'identity mismatch: source declarations do not cover the shared table exactly (zh-TW): 76/77; missing ["mobile matrix new","","product-name","fill"]', 'identity mismatch: source declarations do not cover the shared table exactly (zh-CN): 76/77; missing ["mobile matrix new","","product-name","fill"]' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

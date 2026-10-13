@@ -1,0 +1,6 @@
+# livecommerce/tests/foundation_test [livecommerce/tests/foundation.test]
+tests/foundation/catalog_matrix_evidence_test.go:154:8: undefined: err
+tests/foundation/catalog_matrix_evidence_test.go:155:5: undefined: err
+tests/foundation/catalog_matrix_evidence_test.go:156:11: undefined: err
+FAIL	livecommerce/tests/foundation [build failed]
+FAIL

@@ -1,0 +1,1106 @@
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:2: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/account contracts/customers-billing-v1.md:41, contracts/customers-billing-v1.md:246, contracts/customers-billing-v1.md:408, contracts/stripe-live-enable-v1.md:39, contracts/stripe-live-enable-v1.md:65, contracts/stripe-live-enable-v1.md:96, contracts/stripe-live-enable-v1.md:318, contracts/stripe-psp-v1.md:173, contracts/stripe-psp-v1.md:467, contracts/stripe-psp-v1.md:479, contracts/stripe-psp-v1.md:1235, contracts/stripe-psp-v1.md:1317 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:3: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/admin/stores/{}/audit-events: contracts/foundation-v1.md:28 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:4: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/admin/stores/{}/customers/{}/historical-orders[ contracts/migration-import-v1.md:122 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:5: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/admin/stores/{}/settlements[ contracts/stripe-platform-account-v1.md:432 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:6: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/admin/stores/{}: contracts/foundation-v1.md:27 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:7: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/balance_transactions contracts/stripe-platform-account-v1.md:412 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:8: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/checkout/sessions contracts/stripe-psp-v1.md:571 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:9: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/checkout/sessions/{} contracts/stripe-psp-v1.md:565 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:10: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/merchant/ads/drafts[/{}] contracts/meta-ads-v1.md:498 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:11: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/merchant/ads/meta/callback contracts/meta-ads-v1.md:134, contracts/meta-ads-v1.md:496 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:12: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/merchant/ads/report contracts/meta-ads-v1.md:503 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:13: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/payment_intents/{} contracts/stripe-refund-v1.md:103, contracts/stripe-refund-v1.md:126 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:14: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/refunds contracts/stripe-refund-v1.md:83 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:15: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/refunds/{} contracts/stripe-refund-v1.md:83 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:16: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/storefront/checkouts/{} contracts/core-openapi.json:150, contracts/core-openapi.json:151 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:17: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/subscriptions contracts/customers-billing-v1.md:323 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:18: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/subscriptions/{} contracts/customers-billing-v1.md:131 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:19: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/admin/stores/{}/ad-drafts/{}/publish contracts/core-openapi.json:843, contracts/core-openapi.json:844 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:20: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/admin/stores/{}/conversations/{}/takeover contracts/core-openapi.json:555, contracts/core-openapi.json:556 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:21: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/admin/stores/{}/live-sessions/{}/page-live-videos contracts/live-session-flow-openapi.json:386, contracts/live-session-flow-openapi.json:537 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:22: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/admin/stores/{}/live-sessions/{}/start contracts/core-openapi.json:405, contracts/core-openapi.json:406 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:23: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/admin/stores/{}/packages/{}/shipments contracts/core-openapi.json:694, contracts/core-openapi.json:695 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:24: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/billing_portal/sessions contracts/customers-billing-v1.md:107 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:25: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/checkout/sessions contracts/customers-billing-v1.md:105, contracts/stripe-psp-v1.md:390 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:26: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/checkout/sessions/{}/expire contracts/customers-billing-v1.md:328, contracts/stripe-psp-v1.md:567 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:27: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/identity/staff/{list contracts/storefront-v2.md:251 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:28: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/merchant/ads/drafts contracts/meta-ads-v1.md:499 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:29: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/merchant/ads/meta/bindings contracts/meta-ads-v1.md:135, contracts/meta-ads-v1.md:497 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:30: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/merchant/ads/meta/connect contracts/meta-ads-v1.md:133, contracts/meta-ads-v1.md:495 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:31: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/platform/stripe/webhook: contracts/customers-billing-v1.md:130 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:32: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/refunds contracts/stripe-refund-v1.md:78, contracts/stripe-refund-v1.md:106, contracts/stripe-refund-v1.md:396, contracts/stripe-refund-v1.md:523 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:33: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/storefront/carts/{}/checkout contracts/core-openapi.json:9, contracts/core-openapi.json:10 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:34: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY PUT /v1/merchant/ads/capi contracts/meta-ads-v1.md:504 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:127: trailing whitespace.
++INFO () GO_NOT_IN_BFF DELETE /v1/admin/stores/{}/live-sessions/{}/claims/blocklist/entries/{} internal/httpapi/blocklist.go:33, internal/httpapi/blocklist.go:36, internal/httpapi/blocklist.go:56, internal/httpapi/blocklist.go:56, internal/httpapi/claims.go:58, internal/httpapi/claims.go:128, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:130: trailing whitespace.
++INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{} internal/httpapi/handler.go:117, internal/httpapi/handler.go:245, internal/httpapi/handler.go:246, internal/platform/platform.go:796, internal/platform/platform.go:801 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:131: trailing whitespace.
++INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{}/audit-events internal/httpapi/handler.go:117, internal/httpapi/handler.go:245, internal/httpapi/handler.go:246, internal/platform/platform.go:797, internal/platform/platform.go:830 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:132: trailing whitespace.
++INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{}/inbox/order-prefill internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:153, internal/httpapi/merchanttools.go:345, internal/httpapi/merchanttools.go:346, internal/httpapi/merchanttools.go:346, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:133: trailing whitespace.
++INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{}/live-sessions/{}/claims/blocklist internal/httpapi/blocklist.go:33, internal/httpapi/blocklist.go:34, internal/httpapi/blocklist.go:37, internal/httpapi/blocklist.go:37, internal/httpapi/claims.go:58, internal/httpapi/claims.go:128, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:134: trailing whitespace.
++INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{}/live-sessions/{}/claims/blocklist/check internal/httpapi/blocklist.go:33, internal/httpapi/blocklist.go:35, internal/httpapi/blocklist.go:65, internal/httpapi/blocklist.go:65, internal/httpapi/claims.go:58, internal/httpapi/claims.go:128, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:135: trailing whitespace.
++INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{}/live-sessions/{}/claims/keywords/next internal/httpapi/claims.go:58, internal/httpapi/claims.go:130, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210, internal/httpapi/keyword_tools.go:29, internal/httpapi/keyword_tools.go:30, internal/httpapi/keyword_tools.go:49, internal/httpapi/keyword_tools.go:49 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:136: trailing whitespace.
++INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{}/live-sessions/{}/page-live-videos internal/httpapi/claims.go:188, internal/httpapi/handler.go:206, internal/httpapi/live_flow.go:27, internal/httpapi/live_flow.go:46, internal/httpapi/live_flow.go:46 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:137: trailing whitespace.
++INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{}/live-sessions/{}/reminders internal/httpapi/claims.go:188, internal/httpapi/handler.go:238, internal/httpapi/reminders.go:32, internal/httpapi/reminders.go:62, internal/httpapi/reminders.go:62 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:138: trailing whitespace.
++INFO () GO_NOT_IN_BFF POST /v1/admin/stores/{}/live-sessions/{}/claims/blocklist internal/httpapi/blocklist.go:33, internal/httpapi/blocklist.go:34, internal/httpapi/blocklist.go:47, internal/httpapi/blocklist.go:47, internal/httpapi/claims.go:58, internal/httpapi/claims.go:128, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:139: trailing whitespace.
++INFO () GO_NOT_IN_BFF POST /v1/admin/stores/{}/live-sessions/{}/claims/keywords/check internal/httpapi/claims.go:58, internal/httpapi/claims.go:130, internal/httpapi/claims.go:198, internal/httpapi/handler.go:210, internal/httpapi/keyword_tools.go:29, internal/httpapi/keyword_tools.go:30, internal/httpapi/keyword_tools.go:40, internal/httpapi/keyword_tools.go:40 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:140: trailing whitespace.
++INFO () GO_NOT_IN_BFF POST /v1/admin/stores/{}/live-sessions/{}/claims/offers/batch internal/httpapi/claims.go:58, internal/httpapi/claims.go:130, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210, internal/httpapi/keyword_tools.go:29, internal/httpapi/keyword_tools.go:30, internal/httpapi/keyword_tools.go:59, internal/httpapi/keyword_tools.go:59 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:141: trailing whitespace.
++INFO () GO_NOT_IN_BFF POST /v1/admin/stores/{}/live-sessions/{}/claims/simulate internal/httpapi/claims.go:58, internal/httpapi/claims.go:130, internal/httpapi/claims.go:198, internal/httpapi/handler.go:210, internal/httpapi/keyword_tools.go:29, internal/httpapi/keyword_tools.go:30, internal/httpapi/keyword_tools.go:31, internal/httpapi/keyword_tools.go:31 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:142: trailing whitespace.
++INFO () GO_NOT_IN_BFF POST /v1/admin/stores/{}/live-sessions/{}/page-live-videos/read internal/httpapi/claims.go:188, internal/httpapi/handler.go:206, internal/httpapi/live_flow.go:27, internal/httpapi/live_flow.go:58, internal/httpapi/live_flow.go:58 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:143: trailing whitespace.
++INFO () GO_NOT_IN_BFF POST /v1/admin/stores/{}/live-sessions/{}/reminders internal/httpapi/claims.go:188, internal/httpapi/handler.go:238, internal/httpapi/reminders.go:32, internal/httpapi/reminders.go:60 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:144: trailing whitespace.
++INFO () GO_NOT_IN_BFF POST /v1/admin/stores/{}/live-sessions/{}/reminders/{} internal/httpapi/claims.go:188, internal/httpapi/handler.go:238, internal/httpapi/reminders.go:32, internal/httpapi/reminders.go:61 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:145: trailing whitespace.
++INFO () GO_NOT_IN_BFF POST /v1/admin/stores/{}/message-templates internal/httpapi/handler.go:239, internal/httpapi/templates.go:29, internal/httpapi/templates.go:33, internal/httpapi/templates.go:33, internal/httpapi/templates.go:56 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:146: trailing whitespace.
++INFO () GO_NOT_IN_BFF POST /v1/admin/stores/{}/orders/for-buyer internal/httpapi/cvs.go:146, internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:153, internal/httpapi/merchanttools.go:345, internal/httpapi/merchanttools.go:365, internal/httpapi/merchanttools.go:365 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:147: trailing whitespace.
++INFO () GO_NOT_IN_BFF POST /v1/admin/stores/{}/products/{}/images/{}/renditions internal/httpapi/handler.go:197, internal/httpapi/handler.go:342, internal/httpapi/images.go:36, internal/httpapi/images.go:37, internal/httpapi/images.go:37 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:150: trailing whitespace.
++WARNING (legacy) GO_ONLY DELETE /v1/admin/stores/{}/customers/tags/{} internal/httpapi/customer_tags.go:28, internal/httpapi/customer_tags.go:72, internal/httpapi/customer_tags.go:72, internal/httpapi/customers.go:37, internal/httpapi/customers.go:42, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:151: trailing whitespace.
++WARNING (legacy) GO_ONLY DELETE /v1/admin/stores/{}/customers/{}/notes/{} internal/httpapi/customer_tags.go:28, internal/httpapi/customer_tags.go:101, internal/httpapi/customer_tags.go:101, internal/httpapi/customers.go:37, internal/httpapi/customers.go:42, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:152: trailing whitespace.
++WARNING (legacy) GO_ONLY DELETE /v1/admin/stores/{}/live-sessions/{}/claims/blocklist/entries/{} internal/httpapi/blocklist.go:33, internal/httpapi/blocklist.go:36, internal/httpapi/blocklist.go:56, internal/httpapi/blocklist.go:56, internal/httpapi/claims.go:58, internal/httpapi/claims.go:128, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:153: trailing whitespace.
++WARNING (legacy) GO_ONLY DELETE /v1/admin/stores/{}/parcel-groups/{} internal/httpapi/handler.go:229, internal/httpapi/parcels.go:31, internal/httpapi/parcels.go:79, internal/httpapi/parcels.go:79 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:154: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/bank-transfer-settings internal/httpapi/cvs.go:146, internal/httpapi/handler.go:231, internal/httpapi/offline.go:33, internal/httpapi/offline.go:35, internal/httpapi/offline.go:35 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:155: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/billing internal/httpapi/billing.go:48, internal/httpapi/billing.go:50, internal/httpapi/billing.go:50, internal/httpapi/billing.go:116, internal/httpapi/handler.go:226 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:156: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/billing/standing internal/httpapi/billing.go:48, internal/httpapi/billing.go:65, internal/httpapi/billing.go:65, internal/httpapi/billing.go:116, internal/httpapi/handler.go:226 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:157: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/cash-on-delivery-settings internal/httpapi/cod.go:25, internal/httpapi/cod.go:26, internal/httpapi/cod.go:26, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:232 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:158: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/customers internal/httpapi/customers.go:37, internal/httpapi/customers.go:44, internal/httpapi/customers.go:44, internal/httpapi/customers.go:115, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:159: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/customers/tags internal/httpapi/customer_tags.go:56, internal/httpapi/customer_tags.go:56, internal/httpapi/customers.go:37, internal/httpapi/customers.go:42, internal/httpapi/customers.go:115, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:160: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/customers/{} internal/httpapi/customers.go:37, internal/httpapi/customers.go:56, internal/httpapi/customers.go:56, internal/httpapi/customers.go:115, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:161: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/customers/{}/historical-orders internal/httpapi/customer_historical.go:26, internal/httpapi/customer_historical.go:26, internal/httpapi/customers.go:37, internal/httpapi/customers.go:43, internal/httpapi/customers.go:115, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:162: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/customers/{}/notes internal/httpapi/customer_tags.go:81, internal/httpapi/customer_tags.go:81, internal/httpapi/customers.go:37, internal/httpapi/customers.go:42, internal/httpapi/customers.go:115, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:163: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/dashboard internal/httpapi/cvs.go:146, internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:42, internal/httpapi/merchanttools.go:43, internal/httpapi/merchanttools.go:43 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:164: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/design/draft internal/httpapi/design.go:40, internal/httpapi/design.go:41, internal/httpapi/design.go:41, internal/httpapi/design.go:77, internal/httpapi/handler.go:198 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:165: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/design/media internal/httpapi/design.go:40, internal/httpapi/design.go:59, internal/httpapi/design.go:59, internal/httpapi/design.go:77, internal/httpapi/handler.go:198 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:166: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/design/media/{} internal/httpapi/design.go:40, internal/httpapi/design.go:63, internal/httpapi/design.go:63, internal/httpapi/design.go:77, internal/httpapi/handler.go:198 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:167: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/design/versions internal/httpapi/design.go:40, internal/httpapi/design.go:56, internal/httpapi/design.go:56, internal/httpapi/design.go:77, internal/httpapi/handler.go:198 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:168: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/finance/summary internal/httpapi/customers.go:115, internal/httpapi/finance.go:29, internal/httpapi/finance.go:30, internal/httpapi/finance.go:30, internal/httpapi/handler.go:224 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:169: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/finance/summary.csv internal/httpapi/customers.go:115, internal/httpapi/finance.go:29, internal/httpapi/finance.go:42, internal/httpapi/finance.go:42, internal/httpapi/handler.go:224 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:170: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/imports/{}/results.csv internal/httpapi/handler.go:223, internal/httpapi/imports.go:34, internal/httpapi/imports.go:106, internal/httpapi/imports.go:106, internal/httpapi/merchanttools.go:243 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:171: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/inbox/buyer-panel internal/httpapi/handler.go:236, internal/httpapi/inbox.go:51, internal/httpapi/inbox.go:153, internal/httpapi/inbox.go:153, internal/httpapi/inbox.go:178 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:172: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/inbox/conversations internal/httpapi/handler.go:236, internal/httpapi/inbox.go:50, internal/httpapi/inbox.go:55, internal/httpapi/inbox.go:55, internal/httpapi/inbox.go:178 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:173: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/inbox/conversations/{}/messages internal/httpapi/handler.go:236, internal/httpapi/inbox.go:50, internal/httpapi/inbox.go:97, internal/httpapi/inbox.go:97, internal/httpapi/inbox.go:178 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:174: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/inbox/order-prefill internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:153, internal/httpapi/merchanttools.go:345, internal/httpapi/merchanttools.go:346, internal/httpapi/merchanttools.go:346, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:175: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/live-sessions internal/httpapi/handler.go:205, internal/httpapi/studio.go:36, internal/httpapi/studio.go:37, internal/httpapi/studio.go:37, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:176: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/live-sessions/{} internal/httpapi/handler.go:205, internal/httpapi/studio.go:36, internal/httpapi/studio.go:50, internal/httpapi/studio.go:50, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:177: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/live-sessions/{}/claims internal/httpapi/claims.go:58, internal/httpapi/claims.go:60, internal/httpapi/claims.go:60, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:178: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/live-sessions/{}/claims/blocklist internal/httpapi/blocklist.go:33, internal/httpapi/blocklist.go:34, internal/httpapi/blocklist.go:37, internal/httpapi/blocklist.go:37, internal/httpapi/claims.go:58, internal/httpapi/claims.go:128, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:179: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/live-sessions/{}/claims/blocklist/check internal/httpapi/blocklist.go:33, internal/httpapi/blocklist.go:35, internal/httpapi/blocklist.go:65, internal/httpapi/blocklist.go:65, internal/httpapi/claims.go:58, internal/httpapi/claims.go:128, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:180: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/live-sessions/{}/claims/bundles internal/httpapi/claims.go:58, internal/httpapi/claims.go:111, internal/httpapi/claims.go:111, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:181: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/live-sessions/{}/claims/keywords/next internal/httpapi/claims.go:58, internal/httpapi/claims.go:130, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210, internal/httpapi/keyword_tools.go:29, internal/httpapi/keyword_tools.go:30, internal/httpapi/keyword_tools.go:49, internal/httpapi/keyword_tools.go:49 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:182: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/live-sessions/{}/claims/library internal/httpapi/claims.go:58, internal/httpapi/claims.go:93, internal/httpapi/claims.go:93, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:183: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/live-sessions/{}/console internal/httpapi/claims.go:188, internal/httpapi/handler.go:209, internal/httpapi/live_console.go:27, internal/httpapi/live_console.go:28, internal/httpapi/live_console.go:28 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:184: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/live-sessions/{}/input internal/httpapi/handler.go:205, internal/httpapi/studio.go:36, internal/httpapi/studio.go:98, internal/httpapi/studio.go:98, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:185: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/live-sessions/{}/input/prepared internal/httpapi/handler.go:205, internal/httpapi/studio.go:36, internal/httpapi/studio.go:107, internal/httpapi/studio.go:107, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:186: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/live-sessions/{}/reminders internal/httpapi/claims.go:188, internal/httpapi/handler.go:238, internal/httpapi/reminders.go:32, internal/httpapi/reminders.go:62, internal/httpapi/reminders.go:62 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:187: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/logistics/cvs-settings internal/httpapi/cvs.go:49, internal/httpapi/cvs.go:75, internal/httpapi/cvs.go:75, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:227 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:188: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/logistics/ecpay internal/httpapi/cvs.go:49, internal/httpapi/cvs.go:52, internal/httpapi/cvs.go:52, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:227 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:189: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/markets internal/httpapi/handler.go:201, internal/httpapi/handler.go:296, internal/httpapi/settings_discovery.go:18, internal/httpapi/settings_discovery.go:19, internal/httpapi/settings_discovery.go:19 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:190: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/markets/{}/countries/TW/payment-methods internal/httpapi/handler.go:201, internal/httpapi/settings.go:51, internal/httpapi/settings_discovery.go:38, internal/httpapi/settings_discovery.go:38 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:191: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/markets/{}/countries/{}/delivery-services internal/httpapi/handler.go:201, internal/httpapi/handler.go:296, internal/httpapi/settings.go:19, internal/httpapi/settings_discovery.go:35, internal/httpapi/settings_discovery.go:35 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:192: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/markets/{}/countries/{}/delivery-services/{} internal/httpapi/handler.go:200, internal/httpapi/settings.go:19, internal/httpapi/settings.go:22, internal/httpapi/settings.go:22, internal/httpapi/settings.go:51 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:193: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/markets/{}/countries/{}/delivery-services/{}/policy internal/httpapi/handler.go:201, internal/httpapi/settings.go:19, internal/httpapi/settings.go:51, internal/httpapi/settings_discovery.go:41, internal/httpapi/settings_discovery.go:41 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:194: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/markets/{}/countries/{}/payment-methods/{} internal/httpapi/handler.go:200, internal/httpapi/settings.go:19, internal/httpapi/settings.go:34, internal/httpapi/settings.go:34, internal/httpapi/settings.go:51 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:195: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/message-templates internal/httpapi/handler.go:239, internal/httpapi/templates.go:29, internal/httpapi/templates.go:44, internal/httpapi/templates.go:44, internal/httpapi/templates.go:56 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:196: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/meta-connect/callback internal/httpapi/ads.go:220, internal/httpapi/handler.go:220, internal/httpapi/meta_connect.go:35, internal/httpapi/meta_connect.go:46, internal/httpapi/meta_connect.go:46 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:197: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/meta-connect/states/{} internal/httpapi/ads.go:220, internal/httpapi/handler.go:220, internal/httpapi/meta_connect.go:35, internal/httpapi/meta_connect.go:54, internal/httpapi/meta_connect.go:54 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:198: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/meta-connect/status internal/httpapi/ads.go:220, internal/httpapi/handler.go:220, internal/httpapi/meta_connect.go:35, internal/httpapi/meta_connect.go:49, internal/httpapi/meta_connect.go:49 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:199: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/meta/health internal/httpapi/ads.go:220, internal/httpapi/handler.go:221, internal/httpapi/meta_health.go:35, internal/httpapi/meta_health.go:38, internal/httpapi/meta_health.go:38 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:200: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/notification-settings internal/httpapi/cvs.go:146, internal/httpapi/handler.go:235, internal/httpapi/notify.go:23, internal/httpapi/notify.go:24, internal/httpapi/notify.go:24 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:201: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/operations internal/httpapi/handler.go:240, internal/httpapi/operations.go:41, internal/httpapi/operations.go:43, internal/httpapi/operations.go:43, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:202: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/order-actions internal/httpapi/handler.go:218, internal/httpapi/shipments.go:41, internal/httpapi/shipments.go:92, internal/httpapi/shipments.go:92, internal/httpapi/shipments.go:133 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:203: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/orders/cancel-refund-gaps internal/httpapi/handler.go:230, internal/httpapi/returns.go:104, internal/httpapi/returns.go:123, internal/httpapi/returns.go:123, internal/httpapi/shipments.go:133 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:204: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/orders/manual/options internal/httpapi/cvs.go:146, internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:42, internal/httpapi/merchanttools.go:102, internal/httpapi/merchanttools.go:102 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:205: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/orders/merge-suggestions internal/httpapi/handler.go:229, internal/httpapi/parcels.go:31, internal/httpapi/parcels.go:33, internal/httpapi/parcels.go:33, internal/httpapi/shipments.go:133 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:206: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/orders/unshipped.csv internal/httpapi/handler.go:218, internal/httpapi/shipments.go:41, internal/httpapi/shipments.go:82, internal/httpapi/shipments.go:82, internal/httpapi/shipments.go:133 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:207: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/orders/{} internal/httpapi/handler.go:204, internal/httpapi/orders.go:18, internal/httpapi/orders.go:20, internal/httpapi/orders.go:59 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:208: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/orders/{}/bank-transfer internal/httpapi/cvs.go:146, internal/httpapi/handler.go:231, internal/httpapi/offline.go:33, internal/httpapi/offline.go:34, internal/httpapi/offline.go:49, internal/httpapi/offline.go:49 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:209: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/orders/{}/cvs-shipment internal/httpapi/cvs.go:49, internal/httpapi/cvs.go:50, internal/httpapi/cvs.go:99, internal/httpapi/cvs.go:99, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:227 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:210: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/orders/{}/refunds internal/httpapi/handler.go:215, internal/httpapi/refunds.go:32, internal/httpapi/refunds.go:45, internal/httpapi/refunds.go:64, internal/httpapi/refunds.go:64, internal/httpapi/refunds.go:101 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:211: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/orders/{}/returns internal/httpapi/handler.go:230, internal/httpapi/returns.go:104, internal/httpapi/returns.go:152, internal/httpapi/returns.go:152, internal/httpapi/shipments.go:133 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:212: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/orders/{}/shipment/history internal/httpapi/handler.go:218, internal/httpapi/shipments.go:41, internal/httpapi/shipments.go:70, internal/httpapi/shipments.go:70, internal/httpapi/shipments.go:133 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:213: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/parcel-groups internal/httpapi/handler.go:229, internal/httpapi/parcels.go:31, internal/httpapi/parcels.go:46, internal/httpapi/parcels.go:46, internal/httpapi/shipments.go:133 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:214: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/products/export.csv internal/httpapi/cvs.go:146, internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:42, internal/httpapi/merchanttools.go:48, internal/httpapi/merchanttools.go:48 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:215: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/provider-accounts internal/httpapi/accounts.go:23, internal/httpapi/accounts.go:121, internal/httpapi/accounts.go:121, internal/httpapi/handler.go:203, internal/httpapi/handler.go:375 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:216: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/provider-accounts/{} internal/httpapi/accounts.go:23, internal/httpapi/accounts.go:145, internal/httpapi/accounts.go:145, internal/httpapi/handler.go:203, internal/httpapi/settings.go:51 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:217: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/reports/channels internal/httpapi/customers.go:115, internal/httpapi/handler.go:225, internal/httpapi/reports.go:35, internal/httpapi/reports.go:42, internal/httpapi/reports.go:50, internal/httpapi/reports.go:50, internal/httpapi/reports.go:72, internal/httpapi/reports.go:72 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:218: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/reports/channels.csv internal/httpapi/customers.go:115, internal/httpapi/handler.go:225, internal/httpapi/reports.go:35, internal/httpapi/reports.go:42, internal/httpapi/reports.go:50, internal/httpapi/reports.go:50, internal/httpapi/reports.go:86, internal/httpapi/reports.go:86 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:219: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/reports/funnel internal/httpapi/customers.go:115, internal/httpapi/handler.go:225, internal/httpapi/reports.go:35, internal/httpapi/reports.go:42, internal/httpapi/reports.go:57, internal/httpapi/reports.go:57, internal/httpapi/reports.go:72, internal/httpapi/reports.go:72 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:220: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/reports/funnel.csv internal/httpapi/customers.go:115, internal/httpapi/handler.go:225, internal/httpapi/reports.go:35, internal/httpapi/reports.go:42, internal/httpapi/reports.go:57, internal/httpapi/reports.go:57, internal/httpapi/reports.go:86, internal/httpapi/reports.go:86 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:221: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/reports/manual-orders internal/httpapi/customers.go:115, internal/httpapi/handler.go:225, internal/httpapi/reports.go:35, internal/httpapi/reports.go:42, internal/httpapi/reports.go:64, internal/httpapi/reports.go:64, internal/httpapi/reports.go:72, internal/httpapi/reports.go:72 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:222: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/reports/manual-orders.csv internal/httpapi/customers.go:115, internal/httpapi/handler.go:225, internal/httpapi/reports.go:35, internal/httpapi/reports.go:42, internal/httpapi/reports.go:64, internal/httpapi/reports.go:64, internal/httpapi/reports.go:86, internal/httpapi/reports.go:86 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:223: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/reports/products.csv internal/httpapi/customers.go:115, internal/httpapi/handler.go:225, internal/httpapi/reports.go:35, internal/httpapi/reports.go:42, internal/httpapi/reports.go:43, internal/httpapi/reports.go:43, internal/httpapi/reports.go:86, internal/httpapi/reports.go:86 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:224: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/returns internal/httpapi/handler.go:230, internal/httpapi/returns.go:104, internal/httpapi/returns.go:164, internal/httpapi/returns.go:164 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:225: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/settlements internal/httpapi/handler.go:217, internal/httpapi/settlements.go:34, internal/httpapi/settlements.go:35, internal/httpapi/settlements.go:35, internal/httpapi/settlements.go:59 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:226: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/settlements/{} internal/httpapi/handler.go:217, internal/httpapi/settlements.go:34, internal/httpapi/settlements.go:45, internal/httpapi/settlements.go:45, internal/httpapi/settlements.go:59 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:227: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/shipments/tracking-import/{}/result.csv internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:42, internal/httpapi/merchanttools.go:173, internal/httpapi/merchanttools.go:173, internal/httpapi/merchanttools.go:243 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:228: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/storefront/domains internal/httpapi/handler.go:202, internal/httpapi/settings.go:51, internal/httpapi/storefront.go:62, internal/httpapi/storefront.go:72, internal/httpapi/storefront.go:73, internal/httpapi/storefront.go:73 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:229: trailing whitespace.
++WARNING (legacy) GO_ONLY PATCH /v1/admin/stores/{}/customers/tags/{} internal/httpapi/customer_tags.go:28, internal/httpapi/customer_tags.go:68, internal/httpapi/customer_tags.go:68, internal/httpapi/customers.go:37, internal/httpapi/customers.go:42, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:230: trailing whitespace.
++WARNING (legacy) GO_ONLY PATCH /v1/admin/stores/{}/customers/{}/notes/{} internal/httpapi/customer_tags.go:28, internal/httpapi/customer_tags.go:97, internal/httpapi/customer_tags.go:97, internal/httpapi/customers.go:37, internal/httpapi/customers.go:42, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:231: trailing whitespace.
++WARNING (legacy) GO_ONLY PATCH /v1/admin/stores/{}/live-sessions/{} internal/httpapi/handler.go:205, internal/httpapi/studio.go:36, internal/httpapi/studio.go:67, internal/httpapi/studio.go:67, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:232: trailing whitespace.
++WARNING (legacy) GO_ONLY PATCH /v1/admin/stores/{}/live-sessions/{}/claims/offers/{} internal/httpapi/claims.go:58, internal/httpapi/claims.go:80, internal/httpapi/claims.go:80, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:233: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/billing/checkout internal/httpapi/billing.go:48, internal/httpapi/billing.go:71, internal/httpapi/billing.go:71, internal/httpapi/billing.go:116, internal/httpapi/claims.go:138, internal/httpapi/handler.go:226 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:234: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/billing/portal internal/httpapi/billing.go:48, internal/httpapi/billing.go:90, internal/httpapi/billing.go:90, internal/httpapi/billing.go:116, internal/httpapi/claims.go:138, internal/httpapi/handler.go:226 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:235: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/customers/tags internal/httpapi/customer_tags.go:28, internal/httpapi/customer_tags.go:64, internal/httpapi/customer_tags.go:64, internal/httpapi/customers.go:37, internal/httpapi/customers.go:42, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:236: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/customers/{}/consent-withdrawals internal/httpapi/customers.go:37, internal/httpapi/customers.go:63, internal/httpapi/customers.go:63, internal/httpapi/customers.go:115, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:237: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/customers/{}/erasure internal/httpapi/customers.go:37, internal/httpapi/customers.go:89, internal/httpapi/customers.go:89, internal/httpapi/customers.go:115, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:238: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/customers/{}/exports internal/httpapi/customers.go:37, internal/httpapi/customers.go:75, internal/httpapi/customers.go:75, internal/httpapi/customers.go:115, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:239: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/customers/{}/notes internal/httpapi/customer_tags.go:28, internal/httpapi/customer_tags.go:93, internal/httpapi/customer_tags.go:93, internal/httpapi/customers.go:37, internal/httpapi/customers.go:42, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:240: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/design/media internal/httpapi/design.go:40, internal/httpapi/design.go:62, internal/httpapi/design.go:150, internal/httpapi/handler.go:198 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:241: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/design/media/{}/delete internal/httpapi/design.go:40, internal/httpapi/design.go:70, internal/httpapi/design.go:70, internal/httpapi/design.go:121, internal/httpapi/handler.go:198 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:242: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/design/preview-token internal/httpapi/design.go:40, internal/httpapi/design.go:53, internal/httpapi/design.go:53, internal/httpapi/design.go:113, internal/httpapi/handler.go:198 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:243: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/design/publish internal/httpapi/design.go:40, internal/httpapi/design.go:47, internal/httpapi/design.go:47, internal/httpapi/design.go:113, internal/httpapi/handler.go:198 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:244: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/design/rollback internal/httpapi/design.go:40, internal/httpapi/design.go:50, internal/httpapi/design.go:50, internal/httpapi/design.go:113, internal/httpapi/handler.go:198 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:245: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/imports/customers/commit internal/httpapi/handler.go:223, internal/httpapi/imports.go:34, internal/httpapi/imports.go:53, internal/httpapi/imports.go:53, internal/httpapi/merchanttools.go:243 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:246: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/imports/customers/preview internal/httpapi/handler.go:223, internal/httpapi/imports.go:34, internal/httpapi/imports.go:36, internal/httpapi/imports.go:36, internal/httpapi/merchanttools.go:243 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:247: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/imports/orders/commit internal/httpapi/handler.go:223, internal/httpapi/imports.go:34, internal/httpapi/imports.go:88, internal/httpapi/imports.go:88, internal/httpapi/merchanttools.go:243 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:248: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/imports/orders/preview internal/httpapi/handler.go:223, internal/httpapi/imports.go:34, internal/httpapi/imports.go:72, internal/httpapi/imports.go:72, internal/httpapi/merchanttools.go:243 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:249: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/inbox/conversations/{}/customer-link internal/httpapi/handler.go:236, internal/httpapi/inbox.go:50, internal/httpapi/inbox.go:141, internal/httpapi/inbox.go:141, internal/httpapi/inbox.go:178 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:250: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/inbox/conversations/{}/messages internal/httpapi/handler.go:237, internal/httpapi/inbox.go:178, internal/httpapi/inbox_send.go:42, internal/httpapi/inbox_send.go:46, internal/httpapi/inbox_send.go:46 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:251: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/inbox/conversations/{}/read internal/httpapi/handler.go:236, internal/httpapi/inbox.go:50, internal/httpapi/inbox.go:109, internal/httpapi/inbox.go:109, internal/httpapi/inbox.go:178 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:252: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/inbox/conversations/{}/release internal/httpapi/handler.go:236, internal/httpapi/inbox.go:50, internal/httpapi/inbox.go:129, internal/httpapi/inbox.go:129, internal/httpapi/inbox.go:178 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:253: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/inbox/conversations/{}/takeover internal/httpapi/handler.go:236, internal/httpapi/inbox.go:50, internal/httpapi/inbox.go:120, internal/httpapi/inbox.go:120, internal/httpapi/inbox.go:178 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:254: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions internal/httpapi/handler.go:205, internal/httpapi/studio.go:36, internal/httpapi/studio.go:47, internal/httpapi/studio.go:47, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:255: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/claims/blocklist internal/httpapi/blocklist.go:33, internal/httpapi/blocklist.go:34, internal/httpapi/blocklist.go:47, internal/httpapi/blocklist.go:47, internal/httpapi/claims.go:58, internal/httpapi/claims.go:128, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:256: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/claims/bundles/{}/link internal/httpapi/claims.go:58, internal/httpapi/claims.go:123, internal/httpapi/claims.go:138, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:257: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/claims/keywords/check internal/httpapi/claims.go:58, internal/httpapi/claims.go:130, internal/httpapi/claims.go:198, internal/httpapi/handler.go:210, internal/httpapi/keyword_tools.go:29, internal/httpapi/keyword_tools.go:30, internal/httpapi/keyword_tools.go:40, internal/httpapi/keyword_tools.go:40 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:258: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/claims/manual internal/httpapi/claims.go:58, internal/httpapi/claims.go:105, internal/httpapi/claims.go:105, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:259: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/claims/offer-import internal/httpapi/claims.go:58, internal/httpapi/claims.go:86, internal/httpapi/claims.go:86, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:260: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/claims/offers internal/httpapi/claims.go:58, internal/httpapi/claims.go:72, internal/httpapi/claims.go:72, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:261: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/claims/offers/batch internal/httpapi/claims.go:58, internal/httpapi/claims.go:130, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210, internal/httpapi/keyword_tools.go:29, internal/httpapi/keyword_tools.go:30, internal/httpapi/keyword_tools.go:59, internal/httpapi/keyword_tools.go:59 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:262: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/claims/offers/{}/recommend internal/httpapi/claims.go:188, internal/httpapi/handler.go:237, internal/httpapi/inbox_send.go:43, internal/httpapi/inbox_send.go:84, internal/httpapi/inbox_send.go:84 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:263: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/claims/simulate internal/httpapi/claims.go:58, internal/httpapi/claims.go:130, internal/httpapi/claims.go:198, internal/httpapi/handler.go:210, internal/httpapi/keyword_tools.go:29, internal/httpapi/keyword_tools.go:30, internal/httpapi/keyword_tools.go:31, internal/httpapi/keyword_tools.go:31 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:264: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/claims/window internal/httpapi/claims.go:58, internal/httpapi/claims.go:65, internal/httpapi/claims.go:65, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:265: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/comments/{}/print internal/httpapi/claims.go:188, internal/httpapi/handler.go:208, internal/httpapi/live_stream.go:35, internal/httpapi/live_stream.go:56, internal/httpapi/live_stream.go:56 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:266: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/comments/{}/private-reply internal/httpapi/claims.go:188, internal/httpapi/handler.go:237, internal/httpapi/inbox_send.go:43, internal/httpapi/inbox_send.go:58, internal/httpapi/inbox_send.go:58 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:267: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/comments/{}/public-reply internal/httpapi/claims.go:188, internal/httpapi/handler.go:237, internal/httpapi/inbox_send.go:43, internal/httpapi/inbox_send.go:72, internal/httpapi/inbox_send.go:72 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:268: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/input/start internal/httpapi/handler.go:205, internal/httpapi/studio.go:36, internal/httpapi/studio.go:116, internal/httpapi/studio.go:116, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:269: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/input/token internal/httpapi/handler.go:205, internal/httpapi/studio.go:36, internal/httpapi/studio.go:127, internal/httpapi/studio.go:127, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:270: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/lifecycle internal/httpapi/claims.go:188, internal/httpapi/handler.go:207, internal/httpapi/live_lifecycle.go:27, internal/httpapi/live_lifecycle.go:28, internal/httpapi/live_lifecycle.go:28 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:271: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/page-live-videos/read internal/httpapi/claims.go:188, internal/httpapi/handler.go:206, internal/httpapi/live_flow.go:27, internal/httpapi/live_flow.go:58, internal/httpapi/live_flow.go:58 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:272: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/rehearsal/start internal/httpapi/handler.go:205, internal/httpapi/studio.go:36, internal/httpapi/studio.go:80, internal/httpapi/studio.go:80, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:273: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/rehearsal/stop internal/httpapi/handler.go:205, internal/httpapi/studio.go:36, internal/httpapi/studio.go:90, internal/httpapi/studio.go:90, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:274: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/reminders internal/httpapi/claims.go:188, internal/httpapi/handler.go:238, internal/httpapi/reminders.go:32, internal/httpapi/reminders.go:60 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:275: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/reminders/{} internal/httpapi/claims.go:188, internal/httpapi/handler.go:238, internal/httpapi/reminders.go:32, internal/httpapi/reminders.go:61 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:276: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/logistics/ecpay/enabled internal/httpapi/cvs.go:49, internal/httpapi/cvs.go:66, internal/httpapi/cvs.go:66, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:227 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:277: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/markets internal/httpapi/handler.go:201, internal/httpapi/settings.go:51, internal/httpapi/settings_discovery.go:18, internal/httpapi/settings_discovery.go:22, internal/httpapi/settings_discovery.go:22 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:278: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/markets/{}/countries/{}/payment-methods/{}/inspect internal/httpapi/handler.go:200, internal/httpapi/settings.go:19, internal/httpapi/settings.go:43, internal/httpapi/settings.go:43, internal/httpapi/settings.go:51 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:279: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/message-templates internal/httpapi/handler.go:239, internal/httpapi/templates.go:29, internal/httpapi/templates.go:33, internal/httpapi/templates.go:33, internal/httpapi/templates.go:56 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:280: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/meta-connect/disconnect internal/httpapi/ads.go:220, internal/httpapi/handler.go:220, internal/httpapi/meta_connect.go:35, internal/httpapi/meta_connect.go:69, internal/httpapi/meta_connect.go:69 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:281: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/meta-connect/pick internal/httpapi/ads.go:220, internal/httpapi/handler.go:220, internal/httpapi/meta_connect.go:35, internal/httpapi/meta_connect.go:59, internal/httpapi/meta_connect.go:59 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:282: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/meta-connect/start internal/httpapi/ads.go:220, internal/httpapi/handler.go:220, internal/httpapi/meta_connect.go:35, internal/httpapi/meta_connect.go:38, internal/httpapi/meta_connect.go:38 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:283: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/meta/health/recheck internal/httpapi/ads.go:220, internal/httpapi/handler.go:221, internal/httpapi/meta_health.go:35, internal/httpapi/meta_health.go:44, internal/httpapi/meta_health.go:44 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:284: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/operations/{}/cancel internal/httpapi/handler.go:240, internal/httpapi/operations.go:41, internal/httpapi/operations.go:66, internal/httpapi/operations.go:68, internal/httpapi/operations.go:72, internal/httpapi/operations.go:72, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:285: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/operations/{}/query internal/httpapi/handler.go:240, internal/httpapi/operations.go:41, internal/httpapi/operations.go:66, internal/httpapi/operations.go:68, internal/httpapi/operations.go:72, internal/httpapi/operations.go:72, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:286: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/operations/{}/retry internal/httpapi/handler.go:240, internal/httpapi/operations.go:41, internal/httpapi/operations.go:66, internal/httpapi/operations.go:68, internal/httpapi/operations.go:72, internal/httpapi/operations.go:72, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:287: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/export internal/httpapi/handler.go:228, internal/httpapi/picklist.go:37, internal/httpapi/picklist.go:56, internal/httpapi/picklist.go:56 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:288: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/for-buyer internal/httpapi/cvs.go:146, internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:153, internal/httpapi/merchanttools.go:345, internal/httpapi/merchanttools.go:365, internal/httpapi/merchanttools.go:365 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:289: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/manual/regenerate-link internal/httpapi/cvs.go:146, internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:42, internal/httpapi/merchanttools.go:133, internal/httpapi/merchanttools.go:133 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:290: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/pick-list internal/httpapi/handler.go:228, internal/httpapi/picklist.go:37, internal/httpapi/picklist.go:39, internal/httpapi/picklist.go:39 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:291: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/{}/bank-transfer/confirm internal/httpapi/cvs.go:146, internal/httpapi/handler.go:231, internal/httpapi/offline.go:33, internal/httpapi/offline.go:34, internal/httpapi/offline.go:55, internal/httpapi/offline.go:55 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:292: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/{}/bank-transfer/refund-offline internal/httpapi/cvs.go:146, internal/httpapi/handler.go:231, internal/httpapi/offline.go:33, internal/httpapi/offline.go:34, internal/httpapi/offline.go:66, internal/httpapi/offline.go:66 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:293: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/{}/bank-transfer/reject internal/httpapi/cvs.go:146, internal/httpapi/handler.go:231, internal/httpapi/offline.go:33, internal/httpapi/offline.go:34, internal/httpapi/offline.go:75, internal/httpapi/offline.go:75 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:294: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/{}/cancel internal/httpapi/handler.go:230, internal/httpapi/returns.go:104, internal/httpapi/returns.go:106, internal/httpapi/returns.go:106, internal/httpapi/shipments.go:133 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:295: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/{}/collection internal/httpapi/cvs.go:49, internal/httpapi/cvs.go:50, internal/httpapi/cvs.go:124, internal/httpapi/cvs.go:124, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:227 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:296: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/{}/cvs-shipment internal/httpapi/cvs.go:49, internal/httpapi/cvs.go:50, internal/httpapi/cvs.go:89, internal/httpapi/cvs.go:89, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:227 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:297: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/{}/cvs-shipment/abandon internal/httpapi/cvs.go:49, internal/httpapi/cvs.go:50, internal/httpapi/cvs.go:115, internal/httpapi/cvs.go:115, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:227 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:298: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/{}/cvs-shipment/print-form internal/httpapi/cvs.go:49, internal/httpapi/cvs.go:50, internal/httpapi/cvs.go:104, internal/httpapi/cvs.go:104, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:227 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:299: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/{}/pay-at-pickup-release internal/httpapi/cvs.go:49, internal/httpapi/cvs.go:50, internal/httpapi/cvs.go:133, internal/httpapi/cvs.go:133, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:227 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:300: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/{}/refunds/{}/refresh internal/httpapi/handler.go:215, internal/httpapi/refunds.go:32, internal/httpapi/refunds.go:45, internal/httpapi/refunds.go:75, internal/httpapi/refunds.go:75, internal/httpapi/refunds.go:101 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:301: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/{}/returns internal/httpapi/handler.go:230, internal/httpapi/returns.go:104, internal/httpapi/returns.go:135, internal/httpapi/returns.go:135, internal/httpapi/shipments.go:133 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:302: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/parcel-groups internal/httpapi/handler.go:229, internal/httpapi/parcels.go:31, internal/httpapi/parcels.go:58, internal/httpapi/parcels.go:58, internal/httpapi/shipments.go:133 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:303: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/products/bulk-status internal/httpapi/handler.go:117, internal/httpapi/handler.go:160, internal/httpapi/handler.go:160, internal/httpapi/handler.go:348 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:304: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/products/document internal/httpapi/handler.go:117, internal/httpapi/handler.go:154, internal/httpapi/handler.go:154, internal/httpapi/handler.go:348 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:305: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/products/import/commit internal/httpapi/cvs.go:146, internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:42, internal/httpapi/merchanttools.go:62, internal/httpapi/merchanttools.go:65, internal/httpapi/merchanttools.go:66, internal/httpapi/merchanttools.go:66 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:306: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/products/import/preview internal/httpapi/cvs.go:146, internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:42, internal/httpapi/merchanttools.go:62, internal/httpapi/merchanttools.go:65, internal/httpapi/merchanttools.go:66, internal/httpapi/merchanttools.go:66 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:307: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/products/{}/copy internal/httpapi/handler.go:117, internal/httpapi/handler.go:163, internal/httpapi/handler.go:163, internal/httpapi/handler.go:348 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:308: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/promotions internal/httpapi/cvs.go:146, internal/httpapi/handler.go:234, internal/httpapi/promotions.go:25, internal/httpapi/promotions.go:32, internal/httpapi/promotions.go:32 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:309: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/promotions/{} internal/httpapi/cvs.go:146, internal/httpapi/handler.go:234, internal/httpapi/promotions.go:25, internal/httpapi/promotions.go:41, internal/httpapi/promotions.go:41 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:310: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/provider-accounts internal/httpapi/accounts.go:23, internal/httpapi/accounts.go:131, internal/httpapi/accounts.go:131, internal/httpapi/handler.go:203, internal/httpapi/settings.go:51 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:311: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/provider-accounts/{}/rotate internal/httpapi/accounts.go:23, internal/httpapi/accounts.go:155, internal/httpapi/accounts.go:155, internal/httpapi/handler.go:203, internal/httpapi/settings.go:51 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:312: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/returns/{}/cancel internal/httpapi/handler.go:230, internal/httpapi/returns.go:92, internal/httpapi/returns.go:104, internal/httpapi/returns.go:233, internal/httpapi/returns.go:233 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:313: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/returns/{}/close internal/httpapi/handler.go:230, internal/httpapi/returns.go:92, internal/httpapi/returns.go:104, internal/httpapi/returns.go:217, internal/httpapi/returns.go:217 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:314: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/returns/{}/inspect internal/httpapi/handler.go:230, internal/httpapi/returns.go:92, internal/httpapi/returns.go:104, internal/httpapi/returns.go:200, internal/httpapi/returns.go:200 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:315: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/returns/{}/receive internal/httpapi/handler.go:230, internal/httpapi/returns.go:92, internal/httpapi/returns.go:104, internal/httpapi/returns.go:184, internal/httpapi/returns.go:184 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:316: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/shipments/cvs-batch internal/httpapi/cvs.go:146, internal/httpapi/handler.go:228, internal/httpapi/picklist.go:37, internal/httpapi/picklist.go:84, internal/httpapi/picklist.go:84 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:317: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/shipments/tracking-import/commit internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:42, internal/httpapi/merchanttools.go:162, internal/httpapi/merchanttools.go:162, internal/httpapi/merchanttools.go:243 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:318: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/shipments/tracking-import/preview internal/httpapi/cvs.go:146, internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:42, internal/httpapi/merchanttools.go:156, internal/httpapi/merchanttools.go:156 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:319: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/storefront/domains internal/httpapi/handler.go:202, internal/httpapi/settings.go:51, internal/httpapi/storefront.go:62, internal/httpapi/storefront.go:72, internal/httpapi/storefront.go:76 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:320: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/storefront/domains/detach internal/httpapi/handler.go:202, internal/httpapi/settings.go:51, internal/httpapi/storefront.go:62, internal/httpapi/storefront.go:72, internal/httpapi/storefront.go:80, internal/httpapi/storefront.go:80 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:321: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/storefront/domains/suspend internal/httpapi/handler.go:202, internal/httpapi/settings.go:51, internal/httpapi/storefront.go:62, internal/httpapi/storefront.go:72, internal/httpapi/storefront.go:77, internal/httpapi/storefront.go:77 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:322: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/storefront/publication internal/httpapi/handler.go:202, internal/httpapi/settings.go:51, internal/httpapi/storefront.go:62, internal/httpapi/storefront.go:66, internal/httpapi/storefront.go:66 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:323: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/initial-store internal/identityhttp/handler.go:74, internal/identityhttp/handler.go:74 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:324: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/login/complete internal/identityhttp/handler.go:58, internal/identityhttp/handler.go:58 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:325: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/login/start internal/identityhttp/handler.go:46, internal/identityhttp/handler.go:46 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:326: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/logout internal/identityhttp/handler.go:95, internal/identityhttp/handler.go:95 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:327: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/password/complete internal/identityhttp/password.go:94, internal/identityhttp/password.go:94 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:328: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/password/login internal/identityhttp/password.go:73, internal/identityhttp/password.go:73 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:329: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/password/reset internal/identityhttp/password.go:82, internal/identityhttp/password.go:82 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:330: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/password/signup internal/identityhttp/password.go:64, internal/identityhttp/password.go:64 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:331: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/staff/accept internal/identityhttp/staff.go:63, internal/identityhttp/staff.go:64, internal/identityhttp/staff.go:64, internal/identityhttp/staff.go:111, internal/identityhttp/staff.go:111 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:332: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/staff/invite internal/identityhttp/staff.go:63, internal/identityhttp/staff.go:64, internal/identityhttp/staff.go:64, internal/identityhttp/staff.go:93, internal/identityhttp/staff.go:93 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:333: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/staff/list internal/identityhttp/staff.go:63, internal/identityhttp/staff.go:64, internal/identityhttp/staff.go:64, internal/identityhttp/staff.go:86, internal/identityhttp/staff.go:86 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:334: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/staff/remove internal/identityhttp/staff.go:63, internal/identityhttp/staff.go:64, internal/identityhttp/staff.go:64, internal/identityhttp/staff.go:108, internal/identityhttp/staff.go:108 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:335: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/staff/revoke-invite internal/identityhttp/staff.go:63, internal/identityhttp/staff.go:64, internal/identityhttp/staff.go:64, internal/identityhttp/staff.go:102, internal/identityhttp/staff.go:102 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:336: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/staff/set-role internal/identityhttp/staff.go:63, internal/identityhttp/staff.go:64, internal/identityhttp/staff.go:64, internal/identityhttp/staff.go:105, internal/identityhttp/staff.go:105 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:337: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/bank-transfer-settings internal/httpapi/cvs.go:146, internal/httpapi/handler.go:231, internal/httpapi/offline.go:33, internal/httpapi/offline.go:40, internal/httpapi/offline.go:40 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:338: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/cash-on-delivery-settings internal/httpapi/cod.go:25, internal/httpapi/cod.go:31, internal/httpapi/cod.go:31, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:232 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:339: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/customers/{}/tags internal/httpapi/customer_tags.go:28, internal/httpapi/customer_tags.go:76, internal/httpapi/customer_tags.go:76, internal/httpapi/customers.go:37, internal/httpapi/customers.go:42, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:340: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/design/draft internal/httpapi/design.go:40, internal/httpapi/design.go:44, internal/httpapi/design.go:44, internal/httpapi/design.go:113, internal/httpapi/handler.go:198 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:341: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/live-sessions/{}/claims/library/{} internal/httpapi/claims.go:58, internal/httpapi/claims.go:98, internal/httpapi/claims.go:98, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:342: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/logistics/cvs-settings internal/httpapi/cvs.go:49, internal/httpapi/cvs.go:80, internal/httpapi/cvs.go:80, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:227 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:343: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/logistics/ecpay internal/httpapi/cvs.go:49, internal/httpapi/cvs.go:57, internal/httpapi/cvs.go:57, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:227 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:344: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/markets/{}/countries/{}/delivery-services/{} internal/httpapi/handler.go:200, internal/httpapi/settings.go:19, internal/httpapi/settings.go:25, internal/httpapi/settings.go:25, internal/httpapi/settings.go:51 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:345: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/markets/{}/countries/{}/delivery-services/{}/policy internal/httpapi/handler.go:201, internal/httpapi/settings.go:19, internal/httpapi/settings.go:51, internal/httpapi/settings_discovery.go:44, internal/httpapi/settings_discovery.go:44 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:346: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/markets/{}/countries/{}/payment-methods/{} internal/httpapi/handler.go:200, internal/httpapi/settings.go:19, internal/httpapi/settings.go:37, internal/httpapi/settings.go:37, internal/httpapi/settings.go:51 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:347: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/orders/{}/shipment internal/httpapi/handler.go:218, internal/httpapi/shipments.go:41, internal/httpapi/shipments.go:43, internal/httpapi/shipments.go:43, internal/httpapi/shipments.go:133 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:348: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/parcel-groups/{}/shipment internal/httpapi/handler.go:229, internal/httpapi/parcels.go:31, internal/httpapi/parcels.go:96, internal/httpapi/parcels.go:96, internal/httpapi/shipments.go:133 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:349: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/products/{}/document internal/httpapi/handler.go:117, internal/httpapi/handler.go:157, internal/httpapi/handler.go:157, internal/httpapi/handler.go:348 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:350: trailing whitespace.
++WARNING (legacy) METHOD_MISMATCH go=GET,POST;contract=GET;bff=GET,POST /v1/admin/stores/{}/promotions apps/admin/app/api/stores/[store]/[...resource]/route.ts:9, apps/admin/app/api/stores/[store]/[...resource]/route.ts:18, apps/admin/app/api/stores/[store]/[...resource]/route.ts:309, apps/admin/app/api/stores/[store]/[...resource]/route.ts:327, apps/admin/app/api/stores/[store]/[...resource]/route.ts:404, apps/admin/app/api/stores/[store]/[...resource]/route.ts:580, apps/admin/app/api/stores/[store]/[...resource]/route.ts:581, apps/admin/app/api/stores/[store]/[...resource]/route.ts:582, apps/admin/app/api/stores/[store]/[...resource]/route.ts:583, apps/admin/app/api/stores/[store]/[...resource]/route.ts:602, apps/admin/app/api/stores/[store]/[...resource]/route.ts:603, apps/admin/app/api/stores/[store]/[...resource]/route.ts:604, apps/admin/lib/backend.ts:105, apps/admin/lib/promotions-request.ts:8, apps/admin/lib/promotions-request.ts:9, apps/admin/lib/promotions-request.ts:10, apps/admin/lib/promotions-request.ts:11, apps/admin/lib/promotions-request.ts:12, apps/admin/lib/promotions-request.ts:14, contracts/storefront-v2.md:304, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:234, internal/httpapi/promotions.go:25, internal/httpapi/promotions.go:26, internal/httpapi/promotions.go:26, internal/httpapi/promotions.go:32, internal/httpapi/promotions.go:32 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:351: trailing whitespace.
++WARNING (legacy) METHOD_MISMATCH go=GET,POST;contract=POST;bff=GET,POST /v1/admin/stores/{}/orders/{}/refunds apps/admin/app/api/stores/[store]/[...resource]/route.ts:9, apps/admin/app/api/stores/[store]/[...resource]/route.ts:12, apps/admin/app/api/stores/[store]/[...resource]/route.ts:309, apps/admin/app/api/stores/[store]/[...resource]/route.ts:327, apps/admin/app/api/stores/[store]/[...resource]/route.ts:404, apps/admin/app/api/stores/[store]/[...resource]/route.ts:580, apps/admin/app/api/stores/[store]/[...resource]/route.ts:581, apps/admin/app/api/stores/[store]/[...resource]/route.ts:582, apps/admin/app/api/stores/[store]/[...resource]/route.ts:583, apps/admin/app/api/stores/[store]/[...resource]/route.ts:602, apps/admin/app/api/stores/[store]/[...resource]/route.ts:603, apps/admin/app/api/stores/[store]/[...resource]/route.ts:604, apps/admin/lib/backend.ts:105, apps/admin/lib/orders-request.ts:44, apps/admin/lib/orders-request.ts:49, apps/admin/lib/orders-request.ts:50, apps/admin/lib/orders-request.ts:51, apps/admin/lib/orders-request.ts:52, apps/admin/lib/orders-request.ts:53, apps/admin/lib/orders-request.ts:54, apps/admin/lib/orders-request.ts:55, apps/admin/lib/orders-request.ts:56, apps/admin/lib/orders-request.ts:58, apps/admin/lib/orders-request.ts:59, apps/admin/lib/orders-request.ts:60, apps/admin/lib/orders-request.ts:61, apps/admin/lib/orders-request.ts:62, apps/admin/lib/orders-request.ts:63, apps/admin/lib/orders-request.ts:65, apps/admin/lib/orders-request.ts:66, apps/admin/lib/orders-request.ts:69, apps/admin/lib/orders-request.ts:70, apps/admin/lib/orders-request.ts:71, apps/admin/lib/orders-request.ts:72, apps/admin/lib/orders-request.ts:73, apps/admin/lib/orders-request.ts:74, apps/admin/lib/orders-request.ts:76, contracts/core-openapi.json:254, contracts/core-openapi.json:255, internal/httpapi/handler.go:215, internal/httpapi/refunds.go:32, internal/httpapi/refunds.go:45, internal/httpapi/refunds.go:46, internal/httpapi/refunds.go:46, internal/httpapi/refunds.go:64, internal/httpapi/refunds.go:64, internal/httpapi/refunds.go:101 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:352: trailing whitespace.
++WARNING (legacy) METHOD_MISMATCH go=GET,PUT;contract=PUT;bff=GET,PUT /v1/admin/stores/{}/notification-settings apps/admin/app/api/stores/[store]/[...resource]/route.ts:9, apps/admin/app/api/stores/[store]/[...resource]/route.ts:17, apps/admin/app/api/stores/[store]/[...resource]/route.ts:309, apps/admin/app/api/stores/[store]/[...resource]/route.ts:327, apps/admin/app/api/stores/[store]/[...resource]/route.ts:404, apps/admin/app/api/stores/[store]/[...resource]/route.ts:580, apps/admin/app/api/stores/[store]/[...resource]/route.ts:581, apps/admin/app/api/stores/[store]/[...resource]/route.ts:582, apps/admin/app/api/stores/[store]/[...resource]/route.ts:583, apps/admin/app/api/stores/[store]/[...resource]/route.ts:602, apps/admin/app/api/stores/[store]/[...resource]/route.ts:603, apps/admin/app/api/stores/[store]/[...resource]/route.ts:604, apps/admin/lib/backend.ts:105, apps/admin/lib/logistics-request.ts:9, apps/admin/lib/logistics-request.ts:10, apps/admin/lib/logistics-request.ts:11, apps/admin/lib/logistics-request.ts:12, apps/admin/lib/logistics-request.ts:13, apps/admin/lib/logistics-request.ts:14, apps/admin/lib/logistics-request.ts:16, apps/admin/lib/logistics-request.ts:17, apps/admin/lib/logistics-request.ts:19, apps/admin/lib/logistics-request.ts:20, apps/admin/lib/logistics-request.ts:22, apps/admin/lib/logistics-request.ts:23, apps/admin/lib/logistics-request.ts:25, contracts/storefront-v2.md:209, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:235, internal/httpapi/notify.go:23, internal/httpapi/notify.go:24, internal/httpapi/notify.go:24, internal/httpapi/notify.go:29, internal/httpapi/notify.go:29 
+output/matrix-ledger-enforce/round3/before-modal-precondition/check-gates.log:353: trailing whitespace.
++WARNING (legacy) METHOD_MISMATCH go=GET;contract=GET,POST;bff= /v1/admin/stores/{}/live-sessions/{}/page-live-videos contracts/live-session-flow-openapi.json:386, contracts/live-session-flow-openapi.json:387, contracts/live-session-flow-openapi.json:537, internal/httpapi/claims.go:188, internal/httpapi/handler.go:206, internal/httpapi/live_flow.go:27, internal/httpapi/live_flow.go:46, internal/httpapi/live_flow.go:46 
+output/matrix-ledger-enforce/round3/before-modal-precondition/typecheck.log:8: new blank line at EOF.
+output/matrix-ledger-enforce/round3/browser-product-editor.log:18: trailing whitespace.
++  Generating static pages using 9 workers (3/15) 
+output/matrix-ledger-enforce/round3/browser-product-editor.log:19: trailing whitespace.
++  Generating static pages using 9 workers (7/15) 
+output/matrix-ledger-enforce/round3/browser-product-editor.log:20: trailing whitespace.
++  Generating static pages using 9 workers (11/15) 
+output/matrix-ledger-enforce/round3/check-gates.log:2: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/account contracts/customers-billing-v1.md:41, contracts/customers-billing-v1.md:246, contracts/customers-billing-v1.md:408, contracts/stripe-live-enable-v1.md:39, contracts/stripe-live-enable-v1.md:65, contracts/stripe-live-enable-v1.md:96, contracts/stripe-live-enable-v1.md:318, contracts/stripe-psp-v1.md:173, contracts/stripe-psp-v1.md:467, contracts/stripe-psp-v1.md:479, contracts/stripe-psp-v1.md:1235, contracts/stripe-psp-v1.md:1317 
+output/matrix-ledger-enforce/round3/check-gates.log:3: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/admin/stores/{}/audit-events: contracts/foundation-v1.md:28 
+output/matrix-ledger-enforce/round3/check-gates.log:4: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/admin/stores/{}/customers/{}/historical-orders[ contracts/migration-import-v1.md:122 
+output/matrix-ledger-enforce/round3/check-gates.log:5: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/admin/stores/{}/settlements[ contracts/stripe-platform-account-v1.md:432 
+output/matrix-ledger-enforce/round3/check-gates.log:6: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/admin/stores/{}: contracts/foundation-v1.md:27 
+output/matrix-ledger-enforce/round3/check-gates.log:7: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/balance_transactions contracts/stripe-platform-account-v1.md:412 
+output/matrix-ledger-enforce/round3/check-gates.log:8: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/checkout/sessions contracts/stripe-psp-v1.md:571 
+output/matrix-ledger-enforce/round3/check-gates.log:9: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/checkout/sessions/{} contracts/stripe-psp-v1.md:565 
+output/matrix-ledger-enforce/round3/check-gates.log:10: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/merchant/ads/drafts[/{}] contracts/meta-ads-v1.md:498 
+output/matrix-ledger-enforce/round3/check-gates.log:11: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/merchant/ads/meta/callback contracts/meta-ads-v1.md:134, contracts/meta-ads-v1.md:496 
+output/matrix-ledger-enforce/round3/check-gates.log:12: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/merchant/ads/report contracts/meta-ads-v1.md:503 
+output/matrix-ledger-enforce/round3/check-gates.log:13: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/payment_intents/{} contracts/stripe-refund-v1.md:103, contracts/stripe-refund-v1.md:126 
+output/matrix-ledger-enforce/round3/check-gates.log:14: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/refunds contracts/stripe-refund-v1.md:83 
+output/matrix-ledger-enforce/round3/check-gates.log:15: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/refunds/{} contracts/stripe-refund-v1.md:83 
+output/matrix-ledger-enforce/round3/check-gates.log:16: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/storefront/checkouts/{} contracts/core-openapi.json:150, contracts/core-openapi.json:151 
+output/matrix-ledger-enforce/round3/check-gates.log:17: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/subscriptions contracts/customers-billing-v1.md:323 
+output/matrix-ledger-enforce/round3/check-gates.log:18: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY GET /v1/subscriptions/{} contracts/customers-billing-v1.md:131 
+output/matrix-ledger-enforce/round3/check-gates.log:19: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/admin/stores/{}/ad-drafts/{}/publish contracts/core-openapi.json:843, contracts/core-openapi.json:844 
+output/matrix-ledger-enforce/round3/check-gates.log:20: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/admin/stores/{}/conversations/{}/takeover contracts/core-openapi.json:555, contracts/core-openapi.json:556 
+output/matrix-ledger-enforce/round3/check-gates.log:21: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/admin/stores/{}/live-sessions/{}/page-live-videos contracts/live-session-flow-openapi.json:386, contracts/live-session-flow-openapi.json:537 
+output/matrix-ledger-enforce/round3/check-gates.log:22: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/admin/stores/{}/live-sessions/{}/start contracts/core-openapi.json:405, contracts/core-openapi.json:406 
+output/matrix-ledger-enforce/round3/check-gates.log:23: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/admin/stores/{}/packages/{}/shipments contracts/core-openapi.json:694, contracts/core-openapi.json:695 
+output/matrix-ledger-enforce/round3/check-gates.log:24: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/billing_portal/sessions contracts/customers-billing-v1.md:107 
+output/matrix-ledger-enforce/round3/check-gates.log:25: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/checkout/sessions contracts/customers-billing-v1.md:105, contracts/stripe-psp-v1.md:390 
+output/matrix-ledger-enforce/round3/check-gates.log:26: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/checkout/sessions/{}/expire contracts/customers-billing-v1.md:328, contracts/stripe-psp-v1.md:567 
+output/matrix-ledger-enforce/round3/check-gates.log:27: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/identity/staff/{list contracts/storefront-v2.md:251 
+output/matrix-ledger-enforce/round3/check-gates.log:28: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/merchant/ads/drafts contracts/meta-ads-v1.md:499 
+output/matrix-ledger-enforce/round3/check-gates.log:29: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/merchant/ads/meta/bindings contracts/meta-ads-v1.md:135, contracts/meta-ads-v1.md:497 
+output/matrix-ledger-enforce/round3/check-gates.log:30: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/merchant/ads/meta/connect contracts/meta-ads-v1.md:133, contracts/meta-ads-v1.md:495 
+output/matrix-ledger-enforce/round3/check-gates.log:31: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/platform/stripe/webhook: contracts/customers-billing-v1.md:130 
+output/matrix-ledger-enforce/round3/check-gates.log:32: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/refunds contracts/stripe-refund-v1.md:78, contracts/stripe-refund-v1.md:106, contracts/stripe-refund-v1.md:396, contracts/stripe-refund-v1.md:523 
+output/matrix-ledger-enforce/round3/check-gates.log:33: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY POST /v1/storefront/carts/{}/checkout contracts/core-openapi.json:9, contracts/core-openapi.json:10 
+output/matrix-ledger-enforce/round3/check-gates.log:34: trailing whitespace.
++WARNING (legacy) CONTRACT_ONLY PUT /v1/merchant/ads/capi contracts/meta-ads-v1.md:504 
+output/matrix-ledger-enforce/round3/check-gates.log:127: trailing whitespace.
++INFO () GO_NOT_IN_BFF DELETE /v1/admin/stores/{}/live-sessions/{}/claims/blocklist/entries/{} internal/httpapi/blocklist.go:33, internal/httpapi/blocklist.go:36, internal/httpapi/blocklist.go:56, internal/httpapi/blocklist.go:56, internal/httpapi/claims.go:58, internal/httpapi/claims.go:128, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/check-gates.log:130: trailing whitespace.
++INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{} internal/httpapi/handler.go:117, internal/httpapi/handler.go:245, internal/httpapi/handler.go:246, internal/platform/platform.go:796, internal/platform/platform.go:801 
+output/matrix-ledger-enforce/round3/check-gates.log:131: trailing whitespace.
++INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{}/audit-events internal/httpapi/handler.go:117, internal/httpapi/handler.go:245, internal/httpapi/handler.go:246, internal/platform/platform.go:797, internal/platform/platform.go:830 
+output/matrix-ledger-enforce/round3/check-gates.log:132: trailing whitespace.
++INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{}/inbox/order-prefill internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:153, internal/httpapi/merchanttools.go:345, internal/httpapi/merchanttools.go:346, internal/httpapi/merchanttools.go:346, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/check-gates.log:133: trailing whitespace.
++INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{}/live-sessions/{}/claims/blocklist internal/httpapi/blocklist.go:33, internal/httpapi/blocklist.go:34, internal/httpapi/blocklist.go:37, internal/httpapi/blocklist.go:37, internal/httpapi/claims.go:58, internal/httpapi/claims.go:128, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/check-gates.log:134: trailing whitespace.
++INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{}/live-sessions/{}/claims/blocklist/check internal/httpapi/blocklist.go:33, internal/httpapi/blocklist.go:35, internal/httpapi/blocklist.go:65, internal/httpapi/blocklist.go:65, internal/httpapi/claims.go:58, internal/httpapi/claims.go:128, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/check-gates.log:135: trailing whitespace.
++INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{}/live-sessions/{}/claims/keywords/next internal/httpapi/claims.go:58, internal/httpapi/claims.go:130, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210, internal/httpapi/keyword_tools.go:29, internal/httpapi/keyword_tools.go:30, internal/httpapi/keyword_tools.go:49, internal/httpapi/keyword_tools.go:49 
+output/matrix-ledger-enforce/round3/check-gates.log:136: trailing whitespace.
++INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{}/live-sessions/{}/page-live-videos internal/httpapi/claims.go:188, internal/httpapi/handler.go:206, internal/httpapi/live_flow.go:27, internal/httpapi/live_flow.go:46, internal/httpapi/live_flow.go:46 
+output/matrix-ledger-enforce/round3/check-gates.log:137: trailing whitespace.
++INFO () GO_NOT_IN_BFF GET /v1/admin/stores/{}/live-sessions/{}/reminders internal/httpapi/claims.go:188, internal/httpapi/handler.go:238, internal/httpapi/reminders.go:32, internal/httpapi/reminders.go:62, internal/httpapi/reminders.go:62 
+output/matrix-ledger-enforce/round3/check-gates.log:138: trailing whitespace.
++INFO () GO_NOT_IN_BFF POST /v1/admin/stores/{}/live-sessions/{}/claims/blocklist internal/httpapi/blocklist.go:33, internal/httpapi/blocklist.go:34, internal/httpapi/blocklist.go:47, internal/httpapi/blocklist.go:47, internal/httpapi/claims.go:58, internal/httpapi/claims.go:128, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/check-gates.log:139: trailing whitespace.
++INFO () GO_NOT_IN_BFF POST /v1/admin/stores/{}/live-sessions/{}/claims/keywords/check internal/httpapi/claims.go:58, internal/httpapi/claims.go:130, internal/httpapi/claims.go:198, internal/httpapi/handler.go:210, internal/httpapi/keyword_tools.go:29, internal/httpapi/keyword_tools.go:30, internal/httpapi/keyword_tools.go:40, internal/httpapi/keyword_tools.go:40 
+output/matrix-ledger-enforce/round3/check-gates.log:140: trailing whitespace.
++INFO () GO_NOT_IN_BFF POST /v1/admin/stores/{}/live-sessions/{}/claims/offers/batch internal/httpapi/claims.go:58, internal/httpapi/claims.go:130, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210, internal/httpapi/keyword_tools.go:29, internal/httpapi/keyword_tools.go:30, internal/httpapi/keyword_tools.go:59, internal/httpapi/keyword_tools.go:59 
+output/matrix-ledger-enforce/round3/check-gates.log:141: trailing whitespace.
++INFO () GO_NOT_IN_BFF POST /v1/admin/stores/{}/live-sessions/{}/claims/simulate internal/httpapi/claims.go:58, internal/httpapi/claims.go:130, internal/httpapi/claims.go:198, internal/httpapi/handler.go:210, internal/httpapi/keyword_tools.go:29, internal/httpapi/keyword_tools.go:30, internal/httpapi/keyword_tools.go:31, internal/httpapi/keyword_tools.go:31 
+output/matrix-ledger-enforce/round3/check-gates.log:142: trailing whitespace.
++INFO () GO_NOT_IN_BFF POST /v1/admin/stores/{}/live-sessions/{}/page-live-videos/read internal/httpapi/claims.go:188, internal/httpapi/handler.go:206, internal/httpapi/live_flow.go:27, internal/httpapi/live_flow.go:58, internal/httpapi/live_flow.go:58 
+output/matrix-ledger-enforce/round3/check-gates.log:143: trailing whitespace.
++INFO () GO_NOT_IN_BFF POST /v1/admin/stores/{}/live-sessions/{}/reminders internal/httpapi/claims.go:188, internal/httpapi/handler.go:238, internal/httpapi/reminders.go:32, internal/httpapi/reminders.go:60 
+output/matrix-ledger-enforce/round3/check-gates.log:144: trailing whitespace.
++INFO () GO_NOT_IN_BFF POST /v1/admin/stores/{}/live-sessions/{}/reminders/{} internal/httpapi/claims.go:188, internal/httpapi/handler.go:238, internal/httpapi/reminders.go:32, internal/httpapi/reminders.go:61 
+output/matrix-ledger-enforce/round3/check-gates.log:145: trailing whitespace.
++INFO () GO_NOT_IN_BFF POST /v1/admin/stores/{}/message-templates internal/httpapi/handler.go:239, internal/httpapi/templates.go:29, internal/httpapi/templates.go:33, internal/httpapi/templates.go:33, internal/httpapi/templates.go:56 
+output/matrix-ledger-enforce/round3/check-gates.log:146: trailing whitespace.
++INFO () GO_NOT_IN_BFF POST /v1/admin/stores/{}/orders/for-buyer internal/httpapi/cvs.go:146, internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:153, internal/httpapi/merchanttools.go:345, internal/httpapi/merchanttools.go:365, internal/httpapi/merchanttools.go:365 
+output/matrix-ledger-enforce/round3/check-gates.log:147: trailing whitespace.
++INFO () GO_NOT_IN_BFF POST /v1/admin/stores/{}/products/{}/images/{}/renditions internal/httpapi/handler.go:197, internal/httpapi/handler.go:342, internal/httpapi/images.go:36, internal/httpapi/images.go:37, internal/httpapi/images.go:37 
+output/matrix-ledger-enforce/round3/check-gates.log:150: trailing whitespace.
++WARNING (legacy) GO_ONLY DELETE /v1/admin/stores/{}/customers/tags/{} internal/httpapi/customer_tags.go:28, internal/httpapi/customer_tags.go:72, internal/httpapi/customer_tags.go:72, internal/httpapi/customers.go:37, internal/httpapi/customers.go:42, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/check-gates.log:151: trailing whitespace.
++WARNING (legacy) GO_ONLY DELETE /v1/admin/stores/{}/customers/{}/notes/{} internal/httpapi/customer_tags.go:28, internal/httpapi/customer_tags.go:101, internal/httpapi/customer_tags.go:101, internal/httpapi/customers.go:37, internal/httpapi/customers.go:42, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/check-gates.log:152: trailing whitespace.
++WARNING (legacy) GO_ONLY DELETE /v1/admin/stores/{}/live-sessions/{}/claims/blocklist/entries/{} internal/httpapi/blocklist.go:33, internal/httpapi/blocklist.go:36, internal/httpapi/blocklist.go:56, internal/httpapi/blocklist.go:56, internal/httpapi/claims.go:58, internal/httpapi/claims.go:128, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/check-gates.log:153: trailing whitespace.
++WARNING (legacy) GO_ONLY DELETE /v1/admin/stores/{}/parcel-groups/{} internal/httpapi/handler.go:229, internal/httpapi/parcels.go:31, internal/httpapi/parcels.go:79, internal/httpapi/parcels.go:79 
+output/matrix-ledger-enforce/round3/check-gates.log:154: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/bank-transfer-settings internal/httpapi/cvs.go:146, internal/httpapi/handler.go:231, internal/httpapi/offline.go:33, internal/httpapi/offline.go:35, internal/httpapi/offline.go:35 
+output/matrix-ledger-enforce/round3/check-gates.log:155: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/billing internal/httpapi/billing.go:48, internal/httpapi/billing.go:50, internal/httpapi/billing.go:50, internal/httpapi/billing.go:116, internal/httpapi/handler.go:226 
+output/matrix-ledger-enforce/round3/check-gates.log:156: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/billing/standing internal/httpapi/billing.go:48, internal/httpapi/billing.go:65, internal/httpapi/billing.go:65, internal/httpapi/billing.go:116, internal/httpapi/handler.go:226 
+output/matrix-ledger-enforce/round3/check-gates.log:157: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/cash-on-delivery-settings internal/httpapi/cod.go:25, internal/httpapi/cod.go:26, internal/httpapi/cod.go:26, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:232 
+output/matrix-ledger-enforce/round3/check-gates.log:158: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/customers internal/httpapi/customers.go:37, internal/httpapi/customers.go:44, internal/httpapi/customers.go:44, internal/httpapi/customers.go:115, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/check-gates.log:159: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/customers/tags internal/httpapi/customer_tags.go:56, internal/httpapi/customer_tags.go:56, internal/httpapi/customers.go:37, internal/httpapi/customers.go:42, internal/httpapi/customers.go:115, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/check-gates.log:160: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/customers/{} internal/httpapi/customers.go:37, internal/httpapi/customers.go:56, internal/httpapi/customers.go:56, internal/httpapi/customers.go:115, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/check-gates.log:161: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/customers/{}/historical-orders internal/httpapi/customer_historical.go:26, internal/httpapi/customer_historical.go:26, internal/httpapi/customers.go:37, internal/httpapi/customers.go:43, internal/httpapi/customers.go:115, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/check-gates.log:162: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/customers/{}/notes internal/httpapi/customer_tags.go:81, internal/httpapi/customer_tags.go:81, internal/httpapi/customers.go:37, internal/httpapi/customers.go:42, internal/httpapi/customers.go:115, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/check-gates.log:163: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/dashboard internal/httpapi/cvs.go:146, internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:42, internal/httpapi/merchanttools.go:43, internal/httpapi/merchanttools.go:43 
+output/matrix-ledger-enforce/round3/check-gates.log:164: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/design/draft internal/httpapi/design.go:40, internal/httpapi/design.go:41, internal/httpapi/design.go:41, internal/httpapi/design.go:77, internal/httpapi/handler.go:198 
+output/matrix-ledger-enforce/round3/check-gates.log:165: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/design/media internal/httpapi/design.go:40, internal/httpapi/design.go:59, internal/httpapi/design.go:59, internal/httpapi/design.go:77, internal/httpapi/handler.go:198 
+output/matrix-ledger-enforce/round3/check-gates.log:166: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/design/media/{} internal/httpapi/design.go:40, internal/httpapi/design.go:63, internal/httpapi/design.go:63, internal/httpapi/design.go:77, internal/httpapi/handler.go:198 
+output/matrix-ledger-enforce/round3/check-gates.log:167: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/design/versions internal/httpapi/design.go:40, internal/httpapi/design.go:56, internal/httpapi/design.go:56, internal/httpapi/design.go:77, internal/httpapi/handler.go:198 
+output/matrix-ledger-enforce/round3/check-gates.log:168: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/finance/summary internal/httpapi/customers.go:115, internal/httpapi/finance.go:29, internal/httpapi/finance.go:30, internal/httpapi/finance.go:30, internal/httpapi/handler.go:224 
+output/matrix-ledger-enforce/round3/check-gates.log:169: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/finance/summary.csv internal/httpapi/customers.go:115, internal/httpapi/finance.go:29, internal/httpapi/finance.go:42, internal/httpapi/finance.go:42, internal/httpapi/handler.go:224 
+output/matrix-ledger-enforce/round3/check-gates.log:170: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/imports/{}/results.csv internal/httpapi/handler.go:223, internal/httpapi/imports.go:34, internal/httpapi/imports.go:106, internal/httpapi/imports.go:106, internal/httpapi/merchanttools.go:243 
+output/matrix-ledger-enforce/round3/check-gates.log:171: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/inbox/buyer-panel internal/httpapi/handler.go:236, internal/httpapi/inbox.go:51, internal/httpapi/inbox.go:153, internal/httpapi/inbox.go:153, internal/httpapi/inbox.go:178 
+output/matrix-ledger-enforce/round3/check-gates.log:172: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/inbox/conversations internal/httpapi/handler.go:236, internal/httpapi/inbox.go:50, internal/httpapi/inbox.go:55, internal/httpapi/inbox.go:55, internal/httpapi/inbox.go:178 
+output/matrix-ledger-enforce/round3/check-gates.log:173: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/inbox/conversations/{}/messages internal/httpapi/handler.go:236, internal/httpapi/inbox.go:50, internal/httpapi/inbox.go:97, internal/httpapi/inbox.go:97, internal/httpapi/inbox.go:178 
+output/matrix-ledger-enforce/round3/check-gates.log:174: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/inbox/order-prefill internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:153, internal/httpapi/merchanttools.go:345, internal/httpapi/merchanttools.go:346, internal/httpapi/merchanttools.go:346, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/check-gates.log:175: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/live-sessions internal/httpapi/handler.go:205, internal/httpapi/studio.go:36, internal/httpapi/studio.go:37, internal/httpapi/studio.go:37, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/check-gates.log:176: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/live-sessions/{} internal/httpapi/handler.go:205, internal/httpapi/studio.go:36, internal/httpapi/studio.go:50, internal/httpapi/studio.go:50, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/check-gates.log:177: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/live-sessions/{}/claims internal/httpapi/claims.go:58, internal/httpapi/claims.go:60, internal/httpapi/claims.go:60, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/check-gates.log:178: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/live-sessions/{}/claims/blocklist internal/httpapi/blocklist.go:33, internal/httpapi/blocklist.go:34, internal/httpapi/blocklist.go:37, internal/httpapi/blocklist.go:37, internal/httpapi/claims.go:58, internal/httpapi/claims.go:128, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/check-gates.log:179: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/live-sessions/{}/claims/blocklist/check internal/httpapi/blocklist.go:33, internal/httpapi/blocklist.go:35, internal/httpapi/blocklist.go:65, internal/httpapi/blocklist.go:65, internal/httpapi/claims.go:58, internal/httpapi/claims.go:128, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/check-gates.log:180: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/live-sessions/{}/claims/bundles internal/httpapi/claims.go:58, internal/httpapi/claims.go:111, internal/httpapi/claims.go:111, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/check-gates.log:181: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/live-sessions/{}/claims/keywords/next internal/httpapi/claims.go:58, internal/httpapi/claims.go:130, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210, internal/httpapi/keyword_tools.go:29, internal/httpapi/keyword_tools.go:30, internal/httpapi/keyword_tools.go:49, internal/httpapi/keyword_tools.go:49 
+output/matrix-ledger-enforce/round3/check-gates.log:182: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/live-sessions/{}/claims/library internal/httpapi/claims.go:58, internal/httpapi/claims.go:93, internal/httpapi/claims.go:93, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/check-gates.log:183: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/live-sessions/{}/console internal/httpapi/claims.go:188, internal/httpapi/handler.go:209, internal/httpapi/live_console.go:27, internal/httpapi/live_console.go:28, internal/httpapi/live_console.go:28 
+output/matrix-ledger-enforce/round3/check-gates.log:184: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/live-sessions/{}/input internal/httpapi/handler.go:205, internal/httpapi/studio.go:36, internal/httpapi/studio.go:98, internal/httpapi/studio.go:98, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/check-gates.log:185: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/live-sessions/{}/input/prepared internal/httpapi/handler.go:205, internal/httpapi/studio.go:36, internal/httpapi/studio.go:107, internal/httpapi/studio.go:107, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/check-gates.log:186: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/live-sessions/{}/reminders internal/httpapi/claims.go:188, internal/httpapi/handler.go:238, internal/httpapi/reminders.go:32, internal/httpapi/reminders.go:62, internal/httpapi/reminders.go:62 
+output/matrix-ledger-enforce/round3/check-gates.log:187: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/logistics/cvs-settings internal/httpapi/cvs.go:49, internal/httpapi/cvs.go:75, internal/httpapi/cvs.go:75, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:227 
+output/matrix-ledger-enforce/round3/check-gates.log:188: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/logistics/ecpay internal/httpapi/cvs.go:49, internal/httpapi/cvs.go:52, internal/httpapi/cvs.go:52, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:227 
+output/matrix-ledger-enforce/round3/check-gates.log:189: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/markets internal/httpapi/handler.go:201, internal/httpapi/handler.go:296, internal/httpapi/settings_discovery.go:18, internal/httpapi/settings_discovery.go:19, internal/httpapi/settings_discovery.go:19 
+output/matrix-ledger-enforce/round3/check-gates.log:190: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/markets/{}/countries/TW/payment-methods internal/httpapi/handler.go:201, internal/httpapi/settings.go:51, internal/httpapi/settings_discovery.go:38, internal/httpapi/settings_discovery.go:38 
+output/matrix-ledger-enforce/round3/check-gates.log:191: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/markets/{}/countries/{}/delivery-services internal/httpapi/handler.go:201, internal/httpapi/handler.go:296, internal/httpapi/settings.go:19, internal/httpapi/settings_discovery.go:35, internal/httpapi/settings_discovery.go:35 
+output/matrix-ledger-enforce/round3/check-gates.log:192: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/markets/{}/countries/{}/delivery-services/{} internal/httpapi/handler.go:200, internal/httpapi/settings.go:19, internal/httpapi/settings.go:22, internal/httpapi/settings.go:22, internal/httpapi/settings.go:51 
+output/matrix-ledger-enforce/round3/check-gates.log:193: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/markets/{}/countries/{}/delivery-services/{}/policy internal/httpapi/handler.go:201, internal/httpapi/settings.go:19, internal/httpapi/settings.go:51, internal/httpapi/settings_discovery.go:41, internal/httpapi/settings_discovery.go:41 
+output/matrix-ledger-enforce/round3/check-gates.log:194: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/markets/{}/countries/{}/payment-methods/{} internal/httpapi/handler.go:200, internal/httpapi/settings.go:19, internal/httpapi/settings.go:34, internal/httpapi/settings.go:34, internal/httpapi/settings.go:51 
+output/matrix-ledger-enforce/round3/check-gates.log:195: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/message-templates internal/httpapi/handler.go:239, internal/httpapi/templates.go:29, internal/httpapi/templates.go:44, internal/httpapi/templates.go:44, internal/httpapi/templates.go:56 
+output/matrix-ledger-enforce/round3/check-gates.log:196: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/meta-connect/callback internal/httpapi/ads.go:220, internal/httpapi/handler.go:220, internal/httpapi/meta_connect.go:35, internal/httpapi/meta_connect.go:46, internal/httpapi/meta_connect.go:46 
+output/matrix-ledger-enforce/round3/check-gates.log:197: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/meta-connect/states/{} internal/httpapi/ads.go:220, internal/httpapi/handler.go:220, internal/httpapi/meta_connect.go:35, internal/httpapi/meta_connect.go:54, internal/httpapi/meta_connect.go:54 
+output/matrix-ledger-enforce/round3/check-gates.log:198: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/meta-connect/status internal/httpapi/ads.go:220, internal/httpapi/handler.go:220, internal/httpapi/meta_connect.go:35, internal/httpapi/meta_connect.go:49, internal/httpapi/meta_connect.go:49 
+output/matrix-ledger-enforce/round3/check-gates.log:199: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/meta/health internal/httpapi/ads.go:220, internal/httpapi/handler.go:221, internal/httpapi/meta_health.go:35, internal/httpapi/meta_health.go:38, internal/httpapi/meta_health.go:38 
+output/matrix-ledger-enforce/round3/check-gates.log:200: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/notification-settings internal/httpapi/cvs.go:146, internal/httpapi/handler.go:235, internal/httpapi/notify.go:23, internal/httpapi/notify.go:24, internal/httpapi/notify.go:24 
+output/matrix-ledger-enforce/round3/check-gates.log:201: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/operations internal/httpapi/handler.go:240, internal/httpapi/operations.go:41, internal/httpapi/operations.go:43, internal/httpapi/operations.go:43, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/check-gates.log:202: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/order-actions internal/httpapi/handler.go:218, internal/httpapi/shipments.go:41, internal/httpapi/shipments.go:92, internal/httpapi/shipments.go:92, internal/httpapi/shipments.go:133 
+output/matrix-ledger-enforce/round3/check-gates.log:203: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/orders/cancel-refund-gaps internal/httpapi/handler.go:230, internal/httpapi/returns.go:104, internal/httpapi/returns.go:123, internal/httpapi/returns.go:123, internal/httpapi/shipments.go:133 
+output/matrix-ledger-enforce/round3/check-gates.log:204: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/orders/manual/options internal/httpapi/cvs.go:146, internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:42, internal/httpapi/merchanttools.go:102, internal/httpapi/merchanttools.go:102 
+output/matrix-ledger-enforce/round3/check-gates.log:205: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/orders/merge-suggestions internal/httpapi/handler.go:229, internal/httpapi/parcels.go:31, internal/httpapi/parcels.go:33, internal/httpapi/parcels.go:33, internal/httpapi/shipments.go:133 
+output/matrix-ledger-enforce/round3/check-gates.log:206: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/orders/unshipped.csv internal/httpapi/handler.go:218, internal/httpapi/shipments.go:41, internal/httpapi/shipments.go:82, internal/httpapi/shipments.go:82, internal/httpapi/shipments.go:133 
+output/matrix-ledger-enforce/round3/check-gates.log:207: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/orders/{} internal/httpapi/handler.go:204, internal/httpapi/orders.go:18, internal/httpapi/orders.go:20, internal/httpapi/orders.go:59 
+output/matrix-ledger-enforce/round3/check-gates.log:208: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/orders/{}/bank-transfer internal/httpapi/cvs.go:146, internal/httpapi/handler.go:231, internal/httpapi/offline.go:33, internal/httpapi/offline.go:34, internal/httpapi/offline.go:49, internal/httpapi/offline.go:49 
+output/matrix-ledger-enforce/round3/check-gates.log:209: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/orders/{}/cvs-shipment internal/httpapi/cvs.go:49, internal/httpapi/cvs.go:50, internal/httpapi/cvs.go:99, internal/httpapi/cvs.go:99, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:227 
+output/matrix-ledger-enforce/round3/check-gates.log:210: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/orders/{}/refunds internal/httpapi/handler.go:215, internal/httpapi/refunds.go:32, internal/httpapi/refunds.go:45, internal/httpapi/refunds.go:64, internal/httpapi/refunds.go:64, internal/httpapi/refunds.go:101 
+output/matrix-ledger-enforce/round3/check-gates.log:211: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/orders/{}/returns internal/httpapi/handler.go:230, internal/httpapi/returns.go:104, internal/httpapi/returns.go:152, internal/httpapi/returns.go:152, internal/httpapi/shipments.go:133 
+output/matrix-ledger-enforce/round3/check-gates.log:212: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/orders/{}/shipment/history internal/httpapi/handler.go:218, internal/httpapi/shipments.go:41, internal/httpapi/shipments.go:70, internal/httpapi/shipments.go:70, internal/httpapi/shipments.go:133 
+output/matrix-ledger-enforce/round3/check-gates.log:213: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/parcel-groups internal/httpapi/handler.go:229, internal/httpapi/parcels.go:31, internal/httpapi/parcels.go:46, internal/httpapi/parcels.go:46, internal/httpapi/shipments.go:133 
+output/matrix-ledger-enforce/round3/check-gates.log:214: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/products/export.csv internal/httpapi/cvs.go:146, internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:42, internal/httpapi/merchanttools.go:48, internal/httpapi/merchanttools.go:48 
+output/matrix-ledger-enforce/round3/check-gates.log:215: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/provider-accounts internal/httpapi/accounts.go:23, internal/httpapi/accounts.go:121, internal/httpapi/accounts.go:121, internal/httpapi/handler.go:203, internal/httpapi/handler.go:375 
+output/matrix-ledger-enforce/round3/check-gates.log:216: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/provider-accounts/{} internal/httpapi/accounts.go:23, internal/httpapi/accounts.go:145, internal/httpapi/accounts.go:145, internal/httpapi/handler.go:203, internal/httpapi/settings.go:51 
+output/matrix-ledger-enforce/round3/check-gates.log:217: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/reports/channels internal/httpapi/customers.go:115, internal/httpapi/handler.go:225, internal/httpapi/reports.go:35, internal/httpapi/reports.go:42, internal/httpapi/reports.go:50, internal/httpapi/reports.go:50, internal/httpapi/reports.go:72, internal/httpapi/reports.go:72 
+output/matrix-ledger-enforce/round3/check-gates.log:218: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/reports/channels.csv internal/httpapi/customers.go:115, internal/httpapi/handler.go:225, internal/httpapi/reports.go:35, internal/httpapi/reports.go:42, internal/httpapi/reports.go:50, internal/httpapi/reports.go:50, internal/httpapi/reports.go:86, internal/httpapi/reports.go:86 
+output/matrix-ledger-enforce/round3/check-gates.log:219: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/reports/funnel internal/httpapi/customers.go:115, internal/httpapi/handler.go:225, internal/httpapi/reports.go:35, internal/httpapi/reports.go:42, internal/httpapi/reports.go:57, internal/httpapi/reports.go:57, internal/httpapi/reports.go:72, internal/httpapi/reports.go:72 
+output/matrix-ledger-enforce/round3/check-gates.log:220: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/reports/funnel.csv internal/httpapi/customers.go:115, internal/httpapi/handler.go:225, internal/httpapi/reports.go:35, internal/httpapi/reports.go:42, internal/httpapi/reports.go:57, internal/httpapi/reports.go:57, internal/httpapi/reports.go:86, internal/httpapi/reports.go:86 
+output/matrix-ledger-enforce/round3/check-gates.log:221: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/reports/manual-orders internal/httpapi/customers.go:115, internal/httpapi/handler.go:225, internal/httpapi/reports.go:35, internal/httpapi/reports.go:42, internal/httpapi/reports.go:64, internal/httpapi/reports.go:64, internal/httpapi/reports.go:72, internal/httpapi/reports.go:72 
+output/matrix-ledger-enforce/round3/check-gates.log:222: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/reports/manual-orders.csv internal/httpapi/customers.go:115, internal/httpapi/handler.go:225, internal/httpapi/reports.go:35, internal/httpapi/reports.go:42, internal/httpapi/reports.go:64, internal/httpapi/reports.go:64, internal/httpapi/reports.go:86, internal/httpapi/reports.go:86 
+output/matrix-ledger-enforce/round3/check-gates.log:223: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/reports/products.csv internal/httpapi/customers.go:115, internal/httpapi/handler.go:225, internal/httpapi/reports.go:35, internal/httpapi/reports.go:42, internal/httpapi/reports.go:43, internal/httpapi/reports.go:43, internal/httpapi/reports.go:86, internal/httpapi/reports.go:86 
+output/matrix-ledger-enforce/round3/check-gates.log:224: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/returns internal/httpapi/handler.go:230, internal/httpapi/returns.go:104, internal/httpapi/returns.go:164, internal/httpapi/returns.go:164 
+output/matrix-ledger-enforce/round3/check-gates.log:225: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/settlements internal/httpapi/handler.go:217, internal/httpapi/settlements.go:34, internal/httpapi/settlements.go:35, internal/httpapi/settlements.go:35, internal/httpapi/settlements.go:59 
+output/matrix-ledger-enforce/round3/check-gates.log:226: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/settlements/{} internal/httpapi/handler.go:217, internal/httpapi/settlements.go:34, internal/httpapi/settlements.go:45, internal/httpapi/settlements.go:45, internal/httpapi/settlements.go:59 
+output/matrix-ledger-enforce/round3/check-gates.log:227: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/shipments/tracking-import/{}/result.csv internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:42, internal/httpapi/merchanttools.go:173, internal/httpapi/merchanttools.go:173, internal/httpapi/merchanttools.go:243 
+output/matrix-ledger-enforce/round3/check-gates.log:228: trailing whitespace.
++WARNING (legacy) GO_ONLY GET /v1/admin/stores/{}/storefront/domains internal/httpapi/handler.go:202, internal/httpapi/settings.go:51, internal/httpapi/storefront.go:62, internal/httpapi/storefront.go:72, internal/httpapi/storefront.go:73, internal/httpapi/storefront.go:73 
+output/matrix-ledger-enforce/round3/check-gates.log:229: trailing whitespace.
++WARNING (legacy) GO_ONLY PATCH /v1/admin/stores/{}/customers/tags/{} internal/httpapi/customer_tags.go:28, internal/httpapi/customer_tags.go:68, internal/httpapi/customer_tags.go:68, internal/httpapi/customers.go:37, internal/httpapi/customers.go:42, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/check-gates.log:230: trailing whitespace.
++WARNING (legacy) GO_ONLY PATCH /v1/admin/stores/{}/customers/{}/notes/{} internal/httpapi/customer_tags.go:28, internal/httpapi/customer_tags.go:97, internal/httpapi/customer_tags.go:97, internal/httpapi/customers.go:37, internal/httpapi/customers.go:42, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/check-gates.log:231: trailing whitespace.
++WARNING (legacy) GO_ONLY PATCH /v1/admin/stores/{}/live-sessions/{} internal/httpapi/handler.go:205, internal/httpapi/studio.go:36, internal/httpapi/studio.go:67, internal/httpapi/studio.go:67, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/check-gates.log:232: trailing whitespace.
++WARNING (legacy) GO_ONLY PATCH /v1/admin/stores/{}/live-sessions/{}/claims/offers/{} internal/httpapi/claims.go:58, internal/httpapi/claims.go:80, internal/httpapi/claims.go:80, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/check-gates.log:233: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/billing/checkout internal/httpapi/billing.go:48, internal/httpapi/billing.go:71, internal/httpapi/billing.go:71, internal/httpapi/billing.go:116, internal/httpapi/claims.go:138, internal/httpapi/handler.go:226 
+output/matrix-ledger-enforce/round3/check-gates.log:234: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/billing/portal internal/httpapi/billing.go:48, internal/httpapi/billing.go:90, internal/httpapi/billing.go:90, internal/httpapi/billing.go:116, internal/httpapi/claims.go:138, internal/httpapi/handler.go:226 
+output/matrix-ledger-enforce/round3/check-gates.log:235: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/customers/tags internal/httpapi/customer_tags.go:28, internal/httpapi/customer_tags.go:64, internal/httpapi/customer_tags.go:64, internal/httpapi/customers.go:37, internal/httpapi/customers.go:42, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/check-gates.log:236: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/customers/{}/consent-withdrawals internal/httpapi/customers.go:37, internal/httpapi/customers.go:63, internal/httpapi/customers.go:63, internal/httpapi/customers.go:115, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/check-gates.log:237: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/customers/{}/erasure internal/httpapi/customers.go:37, internal/httpapi/customers.go:89, internal/httpapi/customers.go:89, internal/httpapi/customers.go:115, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/check-gates.log:238: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/customers/{}/exports internal/httpapi/customers.go:37, internal/httpapi/customers.go:75, internal/httpapi/customers.go:75, internal/httpapi/customers.go:115, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/check-gates.log:239: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/customers/{}/notes internal/httpapi/customer_tags.go:28, internal/httpapi/customer_tags.go:93, internal/httpapi/customer_tags.go:93, internal/httpapi/customers.go:37, internal/httpapi/customers.go:42, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/check-gates.log:240: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/design/media internal/httpapi/design.go:40, internal/httpapi/design.go:62, internal/httpapi/design.go:150, internal/httpapi/handler.go:198 
+output/matrix-ledger-enforce/round3/check-gates.log:241: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/design/media/{}/delete internal/httpapi/design.go:40, internal/httpapi/design.go:70, internal/httpapi/design.go:70, internal/httpapi/design.go:121, internal/httpapi/handler.go:198 
+output/matrix-ledger-enforce/round3/check-gates.log:242: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/design/preview-token internal/httpapi/design.go:40, internal/httpapi/design.go:53, internal/httpapi/design.go:53, internal/httpapi/design.go:113, internal/httpapi/handler.go:198 
+output/matrix-ledger-enforce/round3/check-gates.log:243: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/design/publish internal/httpapi/design.go:40, internal/httpapi/design.go:47, internal/httpapi/design.go:47, internal/httpapi/design.go:113, internal/httpapi/handler.go:198 
+output/matrix-ledger-enforce/round3/check-gates.log:244: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/design/rollback internal/httpapi/design.go:40, internal/httpapi/design.go:50, internal/httpapi/design.go:50, internal/httpapi/design.go:113, internal/httpapi/handler.go:198 
+output/matrix-ledger-enforce/round3/check-gates.log:245: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/imports/customers/commit internal/httpapi/handler.go:223, internal/httpapi/imports.go:34, internal/httpapi/imports.go:53, internal/httpapi/imports.go:53, internal/httpapi/merchanttools.go:243 
+output/matrix-ledger-enforce/round3/check-gates.log:246: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/imports/customers/preview internal/httpapi/handler.go:223, internal/httpapi/imports.go:34, internal/httpapi/imports.go:36, internal/httpapi/imports.go:36, internal/httpapi/merchanttools.go:243 
+output/matrix-ledger-enforce/round3/check-gates.log:247: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/imports/orders/commit internal/httpapi/handler.go:223, internal/httpapi/imports.go:34, internal/httpapi/imports.go:88, internal/httpapi/imports.go:88, internal/httpapi/merchanttools.go:243 
+output/matrix-ledger-enforce/round3/check-gates.log:248: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/imports/orders/preview internal/httpapi/handler.go:223, internal/httpapi/imports.go:34, internal/httpapi/imports.go:72, internal/httpapi/imports.go:72, internal/httpapi/merchanttools.go:243 
+output/matrix-ledger-enforce/round3/check-gates.log:249: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/inbox/conversations/{}/customer-link internal/httpapi/handler.go:236, internal/httpapi/inbox.go:50, internal/httpapi/inbox.go:141, internal/httpapi/inbox.go:141, internal/httpapi/inbox.go:178 
+output/matrix-ledger-enforce/round3/check-gates.log:250: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/inbox/conversations/{}/messages internal/httpapi/handler.go:237, internal/httpapi/inbox.go:178, internal/httpapi/inbox_send.go:42, internal/httpapi/inbox_send.go:46, internal/httpapi/inbox_send.go:46 
+output/matrix-ledger-enforce/round3/check-gates.log:251: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/inbox/conversations/{}/read internal/httpapi/handler.go:236, internal/httpapi/inbox.go:50, internal/httpapi/inbox.go:109, internal/httpapi/inbox.go:109, internal/httpapi/inbox.go:178 
+output/matrix-ledger-enforce/round3/check-gates.log:252: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/inbox/conversations/{}/release internal/httpapi/handler.go:236, internal/httpapi/inbox.go:50, internal/httpapi/inbox.go:129, internal/httpapi/inbox.go:129, internal/httpapi/inbox.go:178 
+output/matrix-ledger-enforce/round3/check-gates.log:253: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/inbox/conversations/{}/takeover internal/httpapi/handler.go:236, internal/httpapi/inbox.go:50, internal/httpapi/inbox.go:120, internal/httpapi/inbox.go:120, internal/httpapi/inbox.go:178 
+output/matrix-ledger-enforce/round3/check-gates.log:254: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions internal/httpapi/handler.go:205, internal/httpapi/studio.go:36, internal/httpapi/studio.go:47, internal/httpapi/studio.go:47, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/check-gates.log:255: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/claims/blocklist internal/httpapi/blocklist.go:33, internal/httpapi/blocklist.go:34, internal/httpapi/blocklist.go:47, internal/httpapi/blocklist.go:47, internal/httpapi/claims.go:58, internal/httpapi/claims.go:128, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/check-gates.log:256: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/claims/bundles/{}/link internal/httpapi/claims.go:58, internal/httpapi/claims.go:123, internal/httpapi/claims.go:138, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/check-gates.log:257: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/claims/keywords/check internal/httpapi/claims.go:58, internal/httpapi/claims.go:130, internal/httpapi/claims.go:198, internal/httpapi/handler.go:210, internal/httpapi/keyword_tools.go:29, internal/httpapi/keyword_tools.go:30, internal/httpapi/keyword_tools.go:40, internal/httpapi/keyword_tools.go:40 
+output/matrix-ledger-enforce/round3/check-gates.log:258: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/claims/manual internal/httpapi/claims.go:58, internal/httpapi/claims.go:105, internal/httpapi/claims.go:105, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/check-gates.log:259: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/claims/offer-import internal/httpapi/claims.go:58, internal/httpapi/claims.go:86, internal/httpapi/claims.go:86, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/check-gates.log:260: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/claims/offers internal/httpapi/claims.go:58, internal/httpapi/claims.go:72, internal/httpapi/claims.go:72, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/check-gates.log:261: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/claims/offers/batch internal/httpapi/claims.go:58, internal/httpapi/claims.go:130, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210, internal/httpapi/keyword_tools.go:29, internal/httpapi/keyword_tools.go:30, internal/httpapi/keyword_tools.go:59, internal/httpapi/keyword_tools.go:59 
+output/matrix-ledger-enforce/round3/check-gates.log:262: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/claims/offers/{}/recommend internal/httpapi/claims.go:188, internal/httpapi/handler.go:237, internal/httpapi/inbox_send.go:43, internal/httpapi/inbox_send.go:84, internal/httpapi/inbox_send.go:84 
+output/matrix-ledger-enforce/round3/check-gates.log:263: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/claims/simulate internal/httpapi/claims.go:58, internal/httpapi/claims.go:130, internal/httpapi/claims.go:198, internal/httpapi/handler.go:210, internal/httpapi/keyword_tools.go:29, internal/httpapi/keyword_tools.go:30, internal/httpapi/keyword_tools.go:31, internal/httpapi/keyword_tools.go:31 
+output/matrix-ledger-enforce/round3/check-gates.log:264: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/claims/window internal/httpapi/claims.go:58, internal/httpapi/claims.go:65, internal/httpapi/claims.go:65, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/check-gates.log:265: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/comments/{}/print internal/httpapi/claims.go:188, internal/httpapi/handler.go:208, internal/httpapi/live_stream.go:35, internal/httpapi/live_stream.go:56, internal/httpapi/live_stream.go:56 
+output/matrix-ledger-enforce/round3/check-gates.log:266: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/comments/{}/private-reply internal/httpapi/claims.go:188, internal/httpapi/handler.go:237, internal/httpapi/inbox_send.go:43, internal/httpapi/inbox_send.go:58, internal/httpapi/inbox_send.go:58 
+output/matrix-ledger-enforce/round3/check-gates.log:267: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/comments/{}/public-reply internal/httpapi/claims.go:188, internal/httpapi/handler.go:237, internal/httpapi/inbox_send.go:43, internal/httpapi/inbox_send.go:72, internal/httpapi/inbox_send.go:72 
+output/matrix-ledger-enforce/round3/check-gates.log:268: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/input/start internal/httpapi/handler.go:205, internal/httpapi/studio.go:36, internal/httpapi/studio.go:116, internal/httpapi/studio.go:116, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/check-gates.log:269: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/input/token internal/httpapi/handler.go:205, internal/httpapi/studio.go:36, internal/httpapi/studio.go:127, internal/httpapi/studio.go:127, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/check-gates.log:270: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/lifecycle internal/httpapi/claims.go:188, internal/httpapi/handler.go:207, internal/httpapi/live_lifecycle.go:27, internal/httpapi/live_lifecycle.go:28, internal/httpapi/live_lifecycle.go:28 
+output/matrix-ledger-enforce/round3/check-gates.log:271: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/page-live-videos/read internal/httpapi/claims.go:188, internal/httpapi/handler.go:206, internal/httpapi/live_flow.go:27, internal/httpapi/live_flow.go:58, internal/httpapi/live_flow.go:58 
+output/matrix-ledger-enforce/round3/check-gates.log:272: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/rehearsal/start internal/httpapi/handler.go:205, internal/httpapi/studio.go:36, internal/httpapi/studio.go:80, internal/httpapi/studio.go:80, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/check-gates.log:273: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/rehearsal/stop internal/httpapi/handler.go:205, internal/httpapi/studio.go:36, internal/httpapi/studio.go:90, internal/httpapi/studio.go:90, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/check-gates.log:274: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/reminders internal/httpapi/claims.go:188, internal/httpapi/handler.go:238, internal/httpapi/reminders.go:32, internal/httpapi/reminders.go:60 
+output/matrix-ledger-enforce/round3/check-gates.log:275: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/live-sessions/{}/reminders/{} internal/httpapi/claims.go:188, internal/httpapi/handler.go:238, internal/httpapi/reminders.go:32, internal/httpapi/reminders.go:61 
+output/matrix-ledger-enforce/round3/check-gates.log:276: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/logistics/ecpay/enabled internal/httpapi/cvs.go:49, internal/httpapi/cvs.go:66, internal/httpapi/cvs.go:66, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:227 
+output/matrix-ledger-enforce/round3/check-gates.log:277: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/markets internal/httpapi/handler.go:201, internal/httpapi/settings.go:51, internal/httpapi/settings_discovery.go:18, internal/httpapi/settings_discovery.go:22, internal/httpapi/settings_discovery.go:22 
+output/matrix-ledger-enforce/round3/check-gates.log:278: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/markets/{}/countries/{}/payment-methods/{}/inspect internal/httpapi/handler.go:200, internal/httpapi/settings.go:19, internal/httpapi/settings.go:43, internal/httpapi/settings.go:43, internal/httpapi/settings.go:51 
+output/matrix-ledger-enforce/round3/check-gates.log:279: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/message-templates internal/httpapi/handler.go:239, internal/httpapi/templates.go:29, internal/httpapi/templates.go:33, internal/httpapi/templates.go:33, internal/httpapi/templates.go:56 
+output/matrix-ledger-enforce/round3/check-gates.log:280: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/meta-connect/disconnect internal/httpapi/ads.go:220, internal/httpapi/handler.go:220, internal/httpapi/meta_connect.go:35, internal/httpapi/meta_connect.go:69, internal/httpapi/meta_connect.go:69 
+output/matrix-ledger-enforce/round3/check-gates.log:281: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/meta-connect/pick internal/httpapi/ads.go:220, internal/httpapi/handler.go:220, internal/httpapi/meta_connect.go:35, internal/httpapi/meta_connect.go:59, internal/httpapi/meta_connect.go:59 
+output/matrix-ledger-enforce/round3/check-gates.log:282: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/meta-connect/start internal/httpapi/ads.go:220, internal/httpapi/handler.go:220, internal/httpapi/meta_connect.go:35, internal/httpapi/meta_connect.go:38, internal/httpapi/meta_connect.go:38 
+output/matrix-ledger-enforce/round3/check-gates.log:283: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/meta/health/recheck internal/httpapi/ads.go:220, internal/httpapi/handler.go:221, internal/httpapi/meta_health.go:35, internal/httpapi/meta_health.go:44, internal/httpapi/meta_health.go:44 
+output/matrix-ledger-enforce/round3/check-gates.log:284: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/operations/{}/cancel internal/httpapi/handler.go:240, internal/httpapi/operations.go:41, internal/httpapi/operations.go:66, internal/httpapi/operations.go:68, internal/httpapi/operations.go:72, internal/httpapi/operations.go:72, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/check-gates.log:285: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/operations/{}/query internal/httpapi/handler.go:240, internal/httpapi/operations.go:41, internal/httpapi/operations.go:66, internal/httpapi/operations.go:68, internal/httpapi/operations.go:72, internal/httpapi/operations.go:72, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/check-gates.log:286: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/operations/{}/retry internal/httpapi/handler.go:240, internal/httpapi/operations.go:41, internal/httpapi/operations.go:66, internal/httpapi/operations.go:68, internal/httpapi/operations.go:72, internal/httpapi/operations.go:72, internal/httpapi/studio.go:199 
+output/matrix-ledger-enforce/round3/check-gates.log:287: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/export internal/httpapi/handler.go:228, internal/httpapi/picklist.go:37, internal/httpapi/picklist.go:56, internal/httpapi/picklist.go:56 
+output/matrix-ledger-enforce/round3/check-gates.log:288: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/for-buyer internal/httpapi/cvs.go:146, internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:153, internal/httpapi/merchanttools.go:345, internal/httpapi/merchanttools.go:365, internal/httpapi/merchanttools.go:365 
+output/matrix-ledger-enforce/round3/check-gates.log:289: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/manual/regenerate-link internal/httpapi/cvs.go:146, internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:42, internal/httpapi/merchanttools.go:133, internal/httpapi/merchanttools.go:133 
+output/matrix-ledger-enforce/round3/check-gates.log:290: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/pick-list internal/httpapi/handler.go:228, internal/httpapi/picklist.go:37, internal/httpapi/picklist.go:39, internal/httpapi/picklist.go:39 
+output/matrix-ledger-enforce/round3/check-gates.log:291: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/{}/bank-transfer/confirm internal/httpapi/cvs.go:146, internal/httpapi/handler.go:231, internal/httpapi/offline.go:33, internal/httpapi/offline.go:34, internal/httpapi/offline.go:55, internal/httpapi/offline.go:55 
+output/matrix-ledger-enforce/round3/check-gates.log:292: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/{}/bank-transfer/refund-offline internal/httpapi/cvs.go:146, internal/httpapi/handler.go:231, internal/httpapi/offline.go:33, internal/httpapi/offline.go:34, internal/httpapi/offline.go:66, internal/httpapi/offline.go:66 
+output/matrix-ledger-enforce/round3/check-gates.log:293: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/{}/bank-transfer/reject internal/httpapi/cvs.go:146, internal/httpapi/handler.go:231, internal/httpapi/offline.go:33, internal/httpapi/offline.go:34, internal/httpapi/offline.go:75, internal/httpapi/offline.go:75 
+output/matrix-ledger-enforce/round3/check-gates.log:294: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/{}/cancel internal/httpapi/handler.go:230, internal/httpapi/returns.go:104, internal/httpapi/returns.go:106, internal/httpapi/returns.go:106, internal/httpapi/shipments.go:133 
+output/matrix-ledger-enforce/round3/check-gates.log:295: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/{}/collection internal/httpapi/cvs.go:49, internal/httpapi/cvs.go:50, internal/httpapi/cvs.go:124, internal/httpapi/cvs.go:124, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:227 
+output/matrix-ledger-enforce/round3/check-gates.log:296: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/{}/cvs-shipment internal/httpapi/cvs.go:49, internal/httpapi/cvs.go:50, internal/httpapi/cvs.go:89, internal/httpapi/cvs.go:89, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:227 
+output/matrix-ledger-enforce/round3/check-gates.log:297: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/{}/cvs-shipment/abandon internal/httpapi/cvs.go:49, internal/httpapi/cvs.go:50, internal/httpapi/cvs.go:115, internal/httpapi/cvs.go:115, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:227 
+output/matrix-ledger-enforce/round3/check-gates.log:298: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/{}/cvs-shipment/print-form internal/httpapi/cvs.go:49, internal/httpapi/cvs.go:50, internal/httpapi/cvs.go:104, internal/httpapi/cvs.go:104, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:227 
+output/matrix-ledger-enforce/round3/check-gates.log:299: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/{}/pay-at-pickup-release internal/httpapi/cvs.go:49, internal/httpapi/cvs.go:50, internal/httpapi/cvs.go:133, internal/httpapi/cvs.go:133, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:227 
+output/matrix-ledger-enforce/round3/check-gates.log:300: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/{}/refunds/{}/refresh internal/httpapi/handler.go:215, internal/httpapi/refunds.go:32, internal/httpapi/refunds.go:45, internal/httpapi/refunds.go:75, internal/httpapi/refunds.go:75, internal/httpapi/refunds.go:101 
+output/matrix-ledger-enforce/round3/check-gates.log:301: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/orders/{}/returns internal/httpapi/handler.go:230, internal/httpapi/returns.go:104, internal/httpapi/returns.go:135, internal/httpapi/returns.go:135, internal/httpapi/shipments.go:133 
+output/matrix-ledger-enforce/round3/check-gates.log:302: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/parcel-groups internal/httpapi/handler.go:229, internal/httpapi/parcels.go:31, internal/httpapi/parcels.go:58, internal/httpapi/parcels.go:58, internal/httpapi/shipments.go:133 
+output/matrix-ledger-enforce/round3/check-gates.log:303: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/products/bulk-status internal/httpapi/handler.go:117, internal/httpapi/handler.go:160, internal/httpapi/handler.go:160, internal/httpapi/handler.go:348 
+output/matrix-ledger-enforce/round3/check-gates.log:304: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/products/document internal/httpapi/handler.go:117, internal/httpapi/handler.go:154, internal/httpapi/handler.go:154, internal/httpapi/handler.go:348 
+output/matrix-ledger-enforce/round3/check-gates.log:305: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/products/import/commit internal/httpapi/cvs.go:146, internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:42, internal/httpapi/merchanttools.go:62, internal/httpapi/merchanttools.go:65, internal/httpapi/merchanttools.go:66, internal/httpapi/merchanttools.go:66 
+output/matrix-ledger-enforce/round3/check-gates.log:306: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/products/import/preview internal/httpapi/cvs.go:146, internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:42, internal/httpapi/merchanttools.go:62, internal/httpapi/merchanttools.go:65, internal/httpapi/merchanttools.go:66, internal/httpapi/merchanttools.go:66 
+output/matrix-ledger-enforce/round3/check-gates.log:307: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/products/{}/copy internal/httpapi/handler.go:117, internal/httpapi/handler.go:163, internal/httpapi/handler.go:163, internal/httpapi/handler.go:348 
+output/matrix-ledger-enforce/round3/check-gates.log:308: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/promotions internal/httpapi/cvs.go:146, internal/httpapi/handler.go:234, internal/httpapi/promotions.go:25, internal/httpapi/promotions.go:32, internal/httpapi/promotions.go:32 
+output/matrix-ledger-enforce/round3/check-gates.log:309: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/promotions/{} internal/httpapi/cvs.go:146, internal/httpapi/handler.go:234, internal/httpapi/promotions.go:25, internal/httpapi/promotions.go:41, internal/httpapi/promotions.go:41 
+output/matrix-ledger-enforce/round3/check-gates.log:310: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/provider-accounts internal/httpapi/accounts.go:23, internal/httpapi/accounts.go:131, internal/httpapi/accounts.go:131, internal/httpapi/handler.go:203, internal/httpapi/settings.go:51 
+output/matrix-ledger-enforce/round3/check-gates.log:311: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/provider-accounts/{}/rotate internal/httpapi/accounts.go:23, internal/httpapi/accounts.go:155, internal/httpapi/accounts.go:155, internal/httpapi/handler.go:203, internal/httpapi/settings.go:51 
+output/matrix-ledger-enforce/round3/check-gates.log:312: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/returns/{}/cancel internal/httpapi/handler.go:230, internal/httpapi/returns.go:92, internal/httpapi/returns.go:104, internal/httpapi/returns.go:233, internal/httpapi/returns.go:233 
+output/matrix-ledger-enforce/round3/check-gates.log:313: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/returns/{}/close internal/httpapi/handler.go:230, internal/httpapi/returns.go:92, internal/httpapi/returns.go:104, internal/httpapi/returns.go:217, internal/httpapi/returns.go:217 
+output/matrix-ledger-enforce/round3/check-gates.log:314: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/returns/{}/inspect internal/httpapi/handler.go:230, internal/httpapi/returns.go:92, internal/httpapi/returns.go:104, internal/httpapi/returns.go:200, internal/httpapi/returns.go:200 
+output/matrix-ledger-enforce/round3/check-gates.log:315: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/returns/{}/receive internal/httpapi/handler.go:230, internal/httpapi/returns.go:92, internal/httpapi/returns.go:104, internal/httpapi/returns.go:184, internal/httpapi/returns.go:184 
+output/matrix-ledger-enforce/round3/check-gates.log:316: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/shipments/cvs-batch internal/httpapi/cvs.go:146, internal/httpapi/handler.go:228, internal/httpapi/picklist.go:37, internal/httpapi/picklist.go:84, internal/httpapi/picklist.go:84 
+output/matrix-ledger-enforce/round3/check-gates.log:317: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/shipments/tracking-import/commit internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:42, internal/httpapi/merchanttools.go:162, internal/httpapi/merchanttools.go:162, internal/httpapi/merchanttools.go:243 
+output/matrix-ledger-enforce/round3/check-gates.log:318: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/shipments/tracking-import/preview internal/httpapi/cvs.go:146, internal/httpapi/handler.go:233, internal/httpapi/merchanttools.go:42, internal/httpapi/merchanttools.go:156, internal/httpapi/merchanttools.go:156 
+output/matrix-ledger-enforce/round3/check-gates.log:319: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/storefront/domains internal/httpapi/handler.go:202, internal/httpapi/settings.go:51, internal/httpapi/storefront.go:62, internal/httpapi/storefront.go:72, internal/httpapi/storefront.go:76 
+output/matrix-ledger-enforce/round3/check-gates.log:320: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/storefront/domains/detach internal/httpapi/handler.go:202, internal/httpapi/settings.go:51, internal/httpapi/storefront.go:62, internal/httpapi/storefront.go:72, internal/httpapi/storefront.go:80, internal/httpapi/storefront.go:80 
+output/matrix-ledger-enforce/round3/check-gates.log:321: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/storefront/domains/suspend internal/httpapi/handler.go:202, internal/httpapi/settings.go:51, internal/httpapi/storefront.go:62, internal/httpapi/storefront.go:72, internal/httpapi/storefront.go:77, internal/httpapi/storefront.go:77 
+output/matrix-ledger-enforce/round3/check-gates.log:322: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/admin/stores/{}/storefront/publication internal/httpapi/handler.go:202, internal/httpapi/settings.go:51, internal/httpapi/storefront.go:62, internal/httpapi/storefront.go:66, internal/httpapi/storefront.go:66 
+output/matrix-ledger-enforce/round3/check-gates.log:323: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/initial-store internal/identityhttp/handler.go:74, internal/identityhttp/handler.go:74 
+output/matrix-ledger-enforce/round3/check-gates.log:324: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/login/complete internal/identityhttp/handler.go:58, internal/identityhttp/handler.go:58 
+output/matrix-ledger-enforce/round3/check-gates.log:325: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/login/start internal/identityhttp/handler.go:46, internal/identityhttp/handler.go:46 
+output/matrix-ledger-enforce/round3/check-gates.log:326: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/logout internal/identityhttp/handler.go:95, internal/identityhttp/handler.go:95 
+output/matrix-ledger-enforce/round3/check-gates.log:327: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/password/complete internal/identityhttp/password.go:94, internal/identityhttp/password.go:94 
+output/matrix-ledger-enforce/round3/check-gates.log:328: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/password/login internal/identityhttp/password.go:73, internal/identityhttp/password.go:73 
+output/matrix-ledger-enforce/round3/check-gates.log:329: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/password/reset internal/identityhttp/password.go:82, internal/identityhttp/password.go:82 
+output/matrix-ledger-enforce/round3/check-gates.log:330: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/password/signup internal/identityhttp/password.go:64, internal/identityhttp/password.go:64 
+output/matrix-ledger-enforce/round3/check-gates.log:331: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/staff/accept internal/identityhttp/staff.go:63, internal/identityhttp/staff.go:64, internal/identityhttp/staff.go:64, internal/identityhttp/staff.go:111, internal/identityhttp/staff.go:111 
+output/matrix-ledger-enforce/round3/check-gates.log:332: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/staff/invite internal/identityhttp/staff.go:63, internal/identityhttp/staff.go:64, internal/identityhttp/staff.go:64, internal/identityhttp/staff.go:93, internal/identityhttp/staff.go:93 
+output/matrix-ledger-enforce/round3/check-gates.log:333: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/staff/list internal/identityhttp/staff.go:63, internal/identityhttp/staff.go:64, internal/identityhttp/staff.go:64, internal/identityhttp/staff.go:86, internal/identityhttp/staff.go:86 
+output/matrix-ledger-enforce/round3/check-gates.log:334: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/staff/remove internal/identityhttp/staff.go:63, internal/identityhttp/staff.go:64, internal/identityhttp/staff.go:64, internal/identityhttp/staff.go:108, internal/identityhttp/staff.go:108 
+output/matrix-ledger-enforce/round3/check-gates.log:335: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/staff/revoke-invite internal/identityhttp/staff.go:63, internal/identityhttp/staff.go:64, internal/identityhttp/staff.go:64, internal/identityhttp/staff.go:102, internal/identityhttp/staff.go:102 
+output/matrix-ledger-enforce/round3/check-gates.log:336: trailing whitespace.
++WARNING (legacy) GO_ONLY POST /v1/identity/staff/set-role internal/identityhttp/staff.go:63, internal/identityhttp/staff.go:64, internal/identityhttp/staff.go:64, internal/identityhttp/staff.go:105, internal/identityhttp/staff.go:105 
+output/matrix-ledger-enforce/round3/check-gates.log:337: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/bank-transfer-settings internal/httpapi/cvs.go:146, internal/httpapi/handler.go:231, internal/httpapi/offline.go:33, internal/httpapi/offline.go:40, internal/httpapi/offline.go:40 
+output/matrix-ledger-enforce/round3/check-gates.log:338: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/cash-on-delivery-settings internal/httpapi/cod.go:25, internal/httpapi/cod.go:31, internal/httpapi/cod.go:31, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:232 
+output/matrix-ledger-enforce/round3/check-gates.log:339: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/customers/{}/tags internal/httpapi/customer_tags.go:28, internal/httpapi/customer_tags.go:76, internal/httpapi/customer_tags.go:76, internal/httpapi/customers.go:37, internal/httpapi/customers.go:42, internal/httpapi/handler.go:222 
+output/matrix-ledger-enforce/round3/check-gates.log:340: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/design/draft internal/httpapi/design.go:40, internal/httpapi/design.go:44, internal/httpapi/design.go:44, internal/httpapi/design.go:113, internal/httpapi/handler.go:198 
+output/matrix-ledger-enforce/round3/check-gates.log:341: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/live-sessions/{}/claims/library/{} internal/httpapi/claims.go:58, internal/httpapi/claims.go:98, internal/httpapi/claims.go:98, internal/httpapi/claims.go:188, internal/httpapi/handler.go:210 
+output/matrix-ledger-enforce/round3/check-gates.log:342: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/logistics/cvs-settings internal/httpapi/cvs.go:49, internal/httpapi/cvs.go:80, internal/httpapi/cvs.go:80, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:227 
+output/matrix-ledger-enforce/round3/check-gates.log:343: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/logistics/ecpay internal/httpapi/cvs.go:49, internal/httpapi/cvs.go:57, internal/httpapi/cvs.go:57, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:227 
+output/matrix-ledger-enforce/round3/check-gates.log:344: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/markets/{}/countries/{}/delivery-services/{} internal/httpapi/handler.go:200, internal/httpapi/settings.go:19, internal/httpapi/settings.go:25, internal/httpapi/settings.go:25, internal/httpapi/settings.go:51 
+output/matrix-ledger-enforce/round3/check-gates.log:345: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/markets/{}/countries/{}/delivery-services/{}/policy internal/httpapi/handler.go:201, internal/httpapi/settings.go:19, internal/httpapi/settings.go:51, internal/httpapi/settings_discovery.go:44, internal/httpapi/settings_discovery.go:44 
+output/matrix-ledger-enforce/round3/check-gates.log:346: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/markets/{}/countries/{}/payment-methods/{} internal/httpapi/handler.go:200, internal/httpapi/settings.go:19, internal/httpapi/settings.go:37, internal/httpapi/settings.go:37, internal/httpapi/settings.go:51 
+output/matrix-ledger-enforce/round3/check-gates.log:347: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/orders/{}/shipment internal/httpapi/handler.go:218, internal/httpapi/shipments.go:41, internal/httpapi/shipments.go:43, internal/httpapi/shipments.go:43, internal/httpapi/shipments.go:133 
+output/matrix-ledger-enforce/round3/check-gates.log:348: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/parcel-groups/{}/shipment internal/httpapi/handler.go:229, internal/httpapi/parcels.go:31, internal/httpapi/parcels.go:96, internal/httpapi/parcels.go:96, internal/httpapi/shipments.go:133 
+output/matrix-ledger-enforce/round3/check-gates.log:349: trailing whitespace.
++WARNING (legacy) GO_ONLY PUT /v1/admin/stores/{}/products/{}/document internal/httpapi/handler.go:117, internal/httpapi/handler.go:157, internal/httpapi/handler.go:157, internal/httpapi/handler.go:348 
+output/matrix-ledger-enforce/round3/check-gates.log:350: trailing whitespace.
++WARNING (legacy) METHOD_MISMATCH go=GET,POST;contract=GET;bff=GET,POST /v1/admin/stores/{}/promotions apps/admin/app/api/stores/[store]/[...resource]/route.ts:9, apps/admin/app/api/stores/[store]/[...resource]/route.ts:18, apps/admin/app/api/stores/[store]/[...resource]/route.ts:309, apps/admin/app/api/stores/[store]/[...resource]/route.ts:327, apps/admin/app/api/stores/[store]/[...resource]/route.ts:404, apps/admin/app/api/stores/[store]/[...resource]/route.ts:580, apps/admin/app/api/stores/[store]/[...resource]/route.ts:581, apps/admin/app/api/stores/[store]/[...resource]/route.ts:582, apps/admin/app/api/stores/[store]/[...resource]/route.ts:583, apps/admin/app/api/stores/[store]/[...resource]/route.ts:602, apps/admin/app/api/stores/[store]/[...resource]/route.ts:603, apps/admin/app/api/stores/[store]/[...resource]/route.ts:604, apps/admin/lib/backend.ts:105, apps/admin/lib/promotions-request.ts:8, apps/admin/lib/promotions-request.ts:9, apps/admin/lib/promotions-request.ts:10, apps/admin/lib/promotions-request.ts:11, apps/admin/lib/promotions-request.ts:12, apps/admin/lib/promotions-request.ts:14, contracts/storefront-v2.md:304, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:234, internal/httpapi/promotions.go:25, internal/httpapi/promotions.go:26, internal/httpapi/promotions.go:26, internal/httpapi/promotions.go:32, internal/httpapi/promotions.go:32 
+output/matrix-ledger-enforce/round3/check-gates.log:351: trailing whitespace.
++WARNING (legacy) METHOD_MISMATCH go=GET,POST;contract=POST;bff=GET,POST /v1/admin/stores/{}/orders/{}/refunds apps/admin/app/api/stores/[store]/[...resource]/route.ts:9, apps/admin/app/api/stores/[store]/[...resource]/route.ts:12, apps/admin/app/api/stores/[store]/[...resource]/route.ts:309, apps/admin/app/api/stores/[store]/[...resource]/route.ts:327, apps/admin/app/api/stores/[store]/[...resource]/route.ts:404, apps/admin/app/api/stores/[store]/[...resource]/route.ts:580, apps/admin/app/api/stores/[store]/[...resource]/route.ts:581, apps/admin/app/api/stores/[store]/[...resource]/route.ts:582, apps/admin/app/api/stores/[store]/[...resource]/route.ts:583, apps/admin/app/api/stores/[store]/[...resource]/route.ts:602, apps/admin/app/api/stores/[store]/[...resource]/route.ts:603, apps/admin/app/api/stores/[store]/[...resource]/route.ts:604, apps/admin/lib/backend.ts:105, apps/admin/lib/orders-request.ts:44, apps/admin/lib/orders-request.ts:49, apps/admin/lib/orders-request.ts:50, apps/admin/lib/orders-request.ts:51, apps/admin/lib/orders-request.ts:52, apps/admin/lib/orders-request.ts:53, apps/admin/lib/orders-request.ts:54, apps/admin/lib/orders-request.ts:55, apps/admin/lib/orders-request.ts:56, apps/admin/lib/orders-request.ts:58, apps/admin/lib/orders-request.ts:59, apps/admin/lib/orders-request.ts:60, apps/admin/lib/orders-request.ts:61, apps/admin/lib/orders-request.ts:62, apps/admin/lib/orders-request.ts:63, apps/admin/lib/orders-request.ts:65, apps/admin/lib/orders-request.ts:66, apps/admin/lib/orders-request.ts:69, apps/admin/lib/orders-request.ts:70, apps/admin/lib/orders-request.ts:71, apps/admin/lib/orders-request.ts:72, apps/admin/lib/orders-request.ts:73, apps/admin/lib/orders-request.ts:74, apps/admin/lib/orders-request.ts:76, contracts/core-openapi.json:254, contracts/core-openapi.json:255, internal/httpapi/handler.go:215, internal/httpapi/refunds.go:32, internal/httpapi/refunds.go:45, internal/httpapi/refunds.go:46, internal/httpapi/refunds.go:46, internal/httpapi/refunds.go:64, internal/httpapi/refunds.go:64, internal/httpapi/refunds.go:101 
+output/matrix-ledger-enforce/round3/check-gates.log:352: trailing whitespace.
++WARNING (legacy) METHOD_MISMATCH go=GET,PUT;contract=PUT;bff=GET,PUT /v1/admin/stores/{}/notification-settings apps/admin/app/api/stores/[store]/[...resource]/route.ts:9, apps/admin/app/api/stores/[store]/[...resource]/route.ts:17, apps/admin/app/api/stores/[store]/[...resource]/route.ts:309, apps/admin/app/api/stores/[store]/[...resource]/route.ts:327, apps/admin/app/api/stores/[store]/[...resource]/route.ts:404, apps/admin/app/api/stores/[store]/[...resource]/route.ts:580, apps/admin/app/api/stores/[store]/[...resource]/route.ts:581, apps/admin/app/api/stores/[store]/[...resource]/route.ts:582, apps/admin/app/api/stores/[store]/[...resource]/route.ts:583, apps/admin/app/api/stores/[store]/[...resource]/route.ts:602, apps/admin/app/api/stores/[store]/[...resource]/route.ts:603, apps/admin/app/api/stores/[store]/[...resource]/route.ts:604, apps/admin/lib/backend.ts:105, apps/admin/lib/logistics-request.ts:9, apps/admin/lib/logistics-request.ts:10, apps/admin/lib/logistics-request.ts:11, apps/admin/lib/logistics-request.ts:12, apps/admin/lib/logistics-request.ts:13, apps/admin/lib/logistics-request.ts:14, apps/admin/lib/logistics-request.ts:16, apps/admin/lib/logistics-request.ts:17, apps/admin/lib/logistics-request.ts:19, apps/admin/lib/logistics-request.ts:20, apps/admin/lib/logistics-request.ts:22, apps/admin/lib/logistics-request.ts:23, apps/admin/lib/logistics-request.ts:25, contracts/storefront-v2.md:209, internal/httpapi/cvs.go:146, internal/httpapi/handler.go:235, internal/httpapi/notify.go:23, internal/httpapi/notify.go:24, internal/httpapi/notify.go:24, internal/httpapi/notify.go:29, internal/httpapi/notify.go:29 
+output/matrix-ledger-enforce/round3/check-gates.log:353: trailing whitespace.
++WARNING (legacy) METHOD_MISMATCH go=GET;contract=GET,POST;bff= /v1/admin/stores/{}/live-sessions/{}/page-live-videos contracts/live-session-flow-openapi.json:386, contracts/live-session-flow-openapi.json:387, contracts/live-session-flow-openapi.json:537, internal/httpapi/claims.go:188, internal/httpapi/handler.go:206, internal/httpapi/live_flow.go:27, internal/httpapi/live_flow.go:46, internal/httpapi/live_flow.go:46 
+output/matrix-ledger-enforce/round3/diagnostics/receiver-emitter-intermediate.log:50: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/diagnostics/receiver-emitter-intermediate.log:55: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/diagnostics/receiver-emitter-intermediate.log:74: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/diagnostics/receiver-emitter-intermediate.log:76: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/diagnostics/receiver-emitter-intermediate.log:95: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/diagnostics/receiver-emitter-intermediate.log:97: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/diagnostics/receiver-emitter-intermediate.log:116: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/diagnostics/receiver-emitter-intermediate.log:118: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/diagnostics/receiver-emitter-intermediate.log:137: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/diagnostics/receiver-emitter-intermediate.log:139: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/diagnostics/receiver-emitter-intermediate.log:158: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/diagnostics/receiver-emitter-intermediate.log:160: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/diagnostics/receiver-emitter-intermediate.log:179: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/diagnostics/receiver-emitter-intermediate.log:181: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/diagnostics/receiver-emitter-intermediate.log:200: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/diagnostics/receiver-emitter-intermediate.log:202: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/diagnostics/receiver-emitter-intermediate.log:221: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/diagnostics/receiver-emitter-intermediate.log:223: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/diagnostics/receiver-emitter-intermediate.log:242: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/diagnostics/receiver-emitter-intermediate.log:244: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/diagnostics/receiver-emitter-intermediate.log:263: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/diagnostics/receiver-emitter-intermediate.log:265: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/diagnostics/receiver-emitter-intermediate.log:284: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/diagnostics/receiver-emitter-intermediate.log:286: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/native-missing-outcome.log:17: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/native-missing-outcome.log:24: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/native-missing-outcome.source.txt:1399: trailing whitespace.
++              
+output/matrix-ledger-enforce/round3/nested-step.log:17: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/nested-step.log:27: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/receiver-tests-red.log:17: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/receiver-tests-red.log:19: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/receiver-tests-red.log:36: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/receiver-tests-red.log:38: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/tautological-outcome.log:17: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/tautological-outcome.log:24: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/typecheck.log:8: new blank line at EOF.
+output/matrix-ledger-enforce/round3/unrelated-outcome.log:17: trailing whitespace.
++  
+output/matrix-ledger-enforce/round3/unrelated-outcome.log:24: trailing whitespace.
++  
