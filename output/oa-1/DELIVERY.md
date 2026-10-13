@@ -7,9 +7,11 @@
   `cb4256f37586aad5139f1216fc92d6226fa70003`, merged in `0f1060a72`.
   Retired scopes reject fresh CAS, but preserve authorized exact replay during
   retention. Backend separate from paused PR #32.
-- Current artifact: storage, private admission helpers, C1 SQL coordinator and
-  Go orchestration; C1 is under CI review. C2 execution remains incomplete;
-  the new placement path is not enabled.
+- Current artifact: native C1 admission, complete single-transaction C2,
+  inline/River execution and periodic sweep. Their scoped CI receipts below
+  do not constitute complete OA-1 acceptance: A2 retirement, cancellation and
+  privacy compatibility, the remaining crash/mutation matrix and final gates
+  are still under verification. The public placement path is not enabled.
 
 ## Evidence
 
@@ -317,3 +319,32 @@ generation CAS/unique and partial Begin-commit mutations (`38467152494`,
 (`38467298823` @`6a2f0cea9`). Existing workflow and per-test bounds are unchanged.
 GitHub job-status calls intermittently returned HTTP 502; those are monitoring
 failures, not product test verdicts. No local run substitutes for CI.
+
+## Native deadline, composition and mutation receipts (continuation)
+
+| Run / source / job | Result and exact scope |
+| --- | --- |
+| CI65 `38465747856` / `5ef841656` / `115532316750` | **GREEN** `PASS=1 FAIL=0 SKIP=0 exit=0`; `TestOrderAttemptDeadlineRealClaimPeriodicLiveness` takes 905.28s across the unchanged real 15-minute admission deadline. The actual periodic consumer releases native claims/reservations and permits the next generation. This case deliberately suppresses placement; the separate C2-versus-expiry race remains pending. `deadline-native-green-ci65.log`. |
+| CI68 `38466720785` / `6e7de3753` / `115535984686` | **GREEN** unit shard, including the three actual worker configuration cases that failed in CI56. Correct off/on behavior and strict key custody now pass. This alone does not prove the packaged worker consumes an order. `worker-composition-green-ci68.log`. |
+| CI69 `38466883637` / `6e7de3753` / `115535991062` | Pending-only transport lookup mutation **RED**, `PASS=0 FAIL=1 exit=1`: native terminal replay no longer follows the retained authority. `pending-only-replay-mutation-ci69.log`. |
+| CI70 `38467152494` / `9e648aff0` / `115537014792` | Omitted generation CAS mutation **RED**, `PASS=0 FAIL=1 exit=1`: the required typed stale-generation refusal becomes an unavailable error. `generation-cas-mutation-ci70.log`. |
+| CI71 `38467159295` / `9e648aff0` / `115537015335` | Omitted all-state generation uniqueness **RED**, `PASS=0 FAIL=1 exit=1`: the exact durable-schema invariant fails. `generation-unique-mutation-ci71.log`. |
+| CI72 `38467163852` / `9e648aff0` / `115537374698` | Disabled atomic COMMIT guard **RED**, `PASS=0 FAIL=1 exit=1`: both actual executor logins commit a Begin-only partial pipeline when the deferred guard is removed. `partial-commit-mutation-ci72.log`. |
+| CI73 `38467298823` / `6a2f0cea9` / `115540242595` | `PASS=0 FAIL=1 exit=1`; actual enabled worker commits, but its receipt fails the queued-notification oracle. Static inspection found the isolated fixture omitted the native published storefront origin needed for READY. `4fe3f5eea` adds the existing `bhPublish` seam plus a positive active/public/unexpired-proof sentinel; every READY assertion remains. CI81 owns verification; this is not a product PASS. `enabled-worker-first-ci73.log`. |
+| CI75 `38468199865` / `7d655349f` / `115540614733` | A2 tests FIRST **RED**, `PASS=0 FAIL=5 exit=1`: after native C1 prerequisites, the dedicated admin role and version-bound eight-argument admission entry are absent (42704/42883). Concurrency behavior remains NOT_RUN until implementation and A2-M1 calibration. `key-retirement-first-ci75.log`. |
+| CI76 `38468285275` / `b83c6c66e` / `115541778243` | Erasure-prefix authority FIRST **RED**, `PASS=0 FAIL=1 SKIP=0 exit=1`: the three exact private erasure entries are absent (42883). `erasure-prefix-first-ci76.log`. |
+
+Root-monitored registrations, not accepted results: real River/inline consumer
+race CI74 `38467528473`; native cancellation plus legacy regressions CI77
+`38468325801`; erasure/C1 race FIRST CI78 `38468487041`; CVS crash/key-rotation/
+terminal-CAS matrix CI79 `38468605984`; erasure product and legacy privacy CI80
+`38468649299`; enabled process CI81 `38469036123`; genuine C2-versus-15-minute
+deadline CI82 `38469249744`; owner-derivation mutation CI83 `38469282415`; final
+deadline-check mutation CI84 `38469287812`. All run on isolated GitHub runners
+with unchanged per-case and workflow budgets; root reads their jobs/logs.
+
+Root migrations now include 0192 erasure lock-prefix and 0193 native cancel
+compatibility (upgrade pin 117); 0194 A2 remains pending integration. The admin
+credential follows the existing external-operator provisioning pattern: it is
+not a deployed core login or a secret mounted into API/claims-worker. Final
+numbering, metadata, whole-unit gates and independent review remain required.
