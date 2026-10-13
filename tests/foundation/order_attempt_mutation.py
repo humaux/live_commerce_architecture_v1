@@ -60,6 +60,21 @@ def main():
             "   WHERE x.tenant_id=auth_tenant AND x.operation_family='merchant_order' AND x.transport_key_digest=p_key;\n",
             "   WHERE x.tenant_id=auth_tenant AND x.operation_family='merchant_order' AND x.transport_key_digest=p_key AND x.state='PENDING';\n",
         )],
+        "omit-generation-cas": [(
+            "migrations/0176_order_attempt_admission.sql",
+            "  IF s.retired_at IS NOT NULL OR s.current_generation<>p_generation THEN\n",
+            "  IF s.retired_at IS NOT NULL THEN\n",
+        )],
+        "omit-generation-unique": [(
+            "migrations/0170_order_attempt_identity.sql",
+            " UNIQUE(scope_id,intent_generation),\n",
+            "",
+        )],
+        "permit-partial-commit": [(
+            "migrations/0182_order_attempt_execution_commit.sql",
+            "BEGIN\n -- Deferred NEW is the trusted inserted cart, not the final attempt version.\n",
+            "BEGIN\n RETURN NULL;\n -- Deferred NEW is the trusted inserted cart, not the final attempt version.\n",
+        )],
     }
     if name not in edits:
         raise SystemExit("unknown OA mutation")
