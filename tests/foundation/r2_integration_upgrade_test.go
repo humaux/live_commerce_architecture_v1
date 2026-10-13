@@ -90,8 +90,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0176 (OA-1 C1 admission and same-transaction seal) adds one: 100 -> 101.
 	// 0178 (OA-1 attempt-first execution fence and private plan context) adds one: 101 -> 102.
 	// 0179 (OA-1 frozen attempt-owned cart and quote materialization) adds one: 102 -> 103.
-	if len(r2) != 103 {
-		t.Fatalf("R2 migration set = %d files %v, want 103", len(r2), r2)
+	// 0180 (OA1 fenced metadata-only abort) adds one: 103 -> 104.
+	if len(r2) != 104 {
+		t.Fatalf("R2 migration set = %d files %v, want 104", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
