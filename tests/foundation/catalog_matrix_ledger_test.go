@@ -5,16 +5,22 @@ package foundation_test
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"crypto/sha256"
 	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -67,9 +73,13 @@ var productEditorMatrixLedgerLocales = map[string]map[string]string{
 }
 
 func productEditorMatrixLedgerExpected() map[productEditorMatrixLedgerKey]string {
+	return productEditorMatrixExpected(productEditorMatrixLedgerCases, productEditorMatrixLedgerLocales)
+}
+
+func productEditorMatrixExpected(cases []productEditorMatrixLedgerCase, locales map[string]map[string]string) map[productEditorMatrixLedgerKey]string {
 	expected := make(map[productEditorMatrixLedgerKey]string)
-	for locale, labels := range productEditorMatrixLedgerLocales {
-		for _, required := range productEditorMatrixLedgerCases {
+	for locale, labels := range locales {
+		for _, required := range cases {
 			control, claim := required.Control, required.Expected
 			for token, label := range labels {
 				control = strings.ReplaceAll(control, token, label)
@@ -91,11 +101,14 @@ func productEditorMatrixLedgerExpected() map[productEditorMatrixLedgerKey]string
 // Select by reserved page namespace BEFORE inspecting locale/width/result, so
 // malformed target rows cannot disappear through a success-only filter.
 func validateProductEditorMatrixLedger(data []byte) error {
+	return productEditorMatrixValidateExpectedLedger(data, productEditorMatrixLedgerExpected())
+}
+
+func productEditorMatrixValidateExpectedLedger(data []byte, remaining map[productEditorMatrixLedgerKey]string) error {
 	var rows []productEditorMatrixLedgerRow
 	if err := json.Unmarshal(data, &rows); err != nil {
 		return fmt.Errorf("invalid matrix ledger JSON: %w", err)
 	}
-	remaining := productEditorMatrixLedgerExpected()
 	seen := make(map[productEditorMatrixLedgerKey]bool)
 	for i, row := range rows {
 		if row.Page == "" {
@@ -330,9 +343,10 @@ func validateProductEditorMatrixEvidence(root string) error {
 	evidence := unit + string(dirMatch[1])
 	canonical := evidence + "/browser/"
 	var manifest struct {
-		Tested  string            `json:"tested_source_commit"`
-		Sources map[string]string `json:"source_files_sha256"`
-		Copies  []struct {
+		Tested     string            `json:"tested_source_commit"`
+		Sources    map[string]string `json:"source_files_sha256"`
+		FrozenHash string            `json:"frozen_identity_record_sha256"`
+		Copies     []struct {
 			Canonical string `json:"canonical"`
 			SHA256    string `json:"sha256"`
 		} `json:"copied_native_bytes"`
@@ -387,23 +401,44 @@ func validateProductEditorMatrixEvidence(root string) error {
 			return err
 		}
 	}
-	entries, err := os.ReadDir(filepath.Join(root, canonical))
-	if err != nil {
-		return err
-	}
-	for _, entry := range entries {
-		path := canonical + entry.Name()
-		data, err := productEditorMatrixEvidenceRead(root, path)
+	// The entire package is closed, including nested and outer receipts. No
+	// symlinks/special files may hide unindexed bytes before a historical skip.
+	if err := filepath.WalkDir(filepath.Join(root, evidence), func(full string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if entry.Type()&os.ModeSymlink != 0 {
+			return fmt.Errorf("canonical package symlink: %s", full)
+		}
+		if entry.IsDir() {
+			return nil
+		}
+		info, err := entry.Info()
 		if err != nil {
 			return err
 		}
-		if err := productEditorMatrixEvidenceHash(path, data, index.Artifacts[path]); err != nil {
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("canonical package non-regular artifact: %s", full)
+		}
+		path, err := filepath.Rel(root, full)
+		if err != nil {
 			return err
 		}
+		path = filepath.ToSlash(path)
+		if path == evidence+"/ARTIFACTS.json" {
+			return nil
+		}
+		if _, indexed := index.Artifacts[path]; !indexed {
+			return fmt.Errorf("unindexed canonical package artifact: %s", path)
+		}
+		return nil
+	}); err != nil {
+		return err
 	}
 	var source struct {
-		Tested  string            `json:"tested_source_commit"`
-		Sources map[string]string `json:"source_files_sha256"`
+		Tested     string            `json:"tested_source_commit"`
+		Sources    map[string]string `json:"source_files_sha256"`
+		FrozenHash string            `json:"frozen_identity_record_sha256"`
 	}
 	sourcePath := evidence + "/SOURCE.json"
 	sourceData, err := productEditorMatrixEvidenceRead(root, sourcePath)
@@ -416,7 +451,7 @@ func validateProductEditorMatrixEvidence(root string) error {
 	if err := json.Unmarshal(sourceData, &source); err != nil {
 		return fmt.Errorf("canonical source receipt: %w", err)
 	}
-	if source.Tested != manifest.Tested || !reflect.DeepEqual(source.Sources, manifest.Sources) {
+	if source.Tested != manifest.Tested || !reflect.DeepEqual(source.Sources, manifest.Sources) || source.FrozenHash != manifest.FrozenHash {
 		return fmt.Errorf("SOURCE.json must bind the same tested source and source files as the manifest")
 	}
 	// The separately indexed frozen run receipt corroborates the OLD producer
@@ -478,13 +513,20 @@ func validateProductEditorMatrixEvidence(root string) error {
 		}
 		native[name] = data
 	}
+	frozen, err := productEditorMatrixFrozenEvidence(root, evidence, manifest.Tested, manifest.FrozenHash, manifest.Sources, index.Artifacts)
+	if err != nil {
+		return err
+	}
 	// Historical records cannot be compared to a future control table. Their
 	// immutable ledger must still be internally coherent and corroborate outcomes.
 	required, err := productEditorMatrixHistoricalLedger(native["product-editor-click-ledger.json"])
 	if err != nil {
 		return fmt.Errorf("canonical browser ledger: %w", err)
 	}
-	if err := validateProductEditorMatrixRunOutcome(manifestData, native, required); err != nil {
+	if err := productEditorMatrixValidateExpectedLedger(native["product-editor-click-ledger.json"], productEditorMatrixExpected(frozen.Cases, frozen.Locales)); err != nil {
+		return fmt.Errorf("frozen historical claims: %w", err)
+	}
+	if err := validateProductEditorMatrixRunOutcome(manifestData, native, required, frozen.Tests); err != nil {
 		return err
 	}
 	// Validate ALL recorded digests first: an absent newly introduced path can be
@@ -497,6 +539,8 @@ func validateProductEditorMatrixEvidence(root string) error {
 		}
 	}
 	var drift productEditorMatrixEvidenceDrift
+	// SOURCE.json's corroborated owned producer set defines checkout drift.
+	// Frozen consumers prove historical identities above without expanding it.
 	sourcePaths := make([]string, 0, len(manifest.Sources))
 	for path := range manifest.Sources {
 		sourcePaths = append(sourcePaths, path)
@@ -508,9 +552,16 @@ func validateProductEditorMatrixEvidence(root string) error {
 		if !regexp.MustCompile(`^[0-9a-f]{64}$`).MatchString(hash) {
 			return fmt.Errorf("invalid recorded source SHA-256: %s", path)
 		}
-		data, err := productEditorMatrixEvidenceRead(root, path)
+		data, err := productEditorMatrixEvidenceSourceRead(root, path)
 		if err != nil {
-			return err
+			if !os.IsNotExist(err) {
+				return err
+			}
+			drift = append(drift, path)
+			if path == gate {
+				gateChanged = true
+			}
+			continue
 		}
 		if err := productEditorMatrixEvidenceHash(path, data, hash); err != nil {
 			drift = append(drift, path)
@@ -533,6 +584,11 @@ func validateProductEditorMatrixEvidence(root string) error {
 	}
 	if len(drift) != 0 {
 		return drift
+	}
+	for log, expected := range map[string]int{"playwright.log": 12, "cc12-playwright.log": 2} {
+		if err := productEditorMatrixPlaywrightSummary(native[log], productEditorMatrixCurrentRunIdentities(expected)); err != nil {
+			return fmt.Errorf("current run identities: %w", err)
+		}
 	}
 	return validateProductEditorMatrixLedger(native["product-editor-click-ledger.json"])
 }
@@ -561,4 +617,359 @@ func productEditorMatrixEvidenceRead(root, path string) ([]byte, error) {
 		return nil, fmt.Errorf("canonical evidence/source symlink escapes checkout: %s", path)
 	}
 	return os.ReadFile(full)
+}
+
+// Missing actual producers are drift only after lexical validation. Symlinks
+// (including dangling ones) and non-ENOENT I/O failures remain hard errors.
+func productEditorMatrixEvidenceSourceRead(root, path string) ([]byte, error) {
+	if filepath.IsAbs(path) || filepath.Clean(path) != path || path == "." || path == ".." || strings.HasPrefix(path, "../") {
+		return nil, fmt.Errorf("canonical source path must stay repository-relative: %s", path)
+	}
+	full := root
+	for _, part := range strings.Split(path, "/") {
+		full = filepath.Join(full, part)
+		info, err := os.Lstat(full)
+		if err != nil {
+			return nil, err
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return nil, fmt.Errorf("canonical source symlink: %s", path)
+		}
+	}
+	return os.ReadFile(full)
+}
+
+type productEditorMatrixFrozenRecord struct {
+	Tested    string                          `json:"tested_source_commit"`
+	Snapshots map[string]string               `json:"source_snapshots"`
+	Hashes    map[string]string               `json:"source_files_sha256"`
+	Blobs     map[string]string               `json:"git_blob_ids"`
+	Locales   map[string]map[string]string    `json:"locale_labels"`
+	Tests     map[string][]string             `json:"test_identities"`
+	Cases     []productEditorMatrixLedgerCase `json:"-"`
+	MembershipHash string `json:"package_membership_sha256"`
+}
+
+// New metadata is derived from the tested Git objects and observed native logs;
+// raw snapshots let validation work without a deep Git checkout or current labels.
+func productEditorMatrixFrozenEvidence(root, evidence, tested, frozenHash string, sources, artifacts map[string]string) (productEditorMatrixFrozenRecord, error) {
+	var record productEditorMatrixFrozenRecord
+	path := evidence + "/FROZEN-IDENTITIES.json"
+	data, err := productEditorMatrixEvidenceRead(root, path)
+	if err != nil {
+		return record, err
+	}
+	if err := productEditorMatrixEvidenceHash(path, data, artifacts[path]); err != nil {
+		return record, err
+	}
+	if err := productEditorMatrixEvidenceHash(path, data, frozenHash); err != nil {
+		return record, err
+	}
+	if err := json.Unmarshal(data, &record); err != nil {
+		return record, err
+	}
+	if record.Tested != tested || len(record.Snapshots) == 0 || len(record.Snapshots) != len(record.Hashes) || len(record.Snapshots) != len(record.Blobs) {
+		return record, fmt.Errorf("frozen identity record must bind tested source and snapshots")
+	}
+	if err := productEditorMatrixFrozenMembership(root, evidence, tested, record.MembershipHash, artifacts); err != nil {
+		return record, err
+	}
+	frozen := map[string][]byte{}
+	for source, snapshot := range record.Snapshots {
+		if !strings.HasPrefix(snapshot, evidence+"/frozen/") {
+			return record, fmt.Errorf("frozen snapshot outside package: %s", snapshot)
+		}
+		data, err := productEditorMatrixEvidenceRead(root, snapshot)
+		if err != nil {
+			return record, err
+		}
+		if err := productEditorMatrixEvidenceHash(snapshot, data, artifacts[snapshot]); err != nil {
+			return record, err
+		}
+		if err := productEditorMatrixEvidenceHash(source, data, record.Hashes[source]); err != nil {
+			return record, err
+		}
+		if record.Blobs[source] != productEditorMatrixGitBlob(data) {
+			return record, fmt.Errorf("frozen snapshot Git blob mismatch: %s", source)
+		}
+		if hash, present := sources[source]; present && hash != record.Hashes[source] {
+			return record, fmt.Errorf("frozen snapshot disagrees with tested producer: %s", source)
+		}
+		frozen[source] = data
+	}
+	const table = "tests/foundation/testdata/product_editor_matrix_cases.json"
+	const gate = "tests/foundation/catalog_matrix_ledger_test.go"
+	if err := json.Unmarshal(frozen[table], &record.Cases); err != nil || len(record.Cases) == 0 {
+		return record, fmt.Errorf("frozen case table missing or malformed")
+	}
+	producers, err := productEditorMatrixFrozenProducers(frozen[gate])
+	if err != nil {
+		return record, err
+	}
+	if len(producers) != len(sources) {
+		return record, fmt.Errorf("tested producer set disagrees with frozen declaration")
+	}
+	for _, producer := range producers {
+		if _, present := sources[producer]; !present {
+			return record, fmt.Errorf("tested source receipt omitted frozen producer: %s", producer)
+		}
+	}
+	locales, err := productEditorMatrixFrozenLocales(frozen[gate])
+	if err != nil {
+		return record, err
+	}
+	if !reflect.DeepEqual(locales, record.Locales) {
+		return record, fmt.Errorf("frozen locale labels disagree with tested producer")
+	}
+	// Validate the untrusted table before using the current declaration builder,
+	// whose panic contract is appropriate only for compiled trusted data.
+	keys := map[productEditorMatrixLedgerKey]bool{}
+	for locale, labels := range record.Locales {
+		for _, item := range record.Cases {
+			control, claim := item.Control, item.Expected
+			for token, label := range labels {
+				control = strings.ReplaceAll(control, token, label)
+				claim = strings.ReplaceAll(claim, token, label)
+			}
+			key := productEditorMatrixLedgerKey{Page: item.Page, Locale: locale, Width: 390, Row: item.Row, Control: control, Action: item.Action}
+			if strings.TrimSpace(claim) == "" || strings.TrimSpace(control) == "" || strings.TrimSpace(item.Action) == "" || (!strings.HasPrefix(item.Page, "mobile matrix") && !strings.HasPrefix(item.Page, "mobile axis remove")) || keys[key] {
+				return record, fmt.Errorf("invalid or duplicate frozen table identity")
+			}
+			keys[key] = true
+		}
+	}
+	for log, identities := range record.Tests {
+		if log != "playwright.log" && log != "cc12-playwright.log" {
+			return record, fmt.Errorf("unexpected frozen run: %s", log)
+		}
+		if len(identities) == 0 {
+			return record, fmt.Errorf("empty frozen run identities: %s", log)
+		}
+		seen := map[string]bool{}
+		for _, identity := range identities {
+			parts := strings.SplitN(identity, " › ", 2)
+			if len(parts) != 2 || strings.TrimSpace(parts[1]) == "" || len(frozen[parts[0]]) == 0 || seen[identity] {
+				return record, fmt.Errorf("invalid, duplicate or unbound frozen test identity: %s", identity)
+			}
+			seen[identity] = true
+		}
+	}
+	if len(record.Tests) != 2 {
+		return record, fmt.Errorf("frozen record must bind both full browser runs")
+	}
+	if err := productEditorMatrixFrozenRunOracle(frozen, record.Tests); err != nil {
+		return record, err
+	}
+	return record, nil
+}
+
+// The names-only receipt is independent of ARTIFACTS and includes itself; no
+// digest is stored inside itself, so membership cannot create a self-hash cycle.
+func productEditorMatrixFrozenMembership(root, evidence, tested, hash string, artifacts map[string]string) error {
+	path := evidence + "/FROZEN-MEMBERSHIP.json"
+	data, err := productEditorMatrixEvidenceRead(root, path)
+	if err != nil {
+		return err
+	}
+	if err := productEditorMatrixEvidenceHash(path, data, artifacts[path]); err != nil {
+		return err
+	}
+	if err := productEditorMatrixEvidenceHash(path, data, hash); err != nil {
+		return err
+	}
+	var membership struct {
+		Tested string `json:"tested_source_commit"`
+		Members []string `json:"package_members"`
+	}
+	if err := json.Unmarshal(data, &membership); err != nil {
+		return err
+	}
+	if membership.Tested != tested || len(membership.Members) == 0 || len(membership.Members) != len(artifacts) {
+		return fmt.Errorf("canonical index must retain the entire frozen package membership")
+	}
+	seen := map[string]bool{}
+	for _, member := range membership.Members {
+		if member == "ARTIFACTS.json" || filepath.IsAbs(member) || filepath.ToSlash(filepath.Clean(member)) != member || member == "." || strings.HasPrefix(member, "../") || seen[member] {
+			return fmt.Errorf("invalid or duplicate frozen package member: %s", member)
+		}
+		seen[member] = true
+		if _, present := artifacts[evidence+"/"+member]; !present {
+			return fmt.Errorf("canonical index omitted frozen package member: %s", member)
+		}
+	}
+	// An independently reviewed original package-name digest prevents coordinated
+	// rewrites of membership, identity record, SOURCE, manifest and index together.
+	// New package versions need an explicit reviewed oracle, just like consumers.
+	members := append([]string{}, membership.Members...)
+	sort.Strings(members)
+	const originalMembers = "ec82c6dcbd9f3804791239c358cac0e592c6d9d9bee1b2515d35c40478a8fdff"
+	if fmt.Sprintf("%x", sha256.Sum256([]byte(strings.Join(members, "\n")))) != originalMembers {
+		return fmt.Errorf("frozen package membership disagrees with original package oracle")
+	}
+	if !seen["FROZEN-MEMBERSHIP.json"] || !seen["FROZEN-IDENTITIES.json"] {
+		return fmt.Errorf("frozen membership must retain its provenance records")
+	}
+	return nil
+}
+
+// Only the declaration at the tested source defines OLD producers. Current
+// declarations can evolve without expanding the fourteen historical bindings.
+func productEditorMatrixFrozenProducers(data []byte) ([]string, error) {
+	file, err := parser.ParseFile(token.NewFileSet(), "frozen.go", data, 0)
+	if err != nil {
+		return nil, err
+	}
+	var producers []string
+	seen := map[string]bool{}
+	for _, decl := range file.Decls {
+		gen, ok := decl.(*ast.GenDecl)
+		if !ok || gen.Tok != token.VAR {
+			continue
+		}
+		for _, spec := range gen.Specs {
+			value, ok := spec.(*ast.ValueSpec)
+			if !ok || len(value.Names) != 1 || value.Names[0].Name != "productEditorMatrixEvidenceSources" || len(value.Values) != 1 {
+				continue
+			}
+			literal, ok := value.Values[0].(*ast.CompositeLit)
+			if !ok || producers != nil {
+				return nil, fmt.Errorf("frozen producer declaration must be one literal")
+			}
+			producers = []string{}
+			for _, element := range literal.Elts {
+				item, ok := element.(*ast.BasicLit)
+				if !ok || item.Kind != token.STRING {
+					return nil, fmt.Errorf("frozen producer must be a literal path")
+				}
+				path, err := strconv.Unquote(item.Value)
+				if err != nil || path == "" || filepath.IsAbs(path) || filepath.ToSlash(filepath.Clean(path)) != path || strings.HasPrefix(path, "../") || seen[path] {
+					return nil, fmt.Errorf("invalid or duplicate frozen producer")
+				}
+				seen[path] = true
+				producers = append(producers, path)
+			}
+		}
+	}
+	if len(producers) == 0 {
+		return nil, fmt.Errorf("missing frozen producer declaration")
+	}
+	return producers, nil
+}
+
+// Independent original identity oracle for the four exact consumer Git blobs at
+// 2e10084b3f5e96548c15953cc40488aef9e1c86d. Titles/domains were read from those
+// declarations and corroborated by the unchanged native logs. This deliberately
+// fails closed for a different consumer version, which needs a reviewed oracle;
+// it never calls the current-title function or generates new browser evidence.
+func productEditorMatrixFrozenRunOracle(frozen map[string][]byte, tests map[string][]string) error {
+	consumerHashes := map[string]string{
+		"tests/admin/product-editor.acceptance.ts": "42c62c527424bc0d611c29f15ca9570330ee8a7fb2f4aeb2a5f9cbd3c8f44e69",
+		"tests/admin/product-review.acceptance.ts": "e9fb97fb23762ffede5ee3b755e88c88263bb5d458075b05b214e44766f077a4",
+		"tests/admin/product-feedback.acceptance.ts": "ac098dafcd7f782901c87523878a37768cf6530a024dd1bf75999a908219a173",
+		"tests/admin/catalog-core.spec.ts": "18db7e6e25ddfc05bdd6b9fecc6f80b3bd47e92f1e31addddf6ff318c21da0d8",
+	}
+	for path, hash := range consumerHashes {
+		if err := productEditorMatrixEvidenceHash(path, frozen[path], hash); err != nil {
+			return fmt.Errorf("unsupported frozen consumer oracle: %w", err)
+		}
+	}
+	want := map[string][]string{
+		"playwright.log": {
+			"tests/admin/product-editor.acceptance.ts › PE12-17 document workflow, matrix, list actions and click ledger",
+			"tests/admin/product-review.acceptance.ts › review: bulk price 80 plus archive sends exclusive archive entry and persists",
+			"tests/admin/product-review.acceptance.ts › review: create UNKNOWN then client preserves receipt fence after reload",
+			"tests/admin/product-review.acceptance.ts › review: create UNKNOWN then 401 preserves receipt fence after reload",
+			"tests/admin/product-review.acceptance.ts › review: create UNKNOWN then 403 preserves receipt fence after reload",
+			"tests/admin/product-review.acceptance.ts › review: copy UNKNOWN then client preserves receipt fence after reload",
+			"tests/admin/product-review.acceptance.ts › review: copy UNKNOWN then 401 preserves receipt fence after reload",
+			"tests/admin/product-review.acceptance.ts › review: copy UNKNOWN then 403 preserves receipt fence after reload",
+			"tests/admin/product-review.acceptance.ts › review: order UNKNOWN then 403 preserves receipt fence after reload",
+			"tests/admin/product-review.acceptance.ts › review: publish UNKNOWN then 403 preserves receipt fence after reload",
+			"tests/admin/product-feedback.acceptance.ts › feedback: identical image-required validation reveals again at 1586px",
+			"tests/admin/product-feedback.acceptance.ts › feedback: identical image-required validation reveals again at 390px",
+		},
+		"cc12-playwright.log": {
+			"tests/admin/catalog-core.spec.ts › CC12 desktop en › catalog v2: draft product, 2x3 matrix, prices, compare-at, stock, photo, collection, activate, shopper view, archive a variant, deactivate (desktop, en)",
+			"tests/admin/catalog-core.spec.ts › CC12 mobile zh-TW › catalog v2: draft product, 2x3 matrix, prices, compare-at, stock, photo, collection, activate, shopper view, archive a variant, deactivate (mobile, zh-TW)",
+		},
+	}
+	for log, identities := range want {
+		actual := append([]string{}, tests[log]...)
+		sort.Strings(identities)
+		sort.Strings(actual)
+		if !reflect.DeepEqual(identities, actual) {
+			return fmt.Errorf("frozen run titles disagree with original consumer declarations: %s", log)
+		}
+	}
+	return nil
+}
+
+func productEditorMatrixFrozenLocales(data []byte) (map[string]map[string]string, error) {
+	file, err := parser.ParseFile(token.NewFileSet(), "frozen.go", data, 0)
+	if err != nil {
+		return nil, err
+	}
+	locales := map[string]map[string]string{}
+	for _, decl := range file.Decls {
+		gen, ok := decl.(*ast.GenDecl)
+		if !ok || gen.Tok != token.VAR {
+			continue
+		}
+		for _, spec := range gen.Specs {
+			value, ok := spec.(*ast.ValueSpec)
+			if !ok || len(value.Names) != 1 || value.Names[0].Name != "productEditorMatrixLedgerLocales" || len(value.Values) != 1 {
+				continue
+			}
+			outer, ok := value.Values[0].(*ast.CompositeLit)
+			if !ok {
+				return nil, fmt.Errorf("frozen locale bindings must be literal")
+			}
+			for _, item := range outer.Elts {
+				pair, ok := item.(*ast.KeyValueExpr)
+				if !ok {
+					return nil, fmt.Errorf("frozen locale entry must be literal")
+				}
+				key, ok := pair.Key.(*ast.BasicLit)
+				if !ok {
+					return nil, fmt.Errorf("frozen locale key must be literal")
+				}
+				locale, err := strconv.Unquote(key.Value)
+				if err != nil || strings.TrimSpace(locale) == "" || locales[locale] != nil {
+					return nil, fmt.Errorf("invalid frozen locale key")
+				}
+				labels, ok := pair.Value.(*ast.CompositeLit)
+				if !ok {
+					return nil, fmt.Errorf("frozen labels must be literal")
+				}
+				locales[locale] = map[string]string{}
+				for _, item := range labels.Elts {
+					pair, ok := item.(*ast.KeyValueExpr)
+					if !ok {
+						return nil, fmt.Errorf("frozen label must be literal")
+					}
+					key, keyOK := pair.Key.(*ast.BasicLit)
+					value, valueOK := pair.Value.(*ast.BasicLit)
+					if !keyOK || !valueOK {
+						return nil, fmt.Errorf("frozen label operands must be literal")
+					}
+					name, e1 := strconv.Unquote(key.Value)
+					label, e2 := strconv.Unquote(value.Value)
+					if e1 != nil || e2 != nil || name == "" || label == "" || locales[locale][name] != "" {
+						return nil, fmt.Errorf("invalid frozen label")
+					}
+					locales[locale][name] = label
+				}
+			}
+		}
+	}
+	if len(locales) == 0 {
+		return nil, fmt.Errorf("missing frozen locale bindings")
+	}
+	return locales, nil
+}
+
+// Git object identity is provenance; SHA-256 above remains the integrity digest.
+func productEditorMatrixGitBlob(data []byte) string {
+	object := append([]byte(fmt.Sprintf("blob %d\x00", len(data))), data...)
+	return fmt.Sprintf("%x", sha1.Sum(object))
 }

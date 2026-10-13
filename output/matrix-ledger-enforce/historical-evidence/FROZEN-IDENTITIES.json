@@ -1,0 +1,84 @@
+{
+  "tested_source_commit": "2e10084b3f5e96548c15953cc40488aef9e1c86d",
+  "provenance": "Added metadata derives from actual tested Git blobs and unchanged native list-reporter output; no browser run or current PASS generation.",
+  "source_snapshots": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/foundation/catalog_matrix_ledger_test.go.source.txt",
+    "tests/foundation/testdata/product_editor_matrix_cases.json": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/foundation/testdata/product_editor_matrix_cases.json.source.txt",
+    "tests/admin/product-editor.acceptance.ts": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/admin/product-editor.acceptance.ts.source.txt",
+    "tests/admin/product-editor-matrix-ledger.ts": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/admin/product-editor-matrix-ledger.ts.source.txt",
+    "tests/admin/product-review.acceptance.ts": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/admin/product-review.acceptance.ts.source.txt",
+    "tests/admin/product-feedback.acceptance.ts": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/admin/product-feedback.acceptance.ts.source.txt",
+    "tests/admin/catalog-core.spec.ts": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/admin/catalog-core-spec.source.txt"
+  },
+  "source_files_sha256": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "0bca90d283d8bf73eefdb0689ab68b4c2b3c97d619a53de6bf01e95d7c594371",
+    "tests/foundation/testdata/product_editor_matrix_cases.json": "d380f3e06babf7a96b77fe4ff46ddf77b38d84da521c8f0f378704e7f0ebca0d",
+    "tests/admin/product-editor.acceptance.ts": "42c62c527424bc0d611c29f15ca9570330ee8a7fb2f4aeb2a5f9cbd3c8f44e69",
+    "tests/admin/product-editor-matrix-ledger.ts": "8f316ca5d61458e5c01f98891d784677998acca1240d1270311c0b4235e48e09",
+    "tests/admin/product-review.acceptance.ts": "e9fb97fb23762ffede5ee3b755e88c88263bb5d458075b05b214e44766f077a4",
+    "tests/admin/product-feedback.acceptance.ts": "ac098dafcd7f782901c87523878a37768cf6530a024dd1bf75999a908219a173",
+    "tests/admin/catalog-core.spec.ts": "18db7e6e25ddfc05bdd6b9fecc6f80b3bd47e92f1e31addddf6ff318c21da0d8"
+  },
+  "git_blob_ids": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "9c13933c87d535981e254399d142f5c05f963105",
+    "tests/foundation/testdata/product_editor_matrix_cases.json": "eb8cd9c7a3adff912068bbf9ebf64922f5fe57ce",
+    "tests/admin/product-editor.acceptance.ts": "7e7791d623a356285c407f079d62889ba9c372a6",
+    "tests/admin/product-editor-matrix-ledger.ts": "65a4f17d004a602ec5e1ec974bd019e766d26c45",
+    "tests/admin/product-review.acceptance.ts": "d269460071e5a2b21128be0bdbecbe563c62556b",
+    "tests/admin/product-feedback.acceptance.ts": "bc8c2c966e9694571fb6b78272ad02b02c4784cf",
+    "tests/admin/catalog-core.spec.ts": "311a6397747015c26d0e0ec94a65081689f542e3"
+  },
+  "locale_labels": {
+    "zh-TW": {
+      "@price": "售價",
+      "@compare": "原價",
+      "@quantity": "數量",
+      "@max": "單次購買上限",
+      "@targetQty": "改後庫存",
+      "@code": "貨號",
+      "@keyword": "直播關鍵字",
+      "@untracked": "不追蹤 ∞"
+    },
+    "zh-CN": {
+      "@price": "售价",
+      "@compare": "原价",
+      "@quantity": "数量",
+      "@max": "单次购买上限",
+      "@targetQty": "改后库存",
+      "@code": "货号",
+      "@keyword": "直播关键字",
+      "@untracked": "不追踪 ∞"
+    },
+    "en": {
+      "@price": "Price",
+      "@compare": "Compare-at price",
+      "@quantity": "Quantity",
+      "@max": "Maximum per order",
+      "@targetQty": "Resulting on-hand",
+      "@code": "SKU code",
+      "@keyword": "Live keyword",
+      "@untracked": "Do not track ∞"
+    }
+  },
+  "test_identities": {
+    "playwright.log": [
+      "tests/admin/product-editor.acceptance.ts › PE12-17 document workflow, matrix, list actions and click ledger",
+      "tests/admin/product-review.acceptance.ts › review: bulk price 80 plus archive sends exclusive archive entry and persists",
+      "tests/admin/product-review.acceptance.ts › review: create UNKNOWN then client preserves receipt fence after reload",
+      "tests/admin/product-review.acceptance.ts › review: create UNKNOWN then 401 preserves receipt fence after reload",
+      "tests/admin/product-review.acceptance.ts › review: create UNKNOWN then 403 preserves receipt fence after reload",
+      "tests/admin/product-review.acceptance.ts › review: copy UNKNOWN then client preserves receipt fence after reload",
+      "tests/admin/product-review.acceptance.ts › review: copy UNKNOWN then 401 preserves receipt fence after reload",
+      "tests/admin/product-review.acceptance.ts › review: copy UNKNOWN then 403 preserves receipt fence after reload",
+      "tests/admin/product-review.acceptance.ts › review: order UNKNOWN then 403 preserves receipt fence after reload",
+      "tests/admin/product-review.acceptance.ts › review: publish UNKNOWN then 403 preserves receipt fence after reload",
+      "tests/admin/product-feedback.acceptance.ts › feedback: identical image-required validation reveals again at 1586px",
+      "tests/admin/product-feedback.acceptance.ts › feedback: identical image-required validation reveals again at 390px"
+    ],
+    "cc12-playwright.log": [
+      "tests/admin/catalog-core.spec.ts › CC12 desktop en › catalog v2: draft product, 2x3 matrix, prices, compare-at, stock, photo, collection, activate, shopper view, archive a variant, deactivate (desktop, en)",
+      "tests/admin/catalog-core.spec.ts › CC12 mobile zh-TW › catalog v2: draft product, 2x3 matrix, prices, compare-at, stock, photo, collection, activate, shopper view, archive a variant, deactivate (mobile, zh-TW)"
+    ]
+  },
+  "package_membership_sha256": "ca4468a7cb5559fded29d22044d28d2215cedd3acd7ac2e9bb9a3d692244ccf2"
+}

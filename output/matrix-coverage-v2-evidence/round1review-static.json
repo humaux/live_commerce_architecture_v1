@@ -1,0 +1,237 @@
+{
+  "task_id": "f597a8bc-ce29-4b68-ab31-815dd5a319cb-sub-evidence-review",
+  "base_commit": "8ab590779d9ed0e22c5f39031143e3e93dcf893a",
+  "author_model": "gpt-6.1-sol",
+  "author_reasoning": "high",
+  "author_provenance": "Explicit parent spawn metadata for NEW review repair author only. Original author configuration is recorded separately from owner-supplied observed thread metadata; original root model/effort UNKNOWN.",
+  "evidence_level": "E1 STATIC SOURCE EDITS ONLY; compile/lint/tests/gates NOT_RUN locally; CI owned by parent",
+  "source_files_sha256": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "bf5fb1c6df8f73c8469862d1ec16879307a3387ec7e263ed701ebb99fa02e1b0",
+    "tests/foundation/catalog_matrix_evidence_test.go": "224a9e1843616e3b83121849b774350144a2bea723ee97daa961b70627d443b7"
+  },
+  "frozen_record_sha256": "bee23db00d350a23d999078119239f4afc8499df80572e1538b883af0f678e07",
+  "static_read_whitespace_observations": [
+    {
+      "path": "output/matrix-coverage-v2-evidence/test-node-final.log",
+      "trailing_whitespace_lines": [
+        1621,
+        1626
+      ],
+      "count": 2,
+      "sha256_raw": "ad5ae5be3d96465b4a252768d585e252ffb2da6587ef7f48501c758eac866ec7"
+    },
+    {
+      "path": "output/matrix-coverage-v2-evidence/check-gates-final.log",
+      "trailing_whitespace_lines": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "count": 249,
+      "sha256_raw": "cf7bc257c8358f64bb368a76c8728f94d22a869130e96c15e96a508397670a5a"
+    },
+    {
+      "path": "output/matrix-coverage-v2-evidence/shard-registration-red.log",
+      "trailing_whitespace_lines": [
+        23,
+        28
+      ],
+      "count": 2,
+      "sha256_raw": "0900837ac5374edbaf2767915098a678a103c3c7b1bf1e170a4773eb32bf47f3"
+    },
+    {
+      "path": "output/matrix-coverage-v2-evidence/check-gates-registry-final.log",
+      "trailing_whitespace_lines": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "count": 249,
+      "sha256_raw": "977eb3126270ceffa24840631bbe58e0b8c83a1f6c0a1a456becd7c4e9c8c77a"
+    }
+  ],
+  "actual_commands": [
+    {
+      "command": "git status --short / git rev-parse HEAD / directed rg,sed reads",
+      "exit_code": 0,
+      "scope": "read-only source and ownership context; no acceptance gate"
+    },
+    {
+      "command": "git show 2e10084b3f5e96548c15953cc40488aef9e1c86d:<each source_snapshots key>",
+      "exit_code": 0,
+      "scope": "actual frozen Git object reads; 7 producer snapshots"
+    },
+    {
+      "command": "git rev-parse 2e10084b3f5e96548c15953cc40488aef9e1c86d:<each source_snapshots key>",
+      "exit_code": 0,
+      "scope": "7 frozen blob provenance IDs"
+    },
+    {
+      "command": "python3 - (static file edits, snapshot extraction, SHA-256 and lossless gzip preserving historical raw bytes)",
+      "exit_code": 0,
+      "scope": "file editing/provenance only; no test/check process"
+    },
+    {
+      "command": "git add tests/foundation/catalog_matrix_evidence_test.go; git commit -m test(matrix-evidence): add review regression controls before repair",
+      "exit_code": 0,
+      "commit": "f03b76ba"
+    },
+    {
+      "command": "directed obsolete canonical path reads before DELIVERY link resolved",
+      "exit_code": 2,
+      "scope": "read lookup only; corrected to historical-evidence; no tests run"
+    },
+    {
+      "command": "git apply -p0 output/matrix-coverage-v2-evidence/ci-format-38381067824/gofmt-apply.patch",
+      "exit_code": 0,
+      "scope": "file mutation using exact CI patch; no local formatter/check/test"
+    },
+    {
+      "command": "static apply_patch; python3 static source SHA-256 receipt refresh; git add/commit for integration regression and fix",
+      "exit_code": 0,
+      "scope": "file mutation and commit only; no formatter/test/check"
+    },
+    {
+      "command": "local go/node/pnpm/playwright/devserver/PG/gate/formatter",
+      "exit_code": "NOT_RUN",
+      "scope": "owner CI-only restriction"
+    }
+  ],
+  "ci_formatter_patch": "output/matrix-coverage-v2-evidence/ci-format-38381067824/receipt.json",
+  "integration_correction": {
+    "base_commit": "31781cbf42a0c72c4e1432eb161118d03a8feaeb",
+    "regression_test_commit": "b60e4c57",
+    "root_cause": "Frozen auxiliary consumer hashes expanded Go checkout drift beyond SOURCE.json bound producer set, while PR46 independently recomputes only SOURCE bindings and requires exact skip-reason set equality.",
+    "fix": "Checkout drift iterates manifest.Sources corroborated with SOURCE.json only; frozen snapshots, identity, locale, case table and native outcome validation remain unchanged. Frozen consumer provenance corroborates historical evidence rather than authorizing additional current checkout bindings.",
+    "controls": "Existing TestProductEditorMatrixLedgerEvidenceSharedSources now includes product-review.acceptance.ts, product-feedback.acceptance.ts, catalog-core.spec.ts and requires nil error after each current context change; all frozen history corruption controls retained.",
+    "local_test_formatter_check": "NOT_RUN owner CI-only",
+    "ci_compile_behavior": "NOT_RUN for this correction; parent owns exact-source CI",
+    "delivery_note_owner": "Parent preserves and commits its uncommitted DELIVERY and lossless CI logs; integration note transmitted in handoff."
+  },
+  "inert_snapshot_rename": {
+    "base_commit": "b416e482",
+    "ci_red_run": "38383142992",
+    "old_path": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/admin/catalog-core.spec.ts.source.txt",
+    "new_path": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/admin/catalog-core-spec.source.txt",
+    "preserved_raw_sha256": "18db7e6e25ddfc05bdd6b9fecc6f80b3bd47e92f1e31addddf6ff318c21da0d8",
+    "frozen_record_sha256_before": "afd55e756cbeec4a1787141bd37ac5a562a2187e10b16ba8871674b79289dec7",
+    "frozen_record_sha256_after": "bee23db00d350a23d999078119239f4afc8499df80572e1538b883af0f678e07",
+    "scope": "Path and metadata only; original tested Git source key, SHA256, Git blob ID, all raw snapshot/native bytes and all validation assertions remain unchanged.",
+    "commands": "python3 static rename/metadata edits/hash receipt; git add/commit",
+    "exit_code": 0,
+    "acceptance": "NOT_RUN for new artifact metadata; parent GitHub CI only"
+  },
+  "original_author_observed_thread_metadata": {
+    "agent_path": "/root/matrix_v2_evidence",
+    "name": "Carver",
+    "role": "commerce_worker",
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "high",
+    "thread_id": "01a133fe-95a6-7c52-bddb-3730de0585fd",
+    "turn_context_count": 8,
+    "first_turn_context_at": "2026-10-13T06:41:31Z",
+    "last_turn_context_at": "2026-10-13T07:53:40Z",
+    "provenance": "Owner-supplied trusted observation of thread metadata; local session files not independently read by this repair",
+    "original_root_model": "UNKNOWN",
+    "original_root_reasoning": "UNKNOWN"
+  },
+  "three_integrity_p2_followup": {
+    "base_commit": "a881f08c",
+    "test_first_commit": "fd4e0fb5",
+    "review_comment_ids": [
+      4257302531,
+      4257351932,
+      4257351947
+    ],
+    "evidence_level": "E1 static only; CI NOT_RUN",
+    "current_source_sha256": {
+      "tests/foundation/catalog_matrix_ledger_test.go": "734669425ba17025fef5137dd912252b2956e2b7d4c4dd42c46ae75e9b79c238",
+      "tests/foundation/catalog_matrix_evidence_test.go": "19ad74366c4ceda19d233d40d2a3a66874425a8b4f8850702ddf44cdbf76aeb0"
+    },
+    "package_membership_sha256": "ca4468a7cb5559fded29d22044d28d2215cedd3acd7ac2e9bb9a3d692244ccf2",
+    "frozen_identity_record_sha256": "f1a92950a92fd854f18e05ea9b3119e88a40977d52cdbd602c569da9289f2c95",
+    "package_member_count": 54,
+    "native_bytes": "Unchanged. Only new names-only membership and hash-bound metadata pointers/index edited.",
+    "producer_scope": "Exact tested producer keyset parsed from frozen Go declaration; current drift remains SOURCE fourteen producers only.",
+    "title_oracle": "Independent original 12+2 identities from actual tested declarations/domains corroborated by unchanged native logs; fixed four consumer SHA-256s fail closed for other versions. Current identity function never supplies history.",
+    "negative_controls": [
+      "RunReceipt/old-producer-omitted-everywhere",
+      "SharedSources/membership-deleted-test-node.json-drift-false",
+      "SharedSources/membership-deleted-test-node.json-drift-true",
+      "SharedSources/membership-deleted-frozen/tests/admin/product-editor-matrix-ledger.ts.source.txt-drift-false",
+      "SharedSources/membership-deleted-frozen/tests/admin/product-editor-matrix-ledger.ts.source.txt-drift-true",
+      "RunIdentity/frozen-title-editor-rehashed",
+      "RunIdentity/frozen-title-review-rehashed",
+      "RunIdentity/frozen-title-feedback-rehashed",
+      "RunIdentity/frozen-title-cc12-rehashed",
+      "SharedSources/membership-all-rehashed-deleted-test-node.json",
+      "SharedSources/membership-all-rehashed-deleted-frozen/tests/admin/product-editor-matrix-ledger.ts.source.txt"
+    ],
+    "commands": [
+      {
+        "command": "python3 static source/metadata file edits and SHA-256 reads",
+        "exit_code": 0
+      },
+      {
+        "command": "git add tests/foundation/catalog_matrix_evidence_test.go",
+        "exit_code": 0
+      },
+      {
+        "command": "git commit test-first fd4e0fb5",
+        "exit_code": 0
+      },
+      {
+        "command": "python3 static edit failed exact-string lookup twice; no tests invoked",
+        "exit_code": 1
+      },
+      {
+        "command": "python3 corrected static file edits and metadata/hash reads",
+        "exit_code": 0
+      },
+      {
+        "command": "git add and git commit test-only 36cad088 / 910cec2c",
+        "exit_code": 0
+      }
+    ],
+    "not_run": [
+      "local go test",
+      "local formatter",
+      "local check-gates",
+      "all runtime/browser/PG"
+    ],
+    "pending": "Root CI GREEN/gofmt preview if necessary and independent review. Implementation E1 static only.",
+    "test_only_commits": [
+      "fd4e0fb5",
+      "36cad088",
+      "910cec2c"
+    ],
+    "behavior_red": {
+      "run_id": 38389630299,
+      "tested_commit": "910cec2c",
+      "raw_log": "output/matrix-coverage-v2-evidence/ci-red-38389630299.log.gz",
+      "raw_log_sha256": "7211980292646e3b55a1711fa02c33660569f805c581c5d47a947739e4be5822",
+      "observation": "Read retained official GitHub raw log: RunReceipt, SharedSources, RunIdentity top-level failures and four coordinated frozen-title rehash controls accepted historical marker. Earlier38388946999 compile-only RED is not behavioral proof."
+    },
+    "independent_package_member_names_sha256": "ec82c6dcbd9f3804791239c358cac0e592c6d9d9bee1b2515d35c40478a8fdff",
+    "package_membership_authority": "Independent compiled sorted relative-name digest plus separate hash-bound names-only receipt; defeats coordinated deletion and rehash of membership/FROZEN/SOURCE/manifest/index. MODEL_ONLY fixtures copy full original canonical package before rebinding, with no trust bypass.",
+    "known_limit": "Original membership and four consumer versions are independently pinned; different frozen package/consumer version requires a reviewed oracle update, fails closed until then."
+  }
+}

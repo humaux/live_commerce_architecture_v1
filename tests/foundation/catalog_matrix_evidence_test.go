@@ -32,7 +32,23 @@ func TestProductEditorMatrixLedgerEvidenceHistoricalPolicy(t *testing.T) {
 		{"matching", "1", "", 0, "--- PASS: TestProductEditorMatrixLedgerEvidence"},
 		{"drift-default", "", "source", 0, "--- SKIP: TestProductEditorMatrixLedgerEvidence"},
 		{"drift-strict", "1", "source", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
+		{"removed-producer-default", "", "removed-producer", 0, "--- SKIP: TestProductEditorMatrixLedgerEvidence"},
+		{"removed-producer-strict", "1", "removed-producer", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
+		{"renamed-producer-default", "", "renamed-producer", 0, "--- SKIP: TestProductEditorMatrixLedgerEvidence"},
+		{"renamed-producer-strict", "1", "renamed-producer", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
 		{"tampered-matching", "", "artifact", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
+		{"source-directory-default", "", "source-directory", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
+		{"source-directory-strict", "1", "source-directory", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
+		{"dangling-source-default", "", "dangling-source", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
+		{"dangling-source-strict", "1", "dangling-source", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
+		{"unindexed-outer-matching-default", "", "unindexed-outer-matching", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
+		{"unindexed-outer-matching-strict", "1", "unindexed-outer-matching", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
+		{"unindexed-outer-drift-default", "", "unindexed-outer-drift", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
+		{"unindexed-outer-drift-strict", "1", "unindexed-outer-drift", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
+		{"unindexed-nested-matching-default", "", "unindexed-nested-matching", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
+		{"unindexed-nested-matching-strict", "1", "unindexed-nested-matching", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
+		{"unindexed-nested-drift-default", "", "unindexed-nested-drift", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
+		{"unindexed-nested-drift-strict", "1", "unindexed-nested-drift", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
 		{"deleted-drift-default", "", "deleted", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
 		{"deleted-drift-strict", "1", "deleted", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
 		{"copy-drift-default", "", "copy", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
@@ -52,7 +68,39 @@ func TestProductEditorMatrixLedgerEvidenceHistoricalPolicy(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
+			if strings.HasPrefix(tc.mutation, "unindexed-") {
+				extra := filepath.Dir(canonical) + "/unindexed.txt"
+				if strings.Contains(tc.mutation, "nested") {
+					extra = filepath.Dir(canonical) + "/nested/unindexed.txt"
+				}
+				if err := os.MkdirAll(filepath.Dir(filepath.Join(root, extra)), 0700); err != nil {
+					t.Fatal(err)
+				}
+				productEditorMatrixWriteFixture(t, root, extra, []byte("unindexed evidence"))
+				if strings.HasSuffix(tc.mutation, "-matching") {
+					productEditorMatrixWriteFixture(t, root, path, productEditorMatrixReadFixture(t, "../..", path))
+				}
+			}
 			switch tc.mutation {
+			case "source-directory", "dangling-source":
+				if err := os.Remove(filepath.Join(root, path)); err != nil {
+					t.Fatal(err)
+				}
+				if tc.mutation == "source-directory" {
+					if err := os.Mkdir(filepath.Join(root, path), 0700); err != nil {
+						t.Fatal(err)
+					}
+				} else if err := os.Symlink("missing-producer.ts", filepath.Join(root, path)); err != nil {
+					t.Fatal(err)
+				}
+			case "removed-producer":
+				if err := os.Remove(filepath.Join(root, path)); err != nil {
+					t.Fatal(err)
+				}
+			case "renamed-producer":
+				if err := os.Rename(filepath.Join(root, path), filepath.Join(root, path+".renamed")); err != nil {
+					t.Fatal(err)
+				}
 			case "deleted":
 				if err := os.Remove(filepath.Join(root, canonical, "playwright.log")); err != nil {
 					t.Fatal(err)
@@ -92,7 +140,7 @@ func TestProductEditorMatrixLedgerEvidenceHistoricalPolicy(t *testing.T) {
 			if code != tc.wantExit || !strings.Contains(string(output), tc.want) {
 				t.Fatalf("want exit %d and %q", tc.wantExit, tc.want)
 			}
-			if tc.mutation == "deleted" || tc.mutation == "copy" || tc.mutation == "index" {
+			if tc.mutation == "source-directory" || tc.mutation == "dangling-source" || strings.HasPrefix(tc.mutation, "unindexed-") || tc.mutation == "deleted" || tc.mutation == "copy" || tc.mutation == "index" {
 				if strings.Contains(string(output), "canonical evidence is historical") || strings.Contains(string(output), "--- SKIP:") {
 					t.Fatal("corrupted historical package must fail for immutable integrity in both policies")
 				}
@@ -109,7 +157,7 @@ func TestProductEditorMatrixLedgerEvidenceHistoricalPolicy(t *testing.T) {
 
 // Drift may relax comparison with evolved producers, never the immutable package.
 func TestProductEditorMatrixLedgerEvidenceDriftIntegrity(t *testing.T) {
-	for _, mutation := range []string{"deleted-native", "omitted-native", "copy-hash", "unindexed-copy", "extra-index-bytes", "extra-index-missing", "extra-index-path", "failed-outcome", "duplicate-ledger", "failed-ledger", "missing-claim", "manifest-ledger", "malformed-source"} {
+	for _, mutation := range []string{"deleted-native", "omitted-native", "copy-hash", "unindexed-copy", "extra-index-bytes", "extra-index-missing", "extra-index-path", "failed-outcome", "duplicate-ledger", "failed-ledger", "missing-claim", "manifest-ledger", "malformed-source", "unindexed-outer", "unindexed-nested", "blank-locale", "missing-locale", "altered-claim"} {
 		t.Run(mutation, func(t *testing.T) {
 			root, canonical := productEditorMatrixEvidenceFixture(t)
 			source := "tests/admin/product-editor.acceptance.ts"
@@ -118,6 +166,38 @@ func TestProductEditorMatrixLedgerEvidenceDriftIntegrity(t *testing.T) {
 			manifest, index := productEditorMatrixJSONFixture(t, root, manifestPath), productEditorMatrixJSONFixture(t, root, indexPath)
 			path := canonical + "/playwright.log"
 			switch mutation {
+			case "unindexed-outer", "unindexed-nested":
+				path = filepath.Dir(canonical) + "/unindexed.txt"
+				if mutation == "unindexed-nested" {
+					path = filepath.Dir(canonical) + "/nested/unindexed.txt"
+				}
+				if err := os.MkdirAll(filepath.Dir(filepath.Join(root, path)), 0700); err != nil {
+					t.Fatal(err)
+				}
+				productEditorMatrixWriteFixture(t, root, path, []byte("unindexed evidence"))
+			case "blank-locale", "missing-locale", "altered-claim":
+				path = canonical + "/product-editor-click-ledger.json"
+				var rows []productEditorMatrixLedgerRow
+				if err := json.Unmarshal(productEditorMatrixReadFixture(t, root, path), &rows); err != nil {
+					t.Fatal(err)
+				}
+				if mutation == "blank-locale" {
+					rows[0].Locale = ""
+				}
+				if mutation == "altered-claim" {
+					rows[0].Expected = json.RawMessage(`"unrelated plausible historical claim"`)
+				}
+				if mutation == "missing-locale" {
+					kept := []productEditorMatrixLedgerRow{}
+					for _, row := range rows {
+						if row.Locale != "en" {
+							kept = append(kept, row)
+						}
+					}
+					rows = kept
+				}
+				data, _ := json.Marshal(rows)
+				productEditorMatrixRehashFixture(t, root, canonical, path, data)
 			case "deleted-native":
 				if err := os.Remove(filepath.Join(root, path)); err != nil {
 					t.Fatal(err)
@@ -134,6 +214,7 @@ func TestProductEditorMatrixLedgerEvidenceDriftIntegrity(t *testing.T) {
 					}
 				}
 				manifest["copied_native_bytes"] = copies
+
 			case "copy-hash":
 				manifest["copied_native_bytes"].([]any)[0].(map[string]any)["sha256"] = strings.Repeat("0", 64)
 			case "unindexed-copy":
@@ -191,7 +272,7 @@ func TestProductEditorMatrixLedgerEvidenceDriftIntegrity(t *testing.T) {
 				index["artifacts_sha256"].(map[string]any)[sourcePath] = fmt.Sprintf("%x", sha256.Sum256(data))
 			}
 			// Preserve deliberate semantic rehashes; only explicitly edited receipts are rewritten.
-			if mutation != "failed-outcome" && mutation != "duplicate-ledger" && mutation != "failed-ledger" && mutation != "missing-claim" {
+			if mutation != "blank-locale" && mutation != "missing-locale" && mutation != "altered-claim" && mutation != "failed-outcome" && mutation != "duplicate-ledger" && mutation != "failed-ledger" && mutation != "missing-claim" {
 				data, _ := json.Marshal(manifest)
 				productEditorMatrixWriteFixture(t, root, manifestPath, data)
 				index["artifacts_sha256"].(map[string]any)[manifestPath] = fmt.Sprintf("%x", sha256.Sum256(data))
@@ -236,7 +317,7 @@ func TestProductEditorMatrixLedgerEvidenceProducerEvolution(t *testing.T) {
 // A changed declaration alone cannot excuse an omitted OLD producer. The
 // separately indexed frozen run receipt must corroborate the recorded source set.
 func TestProductEditorMatrixLedgerEvidenceRunReceipt(t *testing.T) {
-	for _, mutation := range []string{"old-producer-omitted", "missing", "unindexed", "tested-commit", "after-commit", "before-sources", "after-sources", "command", "exit", "missing-exit"} {
+	for _, mutation := range []string{"old-producer-omitted", "old-producer-omitted-everywhere", "missing", "unindexed", "tested-commit", "after-commit", "before-sources", "after-sources", "command", "exit", "missing-exit"} {
 		t.Run(mutation, func(t *testing.T) {
 			root, canonical := productEditorMatrixEvidenceFixture(t)
 			gate := "tests/foundation/catalog_matrix_ledger_test.go"
@@ -247,7 +328,7 @@ func TestProductEditorMatrixLedgerEvidenceRunReceipt(t *testing.T) {
 			index := productEditorMatrixJSONFixture(t, root, indexPath)
 			receipt := productEditorMatrixJSONFixture(t, root, path)
 			switch mutation {
-			case "old-producer-omitted":
+			case "old-producer-omitted", "old-producer-omitted-everywhere":
 				producer := "tests/admin/product-editor.acceptance.ts"
 				for _, boundPath := range []string{canonical + "/browser-evidence.json", evidence + "/SOURCE.json"} {
 					bound := productEditorMatrixJSONFixture(t, root, boundPath)
@@ -257,6 +338,10 @@ func TestProductEditorMatrixLedgerEvidenceRunReceipt(t *testing.T) {
 					index["artifacts_sha256"].(map[string]any)[boundPath] = fmt.Sprintf("%x", sha256.Sum256(data))
 				}
 				delete(index["source_files_sha256"].(map[string]any), producer)
+				if mutation == "old-producer-omitted-everywhere" {
+					delete(receipt["source_files_sha256"].(map[string]any), producer)
+					delete(receipt["source_files_sha256_after"].(map[string]any), producer)
+				}
 			case "missing":
 				if err := os.Remove(filepath.Join(root, path)); err != nil {
 					t.Fatal(err)
@@ -299,6 +384,62 @@ func TestProductEditorMatrixLedgerEvidenceRunReceipt(t *testing.T) {
 }
 
 func TestProductEditorMatrixLedgerEvidenceTableEvolution(t *testing.T) {
+	for _, change := range []string{"rename-title", "add-case", "remove-case"} {
+		t.Run(change, func(t *testing.T) {
+			root, _ := productEditorMatrixEvidenceFixture(t)
+			gate := "tests/foundation/catalog_matrix_ledger_test.go"
+			productEditorMatrixWriteFixture(t, root, gate, append(productEditorMatrixReadFixture(t, root, gate), '\n'))
+			original := productEditorMatrixCurrentRunIdentities
+			productEditorMatrixCurrentRunIdentities = func(count int) []string {
+				identities := original(count)
+				switch change {
+				case "rename-title":
+					identities[0] += " future title"
+				case "add-case":
+					identities = append(identities, "tests/admin/product-review.acceptance.ts › future case")
+				case "remove-case":
+					identities = identities[1:]
+				}
+				return identities
+			}
+			defer func() { productEditorMatrixCurrentRunIdentities = original }()
+			var drift productEditorMatrixEvidenceDrift
+			if err := validateProductEditorMatrixEvidence(root); !errors.As(err, &drift) {
+				t.Fatalf("frozen title evolution must be typed drift: %v", err)
+			}
+		})
+	}
+	for _, change := range []string{"add-locale", "remove-locale", "rename-label"} {
+		t.Run(change, func(t *testing.T) {
+			root, _ := productEditorMatrixEvidenceFixture(t)
+			gate := "tests/foundation/catalog_matrix_ledger_test.go"
+			productEditorMatrixWriteFixture(t, root, gate, append(productEditorMatrixReadFixture(t, root, gate), '\n'))
+			original := productEditorMatrixLedgerLocales
+			locales := map[string]map[string]string{}
+			for locale, labels := range original {
+				locales[locale] = labels
+			}
+			switch change {
+			case "add-locale":
+				locales["ja"] = original["en"]
+			case "remove-locale":
+				delete(locales, "en")
+			case "rename-label":
+				labels := map[string]string{}
+				for key, value := range original["en"] {
+					labels[key] = value
+				}
+				labels["@price"] = "Future price label"
+				locales["en"] = labels
+			}
+			productEditorMatrixLedgerLocales = locales
+			defer func() { productEditorMatrixLedgerLocales = original }()
+			var drift productEditorMatrixEvidenceDrift
+			if err := validateProductEditorMatrixEvidence(root); !errors.As(err, &drift) {
+				t.Fatalf("frozen locale evolution must be typed drift: %v", err)
+			}
+		})
+	}
 	root, _ := productEditorMatrixEvidenceFixture(t)
 	path := "tests/foundation/testdata/product_editor_matrix_cases.json"
 	productEditorMatrixWriteFixture(t, root, path, append(productEditorMatrixReadFixture(t, root, path), '\n'))
@@ -388,11 +529,15 @@ func productEditorMatrixReadFixture(t *testing.T, root, path string) []byte {
 // Shared harness/configuration changes in a PR merge ref do not invalidate the
 // unit's source-bound evidence; its executable producers remain fail-closed.
 func TestProductEditorMatrixLedgerEvidenceSharedSources(t *testing.T) {
+	productEditorMatrixEvidenceMembershipControls(t)
 	for _, path := range []string{
 		"scripts/dev/test-node.sh", "scripts/dev/test-local.sh", "docs/delivery/GATES.md", "playwright.config.ts",
 		"tests/foundation/testdata/product_editor_mobile_matrix_ledger.json",
 		"apps/admin/lib/product-editor-copy.ts", "apps/admin/components/ProductDocumentVariants.tsx",
 		"apps/admin/components/ProductDocumentForm.tsx", "apps/admin/lib/use-product-document.ts", "apps/admin/lib/product-document.ts",
+		// Frozen consumer snapshots corroborate historical run identities; their
+		// current checkout bytes are outside SOURCE.json's owned producer set.
+		"tests/admin/product-review.acceptance.ts", "tests/admin/product-feedback.acceptance.ts", "tests/admin/catalog-core.spec.ts",
 	} {
 		t.Run(path, func(t *testing.T) {
 			root, _ := productEditorMatrixEvidenceFixture(t)
@@ -402,6 +547,86 @@ func TestProductEditorMatrixLedgerEvidenceSharedSources(t *testing.T) {
 			}
 			if err := validateProductEditorMatrixEvidence(root); err != nil {
 				t.Fatalf("informational shared source change must not invalidate unit evidence: %v", err)
+			}
+		})
+	}
+}
+
+// Removing a file and its mutable index entry together must not erase history.
+func productEditorMatrixEvidenceMembershipControls(t *testing.T) {
+	t.Helper()
+	for _, name := range []string{"test-node.json", "frozen/tests/admin/product-editor-matrix-ledger.ts.source.txt"} {
+		for _, changed := range []bool{false, true} {
+			t.Run(fmt.Sprintf("membership-deleted-%s-drift-%t", name, changed), func(t *testing.T) {
+				root, canonical := productEditorMatrixEvidenceFixture(t)
+				evidence := filepath.Dir(canonical)
+				path := evidence + "/" + name
+				if err := os.Remove(filepath.Join(root, path)); err != nil {
+					t.Fatal(err)
+				}
+				indexPath := evidence + "/ARTIFACTS.json"
+				index := productEditorMatrixJSONFixture(t, root, indexPath)
+				delete(index["artifacts_sha256"].(map[string]any), path)
+				data, _ := json.Marshal(index)
+				productEditorMatrixWriteFixture(t, root, indexPath, data)
+				if changed {
+					gate := "tests/foundation/catalog_matrix_ledger_test.go"
+					productEditorMatrixWriteFixture(t, root, gate, append(productEditorMatrixReadFixture(t, root, gate), '\n'))
+				}
+				var drift productEditorMatrixEvidenceDrift
+				if err := validateProductEditorMatrixEvidence(root); err == nil || errors.As(err, &drift) {
+					t.Fatalf("coordinated package deletion must fail before drift: %v", err)
+				}
+			})
+		}
+	}
+	for _, name := range []string{"test-node.json", "frozen/tests/admin/product-editor-matrix-ledger.ts.source.txt"} {
+		t.Run("membership-all-rehashed-deleted-"+name, func(t *testing.T) {
+			root, canonical := productEditorMatrixEvidenceFixture(t)
+			evidence := filepath.Dir(canonical)
+			path := evidence + "/" + name
+			if err := os.Remove(filepath.Join(root, path)); err != nil {
+				t.Fatal(err)
+			}
+			indexPath := evidence + "/ARTIFACTS.json"
+			index := productEditorMatrixJSONFixture(t, root, indexPath)
+			delete(index["artifacts_sha256"].(map[string]any), path)
+			data, _ := json.Marshal(index)
+			productEditorMatrixWriteFixture(t, root, indexPath, data)
+			membershipPath := evidence + "/FROZEN-MEMBERSHIP.json"
+			membership := productEditorMatrixJSONFixture(t, root, membershipPath)
+			members := []any{}
+			for _, member := range membership["package_members"].([]any) {
+				if member != name {
+					members = append(members, member)
+				}
+			}
+			membership["package_members"] = members
+			data, _ = json.Marshal(membership)
+			productEditorMatrixRehashFixture(t, root, canonical, membershipPath, data)
+			recordPath := evidence + "/FROZEN-IDENTITIES.json"
+			record := productEditorMatrixJSONFixture(t, root, recordPath)
+			record["package_membership_sha256"] = fmt.Sprintf("%x", sha256.Sum256(data))
+			// Remove auxiliary snapshot references too; stale metadata must not
+			// be the reason a fully coordinated historical corruption fails.
+			if strings.HasPrefix(name, "frozen/") {
+				for _, field := range []string{"source_snapshots", "source_files_sha256", "git_blob_ids"} {
+					delete(record[field].(map[string]any), "tests/admin/product-editor-matrix-ledger.ts")
+				}
+			}
+			data, _ = json.Marshal(record)
+			productEditorMatrixRehashFixture(t, root, canonical, recordPath, data)
+			for _, bound := range []string{canonical + "/browser-evidence.json", evidence + "/SOURCE.json"} {
+				value := productEditorMatrixJSONFixture(t, root, bound)
+				value["frozen_identity_record_sha256"] = fmt.Sprintf("%x", sha256.Sum256(data))
+				bytes, _ := json.Marshal(value)
+				productEditorMatrixRehashFixture(t, root, canonical, bound, bytes)
+			}
+			gate := "tests/foundation/catalog_matrix_ledger_test.go"
+			productEditorMatrixWriteFixture(t, root, gate, append(productEditorMatrixReadFixture(t, root, gate), '\n'))
+			var drift productEditorMatrixEvidenceDrift
+			if err := validateProductEditorMatrixEvidence(root); err == nil || errors.As(err, &drift) {
+				t.Fatalf("fully rehashed membership omission must fail before drift: %v", err)
 			}
 		})
 	}
@@ -470,6 +695,19 @@ func productEditorMatrixEvidenceFixture(t *testing.T) (string, string) {
 	ledgerData, _ := json.Marshal(rows)
 	manifest["ledger"] = map[string]any{"raw_rows": len(rows), "required_unique_PASS": len(rows), "per_locale": perLocale, "width": 390}
 	artifacts := map[string]string{}
+	// Copy the entire original package before MODEL_ONLY semantic rebinding.
+	// Its complete names stay subject to the same independent oracle as delivery.
+	originalEvidence := "output/matrix-ledger-enforce/" + string(dir[1])
+	originalIndex := productEditorMatrixJSONFixture(t, "../..", originalEvidence+"/ARTIFACTS.json")
+	for path := range originalIndex["artifacts_sha256"].(map[string]any) {
+		if strings.HasSuffix(path, "/FROZEN-MEMBERSHIP.json") {
+			continue
+		}
+		data := productEditorMatrixReadFixture(t, "../..", path)
+		copyPath := filepath.Dir(canonical) + strings.TrimPrefix(path, originalEvidence)
+		write(copyPath, data)
+		artifacts[copyPath] = hash(data)
+	}
 	copies := []map[string]string{}
 	for _, entry := range manifest["copied_native_bytes"].([]any) {
 		old := entry.(map[string]any)
@@ -484,13 +722,46 @@ func productEditorMatrixEvidenceFixture(t *testing.T) (string, string) {
 		copies = append(copies, map[string]string{"canonical": path, "source_native": "fixture-only/" + name, "sha256": hash(data)})
 	}
 	manifest["copied_native_bytes"] = copies
+	// MODEL_ONLY frozen metadata and source snapshots rebind the copied fixture,
+	// never native delivered evidence. Its case source remains the sole table.
+	frozen := productEditorMatrixJSONFixture(t, "../..", "output/matrix-ledger-enforce/"+string(dir[1])+"/FROZEN-IDENTITIES.json")
+	frozen["fixture_evidence_class"] = "MODEL_ONLY"
+	frozen["locale_labels"] = productEditorMatrixLedgerLocales
+	frozen["test_identities"] = map[string][]string{"playwright.log": productEditorMatrixCurrentRunIdentities(12), "cc12-playwright.log": productEditorMatrixCurrentRunIdentities(2)}
+	frozenHashes, snapshots, blobs := map[string]string{}, map[string]string{}, map[string]string{}
+	for path := range frozen["source_snapshots"].(map[string]any) {
+		data := productEditorMatrixReadFixture(t, "../..", path)
+		write(path, data)
+		snapshot := filepath.Dir(canonical) + strings.TrimPrefix(frozen["source_snapshots"].(map[string]any)[path].(string), originalEvidence)
+		write(snapshot, data)
+		snapshots[path], frozenHashes[path], artifacts[snapshot], blobs[path] = snapshot, hash(data), hash(data), productEditorMatrixGitBlob(data)
+	}
+	frozen["source_files_sha256"], frozen["source_snapshots"], frozen["git_blob_ids"] = frozenHashes, snapshots, blobs
+	// MODEL_ONLY membership records this isolated package, including metadata
+	// written below. Names only avoid a circular dependency on their digests.
+	evidence := filepath.Dir(canonical)
+	membershipPath := evidence + "/FROZEN-MEMBERSHIP.json"
+	members := []string{"FROZEN-MEMBERSHIP.json"}
+	for path := range artifacts {
+		members = append(members, strings.TrimPrefix(path, evidence+"/"))
+	}
+	sort.Strings(members)
+	membershipData, _ := json.Marshal(map[string]any{"tested_source_commit": manifest["tested_source_commit"], "package_members": members, "fixture_evidence_class": "MODEL_ONLY"})
+	write(membershipPath, membershipData)
+	artifacts[membershipPath] = hash(membershipData)
+	frozen["package_membership_sha256"] = hash(membershipData)
+	frozenData, _ := json.Marshal(frozen)
+	frozenPath := filepath.Dir(canonical) + "/FROZEN-IDENTITIES.json"
+	write(frozenPath, frozenData)
+	artifacts[frozenPath] = hash(frozenData)
+	manifest["frozen_identity_record_sha256"] = hash(frozenData)
 	data, err := json.Marshal(manifest)
 	if err != nil {
 		t.Fatal(err)
 	}
 	write(canonical+"/browser-evidence.json", data)
 	artifacts[canonical+"/browser-evidence.json"] = hash(data)
-	source, _ := json.Marshal(map[string]any{"tested_source_commit": manifest["tested_source_commit"], "source_files_sha256": sources})
+	source, _ := json.Marshal(map[string]any{"tested_source_commit": manifest["tested_source_commit"], "source_files_sha256": sources, "frozen_identity_record_sha256": hash(frozenData)})
 	write("output/matrix-ledger-enforce/fixture/SOURCE.json", source)
 	artifacts["output/matrix-ledger-enforce/fixture/SOURCE.json"] = hash(source)
 	// MODEL_ONLY rebinds a COPY of the independent frozen run receipt. This is
@@ -536,21 +807,28 @@ func productEditorMatrixHistoricalLedger(data []byte) (int, error) {
 		if err := json.Unmarshal(row.Expected, &claim); err != nil || strings.TrimSpace(claim) == "" {
 			return 0, fmt.Errorf("mobile matrix ledger row %d has missing expected claim", i)
 		}
-		if row.Actual != "PASS" || row.Width != 390 || productEditorMatrixLedgerLocales[row.Locale] == nil || strings.TrimSpace(row.Control) == "" || strings.TrimSpace(row.Action) == "" {
+		if row.Actual != "PASS" || row.Width != 390 || strings.TrimSpace(row.Locale) == "" || strings.TrimSpace(row.Control) == "" || strings.TrimSpace(row.Action) == "" {
 			return 0, fmt.Errorf("invalid mobile matrix ledger identity/result at row %d", i)
 		}
 		seen[row.productEditorMatrixLedgerKey] = true
 		perLocale[row.Locale]++
 	}
-	for locale := range productEditorMatrixLedgerLocales {
-		if perLocale[locale] == 0 || perLocale[locale] != perLocale["en"] {
+	count := 0
+	for _, covered := range perLocale {
+		if count == 0 {
+			count = covered
+		}
+		if covered == 0 || covered != count {
 			return 0, fmt.Errorf("historical matrix ledger requires equal nonempty locale coverage")
 		}
+	}
+	if len(perLocale) == 0 {
+		return 0, fmt.Errorf("historical matrix ledger requires nonempty locale coverage")
 	}
 	return len(seen), nil
 }
 
-func validateProductEditorMatrixRunOutcome(manifestData []byte, native map[string][]byte, required int) error {
+func validateProductEditorMatrixRunOutcome(manifestData []byte, native map[string][]byte, required int, frozen map[string][]string) error {
 	var manifest struct {
 		Passed map[string]int `json:"actual_passed_cases"`
 		Ledger struct {
@@ -565,10 +843,9 @@ func validateProductEditorMatrixRunOutcome(manifestData []byte, native map[strin
 	}
 	for _, run := range []struct {
 		name, field, log string
-		expected         int
 	}{
-		{"pe-last-run.json", "PE_and_review", "playwright.log", 12},
-		{"cc12-last-run.json", "CC12_frozen", "cc12-playwright.log", 2},
+		{"pe-last-run.json", "PE_and_review", "playwright.log"},
+		{"cc12-last-run.json", "CC12_frozen", "cc12-playwright.log"},
 	} {
 		var final struct {
 			Status string             `json:"status"`
@@ -580,10 +857,10 @@ func validateProductEditorMatrixRunOutcome(manifestData []byte, native map[strin
 		if final.Status != "passed" || final.Failed == nil || len(*final.Failed) != 0 {
 			return fmt.Errorf("canonical run outcome %s must be passed with explicit empty failedTests", run.name)
 		}
-		if manifest.Passed[run.field] != run.expected {
-			return fmt.Errorf("canonical manifest passed count %s must be %d", run.field, run.expected)
+		if manifest.Passed[run.field] != len(frozen[run.log]) || len(frozen[run.log]) == 0 {
+			return fmt.Errorf("canonical manifest passed count %s must match frozen identities", run.field)
 		}
-		if err := productEditorMatrixPlaywrightSummary(native[run.log], run.expected); err != nil {
+		if err := productEditorMatrixPlaywrightSummary(native[run.log], frozen[run.log]); err != nil {
 			return fmt.Errorf("canonical run outcome %s: %w", run.log, err)
 		}
 	}
@@ -607,7 +884,11 @@ func validateProductEditorMatrixRunOutcome(manifestData []byte, native map[strin
 	return nil
 }
 
-func productEditorMatrixPlaywrightSummary(data []byte, expected int) error {
+func productEditorMatrixPlaywrightSummary(data []byte, declared []string) error {
+	expected := len(declared)
+	if expected == 0 {
+		return fmt.Errorf("empty declared run identities")
+	}
 	text := regexp.MustCompile(`\x1b\[[0-9;]*m`).ReplaceAllString(string(data), "")
 	started := regexp.MustCompile(`(?m)^Running (\d+) tests? using \d+ workers?`).FindAllStringSubmatch(text, -1)
 	if len(started) != 1 || started[0][1] != strconv.Itoa(expected) {
@@ -631,32 +912,9 @@ func productEditorMatrixPlaywrightSummary(data []byte, expected int) error {
 	if passed != 1 {
 		return fmt.Errorf("must contain one completed passing summary")
 	}
-	// Frozen consumer identities come from catalog-core's registered acceptance
-	// cases, corroborated by round4 native list-reporter output. Positions and
-	// durations vary; each exact consumer file/title must pass once, no substitutes.
 	identities := map[string]int{}
-	add := func(file, title string) { identities["tests/admin/"+file+" › "+title]++ }
-	switch expected {
-	case 12:
-		add("product-editor.acceptance.ts", "PE12-17 document workflow, matrix, list actions and click ledger")
-		add("product-review.acceptance.ts", "review: bulk price 80 plus archive sends exclusive archive entry and persists")
-		for _, action := range []string{"create", "copy"} {
-			for _, denial := range []string{"client", "401", "403"} {
-				add("product-review.acceptance.ts", fmt.Sprintf("review: %s UNKNOWN then %s preserves receipt fence after reload", action, denial))
-			}
-		}
-		for _, action := range []string{"order", "publish"} {
-			add("product-review.acceptance.ts", fmt.Sprintf("review: %s UNKNOWN then 403 preserves receipt fence after reload", action))
-		}
-		for _, width := range []int{1586, 390} {
-			add("product-feedback.acceptance.ts", fmt.Sprintf("feedback: identical image-required validation reveals again at %dpx", width))
-		}
-	case 2:
-		for _, variant := range []struct{ viewport, locale string }{{"desktop", "en"}, {"mobile", "zh-TW"}} {
-			add("catalog-core.spec.ts", fmt.Sprintf("CC12 %s %s › catalog v2: draft product, 2x3 matrix, prices, compare-at, stock, photo, collection, activate, shopper view, archive a variant, deactivate (%s, %s)", variant.viewport, variant.locale, variant.viewport, variant.locale))
-		}
-	default:
-		return fmt.Errorf("no frozen case identities for %d cases", expected)
+	for _, identity := range declared {
+		identities[identity]++
 	}
 	cases := regexp.MustCompile(`(?m)^\s*✓\s+\d+\s+(tests/[^\r\n]+):\d+:\d+ › (.+) \([^()\r\n]*\)\s*$`).FindAllStringSubmatch(text, -1)
 	if len(cases) != expected {
@@ -789,6 +1047,78 @@ func productEditorMatrixRehashFixture(t *testing.T, root, canonical, path string
 // Identity controls keep summaries, final receipts and all hashes consistent.
 // Only the executed consumer file/title multiset may make these runs invalid.
 func TestProductEditorMatrixLedgerEvidenceRunIdentity(t *testing.T) {
+	for _, mutation := range []string{"frozen-record-missing", "frozen-record-unindexed", "frozen-label", "frozen-test-duplicate", "frozen-test-unbound", "frozen-title-editor-rehashed", "frozen-title-review-rehashed", "frozen-title-feedback-rehashed", "frozen-title-cc12-rehashed", "frozen-blob", "frozen-table-bytes"} {
+		t.Run(mutation, func(t *testing.T) {
+			root, canonical := productEditorMatrixEvidenceFixture(t)
+			gate := "tests/foundation/catalog_matrix_ledger_test.go"
+			productEditorMatrixWriteFixture(t, root, gate, append(productEditorMatrixReadFixture(t, root, gate), '\n'))
+			path := filepath.Dir(canonical) + "/FROZEN-IDENTITIES.json"
+			record := productEditorMatrixJSONFixture(t, root, path)
+			switch mutation {
+			case "frozen-record-missing":
+				if err := os.Remove(filepath.Join(root, path)); err != nil {
+					t.Fatal(err)
+				}
+			case "frozen-record-unindexed":
+				indexPath := filepath.Dir(canonical) + "/ARTIFACTS.json"
+				index := productEditorMatrixJSONFixture(t, root, indexPath)
+				delete(index["artifacts_sha256"].(map[string]any), path)
+				data, _ := json.Marshal(index)
+				productEditorMatrixWriteFixture(t, root, indexPath, data)
+			case "frozen-table-bytes":
+				table := "tests/foundation/testdata/product_editor_matrix_cases.json"
+				snapshot := record["source_snapshots"].(map[string]any)[table].(string)
+				productEditorMatrixRehashFixture(t, root, canonical, snapshot, []byte(`[]`))
+			default:
+				switch mutation {
+				case "frozen-label":
+					record["locale_labels"].(map[string]any)["en"].(map[string]any)["@price"] = "invented historical price"
+				case "frozen-test-duplicate":
+					tests := record["test_identities"].(map[string]any)["playwright.log"].([]any)
+					tests[0] = tests[1]
+				case "frozen-test-unbound":
+					record["test_identities"].(map[string]any)["playwright.log"].([]any)[0] = "tests/fake.spec.ts › invented passing case"
+				case "frozen-title-editor-rehashed", "frozen-title-review-rehashed", "frozen-title-feedback-rehashed", "frozen-title-cc12-rehashed":
+					log, position := "playwright.log", 0
+					switch mutation {
+					case "frozen-title-review-rehashed":
+						position = 2
+					case "frozen-title-feedback-rehashed":
+						position = 10
+					case "frozen-title-cc12-rehashed":
+						log = "cc12-playwright.log"
+					}
+					tests := record["test_identities"].(map[string]any)[log].([]any)
+					original := tests[position].(string)
+					parts := strings.SplitN(original, " › ", 2)
+					invented := parts[1] + " invented passing title"
+					tests[position] = parts[0] + " › " + invented
+					logPath := canonical + "/" + log
+					logData := strings.Replace(string(productEditorMatrixReadFixture(t, root, logPath)), " › "+parts[1]+" (", " › "+invented+" (", 1)
+					if !strings.Contains(logData, invented) {
+						t.Fatal("negative control must mutate the native title")
+					}
+					productEditorMatrixRehashFixture(t, root, canonical, logPath, []byte(logData))
+				case "frozen-blob":
+					record["git_blob_ids"].(map[string]any)[gate] = strings.Repeat("0", 40)
+				}
+				// Consistently rebind the extra metadata; frozen source semantics,
+				// rather than an old metadata digest, must reject these mutations.
+				data, _ := json.Marshal(record)
+				productEditorMatrixRehashFixture(t, root, canonical, path, data)
+				for _, bound := range []string{canonical + "/browser-evidence.json", filepath.Dir(canonical) + "/SOURCE.json"} {
+					value := productEditorMatrixJSONFixture(t, root, bound)
+					value["frozen_identity_record_sha256"] = fmt.Sprintf("%x", sha256.Sum256(data))
+					bytes, _ := json.Marshal(value)
+					productEditorMatrixRehashFixture(t, root, canonical, bound, bytes)
+				}
+			}
+			var drift productEditorMatrixEvidenceDrift
+			if err := validateProductEditorMatrixEvidence(root); err == nil || errors.As(err, &drift) {
+				t.Fatalf("corrupt frozen evidence must fail before drift: %v", err)
+			}
+		})
+	}
 	for _, log := range []string{"playwright.log", "cc12-playwright.log"} {
 		for _, mutation := range []string{"wrong-file", "wrong-title", "substituted-case", "drop-case", "duplicate-case", "same-counts-fake-run"} {
 			t.Run(log+"/"+mutation, func(t *testing.T) {
@@ -836,6 +1166,12 @@ func TestProductEditorMatrixLedgerEvidenceRunIdentity(t *testing.T) {
 					}
 					t.Logf("rejected rehashed %s: %v", mutation, err)
 				}
+				gate := "tests/foundation/catalog_matrix_ledger_test.go"
+				productEditorMatrixWriteFixture(t, root, gate, append(productEditorMatrixReadFixture(t, root, gate), '\n'))
+				var drift productEditorMatrixEvidenceDrift
+				if err := validateProductEditorMatrixEvidence(root); err == nil || errors.As(err, &drift) {
+					t.Fatalf("corrupted historical identity must fail before drift: %v", err)
+				}
 			})
 		}
 	}
@@ -854,4 +1190,39 @@ func TestProductEditorMatrixLedgerEvidenceRunIdentityMetadata(t *testing.T) {
 	if err := validateProductEditorMatrixEvidence(root); err != nil {
 		t.Fatalf("changed line numbers and durations must preserve identities: %v", err)
 	}
+}
+
+// Current matching producers keep the exact full case contract. Historical
+// checks use the indexed observed record instead of these evolving titles.
+var productEditorMatrixCurrentRunIdentities = func(expected int) []string {
+	identities := map[string]int{}
+	add := func(file, title string) { identities["tests/admin/"+file+" › "+title]++ }
+	switch expected {
+	case 12:
+		add("product-editor.acceptance.ts", "PE12-17 document workflow, matrix, list actions and click ledger")
+		add("product-review.acceptance.ts", "review: bulk price 80 plus archive sends exclusive archive entry and persists")
+		for _, action := range []string{"create", "copy"} {
+			for _, denial := range []string{"client", "401", "403"} {
+				add("product-review.acceptance.ts", fmt.Sprintf("review: %s UNKNOWN then %s preserves receipt fence after reload", action, denial))
+			}
+		}
+		for _, action := range []string{"order", "publish"} {
+			add("product-review.acceptance.ts", fmt.Sprintf("review: %s UNKNOWN then 403 preserves receipt fence after reload", action))
+		}
+		for _, width := range []int{1586, 390} {
+			add("product-feedback.acceptance.ts", fmt.Sprintf("feedback: identical image-required validation reveals again at %dpx", width))
+		}
+	case 2:
+		for _, variant := range []struct{ viewport, locale string }{{"desktop", "en"}, {"mobile", "zh-TW"}} {
+			add("catalog-core.spec.ts", fmt.Sprintf("CC12 %s %s › catalog v2: draft product, 2x3 matrix, prices, compare-at, stock, photo, collection, activate, shopper view, archive a variant, deactivate (%s, %s)", variant.viewport, variant.locale, variant.viewport, variant.locale))
+		}
+	default:
+		return nil
+	}
+	result := []string{}
+	for identity := range identities {
+		result = append(result, identity)
+	}
+	sort.Strings(result)
+	return result
 }

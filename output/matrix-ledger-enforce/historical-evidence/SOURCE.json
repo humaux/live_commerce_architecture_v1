@@ -143,5 +143,6 @@
     "actual_CLI_GITHUB_OUTPUT_ci_plan_selected": 14,
     "source_observations": "union of base/head/merge checkout; missing old declaration allowed, malformed declaration fails closed",
     "selection": "monotone addition of existing browser-product-editor mode"
-  }
+  },
+  "frozen_identity_record_sha256": "f1a92950a92fd854f18e05ea9b3119e88a40977d52cdbd602c569da9289f2c95"
 }

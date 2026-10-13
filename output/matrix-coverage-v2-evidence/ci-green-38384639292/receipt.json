@@ -1,0 +1,35 @@
+{
+  "provenance": "Actual GitHub CI API metadata and raw log download; no local tests or runs",
+  "ci_run_id": "38384639292",
+  "head_sha": "42e47bc756b92cbd194e2ac6da849e75ee2cea22",
+  "status": "completed",
+  "conclusion": "success",
+  "url": "https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38384639292",
+  "steps": [
+    {
+      "job": "foundation",
+      "step": "Evidence-validator focused integrity controls",
+      "conclusion": "success",
+      "exit_code": 0
+    },
+    {
+      "job": "foundation",
+      "step": "Delivered patch whitespace",
+      "conclusion": "success",
+      "exit_code": 0
+    },
+    {
+      "job": "foundation",
+      "step": "Package docs and gate map are current",
+      "conclusion": "success",
+      "exit_code": 0
+    },
+    {
+      "job": "foundation",
+      "step": "Node unit suites (storefront, i18n)",
+      "conclusion": "success",
+      "exit_code": 0
+    }
+  ],
+  "complete_gates": "PENDING; Foundation alone does not close same-run Go/browser/required receipt chain"
+}

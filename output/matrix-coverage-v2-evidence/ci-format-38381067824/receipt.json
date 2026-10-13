@@ -1,0 +1,30 @@
+{
+  "ci_run_id": "38381067824",
+  "status": "formatter preview stopped before compile/behavior; no behavioral result",
+  "origin": "GitHub CI gofmt -d, applied locally as static patch only",
+  "normalization": "only .go.orig headers changed to .go in apply copy",
+  "command": "git apply -p0 output/matrix-coverage-v2-evidence/ci-format-38381067824/gofmt-apply.patch",
+  "exit_code": 0,
+  "patches": [
+    {
+      "path": "output/matrix-coverage-v2-evidence/ci-format-38381067824/gofmt.patch.gz",
+      "raw_sha256": "f82133b9ed75c9e7c67554d3ea3d84a298feadfdf90044fe3b36d410ad4b2ec8",
+      "raw_bytes": 6370,
+      "gzip_sha256": "35b0a9b2f831203701b8b832fd168dbafc730a9f765cdd26b755fdd80fe8b1c8",
+      "trailing_whitespace_lines": [
+        34,
+        51
+      ]
+    },
+    {
+      "path": "output/matrix-coverage-v2-evidence/ci-format-38381067824/gofmt-apply.patch.gz",
+      "raw_sha256": "23a47b0f8d47012e754e6f03fd1e2c4a39a1d374276c120c11ec53fb5af8c9c4",
+      "raw_bytes": 6350,
+      "gzip_sha256": "5588302edda8618059e0ea8b6f18dec3a61386cb9324fcfb54a6eb69c15095ac",
+      "trailing_whitespace_lines": [
+        34,
+        51
+      ]
+    }
+  ]
+}
