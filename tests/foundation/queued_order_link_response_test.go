@@ -1,11 +1,13 @@
-// Purpose: reject a stale buyer URL when a real checkout reminder supersedes Place's link before A16 DM planning.
+// Purpose: reject a stale buyer URL when a real concurrent pay-link plan supersedes Place's link before A16 DM planning.
 // Depends on: real checkout/claims/merchant HTTP pipeline, inbox planners, River and HPKE; lbSetup's signed Meta intake.
 // Used by: PR32 thread 4256912975 focused REAL_PG regression; loopback Graph remains paused (Meta LIVE NOT_RUN).
-// Invariants: I01/I02/I04/I06/I11; exactly one order/reminder/secret/job, no dead response URL or extra work on replay.
+// Invariants: I01/I02/I04/I06/I11; exactly one order/DM/secret/job, no dead response URL or extra work on replay.
+// This representative race uses the allowed bank-transfer manual flow; real reminder compatibility has separate batch/target tests.
 // Transaction seams return errors; never call testing.Fatal/Goexit inside WithScope, so failures release the transaction.
 package foundation_test
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/json"
@@ -25,7 +27,7 @@ import (
 	"livecommerce/internal/platform"
 )
 
-// qlrBeforeProbe delays only the first empty-link probe. Both the competing reminder and every planner call are real.
+// qlrBeforeProbe delays only the first empty-link probe. Both the competing plan and every planner call are real.
 type qlrBeforeProbe struct {
 	delegate  *inbox.Service
 	before    func(context.Context, string) error
@@ -43,7 +45,7 @@ func (p *qlrBeforeProbe) PlanOrderPayLink(ctx context.Context, tx pgx.Tx, scope 
 	return p.delegate.PlanOrderPayLink(ctx, tx, scope, key, conv, order, link)
 }
 
-func TestQueuedOrderLinkForBuyerResponseAfterReminder(t *testing.T) {
+func TestQueuedOrderLinkForBuyerResponseAfterConcurrentPlan(t *testing.T) {
 	lb, e := lbSetup(t), lbuNew(t)
 	ctx := context.Background()
 	e.grantCreator("integration:execute")
@@ -98,25 +100,27 @@ func TestQueuedOrderLinkForBuyerResponseAfterReminder(t *testing.T) {
 	bridge.linkPeer(t, bundle, conv, randomUUID()) // disclosed peer fixture: the exact relation a completed private reply would write
 	mustExec(t, e.p.f.owner, `UPDATE claims.bundles SET created_at=clock_timestamp()-interval '20 minutes' WHERE id=$1`, bundle)
 	e.h.closeWindow(t, meta.session)
-	// Reuse the real planner with a test-owned HPKE pair so the sealed pending reminder can be inspected without dispatching it.
+	// Reuse the real planner with a test-owned HPKE pair so the sealed pending DM can be inspected without dispatching it.
 	sealKeys, open := mcnPageRing(t)
 	lb.svc.EnableSend(sealKeys, lb.jobs, msgtemplates.NewService())
-	reminders, err := merchanttools.NewCheckoutReminders(e.p.f.runtime, e.manual, lb.svc)
-	if err != nil {
-		t.Fatal(err)
+	key, regenerationKey, concurrentDMKey := lbKey(), lbKey(), lbKey()
+	if key == regenerationKey || key == concurrentDMKey || regenerationKey == concurrentDMKey {
+		t.Fatal("placement, public regeneration and competing DM must use distinct keys")
 	}
 	var order string
-	var originalHash []byte
+	var originalHash, regeneratedHash []byte
+	var concurrentPlan inbox.SendOutput
 	probes := 0
 	planner := &qlrBeforeProbe{delegate: lb.svc, before: func(callCtx context.Context, committedOrder string) error {
 		callCtx, cancel := context.WithTimeout(callCtx, 10*time.Second)
 		defer cancel()
 		probes++
 		order = committedOrder
-		// Positive seam sentinel: Place and the upper bundle receipt have committed before the real reminder starts.
+		// Positive seam sentinel: the allowed bank-transfer Place and upper bundle receipt have committed before interposition.
 		var n int
 		if err := e.p.f.owner.QueryRow(callCtx, `SELECT count(*) FROM checkout.orders o JOIN inbox.order_for_buyer f ON f.order_id=o.id
-			WHERE o.id=$1 AND o.source='merchant_manual' AND o.commercial_state='AWAITING_PAYMENT' AND f.bundle_id=$2 AND f.state='placed'`, order, bundle).Scan(&n); err != nil {
+			WHERE o.id=$1 AND o.source='merchant_manual' AND o.commercial_state='AWAITING_TRANSFER' AND f.bundle_id=$2 AND f.state='placed'
+			AND o.tenant_id=$3 AND o.store_id=$4 AND f.tenant_id=$3 AND f.store_id=$4`, order, bundle, e.tenant(), e.store()).Scan(&n); err != nil {
 			return fmt.Errorf("read committed order/bundle seam sentinel: %w", err)
 		}
 		if n != 1 {
@@ -125,29 +129,49 @@ func TestQueuedOrderLinkForBuyerResponseAfterReminder(t *testing.T) {
 		if err := e.p.f.owner.QueryRow(callCtx, `SELECT token_hash FROM checkout.order_links WHERE order_id=$1 AND redeemed_at IS NULL`, order).Scan(&originalHash); err != nil {
 			return fmt.Errorf("read initial committed link hash: %w", err)
 		}
-		reminded, err := reminders.Trigger(callCtx, e.token(), e.store(), lbKey(), meta.session, bundle)
-		if _, parkErr := e.p.f.owner.Exec(callCtx, `UPDATE river.river_job SET queue='cr_hold' WHERE kind='external_operation_v1' AND state='available' AND queue='default'
-			AND args->>'operation_id' IN (SELECT id::text FROM integration.operations WHERE tenant_id=$1 AND store_id=$2 AND request->>'message_type'='checkout_reminder')`, e.tenant(), e.store()); parkErr != nil {
-			return fmt.Errorf("hold real competing reminder job: %w", parkErr)
-		}
+		regenerated, replayed, err := e.manual.RegenerateLink(callCtx, e.token(), e.store(), regenerationKey, merchanttools.ManualRegenerateInput{OrderID: order, Locale: "zh-TW"})
 		if err != nil {
-			return fmt.Errorf("real competing reminder: %w", err)
+			return fmt.Errorf("real public link regeneration: %w", err)
 		}
-		if reminded.Queued != 1 || reminded.Refused != 0 || reminded.AlreadyReminded != 0 || len(reminded.Results) != 1 || reminded.Results[0].BundleID != bundle || reminded.Results[0].Outcome != "queued" {
-			return fmt.Errorf("real competing reminder: queued=%d refused=%d already=%d rows=%d", reminded.Queued, reminded.Refused, reminded.AlreadyReminded, len(reminded.Results))
+		if replayed || regenerated.OrderID != order || regenerated.Source != "merchant_manual" || regenerated.BuyerLink == "" {
+			return fmt.Errorf("real public regeneration must issue one new link for the committed manual order: replayed=%v same_order=%v source=%s has_link=%v", replayed, regenerated.OrderID == order, regenerated.Source, regenerated.BuyerLink != "")
+		}
+		if err := e.p.f.owner.QueryRow(callCtx, `SELECT token_hash FROM checkout.order_links WHERE order_id=$1 AND redeemed_at IS NULL`, order).Scan(&regeneratedHash); err != nil {
+			return fmt.Errorf("read publicly regenerated link hash: %w", err)
+		}
+		if bytes.Equal(originalHash, regeneratedHash) {
+			return fmt.Errorf("public regeneration did not replace the original link")
+		}
+		if err := platform.WithScope(callCtx, e.p.f.runtime, e.token(), e.store(), "inbox:reply", func(tx pgx.Tx, scope platform.Scope) error {
+			var err error
+			concurrentPlan, err = lb.svc.PlanOrderPayLink(callCtx, tx, scope, concurrentDMKey, conv, order, regenerated.BuyerLink)
+			return err
+		}); err != nil {
+			return fmt.Errorf("real competing payment DM plan: %w", err)
+		}
+		if concurrentPlan.OperationID == "" || concurrentPlan.OutboundID == "" || concurrentPlan.SendState != "queued" {
+			return fmt.Errorf("real competing payment DM must return its queued operation and outbound: has_operation=%v has_outbound=%v state=%s", concurrentPlan.OperationID != "", concurrentPlan.OutboundID != "", concurrentPlan.SendState)
+		}
+		parked, err := e.p.f.owner.Exec(callCtx, `UPDATE river.river_job SET queue='qlr_hold' WHERE kind='external_operation_v1' AND state='available' AND queue='default'
+			AND args->>'operation_id'=$1 AND EXISTS(SELECT 1 FROM integration.operations WHERE id::text=$1 AND tenant_id=$2 AND store_id=$3)`, concurrentPlan.OperationID, e.tenant(), e.store())
+		if err != nil {
+			return fmt.Errorf("hold real competing payment DM job: %w", err)
+		}
+		if parked.RowsAffected() != 1 {
+			return fmt.Errorf("hold exactly the returned payment DM job: rows=%d", parked.RowsAffected())
 		}
 		return nil
 	}}
+	var err error
 	e.fb, err = merchanttools.NewForBuyer(e.manual, planner)
 	if err != nil {
 		t.Fatal(err)
 	}
 	e.handler = httpapi.NewHandler(e.p.f.runtime, httpapi.Options{CVS: e.cvs, ManualOrders: e.manual, ForBuyer: e.fb, Inbox: lb.svc})
-	key := lbKey()
 	body := e.body(1, []string{bundle}, conv, true)
 	code, out := e.post(e.token(), key, body)
 	if planner.beforeErr != nil {
-		t.Fatalf("real competing reminder interposition: %v", planner.beforeErr)
+		t.Fatalf("real competing payment DM interposition: %v", planner.beforeErr)
 	}
 	if code != 201 || probes != 1 || lbuStr(out, "order_id") != order {
 		t.Fatalf("fresh placement: status=%d probes=%d same_order=%v", code, probes, lbuStr(out, "order_id") == order)
@@ -159,7 +183,7 @@ func TestQueuedOrderLinkForBuyerResponseAfterReminder(t *testing.T) {
 			t.Errorf("status=%d send state=%v reason=%v, want not_sent/link_unavailable", status, send["state"], send["reason"])
 		}
 		if link, exists := result["buyer_link"]; !exists || link != nil {
-			t.Error("buyer_link must be explicitly null after the competing reminder supersedes the original link")
+			t.Error("buyer_link must be explicitly null after the competing payment DM plan supersedes the original link")
 		}
 	}
 	assertResponse(code, out)
@@ -177,7 +201,7 @@ func TestQueuedOrderLinkForBuyerResponseAfterReminder(t *testing.T) {
 			"regeneration_audit": `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='order.manual_link_regenerated'`,
 			"dm_operations":      `SELECT count(*) FROM integration.operations WHERE tenant_id=$1 AND store_id=$2 AND action='meta.dm_send'`,
 		}
-		for label, want := range map[string]int{"orders": 1, "links": 2, "active_links": 1, "placed": 1, "origins": 1, "manual_audit": 1, "for_buyer_audit": 1, "grant_audit": 1, "regeneration_audit": 0, "dm_operations": 1} {
+		for label, want := range map[string]int{"orders": 1, "links": 2, "active_links": 1, "placed": 1, "origins": 1, "manual_audit": 1, "for_buyer_audit": 1, "grant_audit": 1, "regeneration_audit": 1, "dm_operations": 1} {
 			if got := e.count(queries[label], e.tenant(), e.store()); got != want {
 				t.Errorf("%s=%d want=%d", label, got, want)
 			}
@@ -187,21 +211,24 @@ func TestQueuedOrderLinkForBuyerResponseAfterReminder(t *testing.T) {
 				t.Errorf("receipt %s=%d want=1", operation, n)
 			}
 		}
+		for operation, receiptKey := range map[string]string{"merchanttools.order.relink": regenerationKey, "inbox.dm.order_pay_link": concurrentDMKey} {
+			if n := e.count(`SELECT count(*) FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND operation=$4 AND idempotency_key=$5`, e.tenant(), e.store(), e.p.f.principalA, operation, receiptKey); n != 1 {
+				t.Errorf("competing receipt %s=%d want=1", operation, n)
+			}
+		}
 		if qty, rows := e.held(bundle, meta.offer.ID); qty != 1 || rows != 1 {
 			t.Errorf("claim finish held=%d rows=%d want=1/1", qty, rows)
 		}
 		if n := e.count(`SELECT count(*) FROM checkout.order_links WHERE order_id=$1 AND token_hash=$2 AND redeemed_at IS NOT NULL`, order, originalHash); n != 1 {
-			t.Error("competing reminder must have invalidated the original committed URL")
+			t.Error("public regeneration must have invalidated the original committed URL")
 		}
-		var op string
-		if err := e.p.f.owner.QueryRow(ctx, `SELECT id::text FROM integration.operations WHERE tenant_id=$1 AND store_id=$2
-			AND action='meta.dm_send' AND request->>'message_type'='checkout_reminder' AND request->>'session_id'=$3`, e.tenant(), e.store(), meta.session).Scan(&op); err != nil {
-			t.Fatal("real checkout reminder operation in the trade store", err)
-		}
+		op := concurrentPlan.OperationID
 		if n := e.count(`SELECT count(*) FROM integration.operations o JOIN river.river_job j ON j.id=o.job_id
 			WHERE o.id=$1 AND o.state='READY' AND o.action='meta.dm_send' AND o.request->>'conversation_id'=$2
-			AND o.request->>'bundle_id'=$3 AND o.request->>'reminder_state'='awaiting_payment' AND j.state='available' AND j.queue='cr_hold'`, op, conv, bundle); n != 1 || bridge.secretCount(t, op) != 1 {
-			t.Error("reminder must retain one real READY operation, held River job and sealed secret")
+			AND o.request->>'order_id'=$3 AND o.request->>'message_type'='dm' AND o.request->>'origin'='human'
+			AND o.request->>'template_id'='order-pay-link/v1' AND o.request->>'template_version'='1' AND o.request->>'outbound_id'=$4
+			AND o.tenant_id=$5 AND o.store_id=$6 AND j.state='available' AND j.queue='qlr_hold'`, op, conv, order, concurrentPlan.OutboundID, e.tenant(), e.store()); n != 1 || bridge.secretCount(t, op) != 1 {
+			t.Error("payment DM must retain one real READY operation, held River job and sealed secret")
 		}
 		var enc, sealed []byte
 		if err := e.p.f.owner.QueryRow(ctx, `SELECT enc,sealed FROM inbox.send_secrets WHERE operation_id=$1`, op).Scan(&enc, &sealed); err != nil {
@@ -209,7 +236,7 @@ func TestQueuedOrderLinkForBuyerResponseAfterReminder(t *testing.T) {
 		}
 		plain, err := open.OpenSend(e.tenant(), e.store(), op, enc, sealed)
 		if err != nil {
-			t.Fatal("open test-owned reminder seal", err)
+			t.Fatal("open test-owned payment DM seal", err)
 		}
 		var message struct {
 			Text string `json:"text"`
@@ -217,17 +244,20 @@ func TestQueuedOrderLinkForBuyerResponseAfterReminder(t *testing.T) {
 		err = json.Unmarshal(plain, &message)
 		clear(plain)
 		if err != nil {
-			t.Fatal("decode sealed reminder", err)
+			t.Fatal("decode sealed payment DM", err)
 		}
 		match := regexp.MustCompile(`/order-link#o=` + regexp.QuoteMeta(order) + `&t=([A-Za-z0-9_-]+)`).FindStringSubmatch(message.Text)
 		message.Text = ""
 		if len(match) != 2 {
-			t.Fatal("sealed reminder does not contain the committed order link")
+			t.Fatal("sealed payment DM does not contain the committed order link")
 		}
 		hash := sha256.Sum256([]byte(match[1]))
 		match = nil
+		if !bytes.Equal(hash[:], regeneratedHash) || bytes.Equal(hash[:], originalHash) {
+			t.Error("sealed payment DM must carry exactly the publicly regenerated link")
+		}
 		if n := e.count(`SELECT count(*) FROM checkout.order_links WHERE order_id=$1 AND token_hash=$2 AND redeemed_at IS NULL AND expires_at>clock_timestamp()`, order, hash[:]); n != 1 {
-			t.Error("sealed reminder URL must still redeem the current order")
+			t.Error("sealed payment DM URL must still redeem the current order")
 		}
 		if lb.g.count() != 0 {
 			t.Error("paused dispatcher must not call Graph")
