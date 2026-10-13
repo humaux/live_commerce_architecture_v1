@@ -32,6 +32,10 @@ func TestProductEditorMatrixLedgerEvidenceHistoricalPolicy(t *testing.T) {
 		{"matching", "1", "", 0, "--- PASS: TestProductEditorMatrixLedgerEvidence"},
 		{"drift-default", "", "source", 0, "--- SKIP: TestProductEditorMatrixLedgerEvidence"},
 		{"drift-strict", "1", "source", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
+		{"removed-producer-default", "", "removed-producer", 0, "--- SKIP: TestProductEditorMatrixLedgerEvidence"},
+		{"removed-producer-strict", "1", "removed-producer", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
+		{"renamed-producer-default", "", "renamed-producer", 0, "--- SKIP: TestProductEditorMatrixLedgerEvidence"},
+		{"renamed-producer-strict", "1", "renamed-producer", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
 		{"tampered-matching", "", "artifact", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
 		{"deleted-drift-default", "", "deleted", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
 		{"deleted-drift-strict", "1", "deleted", 1, "--- FAIL: TestProductEditorMatrixLedgerEvidence"},
@@ -53,6 +57,10 @@ func TestProductEditorMatrixLedgerEvidenceHistoricalPolicy(t *testing.T) {
 				}
 			}
 			switch tc.mutation {
+			case "removed-producer":
+				if err := os.Remove(filepath.Join(root, path)); err != nil { t.Fatal(err) }
+			case "renamed-producer":
+				if err := os.Rename(filepath.Join(root, path), filepath.Join(root, path+".renamed")); err != nil { t.Fatal(err) }
 			case "deleted":
 				if err := os.Remove(filepath.Join(root, canonical, "playwright.log")); err != nil {
 					t.Fatal(err)
@@ -109,7 +117,7 @@ func TestProductEditorMatrixLedgerEvidenceHistoricalPolicy(t *testing.T) {
 
 // Drift may relax comparison with evolved producers, never the immutable package.
 func TestProductEditorMatrixLedgerEvidenceDriftIntegrity(t *testing.T) {
-	for _, mutation := range []string{"deleted-native", "omitted-native", "copy-hash", "unindexed-copy", "extra-index-bytes", "extra-index-missing", "extra-index-path", "failed-outcome", "duplicate-ledger", "failed-ledger", "missing-claim", "manifest-ledger", "malformed-source"} {
+	for _, mutation := range []string{"deleted-native", "omitted-native", "copy-hash", "unindexed-copy", "extra-index-bytes", "extra-index-missing", "extra-index-path", "failed-outcome", "duplicate-ledger", "failed-ledger", "missing-claim", "manifest-ledger", "malformed-source", "unindexed-outer", "unindexed-nested", "blank-locale", "missing-locale", "altered-claim"} {
 		t.Run(mutation, func(t *testing.T) {
 			root, canonical := productEditorMatrixEvidenceFixture(t)
 			source := "tests/admin/product-editor.acceptance.ts"
@@ -118,6 +126,24 @@ func TestProductEditorMatrixLedgerEvidenceDriftIntegrity(t *testing.T) {
 			manifest, index := productEditorMatrixJSONFixture(t, root, manifestPath), productEditorMatrixJSONFixture(t, root, indexPath)
 			path := canonical + "/playwright.log"
 			switch mutation {
+			case "unindexed-outer", "unindexed-nested":
+				path = filepath.Dir(canonical) + "/unindexed.txt"
+				if mutation == "unindexed-nested" { path = filepath.Dir(canonical) + "/nested/unindexed.txt" }
+				if err := os.MkdirAll(filepath.Dir(filepath.Join(root, path)), 0700); err != nil { t.Fatal(err) }
+				productEditorMatrixWriteFixture(t, root, path, []byte("unindexed evidence"))
+			case "blank-locale", "missing-locale", "altered-claim":
+				path = canonical + "/product-editor-click-ledger.json"
+				var rows []productEditorMatrixLedgerRow
+				if err := json.Unmarshal(productEditorMatrixReadFixture(t, root, path), &rows); err != nil { t.Fatal(err) }
+				if mutation == "blank-locale" { rows[0].Locale = "" }
+				if mutation == "altered-claim" { rows[0].Expected = json.RawMessage(`"unrelated plausible historical claim"`) }
+				if mutation == "missing-locale" {
+					kept := []productEditorMatrixLedgerRow{}
+					for _, row := range rows { if row.Locale != "en" { kept = append(kept, row) } }
+					rows = kept
+				}
+				data, _ := json.Marshal(rows)
+				productEditorMatrixRehashFixture(t, root, canonical, path, data)
 			case "deleted-native":
 				if err := os.Remove(filepath.Join(root, path)); err != nil {
 					t.Fatal(err)
@@ -191,7 +217,7 @@ func TestProductEditorMatrixLedgerEvidenceDriftIntegrity(t *testing.T) {
 				index["artifacts_sha256"].(map[string]any)[sourcePath] = fmt.Sprintf("%x", sha256.Sum256(data))
 			}
 			// Preserve deliberate semantic rehashes; only explicitly edited receipts are rewritten.
-			if mutation != "failed-outcome" && mutation != "duplicate-ledger" && mutation != "failed-ledger" && mutation != "missing-claim" {
+			if mutation != "blank-locale" && mutation != "missing-locale" && mutation != "altered-claim" && mutation != "failed-outcome" && mutation != "duplicate-ledger" && mutation != "failed-ledger" && mutation != "missing-claim" {
 				data, _ := json.Marshal(manifest)
 				productEditorMatrixWriteFixture(t, root, manifestPath, data)
 				index["artifacts_sha256"].(map[string]any)[manifestPath] = fmt.Sprintf("%x", sha256.Sum256(data))
@@ -299,6 +325,29 @@ func TestProductEditorMatrixLedgerEvidenceRunReceipt(t *testing.T) {
 }
 
 func TestProductEditorMatrixLedgerEvidenceTableEvolution(t *testing.T) {
+	for _, change := range []string{"add-locale", "remove-locale", "rename-label"} {
+		t.Run(change, func(t *testing.T) {
+			root, _ := productEditorMatrixEvidenceFixture(t)
+			gate := "tests/foundation/catalog_matrix_ledger_test.go"
+			productEditorMatrixWriteFixture(t, root, gate, append(productEditorMatrixReadFixture(t, root, gate), '\n'))
+			original := productEditorMatrixLedgerLocales
+			locales := map[string]map[string]string{}
+			for locale, labels := range original { locales[locale] = labels }
+			switch change {
+			case "add-locale": locales["ja"] = original["en"]
+			case "remove-locale": delete(locales, "en")
+			case "rename-label":
+				labels := map[string]string{}
+				for key, value := range original["en"] { labels[key] = value }
+				labels["@price"] = "Future price label"
+				locales["en"] = labels
+			}
+			productEditorMatrixLedgerLocales = locales
+			defer func() { productEditorMatrixLedgerLocales = original }()
+			var drift productEditorMatrixEvidenceDrift
+			if err := validateProductEditorMatrixEvidence(root); !errors.As(err, &drift) { t.Fatalf("frozen locale evolution must be typed drift: %v", err) }
+		})
+	}
 	root, _ := productEditorMatrixEvidenceFixture(t)
 	path := "tests/foundation/testdata/product_editor_matrix_cases.json"
 	productEditorMatrixWriteFixture(t, root, path, append(productEditorMatrixReadFixture(t, root, path), '\n'))
