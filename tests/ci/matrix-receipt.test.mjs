@@ -4,7 +4,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { readFileSync, mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs";
+import { readFileSync, mkdirSync, writeFileSync, existsSync, rmSync, symlinkSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { runInNewContext } from "node:vm";
@@ -72,6 +72,38 @@ function historicalGoEvents({ reason } = {}) {
     ? [{ Package: packageName, Test, Action: "output", Output: `    catalog_matrix_ledger_test.go:123: ${skipReason}\n` }, { Package: packageName, Test, Action: "skip" }]
     : [{ Package: packageName, Test, Action: "pass" }])];
 }
+
+test("independent historical drift accepts a removed bound producer but refuses links and unsafe source paths", () => {
+  const root = resolve("output/matrix-coverage-v2-execution/probes/removed-producer");
+  rmSync(root, { recursive: true, force: true });
+  const gate = "tests/foundation/catalog_matrix_ledger_test.go";
+  const producer = "tests/admin/old-matrix-producer.ts";
+  const gateBytes = Buffer.from(`var productEditorMatrixEvidenceSources = []string{\n"${gate}",\n"${producer}",\n}\n`);
+  const hash = (bytes) => createHash("sha256").update(bytes).digest("hex");
+  const put = (path, bytes) => { mkdirSync(dirname(resolve(root, path)), { recursive: true }); writeFileSync(resolve(root, path), bytes); };
+  put(gate, gateBytes);
+  put(producer, "tested producer\n");
+  put("output/matrix-ledger-enforce/DELIVERY.md", "[SOURCE.json](fixture/SOURCE.json)\n");
+  const sources = { [gate]: hash(gateBytes), [producer]: hash(Buffer.from("tested producer\n")) };
+  const sourcePath = "output/matrix-ledger-enforce/fixture/SOURCE.json";
+  const bind = (bound = sources) => put(sourcePath, JSON.stringify({ source_files_sha256: bound }));
+  try {
+    bind();
+    assert.deepEqual(canonicalEvidenceDrift(null, root), []);
+    rmSync(resolve(root, producer));
+    assert.deepEqual(canonicalEvidenceDrift(null, root), [producer], "removed SOURCE-bound producer is exact historical drift");
+    symlinkSync("missing-producer.ts", resolve(root, producer));
+    assert.throws(() => canonicalEvidenceDrift(null, root), /canonical source symlink/, "dangling links are not removed producers");
+    rmSync(resolve(root, producer));
+    mkdirSync(resolve(root, producer));
+    assert.throws(() => canonicalEvidenceDrift(null, root), /EISDIR/, "a source directory remains an I/O failure");
+    rmSync(resolve(root, producer));
+    bind({ ...sources, "../escape.ts": hash(Buffer.from("escape")) });
+    assert.throws(() => canonicalEvidenceDrift(null, root), /repository-relative/);
+    bind({ ...sources, [producer]: "invalid" });
+    assert.throws(() => canonicalEvidenceDrift(null, root), /invalid bound hash/);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
 
 test("Node receipt accepts exact required suites with individual passing case identities", () => {
   const result = nodeOutcome(nodeEvents(), nodeSuites);

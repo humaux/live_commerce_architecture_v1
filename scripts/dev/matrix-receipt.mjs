@@ -2,9 +2,9 @@
 // Depends on: Node 24, Go test JSON events, and the current shard-plan.json.
 // Used by: test-node.sh, test-local.sh and CI receipt validators.
 import { spawnSync } from "node:child_process";
-import { readFileSync, readdirSync, mkdirSync, writeFileSync } from "node:fs";
+import { readFileSync, readdirSync, mkdirSync, writeFileSync, lstatSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { basename, dirname, resolve, relative } from "node:path";
+import { basename, dirname, resolve, relative, isAbsolute, posix } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const nodeSuites = [
@@ -21,13 +21,13 @@ const receiptSourceFiles = ["scripts/dev/matrix-receipt.mjs", "scripts/dev/matri
   "tests/ci/matrix-receipt.test.mjs", "tests/foundation/browser_catalog_core_test.go", ...nodeSuites];
 
 function sha(bytes) { return createHash("sha256").update(bytes).digest("hex"); }
-export function canonicalEvidenceDrift(sourcePathOverride = null) {
-  const delivery = readFileSync("output/matrix-ledger-enforce/DELIVERY.md", "utf8");
+export function canonicalEvidenceDrift(sourcePathOverride = null, checkout = process.cwd()) {
+  const delivery = readFileSync(resolve(checkout, "output/matrix-ledger-enforce/DELIVERY.md"), "utf8");
   const directory = /\[SOURCE\.json\]\(([A-Za-z0-9._-]+)\/SOURCE\.json\)/.exec(delivery)?.[1];
   if (!directory) throw new Error("canonical matrix delivery does not link SOURCE.json");
-  const source = JSON.parse(readFileSync(sourcePathOverride || `output/matrix-ledger-enforce/${directory}/SOURCE.json`, "utf8"));
+  const source = JSON.parse(readFileSync(sourcePathOverride || resolve(checkout, `output/matrix-ledger-enforce/${directory}/SOURCE.json`), "utf8"));
   const gatePath = "tests/foundation/catalog_matrix_ledger_test.go";
-  const gateBytes = readFileSync(gatePath);
+  const gateBytes = readFileSync(resolve(checkout, gatePath));
   const goSource = gateBytes.toString("utf8");
   const body = /var productEditorMatrixEvidenceSources = \[\]string\{([\s\S]*?)\n\}/.exec(goSource)?.[1];
   const bound = [...(body || "").matchAll(/"([^"\n]+)"/g)].map((match) => match[1]);
@@ -36,7 +36,23 @@ export function canonicalEvidenceDrift(sourcePathOverride = null) {
   let gateChanged = false;
   for (const [path, expected] of Object.entries(source.source_files_sha256 || {}).sort(([a], [b]) => a.localeCompare(b))) {
     if (!/^[0-9a-f]{64}$/.test(expected || "")) throw new Error(`SOURCE.json has an invalid bound hash for ${path}`);
-    if (sha(readFileSync(path)) !== expected) {
+    // Match the Go evidence policy: only a genuinely removed producer is
+    // historical drift; unsafe paths, links and all other I/O errors fail.
+    if (typeof path !== "string" || isAbsolute(path) || posix.normalize(path) !== path ||
+        path === "." || path === ".." || path.startsWith("../"))
+      throw new Error(`canonical source path must stay repository-relative: ${path}`);
+    let actual = null;
+    try {
+      let full = checkout;
+      for (const part of path.split("/")) {
+        full = resolve(full, part);
+        if (lstatSync(full).isSymbolicLink()) throw new Error(`canonical source symlink: ${path}`);
+      }
+      actual = sha(readFileSync(full));
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
+    if (actual !== expected) {
       drift.push(path);
       if (path === gatePath) gateChanged = true;
     }
