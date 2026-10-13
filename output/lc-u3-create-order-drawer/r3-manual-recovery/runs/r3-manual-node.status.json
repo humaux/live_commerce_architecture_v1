@@ -1,0 +1,20 @@
+{
+  "name": "r3-manual-node",
+  "command": [
+    "bash",
+    "scripts/dev/test-node.sh"
+  ],
+  "timeout": 900,
+  "head": "62ff64efd38a7a07b70a7009ce98c6c963bffba7",
+  "exit_code": 1,
+  "source_sha256": "86be04968b69e9d4d33a0a009515027ff58b764e436903e73d0d2ae6d0ff830e",
+  "source_after": "86be04968b69e9d4d33a0a009515027ff58b764e436903e73d0d2ae6d0ff830e",
+  "source_unchanged": true,
+  "historical_output_sha256": "cd6edadfac53eb0f985a7d7cf1c3ea6d7240b4bb15bbd411e5acfebc4ca58dcc",
+  "historical_output_after": "cd6edadfac53eb0f985a7d7cf1c3ea6d7240b4bb15bbd411e5acfebc4ca58dcc",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": true,
+  "tracked_status_clean_after": true,
+  "elapsed_seconds": 54.093
+}

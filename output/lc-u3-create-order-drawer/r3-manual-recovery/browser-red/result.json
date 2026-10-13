@@ -1,0 +1,224 @@
+{
+  "cases": 31,
+  "failed": [
+    "DU3-manual-absence-recovery"
+  ],
+  "results": [
+    {
+      "case": "DU3-manual-unknown-draft-edit",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-en-1440",
+      "order_id": "de71cefa-a32a-44aa-b32c-24c5f7ebbde6"
+    },
+    {
+      "case": "DU3-single-order-en-1440",
+      "queued_observation": {
+        "operations": 1,
+        "original_link": true,
+        "regenerations": 0,
+        "secrets": 1,
+        "valid_links": 1
+      }
+    },
+    {
+      "case": "DU3-single-order-en-1440",
+      "queued_replay": true,
+      "copy_blocked": true,
+      "regenerate_posts": 0,
+      "operations": 1,
+      "original_link": true,
+      "regenerations": 0,
+      "secrets": 1,
+      "valid_links": 1
+    },
+    {
+      "case": "DU3-single-order-en-1440",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-en-390",
+      "order_id": "a9993f72-7335-436c-a2a6-582015de617f"
+    },
+    {
+      "case": "DU3-single-order-en-390",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-zh-TW-1440",
+      "order_id": "71b62c6c-ea94-45fa-bff8-510ef0b222da"
+    },
+    {
+      "case": "DU3-single-order-zh-TW-1440",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-zh-TW-390",
+      "order_id": "93d1e620-9654-4159-bf1e-affcbad777c6"
+    },
+    {
+      "case": "DU3-single-order-zh-TW-390",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-zh-CN-1440",
+      "order_id": "d93da048-f9ce-4ef2-b1cf-d8f57c6098fd"
+    },
+    {
+      "case": "DU3-single-order-zh-CN-1440",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-zh-CN-390",
+      "order_id": "30f251b4-c3f9-4d28-b3cd-2a6a0eb22e34"
+    },
+    {
+      "case": "DU3-single-order-zh-CN-390",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-partial-begin-recovery",
+      "partial_before_recovery": {
+        "begin": 1,
+        "bindings": 1,
+        "closures": 0,
+        "completion_receipts": 0,
+        "dm_valid_links": 0,
+        "for_buyer_audits": 0,
+        "for_buyer_receipts": 0,
+        "jobs": 0,
+        "killed": true,
+        "links": 0,
+        "manual_audits": 0,
+        "manual_receipts": 0,
+        "manual_source": 0,
+        "operations": 0,
+        "orders": 1,
+        "pending_bundles": 1,
+        "placed_bundles": 0,
+        "recovery_receipts": 0,
+        "secrets": 0,
+        "valid_links": 0
+      }
+    },
+    {
+      "case": "DU3-partial-begin-recovery",
+      "recover_status": 503
+    },
+    {
+      "case": "DU3-partial-begin-recovery",
+      "attempts": 3,
+      "same_key": true,
+      "same_body": true,
+      "recover_status": 503,
+      "completion": {
+        "begin": 1,
+        "bindings": 1,
+        "closures": 0,
+        "completion_receipts": 1,
+        "dm_valid_links": 1,
+        "for_buyer_audits": 1,
+        "for_buyer_receipts": 1,
+        "jobs": 1,
+        "links": 1,
+        "manual_audits": 1,
+        "manual_receipts": 1,
+        "manual_source": 1,
+        "operations": 1,
+        "orders": 1,
+        "pending_bundles": 0,
+        "placed_bundles": 1,
+        "recovery_receipts": 0,
+        "secrets": 1,
+        "valid_links": 1
+      },
+      "reload_persisted": true
+    },
+    {
+      "case": "DU3-capability-after-unknown-recovery",
+      "refusal_status": 409,
+      "replay_same_key": true,
+      "replay_same_body": true
+    },
+    {
+      "case": "DU3-capability-after-unknown-recovery",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "refusal_status": 409,
+      "recover_status": 200,
+      "completion": {
+        "begin": 1,
+        "bindings": 1,
+        "closures": 0,
+        "completion_receipts": 1,
+        "dm_valid_links": 1,
+        "for_buyer_audits": 1,
+        "for_buyer_receipts": 1,
+        "jobs": 1,
+        "links": 1,
+        "manual_audits": 1,
+        "manual_receipts": 1,
+        "manual_source": 1,
+        "operations": 1,
+        "orders": 1,
+        "pending_bundles": 0,
+        "placed_bundles": 1,
+        "recovery_receipts": 1,
+        "secrets": 1,
+        "valid_links": 1
+      },
+      "reload_persisted": true
+    },
+    {
+      "case": "DU3-manual-absence-recovery",
+      "refusal_status": 422,
+      "same_key": true,
+      "same_body": true,
+      "partial": false
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "base": "b1229fbd",
+  "path": "apps/admin/components/ManualOrder.tsx",
+  "backup": "output/playwright/lc-u3-k3-p2/r3-manual-fixed.tsx",
+  "fixed_sha256": "9f120359aaf0484810d6e80d2e9b5640d6c043aaa0e3f98581c15b2faaf6c44e",
+  "base_sha256": "ba2e5fb539541154ddfae2956cdb14d63ca6d13610867c4bef26c64d354a449c",
+  "mutation": "Replace only ManualOrder.tsx with b1229fbd component; preserve new tests/backend/client/BFF and all assertions"
+}

@@ -1,0 +1,7 @@
+{
+  "cases": 10,
+  "order_id": "ada0eb49-e3b8-46af-8842-b2ae3f71973c",
+  "cod_order_id": "f5dabe41-48b6-4bb1-8320-f8e20205514b",
+  "link_locale": "zh-TW",
+  "boundary": "production Next; signed MOCK IdP; synthetic local TLS/CONNECT; no provider or deployment DNS/TLS acceptance"
+}

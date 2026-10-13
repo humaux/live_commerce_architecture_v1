@@ -1,0 +1,14 @@
+{
+  "HEAD": "b1229fbda54e3aa4a1262387d864a20382ec90f0",
+  "status": " M contracts/storefront-v2.md\n?? internal/httpapi/manual_order_recovery_test.go\n?? tests/foundation/manual_order_recovery_test.go\n",
+  "files": {
+    "internal/merchanttools/manual.go": "d90931f69ace203e9b577685a0e3bf5b0ca5a7ad9ae673b73444ee748a8b1db4",
+    "internal/merchanttools/order_attempt.go": "331034ee420356f78922e184f34bdf3b30717eef49b1de2568d27110a43eca5d",
+    "internal/httpapi/merchanttools.go": "da7c473321a0b6c93af61345cad85d3ad7d16720be93a0d85ee8205821f26062",
+    "internal/httpapi/manual_order_recovery_test.go": "e6b3656485ed35dcedddc8e4a33cc29ceb97ebfed3f1a299ffd1909eee057abf",
+    "tests/foundation/manual_order_recovery_test.go": "0b990304bfcf7d6cc58924d27998b5b882129fa4a5ee84170c77a7582088eb6d",
+    "contracts/storefront-v2.md": "1c251d8e37a79abd54dd07ea69aacba443082bdd57200b0a4aaadc1e54cf2928"
+  },
+  "command": "bash scripts/dev/test-focused.sh '^(TestManualRecovery|TestMerchantToolsManualOrder$)' ./tests/foundation ./internal/httpapi",
+  "freeze": "parent confirmed base b1229fbda54e3aa4a1262387d864a20382ec90f0; no file edits while tests running"
+}

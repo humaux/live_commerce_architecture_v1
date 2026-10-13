@@ -1,0 +1,24 @@
+{
+  "name": "r3-manual-tsc",
+  "command": [
+    "pnpm",
+    "exec",
+    "tsc",
+    "--noEmit",
+    "-p",
+    "apps/admin"
+  ],
+  "timeout": 180,
+  "head": "8d812b996a87505bc41e611b7cbced4ceb38fee3",
+  "exit_code": 0,
+  "source_sha256": "90bbd184725922fa5b41648f76e626619085896c164044dfe88ab9f2f254a911",
+  "source_after": "90bbd184725922fa5b41648f76e626619085896c164044dfe88ab9f2f254a911",
+  "source_unchanged": true,
+  "historical_output_sha256": "cd6edadfac53eb0f985a7d7cf1c3ea6d7240b4bb15bbd411e5acfebc4ca58dcc",
+  "historical_output_after": "cd6edadfac53eb0f985a7d7cf1c3ea6d7240b4bb15bbd411e5acfebc4ca58dcc",
+  "historical_output_unchanged": true,
+  "tracked_status_unchanged": true,
+  "tracked_status_clean_before": false,
+  "tracked_status_clean_after": false,
+  "elapsed_seconds": 2.948
+}

@@ -1,0 +1,12 @@
+[
+  {
+    "owned_container": "lc-focused-90256",
+    "docker_inspect_exit": 1,
+    "removed": true
+  },
+  {
+    "owned_container": "lc-focused-27646",
+    "docker_inspect_exit": 1,
+    "removed": true
+  }
+]
