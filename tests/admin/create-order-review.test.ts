@@ -131,6 +131,26 @@ test("PR32 granted catalog permission positively reaches real A15 and options se
   assert.deepEqual(orderReads(calls).sort(), [`/api/stores/${store.id}/tools/inbox/order-prefill?bundle_id=${bundle}`, `/api/stores/${store.id}/tools/orders/manual/options`].sort());
 });
 
+for (const locale of ["en", "zh-TW", "zh-CN"] as const) test(`PR32 ${locale} merged claim row visibly warns catalog fallback before submit`, async t => {
+  const env = browserEnvironment(t), calls = network(), upstream = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    if (String(input).includes("/tools/inbox/order-prefill?")) return response({ ...prefill, live_price_eligible: true, live_price_reason: "",
+      items: [{ ...prefill.items[0], quantity: 2, live_quantity_remaining: 2 },
+        { ...prefill.items[0], offer_id: otherOffer, keyword: "B1", quantity: 3, live_quantity_remaining: 3 }] });
+    return upstream(input, init);
+  };
+  const h = env.mount(() => CreateOrderDrawer({ locale, store: { ...allowedStore, permissions: [...allowedStore.permissions, "live:manage"] },
+    bundleId: bundle, sessionId: session, onClose() {} } as any));
+  await h.settle();
+  assert.ok(nodes(h.output).some(n => n.props["data-testid"] === "drawer-form"), "real A15 form positively loaded");
+  const items = node(h, n => n.props["data-testid"] === "drawer-items");
+  assert.ok(textOf(items).includes(createOrderCopy[locale].mergedClaimWarning), "the merged item explicitly shows its catalog-price fallback");
+  assert.equal(node(h, n => n.props["data-testid"] === `drawer-quantity-${sku}`).props.value, 5, "both quantities remain editable as one SKU line");
+  assert.ok(nodes(h.output).some(n => n.props["data-testid"] === "drawer-claim-0"));
+  assert.ok(nodes(h.output).some(n => n.props["data-testid"] === "drawer-claim-1"), "both per-claim allowances remain visible");
+  assert.deepEqual(calls.filter(path => path.endsWith("/tools/orders/for-buyer")), [], "warning is displayed before any money-path submission");
+});
+
 // PR #32 review P1 (thread 4232390268): a drawer-only 401/403 must revoke the parent Inbox/Console too, not just
 // this BuyerPanel, or the parent keeps showing buyer names, messages and drafts after authority loss.
 test("PR32 drawer 401 propagates to the parent onUnauthorized", async t => {
@@ -149,8 +169,8 @@ test("PR32 drawer 401 propagates to the parent onUnauthorized", async t => {
   assert.equal(textOf(h.output).includes("SYNTHETIC_REVIEW_BUYER"), false, "buyer facts cleared");
 });
 
-for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
-  test(`PR32 ${locale} queued payment replay never rotates its sealed DM link through plain copy`, async t => {
+for (const locale of ["en", "zh-TW", "zh-CN"] as const) for (const linkState of ["queued", "link_unavailable"] as const) {
+  test(`PR32 ${locale} ${linkState} payment replay never rotates its sealed DM link through plain copy`, async t => {
     const env = browserEnvironment(t);
     const calls = network();
     const upstream = globalThis.fetch;
@@ -170,7 +190,7 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
         return response({ order_id: offer, commercial_state: "AWAITING_TRANSFER", payment_mode: "bank_transfer",
           total_minor: 200, currency: "TWD", expires_at: "2030-01-01T00:00:00Z", buyer_link: null,
           link_state: "configured", source: "merchant_manual", live_price: "not_applied", live_price_reason: "no_conversation",
-          send: { state: "queued", operation_id: otherOffer } });
+          send: linkState === "queued" ? { state: "queued", operation_id: otherOffer } : { state: "not_sent", reason: "link_unavailable" } });
       }
       if (path.endsWith("/tools/orders/manual/regenerate-link")) {
         calls.push(path);
@@ -186,11 +206,12 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
     node(h, n => n.props["data-testid"] === "drawer-form").props.onSubmit({ preventDefault() {} });
     await h.settle();
     assert.ok(nodes(h.output).some(n => n.props["data-testid"] === "drawer-result"), "positive success sentinel before negative checks");
-    assert.ok(textOf(node(h, n => n.props["data-testid"] === "drawer-send-result")).includes(createOrderCopy[locale].queued));
+    assert.ok(textOf(node(h, n => n.props["data-testid"] === "drawer-send-result")).includes(linkState === "queued" ? createOrderCopy[locale].queued : createOrderCopy[locale].notSent));
+    assert.equal(textOf(node(h, n => n.props["data-testid"] === "drawer-queued-link")), createOrderCopy[locale].queuedLink, "positive planned-link explanation before absence assertions");
     const copy = nodes(h.output).find(n => n.props["data-testid"] === "drawer-copy-link");
     if (copy && !copy.props.disabled) { copy.props.onClick(); await h.settle(); }
     assert.deepEqual(calls.filter(path => path.endsWith("/regenerate-link")), [], "plain copy cannot silently supersede the queued DM credential");
-    assert.equal(copy, undefined, "queued state offers no plain copy control");
+    assert.equal(copy, undefined, "queued or reminder-owned state offers no plain copy control");
   });
 }
 
@@ -301,6 +322,44 @@ test("PR32 lost seal reply then attempt_closed can recover the same durable rece
   assert.ok(writes.every(w => w.key === writes[0].key && w.body === writes[0].body));
   assert.equal(node(h, n => n.props["data-testid"] === "drawer-close").props.disabled, false);
   assert.ok(node(h, n => n.props["data-testid"] === "drawer-recovery-result"));
+});
+
+test("PR32 picker expanding a retained result aborts a later search without locking the search control", async t => {
+  const env = browserEnvironment(t);
+  const { ManualOrderItemPicker } = await import("../../apps/admin/components/ManualOrderItemPicker.tsx");
+  const summary = { id: offer, slug: "synthetic-product", name: "SYNTHETIC Picker Product", status: "active", version: 1,
+    cover_image_id: null, price_min_minor: 200, price_max_minor: 200, currency: "TWD", sku_count: 1, available: 2,
+    keyword: "", inventory_tracked: true, updated_at: "2030-01-01T00:00:00Z" };
+  const detail = { id: offer, slug: summary.slug, name: summary.name, description: "", status: "active", version: 1,
+    seo_title: "", seo_description: "", options: [], collection_ids: [], warehouse_id: null,
+    skus: [{ id: sku, code: "SYNTHETIC-SKU", title: "SYNTHETIC Variant", price_minor: 200, compare_at_minor: null,
+      option_values: [], version: 1, currency: "TWD", available: 2, inventory_tracked: true, max_per_order: null,
+      keyword: "", on_hand: 2, committed: 0, weight_grams: 0, length_mm: 0, width_mm: 0, height_mm: 0,
+      origin_country: "TW", customs_name: "Synthetic", hs_candidate: "" }] };
+  let searches = 0, expansions = 0, aborted = 0;
+  globalThis.fetch = async (input, init) => {
+    const path = String(input);
+    if (path.includes("/catalog-products?")) {
+      searches++;
+      if (searches === 2) return new Promise<Response>((_, reject) => {
+        init!.signal!.addEventListener("abort", () => { aborted++; reject(new DOMException("Aborted", "AbortError")); }, { once: true });
+      });
+      return response({ items: [summary], next_cursor: "", total: 1, status_counts: { draft: 0, active: 1, archived: 0 } });
+    }
+    if (path.endsWith(`/products/${offer}`)) { expansions++; return response(detail); }
+    throw new Error(`Unexpected picker seam: ${path}`);
+  };
+  const h = env.mount(() => ManualOrderItemPicker({ locale: "en", store: allowedStore, lines: [], setLines() {}, idPrefix: "review", quantityControls: "stepper" }));
+  const search = () => node(h, n => n.props["data-testid"] === "review-search-button");
+  search().props.onClick(); await h.settle(); assert.equal(searches, 1);
+  assert.ok(textOf(h.output).includes(summary.name), "positive first catalog result");
+  search().props.onClick(); await h.settle(); assert.equal(searches, 2); assert.equal(search().props.disabled, true);
+  const expand = node(h, n => n.type === "button" && !!n.props.className && !n.props["data-testid"]);
+  expand.props.onClick(); await h.settle();
+  assert.equal(aborted, 1, "real catalog client's in-flight fetch was aborted");
+  assert.equal(expansions, 1); assert.ok(textOf(h.output).includes("SYNTHETIC Variant"), "real parsed product detail loaded");
+  assert.equal(search().props.disabled, false, "expansion owns the spinner after aborting the former search");
+  search().props.onClick(); await h.settle(); assert.equal(searches, 3, "merchant can actually search again");
 });
 for (const status of [401, 403]) test(`PR32 malformed recovery ${status} revokes the parent and discards the drawer`, async t => {
   let placed = 0;

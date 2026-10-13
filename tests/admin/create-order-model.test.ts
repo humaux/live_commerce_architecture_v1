@@ -19,6 +19,7 @@ import {
   parseManualResult,
   toolsRoute,
 } from "../../apps/admin/lib/merchant-tools-model.ts";
+import { createOrderCopy } from "../../apps/admin/lib/create-order-copy.ts";
 const id = "11111111-1111-4111-8111-111111111111",
   optionKey = `${id}|TW|home`;
 test("restriction session follows actual A15 offers, never the first unrelated A13 claim", () => {
@@ -72,6 +73,19 @@ const body = () => ({
   locale: "en",
   for: { bundle_ids: [id], conversation_id: null },
   send_payment_link: false,
+});
+for (const locale of ["en", "zh-TW", "zh-CN"] as const) test(`PR32 ${locale} merged duplicate-SKU claims preserve quantities and explicitly warn catalog fallback`, () => {
+  const raw: any = prefill();
+  raw.live_price_eligible = true; raw.live_price_reason = "";
+  raw.items[0].live_quantity_remaining = 2;
+  raw.items.push({ ...raw.items[0], offer_id: "22222222-2222-4222-8222-222222222222", keyword: "B1", quantity: 3, live_quantity_remaining: 3 });
+  const parsed = parseOrderPrefill(raw), form = prefillForm(parsed, locale, "TWD");
+  assert.equal(form.lines.length, 1, "manual endpoint permits one row per SKU");
+  assert.equal(form.lines[0].quantity, 5, "never truncate a second claim's quantity");
+  assert.equal(form.lines[0].note, createOrderCopy[locale].mergedClaimWarning);
+  assert.ok(form.lines[0].note, "catalog fallback must be visible before submitting an eligible-looking prefill");
+  assert.equal(parsed.items.length, 2, "both server claim rows and their allowances remain intact");
+  assert.equal(parsed.live_price_eligible, true, "the client does not rewrite server capability state");
 });
 const result = () => ({
   order_id: id,
