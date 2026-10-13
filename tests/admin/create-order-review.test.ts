@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { environment, store, conversation, response, nodes, node, textOf, BuyerPanel, thread } from "./inbox-review-host.test.ts";
 const { CreateOrderDrawer } = await import("../../apps/admin/components/CreateOrderDrawer.tsx");
 const { CommentStream } = await import("../../apps/admin/components/CommentStream.tsx");
-const { createOrderCopy } = await import("../../apps/admin/lib/create-order-copy.ts");
+const { createOrderCopy, createOrderReason } = await import("../../apps/admin/lib/create-order-copy.ts");
 const { retainOrderAttempt } = await import("../../apps/admin/lib/create-order-attempt.ts");
 const { OrderGuard } = await import("../../apps/admin/lib/create-order-attempt.ts");
 
@@ -170,7 +170,7 @@ test("PR32 drawer 401 propagates to the parent onUnauthorized", async t => {
   assert.equal(textOf(h.output).includes("SYNTHETIC_REVIEW_BUYER"), false, "buyer facts cleared");
 });
 
-for (const locale of ["en", "zh-TW", "zh-CN"] as const) for (const linkState of ["queued", "link_unavailable"] as const) {
+for (const locale of ["en", "zh-TW", "zh-CN"] as const) for (const linkState of ["queued", "link_unavailable", "order_cancelled"] as const) {
   test(`PR32 ${locale} ${linkState} payment replay never rotates its sealed DM link through plain copy`, async t => {
     const env = browserEnvironment(t);
     const calls = network();
@@ -191,7 +191,7 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const) for (const linkState of 
         return response({ order_id: offer, commercial_state: "AWAITING_TRANSFER", payment_mode: "bank_transfer",
           total_minor: 200, currency: "TWD", expires_at: "2030-01-01T00:00:00Z", buyer_link: null,
           link_state: "configured", source: "merchant_manual", live_price: "not_applied", live_price_reason: "no_conversation",
-          send: linkState === "queued" ? { state: "queued", operation_id: otherOffer } : { state: "not_sent", reason: "link_unavailable" } });
+          send: linkState === "queued" ? { state: "queued", operation_id: otherOffer } : { state: "not_sent", reason: linkState } });
       }
       if (path.endsWith("/tools/orders/manual/regenerate-link")) {
         calls.push(path);
@@ -208,7 +208,12 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const) for (const linkState of 
     await h.settle();
     assert.ok(nodes(h.output).some(n => n.props["data-testid"] === "drawer-result"), "positive success sentinel before negative checks");
     assert.ok(textOf(node(h, n => n.props["data-testid"] === "drawer-send-result")).includes(linkState === "queued" ? createOrderCopy[locale].queued : createOrderCopy[locale].notSent));
-    assert.equal(textOf(node(h, n => n.props["data-testid"] === "drawer-queued-link")), createOrderCopy[locale].queuedLink, "positive planned-link explanation before absence assertions");
+    if (linkState !== "order_cancelled") assert.equal(textOf(node(h, n => n.props["data-testid"] === "drawer-queued-link")), createOrderCopy[locale].queuedLink, "positive planned-link explanation before absence assertions");
+    else {
+      const cancelled = { en: "The order was cancelled. Payment messages and links are unavailable.", "zh-TW": "訂單已取消，無法傳送付款訊息或使用付款連結。", "zh-CN": "订单已取消，无法发送付款消息或使用付款链接。" }[locale];
+      assert.equal(createOrderReason(locale, "order_cancelled"), cancelled);
+      assert.ok(textOf(node(h, n => n.props["data-testid"] === "drawer-send-result")).includes(cancelled), "positive cancelled-order reason before absence assertions");
+    }
     const copy = nodes(h.output).find(n => n.props["data-testid"] === "drawer-copy-link");
     if (copy && !copy.props.disabled) { copy.props.onClick(); await h.settle(); }
     assert.deepEqual(calls.filter(path => path.endsWith("/regenerate-link")), [], "plain copy cannot silently supersede the queued DM credential");
