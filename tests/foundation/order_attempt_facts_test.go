@@ -236,7 +236,9 @@ func TestOrderAttemptFactsShippingTaxAndLocks(t *testing.T) {
 		`SELECT market_id FROM fulfillment.service_heads WHERE market_id=$1::uuid AND code=$2::text FOR UPDATE NOWAIT`,
 		`SELECT market_id FROM fulfillment.allocation_heads WHERE market_id=$1::uuid AND code=$2::text FOR UPDATE NOWAIT`,
 	} {
-		oaStateReject(t,other,"55P03",query,h.market.ID,code)
+		args := []any{h.market.ID}
+		if strings.Contains(query,"$2") { args = append(args,code) }
+		oaStateReject(t,other,"55P03",query,args...)
 	}
 	oaStateReject(t,other,"55P03",`SELECT id FROM catalog.skus WHERE id=$1 FOR UPDATE NOWAIT`,e.money)
 	oaStateReject(t,other,"55P03",`SELECT id FROM catalog.products WHERE id=(SELECT product_id FROM catalog.skus WHERE id=$1) FOR UPDATE NOWAIT`,e.money)
