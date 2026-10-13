@@ -121,7 +121,14 @@ func TestOrderAttemptDestinationFrozenReadbackAndRollback(t *testing.T) {
 			encoded, err := json.Marshal(checkout.Snapshot{Destination:d})
 			if err != nil { t.Fatal(err) }
 			var decoded checkout.Snapshot
-			if err = json.Unmarshal(encoded, &decoded); err != nil || !reflect.DeepEqual(decoded.Destination, d) { t.Fatal("typed checkout destination snapshot loses fields") }
+			if err = json.Unmarshal(encoded, &decoded); err != nil { t.Fatal(err) }
+			// PostgreSQL emits +00:00; time.Time marshals that instant as Z.
+			// Compare every canonical wire field, not time.Time's location pointer.
+			roundTrip, err := json.Marshal(decoded)
+			if err != nil { t.Fatal(err) }
+			if string(roundTrip) != string(encoded) { t.Fatal("typed checkout destination snapshot loses wire fields") }
+			if !decoded.Destination.SelectedAt.Equal(d.SelectedAt) || !decoded.Destination.ExpiresAt.Equal(d.ExpiresAt) { t.Fatal("typed checkout destination snapshot changes lifetime") }
+			if d.Pickup != nil && (decoded.Destination.Pickup == nil || !decoded.Destination.Pickup.AttestedAt.Equal(d.Pickup.AttestedAt) || !decoded.Destination.Pickup.ValidUntil.Equal(d.Pickup.ValidUntil)) { t.Fatal("typed checkout destination snapshot changes pickup lifetime") }
 			var effects int
 			if err = tx.QueryRow(ctx, `SELECT (SELECT count(*) FROM checkout.orders WHERE create_attempt_id=$1)+(SELECT count(*) FROM inventory.reservations WHERE create_attempt_id=$1)`, a.AttemptID).Scan(&effects); err != nil || effects != 0 { t.Fatalf("destination acquired order/hold effects: count=%d err=%v", effects, err) }
 			var sessions int
