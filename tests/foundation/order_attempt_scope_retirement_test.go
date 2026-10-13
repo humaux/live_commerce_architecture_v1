@@ -117,7 +117,7 @@ func TestOrderAttemptScopeRetirementPrincipalLockAndACL(t *testing.T) {
 	}
 	defer probe.Rollback(ctx)
 	oaStateReject(t, probe, "55P03", `SELECT id FROM identity.principals WHERE id=$1 FOR UPDATE NOWAIT`, principal)
-	var exact, coordinatorDML bool
+	var exact, coordinatorDML, lockColumnOnly bool
 	err = f.owner.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner
 	 WHERE p.oid=to_regprocedure('identity.lock_order_attempt_principal(bytea,uuid)')
 	 AND p.prosecdef AND r.rolname='commerce_auth'
@@ -126,9 +126,14 @@ func TestOrderAttemptScopeRetirementPrincipalLockAndACL(t *testing.T) {
 	  WHERE a.privilege_type='EXECUTE' AND a.grantee<>p.proowner ORDER BY 1)
 	 = ARRAY['commerce_order_attempt_owner']::text[]),
 	 has_table_privilege('commerce_order_attempt_owner','identity.principals','SELECT,INSERT,UPDATE,DELETE')
-	 OR has_any_column_privilege('commerce_order_attempt_owner','identity.principals','SELECT,INSERT,UPDATE')`).Scan(&exact, &coordinatorDML)
-	if err != nil || !exact || coordinatorDML {
-		t.Fatalf("principal lock authority boundary: exact=%v coordinatorDML=%v err=%v", exact, coordinatorDML, err)
+	 OR has_any_column_privilege('commerce_order_attempt_owner','identity.principals','SELECT,INSERT,UPDATE'),
+	 has_column_privilege('commerce_auth','identity.principals','id','UPDATE')
+	 AND NOT has_table_privilege('commerce_auth','identity.principals','UPDATE')
+	 AND NOT EXISTS(SELECT 1 FROM pg_attribute a WHERE a.attrelid='identity.principals'::regclass
+	  AND a.attnum>0 AND NOT a.attisdropped AND a.attname<>'id'
+	  AND has_column_privilege('commerce_auth',a.attrelid,a.attnum,'UPDATE'))`).Scan(&exact, &coordinatorDML, &lockColumnOnly)
+	if err != nil || !exact || coordinatorDML || !lockColumnOnly {
+		t.Fatalf("principal lock authority boundary: exact=%v coordinatorDML=%v lockColumnOnly=%v err=%v", exact, coordinatorDML, lockColumnOnly, err)
 	}
 	_, err = f.runtime.Exec(ctx, `SELECT identity.lock_order_attempt_principal($1,$2)`, tokenHash(token), f.storeA1)
 	var pgerr *pgconn.PgError
