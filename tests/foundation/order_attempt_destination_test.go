@@ -322,3 +322,40 @@ func TestOrderAttemptDestinationServiceBeforePickupBarrier(t *testing.T) {
 	_, err = probe.Exec(ctx, `SELECT current_version FROM fulfillment.service_heads WHERE tenant_id=$1 AND store_id=$2 AND market_id=$3 AND country='TW' AND code=$4 FOR UPDATE NOWAIT`, e.tenant(), e.store(), e.p.market.ID, facts.Catalog.Service.Code)
 	oaFenceCode(t, nil, err, "55P03")
 }
+
+func TestOrderAttemptDestinationReservedPickupNamespace(t *testing.T) {
+	e := lbuNew(t)
+	a := oaDestinationAdmit(t, e, "cvs_711", "bank_transfer")
+	ctx := context.Background()
+	tx, plain := oaFenceDomainTx(t, e, a, true)
+	quote := oaDestinationQuote(t, tx, a, plain)
+	got, _, err := oaDestinationCall(tx, a.AttemptID, plain, quote.CartID)
+	if err != nil || got.Destination.Pickup == nil { t.Fatalf("attempt pickup positive sentinel: %v", err) }
+	pickup := got.Destination.Pickup
+	if _, err = tx.Exec(ctx, `RESET ROLE`); err != nil { t.Fatal(err) }
+	if _, err = tx.Exec(ctx, `SELECT set_config('app.tenant_id',$1,true),set_config('app.store_id',$2,true),set_config('app.principal_id',$3,true),set_config('app.buyer_id',$4,true)`, e.tenant(), e.store(), e.p.f.principalA, randomUUID()); err != nil { t.Fatal(err) }
+	for _, role := range []string{"commerce_buyer_runtime", "commerce_checkout_runtime"} {
+		if _, err = tx.Exec(ctx, `SET LOCAL ROLE `+pgx.Identifier{role}.Sanitize()); err != nil { t.Fatal(err) }
+		var rows int
+		err = tx.QueryRow(ctx, `SELECT (SELECT count(*) FROM fulfillment.pickup_versions WHERE id=$1::uuid)+(SELECT count(*) FROM fulfillment.pickup_heads WHERE pickup_id=$1::uuid)`, pickup.ID).Scan(&rows)
+		if err != nil || rows != 0 { t.Fatalf("%s exposed another owner's attempt source: count=%d err=%v", role, rows, err) }
+		if _, err = tx.Exec(ctx, `RESET ROLE`); err != nil { t.Fatal(err) }
+	}
+	if _, err = tx.Exec(ctx, `SET LOCAL ROLE commerce_runtime`); err != nil { t.Fatal(err) }
+	if _, err = tx.Exec(ctx, `SAVEPOINT attempt_namespace_insert`); err != nil { t.Fatal(err) }
+	_, err = tx.Exec(ctx, `INSERT INTO fulfillment.pickup_versions(tenant_id,store_id,kind,namespace,code,version,country,name,address,verification_kind,evidence_ref,principal_id,attested_at,valid_until)
+	 VALUES($1,$2,'cvs_711',$3,$4,2,'TW','Synthetic store','Synthetic store address','MANUAL_ATTESTED','synthetic-evidence',$5,clock_timestamp(),clock_timestamp()+interval '1 day')`, e.tenant(), e.store(), pickup.Namespace, pickup.Code, e.p.f.principalA)
+	oaFenceCode(t, nil, err, "42501")
+	if _, err = tx.Exec(ctx, `ROLLBACK TO SAVEPOINT attempt_namespace_insert`); err != nil { t.Fatal(err) }
+	tag, err := tx.Exec(ctx, `UPDATE fulfillment.pickup_heads SET enabled=false WHERE tenant_id=$1 AND store_id=$2 AND namespace=$3`, e.tenant(), e.store(), pickup.Namespace)
+	if err != nil || tag.RowsAffected() != 0 { t.Fatalf("merchant runtime mutated immutable attempt pickup head: rows=%d err=%v", tag.RowsAffected(), err) }
+	if _, err = tx.Exec(ctx, `RESET ROLE`); err != nil { t.Fatal(err) }
+	var enabled bool
+	if err = tx.QueryRow(ctx, `SELECT enabled FROM fulfillment.pickup_heads WHERE pickup_id=$1`, pickup.ID).Scan(&enabled); err != nil || !enabled { t.Fatalf("reserved source changed: %v", err) }
+	var safe bool
+	err = tx.QueryRow(ctx, `SELECT p.prosecdef AND r.rolname='commerce_checkout_writer' AND NOT(r.rolcanlogin OR r.rolsuper OR r.rolbypassrls)
+	 AND p.proconfig=ARRAY['search_path=pg_catalog']::text[] AND length(obj_description(p.oid,'pg_proc'))>0
+	 AND ARRAY(SELECT pg_get_userbyid(a.grantee)::text FROM aclexplode(p.proacl) a WHERE a.grantee<>p.proowner AND a.privilege_type='EXECUTE' ORDER BY 1)=ARRAY['commerce_buyer_writer']::text[]
+	 FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner WHERE p.oid=to_regprocedure('fulfillment.order_attempt_materialize_pickup(uuid,text,uuid)')`).Scan(&safe)
+	if err != nil || !safe { t.Fatalf("unsafe private pickup helper ACL: %v", err) }
+}
