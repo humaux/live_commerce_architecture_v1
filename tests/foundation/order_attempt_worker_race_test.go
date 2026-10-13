@@ -148,8 +148,8 @@ func TestOrderAttemptWorkerRealConsumerRacesInline(t *testing.T) {
 	var jobs int
 	var durable orderattempt.ExecutionReceipt
 	if err = e.p.f.owner.QueryRow(ctx, `SELECT state,receipt,
-	 (SELECT count(*) FROM river.river_job WHERE kind='order_attempt_v1' AND args->>'attempt_id'=$1::text)
-	 FROM ops.order_attempts WHERE attempt_id=$1`, a.AttemptID).Scan(&durable.State, &durable.Receipt, &jobs); err != nil || jobs != 1 {
+	 (SELECT count(*) FROM river.river_job WHERE kind='order_attempt_v1' AND args->>'attempt_id'=($1::uuid)::text)
+	 FROM ops.order_attempts WHERE attempt_id=$1::uuid`, a.AttemptID).Scan(&durable.State, &durable.Receipt, &jobs); err != nil || jobs != 1 {
 		t.Fatalf("race did not preserve exactly one original job: jobs=%d err=%v", jobs, err)
 	}
 	oaExecutorSameReceipt(t, got, durable)
