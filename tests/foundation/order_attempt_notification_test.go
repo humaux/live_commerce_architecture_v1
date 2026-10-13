@@ -474,6 +474,16 @@ func TestOrderAttemptNotificationReadyNativeActualCrypto(t *testing.T) {
 	 (SELECT count(*) FROM inbox.send_secrets WHERE operation_id=$2),
 	 (SELECT count(*) FROM river_expiry.river_job WHERE args->>'order_id'=$1::text)`,a.AttemptID,operation).Scan(&notifications,&operations,&nativeJobs,&outbounds,&secrets,&expiry)
 	if err != nil || notifications!=1 || operations!=1 || nativeJobs!=1 || outbounds!=1 || secrets!=1 || expiry!=1 { t.Fatalf("READY/replay exact effects n=%d op=%d job=%d outbound=%d secret=%d expiry=%d err=%v",notifications,operations,nativeJobs,outbounds,secrets,expiry,err) }
+	// Validate only the notification constraint; the native partial C2 stays PENDING.
+	oaStateExec(t,tx,`SET CONSTRAINTS order_payment_notification_pair IMMEDIATE`)
+	oaStateExec(t,tx,`SET CONSTRAINTS order_payment_notification_pair DEFERRED`)
+	oaStateExec(t,tx,`SAVEPOINT oa_ready_job_shape`)
+	oaStateExec(t,tx,`UPDATE river.river_job SET args=args||jsonb_build_object('synthetic_extra',true) WHERE id=$1`,job)
+	oaStateExec(t,tx,`UPDATE inbox.order_payment_notifications SET worker_generation=worker_generation WHERE id=$1`,result.NotificationID)
+	_, pairErr := tx.Exec(context.Background(),`SET CONSTRAINTS order_payment_notification_pair IMMEDIATE`)
+	var pairPG *pgconn.PgError
+	if !errors.As(pairErr,&pairPG) || pairPG.Code!="23514" { t.Fatalf("deferred READY pair accepted a non-exact native job: %v",pairErr) }
+	oaStateExec(t,tx,`ROLLBACK TO SAVEPOINT oa_ready_job_shape`)
 	// Pair enforcement and irreversible provenance remain true even for the fixture owner.
 	oaNotificationReject(t,tx,`UPDATE inbox.order_payment_notifications SET operation_id=NULL WHERE id=$1`,result.NotificationID)
 	oaNotificationReject(t,tx,`UPDATE inbox.order_payment_notifications SET state='VOID',void_stage='before_c3',void_code='capability',operation_id=NULL,outbound_id=NULL WHERE id=$1`,result.NotificationID)
