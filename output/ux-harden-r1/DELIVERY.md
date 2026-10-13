@@ -3,7 +3,7 @@
      Used by: owner, integrator and independent PR reviewers. -->
 # UX-HARDEN-R1 delivery
 
-Status: CI reproduced UXH01–04 on unchanged product source. The five scoped fixes are implemented; green CI and final independent acceptance are pending.
+Status: CI reproduced UXH01–04 on unchanged product source. The fix run passed all four behaviors in all three locales and the REAL-stack storefront gate, but the complete editor gate failed on an obsolete navigation locator in the repeated-validation test. That locator is corrected; complete green CI and final independent acceptance are pending.
 
 - Branch: `unit/ux-harden-r1`; PR target: `r3/integration`.
 - Base after `git fetch origin`: `0bfe36e53acb694f4697521202e24f0790638941`.
@@ -30,6 +30,14 @@ All executions are GitHub-only under the owner's 2026-10-13 rule. No local tests
 - Red: [Gates run 38386230504](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38386230504), head `3feaf4967c7bcdce8ead732cef5b32083b9898ec`, completed **FAILURE**. The `--browser-product-editor` Gate step failed; its browser log is preserved in [red-product-editor.log](red-product-editor.log), copied from artifact `gate-browser-product-editor` (artifact ID `11807208320`).
 - Green: `--browser-product-editor`, default REAL-stack `--browser-storefront`; PR-required browser universe and foundation checks apply from the existing path planner.
 - Foundation checks supply `scripts/dev/test-node.sh` and `scripts/dev/check-gates.sh`; typecheck/build results must be read from CI.
+
+### First fix run
+
+[Gates run 38390368168](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38390368168), head `bc9e9310c33ac4d0f1b0cf831ff5a49eaacdaf19`:
+
+- `--browser-storefront`: Gate **SUCCESS**, default REAL application/PG stack (no vendor LIVE claim). [fix1-storefront.log](fix1-storefront.log) preserves SFR01–09 success from artifact `11808812314`.
+- `--browser-product-editor`: Gate **FAILURE**. [fix1-product-editor.log](fix1-product-editor.log), copied from artifact `11808878094`, records successful UXH01–04 measurements in zh-TW, zh-CN and en. Both resize directions retain focus; manual scroll stays 196/196, 182/182 and 501/501 respectively; the hint row remains 26.796875px at all three measured widths.
+- The editor suite reports 10 passed, 1 failed and 1 not run. The failure is `product-feedback.acceptance.ts:62`, which still locates navigation by the former shared name `Readiness`. Its independent navigation expectation now uses `Product editor navigation`; both Publish clicks, reveal/focus checks and mutation fencing remain unchanged. This run is not a whole-editor PASS.
 
 ### Red observations and fixes
 

@@ -57,7 +57,7 @@ export function registerProductFeedbackAcceptance() {
       ).toEqual([]);
 
       await form
-        .getByRole("navigation", { name: c.progress })
+        .getByRole("navigation", { name: "Product editor navigation", exact: true })
         .getByRole("button", { name: c.basics, exact: true })
         .click();
       await expect
