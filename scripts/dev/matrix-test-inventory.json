@@ -71,7 +71,7 @@
       ]
     },
     "tests/ci/product-editor-matrix-execution.test.mjs": {
-      "source_sha256": "5eae4a08c56cf5f1e7aaa30e4bb12f2ad4b48e4f33fc6d6f3ee4324548fcc0ac",
+      "source_sha256": "52aeb641420331af405ad19004d8f60d77238db62c414b6be05ddacfe97b2733",
       "tests": [
         "CI cannot append an evidence-test skip to the actual balanced dispatch",
         "Gates job and Gate step reject continue-on-error, including expressions",
@@ -89,6 +89,7 @@
         "Go selector in literal GOFLAGS cannot suppress the foundation matrix: -test.skip '^$'",
         "Go selector in literal GOFLAGS cannot suppress the foundation matrix: -test.skip=^$",
         "Node matrix command cannot hide failures with a trailing shell OR",
+        "both authoritative Go foundation commands retain race instrumentation",
         "canonical Node receipt set retains product-editor-matrix-controls.test.mjs",
         "canonical Node receipt set retains product-editor-matrix-execution.test.mjs",
         "canonical Node receipt set retains product-editor-matrix-ledger.test.mjs",

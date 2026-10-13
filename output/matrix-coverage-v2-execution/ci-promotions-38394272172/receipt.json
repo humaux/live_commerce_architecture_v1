@@ -1,0 +1,22 @@
+{
+  "run_id": "38394272172",
+  "job_id": "115288802880",
+  "branch_head": "a24a98d047c302b88d73c723230eadd22a7eb5bb",
+  "mode": "--browser-promotions",
+  "exit_code": 1,
+  "failure": "Negative money regex for960 also matches random SKU BRP-6cdb58d5e960; rendered amount is1060 with invalidcoupon anddiscount0",
+  "same_spec_git_blob_on_branch_and_local_origin_trunk": "4564baa610682b7b693f5efb6f88ce095a21bf27",
+  "classification": "Unchanged promotions matcher; outside Matrix execution/evidence scope, not modified",
+  "files": {
+    "job.log": {
+      "raw_bytes": 105352,
+      "raw_sha256": "16f714498f75943e2a78c764f360c173b6a9cf289e88c68c6bd7d16ca6536dbc",
+      "gzip_sha256": "df524731a3da6c2b34435d708d49864a24a7053585dde160ad22d103d5272a2e"
+    },
+    "browser.log": {
+      "raw_bytes": 7497,
+      "raw_sha256": "9ec0ceeff9391cc23d465f43ee040603ef781374642ee8eeee9f90700cd64d24",
+      "gzip_sha256": "04fee0836a864eacdaec59823a2b74405847e08ae5948632683746ad8fd6c0b7"
+    }
+  }
+}
