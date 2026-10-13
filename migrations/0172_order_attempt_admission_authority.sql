@@ -122,7 +122,8 @@ BEGIN
  END IF;
  RETURN jsonb_build_object('attempt_id',a.attempt_id,'scope_id',a.scope_id,'intent_generation',a.intent_generation,
   'tenant_id',a.tenant_id,'store_id',a.store_id,'buyer_owner_id',a.buyer_owner_id,'principal_id',principal,
-  'admitted_at',a.admitted_at,'execute_by',a.execute_by,'request_hash',encode(a.request_hash,'hex'));
+  'admitted_at',a.admitted_at,'execute_by',a.execute_by,'request_hash',encode(a.request_hash,'hex'),
+  'private_owner',a.admission_provenance->'private_owner');
 END $$;
 ALTER FUNCTION ops.order_attempt_admission_context(uuid,jsonb) OWNER TO commerce_order_attempt_owner;
 REVOKE ALL ON FUNCTION ops.order_attempt_admission_context(uuid,jsonb) FROM PUBLIC;
