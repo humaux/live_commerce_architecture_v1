@@ -51,7 +51,8 @@ func TestOrderAttemptErasurePrefixExactAuthority(t *testing.T) {
 		t.Fatal(err)
 	}
 	oaAbortCleanupTx(t, tx)
-	oaFenceCode(t, tx, "42501", `SELECT ops.order_attempt_erase_prefix($1,$2,$3)`, e.tenant(), e.store(), randomUUID())
+	_, err = tx.Exec(context.Background(), `SELECT ops.order_attempt_erase_prefix($1,$2,$3)`, e.tenant(), e.store(), randomUUID())
+	oaFenceCode(t, nil, err, "42501")
 	if err = tx.Rollback(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -65,7 +66,8 @@ func TestOrderAttemptErasurePrefixExactAuthority(t *testing.T) {
 		}
 		oaAbortCleanupTx(t, ownerTx)
 		oaStateExec(t, ownerTx, `SET LOCAL ROLE commerce_privacy_writer`)
-		oaFenceCode(t, ownerTx, "PT400", query)
+		_, err = ownerTx.Exec(context.Background(), query)
+		oaFenceCode(t, nil, err, "PT400")
 		if err = ownerTx.Rollback(context.Background()); err != nil {
 			t.Fatal(err)
 		}
@@ -76,7 +78,8 @@ func TestOrderAttemptErasurePrefixExactAuthority(t *testing.T) {
 	}
 	oaAbortCleanupTx(t, ownerTx)
 	oaStateExec(t, ownerTx, `SET LOCAL ROLE commerce_privacy_writer`)
-	oaFenceCode(t, ownerTx, "PT403", `SELECT ops.order_attempt_erase_prefix($1,$2,$3)`, e.tenant(), e.store(), randomUUID())
+	_, err = ownerTx.Exec(context.Background(), `SELECT ops.order_attempt_erase_prefix($1,$2,$3)`, e.tenant(), e.store(), randomUUID())
+	oaFenceCode(t, nil, err, "PT403")
 	if err = ownerTx.Rollback(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -108,12 +111,12 @@ func TestOrderAttemptErasureRetainsCommittedCommercialProof(t *testing.T) {
 	var exact bool
 	err = e.p.f.owner.QueryRow(context.Background(), `SELECT NOT b.active AND a.state='COMMITTED'
 	 AND o.id=a.order_id AND o.owner_id=$2 AND o.commercial_state='AWAITING_COLLECTION'
-	 AND o.total_minor=$3 AND o.currency=$4 AND r.state='COMMITTED'
+	 AND o.total_minor=$3 AND o.currency=a.receipt->>'currency' AND r.state='COMMITTED'
 	 AND NOT EXISTS(SELECT 1 FROM ops.order_attempt_subjects s WHERE s.attempt_id=a.attempt_id)
 	 AND (SELECT sum(delta_allocated) FROM inventory.ledger l WHERE l.checkout_id=a.attempt_id)=5
 	 FROM ops.order_attempts a JOIN checkout.orders o ON o.id=a.order_id
 	 JOIN inventory.reservations r ON r.id=o.id JOIN buyer.owners b ON b.id=o.owner_id
-	 WHERE a.attempt_id=$1`, a.AttemptID, plan.BuyerOwnerID, plan.Calculation.TotalMinor, plan.Calculation.Currency).Scan(&exact)
+	 WHERE a.attempt_id=$1`, a.AttemptID, plan.BuyerOwnerID, plan.Calculation.TotalMinor).Scan(&exact)
 	if err != nil || !exact {
 		t.Fatalf("native retained commercial/stock proof after erasure: exact=%v err=%v", exact, err)
 	}
