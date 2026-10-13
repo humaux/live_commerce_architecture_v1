@@ -3935,7 +3935,8 @@ func crClusterLogin(t *testing.T, owner *pgxpool.Pool, authority string) *pgxpoo
 }
 
 // crUpgradeAndPreconditions is CRP02's populated-upgrade clause on a throw-away PG cluster: everything up to and
-// including 0070 (and every migration except 0071) is applied, claims rows are populated, then 0071 is applied.
+// including 0070 (except 0071 and its dependent root/post-River suffixes) is applied, claims rows are populated,
+// then 0071 and every held dependency are applied with their exact file checksums.
 func crUpgradeAndPreconditions(t *testing.T) {
 	ctx := context.Background()
 	owner := mciStartPG(t)
@@ -4015,30 +4016,35 @@ func crUpgradeAndPreconditions(t *testing.T) {
 	// hold 0169 back: its 55000 precondition demands the 0127 definers it recreates (held back above), so it must run after 0127
 	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0169_lc_r2_c3x_purge.sql',$1)`, lcR2Sum)
 	// The post-0169 OA chain depends on the held 0129 native reservation table.
-	// Keep the entire current root SQL suffix out of the historical first stage,
+	// Its post-River suffix also requires OA roles, tables and private helpers.
+	// Keep both current SQL suffixes out of the historical first stage,
 	// then apply every held file on the populated schema with its real checksum.
-	entries, err := os.ReadDir("../../migrations")
-	if err != nil {
-		t.Fatal(err)
-	}
 	heldOA := make(map[string]string)
 	heldOANames := make([]string, 0)
-	for _, entry := range entries {
-		name := entry.Name()
-		if entry.IsDir() || !strings.HasSuffix(name, ".sql") || name < "0170_" {
-			continue
-		}
-		contents, err := os.ReadFile(filepath.Join("../../migrations", name))
+	for _, suffix := range []struct{ dir, first string }{{"", "0170_"}, {"post_river", "0023_"}} {
+		entries, err := os.ReadDir(filepath.Join("../../migrations", suffix.dir))
 		if err != nil {
 			t.Fatal(err)
 		}
-		checksum := fmt.Sprintf("%x", sha256.Sum256(contents))
-		heldOA[name] = checksum
-		heldOANames = append(heldOANames, name)
-		mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2)`, name, checksum)
-	}
-	if len(heldOA) == 0 {
-		t.Fatal("historical upgrade fixture did not discover the dependent OA migration chain")
+		beforeSuffix := len(heldOANames)
+		for _, entry := range entries {
+			name := entry.Name()
+			if entry.IsDir() || !strings.HasSuffix(name, ".sql") || name < suffix.first {
+				continue
+			}
+			version := filepath.ToSlash(filepath.Join(suffix.dir, name))
+			contents, err := os.ReadFile(filepath.Join("../../migrations", version))
+			if err != nil {
+				t.Fatal(err)
+			}
+			checksum := fmt.Sprintf("%x", sha256.Sum256(contents))
+			heldOA[version] = checksum
+			heldOANames = append(heldOANames, version)
+			mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2)`, version, checksum)
+		}
+		if len(heldOANames) == beforeSuffix {
+			t.Fatalf("historical upgrade fixture did not discover dependent OA suffix %q from %s", suffix.dir, suffix.first)
+		}
 	}
 	if err := migrations.Apply(ctx, owner); err != nil {
 		t.Fatalf("apply historical stage with 0071 and its dependent migrations held: %v", err)
@@ -4052,6 +4058,20 @@ func crUpgradeAndPreconditions(t *testing.T) {
 	}
 	if n := crCount(t, owner, `SELECT count(*) FROM pg_roles WHERE rolname LIKE 'commerce\_retention\_%'`); n != 0 {
 		t.Fatalf("pre-0071 database already has %d retention roles", n)
+	}
+	if n := crCount(t, owner, `SELECT count(*) FROM pg_roles WHERE rolname='commerce_order_attempt_owner'`); n != 0 {
+		t.Fatalf("historical database already has %d OA coordinator roles", n)
+	}
+	postOAProbes := []string{
+		`SELECT to_regprocedure('ops.order_attempt_job_matches(bigint,uuid,bigint)')::text`,
+		`SELECT to_regprocedure('checkout.order_attempt_enqueue_expiry(uuid,text,timestamptz)')::text`,
+		`SELECT to_regprocedure('ops.order_attempt_job_live(bigint,uuid,bigint)')::text`,
+	}
+	for _, q := range postOAProbes {
+		var got *string
+		if err := owner.QueryRow(ctx, q).Scan(&got); err != nil || got != nil {
+			t.Fatalf("historical database already has post-River OA helper %s: %v %v", q, got, err)
+		}
 	}
 	// populated claims rows (owner-seeded, synthetic): manual + Meta bundles with binding and link, intake, ledger, conversation
 	w := crFreshWorld(t, owner)
@@ -4133,6 +4153,12 @@ func crUpgradeAndPreconditions(t *testing.T) {
 	var upgradedOA *string
 	if err := owner.QueryRow(ctx, `SELECT to_regclass('ops.order_attempts')::text`).Scan(&upgradedOA); err != nil || upgradedOA == nil {
 		t.Fatalf("populated upgrade omitted native OA schema: %v %v", upgradedOA, err)
+	}
+	for _, q := range postOAProbes {
+		var got *string
+		if err := owner.QueryRow(ctx, q).Scan(&got); err != nil || got == nil {
+			t.Fatalf("populated upgrade omitted post-River OA helper %s: %v %v", q, got, err)
+		}
 	}
 	afterFirst := crExplicitDigest(t, owner, "public.lc_schema_migrations", "applied_at")
 	if err := migrations.Apply(ctx, owner); err != nil {
