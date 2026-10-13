@@ -21,6 +21,19 @@ type oaAbortWire struct {
 	Receipt json.RawMessage `json:"receipt"`
 }
 
+func oaAbortCleanupTx(t *testing.T, tx pgx.Tx) {
+	t.Helper()
+	// Register before any assertion: Fatal must release pool connections too.
+	// Cleanup outlives the test deadline, but never waits without a bound.
+	t.Cleanup(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		if err := tx.Rollback(ctx); err != nil && err != pgx.ErrTxClosed {
+			t.Errorf("abort fixture transaction cleanup: %v", err)
+		}
+	})
+}
+
 func oaAbortCall(ctx context.Context, tx pgx.Tx, hash []byte, store any, attempt string, generation int64, code string) ([]byte, error) {
 	var raw []byte
 	// Calls ops.abort_order_attempt, order-attempt-v1 §§1/3: fence before any domain lock/effect.
@@ -94,6 +107,7 @@ func TestOrderAttemptAbortNoKeyReceiptAndReplay(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	oaAbortCleanupTx(t, seed)
 	raw, err := oaFenceCall(ctx, seed, tokenHash(e.token()), e.store(), a.AttemptID, a.Generation)
 	if err != nil {
 		t.Fatal(err)
@@ -109,7 +123,7 @@ func TestOrderAttemptAbortNoKeyReceiptAndReplay(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer tx.Rollback(ctx)
+	oaAbortCleanupTx(t, tx)
 	oaStateExec(t, tx, `SELECT set_config('app.tenant_id','caller-marker',true),set_config('app.store_id','caller-marker',true),
 	 set_config('app.principal_id','caller-marker',true),set_config('app.buyer_id','caller-marker',true),set_config('app.buyer_session_id','caller-marker',true)`)
 	raw, err = oaAbortCall(ctx, tx, tokenHash(e.token()), e.store(), a.AttemptID, a.Generation, "PLAN_UNAVAILABLE")
@@ -145,7 +159,7 @@ func TestOrderAttemptAbortNoKeyReceiptAndReplay(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer replay.Rollback(ctx)
+	oaAbortCleanupTx(t, replay)
 	raw, err = oaAbortCall(ctx, replay, tokenHash(e.token()), e.store(), a.AttemptID, a.Generation, "unlisted-new-reason")
 	if err != nil || !bytes.Equal(oaAbortReceipt(t, raw, a, "PLAN_UNAVAILABLE").Receipt, first.Receipt) {
 		t.Fatalf("terminal no-op replay changed receipt: %v", err)
@@ -185,6 +199,7 @@ func TestOrderAttemptAbortReasonsAndCurrentReadAuthority(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			oaAbortCleanupTx(t, tx)
 			raw, err := oaAbortCall(ctx, tx, hash, store, a.AttemptID, generation, reason)
 			oaFenceCode(t, raw, err, want)
 			if err = tx.Rollback(ctx); err != nil {
@@ -205,11 +220,13 @@ func TestOrderAttemptAbortIndexedOwnerPrefixAndWitness(t *testing.T) {
 	mustExec(t, e.p.f.owner, `INSERT INTO buyer.owners(id,tenant_id,store_id) VALUES($1,$2,$3)`, other, e.tenant(), e.store())
 	mustExec(t, e.p.f.owner, `INSERT INTO ops.order_attempt_subjects(tenant_id,store_id,subject_kind,subject_id,attempt_id) VALUES($1,$2,'customer',$3,$4)`, e.tenant(), e.store(), other, a.AttemptID)
 	stale, _ := oaFenceDomainTx(t, e, a, true)
+	oaAbortCleanupTx(t, stale)
 	if err := stale.Commit(ctx); err != nil {
 		t.Fatal(err)
 	}
 	for _, acquire := range []bool{false, true} {
 		tx, _ := oaFenceDomainTx(t, e, a, acquire)
+		oaAbortCleanupTx(t, tx)
 		oaStateExec(t, tx, `SET LOCAL ROLE commerce_order_attempt_owner`)
 		if !acquire {
 			oaStateReject(t, tx, "PT409", `SELECT buyer.order_attempt_lock_owners($1,$2)`, a.AttemptID, a.Generation)
@@ -224,6 +241,7 @@ func TestOrderAttemptAbortIndexedOwnerPrefixAndWitness(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			oaAbortCleanupTx(t, probe)
 			_, err = probe.Exec(ctx, `SELECT id FROM buyer.owners WHERE id=$1 FOR UPDATE NOWAIT`, other)
 			oaJobError(t, err, "55P03")
 			_ = probe.Rollback(ctx)
@@ -237,7 +255,7 @@ func TestOrderAttemptAbortIndexedOwnerPrefixAndWitness(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer tx.Rollback(ctx)
+	oaAbortCleanupTx(t, tx)
 	raw, err := oaAbortCall(ctx, tx, tokenHash(e.token()), e.store(), a.AttemptID, a.Generation, "ERASED")
 	if err != nil {
 		t.Fatalf("inactive indexed contact must permit metadata-only erasure abort: %v", err)
@@ -253,10 +271,12 @@ func TestOrderAttemptAbortPartialCartRequiresRollback(t *testing.T) {
 	a := oaFenceAdmit(t, e)
 	ctx := context.Background()
 	tx, _ := oaFenceDomainTx(t, e, a, true)
+	oaAbortCleanupTx(t, tx)
 	partial, err := tx.Begin(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
+	oaAbortCleanupTx(t, partial)
 	// Native same-transaction C2 partial, deliberately injected by fixture owner.
 	// No fake quote/Begin implementation or synthetic capability is used.
 	oaStateExec(t, partial, `INSERT INTO storefront.carts(tenant_id,store_id,owner_id,currency,version,cart_kind,create_attempt_id)
@@ -266,6 +286,7 @@ func TestOrderAttemptAbortPartialCartRequiresRollback(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	oaAbortCleanupTx(t, probe)
 	raw, err := oaAbortCall(ctx, probe, tokenHash(e.token()), e.store(), a.AttemptID, a.Generation, "PLAN_UNAVAILABLE")
 	oaFenceCode(t, raw, err, "PT409")
 	if err = probe.Rollback(ctx); err != nil {
@@ -312,7 +333,7 @@ func TestOrderAttemptAbortReleasesOnlyOwnAdmission(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer tx.Rollback(ctx)
+	oaAbortCleanupTx(t, tx)
 	raw, err := oaAbortCall(ctx, tx, tokenHash(e.token()), e.store(), a.AttemptID, a.Generation, "PLAN_UNAVAILABLE")
 	if err != nil {
 		t.Fatal(err)
@@ -341,7 +362,7 @@ func TestOrderAttemptAbortWorkerNoEarlierLocksAndACL(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer holder.Rollback(context.Background())
+	oaAbortCleanupTx(t, holder)
 	oaStateExec(t, holder, `SELECT scope_id FROM ops.order_attempt_scopes WHERE scope_id=$1 FOR UPDATE`, a.ScopeID)
 	oaStateExec(t, holder, `SELECT id FROM identity.principals WHERE id=$1 FOR UPDATE`, e.p.f.principalA)
 	oaStateExec(t, holder, `SELECT pg_advisory_xact_lock(hashtextextended('order-attempt-subject:'||tenant_id::text||':'||store_id::text||':'||subject_kind||':'||subject_id::text,0))
@@ -351,7 +372,7 @@ func TestOrderAttemptAbortWorkerNoEarlierLocksAndACL(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer tx.Rollback(context.Background())
+	oaAbortCleanupTx(t, tx)
 	oaStateExec(t, tx, `SET LOCAL lock_timeout='750ms'`)
 	var actual bool
 	if err = tx.QueryRow(ctx, `SELECT session_user=current_user AND pg_has_role(session_user,'commerce_claims_worker','MEMBER')`).Scan(&actual); err != nil || !actual {
@@ -404,10 +425,12 @@ func TestOrderAttemptAbortBoundOrConsumedAdmissionRefused(t *testing.T) {
 			a := oaQuoteAdmit(t, e, true)
 			ctx := context.Background()
 			tx, _ := oaFenceDomainTx(t, e, a, true)
+			oaAbortCleanupTx(t, tx)
 			partial, err := tx.Begin(ctx)
 			if err != nil {
 				t.Fatal(err)
 			}
+			oaAbortCleanupTx(t, partial)
 			// Native audit rows intentionally contain a same-Tx partial. Abort
 			// must reject it rather than release, erase or compensate its evidence.
 			switch anomaly {
@@ -423,6 +446,7 @@ func TestOrderAttemptAbortBoundOrConsumedAdmissionRefused(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			oaAbortCleanupTx(t, probe)
 			raw, err := oaAbortCall(ctx, probe, tokenHash(e.token()), e.store(), a.AttemptID, a.Generation, "PLAN_UNAVAILABLE")
 			oaFenceCode(t, raw, err, "PT409")
 			if err = probe.Rollback(ctx); err != nil {
@@ -452,7 +476,7 @@ func TestOrderAttemptAbortExpiredNativeMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer tx.Rollback(ctx)
+	oaAbortCleanupTx(t, tx)
 	attempt, scope, owner := randomUUID(), randomUUID(), randomUUID()
 	// Storage-only past-seeded metadata proves the DB deadline boundary without
 	// altering immutable C1 rows/triggers or waiting fifteen minutes. Independent
@@ -477,7 +501,7 @@ func TestOrderAttemptAbortExpiredNativeMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer execution.Rollback(ctx)
+	oaAbortCleanupTx(t, execution)
 	raw, err := oaAbortCall(ctx, execution, nil, nil, attempt, 1, "EXPIRED")
 	if err != nil {
 		t.Fatalf("expired metadata abort must not require plaintext/key or active deadline: %v", err)
