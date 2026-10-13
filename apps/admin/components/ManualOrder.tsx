@@ -77,6 +77,8 @@ export function ManualOrder({
   const attemptOption = useRef<ManualOption | null>(null);
   const sending = useRef(false);
   const regen = useRef<{ body: string; key: string } | null>(null);
+  // Keep an ambiguous server recovery bound to its original transport receipt; never persist this key or buyer input.
+  const pendingRecoveryKey = useRef<string | null>(null);
   const clear = useCallback(() => {
     attempt.current.clear(); attemptOption.current = null; regen.current = null; guard.current = null;
     guardScope.current = ""; sending.current = false;
@@ -143,6 +145,7 @@ export function ManualOrder({
       if (scope !== guardScope.current || !privacy.fence.current(ticket)) return;
       if (outcome.ok) {
         attempt.current.finish(); guard.current?.clear(); setUncertain(false);
+        pendingRecoveryKey.current = null;
         setCodDue(outcome.value.commercial_state !== "CANCELLED" && outcome.value.payment_mode === "cash_on_delivery" ? outcome.value.total_minor + (attemptOption.current?.cod_surcharge_minor ?? 0) : null);
         setPlaced(outcome.value); return;
       }
@@ -171,6 +174,7 @@ export function ManualOrder({
   }
   function newAttempt() {
     if (sending.current || guarded || revoked || recoveredOrder || !attempt.current.startNew()) return false;
+    pendingRecoveryKey.current = null;
     attemptOption.current = null; setFailure(""); setUncertain(false); setRecoverable(false); setRecoveryNote(""); return true;
   }
   function revoke() {
@@ -193,6 +197,7 @@ export function ManualOrder({
       // The server serialized Begin and sealed absence; a generic business refusal alone never releases this key.
       attempt.current.finish();
       if (!guard.current?.authoritativeRecovered()) { setGuarded(true); return; }
+      pendingRecoveryKey.current = null;
       setFailure(""); setUncertain(false); setRecoverable(false);
       if (outcome.value.state === "created") setRecoveredOrder(outcome.value.order_id);
       else setRecoveryNote(recoveryCopy.recovered);
@@ -207,7 +212,8 @@ export function ManualOrder({
     const scope = guardScope.current, ticket = privacy.fence.begin();
     sending.current = true; setBusy(true); setFailure("");
     try {
-      const outcome = await recoverPendingOrder(store.id, boundary, ticket.signal);
+      const key = pendingRecoveryKey.current ??= crypto.randomUUID();
+      const outcome = await recoverPendingOrder(store.id, key, boundary, ticket.signal);
       if (scope !== guardScope.current || !privacy.fence.current(ticket)) return;
       if (!outcome.ok) {
         if ([401, 403].includes(outcome.status)) { revoke(); return; }
@@ -215,6 +221,7 @@ export function ManualOrder({
       }
       // The server reconciles its principal/store intent even when browser-private key/body was forgotten.
       if (!guard.current?.authoritativeRecovered()) { setFailure(c.errors.retry_later); return; }
+      pendingRecoveryKey.current = null;
       attempt.current.clear(); attemptOption.current = null;
       setGuarded(false); setFailure(""); setUncertain(false); setRecoverable(false);
       if (outcome.value.state === "created") setRecoveredOrder(outcome.value.order_id);

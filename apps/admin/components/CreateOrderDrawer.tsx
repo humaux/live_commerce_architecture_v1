@@ -132,6 +132,8 @@ export function CreateOrderDrawer({
   const regeneration = useRef<{ key: string; locale: Locale } | null>(null),
     sending = useRef(false),
     copying = useRef(false);
+  // Opaque transport receipt only; privacy loss does not authorize retargeting an ambiguous server recovery.
+  const pendingRecoveryKey = useRef<string | null>(null);
   const clear = useCallback(() => {
     attempt.current.clear();
     privateLink.current = null;
@@ -381,6 +383,7 @@ export function CreateOrderDrawer({
         setUncertain(false);
         attempt.current.finish();
         guard.current?.clear();
+        pendingRecoveryKey.current = null;
       } else {
         setError(outcome.code);
         if (!pending && outcome.status === 409 && outcome.code === "attempt_pending") {
@@ -433,6 +436,7 @@ export function CreateOrderDrawer({
   }
   function newAttempt() {
     if (sending.current || result || duplicate || !attempt.current.startNew()) return;
+    pendingRecoveryKey.current = null;
     setError(""); setUncertain(false); setRecoverable(false); setRecoveryNote("");
   }
   async function recover() {
@@ -451,6 +455,7 @@ export function CreateOrderDrawer({
       // Only the durable A16R seal can prove absence; bounded order lists and generic 422s cannot.
       attempt.current.finish();
       if (!guard.current?.authoritativeRecovered()) { setGuarded(true); return; }
+      pendingRecoveryKey.current = null;
       setError(""); setUncertain(false); setRecoverable(false);
       if (outcome.value.state === "created") setDuplicate({ id: outcome.value.order_id });
       else setRecoveryNote(c.recovered);
@@ -467,7 +472,8 @@ export function CreateOrderDrawer({
     sending.current = true; setBusy(true); setError("");
     try {
       if ((await checkedBoundary(boundary)) !== boundary || !privacy.fence.current(ticket)) return;
-      const outcome = await recoverPendingOrder(store.id, boundary, ticket.signal);
+      const key = pendingRecoveryKey.current ??= crypto.randomUUID();
+      const outcome = await recoverPendingOrder(store.id, key, boundary, ticket.signal);
       if (!privacy.fence.current(ticket)) return;
       if (!outcome.ok) {
         if ([401, 403].includes(outcome.status)) { expire(); return; }
@@ -475,6 +481,7 @@ export function CreateOrderDrawer({
       }
       // Only the server can find and reconcile a lost receipt; the recovery transport creates no order intent.
       if (!guard.current?.authoritativeRecovered()) { setError("unavailable"); return; }
+      pendingRecoveryKey.current = null;
       attempt.current.clear();
       setGuarded(false); setUncertain(false); setRecoverable(false); setError("");
       if (outcome.value.state === "created") {
