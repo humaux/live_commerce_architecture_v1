@@ -262,6 +262,19 @@ async function recoveryForm(t: any, locale: "en" | "zh-TW" | "zh-CN", outcome: (
   return ready;
 }
 
+test("PR32 an UNKNOWN drawer reply permits only explicit authoritative recovery with its frozen key/body", async t => {
+  const ready = await readyRecoveryForm(t, "en", () => response({ code: "retry_later" }, 503));
+  await ready.submit();
+  assert.equal(textOf(node(ready.h, n => n.props["data-testid"] === "drawer-error")), createOrderCopy.en.uncertain);
+  const control = node(ready.h, n => n.props["data-testid"] === "drawer-recover-attempt");
+  assert.equal(control.props.disabled, false, "positive recovery action after an actual ambiguous response");
+  assert.equal(ready.writes.length, 1, "recovery is never automatic");
+  control.props.onClick(); await ready.h.settle();
+  assert.equal(ready.writes.length, 2); assert.ok(ready.writes[1].path.endsWith("/orders/for-buyer/recover"));
+  assert.equal(ready.writes[1].key, ready.writes[0].key); assert.equal(ready.writes[1].body, ready.writes[0].body);
+  assert.equal(ready.env.saved.size, 1); assert.equal(node(ready.h, n => n.props["data-testid"] === "drawer-close").props.disabled, true);
+  assert.equal(nodes(ready.h.output).some(n => n.props["data-testid"] === "drawer-new-attempt"), false);
+});
 for (const locale of ["en", "zh-TW", "zh-CN"] as const) for (const entry of ["server_refusal", "lost_browser_receipt"] as const)
   for (const state of ["none", "not_created", "created", "unknown"] as const) test(`PR32 ${locale} drawer ${entry} recovers ${state} from server-owned pending intent`, async t => {
     const ready = await readyRecoveryForm(t, locale, () => response({ code: "attempt_pending" }, 409));

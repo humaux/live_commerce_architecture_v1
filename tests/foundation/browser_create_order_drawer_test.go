@@ -288,8 +288,8 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 		t.Fatal(err)
 	}
 	var finalMu sync.Mutex
-	var finalKeys []string // Private test-only observations for the two added A16 requests.
-	var prefetchKeys []string // Two separate real writes before the drawer/manual retry fence faults.
+	var finalKeys []string       // Private test-only observations for the two added A16 requests.
+	var prefetchKeys []string    // Two separate real writes before the drawer/manual retry fence faults.
 	var unavailableKeys []string // The separate real201/order underlying the labelled link_unavailable response-edge case.
 	mux := http.NewServeMux()
 	mux.Handle("/v1/identity/", private)
@@ -634,10 +634,10 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 		}
 	}
 	for scenario, controls := range map[string][]string{
-		"DU3-manual-absence-recovery":    {"manual frozen refusal", "manual absence seal and new intent", "manual new intent persistence"},
-		"DU3-manual-partial-recovery":    {"manual partial Begin fault", "manual partial authority", "manual partial retry persistence"},
-		"DU3-never-sent-key-validation":  {"never sent invalid key", "never sent close reopen persistence"},
-		"DU3-unknown-auth-relogin-guard": {"unknown real auth clear", "relogin stable unresolved guard", "reloaded stable unresolved guard", "guard scope and persisted order"},
+		"DU3-manual-absence-recovery":                {"manual frozen refusal", "manual absence seal and new intent", "manual new intent persistence"},
+		"DU3-manual-partial-recovery":                {"manual partial Begin fault", "manual partial authority", "manual partial retry persistence"},
+		"DU3-never-sent-key-validation":              {"never sent invalid key", "never sent close reopen persistence"},
+		"DU3-unknown-auth-relogin-guard":             {"unknown real auth clear", "relogin stable unresolved guard", "reloaded stable unresolved guard", "guard scope and persisted order"},
 		"DU3-drawer-prefetch-fence-retained-unknown": {"drawer server pending recovery"},
 		"DU3-manual-prefetch-fence-retained-unknown": {"manual server pending recovery"},
 	} {
