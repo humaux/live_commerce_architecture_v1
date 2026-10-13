@@ -362,7 +362,16 @@ func TestOrderIntentAuthoritySchemaPrivacyAndScope(t *testing.T) {
 	if err := json.Unmarshal(w.Body.Bytes(), &recovered); err != nil {
 		t.Fatal("generic erased-intent recovery returned invalid JSON")
 	}
-	if w.Code != 503 || recovered["code"] != "retry_later" || len(recovered) != 1 {
+	// The real router returns the standard non-sensitive error envelope, not a recovery-state DTO.
+	fields := make([]string, 0, len(recovered))
+	for field := range recovered {
+		fields = append(fields, field)
+	}
+	lcSameSet(t, "erased-intent error fields", fields, []string{"code", "message", "details", "request_id", "retryable"})
+	details, validDetails := recovered["details"].(map[string]any)
+	requestID, validRequestID := recovered["request_id"].(string)
+	if w.Code != 503 || recovered["code"] != "retry_later" || recovered["message"] != "Temporarily unavailable." ||
+		!validRequestID || requestID == "" || recovered["retryable"] != true || !validDetails || len(details) != 0 {
 		t.Fatalf("generic recovery recreated erased input or disclosed private state: status=%d code=%v fields=%d", w.Code, recovered["code"], len(recovered))
 	}
 	assertErasedPending()

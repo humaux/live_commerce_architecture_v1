@@ -40,17 +40,28 @@ func TestLiveConsoleRecoveryFreshAuthorityAfterCheckoutWait(t *testing.T) {
 			if (!c.absent && status != 201) || (c.absent && status != 422) {
 				t.Fatalf("place: %d %v", status, placed)
 			}
+			// A definitive never-created 422 now seals its intent immediately. Revoked recovery must add no receipt
+			// to that existing authority, rather than pretending the initial refusal left the ledger empty.
+			_, initialBeginKey := lcrpKeys(e, key)
+			beforeReceipts := e.count(`SELECT count(*) FROM ops.command_results WHERE store_id=$1 AND idempotency_key IN ($2,$3)
+ AND operation IN ('merchanttools.order.attempt.recovery','merchanttools.order.checkout.closed')`, e.store(), key, initialBeginKey)
+			wantInitialReceipts := 0
+			if c.absent {
+				wantInitialReceipts = 2
+			}
+			if beforeReceipts != wantInitialReceipts {
+				t.Fatalf("initial original recovery authority receipts=%d want=%d", beforeReceipts, wantInitialReceipts)
+			}
 			var owner, beginKey string
 			if !c.absent {
 				if err := e.p.f.owner.QueryRow(context.Background(), `SELECT owner_id::text,idempotency_key FROM checkout.command_results WHERE store_id=$1 AND order_id=$2 AND operation='checkout.begin'`, e.store(), placed["order_id"]).Scan(&owner, &beginKey); err != nil {
 					t.Fatal(err)
 				}
 			} else {
-				if err := e.p.f.owner.QueryRow(context.Background(), `SELECT owner_id::text FROM buyer.capability_sessions WHERE store_id=$1 ORDER BY created_at DESC LIMIT 1`, e.store()).Scan(&owner); err != nil {
+				if err := e.p.f.owner.QueryRow(context.Background(), `SELECT buyer_owner_id::text,begin_key FROM ops.order_intents
+ WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND idempotency_key=$4 AND state='sealed'`, e.tenant(), e.store(), principal, key).Scan(&owner, &beginKey); err != nil {
 					t.Fatal(err)
 				}
-				hash := sha256.Sum256([]byte("mt|begin|" + key))
-				beginKey = fmt.Sprintf("mt-%x", hash[:16])
 			}
 			hold, err := e.p.f.owner.Begin(context.Background())
 			if err != nil {
@@ -84,10 +95,11 @@ func TestLiveConsoleRecoveryFreshAuthorityAfterCheckoutWait(t *testing.T) {
 				t.Fatalf("post-wait authority: %d %v want %d", r.status, r.out, c.want)
 			}
 			var receipts int
-			if err = e.p.f.owner.QueryRow(context.Background(), `SELECT count(*) FROM ops.command_results WHERE store_id=$1 AND operation IN ('merchanttools.order.attempt.recovery','merchanttools.order.checkout.closed')`, e.store()).Scan(&receipts); err != nil {
+			if err = e.p.f.owner.QueryRow(context.Background(), `SELECT count(*) FROM ops.command_results WHERE store_id=$1 AND idempotency_key IN ($2,$3)
+ AND operation IN ('merchanttools.order.attempt.recovery','merchanttools.order.checkout.closed')`, e.store(), key, beginKey).Scan(&receipts); err != nil {
 				t.Fatal(err)
 			}
-			if receipts != 0 {
+			if receipts != beforeReceipts {
 				t.Fatal("revoked recovery wrote an authoritative receipt")
 			}
 		})
@@ -341,38 +353,38 @@ func TestLiveConsoleRecoveryCheckoutReceiptWithoutMerchantReceipt(t *testing.T) 
 	e := lbuNew(t)
 	key := t04Key("lcr-orphan")
 	body := e.body(2, nil, "", false)
-	st, placed := e.post(e.token(), key, body)
-	if st != 201 {
-		t.Fatalf("setup: %d %v", st, placed)
+	baseline := lcrpCheckoutBaseline(e)
+	// Kill the real transaction after Begin commits and before the manual receipt/source/link commit.
+	// A completed-then-corrupted intent would not model a pending crash boundary under the new authority.
+	lcrPartialKill(t, e, key, body, "merchanttools.order.manual")
+	_, beginKey := lcrpKeys(e, key)
+	var id string
+	oiaRead(t, e, `SELECT order_id::text FROM checkout.command_results WHERE tenant_id=$1 AND store_id=$2 AND operation='checkout.begin' AND idempotency_key=$3`, []any{e.tenant(), e.store(), beginKey}, &id)
+	if e.count(`SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store()) != baseline.orders+1 || e.orders() != 0 || e.reserved() != baseline.held+2 || e.plan.planned() != 0 {
+		t.Fatal("orphan fixture lacks exactly one original Begin-only order/hold")
 	}
-	id := placed["order_id"]
-	// Privileged fixture models the crash gap after checkout's durable order/receipt commit,
-	// before either merchant receipt. Never deletes a checkout receipt, order or stock row.
-	mustExec(t, e.p.f.owner, `DELETE FROM ops.command_results WHERE store_id=$1 AND idempotency_key=$2 AND operation IN ('merchanttools.order.manual','merchanttools.order.for_buyer','merchanttools.order.for_buyer.completed')`, e.store(), key)
-	// Dynamic payment policy changes before retry; the unchanged body now fails pre-Begin.
+	// The original immutable checkout is already accepted. Dynamic policy changes must not reprice or block its completion.
 	mustExec(t, e.p.f.owner, `UPDATE checkout.bank_transfer_settings SET enabled=false WHERE store_id=$1`, e.store())
-	before, held := e.orders(), e.reserved()
-	st, out := e.post(e.token(), key, body)
-	if st != 422 {
-		t.Fatalf("need actual dynamic 422: %d %v", st, out)
-	}
-	st, out = lcrRecover(t, e, e.token(), key, body)
+	st, out := lcrRecover(t, e, e.token(), key, body)
 	if st != 503 || out["code"] != "retry_later" || out["order_id"] != nil {
 		t.Fatalf("incomplete orphan must retain UNKNOWN: %d %v", st, out)
 	}
-	mustExec(t, e.p.f.owner, `UPDATE checkout.bank_transfer_settings SET enabled=true WHERE store_id=$1`, e.store())
+	st, out = e.post(e.token(), key, body)
+	if st != 201 || out["order_id"] != id {
+		t.Fatalf("explicit frozen orphan completion: %d %v", st, out)
+	}
 	st, out = e.post(e.token(), key, body)
 	if st != 200 || out["order_id"] != id {
-		// The removed upper receipt is completed again; this is a fresh upper response for the same checkout order.
-		if st != 201 || out["order_id"] != id {
-			t.Fatalf("explicit orphan replay: %d %v", st, out)
-		}
+		t.Fatalf("completed orphan exact replay: %d %v", st, out)
 	}
 	st, out = lcrRecover(t, e, e.token(), key, body)
 	if st != 200 || out["state"] != "created" || out["order_id"] != id || len(out) != 2 {
 		t.Fatalf("completed orphan recovery: %d %v", st, out)
 	}
-	if e.orders() != before || e.reserved() != held || e.plan.planned() != 0 {
+	if e.orders() != 1 || e.reserved() != baseline.held+2 || e.plan.planned() != 0 ||
+		e.count(`SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store()) != baseline.orders+1 ||
+		e.count(`SELECT count(*) FROM checkout.command_results WHERE tenant_id=$1 AND store_id=$2 AND operation='checkout.begin'`, e.tenant(), e.store()) != baseline.begins+1 ||
+		e.count(`SELECT count(*) FROM checkout.order_links WHERE tenant_id=$1 AND store_id=$2 AND order_id=$3`, e.tenant(), e.store(), id) != 1 {
 		t.Fatal("created recovery changed money/stock/DM")
 	}
 }
@@ -604,8 +616,10 @@ func TestLiveConsoleRecoveryLegacyUnboundPartialStaysUnknown(t *testing.T) {
 	if st != 201 {
 		t.Fatalf("setup %d %v", st, out)
 	}
-	// Model legacy pre-amendment process gap: no full A16 receipt or canonical new binding survives.
-	mustExec(t, e.p.f.owner, `DELETE FROM ops.command_results WHERE store_id=$1 AND idempotency_key=$2 AND operation IN ('merchanttools.order.for_buyer','merchanttools.order.attempt')`, e.store(), key)
+	// Privileged upgrade fixture removes the new server intent as well as the old A16 binding.
+	// Keeping a created intent would correctly reject another body under I02, rather than model an unbound legacy request.
+	mustExec(t, e.p.f.owner, `DELETE FROM ops.order_intents WHERE store_id=$1 AND idempotency_key=$2`, e.store(), key)
+	mustExec(t, e.p.f.owner, `DELETE FROM ops.command_results WHERE store_id=$1 AND idempotency_key=$2 AND operation IN ('merchanttools.order.for_buyer','merchanttools.order.attempt','merchanttools.order.for_buyer.completed')`, e.store(), key)
 	st, out = lcrRecover(t, e, e.token(), key, e.body(2, nil, "", true))
 	if st != 503 {
 		t.Fatalf("unverifiable legacy A16 target/send must remain UNKNOWN: %d %v", st, out)

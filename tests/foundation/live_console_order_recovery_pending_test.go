@@ -28,9 +28,12 @@ func lcrpReleaseOriginalAttempt(t *testing.T, bundleCount int) {
 	_, _, otherBundle, otherConversation := e.scenario()
 	key, otherKey := t04Key("lcrp-original"), t04Key("lcrp-other")
 	otherBody := e.body(2, []string{otherBundle}, otherConversation, false)
+	// A separate authenticated principal can own the unrelated pending request. The same principal must be refused
+	// before reaching this second destination barrier, as the server's one-pending-intent authority requires.
+	otherToken := e.member("inbox:read")
 	barrier, remove := lcrpFaultBarrier(t, e, "destination")
 	lcrpInterrupt(t, e, barrier, func() (int, map[string]any) { return e.post(e.token(), key, body) })
-	lcrpInterrupt(t, e, barrier, func() (int, map[string]any) { return e.post(e.token(), otherKey, otherBody) })
+	lcrpInterrupt(t, e, barrier, func() (int, map[string]any) { return e.post(otherToken, otherKey, otherBody) })
 	remove()
 	pending := lcrpFacts{Pending: bundleCount, LiveGrants: bundleCount}
 	unrelated := lcrpFacts{Pending: 1, LiveGrants: 1}
@@ -56,8 +59,17 @@ func lcrpReleaseOriginalAttempt(t *testing.T, bundleCount int) {
 	if e.orders() != 1 || e.reserved() != baseline.held+2 || e.plan.planned() != 0 {
 		t.Fatal("new attempt did not produce exactly one order/hold and zero DM")
 	}
-	// Quantity remains two units on one SKU: one bundle prices that line; Finish expires the other bundle's unused grant.
-	lcrpRequireFacts(t, e, newKey, lcrpFacts{Placed: bundleCount, OrderLinks: bundleCount, ConsumedGrants: 1, ExpiredGrants: bundleCount - 1})
+	// A single origin prices the SKU. Two distinct claim origins for that same SKU fail closed to catalog,
+	// so neither grant is consumed; every reservation still finishes and every unused grant expires.
+	consumed, price, rule := 1, int64(ltgLive), "live_claim"
+	if bundleCount == 2 {
+		consumed, price, rule = 0, ltgCatalog, ""
+	}
+	if unit, actualRule := e.unit(lbuStr(placed, "order_id")); unit != price || actualRule != rule {
+		t.Fatalf("recovered new intent price=%d rule=%s want=%d/%s", unit, actualRule, price, rule)
+	}
+	placedFacts := lcrpFacts{Placed: bundleCount, OrderLinks: bundleCount, ConsumedGrants: consumed, ExpiredGrants: bundleCount - consumed}
+	lcrpRequireFacts(t, e, newKey, placedFacts)
 	lcrpRequireFacts(t, e, otherKey, unrelated)
 
 	// Neither replaying the old seal nor recovering the completed new attempt may release its placed row.
@@ -76,7 +88,8 @@ func lcrpReleaseOriginalAttempt(t *testing.T, bundleCount int) {
 		t.Fatalf("created recovery status=%d state=%s", status, lbuStr(created, "state"))
 	}
 	lcrpRequireFacts(t, e, key, lcrpFacts{Released: bundleCount, ExpiredGrants: bundleCount, Seals: 1, Recoveries: 1})
-	lcrpRequireFacts(t, e, newKey, lcrpFacts{Placed: bundleCount, OrderLinks: bundleCount, ConsumedGrants: 1, ExpiredGrants: bundleCount - 1, Recoveries: 1})
+	placedFacts.Recoveries = 1
+	lcrpRequireFacts(t, e, newKey, placedFacts)
 	lcrpRequireFacts(t, e, otherKey, unrelated)
 	if e.orders() != 1 || e.reserved() != baseline.held+2 {
 		t.Fatal("recovery replay changed the one placed order/hold")
@@ -275,7 +288,12 @@ func lcrpInterrupt(t *testing.T, e *lbuEnv, barrier string, call func() (int, ma
 		time.Sleep(10 * time.Millisecond)
 	}
 	if !waiting {
-		t.Fatal("exact pending recovery fault waiter did not appear")
+		select {
+		case reply := <-done:
+			t.Fatalf("request ended before exact pending recovery barrier: status=%d code=%s", reply.status, reply.code)
+		default:
+			t.Fatal("exact pending recovery fault waiter did not appear")
+		}
 	}
 	var killed bool
 	if err = e.p.f.owner.QueryRow(ctx, `SELECT pg_terminate_backend(pid) FROM pg_locks
