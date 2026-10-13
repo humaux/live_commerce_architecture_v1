@@ -4,6 +4,7 @@
 package foundation_test
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/json"
@@ -530,6 +531,57 @@ func productEditorMatrixReadFixture(t *testing.T, root, path string) []byte {
 // unit's source-bound evidence; its executable producers remain fail-closed.
 func TestProductEditorMatrixLedgerEvidenceSharedSources(t *testing.T) {
 	productEditorMatrixEvidenceMembershipControls(t)
+	t.Run("content-rehashed-test-node-receipt", func(t *testing.T) {
+		root, canonical := productEditorMatrixEvidenceFixture(t)
+		path := filepath.Dir(canonical) + "/test-node.json"
+		receipt := productEditorMatrixJSONFixture(t, root, path)
+		if receipt["exit_code"] != float64(0) {
+			t.Fatal("original test-node receipt must retain its recorded success")
+		}
+		receipt["exit_code"] = 1
+		data, _ := json.Marshal(receipt)
+		productEditorMatrixRehashFixture(t, root, canonical, path, data)
+		gate := "tests/foundation/catalog_matrix_ledger_test.go"
+		productEditorMatrixWriteFixture(t, root, gate, append(productEditorMatrixReadFixture(t, root, gate), '\n'))
+		var drift productEditorMatrixEvidenceDrift
+		if err := validateProductEditorMatrixEvidence(root); err == nil || errors.As(err, &drift) {
+			t.Fatalf("rehashed original receipt corruption must fail before drift: %v", err)
+		}
+	})
+	t.Run("changed-checkout-review-keeps-frozen-bytes", func(t *testing.T) {
+		checkout := t.TempDir()
+		paths := append([]string{}, productEditorMatrixEvidenceSources...)
+		manifest := productEditorMatrixJSONFixture(t, "../..", "output/matrix-ledger-enforce/historical-evidence/browser/browser-evidence.json")
+		for path := range manifest["informational_source_files_sha256"].(map[string]any) {
+			paths = append(paths, path)
+		}
+		record := productEditorMatrixJSONFixture(t, "../..", "output/matrix-ledger-enforce/historical-evidence/FROZEN-IDENTITIES.json")
+		for path := range record["source_snapshots"].(map[string]any) {
+			paths = append(paths, path)
+		}
+		for _, path := range paths {
+			if err := os.MkdirAll(filepath.Dir(filepath.Join(checkout, path)), 0700); err != nil {
+				t.Fatal(err)
+			}
+			productEditorMatrixWriteFixture(t, checkout, path, productEditorMatrixReadFixture(t, "../..", path))
+		}
+		const consumer = "tests/admin/product-review.acceptance.ts"
+		changed := append(productEditorMatrixReadFixture(t, checkout, consumer), []byte("\n// future checkout review change\n")...)
+		productEditorMatrixWriteFixture(t, checkout, consumer, changed)
+		root, canonical := productEditorMatrixEvidenceFixtureFromCheckout(t, checkout)
+		frozen := productEditorMatrixJSONFixture(t, root, filepath.Dir(canonical)+"/FROZEN-IDENTITIES.json")
+		snapshot := frozen["source_snapshots"].(map[string]any)[consumer].(string)
+		original := record["source_snapshots"].(map[string]any)[consumer].(string)
+		if !bytes.Equal(productEditorMatrixReadFixture(t, root, snapshot), productEditorMatrixReadFixture(t, "../..", original)) {
+			t.Fatal("fixture must preserve original frozen consumer bytes after a checkout edit")
+		}
+		if !bytes.Equal(productEditorMatrixReadFixture(t, root, consumer), changed) {
+			t.Fatal("fixture must retain the changed informational checkout consumer")
+		}
+		if err := validateProductEditorMatrixEvidence(root); err != nil {
+			t.Fatalf("future informational consumer must not invalidate fixed historical fixture: %v", err)
+		}
+	})
 	for _, path := range []string{
 		"scripts/dev/test-node.sh", "scripts/dev/test-local.sh", "docs/delivery/GATES.md", "playwright.config.ts",
 		"tests/foundation/testdata/product_editor_mobile_matrix_ledger.json",
@@ -634,6 +686,11 @@ func productEditorMatrixEvidenceMembershipControls(t *testing.T) {
 
 func productEditorMatrixEvidenceFixture(t *testing.T) (string, string) {
 	t.Helper()
+	return productEditorMatrixEvidenceFixtureFromCheckout(t, "../..")
+}
+
+func productEditorMatrixEvidenceFixtureFromCheckout(t *testing.T, checkout string) (string, string) {
+	t.Helper()
 	root := t.TempDir()
 	const canonical = "output/matrix-ledger-enforce/fixture/browser"
 	delivery := productEditorMatrixReadFixture(t, "../..", "output/matrix-ledger-enforce/DELIVERY.md")
@@ -658,21 +715,21 @@ func productEditorMatrixEvidenceFixture(t *testing.T) (string, string) {
 	hash := func(data []byte) string { return fmt.Sprintf("%x", sha256.Sum256(data)) }
 	sources := map[string]string{}
 	for path := range manifest["source_files_sha256"].(map[string]any) {
-		data := productEditorMatrixReadFixture(t, "../..", path)
+		data := productEditorMatrixReadFixture(t, checkout, path)
 		write(path, data)
 		sources[path] = hash(data)
 	}
 	// Isolated corruption fixtures rebind current executable bytes; delivered
 	// canonical evidence still must come from an actual run on frozen sources.
 	for _, path := range productEditorMatrixEvidenceSources {
-		data := productEditorMatrixReadFixture(t, "../..", path)
+		data := productEditorMatrixReadFixture(t, checkout, path)
 		write(path, data)
 		sources[path] = hash(data)
 	}
 	manifest["source_files_sha256"] = sources
 	if shared, ok := manifest["informational_source_files_sha256"].(map[string]any); ok {
 		for path := range shared {
-			data := productEditorMatrixReadFixture(t, "../..", path)
+			data := productEditorMatrixReadFixture(t, checkout, path)
 			write(path, data)
 			shared[path] = hash(data)
 		}
@@ -703,7 +760,7 @@ func productEditorMatrixEvidenceFixture(t *testing.T) (string, string) {
 		if strings.HasSuffix(path, "/FROZEN-MEMBERSHIP.json") {
 			continue
 		}
-		data := productEditorMatrixReadFixture(t, "../..", path)
+		data := productEditorMatrixReadFixture(t, checkout, path)
 		copyPath := filepath.Dir(canonical) + strings.TrimPrefix(path, originalEvidence)
 		write(copyPath, data)
 		artifacts[copyPath] = hash(data)
@@ -730,7 +787,7 @@ func productEditorMatrixEvidenceFixture(t *testing.T) (string, string) {
 	frozen["test_identities"] = map[string][]string{"playwright.log": productEditorMatrixCurrentRunIdentities(12), "cc12-playwright.log": productEditorMatrixCurrentRunIdentities(2)}
 	frozenHashes, snapshots, blobs := map[string]string{}, map[string]string{}, map[string]string{}
 	for path := range frozen["source_snapshots"].(map[string]any) {
-		data := productEditorMatrixReadFixture(t, "../..", path)
+		data := productEditorMatrixReadFixture(t, checkout, path)
 		write(path, data)
 		snapshot := filepath.Dir(canonical) + strings.TrimPrefix(frozen["source_snapshots"].(map[string]any)[path].(string), originalEvidence)
 		write(snapshot, data)
