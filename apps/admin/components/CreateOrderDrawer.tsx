@@ -396,9 +396,9 @@ export function CreateOrderDrawer({
           setUncertain(false);
         } else if (retainOrderAttempt(outcome, uncertain)) {
           setUncertain(true);
-          // Any retained definitive refusal can precede replay lookup (including lost inbox:reply).
-          // Recovery uses the frozen key/body and requires its own authority; it never guesses absence.
-          setRecoverable(!outcome.uncertain);
+          // Explicit recovery is safe even after UNKNOWN: the server alone proves completion or durable absence.
+          // It uses the frozen key/body; no response, including a lost recovery reply, permits a blind new key.
+          setRecoverable(true);
         } else {
           attempt.current.finish();
           guard.current?.clear();
@@ -422,7 +422,7 @@ export function CreateOrderDrawer({
         setError(
           cause instanceof CreateOrderError ? cause.code : "unavailable",
         );
-        if (attempt.current.pending()) setUncertain(true);
+        if (attempt.current.pending()) { setUncertain(true); setRecoverable(true); }
       }
     } finally {
       if (privacy.fence.current(ticket)) {
