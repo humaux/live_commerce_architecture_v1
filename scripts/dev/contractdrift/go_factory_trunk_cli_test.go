@@ -302,11 +302,13 @@ func TestGoFactoryTrunkCallerOriginCLI(t *testing.T) {
 		{"pool nested assignment", `if c.enabled { mainPool = hooked; ` + trunkFactoryOriginCall + ` }`, ""},
 		{"pool nested short declaration", `if c.enabled { mainPool, err := makePool(ctx, c); if err != nil { return }; ` + trunkFactoryOriginCall + ` }`, ""},
 		{"pool range variable", `for _, mainPool := range []*pgxpool.Pool{hooked} { ` + trunkFactoryOriginCall + ` }`, ""},
-		{"pool FuncLit parameter", `func(mainPool *pgxpool.Pool) { ` + trunkFactoryOriginCall + ` }(hooked)`, ""},
+		{"pool FuncLit parameter", `func(mainPool *pgxpool.Pool) { _, _, err := buildBuyer(ctx, c, mainPool); if err != nil { return } }(hooked)
+ ` + trunkFactoryOriginCall, ""},
 		{"context nested assignment", `if c.enabled { ctx = &routingContext{Context: ctx, c: c}; ` + trunkFactoryOriginCall + ` }`, ""},
 		{"context nested short declaration", `if c.enabled { ctx := &routingContext{Context: ctx, c: c}; ` + trunkFactoryOriginCall + ` }`, ""},
 		{"context range variable", `for _, ctx := range []context.Context{&routingContext{Context: ctx, c: c}} { ` + trunkFactoryOriginCall + ` }`, ""},
-		{"context FuncLit parameter", `func(ctx context.Context) { ` + trunkFactoryOriginCall + ` }(&routingContext{Context: ctx, c: c})`, ""},
+		{"context FuncLit parameter", `func(ctx context.Context) { _, _, err := buildBuyer(ctx, c, mainPool); if err != nil { return } }(&routingContext{Context: ctx, c: c})
+ ` + trunkFactoryOriginCall, ""},
 		{"pool function value", `safe, _, err := buildBuyer(ctx, c, mainPool); if err != nil { return }; _ = safe
  run := buildBuyer
  h, _, err := run(ctx, c, hooked); if err != nil { return }; mux.Handle("/v1/trunk-factory", h)`, ""},
