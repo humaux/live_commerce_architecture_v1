@@ -70,7 +70,7 @@ BEGIN
  END IF;
  FOR item IN SELECT value FROM jsonb_array_elements(p_selection->'items') LOOP
   IF jsonb_typeof(item)<>'object' OR coalesce(item->>'sku_id','') !~ v_uuid
-   OR jsonb_typeof(item->'quantity') IS DISTINCT FROM 'number' OR coalesce(item->>'quantity','') !~ '^[1-9][0-9]{0,2}$'
+   OR jsonb_typeof(item->'quantity') IS DISTINCT FROM 'number' OR coalesce(item->>'quantity','') !~ '^([1-9][0-9]{0,2}|1000)$'
    OR jsonb_typeof(item->'ordinal') IS DISTINCT FROM 'number' OR coalesce(item->>'ordinal','') !~ '^[1-9][0-9]{0,8}$'
    OR (item->>'origin_id' IS NOT NULL AND item->>'origin_id' !~ v_uuid)
    OR ((item->>'bundle_id' IS NULL)<>(item->>'offer_id' IS NULL))
