@@ -1,0 +1,16 @@
+[
+  {
+    "ci_run_id": "38380816525",
+    "raw_log_sha256": "12fe41b48a838c54c8581893f4a49632e9454cfaf9e85f67a44a829b33ac7361",
+    "raw_bytes": 695378,
+    "lossless_gzip": "ci-foundation-38380816525.log.gz",
+    "gzip_sha256": "29fea4f45373ac099efe29b482c8cfa77ee35d62608789d6df9d2a247e575554"
+  },
+  {
+    "ci_run_id": "38382999786",
+    "raw_log_sha256": "82777f836c7684c258cab3911c73aab18c8f7d75a6efc15e992ca338e1e6bfe2",
+    "raw_bytes": 255640,
+    "lossless_gzip": "ci-red-38382999786.log.gz",
+    "gzip_sha256": "1bc68d057ed595d09614bc01d459a626e85a2ac44bd8ee241ec32093e8997465"
+  }
+]

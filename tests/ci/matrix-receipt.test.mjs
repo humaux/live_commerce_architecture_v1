@@ -97,7 +97,7 @@ test("independent historical drift accepts a removed bound producer but refuses 
     rmSync(resolve(root, producer));
     mkdirSync(resolve(root, producer));
     assert.throws(() => canonicalEvidenceDrift(null, root), /EISDIR/, "a source directory remains an I/O failure");
-    rmSync(resolve(root, producer));
+    rmSync(resolve(root, producer), { recursive: true });
     bind({ ...sources, "../escape.ts": hash(Buffer.from("escape")) });
     assert.throws(() => canonicalEvidenceDrift(null, root), /repository-relative/);
     bind({ ...sources, [producer]: "invalid" });
