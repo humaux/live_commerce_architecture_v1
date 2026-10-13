@@ -101,8 +101,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0189 (OA1 native terminal proof and scoped audit) adds one: 111 -> 112.
 	// 0188 (OA1 native initial payment notification pair) adds one: 112 -> 113.
 	// 0191 (OA1 fenced orphan-job sweep repair) adds one: 113 -> 114.
-	if len(r2) != 114 {
-		t.Fatalf("R2 migration set = %d files %v, want 114", len(r2), r2)
+	// 0190 (OA1 expiry provenance and canonical order lock) adds one: 114 -> 115.
+	if len(r2) != 115 {
+		t.Fatalf("R2 migration set = %d files %v, want 115", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

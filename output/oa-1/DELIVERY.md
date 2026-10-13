@@ -204,3 +204,12 @@ helper RED. The exact upgrade count is 114; reserved 0190 is not yet present.
 Eight real-PG crash barriers were added tests-first in `cd32362f0`, with a full
 combined claims/READY control. They remain NOT_RUN until the next CI result.
 All local execution remains NOT_RUN by owner directive; no complete OA1 claim.
+
+CI50 `38462169006` is registered at `159de6e18` for the native notification,
+settlement, executor (including crash matrix), sweep and real API process cases.
+Root monitors its unchanged 150-minute workflow bound and focused-test budget.
+0190 expiry compatibility was integrated as `74f97e277` after CI49's two causal
+expiry failures. It retains the existing `expire_held` ABI and exact expiry-only
+EXECUTE grant, takes the shared order advisory first, and carries the admitted
+creator through SYSTEM_EXPIRY release/event rows. Upgrade count becomes 115.
+The next CI run owns the result; source integration is not expiry acceptance.
