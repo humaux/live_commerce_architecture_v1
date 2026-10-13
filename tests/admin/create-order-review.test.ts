@@ -373,3 +373,20 @@ test("PR32 UNKNOWN then401 and actual new CSRF cannot bypass a same-principal st
   assert.equal(writes.length, 2, "new login must not create a third request with a fresh key");
   assert.equal(writes[0].key, writes[1].key); assert.equal(writes[0].body, writes[1].body);
 });
+
+for (const priorUnknown of [false, true]) test(`PR32 drawer pre-dispatch session loss ${priorUnknown ? "retains UNKNOWN" : "releases fresh never-sent"} before privacy teardown`, async t => {
+  const { h, env, writes, submit, revoked } = await readyRecoveryForm(t, "en", () => response({ code: "retry_later" }, 503));
+  if (priorUnknown) {
+    await submit(); assert.equal(writes.length, 1);
+    assert.equal(env.saved.size, 1, "positive unresolved guard before fence loss");
+    env.document.cookie = `__Host-commerce_csrf=${"b".repeat(43)}`;
+  } else {
+    const uuid = crypto.randomUUID.bind(crypto);
+    t.mock.method(crypto, "randomUUID", () => { const key = uuid(); env.document.cookie = `__Host-commerce_csrf=${"b".repeat(43)}`; return key; });
+  }
+  await submit();
+  assert.equal(revoked(), 1, "session loss still conceals the parent");
+  assert.equal(h.output, null, "no private form survives the changed session");
+  assert.equal(writes.length, priorUnknown ? 1 : 0, "fence failure sends no new command");
+  assert.equal(env.saved.size, priorUnknown ? 1 : 0, "only a previously dispatched UNKNOWN must remain guarded");
+});

@@ -674,6 +674,58 @@ try {
   await runManualCreatedRecovery({page:createdPage,api,origin,store,cvs,addCatalog,fillEmpty,record,results});cases++;
  } finally {await closeContext(createdContext);}
  assert.equal(cases,36,"preserve all35 prior cases and add created ManualOrder recovery detail persistence");
+ // PR32 pre-dispatch fence: fault only the browser's CSRF primitive, then click the production submit.
+ // All request parsing, session hashing, clients, BFF and business writes remain the actual deployed flow.
+ for(const kind of ["drawer","manual"]) for(const priorUnknown of [false,true]) {
+  current=`DU3-${kind}-prefetch-fence-${priorUnknown?"retained-unknown":"never-sent"}`;
+  const context=await browser.newContext(ctxOpts({ignoreHTTPSErrors:true,viewport:{width:1440,height:900}})),page=await context.newPage();
+  const commandPath=kind==="drawer"?routePath:`/api/stores/${store}/tools/orders/manual`;
+  const submitId=kind==="drawer"?"drawer-submit":"manual-order-submit",errorId=kind==="drawer"?"drawer-error":"manual-order-error";
+  let posts=0,first;
+  const observe=request=>{if(request.method()==="POST"&&new URL(request.url()).pathname===commandPath)posts++;};
+  const guardCount=()=>page.evaluate(()=>Object.keys(sessionStorage).filter(key=>key.startsWith("buyer-order-unresolved:")).length);
+  const openEntry=async()=>{
+   if(kind==="drawer") return openConversation(page,"en",fixtures[0].Unlinked);
+   await page.goto(`${origin}/en/orders/new?store=${store}`);
+   const form=page.getByTestId("manual-order-form");await expect(form).toBeVisible();return form;
+  };
+  page.on("request",observe);
+  try {
+   await page.goto(`${origin}/en`);await page.getByRole("button",{name:"Sign in with identity service",exact:true}).click();await expect(page.getByTestId("dashboard-page")).toBeVisible();
+   const oldCSRF=(await context.cookies()).filter(cookie=>cookie.name==="__Host-commerce_csrf");assert.equal(oldCSRF.length,1);
+   const before=await (await fetch(`${api}/__test/drawer-facts`)).json();
+   let form=await openEntry();await addCatalog(form,kind==="drawer"?"drawer":"mo");await fillEmpty(form,kind==="drawer"?"drawer":"mo");await expect(form.getByTestId(submitId)).toBeEnabled();
+   if(priorUnknown) {
+    // Drop only a real successful response. The original key/body remain in the component's attempt.
+    await page.route(`**${commandPath}`,async route=>{const real=await route.fetch();assert.equal(real.status(),201);first={key:route.request().headers()["idempotency-key"],body:route.request().postData()};await real.dispose();await route.abort("failed");});
+    await form.getByTestId(submitId).click();await expect(form.getByTestId(errorId)).toBeVisible();assert.equal(posts,1);assert.equal(await guardCount(),1);
+    await page.unroute(`**${commandPath}`);
+    await context.addCookies([{...oldCSRF[0],value:"B".repeat(43)}]);
+   } else {
+    // Disclosed one-shot fault: a valid UUID is returned, but CSRF changes between prepare and fetch.
+    await page.evaluate(()=>{const original=crypto.randomUUID;window.__lcPrefetchFenceCalls=0;Object.defineProperty(crypto,"randomUUID",{configurable:true,value:()=>{const key=original.call(crypto);window.__lcPrefetchFenceCalls++;Object.defineProperty(crypto,"randomUUID",{configurable:true,value:original});document.cookie=`__Host-commerce_csrf=${"B".repeat(43)}; Path=/; Secure; SameSite=Lax`;return key;}});});
+   }
+   await form.getByTestId(submitId).click();
+   await expect.poll(()=>page.evaluate(()=>[...document.querySelectorAll("input,textarea")].every(el=>!el.value.includes("SYNTHETIC Drawer Buyer"))),{message:"pre-fetch session loss must clear private fields"}).toBe(true);
+   if(!priorUnknown) assert.equal(await page.evaluate(()=>window.__lcPrefetchFenceCalls),1,"fault actually consumed inside prepare");
+   await expect.poll(guardCount,{message:"fresh never-sent must discharge before revoke; existing UNKNOWN must remain"}).toBe(priorUnknown?1:0);
+   assert.equal(posts,priorUnknown?1:0,"fence failure dispatches no additional command");
+   assert.equal((await (await fetch(`${api}/__test/drawer-facts`)).json()).orders-before.orders,priorUnknown?1:0,"server order count matches only actually dispatched intent");
+   await context.addCookies(oldCSRF);
+   if(priorUnknown) {
+    if(kind==="manual") {await page.goto(`${origin}/en/orders/new?store=${store}`);await expect(page.getByTestId("manual-order-guard")).toBeVisible();await page.reload();await expect(page.getByTestId("manual-order-guard")).toBeVisible();await expect(page.getByTestId("manual-order-form")).toHaveCount(0);}
+    else {await page.goto(`${origin}/en/messages?store=${store}`);await page.getByTestId(`conversation-${fixtures[0].Unlinked}`).click();await expect(page.getByTestId("buyer-panel")).toBeVisible();await page.getByTestId("buyer-create-order").click();await expect(page.getByTestId("drawer-unresolved-guard")).toBeVisible();await expect(page.getByTestId("drawer-form")).toHaveCount(0);await page.reload();await page.getByTestId(`conversation-${fixtures[0].Unlinked}`).click();await expect(page.getByTestId("buyer-panel")).toBeVisible();await page.getByTestId("buyer-create-order").click();await expect(page.getByTestId("drawer-unresolved-guard")).toBeVisible();}
+    const exact=await fetch(`${api}/__test/${kind==="drawer"?"drawer":"manual"}-prefetch-request-facts`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({keys:[first.key]})});assert.equal(exact.status,200);assert.deepEqual(await exact.json(),{orders:1,receipts:1});
+   } else {
+    form=await openEntry();await addCatalog(form,kind==="drawer"?"drawer":"mo");await fillEmpty(form,kind==="drawer"?"drawer":"mo");await expect(form.getByTestId(submitId)).toBeEnabled();
+    await page.reload();form=await openEntry();await expect(form).toBeVisible();assert.equal(await guardCount(),0,"no orphan UX guard after restore/reload");
+   }
+   assert.equal(posts,priorUnknown?1:0);
+   record(`${kind} pre-fetch session fence`,"real submit/CSRF fault/restore/reload",priorUnknown?"one real lost201; retry sends0; UNKNOWN guard1 survives reload; exactone order":"new intent fetch0/order0; guard0 before privacy teardown; restored form survives reload");
+   results.push({case:current,prior_unknown:priorUnknown,posts,preflight_posts:0,guard_count:priorUnknown?1:0,pg_delta:priorUnknown?1:0,reload_persisted:true});cases++;
+  } finally {await page.unroute(`**${commandPath}`);page.off("request",observe);await closeContext(context);}
+ }
+ assert.equal(cases,40,"all36 prior cases plus drawer/manual fresh and UNKNOWN pre-dispatch fence clicks");
 } catch (error) {
  recordFailure(error);
 } finally {
