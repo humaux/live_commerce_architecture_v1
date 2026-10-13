@@ -1,4 +1,4 @@
-// Purpose: assert a committed Begin is not authoritative completion of the full A16 pipeline.
+// Purpose: prove Begin-only UNKNOWN, cross-tab intent exclusion and server-authoritative full A16 recovery.
 // Depends on: drawer gate click helpers and Go-owned scoped PG trigger/termination and readback controls.
 // Used by: create-order-drawer-gate.mjs after the unchanged 29-case matrix.
 // Invariants: I02/I03/I06/I11; only counts, booleans and HTTP statuses enter retained evidence.
@@ -23,7 +23,7 @@ export async function runPartialRecovery({page,api,origin,store,cvs,sku,fixture,
  await expect(drawer.getByTestId(`drawer-quantity-${sku}`)).toHaveValue("2");
  await expect(drawer.getByTestId("drawer-submit")).toBeEnabled();
  const attempts=[];
- let firstFacts;
+ let firstFacts,otherPage;
  await control("arm",{});
  await page.route(`**${routePath}`,async route=>{
   attempts.push({key:route.request().headers()["idempotency-key"],body:route.request().postData()});
@@ -44,17 +44,15 @@ export async function runPartialRecovery({page,api,origin,store,cvs,sku,fixture,
   await expect(drawer.getByTestId("drawer-close")).toBeDisabled();
   await expect(drawer.getByTestId("drawer-new-attempt")).toHaveCount(0);
   await expect(drawer.getByTestId("drawer-name")).toBeDisabled();
-  // CVS remains selectable with pickup payment; disable only bank transfer after valid options were loaded.
-  await bank(false);
-  const [refusal]=await Promise.all([page.waitForResponse(r=>r.request().method()==="POST"&&new URL(r.url()).pathname===routePath),drawer.getByTestId("drawer-submit").click()]);
-  assert.equal(refusal.status(),422);assert.equal((await refusal.json()).code,"bank_transfer_unavailable");
-  await expect(drawer.getByTestId("drawer-recover-attempt")).toBeVisible();
+  // UNKNOWN itself permits only an explicit authoritative check; it neither finalizes nor regenerates the key.
+  await expect(drawer.getByTestId("drawer-recover-attempt")).toBeVisible();await expect(drawer.getByTestId("drawer-recover-attempt")).toBeEnabled();
   const [recovery]=await Promise.all([page.waitForResponse(r=>r.request().method()==="POST"&&new URL(r.url()).pathname===`${routePath}/recover`),drawer.getByTestId("drawer-recover-attempt").click()]);
   // RED target 4250496779: old recovery incorrectly reports created from Begin alone.
   results.push({case:"DU3-partial-begin-recovery",recover_status:recovery.status()});
   assert.equal(recovery.status(),503,"partial Begin must retain UNKNOWN, not report a completed A16");
   assert.equal((await recovery.json()).code,"retry_later");assert(recovery.headers()["cache-control"]?.includes("no-store"));
   assert.equal(recovery.request().headers()["idempotency-key"],attempts[0].key);assert.equal(recovery.request().postData(),attempts[0].body);
+  attempts.push({key:recovery.request().headers()["idempotency-key"],body:recovery.request().postData()});
   await expect(drawer.getByTestId("drawer-error")).toBeVisible();
   await expect(drawer.getByTestId("drawer-close")).toBeDisabled();
   await expect(drawer.getByTestId("drawer-new-attempt")).toHaveCount(0);
@@ -65,22 +63,55 @@ export async function runPartialRecovery({page,api,origin,store,cvs,sku,fixture,
   const {killed,...beforeRecovery}=firstFacts;
   const unresolved=await control("facts",{key:attempts[0].key});assert.deepEqual(unresolved,beforeRecovery);
   record("partial A16R authority","click recover","actual 503 retry_later; no seal/receipt; new attempt absent; close blocked; guard retained");
-  await bank(true);
+  // A separate real tab shares the login but has no first tab's sessionStorage flag or frozen body.
+  otherPage=await page.context().newPage();
+  const otherDrawer=await openConversation(otherPage,"en",fixture.Linked);
+  assert.equal(await otherPage.evaluate(()=>Object.keys(sessionStorage).filter(key=>key.startsWith("buyer-order-unresolved:")).length),0);
+  await otherDrawer.getByTestId("drawer-option").selectOption(cvs);
+  await otherDrawer.getByTestId("drawer-store-code").fill("123456");
+  await otherDrawer.getByTestId("drawer-store-name").fill("SYNTHETIC Partial Pickup");
+  await otherDrawer.getByTestId("drawer-store-address").fill("1 Synthetic Partial Road");
+  await otherDrawer.getByTestId("drawer-mode-bank_transfer").check();
+  await otherDrawer.getByTestId("drawer-send-payment-link").check();
+  await expect(otherDrawer.getByTestId(`drawer-quantity-${sku}`)).toHaveValue("2");await expect(otherDrawer.getByTestId("drawer-submit")).toBeEnabled();
+  // Remove a dynamic option only after both real forms loaded. The original committed intent must remain completable.
+  await bank(false);
+  const [refused]=await Promise.all([otherPage.waitForResponse(r=>r.request().method()==="POST"&&new URL(r.url()).pathname===routePath),otherDrawer.getByTestId("drawer-submit").click()]);
+  assert.equal(refused.status(),409);assert.equal((await refused.json()).code,"attempt_pending");
+  assert.notEqual(refused.request().headers()["idempotency-key"],attempts[0].key,"a fresh tab actually attempted a different key");
+  await expect(otherDrawer.getByTestId("drawer-unresolved-guard")).toBeVisible();await expect(otherDrawer.getByTestId("drawer-form")).toHaveCount(0);
+  assert.deepEqual(await control("facts",{key:attempts[0].key}),beforeRecovery,"fresh tab refusal creates no second Begin, source, link, bundle placement or DM");
+  record("partial cross-tab pending refusal","open real independent tab/fill actual form/click create","actual409 attempt_pending with different key; server retains exact original Begin; no second pipeline");
+  const recoveryPath=`/api/stores/${store}/tools/orders/attempt/recover`;
+  await expect(otherDrawer.getByTestId("drawer-recover-pending")).toBeVisible();await expect(otherDrawer.getByTestId("drawer-recover-pending")).toBeEnabled();
+  const [reconciled]=await Promise.all([otherPage.waitForResponse(r=>r.request().method()==="POST"&&new URL(r.url()).pathname===recoveryPath),otherDrawer.getByTestId("drawer-recover-pending").click()]);
+  assert.equal(reconciled.status(),200);const recovered=await reconciled.json();assert.equal(recovered.state,"created");assert.deepEqual(Object.keys(recovered).sort(),["order_id","state"]);
+  assert.equal(reconciled.request().postData(),"{}");assert.notEqual(reconciled.request().headers()["idempotency-key"],attempts[0].key);assert.notEqual(reconciled.request().headers()["idempotency-key"],refused.request().headers()["idempotency-key"]);
+  assert(reconciled.headers()["cache-control"]?.includes("no-store"));
+  await expect(otherDrawer.getByTestId("drawer-recovery-result")).toBeVisible();await expect(otherDrawer.getByTestId("drawer-view-order")).toHaveAttribute("href",`/en/orders?store=${store}&order=${recovered.order_id}`);
+  await expect(otherDrawer.getByTestId("drawer-form")).toHaveCount(0);await expect(otherDrawer.getByTestId("drawer-copy-link")).toHaveCount(0);
+  assert.equal(await otherPage.evaluate(()=>Object.keys(sessionStorage).filter(key=>key.startsWith("buyer-order-unresolved:")).length),0);
+  const complete=await control("facts",{key:attempts[0].key});
+  // Place's original link is superseded by atomic DM issuance: exact historical rows, only one redeemable planned link.
+  assert.deepEqual(complete,{begin:1,bindings:1,orders:1,manual_source:1,links:2,valid_links:1,manual_receipts:1,for_buyer_receipts:1,completion_receipts:1,recovery_receipts:0,closures:0,manual_audits:1,for_buyer_audits:1,pending_bundles:0,placed_bundles:1,operations:1,secrets:1,jobs:1,dm_valid_links:1});
+  record("partial server pending recovery","click server recovery in the second tab","real200 created exact original order; original frozen pipeline resumes despite removed bank option; source/link/bundle/audit/DM exactly once");
+  await otherDrawer.getByTestId("drawer-view-order").click();await expect(otherPage.getByTestId("order-detail")).toHaveAttribute("aria-label",new RegExp(recovered.order_id));await otherPage.reload();await expect(otherPage.getByTestId("order-detail")).toHaveAttribute("aria-label",new RegExp(recovered.order_id));
+  assert.deepEqual(await control("facts",{key:attempts[0].key}),complete,"second-tab detail/reload never repeats any side effect");
+  await otherPage.close();otherPage=null;
+  await expect(drawer.getByTestId("drawer-submit")).toBeVisible();await expect(drawer.getByTestId("drawer-submit")).toBeEnabled();
   const [finished]=await Promise.all([page.waitForResponse(r=>r.request().method()==="POST"&&new URL(r.url()).pathname===routePath),drawer.getByTestId("drawer-submit").click()]);
   assert.equal(finished.status(),201);const value=await finished.json();assert.equal(value.send.state,"queued");assert(value.send.operation_id);
+  assert.equal(value.order_id,recovered.order_id,"original frozen-key replay points to the order reconciled by server recovery");
   await expect(drawer.getByTestId("drawer-result")).toBeVisible();await expect(drawer.getByTestId("drawer-send-result")).toContainText("queued");
-  assert.equal(attempts.length,3);assert(attempts.every(a=>a.key===attempts[0].key&&a.body===attempts[0].body),"every explicit A16 retry retains frozen body and original key");
-  const complete=await control("facts",{key:attempts[0].key});
-  // Place's original link is superseded by atomic DM issuance: exactly two historical rows,
-  // only one redeemable link, and that exact live link is sealed in the one planned DM.
-  assert.deepEqual(complete,{begin:1,bindings:1,orders:1,manual_source:1,links:2,valid_links:1,manual_receipts:1,for_buyer_receipts:1,completion_receipts:1,recovery_receipts:0,closures:0,manual_audits:1,for_buyer_audits:1,pending_bundles:0,placed_bundles:1,operations:1,secrets:1,jobs:1,dm_valid_links:1});
+  assert.equal(attempts.length,3);assert(attempts.every(a=>a.key===attempts[0].key&&a.body===attempts[0].body),"original create, key recovery and explicit replay all retain the exact frozen body/key");
+  assert.deepEqual(await control("facts",{key:attempts[0].key}),complete,"same-key replay repeats no link, receipt, source, audit, bundle or DM");
   assert.equal(await page.evaluate(()=>Object.keys(sessionStorage).filter(key=>key.startsWith("buyer-order-unresolved:")).length),0);
   await drawer.getByTestId("drawer-close").click();
   await page.goto(`${origin}/en/orders?store=${store}`);await page.reload();
   await expect(page.getByTestId("orders-table")).toBeVisible();await expect(page.getByTestId(`order-row-${value.order_id}`)).toBeVisible();
   await page.getByTestId(`order-expand-${value.order_id}`).click();await expect(page.getByTestId("order-detail")).toBeVisible();await expect(page.getByTestId("order-detail")).toHaveAttribute("aria-label",new RegExp(value.order_id));
   assert.deepEqual(await control("facts",{key:attempts[0].key}),complete,"reload creates no second order/link/operation or receipt");
-  results.push({case:"DU3-partial-begin-recovery",attempts:3,same_key:true,same_body:true,recover_status:503,completion:complete,reload_persisted:true});
+  results.push({case:"DU3-partial-begin-recovery",attempts:3,same_key:true,same_body:true,recover_status:503,cross_tab_refusal:409,cross_tab_recovery:200,generic_request_empty:true,completion:complete,reload_persisted:true});
   record("partial original retry persistence","restore bank/click original retry/close/reload/click exact order","one source/valid sealed link/manual+for-buyer+completion receipt/audit/placed bundle and real queued DM job; exact original+atomic-issuance history; no new key");
- } finally {await page.unroute(`**${routePath}`);await bank(true);}
+ } finally {if(otherPage)await otherPage.close();await page.unroute(`**${routePath}`);await bank(true);}
 }

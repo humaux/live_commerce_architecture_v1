@@ -622,7 +622,7 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 			t.Fatalf("drawer narrow-role locale %s requires exactly one real click verdict, got %d; evidence=%s", locale, matches, evidence)
 		}
 	}
-	for _, control := range []string{"partial Begin fault", "partial A16R authority", "partial original retry persistence"} {
+	for _, control := range []string{"partial Begin fault", "partial A16R authority", "partial cross-tab pending refusal", "partial server pending recovery", "partial original retry persistence"} {
 		matches := 0
 		for _, row := range ledger {
 			if row.Case == "DU3-partial-begin-recovery" && row.Control == control && row.Status == "PASS" {
