@@ -143,3 +143,25 @@ test("legacy CSRF guard is retained fail-closed across a different stable princi
   assert.equal(guard.arm(), false);
   assert.equal(guard.clear(), false, "clearing this principal's guard cannot erase an unattributed legacy receipt");
 });
+test("authoritative recovery clears only this principal and unattributed legacy flags in its store", () => {
+  // Match browser Storage's enumerable keys rather than a non-enumerable Map stand-in.
+  const own = `buyer-order-unresolved:v2:store:${"c".repeat(64)}`, other = `buyer-order-unresolved:v2:store:${"d".repeat(64)}`;
+  const foreign = `buyer-order-unresolved:v2:foreign:${"c".repeat(64)}`, legacy = "buyer-order-unresolved:store:old-csrf-digest";
+  const foreignLegacy = "buyer-order-unresolved:foreign:old-csrf-digest";
+  const storage: any = {
+    [own]: "1", [other]: "1", [foreign]: "1", [legacy]: "1", [foreignLegacy]: "1",
+    getItem(key: string) { return Object.hasOwn(this, key) ? this[key] : null; },
+    setItem(key: string, value: string) { this[key] = value; }, removeItem(key: string) { delete this[key]; },
+  };
+  const guard = new OrderGuard(storage, "store", "c".repeat(64));
+  assert.equal(guard.clear(), false, "ordinary UX/definitive-response cleanup cannot release a legacy unresolved flag");
+  assert.equal(storage.getItem(legacy), "1");
+  storage.setItem(own, "1");
+  assert.equal(guard.authoritativeRecovered(), true, "only successful server reconciliation releases this store's unattributed flag");
+  assert.equal(storage.getItem(own), null); assert.equal(storage.getItem(legacy), null);
+  for (const preserved of [other, foreign, foreignLegacy]) assert.equal(storage.getItem(preserved), "1");
+});
+test("authoritative recovery guard cleanup fails closed if Storage refuses a removal", () => {
+  const guard = new OrderGuard({ getItem() { return "1"; }, setItem() {}, removeItem() { throw new Error("denied"); } }, "store", "c".repeat(64));
+  assert.equal(guard.authoritativeRecovered(), false);
+});

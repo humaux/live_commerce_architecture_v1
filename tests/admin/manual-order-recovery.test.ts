@@ -15,6 +15,7 @@ registerHooks({ resolve(specifier, context, next) {
 } });
 const { ManualOrder } = await import("../../apps/admin/components/ManualOrder.tsx");
 const { createOrderCopy } = await import("../../apps/admin/lib/create-order-copy.ts");
+const { OrderGuard } = await import("../../apps/admin/lib/create-order-attempt.ts");
 
 const sku = "77777777-7777-4777-8777-777777777777";
 const optionKey = `${sku}|TW|home`;
@@ -82,6 +83,51 @@ for (const priorUnknown of [false, true]) test(`ManualOrder preflight session lo
   assert.equal(writes.length, before, "actual production preflight rejects before fetch");
   assert.equal(saved.size, priorUnknown ? 1 : 0, "never-sent fresh attempts leave no guard; old UNKNOWN survives");
 });
+for (const locale of ["en", "zh-TW", "zh-CN"] as const) for (const entry of ["server_refusal", "lost_browser_receipt"] as const)
+  for (const state of ["none", "not_created", "created", "unknown"] as const) test(`ManualOrder ${locale} ${entry} recovers ${state} from authenticated pending intent`, async t => {
+    const ready = await form(t, locale, "ready"), upstream = globalThis.fetch;
+    const recoveryWrites: { body: string; key: string | null }[] = [];
+    globalThis.fetch = async (input, init) => {
+      const path = String(input);
+      if (path.endsWith("/tools/orders/attempt/recover")) {
+        recoveryWrites.push({ body: String(init!.body), key: new Headers(init!.headers).get("Idempotency-Key") });
+        return state === "unknown" ? response({ code: "retry_later" }, 503) : response(state === "created" ? { state, order_id: order } : { state });
+      }
+      if (path.endsWith("/tools/orders/manual")) {
+        ready.writes.push({ path, body: String(init!.body), key: new Headers(init!.headers).get("Idempotency-Key") });
+        return response({ code: "attempt_pending" }, 409);
+      }
+      return upstream(input, init);
+    };
+    let h = ready.h;
+    if (entry === "server_refusal") await ready.submit();
+    else {
+      assert.equal(new OrderGuard(ready.env.window.sessionStorage, store.id, store.order_guard_scope).arm(), true);
+      h.dispose(); h = ready.env.mount(ready.render); await h.settle();
+    }
+    assert.ok(node(h, n => n.props["data-testid"] === "manual-order-guard"), "positive pending state before recovery");
+    assert.equal(nodes(h.output).some(n => n.props["data-testid"] === "manual-order-form"), false);
+    const control = node(h, n => n.props["data-testid"] === "manual-order-recover-pending");
+    assert.equal(textOf(control), createOrderCopy[locale].recoverPending); assert.equal(control.props.disabled, false);
+    assert.equal(recoveryWrites.length, 0, "merchant explicitly clicks recovery"); control.props.onClick(); await h.settle();
+    assert.equal(recoveryWrites.length, 1); assert.equal(recoveryWrites[0].body, "{}");
+    assert.ok(recoveryWrites[0].key); assert.notEqual(recoveryWrites[0].key, ready.writes[0]?.key);
+    assert.equal(ready.writes.length, entry === "server_refusal" ? 1 : 0, "there is no new order request during recovery");
+    if (state === "unknown") {
+      assert.equal(ready.saved.size, 1); assert.ok(node(h, n => n.props["data-testid"] === "manual-order-guard"));
+      assert.equal(nodes(h.output).some(n => n.props["data-testid"] === "manual-order-form"), false);
+      assert.equal(node(h, n => n.props["data-testid"] === "manual-order-recover-pending").props.disabled, false);
+    } else {
+      assert.equal(ready.saved.size, 0);
+      if (state === "created") {
+        assert.equal(node(h, n => n.props["data-testid"] === "manual-order-recovered-order").props.href, `/${locale}/orders?store=${store.id}&order=${order}`);
+        assert.equal(nodes(h.output).some(n => n.props["data-testid"] === "manual-order-form"), false);
+      } else {
+        assert.ok(node(h, n => n.props["data-testid"] === "manual-order-form"), "server absence or durable seal restores the form");
+        assert.ok(textOf(node(h, n => n.props["data-testid"] === "manual-order-recovery-status")).includes(state === "none" ? createOrderCopy[locale].noPending : createOrderCopy[locale].recovered));
+      }
+    }
+  });
 for (const event of ["hide", "logout", "forbidden", "not-found"] as const) {
   test(`ManualOrder late link regeneration after ${event} cannot restore a discarded order or buyer link`, async t => {
     const { h, env, render, writes } = await form(t, "en", "initial_created");
