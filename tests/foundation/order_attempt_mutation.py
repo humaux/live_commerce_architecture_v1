@@ -75,6 +75,16 @@ def main():
             "BEGIN\n -- Deferred NEW is the trusted inserted cart, not the final attempt version.\n",
             "BEGIN\n RETURN NULL;\n -- Deferred NEW is the trusted inserted cart, not the final attempt version.\n",
         )],
+        "derive-current-owner": [(
+            "migrations/0187_order_attempt_pay_entry.sql",
+            "  AND x.owner_id=buyer_id AND x.id=p_attempt AND x.create_attempt_id=p_attempt\n",
+            "  AND x.owner_id=md5('oa-current-owner|'||p_key_version)::uuid AND x.id=p_attempt AND x.create_attempt_id=p_attempt\n",
+        )],
+        "omit-final-deadline": [(
+            "migrations/0186_order_attempt_composite.sql",
+            "  PERFORM ops.order_attempt_execution_context(p_attempt,p_plan_plaintext);\n  UPDATE ops.order_attempts a SET state='COMMITTED'",
+            "  UPDATE ops.order_attempts a SET state='COMMITTED'",
+        )],
     }
     if name not in edits:
         raise SystemExit("unknown OA mutation")
