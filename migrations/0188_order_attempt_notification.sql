@@ -75,25 +75,25 @@ GRANT EXECUTE ON FUNCTION ops.order_attempt_execution_context(uuid,text),social.
 
 CREATE FUNCTION checkout.order_attempt_notification_payable(p_attempt uuid,p_plan text) RETURNS boolean
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE ctx jsonb; b jsonb; tenant uuid; store uuid; owner_id uuid; order_key bigint; result boolean;
+DECLARE ctx jsonb; b jsonb; tenant uuid; store uuid; buyer_id uuid; order_key bigint; result boolean;
  prior_tenant text:=current_setting('app.tenant_id',true); prior_store text:=current_setting('app.store_id',true);
  prior_principal text:=current_setting('app.principal_id',true); prior_buyer text:=current_setting('app.buyer_id',true);
  prior_session text:=current_setting('app.buyer_session_id',true); prior_attempt text:=current_setting('app.order_attempt_id',true);
 BEGIN
  ctx:=ops.order_attempt_execution_context(p_attempt,p_plan); b:=ctx->'binding';
- tenant:=(b->>'tenant_id')::uuid; store:=(b->>'store_id')::uuid; owner_id:=(b->>'buyer_owner_id')::uuid;
+ tenant:=(b->>'tenant_id')::uuid; store:=(b->>'store_id')::uuid; buyer_id:=(b->>'buyer_owner_id')::uuid;
  order_key:=hashtextextended('checkout.order|'||tenant::text||'|'||store::text||'|'||p_attempt::text,0);
  IF NOT EXISTS(SELECT 1 FROM pg_locks l WHERE l.pid=pg_backend_pid() AND l.locktype='advisory'
   AND l.classid=((order_key>>32)&4294967295)::oid AND l.objid=(order_key&4294967295)::oid
   AND l.objsubid=1 AND l.mode='ExclusiveLock' AND l.granted) THEN
   RAISE EXCEPTION 'order_not_locked' USING ERRCODE='PT409'; END IF;
  PERFORM set_config('app.tenant_id',tenant::text,true),set_config('app.store_id',store::text,true),
-  set_config('app.principal_id',b->>'principal_id',true),set_config('app.buyer_id',owner_id::text,true),
+  set_config('app.principal_id',b->>'principal_id',true),set_config('app.buyer_id',buyer_id::text,true),
   set_config('app.buyer_session_id','',true),set_config('app.order_attempt_id',p_attempt::text,true);
  SELECT EXISTS(SELECT 1 FROM checkout.orders o JOIN checkout.order_pay_entries e
   ON (e.tenant_id,e.store_id,e.owner_id,e.order_id,e.create_attempt_id)=(o.tenant_id,o.store_id,o.owner_id,o.id,o.create_attempt_id)
   JOIN inventory.reservations r ON r.tenant_id=o.tenant_id AND r.store_id=o.store_id AND r.id=o.id
-  WHERE o.tenant_id=tenant AND o.store_id=store AND o.owner_id=order_attempt_notification_payable.owner_id
+  WHERE o.tenant_id=tenant AND o.store_id=store AND o.owner_id=buyer_id
    AND o.id=p_attempt AND o.create_attempt_id=p_attempt AND o.creator_kind='order_attempt'
    AND o.creator_session_id IS NULL AND o.source='merchant_manual' AND o.generation=1 AND o.expires_at>clock_timestamp()
    AND e.link_version=1 AND e.revoked_at IS NULL AND e.issued_at<=clock_timestamp()

@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"reflect"
 	"sync"
 	"testing"
@@ -278,8 +279,12 @@ func oaExecutorWaitBlocked(t *testing.T, e *lbuEnv, ctx context.Context, holder 
 	defer ticker.Stop()
 	for {
 		var blocked int
-		err := e.p.f.owner.QueryRow(ctx, `SELECT count(*) FROM pg_stat_activity
-		 WHERE $1::int=ANY(pg_blocking_pids(pid)) AND wait_event_type='Lock'`, int32(holder.Conn().PgConn().PID())).Scan(&blocked)
+		// A second row-lock waiter can block behind the first waiter's tuple lock
+		// rather than directly behind holder. Prove the complete native wait chain.
+		err := e.p.f.owner.QueryRow(ctx, `WITH RECURSIVE blocked(pid) AS (
+		 SELECT $1::int UNION SELECT a.pid FROM pg_stat_activity a JOIN blocked b
+		 ON b.pid=ANY(pg_blocking_pids(a.pid)) WHERE a.wait_event_type='Lock')
+		 SELECT count(*) FROM blocked WHERE pid<>$1::int`, int32(holder.Conn().PgConn().PID())).Scan(&blocked)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -413,7 +418,8 @@ func TestOrderAttemptExecutorTransientBalanceLockLeavesPending(t *testing.T) {
 		if got.err == nil || got.receipt.State != "" || len(got.receipt.Receipt) != 0 {
 			t.Fatal("transient lock failure falsely returned a terminal result")
 		}
-		if sqlState(got.err) != "55P03" {
+		var failure *orderattempt.AdmissionError
+		if !errors.As(got.err, &failure) || failure.SQLState() != "55P03" || failure.Code() != "order_attempt_retryable" || failure.OutcomeUnknown() {
 			t.Fatalf("expected the native lock timeout after positive balance barrier: %v", got.err)
 		}
 	case <-ctx.Done():

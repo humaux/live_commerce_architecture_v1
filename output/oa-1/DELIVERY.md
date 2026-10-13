@@ -94,13 +94,28 @@ Focused job `115512700152` reached migration 0189 but failed its PL/pgSQL
 IF/CASE parsing (42601), before any C2 assertion: `PASS=0 FAIL=24 SKIP=0 exit=1`.
 `full-c2-ci45.log` retains the setup failure; behavioral acceptance is NOT_RUN.
 The RHS CASE expressions are now parenthesized without changing predicates.
-Startup key configuration FIRST tests are also on this head; the unit job
-is still running.
+The unit job `115512700279` also finished red: 0189 prevented other native
+package fixtures from loading, and `LoadKeys` was absent at compile time.
+`unit-ci45.log` records both. Configuration behavior remains NOT_RUN.
 
 CI `38459781617` at `f781f06cf`, job `115511819647`, gives sweep API-only RED:
 missing `Sweep`, `AddWorkers` and `PeriodicJob`, `PASS=0 FAIL=0 SKIP=0 exit=1`.
 `sweep-api-red-ci.log` preserves the compile diagnostics. Native sweep behavior
 must run after the implementation; this is not a SQL behavior result.
+
+CI `38460669227` at `882527e4b`, job `115514848500`, reached native tests:
+`PASS=5 FAIL=28 SKIP=0 exit=1`, `full-c2-ci47.log`. C2's pay stage causally
+failed with 42P01: a function-name qualifier was used for a local PL/pgSQL
+variable. It now uses an unambiguous local name. Sweep SQL absence is causal
+RED (42883 after real C1); its product migration follows this receipt. The
+concurrency fixture now observes transitive native row-lock waiters, and the
+timeout assertion reads the public redacted AdmissionError SQLState rather
+than assuming a raw pgconn error; it still requires exactly 55P03 and additionally
+requires the retryable code and a known-uncommitted outcome.
+
+CI `38461005406` at `c57e09eaa` runs the API physical-database boundary FIRST
+test through the packaged binary. Root monitors this pending result under the
+unchanged workflow bound; no process acceptance is claimed yet.
 
 The full C2 composite and terminal proof are in progress; notification helpers,
 Go executor, native expiry compatibility, worker/sweep and the complete matrix
