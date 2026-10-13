@@ -1,0 +1,831 @@
+# Purpose: preserve genuine CI RED for selected-tab geometry and missing persisted native interactions.
+# Depends on: GitHub Gates38432944296, job115419825933 and artifact11833242913.
+# Used by: UX-HARDEN-R1 DELIVERY and independent reviewers; no local runtime acceptance.
+# Run: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38432944296
+# Job: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38432944296/job/115419825933
+# Artifact: gate-browser-product-editor, id11833242913.
+# PR head: a2dfa7e355c3e645aa682640aeec0e2edce08449
+# Executed checkout: refs/remotes/pull/49/merge, synthetic merge4dd9180c78c1ad5eb267889cbfee5283326e4199.
+# Merge inputs: a2dfa7e355c3e645aa682640aeec0e2edce08449 into221539a7f6634824dbabb5e0f3681a270a3e7b8b.
+# Job conclusion: FAILURE; actual17:13:46Z→17:18:07Z on2026-10-13.
+# Source: playwright/run.GOcHO75I/catalog-core/20261013T171551.403619782/playwright.log in the uploaded artifact.
+# Observations: UXH06 and UXH07 fail in all3 locales; UXH05 fails in en; all33 persisted UXH rows are absent.
+# The complete browser log follows verbatim. The overall Gates round was still running when this job completed.
+
+Running 12 tests using 1 worker
+
+UXH07 {"locale":"zh-TW","before":{"tabWidth":70,"frameWidth":188,"overflow":76,"scrollLeft":76,"tabLeft":134,"tabRight":204,"frameLeft":16,"frameRight":204,"fullyVisible":true},"after":{"tabWidth":81.6875,"frameWidth":188,"overflow":138,"scrollLeft":76,"tabLeft":184.625,"tabRight":266.3125,"frameLeft":16,"frameRight":204,"fullyVisible":false}}
+UXH01 {"locale":"zh-TW","expected":{"nav":"商品編輯導覽","group":"商品編輯區段","toggle":"查看完成度","heading":"完成度"}}
+UXH02 {"locale":"zh-TW","direction":"900→901","focusedSection":"seo","retained":true}
+UXH02 {"locale":"zh-TW","direction":"901→900","focusedSection":"seo","retained":true}
+UXH03 {"locale":"zh-TW","operation":"unrelated draft edit","before":196,"after":196}
+UXH03 {"locale":"zh-TW","operation":"readiness click reveals media","scrollLeft":0}
+UXH04 {"locale":"zh-TW","narrow":{"overflow":196,"reserved":26.796875},"wide":{"overflow":0,"reserved":26.796875},"narrowAgain":{"overflow":196,"reserved":26.796875}}
+UXH05 {"locale":"zh-TW","direction":"901→390","tabLeft":243,"tabRight":361,"tabWidth":118,"frameLeft":29,"frameRight":361,"frameWidth":332,"overflow":196,"scrollLeft":196,"fullyVisible":true}
+UXH06 {"locale":"zh-TW","direction":"500→390","before":{"tabLeft":353,"tabRight":471,"tabWidth":118,"frameLeft":29,"frameRight":471,"frameWidth":442,"overflow":86,"scrollLeft":86,"fullyVisible":true},"after":{"tabLeft":353,"tabRight":471,"tabWidth":118,"frameLeft":29,"frameRight":361,"frameWidth":332,"overflow":196,"scrollLeft":86,"fullyVisible":false}}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"zh-TW","width":1366,"navLeft":244,"navRight":428,"navTargets":[{"label":"商品圖片","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"基本資訊","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"價格與庫存","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"規格","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"分類","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"物流","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"搜尋引擎最佳化","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"zh-TW","width":1440,"navLeft":244,"navRight":428,"navTargets":[{"label":"商品圖片","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"基本資訊","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"價格與庫存","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"規格","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"分類","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"物流","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"搜尋引擎最佳化","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415}],"rawTails":[{"id":"product-price","rawBottom":843.890625,"paneBottom":815,"barTop":831,"clippedTailHittable":false},{"id":"product-compare","rawBottom":843.890625,"paneBottom":815,"barTop":831,"clippedTailHittable":false}]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"zh-TW","width":1586,"navLeft":244,"navRight":428,"navTargets":[{"label":"商品圖片","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"基本資訊","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"價格與庫存","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"規格","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"分類","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"物流","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"搜尋引擎最佳化","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"zh-TW","width":390,"navLeft":16,"navRight":374,"navTargets":[{"label":"商品圖片","rawLeft":-51,"rawRight":25,"visibleLeft":16,"visibleRight":25},{"label":"基本資訊","rawLeft":29,"rawRight":105,"visibleLeft":29,"visibleRight":105},{"label":"價格與庫存","rawLeft":109,"rawRight":199,"visibleLeft":109,"visibleRight":199},{"label":"規格","rawLeft":203,"rawRight":251,"visibleLeft":203,"visibleRight":251},{"label":"分類","rawLeft":255,"rawRight":303,"visibleLeft":255,"visibleRight":303},{"label":"物流","rawLeft":307,"rawRight":355,"visibleLeft":307,"visibleRight":355},{"label":"搜尋引擎最佳化","rawLeft":359,"rawRight":477,"visibleLeft":359,"visibleRight":374}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"zh-TW","width":375,"navLeft":16,"navRight":359,"navTargets":[{"label":"商品圖片","rawLeft":29,"rawRight":105,"visibleLeft":29,"visibleRight":105},{"label":"基本資訊","rawLeft":109,"rawRight":185,"visibleLeft":109,"visibleRight":185},{"label":"價格與庫存","rawLeft":189,"rawRight":279,"visibleLeft":189,"visibleRight":279},{"label":"規格","rawLeft":283,"rawRight":331,"visibleLeft":283,"visibleRight":331},{"label":"分類","rawLeft":335,"rawRight":383,"visibleLeft":335,"visibleRight":359}],"rawTails":[]}
+UXH07 {"locale":"zh-CN","before":{"tabWidth":70,"frameWidth":188,"overflow":76,"scrollLeft":76,"tabLeft":134,"tabRight":204,"frameLeft":16,"frameRight":204,"fullyVisible":true},"after":{"tabWidth":81.6875,"frameWidth":188,"overflow":138,"scrollLeft":76,"tabLeft":184.625,"tabRight":266.3125,"frameLeft":16,"frameRight":204,"fullyVisible":false}}
+UXH01 {"locale":"zh-CN","expected":{"nav":"商品编辑导航","group":"商品编辑区段","toggle":"查看完成度","heading":"完成度"}}
+UXH02 {"locale":"zh-CN","direction":"900→901","focusedSection":"seo","retained":true}
+UXH02 {"locale":"zh-CN","direction":"901→900","focusedSection":"seo","retained":true}
+UXH03 {"locale":"zh-CN","operation":"unrelated draft edit","before":182,"after":182}
+UXH03 {"locale":"zh-CN","operation":"readiness click reveals media","scrollLeft":0}
+UXH04 {"locale":"zh-CN","narrow":{"overflow":182,"reserved":26.796875},"wide":{"overflow":0,"reserved":26.796875},"narrowAgain":{"overflow":182,"reserved":26.796875}}
+UXH05 {"locale":"zh-CN","direction":"901→390","tabLeft":257,"tabRight":361,"tabWidth":104,"frameLeft":29,"frameRight":361,"frameWidth":332,"overflow":182,"scrollLeft":182,"fullyVisible":true}
+UXH06 {"locale":"zh-CN","direction":"500→390","before":{"tabLeft":367,"tabRight":471,"tabWidth":104,"frameLeft":29,"frameRight":471,"frameWidth":442,"overflow":72,"scrollLeft":72,"fullyVisible":true},"after":{"tabLeft":367,"tabRight":471,"tabWidth":104,"frameLeft":29,"frameRight":361,"frameWidth":332,"overflow":182,"scrollLeft":72,"fullyVisible":false}}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"zh-CN","width":1366,"navLeft":244,"navRight":428,"navTargets":[{"label":"商品图片","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"基本信息","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"价格与库存","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"规格","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"分类","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"物流","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"搜索引擎优化","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"zh-CN","width":1440,"navLeft":244,"navRight":428,"navTargets":[{"label":"商品图片","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"基本信息","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"价格与库存","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"规格","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"分类","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"物流","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"搜索引擎优化","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415}],"rawTails":[{"id":"product-price","rawBottom":843.890625,"paneBottom":815,"barTop":831,"clippedTailHittable":false},{"id":"product-compare","rawBottom":843.890625,"paneBottom":815,"barTop":831,"clippedTailHittable":false}]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"zh-CN","width":1586,"navLeft":244,"navRight":428,"navTargets":[{"label":"商品图片","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"基本信息","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"价格与库存","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"规格","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"分类","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"物流","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"搜索引擎优化","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"zh-CN","width":390,"navLeft":16,"navRight":374,"navTargets":[{"label":"商品图片","rawLeft":-51,"rawRight":25,"visibleLeft":16,"visibleRight":25},{"label":"基本信息","rawLeft":29,"rawRight":105,"visibleLeft":29,"visibleRight":105},{"label":"价格与库存","rawLeft":109,"rawRight":199,"visibleLeft":109,"visibleRight":199},{"label":"规格","rawLeft":203,"rawRight":251,"visibleLeft":203,"visibleRight":251},{"label":"分类","rawLeft":255,"rawRight":303,"visibleLeft":255,"visibleRight":303},{"label":"物流","rawLeft":307,"rawRight":355,"visibleLeft":307,"visibleRight":355},{"label":"搜索引擎优化","rawLeft":359,"rawRight":463,"visibleLeft":359,"visibleRight":374}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"zh-CN","width":375,"navLeft":16,"navRight":359,"navTargets":[{"label":"商品图片","rawLeft":29,"rawRight":105,"visibleLeft":29,"visibleRight":105},{"label":"基本信息","rawLeft":109,"rawRight":185,"visibleLeft":109,"visibleRight":185},{"label":"价格与库存","rawLeft":189,"rawRight":279,"visibleLeft":189,"visibleRight":279},{"label":"规格","rawLeft":283,"rawRight":331,"visibleLeft":283,"visibleRight":331},{"label":"分类","rawLeft":335,"rawRight":383,"visibleLeft":335,"visibleRight":359}],"rawTails":[]}
+UXH07 {"locale":"en","before":{"tabWidth":87.921875,"frameWidth":188,"overflow":89,"scrollLeft":89,"tabLeft":115.59375,"tabRight":203.515625,"frameLeft":16,"frameRight":204,"fullyVisible":true},"after":{"tabWidth":99.609375,"frameWidth":188,"overflow":151,"scrollLeft":89,"tabLeft":166.21875,"tabRight":265.828125,"frameLeft":16,"frameRight":204,"fullyVisible":false}}
+UXH01 {"locale":"en","expected":{"nav":"Product editor navigation","group":"Product editor sections","toggle":"Show readiness checklist","heading":"Readiness"}}
+UXH02 {"locale":"en","direction":"900→901","focusedSection":"seo","retained":true}
+UXH02 {"locale":"en","direction":"901→900","focusedSection":"seo","retained":true}
+UXH03 {"locale":"en","operation":"unrelated draft edit","before":501,"after":501}
+UXH03 {"locale":"en","operation":"readiness click reveals media","scrollLeft":0}
+UXH04 {"locale":"en","narrow":{"overflow":501,"reserved":26.796875},"wide":{"overflow":1,"reserved":26.796875},"narrowAgain":{"overflow":501,"reserved":26.796875}}
+UXH05 {"locale":"en","direction":"901→390","tabLeft":701.28125,"tabRight":862.109375,"tabWidth":160.828125,"frameLeft":29,"frameRight":361,"frameWidth":332,"overflow":501,"scrollLeft":0,"fullyVisible":false}
+UXH06 {"locale":"en","direction":"500→390","before":{"tabLeft":310.28125,"tabRight":471.109375,"tabWidth":160.828125,"frameLeft":29,"frameRight":471,"frameWidth":442,"overflow":391,"scrollLeft":391,"fullyVisible":true},"after":{"tabLeft":310.28125,"tabRight":471.109375,"tabWidth":160.828125,"frameLeft":29,"frameRight":361,"frameWidth":332,"overflow":501,"scrollLeft":391,"fullyVisible":false}}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"en","width":1366,"navLeft":244,"navRight":428,"navTargets":[{"label":"Product images","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Basic information","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Price & inventory","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Variants","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Collections","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Shipping","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Search engine listing","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"en","width":1440,"navLeft":244,"navRight":428,"navTargets":[{"label":"Product images","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Basic information","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Price & inventory","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Variants","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Collections","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Shipping","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Search engine listing","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415}],"rawTails":[{"id":"product-price","rawBottom":834.890625,"paneBottom":815,"barTop":831,"clippedTailHittable":false},{"id":"product-compare","rawBottom":834.890625,"paneBottom":815,"barTop":831,"clippedTailHittable":false}]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"en","width":1586,"navLeft":244,"navRight":428,"navTargets":[{"label":"Product images","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Basic information","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Price & inventory","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Variants","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Collections","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Shipping","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Search engine listing","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"en","width":390,"navLeft":16,"navRight":374,"navTargets":[{"label":"Product images","rawLeft":-100,"rawRight":25.03125,"visibleLeft":16,"visibleRight":25.03125},{"label":"Basic information","rawLeft":29.03125,"rawRight":167.28125,"visibleLeft":29.03125,"visibleRight":167.28125},{"label":"Price & inventory","rawLeft":171.28125,"rawRight":306.4375,"visibleLeft":171.28125,"visibleRight":306.4375},{"label":"Variants","rawLeft":310.4375,"rawRight":384.921875,"visibleLeft":310.4375,"visibleRight":374}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"en","width":375,"navLeft":16,"navRight":359,"navTargets":[{"label":"Product images","rawLeft":-60,"rawRight":65.03125,"visibleLeft":16,"visibleRight":65.03125},{"label":"Basic information","rawLeft":69.03125,"rawRight":207.28125,"visibleLeft":69.03125,"visibleRight":207.28125},{"label":"Price & inventory","rawLeft":211.28125,"rawRight":346.4375,"visibleLeft":211.28125,"visibleRight":346.4375},{"label":"Variants","rawLeft":350.4375,"rawRight":424.921875,"visibleLeft":350.4375,"visibleRight":359}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"en","width":1586,"navLeft":244,"navRight":428,"navTargets":[{"label":"Product images","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Basic information","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Variants","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Collections","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Shipping","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Search engine listing","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415}],"rawTails":[{"id":"bulk-open","rawBottom":944.078125,"paneBottom":907,"barTop":923,"clippedTailHittable":false}]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"zh-TW","width":1440,"navLeft":244,"navRight":428,"navTargets":[{"label":"商品圖片","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"基本資訊","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"價格與庫存","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"規格","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"分類","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"物流","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"搜尋引擎最佳化","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"zh-TW","width":390,"navLeft":16,"navRight":374,"navTargets":[{"label":"商品圖片","rawLeft":29,"rawRight":105,"visibleLeft":29,"visibleRight":105},{"label":"基本資訊","rawLeft":109,"rawRight":185,"visibleLeft":109,"visibleRight":185},{"label":"價格與庫存","rawLeft":189,"rawRight":279,"visibleLeft":189,"visibleRight":279},{"label":"規格","rawLeft":283,"rawRight":331,"visibleLeft":283,"visibleRight":331},{"label":"分類","rawLeft":335,"rawRight":383,"visibleLeft":335,"visibleRight":374}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"zh-CN","width":1440,"navLeft":244,"navRight":428,"navTargets":[{"label":"商品图片","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"基本信息","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"价格与库存","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"规格","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"分类","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"物流","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"搜索引擎优化","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"zh-CN","width":390,"navLeft":16,"navRight":374,"navTargets":[{"label":"商品图片","rawLeft":29,"rawRight":105,"visibleLeft":29,"visibleRight":105},{"label":"基本信息","rawLeft":109,"rawRight":185,"visibleLeft":109,"visibleRight":185},{"label":"价格与库存","rawLeft":189,"rawRight":279,"visibleLeft":189,"visibleRight":279},{"label":"规格","rawLeft":283,"rawRight":331,"visibleLeft":283,"visibleRight":331},{"label":"分类","rawLeft":335,"rawRight":383,"visibleLeft":335,"visibleRight":374}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"en","width":1440,"navLeft":244,"navRight":428,"navTargets":[{"label":"Product images","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Basic information","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Price & inventory","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Variants","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Collections","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Shipping","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"Search engine listing","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415}],"rawTails":[]}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"en","width":390,"navLeft":16,"navRight":374,"navTargets":[{"label":"Product images","rawLeft":29,"rawRight":154.03125,"visibleLeft":29,"visibleRight":154.03125},{"label":"Basic information","rawLeft":158.03125,"rawRight":296.28125,"visibleLeft":158.03125,"visibleRight":296.28125},{"label":"Price & inventory","rawLeft":300.28125,"rawRight":435.4375,"visibleLeft":300.28125,"visibleRight":374}],"rawTails":[]}
+  ✘   1 tests/admin/product-editor.acceptance.ts:17:3 › PE12-17 document workflow, matrix, list actions and click ledger (1.8m)
+  -   2 tests/admin/product-review.acceptance.ts:49:3 › review: bulk price 80 plus archive sends exclusive archive entry and persists
+  -   3 tests/admin/product-review.acceptance.ts:125:5 › review: create UNKNOWN then client preserves receipt fence after reload
+  -   4 tests/admin/product-review.acceptance.ts:125:5 › review: create UNKNOWN then 401 preserves receipt fence after reload
+  -   5 tests/admin/product-review.acceptance.ts:125:5 › review: create UNKNOWN then 403 preserves receipt fence after reload
+  -   6 tests/admin/product-review.acceptance.ts:125:5 › review: copy UNKNOWN then client preserves receipt fence after reload
+  -   7 tests/admin/product-review.acceptance.ts:125:5 › review: copy UNKNOWN then 401 preserves receipt fence after reload
+  -   8 tests/admin/product-review.acceptance.ts:125:5 › review: copy UNKNOWN then 403 preserves receipt fence after reload
+  -   9 tests/admin/product-review.acceptance.ts:125:5 › review: order UNKNOWN then 403 preserves receipt fence after reload
+  -  10 tests/admin/product-review.acceptance.ts:125:5 › review: publish UNKNOWN then 403 preserves receipt fence after reload
+  -  11 tests/admin/product-feedback.acceptance.ts:15:5 › feedback: identical image-required validation reveals again at 1586px
+  -  12 tests/admin/product-feedback.acceptance.ts:15:5 › feedback: identical image-required validation reveals again at 390px
+
+
+  1) tests/admin/product-editor.acceptance.ts:17:3 › PE12-17 document workflow, matrix, list actions and click ledger 
+
+    Error: UXH07 existing selected tab is revealed after real asynchronous count-label growth
+
+    UXH07 existing selected tab is revealed after real asynchronous count-label growth
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 1000ms exceeded while waiting on the predicate
+
+       at product-editor-layout.acceptance.ts:63
+
+      61 |     expect(after.tabWidth, "UXH07 selected label fits the frame").toBeLessThanOrEqual(after.frameWidth);
+      62 |     await expect.soft.poll(async () => (await measure()).fullyVisible,
+    > 63 |       { message: "UXH07 existing selected tab is revealed after real asynchronous count-label growth", timeout: 1000 }).toBe(true);
+         |                                                                                                                         ^
+      64 |     console.log("UXH07", JSON.stringify({ locale, before, after: await measure() }));
+      65 |   } catch (error) {
+      66 |     failed = true;
+        at assertProductListAsyncTabGrowth (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:63:121)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:145:31
+
+    Error: UXH06 already-overflowing selected SEO is fully visible after 500→390 resize
+
+    UXH06 already-overflowing selected SEO is fully visible after 500→390 resize
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 1000ms exceeded while waiting on the predicate
+
+       at product-editor-layout.acceptance.ts:257
+
+      255 |     await verify(seo, "UXH06 clipping resize retains SEO selection").toHaveAttribute("aria-current", "location");
+      256 |     await verify.poll(async () => (await measureSelected()).fullyVisible,
+    > 257 |       { message: "UXH06 already-overflowing selected SEO is fully visible after 500→390 resize" }).toBe(true);
+          |                                                                                                    ^
+      258 |     console.log("UXH06", JSON.stringify({ locale, direction: "500→390", before: beforeClipping, after: await measureSelected() }));
+      259 |     seen.add(locale);
+      260 |     hardenedLocales.set(page, seen);
+        at assertProductEditorHardening (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:257:100)
+        at assertProductEditorReservedLayout (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:318:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:194:11
+
+    Error: UXH07 existing selected tab is revealed after real asynchronous count-label growth
+
+    UXH07 existing selected tab is revealed after real asynchronous count-label growth
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 1000ms exceeded while waiting on the predicate
+
+       at product-editor-layout.acceptance.ts:63
+
+      61 |     expect(after.tabWidth, "UXH07 selected label fits the frame").toBeLessThanOrEqual(after.frameWidth);
+      62 |     await expect.soft.poll(async () => (await measure()).fullyVisible,
+    > 63 |       { message: "UXH07 existing selected tab is revealed after real asynchronous count-label growth", timeout: 1000 }).toBe(true);
+         |                                                                                                                         ^
+      64 |     console.log("UXH07", JSON.stringify({ locale, before, after: await measure() }));
+      65 |   } catch (error) {
+      66 |     failed = true;
+        at assertProductListAsyncTabGrowth (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:63:121)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:145:31
+
+    Error: UXH06 already-overflowing selected SEO is fully visible after 500→390 resize
+
+    UXH06 already-overflowing selected SEO is fully visible after 500→390 resize
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 1000ms exceeded while waiting on the predicate
+
+       at product-editor-layout.acceptance.ts:257
+
+      255 |     await verify(seo, "UXH06 clipping resize retains SEO selection").toHaveAttribute("aria-current", "location");
+      256 |     await verify.poll(async () => (await measureSelected()).fullyVisible,
+    > 257 |       { message: "UXH06 already-overflowing selected SEO is fully visible after 500→390 resize" }).toBe(true);
+          |                                                                                                    ^
+      258 |     console.log("UXH06", JSON.stringify({ locale, direction: "500→390", before: beforeClipping, after: await measureSelected() }));
+      259 |     seen.add(locale);
+      260 |     hardenedLocales.set(page, seen);
+        at assertProductEditorHardening (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:257:100)
+        at assertProductEditorReservedLayout (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:318:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:194:11
+
+    Error: UXH07 existing selected tab is revealed after real asynchronous count-label growth
+
+    UXH07 existing selected tab is revealed after real asynchronous count-label growth
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 1000ms exceeded while waiting on the predicate
+
+       at product-editor-layout.acceptance.ts:63
+
+      61 |     expect(after.tabWidth, "UXH07 selected label fits the frame").toBeLessThanOrEqual(after.frameWidth);
+      62 |     await expect.soft.poll(async () => (await measure()).fullyVisible,
+    > 63 |       { message: "UXH07 existing selected tab is revealed after real asynchronous count-label growth", timeout: 1000 }).toBe(true);
+         |                                                                                                                         ^
+      64 |     console.log("UXH07", JSON.stringify({ locale, before, after: await measure() }));
+      65 |   } catch (error) {
+      66 |     failed = true;
+        at assertProductListAsyncTabGrowth (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:63:121)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:145:31
+
+    Error: UXH05 desktop-selected SEO is fully visible after 901→390 resize
+
+    UXH05 desktop-selected SEO is fully visible after 901→390 resize
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 1000ms exceeded while waiting on the predicate
+
+       at product-editor-layout.acceptance.ts:239
+
+      237 |     await verify(seo, "UXH05 resize preserves the selected SEO section").toHaveAttribute("aria-current", "location");
+      238 |     await verify.poll(async () => (await measureSelected()).fullyVisible,
+    > 239 |       { message: "UXH05 desktop-selected SEO is fully visible after 901→390 resize" }).toBe(true);
+          |                                                                                        ^
+      240 |     console.log("UXH05", JSON.stringify({ locale, direction: "901→390", ...await measureSelected() }));
+      241 |
+      242 |     // Unlike UXH05, overflow exists on both sides of this resize. Select once
+        at assertProductEditorHardening (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:239:88)
+        at assertProductEditorReservedLayout (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:318:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:194:11
+
+    Error: UXH06 already-overflowing selected SEO is fully visible after 500→390 resize
+
+    UXH06 already-overflowing selected SEO is fully visible after 500→390 resize
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 1000ms exceeded while waiting on the predicate
+
+       at product-editor-layout.acceptance.ts:257
+
+      255 |     await verify(seo, "UXH06 clipping resize retains SEO selection").toHaveAttribute("aria-current", "location");
+      256 |     await verify.poll(async () => (await measureSelected()).fullyVisible,
+    > 257 |       { message: "UXH06 already-overflowing selected SEO is fully visible after 500→390 resize" }).toBe(true);
+          |                                                                                                    ^
+      258 |     console.log("UXH06", JSON.stringify({ locale, direction: "500→390", before: beforeClipping, after: await measureSelected() }));
+      259 |     seen.add(locale);
+      260 |     hardenedLocales.set(page, seen);
+        at assertProductEditorHardening (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:257:100)
+        at assertProductEditorReservedLayout (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:318:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:194:11
+
+    Error: UXH persisted zh-TW UXH01/readiness-toggle click expand/collapse: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted zh-TW UXH02/section-keyboard Shift+Tab: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted zh-TW UXH02/section-focus resize 900→901: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted zh-TW UXH02/section-focus resize 901→900: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted zh-TW UXH03/section-strip wheel horizontally: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted zh-TW UXH03/product-name keyboard draft edit: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted zh-TW UXH03/readiness-media click: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted zh-TW UXH04/overflow-hint resize 390→890→390: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted zh-TW UXH05/section-seo click then resize 901→390: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted zh-TW UXH06/section-seo click then resize 500→390: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted zh-TW UXH07/list-status-archived click then real count arrival: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted zh-CN UXH01/readiness-toggle click expand/collapse: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted zh-CN UXH02/section-keyboard Shift+Tab: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted zh-CN UXH02/section-focus resize 900→901: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted zh-CN UXH02/section-focus resize 901→900: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted zh-CN UXH03/section-strip wheel horizontally: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted zh-CN UXH03/product-name keyboard draft edit: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted zh-CN UXH03/readiness-media click: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted zh-CN UXH04/overflow-hint resize 390→890→390: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted zh-CN UXH05/section-seo click then resize 901→390: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted zh-CN UXH06/section-seo click then resize 500→390: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted zh-CN UXH07/list-status-archived click then real count arrival: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted en UXH01/readiness-toggle click expand/collapse: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted en UXH02/section-keyboard Shift+Tab: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted en UXH02/section-focus resize 900→901: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted en UXH02/section-focus resize 901→900: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted en UXH03/section-strip wheel horizontally: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted en UXH03/product-name keyboard draft edit: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted en UXH03/readiness-media click: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted en UXH04/overflow-hint resize 390→890→390: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted en UXH05/section-seo click then resize 901→390: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted en UXH06/section-seo click then resize 500→390: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    Error: UXH persisted en UXH07/list-status-archived click then real count arrival: exactly one real interaction record
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      1728 |           row.locale === locale && row.control === control && row.action === action);
+      1729 |         const label = `UXH persisted ${locale} ${control} ${action}`;
+    > 1730 |         expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+           |                                                                               ^
+      1731 |         for (const row of matches) {
+      1732 |           expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+      1733 |           expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:1730:79
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.GOcHO75I/catalog-core/20261013T171551.403619782/results/catalog-core-PE12-17-docum-0e9d3-st-actions-and-click-ledger/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.GOcHO75I/catalog-core/20261013T171551.403619782/results/catalog-core-PE12-17-docum-0e9d3-st-actions-and-click-ledger/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/run.GOcHO75I/catalog-core/20261013T171551.403619782/results/catalog-core-PE12-17-docum-0e9d3-st-actions-and-click-ledger/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/run.GOcHO75I/catalog-core/20261013T171551.403619782/results/catalog-core-PE12-17-docum-0e9d3-st-actions-and-click-ledger/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/admin/product-editor.acceptance.ts:17:3 › PE12-17 document workflow, matrix, list actions and click ledger 
+  11 did not run

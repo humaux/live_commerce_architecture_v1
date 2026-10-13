@@ -64,6 +64,18 @@
   color: var(--pe-accent);
   font-weight: 700;
 }
+/* A stable TabStrip preserves keyboard focus when crossing the mobile breakpoint. */
+.pe-index nav > div {
+  margin-bottom: 0;
+  border-bottom: 0;
+}
+.pe-index .pe-section-tabs {
+  display: block;
+  overflow: visible;
+}
+.pe-index nav > div > p {
+  display: none;
+}
 .pe-index .pe-readiness {
   display: flex;
   align-items: center;
@@ -750,10 +762,13 @@
   .pe-index nav {
     display: block;
   }
-  /* The shared TabStrip owns horizontal scrolling; its hint stays outside the clip. */
-  .pe-index nav > div {
-    margin-bottom: 0;
-    border-bottom: 0;
+  /* The same controls become a horizontal strip; its reserved hint stays outside the clip. */
+  .pe-index .pe-section-tabs {
+    display: flex;
+    overflow-x: auto;
+  }
+  .pe-index nav > div > p {
+    display: block;
   }
   .pe-index nav button {
     width: auto;

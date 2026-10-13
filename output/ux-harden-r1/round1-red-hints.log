@@ -1,0 +1,23 @@
+## Purpose: preserve actual CI red proof for default TabStrip hint reservation.
+## Depends on: Foundation run 38398316297, head d53311489750d1d5d995d0f539db7f097f717a1d, job 115299111934.
+## Used by: PR49 round-1 red-to-green review; this is a GitHub Node receipt, not a local test run.
+## Source: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38398316297
+## Command: bash scripts/dev/test-node.sh. Failed on the actual Presentation SSR before later Node batches; the product-document stale assertion has not executed yet.
+foundation	Node unit suites (storefront, i18n)	2026-10-13T12:41:03.3442981Z ✖ failing tests:
+foundation	Node unit suites (storefront, i18n)	2026-10-13T12:41:03.3443078Z 
+foundation	Node unit suites (storefront, i18n)	2026-10-13T12:41:03.3443274Z test at tests/admin/shell-render.test.ts:33:1
+foundation	Node unit suites (storefront, i18n)	2026-10-13T12:41:03.3443779Z ✖ TabStrip reserves a hidden hint only when the caller opts in (6.896373ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-13T12:41:03.3444354Z   AssertionError [ERR_ASSERTION]: existing consumers have no empty hint row
+foundation	Node unit suites (storefront, i18n)	2026-10-13T12:41:03.3445298Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/shell-render.test.ts:39:10)
+foundation	Node unit suites (storefront, i18n)	2026-10-13T12:41:03.3446004Z       at Test.runInAsyncScope (node:async_hooks:227:14)
+foundation	Node unit suites (storefront, i18n)	2026-10-13T12:41:03.3446403Z       at Test.run (node:internal/test_runner/test:1402:25)
+foundation	Node unit suites (storefront, i18n)	2026-10-13T12:41:03.3446839Z       at Test.start (node:internal/test_runner/test:1262:17)
+foundation	Node unit suites (storefront, i18n)	2026-10-13T12:41:03.3447364Z       at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+foundation	Node unit suites (storefront, i18n)	2026-10-13T12:41:03.3447744Z     generatedMessage: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-13T12:41:03.3447970Z     code: 'ERR_ASSERTION',
+foundation	Node unit suites (storefront, i18n)	2026-10-13T12:41:03.3449129Z     actual: '<div class="tabs"><div role="group" aria-label="Sections" class="tabStrip "><button aria-selected="true">Selected</button></div><p class="scrollHint" aria-hidden="true">Scroll left · Scroll right</p></div>',
+foundation	Node unit suites (storefront, i18n)	2026-10-13T12:41:03.3450040Z     expected: /<p\b/,
+foundation	Node unit suites (storefront, i18n)	2026-10-13T12:41:03.3450277Z     operator: 'doesNotMatch',
+foundation	Node unit suites (storefront, i18n)	2026-10-13T12:41:03.3450510Z     diff: 'simple'
+foundation	Node unit suites (storefront, i18n)	2026-10-13T12:41:03.3450786Z   }
+foundation	Node unit suites (storefront, i18n)	2026-10-13T12:41:03.3497161Z ##[error]Process completed with exit code 1.

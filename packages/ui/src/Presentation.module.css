@@ -194,6 +194,13 @@
   font-size: var(--ui-text-helper);
   color: var(--ui-muted);
 }
+/* Reservation is opt-in; existing TabStrip and TableFrame layouts are unchanged. */
+.reservedHint {
+  min-height: 1.4em;
+}
+.reservedHint[aria-hidden="true"] {
+  visibility: hidden;
+}
 .filePicker {
   display: flex;
   flex-wrap: wrap;

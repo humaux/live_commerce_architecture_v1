@@ -10,7 +10,7 @@ import { createHash } from "node:crypto";
 import axe from "axe-core";
 import { createProductEditorMatrixLedger } from "./product-editor-matrix-ledger";
 import { productEditorCopy } from "../../apps/admin/lib/product-editor-copy";
-import { assertProductEditorReservedLayout } from "./product-editor-layout.acceptance";
+import { assertProductEditorReservedLayout, assertProductListAsyncTabGrowth, type ProductEditorHardeningRecord } from "./product-editor-layout.acceptance";
 import { assertProductListLayout } from "./product-list-layout.acceptance";
 /** Registers real-click product acceptance cases; the calling runner owns test fixtures and cleanup. */
 export function registerProductEditorAcceptance() {
@@ -33,6 +33,7 @@ export function registerProductEditorAcceptance() {
         key: string;
         body: string | null;
       }[] = [];
+    const recordHardening = (row: ProductEditorHardeningRecord) => { ledger.push(row); };
     page.on("request", (r) => {
       if (r.url().includes("/api/stores/") && r.method() !== "GET")
         writes.push({
@@ -142,6 +143,7 @@ export function registerProductEditorAcceptance() {
             expect(target.height).toBeGreaterThanOrEqual(44);
           }
           await shot(`list-${locale}-${width}`);
+          if (width === 1366) await assertProductListAsyncTabGrowth(page, recordHardening);
           await page.getByTestId("product-new").click();
           if (width === 390) {
             const toggle = page.locator(".pe-readiness-toggle");
@@ -195,10 +197,11 @@ export function registerProductEditorAcceptance() {
             (width === 1440 || width === 1586 || width === 390)
               ? (section) => shot(`editor-${locale}-${width}-${section}`)
               : undefined,
+            recordHardening,
           );
           await page
             .getByRole("navigation", {
-              name: productEditorCopy[locale].progress,
+              name: productEditorCopy[locale].navigation,
             })
             .getByRole("button", {
               name: productEditorCopy[locale].media,
@@ -363,7 +366,7 @@ export function registerProductEditorAcceptance() {
       await expect(page.locator('[data-testid^="matrix-row-"]')).toHaveCount(
         12,
       );
-      await assertProductEditorReservedLayout(page);
+      await assertProductEditorReservedLayout(page, undefined, recordHardening);
       expect(writes.length).toBe(networkBefore);
       await page.getByTestId("bulk-open").click();
       await page.getByTestId("bulk-value").fill("80");
@@ -671,7 +674,7 @@ export function registerProductEditorAcceptance() {
         const beforeVisual = writes.length;
         await page.getByTestId("product-name").fill(`${tag} unsaved visual ${locale}`);
         await expect(page.locator(".pe-savebar > span")).toHaveText(productEditorCopy[locale].dirty);
-        await assertProductEditorReservedLayout(page, section => shot(`edit-${locale}-${width}-${section}`));
+        await assertProductEditorReservedLayout(page, section => shot(`edit-${locale}-${width}-${section}`), recordHardening);
         await fit();
         expect(writes.length).toBe(beforeVisual);
         await shot(`edit-${locale}-${width}`);
@@ -1704,6 +1707,45 @@ export function registerProductEditorAcceptance() {
     } finally {
       await saveEvidence();
       await writeFile(path.join(evidence, "product-ui-output.txt"), out);
+      // Read this run's saved REAL ledger, not console diagnostics or synthetic
+      // rows. Keep the 267-case matrix namespace and its validator untouched.
+      const saved: unknown = JSON.parse(await readFile(path.join(evidence, "product-editor-click-ledger.json"), "utf8"));
+      expect.soft(Array.isArray(saved), "UXH persisted click ledger is an array").toBe(true);
+      const rows = Array.isArray(saved) ? saved as Record<string, unknown>[] : [];
+      const required = [
+        ["UXH01/readiness-toggle", "click expand/collapse", "localized names remain distinct; checklist expands and collapses"],
+        ["UXH02/section-keyboard", "Shift+Tab", "native keyboard traversal focuses the last section button"],
+        ["UXH02/section-focus", "resize 900→901", "section keyboard focus survives narrow-to-desktop resize"],
+        ["UXH02/section-focus", "resize 901→900", "section keyboard focus survives desktop-to-narrow resize"],
+        ["UXH03/section-strip", "wheel horizontally", "native horizontal wheel reaches the overflowing strip end"],
+        ["UXH03/product-name", "keyboard draft edit", "unrelated draft edit preserves the user's strip scroll position"],
+        ["UXH03/readiness-media", "click", "readiness navigation selects and reveals the media tab"],
+        ["UXH04/overflow-hint", "resize 390→890→390", "hint visibility follows overflow while its reserved row stays stable"],
+        ["UXH05/section-seo", "click then resize 901→390", "desktop-selected SEO stays selected and fully visible after resize"],
+        ["UXH06/section-seo", "click then resize 500→390", "already-overflowing selected SEO stays selected and fully visible after resize"],
+        ["UXH07/list-status-archived", "click then real count arrival", "same selected status button stays fully visible after asynchronous real count-label growth"],
+      ] as const;
+      for (const locale of ["zh-TW", "zh-CN", "en"]) for (const [control, action, expected] of required) {
+        const matches = rows.filter(row => row && row.page === "product editor hardening" &&
+          row.locale === locale && row.control === control && row.action === action);
+        const label = `UXH persisted ${locale} ${control} ${action}`;
+        expect.soft(matches, `${label}: exactly one real interaction record`).toHaveLength(1);
+        for (const row of matches) {
+          expect.soft(row.expected, `${label}: declared postcondition`).toBe(expected);
+          expect.soft(row.actual, `${label}: native action and assertions passed`).toBe("PASS");
+          expect.soft(row.pass, `${label}: explicit passed status`).toBe(true);
+          const viewport = row.viewport as { width?: unknown; height?: unknown } | undefined;
+          for (const dimension of ["width", "height"] as const) {
+            const value = viewport?.[dimension];
+            expect.soft(typeof value === "number" && Number.isFinite(value) && value > 0,
+              `${label}: measured viewport ${dimension}`).toBe(true);
+          }
+          const metrics = row.metrics;
+          expect.soft(metrics !== null && typeof metrics === "object" && !Array.isArray(metrics) &&
+            Object.values(metrics).some(value => typeof value === "boolean" ||
+              (typeof value === "number" && Number.isFinite(value))), `${label}: measured interaction metrics`).toBe(true);
+        }
+      }
     }
   });
 }
