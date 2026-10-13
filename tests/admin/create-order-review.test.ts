@@ -134,13 +134,15 @@ test("PR32 granted catalog permission positively reaches real A15 and options se
 
 for (const locale of ["en", "zh-TW", "zh-CN"] as const) test(`PR32 ${locale} merged claim row visibly warns catalog fallback before submit`, async t => {
   const env = browserEnvironment(t), calls = network(), upstream = globalThis.fetch;
+  // Match the real parent: a store changes on a scope update, not on each drawer state render.
+  const scopedStore = { ...allowedStore, permissions: [...allowedStore.permissions, "live:manage"] };
   globalThis.fetch = async (input, init) => {
     if (String(input).includes("/tools/inbox/order-prefill?")) return response({ ...prefill, live_price_eligible: true, live_price_reason: "",
       items: [{ ...prefill.items[0], quantity: 2, live_quantity_remaining: 2 },
         { ...prefill.items[0], offer_id: otherOffer, keyword: "B1", quantity: 3, live_quantity_remaining: 3 }] });
     return upstream(input, init);
   };
-  const h = env.mount(() => CreateOrderDrawer({ locale, store: { ...allowedStore, permissions: [...allowedStore.permissions, "live:manage"] },
+  const h = env.mount(() => CreateOrderDrawer({ locale, store: scopedStore,
     bundleId: bundle, sessionId: session, onClose() {} } as any));
   await h.settle();
   assert.ok(nodes(h.output).some(n => n.props["data-testid"] === "drawer-form"), "real A15 form positively loaded");
