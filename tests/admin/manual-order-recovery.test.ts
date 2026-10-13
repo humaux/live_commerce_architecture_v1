@@ -135,6 +135,10 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const) for (const entry of ["se
       assert.equal(ready.saved.size, 1); assert.ok(node(h, n => n.props["data-testid"] === "manual-order-guard"));
       assert.equal(nodes(h.output).some(n => n.props["data-testid"] === "manual-order-form"), false);
       assert.equal(node(h, n => n.props["data-testid"] === "manual-order-recover-pending").props.disabled, false);
+      node(h, n => n.props["data-testid"] === "manual-order-recover-pending").props.onClick();await h.settle();
+      assert.equal(recoveryWrites.length, 2);assert.equal(recoveryWrites[1].key, recoveryWrites[0].key, "ambiguous manual recovery retains its server target transport key");
+      assert.equal(recoveryWrites[1].body, "{}");assert.equal(ready.saved.size, 1);
+      assert.equal(ready.writes.length, entry === "server_refusal" ? 1 : 0);
     } else {
       assert.equal(ready.saved.size, 0);
       if (state === "created") {

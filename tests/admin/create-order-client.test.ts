@@ -186,6 +186,7 @@ test("recovery transport auth loss outranks malformed private error bodies", asy
 test("server pending recovery locates the authenticated intent with an empty request and recovery-only keys", async () => {
   cookie = "A".repeat(43); const boundary = await sessionBoundary(); const keys: string[] = [];
   for (const result of [{ state: "none" }, { state: "not_created" }, { state: "created", order_id: id }]) {
+    const recoveryKey = crypto.randomUUID();
     globalThis.fetch = async (input, init) => {
       assert.equal(String(input), `/api/stores/${id}/tools/orders/attempt/recover`);
       assert.equal(init!.method, "POST"); assert.equal(init!.body, "{}", "no lost browser body/key or buyer fields are reconstructed");
@@ -194,21 +195,37 @@ test("server pending recovery locates the authenticated intent with an empty req
       assert.equal(init!.credentials, "same-origin"); assert.equal(init!.cache, "no-store"); assert.equal(init!.redirect, "error"); assert.equal(init!.referrerPolicy, "no-referrer");
       return reply(result);
     };
-    assert.deepEqual(await recoverPendingOrder(id, boundary), { ok: true, status: 200, value: result });
+    assert.deepEqual(await recoverPendingOrder(id, recoveryKey, boundary), { ok: true, status: 200, value: result });
+    assert.equal(keys.at(-1), recoveryKey, "caller owns the recovery transport receipt");
   }
   assert.equal(new Set(keys).size, 3, "a recovery-only key never becomes a replacement order key");
   for (const invalid of [{ state: "none", order_id: id }, { state: "none", key: "private" }, { state: "pending" }, { state: "created" }]) {
     globalThis.fetch = async () => reply(invalid);
-    assert.deepEqual(await recoverPendingOrder(id, boundary), { ok: false, code: "retry_later", status: 503, uncertain: true });
+    assert.deepEqual(await recoverPendingOrder(id, "synthetic-recovery-transport", boundary), { ok: false, code: "retry_later", status: 503, uncertain: true });
   }
   let dispatched = 0; globalThis.fetch = async () => { dispatched++; return reply({ state: "none" }); };
   cookie = "B".repeat(43);
-  await assert.rejects(recoverPendingOrder(id, boundary), error => error instanceof CreateOrderError && error.neverSent === true && error.status === 401);
+  await assert.rejects(recoverPendingOrder(id, "synthetic-recovery-transport", boundary), error => error instanceof CreateOrderError && error.neverSent === true && error.status === 401);
   assert.equal(dispatched, 0);
   cookie = "A".repeat(43);
   globalThis.fetch = async () => { dispatched++; cookie = "B".repeat(43); return reply({ state: "none" }); };
-  await assert.rejects(recoverPendingOrder(id, boundary), error => error instanceof CreateOrderError && error.neverSent === false && error.status === 401);
+  await assert.rejects(recoverPendingOrder(id, "synthetic-recovery-transport", boundary), error => error instanceof CreateOrderError && error.neverSent === false && error.status === 401);
   assert.equal(dispatched, 1, "post-response privacy rejection cannot prove prior order absence"); cookie = "A".repeat(43);
+});
+test("generic recovery lost response retries the caller's same transport key instead of discovering a different intent", async () => {
+  cookie = "A".repeat(43);const boundary = await sessionBoundary(), recoveryKey = "synthetic-pending-recovery-transport";
+  const requests: { key: string | null; body: string }[] = [];
+  globalThis.fetch = async (_input, init) => {
+    requests.push({ key: new Headers(init!.headers).get("Idempotency-Key"), body: String(init!.body) });
+    if (requests.length === 1) throw new Error("SYNTHETIC_LOST_RECOVERY_RESPONSE");
+    return reply({ state: "created", order_id: id });
+  };
+  assert.deepEqual(await recoverPendingOrder(id, recoveryKey, boundary), { ok: false, code: "retry_later", status: 503, uncertain: true });
+  assert.equal(requests.length, 1, "recovery never retries automatically");
+  assert.deepEqual(await recoverPendingOrder(id, recoveryKey, boundary), { ok: true, status: 200, value: { state: "created", order_id: id } });
+  assert.deepEqual(requests, [{ key: recoveryKey, body: "{}" }, { key: recoveryKey, body: "{}" }]);
+  await assert.rejects(recoverPendingOrder(id, "invalid key", boundary), error => error instanceof CreateOrderError && error.status === 422 && error.neverSent === true);
+  assert.equal(requests.length, 2, "invalid pre-dispatch transport cannot create a server recovery record");
 });
 test("real csrf/session helpers fence both reads and immutable receipt writes", async () => {
   const calls: { url: string; init: RequestInit }[] = [];
