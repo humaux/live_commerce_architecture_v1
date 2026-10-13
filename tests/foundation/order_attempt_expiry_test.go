@@ -52,7 +52,7 @@ func oaExpiryCommitted(t *testing.T, e *lbuEnv, mode string) (orderattempt.Admis
 		"credential_ciphertext_hex": hex.EncodeToString(material.Ciphertext),
 	})
 	var pay struct {
-		Stage string `json:"stage"`
+		Stage        string `json:"stage"`
 		Notification struct {
 			State string `json:"state"`
 		} `json:"notification"`
@@ -62,7 +62,7 @@ func oaExpiryCommitted(t *testing.T, e *lbuEnv, mode string) (orderattempt.Admis
 	}
 	raw, err = oaCompositeCall(tx, a, plain, "finish", map[string]any{"state": "NOT_REQUESTED"})
 	var finish struct {
-		State string `json:"state"`
+		State   string `json:"state"`
 		Receipt struct {
 			State   string `json:"state"`
 			OrderID string `json:"order_id"`
