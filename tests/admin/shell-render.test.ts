@@ -29,6 +29,19 @@ function jsx(path: string, resolve: (name: string) => unknown, transform = (s: s
 const presentation = jsx("packages/ui/src/Presentation.tsx", (name) => name.endsWith(".css") ? css : requireApp(name), (source) =>
   process.env.LC_SHELL_RENDER_FAULT === "headings" ? source.replace("<h1>{title}</h1>", "<h2>{title}</h2>") : source);
 const ui = jsx("packages/ui/src/AppShell.tsx", (name) => name.endsWith(".css") ? css : name === "./Presentation" ? presentation : requireApp(name));
+
+test("TabStrip reserves a hidden hint only when the caller opts in", () => {
+  const props = { label: "Sections", previousLabel: "Scroll left", nextLabel: "Scroll right" };
+  const renderStrip = (reserveHint?: boolean) => renderToStaticMarkup(React.createElement(
+    presentation.TabStrip, { ...props, ...(reserveHint === undefined ? {} : { reserveHint }) },
+    React.createElement("button", { "aria-selected": "true" }, "Selected"),
+  ));
+  assert.doesNotMatch(renderStrip(), /<p\b/, "existing consumers have no empty hint row");
+  assert.doesNotMatch(renderStrip(false), /<p\b/, "explicit false preserves existing layout");
+  const reserved = renderStrip(true);
+  assert.match(reserved, /<p[^>]*aria-hidden="true"[^>]*>Scroll left · Scroll right<\/p>/);
+  assert.doesNotMatch(reserved, /reserveHint=/, "presentation-only prop never reaches the DOM");
+});
 const header = jsx("apps/admin/components/AdminPageHeader.tsx", (name) => name === "@live-commerce/ui" ? ui :
   name === "@/src/page-title" ? { pageTitle } : name === "next/navigation" ? { usePathname: () => pathname } : requireApp(name));
 const frame = jsx("apps/admin/components/WorkspaceFrame.tsx", (name) => {

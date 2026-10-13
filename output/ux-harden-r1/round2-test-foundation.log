@@ -1,0 +1,23 @@
+# Purpose: preserve the tests-first PR49 Foundation receipt and actual checkout provenance.
+# Depends on: GitHub Foundation run38432944274, job115419546421 and its completed log.
+# Used by: UX-HARDEN-R1 DELIVERY and independent reviewers; browser regressions remain pending.
+# Run: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38432944274
+# Job: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38432944274/job/115419546421
+# PR head: a2dfa7e355c3e645aa682640aeec0e2edce08449
+# Executed checkout: refs/remotes/pull/49/merge, synthetic merge4dd9180c78c1ad5eb267889cbfee5283326e4199
+# Merge inputs: PR heada2dfa7e355c3e645aa682640aeec0e2edce08449 into base221539a7f6634824dbabb5e0f3681a270a3e7b8b
+# Conclusion: SUCCESS; actual job16:44:19Z→16:49:20Z on2026-10-13.
+# Excerpts below are copied from the completed CI log. They do not prove UXH06/07 or persisted browser ledger coverage.
+foundation	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T16:44:28.3963066Z HEAD is now at 4dd9180c Merge a2dfa7e355c3e645aa682640aeec0e2edce08449 into 221539a7f6634824dbabb5e0f3681a270a3e7b8b
+foundation	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T16:44:28.4129879Z 4dd9180c78c1ad5eb267889cbfee5283326e4199
+foundation	Dependency map is current	2026-10-13T16:44:43.0194598Z depmap: up to date
+foundation	Package docs and gate map are current	2026-10-13T16:47:16.7407948Z ✔ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (891.480258ms)
+foundation	Package docs and gate map are current	2026-10-13T16:47:19.1172874Z check-gates: ok (83 modes, all documented; every tracked test file is run)
+foundation	Node unit suites (storefront, i18n)	2026-10-13T16:48:02.4960766Z ✔ TabStrip reserves a hidden hint only when the caller opts in (17.81377ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-13T16:48:14.5105187Z ℹ tests 461
+foundation	Node unit suites (storefront, i18n)	2026-10-13T16:48:14.5105854Z ℹ pass 461
+foundation	Node unit suites (storefront, i18n)	2026-10-13T16:48:14.5106241Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-13T16:48:18.4512471Z ✔ readiness toggle renders the distinct visible editor copy in every supported locale (113.763254ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-13T16:48:18.4694388Z ℹ tests 29
+foundation	Node unit suites (storefront, i18n)	2026-10-13T16:48:18.4694800Z ℹ pass 29
+foundation	Node unit suites (storefront, i18n)	2026-10-13T16:48:18.4694999Z ℹ fail 0

@@ -140,39 +140,79 @@ function useScrollFrame() {
   return { ref, edges };
 }
 
-/** Observes tab layout and scrolls the selected tab into view. */
+/** Reveals selected tabs after horizontal layout changes; unrelated renders preserve user scrolling. */
 export function TabStrip({
   children,
   label,
   previousLabel,
   nextLabel,
+  reserveHint = false,
   ...props
 }: {
   children: ReactNode;
   label: string;
   previousLabel: string;
   nextLabel: string;
+  reserveHint?: boolean;
 } & HTMLAttributes<HTMLDivElement>) {
   const { ref, edges } = useScrollFrame();
   useEffect(() => {
     const element = ref.current;
-    const selected = element?.querySelector<HTMLElement>(
-      '[aria-selected="true"],[aria-pressed="true"],.active',
-    );
-    if (!element || !selected) return;
-    const outer = element.getBoundingClientRect(),
-      inner = selected.getBoundingClientRect();
-    if (inner.left < outer.left) element.scrollLeft -= outer.left - inner.left;
-    else if (inner.right > outer.right)
-      element.scrollLeft += inner.right - outer.right;
-  }, [children, ref]);
+    if (!element) return;
+    let previous: HTMLElement | null = null;
+    const reveal = (force = false) => {
+      const selected = element.querySelector<HTMLElement>(
+        '[aria-selected="true"],[aria-pressed="true"],[aria-current="location"],.active',
+      );
+      // React recreates children while editing and polling; stable tab identity,
+      // rather than JSX identity, decides when the user's scroll may change.
+      if (!force && selected === previous) return;
+      previous = selected;
+      if (!selected) return;
+      const outer = element.getBoundingClientRect(), inner = selected.getBoundingClientRect();
+      if (inner.left < outer.left) element.scrollLeft -= outer.left - inner.left;
+      else if (inner.right > outer.right) element.scrollLeft += inner.right - outer.right;
+    };
+    reveal();
+    // Content offsets and widths exclude manual scroll and viewport translation.
+    const horizontalGeometry = () => [element.clientWidth, element.scrollWidth,
+      previous ? previous.getBoundingClientRect().left - element.getBoundingClientRect().left + element.scrollLeft : 0,
+      ...Array.from(element.children, child => child.getBoundingClientRect().width)];
+    let previousGeometry = horizontalGeometry();
+    const checkGeometry = () => {
+      const next = horizontalGeometry();
+      const changed = next.length !== previousGeometry.length ||
+        next.some((value, index) => Math.abs(value - previousGeometry[index]!) > .5);
+      previousGeometry = next;
+      if (changed) reveal(true);
+    };
+    const resize = new ResizeObserver(checkGeometry);
+    const observed = new Set<Element>();
+    const syncChildren = () => {
+      const children = new Set(Array.from(element.children));
+      for (const child of observed) if (!children.has(child)) {
+        resize.unobserve(child);
+        observed.delete(child);
+      }
+      for (const child of children) if (!observed.has(child)) {
+        resize.observe(child);
+        observed.add(child);
+      }
+    };
+    const observer = new MutationObserver(() => { syncChildren(); reveal(); checkGeometry(); });
+    observer.observe(element, { childList: true, subtree: true, characterData: true, attributes: true,
+      attributeFilter: ["aria-selected", "aria-pressed", "aria-current", "class"] });
+    resize.observe(element);
+    syncChildren();
+    return () => { observer.disconnect(); resize.disconnect(); };
+  }, [ref]);
   return (
     <div className={s.tabs}>
       <div role="group" {...props} aria-label={props["aria-label"] ?? label} ref={ref} className={`${s.tabStrip} ${props.className ?? ""}`}>
         {children}
       </div>
-      {(edges.before || edges.after) && (
-        <p className={s.scrollHint}>{previousLabel} · {nextLabel}</p>
+      {(reserveHint || edges.before || edges.after) && (
+        <p className={`${s.scrollHint} ${reserveHint ? s.reservedHint : ""}`} aria-hidden={!(edges.before || edges.after)}>{previousLabel} · {nextLabel}</p>
       )}
     </div>
   );

@@ -160,16 +160,42 @@ test("PR #1 4212540352: pre-publish missing-items list collapses behind a real t
     form,
     /<button type="button" className="pe-readiness-toggle" aria-expanded=\{readinessOpen\}\n\s+aria-controls="pe-readiness-section" onClick=\{\(\) => setReadinessOpen\(\(open\) => !open\)\}>/,
   );
-  assert.match(form, /\{c\.progress\}\n\s+<\/button>/);
   // The controlled section carries the id and is hidden only while collapsed on a small screen.
   assert.match(form, /<section id="pe-readiness-section" hidden=\{narrowViewport && !readinessOpen\}>/);
-  // The visible label exists in all three locales via the existing copy file.
-  for (const locale of ["zh-TW", "zh-CN", "en"] as const)
-    assert.ok(productEditorCopy[locale].progress.length > 0, `${locale}: toggle label`);
   // The button styling lives in the ≤900px block; desktop has no toggle chrome at all.
   const media = css.indexOf("@media (max-width: 900px)");
   const rule = css.indexOf(".pe-readiness-toggle {", media);
   assert.ok(rule > media, "toggle styles must live in the ≤900px block");
+});
+
+test("readiness toggle renders the distinct visible editor copy in every supported locale", () => {
+  const source = readFileSync(new URL("../../apps/admin/components/ProductDocumentForm.tsx", import.meta.url), "utf8");
+  const file = ts.createSourceFile("ProductDocumentForm.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  let toggle = "";
+  const visit = (node: ts.Node) => {
+    if (ts.isJsxElement(node) && node.openingElement.attributes.properties.some(attr =>
+      ts.isJsxAttribute(attr) && attr.name.getText(file) === "className" && attr.initializer &&
+      ts.isStringLiteral(attr.initializer) && attr.initializer.text === "pe-readiness-toggle")) toggle = node.getText(file);
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  assert.ok(toggle, "execute the production toggle JSX, not a copied label");
+  const requireApp = createRequire(new URL("../../apps/admin/package.json", import.meta.url));
+  const React = requireApp("react"), { renderToStaticMarkup } = requireApp("react-dom/server");
+  const module = { exports: {} as Record<string, any> };
+  const compiled = ts.transpileModule(`export function Toggle({c, locale}: any) {
+    const readinessOpen = false, setReadinessOpen = () => {}; return (${toggle});
+  }`, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
+  runInNewContext(compiled, { module, exports: module.exports, require: requireApp });
+  for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
+    const c = productEditorCopy[locale], names = [c.navigation, c.sections, c.readinessToggle, c.progress];
+    assert.ok(names.every(name => name.trim().length > 0), `${locale}: visible copy`);
+    assert.equal(new Set(names).size, 4, `${locale}: distinct accessible names`);
+    const html = renderToStaticMarkup(React.createElement(module.exports.Toggle, { c, locale }));
+    assert.equal(html.replace(/<[^>]*>/g, "").trim(), c.readinessToggle, `${locale}: actual visible toggle text`);
+    assert.doesNotMatch(html, /\bhidden(?:=|\s|>)/, `${locale}: toggle is visible`);
+  }
+  assert.equal(Reflect.get(productEditorCopy, "unsupported"), undefined, "unknown locales have no Chinese fallback");
 });
 
 // Structural regressions complement the real browser geometry assertions; they do not prove pixels.

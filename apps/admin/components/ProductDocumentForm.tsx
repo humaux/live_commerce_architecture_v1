@@ -10,13 +10,7 @@ import type { Locale } from "@live-commerce/i18n";
 import type { Store, ProductImageList } from "@/lib/model";
 import { currencySign } from "@/lib/client";
 import { readCollections, readWarehouses } from "@/lib/catalog-v2-client";
-import {
-  fromMinor,
-  toMinor,
-  type Collection,
-  type OptionAxis,
-  type ProductDetail,
-} from "@/lib/catalog-v2-model";
+import { fromMinor, toMinor, type Collection, type OptionAxis, type ProductDetail } from "@/lib/catalog-v2-model";
 import { imageURL } from "@/lib/images-client";
 import {
   newRow,
@@ -292,15 +286,17 @@ export function ProductDocumentForm({
       }}
     >
       <aside className="pe-index">
-        <nav aria-label={c.progress}>
-          {narrowViewport ? <TabStrip label={c.progress} previousLabel={presentationCopy[locale].previous}
-            nextLabel={presentationCopy[locale].next} data-testid="product-section-tabs">{sectionButtons}</TabStrip> : sectionButtons}
+        <nav aria-label={c.navigation}>
+          {/* Keep the same section controls mounted across rotation; CSS owns the vertical/horizontal layout. */}
+          <TabStrip label={c.sections} reserveHint
+            previousLabel={presentationCopy[locale].previous} nextLabel={presentationCopy[locale].next}
+            className="pe-section-tabs" data-testid="product-section-tabs">{sectionButtons}</TabStrip>
         </nav>
         {/* Readiness accordion (comment 4212540352): real button with a visible label in all locales; >900px renders no toggle at all, desktop layout unchanged. */}
         {narrowViewport && (
           <button type="button" className="pe-readiness-toggle" aria-expanded={readinessOpen}
             aria-controls="pe-readiness-section" onClick={() => setReadinessOpen((open) => !open)}>
-            {c.progress}
+            {c.readinessToggle}
           </button>
         )}
         <section id="pe-readiness-section" hidden={narrowViewport && !readinessOpen}>

@@ -1,0 +1,75 @@
+## Purpose: preserve CI green for PR49 round-one SSR hint and localized toggle tests.
+## Depends on: Foundation run 38414578284, exact head b2edee56c279d1da8a21377c8ee0ac2531d76832, job 115355481247.
+## Used by: independent PR49 red-to-green review; this is GitHub evidence, not a local execution.
+## Source: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38414578284
+## Verdict: completed SUCCESS; started 2026-10-13T14:37:25Z, completed 2026-10-13T14:42:29Z. Excerpts below are copied from that job's log. Browser gates and final independent acceptance remain pending.
+2026-10-13T14:40:26.7451948Z shard-plan: ok (1272 top-level tests, each in exactly one of 10 groups)
+2026-10-13T14:40:26.8669865Z check-backend-coverage: ok (70 internal package dirs and 89 split-package files classified; 52 browser modes declare lc_covers)
+2026-10-13T14:40:27.3984148Z check-gates: ok (83 modes, all documented; every tracked test file is run)
+2026-10-13T14:40:27.4858826Z check-headers: OK (base 0bfe36e53acb694f4697521202e24f0790638941)
+2026-10-13T14:41:03.1254192Z ##[group]Run bash scripts/dev/test-node.sh
+2026-10-13T14:41:03.1254572Z [36;1mbash scripts/dev/test-node.sh[0m
+2026-10-13T14:41:03.1316738Z shell: /usr/bin/bash -e {0}
+2026-10-13T14:41:03.1316990Z env:
+2026-10-13T14:41:09.7139239Z ✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (2.769632ms)
+2026-10-13T14:41:09.7140870Z ✔ G-UI1 copy key parity: no missing or extra key in any locale (0.312293ms)
+2026-10-13T14:41:09.7142588Z ✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.7818ms)
+2026-10-13T14:41:09.7144963Z ✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (52.314037ms)
+2026-10-13T14:41:09.7146870Z ✔ G-UI1 dynamic and public routes match, details never appear as navigation (1.037888ms)
+2026-10-13T14:41:09.7149151Z ✔ W6-U2 ledger is a settings in-page route, preserving existing navigation (0.379138ms)
+2026-10-13T14:41:09.7151293Z ✔ Every browser spec clicks nav-orders: the orders group stays a singleton, so returns/new/print routes are nav: false (0.484725ms)
+2026-10-13T14:41:09.7153189Z ✔ TabStrip reserves a hidden hint only when the caller opts in (12.736895ms)
+2026-10-13T14:41:09.7155730Z ✔ shell-registry: every routed path has exactly one nonempty shared h1 in all three locales (492.203364ms)
+2026-10-13T14:41:09.7157665Z ✔ shell-registry: orders stays one actual group button on live and non-live routes (5.139076ms)
+2026-10-13T14:41:09.7159800Z ✔ shell-registry: loading/expired/unavailable/forbidden keep one safe heading and never leak private content (8.732898ms)
+2026-10-13T14:41:09.7161781Z ✔ created address is a strict HTTPS origin matching the assigned handle (3.942021ms)
+2026-10-13T14:41:09.7163710Z ✔ DNS instructions must name the requested origin and a bare hostname target (3.076355ms)
+2026-10-13T14:41:09.7165380Z ✔ domain kind is authoritative and closed, not inferred from host or token (0.534949ms)
+2026-10-13T14:41:09.7167181Z ✔ apex DNS retains every concrete IPv4/IPv6 address and rejects malformed values (1.565945ms)
+2026-10-13T14:41:09.7169228Z ✔ pending domain journal preserves exact action/key/target; legacy or corrupt markers never replay (1.434759ms)
+2026-10-13T14:41:09.7171249Z ✔ browser-origin gate: every refusal happens before Go is called, for every action (52.405229ms)
+2026-10-13T14:41:09.7172753Z ✔ only POST exists on the team routes (1.99745ms)
+2026-10-13T14:41:09.7174373Z ✔ unknown action is a local 404 and never reaches Go (3.923036ms)
+2026-10-13T14:41:09.7176237Z ✔ strict request grammar: wrong keys, types, ids, roles, locales and token shapes are 422 locally (19.791919ms)
+2026-10-13T14:41:09.7178623Z ✔ what reaches Go: BFF key, bearer from the cookie, no Cookie/Origin, body unchanged, exactly one call per request (66.090927ms)
+2026-10-13T14:41:09.7180830Z ✔ Go failures are rebuilt locally from allow-listed codes, never retried, and never echo the token (68.800774ms)
+2026-10-13T14:41:09.7182820Z ✔ team answer: accepts the frozen shape, null role and OIDC member without email (2.237047ms)
+2026-10-13T14:41:09.7185205Z ✔ team answer: unknown key, unknown role, bad id, bad mail state are rejected (1.083223ms)
+2026-10-13T14:41:09.7186572Z ✔ invite and accept answers are strict (1.71901ms)
+2026-10-13T14:41:09.7187991Z ✔ request grammar: every action has an exact key set and rejects junk values (0.886906ms)
+2026-10-13T14:41:09.7189807Z ✔ copy: three locales carry the same keys and a label for every role (1.670269ms)
+2026-10-13T14:41:09.7191887Z ✔ role-aware navigation: hides entries the member's permissions cannot use; unknown shows all; Team is owner-only (0.837755ms)
+2026-10-13T14:41:21.9292027Z ✔ P02 settlements directory rejects missing/link/owner/group/mode with a valid control (262.492158ms)
+2026-10-13T14:41:21.9297119Z ✔ preflight health permission grammars and API/worker consistency fail closed (1687.228217ms)
+2026-10-13T14:41:21.9299748Z ✔ merchant alert flag is explicit 0|1 and independently requires SMTP (1285.416725ms)
+2026-10-13T14:41:25.8922334Z ✔ PE13 bulk quantity skips negative rows without modifying them (0.214371ms)
+2026-10-13T14:41:25.8924309Z ✔ PE12 untracked document uses whole currency and per-order cap, never quantity (13.686799ms)
+2026-10-13T14:41:25.8926089Z ✔ PE14 missing readback is not guessed or silently cleared by full replacement (0.14475ms)
+2026-10-13T14:41:25.8928151Z ✔ bulk status accepts explicit per-item results, never empty or duplicated confirmations (0.455641ms)
+2026-10-13T14:41:25.8930835Z ✔ matrix refuses over 100 SKUs before expansion (0.251189ms)
+2026-10-13T14:41:25.8932972Z ✔ PR #1 4212540344: per-row matrix labels reappear where the matrix header is not visible (≤900px), desktop untouched (0.669761ms)
+2026-10-13T14:41:25.8935848Z ✔ PR #1 4212540352: pre-publish missing-items list collapses behind a real toggle at ≤900px instead of being removed (0.619938ms)
+2026-10-13T14:41:25.8938145Z ✔ readiness toggle renders the distinct visible editor copy in every supported locale (114.230144ms)
+2026-10-13T14:41:25.8940018Z ✔ mobile product sections reuse the existing hinted TabStrip (0.456533ms)
+2026-10-13T14:41:25.8941744Z ✔ mobile save status has its own row instead of a fixed narrow text cap (0.334475ms)
+2026-10-13T14:41:25.8943827Z ✔ empty mobile save status reserves the same line as the first dirty edit (0.311011ms)
+2026-10-13T14:41:25.8945940Z ✔ readiness cannot promise field focus while the actual destination is locked (11.860138ms)
+2026-10-13T14:41:25.8947598Z ✔ pane focus selects an enabled rendered control and rounds fractional reveal inside the clip (65.358761ms)
+2026-10-13T14:41:25.9105471Z ✔ parity: admin caps equal the Go constants (2.057373ms)
+2026-10-13T14:41:25.9106601Z ✔ image list: 4 main + 20 detail + 2 sku in role order is accepted (0.969229ms)
+2026-10-13T14:41:25.9107928Z ✔ image list: 5 main, 21 detail, wrong role order, gaps and extra keys are refused (6.019195ms)
+2026-10-13T14:41:25.9109306Z ✔ single image: role is required and its position is bounded by the role cap (0.274052ms)
+2026-10-13T14:41:25.9110405Z ✔ option text limits count Go runes rather than UTF-16 units (0.524269ms)
+2026-10-13T14:41:25.9111155Z ✔ PE14 new edit SKU carries its own shipping and clears no existing fields (25.21166ms)
+2026-10-13T14:41:25.9111902Z ✔ PE14 patch changes only price and preserves unmentioned fields (0.695679ms)
+2026-10-13T14:41:25.9113017Z ✔ PE14 on_hand is not available, zero target is transmitted, ambiguous warehouse refuses (1.147693ms)
+2026-10-13T14:41:25.9114650Z ✔ PE14 explicit clears and shipping remain per SKU on an active row (0.565376ms)
+2026-10-13T14:41:25.9115859Z ✔ PE14 archive supersedes every other edit on that SKU (b77eeb11) (0.598367ms)
+2026-10-13T14:41:25.9117224Z ✔ PE14 no-op has no command fields and changed axes explicitly archive omitted variants (0.505655ms)
+2026-10-13T14:41:25.9118113Z ✔ PE14 replacement SKU edit excludes create-only code from the strict patch grammar (0.864835ms)
+2026-10-13T14:41:25.9118625Z ℹ tests 29
+2026-10-13T14:41:25.9118835Z ℹ suites 0
+2026-10-13T14:41:25.9119038Z ℹ pass 29
+2026-10-13T14:41:25.9119239Z ℹ fail 0
+2026-10-13T14:41:25.9119451Z ℹ cancelled 0
+2026-10-13T14:41:25.9119672Z ℹ skipped 0

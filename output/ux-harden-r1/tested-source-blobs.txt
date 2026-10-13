@@ -1,0 +1,11 @@
+# Purpose: bind scoped CI proof to the exact source blobs even across later evidence-only commits.
+# Depends on: Git tree 41cd06fd01177447fe1a137529930b18d2408324, Gates run 38393003430.
+# Used by: UX-HARDEN-R1 reviewers; original git ls-tree output follows unchanged.
+100644 blob cbcb8426694e915be7113ae12242a2c23d21f82d	apps/admin/components/ProductDocument.css
+100644 blob 23ecb16fa5d66e83f9f1a83618e70b172e4013e0	apps/admin/components/ProductDocumentForm.tsx
+100644 blob f2a8d3b938e9815ac3d39fafa36f06b68a967c69	packages/ui/src/Presentation.module.css
+100644 blob 9958d292b55cc386894013f89a248ca33ac3fa0e	packages/ui/src/Presentation.tsx
+100644 blob de9ffbc010351df0672e55eb26d3b6eff05f6a21	tests/admin/product-editor-layout.acceptance.ts
+100644 blob 878c4f79d2dbbd179c2513afa0df43f8aa40c5d1	tests/admin/product-editor.acceptance.ts
+100644 blob c52ea6c63ad080c0508a10015bba06264d1c6bec	tests/admin/product-feedback.acceptance.ts
+100644 blob ba4eba50b185f5e74cb004565833921fb7f9ea9b	tests/storefront/shop-real-gate.mjs

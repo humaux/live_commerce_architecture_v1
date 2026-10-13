@@ -1,0 +1,268 @@
+# Purpose: preserve the genuine UXH01–04 GitHub CI red browser receipt.
+# Depends on: Gates run 38386230504, head 3feaf4967c7bcdce8ead732cef5b32083b9898ec, artifact 11807208320.
+# Used by: UX-HARDEN-R1 reviewers; original artifact playwright.log follows unchanged.
+Running 12 tests using 1 worker
+
+UXH01 {"locale":"zh-TW","expected":{"nav":"商品編輯導覽","group":"商品編輯區段","toggle":"查看完成度","heading":"完成度"}}
+UXH02 {"locale":"zh-TW","direction":"900→901","focusedSection":"seo","retained":false}
+UXH02 {"locale":"zh-TW","direction":"901→900","focusedSection":"seo","retained":false}
+UXH03 {"locale":"zh-TW","operation":"unrelated draft edit","before":196,"after":80}
+UXH03 {"locale":"zh-TW","operation":"readiness click reveals media","scrollLeft":0}
+UXH04 {"locale":"zh-TW","narrow":{"overflow":196,"reserved":26.796875},"wide":{"overflow":0,"reserved":0},"narrowAgain":{"overflow":196,"reserved":26.796875}}
+EDITOR_VISIBLE_CLIP_DIAGNOSTIC {"locale":"zh-TW","width":1366,"navLeft":244,"navRight":428,"navTargets":[{"label":"商品圖片","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"基本資訊","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"價格與庫存","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"規格","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"分類","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"物流","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415},{"label":"搜尋引擎最佳化","rawLeft":257,"rawRight":415,"visibleLeft":257,"visibleRight":415}],"rawTails":[]}
+  ✘   1 tests/admin/product-editor.acceptance.ts:17:3 › PE12-17 document workflow, matrix, list actions and click ledger (5.0m)
+  -   2 tests/admin/product-review.acceptance.ts:49:3 › review: bulk price 80 plus archive sends exclusive archive entry and persists
+  -   3 tests/admin/product-review.acceptance.ts:125:5 › review: create UNKNOWN then client preserves receipt fence after reload
+  -   4 tests/admin/product-review.acceptance.ts:125:5 › review: create UNKNOWN then 401 preserves receipt fence after reload
+  -   5 tests/admin/product-review.acceptance.ts:125:5 › review: create UNKNOWN then 403 preserves receipt fence after reload
+  -   6 tests/admin/product-review.acceptance.ts:125:5 › review: copy UNKNOWN then client preserves receipt fence after reload
+  -   7 tests/admin/product-review.acceptance.ts:125:5 › review: copy UNKNOWN then 401 preserves receipt fence after reload
+  -   8 tests/admin/product-review.acceptance.ts:125:5 › review: copy UNKNOWN then 403 preserves receipt fence after reload
+  -   9 tests/admin/product-review.acceptance.ts:125:5 › review: order UNKNOWN then 403 preserves receipt fence after reload
+  -  10 tests/admin/product-review.acceptance.ts:125:5 › review: publish UNKNOWN then 403 preserves receipt fence after reload
+  -  11 tests/admin/product-feedback.acceptance.ts:15:5 › feedback: identical image-required validation reveals again at 1586px
+  -  12 tests/admin/product-feedback.acceptance.ts:15:5 › feedback: identical image-required validation reveals again at 390px
+
+
+  1) tests/admin/product-editor.acceptance.ts:17:3 › PE12-17 document workflow, matrix, list actions and click ledger 
+
+    Error: UXH01 navigation has its distinct localized name
+
+    expect(locator).toHaveAccessibleName(expected) failed
+
+    Locator:  locator('form.pe-document').locator('.pe-index nav')
+    Expected: "商品編輯導覽"
+    Received: "完成度"
+    Timeout:  1000ms
+
+    Call log:
+      - UXH01 navigation has its distinct localized name locator('form.pe-document').locator('.pe-index nav') with timeout 1000ms
+      - waiting for locator('form.pe-document').locator('.pe-index nav')
+        11 × locator resolved to <nav aria-label="完成度">…</nav>
+           - unexpected value "完成度"
+
+
+       at product-editor-layout.acceptance.ts:57
+
+      55 |     await setExpanded(true);
+      56 |     console.log("UXH01", JSON.stringify({ locale, expected: labels }));
+    > 57 |     await verify(nav, "UXH01 navigation has its distinct localized name").toHaveAccessibleName(labels!.nav);
+         |                                                                           ^
+      58 |     await verify(tabs, "UXH01 TabStrip group has its distinct localized name").toHaveAccessibleName(labels!.group);
+      59 |     await verify(tabs, "UXH01 named strip exposes the group role").toHaveAttribute("role", "group");
+      60 |     await verify(toggle, "UXH01 readiness action has its distinct localized name").toHaveAccessibleName(labels!.toggle);
+        at assertProductEditorHardening (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:57:75)
+        at assertProductEditorReservedLayout (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:199:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:193:11
+
+    Error: UXH01 TabStrip group has its distinct localized name
+
+    expect(locator).toHaveAccessibleName(expected) failed
+
+    Locator:  locator('form.pe-document').getByTestId('product-section-tabs')
+    Expected: "商品編輯區段"
+    Received: "完成度"
+    Timeout:  1000ms
+
+    Call log:
+      - UXH01 TabStrip group has its distinct localized name locator('form.pe-document').getByTestId('product-section-tabs') with timeout 1000ms
+      - waiting for locator('form.pe-document').getByTestId('product-section-tabs')
+        11 × locator resolved to <div role="group" aria-label="完成度" data-testid="product-section-tabs" class="Presentation-module__8VabpW__tabStrip ">…</div>
+           - unexpected value "完成度"
+
+
+       at product-editor-layout.acceptance.ts:58
+
+      56 |     console.log("UXH01", JSON.stringify({ locale, expected: labels }));
+      57 |     await verify(nav, "UXH01 navigation has its distinct localized name").toHaveAccessibleName(labels!.nav);
+    > 58 |     await verify(tabs, "UXH01 TabStrip group has its distinct localized name").toHaveAccessibleName(labels!.group);
+         |                                                                                ^
+      59 |     await verify(tabs, "UXH01 named strip exposes the group role").toHaveAttribute("role", "group");
+      60 |     await verify(toggle, "UXH01 readiness action has its distinct localized name").toHaveAccessibleName(labels!.toggle);
+      61 |     await verify(checklist.getByRole("heading", { level: 2 }), "UXH01 readiness h2 retains the checklist name").toHaveAccessibleName(labels!.heading);
+        at assertProductEditorHardening (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:58:80)
+        at assertProductEditorReservedLayout (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:199:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:193:11
+
+    Error: UXH01 readiness action has its distinct localized name
+
+    expect(locator).toHaveAccessibleName(expected) failed
+
+    Locator:  locator('form.pe-document').locator('.pe-readiness-toggle')
+    Expected: "查看完成度"
+    Received: "完成度"
+    Timeout:  1000ms
+
+    Call log:
+      - UXH01 readiness action has its distinct localized name locator('form.pe-document').locator('.pe-readiness-toggle') with timeout 1000ms
+      - waiting for locator('form.pe-document').locator('.pe-readiness-toggle')
+        11 × locator resolved to <button type="button" aria-expanded="true" class="pe-readiness-toggle" aria-controls="pe-readiness-section">完成度</button>
+           - unexpected value "完成度"
+
+
+       at product-editor-layout.acceptance.ts:60
+
+      58 |     await verify(tabs, "UXH01 TabStrip group has its distinct localized name").toHaveAccessibleName(labels!.group);
+      59 |     await verify(tabs, "UXH01 named strip exposes the group role").toHaveAttribute("role", "group");
+    > 60 |     await verify(toggle, "UXH01 readiness action has its distinct localized name").toHaveAccessibleName(labels!.toggle);
+         |                                                                                    ^
+      61 |     await verify(checklist.getByRole("heading", { level: 2 }), "UXH01 readiness h2 retains the checklist name").toHaveAccessibleName(labels!.heading);
+      62 |     await setExpanded(false);
+      63 |
+        at assertProductEditorHardening (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:60:84)
+        at assertProductEditorReservedLayout (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:199:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:193:11
+
+    Error: UXH02 section button retains keyboard focus when leaving narrow layout
+
+    expect(locator).toBeFocused() failed
+
+    Locator:  locator('form.pe-document').locator('.pe-index nav').locator('button[aria-controls="seo"]')
+    Expected: focused
+    Received: inactive
+    Timeout:  1000ms
+
+    Call log:
+      - UXH02 section button retains keyboard focus when leaving narrow layout locator('form.pe-document').locator('.pe-index nav').locator('button[aria-controls="seo"]') with timeout 1000ms
+      - waiting for locator('form.pe-document').locator('.pe-index nav').locator('button[aria-controls="seo"]')
+        11 × locator resolved to <button type="button" aria-controls="seo">搜尋引擎最佳化</button>
+           - unexpected value "inactive"
+
+
+       at product-editor-layout.acceptance.ts:75
+
+      73 |     console.log("UXH02", JSON.stringify({ locale, direction: "900→901", focusedSection,
+      74 |       retained: await focused.evaluate(el => document.activeElement === el) }));
+    > 75 |     await verify(focused, "UXH02 section button retains keyboard focus when leaving narrow layout").toBeFocused();
+         |                                                                                                     ^
+      76 |     // Reacquire focus after a RED loss so the reverse transition is independently tested.
+      77 |     focused = await focusLastSection();
+      78 |     await expect(focused).toBeFocused();
+        at assertProductEditorHardening (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:75:101)
+        at assertProductEditorReservedLayout (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:199:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:193:11
+
+    Error: UXH02 section button retains keyboard focus when entering narrow layout
+
+    expect(locator).toBeFocused() failed
+
+    Locator:  locator('form.pe-document').locator('.pe-index nav').locator('button[aria-controls="seo"]')
+    Expected: focused
+    Received: inactive
+    Timeout:  1000ms
+
+    Call log:
+      - UXH02 section button retains keyboard focus when entering narrow layout locator('form.pe-document').locator('.pe-index nav').locator('button[aria-controls="seo"]') with timeout 1000ms
+      - waiting for locator('form.pe-document').locator('.pe-index nav').locator('button[aria-controls="seo"]')
+        11 × locator resolved to <button type="button" aria-controls="seo">搜尋引擎最佳化</button>
+           - unexpected value "inactive"
+
+
+       at product-editor-layout.acceptance.ts:83
+
+      81 |     console.log("UXH02", JSON.stringify({ locale, direction: "901→900", focusedSection,
+      82 |       retained: await focused.evaluate(el => document.activeElement === el) }));
+    > 83 |     await verify(focused, "UXH02 section button retains keyboard focus when entering narrow layout").toBeFocused();
+         |                                                                                                      ^
+      84 |
+      85 |     await resize(390);
+      86 |     await nav.locator('button[aria-controls="basics"]').click();
+        at assertProductEditorHardening (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:83:102)
+        at assertProductEditorReservedLayout (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:199:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:193:11
+
+    Error: UXH03 unrelated draft render preserves the user's strip position
+
+    expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 1
+    Received:    116
+
+       at product-editor-layout.acceptance.ts:106
+
+      104 |     const after = await tabs.evaluate(el => el.scrollLeft); // READ/MEASURE
+      105 |     console.log("UXH03", JSON.stringify({ locale, operation: "unrelated draft edit", before, after }));
+    > 106 |     verify(Math.abs(after - before), "UXH03 unrelated draft render preserves the user's strip position").toBeLessThanOrEqual(1);
+          |                                                                                                          ^
+      107 |     await name.fill(originalName);
+      108 |     await scrollToEnd();
+      109 |     await setExpanded(true);
+        at assertProductEditorHardening (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:106:106)
+        at assertProductEditorReservedLayout (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:199:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:193:11
+
+    Error: UXH04 hint row stays reserved when overflow disappears
+
+    expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 1
+    Received:    26.796875
+
+       at product-editor-layout.acceptance.ts:134
+
+      132 |     verify(wide.overflow, "UXH04 wider viewport removes real overflow").toBeLessThanOrEqual(1);
+      133 |     verify(narrow.reserved, "UXH04 overflow hint has a measurable reserved row").toBeGreaterThan(0);
+    > 134 |     verify(Math.abs(wide.reserved - narrow.reserved), "UXH04 hint row stays reserved when overflow disappears").toBeLessThanOrEqual(1);
+          |                                                                                                                 ^
+      135 |     await resize(390);
+      136 |     const narrowAgain = await measureHintRow();
+      137 |     await verify(hint, "UXH04 hint returns with overflow").toBeVisible();
+        at assertProductEditorHardening (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:134:113)
+        at assertProductEditorReservedLayout (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:199:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:193:11
+
+    Error: UXH04 hint row stays reserved when overflow returns
+
+    expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 1
+    Received:    26.796875
+
+       at product-editor-layout.acceptance.ts:138
+
+      136 |     const narrowAgain = await measureHintRow();
+      137 |     await verify(hint, "UXH04 hint returns with overflow").toBeVisible();
+    > 138 |     verify(Math.abs(narrowAgain.reserved - wide.reserved), "UXH04 hint row stays reserved when overflow returns").toBeLessThanOrEqual(1);
+          |                                                                                                                   ^
+      139 |     console.log("UXH04", JSON.stringify({ locale, narrow, wide, narrowAgain }));
+      140 |     seen.add(locale);
+      141 |     hardenedLocales.set(page, seen);
+        at assertProductEditorHardening (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:138:115)
+        at assertProductEditorReservedLayout (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor-layout.acceptance.ts:199:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:193:11
+
+    Test timeout of 300000ms exceeded.
+
+    Error: locator.click: Test ended.
+    Call log:
+      - waiting for getByRole('navigation', { name: '商品編輯導覽' }).getByRole('button', { name: '商品圖片', exact: true })
+
+
+      205 |               exact: true,
+      206 |             })
+    > 207 |             .click();
+          |              ^
+      208 |           await fit();
+      209 |           await page.addScriptTag({ content: axe.source });
+      210 |           const accessibility = await page.evaluate(
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:207:14
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.qCFGqpHI/catalog-core/20261013T110450.791854566/results/catalog-core-PE12-17-docum-0e9d3-st-actions-and-click-ledger/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.qCFGqpHI/catalog-core/20261013T110450.791854566/results/catalog-core-PE12-17-docum-0e9d3-st-actions-and-click-ledger/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/run.qCFGqpHI/catalog-core/20261013T110450.791854566/results/catalog-core-PE12-17-docum-0e9d3-st-actions-and-click-ledger/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/run.qCFGqpHI/catalog-core/20261013T110450.791854566/results/catalog-core-PE12-17-docum-0e9d3-st-actions-and-click-ledger/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Slow test file: tests/admin/product-editor.acceptance.ts (5.0m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  1 failed
+    tests/admin/product-editor.acceptance.ts:17:3 › PE12-17 document workflow, matrix, list actions and click ledger 
+  11 did not run
