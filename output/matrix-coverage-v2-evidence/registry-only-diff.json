@@ -1,0 +1,12 @@
+{
+  "change": "append only four GROUP3 top-level tests to existing g06",
+  "names": [
+    "TestProductEditorMatrixLedgerEvidenceDriftIntegrity",
+    "TestProductEditorMatrixLedgerEvidenceProducerEvolution",
+    "TestProductEditorMatrixLedgerEvidenceRunReceipt",
+    "TestProductEditorMatrixLedgerEvidenceTableEvolution"
+  ],
+  "other_groups_and_fields_unchanged": true,
+  "plan_sha256": "b0ce1850b25472fe0508897d4297878e632e87959c33242ba67d5932a895e614",
+  "limit_or_gate_changes": false
+}

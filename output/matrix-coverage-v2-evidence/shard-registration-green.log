@@ -1,0 +1,15 @@
+✔ parser: only compiled, correctly-shaped Test functions of untagged _test.go files (2.325ms)
+✔ the real plan: every top-level test of tests/foundation runs in exactly one group (2140.526167ms)
+✔ a new test (in no list) still runs, exactly once, in the catch-all group; the same name with no catch-all is red (1434.771042ms)
+✔ a test listed in two groups is red; drift beyond the limit is red (1327.666417ms)
+✔ regexes: anchored explicit lists; the catch-all skips exactly everyone else's tests (0.818333ms)
+✔ pack: deterministic, balanced to within the longest test, every name once (10.866916ms)
+✔ parseDurations: top-level lines only (0.272375ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5255.358083

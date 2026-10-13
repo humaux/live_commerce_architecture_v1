@@ -4,7 +4,7 @@
 import hashlib, json, os, pathlib, signal, subprocess, sys, time
 name, seconds, *command = sys.argv[1:]
 out = pathlib.Path(__file__).parent
-paths = ["tests/foundation/catalog_matrix_ledger_test.go", "tests/foundation/catalog_matrix_evidence_test.go", "docs/delivery/GATES.md"]
+paths = ["tests/foundation/catalog_matrix_ledger_test.go", "tests/foundation/catalog_matrix_evidence_test.go", "docs/delivery/GATES.md", "scripts/dev/shard-plan.json"]
 def hashes():
     return {p: hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest() for p in paths}
 before = hashes()

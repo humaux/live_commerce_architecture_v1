@@ -766,7 +766,11 @@
     "TestT06DispatcherBudgetPersistsManualRequirement",
     "TestT06DispatcherRealProcessCrashRescue",
     "TestT06GoPlanAtomicReplayCanonicalAndReadback",
-    "TestT06SQLEventFailureRollsBackClaimAndCompletion"
+    "TestT06SQLEventFailureRollsBackClaimAndCompletion",
+    "TestProductEditorMatrixLedgerEvidenceDriftIntegrity",
+    "TestProductEditorMatrixLedgerEvidenceProducerEvolution",
+    "TestProductEditorMatrixLedgerEvidenceRunReceipt",
+    "TestProductEditorMatrixLedgerEvidenceTableEvolution"
    ]
   },
   {

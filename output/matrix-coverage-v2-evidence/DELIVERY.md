@@ -6,7 +6,7 @@ Used by: parent integrator and independent reviewer. -->
 - task_id: `f597a8bc-ce29-4b68-ab31-815dd5a319cb` (parent); subcanvas `codex4-matrix-v2-sub-evidence`.
 - base_commit: `0bfe36e53acb694f4697521202e24f0790638941`; branch `unit/matrix-coverage-v2-evidence`; worktree `.worktrees/matrix-coverage-v2-evidence`.
 - Author: `/root/matrix_v2_evidence`, implementation/test role; inherited actual model/reasoning **UNKNOWN** (not exposed). No delegation, push or PR.
-- Changed paths: `tests/foundation/catalog_matrix_ledger_test.go`, `tests/foundation/catalog_matrix_evidence_test.go`, focused strict-delivery section of `docs/delivery/GATES.md`, `output/matrix-coverage-v2-evidence/**`.
+- Changed paths: `tests/foundation/catalog_matrix_ledger_test.go`, `tests/foundation/catalog_matrix_evidence_test.go`, focused strict-delivery section of `docs/delivery/GATES.md`, `output/matrix-coverage-v2-evidence/**`; root explicitly extended write_paths to `scripts/dev/shard-plan.json` for four g06 registrations, with integrator owning final JSON merge.
 - Contract/dependency/migration changes: none. The 14-entry producer declaration and current live-browser exact-ledger interface stay unchanged.
 
 The root cause was the typed drift return preceding native copy, required-file and outcome checks, while artifact hashing covered only the browser subtree. The validator now checks every artifact-index path/byte/hash inside the canonical package, all copy/index memberships, all five required native files and native outcome coherence before classifying source drift. All recorded source digests must remain valid; an absent newly introduced producer is historical only if the receipt-bound gate declaration source differs from the current checkout. An unchanged declaration missing a producer remains malformed. The follow-up P2 control also requires the independently indexed frozen `browser-product-editor.json` receipt to corroborate the recorded old producer set, tested/after commit, exact full-mode command and explicit exit 0 before drift. An unrelated gate comment cannot excuse removing a producer still present in the immutable run receipt.
@@ -15,7 +15,7 @@ Historical ledgers retain schema, unique identity, nonempty claim, PASS, locale/
 
 ## Actual commands and receipts
 
-The runner [run.py](run.py) bounds each command, preserves full logs and binds all three edited source files before/after; every recorded run has unchanged source hashes. All focused commands use `-count=1 -v`.
+The runner [run.py](run.py) bounds each command, preserves full logs and binds the validator/docs sources before/after, and adds `scripts/dev/shard-plan.json` from the focused registration red onwards; every recorded run has unchanged source hashes. All focused commands use `-count=1 -v`.
 
 | Command | Exit | Evidence |
 | --- | ---: | --- |
@@ -32,8 +32,13 @@ The runner [run.py](run.py) bounds each command, preserves full logs and binds a
 | `go test ./tests/foundation -run '^TestProductEditorMatrix' -count=1 -v` after independent receipt binding | 0 | **final source** [focused-receipt-final.json](focused-receipt-final.json), [uncompressed log](focused-receipt-final.log): 10 new receipt controls plus existing strict/default policy and genuine new-producer/table evolution |
 | `LC_MATRIX_EVIDENCE_STRICT=1 go test ./tests/foundation -run '^TestProductEditorMatrixLedgerEvidence$' -count=1 -v` after receipt binding | 1 (expected historical negative) | [strict-receipt-historical.json](strict-receipt-historical.json), [log](strict-receipt-historical.log): actual canonical full-run receipt validates; source drift remains fatal in strict mode |
 | `git diff --check` after receipt binding | 0 | [diff-receipt-final.json](diff-receipt-final.json), [log](diff-receipt-final.log) |
+| `pnpm install --frozen-lockfile` | 0 | [deps-frozen-install.json](deps-frozen-install.json), [log](deps-frozen-install.log), [deps-state.json](deps-state.json): existing store reused49/downloaded0, lockfile/source unchanged |
+| `bash scripts/dev/test-node.sh` on `a7abaefe` | 1 (RED) | [test-node-final.json](test-node-final.json), [full log](test-node-final.log): sole failure is existing shard-plan synthetic +3 test capacity control, 59 existing unplanned +3 =62 >60 |
+| `bash scripts/dev/check-gates.sh` on `a7abaefe` | 0 | [check-gates-final.json](check-gates-final.json), [full log](check-gates-final.log): actual plan59 unplanned and1276 top-level names valid; prior to explicit registration |
+| `node --test tests/ci/shard-plan.test.mjs` before explicit registration | 1 (RED) | [shard-registration-red.json](shard-registration-red.json), [full log](shard-registration-red.log): same +3 capacity failure |
+| `node --test tests/ci/shard-plan.test.mjs` after explicit registration | 0 (7/7) | [shard-registration-green.json](shard-registration-green.json), [full log](shard-registration-green.log), [registry-only-diff.json](registry-only-diff.json) |
 
-Final ledger/evidence/GATES SHA-256 values are bound in `focused-receipt-final.json`; its checkout base SHA is recorded with dirty-source content hashes, not asserted as a pristine tested commit. E3 evidence proves the filesystem validator and test-entrypoint behavior in the tested DB-free environment. It does not prove current UI clicks, provider, production or independent acceptance.
+Unchanged final validator/docs SHA-256 values are bound in `focused-receipt-final.json`; its checkout base SHA is recorded with dirty-source content hashes, not asserted as a pristine tested commit. The final registry SHA-256 is bound in `shard-registration-green.json`. E3 evidence proves the filesystem validator, test-entrypoint behavior and focused shard registration in the tested DB-free environment; full broad reruns on this registry freeze are pending. It does not prove current UI clicks, provider, production or independent acceptance.
 
 ## Delivery checklist and remaining work
 
@@ -43,9 +48,13 @@ Final ledger/evidence/GATES SHA-256 values are bound in `focused-receipt-final.j
 LC_MATRIX_EVIDENCE_STRICT=1 go test ./tests/foundation -run '^TestProductEditorMatrixLedgerEvidence$' -count=1 -v
 ```
 
-- `bash scripts/dev/test-node.sh`: **NOT_RUN**, parent ordered HOLD until a serialized broad-gate slot; unrelated child deadlines occurred under competing agents.
-- `bash scripts/dev/check-gates.sh`: **NOT_RUN**, same serialized slot requirement.
-- Current full browser/PG, CI and independent review: **NOT_RUN** here; parent owns serial resources, push and review.
+- `bash scripts/dev/test-node.sh`: first run **exit1** above; after focused registry repair, final full rerun **NOT_RUN/HOLD**, parent started GROUP1 native after actual PG slot became free.
+- `bash scripts/dev/check-gates.sh`: initial pre-registration run **exit0**; final registry-freeze rerun **NOT_RUN/HOLD**, same native resource window.
+- Current full browser/PG: **NOT_RUN and not required for unchanged GROUP3 UI**; CI and independent review **NOT_RUN** here, parent owns resources, push and review.
 - Strict current-source canonical delivery: **NOT_RUN**; old canonical remains historical, unmodified. The strict historical failure is expected and is not PASS.
 - Historical old expected claims are not compared to a future current table during drift; immutable schema/outcomes remain checked. A historical SKIP cannot certify current controls.
 - No owned test fixture/process remains after these commands. All failure and red evidence is retained; no foreign files were cleaned.
+
+## Minimal shared registry integration
+
+The first Node run found that the four new GROUP3 Go names left the existing plan at59 unplanned; the unchanged synthetic +3 control then correctly failed at62 >60. Root authorized appending exactly these four names to existing g06. Other groups, existing names, estimates and thresholds are byte/structure preserved; no repack or assertion change. The same tests remain selected by g06. Root owns final shared JSON integration; full broad reruns will resume after the GROUP1 native resource window.
