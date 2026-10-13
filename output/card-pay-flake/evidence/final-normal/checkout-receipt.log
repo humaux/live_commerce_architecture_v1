@@ -1,0 +1,15 @@
+# Purpose: preserve selected unchanged CI checkout and gate-verdict lines; this is an excerpt, not the full job log.
+# Depends on: Gates38466746876 attempt1 job115536760460; full job log SHA256 41ed00a40ad3971cf67d814a92bd1531956469f66425c1814ee0c4d904367bc1; original lines410-413 and1199-1206.
+# Used by: CARD-PAY-FLAKE reviewers to bind normal CI to actual synthetic merge9dd9998a56643fa6bd3b58c00af4488499a01c9b of head46c21310accd6498e21e0e28ab8ce90b4ec63094 into base256e9740ced9c5de05a83f58eb9f4c79a231b7b2.
+2026-10-13T21:24:42.9236901Z HEAD is now at 9dd9998a Merge 46c21310accd6498e21e0e28ab8ce90b4ec63094 into 256e9740ced9c5de05a83f58eb9f4c79a231b7b2
+2026-10-13T21:24:42.9341287Z ##[endgroup]
+2026-10-13T21:24:42.9385873Z [command]/usr/bin/git log -1 --format=%H
+2026-10-13T21:24:42.9412284Z 9dd9998a56643fa6bd3b58c00af4488499a01c9b
+2026-10-13T21:26:48.0135141Z === RUN   TestBrowserCardPayments
+2026-10-13T21:27:18.0283967Z     browser_card_payments_test.go:197: W4-U1 BROWSER (MOCK Stripe): admin half passed (card-payments + settlements); screenshots hashed; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.a17MV1Mw/card-payments/20261013T212702.783207482
+2026-10-13T21:27:18.0335929Z     browser_card_payments_test.go:198: CARD_PAY_FIXTURE released_setup_pools=24 before_buyer=true
+2026-10-13T21:27:33.8162645Z     browser_card_payments_test.go:218: W4-U1 BROWSER buyer half passed (disclosure present above the pay button and on the paid page, absent for a primary connection); evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.a17MV1Mw/card-payments/20261013T212702.783207482
+2026-10-13T21:27:34.3226459Z --- PASS: TestBrowserCardPayments (46.31s)
+2026-10-13T21:27:34.3239692Z PASS
+2026-10-13T21:27:35.3347110Z ok  	livecommerce/tests/foundation	47.389s
+2026-10-13T21:27:35.6829129Z PASS: W4-U1 isolated admin + storefront Next, Go, PG, real worker; platform Stripe = MOCK (independent fake; designate/open/allowlist/block through the operator definers; statements through sync -> close -> payout record), no Stripe, no key, test mode only; merchant enable/disable (CAS PUT, 409 reload), every state badge, platform-not-OPEN hides the toggle, BLOCKED disable-only, settlements list + detail, no acct_/sk_/rk_ in DOM/network/storage; buyer collector disclosure in zh-TW + zh-CN + en above the pay button and on the paid page, absent for a primary connection; desktop + 390px; not Stripe, provider or deployment acceptance; SANDBOX and LIVE are NOT_RUN.

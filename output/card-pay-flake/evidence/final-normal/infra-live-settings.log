@@ -1,0 +1,11 @@
+# Purpose: preserve the required-CI infrastructure refusal; this is an excerpt and does not claim browser acceptance.
+# Depends on: Gates38466746876 attempt1 head46c21310accd6498e21e0e28ab8ce90b4ec63094 job115536763126 actual21:31:50-21:33:15UTC; artifact11852890754 digest e39220234ff8b5df4a30bae06c9ab4d07ed79391db719e2885466b7988c799ef.
+# Used by: CARD-PAY-FLAKE PR52 owner to distinguish dependency-download failure before Go/browser execution from the completed green normal card gate.
+# Original artifact gate log SHA256: 05c13685e246747ccab443908edb56b616aabd0655b92a8caebfb08a7438577b.
+# Original direct job log SHA256: f88f456e8e7111cc35e14dd022ccc1e376d5af26453667f2b21aa4ce5f104228; original lines1133-1137 below.
+# The mode's Node tests (38/38) and admin Next build passed in CI; Go setup failed, so the Go/browser portion is NOT_RUN. No source change or rerun was made at21:40UTC while the original round remained active.
+2026-10-13T21:33:10.8329321Z # livecommerce/tests/foundation
+2026-10-13T21:33:10.8353550Z ##[error]../../../go/pkg/mod/github.com/jackc/pgx/v5@v5.11.0/pgconn/auth_scram.go:33:2: golang.org/x/text@v0.42.0: read "https://proxy.golang.org/golang.org/x/text/@v/v0.42.0.zip": stream error: stream ID 29; INTERNAL_ERROR; received from peer
+2026-10-13T21:33:10.8361450Z FAIL	livecommerce/tests/foundation [setup failed]
+2026-10-13T21:33:10.8361914Z FAIL
+2026-10-13T21:33:11.0321745Z ##[error]Process completed with exit code 1.
