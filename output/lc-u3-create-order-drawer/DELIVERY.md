@@ -1,5 +1,50 @@
 # LC-U3 create-order drawer delivery
 
+## PR32 r5 — order-scoped queued reminder links (2026-10-13)
+
+**Source pushed; current CI acceptance PENDING.** Code/test HEAD **`aefd9848b9b6af1dca4f44e09db02607811de87c`** includes product fix **`d563301ef21f7c09cdaa9a1277fc6f6bb05b4f5d`** and bounded valid-fixture commits5ee394af/aefd9848, based on accepted unit head **`883eb869e378edbc00d5fb0a7c5a858c7b820170`** and its merged integration **`0bfe36e53acb694f4697521202e24f0790638941`**. This section supersedes the r4 store-wide legacy-guard limitation below. Owner's 2026-10-13 rule routes all new tests/builds/browser acceptance to GitHub CI; no local acceptance command has been restarted.
+
+- Implementer: Codex-3; GPT-6 family instruction, actual runtime model/effort identifiers NOT_EXPOSED. Worktree `.worktrees/lc-u3-create-order-drawer`, branch `unit/lc-u3-create-order-drawer`. Read-only mapping/review and test-only child work used separate ownership; test writer branch `codex/pr32-r5-stale-link` at base883eb869, changes cherry-picked and reviewed. No recursive delegation.
+- Allowed writes in this round: `migrations/0171_checkout_reminder_order_guard.sql`; `internal/merchanttools/{manual.go,checkout_reminders.go,order_for_buyer.go}`; `internal/inbox/reminders.go`; `contracts/{live-console-v1.md,storefront-v2.md}`; `tests/foundation/{queued_order_link_batch_test.go,queued_order_link_response_test.go,queued_order_link_target_test.go,checkout_reminder_test.go}`; this DELIVERY and its `r5-ci/` receipts. Migration0171 was reserved in coordination. Owner `output/ext-agents/**`, migration0144, dependencies, route/BFF shapes and all UI/browser specs are untouched by this delta.
+- Evidence: **E1 source review; causal batch RED recorded in CI, full current E3 green pending.** REAL_PG tests use actual signed intake, merchant HTTP transactions, reminder scanner/planner, River and HPKE. Only disclosed synthetic buyer/order fixture insertion and test interposition are used; dispatcher is paused and Graph call count must remain0. Meta LIVE and G07 remain NOT_RUN.
+
+Thread replies / fixes:
+
+- **4256890998:** the missing reminder order identity made a nonterminal reminder protect every order in the store. New migration0171 records authoritative `crm_bundle_facts.order_id`; same-order transaction locking calls the scoped `inbox.order_pay_link_pending` definer. Legacy missing-order reminders correlate only through immutable order origins and the exact request bundle or same-store operation journal; no latest-order guess or store-wide fallback. Each newly planned operation is also checked against the order whose link was issued before commit. A candidate change rolls back that buyer's link/operation/secret/job and reports `not_remindable`, allowing independent buyers in the batch to continue.
+- **4256912975:** a real competing reminder can supersede Place's original token before payment-DM planning. When planning reports `not_sent/link_unavailable`, the response and same-key replay now return explicit `buyer_link:null`. Other not-sent reasons, including `window_closed` with a still-valid link, retain their existing behavior.
+
+New regression tests:
+
+| Test | Required real-seam result |
+|---|---|
+| `TestQueuedOrderLinkTwoBuyerReminderBatch` | Two distinct unpaid buyers both queue, with one valid order-matching link/READY operation/sealed secret/held job each; same-order regeneration refuses while an unrelated order succeeds. |
+| `TestQueuedOrderLinkLegacyReminderScope` | Remove only legacy order metadata; exact origin/journal association still protects that order while another buyer remains regenerable. |
+| `TestQueuedOrderLinkForBuyerResponseAfterConcurrentPlan` | After real bank-transfer Place and the bundle receipt commit, interpose real RegenerateLink and a distinct-key real payment-DM plan. The original token dies, the sealed competing token remains valid, response/replay has no dead URL and order/receipt/bundle/DM counts remain exact. |
+| `TestQueuedOrderLinkReminderCandidateIdentity` | Scan A, issue A, then recheck newer B in the same bundle: exact rollback/refusal for that buyer, independent C still queues; later B plan seals B and protects only B. |
+| `TestCheckoutReminderMigration0144ExactACL` (extended) | Pin the new definer's exact owner, `SECURITY DEFINER`, `search_path=pg_catalog`, PUBLIC revoke and runtime-only EXECUTE; workers have no EXECUTE and no new table privilege is granted. |
+
+CI registration (run conclusions will be updated from GitHub; queued/in-progress is not PASS or causal RED):
+
+| Role | Source HEAD | CI run | Current result |
+|---|---|---|---|
+| Tests-only RED1, unchanged product883 | `bd4829216d577994463cee2653960e7179ce904c` | [Gates38379906480](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38379906480) | Native batch assertion FAIL: queued1/refused1 instead of2/0; artifact11803888339. Entire run CANCELLED after a stalled test failure exit, so no complete focused exit verdict. Response failed its fixture sentinel, not the target defect; missing new ACL function also failed as expected. |
+| Tests-only RED2, added candidate race and bounded test interposition | `0d093e9216e598734e76e756b7261427348b52b1` | [Gates38381851583](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38381851583) | CANCELLED before gate; NOT_RUN. |
+| Initial fixed focused suite | `d563301ef21f7c09cdaa9a1277fc6f6bb05b4f5d` | [Gates38382615370](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38382615370) | CANCELLED before gate for callback safety; NOT_RUN. |
+| Initial required PR modes | `d563301ef21f7c09cdaa9a1277fc6f6bb05b4f5d` | [Gates38382155444](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38382155444) | Cancellation requested for invalid response fixture/failure-exit safety; no product acceptance verdict. Contract drift plan SUCCESS. |
+| Fixed Foundation, Node/structure/security gates | same fix HEAD | [Foundation38382155046](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38382155046) | SUCCESS; Node, check-gates, dependency docs/map, secret lint and vulnerability scan. Go/PG acceptance remains in Gates. |
+| Corrected tests-only RED3, unchanged product883 | `4d99d19de1b0c3af71ec6c0229df2d194aaf34e6` | [Gates38385863056](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38385863056) | PENDING; exact two-buyer batch and supported competing payment-DM response race. Product diff from883 is empty. |
+| Corrected fixed focused REAL_PG/security/compatibility | `aefd9848b9b6af1dca4f44e09db02607811de87c` | [Gates38385979096](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38385979096) | PENDING; full focused regex below. |
+| Corrected required PR modes | same code/test HEAD | [Gates38385984021](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38385984021) | PENDING; full repo-selected set, no exclusions. |
+| Corrected Foundation | same code/test HEAD | [Foundation38385983363](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38385983363) | PENDING. |
+
+Fixture correction: ManualOrders supports bank_transfer, pay_at_pickup and COD, none of which places an AWAITING_PAYMENT order. The initial response fixture's real reminder was therefore ineligible; that setup failure is not causal RED. The corrected response case uses the supported bank-transfer state and the real competing payment-DM planner to reproduce the same stale-token branch, while the separate batch/legacy/candidate cases test actual checkout reminders. Exactly one competing regeneration audit is required. Error returns in nested transaction callbacks preserve rollback on assertion failure; no testing.Fatal/Goexit is used inside those callbacks.
+
+Fixed focused regex: `TestQueuedOrderLink|TestCheckoutReminder|TestLiveClaimsKC03|TestClaimsRetentionCRP02|TestLiveConsoleOrderForBuyerPayLinkOutcomes|TestLiveConsoleOrderForBuyerKeyBoundToItsBody`. CI uses its existing focused/job budgets; no assertion, timeout or coverage bound was loosened. New response-test interposition alone has a10s context deadline so its real competing call cannot silently hang. Next production browser builds perform Next's TypeScript checks; the Foundation workflow does not independently run tsc. GitHub completion notifications, the integrator's round packet and the existing thread heartbeat `pr36-lc-u3` (updated to CI-only PR32 ownership, every15minutes, quiet without meaningful change) are the wake path. This owner reads checks/logs/artifacts via gh and retains PR ownership until merge. No new task or local test process was created.
+
+Historical acceptance at883 is now verified **SUCCESS**: [Gates38374853066](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38374853066), all78 jobs with no failure, and [Foundation38374852669](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38374852669). These accept r4 only, not the new migration/code. Pre-directive r5 local attempts are **NOT_RUN** (interruption143, Docker-unavailable1, owner cancellation1), preserved under ignored `output/playwright/lc-u3-k3-p2/r5-red-batch*`; none provides causal RED or PASS. All newly claimed runtime verdicts must come from the CI run IDs above.
+
+---
+
 ## PR32 r4 — CI acceptance handoff (2026-10-13)
 
 **READY for isolated GitHub CI; full current acceptance is PENDING.** Owner directed immediate unit-branch push and CI acceptance on 2026-10-13; local contention is not a product verdict. Source HEAD **c54f70dc2b2e17abcac52ea01e6e098f52d97773**, source SHA256 **894caba8911faf12be896603c5ab4fae898c47382026c1252d7ac9e95f3c00ac**. Merged trunk **0bfe36e53acb694f4697521202e24f0790638941** using merge **5a51ea2c**, no rebase; both UI actions, suites and all Node entries retained. This handoff adds only delivery evidence.
