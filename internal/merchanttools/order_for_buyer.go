@@ -254,6 +254,10 @@ func (f *ForBuyer) Place(ctx context.Context, token, storeID, key string, in For
 	if err != nil {
 		return ForBuyerResult{}, false, err
 	}
+	if out.Send.State == "not_sent" && out.Send.Reason == "link_unavailable" {
+		// A competing reminder may have superseded Place's URL before DM planning. Never return that dead token.
+		out.BuyerLink = nil
+	}
 	// The inner A16 receipt predates DM planning. Recovery must not finalize a partially committed pipeline.
 	if err = f.complete(ctx, token, storeID, key, request, out.OrderID); err != nil {
 		return ForBuyerResult{}, false, mapForBuyerError(err)

@@ -534,14 +534,14 @@ func (m *ManualOrders) regenerateLink(ctx context.Context, tx pgx.Tx, scope plat
 }
 
 // guardOrderPayLink holds the same-order lock until commit and refuses any payment DM whose outcome can still deliver its sealed URL.
-// Legacy awaiting-payment reminder requests lack order_id; their store-wide refusal fails closed without exposing private claim origins.
+// Legacy reminder order correlation stays inside the scoped definer; runtime never reads private claim origins or reminder rows.
 func guardOrderPayLink(ctx context.Context, tx pgx.Tx, scope platform.Scope, orderID string) error {
 	if err := inbox.LockOrderPayLink(ctx, tx, scope, orderID); err != nil {
 		return err
 	}
 	var pending bool
-	if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM integration.operations WHERE tenant_id=$1 AND store_id=$2 AND action='meta.dm_send'
-  AND (request->>'order_id'=$3 OR (request->>'message_type'='checkout_reminder' AND request->>'reminder_state'='awaiting_payment')) AND state IN ('READY','DISPATCHING','UNKNOWN','ACKNOWLEDGED'))`, scope.TenantID, scope.StoreID, orderID).Scan(&pending); err != nil {
+	// Calls inbox.order_pay_link_pending (0171; storefront-v2 queued payment link guard), preserving legacy bundle/order scope.
+	if err := tx.QueryRow(ctx, `SELECT inbox.order_pay_link_pending($1::uuid)`, orderID).Scan(&pending); err != nil {
 		return err
 	}
 	if pending {

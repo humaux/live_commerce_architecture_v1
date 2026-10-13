@@ -15,6 +15,7 @@ package inbox
 
 import (
 	"context"
+	"net/http"
 	"slices"
 	"strings"
 
@@ -177,13 +178,26 @@ func (s *Service) PlanCheckoutReminder(ctx context.Context, tx pgx.Tx, scope pla
 	if err != nil {
 		return err
 	}
-	// Calls inbox.plan_checkout_reminder (0144): definer commerce_integration_writer; lcn-dup lock, window/takeover/capability/state re-check, the
+	// Calls inbox.plan_checkout_reminder (0171, live-console-v1 Amendment W3-03B): definer commerce_integration_writer; lcn-dup lock,
+	// window/takeover/capability/state re-check, the
 	// once-per-buyer row, then inbox.lcn_emit (operation, outbound row, sealed secret, audit). Never a takeover (origin=auto).
 	var op string
 	if err := tx.QueryRow(ctx, `SELECT inbox.plan_checkout_reminder($1::uuid,$2::uuid,$3::uuid,'manual',$4::bigint,$5,$6::uuid,$7::bigint,$8::uuid,$9::bytea,$10,$11::bytea,$12::bytea,$13::bytea,$14::bytea,$15,$16::bigint)::text`,
 		sessionID, c.BundleID, c.ConversationID, c.Generation, c.State, p.operation, p.job, p.outbound, p.hmac, p.keyID, p.nonce, p.ciphertext,
 		p.enc, p.sealed, tplID, int64(1)).Scan(&op); err != nil {
 		return databaseError(err)
+	}
+	if c.State == StateAwaitingPayment {
+		// A newer order can become the bundle's target after the scan. Bind the actual persisted plan to the link issued here;
+		// a mismatch rolls back this entire buyer transaction (rotation, operation, secret, job and reminder journal).
+		var plannedOrder string
+		if err := tx.QueryRow(ctx, `SELECT request->>'order_id' FROM integration.operations WHERE tenant_id=$1 AND store_id=$2 AND id=$3`,
+			scope.TenantID, scope.StoreID, op).Scan(&plannedOrder); err != nil {
+			return databaseError(err)
+		}
+		if plannedOrder != c.OrderID {
+			return &SendError{Status: http.StatusConflict, Code: "not_remindable"}
+		}
 	}
 	return nil
 }

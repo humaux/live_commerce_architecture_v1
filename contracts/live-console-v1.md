@@ -1164,6 +1164,8 @@ Skipped:
 
 ## Amendment W3-03B checkout reminders (2026-10-06; migration 0144; revised after the independent review)
 
+PR32 revision (2026-10-13; migration 0171): an awaiting-payment reminder's operation request carries the authoritative order id from `inbox.crm_bundle_facts`, in addition to its bundle/session. Before committing, the real inbox planner verifies its own persisted operation's order matches the scanned order whose link was issued; a changed target returns existing `not_remindable` and rolls back that buyer's link rotation, plan, secret, job and journal. The SQL planner signature and its exact ACL stay unchanged. The payment-link guard matches that order in the authenticated tenant/store. Legacy plans lacking the field are correlated only through immutable bundle/order origins (the persisted reminder journal supplies a missing bundle id); multiple historical orders remain conservatively protected within that bundle, never across the store. `inbox.order_pay_link_pending(uuid)` is a read-only scoped definer, owned by `commerce_integration_writer`, executable only by that owner and `commerce_runtime`, and rechecks `inventory:reserve` + `catalog:read`. No table grants or existing operation/secret rewrites. A for-buyer DM refusal `not_sent/link_unavailable` suppresses the potentially superseded initial `buyer_link` instead of returning a dead payment URL.
+
 Owner ruling: a reminder is sent **only within 24 h of the buyer's last inbound message** (`messaging_type=RESPONSE`). Meta's fixed-format / utility
 policy is unverified (EVIDENCE_GAP; message tags were removed 2026-02-09), so there is no tag, no UPDATE type, no utility template, no send outside the window.
 

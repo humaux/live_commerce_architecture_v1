@@ -191,7 +191,10 @@ var (
 // refusalCode maps a per-buyer failure to its fixed code, or "" when the failure must end the pass (unknown errors never leak a driver message).
 func refusalCode(err error) string {
 	var pg *pgconn.PgError
+	var send *inbox.SendError
 	switch {
+	case errors.As(err, &send) && send.Status == http.StatusConflict && send.Code == "not_remindable":
+		return "not_remindable" // persisted plan target changed; this buyer rolled back, while the batch continues.
 	case errors.Is(err, errLinkReplayed):
 		return "link_replayed"
 	case errors.Is(err, errLinkUnavailable):
