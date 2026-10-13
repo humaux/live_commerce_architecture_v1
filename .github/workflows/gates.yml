@@ -192,11 +192,24 @@ jobs:
           mkdir -p output/ci-gates
           git rev-parse HEAD > output/ci-gates/formatter-source-sha.txt
           status=0
-          gofmt -d internal/orderattempt internal/inbox/order_attempt_notification.go tests/foundation/order_attempt*.go > output/ci-gates/oa1-gofmt.patch || status=$?
+          gofmt -d internal/orderattempt internal/inbox/order_attempt_notification.go cmd/claims-worker cmd/api/buyer.go tests/foundation/order_attempt*.go > output/ci-gates/oa1-gofmt.patch || status=$?
           printf '%s\n' "$status" > output/ci-gates/formatter-exit.txt
           # Go 1.27 -d exits 1 when a formatting diff exists. This step collects
           # evidence only; the unmodified tree still faces check-gates/gofmt.
           [[ "$status" -le 1 ]]
+      - name: OA1 generated metadata evidence
+        if: ${{ github.event_name == 'workflow_dispatch' && github.ref_name == 'unit/oa-1-order-attempt-core' && matrix.mode == 'focused:^TestOrderAttemptModel' }}
+        run: |
+          bash scripts/dev/depmap.sh
+          cp docs/engineering/dependency-map.md output/ci-gates/oa1-dependency-map.md
+          node scripts/dev/shard-plan.mjs --write
+          cp scripts/dev/shard-plan.json output/ci-gates/oa1-shard-plan.json
+          git restore --source=HEAD -- docs/engineering/dependency-map.md scripts/dev/shard-plan.json
+      - name: OA1 model fuzz evidence
+        if: ${{ github.event_name == 'workflow_dispatch' && github.ref_name == 'unit/oa-1-order-attempt-core' && matrix.mode == 'focused:^TestOrderAttemptModel' }}
+        run: |
+          set -o pipefail
+          go test ./tests/foundation -run '^$' -fuzz '^FuzzOrderAttemptModel$' -fuzztime=30s -parallel=2 -timeout=120s 2>&1 | tee output/ci-gates/oa1-fuzz.log
       - name: Gate
         run: |
           set -o pipefail
