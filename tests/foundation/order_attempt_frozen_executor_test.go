@@ -96,9 +96,9 @@ func TestOrderAttemptFrozenExecutorHonorsPricesFeesAndIndependentBuyerCart(t *te
 		Catalog oaFactsResult `json:"catalog"`
 		Claims  oaClaimResult `json:"claims"`
 	}
-	if err = json.Unmarshal(plan.Facts, &facts); err != nil || len(facts.Catalog.Lines) != 2 || len(facts.Claims.Lines) != 2 ||
+	if err = json.Unmarshal(plan.Facts, &facts); err != nil || len(facts.Catalog.Lines) != 2 || len(facts.Claims.Lines) != 1 ||
 		facts.Claims.Lines[0].LivePriceMinor == nil || *facts.Claims.Lines[0].LivePriceMinor != ltgLive ||
-		facts.Claims.Lines[1].LivePriceMinor != nil || plan.Calculation.ShippingMinor != 17300 ||
+		facts.Claims.Lines[0].Ordinal != 1 || facts.Claims.Lines[0].OriginID != facts.Catalog.Lines[0].OriginID || plan.Calculation.ShippingMinor != 17300 ||
 		facts.Catalog.Payment.SurchargeMinor != 3500 || facts.Catalog.Lines[1].UnitPriceMinor != ltgCatalog {
 		t.Fatalf("real C1 mixed-origin/fee positive sentinel: %v", err)
 	}
