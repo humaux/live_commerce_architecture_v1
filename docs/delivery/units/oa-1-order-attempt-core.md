@@ -82,19 +82,44 @@ the existing Go allocator, while quote/order lines retain separate origins.
 
 The composite entry uses one internal signature:
 `ops.execute_order_attempt(attempt uuid, generation bigint, exact_plan text,
-step text, input jsonb) RETURNS jsonb`. `prepare`, `begin`, and `finish` are
+step text, input jsonb) RETURNS jsonb`. `prepare`, `begin`, `pay`, and `finish` are
 in-transaction call stages, not durable attempt states or separate commits.
 `prepare` takes the owner/claim/order prefix, materializes the quote and
 destination, and returns locked allocation facts. Go runs the existing pure
 allocator. `begin` validates that result, writes native order effects and returns
-the context needed for local encryption. Go prepares the order-only credential
-and sealed notification. `finish` validates/stores those artifacts, completes
+the context needed for local encryption. Go prepares the order-only credential;
+`pay` validates/stores its versioned envelope and returns the current notification
+preparation facts under the retained order lock. Go seals the notification.
+`finish` validates/stores that artifact, completes
 source/claims/outbox and the terminal receipt. Every call revalidates the held
 current-transaction fence and the exact stored plan; native creator identities
 prove the earlier stage. Only the Go executor commits. Deferred constraints
 reject partial materialization; no runtime may call the domain helpers directly.
 This preserves the frozen single-transaction design while keeping pricing,
 allocation and cryptography in their existing Go implementations.
+
+The internal `pay` input is exactly `{key_version, token_hash_hex,
+credential_ciphertext_hex}` (32-byte digest and 71-byte envelope). Its result is
+`{stage: "PAY_PREPARED", pay_entry: <safe stored metadata>, notification: <private
+preparation DTO>}`. The additional call stage is necessary because notification
+preparation verifies the stored credential; it adds no commit or durable state.
+The `finish` input is the exact notification artifact (including the one-field
+`NOT_REQUESTED` disposition). SQL derives the receipt from native order facts;
+no caller-supplied order, money or receipt is accepted. The terminal receipt is
+`{state, attempt_id, intent_generation, order_id, commercial_state, payment_mode,
+total_minor, currency, send}` and contains no bearer or contact. All merchant
+attempts emit `order.manual_created` with only attempt/order/generation metadata,
+as the existing shared ManualOrders placement does for both entry flows. Its
+membership FK takes KEY SHARE on the membership row, not a recursive principal
+lock; held-principal/scope tests must prove the frozen lock rule. Missing native
+FK targets remain an internal retryable fault, not an inferred business refusal.
+
+Go execution is exposed internally as `NewExecutor(pool, planKeys, payEntryKeys,
+inboxService)` plus `Execute(ctx, merchantToken, store, attempt, generation)`.
+These concrete dependencies use one pool/transaction; no testing hook replaces
+domain effects. Inline and River use that same method and the same fixed error
+classification. The return is the durable metadata receipt; bearer disclosure
+belongs to the later locked read surface.
 
 ## Required evidence
 
