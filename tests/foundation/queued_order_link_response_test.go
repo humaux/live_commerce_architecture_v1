@@ -1,6 +1,6 @@
 // Purpose: reject a stale buyer URL when a real concurrent pay-link plan supersedes Place's link before A16 DM planning.
 // Depends on: real checkout/claims/merchant HTTP pipeline, inbox planners, River and HPKE; lbSetup's signed Meta intake.
-// Used by: PR32 thread 4256912975 focused REAL_PG regression; loopback Graph remains paused (Meta LIVE NOT_RUN).
+// Used by: PR32 threads 4256912975/4257479285 focused REAL_PG regressions; loopback Graph remains paused (Meta LIVE NOT_RUN).
 // Invariants: I01/I02/I04/I06/I11; exactly one order/DM/secret/job, no dead response URL or extra work on replay.
 // This representative race uses the allowed bank-transfer manual flow; real reminder compatibility has separate batch/target tests.
 // Transaction seams return errors; never call testing.Fatal/Goexit inside WithScope, so failures release the transaction.
@@ -46,6 +46,16 @@ func (p *qlrBeforeProbe) PlanOrderPayLink(ctx context.Context, tx pgx.Tx, scope 
 }
 
 func TestQueuedOrderLinkForBuyerResponseAfterConcurrentPlan(t *testing.T) {
+	qlrForBuyerConcurrentPlan(t, false)
+}
+
+func TestQueuedOrderLinkForBuyerWindowClosedAfterConcurrentPlan(t *testing.T) {
+	qlrForBuyerConcurrentPlan(t, true)
+}
+
+// Both refusal paths share every real planner/HPKE/job/checkout assertion; only the message-window transition differs.
+func qlrForBuyerConcurrentPlan(t *testing.T, closeMessageWindow bool) {
+	t.Helper()
 	lb, e := lbSetup(t), lbuNew(t)
 	ctx := context.Background()
 	e.grantCreator("integration:execute")
@@ -170,6 +180,18 @@ func TestQueuedOrderLinkForBuyerResponseAfterConcurrentPlan(t *testing.T) {
 		if parked.RowsAffected() != 1 {
 			return fmt.Errorf("hold exactly the returned payment DM job: rows=%d", parked.RowsAffected())
 		}
+		if closeMessageWindow {
+			// Disclosed expiry fixture, equivalent to lbEnv.setInbound: the real planner must observe a closed session window.
+			// It runs after the competing plan committed and before the outer planner's very first empty-link probe.
+			expired, err := e.p.f.owner.Exec(callCtx, `UPDATE inbox.conversation_state SET last_inbound_at=clock_timestamp()-interval '25 hours'
+				WHERE tenant_id=$1 AND store_id=$2 AND conversation_id=$3`, e.tenant(), e.store(), conv)
+			if err != nil {
+				return fmt.Errorf("expire exact real messaging window after competing plan: %w", err)
+			}
+			if expired.RowsAffected() != 1 {
+				return fmt.Errorf("expire exactly the competing plan's conversation window: rows=%d", expired.RowsAffected())
+			}
+		}
 		return nil
 	}}
 	var err error
@@ -189,8 +211,12 @@ func TestQueuedOrderLinkForBuyerResponseAfterConcurrentPlan(t *testing.T) {
 	assertResponse := func(status int, result map[string]any) {
 		t.Helper()
 		send, _ := result["send"].(map[string]any)
-		if send["state"] != "not_sent" || send["reason"] != "link_unavailable" {
-			t.Errorf("status=%d send state=%v reason=%v, want not_sent/link_unavailable", status, send["state"], send["reason"])
+		wantReason := "link_unavailable"
+		if closeMessageWindow {
+			wantReason = "window_closed"
+		}
+		if send["state"] != "not_sent" || send["reason"] != wantReason {
+			t.Errorf("status=%d send state=%v reason=%v, want not_sent/%s", status, send["state"], send["reason"], wantReason)
 		}
 		if link, exists := result["buyer_link"]; !exists || link != nil {
 			t.Error("buyer_link must be explicitly null after the competing payment DM plan supersedes the original link")
@@ -199,6 +225,9 @@ func TestQueuedOrderLinkForBuyerResponseAfterConcurrentPlan(t *testing.T) {
 	assertResponse(code, out)
 	assertFacts := func() {
 		t.Helper()
+		if closeMessageWindow && e.count(`SELECT count(*) FROM inbox.conversation_state WHERE tenant_id=$1 AND store_id=$2 AND conversation_id=$3 AND last_inbound_at<clock_timestamp()-interval '24 hours'`, e.tenant(), e.store(), conv) != 1 {
+			t.Error("the real competing plan's conversation must remain outside the session window")
+		}
 		if n := e.count(`SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store()); n != baseOrders+1 {
 			t.Errorf("store orders=%d want baseline %d + exactly one new order", n, baseOrders)
 		}
