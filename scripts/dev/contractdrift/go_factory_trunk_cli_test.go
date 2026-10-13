@@ -24,6 +24,7 @@ type config struct { label string }
 var globalLabel = "legacy"
 func main() {
  mux := http.NewServeMux()
+ mux.HandleFunc("GET /v1/admin/stores/{store_id}/widgets/{widget_id}", func(w http.ResponseWriter, r *http.Request) {})
  h, _, err := buildBuyer(context.Background(), &pool{route: "primary"}, &config{label: "legacy"})
  if err != nil { return }
  mux.Handle("/v1/trunk-factory", h)
@@ -262,6 +263,7 @@ func makePool(ctx context.Context, c *config) (*pgxpool.Pool, error) {
 func main() {
  c := &config{enabled: true, label: "legacy"}
  mux := http.NewServeMux()
+ mux.HandleFunc("GET /v1/admin/stores/{store_id}/widgets/{widget_id}", func(w http.ResponseWriter, r *http.Request) {})
  ctx := context.Background()
  mainPool := &pgxpool.Pool{}
  _ = mainPool
