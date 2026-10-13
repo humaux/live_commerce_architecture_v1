@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5"
+	"livecommerce/internal/checkout"
 	"livecommerce/internal/inventory"
 	"livecommerce/internal/orderattempt"
 )
@@ -21,6 +22,76 @@ type oaCompositePrepared struct {
 	QuoteID       string           `json:"quote_id"`
 	DestinationID string           `json:"destination_id"`
 	Allocation    oaAllocationWire `json:"allocation"`
+}
+
+func oaCompositePrepare(t *testing.T, tx pgx.Tx, a orderattempt.AdmissionReceipt, plain []byte) (oaCompositePrepared, []inventory.Line) {
+	t.Helper()
+	raw, err := oaCompositeCall(tx, a, plain, "prepare", map[string]any{})
+	var prepared oaCompositePrepared
+	if err != nil || json.Unmarshal(raw, &prepared) != nil || prepared.Stage != "PREPARED" || prepared.Allocation.OrderID != a.AttemptID {
+		t.Fatalf("actual composite prepare sentinel: %v", err)
+	}
+	lines := []inventory.Line{}
+	if len(prepared.Allocation.Demands) > 0 {
+		lines, err = inventory.PlanAllocation(prepared.Allocation.WarehouseIDs, prepared.Allocation.Demands, prepared.Allocation.Balances)
+		if err != nil {
+			t.Fatalf("native locked allocation facts: %v", err)
+		}
+	}
+	return prepared, lines
+}
+
+func oaCompositeBeginInput(prepared oaCompositePrepared, lines []inventory.Line) map[string]any {
+	return map[string]any{"cart_id": prepared.CartID, "quote_id": prepared.QuoteID,
+		"destination_id": prepared.DestinationID, "allocation": lines}
+}
+
+func TestOrderAttemptCompositeBeginActualLoginsAndCommitBoundary(t *testing.T) {
+	for _, worker := range []bool{false, true} {
+		name := "runtime"
+		if worker {
+			name = "claims-worker"
+		}
+		t.Run(name, func(t *testing.T) {
+			e := lbuNew(t)
+			a := oaFenceAdmit(t, e)
+			tx, plain := oaCompositeTx(t, e, a, worker)
+			prepared, lines := oaCompositePrepare(t, tx, a, plain)
+			raw, err := oaCompositeCall(tx, a, plain, "begin", oaCompositeBeginInput(prepared, lines))
+			var got checkout.Result
+			if err != nil || json.Unmarshal(raw, &got) != nil || got.OrderID != a.AttemptID || got.ReservationID != a.AttemptID || got.CommercialState != "AWAITING_TRANSFER" {
+				t.Fatalf("actual composite Begin after prepare: %v", err)
+			}
+			// A native Begin receipt alone is not a complete C2 receipt. The
+			// runtime must finish source, pay entry, claims and outbox first.
+			oaFenceCode(t, nil, tx.Commit(context.Background()), "23514")
+			oaCompositeNoEffects(t, e, a)
+			oaBeginZeroEffects(t, e, a.AttemptID)
+		})
+	}
+}
+
+func TestOrderAttemptCompositeBeginRejectsChangedStageIdentity(t *testing.T) {
+	for _, field := range []string{"cart_id", "quote_id", "destination_id", "tenant_id", "allocation"} {
+		t.Run(field, func(t *testing.T) {
+			e := lbuNew(t)
+			a := oaFenceAdmit(t, e)
+			tx, plain := oaCompositeTx(t, e, a, false)
+			prepared, lines := oaCompositePrepare(t, tx, a, plain)
+			input := oaCompositeBeginInput(prepared, lines)
+			input[field] = randomUUID()
+			if field == "allocation" {
+				forged := append([]inventory.Line(nil), lines...)
+				forged[0].Quantity++
+				input[field] = forged
+			}
+			raw, err := oaCompositeCall(tx, a, plain, "begin", input)
+			oaFenceCode(t, raw, err, "PT400")
+			_ = tx.Rollback(context.Background())
+			oaCompositeNoEffects(t, e, a)
+			oaBeginZeroEffects(t, e, a.AttemptID)
+		})
+	}
 }
 
 func oaCompositeCall(tx pgx.Tx, a orderattempt.AdmissionReceipt, plain []byte, step string, input any) ([]byte, error) {
