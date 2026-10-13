@@ -10,7 +10,7 @@ import { createHash } from "node:crypto";
 import axe from "axe-core";
 import { createProductEditorMatrixLedger } from "./product-editor-matrix-ledger";
 import { productEditorCopy } from "../../apps/admin/lib/product-editor-copy";
-import { assertProductEditorReservedLayout, assertProductListAsyncTabGrowth } from "./product-editor-layout.acceptance";
+import { assertProductEditorReservedLayout, assertProductListAsyncTabGrowth, type ProductEditorHardeningRecord } from "./product-editor-layout.acceptance";
 import { assertProductListLayout } from "./product-list-layout.acceptance";
 /** Registers real-click product acceptance cases; the calling runner owns test fixtures and cleanup. */
 export function registerProductEditorAcceptance() {
@@ -33,6 +33,7 @@ export function registerProductEditorAcceptance() {
         key: string;
         body: string | null;
       }[] = [];
+    const recordHardening = (row: ProductEditorHardeningRecord) => { ledger.push(row); };
     page.on("request", (r) => {
       if (r.url().includes("/api/stores/") && r.method() !== "GET")
         writes.push({
@@ -142,7 +143,7 @@ export function registerProductEditorAcceptance() {
             expect(target.height).toBeGreaterThanOrEqual(44);
           }
           await shot(`list-${locale}-${width}`);
-          if (width === 1366) await assertProductListAsyncTabGrowth(page);
+          if (width === 1366) await assertProductListAsyncTabGrowth(page, recordHardening);
           await page.getByTestId("product-new").click();
           if (width === 390) {
             const toggle = page.locator(".pe-readiness-toggle");
@@ -196,6 +197,7 @@ export function registerProductEditorAcceptance() {
             (width === 1440 || width === 1586 || width === 390)
               ? (section) => shot(`editor-${locale}-${width}-${section}`)
               : undefined,
+            recordHardening,
           );
           await page
             .getByRole("navigation", {
@@ -364,7 +366,7 @@ export function registerProductEditorAcceptance() {
       await expect(page.locator('[data-testid^="matrix-row-"]')).toHaveCount(
         12,
       );
-      await assertProductEditorReservedLayout(page);
+      await assertProductEditorReservedLayout(page, undefined, recordHardening);
       expect(writes.length).toBe(networkBefore);
       await page.getByTestId("bulk-open").click();
       await page.getByTestId("bulk-value").fill("80");
@@ -672,7 +674,7 @@ export function registerProductEditorAcceptance() {
         const beforeVisual = writes.length;
         await page.getByTestId("product-name").fill(`${tag} unsaved visual ${locale}`);
         await expect(page.locator(".pe-savebar > span")).toHaveText(productEditorCopy[locale].dirty);
-        await assertProductEditorReservedLayout(page, section => shot(`edit-${locale}-${width}-${section}`));
+        await assertProductEditorReservedLayout(page, section => shot(`edit-${locale}-${width}-${section}`), recordHardening);
         await fit();
         expect(writes.length).toBe(beforeVisual);
         await shot(`edit-${locale}-${width}`);

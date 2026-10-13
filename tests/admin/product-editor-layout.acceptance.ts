@@ -1,7 +1,7 @@
 // Purpose: Verify real editor navigation, visible field focus and reserved savebar geometry without synthetic DOM changes.
-// Depends on: Playwright Page/Route/expect, production ProductDocumentForm/ProductList markup and localized copy; caller-owned browser/PG fixture.
+// Depends on: Playwright Page/Route/expect/test.info, production ProductDocumentForm/ProductList markup and localized copy; caller-owned browser/PG fixture and ledger callback.
 // Used by: product-editor.acceptance.ts under --browser-product-editor; reads geometry and performs real nav clicks.
-import { expect, type Page, type Route } from "@playwright/test";
+import { expect, test, type Page, type Route } from "@playwright/test";
 import { presentationCopy } from "../../apps/admin/lib/presentation-copy";
 import { productEditorCopy } from "../../apps/admin/lib/product-editor-copy";
 import { catalogCopy } from "../../apps/admin/lib/catalog-v2-copy";
@@ -10,8 +10,36 @@ import { catalogCopy } from "../../apps/admin/lib/catalog-v2-copy";
 // the existing reserved-layout checks still run on every create/edit fixture.
 const hardenedLocales = new WeakMap<Page, Set<string>>();
 
+/** One native interaction result, appended to the caller's persisted ledger. */
+export type ProductEditorHardeningRecord = {
+  page: "product editor hardening"; locale: string; control: string; action: string; expected: string;
+  actual: "PASS" | "FAIL"; pass: boolean; viewport: { width: number; height: number };
+  width: number; height: number; metrics: Record<string, number | boolean>;
+};
+type HardeningRecorder = (row: ProductEditorHardeningRecord) => void;
+
+// Soft assertions do not throw. Their per-action error delta is authoritative;
+// hard failures still propagate after the caller receives the failed record.
+function hardeningAction(page: Page, locale: string, record?: HardeningRecorder) {
+  return async (control: string, action: string, expected: string,
+    perform: (metrics: Record<string, number | boolean>) => Promise<void>) => {
+    const errorsBefore = test.info().errors.length;
+    const initialViewport = page.viewportSize()!;
+    const metrics: Record<string, number | boolean> = { startWidth: initialViewport.width, startHeight: initialViewport.height };
+    let hardFailed = false;
+    try { await perform(metrics); }
+    catch (error) { hardFailed = true; throw error; }
+    finally {
+      const viewport = page.viewportSize() ?? initialViewport;
+      const pass = !hardFailed && test.info().errors.length === errorsBefore;
+      record?.({ page: "product editor hardening", locale, control, action, expected,
+        actual: pass ? "PASS" : "FAIL", pass, viewport, width: viewport.width, height: viewport.height, metrics });
+    }
+  };
+}
+
 /** Delays an unchanged real catalog response to measure native status-count label growth. */
-export async function assertProductListAsyncTabGrowth(page: Page) {
+export async function assertProductListAsyncTabGrowth(page: Page, record?: HardeningRecorder) {
   const locale = new URL(page.url()).pathname.split("/")[1] as keyof typeof catalogCopy;
   const originalViewport = page.viewportSize()!;
   const archived = page.getByTestId("products-tab-archived");
@@ -38,30 +66,37 @@ export async function assertProductListAsyncTabGrowth(page: Page) {
   await page.route(pattern, handler);
   let failed = false;
   try {
-    // Four localized status tabs genuinely overflow this narrow frame; this is
-    // an extra hardening viewport, outside the canonical mobile matrix cases.
-    await page.setViewportSize({ width: 220, height: originalViewport.height });
-    await archived.click();
-    await expect.poll(() => received, { message: "UXH07 unchanged real response is held", timeout: 10000 }).toBe(true);
-    await expect(archived).toHaveAttribute("aria-pressed", "true");
-    await expect(archived).toHaveText(catalogCopy[locale].status.archived);
-    await expect.poll(async () => (await measure()).fullyVisible).toBe(true);
-    const selectedNode = await archived.elementHandle();
-    expect(selectedNode, "UXH07 selected production button exists").toBeTruthy();
-    const before = await measure();
-    expect(before.overflow, "UXH07 strip already overflows before status counts arrive").toBeGreaterThan(1);
-    release();
-    await expect(archived).toHaveText(new RegExp(`^${catalogCopy[locale].status.archived} \\d+$`));
-    await expect.poll(async () => (await measure()).tabWidth,
-      { message: "UXH07 real count arrival grows the selected label" }).toBeGreaterThan(before.tabWidth);
-    const after = await measure();
-    expect(await selectedNode!.evaluate(el => el.isConnected), "UXH07 count arrival keeps the same selected DOM button").toBe(true);
-    await expect(archived).toHaveAttribute("aria-pressed", "true");
-    expect(after.overflow, "UXH07 strip still overflows after label growth").toBeGreaterThan(1);
-    expect(after.tabWidth, "UXH07 selected label fits the frame").toBeLessThanOrEqual(after.frameWidth);
-    await expect.soft.poll(async () => (await measure()).fullyVisible,
-      { message: "UXH07 existing selected tab is revealed after real asynchronous count-label growth", timeout: 1000 }).toBe(true);
-    console.log("UXH07", JSON.stringify({ locale, before, after: await measure() }));
+    await hardeningAction(page, locale, record)("UXH07/list-status-archived", "click then real count arrival",
+      "same selected status button stays fully visible after asynchronous real count-label growth", async metrics => {
+      // Four localized status tabs genuinely overflow this narrow frame; this is
+      // an extra hardening viewport, outside the canonical mobile matrix cases.
+      await page.setViewportSize({ width: 220, height: originalViewport.height });
+      await archived.click();
+      await expect.poll(() => received, { message: "UXH07 unchanged real response is held", timeout: 10000 }).toBe(true);
+      await expect(archived).toHaveAttribute("aria-pressed", "true");
+      await expect(archived).toHaveText(catalogCopy[locale].status.archived);
+      await expect.poll(async () => (await measure()).fullyVisible).toBe(true);
+      const selectedNode = await archived.elementHandle();
+      expect(selectedNode, "UXH07 selected production button exists").toBeTruthy();
+      const before = await measure();
+      Object.assign(metrics, { beforeTabWidth: before.tabWidth, beforeOverflow: before.overflow,
+        beforeScrollLeft: before.scrollLeft, beforeFullyVisible: before.fullyVisible });
+      expect(before.overflow, "UXH07 strip already overflows before status counts arrive").toBeGreaterThan(1);
+      release();
+      await expect(archived).toHaveText(new RegExp(`^${catalogCopy[locale].status.archived} \\d+$`));
+      await expect.poll(async () => (await measure()).tabWidth,
+        { message: "UXH07 real count arrival grows the selected label" }).toBeGreaterThan(before.tabWidth);
+      const after = await measure();
+      Object.assign(metrics, after);
+      expect(await selectedNode!.evaluate(el => el.isConnected), "UXH07 count arrival keeps the same selected DOM button").toBe(true);
+      await expect(archived).toHaveAttribute("aria-pressed", "true");
+      expect(after.overflow, "UXH07 strip still overflows after label growth").toBeGreaterThan(1);
+      expect(after.tabWidth, "UXH07 selected label fits the frame").toBeLessThanOrEqual(after.frameWidth);
+      await expect.soft.poll(async () => (await measure()).fullyVisible,
+        { message: "UXH07 existing selected tab is revealed after real asynchronous count-label growth", timeout: 1000 }).toBe(true);
+      console.log("UXH07", JSON.stringify({ locale, before, after: await measure() }));
+      Object.assign(metrics, await measure(), { sameButtonConnected: await selectedNode!.evaluate(el => el.isConnected) });
+    });
   } catch (error) {
     failed = true;
     throw error;
@@ -88,7 +123,7 @@ export async function assertProductListAsyncTabGrowth(page: Page) {
 }
 
 /** Exercises UXH01–06 with native input and read-only browser measurements. */
-async function assertProductEditorHardening(page: Page) {
+async function assertProductEditorHardening(page: Page, record?: HardeningRecorder) {
   const locale = new URL(page.url()).pathname.split("/")[1] as "zh-TW" | "zh-CN" | "en";
   const c = productEditorCopy[locale];
   expect(c, "UXH01 supported editor locale").toBeTruthy();
@@ -107,6 +142,7 @@ async function assertProductEditorHardening(page: Page) {
   const originalName = await name.inputValue();
   const originalExpanded = originalViewport.width <= 900 && await toggle.getAttribute("aria-expanded") === "true";
   const verify = expect.configure({ soft: true, timeout: 1000 });
+  const action = hardeningAction(page, locale, record);
   const resize = async (width: number) => {
     await page.setViewportSize({ width, height: originalViewport.height });
     if (width <= 900) await expect(toggle).toBeVisible();
@@ -129,36 +165,57 @@ async function assertProductEditorHardening(page: Page) {
     throw new Error("UXH02 keyboard could not reach the last section button");
   };
   try {
-    await resize(900);
-    await setExpanded(true);
-    console.log("UXH01", JSON.stringify({ locale, expected: labels }));
-    await verify(nav, "UXH01 navigation has its distinct localized name").toHaveAccessibleName(labels!.nav);
-    await verify(tabs, "UXH01 TabStrip group has its distinct localized name").toHaveAccessibleName(labels!.group);
-    await verify(tabs, "UXH01 named strip exposes the group role").toHaveAttribute("role", "group");
-    await verify(toggle, "UXH01 readiness action has its distinct localized name").toHaveAccessibleName(labels!.toggle);
-    await verify(checklist.getByRole("heading", { level: 2 }), "UXH01 readiness h2 retains the checklist name").toHaveAccessibleName(labels!.heading);
-    await setExpanded(false);
+    await action("UXH01/readiness-toggle", "click expand/collapse",
+      "localized names remain distinct; checklist expands and collapses", async metrics => {
+      await resize(900);
+      await setExpanded(true);
+      await expect(checklist).toBeVisible();
+      console.log("UXH01", JSON.stringify({ locale, expected: labels }));
+      await verify(nav, "UXH01 navigation has its distinct localized name").toHaveAccessibleName(labels!.nav);
+      await verify(tabs, "UXH01 TabStrip group has its distinct localized name").toHaveAccessibleName(labels!.group);
+      await verify(tabs, "UXH01 named strip exposes the group role").toHaveAttribute("role", "group");
+      await verify(toggle, "UXH01 readiness action has its distinct localized name").toHaveAccessibleName(labels!.toggle);
+      await verify(checklist.getByRole("heading", { level: 2 }), "UXH01 readiness h2 retains the checklist name").toHaveAccessibleName(labels!.heading);
+      await setExpanded(false);
+      await expect(checklist).toBeHidden();
+      Object.assign(metrics, { expanded: await toggle.getAttribute("aria-expanded") === "true",
+        checklistVisible: await checklist.isVisible(), distinctNames: new Set(Object.values(labels)).size });
+    });
 
     // The readiness button is immediately after the strip. A real click followed
     // by Shift+Tab focuses the last section without invoking its field-focus action.
-    await toggle.click();
-    await toggle.click();
-    let focused = await focusLastSection();
-    const focusedSection = await focused.getAttribute("aria-controls");
-    await expect(focused).toBeFocused();
-    await resize(901);
-    focused = nav.locator(`button[aria-controls="${focusedSection}"]`);
-    console.log("UXH02", JSON.stringify({ locale, direction: "900→901", focusedSection,
-      retained: await focused.evaluate(el => document.activeElement === el) }));
-    await verify(focused, "UXH02 section button retains keyboard focus when leaving narrow layout").toBeFocused();
+    let focused = nav.locator("button[aria-controls]").last();
+    let focusedSection: string | null = null;
+    await action("UXH02/section-keyboard", "Shift+Tab",
+      "native keyboard traversal focuses the last section button", async metrics => {
+      await toggle.click();
+      await toggle.click();
+      focused = await focusLastSection();
+      focusedSection = await focused.getAttribute("aria-controls");
+      await expect(focused).toBeFocused();
+      metrics.focused = await focused.evaluate(el => document.activeElement === el);
+    });
+    await action("UXH02/section-focus", "resize 900→901",
+      "section keyboard focus survives narrow-to-desktop resize", async metrics => {
+      await resize(901);
+      focused = nav.locator(`button[aria-controls="${focusedSection}"]`);
+      console.log("UXH02", JSON.stringify({ locale, direction: "900→901", focusedSection,
+        retained: await focused.evaluate(el => document.activeElement === el) }));
+      await verify(focused, "UXH02 section button retains keyboard focus when leaving narrow layout").toBeFocused();
+      metrics.focusRetained = await focused.evaluate(el => document.activeElement === el);
+    });
     // Reacquire focus after a RED loss so the reverse transition is independently tested.
     focused = await focusLastSection();
     await expect(focused).toBeFocused();
-    await resize(900);
-    focused = nav.locator(`button[aria-controls="${focusedSection}"]`);
-    console.log("UXH02", JSON.stringify({ locale, direction: "901→900", focusedSection,
-      retained: await focused.evaluate(el => document.activeElement === el) }));
-    await verify(focused, "UXH02 section button retains keyboard focus when entering narrow layout").toBeFocused();
+    await action("UXH02/section-focus", "resize 901→900",
+      "section keyboard focus survives desktop-to-narrow resize", async metrics => {
+      await resize(900);
+      focused = nav.locator(`button[aria-controls="${focusedSection}"]`);
+      console.log("UXH02", JSON.stringify({ locale, direction: "901→900", focusedSection,
+        retained: await focused.evaluate(el => document.activeElement === el) }));
+      await verify(focused, "UXH02 section button retains keyboard focus when entering narrow layout").toBeFocused();
+      metrics.focusRetained = await focused.evaluate(el => document.activeElement === el);
+    });
 
     await resize(390);
     await nav.locator('button[aria-controls="basics"]').click();
@@ -173,56 +230,76 @@ async function assertProductEditorHardening(page: Page) {
         { message: "UXH03 native horizontal wheel reaches the strip end" }).toBeLessThanOrEqual(1);
       return tabs.evaluate(el => el.scrollLeft); // READ/MEASURE
     };
-    const before = await scrollToEnd();
-    await expect(name).toBeFocused();
-    await page.keyboard.press("End");
-    await page.keyboard.insertText(" UXH03");
-    await expect(name).toHaveValue(`${originalName} UXH03`);
-    await tabs.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))); // READ/MEASURE
-    const after = await tabs.evaluate(el => el.scrollLeft); // READ/MEASURE
-    console.log("UXH03", JSON.stringify({ locale, operation: "unrelated draft edit", before, after }));
-    verify(Math.abs(after - before), "UXH03 unrelated draft render preserves the user's strip position").toBeLessThanOrEqual(1);
+    let before = 0;
+    await action("UXH03/section-strip", "wheel horizontally",
+      "native horizontal wheel reaches the overflowing strip end", async metrics => {
+      before = await scrollToEnd();
+      Object.assign(metrics, await tabs.evaluate(el => ({ scrollLeft: el.scrollLeft,
+        overflow: el.scrollWidth - el.clientWidth, endDistance: el.scrollWidth - el.clientWidth - el.scrollLeft })));
+    });
+    await action("UXH03/product-name", "keyboard draft edit",
+      "unrelated draft edit preserves the user's strip scroll position", async metrics => {
+      await expect(name).toBeFocused();
+      await page.keyboard.press("End");
+      await page.keyboard.insertText(" UXH03");
+      await expect(name).toHaveValue(`${originalName} UXH03`);
+      await tabs.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))); // READ/MEASURE
+      const after = await tabs.evaluate(el => el.scrollLeft); // READ/MEASURE
+      console.log("UXH03", JSON.stringify({ locale, operation: "unrelated draft edit", before, after }));
+      verify(Math.abs(after - before), "UXH03 unrelated draft render preserves the user's strip position").toBeLessThanOrEqual(1);
+      Object.assign(metrics, { beforeScrollLeft: before, afterScrollLeft: after, drift: Math.abs(after - before) });
+    });
     await name.fill(originalName);
     await scrollToEnd();
     await setExpanded(true);
-    await checklist.locator('.pe-readiness[aria-controls="media"]').first().click();
-    const selected = nav.locator('button[aria-controls="media"]');
-    await verify(selected, "UXH03 actual readiness click changes the active section").toHaveAttribute("aria-current", "location");
-    await verify.poll(() => selected.evaluate(el => {
-      const strip = el.closest('[data-testid="product-section-tabs"]')!;
-      const r = el.getBoundingClientRect(), frame = strip.getBoundingClientRect();
-      return r.left >= frame.left - 1 && r.right <= frame.right + 1;
-    }), { message: "UXH03 active-section change reveals the selected tab" }).toBe(true);
-    console.log("UXH03", JSON.stringify({ locale, operation: "readiness click reveals media", scrollLeft: await tabs.evaluate(el => el.scrollLeft) }));
+    await action("UXH03/readiness-media", "click",
+      "readiness navigation selects and reveals the media tab", async metrics => {
+      await checklist.locator('.pe-readiness[aria-controls="media"]').first().click();
+      const selected = nav.locator('button[aria-controls="media"]');
+      await verify(selected, "UXH03 actual readiness click changes the active section").toHaveAttribute("aria-current", "location");
+      await verify.poll(() => selected.evaluate(el => {
+        const strip = el.closest('[data-testid="product-section-tabs"]')!;
+        const r = el.getBoundingClientRect(), frame = strip.getBoundingClientRect();
+        return r.left >= frame.left - 1 && r.right <= frame.right + 1;
+      }), { message: "UXH03 active-section change reveals the selected tab" }).toBe(true);
+      console.log("UXH03", JSON.stringify({ locale, operation: "readiness click reveals media", scrollLeft: await tabs.evaluate(el => el.scrollLeft) }));
+      Object.assign(metrics, await selected.evaluate(el => {
+        const r = el.getBoundingClientRect(), frame = el.closest('[data-testid="product-section-tabs"]')!.getBoundingClientRect();
+        return { selected: el.getAttribute("aria-current") === "location", tabLeft: r.left, tabRight: r.right,
+          frameLeft: frame.left, frameRight: frame.right, fullyVisible: r.left >= frame.left - 1 && r.right <= frame.right + 1 };
+      }));
+    });
     await setExpanded(false);
 
-    const hint = nav.getByText(`${presentationCopy[locale as keyof typeof presentationCopy].previous} · ${presentationCopy[locale as keyof typeof presentationCopy].next}`, { exact: true });
-    await expect(hint).toBeVisible();
-    const measureHintRow = () => tabs.evaluate(el => {
-      const strip = el.getBoundingClientRect(), frame = el.parentElement!.getBoundingClientRect();
-      return { overflow: el.scrollWidth - el.clientWidth, reserved: frame.bottom - strip.bottom };
-    }); // READ/MEASURE: isolate the hint row from unrelated responsive field wrapping.
-    const narrow = await measureHintRow();
-    await resize(890);
-    const wide = await measureHintRow();
-    await verify(hint, "UXH04 hint is hidden when there is no overflow").toBeHidden();
-    verify(narrow.overflow, "UXH04 narrow viewport has real overflow").toBeGreaterThan(1);
-    verify(wide.overflow, "UXH04 wider viewport removes real overflow").toBeLessThanOrEqual(1);
-    verify(narrow.reserved, "UXH04 overflow hint has a measurable reserved row").toBeGreaterThan(0);
-    verify(Math.abs(wide.reserved - narrow.reserved), "UXH04 hint row stays reserved when overflow disappears").toBeLessThanOrEqual(1);
-    await resize(390);
-    const narrowAgain = await measureHintRow();
-    await verify(hint, "UXH04 hint returns with overflow").toBeVisible();
-    verify(Math.abs(narrowAgain.reserved - wide.reserved), "UXH04 hint row stays reserved when overflow returns").toBeLessThanOrEqual(1);
-    console.log("UXH04", JSON.stringify({ locale, narrow, wide, narrowAgain }));
+    await action("UXH04/overflow-hint", "resize 390→890→390",
+      "hint visibility follows overflow while its reserved row stays stable", async metrics => {
+      const hint = nav.getByText(`${presentationCopy[locale as keyof typeof presentationCopy].previous} · ${presentationCopy[locale as keyof typeof presentationCopy].next}`, { exact: true });
+      await expect(hint).toBeVisible();
+      const measureHintRow = () => tabs.evaluate(el => {
+        const strip = el.getBoundingClientRect(), frame = el.parentElement!.getBoundingClientRect();
+        return { overflow: el.scrollWidth - el.clientWidth, reserved: frame.bottom - strip.bottom };
+      }); // READ/MEASURE: isolate the hint row from unrelated responsive field wrapping.
+      const narrow = await measureHintRow();
+      await resize(890);
+      const wide = await measureHintRow();
+      await verify(hint, "UXH04 hint is hidden when there is no overflow").toBeHidden();
+      verify(narrow.overflow, "UXH04 narrow viewport has real overflow").toBeGreaterThan(1);
+      verify(wide.overflow, "UXH04 wider viewport removes real overflow").toBeLessThanOrEqual(1);
+      verify(narrow.reserved, "UXH04 overflow hint has a measurable reserved row").toBeGreaterThan(0);
+      verify(Math.abs(wide.reserved - narrow.reserved), "UXH04 hint row stays reserved when overflow disappears").toBeLessThanOrEqual(1);
+      await resize(390);
+      const narrowAgain = await measureHintRow();
+      await verify(hint, "UXH04 hint returns with overflow").toBeVisible();
+      verify(Math.abs(narrowAgain.reserved - wide.reserved), "UXH04 hint row stays reserved when overflow returns").toBeLessThanOrEqual(1);
+      console.log("UXH04", JSON.stringify({ locale, narrow, wide, narrowAgain }));
+      Object.assign(metrics, { narrowOverflow: narrow.overflow, wideOverflow: wide.overflow, restoredOverflow: narrowAgain.overflow,
+        narrowReserved: narrow.reserved, wideReserved: wide.reserved, restoredReserved: narrowAgain.reserved,
+        restoredHintVisible: await hint.isVisible() });
+    });
 
     // Select on desktop before the responsive layout introduces horizontal
     // overflow. No mobile tab click or keyboard focus may scroll it into view.
-    await resize(901);
     const seo = nav.locator('button[aria-controls="seo"]');
-    await seo.click();
-    await expect(seo, "UXH05 desktop click selects SEO before resize").toHaveAttribute("aria-current", "location");
-    await resize(390);
     const measureSelected = () => seo.evaluate(el => {
       const strip = el.closest('[data-testid="product-section-tabs"]')!;
       const tab = el.getBoundingClientRect(), frame = strip.getBoundingClientRect();
@@ -231,31 +308,47 @@ async function assertProductEditorHardening(page: Page) {
         overflow: strip.scrollWidth - strip.clientWidth, scrollLeft: strip.scrollLeft,
         fullyVisible: tab.width > 0 && tab.left >= frame.left - 1 && tab.right <= frame.right + 1 };
     }); // READ/MEASURE only: native desktop selection and viewport resize drive the flow.
-    const resizedSelected = await measureSelected();
-    expect(resizedSelected.overflow, "UXH05 mobile strip has real horizontal overflow").toBeGreaterThan(1);
-    expect(resizedSelected.tabWidth, "UXH05 selected tab fits inside the mobile strip").toBeLessThanOrEqual(resizedSelected.frameWidth);
-    await verify(seo, "UXH05 resize preserves the selected SEO section").toHaveAttribute("aria-current", "location");
-    await verify.poll(async () => (await measureSelected()).fullyVisible,
-      { message: "UXH05 desktop-selected SEO is fully visible after 901→390 resize" }).toBe(true);
-    console.log("UXH05", JSON.stringify({ locale, direction: "901→390", ...await measureSelected() }));
+    await action("UXH05/section-seo", "click then resize 901→390",
+      "desktop-selected SEO stays selected and fully visible after resize", async metrics => {
+      await resize(901);
+      await seo.click();
+      await expect(seo, "UXH05 desktop click selects SEO before resize").toHaveAttribute("aria-current", "location");
+      await resize(390);
+      const resizedSelected = await measureSelected();
+      Object.assign(metrics, resizedSelected);
+      expect(resizedSelected.overflow, "UXH05 mobile strip has real horizontal overflow").toBeGreaterThan(1);
+      expect(resizedSelected.tabWidth, "UXH05 selected tab fits inside the mobile strip").toBeLessThanOrEqual(resizedSelected.frameWidth);
+      await verify(seo, "UXH05 resize preserves the selected SEO section").toHaveAttribute("aria-current", "location");
+      await verify.poll(async () => (await measureSelected()).fullyVisible,
+        { message: "UXH05 desktop-selected SEO is fully visible after 901→390 resize" }).toBe(true);
+      console.log("UXH05", JSON.stringify({ locale, direction: "901→390", ...await measureSelected() }));
+      Object.assign(metrics, await measureSelected(), { selected: await seo.getAttribute("aria-current") === "location" });
+    });
 
     // Unlike UXH05, overflow exists on both sides of this resize. Select once
     // at 500px, where all three locales overflow; no click/focus/wheel after
     // resize may reveal SEO. The 600px Chinese strip has spare room.
-    await resize(500);
-    await seo.click();
-    await expect(seo, "UXH06 native click selects SEO at 500px").toHaveAttribute("aria-current", "location");
-    const beforeClipping = await measureSelected();
-    expect(beforeClipping.overflow, "UXH06 500px strip already overflows").toBeGreaterThan(1);
-    expect(beforeClipping.fullyVisible, "UXH06 selected SEO starts fully visible").toBe(true);
-    await resize(390);
-    const afterClipping = await measureSelected();
-    expect(afterClipping.overflow, "UXH06 390px strip still overflows").toBeGreaterThan(1);
-    expect(afterClipping.tabWidth, "UXH06 selected tab fits inside the resized strip").toBeLessThanOrEqual(afterClipping.frameWidth);
-    await verify(seo, "UXH06 clipping resize retains SEO selection").toHaveAttribute("aria-current", "location");
-    await verify.poll(async () => (await measureSelected()).fullyVisible,
-      { message: "UXH06 already-overflowing selected SEO is fully visible after 500→390 resize" }).toBe(true);
-    console.log("UXH06", JSON.stringify({ locale, direction: "500→390", before: beforeClipping, after: await measureSelected() }));
+    await action("UXH06/section-seo", "click then resize 500→390",
+      "already-overflowing selected SEO stays selected and fully visible after resize", async metrics => {
+      await resize(500);
+      await seo.click();
+      await expect(seo, "UXH06 native click selects SEO at 500px").toHaveAttribute("aria-current", "location");
+      const beforeClipping = await measureSelected();
+      Object.assign(metrics, { beforeOverflow: beforeClipping.overflow, beforeScrollLeft: beforeClipping.scrollLeft,
+        beforeFullyVisible: beforeClipping.fullyVisible, beforeTabWidth: beforeClipping.tabWidth, beforeFrameWidth: beforeClipping.frameWidth });
+      expect(beforeClipping.overflow, "UXH06 500px strip already overflows").toBeGreaterThan(1);
+      expect(beforeClipping.fullyVisible, "UXH06 selected SEO starts fully visible").toBe(true);
+      await resize(390);
+      const afterClipping = await measureSelected();
+      Object.assign(metrics, afterClipping);
+      expect(afterClipping.overflow, "UXH06 390px strip still overflows").toBeGreaterThan(1);
+      expect(afterClipping.tabWidth, "UXH06 selected tab fits inside the resized strip").toBeLessThanOrEqual(afterClipping.frameWidth);
+      await verify(seo, "UXH06 clipping resize retains SEO selection").toHaveAttribute("aria-current", "location");
+      await verify.poll(async () => (await measureSelected()).fullyVisible,
+        { message: "UXH06 already-overflowing selected SEO is fully visible after 500→390 resize" }).toBe(true);
+      console.log("UXH06", JSON.stringify({ locale, direction: "500→390", before: beforeClipping, after: await measureSelected() }));
+      Object.assign(metrics, await measureSelected(), { selected: await seo.getAttribute("aria-current") === "location" });
+    });
     seen.add(locale);
     hardenedLocales.set(page, seen);
   } finally {
@@ -275,6 +368,7 @@ async function assertProductEditorHardening(page: Page) {
 export async function assertProductEditorReservedLayout(
   page: Page,
   capture?: (section: string) => Promise<void>,
+  record?: HardeningRecorder,
 ) {
   const form = page.locator("form.pe-document");
   const pane = form.getByTestId("product-fields");
@@ -315,7 +409,7 @@ export async function assertProductEditorReservedLayout(
     }
   };
   await assertReserved();
-  await assertProductEditorHardening(page);
+  await assertProductEditorHardening(page, record);
   if (page.viewportSize()!.width <= 390) {
     const locale = new URL(page.url()).pathname.split("/")[1] as keyof typeof presentationCopy;
     const tabs = form.getByTestId("product-section-tabs");
