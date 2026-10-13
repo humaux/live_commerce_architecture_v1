@@ -50,18 +50,20 @@ INSERT INTO ops.order_attempt_plan_key_versions(key_version)
 CREATE POLICY order_attempt_key_admin_locator ON ops.order_attempts
  FOR SELECT TO commerce_order_attempt_owner USING(
  pg_has_role(session_user,'commerce_order_attempt_key_admin','MEMBER')
- AND (SELECT count(*)=1 AND bool_and(m.roleid='commerce_order_attempt_key_admin'::regrole
+ AND (SELECT count(*)=1 AND bool_and(r.rolname='commerce_order_attempt_key_admin'
   AND m.inherit_option AND NOT m.set_option)
-  FROM pg_auth_members m WHERE m.member=session_user::regrole));
+  FROM pg_auth_members m JOIN pg_roles r ON r.oid=m.roleid
+  JOIN pg_roles login ON login.oid=m.member WHERE login.rolname=session_user));
 
 CREATE FUNCTION ops.retire_order_attempt_plan_key(p_version text) RETURNS text
  LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE retired timestamptz;
 BEGIN
  IF NOT pg_has_role(session_user,'commerce_order_attempt_key_admin','MEMBER')
-  OR NOT (SELECT count(*)=1 AND bool_and(m.roleid='commerce_order_attempt_key_admin'::regrole
+  OR NOT (SELECT count(*)=1 AND bool_and(r.rolname='commerce_order_attempt_key_admin'
    AND m.inherit_option AND NOT m.set_option)
-   FROM pg_auth_members m WHERE m.member=session_user::regrole) THEN
+   FROM pg_auth_members m JOIN pg_roles r ON r.oid=m.roleid
+   JOIN pg_roles login ON login.oid=m.member WHERE login.rolname=session_user) THEN
   RAISE EXCEPTION 'invalid plan key authority' USING ERRCODE='42501';
  END IF;
  IF current_setting('transaction_isolation')<>'read committed'
