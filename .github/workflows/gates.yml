@@ -210,6 +210,11 @@ jobs:
         run: |
           set -o pipefail
           go test ./tests/foundation -run '^$' -fuzz '^FuzzOrderAttemptModel$' -fuzztime=30s -parallel=2 -timeout=120s 2>&1 | tee output/ci-gates/oa1-fuzz.log
+      - name: OA1 backend classification acceptance
+        if: ${{ github.event_name == 'workflow_dispatch' && github.ref_name == 'unit/oa-1-order-attempt-core' && matrix.mode == 'focused:^TestOrderAttemptModel' }}
+        run: |
+          set -o pipefail
+          node --test tests/ci/backend-coverage.test.mjs tests/ci/pr-modes.test.mjs 2>&1 | tee output/ci-gates/oa1-backend-classification.log
       - name: Gate
         run: |
           set -o pipefail

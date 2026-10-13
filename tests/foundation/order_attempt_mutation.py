@@ -92,6 +92,27 @@ def main():
             "  END IF;\n",
             "",
         )],
+        "a2-deploy-admin-custody": [(
+            "deploy/postgres/logins.tsv",
+            "# Change rules: a new login needs (1) a row here, (2) pw_/dsn_ rows in deploy/secrets.manifest.tsv,\n",
+            "# Change rules: a new login needs (1) a row here, (2) pw_/dsn_ rows in deploy/secrets.manifest.tsv,\n"
+            "lc_order_attempt_key_admin\tcommerce_order_attempt_key_admin\tinherit_noset\tcore\tapi:COMMERCE_ORDER_ATTEMPT_KEY_ADMIN_DATABASE_URL\tmutation\n",
+        )],
+        "m2b-omit-cancel-revocation": [(
+            "migrations/0193_order_attempt_native_cancel.sql",
+            "   AND order_id=NEW.id AND create_attempt_id=NEW.create_attempt_id AND revoked_at IS NULL;\n",
+            "   AND order_id=NEW.id AND create_attempt_id=NEW.create_attempt_id AND revoked_at IS NULL AND false;\n",
+        )],
+        "erase-body-before-seal": [(
+            "migrations/0192_order_attempt_erasure_prefix.sql",
+            "  UPDATE ops.order_attempts x SET state='ABORTED',settled_at=clock_timestamp(),\n",
+            "  UPDATE ops.order_attempts x SET plan_ciphertext=NULL,plan_key_version=NULL\n"
+            "   WHERE x.attempt_id=(entry->>'attempt_id')::uuid\n"
+            "    AND x.intent_generation=(entry->>'generation')::bigint\n"
+            "    AND x.tenant_id=(ctx->>'tenant_id')::uuid AND x.store_id=(ctx->>'store_id')::uuid\n"
+            "    AND x.state='PENDING' AND x.admission_finished;\n"
+            "  UPDATE ops.order_attempts x SET state='ABORTED',settled_at=clock_timestamp(),\n",
+        )],
     }
     if name not in edits:
         raise SystemExit("unknown OA mutation")
