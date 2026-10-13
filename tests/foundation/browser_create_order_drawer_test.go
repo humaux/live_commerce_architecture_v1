@@ -26,6 +26,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -286,6 +287,8 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	var finalMu sync.Mutex
+	var finalKeys []string // Private test-only observations for the two added A16 requests.
 	mux := http.NewServeMux()
 	mux.Handle("/v1/identity/", private)
 	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -435,7 +438,7 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-		if r.Method == "POST" && (r.URL.Path == "/__test/drawer-request-facts" || r.URL.Path == "/__test/manual-request-facts") {
+		if r.Method == "POST" && (r.URL.Path == "/__test/drawer-request-facts" || r.URL.Path == "/__test/manual-request-facts" || r.URL.Path == "/__test/drawer-final-request-facts") {
 			operation := "merchanttools.order.for_buyer"
 			if r.URL.Path == "/__test/manual-request-facts" {
 				operation = "merchanttools.order.manual"
@@ -461,6 +464,21 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
      WHERE c.tenant_id=$1 AND c.store_id=$2 AND c.principal_id=$3 AND c.operation=$5 AND c.idempotency_key=ANY($4::text[])`, e.tenant(), e.store(), e.p.f.principalA, input.Keys, operation).Scan(&orders, &receipts); err != nil {
 				http.Error(w, "observation failed", 500)
 				return
+			}
+			if r.URL.Path == "/__test/drawer-final-request-facts" {
+				finalMu.Lock()
+				for _, key := range input.Keys {
+					seen := false
+					for _, existing := range finalKeys {
+						if existing == key {
+							seen = true
+						}
+					}
+					if !seen {
+						finalKeys = append(finalKeys, key)
+					}
+				}
+				finalMu.Unlock()
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.Header().Set("Cache-Control", "no-store")
@@ -519,23 +537,33 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	if err := e.p.f.owner.QueryRow(ctx, `SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2 AND source='merchant_manual'`, e.tenant(), e.store()).Scan(&orders); err != nil {
 		t.Fatal(err)
 	}
-	// Preserve original PG14 separately; exclude only the two extra bundles and privately observed added manual keys.
+	// Independent additive readback preserves the prior PG18 slice and all original PG14 orders.
+	finalMu.Lock()
+	observedFinalKeys := append([]string(nil), finalKeys...)
+	finalMu.Unlock()
+	var finalOrders, finalReceipts, priorOrders int
+	if err := e.p.f.owner.QueryRow(ctx, `SELECT count(DISTINCT o.id),count(*) FROM ops.command_results c JOIN checkout.orders o ON o.id=(c.response->>'order_id')::uuid AND o.tenant_id=c.tenant_id AND o.store_id=c.store_id WHERE c.tenant_id=$1 AND c.store_id=$2 AND c.principal_id=$3 AND c.operation='merchanttools.order.for_buyer' AND c.idempotency_key=ANY($4::text[])`, e.tenant(), e.store(), e.p.f.principalA, observedFinalKeys).Scan(&finalOrders, &finalReceipts); err != nil {
+		t.Fatal("final money independent PG observation failed")
+	}
+	if err := e.p.f.owner.QueryRow(ctx, `SELECT count(*) FROM checkout.orders o WHERE o.tenant_id=$1 AND o.store_id=$2 AND o.source='merchant_manual' AND NOT EXISTS(SELECT 1 FROM ops.command_results c WHERE c.tenant_id=o.tenant_id AND c.store_id=o.store_id AND c.principal_id=$3 AND c.operation='merchanttools.order.for_buyer' AND c.idempotency_key=ANY($4::text[]) AND c.response->>'order_id'=o.id::text)`, e.tenant(), e.store(), e.p.f.principalA, observedFinalKeys).Scan(&priorOrders); err != nil {
+		t.Fatal("prior PG18 independent observation failed")
+	}
 	manualKeys := manualControl.readbackManual(t, evidence, runErr == nil)
 	var legacyOrders int
-	if err := e.p.f.owner.QueryRow(ctx, `SELECT count(*) FROM checkout.orders o WHERE o.tenant_id=$1 AND o.store_id=$2 AND o.source='merchant_manual' AND NOT EXISTS(SELECT 1 FROM inbox.order_for_buyer b WHERE b.tenant_id=o.tenant_id AND b.store_id=o.store_id AND b.bundle_id=ANY($3::uuid[]) AND b.order_id=o.id) AND NOT EXISTS(SELECT 1 FROM ops.command_results c WHERE c.tenant_id=o.tenant_id AND c.store_id=o.store_id AND c.principal_id=$4 AND c.operation='merchanttools.order.manual' AND c.idempotency_key=ANY($5::text[]) AND c.response->>'order_id'=o.id::text)`, e.tenant(), e.store(), []string{partialFixture.Bundle, capabilityFixture.Bundle}, e.p.f.principalA, manualKeys).Scan(&legacyOrders); err != nil {
+	if err := e.p.f.owner.QueryRow(ctx, `SELECT count(*) FROM checkout.orders o WHERE o.tenant_id=$1 AND o.store_id=$2 AND o.source='merchant_manual' AND NOT EXISTS(SELECT 1 FROM inbox.order_for_buyer b WHERE b.tenant_id=o.tenant_id AND b.store_id=o.store_id AND b.bundle_id=ANY($3::uuid[]) AND b.order_id=o.id) AND NOT EXISTS(SELECT 1 FROM ops.command_results c WHERE c.tenant_id=o.tenant_id AND c.store_id=o.store_id AND c.principal_id=$4 AND c.operation='merchanttools.order.manual' AND c.idempotency_key=ANY($5::text[]) AND c.response->>'order_id'=o.id::text) AND NOT EXISTS(SELECT 1 FROM ops.command_results c WHERE c.tenant_id=o.tenant_id AND c.store_id=o.store_id AND c.principal_id=$4 AND c.operation='merchanttools.order.for_buyer' AND c.idempotency_key=ANY($6::text[]) AND c.response->>'order_id'=o.id::text)`, e.tenant(), e.store(), []string{partialFixture.Bundle, capabilityFixture.Bundle}, e.p.f.principalA, manualKeys, observedFinalKeys).Scan(&legacyOrders); err != nil {
 		t.Fatal(err)
 	}
 	partialFault.readback(t, evidence, runErr == nil)
 	capabilityControl.readback(t, evidence, runErr == nil)
-	pg, _ := json.Marshal(map[string]any{"orders": orders, "expected": 18, "single_order": orders == 18, "legacy_orders": legacyOrders, "legacy_expected": 14, "legacy_single_order": legacyOrders == 14})
+	pg, _ := json.Marshal(map[string]any{"orders": orders, "expected": 20, "single_order": orders == 20, "prior_orders": priorOrders, "prior_expected": 18, "prior_single_order": priorOrders == 18, "final_request_orders": finalOrders, "final_request_receipts": finalReceipts, "final_observed_keys": len(observedFinalKeys), "legacy_orders": legacyOrders, "legacy_expected": 14, "legacy_single_order": legacyOrders == 14})
 	if err := os.WriteFile(filepath.Join(evidence, "pg-readback.json"), pg, 0600); err != nil {
 		t.Fatal(err)
 	}
 	if runErr != nil {
-		t.Fatalf("drawer browser gate failed: %v; PG orders=%d expected=18; evidence=%s", runErr, orders, evidence)
+		t.Fatalf("drawer browser gate failed: %v; PG orders=%d expected=20; evidence=%s", runErr, orders, evidence)
 	}
-	if orders != 18 || legacyOrders != 14 {
-		t.Fatalf("drawer single-order PG readback orders=%d expected=18 legacy_orders=%d expected=14; evidence=%s", orders, legacyOrders, evidence)
+	if orders != 20 || priorOrders != 18 || legacyOrders != 14 || finalOrders != 2 || finalReceipts != 2 || len(observedFinalKeys) != 2 {
+		t.Fatalf("drawer PG orders=%d expected=20 prior_orders=%d expected=18 legacy_orders=%d expected=14 added_orders=%d expected=2 added_receipts=%d expected=2 keys=%d expected=2; evidence=%s", orders, priorOrders, legacyOrders, finalOrders, finalReceipts, len(observedFinalKeys), evidence)
 	}
 	for _, fx := range fixtures {
 		if n := e.count(`SELECT count(*) FROM inbox.order_for_buyer WHERE store_id=$1 AND bundle_id=$2 AND state='placed'`, e.store(), fx.Bundle); n != 1 {
@@ -550,9 +578,9 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 		Cases  int      `json:"cases"`
 		Failed []string `json:"failed"`
 	}
-	// Keep all original 31 cases and add both ManualOrder recovery cases.
-	if json.Unmarshal(data, &result) != nil || result.Cases != 33 || len(result.Failed) != 0 {
-		t.Fatalf("drawer exact 33-case matrix result missing; evidence=%s", evidence)
+	// Preserve all prior33 cases and add never-sent and stable-principal recovery guards.
+	if json.Unmarshal(data, &result) != nil || result.Cases != 35 || len(result.Failed) != 0 {
+		t.Fatalf("drawer exact 35-case matrix result missing; evidence=%s", evidence)
 	}
 	ledgerBytes, err := os.ReadFile(filepath.Join(evidence, "click-ledger.json"))
 	if err != nil {
@@ -585,8 +613,10 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 		}
 	}
 	for scenario, controls := range map[string][]string{
-		"DU3-manual-absence-recovery": {"manual frozen refusal", "manual absence seal and new intent", "manual new intent persistence"},
-		"DU3-manual-partial-recovery": {"manual partial Begin fault", "manual partial authority", "manual partial retry persistence"},
+		"DU3-manual-absence-recovery":    {"manual frozen refusal", "manual absence seal and new intent", "manual new intent persistence"},
+		"DU3-manual-partial-recovery":    {"manual partial Begin fault", "manual partial authority", "manual partial retry persistence"},
+		"DU3-never-sent-key-validation":  {"never sent invalid key", "never sent close reopen persistence"},
+		"DU3-unknown-auth-relogin-guard": {"unknown real auth clear", "relogin stable unresolved guard", "reloaded stable unresolved guard", "guard scope and persisted order"},
 	} {
 		for _, control := range controls {
 			matches := 0

@@ -536,6 +536,100 @@ try {
   } finally {await manualContext.close();}
  }
  assert.equal(cases,33,"exact additive ManualOrder recovery matrix");
+ // Final money regression B: inject exactly one invalid generator value, then run the actual client's pre-dispatch validation.
+ {
+  current="DU3-never-sent-key-validation";
+  const context=await browser.newContext(ctxOpts({ignoreHTTPSErrors:true,viewport:{width:1440,height:900}})),page=await context.newPage();
+  let posts=0;
+  const observe=request=>{if(request.method()==="POST"&&new URL(request.url()).pathname===routePath)posts++;};
+  page.on("request",observe);
+  try {
+   await page.goto(`${origin}/en`);await page.getByRole("button",{name:"Sign in with identity service",exact:true}).click();await expect(page.getByTestId("dashboard-page")).toBeVisible();
+   let drawer=await openConversation(page,"en",fixtures[0].Unlinked);
+   await addCatalog(drawer);await fillEmpty(drawer);await expect(drawer.getByTestId("drawer-submit")).toBeEnabled();
+   const before=await (await fetch(`${api}/__test/drawer-facts`)).json();
+   // Disclosed key-generator fault only; do not change DOM, fetch, BFF responses or client code.
+   await page.evaluate(()=>{const original=crypto.randomUUID;window.__lcInvalidKeyCalls=0;Object.defineProperty(crypto,"randomUUID",{configurable:true,value:()=>{window.__lcInvalidKeyCalls++;Object.defineProperty(crypto,"randomUUID",{configurable:true,value:original});return "invalid key";}});});
+   await drawer.getByTestId("drawer-submit").click();
+   await expect(drawer.getByTestId("drawer-error")).toBeVisible();
+   assert.equal(await page.evaluate(()=>window.__lcInvalidKeyCalls),1,"scoped generator fault must actually be consumed by the first click");
+   await expect(drawer.getByTestId("drawer-error")).toContainText("Some details are not valid. Check the form.");
+   await expect(drawer.getByTestId("drawer-error")).not.toContainText("The order may already exist.");
+   await expect(drawer.getByTestId("drawer-close")).toBeEnabled();
+   assert.equal(posts,0,"actual client invalid key is rejected before any A16 POST");
+   assert.equal(await page.evaluate(()=>Object.keys(sessionStorage).filter(key=>key.startsWith("buyer-order-unresolved:")).length),0,"never-sent attempt must not leave an armed guard");
+   assert.equal((await (await fetch(`${api}/__test/drawer-facts`)).json()).orders,before.orders);
+   record("never sent invalid key","inject one generator fault/click actual submit","actualclient invalid_request; zero A16 POST; non-UNKNOWN error; guard0; closeenabled");
+   await drawer.getByTestId("drawer-close").click();await expect(page.getByTestId("create-order-drawer")).toHaveCount(0);
+   drawer=await openConversation(page,"en",fixtures[0].Unlinked);await addCatalog(drawer);await fillEmpty(drawer);await expect(drawer.getByTestId("drawer-submit")).toBeEnabled();
+   const created=await submit(page,drawer);assert.equal(created.status(),201);const value=await created.json();
+   await expect(drawer.getByTestId("drawer-result")).toBeVisible();assert.equal(posts,1,"valid reopened intent sends exactly one A16 POST");
+   const facts=await fetch(`${api}/__test/drawer-final-request-facts`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({keys:[created.request().headers()["idempotency-key"]]})});
+   assert.equal(facts.status,200);assert.deepEqual(await facts.json(),{orders:1,receipts:1});
+   assert.equal((await (await fetch(`${api}/__test/drawer-facts`)).json()).orders-before.orders,1);
+   assert.equal(await page.evaluate(()=>Object.keys(sessionStorage).filter(key=>key.startsWith("buyer-order-unresolved:")).length),0);
+   await drawer.getByTestId("drawer-view-order").click();
+   await expect(page.getByTestId("orders-table")).toBeVisible();await expect(page.getByTestId(`order-row-${value.order_id}`)).toBeVisible();await page.reload();
+   await expect(page.getByTestId(`order-row-${value.order_id}`)).toBeVisible();
+   results.push({case:current,invalid_generator_calls:1,invalid_posts:0,uncertain:false,guard_armed:false,valid_posts:1,pg_delta:1,reload_persisted:true});
+   record("never sent close reopen persistence","click close/create/fill/valid submit/vieworder/reload","newvalidintent actual201; one persisted order/receipt; no guard or duplicate");cases++;
+  } finally {page.off("request",observe);await context.close();}
+ }
+ assert.equal(cases,34,"all33 previouscases plus actual pre-dispatch validation");
+ // Final money regression A: a real lost successful reply and real401 must not be escaped by re-login/rotated CSRF.
+ {
+  current="DU3-unknown-auth-relogin-guard";
+  const context=await browser.newContext(ctxOpts({ignoreHTTPSErrors:true,viewport:{width:1440,height:900}})),page=await context.newPage();
+  const attempts=[];let posts=0,created;
+  const observe=request=>{if(request.method()==="POST"&&new URL(request.url()).pathname===routePath)posts++;};
+  const scopeFor=async id=>{const observed=await page.evaluate(async id=>{const reply=await fetch("/api/stores",{credentials:"same-origin",cache:"no-store"});const data=await reply.json();return {status:reply.status,scope:data.items?.find(item=>item.id===id)?.order_guard_scope};},id);assert.equal(observed.status,200);assert.match(observed.scope,/^[a-f0-9]{64}$/);return observed.scope;};
+  const exact=async()=>{const response=await fetch(`${api}/__test/drawer-final-request-facts`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({keys:[attempts[0].key]})});assert.equal(response.status,200);return response.json();};
+  const guarded=async reload=>{
+   if(reload)await page.reload();else await page.goto(`${origin}/en/messages?store=${store}`);
+   await page.getByTestId(`conversation-${fixtures[0].Unlinked}`).click();await expect(page.getByTestId("buyer-panel")).toBeVisible();
+   const [prefill]=await Promise.all([page.waitForResponse(r=>r.request().method()==="GET"&&new URL(r.url()).pathname===`/api/stores/${store}/tools/inbox/order-prefill`&&new URL(r.url()).searchParams.get("conversation_id")===fixtures[0].Unlinked),page.getByTestId("buyer-create-order").click()]);
+   assert.equal(prefill.status(),200,"guard checks run only after real successful prefill");
+   const drawer=page.getByTestId("create-order-drawer");await expect(drawer).toBeVisible();
+   await expect(drawer.getByTestId("drawer-unresolved-guard")).toBeVisible();
+   await expect(drawer.getByTestId("drawer-unresolved-guard")).toContainText("An earlier order request is unresolved.");
+   await expect(drawer.getByTestId("drawer-form")).toHaveCount(0);await expect(drawer.getByTestId("drawer-submit")).toHaveCount(0);await expect(drawer.getByTestId("drawer-new-attempt")).toHaveCount(0);
+   await expect(drawer.getByTestId("drawer-close")).toBeEnabled();
+   assert.equal(posts,2,"guarded new drawer/reload cannot send fresh A16");assert.deepEqual(await exact(),{orders:1,receipts:1});
+   return drawer;
+  };
+  page.on("request",observe);
+  try {
+   await page.goto(`${origin}/en`);await page.getByRole("button",{name:"Sign in with identity service",exact:true}).click();await expect(page.getByTestId("dashboard-page")).toBeVisible();
+   const originalScope=await scopeFor(store),before=await (await fetch(`${api}/__test/drawer-facts`)).json();
+   const oldCSRF=(await context.cookies()).filter(cookie=>cookie.name==="__Host-commerce_csrf");assert.equal(oldCSRF.length,1);
+   let drawer=await openConversation(page,"en",fixtures[0].Unlinked);await addCatalog(drawer);await fillEmpty(drawer);await expect(drawer.getByTestId("drawer-submit")).toBeEnabled();
+   await page.route(`**${routePath}`,async route=>{attempts.push({key:route.request().headers()["idempotency-key"],body:route.request().postData()});const real=await route.fetch();if(attempts.length===1){assert.equal(real.status(),201);created=await real.json();await real.dispose();await route.abort("failed");}else await route.fulfill({response:real});});
+   await drawer.getByTestId("drawer-submit").click();await expect(drawer.getByTestId("drawer-error")).toContainText("The order may already exist.");await expect(drawer.getByTestId("drawer-close")).toBeDisabled();
+   assert.deepEqual(await exact(),{orders:1,receipts:1});
+   // Disclosed authentication fault: remove only the browser's session cookie; next real BFF command returns401.
+   await context.clearCookies({name:"__Host-commerce_session"});
+   const [denied]=await Promise.all([page.waitForResponse(isSubmit),drawer.getByTestId("drawer-submit").click()]);assert.equal(denied.status(),401);
+   assert.equal(attempts.length,2);assert.equal(attempts[1].key,attempts[0].key);assert.equal(attempts[1].body,attempts[0].body);
+   await expect.poll(()=>page.evaluate(()=>{const surfaces=[document.documentElement.outerHTML,...[...document.querySelectorAll("input,textarea")].map(el=>el.value)];return ["SYNTHETIC Drawer Buyer","0912345678","drawer@example.invalid","Taipei Region","1 Synthetic Drawer Road","Synthetic Floor 1"].every(value=>surfaces.every(surface=>!surface.includes(value)));}),{message:"real401 must clear every private contact/address field"}).toBe(true);
+   assert.equal(await page.evaluate(()=>Object.keys(sessionStorage).filter(key=>key.startsWith("buyer-order-unresolved:")).length),1,"UNKNOWN auth clear preserves opaque guard");assert.equal(posts,2);assert.deepEqual(await exact(),{orders:1,receipts:1});
+   await page.unroute(`**${routePath}`);
+   record("unknown real auth clear","real201/drop reply/remove session cookie/click original retry","actual401 samekey/body; privatefields cleared; opaqueguard1; one durable order/receipt");
+   await page.goto(`${origin}/en`);await page.getByRole("button",{name:"Sign in with identity service",exact:true}).click();await expect(page.getByTestId("dashboard-page")).toBeVisible();
+   const newCSRF=(await context.cookies()).filter(cookie=>cookie.name==="__Host-commerce_csrf");assert.equal(newCSRF.length,1);assert.match(newCSRF[0].value,/^[A-Za-z0-9_-]{43}$/);assert.notEqual(newCSRF[0].value,oldCSRF[0].value,"actual OIDC login must rotate valid CSRF");
+   assert.equal(await scopeFor(store),originalScope,"same actual issuer/subject/principal/store must keep stable order authority scope");
+   drawer=await guarded(false);record("relogin stable unresolved guard","actual OIDC sign-in/newvalidCSRF/click buyer create","same serverguardscope; positive loadedguard; noform/newkey/POST; exactone order");
+   drawer=await guarded(true);record("reloaded stable unresolved guard","reload/click conversation/create","positive loadedguard afterreload; nofresh A16; exactone originalorder/receipt");
+   await drawer.getByTestId("drawer-unresolved-guard").getByRole("link").click();await expect(page.getByTestId("orders-table")).toBeVisible();await expect(page.getByTestId(`order-row-${created.order_id}`)).toBeVisible();
+   // The same authenticated principal can still load an independent store's real create form.
+   const otherStore=process.env.LC_DRAWER_COMMENT_STORE;assert.notEqual(await scopeFor(otherStore),originalScope);
+   await page.goto(`${origin}/en/studio/console?store=${otherStore}&scene=${process.env.LC_DRAWER_COMMENT_SCENE}`);await page.getByTestId(`comment-create-order-${process.env.LC_DRAWER_COMMENT_REF}`).click();
+   drawer=page.getByTestId("create-order-drawer");await expect(drawer).toBeVisible();await expect(drawer.getByTestId("drawer-form")).toBeVisible();await expect(drawer.getByTestId("drawer-unresolved-guard")).toHaveCount(0);await drawer.getByTestId("drawer-close").click();
+   assert.equal(posts,2);assert.deepEqual(await exact(),{orders:1,receipts:1});assert.equal((await (await fetch(`${api}/__test/drawer-facts`)).json()).orders-before.orders,1);
+   results.push({case:current,attempts:2,same_key:true,same_body:true,real_auth_status:401,csrf_rotated:true,stable_scope:true,relogin_guard_loaded:true,reload_guard_loaded:true,other_store_unaffected:true,pg_delta:1,request_orders:1,request_receipts:1});
+   record("guard scope and persisted order","click guard vieworders/otherstore comment create/close","original ordervisible; independentstore formloaded; zero newwrites; PGdelta1");cases++;
+  }finally{await page.unroute(`**${routePath}`);page.off("request",observe);await context.close();}
+ }
+ assert.equal(cases,35,"exact additive final money matrix preservesall33previouscases");
 } catch (error) {
  // Only allowlisted test file/line coordinates are retained; assertion messages may contain private request or DOM material.
  const coordinate=String(error?.stack||"").match(/\b(create-order-(?:drawer-gate|manual-recovery|partial-recovery|capability-recovery)\.mjs):(\d+):(\d+)/);
