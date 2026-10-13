@@ -393,7 +393,7 @@ func TestOrderAttemptNotificationReadyNativeActualCrypto(t *testing.T) {
 	if err = json.Unmarshal(prepared,&contextWire); err != nil || contextWire.State != "PREPARED" || contextWire.BindingID != binding || contextWire.ConversationID != conversation || contextWire.TemplateID != "order-pay-link/v1" || contextWire.TemplateVersion != 1 || contextWire.Origin!=e.origin || contextWire.Locale!=selection["locale"] || len(contextWire.Thread) == 0 { t.Fatal("READY must come from current same-store native binding/template/encrypted inbound/published origin and frozen locale") }
 	// tcvNew's existing bhPublish creates the real current publication/domain proof.
 	// The URL is a dormant crypto fixture; URL-consumer activation is outside OA1.
-	buyerLink := contextWire.Origin+"/order-pay/"+credential
+	buyerLink := contextWire.Origin+"/"+contextWire.Locale+"/pay-entry#o="+a.AttemptID+"&t="+credential
 	oaStateExec(t,tx,`RESET ROLE`)
 	jobs, err := river.NewClient[pgx.Tx](riverpgxv5.New(e.p.f.runtime),&river.Config{Schema:"river"})
 	if err != nil { t.Fatal(err) }
