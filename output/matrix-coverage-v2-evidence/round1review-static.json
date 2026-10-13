@@ -3,7 +3,7 @@
   "base_commit": "8ab590779d9ed0e22c5f39031143e3e93dcf893a",
   "author_model": "gpt-6.1-sol",
   "author_reasoning": "high",
-  "author_provenance": "Explicit parent spawn metadata for NEW review repair author only; original author/root model and effort UNKNOWN",
+  "author_provenance": "Explicit parent spawn metadata for NEW review repair author only. Original author configuration is recorded separately from owner-supplied observed thread metadata; original root model/effort UNKNOWN.",
   "evidence_level": "E1 STATIC SOURCE EDITS ONLY; compile/lint/tests/gates NOT_RUN locally; CI owned by parent",
   "source_files_sha256": {
     "tests/foundation/catalog_matrix_ledger_test.go": "bf5fb1c6df8f73c8469862d1ec16879307a3387ec7e263ed701ebb99fa02e1b0",
@@ -138,5 +138,19 @@
     "commands": "python3 static rename/metadata edits/hash receipt; git add/commit",
     "exit_code": 0,
     "acceptance": "NOT_RUN for new artifact metadata; parent GitHub CI only"
+  },
+  "original_author_observed_thread_metadata": {
+    "agent_path": "/root/matrix_v2_evidence",
+    "name": "Carver",
+    "role": "commerce_worker",
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "high",
+    "thread_id": "01a133fe-95a6-7c52-bddb-3730de0585fd",
+    "turn_context_count": 8,
+    "first_turn_context_at": "2026-10-13T06:41:31Z",
+    "last_turn_context_at": "2026-10-13T07:53:40Z",
+    "provenance": "Owner-supplied trusted observation of thread metadata; local session files not independently read by this repair",
+    "original_root_model": "UNKNOWN",
+    "original_root_reasoning": "UNKNOWN"
   }
 }

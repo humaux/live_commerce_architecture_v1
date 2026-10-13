@@ -4,7 +4,8 @@
     38380064266,
     38381067824,
     38381815228,
-    38383142992
+    38383142992,
+    38384639292
   ],
   "logs": [
     {
@@ -34,6 +35,13 @@
       "raw_sha256": "3bcc5abdf6cdd8ac478ac123501d056524e2629713d2e2a565319323e56955dc",
       "lossless_archive": "ci-red-38383142992.log.gz",
       "archive_sha256": "78cd7099b2a88e93bf7a0fc32cf1131b9c82f720ff1fd5b7d65d4fee1b5911ab"
+    },
+    {
+      "raw_name": "ci-green-38384639292.log",
+      "raw_size_bytes": 799147,
+      "raw_sha256": "de31aa50fc05b84d41dfb7f1f32c3a9dc5674b8b11b4959ba6e279a77777aeb3",
+      "lossless_archive": "ci-green-38384639292.log.gz",
+      "archive_sha256": "973232392c1d7ce237326aed8b23f2e2462b92c8e0e2c48cb59d96e025d530ba"
     }
   ]
 }
