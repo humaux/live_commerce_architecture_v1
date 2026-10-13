@@ -1,5 +1,10 @@
 package foundation_test
 
+// Purpose: native Meta multi-Page migration, authorization and routing gates.
+// Depends on: migrations.Apply, the real-PG foundation fixture and metaconnect fakegraph.
+// Used by: foundation MPG01-MPG05 acceptance and CI migration shards.
+// Invariants: historical root/post-River dependency order, exact checksums and Page ownership.
+//
 // meta_connect_multipage_test.go: PG gates of unit meta-multi-page (migration 0108, docs/delivery/units/meta-multi-page.md):
 // one store connects up to 10 Facebook Pages instead of exactly one. This file is the implementer's own gate: it proves the
 // populated re-key (D1), the cap of 10 (D2), per-Page disconnect + one unsubscribe job per Page (D2), the concurrent
@@ -60,11 +65,41 @@ func TestMetaConnectMultiPageUpgrade(t *testing.T) {
 		held = append(held, version)
 		mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2)`, version, sums[version])
 	}
+	// OA post-River helpers depend on the held 0170+ roles/tables, not just River.
+	// Keep their real checksums in the same hold/release ledger as the numbered chain.
+	postFiles, err := filepath.Glob("../../migrations/post_river/[0-9][0-9][0-9][0-9]_*.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range postFiles {
+		if filepath.Base(f) < "0023_" {
+			continue
+		}
+		version := "post_river/" + filepath.Base(f)
+		body, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		sums[version] = fmt.Sprintf("%x", sha256.Sum256(body))
+		held = append(held, version)
+		mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2)`, version, sums[version])
+	}
+	if !slices.Contains(held, "post_river/0023_order_attempt_jobs.sql") {
+		t.Fatalf("OA post-River dependency not found among the held-back migrations: %v", held)
+	}
 	if !slices.Contains(held, "0108_meta_multi_page.sql") {
 		t.Fatalf("0108 not found among the held-back migrations: %v", held)
 	}
 	if err := migrations.Apply(ctx, owner); err != nil {
 		t.Fatalf("apply every migration before 0108: %v", err)
+	}
+	if n := countRows(t, owner, `SELECT count(*) FROM pg_roles WHERE rolname='commerce_order_attempt_owner'`); n != 0 {
+		t.Fatal("pre-0108 database already has the OA coordinator role")
+	}
+	if n := countRows(t, owner, `SELECT count(*) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace
+		WHERE s.nspname='ops' AND p.proname IN ('order_attempt_job_matches','guard_order_attempt_job',
+		'check_order_attempt_job_link','order_attempt_fence_context','execute_order_attempt')`); n != 0 {
+		t.Fatalf("pre-0108 database already has %d OA root/post-River helpers", n)
 	}
 	// Precondition: the single-Page PK has no page_id column.
 	if n := countRows(t, owner, `SELECT count(*) FROM information_schema.key_column_usage kcu
@@ -106,6 +141,11 @@ func TestMetaConnectMultiPageUpgrade(t *testing.T) {
 	}
 	if n := countRows(t, owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version='0108_meta_multi_page.sql' AND checksum=$1`, sums["0108_meta_multi_page.sql"]); n != 1 {
 		t.Errorf("0108 ledger row with the file checksum: %d", n)
+	}
+	for _, version := range held {
+		if n := countRows(t, owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version=$1 AND checksum=$2`, version, sums[version]); n != 1 {
+			t.Errorf("upgraded ledger row %s with the file checksum: %d", version, n)
+		}
 	}
 
 	// 1. the re-key: the primary key is now (tenant_id, store_id, page_id).
