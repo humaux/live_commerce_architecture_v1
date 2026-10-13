@@ -57,6 +57,25 @@ func TestCatalogCoreCC01PopulatedUpgrade(t *testing.T) {
 		held = append(held, "post_river/0019_worker_authorities.sql")
 		mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2)`, "post_river/0019_worker_authorities.sql", sums["post_river/0019_worker_authorities.sql"])
 	}
+	// OA post-River guards depend on root 0170+, which is held above. Stage
+	// both suffixes together instead of applying guards to a pre-OA schema.
+	postFiles, err := filepath.Glob("../../migrations/post_river/[0-9][0-9][0-9][0-9]_*.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, file := range postFiles {
+		if filepath.Base(file) < "0023_" {
+			continue
+		}
+		version := "post_river/" + filepath.Base(file)
+		body, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		sums[version] = fmt.Sprintf("%x", sha256.Sum256(body))
+		held = append(held, version)
+		mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2)`, version, sums[version])
+	}
 	if !slices.Contains(held, "0086_catalog_v2.sql") {
 		t.Fatalf("0086 not found among the held-back migrations: %v", held)
 	}
@@ -70,6 +89,13 @@ func TestCatalogCoreCC01PopulatedUpgrade(t *testing.T) {
 	}
 	if n := countRows(t, owner, `SELECT count(*) FROM information_schema.tables WHERE table_schema='catalog' AND table_name='collections'`); n != 0 {
 		t.Fatal("pre-0086 database already has catalog.collections")
+	}
+	if n := countRows(t, owner, `SELECT count(*) FROM pg_roles WHERE rolname='commerce_order_attempt_owner'`); n != 0 {
+		t.Fatalf("pre-0086 database already has %d OA coordinator roles", n)
+	}
+	if n := countRows(t, owner, `SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+	 WHERE n.nspname='ops' AND p.proname IN ('order_attempt_job_matches','order_attempt_job_live')`); n != 0 {
+		t.Fatalf("pre-0086 database already has %d post-River OA helpers", n)
 	}
 
 	// ---- populate a merchant's catalog (owner-seeded, synthetic) ----
@@ -138,6 +164,11 @@ func TestCatalogCoreCC01PopulatedUpgrade(t *testing.T) {
 	}
 	if err := migrations.Apply(ctx, owner); err != nil {
 		t.Fatalf("0086 on the populated database: %v", err)
+	}
+	for _, version := range held {
+		if n := countRows(t, owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version=$1 AND checksum=$2`, version, sums[version]); n != 1 {
+			t.Fatalf("held migration %s did not apply with its exact file checksum: %d", version, n)
+		}
 	}
 	ledger := crExplicitDigest(t, owner, "public.lc_schema_migrations", "applied_at")
 	if err := migrations.Apply(ctx, owner); err != nil {

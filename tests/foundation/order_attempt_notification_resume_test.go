@@ -52,6 +52,9 @@ func oaNotificationResumeNative(t *testing.T) oaNotificationResumeScenario {
 		executor: oaNotificationExecutorWithPayloadKey(t, pool, m.key),
 	}, plan: plan}
 	var ready bool
+	// The foundation binary shares a database: unrelated stores can already
+	// have READY operations. This C1 must have neither a local operation nor a
+	// local notification job; unrelated successful notifications are allowed.
 	err = e.p.f.owner.QueryRow(context.Background(), `SELECT a.state='PENDING' AND a.admission_finished
 	 AND a.receipt IS NULL AND a.order_id IS NULL AND a.plan_ciphertext IS NOT NULL
 	 AND b.enabled AND integration.binding_capability_state(a.tenant_id,a.store_id,b.id,'dm_session',ARRAY[]::text[]) IN ('ok','review_required')
@@ -60,7 +63,11 @@ func oaNotificationResumeNative(t *testing.T) oaNotificationResumeScenario {
 	 AND identity.principal_holds(a.tenant_id,a.store_id,$4,ARRAY['inbox:read','inbox:reply','catalog:read','inventory:reserve'])
 	 AND EXISTS(SELECT 1 FROM inbox.order_for_buyer WHERE create_attempt_id=a.attempt_id AND bundle_id=$5 AND state='pending')
 	 AND EXISTS(SELECT 1 FROM claims.merchant_origin_grants WHERE create_attempt_id=a.attempt_id AND bundle_id=$5 AND consumed_at IS NULL)
-	 AND NOT EXISTS(SELECT 1 FROM river.river_job WHERE kind='external_operation_v1')
+	 AND NOT EXISTS(SELECT 1 FROM integration.operations op
+	  WHERE op.tenant_id=a.tenant_id AND op.store_id=a.store_id)
+	 AND NOT EXISTS(SELECT 1 FROM river.river_job j JOIN integration.operations op
+	  ON j.args->>'operation_id'=op.id::text WHERE j.kind='external_operation_v1'
+	  AND op.tenant_id=a.tenant_id AND op.store_id=a.store_id)
 	 FROM ops.order_attempts a JOIN social.conversations c ON c.id=$2
 	 JOIN inbox.conversation_state st ON st.conversation_id=c.id JOIN integration.bindings b ON b.id=$3
 	 WHERE a.attempt_id=$1`, a.AttemptID, conversation, binding, e.p.f.principalA, bundle).Scan(&ready)
