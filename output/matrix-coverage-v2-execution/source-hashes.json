@@ -6,7 +6,7 @@
     ".github/workflows/foundation.yml": "6e91b978a623e849f792703942187009a71f7eabf7e7a8f9d86ff5d463f4129e",
     ".github/workflows/gates.yml": "afc8104b4d8bcf003304b9399331819ef53020e8dd299486e0523ad6c7fbe04b",
     "scripts/dev/ci-plan.mjs": "98010b8f639c32e07e792077c28d7f0da7afa66f79e5355b08e018a60dffb61a",
-    "scripts/dev/matrix-receipt-verify.mjs": "d9f2bd7b94a531fdc1eb9a07fbe8dcef36fee7ae6e4eef21295b3b32c91ec0b5",
+    "scripts/dev/matrix-receipt-verify.mjs": "fc802f39a7658ded6b661b1a869a215ae980817477b001aba310c05b3f58abf9",
     "scripts/dev/matrix-receipt.mjs": "d8d7ba054a56e7ffcc853fb3ee1ceea633beb1ee95f7c77424573d5def013017",
     "scripts/dev/matrix-test-inventory.json": "695315e470f4fe1ac6ce9fbe22d33c0f5586a91424ad84ade1e80e4039933046",
     "scripts/dev/matrix-test-reporter.mjs": "6fe96f22bd3183d58369c3303cae0822760aecaa943635efb9929ae8dadee62f",
@@ -22,5 +22,5 @@
   },
   "source_record_only": true,
   "acceptance": "GitHub CI pending; no local test execution",
-  "recorded_parent": "4081ddae449fd290f443350347074867f85fe194"
+  "recorded_parent": "5b4c19a33ffd05b6e8823945f593351238dc4917"
 }

@@ -58,7 +58,7 @@ export function foundationBrowserRequired(directory, goStepOutcome, runId, sourc
   const errors = verifyReceipt(receipt, { receiptPath, kind: "go", mode: "foundation", runId,
     job: process.env.GITHUB_JOB || "foundation", sourceCommit });
   if (errors.length) throw new Error(`Go receipt: ${errors.join("; ")}`);
-  return receipt.outcome?.historical_skip === true;
+  return receipt.outcome?.historical_skip?.ok === true;
 }
 function collectJsonFiles(root) {
   const found = [];
@@ -99,8 +99,9 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       const go = readJson(resolve(directory, "go.json"));
       const goErrors = verifyReceipt(go, { receiptPath: resolve(directory, "go.json"), kind: "go", mode: "foundation", runId, job: process.env.GITHUB_JOB || "foundation", sourceCommit: expectedSource });
       if (goErrors.length) throw new Error(`Go receipt: ${goErrors.join("; ")}`);
-      const hasBrowserReceipt = go.outcome?.historical_skip === true || browserStepOutcome === "success";
-      if (go.outcome?.historical_skip && browserStepOutcome !== "success")
+      const historicalSkip = go.outcome?.historical_skip?.ok === true;
+      const hasBrowserReceipt = historicalSkip || browserStepOutcome === "success";
+      if (historicalSkip && browserStepOutcome !== "success")
         throw new Error(`historical canonical skip requires same-run browser step success; outcome is ${browserStepOutcome}`);
       if (hasBrowserReceipt) {
         const browserPath = resolve(directory, "browser.json");

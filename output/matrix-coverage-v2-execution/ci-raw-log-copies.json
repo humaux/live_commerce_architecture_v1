@@ -33,5 +33,12 @@
     "raw_bytes": 257940,
     "lossless_gzip": "ci-red-38388813827.log.gz",
     "gzip_sha256": "9caf8bac8792e3136ce7e93cfa71d06d02f2552bee2d9cb6613c3bb1ba17241b"
+  },
+  {
+    "ci_run_id": "38390763488",
+    "raw_log_sha256": "a12510738d12d0e421c592d45d1dd8441419fb3a14aafa7774491fb2179ca5df",
+    "raw_bytes": 256147,
+    "lossless_gzip": "ci-red-38390763488.log.gz",
+    "gzip_sha256": "23cb4be0106ac9240c149c33f0a8d404c9807e08f56cc4a52f12c2ac9100ad88"
   }
 ]
