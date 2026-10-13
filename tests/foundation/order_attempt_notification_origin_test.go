@@ -1,5 +1,5 @@
 // Purpose: REAL_PG tests-first proof that READY retains its prepared origin/version.
-// Depends: signed native ingress, complete C1/C2, registrar domain definers and HPKE.
+// Depends on: signed native ingress, complete C1/C2, registrar domain definers and HPKE.
 // Used by: parent-owned OA1 CI; no dispatcher, test trigger or substituted SQL helper.
 // Invariants: changing authority after PAY_PREPARED cannot commit an old-origin
 // artifact; rollback retains C1 and explicit retry seals the current eligible origin.
