@@ -296,6 +296,7 @@ test("INU03 closed message window and missing capability disable sends with visi
   await expect(page.getByTestId("inbox-thread")).toContainText(/24|window|窗口/);
   record("closed window", "open expired conversation", "send disabled with 24h window reason");
   // Explicit fault injection of a capability read, preserving real admission and real decrypted thread.
+  let injectedHealthReads = 0;
   await page.route(`**/api/stores/${store}/meta/health`, async (route) => {
     const response = await route.fetch();
     expect(response.status()).toBe(200);
@@ -307,13 +308,22 @@ test("INU03 closed message window and missing capability disable sends with visi
           c.reason = "perm_pages_messaging";
         }
     await route.fulfill({ response, json: body });
+    injectedHealthReads++;
   });
-  await page.reload();
-  await open(page, ids.open);
-  await expect(page.getByTestId("reply-send")).toBeDisabled();
-  await expect(page.getByTestId("inbox-thread")).toContainText(/permission|capability|權限/);
-  record("missing capability", "reload and open conversation", "send disabled with capability reason");
-  await privateBoundary(page, consoleMessages);
+  try {
+    await page.reload();
+    await open(page, ids.open);
+    // The loading fallback also says "capability"; require the injected response's actual rendered denial.
+    await expect(page.getByTestId("inbox-thread")).toContainText("Meta permission is missing.");
+    await expect(page.getByTestId("reply-send")).toBeDisabled();
+    await expect(page.getByTestId("inbox-thread")).toContainText(/permission|capability|權限/);
+    record("missing capability", "reload and open conversation", "send disabled with capability reason");
+    await privateBoundary(page, consoleMessages);
+  } finally {
+    // Shell/thread health reads can overlap; finish the fault handlers before context teardown disposes responses.
+    await page.unrouteAll({ behavior: "wait" });
+  }
+  expect(injectedHealthReads, "missing-capability fixture must fulfill a real health response").toBeGreaterThan(0);
 });
 
 test("INU04 stale decrypted responses cannot repaint another conversation or store", async ({ page }) => {
