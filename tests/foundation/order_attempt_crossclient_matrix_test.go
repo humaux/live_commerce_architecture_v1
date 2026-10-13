@@ -47,11 +47,11 @@ func oaCrossAdmit(t *testing.T, e *lbuEnv, svc *orderattempt.Service, token stri
 	return a
 }
 
-func oaCrossBundleRefusal(t *testing.T, out orderattempt.AdmissionReceipt, err error) {
+func oaCrossBundleRefusal(t *testing.T, out orderattempt.AdmissionReceipt, err error, code string) {
 	t.Helper()
 	var denied *orderattempt.AdmissionError
-	if !errors.As(err, &denied) || denied.SQLState() != "PT409" || denied.Code() != "bundle_already_ordered" || denied.OutcomeUnknown() || out.AttemptID != "" || out.ScopeID != "" || len(out.Receipt) != 0 {
-		t.Fatalf("competing principal must receive fixed non-admission bundle refusal: %v", err)
+	if !errors.As(err, &denied) || denied.SQLState() != "PT409" || denied.Code() != code || denied.OutcomeUnknown() || out.AttemptID != "" || out.ScopeID != "" || len(out.Receipt) != 0 {
+		t.Fatalf("competing principal must receive exact non-admission refusal %s: %v", code, err)
 	}
 }
 
@@ -176,7 +176,7 @@ func TestOrderAttemptCrossClientDifferentPrincipalsCannotStealBundle(t *testing.
 	}
 	select {
 	case out := <-done:
-		oaCrossBundleRefusal(t, out.receipt, out.err)
+		oaCrossBundleRefusal(t, out.receipt, out.err, "bundle_already_ordered")
 	case <-ctx.Done():
 		t.Fatal("competing principal did not return from the native bundle barrier")
 	}
@@ -187,9 +187,23 @@ func TestOrderAttemptCrossClientDifferentPrincipalsCannotStealBundle(t *testing.
 	}
 	oaExecutorReceipt(t, got, a, "COMMITTED", "")
 	oaCrossDurable(t, e, a, actorA, got, 2, plan.Calculation.TotalMinor)
+	var remaining int64
+	var settledPlaced, settledUses int
+	err = e.p.f.owner.QueryRow(ctx, `SELECT l.quantity-(SELECT coalesce(sum(u.quantity),0)
+	 FROM claims.live_price_uses u JOIN checkout.orders o ON o.tenant_id=u.tenant_id AND o.store_id=u.store_id AND o.id=u.order_id
+	 WHERE u.tenant_id=l.tenant_id AND u.store_id=l.store_id AND u.bundle_id=l.bundle_id AND u.offer_id=l.offer_id AND o.commercial_state<>'CANCELLED'),
+	 (SELECT count(*) FROM inbox.order_for_buyer WHERE bundle_id=$2 AND create_attempt_id=$1 AND request_id=$1 AND principal_id=$4 AND order_id=$1 AND state='placed'),
+	 (SELECT count(*) FROM claims.live_price_uses WHERE order_id=$1 AND bundle_id=$2 AND offer_id=$3 AND quantity=2)
+	 FROM claims.lines l WHERE l.bundle_id=$2 AND l.offer_id=$3 AND l.sku_id=$5`, a.AttemptID, bundle, offer.ID, actorA, e.money).Scan(&remaining, &settledPlaced, &settledUses)
+	if err != nil || remaining != 0 || settledPlaced != 1 || settledUses != 1 {
+		t.Fatalf("loaded settled claim must be exhausted by the exact winner: remaining=%d placed=%d uses=%d err=%v", remaining, settledPlaced, settledUses, err)
+	}
+	// This is the internal C1 Service refusal, not OA3's public bundle_order_exists
+	// envelope mapping. The loaded exhausted origin hits claim_quantity_exceeded
+	// before the occupied-bundle predicate; its fixed opaque PT409 is phase-specific.
 	for i := 0; i < 2; i++ {
 		out, callErr := svc.Admit(ctx, tokenB, e.store(), requestB)
-		oaCrossBundleRefusal(t, out, callErr)
+		oaCrossBundleRefusal(t, out, callErr, "order_attempt_conflict")
 	}
 	var placed, origins, uses, grants, loserAttempts int
 	err = e.p.f.owner.QueryRow(ctx, `SELECT
