@@ -200,17 +200,22 @@ test("Gates job and Gate step reject continue-on-error, including expressions", 
   }
 });
 test("required Gates job and result/receipt consumers reject continuation, including the first-key step form", () => {
+  const requiredStart = source.workflow.indexOf("\n  required:");
+  assert.ok(requiredStart >= 0, "the mutations must target the actual required job");
+  const prefix = source.workflow.slice(0, requiredStart);
+  const required = source.workflow.slice(requiredStart);
   const resultsName = "        name: Required jobs completed\n";
   const verifier = "      - name: Verify current-run matrix execution receipts\n";
   const mutations = [
-    source.workflow.replace("    timeout-minutes: 5\n", "    timeout-minutes: 5\n    continue-on-error: true\n"),
-    source.workflow.replace("      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0\n", "      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0\n        continue-on-error: true\n"),
-    source.workflow.replace(resultsName, resultsName + "        continue-on-error: true\n"),
-    source.workflow.replace("      - run: |\n          echo \"plan=", "      - continue-on-error: true\n        run: |\n          echo \"plan="),
-    source.workflow.replace(verifier, verifier + "        continue-on-error: ${{ true }}\n"),
-    source.workflow.replace(verifier, "      - continue-on-error: true\n        name: Verify current-run matrix execution receipts\n"),
+    required.replace("    timeout-minutes: 5\n", "    timeout-minutes: 5\n    continue-on-error: true\n"),
+    required.replace("      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0\n", "      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0\n        continue-on-error: true\n"),
+    required.replace(resultsName, resultsName + "        continue-on-error: true\n"),
+    required.replace("      - run: |\n          echo \"plan=", "      - continue-on-error: true\n        run: |\n          echo \"plan="),
+    required.replace(verifier, verifier + "        continue-on-error: ${{ true }}\n"),
+    required.replace(verifier, "      - continue-on-error: true\n        name: Verify current-run matrix execution receipts\n"),
   ];
-  for (const workflow of mutations) {
+  for (const mutation of mutations) {
+    const workflow = prefix + mutation;
     assert.notEqual(workflow, source.workflow);
     assert.ok(matrixExecutionIssues({ ...source, workflow }).some((issue) => issue.includes("required job and both result/receipt consumers")));
   }

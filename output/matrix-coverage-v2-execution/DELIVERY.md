@@ -20,7 +20,7 @@ The following commands and outcomes belong to earlier source snapshots. They are
 - pnpm install --frozen-lockfile --ignore-scripts → exit 0: install.log/install.exit (no lockfile change).
 - node --test tests/ci/product-editor-matrix-execution.test.mjs → RED exit 1, pass32/fail83: red.log/red.exit, unchanged base implementation. Initial test-authoring SyntaxError is separately retained in test-authoring-syntax.log/.exit and is not the RED proof.
 - Same focused command with two added reachability tests → RED exit 1, pass115/fail2: red-reachability.log/.exit.
-- Same focused command → final GREEN exit 0, pass117/fail0: green.log/.exit, bound by source-hashes.json.
+- Same focused command → final GREEN exit 0, pass117/fail0: green.log/.exit, bound by historical-source-hashes.json.
 - Candidate Go executable-prefix regression → focused exit 1, pass110/fail7: candidate-go-prefix-regression.log/.exit. Corrected by reusing assignment-prefix removal for actual GOTOOLCHAIN-prefixed Go command.
 - First broad Node attempt edited during execution: invalid for acceptance, stopped exact owned PIDs; test-node-invalid-source-change.log/.json/.exit (child -15, shell 241).
 - Premature broad Node start while focused regression was red: stopped exact owned PIDs; test-node-premature-focus-red.log/.json/.exit (child -15, shell 241). Not acceptance.
@@ -31,7 +31,7 @@ The following commands and outcomes belong to earlier source snapshots. They are
 
 ## Evidence and outstanding work
 
-- E3 for focused Node mutation gate on exact source-hashes.json; author self-check only. Independent review: NOT_RUN by this author.
+- E3 for focused Node mutation gate on exact historical-source-hashes.json; author self-check only. Independent review: NOT_RUN by this author.
 - Initial full Node/check-gates failed outside this task module; original commands passed in the parent-assigned serialized retry. Independent acceptance remains pending. Full browser/REAL_PG/full foundation/runtime/provider/SANDBOX/LIVE gates: NOT_RUN by this author, per assigned scope and shared resource ownership.
 - Production/provider actions: none. No external credentials required; BLOCKED_EXTERNAL: none.
 - Integrator to-do: independent review/re-run, serialized Node retry and canonical browser acceptance/CI as appropriate; push and open focused PR. No author push/PR/merge.
@@ -80,3 +80,5 @@ Final source hashes: implementation `b39b4377c1f1e9592ab351cfc500279f8eec2482f38
 ## GitHub-only validation boundary
 
 Owner directive on 2026-10-13 requires all tests and runs on GitHub CI. Current implementation is `20c5c1a9b9b93d7e1cfe14c5aede3f7f9ffb7bdb`; source has not been executed locally after this directive. CI run IDs and actual receipts will be added after the push. The exploratory reporter source is retained as inert `probes/custom-reporter.source.txt`, so it cannot masquerade as a newly registered runnable suite. In-test negative controls cover filtered/missing Node cases, Go listing, missing receipts after suppressed failures, exact historical skip conditions, wrong-run browser proof, and mandatory result-consumer failure propagation. The previous successful runs `38363915256` and `38363915641` belong to the old static-only head `f5339cbf`, not this redesign.
+
+PR46 CI red: Foundation `38379329051`, Gates `38379329348` at `226ee182`. Actual Node receipt recorded 223 PASS / 1 FAIL: the continuation mutation targeted the first setup-node outside `required`; it now targets the actual required job. The source inventory omitted two parameterized names; it now includes all 224 actual registered cases, with hashes refreshed on current bytes. Required receipt discovery excludes unrelated manifests/empty exploratory JSON; its injected irrelevant-JSON control executes in CI. Original raw failure events: `ci-red-38379329348/node.json.events`. `source-hashes.json` is a current source-only record; original local receipts remain bound to `historical-source-hashes.json`. No local test was executed. Fix CI pending.

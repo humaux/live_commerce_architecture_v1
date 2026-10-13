@@ -271,6 +271,7 @@ if (kind === "node") {
 receipt.outcome = outcome;
 receipt.violations = outcome.violations;
 finish(receipt, kind, result.status ?? 1, outcome, raw);
+for (const violation of outcome.violations) console.error(`matrix-receipt: ${violation}`);
 if (result.stderr) process.stderr.write(result.stderr);
 if (result.stdout && kind === "go") {
   for (const line of result.stdout.split(/\r?\n/)) {

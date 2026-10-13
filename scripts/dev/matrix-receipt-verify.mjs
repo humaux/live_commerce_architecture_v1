@@ -56,7 +56,9 @@ function collectJsonFiles(root) {
   for (const entry of readdirSync(root, { withFileTypes: true })) {
     const path = join(root, entry.name);
     if (entry.isDirectory()) found.push(...collectJsonFiles(path));
-    else if (entry.isFile() && entry.name.endsWith(".json")) found.push(path);
+    // Gate artifacts also contain native ledgers, manifests and historical
+    // probes. Only these named execution receipts belong to this verifier.
+    else if (entry.isFile() && ["node.json", "go.json", "browser.json"].includes(entry.name)) found.push(path);
   }
   return found;
 }

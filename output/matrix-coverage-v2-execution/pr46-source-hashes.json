@@ -6,17 +6,19 @@
     ".github/workflows/foundation.yml": "a862323b57efb8597e6b09238d9cded5f1f752e626517471bec345e6cf6e44cd",
     ".github/workflows/gates.yml": "8ecda9ee97f90d33d61c7fe2052530e47af3ec149bf5aa7f5d0333fe36c18691",
     "scripts/dev/ci-plan.mjs": "98010b8f639c32e07e792077c28d7f0da7afa66f79e5355b08e018a60dffb61a",
-    "scripts/dev/matrix-receipt-verify.mjs": "e570033d39ac3b11520f886a48082de1308687264549ccacface5e9f3fb7d05b",
-    "scripts/dev/matrix-receipt.mjs": "f2a9e809dded3ebf2baf991bd6c6cb2d80d2d752b5564912b9b46874758256cb",
-    "scripts/dev/matrix-test-inventory.json": "dbb85c2601bd2f3589c9252de62d3854a9ef2b280a5b534cf82eb8fb5e5828fb",
-    "scripts/dev/matrix-test-reporter.mjs": "4f768b7e2591011a9b9b2f6e797f250ae1bc6e72cb6dffa2e0cbff4101134255",
+    "scripts/dev/matrix-receipt-verify.mjs": "7a65aff078483680bdc0b5ee4830457b30584249ccaf05e4d97868f51961cd59",
+    "scripts/dev/matrix-receipt.mjs": "2e271e20fdcebd7753e494cf284017db23c68e56a10f34154a09555779325a0b",
+    "scripts/dev/matrix-test-inventory.json": "83b53065c5a96f10b909bd27309b88ca9c16953e1f10e9c00d8b5f1849d49384",
+    "scripts/dev/matrix-test-reporter.mjs": "6fe96f22bd3183d58369c3303cae0822760aecaa943635efb9929ae8dadee62f",
     "scripts/dev/test-local.sh": "29787c2d1fb8dd32c324532eb8be60c50280998c65b603030fadfce593b9057f",
     "scripts/dev/test-node.sh": "2597c2de3c33b94731a33befe737fad02f5267d736016d0d534b98e0279c7763",
     "tests/ci/ci-plan.test.mjs": "cf2dea8ea6ab9c5bf636764ba607c4d16ee3c1e634fb67d415dbf4c4a11250e2",
-    "tests/ci/matrix-receipt.test.mjs": "d791ede9ee7bbd789f89c5d31418e5394c1c705c268c4b0f89523ef985a59dc1",
+    "tests/ci/matrix-receipt.test.mjs": "26255490a9659cf98c17859d9dd2bc5f963c371e41838853e03f236bc786da7d",
     "tests/ci/pr-modes.test.mjs": "19afb76278c6db5788dc980898967f8b547376cb1929f5923cf07816ed476bb4",
     "tests/ci/product-editor-matrix-execution.mjs": "217d4285a2635d6e8f0eb1cae40eb9935079412fec594b79bf462706a0680a81",
-    "tests/ci/product-editor-matrix-execution.test.mjs": "15d3de9d84492d13c61fe5832371d8534670a18c72967c37eb2c3c9081f0c724",
+    "tests/ci/product-editor-matrix-execution.test.mjs": "7b7758ca0c5ba882f5aec438ad503bd9792051e882c1168a2c6d156a71735ce8",
     "tests/foundation/catalog_matrix_ledger_test.go": "4d748bc485bc9f92c46fa20f77c50d8b20afcd1b24b82e4f89b15e45df723179"
-  }
+  },
+  "source_record_only": true,
+  "acceptance": "NOT_RUN locally; current GitHub CI receipts required"
 }

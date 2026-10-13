@@ -71,9 +71,11 @@
       ]
     },
     "tests/ci/product-editor-matrix-execution.test.mjs": {
-      "source_sha256": "15d3de9d84492d13c61fe5832371d8534670a18c72967c37eb2c3c9081f0c724",
+      "source_sha256": "7b7758ca0c5ba882f5aec438ad503bd9792051e882c1168a2c6d156a71735ce8",
       "tests": [
         "CI cannot append an evidence-test skip to the actual balanced dispatch",
+        "Gates job and Gate step reject continue-on-error, including expressions",
+        "Gates unit shard rejects a Go selector in its workflow GOFLAGS",
         "Go selector in literal GOFLAGS cannot suppress the foundation matrix: --run '^$'",
         "Go selector in literal GOFLAGS cannot suppress the foundation matrix: --run=^$",
         "Go selector in literal GOFLAGS cannot suppress the foundation matrix: --skip '^$'",

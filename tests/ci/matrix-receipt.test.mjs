@@ -174,6 +174,8 @@ test("required verifier accepts a source-drift skip only with a verified same-ru
 
   persistReceipt(resolve(root, "browser"), "browser", "--browser-product-editor", runId, browserEvents,
     ["PRODUCT_EDITOR_ACCEPTANCE=1", "LC_BROWSER_CATALOG_CORE_ACCEPTANCE=1", "-tags", "browser", "-run", "^TestBrowserCatalogCore$", "./tests/foundation"]);
+  writeFileSync(resolve(root, "unrelated-producer.json"), "");
+  writeFileSync(resolve(root, "unrelated-ledger.json"), "not a receipt");
   const accepted = verify(runId);
   assert.equal(accepted.status, 0, `${accepted.stdout}\n${accepted.stderr}`);
 });
