@@ -179,3 +179,57 @@ func makePool(ctx context.Context, c *buyerConfig) (*pgxpool.Pool, error) {
 		t.Fatalf("nested callback-configured pool return escaped gate: exit=%d %s", code, out)
 	}
 }
+
+func TestGoFactoryOA1DeferredErrorClearCLI(t *testing.T) {
+	call := reviewCLI(t)
+	source := strings.Replace(goFactoryOA1Source, "newBuyer(runtime, c)", "newBuyer(mainPool, c)", 1)
+	source = strings.Replace(source, `w.Header().Set("X-Factory-Configuration", c.bffKey)`, `if err := pool.Ping(r.Context()); err != nil { http.NotFound(w, r); return }
+  w.Header().Set("X-Factory-Configuration", c.bffKey)`, 1)
+	platform := goFactoryOA1Platform + `
+func CloseThenClearError(ctx context.Context, first, second *pgxpool.Pool) (err error) {
+ clear := func() { err = nil }
+ defer clear()
+ first.Close()
+ return errors.New("startup pool closed")
+}
+`
+	root, p := goFactoryOA1Legacy(t, call, source, platform, nil)
+	probe := strings.ReplaceAll(goFactoryOA1Probe, "ValidateSameDatabase", "CloseThenClearError")
+	mustWrite(t, p, strings.Replace(source, "_ = mainPool", probe, 1))
+	if code, out := call(root); code != 1 || !strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED") || !strings.Contains(out, "SUMMARY routes go=1 contract=1 bff=1;") || !strings.Contains(out, "UNRESOLVED EXACT /v1/factory-oa1") || !strings.Contains(out, "UNRESOLVED MOUNT /v1/factory-oa1") {
+		t.Fatalf("deferred named error clear hid successful pool close: exit=%d %s", code, out)
+	}
+}
+
+func TestGoFactoryOA1CrossFileBoolScannerCLI(t *testing.T) {
+	call := reviewCLI(t)
+	source := strings.Replace(goFactoryOA1Source, "mux := http.NewServeMux()", "platform.OnScan = func() { c.bffKey = \"changed\" }\n mux := http.NewServeMux()", 1)
+	// bool resolves across files to a custom scanner; acquired uses builtin int and valid comparisons.
+	platform := strings.Replace(goFactoryOA1Platform, "var acquired bool", `var acquired int
+	var destination bool
+	if e = a.QueryRow(bounded, "SELECT pg_catalog.pg_try_advisory_xact_lock($1::bigint)", key).Scan(&destination); e != nil { return denied }`, 1)
+	platform = strings.Replace(platform, "!acquired", "acquired == 0", 1)
+	platform = strings.Replace(platform, "|| acquired {", "|| acquired != 0 {", 1)
+	crossFile := `package platform
+type bool struct{}
+var OnScan func()
+func (*bool) Scan(src any) error { OnScan(); return nil }
+`
+	root, p := goFactoryOA1Legacy(t, call, source, platform, map[string]string{"internal/platform/scanner.go": crossFile})
+	mustWrite(t, p, strings.Replace(source, "_ = mainPool", goFactoryOA1Probe, 1))
+	if code, out := call(root); code != 1 || !strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED") || !strings.Contains(out, "SUMMARY routes go=1 contract=1 bff=1;") || !strings.Contains(out, "UNRESOLVED EXACT /v1/factory-oa1") || !strings.Contains(out, "UNRESOLVED MOUNT /v1/factory-oa1") {
+		t.Fatalf("cross-file bool scanner callback escaped gate: exit=%d %s", code, out)
+	}
+}
+
+func TestGoFactoryOA1InitializerClearedErrorCLI(t *testing.T) {
+	call := reviewCLI(t)
+	source := goFactoryOA1Source + `
+var resetBuyerError = func() bool { errBuyerConfig = nil; return true }()
+`
+	root, p := goFactoryOA1Legacy(t, call, source, goFactoryOA1Platform, nil)
+	mustWrite(t, p, strings.Replace(source, "_ = mainPool", goFactoryOA1Probe, 1))
+	if code, out := call(root); code != 1 || !strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED") || !strings.Contains(out, "SUMMARY routes go=1 contract=1 bff=1;") || !strings.Contains(out, "UNRESOLVED EXACT /v1/factory-oa1") || !strings.Contains(out, "UNRESOLVED MOUNT /v1/factory-oa1") {
+		t.Fatalf("package initializer clearing error sentinel granted admission exclusion: exit=%d %s", code, out)
+	}
+}
