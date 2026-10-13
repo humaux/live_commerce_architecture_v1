@@ -61,4 +61,6 @@ Read-only GitHub snapshot of the earlier docs head `fe4f1a2b`: [Foundation 38381
 ## Independent acceptance (integrator)
 
 - `independent-review-4e80947b.md`: read-only reviewer `claude-sonnet-5-5` (per result.json modelUsage), effort high, **scope: this receipt only**. VERDICT PASS for the receipt (no P0/P1). It did not read `docs/delivery/DELIVERY-REPORT.md` and had no git access.
-- **Full owner-facing report acceptance: PENDING** until a review covering `docs/delivery/DELIVERY-REPORT.md` is committed here. The round-1 report review was not committed and is not relied on.
+- `independent-review-report-c10404a6.md`: full review of `docs/delivery/DELIVERY-REPORT.md` at `c10404a6` (read-only `claude-sonnet-5-5`, effort high; git log and PR list supplied as files). **VERDICT FAIL**: one P1 (deploy blockers B5/B7/B8 missing from the launch table) plus P2s.
+- `independent-review-report-r2-348ed215.md`: delta review at `348ed215` of the fix. **VERDICT PASS**: P1 and P2s closed, 3 new P2s. N1 (B3/B4 wording) and N2 (T21 merge citation) were fixed in the next commit, as wording-only changes; N3 is deferred to the integrator FOLLOWUPS.
+- **Full owner-facing report acceptance: PASS (no P0/P1)** at `348ed215` plus the N1/N2 wording commit. This is documentation acceptance only. It is not launch approval: every launch row stays NOT_RUN until the owner acts.
