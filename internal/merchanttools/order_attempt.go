@@ -1,5 +1,5 @@
 // Purpose: serialize merchant manual/for-buyer attempts across all pipeline transactions and authoritative A16R recovery.
-// Depends on: platform scoped transactions, command.Run append-only ops.command_results, checkout durable Begin receipts,
+// Depends on: platform scoped transactions, ops.order_intents, command.Run receipts, fulfillment.order_intent_begin,
 //
 //	claims.for_buyer_request / for_buyer_release for A16R's original reservation cleanup.
 //
@@ -10,14 +10,12 @@ package merchanttools
 import (
 	"context"
 	"crypto/sha256"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"livecommerce/internal/checkout"
-	"livecommerce/internal/claims"
 	"livecommerce/internal/command"
 	"livecommerce/internal/platform"
 )
@@ -65,7 +63,7 @@ func (f *ForBuyer) complete(ctx context.Context, token, store, key string, reque
 		if !command.ValidID(saved.OrderID) || saved.OrderID != orderID {
 			return command.ErrConflict
 		}
-		return nil
+		return settleIntent(ctx, tx, scope, key, "created", orderID)
 	})
 }
 
@@ -77,6 +75,9 @@ func attemptHeld(ctx context.Context, m *ManualOrders, store, key string) bool {
 // withAttempt holds one store/key advisory lock through every pipeline step, including checkout's commit.
 // The binding is committed separately before dynamic checks, so a process loss cannot let another body take the key.
 func (m *ManualOrders) withAttempt(ctx context.Context, token, store, key, kind string, body any, recovering bool, fn func(context.Context) error) error {
+	if attemptHeld(ctx, m, store, key) {
+		return fn(ctx)
+	}
 	ctx, cancel := context.WithTimeout(ctx, attemptBudget)
 	defer cancel()
 	// Reserve at most half this service's merchant pool for outer locks. Inner pipeline transactions always have room;
@@ -96,17 +97,25 @@ func (m *ManualOrders) withAttempt(ctx context.Context, token, store, key, kind 
 				return err
 			}
 		}
-		// Whole-attempt lock is distinct from command.Run's short receipt lock; nested merchant transactions must not self-deadlock.
+		// Principal/store comes first: other tabs and fresh sessions share this authority, irrespective of their key.
 		if _, err := tx.Exec(ctx, `SELECT set_config('lock_timeout','0',true)`); err != nil {
 			return err
 		}
+		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, "merchanttools.intent|"+scope.TenantID+"|"+scope.StoreID+"|"+scope.PrincipalID); err != nil {
+			return err
+		}
+		// Whole-attempt lock is distinct from command.Run's short receipt lock; nested merchant transactions must not self-deadlock.
 		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, "merchanttools.attempt|"+scope.TenantID+"|"+scope.StoreID+"|"+key); err != nil {
 			return err
 		}
 		request := attemptRequest{Kind: kind, Body: body}
 		var recovery OrderRecovery
+		var intent orderIntent
 		// Revalidate auth after an advisory wait and bind I02 in its own durable transaction.
 		err := platform.WithScope(ctx, m.pool, token, store, manualPermission, func(inner pgx.Tx, s platform.Scope) error {
+			if s.TenantID != scope.TenantID || s.StoreID != scope.StoreID || s.PrincipalID != scope.PrincipalID {
+				return platform.ErrUnauthorized
+			}
 			if err := requireCatalog(ctx, inner, s, token); err != nil {
 				return err
 			}
@@ -122,6 +131,29 @@ func (m *ManualOrders) withAttempt(ctx context.Context, token, store, key, kind 
 				return err
 			}
 			legacyFound := err == nil
+			var legacyOwner string
+			_, intentErr := readIntent(ctx, inner, s, key)
+			if errors.Is(intentErr, pgx.ErrNoRows) {
+				var previouslyBound bool
+				if err = inner.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND operation=$3 AND idempotency_key=$4)`,
+					s.TenantID, s.StoreID, attemptOperation, key).Scan(&previouslyBound); err != nil {
+					return err
+				}
+				if previouslyBound {
+					// Calls fulfillment.order_intent_legacy_owner (0172): adoption proves the original owner from an exact durable Begin.
+					hash := sha256.Sum256([]byte(token))
+					if err = inner.QueryRow(ctx, `SELECT coalesce(fulfillment.order_intent_legacy_owner($1,$2::uuid,$3,$4)::text,'')`, hash[:], store, key, stepKey(key, "begin")).Scan(&legacyOwner); err != nil {
+						return err
+					}
+					if !command.ValidID(legacyOwner) {
+						return ErrUnavailable
+					}
+				} else if legacyFound {
+					return ErrUnavailable
+				}
+			} else if intentErr != nil {
+				return intentErr
+			}
 			var binding struct {
 				Bound bool `json:"bound"`
 			}
@@ -142,138 +174,55 @@ func (m *ManualOrders) withAttempt(ctx context.Context, token, store, key, kind 
 			}); err != nil {
 				return err
 			}
+			if intent, err = m.bindIntent(ctx, inner, s, store, key, request, legacyOwner); err != nil {
+				return err
+			}
 			err = command.Run(ctx, inner, s, recoveryOperation, key, request, &recovery, func() error { return errNeedWork })
 			if errors.Is(err, errNeedWork) {
 				return nil
 			}
-			return err
+			if err != nil {
+				return err
+			}
+			if recovery.State == "not_created" {
+				return settleIntent(ctx, inner, s, key, "sealed", "")
+			}
+			return nil
 		})
 		if err != nil {
 			return err
 		}
-		if !recovering && recovery.State == "not_created" {
+		if !recovering && (recovery.State == "not_created" || intent.State == "sealed") {
 			return &Error{Status: http.StatusConflict, Code: "attempt_closed"}
 		}
-		return fn(context.WithValue(ctx, attemptContextKey{}, heldAttempt{manual: m, store: store, key: key}))
+		callCtx := context.WithValue(ctx, attemptContextKey{}, heldAttempt{manual: m, store: store, key: key})
+		if err = fn(callCtx); err != nil {
+			if !recovering && definitiveIntentRefusal(err) {
+				// The refusal itself proves nothing. Only a fresh locked durable absence check may release this slot.
+				_ = m.sealRefusedIntent(callCtx, token, store, key, request)
+			}
+			return err
+		}
+		if !recovering && kind == manualOperation {
+			return m.settleManualSuccess(callCtx, token, store, key, body)
+		}
+		return nil
 	})
 }
 
-// Recover resolves the frozen A16 attempt under its original key, with no order/stock/link/DM creation.
-// UNKNOWN (including a capability/receipt lookup failure) stays UNKNOWN; it never writes a not_created receipt.
+// Recover resolves the original A16 intent without recreating its pipeline.
+// A Begin-only order stays UNKNOWN until an explicit same-key retry completes its upper receipt.
 func (f *ForBuyer) Recover(ctx context.Context, token, store, key string, in ForBuyerInput) (OrderRecovery, error) {
 	if f == nil || f.manual == nil {
 		return OrderRecovery{}, ErrManualDisabled
 	}
 	request := canonicalForBuyer(in)
-	canonical, err := json.Marshal(request)
-	if err != nil {
-		return OrderRecovery{}, &Error{Status: http.StatusUnprocessableEntity, Code: "invalid_request"}
-	}
-	keyHash := sha256.Sum256([]byte("order-for-buyer|" + store + "|" + key))
-	requestHash := sha256.Sum256(canonical) // exactly the original placeOrder canonical body, without the attempt envelope
-	m := f.manual
 	var out OrderRecovery
-	err = m.withAttempt(ctx, token, store, key, forBuyerOperation, request, true, func(callCtx context.Context) error {
-		return platform.WithScope(callCtx, m.pool, token, store, manualPermission, func(tx pgx.Tx, scope platform.Scope) error {
-			if err := requireCatalog(callCtx, tx, scope, token); err != nil {
-				return err
-			}
-			if err := platform.RequirePermission(callCtx, tx, scope, token, "orders:read"); err != nil {
-				return err
-			}
-			capability := m.capability("order", store, key)
-			issued, err := m.issuer.RegisterForTrustedStore(callCtx, store, capability)
-			if err != nil {
-				return err
-			}
-			if issued.Scope.TenantID != scope.TenantID || issued.Scope.StoreID != scope.StoreID {
-				return platform.ErrScopeNotFound
-			}
-			beginKey := stepKey(key, "begin")
-			// THIS transaction retains the exact Begin lock until both closure and upper recovery receipts COMMIT.
-			// The checkout reader uses its own narrow pool without reacquiring this lock; a lost connection rolls this seal back.
-			if _, err = tx.Exec(callCtx, `SELECT set_config('lock_timeout','0',true)`); err != nil {
-				return err
-			}
-			if _, err = tx.Exec(callCtx, `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, "checkout.begin|"+scope.TenantID+"|"+store+"|"+issued.Scope.OwnerID+"|"+beginKey); err != nil {
-				return err
-			}
-			check := func() error {
-				for _, permission := range []string{manualPermission, "catalog:read", "orders:read"} {
-					if err := platform.RequirePermission(callCtx, tx, scope, token, permission); err != nil {
-						return err
-					}
-				}
-				return nil
-			}
-			if err = check(); err != nil {
-				return err
-			}
-			result, found, err := m.checkout.LookupBeginLocked(callCtx, capability, store, beginKey, issued.Scope)
-			if err != nil {
-				return err
-			}
-			if err = check(); err != nil {
-				return err
-			}
-			resolved := OrderRecovery{State: "not_created"}
-			if found {
-				// Begin commits before source/link, bundle bookkeeping and DM. Only Place may mark their completion;
-				// a missing final receipt must keep the drawer's frozen request available for explicit replay.
-				var completed forBuyerCompletion
-				if err = command.Run(callCtx, tx, scope, forBuyerCompleteOperation, key, request, &completed, func() error {
-					return ErrUnavailable
-				}); err != nil {
-					return err
-				}
-				if !command.ValidID(completed.OrderID) || completed.OrderID != result.OrderID {
-					return command.ErrConflict
-				}
-				resolved = OrderRecovery{State: "created", OrderID: result.OrderID}
-			} else {
-				// Calls claims.for_buyer_request / for_buyer_release (live-console-v1 §5.1.1) under the original Begin lock.
-				// Keep cleanup outside command callbacks: a legacy not_created receipt must repair its pending rows on replay.
-				pendingRequest, lookupErr := claims.RequestForBuyer(callCtx, tx, keyHash[:], requestHash[:], issued.Scope.OwnerID)
-				if lookupErr != nil {
-					return lookupErr
-				}
-				if pendingRequest != nil {
-					if err = claims.ReleaseForBuyer(callCtx, tx, *pendingRequest); err != nil {
-						return err
-					}
-				}
-				binding := struct {
-					OwnerID string `json:"owner_id"`
-				}{issued.Scope.OwnerID}
-				var saved struct {
-					OwnerID string `json:"owner_id"`
-				}
-				if err = command.Run(callCtx, tx, scope, checkoutClosureOperation, beginKey, binding, &saved, func() error {
-					if err := check(); err != nil {
-						return err
-					}
-					saved.OwnerID = issued.Scope.OwnerID
-					return nil
-				}); err != nil {
-					return err
-				}
-				if saved.OwnerID != issued.Scope.OwnerID {
-					return command.ErrConflict
-				}
-			}
-			if err = command.Run(callCtx, tx, scope, recoveryOperation, key, attemptRequest{Kind: forBuyerOperation, Body: request}, &out, func() error {
-				if err := check(); err != nil {
-					return err
-				}
-				out = resolved
-				return command.Audit(callCtx, tx, scope, "order.attempt_recovered")
-			}); err != nil {
-				return err
-			}
-			if out != resolved {
-				return command.ErrConflict
-			}
-			return check()
+	err := f.manual.withAttempt(ctx, token, store, key, forBuyerOperation, request, true, func(callCtx context.Context) error {
+		return platform.WithScope(callCtx, f.manual.pool, token, store, manualPermission, func(tx pgx.Tx, scope platform.Scope) error {
+			var err error
+			out, err = f.manual.recoverIntentState(callCtx, tx, scope, token, key, attemptRequest{Kind: forBuyerOperation, Body: request}, false)
+			return err
 		})
 	})
 	if err != nil {
@@ -289,8 +238,19 @@ func (m *ManualOrders) checkoutGuard(ctx context.Context, token, store, key, own
 		if err := requireCatalog(ctx, tx, scope, token); err != nil {
 			return err
 		}
+		intent, err := readIntent(ctx, tx, scope, key)
+		if err != nil {
+			return err
+		}
+		if intent.Owner != owner {
+			// A rotated signing secret must never place another checkout for this frozen intent.
+			return command.ErrConflict
+		}
+		if intent.State == "sealed" {
+			return checkout.ErrAttemptClosed
+		}
 		var saved string
-		err := tx.QueryRow(ctx, `SELECT response->>'owner_id' FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND operation=$3 AND idempotency_key=$4`, scope.TenantID, scope.StoreID, checkoutClosureOperation, stepKey(key, "begin")).Scan(&saved)
+		err = tx.QueryRow(ctx, `SELECT response->>'owner_id' FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND operation=$3 AND idempotency_key=$4`, scope.TenantID, scope.StoreID, checkoutClosureOperation, stepKey(key, "begin")).Scan(&saved)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil
 		}
