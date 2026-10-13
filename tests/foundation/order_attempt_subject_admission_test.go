@@ -129,6 +129,24 @@ func TestOrderAttemptSubjectsScopeAndSelection(t *testing.T) {
 	oaSubjectReject(t, tx, `SELECT customers.order_attempt_sources($1::jsonb)`, []any{oaSubjectJSON(t, selection)}, "PT403", "forbidden")
 }
 
+func TestOrderAttemptSubjectsDiscoveryDoesNotLockOwner(t *testing.T) {
+	e := lbuNew(t)
+	owner := randomUUID()
+	mustExec(t, e.p.f.owner, `INSERT INTO buyer.owners(id,tenant_id,store_id) VALUES($1,$2,$3)`, owner, e.tenant(), e.store())
+	t.Cleanup(func() { mustExec(t, e.p.f.owner, `DELETE FROM buyer.owners WHERE id=$1`, owner) })
+	lock := oaSubjectTx(t, e)
+	oaStateExec(t, lock, `SELECT id FROM buyer.owners WHERE id=$1 FOR UPDATE`, owner)
+	reader := oaSubjectTx(t, e)
+	oaStateExec(t, reader, `SET LOCAL lock_timeout='100ms'`)
+	oaStateExec(t, reader, `SET LOCAL ROLE commerce_order_attempt_owner`)
+	selection := oaFactsSelection(e)
+	selection["for"].(map[string]any)["customer_id"] = owner
+	out, err := oaSubjectCall(reader, selection)
+	if err != nil || out["buyer_owner_id"] != owner {
+		t.Fatalf("unlocked source discovery waited on owner lock: out=%v err=%v", out, err)
+	}
+}
+
 func oaSubjectCandidate(t *testing.T, e *lbuEnv, selection map[string]any, owner string, private any) (pgx.Tx, string) {
 	t.Helper()
 	tx := oaSubjectTx(t, e)
