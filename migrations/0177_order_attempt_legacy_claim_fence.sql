@@ -1,8 +1,9 @@
 -- Purpose: exclude attempt-owned reservations/grants from every legacy claims path.
 -- Depends on: 0175 attempt identity columns; exact forward bodies from 0129 and 0158.
 -- Used by: existing merchant and storefront claim entry points; C2 uses separate helpers.
--- Invariants: legacy NULL-attempt behavior unchanged; only fenced C2/sweep may settle
--- attempt resources. CREATE OR REPLACE preserves the existing owner/ACL/comments.
+-- Invariants: only fenced C2/sweep may settle pending attempt resources; fresh requests
+-- may release exact placed CANCELLED bindings while retaining their audit/pointer.
+-- CREATE OR REPLACE preserves the existing owner/ACL/comments.
 
 CREATE OR REPLACE FUNCTION claims.for_buyer_begin(p_key_hash bytea, p_request_hash bytea, p_conversation uuid, p_bundles uuid[], p_buyer uuid)
 RETURNS TABLE(o_request uuid, o_reason text)
@@ -39,24 +40,30 @@ BEGIN
   RAISE EXCEPTION 'attempt_owned_reservation' USING ERRCODE='PT409';
  END IF;
  FOREACH b IN ARRAY v_sorted LOOP
-  -- §5.1 3a: lock the live row of the bundle (sorted order = lock order); another request's row blocks unless its order is CANCELLED or the
-  -- row is a pending one that has not been touched for 15 minutes AND whose capability owner has no non-CANCELLED order (a crash between Place and
-  -- the record leaves a pending row WITH an order: that bundle is ordered, never stealable; a live resume refreshes updated_at).
+  -- §5.1 3a: lock the live row in sorted order. Release only another request's
+  -- placed exact CANCELLED order binding, including an attempt-owned binding.
+  -- Native order commands never revive CANCELLED; no backwards order lock needed.
+  -- Timestamp recovery remains exclusively for legacy NULL-attempt pending rows.
   SELECT x.request_id,x.state,x.order_id,x.updated_at,x.buyer_id,x.create_attempt_id INTO r FROM inbox.order_for_buyer x
    WHERE x.tenant_id=v[1] AND x.store_id=v[2] AND x.bundle_id=b AND x.state IN ('pending','placed') FOR UPDATE;
-  IF FOUND AND r.create_attempt_id IS NOT NULL THEN
-   RAISE EXCEPTION 'bundle_already_ordered' USING ERRCODE='PT409';
-  END IF;
   v_own:=FOUND AND r.request_id=v_req;
   IF FOUND AND NOT v_own THEN
-   SELECT o.id INTO v_live FROM checkout.orders o WHERE o.tenant_id=v[1] AND o.store_id=v[2] AND o.owner_id=r.buyer_id AND o.commercial_state<>'CANCELLED'
-    ORDER BY o.created_at DESC LIMIT 1;
-   IF (r.state='placed' AND EXISTS (SELECT 1 FROM checkout.orders o WHERE o.tenant_id=v[1] AND o.store_id=v[2] AND o.id=r.order_id AND o.commercial_state='CANCELLED'))
-    OR (r.state='pending' AND v_live IS NULL AND r.updated_at<v_now-interval '15 minutes') THEN
+   IF r.state='placed' AND EXISTS(SELECT 1 FROM checkout.orders o WHERE o.tenant_id=v[1] AND o.store_id=v[2]
+    AND o.id=r.order_id AND o.owner_id=r.buyer_id AND o.create_attempt_id IS NOT DISTINCT FROM r.create_attempt_id
+    AND o.commercial_state='CANCELLED') THEN
     UPDATE inbox.order_for_buyer x SET state='released',updated_at=v_now
-     WHERE x.tenant_id=v[1] AND x.store_id=v[2] AND x.bundle_id=b AND x.request_id=r.request_id AND x.state IN ('pending','placed');
+     WHERE x.tenant_id=v[1] AND x.store_id=v[2] AND x.bundle_id=b AND x.request_id=r.request_id AND x.state='placed';
+   ELSIF r.create_attempt_id IS NOT NULL THEN
+    RAISE EXCEPTION 'bundle_already_ordered' USING ERRCODE='PT409';
    ELSE
-    RAISE EXCEPTION 'bundle_already_ordered' USING ERRCODE='PT409', DETAIL=coalesce(r.order_id::text,v_live::text,'');
+    SELECT o.id INTO v_live FROM checkout.orders o WHERE o.tenant_id=v[1] AND o.store_id=v[2] AND o.owner_id=r.buyer_id AND o.commercial_state<>'CANCELLED'
+     ORDER BY o.created_at DESC LIMIT 1;
+    IF r.state='pending' AND v_live IS NULL AND r.updated_at<v_now-interval '15 minutes' THEN
+     UPDATE inbox.order_for_buyer x SET state='released',updated_at=v_now
+      WHERE x.tenant_id=v[1] AND x.store_id=v[2] AND x.bundle_id=b AND x.request_id=r.request_id AND x.state='pending' AND x.create_attempt_id IS NULL;
+    ELSE
+     RAISE EXCEPTION 'bundle_already_ordered' USING ERRCODE='PT409', DETAIL=coalesce(r.order_id::text,v_live::text,'');
+    END IF;
    END IF;
   END IF;
   IF v_own THEN

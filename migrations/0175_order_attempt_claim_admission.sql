@@ -143,6 +143,16 @@ BEGIN
  END LOOP;
  IF clock_timestamp()>=v_deadline THEN RAISE EXCEPTION 'attempt_expired' USING ERRCODE='PT409'; END IF;
  FOREACH v_bundle IN ARRAY v_bundles LOOP
+  -- The existing bundle/reservation locks serialize fresh intents. A committed
+  -- CANCELLED order cannot regain a live commercial state through native order
+  -- commands, so this read needs no backwards order lock. Retain the exact old
+  -- order/creator binding and every origin, use and grant as historical audit.
+  UPDATE inbox.order_for_buyer x SET state='released',updated_at=clock_timestamp()
+   WHERE x.tenant_id=v[1] AND x.store_id=v[2] AND x.bundle_id=v_bundle AND x.state='placed'
+    AND x.create_attempt_id IS DISTINCT FROM p_attempt
+    AND EXISTS(SELECT 1 FROM checkout.orders o WHERE o.tenant_id=x.tenant_id AND o.store_id=x.store_id
+     AND o.id=x.order_id AND o.owner_id=x.buyer_id AND o.create_attempt_id IS NOT DISTINCT FROM x.create_attempt_id
+     AND o.commercial_state='CANCELLED');
   -- No stale timestamp recovery here. Only the fenced terminal settlement/sweep may
   -- release a pending attempt. The original partial unique index arbitrates races
   -- with legacy callers that do not lock the bundle row.
