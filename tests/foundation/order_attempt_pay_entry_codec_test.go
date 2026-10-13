@@ -3,7 +3,7 @@
 // Used by: OA1 CI before SQL storage, redemption or process wiring is enabled.
 // Invariants: dedicated key custody, exact binding/digest, canonical random 256-bit tokens,
 // retained-key replay, and redacted failures. Lifetime and validity belong to SQL.
-package orderattempt
+package foundation_test
 
 import (
 	"bytes"
@@ -16,7 +16,13 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"livecommerce/internal/orderattempt"
 )
+
+type PayEntryBinding = orderattempt.PayEntryBinding
+type PayEntryMaterial = orderattempt.PayEntryMaterial
+type PayEntryKeys = orderattempt.PayEntryKeys
 
 func payEntryTestBinding() PayEntryBinding {
 	return PayEntryBinding{
@@ -29,7 +35,7 @@ func payEntryTestBinding() PayEntryBinding {
 
 func payEntryTestKeys(t *testing.T) *PayEntryKeys {
 	t.Helper()
-	k, err := NewPayEntryKeys("v1", map[string][]byte{"v1": bytes.Repeat([]byte{0x41}, 32)})
+	k, err := orderattempt.NewPayEntryKeys("v1", map[string][]byte{"v1": bytes.Repeat([]byte{0x41}, 32)})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +93,7 @@ func payEntryRequireError(t *testing.T, err error) {
 	}
 }
 
-func TestPayEntryRandomCredentialAndIndependentCipher(t *testing.T) {
+func TestOrderAttemptPayEntryRandomCredentialAndIndependentCipher(t *testing.T) {
 	k, b := payEntryTestKeys(t), payEntryTestBinding()
 	seen := make(map[string]bool)
 	for i := 0; i < 8; i++ {
@@ -125,7 +131,7 @@ func TestPayEntryRandomCredentialAndIndependentCipher(t *testing.T) {
 	}
 }
 
-func TestPayEntryRejectsEachBindingAndEnvelopeMutation(t *testing.T) {
+func TestOrderAttemptPayEntryRejectsEachBindingAndEnvelopeMutation(t *testing.T) {
 	k, b := payEntryTestKeys(t), payEntryTestBinding()
 	m, err := k.Issue(b)
 	if err != nil {
@@ -180,14 +186,14 @@ func TestPayEntryRejectsEachBindingAndEnvelopeMutation(t *testing.T) {
 	}
 }
 
-func TestPayEntryRejectsBadKeysAndInvalidBindings(t *testing.T) {
+func TestOrderAttemptPayEntryRejectsBadKeysAndInvalidBindings(t *testing.T) {
 	good := bytes.Repeat([]byte{0x41}, 32)
 	for _, keys := range []map[string][]byte{nil, {}, {"v1": nil}, {"v1": make([]byte, 32)}, {"v1": good[:31]}, {"v2": good}, {"v1": good, "bad/version": good}, {"v1": good, "retired": nil}} {
-		_, err := NewPayEntryKeys("v1", keys)
+		_, err := orderattempt.NewPayEntryKeys("v1", keys)
 		payEntryRequireError(t, err)
 	}
 	for _, version := range []string{"", "bad/version", strings.Repeat("x", 65)} {
-		_, err := NewPayEntryKeys(version, map[string][]byte{version: good})
+		_, err := orderattempt.NewPayEntryKeys(version, map[string][]byte{version: good})
 		payEntryRequireError(t, err)
 	}
 	k, b := payEntryTestKeys(t), payEntryTestBinding()
@@ -205,11 +211,11 @@ func TestPayEntryRejectsBadKeysAndInvalidBindings(t *testing.T) {
 	}
 }
 
-func TestPayEntryRotationCopiesKeysAndRetainsOriginalCredential(t *testing.T) {
+func TestOrderAttemptPayEntryRotationCopiesKeysAndRetainsOriginalCredential(t *testing.T) {
 	b := payEntryTestBinding()
 	raw := bytes.Repeat([]byte{0x41}, 32)
 	input := map[string][]byte{"v1": raw}
-	k, err := NewPayEntryKeys("v1", input)
+	k, err := orderattempt.NewPayEntryKeys("v1", input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -219,7 +225,7 @@ func TestPayEntryRotationCopiesKeysAndRetainsOriginalCredential(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rotated, err := NewPayEntryKeys("v2", map[string][]byte{"v1": bytes.Repeat([]byte{0x41}, 32), "v2": bytes.Repeat([]byte{0x42}, 32), "alias": bytes.Repeat([]byte{0x41}, 32)})
+	rotated, err := orderattempt.NewPayEntryKeys("v2", map[string][]byte{"v1": bytes.Repeat([]byte{0x41}, 32), "v2": bytes.Repeat([]byte{0x42}, 32), "alias": bytes.Repeat([]byte{0x41}, 32)})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -250,7 +256,7 @@ func TestPayEntryRotationCopiesKeysAndRetainsOriginalCredential(t *testing.T) {
 	}
 }
 
-func TestPayEntryRejectsAuthenticatedMalformedCredentialAndDigest(t *testing.T) {
+func TestOrderAttemptPayEntryRejectsAuthenticatedMalformedCredentialAndDigest(t *testing.T) {
 	k, b := payEntryTestKeys(t), payEntryTestBinding()
 	valid := base64.RawURLEncoding.EncodeToString(bytes.Repeat([]byte{0x41}, 32))
 	// Final 'F' has nonzero unused bits but lenient base64 decodes it like valid 'E'.
