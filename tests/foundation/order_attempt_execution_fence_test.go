@@ -276,3 +276,93 @@ func TestOrderAttemptExecutionFenceExactACL(t *testing.T) {
 	 FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner WHERE p.oid=to_regprocedure('ops.lock_order_attempt(bytea,uuid,uuid,bigint)')`).Scan(&safe)
 	if err!=nil || !safe { t.Fatalf("missing or unsafe exact fence entry: safe=%v err=%v",safe,err) }
 }
+
+// The private caller is a NOLOGIN domain definer. The superuser harness switches
+// session authorization only to acquire the fence as the real runtime login,
+// then restores itself and SET ROLE to the domain owner to test its narrow ACL.
+// Production runtime receives neither SET ROLE membership nor direct helper access.
+func oaFenceDomainTx(t *testing.T,e *lbuEnv,a orderattempt.AdmissionReceipt,acquire bool) (pgx.Tx,[]byte) {
+	t.Helper()
+	ctx:=context.Background()
+	var login string
+	if err:=e.p.f.runtime.QueryRow(ctx,`SELECT session_user::text`).Scan(&login); err!=nil { t.Fatal(err) }
+	tx,err:=e.p.f.owner.Begin(ctx)
+	if err!=nil { t.Fatal(err) }
+	t.Cleanup(func(){ _=tx.Rollback(context.Background()) })
+	if !acquire { return tx,nil }
+	if _,err=tx.Exec(ctx,`SET LOCAL SESSION AUTHORIZATION `+pgx.Identifier{login}.Sanitize()); err!=nil { t.Fatal(err) }
+	raw,err:=oaFenceCall(ctx,tx,tokenHash(e.token()),e.store(),a.AttemptID,a.Generation)
+	if err!=nil { t.Fatal(err) }
+	got:=oaFenceOpen(t,raw,a)
+	plan,err:=oaServiceKeys(t).Open(*got.Binding,*got.Envelope)
+	if err!=nil { t.Fatal(err) }
+	plain,err:=json.Marshal(plan)
+	if err!=nil { t.Fatal(err) }
+	if _,err=tx.Exec(ctx,`SET LOCAL SESSION AUTHORIZATION DEFAULT`); err!=nil { t.Fatal(err) }
+	return tx,plain
+}
+
+func TestOrderAttemptExecutionFencePrivateContext(t *testing.T) {
+	e:=lbuNew(t)
+	a:=oaFenceAdmit(t,e)
+	ctx:=context.Background()
+	seed,plain:=oaFenceDomainTx(t,e,a,true)
+	if err:=seed.Commit(ctx); err!=nil { t.Fatal(err) }
+	for _,role:=range []string{"commerce_buyer_writer","commerce_checkout_writer","commerce_claims_writer","commerce_inbox_writer"} {
+		t.Run(role,func(t *testing.T){
+			tx,exact:=oaFenceDomainTx(t,e,a,true)
+			if _,err:=tx.Exec(ctx,`SET LOCAL ROLE `+pgx.Identifier{role}.Sanitize()); err!=nil { t.Fatal(err) }
+			var raw []byte
+			err:=tx.QueryRow(ctx,`SELECT ops.order_attempt_execution_context($1,$2)`,a.AttemptID,string(exact)).Scan(&raw)
+			if err!=nil { t.Fatal(err) }
+			var got struct { Binding orderattempt.PlanBinding `json:"binding"`; Plan orderattempt.FrozenPlan `json:"plan"` }
+			if err=json.Unmarshal(raw,&got); err!=nil || got.Binding.AttemptID!=a.AttemptID || got.Binding.Generation!=a.Generation || got.Plan.Binding()!=got.Binding || len(got.Plan.Calculation.Lines)!=2 { t.Fatal("domain accessor did not return trusted binding and exact parsed plan") }
+		})
+	}
+	for _,mode:=range []string{"old-xid","guc-only","altered-money","altered-owner","altered-facts","altered-hash","same-json-different-bytes","wrong-attempt"} {
+		t.Run(mode,func(t *testing.T){
+			acquire:=mode!="old-xid" && mode!="guc-only"
+			tx,exact:=oaFenceDomainTx(t,e,a,acquire)
+			if !acquire { exact=plain }
+			want,id:="PT400",a.AttemptID
+			switch mode {
+			case "old-xid","guc-only": want="PT409"
+			case "same-json-different-bytes": exact=append([]byte(" "),exact...)
+			case "wrong-attempt": id=randomUUID(); want="PT409"
+			default:
+				var plan map[string]any
+				if err:=json.Unmarshal(exact,&plan); err!=nil { t.Fatal(err) }
+				switch mode {
+				case "altered-money": plan["calculation"]=map[string]any{"subtotal_minor":1}
+				case "altered-owner": plan["buyer_owner_id"]=randomUUID()
+				case "altered-facts": plan["facts"]=map[string]any{"selection":map[string]any{}}
+				case "altered-hash": plan["request_hash"]=make([]int,32)
+				}
+				var err error
+				exact,err=json.Marshal(plan)
+				if err!=nil { t.Fatal(err) }
+			}
+			if _,err:=tx.Exec(ctx,`SELECT set_config('app.tenant_id',$1,true),set_config('app.store_id',$2,true),set_config('app.principal_id',$3,true),set_config('app.order_attempt_execution_xid',pg_current_xact_id()::text,true)`,e.tenant(),e.store(),e.p.f.principalA); err!=nil { t.Fatal(err) }
+			if _,err:=tx.Exec(ctx,`SET LOCAL ROLE commerce_checkout_writer`); err!=nil { t.Fatal(err) }
+			var raw []byte
+			err:=tx.QueryRow(ctx,`SELECT ops.order_attempt_execution_context($1,$2)`,id,string(exact)).Scan(&raw)
+			oaFenceCode(t,raw,err,want)
+		})
+	}
+	for _,role:=range []string{"commerce_runtime","commerce_claims_worker"} {
+		t.Run(role+"-direct-context-denied",func(t *testing.T){
+			pool:=miPool(t,e.p.f,role)
+			var raw []byte
+			err:=pool.QueryRow(ctx,`SELECT ops.order_attempt_execution_context($1,$2)`,a.AttemptID,string(plain)).Scan(&raw)
+			oaFenceCode(t,raw,err,"42501")
+		})
+	}
+	var safe bool
+	err:=e.p.f.owner.QueryRow(ctx,`SELECT p.prosecdef AND p.provolatile='v' AND p.prorettype='jsonb'::regtype
+	 AND r.rolname='commerce_order_attempt_owner' AND NOT (r.rolcanlogin OR r.rolsuper OR r.rolbypassrls)
+	 AND p.proconfig=ARRAY['search_path=pg_catalog']::text[] AND length(obj_description(p.oid,'pg_proc'))>0
+	 AND ARRAY(SELECT pg_get_userbyid(a.grantee)::text FROM aclexplode(p.proacl) a WHERE a.grantee<>p.proowner AND a.privilege_type='EXECUTE' ORDER BY 1)=ARRAY['commerce_buyer_writer','commerce_checkout_writer','commerce_claims_writer','commerce_inbox_writer']::text[]
+	 AND NOT EXISTS(SELECT 1 FROM aclexplode(p.proacl) a WHERE a.grantee<>p.proowner AND a.is_grantable)
+	 FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner WHERE p.oid=to_regprocedure('ops.order_attempt_execution_context(uuid,text)')`).Scan(&safe)
+	if err!=nil || !safe { t.Fatalf("missing or unsafe private context ACL: safe=%v err=%v",safe,err) }
+}
