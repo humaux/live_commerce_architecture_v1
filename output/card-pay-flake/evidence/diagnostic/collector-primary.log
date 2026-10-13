@@ -1,0 +1,291 @@
+# Purpose: preserve the failed eight-context collector probe without private request payloads.
+# Depends on: Gates38460385850 head aa9177af162f96dc979d2c25b2afc1be2c0b8898, job115513839541, artifact11845358883.
+# Used by: CARD-PAY-FLAKE reviewers; original collector log follows unchanged.
+browser engine: chromium
+{"receipt":"CARD_PAY_BROWSER","buyer":0,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":0,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":1,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":7,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":0,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":0,"route":"other","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":3,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":1,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":2,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":0,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":0,"route":"other","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":7,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":5,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":6,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":3,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":1,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":1,"route":"other","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":4,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":2,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":5,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":7,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":7,"route":"other","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":0,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":6,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":0,"route":"other","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":3,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":1,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":1,"route":"other","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":3,"route":"other","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":4,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":5,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":7,"route":"other","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":7,"route":"session","status":503}
+{"receipt":"CARD_PAY_BROWSER","buyer":2,"route":"other","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":6,"route":"other","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":5,"route":"other","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":0,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":4,"route":"other","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":3,"route":"other","status":503}
+{"receipt":"CARD_PAY_BROWSER","buyer":2,"route":"session","status":503}
+{"receipt":"CARD_PAY_BROWSER","buyer":3,"route":"other","failed":true}
+{"receipt":"CARD_PAY_BROWSER","buyer":4,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":1,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":5,"route":"other","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":1,"route":"other","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":6,"route":"session","status":503}
+{"receipt":"CARD_PAY_BROWSER","buyer":5,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":3,"route":"session","status":503}
+{"receipt":"CARD_PAY_BROWSER","buyer":3,"route":"session","failed":true}
+{"receipt":"CARD_PAY_BROWSER","buyer":7,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":2,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":4,"route":"other","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":4,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":1,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":6,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":0,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":7,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":1,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":4,"route":"other","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":2,"route":"other","status":503}
+{"receipt":"CARD_PAY_BROWSER","buyer":2,"route":"orders-list","status":503}
+{"receipt":"CARD_PAY_BROWSER","buyer":5,"route":"other","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":2,"route":"orders-list","failed":true}
+{"receipt":"CARD_PAY_BROWSER","buyer":4,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":5,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":3,"route":"orders-list","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":6,"route":"orders-list","status":503}
+{"receipt":"CARD_PAY_BROWSER","buyer":6,"route":"other","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":1,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":7,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":0,"route":"session","status":503}
+{"receipt":"CARD_PAY_BROWSER","buyer":4,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":5,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":3,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":6,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":7,"route":"other","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":1,"route":"other","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":4,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":5,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":1,"route":"other","status":503}
+{"receipt":"CARD_PAY_BROWSER","buyer":7,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":1,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":0,"route":"orders-list","status":503}
+{"receipt":"CARD_PAY_BROWSER","buyer":4,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":5,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":1,"route":"orders-list","status":503}
+{"receipt":"CARD_PAY_BROWSER","buyer":3,"route":"order-detail","status":503}
+{"receipt":"CARD_PAY_BROWSER","buyer":4,"route":"other","status":503}
+{"receipt":"CARD_PAY_BROWSER","buyer":7,"route":"other","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":4,"route":"other","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":5,"route":"other","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":5,"route":"other","status":503}
+{"receipt":"CARD_PAY_BROWSER","buyer":7,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":6,"route":"other","status":503}
+{"receipt":"CARD_PAY_BROWSER","buyer":7,"route":"orders-list","status":503}
+{"receipt":"CARD_PAY_BROWSER","buyer":4,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":5,"route":"orders-list","status":503}
+{"receipt":"CARD_PAY_BROWSER","buyer":5,"route":"session","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":7,"route":"other","status":503}
+{"receipt":"CARD_PAY_BROWSER","buyer":4,"route":"orders-list","status":503}
+{"receipt":"CARD_PAY_BROWSER","buyer":0,"route":"other","status":200}
+{"receipt":"CARD_PAY_BROWSER","buyer":0,"route":"session","status":200}
+file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:216
+      if (failures.length) throw new AggregateError(failures.map((result) => result.reason), `collector ${expectation}: ${failures.length}/${concurrent} independent buyer flows failed`);
+                                 ^
+
+AggregateError: collector primary: 8/8 independent buyer flows failed
+    at file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:216:34 {
+  [errors]: [
+    locator.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for locator('button[data-order-id="f48b6c2c-5401-4e37-a3c3-b99232f009d4"]')
+    
+        at openOrder (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:109:60)
+        at async file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:204:11
+        at async file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:199:24 {
+      log: [
+        `  - waiting for locator('button[data-order-id="f48b6c2c-5401-4e37-a3c3-b99232f009d4"]')`
+      ],
+      name: 'TimeoutError'
+    },
+    locator.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for locator('button[data-order-id="f48b6c2c-5401-4e37-a3c3-b99232f009d4"]')
+    
+        at openOrder (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:109:60)
+        at async file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:204:11
+        at async file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:199:24 {
+      log: [
+        `  - waiting for locator('button[data-order-id="f48b6c2c-5401-4e37-a3c3-b99232f009d4"]')`
+      ],
+      name: 'TimeoutError'
+    },
+    locator.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for locator('button[data-order-id="f48b6c2c-5401-4e37-a3c3-b99232f009d4"]')
+    
+        at openOrder (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:109:60)
+        at async file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:204:11
+        at async file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:199:24 {
+      log: [
+        `  - waiting for locator('button[data-order-id="f48b6c2c-5401-4e37-a3c3-b99232f009d4"]')`
+      ],
+      name: 'TimeoutError'
+    },
+    ExpectError: expect(locator).toHaveText(expected) failed
+    
+    Locator: getByTestId('order-id')
+    Expected: "f48b6c2c-5401-4e37-a3c3-b99232f009d4"
+    Timeout: 5000ms
+    Error: element(s) not found
+    
+    Call log:
+      - Expect "toHaveText" getByTestId('order-id') with timeout 5000ms
+      - waiting for getByTestId('order-id')
+    
+        at captureRawStack (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/playwright-core@1.63.0/node_modules/playwright-core/lib/coreBundle.js:8588:17)
+        at callMatcherAsStep (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/matchers/expect.js:13310:57)
+        at Object.toHaveText (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/matchers/expect.js:13302:23)
+        at openOrder (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:110:46)
+        at async file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:204:11
+        at async file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:199:24 {
+      matcherResult: {
+        name: 'toHaveText',
+        expected: 'f48b6c2c-5401-4e37-a3c3-b99232f009d4',
+        message: 'expect(locator).toHaveText(expected) failed\n' +
+          '\n' +
+          "Locator: getByTestId('order-id')\n" +
+          'Expected: "f48b6c2c-5401-4e37-a3c3-b99232f009d4"\n' +
+          'Timeout: 5000ms\n' +
+          'Error: element(s) not found\n' +
+          '\n' +
+          'Call log:\n' +
+          `  - Expect "toHaveText" getByTestId('order-id') with timeout 5000ms\n` +
+          "  - waiting for getByTestId('order-id')\n",
+        pass: false,
+        actual: undefined,
+        log: [
+          `  - Expect "toHaveText" getByTestId('order-id') with timeout 5000ms`,
+          "  - waiting for getByTestId('order-id')"
+        ],
+        timeout: 5000,
+        ariaSnapshot: '- link "Skip to content":\n' +
+          '  - /url: "#main"\n' +
+          '- banner:\n' +
+          '  - link "payment mock store":\n' +
+          '    - /url: /en\n' +
+          '  - navigation "Main navigation":\n' +
+          '    - list\n' +
+          '  - search:\n' +
+          '    - text: Search\n' +
+          '    - searchbox "Search"\n' +
+          '    - button "Search"\n' +
+          '  - button "Cart, 0 items"\n' +
+          '- paragraph: Synthetic data · test environment\n' +
+          '- main:\n' +
+          '  - navigation "Your orders":\n' +
+          '    - button "Back to shopping"\n' +
+          '  - alert:\n' +
+          '    - paragraph: We could not confirm the result. Tap Retry to check the same purchase; do not start another one.\n' +
+          '    - button "Retry"\n' +
+          '  - alert:\n' +
+          '    - paragraph: Orders could not be loaded. Retry without starting a new session.\n' +
+          '    - button "Retry"\n' +
+          '  - heading "Your orders" [level=1]\n' +
+          '  - paragraph: Orders available to this shopping session. Keep access to this browser; a new session cannot recover an expired one. Times are Taipei time (UTC+8).\n' +
+          '  - list:\n' +
+          '    - listitem:\n' +
+          '      - time: 10/14/2026, 04:11\n' +
+          '      - text: Order confirmed\n' +
+          '      - strong: NT$25\n' +
+          '      - text: f48b6c2c-5401-4e37-a3c3-b99232f009d4\n' +
+          '      - button "View order"\n' +
+          '- contentinfo:\n' +
+          '  - region "payment mock store":\n' +
+          '    - paragraph: payment mock store\n' +
+          '  - navigation "Legal":\n' +
+          '    - list:\n' +
+          '      - listitem:\n' +
+          '        - link "Shop safely":\n' +
+          '          - /url: /en/legal/anti-fraud\n' +
+          '      - listitem:\n' +
+          '        - link "Data deletion":\n' +
+          '          - /url: /en/data-deletion\n' +
+          '  - navigation "Language":\n' +
+          '    - link "简体中文":\n' +
+          '      - /url: /zh-CN/checkout\n' +
+          '    - link "繁體中文":\n' +
+          '      - /url: /zh-TW/checkout\n' +
+          '    - link "English":\n' +
+          '      - /url: /en/checkout\n' +
+          '  - paragraph: © 2026 payment mock store\n' +
+          '- alert'
+      }
+    },
+    locator.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for locator('button[data-order-id="f48b6c2c-5401-4e37-a3c3-b99232f009d4"]')
+    
+        at openOrder (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:109:60)
+        at async file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:204:11
+        at async file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:199:24 {
+      log: [
+        `  - waiting for locator('button[data-order-id="f48b6c2c-5401-4e37-a3c3-b99232f009d4"]')`
+      ],
+      name: 'TimeoutError'
+    },
+    locator.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for locator('button[data-order-id="f48b6c2c-5401-4e37-a3c3-b99232f009d4"]')
+    
+        at openOrder (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:109:60)
+        at async file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:204:11
+        at async file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:199:24 {
+      log: [
+        `  - waiting for locator('button[data-order-id="f48b6c2c-5401-4e37-a3c3-b99232f009d4"]')`
+      ],
+      name: 'TimeoutError'
+    },
+    locator.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for locator('button[data-order-id="f48b6c2c-5401-4e37-a3c3-b99232f009d4"]')
+    
+        at openOrder (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:109:60)
+        at async file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:204:11
+        at async file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:199:24 {
+      log: [
+        `  - waiting for locator('button[data-order-id="f48b6c2c-5401-4e37-a3c3-b99232f009d4"]')`
+      ],
+      name: 'TimeoutError'
+    },
+    locator.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for locator('button[data-order-id="f48b6c2c-5401-4e37-a3c3-b99232f009d4"]')
+    
+        at openOrder (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:109:60)
+        at async file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:204:11
+        at async file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:199:24 {
+      log: [
+        `  - waiting for locator('button[data-order-id="f48b6c2c-5401-4e37-a3c3-b99232f009d4"]')`
+      ],
+      name: 'TimeoutError'
+    }
+  ]
+}
+
+Node.js v24.21.0

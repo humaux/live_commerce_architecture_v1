@@ -1,0 +1,215 @@
+# Purpose: preserve unchanged normal card-payments CI artifact bytes below these headers.
+# Depends on: Gates38466746876 attempt1 job115536760460 head46c21310accd6498e21e0e28ab8ce90b4ec63094 artifact11850574995; original SHA256 e7f2b17287cccab621afac40b7ada78926918c7018f78a6fb837c3e7966ec195.
+# Used by: CARD-PAY-FLAKE reviewers; Stripe MOCK, real Go/Next/PG; original single plus eight permanent one-attempt primary contexts.
+[
+  {
+    "File": "card-enabled-en-desktop.png",
+    "Sha256": "b19b39f6d5181c99c7622a25079e36fd92cd5885a4c7f6d29c90fa11c3194b45",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "card-enable-dialog-en-desktop.png",
+    "Sha256": "cb5c776436babcffd7a0513180acf3ef5d438129f31fa91a654bf75bc2db2b27",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "card-platform-closed-zh-TW-desktop.png",
+    "Sha256": "656938147a360e19fef0033eaadae8c3639ac87ebbe1af09c92876e076e6c68c",
+    "Locale": "zh-TW",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "card-platform-closed-en-desktop.png",
+    "Sha256": "be7d5f84b2e59ce5a5266a30c0f6a99273d111947e55f3461607cd49ed3f10d5",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "card-blocked-zh-TW-desktop.png",
+    "Sha256": "f5a613fbd029ed9c83f382f88d89e8a0f6fd16de5d6e9a5ee71958e8afab1186",
+    "Locale": "zh-TW",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "card-not-allowlisted-en-desktop.png",
+    "Sha256": "e4987c2a6807b5991986d9b8fe3f32f8c9d1cc979325ad9648a328282ad09b7b",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "card-enable-dialog-zh-TW-desktop.png",
+    "Sha256": "5aa1471b232506697cb1f030194e1b5be04b0a353b6480b0373d3b01d2c93e46",
+    "Locale": "zh-TW",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "card-enabled-en-mobile.png",
+    "Sha256": "ab097ef126013c33a6643018cc162315dc78ceda2451f3ebf8829f9882b89b40",
+    "Locale": "en",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "card-disable-dialog-en-mobile.png",
+    "Sha256": "886a4b7ccc7a1c0745961910ff88117eab312cf2dd9ebcb41a6b01fe0a5d45a7",
+    "Locale": "en",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "card-enabled-zh-TW-mobile.png",
+    "Sha256": "7b1b19a92b97b81f56821292aa52cf94dd167faac11f51f243e85808c84cd68f",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "card-disable-dialog-zh-TW-mobile.png",
+    "Sha256": "9c38ed1f377bc757d517c765caef26894037ef118f6f6017e768e23cf1dd42db",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "settlements-list-en-desktop.png",
+    "Sha256": "fc0c97146d2d482ab585246a32c6d8204870aa860c7cae9951cff01fa9ac6388",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "settlement-detail-paid-en-desktop.png",
+    "Sha256": "896d684ebfd3792cd59fdc356fe03b33dcfc157e9e5b3b486b9913794744b699",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "settlements-list-zh-TW-desktop.png",
+    "Sha256": "fcad268d11c0d127e480719d52072096335afc00a43038b2fda245c8ee23d75a",
+    "Locale": "zh-TW",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "settlements-list-en-mobile.png",
+    "Sha256": "dc56781cec29c75768b15ce1b641c44264aa7f85d427a6f9d8d687462071ea6c",
+    "Locale": "en",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "settlement-detail-en-mobile.png",
+    "Sha256": "1e930b1273da6d3bd951f7c693a1bdea9fee21cda9637f37ccaee46f205deaf5",
+    "Locale": "en",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "settlements-list-zh-TW-mobile.png",
+    "Sha256": "a3597a2167e073f295731399d9b74cb3c3b2d2011772daba75b97d4dc0053ebf",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "settlement-detail-zh-TW-mobile.png",
+    "Sha256": "d6ce94629b4fea210050e7d3c5b1c5efbebb764def35365a9ba20563cc681769",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "collector-unpaid-zh-TW-desktop.png",
+    "Sha256": "1a174665aa23f816c5ad2d784c7ba5bb77c7162f319536a5801c3013a3ea47ef",
+    "Locale": "zh-TW",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "collector-unpaid-zh-TW-mobile.png",
+    "Sha256": "9588f81c8ae0db49f686cd5198bc79d6664bd51b236c98160c4574ffb3bf724d",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "collector-unpaid-zh-CN-desktop.png",
+    "Sha256": "abe5458a38f069385f740911a1eeb3368ca38a3d374b58c40f5cdae7a7393ef9",
+    "Locale": "zh-CN",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "collector-unpaid-zh-CN-mobile.png",
+    "Sha256": "4a7a7e5921f41767da97e1e02a912d059caf38e8ebe2d32ffc33430d1ca71a44",
+    "Locale": "zh-CN",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "collector-unpaid-en-desktop.png",
+    "Sha256": "2a91fd2481c12ced8ed1ad1702157817feff6c6e120103b88e129b31635f467a",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "collector-unpaid-en-mobile.png",
+    "Sha256": "eea91e39483aa85309f85496303174c9e0a6ce0dc3977e89ee4e84c1c8217d00",
+    "Locale": "en",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "collector-paid-zh-TW-desktop.png",
+    "Sha256": "52011acc1997ae286bf2f25dbb0c437f93f2476f71be340fe3a28a3624cd2f14",
+    "Locale": "zh-TW",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "collector-paid-en-desktop.png",
+    "Sha256": "5b817365f810afd08521df24f77ac054e61d9c19812c552389cc0accdfa45295",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "collector-primary-en-desktop.png",
+    "Sha256": "6a5accc1e59f956fec351da6a75de3c5598f2245273a8500b0060513ca81d81e",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "collector-primary-4-en-desktop.png",
+    "Sha256": "6a5accc1e59f956fec351da6a75de3c5598f2245273a8500b0060513ca81d81e",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "collector-primary-2-en-desktop.png",
+    "Sha256": "6a5accc1e59f956fec351da6a75de3c5598f2245273a8500b0060513ca81d81e",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "collector-primary-6-en-desktop.png",
+    "Sha256": "6a5accc1e59f956fec351da6a75de3c5598f2245273a8500b0060513ca81d81e",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "collector-primary-1-en-desktop.png",
+    "Sha256": "6a5accc1e59f956fec351da6a75de3c5598f2245273a8500b0060513ca81d81e",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "collector-primary-5-en-desktop.png",
+    "Sha256": "6a5accc1e59f956fec351da6a75de3c5598f2245273a8500b0060513ca81d81e",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "collector-primary-3-en-desktop.png",
+    "Sha256": "6a5accc1e59f956fec351da6a75de3c5598f2245273a8500b0060513ca81d81e",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "collector-primary-7-en-desktop.png",
+    "Sha256": "6a5accc1e59f956fec351da6a75de3c5598f2245273a8500b0060513ca81d81e",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "collector-primary-0-en-desktop.png",
+    "Sha256": "6a5accc1e59f956fec351da6a75de3c5598f2245273a8500b0060513ca81d81e",
+    "Locale": "en",
+    "Viewport": "desktop"
+  }
+]
