@@ -169,7 +169,7 @@ func TestOrderAttemptFactsProvenanceAndRuntime(t *testing.T) {
 }
 
 func TestOrderAttemptFactsRefusals(t *testing.T) {
-	for _, name := range []string{"extra_price", "bad_quantity", "missing_sku", "missing_market", "unsupported_payment", "duplicate_ordinal", "zero_ordinal", "currency", "inactive"} {
+	for _, name := range []string{"extra_price", "bad_quantity", "missing_sku", "missing_market", "unsupported_payment", "duplicate_ordinal", "zero_ordinal", "currency", "inactive", "bank_disabled"} {
 		t.Run(name, func(t *testing.T) {
 			e := lbuNew(t)
 			selection := oaFactsSelection(e)
@@ -197,15 +197,20 @@ func TestOrderAttemptFactsRefusals(t *testing.T) {
 				code, message = "PT422", "currency_mismatch"
 			case "inactive":
 				code, message = "PT422", "sku_inactive"
+			case "bank_disabled":
+				code, message = "PT422", "bank_transfer_unavailable"
 			}
 			tx, attempt := oaFactsCandidate(t, e, selection)
-			if name == "currency" || name == "inactive" {
+			if name == "currency" || name == "inactive" || name == "bank_disabled" {
 				oaStateExec(t, tx, `RESET ROLE`)
 				if name == "currency" {
 					oaStateExec(t, tx, `UPDATE catalog.skus SET currency='USD' WHERE id=$1`, e.money)
 				}
 				if name == "inactive" {
 					oaStateExec(t, tx, `UPDATE catalog.skus SET status='archived' WHERE id=$1`, e.money)
+				}
+				if name == "bank_disabled" {
+					oaStateExec(t, tx, `UPDATE checkout.bank_transfer_settings SET enabled=false WHERE store_id=$1`, e.store())
 				}
 				oaStateExec(t, tx, `SET LOCAL ROLE commerce_order_attempt_owner`)
 			}
