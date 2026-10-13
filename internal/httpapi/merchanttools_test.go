@@ -1,3 +1,7 @@
+// Purpose: DB-free full-router merchant-tools grammar, registration and error-envelope counterexamples.
+// Depends on: httpapi.NewHandler, httptest and merchanttools coded errors; no database or provider.
+// Used by: focused HTTP transport gates and parent CI acceptance.
+// Invariants: I01/I02/I11; live-console-v1 section 5 private recovery transport.
 package httpapi
 
 import (
@@ -75,6 +79,59 @@ func TestUnwiredManualOrdersAnswer503WithTheirCode(t *testing.T) {
 	_ = json.Unmarshal(w.Body.Bytes(), &body)
 	if w.Code != http.StatusServiceUnavailable || body.Code != "manual_order_unavailable" || body.Message == "" || body.Message == "Request could not be completed." {
 		t.Fatalf("options unwired: %d %+v", w.Code, body)
+	}
+}
+
+func TestOrderIntentRecoveryFullRouterGrammar(t *testing.T) {
+	const path = "/orders/attempt/recover"
+	for _, c := range []struct {
+		name, method, suffix, media, key, body string
+		want                                   int
+	}{
+		{"registered empty command", "POST", "", "application/json", "some-key-123", `{}`, 503},
+		{"whitespace empty command", "POST", "", "application/json", "some-key-123", ` { } `, 503},
+		{"wrong method", "GET", "", "", "", "", 405},
+		{"bare query", "POST", "?", "application/json", "some-key-123", `{}`, 422},
+		{"selector query", "POST", "?key=PRIVATE_CANARY", "application/json", "some-key-123", `{}`, 422},
+		{"missing transport key", "POST", "", "application/json", "", `{}`, 422},
+		{"invalid transport key", "POST", "", "application/json", "bad", `{}`, 422},
+		{"missing JSON media", "POST", "", "", "some-key-123", `{}`, 415},
+		{"wrong JSON media", "POST", "", "text/plain", "some-key-123", `{}`, 415},
+		{"missing body", "POST", "", "application/json", "some-key-123", "", 400},
+		{"null is not empty object", "POST", "", "application/json", "some-key-123", `null`, 422},
+		{"array is not empty object", "POST", "", "application/json", "some-key-123", `[]`, 400},
+		{"number is not empty object", "POST", "", "application/json", "some-key-123", `0`, 400},
+		{"frozen request forbidden", "POST", "", "application/json", "some-key-123", `{"customer":{"name":"PRIVATE_CANARY"}}`, 400},
+		{"original key forbidden", "POST", "", "application/json", "some-key-123", `{"key":"PRIVATE_CANARY"}`, 400},
+		{"client scope forbidden", "POST", "", "application/json", "some-key-123", `{"store_id":"PRIVATE_CANARY"}`, 400},
+		{"duplicate keys forbidden", "POST", "", "application/json", "some-key-123", `{"key":"x","key":"x"}`, 400},
+		{"trailing object forbidden", "POST", "", "application/json", "some-key-123", `{}{}`, 400},
+		{"invalid JSON", "POST", "", "application/json", "some-key-123", `{`, 400},
+		{"bounded body", "POST", "", "application/json", "some-key-123", strings.Repeat(" ", 64<<10) + `{}`, 400},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			w := toolsCall(t, c.method, path+c.suffix, c.media, c.key, c.body)
+			if w.Code != c.want {
+				t.Fatalf("status %d want %d: %s", w.Code, c.want, w.Body.String())
+			}
+			if strings.Contains(w.Body.String(), "PRIVATE_CANARY") {
+				t.Fatal("private request content leaked into refusal")
+			}
+			if c.want == http.StatusServiceUnavailable {
+				var out struct{ Code string }
+				if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil || out.Code != "manual_order_unavailable" {
+					t.Fatalf("unwired service must stay mounted with its closed code: %+v %v", out, err)
+				}
+			}
+		})
+	}
+	request := httptest.NewRequest("POST", toolsBase+path, strings.NewReader(`{}`))
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Idempotency-Key", "some-key-123")
+	w := httptest.NewRecorder()
+	NewHandler(nil).ServeHTTP(w, request)
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("missing bearer: %d want 401", w.Code)
 	}
 }
 
