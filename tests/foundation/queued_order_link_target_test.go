@@ -43,6 +43,7 @@ func TestQueuedOrderLinkReminderCandidateIdentity(t *testing.T) {
 	f := e.h.f
 	other := e.crBuyer(t)
 	orderC := e.crOrder(t, other.bundle, "AWAITING_PAYMENT", "merchant_manual", false)
+	mustExec(t, f.owner, `INSERT INTO buyer.owners(tenant_id,store_id,id) SELECT tenant_id,store_id,owner_id FROM checkout.orders WHERE id=$1`, orderC)
 	// Own the seal only so the actual planned reminder can be inspected without dispatching a buyer message.
 	sealKeys, open := mcnPageRing(t)
 	e.svc.EnableSend(sealKeys, e.jobs, msgtemplates.NewService())
@@ -66,6 +67,7 @@ func TestQueuedOrderLinkReminderCandidateIdentity(t *testing.T) {
 		// Disclosed concurrent synthetic checkout of the SAME bundle. The real fact query chooses the latest expiry,
 		// so make B unambiguously newer; random UUID ordering and clock resolution must not decide this race.
 		orderB = e.crOrder(t, b.bundle, "AWAITING_PAYMENT", "merchant_manual", false)
+		mustExec(t, f.owner, `INSERT INTO buyer.owners(tenant_id,store_id,id) SELECT tenant_id,store_id,owner_id FROM checkout.orders WHERE id=$1`, orderB)
 		mustExec(t, f.owner, `UPDATE checkout.orders SET expires_at=(SELECT expires_at+interval '1 minute' FROM checkout.orders WHERE id=$2) WHERE id=$1`, orderB, orderA)
 	}
 	r, err := merchanttools.NewCheckoutReminders(f.runtime, m, planner)
