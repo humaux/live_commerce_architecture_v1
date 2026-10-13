@@ -139,7 +139,7 @@ BEGIN
   IF line_reason='' AND r.live_price_minor IS NULL THEN line_reason:='no_live_price'; END IF;
   v_price:=CASE WHEN line_reason='' THEN r.live_price_minor ELSE NULL END;
   v_lines:=v_lines||jsonb_build_array(jsonb_build_object('ordinal',v_ordinal,'origin_id',v_origin,'bundle_id',v_bundle,
-   'offer_id',v_offer,'sku_id',v_sku,'quantity',v_quantity,'live_price_minor',v_price,'reason',line_reason));
+   'offer_id',v_offer,'sku_id',v_sku,'quantity',v_quantity,'line_version',r.version,'live_price_minor',v_price,'reason',line_reason));
  END LOOP;
  IF clock_timestamp()>=v_deadline THEN RAISE EXCEPTION 'attempt_expired' USING ERRCODE='PT409'; END IF;
  FOREACH v_bundle IN ARRAY v_bundles LOOP
