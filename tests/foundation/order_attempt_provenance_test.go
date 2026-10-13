@@ -31,6 +31,11 @@ func TestOrderAttemptProvenanceCreatorXOR(t *testing.T) {
 		{"inventory.ledger", "creator_kind", "buyer_owner_id", "buyer_session_id", "ledger_creator_identity"},
 	} {
 		t.Run(tc.table, func(t *testing.T) {
+			var nullable bool
+			if err := f.owner.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM pg_attribute
+			 WHERE attrelid=to_regclass($1) AND attname=$2 AND NOT attnotnull AND NOT attisdropped)`, tc.table, tc.session).Scan(&nullable); err != nil || !nullable {
+				t.Errorf("attempt creator cannot insert with NULL session on %s.%s: nullable=%v err=%v", tc.table, tc.session, nullable, err)
+			}
 			var expression string
 			if err := f.owner.QueryRow(ctx, `SELECT pg_get_expr(conbin,conrelid) FROM pg_constraint
 			 WHERE conrelid=to_regclass($1) AND conname=$2 AND contype='c' AND convalidated`, tc.table, tc.constraint).Scan(&expression); err != nil {
@@ -78,6 +83,56 @@ func TestOrderAttemptProvenanceCreatorXOR(t *testing.T) {
 				oaProvenanceFK(t, f, tc.table, target.table, target.local, target.remote, false)
 			}
 		})
+	}
+}
+
+func TestOrderAttemptProvenanceRemainingInventoryChecks(t *testing.T) {
+	f := fixture(t)
+	ctx := context.Background()
+	const identity = "00000000-0000-4000-8000-000000000002"
+	// Complete synthetic CHECK inputs: testing just the new XOR would miss old
+	// reservation_checkout_family or ledger_checkout_actor still requiring a session.
+	base := map[string]any{
+		"tenant_id": identity, "store_id": identity, "id": identity,
+		"creator_kind": "order_attempt", "create_attempt_id": identity,
+		"buyer_owner_id": identity, "buyer_session_id": nil, "checkout_id": identity,
+		"generation": 1, "state": "HELD", "created_at": "2026-10-13T00:00:00Z",
+		"expires_at": "2026-10-13T00:15:00Z", "warehouse_id": identity, "sku_id": identity,
+		"actor_kind": "ORDER_ATTEMPT", "principal_id": identity, "reservation_id": identity,
+		"kind": "RESERVE", "delta_on_hand": 0, "delta_reserved": 2,
+		"delta_allocated": 0, "delta_unavailable": 0, "balance_version": 1,
+		"operation": "checkout.order_attempt.reserve", "command_key": identity, "reason": "",
+	}
+	data, err := json.Marshal(base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, table := range []string{"inventory.reservations", "inventory.ledger"} {
+		rows, err := f.owner.Query(ctx, `SELECT conname,pg_get_expr(conbin,conrelid) FROM pg_constraint
+		 WHERE conrelid=to_regclass($1) AND contype='c' AND convalidated ORDER BY conname`, table)
+		if err != nil {
+			t.Fatal(err)
+		}
+		type check struct{ name, expression string }
+		var checks []check
+		for rows.Next() {
+			var c check
+			if err := rows.Scan(&c.name, &c.expression); err != nil {
+				t.Fatal(err)
+			}
+			checks = append(checks, c)
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil || len(checks) == 0 {
+			t.Fatalf("no inventory CHECK sentinel on %s: checks=%d err=%v", table, len(checks), err)
+		}
+		for _, c := range checks {
+			var accepted bool
+			query := fmt.Sprintf(`SELECT (%s) IS NOT FALSE FROM jsonb_populate_record(NULL::%s,$1::jsonb)`, c.expression, table)
+			if err := f.owner.QueryRow(ctx, query, string(data)).Scan(&accepted); err != nil || !accepted {
+				t.Errorf("attempt-shaped inventory row blocked by %s.%s: accepted=%v err=%v", table, c.name, accepted, err)
+			}
+		}
 	}
 }
 
