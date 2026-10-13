@@ -158,7 +158,7 @@ BEGIN
   OR jsonb_typeof(v_for->'bundle_ids') IS DISTINCT FROM 'array' THEN
   RAISE EXCEPTION 'invalid_selection' USING ERRCODE='PT400';
  END IF;
- IF jsonb_array_length(v_for->'bundle_ids')>50 OR EXISTS(SELECT 1 FROM jsonb_array_elements(v_for->'bundle_ids') x
+ IF jsonb_array_length(v_for->'bundle_ids')>5 OR EXISTS(SELECT 1 FROM jsonb_array_elements(v_for->'bundle_ids') x
   WHERE jsonb_typeof(x)<>'string' OR trim(both '"' FROM x::text) !~ v_uuid_pattern) THEN
   RAISE EXCEPTION 'invalid_selection' USING ERRCODE='PT400';
  END IF;
