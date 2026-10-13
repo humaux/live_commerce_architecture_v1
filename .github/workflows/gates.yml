@@ -190,7 +190,7 @@ jobs:
         run: |
           mkdir -p output/ci-gates
           rc=0
-          node --test --experimental-strip-types tests/admin/create-order-model.test.ts tests/admin/create-order-client.test.ts tests/admin/create-order-bff.test.ts 2>&1 | tee output/ci-gates/red-client.log
+          node --test --experimental-transform-types tests/admin/create-order-model.test.ts tests/admin/create-order-client.test.ts tests/admin/create-order-bff.test.ts 2>&1 | tee output/ci-gates/red-client.log
           test "${PIPESTATUS[0]}" = 0 || rc=1
           node --test --experimental-transform-types tests/admin/create-order-attempt.test.ts 2>&1 | tee output/ci-gates/red-guard.log
           test "${PIPESTATUS[0]}" = 0 || rc=1
