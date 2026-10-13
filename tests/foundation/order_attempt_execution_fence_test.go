@@ -87,7 +87,7 @@ func TestOrderAttemptExecutionFenceWireAndTransactionWitness(t *testing.T) {
 	var after []byte
 	var orders, carts, jobs int
 	err = e.p.f.owner.QueryRow(ctx, `SELECT execution_xid::text,to_jsonb(a)-'execution_xid',
-	 (SELECT count(*) FROM checkout.orders WHERE tenant_id=a.tenant_id AND store_id=a.store_id AND buyer_owner_id=a.buyer_owner_id),
+	 (SELECT count(*) FROM checkout.orders WHERE tenant_id=a.tenant_id AND store_id=a.store_id AND owner_id=a.buyer_owner_id),
 	 (SELECT count(*) FROM storefront.carts WHERE tenant_id=a.tenant_id AND store_id=a.store_id AND owner_id=a.buyer_owner_id),
 	 (SELECT count(*) FROM river.river_job WHERE kind='order_attempt_v1' AND args->>'attempt_id'=a.attempt_id::text)
 	 FROM ops.order_attempts a WHERE attempt_id=$1`, a.AttemptID).Scan(&persisted,&after,&orders,&carts,&jobs)
@@ -109,6 +109,9 @@ func TestOrderAttemptExecutionFenceNoScopeOwnerOrPrincipalLocks(t *testing.T) {
 	holder, err := e.p.f.owner.Begin(ctx)
 	if err != nil { t.Fatal(err) }
 	defer holder.Rollback(context.Background())
+	var subjects int
+	if err=holder.QueryRow(ctx,`SELECT count(*) FROM ops.order_attempt_subjects WHERE attempt_id=$1`,a.AttemptID).Scan(&subjects); err!=nil || subjects<1 { t.Fatalf("pending subject positive sentinel: count=%d err=%v",subjects,err) }
+	if _,err=holder.Exec(ctx,`SELECT pg_advisory_xact_lock(hashtextextended('order-attempt-subject:'||tenant_id::text||':'||store_id::text||':'||subject_kind||':'||subject_id::text,0)) FROM ops.order_attempt_subjects WHERE attempt_id=$1 ORDER BY subject_kind,subject_id`,a.AttemptID); err!=nil { t.Fatal(err) }
 	for _, sql := range []string{
 		`SELECT scope_id FROM ops.order_attempt_scopes WHERE scope_id=(SELECT scope_id FROM ops.order_attempts WHERE attempt_id=$1) FOR UPDATE`,
 		`SELECT id FROM buyer.owners WHERE id=(SELECT buyer_owner_id FROM ops.order_attempts WHERE attempt_id=$1) FOR UPDATE`,
