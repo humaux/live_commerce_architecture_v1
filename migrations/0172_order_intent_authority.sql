@@ -145,7 +145,7 @@ COMMENT ON FUNCTION fulfillment.order_intent_begin(bytea,uuid,text) IS 'merchant
 -- Only an admitted intent and its exact private-owner Begin commit can establish manual provenance beyond ten minutes.
 CREATE FUNCTION fulfillment.mark_order_intent_manual(p_hash bytea,p_store uuid,p_key text,p_order uuid,p_link bytea) RETURNS void
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE v record; i record; v_now timestamptz:=clock_timestamp();
+DECLARE v record; i record; v_state text; v_now timestamptz:=clock_timestamp();
 BEGIN
  IF p_link IS NULL OR octet_length(p_link)<>32 THEN RAISE EXCEPTION 'invalid link' USING ERRCODE='PT400'; END IF;
  SELECT * INTO v FROM fulfillment.order_intent_begin(p_hash,p_store,p_key);
@@ -155,9 +155,12 @@ BEGIN
  PERFORM pg_advisory_xact_lock(hashtextextended('order-pay-link|'||i.tenant_id::text||'|'||p_store::text||'|'||p_order::text,0));
  PERFORM 1 FROM checkout.orders o WHERE o.tenant_id=i.tenant_id AND o.store_id=p_store AND o.owner_id=i.buyer_owner_id AND o.id=p_order FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'intent order not found' USING ERRCODE='PT409'; END IF;
- UPDATE checkout.orders SET source='merchant_manual' WHERE tenant_id=i.tenant_id AND store_id=p_store AND owner_id=i.buyer_owner_id AND id=p_order;
- INSERT INTO checkout.order_links(token_hash,tenant_id,store_id,owner_id,order_id,created_at,expires_at)
-  VALUES(p_link,i.tenant_id,p_store,i.buyer_owner_id,p_order,v_now,v_now+interval '7 days') ON CONFLICT(token_hash) DO NOTHING;
+ UPDATE checkout.orders SET source='merchant_manual' WHERE tenant_id=i.tenant_id AND store_id=p_store AND owner_id=i.buyer_owner_id AND id=p_order
+  RETURNING commercial_state INTO v_state;
+ IF v_state<>'CANCELLED' THEN
+  INSERT INTO checkout.order_links(token_hash,tenant_id,store_id,owner_id,order_id,created_at,expires_at)
+   VALUES(p_link,i.tenant_id,p_store,i.buyer_owner_id,p_order,v_now,v_now+interval '7 days') ON CONFLICT(token_hash) DO NOTHING;
+ END IF;
 END $$;
 ALTER FUNCTION fulfillment.mark_order_intent_manual(bytea,uuid,text,uuid,bytea) OWNER TO commerce_checkout_writer;
 REVOKE ALL ON FUNCTION fulfillment.mark_order_intent_manual(bytea,uuid,text,uuid,bytea) FROM PUBLIC;
