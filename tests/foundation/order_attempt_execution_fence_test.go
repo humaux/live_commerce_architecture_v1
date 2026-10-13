@@ -371,3 +371,56 @@ func TestOrderAttemptExecutionFencePrivateContext(t *testing.T) {
 	 FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner WHERE p.oid=to_regprocedure('ops.order_attempt_execution_context(uuid,text)')`).Scan(&safe)
 	if err!=nil || !safe { t.Fatalf("missing or unsafe private context ACL: safe=%v err=%v",safe,err) }
 }
+
+func TestOrderAttemptExecutionFenceMetadataContext(t *testing.T) {
+	e:=lbuNew(t)
+	a:=oaFenceAdmit(t,e)
+	ctx:=context.Background()
+	seed,_:=oaFenceDomainTx(t,e,a,true)
+	if err:=seed.Commit(ctx); err!=nil { t.Fatal(err) }
+	for _,role:=range []string{"commerce_buyer_writer","commerce_checkout_writer","commerce_claims_writer","commerce_inbox_writer"} {
+		t.Run(role,func(t *testing.T){
+			tx,_:=oaFenceDomainTx(t,e,a,true)
+			if _,err:=tx.Exec(ctx,`SET LOCAL ROLE `+pgx.Identifier{role}.Sanitize()); err!=nil { t.Fatal(err) }
+			var raw []byte
+			if err:=tx.QueryRow(ctx,`SELECT ops.order_attempt_fence_context($1,$2)`,a.AttemptID,a.Generation).Scan(&raw); err!=nil { t.Fatal(err) }
+			var got orderattempt.PlanBinding
+			var fields map[string]json.RawMessage
+			if err:=json.Unmarshal(raw,&got); err!=nil { t.Fatal(err) }
+			if err:=json.Unmarshal(raw,&fields); err!=nil { t.Fatal(err) }
+			if len(fields)!=12 || got.Schema!=1 || got.AttemptID!=a.AttemptID || got.ScopeID!=a.ScopeID || got.Generation!=a.Generation || got.TenantID!=e.tenant() || got.StoreID!=e.store() || got.PrincipalID!=e.p.f.principalA || got.BuyerOwnerID=="" || got.RequestHash==([32]byte{}) || got.FactsDigest==([32]byte{}) || !got.AdmittedAt.Add(15*time.Minute).Equal(got.ExecuteBy) { t.Fatal("metadata context must expose exact stored binding without plaintext/ciphertext/receipt") }
+		})
+	}
+	for _,mode:=range []string{"old-xid","guc-only","wrong-generation","terminal"} {
+		t.Run(mode,func(t *testing.T){
+			tx,_:=oaFenceDomainTx(t,e,a,mode=="wrong-generation" || mode=="terminal")
+			generation:=a.Generation
+			if mode=="wrong-generation" { generation++ }
+			if mode=="terminal" {
+				// Storage-only rollback fixture exercises the same-xid state recheck.
+				if _,err:=tx.Exec(ctx,`UPDATE ops.order_attempts SET state='ABORTED',plan_ciphertext=NULL,plan_key_version=NULL,settled_at=clock_timestamp(),receipt=jsonb_build_object('state','ABORTED','attempt_id',attempt_id,'intent_generation',intent_generation,'reason','EXPIRED') WHERE attempt_id=$1`,a.AttemptID); err!=nil { t.Fatal(err) }
+			}
+			if _,err:=tx.Exec(ctx,`SELECT set_config('app.tenant_id',$1,true),set_config('app.store_id',$2,true),set_config('app.principal_id',$3,true),set_config('app.order_attempt_execution_xid',pg_current_xact_id()::text,true)`,e.tenant(),e.store(),e.p.f.principalA); err!=nil { t.Fatal(err) }
+			if _,err:=tx.Exec(ctx,`SET LOCAL ROLE commerce_claims_writer`); err!=nil { t.Fatal(err) }
+			var raw []byte
+			err:=tx.QueryRow(ctx,`SELECT ops.order_attempt_fence_context($1,$2)`,a.AttemptID,generation).Scan(&raw)
+			oaFenceCode(t,raw,err,"PT409")
+		})
+	}
+	for _,role:=range []string{"commerce_runtime","commerce_claims_worker"} {
+		t.Run(role+"-direct-metadata-denied",func(t *testing.T){
+			pool:=miPool(t,e.p.f,role)
+			var raw []byte
+			err:=pool.QueryRow(ctx,`SELECT ops.order_attempt_fence_context($1,$2)`,a.AttemptID,a.Generation).Scan(&raw)
+			oaFenceCode(t,raw,err,"42501")
+		})
+	}
+	var safe bool
+	err:=e.p.f.owner.QueryRow(ctx,`SELECT p.prosecdef AND p.provolatile='v' AND p.prorettype='jsonb'::regtype
+	 AND r.rolname='commerce_order_attempt_owner' AND NOT (r.rolcanlogin OR r.rolsuper OR r.rolbypassrls)
+	 AND p.proconfig=ARRAY['search_path=pg_catalog']::text[] AND length(obj_description(p.oid,'pg_proc'))>0
+	 AND ARRAY(SELECT pg_get_userbyid(a.grantee)::text FROM aclexplode(p.proacl) a WHERE a.grantee<>p.proowner AND a.privilege_type='EXECUTE' ORDER BY 1)=ARRAY['commerce_buyer_writer','commerce_checkout_writer','commerce_claims_writer','commerce_inbox_writer']::text[]
+	 AND NOT EXISTS(SELECT 1 FROM aclexplode(p.proacl) a WHERE a.grantee<>p.proowner AND a.is_grantable)
+	 FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner WHERE p.oid=to_regprocedure('ops.order_attempt_fence_context(uuid,bigint)')`).Scan(&safe)
+	if err!=nil || !safe { t.Fatalf("missing or unsafe plaintext-free metadata context ACL: safe=%v err=%v",safe,err) }
+}
