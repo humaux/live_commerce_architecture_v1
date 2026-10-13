@@ -3,10 +3,25 @@
 // Used by: LC-U3 Node gate; storage failures must fail closed.
 import test from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import {
   OrderAttempt,
   OrderGuard,
 } from "../../apps/admin/lib/create-order-attempt.ts";
+test("order attempt production constructors run with native TypeScript stripping alone", () => {
+  const source = new URL("../../apps/admin/lib/create-order-attempt.ts", import.meta.url).href;
+  const script = `import assert from 'node:assert/strict';
+    const {OrderAttempt,OrderGuard}=await import(${JSON.stringify(source)});
+    const attempt=new OrderAttempt(()=>'synthetic-frozen-key');
+    assert.equal(attempt.prepare({items:[]}).key,'synthetic-frozen-key');
+    const values=new Map();const storage={getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,v),removeItem:k=>values.delete(k)};
+    const guard=new OrderGuard(storage,'synthetic-store','a'.repeat(64));
+    assert.equal(guard.arm(),true);assert.equal(guard.blocked(),true);assert.equal(guard.clear(),true);
+    process.stdout.write('native-order-attempt-ok');`;
+  const child = spawnSync(process.execPath, ["--experimental-strip-types", "--no-experimental-transform-types", "--input-type=module", "--eval", script], { encoding: "utf8", timeout: 5000 });
+  assert.equal(child.error, undefined);assert.equal(child.status, 0, child.stderr);
+  assert.equal(child.stdout, "native-order-attempt-ok");
+});
 test("UNKNOWN preserves the exact original bytes and key despite draft edits", () => {
   let keys = 0;
   const attempt = new OrderAttempt(() => `key-${++keys}`);

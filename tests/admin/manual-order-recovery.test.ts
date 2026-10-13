@@ -14,7 +14,7 @@ registerHooks({ resolve(specifier, context, next) {
   return Object.hasOwn(presentation, specifier) ? { url: "data:text/javascript," + encodeURIComponent(presentation[specifier]), shortCircuit: true } : next(specifier, context);
 } });
 const { ManualOrder } = await import("../../apps/admin/components/ManualOrder.tsx");
-const { createOrderCopy } = await import("../../apps/admin/lib/create-order-copy.ts");
+const { createOrderCopy, createOrderReason } = await import("../../apps/admin/lib/create-order-copy.ts");
 const { OrderGuard } = await import("../../apps/admin/lib/create-order-attempt.ts");
 
 const sku = "77777777-7777-4777-8777-777777777777";
@@ -24,7 +24,7 @@ const option = { option_key: optionKey, market_id: sku, country: "TW", delivery_
   mode: "offline", name_en: "Synthetic home", name_hans: "测试宅配", name_hant: "測試宅配", currency: "TWD",
   service_version: 1, allocation_version: 1, payment_modes: ["bank_transfer"], pickup_selection: null };
 
-async function form(t: any, locale: "en" | "zh-TW" | "zh-CN", resolution: "not_created" | "created" | "unknown" | "unauthorized" | "initial_created" | "ready" | Promise<Response>) {
+async function form(t: any, locale: "en" | "zh-TW" | "zh-CN", resolution: "not_created" | "created" | "unknown" | "unauthorized" | "initial_created" | "initial_cancelled" | "ready" | Promise<Response>, paymentMode: "bank_transfer" | "pay_at_pickup" | "cash_on_delivery" = "bank_transfer") {
   const env = environment(t);
   const saved = new Map<string, string>();
   Object.assign(env.window, { sessionStorage: { getItem: (key: string) => saved.get(key) ?? null,
@@ -32,13 +32,15 @@ async function form(t: any, locale: "en" | "zh-TW" | "zh-CN", resolution: "not_c
   const writes: { path: string; key: string | null; body: string }[] = [];
   globalThis.fetch = async (input, init) => {
     const path = String(input);
-    if (path.endsWith("/orders/manual/options")) return response({ options: [option] });
+    if (path.endsWith("/orders/manual/options")) return response({ options: [{ ...option,
+      delivery_kind: paymentMode === "pay_at_pickup" ? "cvs_711" : "home", payment_modes: [paymentMode], pickup_selection: paymentMode === "pay_at_pickup" ? "buyer_entered" : null,
+      ...(paymentMode === "cash_on_delivery" ? { cod_carrier: "black_cat", cod_max_minor: 100000, cod_surcharge_minor: 100 } : {}) }] });
     if (path.endsWith("/orders/manual") || path.endsWith("/orders/manual/recover")) {
       writes.push({ path, key: new Headers(init?.headers).get("Idempotency-Key"), body: String(init?.body) });
       if (path.endsWith("/recover")) return typeof resolution !== "string" ? resolution : resolution === "unauthorized" ? response({ code: "unauthorized" }, 401) : resolution === "unknown" ? response({ code: "retry_later" }, 503)
         : response(resolution === "created" ? { state: "created", order_id: order } : { state: "not_created" });
-      if (resolution === "initial_created") return response({ order_id: order, commercial_state: "AWAITING_TRANSFER", payment_mode: "bank_transfer",
-        total_minor: 100, currency: "TWD", expires_at: "2030-01-01T00:00:00Z", buyer_link: `https://synthetic.invalid/en/pay#o=${order}&t=${"a".repeat(43)}`,
+      if (resolution === "initial_created" || resolution === "initial_cancelled") return response({ order_id: order, commercial_state: resolution === "initial_cancelled" ? "CANCELLED" : "AWAITING_TRANSFER", payment_mode: paymentMode,
+        total_minor: 100, currency: "TWD", expires_at: "2030-01-01T00:00:00Z", buyer_link: resolution === "initial_cancelled" ? null : `https://synthetic.invalid/en/pay#o=${order}&t=${"a".repeat(43)}`,
         link_state: "configured", source: "merchant_manual" }, 201);
       return writes.length === 1 ? response({ code: "retry_later" }, 503) : response({ code: "bank_transfer_unavailable" }, 422);
     }
@@ -51,8 +53,9 @@ async function form(t: any, locale: "en" | "zh-TW" | "zh-CN", resolution: "not_c
   const fields = nodes(h.raw).find(n => (n.type as any)?.name === "ManualOrderFormFields");
   assert.ok(fields, "real shared form interface");
   fields.props.onChange({ lines: [{ sku_id: sku, quantity: 1, label: "Synthetic", code: "SKU", price: "TWD 1" }],
-    name: "SYNTHETIC BUYER", phone: "0912345678", optionKey, mode: "bank_transfer",
-    home: { region: "Taiwan", city: "Taipei", postal_code: "100", line1: "Synthetic address", line2: "" } });
+    name: "SYNTHETIC BUYER", phone: "0912345678", optionKey, mode: paymentMode,
+    home: { region: "Taiwan", city: "Taipei", postal_code: "100", line1: "Synthetic address", line2: "" },
+    cvs: { store_code: "123456", store_name: "Synthetic pickup", store_address: "Synthetic pickup road" } });
   await h.settle();
   const submit = async () => {
     assert.equal(node(h, n => n.props["data-testid"] === "manual-order-submit").props.disabled, false);
@@ -60,13 +63,28 @@ async function form(t: any, locale: "en" | "zh-TW" | "zh-CN", resolution: "not_c
   };
   if (resolution === "ready") return { h, writes, submit, env, render, saved };
   await submit();
-  if (resolution === "initial_created") return { h, writes, submit, env, render, saved };
+  if (resolution === "initial_created" || resolution === "initial_cancelled") return { h, writes, submit, env, render, saved };
   node(h, n => n.props["data-testid"] === "mo-name").props.onChange({ target: { value: "SYNTHETIC EDITED DRAFT" } });
   await h.settle(); await submit();
   assert.ok(textOf(node(h, n => n.props["data-testid"] === "manual-order-error")), "UNKNOWN then dynamic refusal loaded");
   assert.equal(nodes(h.output).some(n => n.props["data-testid"] === "manual-order-new-attempt"), false);
   assert.equal(writes.length, 2); assert.equal(writes[0].key, writes[1].key); assert.equal(writes[0].body, writes[1].body);
   return { h, writes, submit, env, render, saved };
+}
+for (const locale of ["en", "zh-TW", "zh-CN"] as const) for (const paymentMode of ["bank_transfer", "pay_at_pickup", "cash_on_delivery"] as const) {
+  test(`ManualOrder ${locale} real ${paymentMode} CANCELLED replay is terminal without collection or link mutations`, async t => {
+    const { h, writes, saved } = await form(t, locale, "initial_cancelled", paymentMode);
+    const result = node(h, n => n.props["data-testid"] === "manual-order-result");
+    assert.ok(textOf(result).includes({ en: "Order cancelled", "zh-TW": "訂單已取消", "zh-CN": "订单已取消" }[locale]));
+    assert.equal(textOf(node(h, n => n.props["data-testid"] === "manual-order-cancelled")), createOrderReason(locale, "order_cancelled"), "positive cancelled state before absence assertions");
+    assert.equal(writes.length, 1);assert.equal(JSON.parse(writes[0].body).payment_mode, paymentMode);assert.equal(saved.size, 0);
+    for (const testId of ["manual-order-link", "manual-order-regenerate", "manual-order-another", "manual-order-cod-due", "manual-order-form", "manual-order-new-attempt"]) {
+      assert.equal(nodes(h.output).some(n => n.props["data-testid"] === testId), false, `${testId} cannot mutate or collect payment for a cancelled original order`);
+    }
+    assert.equal(nodes(result).filter(n => n.type === "button").length, 0, "cancelled result offers no copy or payment mutation");
+    assert.equal(nodes(result).find(n => n.type === "a")?.props.href, `/${locale}/orders?store=${store.id}`);
+    assert.equal(writes.length, 1);
+  });
 }
 for (const priorUnknown of [false, true]) test(`ManualOrder preflight session loss ${priorUnknown ? "retains UNKNOWN" : "releases fresh never-sent"} before privacy teardown`, async t => {
   const { h, env, writes, submit, saved } = await form(t, "en", priorUnknown ? "unknown" : "ready");
