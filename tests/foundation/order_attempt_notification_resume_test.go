@@ -3,6 +3,7 @@
 // Used by: parent-owned OA1 CI; shared crash/fence oracles, no dispatcher or product hook.
 // Invariants: placement permission/session loss cannot restart Place; VOID commits the
 // complete order once without an operation/job; late refusal rolls back to PENDING.
+// A VOID continuation preserves the exact pre-existing external-job set, including unrelated stores.
 package foundation_test
 
 import (
@@ -19,7 +20,8 @@ import (
 
 type oaNotificationResumeScenario struct {
 	oaCrashScenario
-	plan orderattempt.FrozenPlan
+	plan               orderattempt.FrozenPlan
+	externalJobsBefore []byte
 }
 
 func oaNotificationResumeNative(t *testing.T) oaNotificationResumeScenario {
@@ -67,10 +69,11 @@ func oaNotificationResumeNative(t *testing.T) oaNotificationResumeScenario {
 	  WHERE op.tenant_id=a.tenant_id AND op.store_id=a.store_id)
 	 AND NOT EXISTS(SELECT 1 FROM river.river_job j JOIN integration.operations op
 	  ON j.args->>'operation_id'=op.id::text WHERE j.kind='external_operation_v1'
-	  AND op.tenant_id=a.tenant_id AND op.store_id=a.store_id)
+	  AND op.tenant_id=a.tenant_id AND op.store_id=a.store_id),
+	 coalesce((SELECT jsonb_agg(j.id ORDER BY j.id) FROM river.river_job j WHERE j.kind='external_operation_v1'),'[]'::jsonb)
 	 FROM ops.order_attempts a JOIN social.conversations c ON c.id=$2
 	 JOIN inbox.conversation_state st ON st.conversation_id=c.id JOIN integration.bindings b ON b.id=$3
-	 WHERE a.attempt_id=$1`, a.AttemptID, conversation, binding, e.p.f.principalA, bundle).Scan(&ready)
+	 WHERE a.attempt_id=$1`, a.AttemptID, conversation, binding, e.p.f.principalA, bundle).Scan(&ready, &s.externalJobsBefore)
 	if err != nil || !ready {
 		t.Fatalf("signed conversation/current capability/actual C1 positive sentinel: %v", err)
 	}
@@ -139,7 +142,7 @@ func oaNotificationResumeCommittedVoid(t *testing.T, s oaNotificationResumeScena
 	 AND (SELECT count(*)=1 FROM claims.merchant_origin_grants WHERE create_attempt_id=$1 AND bundle_id=$3 AND quote_id=o.quote_id AND consumed_at IS NOT NULL)
 	 AND (SELECT count(*)=1 FROM inbox.order_payment_notifications WHERE create_attempt_id=$1)
 	 AND NOT EXISTS(SELECT 1 FROM integration.operations WHERE request->>'order_id'=($1::uuid)::text)
-	 AND NOT EXISTS(SELECT 1 FROM river.river_job WHERE kind='external_operation_v1')
+	 AND coalesce((SELECT jsonb_agg(j.id ORDER BY j.id) FROM river.river_job j WHERE j.kind='external_operation_v1'),'[]'::jsonb)=$8::jsonb
 	 AND NOT EXISTS(SELECT 1 FROM inbox.outbound_messages WHERE conversation_id=$5)
 	 AND NOT EXISTS(SELECT 1 FROM inbox.send_secrets z JOIN integration.operations x ON x.id=z.operation_id WHERE x.request->>'order_id'=($1::uuid)::text)
 	 AND (SELECT count(*)=1 FROM ops.audit_events WHERE details->>'attempt_id'=($1::uuid)::text AND action='order.manual_created'
@@ -150,7 +153,7 @@ func oaNotificationResumeCommittedVoid(t *testing.T, s oaNotificationResumeScena
 	 JOIN checkout.order_pay_entries p ON p.order_id=o.id JOIN inventory.reservations r ON r.id=o.id
 	 JOIN inbox.order_payment_notifications n ON n.create_attempt_id=a.attempt_id
 	 JOIN river_expiry.river_job expiry ON expiry.id=o.job_id WHERE a.attempt_id=$1`,
-		s.a.AttemptID, string(out.Receipt), s.bundle, s.offer, s.conversation, s.plan.Calculation.TotalMinor, code).Scan(&exact, &durable)
+		s.a.AttemptID, string(out.Receipt), s.bundle, s.offer, s.conversation, s.plan.Calculation.TotalMinor, code, string(s.externalJobsBefore)).Scan(&exact, &durable)
 	if err != nil || !exact {
 		t.Fatalf("complete native commit with definitive VOID and zero notification operation/job: exact=%v err=%v", exact, err)
 	}

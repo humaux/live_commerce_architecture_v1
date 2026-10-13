@@ -714,3 +714,44 @@ The shard registry was regenerated in CI116 and copied from its source-pinned
 artifact; four new review test groups remain covered. No local generator or
 formatter ran. The dependency map was unchanged, and the CI formatter patch was
 empty. New product-source changes will require another CI authoring receipt.
+
+### Round-1 implemented delta and CI117, 2026-10-13 23:44 UTC
+
+Product source `7e06a76dc661ce8f8e673988f6517c3ad253b129` includes
+`82f3f2dc4` for `4264535427` and `7e06a76dc` for `4264535438`.
+C1 and legacy admission release only a placed mapping with the exact
+tenant/store/bundle/order/owner/creator binding and a durable CANCELLED order.
+The old pointer, creator, origin/grant audit and COMMITTED receipt are retained;
+pending attempts remain fenced, with no new cancel-side earlier locks. The
+pickup setup now copies the existing native valid synthetic customer instead
+of substituting a name outside ECPay's existing 4..10 width bound (`d27203da3`).
+
+Notification PREPARED and the private Go artifact carry the exact origin and
+version used to seal the URL. Finish compares that same pair with its current
+prepare observation; mismatch is the existing `notification_reprepare` PT409,
+causing known whole-C2 rollback to PENDING and an explicit re-prepare/re-seal.
+No definer owner, search_path, ACL or lock order changed. Independent read-only
+delta review found no actionable P0/P1 or integrity P2 (E1 source review only).
+
+[CI117 / 38485486491](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38485486491),
+normal environment, exact source above:
+
+| Job | Actual result | Evidence |
+| --- | --- | --- |
+| `115598078177` | Cancel re-admission GREEN: PASS=3 FAIL=0 SKIP=0, exit 0, including all five payment/catalogue branches, legacy and concurrent principals. | `cancel-readmission-green-ci117.log:729,736,738,741` |
+| `115598078029` | Exact template ACL and both populated historic setups GREEN: PASS=3 FAIL=0 SKIP=0, exit 0. | `compatibility-green-ci117.log:727,732,734,737` |
+| `115598078138` | Model GREEN; CI formatter patch empty; dependency/shard artifacts exactly match committed metadata. | `ci117-authoring/ci-gates/` |
+| `115598077968` | Notification **mixed RED**: PASS=11 FAIL=2 SKIP=0, exit 1. Both new origin-pin cases, actual crypto and native READY execution passed. Existing VOID-resume and late-refusal tests failed their final global zero-job check. | `notification-mixed-ci117.log:745,755,761,795,799` |
+
+The last failure is a remaining shared-fixture sentinel: the final VOID check
+assumed there were no external-operation jobs anywhere, although prior tests
+committed unrelated READY jobs. The correction snapshots the exact sorted
+external-job ID set at the positive C1 sentinel and requires that identical set
+after each VOID commit/replay, alongside all existing order-specific zero-
+operation, full-commit, audit and immutable-replay checks. This detects any new
+orphan job as well as an unintended deletion; it does not replace them with a
+weaker count or omit the absence assertion. This bounded fixture repair awaits
+CI118 GREEN. CI117's required job is RED and is not called a passed run.
+
+Local runtime/formatting remains NOT_RUN. The full native CI115 and external
+CI-DRIFT dependency are still pending; whole-unit status remains **NOT READY**.
