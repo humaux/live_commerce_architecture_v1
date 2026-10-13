@@ -20,9 +20,10 @@ jobs:
     # The full PG suite includes several real 90 s clock gates (MRR/LMR) and ran
     # past 15 min on a 4-vCPU runner (2026-09-28, run 36409672752: cancelled
     # at MRR02 with 0 FAIL). The bound must stay above test-local.sh's go test -timeout
-    # (4500 s since the R2 merge, 2026-09-30) plus setup; 90 min bounds a hung run
-    # without cutting a green one.
-    timeout-minutes: 90
+    # (4500 s since the R2 merge, 2026-09-30) plus setup. A canonical historical-evidence
+    # skip conditionally adds the registered 1700 s browser mode, so reserve 120 min while
+    # still bounding a hung full-suite job.
+    timeout-minutes: 120
     env:
       GOTOOLCHAIN: go1.27.2
       GOFLAGS: -mod=readonly
@@ -91,15 +92,42 @@ jobs:
           LC_MATRIX_RECEIPT_KIND: go
           LC_MATRIX_RECEIPT_MODE: foundation
         run: bash scripts/dev/test-local.sh
+      - name: Check whether canonical Go skip needs browser proof
+        id: matrix-skip
+        if: ${{ steps.go-tests.outcome == 'success' }}
+        shell: bash
+        run: env -u NODE_OPTIONS node scripts/dev/matrix-receipt-verify.mjs foundation-browser-required output/matrix-coverage-v2-execution/$GITHUB_RUN_ID/$GITHUB_JOB "${{ steps.go-tests.outcome }}" "$GITHUB_RUN_ID" "$GITHUB_SHA"
+      - name: Browser requirements from registry
+        id: browsers
+        if: ${{ steps.matrix-skip.outputs.required == 'true' }}
+        env:
+          MODE: --browser-product-editor
+        run: node scripts/dev/ci-playwright-browsers.mjs "$MODE"
+      - name: Install Playwright browser requirements
+        if: ${{ steps.matrix-skip.outputs.required == 'true' && steps.browsers.outputs.engines != '' }}
+        timeout-minutes: 15
+        env:
+          BROWSERS: ${{ steps.browsers.outputs.engines }}
+        run: |
+          read -r -a browsers <<< "$BROWSERS"
+          bash scripts/dev/ci-playwright-install.sh "${browsers[@]}"
+      - name: Browser product editor backstop
+        id: browser-tests
+        if: ${{ always() && steps.matrix-skip.outputs.required == 'true' }}
+        env:
+          LC_MATRIX_RECEIPT_KIND: browser
+          LC_MATRIX_RECEIPT_MODE: --browser-product-editor
+        run: xvfb-run -a bash scripts/dev/test-local.sh --browser-product-editor
       - name: Verify current-run matrix execution receipts
         if: always()
         shell: bash
         env:
           NODE_OUTCOME: ${{ steps.node-tests.outcome }}
           GO_OUTCOME: ${{ steps.go-tests.outcome }}
+          BROWSER_OUTCOME: ${{ steps.browser-tests.outcome }}
           GO_EXPECTED: ${{ !(github.event_name == 'pull_request' && github.base_ref == 'r3/integration') }}
           LC_MATRIX_NODE_MODE: foundation
-        run: env -u NODE_OPTIONS node scripts/dev/matrix-receipt-verify.mjs foundation output/matrix-coverage-v2-execution/$GITHUB_RUN_ID/$GITHUB_JOB "$NODE_OUTCOME" "$GO_OUTCOME" "$GO_EXPECTED" "$GITHUB_RUN_ID" "$GITHUB_SHA"
+        run: env -u NODE_OPTIONS node scripts/dev/matrix-receipt-verify.mjs foundation output/matrix-coverage-v2-execution/$GITHUB_RUN_ID/$GITHUB_JOB "$NODE_OUTCOME" "$GO_OUTCOME" "$BROWSER_OUTCOME" "$GO_EXPECTED" "$GITHUB_RUN_ID" "$GITHUB_SHA"
       - name: Preserve matrix execution receipts
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0

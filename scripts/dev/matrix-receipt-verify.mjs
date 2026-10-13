@@ -1,7 +1,7 @@
 // Purpose: fail closed unless CI has receipts from required live matrix executions.
 // Depends on: matrix-receipt.mjs source inventory and GitHub run/job/shard context.
 // Used by: foundation always-verifier and the Gates required aggregate.
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, appendFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { basename, dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -50,6 +50,16 @@ export function verifyReceipt(receipt, { receiptPath, kind, mode, runId, job, so
   } catch (error) { errors.push(`raw event verification: ${error.message}`); }
   return errors;
 }
+/** Validate the Foundation Go receipt before deciding whether its historical skip needs a live browser backstop. */
+export function foundationBrowserRequired(directory, goStepOutcome, runId, sourceCommit) {
+  if (goStepOutcome !== "success") throw new Error(`Go runner outcome is ${goStepOutcome}`);
+  const receiptPath = resolve(directory, "go.json");
+  const receipt = readJson(receiptPath);
+  const errors = verifyReceipt(receipt, { receiptPath, kind: "go", mode: "foundation", runId,
+    job: process.env.GITHUB_JOB || "foundation", sourceCommit });
+  if (errors.length) throw new Error(`Go receipt: ${errors.join("; ")}`);
+  return receipt.outcome?.historical_skip === true;
+}
 function collectJsonFiles(root) {
   const found = [];
   if (!statSync(root).isDirectory()) return found;
@@ -71,21 +81,40 @@ function catchAllShard() {
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) try {
   const [mode, ...args] = process.argv.slice(2);
-  if (mode === "foundation") {
-    const [directory, nodeOutcome, goOutcome, goExpected, runId, sha] = args;
+  if (mode === "foundation-browser-required") {
+    const [directory, goStepOutcome, runId, sha] = args;
+    const required = foundationBrowserRequired(directory, goStepOutcome, runId, sha || head());
+    console.log(`matrix-receipt-verify: foundation browser required=${required}`);
+    if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `required=${required}\n`);
+  } else if (mode === "foundation") {
+    const [directory, nodeStepOutcome, goStepOutcome, browserStepOutcome, goExpected, runId, sha] = args;
     const expectedSource = sha || head();
-    if (nodeOutcome !== "success") throw new Error(`Node runner outcome is ${nodeOutcome}`);
+    if (nodeStepOutcome !== "success") throw new Error(`Node runner outcome is ${nodeStepOutcome}`);
     const node = readJson(resolve(directory, "node.json"));
     const errors = verifyReceipt(node, { receiptPath: resolve(directory, "node.json"), kind: "node", mode: `${process.env.LC_MATRIX_NODE_MODE || "foundation"}`, runId,
       job: process.env.GITHUB_JOB || "foundation", sourceCommit: expectedSource });
     if (errors.length) throw new Error(`Node receipt: ${errors.join("; ")}`);
     if (goExpected === "true") {
-      if (goOutcome !== "success") throw new Error(`Go runner outcome is ${goOutcome}`);
+      if (goStepOutcome !== "success") throw new Error(`Go runner outcome is ${goStepOutcome}`);
       const go = readJson(resolve(directory, "go.json"));
       const goErrors = verifyReceipt(go, { receiptPath: resolve(directory, "go.json"), kind: "go", mode: "foundation", runId, job: process.env.GITHUB_JOB || "foundation", sourceCommit: expectedSource });
       if (goErrors.length) throw new Error(`Go receipt: ${goErrors.join("; ")}`);
-      if (go.outcome?.historical_skip) throw new Error("foundation workflow cannot accept the historical matrix skip without a same-run live browser backstop");
-    } else if (goOutcome !== "skipped") throw new Error(`Go not expected but step outcome is ${goOutcome}`);
+      const hasBrowserReceipt = go.outcome?.historical_skip === true || browserStepOutcome === "success";
+      if (go.outcome?.historical_skip && browserStepOutcome !== "success")
+        throw new Error(`historical canonical skip requires same-run browser step success; outcome is ${browserStepOutcome}`);
+      if (hasBrowserReceipt) {
+        const browserPath = resolve(directory, "browser.json");
+        const browser = readJson(browserPath);
+        const browserErrors = verifyReceipt(browser, { receiptPath: browserPath, kind: "browser", mode: "--browser-product-editor",
+          runId, job: process.env.GITHUB_JOB || "foundation", sourceCommit: expectedSource });
+        if (browserErrors.length) throw new Error(`same-run browser receipt: ${browserErrors.join("; ")}`);
+      } else if (browserStepOutcome !== "skipped") {
+        throw new Error(`unexpected Foundation browser runner outcome ${browserStepOutcome}`);
+      }
+    } else {
+      if (goStepOutcome !== "skipped") throw new Error(`Go not expected but step outcome is ${goStepOutcome}`);
+      if (browserStepOutcome !== "skipped") throw new Error(`browser backstop must be skipped when Go is not expected; outcome is ${browserStepOutcome}`);
+    }
   } else if (mode === "required") {
     const [directory, runId, sha, matrixText, eventName] = args;
     const files = collectJsonFiles(resolve(directory));
@@ -117,6 +146,6 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       const errors = verifyReceipt(matches[0].receipt, { receiptPath: matches[0].path, kind: "browser", mode: "--browser-product-editor", runId, job: "gate", sourceCommit: sha });
       if (errors.length) throw new Error(`fresh browser receipt ${matches[0].path}: ${errors.join("; ")}`);
     }
-  } else throw new Error("usage: matrix-receipt-verify.mjs foundation|required ...");
+  } else throw new Error("usage: matrix-receipt-verify.mjs foundation-browser-required|foundation|required ...");
   console.log(`matrix-receipt-verify: ${mode} positive execution receipts verified`);
 } catch (error) { fail(error.message); }

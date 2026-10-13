@@ -4,12 +4,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { readFileSync, mkdirSync, writeFileSync, existsSync, rmSync, symlinkSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { readFileSync, mkdirSync, writeFileSync, existsSync, rmSync, symlinkSync, mkdtempSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { tmpdir } from "node:os";
 import { createHash } from "node:crypto";
 import { runInNewContext } from "node:vm";
 import { nodeSuites, nodeCaseInventory, nodeOutcome, goOutcome, goFamily, validateHistoricalSkip, browserOutcome, sourceHashes, canonicalEvidenceDrift } from "../../scripts/dev/matrix-receipt.mjs";
-import { verifyReceipt } from "../../scripts/dev/matrix-receipt-verify.mjs";
+import { foundationBrowserRequired, verifyReceipt } from "../../scripts/dev/matrix-receipt-verify.mjs";
+
+const probeRoot = mkdtempSync(join(tmpdir(), "matrix-receipt-probes-"));
+const probePath = (...parts) => join(probeRoot, ...parts);
+test.after(() => rmSync(probeRoot, { recursive: true, force: true }));
 
 test("the independent receipt action refuses failed job outcomes even with valid receipts and a commented shell check", () => {
   const workflow = readFileSync(".github/workflows/gates.yml", "utf8")
@@ -74,7 +79,7 @@ function historicalGoEvents({ reason } = {}) {
 }
 
 test("independent historical drift accepts a removed bound producer but refuses links and unsafe source paths", () => {
-  const root = resolve("output/matrix-coverage-v2-execution/probes/removed-producer");
+  const root = probePath("removed-producer");
   rmSync(root, { recursive: true, force: true });
   const gate = "tests/foundation/catalog_matrix_ledger_test.go";
   const producer = "tests/admin/old-matrix-producer.ts";
@@ -118,9 +123,9 @@ test("Node receipt rejects selected-out cases, only cases, a missing case and a 
   assert.equal(nodeOutcome(nodeEvents({ omit: nodeSuites[0] }), nodeSuites).ok, false);
 });
 test("Node_OPTIONS name filtering cannot create a positive actual receipt", () => {
-  const path = "output/matrix-coverage-v2-execution/probes/node-options-preload.json";
+  const path = probePath("node-options-preload.json");
   mkdirSync(dirname(path), { recursive: true });
-  const preload = resolve("output/matrix-coverage-v2-execution/probes/exit-zero.cjs");
+  const preload = probePath("exit-zero.cjs");
   writeFileSync(preload, "process.exit(0);\n");
   const env = { ...process.env, NODE_OPTIONS: `--require=${preload}`, LC_MATRIX_RECEIPT_PATH: path,
     LC_MATRIX_RECEIPT_MODE: "probe-node-filter", GITHUB_RUN_ID: "probe", GITHUB_JOB: "probe",
@@ -132,9 +137,9 @@ test("Node_OPTIONS name filtering cannot create a positive actual receipt", () =
   const plan = JSON.parse(readFileSync("scripts/dev/shard-plan.json", "utf8"));
   const matrix = JSON.stringify(["shard:unit", `shard:${plan.groups.find((group) => group.catch_all).id}`].map((mode) => ({ mode })));
   const head = spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).stdout.trim();
-  mkdirSync("output/matrix-coverage-v2-execution/probes/empty", { recursive: true });
+  mkdirSync(probePath("empty"), { recursive: true });
   const verify = spawnSync(process.execPath, ["scripts/dev/matrix-receipt-verify.mjs", "required",
-    "output/matrix-coverage-v2-execution/probes/empty", "probe", head, matrix, "workflow_dispatch"], { encoding: "utf8",
+    probePath("empty"), "probe", head, matrix, "workflow_dispatch"], { encoding: "utf8",
   env: { ...process.env, NODE_OPTIONS: "" } });
   assert.equal(verify.status, 1, "missing actual receipts fail the required aggregator");
   assert.match(verify.stderr, /expected exactly one node receipt/);
@@ -152,7 +157,7 @@ test("Go receipt derives the catch-all family and requires every actual pass eve
 });
 
 test("Go family cannot remove or rename the canonical historical-evidence test", () => {
-  const directory = resolve("output/matrix-coverage-v2-execution/probes/required-go-identity");
+  const directory = probePath("required-go-identity");
   const { family } = goFamily();
   const required = "TestProductEditorMatrixLedgerEvidence";
   mkdirSync(directory, { recursive: true });
@@ -169,7 +174,7 @@ test("Go family cannot remove or rename the canonical historical-evidence test",
 });
 
 test("Go family discovery is independent of testing parameter names and formatting", () => {
-  const directory = resolve("output/matrix-coverage-v2-execution/probes/go-signature-forms");
+  const directory = probePath("go-signature-forms");
   const { family } = goFamily();
   mkdirSync(directory, { recursive: true });
   const put = (source) => writeFileSync(resolve(directory, "fixture_test.go"), source);
@@ -217,7 +222,7 @@ test("fresh live browser backstop requires the actual product editor browser tes
 
 test("required verifier recomputes event outcomes and rejects a rehashed outcome forgery", () => {
   const events = nodeEvents();
-  const path = "output/matrix-coverage-v2-execution/probes/raw/node.json";
+  const path = probePath("raw", "node.json");
   mkdirSync(dirname(path), { recursive: true });
   const raw = events.map((event) => JSON.stringify(event)).join("\n") + "\n";
   const eventFile = "node.json.events";
@@ -239,7 +244,7 @@ test("required verifier recomputes event outcomes and rejects a rehashed outcome
 });
 
 test("required verifier accepts a source-drift skip only with a verified same-run browser receipt", () => {
-  const root = "output/matrix-coverage-v2-execution/probes/historical-required";
+  const root = probePath("historical-required");
   rmSync(root, { recursive: true, force: true });
   const runId = "historical-probe";
   const head = spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).stdout.trim();
@@ -276,7 +281,7 @@ test("required verifier accepts a source-drift skip only with a verified same-ru
 });
 
 test("Foundation verifier requires fresh same-run browser proof only for a historical Go skip", () => {
-  const root = "output/matrix-coverage-v2-execution/probes/foundation-historical";
+  const root = probePath("foundation-historical");
   rmSync(root, { recursive: true, force: true });
   const runId = "foundation-historical-probe";
   const head = spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).stdout.trim();
@@ -297,6 +302,15 @@ test("Foundation verifier requires fresh same-run browser proof only for a histo
     const { family } = goFamily();
     const passingGoEvents = [{ Package: "livecommerce/tests/foundation", Action: "start" },
       ...family.map((Test) => ({ Package: "livecommerce/tests/foundation", Test, Action: "pass" }))];
+    const detectorDir = probePath("foundation-detector");
+    persistReceipt(detectorDir, "go", "foundation", runId, passingGoEvents, [], "foundation");
+    assert.equal(foundationBrowserRequired(detectorDir, "success", runId, head), false,
+      "a current all-PASS Go receipt does not request browser work");
+    persistReceipt(detectorDir, "go", "foundation", runId, historicalGoEvents(), [], "foundation");
+    assert.equal(foundationBrowserRequired(detectorDir, "success", runId, head), true,
+      "only an independently verified historical skip schedules browser work");
+    assert.throws(() => foundationBrowserRequired(detectorDir, "failure", runId, head), /Go runner outcome/);
+
     const allPass = runVerifier(passingGoEvents, "skipped");
     assert.equal(allPass.status, 0, `${allPass.stdout}\n${allPass.stderr}`);
 
@@ -325,7 +339,7 @@ test("Go historical skip rejects a matching-source skip and a wrong reason at th
   const bound = [...body.matchAll(/"([^"\n]+)"/g)].map((match) => match[1]);
   const source = { source_files_sha256: Object.fromEntries(bound.map((path) => [path,
     createHash("sha256").update(readFileSync(path)).digest("hex")])) };
-  const directory = "output/matrix-coverage-v2-execution/probes/source-facts";
+  const directory = probePath("source-facts");
   mkdirSync(directory, { recursive: true });
   const matchingPath = resolve(directory, "matching-SOURCE.json");
   writeFileSync(matchingPath, JSON.stringify(source));
