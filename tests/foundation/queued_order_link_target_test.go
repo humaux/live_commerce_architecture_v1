@@ -61,7 +61,9 @@ func qltNewerOrder(ctx context.Context, e *lbEnv, bundle, orderA string) (string
 		VALUES($1,$2,gen_random_uuid(),$3,gen_random_uuid(),gen_random_uuid(),1,gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),
 		'TW','std',1,1,'TWD',1000,'AWAITING_PAYMENT','MANUAL_UNASSIGNED',1,
 		(SELECT expires_at+interval '1 minute' FROM checkout.orders WHERE id=$4),
-		(random()*9e12)::bigint+1000000000000,'{"cr":"1"}'::jsonb,now()-interval '5 minutes',now()-interval '5 minutes','merchant_manual')`,
+		(random()*9e12)::bigint+1000000000000,'{"cr":"1"}'::jsonb,
+		(SELECT created_at+interval '1 minute' FROM checkout.orders WHERE id=$4 AND tenant_id=$1 AND store_id=$2),
+		(SELECT created_at+interval '1 minute' FROM checkout.orders WHERE id=$4 AND tenant_id=$1 AND store_id=$2),'merchant_manual')`,
 		f.tenantA, f.storeA1, order, orderA); err != nil {
 		return "", fmt.Errorf("insert concurrent synthetic order: %w", err)
 	}
@@ -117,6 +119,7 @@ func TestQueuedOrderLinkReminderCandidateIdentity(t *testing.T) {
 		}
 		// Disclosed concurrent synthetic checkout of the SAME bundle. The real fact query chooses the latest expiry,
 		// so make B unambiguously newer; random UUID ordering and clock resolution must not decide this race.
+		// Shift creation and expiry together, preserving A's valid card-hold window rather than exceeding its CHECK.
 		orderB, err = qltNewerOrder(callCtx, e, b.bundle, orderA)
 		return err
 	}
