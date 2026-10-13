@@ -199,6 +199,50 @@ func TestOrderAttemptFactsCODFee(t *testing.T) {
 	}
 }
 
+func TestOrderAttemptFactsShippingTaxAndLocks(t *testing.T) {
+	e := lbuNew(t)
+	h := e.p.cqHarness
+	code := "oa"+t04Tag()
+	fee, rate := int64(1200), int64(500)
+	policy := h.policy
+	policy.Method, policy.ShippingMinor, policy.TaxRateBPS = "delivery:"+code, &fee, &rate
+	policy.TaxMode, policy.TaxBasis = "exclusive", "goods_and_shipping"
+	if _, err := h.setPolicy(policy); err != nil { t.Fatal(err) }
+	service := fulfillment.ServiceInput{MarketID: h.market.ID, Country: "TW", Code: code, PolicyVersion: 1,
+		NameHans: "Synthetic", NameHant: "Synthetic", NameEN: "Synthetic", DeliveryKind: "home", Mode: "MANUAL", Enabled: true, Visible: true}
+	if _, err := dsSet(h,t04Key("oa-facts-service"),service); err != nil { t.Fatal(err) }
+	if _, err := daSet(h,t04Key("oa-facts-allocation"),fulfillment.AllocationInput{MarketID: h.market.ID,Country: "TW",Code: code,
+		ExpectedServiceVersion: 1,WarehouseIDs: []string{h.stock.warehouse.ID}}); err != nil { t.Fatal(err) }
+	selection := oaFactsSelection(e)
+	selection["delivery"].(map[string]any)["service_code"] = code
+	tx,attempt := oaFactsCandidate(t,e,selection)
+	out,err := oaFactsCall(tx,attempt,selection)
+	if err != nil { t.Fatal(err) }
+	var lines []pricing.AmountLine
+	for _, line := range out.Lines { lines = append(lines,pricing.AmountLine{UnitPriceMinor: line.UnitPriceMinor,Quantity: line.Quantity}) }
+	calculation,err := pricing.CalculateWith(out.Policy,lines,nil)
+	if err != nil || calculation.SubtotalMinor != 150000 || calculation.ShippingMinor != 1200 ||
+		calculation.TaxMinor != 7560 || calculation.ShippingTaxMinor != 60 || calculation.TotalMinor != 158760 {
+		t.Fatalf("all frozen fee inputs: %+v err=%v",calculation,err)
+	}
+	other,err := e.p.f.owner.Begin(context.Background())
+	if err != nil { t.Fatal(err) }
+	defer other.Rollback(context.Background())
+	// NOWAIT makes this a deterministic lock oracle: each independent transaction
+	// must see the C1 fact lock before C1 returns to its caller for pricing/sealing.
+	for _, query := range []string{
+		`SELECT id FROM pricing.markets WHERE id=$1::uuid FOR UPDATE NOWAIT`,
+		`SELECT market_id FROM pricing.policy_heads WHERE market_id=$1::uuid AND method='delivery:'||$2::text FOR UPDATE NOWAIT`,
+		`SELECT market_id FROM fulfillment.service_heads WHERE market_id=$1::uuid AND code=$2::text FOR UPDATE NOWAIT`,
+		`SELECT market_id FROM fulfillment.allocation_heads WHERE market_id=$1::uuid AND code=$2::text FOR UPDATE NOWAIT`,
+	} {
+		oaStateReject(t,other,"55P03",query,h.market.ID,code)
+	}
+	oaStateReject(t,other,"55P03",`SELECT id FROM catalog.skus WHERE id=$1 FOR UPDATE NOWAIT`,e.money)
+	oaStateReject(t,other,"55P03",`SELECT id FROM catalog.products WHERE id=(SELECT product_id FROM catalog.skus WHERE id=$1) FOR UPDATE NOWAIT`,e.money)
+	oaStateReject(t,other,"55P03",`SELECT store_id FROM checkout.bank_transfer_settings WHERE store_id=$1 FOR UPDATE NOWAIT`,e.store())
+}
+
 func TestOrderAttemptFactsFunctionACL(t *testing.T) {
 	f := fixture(t)
 	var owner, config string
