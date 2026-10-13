@@ -7,7 +7,15 @@ package foundation_test
 import (
 	"bytes"
 	"context"
+	"errors"
+	"sync"
 	"testing"
+	"time"
+
+	"github.com/jackc/pgx/v5"
+	"livecommerce/internal/customers"
+	"livecommerce/internal/orderattempt"
+	"livecommerce/internal/platform"
 )
 
 func TestOrderAttemptErasurePrefixExactAuthority(t *testing.T) {
@@ -82,6 +90,109 @@ func TestOrderAttemptErasurePrefixExactAuthority(t *testing.T) {
 	oaFenceCode(t, nil, err, "PT403")
 	if err = ownerTx.Rollback(context.Background()); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestOrderAttemptErasureSerializesConcurrentC1BeforeOwner(t *testing.T) {
+	e := lbuNew(t)
+	e.grantCreator("customers:privacy", "customers:read")
+	owner, conversation := randomUUID(), randomUUID()
+	mustExec(t, e.p.f.owner, `INSERT INTO buyer.owners(id,tenant_id,store_id) VALUES($1,$2,$3)`, owner, e.tenant(), e.store())
+	mustExec(t, e.p.f.owner, `INSERT INTO social.conversations(id,tenant_id,store_id,app_id,object,asset_id,peer_key)
+	 VALUES($1,$2,$3,'123456789','page','123456789',repeat(replace($1::uuid::text,'-',''),2))`, conversation, e.tenant(), e.store())
+	mustExec(t, e.p.f.owner, `INSERT INTO inbox.conversation_state(tenant_id,store_id,conversation_id,customer_id)
+	 VALUES($1,$2,$3,$4)`, e.tenant(), e.store(), conversation, owner)
+	selection := oaFactsSelection(e)
+	selection["for"] = map[string]any{"bundle_ids": []string{}, "conversation_id": conversation, "customer_id": owner}
+	req := oaMaterialRequest(t, e, selection)
+	svc, err := orderattempt.NewService(e.p.f.runtime, oaServiceKeys(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	ready, erased := make(chan uint32, 1), make(chan error, 1)
+	release := make(chan struct{})
+	var once sync.Once
+	unblock := func() { once.Do(func() { close(release) }) }
+	defer unblock()
+	key := "oa-c1-erasure-" + randomUUID()
+	go func() {
+		erased <- platform.WithScope(ctx, e.p.f.runtime, e.token(), e.store(), "store:read", func(tx pgx.Tx, s platform.Scope) error {
+			if _, err := customers.Erase(ctx, tx, s, e.token(), key, owner); err != nil {
+				return err
+			}
+			ready <- tx.Conn().PgConn().PID()
+			select {
+			case <-release:
+				return nil
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		})
+	}()
+	var erasePID uint32
+	select {
+	case erasePID = <-ready:
+	case err = <-erased:
+		t.Fatalf("native erasure prerequisite: %v", err)
+	case <-ctx.Done():
+		t.Fatal(ctx.Err())
+	}
+	admitted := make(chan error, 1)
+	go func() {
+		_, err := svc.Admit(ctx, e.token(), e.store(), req)
+		admitted <- err
+	}()
+	ticker := time.NewTicker(10 * time.Millisecond)
+	defer ticker.Stop()
+	blocked := false
+	var early error
+	for !blocked && ctx.Err() == nil {
+		err = e.p.f.owner.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM pg_stat_activity
+		 WHERE $1::int=ANY(pg_blocking_pids(pid)) AND wait_event_type='Lock' AND wait_event='advisory')`, erasePID).Scan(&blocked)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !blocked {
+			select {
+			case early = <-admitted:
+				unblock()
+				<-erased
+				t.Fatalf("C1 reached owner/refusal without the subject barrier: %v", early)
+			case <-ticker.C:
+			case <-ctx.Done():
+			}
+		}
+	}
+	unblock()
+	select {
+	case err = <-erased:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-ctx.Done():
+		t.Fatal(ctx.Err())
+	}
+	if !blocked {
+		t.Fatal("actual C1 did not wait on the native erasure subject barrier")
+	}
+	select {
+	case err = <-admitted:
+	case <-ctx.Done():
+		t.Fatal(ctx.Err())
+	}
+	var refusal *orderattempt.AdmissionError
+	if !errors.As(err, &refusal) || refusal.Code() != "ERASED" {
+		t.Fatalf("post-erasure current C1 subject recheck: %v", err)
+	}
+	var exact bool
+	err = e.p.f.owner.QueryRow(ctx, `SELECT NOT o.active
+	 AND EXISTS(SELECT 1 FROM customers.privacy_actions p WHERE p.owner_id=o.id AND p.kind='ERASURE')
+	 AND NOT EXISTS(SELECT 1 FROM ops.order_attempts a WHERE a.tenant_id=o.tenant_id AND a.store_id=o.store_id)
+	 FROM buyer.owners o WHERE o.id=$1`, owner).Scan(&exact)
+	if err != nil || !exact {
+		t.Fatalf("erasure/C1 race must leave no attempt identity or private body: exact=%v err=%v", exact, err)
 	}
 }
 
