@@ -285,3 +285,15 @@ func openPool(ctx context.Context, dsn string, authority string) (*pgxpool.Pool,
 		t.Fatalf("actual pool constructor startup probe changed coverage: exit=%d %s", code, out)
 	}
 }
+
+func TestGoFactoryOA1NamedFactoryErrorCLI(t *testing.T) {
+	call := reviewCLI(t)
+	source := strings.Replace(goFactoryOA1Source, "(http.Handler, cvsParts, func(), error) {", `(handler http.Handler, parts cvsParts, cleanup func(), err error) {
+ clear := func() { err = nil }
+ defer clear()`, 1)
+	root, p := goFactoryOA1Legacy(t, call, source, goFactoryOA1Platform, nil)
+	mustWrite(t, p, strings.Replace(source, "_ = mainPool", goFactoryOA1Probe, 1))
+	if code, out := call(root); code != 1 || !strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED") || !strings.Contains(out, "SUMMARY routes go=1 contract=1 bff=1;") || !strings.Contains(out, "UNRESOLVED EXACT /v1/factory-oa1") || !strings.Contains(out, "UNRESOLVED MOUNT /v1/factory-oa1") {
+		t.Fatalf("named factory error cleared by deferred closure granted admission exclusion: exit=%d %s", code, out)
+	}
+}
