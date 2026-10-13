@@ -1,0 +1,44 @@
+{
+  "pr": 47,
+  "tested_source_commit": "24f645795b0be55d82d978332bc642de982adf99",
+  "ci_foundation": 38390672689,
+  "scope": "focused Foundation evidence, full Gates pending",
+  "replies": [
+    {
+      "thread_comment": 4256257030,
+      "reply_id": 4258197010,
+      "url": "https://github.com/humaux/live_commerce_architecture_v1/pull/47#discussion_r4258197010",
+      "body": "Fixed: removed or renamed recorded producers are classified as historical source drift after path/digest validation; missing immutable artifacts, unsafe paths and other read errors still fail. CI Foundation 38390672689 passes the Matrix family, including deletion/default-skip and strict-failure controls, at 24f645795b0be55d82d978332bc642de982adf99."
+    },
+    {
+      "thread_comment": 4256257042,
+      "reply_id": 4258197363,
+      "url": "https://github.com/humaux/live_commerce_architecture_v1/pull/47#discussion_r4258197363",
+      "body": "Fixed: historical locale identities and claims come from the frozen Go declaration and evidence package, with exact balance checks. Current locale rules apply only when bound sources match. The locale add/remove controls pass in Foundation 38390672689 at 24f64579."
+    },
+    {
+      "thread_comment": 4256257049,
+      "reply_id": 4258197682,
+      "url": "https://github.com/humaux/live_commerce_architecture_v1/pull/47#discussion_r4258197682",
+      "body": "Recorded the original author as gpt-6.1-sol / high using owner-supplied observed thread metadata: thread 01a133fe-95a6-7c52-bddb-3730de0585fd, all eight turn_context records from 2026-10-13T06:41:31Z through 07:53:40Z. Commit a881f08c records this provenance separately from the repair authors."
+    },
+    {
+      "thread_comment": 4256257059,
+      "reply_id": 4258198027,
+      "url": "https://github.com/humaux/live_commerce_architecture_v1/pull/47#discussion_r4258198027",
+      "body": "Fixed: every regular package file must be indexed, and frozen package membership is independently pinned, including outer and nested files. Coordinated deletion of files and mutable index entries is rejected. CI red 38389630299 -> focused Matrix family green in 38390672689; final source 24f64579."
+    },
+    {
+      "thread_comment": 4256257065,
+      "reply_id": 4258198426,
+      "url": "https://github.com/humaux/live_commerce_architecture_v1/pull/47#discussion_r4258198426",
+      "body": "Corrected the historical claim and moved the check to GitHub CI against the delivered base..head patch. Foundation 38390672689 passes Delivered patch whitespace; the committed whitespace injection/repair control demonstrates red -> green. Native logs are retained losslessly compressed rather than normalized."
+    },
+    {
+      "thread_comment": 4256257073,
+      "reply_id": 4258198794,
+      "url": "https://github.com/humaux/live_commerce_architecture_v1/pull/47#discussion_r4258198794",
+      "body": "Fixed: historical case identities and counts are derived from frozen consumer sources and independently pinned original PE/CC12 declarations before any drift skip. Invented or duplicated identities are rejected. CI behavior red 38389630299 -> Matrix family green 38390672689 at 24f64579."
+    }
+  ]
+}
