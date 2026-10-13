@@ -167,6 +167,7 @@ func TestOrderAttemptDeadlineRealClaimPeriodicLiveness(t *testing.T) {
 		}
 		select {
 		case <-ctx.Done():
+			oaSweepDiagnoseFirst(t, pool)
 			t.Fatal("periodic sweep stranded genuine C1 beyond execute_by+90s")
 		case <-tick.C:
 		}

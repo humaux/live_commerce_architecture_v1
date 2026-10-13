@@ -88,11 +88,13 @@ func TestOrderAttemptSweepNativeOrphanRepairAndLiveJobs(t *testing.T) {
 			old := oaSweepJob(t, e, a.AttemptID)
 			oaSweepJobState(t, e, old, state)
 			intent := oaSweepIntent(t, e, a.AttemptID)
-			executor := oaExecutorNew(t, miPool(t, e.p.f, "commerce_claims_worker"), oaServiceKeys(t))
+			pool := miPool(t, e.p.f, "commerce_claims_worker")
+			executor := oaExecutorNew(t, pool, oaServiceKeys(t))
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 			got, err := executor.Sweep(ctx)
 			if err != nil || got.Scanned < 1 || got.Scanned > 100 {
+				oaSweepDiagnoseFirst(t, pool)
 				t.Fatalf("bounded native discovery/sweep: counts=%+v err=%v", got, err)
 			}
 			orphan := state == "missing" || state == "completed" || state == "discarded" || state == "cancelled"
@@ -106,6 +108,7 @@ func TestOrderAttemptSweepNativeOrphanRepairAndLiveJobs(t *testing.T) {
 				t.Fatal("live job was replaced or intent changed; running/retryable at max_attempts remain live")
 			}
 			if _, err = executor.Sweep(ctx); err != nil {
+				oaSweepDiagnoseFirst(t, pool)
 				t.Fatal(err)
 			}
 			if oaSweepJob(t, e, a.AttemptID) != id {
@@ -132,8 +135,10 @@ func TestOrderAttemptSweepRepairNeverTakesScopeOrPrincipalLock(t *testing.T) {
 	defer holder.Rollback(context.Background())
 	oaStateExec(t, holder, `SELECT scope_id FROM ops.order_attempt_scopes WHERE scope_id=$1 FOR UPDATE`, a.ScopeID)
 	oaStateExec(t, holder, `SELECT id FROM identity.principals WHERE id=$1 FOR UPDATE`, e.p.f.principalA)
-	executor := oaExecutorNew(t, miPool(t, e.p.f, "commerce_claims_worker"), oaServiceKeys(t))
+	pool := miPool(t, e.p.f, "commerce_claims_worker")
+	executor := oaExecutorNew(t, pool, oaServiceKeys(t))
 	if _, err = executor.Sweep(ctx); err != nil {
+		oaSweepDiagnoseFirst(t, pool)
 		t.Fatal("repair reacquired an earlier lock (including implicit scope FK)", err)
 	}
 	oaSweepRepair(t, e, a, old, intent)
@@ -162,8 +167,10 @@ func TestOrderAttemptSweepSkipsHeldAttemptWithoutRepair(t *testing.T) {
 	oaAbortCleanupTx(t, holder)
 	defer holder.Rollback(context.Background())
 	oaStateExec(t, holder, `SELECT attempt_id FROM ops.order_attempts WHERE attempt_id=$1 FOR UPDATE`, a.AttemptID)
-	executor := oaExecutorNew(t, miPool(t, e.p.f, "commerce_claims_worker"), oaServiceKeys(t))
+	pool := miPool(t, e.p.f, "commerce_claims_worker")
+	executor := oaExecutorNew(t, pool, oaServiceKeys(t))
 	if _, err = executor.Sweep(ctx); err != nil {
+		oaSweepDiagnoseFirst(t, pool)
 		t.Fatal("SKIP LOCKED sweep waited or failed on held attempt", err)
 	}
 	if oaSweepJob(t, e, a.AttemptID) != old || oaSweepIntent(t, e, a.AttemptID) != intent {
@@ -173,6 +180,7 @@ func TestOrderAttemptSweepSkipsHeldAttemptWithoutRepair(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, err = executor.Sweep(ctx); err != nil {
+		oaSweepDiagnoseFirst(t, pool)
 		t.Fatal(err)
 	}
 	oaSweepRepair(t, e, a, old, intent)
@@ -214,11 +222,13 @@ func TestOrderAttemptSweepExpiredIntentIgnoresJobLiveness(t *testing.T) {
 			a := oaSweepExpired(t, e)
 			old := oaSweepJob(t, e, a.AttemptID)
 			oaSweepJobState(t, e, old, state)
-			executor := oaExecutorNew(t, miPool(t, e.p.f, "commerce_claims_worker"), oaServiceKeys(t))
+			pool := miPool(t, e.p.f, "commerce_claims_worker")
+			executor := oaExecutorNew(t, pool, oaServiceKeys(t))
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 			counts, err := executor.Sweep(ctx)
 			if err != nil || counts.Aborted < 1 {
+				oaSweepDiagnoseFirst(t, pool)
 				t.Fatalf("expired intent must settle without decrypting invalid old envelope: counts=%+v err=%v", counts, err)
 			}
 			var raw []byte
@@ -288,6 +298,11 @@ func TestOrderAttemptSweepRealRiverStartupAndPeriodicOrphanRecovery(t *testing.T
 	pool := miPool(t, e.p.f, "commerce_claims_worker")
 	executor := oaExecutorNew(t, pool, oaServiceKeys(t))
 	oaSweepConsumer(t, pool, executor)
+	defer func() {
+		if t.Failed() {
+			oaSweepDiagnoseFirst(t, pool)
+		}
+	}()
 	startup, stop := context.WithTimeout(context.Background(), 10*time.Second)
 	defer stop()
 	var first int64
