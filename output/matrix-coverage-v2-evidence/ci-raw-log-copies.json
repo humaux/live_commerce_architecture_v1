@@ -5,7 +5,9 @@
     38381067824,
     38381815228,
     38383142992,
-    38384639292
+    38384639292,
+    38388946999,
+    38389630299
   ],
   "logs": [
     {
@@ -42,6 +44,20 @@
       "raw_sha256": "de31aa50fc05b84d41dfb7f1f32c3a9dc5674b8b11b4959ba6e279a77777aeb3",
       "lossless_archive": "ci-green-38384639292.log.gz",
       "archive_sha256": "973232392c1d7ce237326aed8b23f2e2462b92c8e0e2c48cb59d96e025d530ba"
+    },
+    {
+      "raw_name": "ci-red-38388946999.log",
+      "raw_size_bytes": 5760,
+      "raw_sha256": "e99ad834de3c7507436d9a88bbbbc69fc13bf691c344c568563dd20ba6da7351",
+      "lossless_archive": "ci-red-38388946999.log.gz",
+      "archive_sha256": "ca1b4ebf5416fda27e9ae7ffe20dedde943fdf946135cefb62da14a75190ae42"
+    },
+    {
+      "raw_name": "ci-red-38389630299.log",
+      "raw_size_bytes": 99722,
+      "raw_sha256": "d42ccff892540cf27a2a8c68342254aaf583fa2c287af004c9edc143dba61e5c",
+      "lossless_archive": "ci-red-38389630299.log.gz",
+      "archive_sha256": "7211980292646e3b55a1711fa02c33660569f805c581c5d47a947739e4be5822"
     }
   ]
 }

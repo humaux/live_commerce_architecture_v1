@@ -1,0 +1,171 @@
+{
+  "conclusion": "failure",
+  "headSha": "fd4e0fb52c113d82fd90cea8592d51a03072cd0d",
+  "jobs": [
+    {
+      "completedAt": "2026-10-13T11:16:10Z",
+      "conclusion": "failure",
+      "databaseId": 115267618160,
+      "name": "foundation",
+      "startedAt": "2026-10-13T11:15:28Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-10-13T11:15:30Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-10-13T11:15:29Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T11:15:37Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "number": 2,
+          "startedAt": "2026-10-13T11:15:30Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T11:15:43Z",
+          "conclusion": "success",
+          "name": "Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+          "number": 3,
+          "startedAt": "2026-10-13T11:15:37Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T11:15:43Z",
+          "conclusion": "success",
+          "name": "Preserve evidence-validator formatting patch",
+          "number": 4,
+          "startedAt": "2026-10-13T11:15:43Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T11:16:07Z",
+          "conclusion": "failure",
+          "name": "Evidence-validator focused integrity controls",
+          "number": 5,
+          "startedAt": "2026-10-13T11:15:43Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T11:16:07Z",
+          "conclusion": "skipped",
+          "name": "Delivered patch whitespace",
+          "number": 6,
+          "startedAt": "2026-10-13T11:16:07Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T11:16:08Z",
+          "conclusion": "success",
+          "name": "Preserve evidence-validator CI diagnostics",
+          "number": 7,
+          "startedAt": "2026-10-13T11:16:07Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T11:16:08Z",
+          "conclusion": "skipped",
+          "name": "No key-shaped secret literals",
+          "number": 8,
+          "startedAt": "2026-10-13T11:16:08Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T11:16:08Z",
+          "conclusion": "skipped",
+          "name": "Dependency map is current",
+          "number": 9,
+          "startedAt": "2026-10-13T11:16:08Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T11:16:08Z",
+          "conclusion": "skipped",
+          "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "number": 10,
+          "startedAt": "2026-10-13T11:16:08Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T11:16:08Z",
+          "conclusion": "skipped",
+          "name": "Node dependencies (frozen lockfile)",
+          "number": 11,
+          "startedAt": "2026-10-13T11:16:08Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T11:16:08Z",
+          "conclusion": "skipped",
+          "name": "Package docs and gate map are current",
+          "number": 12,
+          "startedAt": "2026-10-13T11:16:08Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T11:16:08Z",
+          "conclusion": "skipped",
+          "name": "Node unit suites (storefront, i18n)",
+          "number": 13,
+          "startedAt": "2026-10-13T11:16:08Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T11:16:08Z",
+          "conclusion": "skipped",
+          "name": "Download pinned test image",
+          "number": 14,
+          "startedAt": "2026-10-13T11:16:08Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T11:16:08Z",
+          "conclusion": "skipped",
+          "name": "Real PostgreSQL, race detector and vet",
+          "number": 15,
+          "startedAt": "2026-10-13T11:16:08Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T11:16:08Z",
+          "conclusion": "skipped",
+          "name": "Reachable vulnerability scan",
+          "number": 16,
+          "startedAt": "2026-10-13T11:16:08Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T11:16:08Z",
+          "conclusion": "skipped",
+          "name": "Post Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+          "number": 31,
+          "startedAt": "2026-10-13T11:16:08Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T11:16:08Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "number": 32,
+          "startedAt": "2026-10-13T11:16:08Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-13T11:16:08Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 33,
+          "startedAt": "2026-10-13T11:16:08Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38388946999/job/115267618160"
+    }
+  ],
+  "status": "completed",
+  "url": "https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38388946999"
+}
