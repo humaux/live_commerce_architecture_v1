@@ -1,3 +1,6 @@
+// Purpose: storefront quote snapshots and frozen per-line price/origin evidence.
+// Depends on: buyer command scope, catalog, pricing and promotions in the caller's PG transaction.
+// Used by: storefront quote creation and typed checkout order snapshot reads.
 package storefront
 
 import (
@@ -38,6 +41,11 @@ type QuoteLine struct {
 	CatalogUnitPriceMinor int64  `json:"catalog_unit_price_minor,omitempty"`
 	ClaimBundleID         string `json:"claim_bundle_id,omitempty"`
 	ClaimOfferID          string `json:"claim_offer_id,omitempty"`
+	// Attempt-only physical identity and frozen origin; omission preserves legacy storefront JSON.
+	LineID      string `json:"line_id,omitempty"`
+	LineOrdinal int64  `json:"line_ordinal,omitempty"`
+	OriginKind  string `json:"origin_kind,omitempty"`
+	OriginID    string `json:"origin_id,omitempty"`
 }
 type Quote struct {
 	ID                 string              `json:"id"`

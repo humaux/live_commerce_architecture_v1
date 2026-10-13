@@ -73,7 +73,7 @@ func TestOrderAttemptQuoteMaterializationFrozenReadbackAndRollback(t *testing.T)
 			// cart with a nontrivial version; an empty cart inventory is not a sentinel.
 			session, browserCart := randomUUID(), randomUUID()
 			mustExec(t, e.p.f.owner, `INSERT INTO buyer.capability_sessions(id,tenant_id,store_id,owner_id,token_hash,expires_at)
-			 SELECT $2,tenant_id,store_id,buyer_owner_id,sha256(convert_to($2::text,'UTF8')),clock_timestamp()+interval '1 hour' FROM ops.order_attempts WHERE attempt_id=$1`, a.AttemptID, session)
+			 SELECT $2::uuid,tenant_id,store_id,buyer_owner_id,sha256(convert_to(($2::uuid)::text,'UTF8')),clock_timestamp()+interval '1 hour' FROM ops.order_attempts WHERE attempt_id=$1`, a.AttemptID, session)
 			mustExec(t, e.p.f.owner, `INSERT INTO storefront.carts(tenant_id,store_id,owner_id,id,creator_session_id,currency,version)
 			 SELECT tenant_id,store_id,buyer_owner_id,$2,$3,'TWD',7 FROM ops.order_attempts WHERE attempt_id=$1`, a.AttemptID, browserCart, session)
 			mustExec(t, e.p.f.owner, `INSERT INTO storefront.cart_lines(tenant_id,store_id,owner_id,cart_id,sku_id,quantity)
