@@ -1,0 +1,146 @@
+gate (focused:^TestOrderAttemptNotification)	Gate	﻿2026-10-13T19:38:01.9076690Z ##[group]Run set -o pipefail
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9077057Z [36;1mset -o pipefail[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9077304Z [36;1mmkdir -p output/ci-gates[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9077823Z [36;1m# Only LC_* names with plain values: an inject-fail run of a new gate must not be able to set arbitrary env.[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9078350Z [36;1mfor kv in $EXTRA_ENV; do[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9078795Z [36;1m  [[ "$kv" =~ ^LC_[A-Z0-9_]+=[A-Za-z0-9._:-]*$ ]] || { echo "refusing extra_env entry: $kv" >&2; exit 2; }[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9079293Z [36;1m  export "$kv"; echo "extra_env: ${kv%%=*} set"[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9079627Z [36;1mdone[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9079837Z [36;1mlog_root=output/ci-gates[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9080096Z [36;1mcase "$MODE" in[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9080380Z [36;1m  --browser*|--stripe-browser*|--ops-disk-guard)[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9080732Z [36;1m    mkdir -p output/playwright[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9081202Z [36;1m    export LC_BROWSER_EVIDENCE_ROOT="$(mktemp -d "$PWD/output/playwright/run.XXXXXXXX")"[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9081761Z [36;1m    log_root="$LC_BROWSER_EVIDENCE_ROOT/ci-gates"[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9082079Z [36;1m    mkdir -p "$log_root"[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9082607Z [36;1m    ;;[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9082803Z [36;1mesac[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9083107Z [36;1mlog="$log_root/$(printf '%s' "$MODE" | tr -c 'A-Za-z0-9_-' '_').log"[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9083487Z [36;1mcase "$MODE" in[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9083823Z [36;1m  foundation) bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9084547Z [36;1m  shard:unit) LC_FOUNDATION_PKGS="$(go list ./... | grep -v '/tests/foundation$' | tr '\n' ' ')" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9085509Z [36;1m  # A balanced group of scripts/dev/shard-plan.json: an anchored explicit -run list, or (the catch-all) -skip of every other group's tests.[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9086849Z [36;1m  shard:g[0-9][0-9]) LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="$(node scripts/dev/shard-plan.mjs run "${MODE#shard:}")" LC_FOUNDATION_SKIP="$(node scripts/dev/shard-plan.mjs skip "${MODE#shard:}")" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9088171Z [36;1m  shard:*)    LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="${MODE#shard:}" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9089013Z [36;1m  focused:*)  LC_FOCUSED_TIMEOUT=7200s bash scripts/dev/test-focused.sh "${MODE#focused:}" 2>&1 | tee "$log" ;;[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9089905Z [36;1m  # One slice of the sweep / visual lint (tests/ui/sweep-shard-lib.mjs): its own PG, fixture and store, so click-sweep runs its single worker race-free.[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9091144Z [36;1m  --browser-click-sweep@*|--browser-visual-lint@*) LC_SWEEP_SHARD="${MODE##*@}" xvfb-run -a bash scripts/dev/test-local.sh "${MODE%@*}" 2>&1 | tee "$log" ;;[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9092038Z [36;1m  # Some browser suites run headed on purpose (MOU03 native bfcache/visibility); the runner has no display.[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9093130Z [36;1m  # Xvfb comes with `playwright install --with-deps`.[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9093714Z [36;1m  --browser*|--stripe-browser*) xvfb-run -a bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$log" ;;[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9094333Z [36;1m  --*)        bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$log" ;;[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9094748Z [36;1m  *) echo "unknown mode: $MODE" >&2; exit 2 ;;[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9095041Z [36;1mesac[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9159326Z shell: /usr/bin/bash -e {0}
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9159595Z env:
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9159816Z   GOTOOLCHAIN: local
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9160044Z   GOFLAGS: -mod=readonly
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9160314Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9160652Z   MODE: focused:^TestOrderAttemptNotification
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9160947Z   LC_SWEEP_WORKERS: 1
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9161152Z   EXTRA_ENV: 
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:01.9161336Z ##[endgroup]
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:03.7252182Z go: downloading github.com/jackc/pgx/v5 v5.11.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:03.8780827Z go: downloading github.com/riverqueue/river v0.40.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:03.8782765Z go: downloading github.com/riverqueue/river/riverdriver/riverpgxv5 v0.40.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:03.8784769Z go: downloading github.com/riverqueue/river/rivertype v0.40.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:03.8981052Z go: downloading github.com/riverqueue/river/riverdriver v0.40.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:03.9489499Z go: downloading golang.org/x/crypto v0.57.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:04.0284503Z go: downloading github.com/jackc/pgpassfile v1.0.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:04.0286002Z go: downloading github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:04.0438421Z go: downloading golang.org/x/text v0.42.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:04.0459336Z go: downloading github.com/jackc/puddle/v2 v2.2.2
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:04.0598930Z go: downloading github.com/riverqueue/river/rivershared v0.40.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:04.1002748Z go: downloading golang.org/x/image v0.46.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:04.3344498Z go: downloading golang.org/x/net v0.60.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:04.4976861Z go: downloading github.com/coreos/go-oidc/v3 v3.21.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:04.4979494Z go: downloading golang.org/x/oauth2 v0.37.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:04.5400568Z go: downloading github.com/tidwall/gjson v1.19.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:04.5401105Z go: downloading golang.org/x/sync v0.23.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:04.5401520Z go: downloading github.com/tidwall/sjson v1.2.5
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:04.5601838Z go: downloading golang.org/x/sys v0.48.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:04.5615293Z go: downloading github.com/go-jose/go-jose/v4 v4.1.4
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:04.5622986Z go: downloading github.com/stretchr/testify v1.11.1
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:04.5627356Z go: downloading go.uber.org/goleak v1.3.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:04.5901838Z go: downloading github.com/tidwall/match v1.2.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:04.5975671Z go: downloading github.com/tidwall/pretty v1.2.1
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:04.6063352Z go: downloading github.com/davecgh/go-spew v1.1.1
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:04.6119407Z go: downloading github.com/pmezard/go-difflib v1.0.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:38:04.6153188Z go: downloading gopkg.in/yaml.v3 v3.0.1
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:25.7273400Z === RUN   TestOrderAttemptNotificationNoBindingVoidNativeAndRollback
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:28.6863725Z     order_attempt_notification_test.go:123: notification prepare after actual native order/pay entry: ERROR: permission denied for schema inbox (SQLSTATE 42501)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:28.6918397Z --- FAIL: TestOrderAttemptNotificationNoBindingVoidNativeAndRollback (2.96s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:28.6933643Z === RUN   TestOrderAttemptNotificationNotRequestedHasNoEffects
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:29.3929679Z     order_attempt_notification_test.go:154: ERROR: permission denied for schema inbox (SQLSTATE 42501)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:29.3993562Z --- FAIL: TestOrderAttemptNotificationNotRequestedHasNoEffects (0.71s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:29.3995508Z === RUN   TestOrderAttemptNotificationCurrentRefusalWithoutBrowserSession
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:29.3997441Z === RUN   TestOrderAttemptNotificationCurrentRefusalWithoutBrowserSession/permission
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:30.0974352Z     order_attempt_notification_test.go:176: resume must give current notification refusal without browser-session reauthentication: ERROR: permission denied for schema inbox (SQLSTATE 42501)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:30.1054773Z === RUN   TestOrderAttemptNotificationCurrentRefusalWithoutBrowserSession/window
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:30.7957869Z     order_attempt_notification_test.go:176: resume must give current notification refusal without browser-session reauthentication: ERROR: permission denied for schema inbox (SQLSTATE 42501)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:30.8028960Z --- FAIL: TestOrderAttemptNotificationCurrentRefusalWithoutBrowserSession (1.40s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:30.8033565Z     --- FAIL: TestOrderAttemptNotificationCurrentRefusalWithoutBrowserSession/permission (0.71s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:30.8036740Z     --- FAIL: TestOrderAttemptNotificationCurrentRefusalWithoutBrowserSession/window (0.70s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:30.8038934Z === RUN   TestOrderAttemptNotificationStrictMaterialAndNullOperationChecks
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:31.4782031Z     order_attempt_notification_test.go:209: ERROR: permission denied for schema inbox (SQLSTATE 42501)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:31.4861174Z --- FAIL: TestOrderAttemptNotificationStrictMaterialAndNullOperationChecks (0.68s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:31.4862840Z === RUN   TestOrderAttemptNotificationPrivateAuthority
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:31.4886717Z     order_attempt_notification_test.go:234: missing validated exact FK inbox.order_payment_notifications [tenant_id store_id owner_id order_id create_attempt_id] -> checkout.orders [tenant_id store_id owner_id id create_attempt_id] deferred=false: present=false err=<nil>
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:31.4896374Z     order_attempt_notification_test.go:235: missing validated exact FK inbox.order_payment_notifications [tenant_id store_id owner_id create_attempt_id] -> ops.order_attempt_creators [tenant_id store_id buyer_owner_id attempt_id] deferred=false: present=false err=<nil>
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:31.4905871Z     order_attempt_notification_test.go:243: notification definer exact ownership/authority inbox.order_attempt_prepare_notification(uuid,text): no rows in result set
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:31.4907262Z --- FAIL: TestOrderAttemptNotificationPrivateAuthority (0.01s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:31.4908465Z === RUN   TestOrderAttemptNotificationRequiresExactHeldPlan
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.1298350Z     order_attempt_notification_test.go:269: unfenced call wrote notification effects
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.1360918Z --- FAIL: TestOrderAttemptNotificationRequiresExactHeldPlan (0.65s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.1362606Z === RUN   TestOrderAttemptNotificationStorefrontOriginCurrentEligibility
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.8185256Z === RUN   TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/configured
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.8195276Z     order_attempt_notification_test.go:296: bound current origin helper: ERROR: permission denied for schema buyer (SQLSTATE 42501)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.8196663Z === RUN   TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/unpublished
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.8199868Z     order_attempt_notification_test.go:291: OA1 storage fixture/action: ERROR: current transaction is aborted, commands ignored until end of transaction block (SQLSTATE 25P02)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.8202456Z === RUN   TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/store_disabled
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.8205141Z     order_attempt_notification_test.go:291: OA1 storage fixture/action: ERROR: current transaction is aborted, commands ignored until end of transaction block (SQLSTATE 25P02)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.8207318Z === RUN   TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/tenant_disabled
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.8210254Z     order_attempt_notification_test.go:291: OA1 storage fixture/action: ERROR: current transaction is aborted, commands ignored until end of transaction block (SQLSTATE 25P02)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.8212604Z === RUN   TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/expired
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.8215025Z     order_attempt_notification_test.go:291: OA1 storage fixture/action: ERROR: current transaction is aborted, commands ignored until end of transaction block (SQLSTATE 25P02)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.8217028Z === RUN   TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/future_proof
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.8219417Z     order_attempt_notification_test.go:291: OA1 storage fixture/action: ERROR: current transaction is aborted, commands ignored until end of transaction block (SQLSTATE 25P02)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.8221567Z === RUN   TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/ambiguous
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.8224334Z     order_attempt_notification_test.go:291: OA1 storage fixture/action: ERROR: current transaction is aborted, commands ignored until end of transaction block (SQLSTATE 25P02)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.8226381Z === NAME  TestOrderAttemptNotificationStorefrontOriginCurrentEligibility
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.8228745Z     order_attempt_notification_test.go:306: OA1 storage fixture/action: ERROR: current transaction is aborted, commands ignored until end of transaction block (SQLSTATE 25P02)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.8298819Z --- FAIL: TestOrderAttemptNotificationStorefrontOriginCurrentEligibility (0.69s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.8300804Z     --- FAIL: TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/configured (0.00s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.8302041Z     --- FAIL: TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/unpublished (0.00s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.8314799Z     --- FAIL: TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/store_disabled (0.00s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.8317121Z     --- FAIL: TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/tenant_disabled (0.00s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.8319101Z     --- FAIL: TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/expired (0.00s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.8320775Z     --- FAIL: TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/future_proof (0.00s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.8342826Z     --- FAIL: TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/ambiguous (0.00s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:32.8344335Z === RUN   TestOrderAttemptNotificationReadyNativeActualCrypto
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:34.1509581Z     order_attempt_notification_test.go:381: actual READY eligibility/template/thread preparation: ERROR: permission denied for schema inbox (SQLSTATE 42501)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:34.1673823Z --- FAIL: TestOrderAttemptNotificationReadyNativeActualCrypto (1.34s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:34.1690992Z FAIL
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:34.1788161Z FAIL	livecommerce/tests/foundation	8.558s
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:34.1880243Z FAIL
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:34.4684938Z test-focused: top-level PASS=0 FAIL=8 SKIP=0 exit=1
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T19:39:34.6770284Z ##[error]Process completed with exit code 1.
+required	Run echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"	﻿2026-10-13T19:39:55.5286870Z ##[group]Run echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"
+required	Run echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"	2026-10-13T19:39:55.5288671Z [36;1mecho "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"[0m
+required	Run echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"	2026-10-13T19:39:55.5289771Z [36;1mrc=0[0m
+required	Run echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"	2026-10-13T19:39:55.5290510Z [36;1m[[ "$PLAN" == success ]] || rc=1[0m
+required	Run echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"	2026-10-13T19:39:55.5291259Z [36;1m[[ "$GATE" == success ]] || rc=1[0m
+required	Run echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"	2026-10-13T19:39:55.5292228Z [36;1mif [[ "$AGG_EXPECTED" == true ]]; then [[ "$AGG" == success ]] || rc=1; else [[ "$AGG" == skipped ]] || rc=1; fi[0m
+required	Run echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"	2026-10-13T19:39:55.5293619Z [36;1mif [[ "$DEPLOY_EXPECTED" == true ]]; then [[ "$DEPLOY" == success ]] || rc=1; else [[ "$DEPLOY" == skipped ]] || rc=1; fi[0m
+required	Run echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"	2026-10-13T19:39:55.5294683Z [36;1mexit "$rc"[0m
+required	Run echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"	2026-10-13T19:39:55.6271830Z shell: /usr/bin/bash -e {0}
+required	Run echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"	2026-10-13T19:39:55.6273024Z env:
+required	Run echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"	2026-10-13T19:39:55.6273585Z   PLAN: success
+required	Run echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"	2026-10-13T19:39:55.6274235Z   GATE: failure
+required	Run echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"	2026-10-13T19:39:55.6274915Z   AGG: skipped
+required	Run echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"	2026-10-13T19:39:55.6275813Z   AGG_EXPECTED: false
+required	Run echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"	2026-10-13T19:39:55.6276414Z   DEPLOY: skipped
+required	Run echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"	2026-10-13T19:39:55.6276967Z   DEPLOY_EXPECTED: false
+required	Run echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"	2026-10-13T19:39:55.6277644Z ##[endgroup]
+required	Run echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"	2026-10-13T19:39:55.6498836Z plan=success gate=failure aggregate=skipped (expected false) deploy=skipped (expected false)
+required	Run echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"	2026-10-13T19:39:55.6518997Z ##[error]Process completed with exit code 1.

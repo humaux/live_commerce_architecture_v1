@@ -67,10 +67,17 @@ Further CI receipts (same assertions; no local execution):
 | `bde893cb4` | [38453470440](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38453470440), `115490195920` | `PASS=8 FAIL=1 SKIP=0 exit=1`: native Begin and both executor-login stages pass; altered-stage inputs leak underlying PT409 rather than the required PT400. `composite-begin-ci37.log`. |
 | `7320538cf` | [38454408486](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38454408486) | GREEN `PASS=20 FAIL=0 SKIP=0 exit=0`: all composite/Begin/claim-completion/pay-entry storage groups. `composite-claim-pay-green-ci.log`. |
 
-CI `38454795431` at `3484ad3cd` first exercises six native notification groups
-after the real pay-entry prerequisite. Registered on dispatch with the existing
-150-minute workflow bound; parent monitors its terminal log. No full C2,
-worker/sweeper, notification bridge or OA-1 completion claim is made.
+| `e796bd02e` | [38455374619](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38455374619), `115496804514` | Settlement FIRST: causal RED `PASS=0 FAIL=4 SKIP=0 exit=1`. Actual C1/native Begin reach the absent `pay` stage, PT400. `settlement-red-ci.log`. |
+| `3484ad3cd` | [38454795431](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38454795431) | Notification first attempt `PASS=0 FAIL=6 exit=1`; fixture retained checkout-writer role after the native pay helper. This setup failure is not notification behavior proof. `notification-red-ci.log`. |
+| `f38c6a47d` | [38455899509](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38455899509) | After the isolated RESET ROLE fixture repair: `PASS=0 FAIL=6 SKIP=0 exit=1`, reaching absent coordinator schema/helper authority. `notification-fixture-corrected-red-ci.log`. |
+| `acdab5f0b` | [38456246349](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38456246349) | Expanded notification FIRST: `PASS=0 FAIL=8 SKIP=0 exit=1`; signed native ingestion and C1/Begin/pay reach missing notification preparation/ACL/FKs; origin helper missing. `notification-ready-red-ci.log`. |
+
+CI `38456636061` at `761f4fb4f` registers executor FIRST tests with the existing
+150-minute workflow bound. Constructor/classifier absence is API-only RED;
+native behavior and mutation acceptance must execute after implementation.
+The full C2 composite and terminal proof are in progress; notification helpers,
+Go executor, native expiry compatibility, worker/sweep and the complete matrix
+remain unverified. No OA-1 completion claim is made.
 
 CI is the only execution environment. Local tests/builds/gates/server/PG:
 **NOT_RUN(owner CI-only directive)**. Static source review does not prove C2.
