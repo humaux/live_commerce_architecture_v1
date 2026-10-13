@@ -57,3 +57,7 @@ Read-only GitHub snapshot of the earlier docs head `fe4f1a2b`: [Foundation 38381
 - Thread `4257368780`: author and both delegates now have concrete role, observed model/effort, release-source base SHA, task worktree, branch and thread metadata provenance above.
 - Thread `4257368785`: removed the unverifiable historical blob-based audit claim. Full final-report independent acceptance is explicitly PENDING for the integrator's review and committed JSON on the final SHA; no author-issued PASS replaces it.
 - No local tests, gates, scripts, servers or containers were run for these documentation corrections. GitHub checks for the new commit and the independent full-report review remain separate requirements.
+
+## Independent acceptance (integrator)
+
+Full-receipt independent review of `4e80947b` by the integrator's Claude API reviewer (read-only, `claude-opus-5-5`, effort high): **VERDICT PASS, no P0/P1**, 5 P2 recorded in the integrator FOLLOWUPS. Evidence: `output/delivery-report/independent-review-4e80947b.md`. The reviewer had no git access, so PR titles and CI run ids remain cited-but-unverified there; docs/delivery/DELIVERY-REPORT.md was independently reviewed in round 1.
