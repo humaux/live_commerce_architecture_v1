@@ -9,10 +9,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"livecommerce/internal/orderattempt"
 )
 
@@ -391,6 +393,10 @@ func TestOrderAttemptAbortWorkerNoEarlierLocksAndACL(t *testing.T) {
 	}
 	raw, err := oaAbortCall(ctx, tx, nil, nil, a.AttemptID, a.Generation, "PLAN_UNAVAILABLE")
 	if err != nil {
+		var native *pgconn.PgError
+		if errors.As(err, &native) {
+			t.Logf("worker abort native failure: SQLSTATE=%s where=%s", native.Code, native.Where)
+		}
 		t.Fatalf("worker NULL-store abort must not lock scope/principal/subject barriers: %v", err)
 	}
 	oaAbortReceipt(t, raw, a, "PLAN_UNAVAILABLE")

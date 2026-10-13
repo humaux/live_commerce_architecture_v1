@@ -228,12 +228,15 @@ BEGIN
  PERFORM checkout.order_attempt_assert_no_effects(p_attempt,p_generation);
  PERFORM claims.order_attempt_release_admission(p_attempt,p_generation);
  v_receipt:=jsonb_build_object('state','ABORTED','attempt_id',p_attempt,'intent_generation',p_generation,'code',p_code);
+ -- The witness is owned by the frozen metadata accessor, independently of the
+ -- terminal row's storage layout. Revalidate immediately before the sole write.
+ PERFORM ops.order_attempt_fence_context(p_attempt,p_generation);
  PERFORM set_config('app.tenant_id',ctx->>'tenant_id',true),set_config('app.store_id',ctx->>'store_id',true);
  UPDATE ops.order_attempts a SET state='ABORTED',receipt=v_receipt,settled_at=clock_timestamp(),
   plan_ciphertext=NULL,plan_key_version=NULL
   WHERE a.tenant_id=(ctx->>'tenant_id')::uuid AND a.store_id=(ctx->>'store_id')::uuid
    AND a.attempt_id=p_attempt AND a.intent_generation=p_generation
-   AND a.state='PENDING' AND a.admission_finished AND a.execution_xid=pg_current_xact_id();
+   AND a.state='PENDING' AND a.admission_finished;
  IF NOT FOUND THEN RAISE EXCEPTION 'attempt_not_fenced' USING ERRCODE='PT409'; END IF;
  -- The existing native terminal trigger drops every subject-index row in this Tx.
  PERFORM set_config('app.tenant_id',coalesce(prior_tenant,''),true),set_config('app.store_id',coalesce(prior_store,''),true);
