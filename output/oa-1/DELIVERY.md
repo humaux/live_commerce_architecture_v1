@@ -86,6 +86,12 @@ without local formatter execution. The evidence collector now records this
 status; actual structural/format gates still test the unchanged checkout.
 This run proves neither C2 behavior nor a product red/green.
 
+CI `38459352221` at `2e407f05d` is the replacement run for
+`focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry)` and
+`shard:unit`, including the actual signed-ingress READY executor case. Root
+monitors the unchanged 150-minute workflow bound and its logs/artifacts; result
+is pending. Startup key configuration FIRST tests are also on this head.
+
 The full C2 composite and terminal proof are in progress; notification helpers,
 Go executor, native expiry compatibility, worker/sweep and the complete matrix
 remain unverified. No OA-1 completion claim is made.
