@@ -8,6 +8,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"strings"
 	"testing"
@@ -17,6 +18,7 @@ import (
 
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/inbox"
+	socialmeta "livecommerce/internal/integrations/meta"
 	"livecommerce/internal/merchanttools"
 	"livecommerce/internal/msgtemplates"
 	"livecommerce/internal/platform"
@@ -74,7 +76,16 @@ func TestQueuedOrderLinkForBuyerResponseAfterReminder(t *testing.T) {
 	})
 	bridge := &lbEnv{mciEnv: &meta, svc: lb.svc, jobs: lb.jobs, g: lb.g}
 	psid := mciDigits(15)
-	conv := bridge.postDM(t, psid, "synthetic buyer asks for checkout", time.Now())
+	// Admit a real signed message, then resolve it in this trade store (lbEnv.postDM assumes the shared fixture store).
+	raw := []byte(fmt.Sprintf(`{"object":"page","entry":[{"id":%q,"time":123,"messaging":[{"sender":{"id":%q},"recipient":{"id":%q},"timestamp":%d,"message":{"mid":%q,"text":"synthetic buyer asks for checkout"}}]}]}`,
+		meta.pageAsset, psid, meta.pageAsset, time.Now().UnixMilli(), "m."+randomUUID()))
+	ev := mcPost(t, meta.page, meta.pageAsset, raw)
+	mcAwait(t, meta.page, ev)
+	var conv string
+	if err := e.p.f.owner.QueryRow(ctx, `SELECT id::text FROM social.conversations WHERE tenant_id=$1 AND store_id=$2 AND object='page' AND asset_id=$3 AND peer_key=$4`,
+		e.tenant(), e.store(), meta.pageAsset, socialmeta.SocialPeerKey(miApp, "page", meta.pageAsset, psid)).Scan(&conv); err != nil {
+		t.Fatal("conversation of the real signed message in the trade store", err)
+	}
 	claim := meta.planReply(t, false, psid, "A1+2")
 	if claim.bundleID == "" || claim.op != "" {
 		t.Fatal("signed comment must produce a bundle without planning a private reply")
@@ -105,7 +116,8 @@ func TestQueuedOrderLinkForBuyerResponseAfterReminder(t *testing.T) {
 			t.Fatal("read initial committed link hash", err)
 		}
 		reminded, err := reminders.Trigger(callCtx, e.token(), e.store(), lbKey(), meta.session, bundle)
-		bridge.crPark(t)
+		mustExec(t, e.p.f.owner, `UPDATE river.river_job SET queue='cr_hold' WHERE kind='external_operation_v1' AND state='available' AND queue='default'
+			AND args->>'operation_id' IN (SELECT id::text FROM integration.operations WHERE tenant_id=$1 AND store_id=$2 AND request->>'message_type'='checkout_reminder')`, e.tenant(), e.store())
 		if err != nil || reminded.Queued != 1 || reminded.Refused != 0 || reminded.AlreadyReminded != 0 || len(reminded.Results) != 1 || reminded.Results[0].BundleID != bundle || reminded.Results[0].Outcome != "queued" {
 			t.Fatalf("real competing reminder: queued=%d refused=%d already=%d rows=%d err=%v", reminded.Queued, reminded.Refused, reminded.AlreadyReminded, len(reminded.Results), err)
 		}
@@ -162,11 +174,11 @@ func TestQueuedOrderLinkForBuyerResponseAfterReminder(t *testing.T) {
 		if n := e.count(`SELECT count(*) FROM checkout.order_links WHERE order_id=$1 AND token_hash=$2 AND redeemed_at IS NOT NULL`, order, originalHash); n != 1 {
 			t.Error("competing reminder must have invalidated the original committed URL")
 		}
-		ops := bridge.crOps(t)
-		if len(ops) != 1 {
-			t.Fatalf("real checkout reminder operations=%d want=1", len(ops))
+		var op string
+		if err := e.p.f.owner.QueryRow(ctx, `SELECT id::text FROM integration.operations WHERE tenant_id=$1 AND store_id=$2
+			AND action='meta.dm_send' AND request->>'message_type'='checkout_reminder' AND request->>'session_id'=$3`, e.tenant(), e.store(), meta.session).Scan(&op); err != nil {
+			t.Fatal("real checkout reminder operation in the trade store", err)
 		}
-		op := ops[0]
 		if n := e.count(`SELECT count(*) FROM integration.operations o JOIN river.river_job j ON j.id=o.job_id
 			WHERE o.id=$1 AND o.state='READY' AND o.action='meta.dm_send' AND o.request->>'conversation_id'=$2
 			AND o.request->>'bundle_id'=$3 AND o.request->>'reminder_state'='awaiting_payment' AND j.state='available' AND j.queue='cr_hold'`, op, conv, bundle); n != 1 || bridge.secretCount(t, op) != 1 {
