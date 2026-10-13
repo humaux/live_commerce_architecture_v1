@@ -35,12 +35,18 @@ func oaEnabledProcessConversation(t *testing.T, e *lbuEnv) (miTest, string, stri
 	mustExec(t, m.f.owner, `INSERT INTO integration.meta_connections(tenant_id,store_id,page_id,page_name,fb_binding,scopes,status,connected_by,route_expires_at)
 	 VALUES($1,$2,$3,'synthetic OA process page',$4,ARRAY['pages_messaging'],'active',$5,clock_timestamp()+interval '1 day')`, e.tenant(), e.store(), asset, binding, e.p.f.principalA)
 	client, err := meta.NewConsumerClient(context.Background(), miPool(t, m.f, "commerce_meta_worker"), mcConsumer(t, m), mcKeys(t, m), 1)
-	if err != nil { t.Fatal("isolated signed-ingress consumer", err) }
-	if err = client.Start(context.Background()); err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal("isolated signed-ingress consumer", err)
+	}
+	if err = client.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
 	t.Cleanup(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 		defer cancel()
-		if err := client.StopAndCancel(ctx); err != nil { t.Errorf("signed-ingress consumer stop: %v", err) }
+		if err := client.StopAndCancel(ctx); err != nil {
+			t.Errorf("signed-ingress consumer stop: %v", err)
+		}
 	})
 	raw := []byte(fmt.Sprintf(`{"object":"page","entry":[{"id":%q,"messaging":[{"sender":{"id":%q},"recipient":{"id":%q},"timestamp":%d,"message":{"mid":%q,"text":"synthetic OA process inbound"}}]}]}`, asset, peer, asset, time.Now().UnixMilli(), "m."+randomUUID()))
 	mcAwait(t, m, mcPost(t, m, asset, raw))
@@ -55,12 +61,16 @@ func oaEnabledProcessWait(t *testing.T, e *lbuEnv, p *mrProcess, predicate strin
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	ticker := time.NewTicker(25*time.Millisecond)
+	ticker := time.NewTicker(25 * time.Millisecond)
 	defer ticker.Stop()
 	for {
 		var ready bool
-		if err := e.p.f.owner.QueryRow(ctx, predicate, args...).Scan(&ready); err != nil { t.Fatal("bounded native process observation", err) }
-		if ready { return }
+		if err := e.p.f.owner.QueryRow(ctx, predicate, args...).Scan(&ready); err != nil {
+			t.Fatal("bounded native process observation", err)
+		}
+		if ready {
+			return
+		}
 		select {
 		case err := <-p.done:
 			p.exited = true
@@ -102,14 +112,16 @@ func TestOrderAttemptWorkerEnabledProcessNativeReady(t *testing.T) {
 	defer server.Close()
 	w.env = append(w.env, "COMMERCE_META_GRAPH_BASE_URL="+server.URL)
 	private, err := ecdh.X25519().NewPrivateKey(randomBytes(32))
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	b64 := base64.StdEncoding.EncodeToString
 	planKey, payKey, payloadKey := b64(bytes.Repeat([]byte{7}, 32)), b64(bytes.Repeat([]byte{0x41}, 32)), b64(m.key)
 	custody := []string{
-		"LC_ORDER_ATTEMPT_PLAN_ACTIVE_KEY=fixture_v1", `LC_ORDER_ATTEMPT_PLAN_KEYS={"fixture_v1":"`+planKey+`"}`,
-		"LC_ORDER_ATTEMPT_PAY_ENTRY_ACTIVE_KEY=v1", `LC_ORDER_ATTEMPT_PAY_ENTRY_KEYS={"v1":"`+payKey+`"}`,
-		"COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID="+miKeyID, `COMMERCE_META_PAYLOAD_KEYS_JSON={"keys":[{"id":"`+miKeyID+`","key_base64":"`+payloadKey+`"}]}`,
-		"COMMERCE_META_PAGE_HPKE_ACTIVE_KEY_ID=oa-process-v1", `COMMERCE_META_PAGE_HPKE_PUBLIC_KEYS_JSON={"keys":[{"id":"oa-process-v1","public_key_base64":"`+b64(private.PublicKey().Bytes())+`"}]}`,
+		"LC_ORDER_ATTEMPT_PLAN_ACTIVE_KEY=fixture_v1", `LC_ORDER_ATTEMPT_PLAN_KEYS={"fixture_v1":"` + planKey + `"}`,
+		"LC_ORDER_ATTEMPT_PAY_ENTRY_ACTIVE_KEY=v1", `LC_ORDER_ATTEMPT_PAY_ENTRY_KEYS={"v1":"` + payKey + `"}`,
+		"COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID=" + miKeyID, `COMMERCE_META_PAYLOAD_KEYS_JSON={"keys":[{"id":"` + miKeyID + `","key_base64":"` + payloadKey + `"}]}`,
+		"COMMERCE_META_PAGE_HPKE_ACTIVE_KEY_ID=oa-process-v1", `COMMERCE_META_PAGE_HPKE_PUBLIC_KEYS_JSON={"keys":[{"id":"oa-process-v1","public_key_base64":"` + b64(private.PublicKey().Bytes()) + `"}]}`,
 	}
 	binary := mrBuild(t, "../../cmd/claims-worker", "oa-enabled-worker")
 	if !t.Run("disabled-keeps-default-lane-without-consuming-claims", func(t *testing.T) {
@@ -127,11 +139,15 @@ func TestOrderAttemptWorkerEnabledProcessNativeReady(t *testing.T) {
 		 AND j.kind='order_attempt_v1' AND j.queue='claims' AND j.state='available' AND j.attempt=0
 		 AND NOT EXISTS(SELECT 1 FROM river.river_job WHERE kind='order_attempt_sweep_v1')
 		 FROM ops.order_attempts a JOIN river.river_job j ON j.args->>'attempt_id'=a.attempt_id::text WHERE a.attempt_id=$1`, a.AttemptID).Scan(&untouched)
-		if err != nil || !untouched { t.Fatalf("disabled OA consumed claims or scheduled sweep: %v", err) }
+		if err != nil || !untouched {
+			t.Fatalf("disabled OA consumed claims or scheduled sweep: %v", err)
+		}
 		oaExecutorNoEffects(t, e, a)
 		mrStop(t, p, syscall.SIGTERM, true)
 		mrLogNoSecrets(t, p, planKey, payKey, payloadKey, w.jobDSNSecret)
-	}) { t.Fatal("disabled process positive prerequisite failed") }
+	}) {
+		t.Fatal("disabled process positive prerequisite failed")
+	}
 	// Pause the ordinary dispatch lane before starting the next process. River
 	// reads persisted pause state at startup; the claims producer stays enabled.
 	mustExec(t, e.p.f.owner, `UPDATE river.river_queue SET paused_at=clock_timestamp() WHERE name='default'`)
@@ -143,28 +159,47 @@ func TestOrderAttemptWorkerEnabledProcessNativeReady(t *testing.T) {
 		oaEnabledProcessWait(t, e, p, `SELECT EXISTS(SELECT 1 FROM river.river_job WHERE kind='order_attempt_sweep_v1' AND queue='claims' AND state='completed')`)
 		mrStop(t, p, syscall.SIGTERM, true)
 		mrLogNoSecrets(t, p, planKey, payKey, payloadKey, w.jobDSNSecret, "synthetic OA process inbound", "synthetic@example.invalid")
-	}) { t.Fatal("enabled native process did not complete") }
-	if requests.Load() != 0 { t.Fatal("local C2 acceptance made an HTTP dispatch request") }
+	}) {
+		t.Fatal("enabled native process did not complete")
+	}
+	if requests.Load() != 0 {
+		t.Fatal("local C2 acceptance made an HTTP dispatch request")
+	}
 	oaEnabledProcessReadyOracle(t, e, a, plan, conversation, binding)
 	t.Run("malformed-enabled-custody-fails-before-ready", func(t *testing.T) {
 		env := append(append([]string(nil), w.env...), "LC_ORDER_ATTEMPT_ENABLED=1")
 		for _, entry := range custody {
-			if strings.HasPrefix(entry, "LC_ORDER_ATTEMPT_PAY_ENTRY_KEYS=") { entry = "LC_ORDER_ATTEMPT_PAY_ENTRY_KEYS=synthetic-malformed-secret" }
+			if strings.HasPrefix(entry, "LC_ORDER_ATTEMPT_PAY_ENTRY_KEYS=") {
+				entry = "LC_ORDER_ATTEMPT_PAY_ENTRY_KEYS=synthetic-malformed-secret"
+			}
 			env = append(env, entry)
 		}
 		p := mrLaunch(t, binary, "oa-malformed-enabled", env)
 		mrFailsBeforeReady(t, p, "claims_worker_invalid_config", planKey, payKey, payloadKey, "synthetic-malformed-secret")
-		if strings.Contains(crReadLog(t, p), "claims_worker_ready") || strings.Contains(crReadLog(t, p), "claims_worker_routes") { t.Fatal("malformed OA custody crossed startup admission") }
+		if strings.Contains(crReadLog(t, p), "claims_worker_ready") || strings.Contains(crReadLog(t, p), "claims_worker_routes") {
+			t.Fatal("malformed OA custody crossed startup admission")
+		}
 	})
 }
 
 func oaEnabledProcessReadyOracle(t *testing.T, e *lbuEnv, a orderattempt.AdmissionReceipt, plan orderattempt.FrozenPlan, conversation, binding string) {
 	t.Helper()
 	var receipt []byte
-	if err := e.p.f.owner.QueryRow(context.Background(), `SELECT receipt FROM ops.order_attempts WHERE attempt_id=$1`, a.AttemptID).Scan(&receipt); err != nil { t.Fatal(err) }
+	if err := e.p.f.owner.QueryRow(context.Background(), `SELECT receipt FROM ops.order_attempts WHERE attempt_id=$1`, a.AttemptID).Scan(&receipt); err != nil {
+		t.Fatal(err)
+	}
 	oaExecutorReceipt(t, orderattempt.ExecutionReceipt{State: "COMMITTED", Receipt: receipt}, a, "COMMITTED", "")
-	var send struct { Send struct { State string `json:"state"`; Reason string `json:"reason"`; OperationID string `json:"operation_id"`; NotificationID string `json:"notification_id"` } `json:"send"` }
-	if json.Unmarshal(receipt, &send) != nil || send.Send.State != "queued" || send.Send.OperationID == "" || send.Send.NotificationID == "" { t.Fatalf("process receipt lost READY notification identities: state=%s reason=%s operation=%t notification=%t", send.Send.State, send.Send.Reason, send.Send.OperationID!="", send.Send.NotificationID!="") }
+	var send struct {
+		Send struct {
+			State          string `json:"state"`
+			Reason         string `json:"reason"`
+			OperationID    string `json:"operation_id"`
+			NotificationID string `json:"notification_id"`
+		} `json:"send"`
+	}
+	if json.Unmarshal(receipt, &send) != nil || send.Send.State != "queued" || send.Send.OperationID == "" || send.Send.NotificationID == "" {
+		t.Fatalf("process receipt lost READY notification identities: state=%s reason=%s operation=%t notification=%t", send.Send.State, send.Send.Reason, send.Send.OperationID != "", send.Send.NotificationID != "")
+	}
 	var exact bool
 	err := e.p.f.owner.QueryRow(context.Background(), `SELECT a.state='COMMITTED' AND a.order_id=a.attempt_id
 	 AND a.plan_ciphertext IS NULL AND a.plan_key_version IS NULL AND a.settled_at IS NOT NULL
@@ -189,7 +224,9 @@ func oaEnabledProcessReadyOracle(t *testing.T, e *lbuEnv, a orderattempt.Admissi
 	 JOIN inbox.order_payment_notifications n ON n.create_attempt_id=a.attempt_id JOIN integration.operations x ON x.id=n.operation_id
 	 JOIN river.river_job j ON j.id=x.job_id JOIN inbox.outbound_messages b ON b.id=n.outbound_id JOIN inbox.send_secrets s ON s.operation_id=x.id
 	 WHERE a.attempt_id=$1`, a.AttemptID, plan.Calculation.TotalMinor, send.Send.NotificationID, send.Send.OperationID, conversation, binding).Scan(&exact)
-	if err != nil || !exact { t.Fatalf("packaged worker full native READY write set: %v", err) }
+	if err != nil || !exact {
+		t.Fatalf("packaged worker full native READY write set: %v", err)
+	}
 	var counts bool
 	err = e.p.f.owner.QueryRow(context.Background(), `SELECT
 	 (SELECT count(*)=1 FROM checkout.orders WHERE create_attempt_id=$1) AND (SELECT count(*)=1 FROM storefront.carts WHERE create_attempt_id=$1)
@@ -204,7 +241,9 @@ func oaEnabledProcessReadyOracle(t *testing.T, e *lbuEnv, a orderattempt.Admissi
 	 AND (SELECT sum(delta_reserved)=5 FROM inventory.ledger WHERE create_attempt_id=$1 AND sku_id=$2 AND actor_kind='ORDER_ATTEMPT')
 	 AND (SELECT count(*)=1 FROM ops.audit_events WHERE tenant_id=$3 AND store_id=$4 AND principal_id=$5 AND action='order.manual_created'
 	 AND details=jsonb_build_object('attempt_id',$1::text,'order_id',$1::text,'intent_generation',$6::bigint))`, a.AttemptID, e.money, e.tenant(), e.store(), e.p.f.principalA, a.Generation).Scan(&counts)
-	if err != nil || !counts { t.Fatalf("packaged worker exact effect counts and stock conservation: %v", err) }
+	if err != nil || !counts {
+		t.Fatalf("packaged worker exact effect counts and stock conservation: %v", err)
+	}
 	var material orderattempt.PayEntryMaterial
 	var digest []byte
 	if err = e.p.f.owner.QueryRow(context.Background(), `SELECT key_version,token_hash,credential_ciphertext FROM checkout.order_pay_entries WHERE order_id=$1`, a.AttemptID).Scan(&material.KeyVersion, &digest, &material.Ciphertext); err != nil || len(digest) != len(material.Digest) {
@@ -212,6 +251,10 @@ func oaEnabledProcessReadyOracle(t *testing.T, e *lbuEnv, a orderattempt.Admissi
 	}
 	copy(material.Digest[:], digest)
 	credential, err := payEntryTestKeys(t).Open(orderattempt.PayEntryBinding{TenantID: e.tenant(), StoreID: e.store(), OrderID: a.AttemptID, Version: 1}, material)
-	if err != nil || len(credential) != 43 { t.Fatal("process did not encrypt its reusable entry with configured pay keys") }
-	if bytes.Contains(receipt, []byte(credential)) { t.Fatal("terminal process receipt exposed the pay credential") }
+	if err != nil || len(credential) != 43 {
+		t.Fatal("process did not encrypt its reusable entry with configured pay keys")
+	}
+	if bytes.Contains(receipt, []byte(credential)) {
+		t.Fatal("terminal process receipt exposed the pay credential")
+	}
 }

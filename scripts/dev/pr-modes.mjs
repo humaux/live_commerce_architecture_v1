@@ -160,6 +160,7 @@ export const BACKEND_ONLY_PACKAGES = {
  * redundant with this rule).
  */
 export const SHARED_BACKEND_PACKAGES = {
+  "internal/orderattempt": "shared C1/C2 money-path executor for inline and claims-worker lanes; native cancellation, expiry and erasure share its SQL authority. Deliberately retain every Go-seeded browser mode during staged OA-1/OA-3 cutover rather than infer safety from the currently disabled public admission path",
   "internal/platform": "runtime configuration/service container every browser harness and cmd binary constructs (evidence: 45/48 Go-seeded modes)",
   "internal/httpapi/handler.go": "mux/service construction, shared request/scope/body handling and response/error mapping used across all route families; also registers the catalog product-write routes (handler.go:148-172), so even a catalog-scoped edit selects every Go-booting mode — deliberate over-selection (K3 round-4 review P2; safe direction, a future file split could narrow it)",
   "internal/httpapi/handler_test.go": "tests the shared handler composition and transport boundary, not one domain route",
