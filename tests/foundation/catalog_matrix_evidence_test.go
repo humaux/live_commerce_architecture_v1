@@ -555,7 +555,7 @@ func TestProductEditorMatrixLedgerEvidenceSharedSources(t *testing.T) {
 // Removing a file and its mutable index entry together must not erase history.
 func productEditorMatrixEvidenceMembershipControls(t *testing.T) {
 	t.Helper()
-	for _, name := range []string{"test-node.json", "browser/retained/test-node.source.txt"} {
+	for _, name := range []string{"test-node.json", "frozen/tests/admin/product-editor-matrix-ledger.ts.source.txt"} {
 		for _, changed := range []bool{false, true} {
 			t.Run(fmt.Sprintf("membership-deleted-%s-drift-%t", name, changed), func(t *testing.T) {
 				root, canonical := productEditorMatrixEvidenceFixture(t)
@@ -579,6 +579,56 @@ func productEditorMatrixEvidenceMembershipControls(t *testing.T) {
 				}
 			})
 		}
+	}
+	for _, name := range []string{"test-node.json", "frozen/tests/admin/product-editor-matrix-ledger.ts.source.txt"} {
+		t.Run("membership-all-rehashed-deleted-"+name, func(t *testing.T) {
+			root, canonical := productEditorMatrixEvidenceFixture(t)
+			evidence := filepath.Dir(canonical)
+			path := evidence + "/" + name
+			if err := os.Remove(filepath.Join(root, path)); err != nil {
+				t.Fatal(err)
+			}
+			indexPath := evidence + "/ARTIFACTS.json"
+			index := productEditorMatrixJSONFixture(t, root, indexPath)
+			delete(index["artifacts_sha256"].(map[string]any), path)
+			data, _ := json.Marshal(index)
+			productEditorMatrixWriteFixture(t, root, indexPath, data)
+			membershipPath := evidence + "/FROZEN-MEMBERSHIP.json"
+			membership := productEditorMatrixJSONFixture(t, root, membershipPath)
+			members := []any{}
+			for _, member := range membership["package_members"].([]any) {
+				if member != name {
+					members = append(members, member)
+				}
+			}
+			membership["package_members"] = members
+			data, _ = json.Marshal(membership)
+			productEditorMatrixRehashFixture(t, root, canonical, membershipPath, data)
+			recordPath := evidence + "/FROZEN-IDENTITIES.json"
+			record := productEditorMatrixJSONFixture(t, root, recordPath)
+			record["package_membership_sha256"] = fmt.Sprintf("%x", sha256.Sum256(data))
+			// Remove auxiliary snapshot references too; stale metadata must not
+			// be the reason a fully coordinated historical corruption fails.
+			if strings.HasPrefix(name, "frozen/") {
+				for _, field := range []string{"source_snapshots", "source_files_sha256", "git_blob_ids"} {
+					delete(record[field].(map[string]any), "tests/admin/product-editor-matrix-ledger.ts")
+				}
+			}
+			data, _ = json.Marshal(record)
+			productEditorMatrixRehashFixture(t, root, canonical, recordPath, data)
+			for _, bound := range []string{canonical + "/browser-evidence.json", evidence + "/SOURCE.json"} {
+				value := productEditorMatrixJSONFixture(t, root, bound)
+				value["frozen_identity_record_sha256"] = fmt.Sprintf("%x", sha256.Sum256(data))
+				bytes, _ := json.Marshal(value)
+				productEditorMatrixRehashFixture(t, root, canonical, bound, bytes)
+			}
+			gate := "tests/foundation/catalog_matrix_ledger_test.go"
+			productEditorMatrixWriteFixture(t, root, gate, append(productEditorMatrixReadFixture(t, root, gate), '\n'))
+			var drift productEditorMatrixEvidenceDrift
+			if err := validateProductEditorMatrixEvidence(root); err == nil || errors.As(err, &drift) {
+				t.Fatalf("fully rehashed membership omission must fail before drift: %v", err)
+			}
+		})
 	}
 }
 
@@ -645,6 +695,19 @@ func productEditorMatrixEvidenceFixture(t *testing.T) (string, string) {
 	ledgerData, _ := json.Marshal(rows)
 	manifest["ledger"] = map[string]any{"raw_rows": len(rows), "required_unique_PASS": len(rows), "per_locale": perLocale, "width": 390}
 	artifacts := map[string]string{}
+	// Copy the entire original package before MODEL_ONLY semantic rebinding.
+	// Its complete names stay subject to the same independent oracle as delivery.
+	originalEvidence := "output/matrix-ledger-enforce/" + string(dir[1])
+	originalIndex := productEditorMatrixJSONFixture(t, "../..", originalEvidence+"/ARTIFACTS.json")
+	for path := range originalIndex["artifacts_sha256"].(map[string]any) {
+		if strings.HasSuffix(path, "/FROZEN-MEMBERSHIP.json") {
+			continue
+		}
+		data := productEditorMatrixReadFixture(t, "../..", path)
+		copyPath := filepath.Dir(canonical) + strings.TrimPrefix(path, originalEvidence)
+		write(copyPath, data)
+		artifacts[copyPath] = hash(data)
+	}
 	copies := []map[string]string{}
 	for _, entry := range manifest["copied_native_bytes"].([]any) {
 		old := entry.(map[string]any)
@@ -659,12 +722,6 @@ func productEditorMatrixEvidenceFixture(t *testing.T) (string, string) {
 		copies = append(copies, map[string]string{"canonical": path, "source_native": "fixture-only/" + name, "sha256": hash(data)})
 	}
 	manifest["copied_native_bytes"] = copies
-	// Extra retained receipts model package membership without creating run evidence.
-	retained := productEditorMatrixReadFixture(t, "../..", "output/matrix-ledger-enforce/"+string(dir[1])+"/test-node.json")
-	for _, path := range []string{filepath.Dir(canonical) + "/test-node.json", canonical + "/retained/test-node.source.txt"} {
-		write(path, retained)
-		artifacts[path] = hash(retained)
-	}
 	// MODEL_ONLY frozen metadata and source snapshots rebind the copied fixture,
 	// never native delivered evidence. Its case source remains the sole table.
 	frozen := productEditorMatrixJSONFixture(t, "../..", "output/matrix-ledger-enforce/"+string(dir[1])+"/FROZEN-IDENTITIES.json")
@@ -675,7 +732,7 @@ func productEditorMatrixEvidenceFixture(t *testing.T) (string, string) {
 	for path := range frozen["source_snapshots"].(map[string]any) {
 		data := productEditorMatrixReadFixture(t, "../..", path)
 		write(path, data)
-		snapshot := filepath.Dir(canonical) + "/frozen/" + path + ".source.txt"
+		snapshot := filepath.Dir(canonical) + strings.TrimPrefix(frozen["source_snapshots"].(map[string]any)[path].(string), originalEvidence)
 		write(snapshot, data)
 		snapshots[path], frozenHashes[path], artifacts[snapshot], blobs[path] = snapshot, hash(data), hash(data), productEditorMatrixGitBlob(data)
 	}
@@ -684,7 +741,7 @@ func productEditorMatrixEvidenceFixture(t *testing.T) (string, string) {
 	// written below. Names only avoid a circular dependency on their digests.
 	evidence := filepath.Dir(canonical)
 	membershipPath := evidence + "/FROZEN-MEMBERSHIP.json"
-	members := []string{"FROZEN-MEMBERSHIP.json", "FROZEN-IDENTITIES.json", "SOURCE.json", "browser/browser-evidence.json", "browser-product-editor.json"}
+	members := []string{"FROZEN-MEMBERSHIP.json"}
 	for path := range artifacts {
 		members = append(members, strings.TrimPrefix(path, evidence+"/"))
 	}

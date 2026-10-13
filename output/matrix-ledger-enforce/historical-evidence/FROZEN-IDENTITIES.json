@@ -79,5 +79,6 @@
       "tests/admin/catalog-core.spec.ts › CC12 desktop en › catalog v2: draft product, 2x3 matrix, prices, compare-at, stock, photo, collection, activate, shopper view, archive a variant, deactivate (desktop, en)",
       "tests/admin/catalog-core.spec.ts › CC12 mobile zh-TW › catalog v2: draft product, 2x3 matrix, prices, compare-at, stock, photo, collection, activate, shopper view, archive a variant, deactivate (mobile, zh-TW)"
     ]
-  }
+  },
+  "package_membership_sha256": "ca4468a7cb5559fded29d22044d28d2215cedd3acd7ac2e9bb9a3d692244ccf2"
 }

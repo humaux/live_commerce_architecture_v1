@@ -152,5 +152,86 @@
     "provenance": "Owner-supplied trusted observation of thread metadata; local session files not independently read by this repair",
     "original_root_model": "UNKNOWN",
     "original_root_reasoning": "UNKNOWN"
+  },
+  "three_integrity_p2_followup": {
+    "base_commit": "a881f08c",
+    "test_first_commit": "fd4e0fb5",
+    "review_comment_ids": [
+      4257302531,
+      4257351932,
+      4257351947
+    ],
+    "evidence_level": "E1 static only; CI NOT_RUN",
+    "current_source_sha256": {
+      "tests/foundation/catalog_matrix_ledger_test.go": "734669425ba17025fef5137dd912252b2956e2b7d4c4dd42c46ae75e9b79c238",
+      "tests/foundation/catalog_matrix_evidence_test.go": "19ad74366c4ceda19d233d40d2a3a66874425a8b4f8850702ddf44cdbf76aeb0"
+    },
+    "package_membership_sha256": "ca4468a7cb5559fded29d22044d28d2215cedd3acd7ac2e9bb9a3d692244ccf2",
+    "frozen_identity_record_sha256": "f1a92950a92fd854f18e05ea9b3119e88a40977d52cdbd602c569da9289f2c95",
+    "package_member_count": 54,
+    "native_bytes": "Unchanged. Only new names-only membership and hash-bound metadata pointers/index edited.",
+    "producer_scope": "Exact tested producer keyset parsed from frozen Go declaration; current drift remains SOURCE fourteen producers only.",
+    "title_oracle": "Independent original 12+2 identities from actual tested declarations/domains corroborated by unchanged native logs; fixed four consumer SHA-256s fail closed for other versions. Current identity function never supplies history.",
+    "negative_controls": [
+      "RunReceipt/old-producer-omitted-everywhere",
+      "SharedSources/membership-deleted-test-node.json-drift-false",
+      "SharedSources/membership-deleted-test-node.json-drift-true",
+      "SharedSources/membership-deleted-frozen/tests/admin/product-editor-matrix-ledger.ts.source.txt-drift-false",
+      "SharedSources/membership-deleted-frozen/tests/admin/product-editor-matrix-ledger.ts.source.txt-drift-true",
+      "RunIdentity/frozen-title-editor-rehashed",
+      "RunIdentity/frozen-title-review-rehashed",
+      "RunIdentity/frozen-title-feedback-rehashed",
+      "RunIdentity/frozen-title-cc12-rehashed",
+      "SharedSources/membership-all-rehashed-deleted-test-node.json",
+      "SharedSources/membership-all-rehashed-deleted-frozen/tests/admin/product-editor-matrix-ledger.ts.source.txt"
+    ],
+    "commands": [
+      {
+        "command": "python3 static source/metadata file edits and SHA-256 reads",
+        "exit_code": 0
+      },
+      {
+        "command": "git add tests/foundation/catalog_matrix_evidence_test.go",
+        "exit_code": 0
+      },
+      {
+        "command": "git commit test-first fd4e0fb5",
+        "exit_code": 0
+      },
+      {
+        "command": "python3 static edit failed exact-string lookup twice; no tests invoked",
+        "exit_code": 1
+      },
+      {
+        "command": "python3 corrected static file edits and metadata/hash reads",
+        "exit_code": 0
+      },
+      {
+        "command": "git add and git commit test-only 36cad088 / 910cec2c",
+        "exit_code": 0
+      }
+    ],
+    "not_run": [
+      "local go test",
+      "local formatter",
+      "local check-gates",
+      "all runtime/browser/PG"
+    ],
+    "pending": "Root CI GREEN/gofmt preview if necessary and independent review. Implementation E1 static only.",
+    "test_only_commits": [
+      "fd4e0fb5",
+      "36cad088",
+      "910cec2c"
+    ],
+    "behavior_red": {
+      "run_id": 38389630299,
+      "tested_commit": "910cec2c",
+      "raw_log": "output/matrix-coverage-v2-evidence/ci-red-38389630299.log.gz",
+      "raw_log_sha256": "7211980292646e3b55a1711fa02c33660569f805c581c5d47a947739e4be5822",
+      "observation": "Read retained official GitHub raw log: RunReceipt, SharedSources, RunIdentity top-level failures and four coordinated frozen-title rehash controls accepted historical marker. Earlier38388946999 compile-only RED is not behavioral proof."
+    },
+    "independent_package_member_names_sha256": "ec82c6dcbd9f3804791239c358cac0e592c6d9d9bee1b2515d35c40478a8fdff",
+    "package_membership_authority": "Independent compiled sorted relative-name digest plus separate hash-bound names-only receipt; defeats coordinated deletion and rehash of membership/FROZEN/SOURCE/manifest/index. MODEL_ONLY fixtures copy full original canonical package before rebinding, with no trust bypass.",
+    "known_limit": "Original membership and four consumer versions are independently pinned; different frozen package/consumer version requires a reviewed oracle update, fails closed until then."
   }
 }
