@@ -89,7 +89,7 @@ func TestOrderAttemptWorkerRealConsumerRacesInline(t *testing.T) {
 	oaSweepJobState(t, e, job, "available")
 	workerPID := oaRaceFencePID(t, e, ctx, holder, workerLogin)
 	var running bool
-	if err = e.p.f.owner.QueryRow(ctx, `SELECT state='running' AND attempt=1 AND cardinality(errors)=0
+	if err = e.p.f.owner.QueryRow(ctx, `SELECT state='running' AND attempt=1 AND coalesce(cardinality(errors),0)=0
 	 AND kind='order_attempt_v1' AND queue='claims' AND priority=1
 	 AND args=jsonb_build_object('attempt_id',$2::text,'intent_generation',$3::bigint)
 	 FROM river.river_job WHERE id=$1`, job, a.AttemptID, a.Generation).Scan(&running); err != nil || !running {
@@ -136,7 +136,7 @@ func TestOrderAttemptWorkerRealConsumerRacesInline(t *testing.T) {
 	oaSweepAwait(t, ctx, func() bool {
 		var complete bool
 		if err := e.p.f.owner.QueryRow(ctx, `SELECT state='completed' AND attempt=1
-		 AND cardinality(errors)=0 FROM river.river_job WHERE id=$1`, job).Scan(&complete); err != nil {
+		 AND coalesce(cardinality(errors),0)=0 FROM river.river_job WHERE id=$1`, job).Scan(&complete); err != nil {
 			t.Fatal(err)
 		}
 		return complete
