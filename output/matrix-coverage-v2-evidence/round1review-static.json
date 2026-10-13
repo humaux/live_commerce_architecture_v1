@@ -233,5 +233,17 @@
     "independent_package_member_names_sha256": "ec82c6dcbd9f3804791239c358cac0e592c6d9d9bee1b2515d35c40478a8fdff",
     "package_membership_authority": "Independent compiled sorted relative-name digest plus separate hash-bound names-only receipt; defeats coordinated deletion and rehash of membership/FROZEN/SOURCE/manifest/index. MODEL_ONLY fixtures copy full original canonical package before rebinding, with no trust bypass.",
     "known_limit": "Original membership and four consumer versions are independently pinned; different frozen package/consumer version requires a reviewed oracle update, fails closed until then."
+  },
+  "ci_format_38390303629": {
+    "ci_run_id": 38390303629,
+    "artifact_id": 11808197289,
+    "source_commit": "843d9d2e1587bdca89f0c97e6c2d12eb9860890b",
+    "raw_patch_sha256": "72ec1de95c707d2e917d8d10d169bd2c799b1884db8ac53a423d77dcd4c729b2",
+    "raw_bytes": 2949,
+    "apply_patch_sha256": "487b8bbdc573dae582b8d81c431837487edaa53324cd4478e1ecdd798ff255b9",
+    "header_change_only": "remove .orig from old-path header",
+    "git_apply_exit": 0,
+    "local_formatter": "NOT_RUN",
+    "ledger_source_sha256": "f03c5a72017e8e4e4534ae5f52bd9a20cad826d534a51b8484b97ce1b30f070d"
   }
 }
