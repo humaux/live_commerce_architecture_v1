@@ -47,3 +47,11 @@ Final source hashes: implementation `b39b4377c1f1e9592ab351cfc500279f8eec2482f38
 - `git diff --check` → exit 0. Full `bash scripts/dev/test-node.sh` and `bash scripts/dev/check-gates.sh` → NOT_RUN for this follow-up (HOLD pending root's serialized slot). Browser, REAL_PG, provider SANDBOX/LIVE and CI → NOT_RUN.
 - Current source SHA256: implementation `754d0855c6dd1bd35022e797059f2f714e3cd3e2a37ff24df66efdfaaff4cd70`; tests `869cf7173ce8b1615391eb03053b4843eda69e65e30ac148ba60b3b74a0cfa93`.
 - Parent task: `f597a8bc-ce29-4b68-ab31-815dd5a319cb`; current base at follow-up start: `8040c36605666a283a7eb048f9f99794b40a27e2`; commit for these changes: pending.
+
+## Independent review follow-up (base b7a228829c32fdba05d0ac692c4a65ce4f092e66)
+
+- Added red coverage for a quoted workflow scalar containing multiple GOFLAGS (`"-count=1 -run=^$"`) and expression-valued `continue-on-error: ${{ true }}` at job and runner-step scope. Literal `false` remains accepted.
+- `node --test tests/ci/product-editor-matrix-execution.test.mjs` on the unfixed parser → exit 1, 140 tests: pass 136, fail 4; see `review-round-red.log`.
+- Same focused command after fix → exit 0, 143 tests: pass 143, fail 0; see `review-round-green.log`. `git diff --check` → exit 0.
+- Frozen source SHA256 before serialized full gates: implementation `03726d87ea9610b73931586f87928fcdea76d672adce5d29b0556719ce4e2f0e`; tests `9eab9ab6f9da74e8949c51655ee1933e73ebb88c1a54ff527bb4304c3244620f`.
+- `bash scripts/dev/test-node.sh` and `bash scripts/dev/check-gates.sh` are queued serially on this unchanged source. Their raw logs, JSON summaries, exit codes, and before/after hashes will be added here. Browser, REAL_PG, provider SANDBOX/LIVE and CI remain NOT_RUN.

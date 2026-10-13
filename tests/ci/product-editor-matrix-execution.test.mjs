@@ -107,6 +107,10 @@ test("foundation workflow rejects a Go selector in its literal GOFLAGS environme
   const foundationWorkflow = source.foundationWorkflow.replace("      GOFLAGS: -mod=readonly", "      GOFLAGS: '-test.run=^$'");
   assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("GOFLAGS")));
 });
+test("foundation workflow tokenizes quoted GOFLAGS values containing multiple flags", () => {
+  const foundationWorkflow = source.foundationWorkflow.replace("      GOFLAGS: -mod=readonly", '      GOFLAGS: "-count=1 -run=^$"');
+  assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("GOFLAGS")));
+});
 test("Node matrix command cannot hide failures with a trailing shell OR", () => {
   const node = source.node.replace(nodeCommand, () => `${nodeCommand} || true`);
   assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("missing")));
@@ -142,6 +146,15 @@ for (const runner of ["test-node", "test-local"]) {
     const foundationWorkflow = source.foundationWorkflow.replace(line, () => `        continue-on-error: true\n${line}`);
     assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("foundation.yml")));
   });
+  test(`foundation workflow refuses expression continue-on-error for ${runner}`, () => {
+    const expression = "${{ true }}";
+    const foundationWorkflow = source.foundationWorkflow.replace(line, () => `        continue-on-error: ${expression}\n${line}`);
+    assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("foundation.yml")));
+  });
+  test(`foundation workflow accepts literal false continue-on-error for ${runner}`, () => {
+    const foundationWorkflow = source.foundationWorkflow.replace(line, () => `        continue-on-error: false\n${line}`);
+    assert.deepEqual(matrixExecutionIssues({ ...source, foundationWorkflow }), []);
+  });
 }
 test("foundation job disabled despite both runner filenames retained", () => {
   const foundationWorkflow = source.foundationWorkflow.replace("  foundation:\n", "  foundation:\n    if: false\n");
@@ -150,6 +163,15 @@ test("foundation job disabled despite both runner filenames retained", () => {
 test("foundation job cannot mark runner failures continue-on-error", () => {
   const foundationWorkflow = source.foundationWorkflow.replace("    runs-on: ubuntu-24.04\n", "    runs-on: ubuntu-24.04\n    continue-on-error: true\n");
   assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("foundation.yml")));
+});
+test("foundation job refuses expression continue-on-error", () => {
+  const expression = "${{ true }}";
+  const foundationWorkflow = source.foundationWorkflow.replace("    runs-on: ubuntu-24.04\n", `    runs-on: ubuntu-24.04\n    continue-on-error: ${expression}\n`);
+  assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("foundation.yml")));
+});
+test("foundation job accepts literal false continue-on-error", () => {
+  const foundationWorkflow = source.foundationWorkflow.replace("    runs-on: ubuntu-24.04\n", "    runs-on: ubuntu-24.04\n    continue-on-error: false\n");
+  assert.deepEqual(matrixExecutionIssues({ ...source, foundationWorkflow }), []);
 });
 
 test("foundation job condition after steps still disables the runners", () => {

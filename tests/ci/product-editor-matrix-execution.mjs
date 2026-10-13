@@ -44,11 +44,23 @@ function hasGoSelectionFlags(args) {
   return args.some((arg) => goSelectionFlags.has(arg.split("=", 1)[0]));
 }
 
+function literalGoFlags(value) {
+  const scalar = commandArgv(value);
+  if (scalar === null) return null;
+  const flags = [];
+  for (const part of scalar) {
+    const words = commandArgv(part);
+    if (words === null) return null;
+    flags.push(...words);
+  }
+  return flags;
+}
+
 function hasSelectingGoFlags(argv) {
   return argv.some((arg) => {
     const match = /^GOFLAGS=(.*)$/.exec(arg);
     if (!match) return false;
-    const flags = commandArgv(match[1]);
+    const flags = literalGoFlags(match[1]);
     return flags === null || hasGoSelectionFlags(flags);
   });
 }
@@ -57,7 +69,7 @@ function workflowHasSelectingGoFlags(text) {
   return text.split(/\r?\n/).some((line) => {
     const match = /^\s+GOFLAGS:\s*(.*?)\s*(?:#.*)?$/.exec(line);
     if (!match) return false;
-    const flags = commandArgv(match[1]);
+    const flags = literalGoFlags(match[1]);
     return flags === null || hasGoSelectionFlags(flags);
   });
 }
@@ -71,7 +83,8 @@ function foundationRunnerBound(text, runner, condition = null) {
   const blocks = [...jobs[1].matchAll(/^  foundation:\s*\n([\s\S]*?)(?=^  [^ #\n]|^\S|(?![\s\S]))/gm)];
   if (blocks.length !== 1) return false;
   const job = blocks[0][1];
-  if (/^\s+continue-on-error:\s*(?:true|yes|on)\s*(?:#.*)?$/im.test(job)) return false;
+  const continueOnError = [...job.matchAll(/^[ \t]+continue-on-error:[ \t]*(.*?)[ \t]*(?:#.*)?$/gim)];
+  if (continueOnError.some(([, value]) => value !== "false")) return false;
   const steps = job.split(/^    steps:\s*$/m);
   if (steps.length !== 2 || /^    if:/m.test(job)) return false;
   return steps[1].split(/^      - /m).slice(1).some((step) => {
