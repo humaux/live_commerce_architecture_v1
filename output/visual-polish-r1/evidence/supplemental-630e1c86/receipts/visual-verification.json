@@ -1,0 +1,15 @@
+{
+  "visual_path": "output/playwright/run.rtxlAF0q/ui-visual-audit/20261012T175953Z",
+  "primary": 348,
+  "expected": 348,
+  "not_run": 0,
+  "blocking": 0,
+  "verdict": {
+    "exit": 0,
+    "reasons": []
+  },
+  "supplemental_1440": 12,
+  "supplemental_files_hashes_verified": true,
+  "source_unchanged": true,
+  "shots_png": 540
+}

@@ -1,0 +1,24 @@
+{
+  "sha": "630e1c867e263c56b03f37ff1def3d918921d96c",
+  "remote_sha": "630e1c867e263c56b03f37ff1def3d918921d96c",
+  "pr_head_sha": "630e1c867e263c56b03f37ff1def3d918921d96c",
+  "thread": 4250866065,
+  "thread_resolved": false,
+  "reply_url": "https://github.com/humaux/live_commerce_architecture_v1/pull/43#discussion_r4251083604",
+  "exits": {
+    "final-fetch": 0,
+    "final-merge": 0,
+    "commit": 0,
+    "push": 0,
+    "remote-verify": 0,
+    "reply": 0,
+    "thread-state": 0,
+    "node-green-final": 0,
+    "test-node": 0,
+    "check-gates": 0,
+    "typecheck": 0,
+    "browser-visual-lint": 0
+  },
+  "evidence_level": "E3 local BROWSER+REAL_PG MOCK",
+  "raw_evidence_intentionally_untracked": true
+}

@@ -1,9 +1,12 @@
+// Purpose: collect primary page screenshots, supplementary native inner-scroll evidence, and existing visual lint results.
+// Depends on: the seeded click-sweep stack, Playwright, visual-lint-lib and visual-scroll-capture.
+// Used by: --browser-visual-lint; keeps the route matrix and lint thresholds unchanged.
 // G-UI9 visual audit runner (unit ui-visual-audit, owner 2026-10-05). Started by tests/ui/click-sweep.mjs when LC_SWEEP_ONLY=visual-audit, i.e. by
 // `bash scripts/dev/test-local.sh --browser-visual-lint`, on the SAME seeded stack as the G-UI8 click sweep (isolated PG, real Go API, production admin and
 // storefront Next builds, signed MOCK IdP; tests/foundation/browser_click_sweep_test.go seeds it). This process never sees a database credential.
 //
 //   1. screenshot corpus: every admin registry route, every buyer storefront route and the five public platform-site pages, at 1586x992 and 390x844 in
-//      zh-TW, zh-CN and en, full page, after the page settled (network + DOM quiet, fonts, lazy images); plus the primary form pages in their
+//      zh-TW, zh-CN and en, full document page, after settling; product editors also retain inner-scroll frames covering their full pane; plus form pages in their
 //      "create new" state and the signed-out admin landing. A missing shot is a failure, never a silent skip.
 //   2. layout lint: tests/ui/visual-lint-lib.mjs measures every page in place (getBoundingClientRect / getComputedStyle, read-only) before it is shot.
 // Output: <run root>/ui-visual-audit/<UTC>/{shots,crops,index.json,lint.json,lint.md}; its parent LATEST names the directory. Exit 1 on any blocking
@@ -27,6 +30,7 @@ import { launch } from "../storefront/browser-engine.mjs";
 import { routes as adminRoutes } from "../../apps/admin/src/routes.ts";
 import { fixture as platformFixture } from "../admin/shell-fixture.mjs";
 import { INIT_SCRIPT, degradedMessages, monitor, settle } from "./click-sweep-lib.mjs";
+import { captureInnerScrollFrames, supplementalViewportFor, foldSupplementalCapture } from "./visual-scroll-capture.mjs";
 import { VISUAL_LOCALES, VISUAL_VIEWPORTS, assignShards, parseShard, routeId, shardReport } from "./sweep-shard-lib.mjs";
 import { BLOCKING, BLOCKING_KINDS, RULES, SCROLL_POSITIONS, T, collect, countByRule, describe, evaluate, r10Occlusion, scrollToFraction, selectRecords } from "./visual-lint-lib.mjs";
 
@@ -202,7 +206,7 @@ export async function main() {
     await page.evaluate(() => document.querySelectorAll("[data-va-outline]").forEach((n) => n.remove())).catch(() => {});
     return path.relative(out, file);
   }
-  async function capture({ page, mon }, unit) {
+  async function capture({ page, mon }, unit, captures = results) {
     const rec = { app: unit.app, route: unit.route, id: unit.id, state: unit.state, locale: unit.locale, viewport: unit.v.name, size: sizeOf(unit.v), url: "", file: "", sha256: "", bytes: 0, status: 0, ok: false, issues: [] };
     const file = path.join(out, "shots", unit.app, unit.id, `${unit.locale}-${sizeOf(unit.v)}.png`);
     const started = Date.now();
@@ -226,9 +230,9 @@ export async function main() {
         if (!onOwnHost || /external request blocked|blocked external/i.test(body) || body.trim().length < 20) {
           rec.notRun = `NOT_RUN: this route hands the browser to ${unit.expectExternal} and the harness could not keep the page's own document on screen (url ${onOwnHost ? "unchanged" : "left the stack"}, body: ${JSON.stringify(body.trim().slice(0, 80))})`;
           rec.issues.push(rec.notRun);
-          results.push({ ...rec, ms: Date.now() - started, counts: {}, groups: {}, blocking: 0, blockingCounts: {}, violations: [], notRun: true });
+          captures.push({ ...rec, ms: Date.now() - started, counts: {}, groups: {}, blocking: 0, blockingCounts: {}, violations: [], notRun: true });
           log(`${unit.app} ${unit.id} ${unit.locale}/${unit.v.name} ${rec.notRun}`);
-          return;
+          return captures[captures.length - 1];
         }
         rec.issues.push(`harness: the external ${unit.expectExternal} navigation is cancelled so the page's own state is shown`);
       }
@@ -239,6 +243,7 @@ export async function main() {
       // measure first, in the state the user sees at the top of the page
       const snapshot = await page.evaluate(collect); // [READ/MEASURE] page.evaluate only reads geometry and styles
       const violations = evaluate(snapshot, { mobile: unit.v.mobile });
+      if (unit.supplementalViewport) rec.layout = snapshot; // actual collect() geometry for this explicitly labelled 1440 pass.
       const named = violations.length ? await page.evaluate(describe, [...new Set(violations.flatMap((x) => x.ids))]) : {};
       const pathFor = (x) => (x.ids.length ? named[x.ids[0]]?.path ?? "" : "document");
       const { picked, groupCounts } = selectRecords(violations, pathFor);
@@ -273,24 +278,37 @@ export async function main() {
         counts.R10 = (counts.R10 ?? 0) + occ.length; groups.R10 = (groups.R10 ?? 0) + (sel.groupCounts.R10 ?? 0);
       }
       await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {}); // [READ/MEASURE]
-      results.push({ ...rec, ms: Date.now() - started, counts, groups, blocking: Object.values(blockingCounts).reduce((a, b) => a + b, 0), blockingCounts, violations: records });
+      if (unit.app === "admin" && ["/products/new", "/products/[product]"].includes(unit.route)) {
+        // The editor deliberately scrolls .pe-fields inside the viewport. A fullPage document shot cannot show its remaining content.
+        // Keep the primary shot/matrix untouched and label these real-wheel viewport frames honestly in index.json.
+        const inner = await captureInnerScrollFrames(page, { selector: ".pe-fields", out, filePrefix: `${unit.app}/${unit.id}/${unit.locale}-${sizeOf(unit.v)}` });
+        rec.supplemental = [inner];
+        if (!inner.complete) { rec.stateFailed = true; rec.issues.push(`inner-scroll coverage failed: ${inner.reason}`); }
+      }
+      captures.push({ ...rec, ms: Date.now() - started, counts, groups, blocking: Object.values(blockingCounts).reduce((a, b) => a + b, 0), blockingCounts, violations: records });
     } catch (e) {
       rec.issues.push(`capture-error: ${String(e.message || e).split("\n")[0].slice(0, 200)}`);
-      results.push({ ...rec, ms: Date.now() - started, counts: {}, groups: {}, blocking: 0, blockingCounts: {}, violations: [], failed: true });
+      captures.push({ ...rec, ms: Date.now() - started, counts: {}, groups: {}, blocking: 0, blockingCounts: {}, violations: [], failed: true });
     }
-    const done = results[results.length - 1];
+    const done = captures[captures.length - 1];
     log(`${unit.app} ${unit.id} ${unit.locale}/${unit.v.name} http ${rec.status}${rec.file ? "" : " NO SHOT"}${done.stateFailed ? " STATE NOT REACHED" : ""} ${JSON.stringify(done.counts)}`);
+    return done;
   }
 
   // ---- the three apps ------------------------------------------------------------------------------------------------------------------------------------------
   const newContext = async (v, locale, extra = {}, withMonitor = true) => {
     const c = await browser.newContext(ctxOptions(v, locale, extra));
-    await c.addInitScript(INIT_SCRIPT);
-    const mon = withMonitor ? monitor(c, { allowedHosts: new Set([new URL(adminOrigin).host, HOST]) }) : null;
-    // /orders/cvs-print auto-posts a signed form to ECPay top-level; the harness cancels that navigation (registered after the monitor, so it runs first) so the
-    // page's own document stays on screen instead of the monitor's "blocked external" stub. No request leaves the stack.
-    if (withMonitor) await c.route((u) => /(^|\.)ecpay\.com\.tw$/i.test(u.hostname), (route) => route.abort("aborted"));
-    return { c, mon, page: await c.newPage() };
+    try {
+      await c.addInitScript(INIT_SCRIPT);
+      const mon = withMonitor ? monitor(c, { allowedHosts: new Set([new URL(adminOrigin).host, HOST]) }) : null;
+      // /orders/cvs-print auto-posts a signed form to ECPay top-level; the harness cancels that navigation (registered after the monitor, so it runs first) so the
+      // page's own document stays on screen instead of the monitor's "blocked external" stub. No request leaves the stack.
+      if (withMonitor) await c.route((u) => /(^|\.)ecpay\.com\.tw$/i.test(u.hostname), (route) => route.abort("aborted"));
+      return { c, mon, page: await c.newPage() };
+    } catch (error) {
+      await c.close().catch(() => {}); // A failed setup never returns its context to the task's cleanup.
+      throw error;
+    }
   };
   const loginState = async () => {
     const c = await browser.newContext({ viewport: { width: 1440, height: 900 } });
@@ -304,7 +322,25 @@ export async function main() {
   };
   const adminTask = (state, u, locale, v) => async () => {
     const s = await newContext(v, locale, u.auth ? { storageState: state } : {});
-    try { await capture(s, { app: "admin", id: u.id, route: u.route, state: u.state, url: u.url(locale), locale, v, prepare: u.prepare, expectExternal: u.expectExternal }); } finally { await s.c.close().catch(() => {}); }
+    const unit = { app: "admin", id: u.id, route: u.route, state: u.state, url: u.url(locale), locale, v, prepare: u.prepare, expectExternal: u.expectExternal };
+    let primary;
+    try { primary = await capture(s, unit); } finally { await s.c.close().catch(() => {}); }
+    const supplemental = supplementalViewportFor(unit);
+    if (supplemental) {
+      let extra, record;
+      // Reuse the same navigation, real preparation, collect/evaluate, crops, R10 and native pane capture at the owner-required width.
+      // A private capture array keeps the primary route matrix/count intact; its lint blockers still contribute to the owning verdict.
+      try {
+        extra = await newContext(supplemental, locale, u.auth ? { storageState: state } : {});
+        record = await capture(extra, { ...unit, v: supplemental, supplementalViewport: true }, []);
+        if (!record) throw new Error("supplemental-capture-returned-no-record");
+      } catch (error) {
+        // The pool logs task errors but primary-only coverage cannot detect a missing required supplement.
+        record = { locale, viewport: supplemental.name, size: sizeOf(supplemental), failed: true,
+          issues: [`${extra ? "capture" : "context"}-error: ${String(error.message ?? error).split("\n")[0].slice(0, 200)}`] };
+      } finally { await extra?.c.close().catch(() => {}); }
+      foldSupplementalCapture(primary, record);
+    }
   };
   const bridge = async (context) => { // the platform site is served by Host: a context bridge keeps the real host names without DNS or TLS (tests/admin/platform-runner.mjs)
     await context.route("**/*", async (route) => {
@@ -413,7 +449,7 @@ export async function main() {
     if (blockingInstances) reasons.push(`${blockingInstances} blocking violation instances (${BLOCKING.join("/")} and R7 clipped controls)`);
     if (missing.length) reasons.push(`${missing.length} enumerated shots missing`);
     if (loadFailures.length) reasons.push(`${loadFailures.length} pages answered HTTP >= 400`);
-    if (stateFailures.length) reasons.push(`${stateFailures.length} "create new" states were not reached`);
+    if (stateFailures.length) reasons.push(`${stateFailures.length} page states, required inner-scroll coverage or supplemental captures were not reached`);
     exitCode = reasons.length ? 1 : 0;
     const report = {
       generated: new Date().toISOString(), commit, out: path.relative(root, out), thresholds: T, rules: RULES, blocking: BLOCKING, blockingKinds: BLOCKING_KINDS,
@@ -424,7 +460,7 @@ export async function main() {
     };
     await writeFile(path.join(out, "index.json"), JSON.stringify({
       generated: report.generated, commit, out: report.out, matrix: report.matrix, expected: expected.length, captured: have.size, notRun, missing,
-      shots: results.filter((r) => r.file).map((r) => ({ app: r.app, route: r.route, id: r.id, state: r.state, url: r.url, locale: r.locale, viewport: r.viewport, size: r.size, file: r.file, sha256: r.sha256, bytes: r.bytes, status: r.status, pageHeight: r.pageHeight, issues: r.issues })),
+      shots: results.filter((r) => r.file).map((r) => ({ app: r.app, route: r.route, id: r.id, state: r.state, url: r.url, locale: r.locale, viewport: r.viewport, size: r.size, file: r.file, sha256: r.sha256, bytes: r.bytes, status: r.status, pageHeight: r.pageHeight, issues: r.issues, supplemental: r.supplemental ?? [] })),
     }, null, 1));
     await writeFile(path.join(out, "lint.json"), JSON.stringify(report, null, 1));
     await writeFile(path.join(out, "counts.json"), JSON.stringify({ commit, generated: report.generated, shots: { expected: expected.length, captured: have.size, notRun: notRun.length }, blockingInstances, totals, byApp, byRoute }, null, 1));
@@ -482,12 +518,15 @@ export function renderMarkdown(report) {
       L.push("", `### \`${r.route}\` (${r.id}, ${r.state}) — blocking ${r.block}, warn ${r.warn}`, "", `| variant | ${rules.join(" | ")} | shot |`, `| --- | ${rules.map(() => "---:").join(" | ")} | --- |`);
       for (const u of [...r.units].sort((a, b) => `${a.locale}${a.size}`.localeCompare(`${b.locale}${b.size}`)))
         L.push(`| ${u.locale} ${u.size}${u.status && u.status >= 400 ? ` HTTP ${u.status}` : ""} | ${rules.map((x) => u.counts[x] ?? 0).join(" | ")} | ${u.notRun ? "**NOT_RUN**" : u.shot ? `\`${u.shot}\`` : "**MISSING**"} |`);
+      for (const u of r.units) for (const extra of u.supplemental ?? []) {
+        if (extra.kind === "supplemental viewport") L.push("", `Supplemental viewport ${extra.locale} ${extra.size}: ${extra.file ? `\`${extra.file}\`` : "**MISSING**"}; counts ${JSON.stringify(extra.counts)}. Included in the owning row's totals; primary matrix unchanged.`);
+      }
       for (const u of r.units.filter((x) => x.notRun).slice(0, 1)) L.push("", `NOT_RUN: ${u.notRun}`);
       for (const rule of rules) {
         const worst = [...r.units].sort((a, b) => (b.blockingCounts?.[rule] ?? 0) - (a.blockingCounts?.[rule] ?? 0))[0];
         if (!worst || !worst.blockingCounts?.[rule]) continue;
         L.push("", `${rule} ${RULES[rule]} (blocking) — worst variant ${worst.locale} ${worst.size} (${worst.blockingCounts[rule]} blocking of ${worst.counts[rule]} instances, ${worst.groups[rule]} groups):`);
-        for (const v of worst.violations.filter((x) => x.rule === rule && x.severity === "block").slice(0, 3)) L.push(`- ${v.kind} \`${v.path || "document"}\` rect ${[v.rect.x, v.rect.y, v.rect.w, v.rect.h].join(",")} measured ${JSON.stringify(v.measured).slice(0, 260)}${v.crop ? ` crop \`${v.crop}\`` : ""}`);
+        for (const v of worst.violations.filter((x) => x.rule === rule && x.severity === "block").slice(0, 3)) L.push(`- ${v.supplementalViewport ? `supplemental ${v.supplementalViewport}: ` : ""}${v.kind} \`${v.path || "document"}\` rect ${[v.rect.x, v.rect.y, v.rect.w, v.rect.h].join(",")} measured ${JSON.stringify(v.measured).slice(0, 260)}${v.crop ? ` crop \`${v.crop}\`` : ""}`);
       }
     }
   }

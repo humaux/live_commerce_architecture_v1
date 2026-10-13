@@ -1,0 +1,44 @@
+✔ PE13 Cartesian matrix is local, preserves edits and deduplicates values (0.6215ms)
+✔ PE13 bulk quantity skips negative rows without modifying them (0.101125ms)
+✔ PE12 untracked document uses whole currency and per-order cap, never quantity (24.64375ms)
+✔ PE14 missing readback is not guessed or silently cleared by full replacement (0.074292ms)
+✔ bulk status accepts explicit per-item results, never empty or duplicated confirmations (0.21075ms)
+✔ matrix refuses over 100 SKUs before expansion (0.085958ms)
+✔ PR #1 4212540344: per-row matrix labels reappear where the matrix header is not visible (≤900px), desktop untouched (1.156042ms)
+✔ PR #1 4212540352: pre-publish missing-items list collapses behind a real toggle at ≤900px instead of being removed (1.4655ms)
+✔ mobile product sections reuse the existing hinted TabStrip (0.147375ms)
+✔ mobile save status has its own row instead of a fixed narrow text cap (0.177958ms)
+✔ empty mobile save status reserves the same line as the first dirty edit (0.136834ms)
+✔ readiness cannot promise field focus while the actual destination is locked (55.262541ms)
+✖ pane focus selects an enabled rendered control and rounds fractional reveal inside the clip (21.117833ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 12
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 345.238083
+
+✖ failing tests:
+
+test at tests/admin/product-document.test.ts:219:1
+✖ pane focus selects an enabled rendered control and rounds fractional reveal inside the clip (21.117833ms)
+  AssertionError [ERR_ASSERTION]: the first disabled control must not steal the destination
+
+  false !== true
+
+      at TestContext.<anonymous> (file://./tests/admin/product-document.test.ts:248:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

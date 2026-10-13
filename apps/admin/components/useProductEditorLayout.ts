@@ -165,15 +165,23 @@ export function useProductEditorLayout(
           target.getBoundingClientRect().top -
           root.getBoundingClientRect().top,
       });
-      const control = target.querySelector<HTMLElement>("input,textarea,button,select");
+      // Existing images start with a disabled move-back button. Navigation must
+      // focus the first usable control rather than silently leaving focus on the tab.
+      const control = [...target.querySelectorAll<HTMLElement>("input,textarea,button,select")]
+        .find((element) => !element.matches(":disabled") && element.getClientRects().length > 0);
       control?.focus({ preventScroll: true });
       if (control) {
         // Expanded readiness leaves a shorter field pane; long translated hints
         // can push the first control below it even after aligning the section.
         // Reveal the control inside this pane, never by scrolling the outer shell.
         const field = control.getBoundingClientRect(), area = root.getBoundingClientRect();
-        if (field.bottom > area.bottom) root.scrollTop += field.bottom - area.bottom;
-        else if (field.top < area.top) root.scrollTop -= area.top - field.top;
+        // Keep the 2px upload focus ring + 3px offset inside the clip; directional
+        // rounding also avoids a fractional boundary surviving integer scroll steps.
+        const inset = 5;
+        if (field.bottom > area.bottom - inset)
+          root.scrollTop = Math.ceil(root.scrollTop + field.bottom - area.bottom + inset);
+        else if (field.top < area.top + inset)
+          root.scrollTop = Math.floor(root.scrollTop + field.top - area.top - inset);
       }
       onSection(id);
     },

@@ -1,0 +1,100 @@
+{
+  "task_id": "VISUAL-POLISH-R1:item4",
+  "agent": "45d9-sub-scroll",
+  "role": "ui_worker",
+  "base_commit": "64ba8319",
+  "summary": "The product editor intentionally uses .pe-fields inner scrolling. Primary document screenshots cannot show hidden inner content. Keep the original matrix and primary images; add native wheel viewport frames, continuous visible content ranges, SHA-256 and geometry under each owning index.json shot. Owner-required 1440x900 captures are supplemental only for /ads, /products/new and /products/[product] primary desktop units in all three locales. The existing full capture pipeline is reused, actual collect() layout is retained, and lint blockers/failures fold into the owning primary verdict.",
+  "paths": [
+    {
+      "path": "tests/ui/visual-audit.mjs",
+      "sha256": "128e8aa16934f6890c6292da4b76da6dc34f53af752850e61a6e4d22475d1d7e"
+    },
+    {
+      "path": "tests/ui/visual-scroll-capture.mjs",
+      "sha256": "538525d5cb94cdc26e91954c0589a48372b5d4ce771721dcbbeb76e6b81a0229"
+    },
+    {
+      "path": "tests/ui/visual-scroll-capture.test.mjs",
+      "sha256": "6db85b4538be4d8e72a4aa012ca453cc67499ccc9e03564550fef519b32d92cd"
+    },
+    {
+      "path": "scripts/dev/test-node.sh",
+      "sha256": "4682621ffe5acfbf7b470a442074fc9a6b2f24e4b2b122fbb0c01f54aaa1cba2"
+    }
+  ],
+  "commands": [
+    {
+      "command": "node --test tests/ui/visual-scroll-capture.test.mjs",
+      "stage": "red: one-fullPage policy adapted into the helper seam",
+      "exit": 1,
+      "pass": 1,
+      "fail": 7,
+      "log": "capture-red.log"
+    },
+    {
+      "command": "node --test tests/ui/visual-scroll-capture.test.mjs",
+      "stage": "green",
+      "exit": 0,
+      "pass": 8,
+      "fail": 0,
+      "log": "capture-green.log"
+    },
+    {
+      "command": "node --test --experimental-strip-types tests/ui/visual-scroll-capture.test.mjs tests/ui/visual-lint-lib.test.mjs tests/ui/sweep-shard-lib.test.mjs",
+      "exit": 0,
+      "pass": 35,
+      "fail": 0,
+      "log": "capture-regression.log"
+    },
+    {
+      "command": "node --check tests/ui/visual-audit.mjs",
+      "exit": 0
+    },
+    {
+      "command": "node --check tests/ui/visual-scroll-capture.mjs",
+      "exit": 0
+    },
+    {
+      "command": "bash -n scripts/dev/test-node.sh",
+      "exit": 0
+    },
+    {
+      "command": "node --test tests/ui/visual-scroll-capture.test.mjs",
+      "stage": "1440 red: absent supplemental policy/folding at real helper seam",
+      "exit": 1,
+      "pass": 8,
+      "fail": 3,
+      "log": "capture-1440-red.log"
+    },
+    {
+      "command": "node --test --experimental-strip-types tests/ui/visual-scroll-capture.test.mjs tests/ui/visual-lint-lib.test.mjs tests/ui/sweep-shard-lib.test.mjs",
+      "stage": "1440 green",
+      "exit": 0,
+      "pass": 38,
+      "fail": 0,
+      "log": "capture-1440-green.log"
+    },
+    {
+      "command": "node --check tests/ui/visual-audit.mjs",
+      "stage": "1440 green",
+      "exit": 0
+    },
+    {
+      "command": "node --check tests/ui/visual-scroll-capture.mjs",
+      "stage": "1440 green",
+      "exit": 0
+    }
+  ],
+  "evidence": "E3 for DB-free helper transport counterexamples only; no real browser coverage claim.",
+  "NOT_RUN": [
+    "Real browser capture and before/after screenshots: parent owns runtime attempt; worker is forbidden to start PG/browser/build/network/Git.",
+    "Full test-node/check-gates/tsc: parent performs the combined unit gate."
+  ],
+  "unchanged": [
+    "Primary route matrix and counts",
+    "Default visual viewports 1586x992 and 390x844",
+    "All existing lint thresholds/assertions",
+    "Product editor height and DOM"
+  ],
+  "runtime_remaining": "Native-wheel geometry and screenshot results require the seeded real browser; partial coverage marks stateFailed and retains frame evidence."
+}
