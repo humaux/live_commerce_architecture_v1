@@ -7,23 +7,28 @@ import { readFileSync } from "node:fs";
 import { matrixExecutionIssues } from "./product-editor-matrix-execution.mjs";
 
 const source = { node: readFileSync("scripts/dev/test-node.sh", "utf8"),
+  receipt: readFileSync("scripts/dev/matrix-receipt.mjs", "utf8"),
   foundationWorkflow: readFileSync(".github/workflows/foundation.yml", "utf8"),
   workflow: readFileSync(".github/workflows/gates.yml", "utf8"), registry: readFileSync("scripts/dev/test-local.sh", "utf8") };
 // The parent gate must first register this test; fixtures then use actual argv and registry contents.
 test("matrix gates are executed through the actual current commands", () => assert.deepEqual(matrixExecutionIssues(source), []));
-for (const name of ["product-editor-matrix-ledger.test.mjs", "product-editor-matrix-execution.test.mjs"]) {
-  test(`incidental comment cannot replace the active Node ${name} argv`, () => {
-    const token = ` tests/ci/${name}`;
-    assert.ok(source.node.includes(token), "real active mutation anchor");
-    const node = source.node.replace(token, "") + `\n# node --test tests/ci/${name}\n`;
-    assert.ok(matrixExecutionIssues({ ...source, node }).some((x) => x.includes(name)));
+const receiptCommand = source.node.split("\n").find((line) => line.startsWith("node scripts/dev/matrix-receipt.mjs node"));
+assert.ok(receiptCommand, "real receipt runner mutation anchor");
+test("incidental filename text cannot replace the active matrix receipt runner", () => {
+  const node = source.node.replace(receiptCommand, "# node scripts/dev/matrix-receipt.mjs node");
+  assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("receipt runner")));
+});
+for (const name of ["product-editor-matrix-ledger.test.mjs", "product-editor-matrix-execution.test.mjs", "product-editor-matrix-controls.test.mjs"]) {
+  test(`canonical Node receipt set retains ${name}`, () => {
+    const receipt = source.receipt.replace(`  "tests/ci/${name}",`, "");
+    assert.ok(matrixExecutionIssues({ ...source, receipt }).some((issue) => issue.includes(name)));
   });
 }
 test("CI cannot append an evidence-test skip to the actual balanced dispatch", () => {
   const token = 'LC_FOUNDATION_SKIP="$(node scripts/dev/shard-plan.mjs skip "${MODE#shard:}")"';
   assert.ok(source.workflow.includes(token));
   const workflow = source.workflow.replace(token, token.slice(0, -1) + '|^TestProductEditorMatrixLedgerEvidence$"');
-  assert.ok(matrixExecutionIssues({ ...source, workflow }).some((x) => x.includes("dispatch")));
+  assert.ok(matrixExecutionIssues({ ...source, workflow }).some((x) => x.includes("source-derived catch-all")));
 });
 for (const selector of ["RUN", "SKIP"]) {
   test(`foundation go test must forward the actual ${selector} selector`, () => {
@@ -34,15 +39,14 @@ for (const selector of ["RUN", "SKIP"]) {
   });
 }
 
-const nodeCommand = source.node.split("\n").find((line) => line.startsWith("node --test ") && line.includes("tests/ci/product-editor-matrix-ledger.test.mjs"));
-assert.ok(nodeCommand, "real Node command mutation anchor");
+const nodeCommand = receiptCommand;
 for (const flag of ["--test-name-pattern", "--test-skip-pattern"]) {
   for (const filter of [`${flag} '^$'`, `${flag}='.*'`, `'${flag}=.*'`]) {
     test(`required Node suites cannot retain filenames but add ${filter}`, () => {
       const node = source.node.replace(nodeCommand, () => `${nodeCommand} ${filter}`);
       assert.ok(node.includes(`${nodeCommand} ${filter}`), "exact filter appended to real command");
       for (const name of ["ledger", "execution", "controls"])
-        assert.ok(node.includes(`tests/ci/product-editor-matrix-${name}.test.mjs`), "suite filename retained");
+        assert.ok(source.receipt.includes(`tests/ci/product-editor-matrix-${name}.test.mjs`), "suite filename retained in canonical runner");
       assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")));
     });
   }
@@ -111,6 +115,18 @@ test("foundation workflow tokenizes quoted GOFLAGS values containing multiple fl
   const foundationWorkflow = source.foundationWorkflow.replace("      GOFLAGS: -mod=readonly", '      GOFLAGS: "-count=1 -run=^$"');
   assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("GOFLAGS")));
 });
+test("Gates unit shard rejects a Go selector in its workflow GOFLAGS", () => {
+  const workflow = source.workflow.replace("      GOFLAGS: -mod=readonly", '      GOFLAGS: "-count=1 -run=^$"');
+  assert.ok(matrixExecutionIssues({ ...source, workflow }).some((issue) => issue.includes("gates.yml GOFLAGS")));
+});
+test("required Gates verifier clears inherited NODE_OPTIONS", () => {
+  const workflow = source.workflow.replace('env: { ...process.env, NODE_OPTIONS: "" }', "env: process.env");
+  assert.ok(matrixExecutionIssues({ ...source, workflow }).some((issue) => issue.includes("NODE_OPTIONS cleared")));
+});
+test("foundation verifier clears inherited NODE_OPTIONS", () => {
+  const foundationWorkflow = source.foundationWorkflow.replace("env -u NODE_OPTIONS node scripts/dev/matrix-receipt-verify.mjs", "node scripts/dev/matrix-receipt-verify.mjs");
+  assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("NODE_OPTIONS cleared")));
+});
 test("Node matrix command cannot hide failures with a trailing shell OR", () => {
   const node = source.node.replace(nodeCommand, () => `${nodeCommand} || true`);
   assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("missing")));
@@ -172,6 +188,36 @@ test("foundation job refuses expression continue-on-error", () => {
 test("foundation job accepts literal false continue-on-error", () => {
   const foundationWorkflow = source.foundationWorkflow.replace("    runs-on: ubuntu-24.04\n", "    runs-on: ubuntu-24.04\n    continue-on-error: false\n");
   assert.deepEqual(matrixExecutionIssues({ ...source, foundationWorkflow }), []);
+});
+test("Gates job and Gate step reject continue-on-error, including expressions", () => {
+  const step = "      - name: Gate\n";
+  for (const mutation of [
+    source.workflow.replace("    timeout-minutes: 150\n", "    timeout-minutes: 150\n    continue-on-error: true\n"),
+    source.workflow.replace(step, step + "        continue-on-error: \${{ false }}\n"),
+  ]) {
+    assert.notEqual(mutation, source.workflow);
+    assert.ok(matrixExecutionIssues({ ...source, workflow: mutation }).some((issue) => issue.includes("continue after errors")));
+  }
+});
+test("required Gates job and result/receipt consumers reject continuation, including the first-key step form", () => {
+  const resultsName = "        name: Required jobs completed\n";
+  const verifier = "      - name: Verify current-run matrix execution receipts\n";
+  const mutations = [
+    source.workflow.replace("    timeout-minutes: 5\n", "    timeout-minutes: 5\n    continue-on-error: true\n"),
+    source.workflow.replace("      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0\n", "      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0\n        continue-on-error: true\n"),
+    source.workflow.replace(resultsName, resultsName + "        continue-on-error: true\n"),
+    source.workflow.replace("      - run: |\n          echo \"plan=", "      - continue-on-error: true\n        run: |\n          echo \"plan="),
+    source.workflow.replace(verifier, verifier + "        continue-on-error: ${{ true }}\n"),
+    source.workflow.replace(verifier, "      - continue-on-error: true\n        name: Verify current-run matrix execution receipts\n"),
+  ];
+  for (const workflow of mutations) {
+    assert.notEqual(workflow, source.workflow);
+    assert.ok(matrixExecutionIssues({ ...source, workflow }).some((issue) => issue.includes("required job and both result/receipt consumers")));
+  }
+});
+test("manual partial runs use a separate check context from the branch-protection required receipt gate", () => {
+  const workflow = source.workflow.replace("name: ${{ github.event_name == 'workflow_dispatch' && 'manual' || 'required' }}", "name: required");
+  assert.ok(matrixExecutionIssues({ ...source, workflow }).some((issue) => issue.includes("required job and both result/receipt consumers")));
 });
 
 test("foundation job condition after steps still disables the runners", () => {

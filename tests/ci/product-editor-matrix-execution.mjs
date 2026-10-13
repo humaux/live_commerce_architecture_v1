@@ -39,6 +39,15 @@ function executableArgv(command) {
   return argv;
 }
 
+function invokesActualGoTest(argv) {
+  if (!argv) return false;
+  if (argv[0] === "go") return argv[1] === "test";
+  if (argv[0] !== "node" || argv[1] !== "scripts/dev/matrix-receipt.mjs" || argv[2] !== "go") return false;
+  let index = 3;
+  while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(argv[index] || "")) index++;
+  return argv[index] === "go" && argv[index + 1] === "test";
+}
+
 const goSelectionFlags = new Set(["-run", "-skip", "--run", "--skip", "-test.run", "-test.skip"]);
 function hasGoSelectionFlags(args) {
   return args.some((arg) => goSelectionFlags.has(arg.split("=", 1)[0]));
@@ -108,32 +117,98 @@ function foundationRunnerBound(text, runner, condition = null) {
   });
 }
 
-export function matrixExecutionIssues({ node, workflow, registry, foundationWorkflow = readFileSync(".github/workflows/foundation.yml", "utf8") }) {
+function workflowTriggerBound(text, integration) {
+  const lines = text.split(/\r?\n/);
+  const start = lines.findIndex((line) => /^on:\s*$/.test(line));
+  if (start < 0) return false;
+  let end = start + 1;
+  while (end < lines.length && (!lines[end].trim() || /^\s/.test(lines[end]) || /^#/.test(lines[end]))) end++;
+  const block = lines.slice(start + 1, end);
+  const triggerIndex = block.findIndex((line) => /^  pull_request:\s*$/.test(line));
+  if (triggerIndex < 0) return false;
+  const tail = block.slice(triggerIndex + 1);
+  const nextTrigger = tail.findIndex((line) => /^  [^ #]/.test(line));
+  const pull = tail.slice(0, nextTrigger < 0 ? tail.length : nextTrigger);
+  return !integration || pull.some((line) => /^    branches:\s*\[r3\/integration\]\s*$/.test(line));
+}
+
+export function matrixExecutionIssues({ node, workflow, registry, receipt = readFileSync("scripts/dev/matrix-receipt.mjs", "utf8"), foundationWorkflow = readFileSync(".github/workflows/foundation.yml", "utf8") }) {
   const issues = [];
   const active = (text) => text.replace(/\\\r?\n/g, " ").split(/\r?\n/)
     .map((line) => line.replace(/\s+#.*$/, "").trim()).filter((line) => line && !line.startsWith("#"));
   const nodeCommands = active(node).map(executableArgv).filter((argv) => argv?.[0] === "node" && argv.includes("--test"));
   const required = ["product-editor-matrix-ledger.test.mjs", "product-editor-matrix-execution.test.mjs", "product-editor-matrix-controls.test.mjs"];
-  for (const name of required) {
-    const token = `tests/ci/${name}`;
-    if (!nodeCommands.some((argv) => argv.includes(token))) issues.push(`active node --test argv missing ${name}`);
-  }
+  const receiptCalls = active(node).map(executableArgv).filter((argv) => argv?.[0] === "node" && argv[1] === "scripts/dev/matrix-receipt.mjs" && argv[2] === "node");
+  if (receiptCalls.length !== 1) issues.push("test-node.sh missing one active matrix receipt runner");
+  if (receiptCalls.some((argv) => argv.length !== 3)) issues.push("test-node.sh must not add matrix suite filters to its receipt invocation");
+  for (const name of required) if (!receipt.includes(`tests/ci/${name}`)) issues.push(`matrix receipt suite set missing ${name}`);
   if (workflowHasSelectingGoFlags(foundationWorkflow))
     issues.push("foundation.yml GOFLAGS must not use Go test selection filters");
-  if (nodeCommands.some((argv) => required.some((name) => argv.includes(`tests/ci/${name}`)) &&
-      argv.some((arg) => ["--test-name-pattern", "--test-skip-pattern", "--test-only", "--test-shard", "--test-concurrency"].includes(arg.split("=")[0]))))
-    issues.push("required matrix Node suites must not use test selection/concurrency filters");
+  if (workflowHasSelectingGoFlags(workflow))
+    issues.push("gates.yml GOFLAGS must not use Go test selection filters");
+  if (!workflowTriggerBound(foundationWorkflow, false)) issues.push("foundation.yml must retain its pull_request trigger");
+  if (!workflowTriggerBound(workflow, true)) issues.push("gates.yml must retain pull_request targeting r3/integration");
+  if (!workflow.includes("LC_MATRIX_RECEIPT_MODE: shard:unit") || !workflow.includes("node scripts/dev/matrix-receipt.mjs node"))
+    issues.push("gates.yml must execute the matrix Node receipt in shard:unit");
+  if (!workflow.includes('uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd') ||
+      !workflow.includes('"scripts/dev/matrix-receipt-verify.mjs", "required"') ||
+      !workflow.includes('env: { ...process.env, NODE_OPTIONS: "" }'))
+    issues.push("gates.yml required job must invoke the pinned JavaScript receipt verifier with NODE_OPTIONS cleared");
+  if (!foundationWorkflow.includes("env -u NODE_OPTIONS node scripts/dev/matrix-receipt-verify.mjs foundation"))
+    issues.push("foundation.yml must always verify positive receipts with NODE_OPTIONS cleared");
   // Bind selectors to their real planner calls; a plan can cover every test yet
   // an extra exclusion at the live dispatch still prevents its execution.
   const dispatch = active(workflow).filter((line) => line.startsWith("shard:g[0-9][0-9]) "));
-  const prefix = 'shard:g[0-9][0-9]) LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="$(node scripts/dev/shard-plan.mjs run "${MODE#shard:}")" LC_FOUNDATION_SKIP="$(node scripts/dev/shard-plan.mjs skip "${MODE#shard:}")" bash scripts/dev/test-local.sh 2>&1';
-  if (dispatch.length !== 1 || !dispatch[0].startsWith(prefix)) issues.push("foundation CI dispatch must forward only the real planner run/skip selectors");
+  const dynamicCatchAll = active(workflow).some((line) => line.startsWith("catch_all=") && line.includes("groups.find((g)=>g.catch_all).id"));
+  const branch = dispatch[0] || "";
+  const expectedSkip = 'LC_FOUNDATION_SKIP="$(node scripts/dev/shard-plan.mjs skip "' + "$" + '{MODE#shard:}")"';
+  if (dispatch.length !== 1 || !dynamicCatchAll || !branch.includes('if [[ "${MODE#shard:}" == "$catch_all" ]]') ||
+      !branch.includes('LC_MATRIX_RECEIPT_KIND=go LC_MATRIX_RECEIPT_MODE="$MODE"') ||
+      !branch.includes('LC_FOUNDATION_RUN="$(node scripts/dev/shard-plan.mjs run "${MODE#shard:}")"') ||
+      !branch.includes('LC_FOUNDATION_SKIP="$(node scripts/dev/shard-plan.mjs skip "${MODE#shard:}")"') ||
+      branch.split(expectedSkip).length - 1 !== 2 ||
+      !branch.includes("else LC_FOUNDATION_PKGS=./tests/foundation") || !branch.includes("bash scripts/dev/test-local.sh 2>&1"))
+    issues.push("foundation CI must emit Go matrix receipts only for the source-derived catch-all shard and forward planner selectors");
+  const jobs = workflow.split(/^jobs:\s*$/m);
+  const gate = jobs.length === 2 ? /^  gate:\s*\n([\s\S]*?)(?=^  [^ #\n]|^\S|$(?![\s\S]))/m.exec(jobs[1])?.[1] : null;
+  const continuation = [...(gate || "").matchAll(/^[ \t]+continue-on-error:[ \t]*(.*?)[ \t]*(?:#.*)?$/gim)];
+  if (!gate || continuation.some(([, value]) => value !== "false"))
+    issues.push("gates.yml gate job and test step must not continue after errors");
+  const requiredJob = jobs.length === 2 ? /^  required:\s*\n([\s\S]*?)(?=^  [^ #\n]|^\S|$(?![\s\S]))/m.exec(jobs[1])?.[1] : null;
+  const requiredHeader = (requiredJob || "").split(/^    steps:\s*$/m)[0];
+  const requiredSteps = (requiredJob || "").split(/^    steps:\s*$/m)[1] || "";
+  const requiredStepBlocks = requiredSteps.split(/(?=^      - )/m).filter((block) => block.trim());
+  const resultConsumers = requiredStepBlocks.filter((block) => /name: Required jobs completed/.test(block));
+  const receiptConsumers = requiredStepBlocks.filter((block) => /name: Verify current-run matrix execution receipts/.test(block) ||
+    /actions\/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd/.test(block));
+  const requiredJobContinuation = [...requiredHeader.matchAll(/^[ \t]+continue-on-error:[ \t]*(.*?)[ \t]*(?:#.*)?$/gim)];
+  const requiredStepContinuations = requiredStepBlocks.flatMap((block) =>
+    [...block.matchAll(/^[ \t]+continue-on-error:[ \t]*(.*?)[ \t]*(?:#.*)?$/gim),
+      ...block.matchAll(/^      - continue-on-error:[ \t]*(.*?)[ \t]*(?:#.*)?$/gim)]
+      .map(([, value]) => ({ block, value })));
+  // The required job is the sole consumer of PLAN/GATE/AGG/DEPLOY and matrix
+  // receipts. Every step that can affect its result is mandatory; only the
+  // artifact download may be optional because the verifiers independently
+  // fail when evidence is absent.
+  const optionalArtifactDownload = (block) => /actions\/download-artifact@/.test(block);
+  const invalidRequiredStepContinuation = requiredStepContinuations.some(({ block, value }) =>
+    !(optionalArtifactDownload(block) && value === "true"));
+  if (!requiredJob || requiredJobContinuation.some(([, value]) => value !== "false") || resultConsumers.length !== 1 || receiptConsumers.length !== 1 ||
+      invalidRequiredStepContinuation ||
+      !requiredHeader.includes("name: ${{ github.event_name == 'workflow_dispatch' && 'manual' || 'required' }}") ||
+      !receiptConsumers[0]?.includes("if: always()") ||
+      !receiptConsumers[0]?.includes('"scripts/dev/matrix-receipt-verify.mjs", "required"') ||
+      !resultConsumers[0]?.includes('[[ "$GATE" == success ]]'))
+    issues.push("gates.yml required job and both result/receipt consumers must remain mandatory and fail closed");
+  if (!workflow.includes('GATE: ${{ needs.gate.result }}') || !workflow.includes('[[ "$GATE" == success ]]'))
+    issues.push("gates.yml required aggregate must fail when any gate matrix leg fails");
   const foundation = modeEntries(registry).find((entry) => entry.name === "foundation");
   const commands = active(foundation?.run ?? "").filter((line) => /(?:^|\s)go test\s/.test(line));
   const selectors = ['${LC_FOUNDATION_RUN:+-run "$LC_FOUNDATION_RUN"}', '${LC_FOUNDATION_SKIP:+-skip "$LC_FOUNDATION_SKIP"}', '${LC_FOUNDATION_PKGS:-./...}'];
-  const extraArgv = executableArgv(selectors.reduce((line, token) => line.replace(token, ""), commands[0] ?? ""));
-  if (commands.length !== 1 || selectors.some((token) => !commands[0].includes(token)) ||
-      !extraArgv || extraArgv[0] !== "go" || extraArgv[1] !== "test" || hasGoSelectionFlags(extraArgv) || hasSelectingGoFlags(commandArgv(commands[0] ?? "") ?? []))
+  const cleanCommands = commands.map((line) => ({ line, argv: executableArgv(selectors.reduce((clean, token) => clean.replace(token, ""), line)) }));
+  if (commands.length !== 2 || cleanCommands.some(({ line, argv }) => selectors.some((token) => !line.includes(token)) ||
+      !invokesActualGoTest(argv) ||
+      hasGoSelectionFlags(argv) || hasSelectingGoFlags(commandArgv(line) ?? [])))
     issues.push("foundation go test must forward RUN, SKIP and package selectors without extra filters");
   const goCondition = "${{ !(github.event_name == 'pull_request' && github.base_ref == 'r3/integration') }}";
   for (const [runner, condition] of [["test-node", null], ["test-local", goCondition]]) {

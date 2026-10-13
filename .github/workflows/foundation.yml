@@ -70,6 +70,9 @@ jobs:
           bash scripts/dev/check-pkgdocs.sh
           bash scripts/dev/check-gates.sh
       - name: Node unit suites (storefront, i18n)
+        id: node-tests
+        env:
+          LC_MATRIX_RECEIPT_MODE: foundation
         # No Docker/PG needed. tests/media/r04-input-runner.test.mjs needs a pinned LiveKit binary and is
         # reported NOT_RUN here (never PASS); see docs/delivery/GATES.md "Node unit suites".
         run: bash scripts/dev/test-node.sh
@@ -82,8 +85,21 @@ jobs:
         if: ${{ !(github.event_name == 'pull_request' && github.base_ref == 'r3/integration') }}
         run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
       - name: Real PostgreSQL, race detector and vet
+        id: go-tests
         if: ${{ !(github.event_name == 'pull_request' && github.base_ref == 'r3/integration') }}
+        env:
+          LC_MATRIX_RECEIPT_KIND: go
+          LC_MATRIX_RECEIPT_MODE: foundation
         run: bash scripts/dev/test-local.sh
+      - name: Verify current-run matrix execution receipts
+        if: always()
+        shell: bash
+        env:
+          NODE_OUTCOME: ${{ steps.node-tests.outcome }}
+          GO_OUTCOME: ${{ steps.go-tests.outcome }}
+          GO_EXPECTED: ${{ !(github.event_name == 'pull_request' && github.base_ref == 'r3/integration') }}
+          LC_MATRIX_NODE_MODE: foundation
+        run: env -u NODE_OPTIONS node scripts/dev/matrix-receipt-verify.mjs foundation output/matrix-coverage-v2-execution/$GITHUB_RUN_ID/$GITHUB_JOB "$NODE_OUTCOME" "$GO_OUTCOME" "$GO_EXPECTED" "$GITHUB_RUN_ID" "$GITHUB_SHA"
       - name: Reachable vulnerability scan
         # v1.1.4 bundles golang.org/x/tools v0.29.0, whose SSA builder panicked
         # ("unexpected expr: *ast.KeyValueExpr") on this module (then Go 1.27.1) in CI

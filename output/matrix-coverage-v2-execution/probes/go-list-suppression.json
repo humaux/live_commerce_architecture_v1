@@ -1,0 +1,122 @@
+{
+  "schema": "matrix-execution-receipt/v1",
+  "kind": "go",
+  "command": [
+    "go",
+    "test",
+    "-list",
+    "^TestProductEditorMatrix",
+    "./tests/foundation"
+  ],
+  "run_id": "probe",
+  "job": "probe",
+  "mode": "probe-go-list",
+  "source_before": {
+    "commit": "f5339cbfbac632473c0bdb2c4823b557689f0fb7",
+    "hashes": {
+      "output/matrix-ledger-enforce/DELIVERY.md": "c49b5026f67fdf4fc94c4aae3193c7e896252edc6ec58b337da6c91052ade680",
+      "output/matrix-ledger-enforce/historical-evidence/SOURCE.json": "468ca57d4ccdb12d0684376a54bfe23c89dd03711eb710b094d2ea3624e2b417",
+      "scripts/dev/matrix-receipt-verify.mjs": "d3ebefa461d7c1f4dba33bd5a9c69635c075957ef6d0ed46dfcbddf5c09b302b",
+      "scripts/dev/matrix-receipt.mjs": "8af4d8e21ccf029480c132a28499a6c341850ef5983c5ba085ad172ce996c910",
+      "scripts/dev/matrix-test-reporter.mjs": "4f768b7e2591011a9b9b2f6e797f250ae1bc6e72cb6dffa2e0cbff4101134255",
+      "scripts/dev/shard-plan.json": "20560a65d2f15729e1b348c277bec7fc636800a33f428648186de26a50f7f5d4",
+      "scripts/dev/test-local.sh": "29787c2d1fb8dd32c324532eb8be60c50280998c65b603030fadfce593b9057f",
+      "scripts/dev/test-node.sh": "2597c2de3c33b94731a33befe737fad02f5267d736016d0d534b98e0279c7763",
+      "tests/ci/product-editor-matrix-controls.test.mjs": "0fd469cca91a990972881b9fcf38961fab75c9f455c57d5b5842c7cf9168e132",
+      "tests/ci/product-editor-matrix-execution.test.mjs": "89a89c24f55a9b044942395cebc1aec1533e51cf4274cba3d5259623d93bb9a8",
+      "tests/ci/product-editor-matrix-ledger.test.mjs": "a456714c2a6bb237a5f0fe19f17d87dbf8a0e2be33d7a3bb73ba1ccc62bab23c",
+      "tests/foundation/browser_catalog_core_test.go": "7630208cfdee79f5c80297e82b6d927b7896e44c57c5b7f69d79b32ad405a29d",
+      "tests/foundation/catalog_matrix_evidence_test.go": "d360e785f8519418eb4ab593c59a4408f28ed453fec63848eaf894ac092cf7c1",
+      "tests/foundation/catalog_matrix_ledger_test.go": "0bca90d283d8bf73eefdb0689ab68b4c2b3c97d619a53de6bf01e95d7c594371"
+    }
+  },
+  "source_after": {
+    "commit": "f5339cbfbac632473c0bdb2c4823b557689f0fb7",
+    "hashes": {
+      "output/matrix-ledger-enforce/DELIVERY.md": "c49b5026f67fdf4fc94c4aae3193c7e896252edc6ec58b337da6c91052ade680",
+      "output/matrix-ledger-enforce/historical-evidence/SOURCE.json": "468ca57d4ccdb12d0684376a54bfe23c89dd03711eb710b094d2ea3624e2b417",
+      "scripts/dev/matrix-receipt-verify.mjs": "d3ebefa461d7c1f4dba33bd5a9c69635c075957ef6d0ed46dfcbddf5c09b302b",
+      "scripts/dev/matrix-receipt.mjs": "8af4d8e21ccf029480c132a28499a6c341850ef5983c5ba085ad172ce996c910",
+      "scripts/dev/matrix-test-reporter.mjs": "4f768b7e2591011a9b9b2f6e797f250ae1bc6e72cb6dffa2e0cbff4101134255",
+      "scripts/dev/shard-plan.json": "20560a65d2f15729e1b348c277bec7fc636800a33f428648186de26a50f7f5d4",
+      "scripts/dev/test-local.sh": "29787c2d1fb8dd32c324532eb8be60c50280998c65b603030fadfce593b9057f",
+      "scripts/dev/test-node.sh": "2597c2de3c33b94731a33befe737fad02f5267d736016d0d534b98e0279c7763",
+      "tests/ci/product-editor-matrix-controls.test.mjs": "0fd469cca91a990972881b9fcf38961fab75c9f455c57d5b5842c7cf9168e132",
+      "tests/ci/product-editor-matrix-execution.test.mjs": "89a89c24f55a9b044942395cebc1aec1533e51cf4274cba3d5259623d93bb9a8",
+      "tests/ci/product-editor-matrix-ledger.test.mjs": "a456714c2a6bb237a5f0fe19f17d87dbf8a0e2be33d7a3bb73ba1ccc62bab23c",
+      "tests/foundation/browser_catalog_core_test.go": "7630208cfdee79f5c80297e82b6d927b7896e44c57c5b7f69d79b32ad405a29d",
+      "tests/foundation/catalog_matrix_evidence_test.go": "d360e785f8519418eb4ab593c59a4408f28ed453fec63848eaf894ac092cf7c1",
+      "tests/foundation/catalog_matrix_ledger_test.go": "0bca90d283d8bf73eefdb0689ab68b4c2b3c97d619a53de6bf01e95d7c594371"
+    }
+  },
+  "started_at": "2026-10-13T08:47:04.028Z",
+  "exit_code": 0,
+  "shard": "g06",
+  "outcome": {
+    "ok": false,
+    "violations": [
+      "Go matrix test missing pass outcome: TestProductEditorMatrixLedger",
+      "Go matrix test missing pass outcome: TestProductEditorMatrixLedgerEvidence",
+      "Go matrix test missing pass outcome: TestProductEditorMatrixLedgerEvidenceCorruption",
+      "Go matrix test missing pass outcome: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy",
+      "Go matrix test missing pass outcome: TestProductEditorMatrixLedgerEvidenceRunIdentity",
+      "Go matrix test missing pass outcome: TestProductEditorMatrixLedgerEvidenceRunIdentityMetadata",
+      "Go matrix test missing pass outcome: TestProductEditorMatrixLedgerEvidenceRunOutcome",
+      "Go matrix test missing pass outcome: TestProductEditorMatrixLedgerEvidenceSharedSources"
+    ],
+    "packages": [
+      "livecommerce/tests/foundation"
+    ],
+    "family": [
+      "TestProductEditorMatrixLedger",
+      "TestProductEditorMatrixLedgerEvidence",
+      "TestProductEditorMatrixLedgerEvidenceCorruption",
+      "TestProductEditorMatrixLedgerEvidenceHistoricalPolicy",
+      "TestProductEditorMatrixLedgerEvidenceRunIdentity",
+      "TestProductEditorMatrixLedgerEvidenceRunIdentityMetadata",
+      "TestProductEditorMatrixLedgerEvidenceRunOutcome",
+      "TestProductEditorMatrixLedgerEvidenceSharedSources"
+    ],
+    "outcomes": [],
+    "historical_skip": null
+  },
+  "violations": [
+    "Go matrix test missing pass outcome: TestProductEditorMatrixLedger",
+    "Go matrix test missing pass outcome: TestProductEditorMatrixLedgerEvidence",
+    "Go matrix test missing pass outcome: TestProductEditorMatrixLedgerEvidenceCorruption",
+    "Go matrix test missing pass outcome: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy",
+    "Go matrix test missing pass outcome: TestProductEditorMatrixLedgerEvidenceRunIdentity",
+    "Go matrix test missing pass outcome: TestProductEditorMatrixLedgerEvidenceRunIdentityMetadata",
+    "Go matrix test missing pass outcome: TestProductEditorMatrixLedgerEvidenceRunOutcome",
+    "Go matrix test missing pass outcome: TestProductEditorMatrixLedgerEvidenceSharedSources"
+  ],
+  "ended_at": "2026-10-13T08:49:57.572Z",
+  "events": {
+    "ok": false,
+    "violations": [
+      "Go matrix test missing pass outcome: TestProductEditorMatrixLedger",
+      "Go matrix test missing pass outcome: TestProductEditorMatrixLedgerEvidence",
+      "Go matrix test missing pass outcome: TestProductEditorMatrixLedgerEvidenceCorruption",
+      "Go matrix test missing pass outcome: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy",
+      "Go matrix test missing pass outcome: TestProductEditorMatrixLedgerEvidenceRunIdentity",
+      "Go matrix test missing pass outcome: TestProductEditorMatrixLedgerEvidenceRunIdentityMetadata",
+      "Go matrix test missing pass outcome: TestProductEditorMatrixLedgerEvidenceRunOutcome",
+      "Go matrix test missing pass outcome: TestProductEditorMatrixLedgerEvidenceSharedSources"
+    ],
+    "packages": [
+      "livecommerce/tests/foundation"
+    ],
+    "family": [
+      "TestProductEditorMatrixLedger",
+      "TestProductEditorMatrixLedgerEvidence",
+      "TestProductEditorMatrixLedgerEvidenceCorruption",
+      "TestProductEditorMatrixLedgerEvidenceHistoricalPolicy",
+      "TestProductEditorMatrixLedgerEvidenceRunIdentity",
+      "TestProductEditorMatrixLedgerEvidenceRunIdentityMetadata",
+      "TestProductEditorMatrixLedgerEvidenceRunOutcome",
+      "TestProductEditorMatrixLedgerEvidenceSharedSources"
+    ],
+    "outcomes": [],
+    "historical_skip": null
+  }
+}

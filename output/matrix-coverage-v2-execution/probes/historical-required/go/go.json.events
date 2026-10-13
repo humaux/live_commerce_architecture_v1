@@ -1,0 +1,14 @@
+{"Package":"livecommerce/tests/foundation","Action":"start"}
+{"Package":"livecommerce/tests/foundation","Test":"TestProductEditorMatrixLedger","Action":"pass"}
+{"Package":"livecommerce/tests/foundation","Test":"TestProductEditorMatrixLedgerEvidence","Action":"output","Output":"    catalog_matrix_ledger_test.go:123: canonical evidence is historical (source drift: scripts/dev/ci-plan.mjs, scripts/dev/matrix-receipt-verify.mjs, scripts/dev/matrix-receipt.mjs, scripts/dev/matrix-test-inventory.json, scripts/dev/matrix-test-reporter.mjs, scripts/dev/pr-modes.mjs, scripts/dev/test-local.sh, scripts/dev/test-node.sh, tests/ci/ci-plan.test.mjs, tests/ci/matrix-receipt.test.mjs, tests/ci/pr-modes.test.mjs, tests/ci/product-editor-matrix-execution.mjs, tests/ci/product-editor-matrix-execution.test.mjs, tests/foundation/catalog_matrix_evidence_test.go, tests/foundation/catalog_matrix_ledger_test.go)\n"}
+{"Package":"livecommerce/tests/foundation","Test":"TestProductEditorMatrixLedgerEvidence","Action":"skip"}
+{"Package":"livecommerce/tests/foundation","Test":"TestProductEditorMatrixLedgerEvidenceCorruption","Action":"pass"}
+{"Package":"livecommerce/tests/foundation","Test":"TestProductEditorMatrixLedgerEvidenceDriftIntegrity","Action":"pass"}
+{"Package":"livecommerce/tests/foundation","Test":"TestProductEditorMatrixLedgerEvidenceHistoricalPolicy","Action":"pass"}
+{"Package":"livecommerce/tests/foundation","Test":"TestProductEditorMatrixLedgerEvidenceProducerEvolution","Action":"pass"}
+{"Package":"livecommerce/tests/foundation","Test":"TestProductEditorMatrixLedgerEvidenceRunIdentity","Action":"pass"}
+{"Package":"livecommerce/tests/foundation","Test":"TestProductEditorMatrixLedgerEvidenceRunIdentityMetadata","Action":"pass"}
+{"Package":"livecommerce/tests/foundation","Test":"TestProductEditorMatrixLedgerEvidenceRunOutcome","Action":"pass"}
+{"Package":"livecommerce/tests/foundation","Test":"TestProductEditorMatrixLedgerEvidenceRunReceipt","Action":"pass"}
+{"Package":"livecommerce/tests/foundation","Test":"TestProductEditorMatrixLedgerEvidenceSharedSources","Action":"pass"}
+{"Package":"livecommerce/tests/foundation","Test":"TestProductEditorMatrixLedgerEvidenceTableEvolution","Action":"pass"}

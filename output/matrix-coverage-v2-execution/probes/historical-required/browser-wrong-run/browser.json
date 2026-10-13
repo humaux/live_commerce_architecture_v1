@@ -1,0 +1,88 @@
+{
+  "schema": "matrix-execution-receipt/v1",
+  "kind": "browser",
+  "mode": "--browser-product-editor",
+  "run_id": "historical-probe-old",
+  "job": "gate",
+  "command": [
+    "PRODUCT_EDITOR_ACCEPTANCE=1",
+    "LC_BROWSER_CATALOG_CORE_ACCEPTANCE=1",
+    "-tags",
+    "browser",
+    "-run",
+    "^TestBrowserCatalogCore$",
+    "./tests/foundation"
+  ],
+  "source_before": {
+    "commit": "dc2304d2a8dab20941ec7d09fc2bb54e2f5b8360",
+    "hashes": {
+      "output/matrix-ledger-enforce/DELIVERY.md": "c49b5026f67fdf4fc94c4aae3193c7e896252edc6ec58b337da6c91052ade680",
+      "output/matrix-ledger-enforce/historical-evidence/SOURCE.json": "468ca57d4ccdb12d0684376a54bfe23c89dd03711eb710b094d2ea3624e2b417",
+      "scripts/dev/ci-plan.mjs": "98010b8f639c32e07e792077c28d7f0da7afa66f79e5355b08e018a60dffb61a",
+      "scripts/dev/matrix-receipt-verify.mjs": "e570033d39ac3b11520f886a48082de1308687264549ccacface5e9f3fb7d05b",
+      "scripts/dev/matrix-receipt.mjs": "f2a9e809dded3ebf2baf991bd6c6cb2d80d2d752b5564912b9b46874758256cb",
+      "scripts/dev/matrix-test-inventory.json": "e623a5707430350b30bf22381af5a9e40184f5b277fa972bc6753b8cfd8ecbbb",
+      "scripts/dev/matrix-test-reporter.mjs": "4f768b7e2591011a9b9b2f6e797f250ae1bc6e72cb6dffa2e0cbff4101134255",
+      "scripts/dev/pr-modes.mjs": "11b8791effbc1c74e2378677d06c0984e860e5b0fcdb80ec12b2768c549938f2",
+      "scripts/dev/shard-plan.json": "b0ce1850b25472fe0508897d4297878e632e87959c33242ba67d5932a895e614",
+      "scripts/dev/test-local.sh": "29787c2d1fb8dd32c324532eb8be60c50280998c65b603030fadfce593b9057f",
+      "scripts/dev/test-node.sh": "2597c2de3c33b94731a33befe737fad02f5267d736016d0d534b98e0279c7763",
+      "tests/ci/ci-plan.test.mjs": "cf2dea8ea6ab9c5bf636764ba607c4d16ee3c1e634fb67d415dbf4c4a11250e2",
+      "tests/ci/matrix-receipt.test.mjs": "d791ede9ee7bbd789f89c5d31418e5394c1c705c268c4b0f89523ef985a59dc1",
+      "tests/ci/pr-modes.test.mjs": "19afb76278c6db5788dc980898967f8b547376cb1929f5923cf07816ed476bb4",
+      "tests/ci/product-editor-matrix-controls.test.mjs": "0fd469cca91a990972881b9fcf38961fab75c9f455c57d5b5842c7cf9168e132",
+      "tests/ci/product-editor-matrix-execution.test.mjs": "f1f48fdbbc188b4b972e8b05414c619238aaad87fdd51cedf60c2f98d56ce320",
+      "tests/ci/product-editor-matrix-ledger.test.mjs": "a456714c2a6bb237a5f0fe19f17d87dbf8a0e2be33d7a3bb73ba1ccc62bab23c",
+      "tests/foundation/browser_catalog_core_test.go": "7630208cfdee79f5c80297e82b6d927b7896e44c57c5b7f69d79b32ad405a29d",
+      "tests/foundation/catalog_matrix_evidence_test.go": "94324882172769000c436bb6dc449dd9ef2c581d5f7974928f29fbfe3240bb03",
+      "tests/foundation/catalog_matrix_ledger_test.go": "4d748bc485bc9f92c46fa20f77c50d8b20afcd1b24b82e4f89b15e45df723179"
+    }
+  },
+  "source_after": {
+    "commit": "dc2304d2a8dab20941ec7d09fc2bb54e2f5b8360",
+    "hashes": {
+      "output/matrix-ledger-enforce/DELIVERY.md": "c49b5026f67fdf4fc94c4aae3193c7e896252edc6ec58b337da6c91052ade680",
+      "output/matrix-ledger-enforce/historical-evidence/SOURCE.json": "468ca57d4ccdb12d0684376a54bfe23c89dd03711eb710b094d2ea3624e2b417",
+      "scripts/dev/ci-plan.mjs": "98010b8f639c32e07e792077c28d7f0da7afa66f79e5355b08e018a60dffb61a",
+      "scripts/dev/matrix-receipt-verify.mjs": "e570033d39ac3b11520f886a48082de1308687264549ccacface5e9f3fb7d05b",
+      "scripts/dev/matrix-receipt.mjs": "f2a9e809dded3ebf2baf991bd6c6cb2d80d2d752b5564912b9b46874758256cb",
+      "scripts/dev/matrix-test-inventory.json": "e623a5707430350b30bf22381af5a9e40184f5b277fa972bc6753b8cfd8ecbbb",
+      "scripts/dev/matrix-test-reporter.mjs": "4f768b7e2591011a9b9b2f6e797f250ae1bc6e72cb6dffa2e0cbff4101134255",
+      "scripts/dev/pr-modes.mjs": "11b8791effbc1c74e2378677d06c0984e860e5b0fcdb80ec12b2768c549938f2",
+      "scripts/dev/shard-plan.json": "b0ce1850b25472fe0508897d4297878e632e87959c33242ba67d5932a895e614",
+      "scripts/dev/test-local.sh": "29787c2d1fb8dd32c324532eb8be60c50280998c65b603030fadfce593b9057f",
+      "scripts/dev/test-node.sh": "2597c2de3c33b94731a33befe737fad02f5267d736016d0d534b98e0279c7763",
+      "tests/ci/ci-plan.test.mjs": "cf2dea8ea6ab9c5bf636764ba607c4d16ee3c1e634fb67d415dbf4c4a11250e2",
+      "tests/ci/matrix-receipt.test.mjs": "d791ede9ee7bbd789f89c5d31418e5394c1c705c268c4b0f89523ef985a59dc1",
+      "tests/ci/pr-modes.test.mjs": "19afb76278c6db5788dc980898967f8b547376cb1929f5923cf07816ed476bb4",
+      "tests/ci/product-editor-matrix-controls.test.mjs": "0fd469cca91a990972881b9fcf38961fab75c9f455c57d5b5842c7cf9168e132",
+      "tests/ci/product-editor-matrix-execution.test.mjs": "f1f48fdbbc188b4b972e8b05414c619238aaad87fdd51cedf60c2f98d56ce320",
+      "tests/ci/product-editor-matrix-ledger.test.mjs": "a456714c2a6bb237a5f0fe19f17d87dbf8a0e2be33d7a3bb73ba1ccc62bab23c",
+      "tests/foundation/browser_catalog_core_test.go": "7630208cfdee79f5c80297e82b6d927b7896e44c57c5b7f69d79b32ad405a29d",
+      "tests/foundation/catalog_matrix_evidence_test.go": "94324882172769000c436bb6dc449dd9ef2c581d5f7974928f29fbfe3240bb03",
+      "tests/foundation/catalog_matrix_ledger_test.go": "4d748bc485bc9f92c46fa20f77c50d8b20afcd1b24b82e4f89b15e45df723179"
+    }
+  },
+  "exit_code": 0,
+  "event_file": "browser.json.events",
+  "event_sha256": "66cc71cbbf52122a39c78b44222e6e231839908d3529f00e00a5f4e8c1a27340",
+  "outcome": {
+    "ok": true,
+    "violations": [],
+    "tests": [
+      {
+        "name": "TestBrowserCatalogCore",
+        "action": "pass"
+      },
+      {
+        "name": "TestBrowserCatalogCore/PE12-17-TWD",
+        "action": "pass"
+      },
+      {
+        "name": "TestBrowserCatalogCore/CC12-frozen",
+        "action": "pass"
+      }
+    ]
+  },
+  "violations": []
+}

@@ -9,6 +9,7 @@
 import { appendFileSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { canonicalEvidenceDrift } from "./matrix-receipt.mjs";
 
 /** Click-sweep shards per full run. Measured on 2026-10-07: ~7600 s of single-worker route time + ~5 min of per-job setup/builds; 10 shards = ~12-16 min per job. Retune from the shard times in PLAN.md. */
 export const SWEEP_SHARDS = 10;
@@ -22,7 +23,7 @@ const fanOut = (mode, n) => Array.from({ length: n }, (_, i) => `${mode}@${i + 1
 export const artifactName = (mode) => `gate-${mode.replace(/^-+/, "").replace(/[^A-Za-z0-9_.-]+/g, "_").replace(/_+$/, "")}`;
 
 /** modes (strings) -> { matrix: [{ mode, art }], sweepN, visualN } with sweepN/visualN = N when every shard 1..N of that gate is in the matrix, else 0. */
-export function expand(modes, { groupIds, sweep = SWEEP_SHARDS, visual = VISUAL_SHARDS }) {
+export function expand(modes, { groupIds, sweep = SWEEP_SHARDS, visual = VISUAL_SHARDS, matrixDrift = false, catchAllId = null }) {
   if (!Array.isArray(modes) || !modes.length || modes.some((m) => typeof m !== "string" || !/^[\x20-\x7e]+$/.test(m))) throw new Error("modes must be a non-empty JSON array of printable strings");
   const out = [];
   for (const m of modes) {
@@ -32,6 +33,9 @@ export function expand(modes, { groupIds, sweep = SWEEP_SHARDS, visual = VISUAL_
     else out.push(m);
   }
   const unique = [...new Set(out)];
+  if (matrixDrift && catchAllId && unique.includes("shard:unit") && unique.includes(`shard:${catchAllId}`) &&
+      !unique.includes("--browser-product-editor"))
+    unique.push("--browser-product-editor");
   const matrix = unique.map((mode) => ({ mode, art: artifactName(mode) }));
   const arts = matrix.map((e) => e.art);
   if (new Set(arts).size !== arts.length) throw new Error(`two modes map to the same artifact name: ${arts.filter((a, i) => arts.indexOf(a) !== i).join(", ")}`);
@@ -47,7 +51,12 @@ export function expand(modes, { groupIds, sweep = SWEEP_SHARDS, visual = VISUAL_
 
 export function main(env = process.env) {
   const plan = JSON.parse(readFileSync(path.join(root, "scripts/dev/shard-plan.json"), "utf8"));
-  const result = expand(JSON.parse(env.MODES ?? ""), { groupIds: plan.groups.map((g) => g.id) });
+  const modes = JSON.parse(env.MODES ?? "");
+  const catchAll = plan.groups.filter((group) => group.catch_all === true);
+  if (catchAll.length !== 1) throw new Error("shard plan must have exactly one catch-all group");
+  const hasMatrixFamily = modes.includes("foundation-shards") || modes.includes(`shard:${catchAll[0].id}`);
+  const matrixDrift = hasMatrixFamily && canonicalEvidenceDrift().length > 0;
+  const result = expand(modes, { groupIds: plan.groups.map((g) => g.id), catchAllId: catchAll[0].id, matrixDrift });
   console.log(`ci-plan: ${result.matrix.length} job(s)${result.sweepN ? `; click-sweep x${result.sweepN} (aggregate)` : ""}${result.visualN ? `; visual-lint x${result.visualN} (aggregate)` : ""}`);
   for (const e of result.matrix) console.log(`  ${e.mode}  -> artifact ${e.art}`);
   if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, `matrix=${JSON.stringify(result.matrix)}\nsweep_n=${result.sweepN}\nvisual_n=${result.visualN}\n`);

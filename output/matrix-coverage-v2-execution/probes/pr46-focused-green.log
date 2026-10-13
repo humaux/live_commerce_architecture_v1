@@ -1,0 +1,283 @@
+ci-plan: 12 job(s)
+  shard:unit  -> artifact gate-shard_unit
+  shard:g01  -> artifact gate-shard_g01
+  shard:g02  -> artifact gate-shard_g02
+  shard:g03  -> artifact gate-shard_g03
+  shard:g04  -> artifact gate-shard_g04
+  shard:g05  -> artifact gate-shard_g05
+  shard:g06  -> artifact gate-shard_g06
+  shard:g07  -> artifact gate-shard_g07
+  shard:g08  -> artifact gate-shard_g08
+  shard:g09  -> artifact gate-shard_g09
+  shard:g10  -> artifact gate-shard_g10
+  --browser-product-editor  -> artifact gate-browser-product-editor
+ci-plan: 10 job(s); click-sweep x10 (aggregate)
+  --browser-click-sweep@1/10  -> artifact gate-browser-click-sweep_1_10
+  --browser-click-sweep@2/10  -> artifact gate-browser-click-sweep_2_10
+  --browser-click-sweep@3/10  -> artifact gate-browser-click-sweep_3_10
+  --browser-click-sweep@4/10  -> artifact gate-browser-click-sweep_4_10
+  --browser-click-sweep@5/10  -> artifact gate-browser-click-sweep_5_10
+  --browser-click-sweep@6/10  -> artifact gate-browser-click-sweep_6_10
+  --browser-click-sweep@7/10  -> artifact gate-browser-click-sweep_7_10
+  --browser-click-sweep@8/10  -> artifact gate-browser-click-sweep_8_10
+  --browser-click-sweep@9/10  -> artifact gate-browser-click-sweep_9_10
+  --browser-click-sweep@10/10  -> artifact gate-browser-click-sweep_10_10
+✔ the full sweep and the full visual lint fan out into every shard and ask for the aggregate (2.648042ms)
+✔ foundation-shards = the unit shard + every plan group; the serial `foundation` mode is untouched (2.254958ms)
+✔ actual canonical producer drift adds the browser backstop only when the complete matrix family is planned (41.935208ms)
+✔ an explicit shard re-run (or a partial list) never claims the whole-run aggregate (0.142166ms)
+✔ duplicates collapse, artifact names are safe and unique, bad input is refused (0.460209ms)
+✔ main writes matrix / sweep_n / visual_n to GITHUB_OUTPUT (2.249042ms)
+✔ gate job concurrency group separates run classes by event (0.822292ms)
+✔ Node receipt accepts exact required suites with individual passing case identities (11.728292ms)
+✔ Node receipt rejects selected-out cases, only cases, a missing case and a missing suite file (15.843375ms)
+✔ Node_OPTIONS name filtering cannot create a positive actual receipt (128.902959ms)
+✔ Go receipt derives the catch-all family and requires every actual pass event (191.220375ms)
+✔ historical canonical skip needs exact real drift and cannot be a matching-source or wrong-reason skip (0.633917ms)
+✔ fresh live browser backstop requires the actual product editor browser test pass (0.200292ms)
+✔ required verifier recomputes event outcomes and rejects a rehashed outcome forgery (135.634041ms)
+✔ required verifier accepts a source-drift skip only with a verified same-run browser receipt (1114.880875ms)
+✔ Go historical skip rejects a matching-source skip and a wrong reason at the verifier's parser boundary (48.0745ms)
+✔ matrix evidence producers always select the current live product-editor guard (35.597291ms)
+✔ matrix evidence producer discovery unions base, head and merge checkout (1.905ms)
+✔ real matrix producer CLI outputs reach the CI job matrix (4719.695958ms)
+ℹ tests/foundation/catalog_matrix_ledger_test.go: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/foundation/catalog_matrix_evidence_test.go: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/foundation/browser_catalog_core_test.go: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/admin/product-editor.acceptance.ts: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/admin/product-editor-matrix-ledger.ts: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/foundation/testdata/product_editor_matrix_cases.json: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/ci/product-editor-matrix-ledger.test.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/ci/product-editor-matrix-claims.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/ci/product-editor-matrix-source.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/ci/product-editor-matrix-execution.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/ci/product-editor-matrix-execution.test.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/ci/product-editor-matrix-controls.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/ci/product-editor-matrix-controls.test.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/ci/matrix-receipt.test.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/ci/ci-plan.test.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ tests/ci/pr-modes.test.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ scripts/dev/matrix-receipt.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ scripts/dev/matrix-receipt-verify.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ scripts/dev/matrix-test-reporter.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ scripts/dev/matrix-test-inventory.json: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ scripts/dev/ci-plan.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ scripts/dev/pr-modes.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ scripts/dev/test-node.sh: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ scripts/dev/test-local.sh: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+ℹ apps/admin/components/ProductBulkFill.tsx: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+✔ docs, contracts, deploy files and node-test dirs run foundation-shards only (0.325542ms)
+✔ deploy script tests are backend-only while matrix producer tests retain their live browser guard (5.529708ms)
+✔ internal/ is NOT backend-only any more: a package no mode declares falls to the conservative PG rule (CI-SELECT) (5.4685ms)
+✔ a UI path adds the whole browser set, including click-sweep and visual-lint (103.725708ms)
+✔ docs-only and output-only diffs keep the single required check (foundation-shards) (2.218ms)
+✔ internal/live/stream.go selects --browser-live-console (PR #30 root cause) (5.790583ms)
+✔ round 3: the real PR #30 diff selects live-console without the shared-httpapi explosion (56.406875ms)
+✔ round 3: live_stream transport alone selects live-console but not CVS (7.264375ms)
+✔ round 3: handler.go and unknown httpapi files remain conservative (7.97025ms)
+✔ round 3: a file-level lc_covers entry is exact, not its sibling directory (11.212042ms)
+✔ round 3: a nonbrowser exact-file declaration cannot replace browser acceptance (6.794625ms)
+✔ round 4: a nonbrowser PACKAGE declaration is never browser acceptance (uniform universe guard, K3 P2) (10.880375ms)
+✔ round 4: --browser-checkout-offline covers internal/merchantorders (its spec clicks bank-transfer confirm/reject, K3 P2 example) (7.499041ms)
+✔ round 4: --browser-catalog-core and --browser-product-editor cover internal/catalog (their spec performs admin product/collection writes) (10.323042ms)
+✔ round 4: --browser-ops-polish covers the admin order-feed and finance domains OP2/OP3 read (K3 P2 example c) (29.175416ms)
+✔ internal/integrations/metareply/x.go selects --browser-live-console (PR #24 root cause) (21.939959ms)
+✔ round 2 narrowness: internal/live/stream.go does NOT select unrelated domains such as --browser-cvs (39.1875ms)
+✔ round 2 evidence: a metareply change selects exactly the modes whose harnesses drive MetaReply (live console + e2e) (6.855875ms)
+✔ round 4: an inbox change selects the inbox modes INCLUDING live-console (its buyer panel reads inbox routes) but stays one domain (16.086083ms)
+✔ a Meta message-parser change selects --browser-inbox (decode dependency) (6.431791ms)
+✔ round 2 SHARED_BACKEND_PACKAGES: every entry carries a reason and selects all PG browser modes (162.353042ms)
+✔ round 2 data invariant: SHARED packages are subtracted from lc_covers (they select all PG modes anyway) (3.467417ms)
+✔ round 2 BACKEND_ONLY_PACKAGES: the real cmd/worker-only entries select no browser mode (4.669042ms)
+✔ round 2: the conservative rules reach the Go-booting 48th mode (--browser-tracking-backfill) (17.337875ms)
+✔ a new migration selects every PG-fixture browser mode (the modes run on the migrated schema) (5.744542ms)
+✔ docs-only and contracts-only diffs still select no browser mode (1.359875ms)
+✔ cmd/ changes select every PG-fixture browser mode (the modes drive the binaries cmd/ builds) (4.95075ms)
+✔ shared platform packages select every PG-fixture browser mode (11.628584ms)
+✔ an internal package no mode declares selects every PG-fixture browser mode until the gate classifies it (2.161708ms)
+✔ lc_covers is registry DATA: declaring modes are selected by prefix match, non-declaring modes are not (15.871208ms)
+✔ backend changes never select the node-only browser modes (no Go harness, no PG fixture) (25.919916ms)
+✔ BACKEND_ONLY_PACKAGES is explicit classified data; listed packages select no browser mode (mechanism, synthetic list) (10.860583ms)
+✔ a registry without lc_covers data (historical source) stays maximally conservative (0.226834ms)
+✔ round 5: an ecpayroute-only change selects the CVS browser gates (thread 4236971117) (4.590041ms)
+✔ round 5: an orders.go-only or merchantorders-only change selects --browser-tracking-backfill (thread 4236972349) (14.061875ms)
+✔ round 5: an inventory-only or live_console.go-only change selects --browser-admin-legacy (thread 4236972354) (9.824209ms)
+✔ legacy browser_* paths still select all browsers; a known untagged foundation file stays backend-only (2.463291ms)
+✔ legacy deploy prefixes remain selected and unrelated paths do not select smoke (13.935083ms)
+✔ the browser set is release-gate's browser-mode universe minus the documented exclusions (181.260041ms)
+✔ every real browser-tagged foundation file selects registry browser modes, including non-browser names (242.103542ms)
+✔ tagged runner discovery follows registry additions, command arrays and line continuations (4.316083ms)
+✔ deploy smoke is selected for its workflow, verdict/helpers and executable test inputs (7.499917ms)
+✔ new selection never drops legacy modes or deploy for any tracked path (5807.510667ms)
+✔ CLI classifies merge-base and explicit head, including removed tags, deleted files and renames (2251.206ms)
+✔ CLI selects modes the base added after divergence when the checkout is the PR merge (PR #22 review P1) (416.123625ms)
+✔ CLI reads the merge checkout's source when the base adds a browser tag after the fork (PR #22 review P1) (490.233333ms)
+✔ CLI explicit head and stdin include tags outside the checkout and uncommitted tag removals (510.957166ms)
+✔ compound/legacy tags and unknown source are conservative; known untagged source stays backend-only (32.391042ms)
+✔ explicit-head CLI derives tagged runner modes from that head's real registry (329.368959ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "架构.md" (509.371916ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "internal/示例.go" (376.454292ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, "tests/foundation/plain\tname_test.go" (485.714292ms)
+✔ real Git CLI preserves legacy selection: quotePath=true, " deploy/scripts/synthetic-smoke.sh" (296.453291ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "架构.md" (403.834417ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "internal/示例.go" (403.764209ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, "tests/foundation/plain\tname_test.go" (320.564167ms)
+✔ real Git CLI preserves legacy selection: quotePath=false, " deploy/scripts/synthetic-smoke.sh" (300.320125ms)
+✔ stdin unions legacy trimming without trimming the source lookup path (131.782833ms)
+✔ matrix gates are executed through the actual current commands (9.735541ms)
+✔ incidental filename text cannot replace the active matrix receipt runner (6.265916ms)
+✔ canonical Node receipt set retains product-editor-matrix-ledger.test.mjs (4.287333ms)
+✔ canonical Node receipt set retains product-editor-matrix-execution.test.mjs (4.1ms)
+✔ canonical Node receipt set retains product-editor-matrix-controls.test.mjs (2.759625ms)
+✔ CI cannot append an evidence-test skip to the actual balanced dispatch (3.411459ms)
+✔ foundation go test must forward the actual RUN selector (3.076458ms)
+✔ foundation go test must forward the actual SKIP selector (3.09775ms)
+✔ required Node suites cannot retain filenames but add --test-name-pattern '^$' (7.80525ms)
+✔ required Node suites cannot retain filenames but add --test-name-pattern='.*' (4.740792ms)
+✔ required Node suites cannot retain filenames but add '--test-name-pattern=.*' (2.227125ms)
+✔ required Node suites cannot retain filenames but add --test-skip-pattern '^$' (4.0425ms)
+✔ required Node suites cannot retain filenames but add --test-skip-pattern='.*' (4.97ms)
+✔ required Node suites cannot retain filenames but add '--test-skip-pattern=.*' (3.9075ms)
+✔ filters on a different Node command do not replace or filter the required suites (4.341542ms)
+✔ foundation command cannot retain forwarding but add -run '^$' (3.94475ms)
+✔ foundation command cannot retain forwarding but add -run=^$ (3.01075ms)
+✔ foundation command cannot retain forwarding but add -run='^$' (3.440834ms)
+✔ foundation command cannot retain forwarding but add '-run=^$' (3.723584ms)
+✔ foundation command cannot retain forwarding but add -skip '^TestProductEditorMatrix' (4.025292ms)
+✔ foundation command cannot retain forwarding but add -skip=^TestProductEditorMatrix (2.936625ms)
+✔ foundation command cannot retain forwarding but add -skip='^TestProductEditorMatrix' (4.432292ms)
+✔ foundation command cannot retain forwarding but add '-skip=^TestProductEditorMatrix' (3.257709ms)
+✔ foundation refuses Go filter alias --run '^$' (4.572958ms)
+✔ foundation refuses Go filter alias --run=^$ (4.131042ms)
+✔ foundation refuses Go filter alias --run='^$' (2.721292ms)
+✔ foundation refuses Go filter alias '--run=^$' (6.061292ms)
+✔ foundation refuses Go filter alias --skip '^$' (3.027417ms)
+✔ foundation refuses Go filter alias --skip=^$ (4.805291ms)
+✔ foundation refuses Go filter alias --skip='^$' (5.070792ms)
+✔ foundation refuses Go filter alias '--skip=^$' (4.301166ms)
+✔ foundation refuses Go filter alias -test.run '^$' (3.625166ms)
+✔ foundation refuses Go filter alias -test.run=^$ (5.716791ms)
+✔ foundation refuses Go filter alias -test.run='^$' (3.925625ms)
+✔ foundation refuses Go filter alias '-test.run=^$' (3.090292ms)
+✔ foundation refuses Go filter alias -test.skip '^$' (3.041083ms)
+✔ foundation refuses Go filter alias -test.skip=^$ (2.694292ms)
+✔ foundation refuses Go filter alias -test.skip='^$' (2.800333ms)
+✔ foundation refuses Go filter alias '-test.skip=^$' (6.701708ms)
+✔ unfiltered required Node command accepts literal env prefix  (4.303375ms)
+✔ required Node command refuses --test-only (4.076541ms)
+✔ required Node command refuses --test-only true (4.955625ms)
+✔ required Node command refuses --test-only=true (3.510875ms)
+✔ required Node command refuses '--test-only=true' (2.477333ms)
+✔ required Node command refuses --test-shard (4.026583ms)
+✔ required Node command refuses --test-shard 1/2 (2.116542ms)
+✔ required Node command refuses --test-shard=1/2 (2.962459ms)
+✔ required Node command refuses '--test-shard=1/2' (2.929584ms)
+✔ required Node command refuses --test-concurrency (2.242417ms)
+✔ required Node command refuses --test-concurrency 1 (1.958584ms)
+✔ required Node command refuses --test-concurrency=1 (2.047958ms)
+✔ required Node command refuses '--test-concurrency=1' (2.009458ms)
+✔ required Node command refuses --test-name-pattern (2.367417ms)
+✔ required Node command refuses --test-name-pattern true (3.031209ms)
+✔ required Node command refuses --test-name-pattern=true (2.749917ms)
+✔ required Node command refuses '--test-name-pattern=true' (2.062209ms)
+✔ required Node command refuses --test-skip-pattern (2.678875ms)
+✔ required Node command refuses --test-skip-pattern true (1.973417ms)
+✔ required Node command refuses --test-skip-pattern=true (2.254459ms)
+✔ required Node command refuses '--test-skip-pattern=true' (3.082041ms)
+✔ unfiltered required Node command accepts literal env prefix FOO=1  (3.674458ms)
+✔ required Node command refuses FOO=1 --test-only (3.265333ms)
+✔ required Node command refuses FOO=1 --test-only true (3.686208ms)
+✔ required Node command refuses FOO=1 --test-only=true (4.051334ms)
+✔ required Node command refuses FOO=1 '--test-only=true' (5.179166ms)
+✔ required Node command refuses FOO=1 --test-shard (4.890625ms)
+✔ required Node command refuses FOO=1 --test-shard 1/2 (3.188667ms)
+✔ required Node command refuses FOO=1 --test-shard=1/2 (3.683125ms)
+✔ required Node command refuses FOO=1 '--test-shard=1/2' (3.164625ms)
+✔ required Node command refuses FOO=1 --test-concurrency (3.154833ms)
+✔ required Node command refuses FOO=1 --test-concurrency 1 (2.843708ms)
+✔ required Node command refuses FOO=1 --test-concurrency=1 (3.169209ms)
+✔ required Node command refuses FOO=1 '--test-concurrency=1' (2.826125ms)
+✔ required Node command refuses FOO=1 --test-name-pattern (2.636959ms)
+✔ required Node command refuses FOO=1 --test-name-pattern true (4.174459ms)
+✔ required Node command refuses FOO=1 --test-name-pattern=true (3.073083ms)
+✔ required Node command refuses FOO=1 '--test-name-pattern=true' (2.645625ms)
+✔ required Node command refuses FOO=1 --test-skip-pattern (3.698334ms)
+✔ required Node command refuses FOO=1 --test-skip-pattern true (3.469542ms)
+✔ required Node command refuses FOO=1 --test-skip-pattern=true (2.867083ms)
+✔ required Node command refuses FOO=1 '--test-skip-pattern=true' (3.1925ms)
+✔ unfiltered required Node command accepts literal env prefix NODE_OPTIONS="--trace-warnings" FOO=1  (2.271458ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-only (3.536333ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-only true (2.782792ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-only=true (2.534542ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 '--test-only=true' (2.74925ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-shard (2.986375ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-shard 1/2 (2.276ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-shard=1/2 (2.093583ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 '--test-shard=1/2' (2.731625ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-concurrency (1.899125ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-concurrency 1 (2.584708ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-concurrency=1 (5.609334ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 '--test-concurrency=1' (3.400416ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-name-pattern (3.590375ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-name-pattern true (2.837792ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-name-pattern=true (3.532208ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 '--test-name-pattern=true' (3.1065ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-skip-pattern (2.212209ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-skip-pattern true (1.994666ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 --test-skip-pattern=true (3.827542ms)
+✔ required Node command refuses NODE_OPTIONS="--trace-warnings" FOO=1 '--test-skip-pattern=true' (7.583875ms)
+✔ Go selector in literal GOFLAGS cannot suppress the foundation matrix: -run '^$' (3.327708ms)
+✔ Go selector in literal GOFLAGS cannot suppress the foundation matrix: -run=^$ (3.79725ms)
+✔ Go selector in literal GOFLAGS cannot suppress the foundation matrix: -skip '^$' (4.118042ms)
+✔ Go selector in literal GOFLAGS cannot suppress the foundation matrix: -skip=^$ (4.39125ms)
+✔ Go selector in literal GOFLAGS cannot suppress the foundation matrix: --run '^$' (3.500625ms)
+✔ Go selector in literal GOFLAGS cannot suppress the foundation matrix: --run=^$ (3.17675ms)
+✔ Go selector in literal GOFLAGS cannot suppress the foundation matrix: --skip '^$' (5.092625ms)
+✔ Go selector in literal GOFLAGS cannot suppress the foundation matrix: --skip=^$ (3.494833ms)
+✔ Go selector in literal GOFLAGS cannot suppress the foundation matrix: -test.run '^$' (3.2375ms)
+✔ Go selector in literal GOFLAGS cannot suppress the foundation matrix: -test.run=^$ (3.198292ms)
+✔ Go selector in literal GOFLAGS cannot suppress the foundation matrix: -test.skip '^$' (3.154083ms)
+✔ Go selector in literal GOFLAGS cannot suppress the foundation matrix: -test.skip=^$ (4.273ms)
+✔ ordinary literal GOFLAGS options remain accepted (6.293584ms)
+✔ foundation workflow rejects a Go selector in its literal GOFLAGS environment (3.248584ms)
+✔ foundation workflow tokenizes quoted GOFLAGS values containing multiple flags (5.398958ms)
+✔ Gates unit shard rejects a Go selector in its workflow GOFLAGS (5.926ms)
+✔ required Gates verifier clears inherited NODE_OPTIONS (4.641541ms)
+✔ foundation verifier clears inherited NODE_OPTIONS (4.615792ms)
+✔ Node matrix command cannot hide failures with a trailing shell OR (4.100708ms)
+✔ foundation Go command cannot hide failures with a trailing shell OR (4.00775ms)
+✔ foundation workflow refuses remove test-node with filename retained (4.542458ms)
+✔ foundation workflow refuses comment test-node with filename retained (2.7955ms)
+✔ foundation workflow refuses wrong runner test-node with filename retained (4.735ms)
+✔ foundation workflow refuses disabled step test-node with filename retained (3.343834ms)
+✔ foundation workflow refuses disabled expression test-node with filename retained (3.466833ms)
+✔ foundation workflow refuses unreachable block test-node with filename retained (1.916834ms)
+✔ foundation workflow accepts executable test-node run block (2.834667ms)
+✔ foundation workflow refuses continue-on-error for test-node (2.034042ms)
+✔ foundation workflow refuses expression continue-on-error for test-node (4.137958ms)
+✔ foundation workflow accepts literal false continue-on-error for test-node (2.254042ms)
+✔ foundation workflow refuses remove test-local with filename retained (3.607542ms)
+✔ foundation workflow refuses comment test-local with filename retained (2.114042ms)
+✔ foundation workflow refuses wrong runner test-local with filename retained (3.237416ms)
+✔ foundation workflow refuses disabled step test-local with filename retained (2.569333ms)
+✔ foundation workflow refuses disabled expression test-local with filename retained (3.9735ms)
+✔ foundation workflow refuses unreachable block test-local with filename retained (3.745ms)
+✔ foundation workflow accepts executable test-local run block (4.065708ms)
+✔ foundation workflow refuses continue-on-error for test-local (4.592125ms)
+✔ foundation workflow refuses expression continue-on-error for test-local (3.848375ms)
+✔ foundation workflow accepts literal false continue-on-error for test-local (2.674083ms)
+✔ foundation job disabled despite both runner filenames retained (2.803083ms)
+✔ foundation job cannot mark runner failures continue-on-error (3.539042ms)
+✔ foundation job refuses expression continue-on-error (5.642833ms)
+✔ foundation job accepts literal false continue-on-error (3.080125ms)
+✔ Gates job and Gate step reject continue-on-error, including expressions (6.485125ms)
+✔ foundation job condition after steps still disables the runners (2.723625ms)
+✔ incidental go test text cannot replace the real foundation executable (3.608083ms)
+ℹ tests 226
+ℹ suites 0
+ℹ pass 226
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 19042.535

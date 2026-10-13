@@ -3,14 +3,17 @@ Depends on: execution parser and existing Node/CI registries.
 Used by: integrator and independent review; only observed gate results are acceptance. -->
 # MATRIX-COVERAGE-V2 GROUP2 delivery
 
-- task_id: f597a8bc-ce29-4b68-ab31-815dd5a319cb (parent); sub-element codex4-matrix-v2-sub-execution. Issue #45 GROUP2.
-- Branch: unit/matrix-coverage-v2-execution. Base_commit: 0bfe36e53acb694f4697521202e24f0790638941. Commit: resolve with `git log -1 unit/matrix-coverage-v2-execution`; source bytes are pinned in source-hashes.json.
-- Worktree: /Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution.
-- Role: implementation/test author. Actual precise model/reasoning identifiers: UNKNOWN (not exposed to this delegated runtime). No recursive delegation.
-- Changed paths: tests/ci/product-editor-matrix-execution.mjs; tests/ci/product-editor-matrix-execution.test.mjs; output/matrix-coverage-v2-execution/**. foundation.yml remains unchanged.
-- Summary: literal argv parsing now removes assignment prefixes before identifying node/go; required Node suites refuse --test-only/--test-shard/--test-concurrency plus prior pattern filters; Go refuses --run/--skip/-test.run/-test.skip in space/equals/quoted forms. Real foundation job/step/run binding rejects retained-filename comment/name/echo/disabled/unreachable substitutes. Go registry requires the executable to be go test, rather than incidental echo text.
-- Interface: existing matrixExecutionIssues API remains compatible; optional foundationWorkflow string defaults to reading the actual foundation.yml. No runtime product, shared schema or dependency changes.
-- Rationale: reuse the existing quote-aware literal argv helper and accept only the repository's current workflow subset; no shell execution, no YAML dependency, no duplicated CI runner. Workflow shape changes fail closed and require review.
+- Current task: PR46 positive execution receipts. task_id `f597a8bc-ce29-4b68-ab31-815dd5a319cb`; base_commit `f5339cbfbac632473c0bdb2c4823b557689f0fb7`; dependency commit `8ab590779d9ed0e22c5f39031143e3e93dcf893a`.
+- Branch/worktree: `unit/matrix-coverage-v2-execution`, `/Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-coverage-v2-execution`. `pr46-source-hashes.json` records the final precommit working-tree file hashes; its `precommit_parent` is `dc2304d2a8dab20941ec7d09fc2bb54e2f5b8360` and the commit is pending.
+- Current result: source edits and evidence inventory are prepared. Latest local focused tests and all local runtime/static gates are `NOT_RUN` after owner restricted test execution to GitHub CI. Prior local test receipts below are historical and do not validate this source snapshot. Current acceptance depends on root-run CI and independent review.
+- Current implementation: positive Node/Go execution receipts bind exact actual outcomes to the workflow run, source, mode and shard; independent verification re-reads raw events. A source-drift-only historical Go skip requires a same-run verified browser job with nested PE12-17-TWD and CC12-frozen passes. The `required` job checks every result consumer, with only artifact download allowed to continue on error, and manual partial runs receive a separate check name.
+- Source and runtime risks: CI source-bound inventory / receipt correctness is pending GitHub CI; browser/REAL_PG, provider SANDBOX/LIVE and production operations are `NOT_RUN`. No external credentials or live actions were used.
+
+## Historical issue45/earlier PR46 receipts (superseded; retained for audit only)
+
+The following commands and outcomes belong to earlier source snapshots. They are not evidence for the current PR46 source tree.
+
+- Prior branch base, paths, tests and source hashes below are historical. The current complete changed-path list and current-snapshot evidence are recorded in “PR46 positive execution receipts” near the end of this file.
 
 ## Actual commands and evidence
 
@@ -34,6 +37,18 @@ Used by: integrator and independent review; only observed gate results are accep
 - Integrator to-do: independent review/re-run, serialized Node retry and canonical browser acceptance/CI as appropriate; push and open focused PR. No author push/PR/merge.
 
 Final source hashes: implementation `b39b4377c1f1e9592ab351cfc500279f8eec2482f38764d1702663eeaf072811`; tests `1ee16f0d106bde822990826222ed29a2e3c663cb3182da9a314f7a664c01249e`. No source changes after focused GREEN.
+
+## PR46 positive execution receipts (current worktree iteration)
+
+- task_id: `f597a8bc-ce29-4b68-ab31-815dd5a319cb`; base_commit: `f5339cbfbac632473c0bdb2c4823b557689f0fb7`; dependency commit: `8ab590779d9ed0e22c5f39031143e3e93dcf893a`.
+- Source snapshot before commit: `dc2304d2a8dab20941ec7d09fc2bb54e2f5b8360`; final commit SHA is reported by the owner after commit.
+- Changed paths: `.github/workflows/foundation.yml`, `.github/workflows/gates.yml`, `scripts/dev/ci-plan.mjs`, `scripts/dev/test-local.sh`, `scripts/dev/test-node.sh`, `scripts/dev/matrix-receipt-verify.mjs`, `scripts/dev/matrix-receipt.mjs`, `scripts/dev/matrix-test-inventory.json`, `scripts/dev/matrix-test-reporter.mjs`, `tests/ci/ci-plan.test.mjs`, `tests/ci/matrix-receipt.test.mjs`, `tests/ci/pr-modes.test.mjs`, `tests/ci/product-editor-matrix-execution.mjs`, `tests/ci/product-editor-matrix-execution.test.mjs`, `tests/foundation/catalog_matrix_ledger_test.go`, and this output directory.
+- Implementation: Node and Go runner receipts capture actual test events and bind source, workflow mode, run ID, shard and command. The required verifier recomputes from raw event files and checks exact Node identities, the dynamically discovered Go family, and the narrowly allowed historical ledger-evidence skip against actual `SOURCE.json` drift. A historical skip requires the same-run `--browser-product-editor` job with passing parent, nested PE12-17-TWD and CC12-frozen events. The planner adds that browser mode only when the bound source facts show real drift. The required workflow job uses a distinct `manual` check name for partial workflow-dispatch runs. Its PLAN/GATE/AGG/DEPLOY result consumer and receipt verifier are mandatory; only the artifact-download step may continue on error, since missing evidence independently fails both consumers.
+- Latest static review fix: the execution parser inspects every step in the `required` job for `continue-on-error`; only the artifact-download action may retain the approved `true`. The mutation test covers an unrelated setup step, the result aggregator as both ordinary and first-key YAML forms, the receipt verifier, and job scope. This edit has no post-edit local test result by owner directive.
+- Focused Node tests, full Node, check-gates, Go, and browser execution after the latest source edits: `NOT_RUN` by this worker under the owner's instruction that GitHub CI is the only test runner. Earlier local green logs in this directory predate the current final source snapshot and are not evidence for it.
+- Actual non-test commands in this iteration: `git status --short && git rev-parse HEAD && git diff --stat ...` → exit 0; two `shasum -a 256 ...` source-hash commands → exit 0; `git apply_patch` source/evidence edits completed. No tests or runtime gates were started after the stop instruction.
+- Current source hash manifest: `pr46-source-hashes.json` (source files are hashed; `precommit_parent` identifies the parent of the precommit source snapshot). Focused historical red/green and receipt fixtures remain under `probes/`; their older green receipts do not cover the latest final source edits.
+- Evidence level: E1 source/inventory/hash binding only for this latest iteration. E3 current-source test and CI receipts: `NOT_RUN`; root owns GitHub CI, independent review and any serialized browser acceptance. No production/provider action was performed.
 
 ## Final serialized retry (source commit 6f46db7788acad1ee66da11eb6f27b3f738f3c3d)
 

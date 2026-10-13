@@ -1,0 +1,3 @@
+{"Package":"livecommerce/tests/foundation","Test":"TestBrowserCatalogCore","Action":"pass"}
+{"Package":"livecommerce/tests/foundation","Test":"TestBrowserCatalogCore/PE12-17-TWD","Action":"pass"}
+{"Package":"livecommerce/tests/foundation","Test":"TestBrowserCatalogCore/CC12-frozen","Action":"pass"}

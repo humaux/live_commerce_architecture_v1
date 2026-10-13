@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { SWEEP_SHARDS, VISUAL_SHARDS, artifactName, expand, main } from "../../scripts/dev/ci-plan.mjs";
+import { canonicalEvidenceDrift } from "../../scripts/dev/matrix-receipt.mjs";
 
 const groupIds = ["g01", "g02", "g03"];
 const modes = (r) => r.matrix.map((e) => e.mode);
@@ -24,6 +25,26 @@ test("foundation-shards = the unit shard + every plan group; the serial `foundat
   assert.deepEqual(modes(expand(["foundation", "focused:^TestX$", "shard:^TestL"], { groupIds })), ["foundation", "focused:^TestX$", "shard:^TestL"]);
   const real = JSON.parse(readFileSync(new URL("../../scripts/dev/shard-plan.json", import.meta.url), "utf8")).groups.map((g) => g.id);
   assert.equal(expand(["foundation-shards"], { groupIds: real }).matrix.length, real.length + 1);
+});
+
+test("actual canonical producer drift adds the browser backstop only when the complete matrix family is planned", () => {
+  const base = { groupIds, catchAllId: "g03" };
+  const clean = expand(["foundation-shards"], { ...base, matrixDrift: false });
+  const drifted = expand(["foundation-shards"], { ...base, matrixDrift: true });
+  const alreadySelected = expand(["foundation-shards", "--browser-product-editor"], { ...base, matrixDrift: true });
+  assert.equal(modes(clean).includes("--browser-product-editor"), false);
+  assert.equal(modes(drifted).filter((mode) => mode === "--browser-product-editor").length, 1);
+  assert.equal(modes(alreadySelected).filter((mode) => mode === "--browser-product-editor").length, 1);
+  assert.equal(modes(expand(["shard:unit"], { ...base, matrixDrift: true })).includes("--browser-product-editor"), false);
+  assert.equal(modes(expand(["shard:g03"], { ...base, matrixDrift: true })).includes("--browser-product-editor"), false);
+  const real = JSON.parse(readFileSync(new URL("../../scripts/dev/shard-plan.json", import.meta.url), "utf8"));
+  const realCatchAll = real.groups.find((group) => group.catch_all).id;
+  const needsBackstop = canonicalEvidenceDrift().length > 0;
+  const output = path.join(mkdtempSync(path.join(tmpdir(), "ci-plan-matrix-drift-")), "out");
+  main({ MODES: JSON.stringify(["foundation-shards"]), GITHUB_OUTPUT: output });
+  const actual = JSON.parse(/^matrix=(.*)$/m.exec(readFileSync(output, "utf8"))[1]).map((entry) => entry.mode);
+  assert.equal(actual.includes("--browser-product-editor"), needsBackstop);
+  assert.ok(actual.includes(`shard:${realCatchAll}`));
 });
 
 test("an explicit shard re-run (or a partial list) never claims the whole-run aggregate", () => {

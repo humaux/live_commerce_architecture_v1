@@ -278,6 +278,17 @@ var productEditorMatrixEvidenceSources = []string{
 	"tests/ci/product-editor-matrix-execution.test.mjs",
 	"tests/ci/product-editor-matrix-controls.mjs",
 	"tests/ci/product-editor-matrix-controls.test.mjs",
+	"tests/ci/matrix-receipt.test.mjs",
+	"tests/ci/ci-plan.test.mjs",
+	"tests/ci/pr-modes.test.mjs",
+	"scripts/dev/matrix-receipt.mjs",
+	"scripts/dev/matrix-receipt-verify.mjs",
+	"scripts/dev/matrix-test-reporter.mjs",
+	"scripts/dev/matrix-test-inventory.json",
+	"scripts/dev/ci-plan.mjs",
+	"scripts/dev/pr-modes.mjs",
+	"scripts/dev/test-node.sh",
+	"scripts/dev/test-local.sh",
 	"apps/admin/components/ProductBulkFill.tsx",
 }
 

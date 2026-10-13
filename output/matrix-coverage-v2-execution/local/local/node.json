@@ -1,0 +1,3579 @@
+{
+  "schema": "matrix-execution-receipt/v1",
+  "kind": "node",
+  "command": [
+    "tests/ci/product-editor-matrix-ledger.test.mjs",
+    "tests/ci/product-editor-matrix-execution.test.mjs",
+    "tests/ci/product-editor-matrix-controls.test.mjs"
+  ],
+  "run_id": "local",
+  "job": "local",
+  "mode": "local",
+  "source_before": {
+    "commit": "f5339cbfbac632473c0bdb2c4823b557689f0fb7",
+    "hashes": {
+      "scripts/dev/matrix-receipt.mjs": "c4b84cc9514e506569af423f2637faa7d887d779086747f89efd2a96773852ae",
+      "scripts/dev/matrix-test-reporter.mjs": "4f768b7e2591011a9b9b2f6e797f250ae1bc6e72cb6dffa2e0cbff4101134255",
+      "scripts/dev/shard-plan.json": "20560a65d2f15729e1b348c277bec7fc636800a33f428648186de26a50f7f5d4",
+      "scripts/dev/test-local.sh": "5a6dc083463197a9735038d85d87ecbecc474514e5f875dd5362f45457b2d0dd",
+      "scripts/dev/test-node.sh": "0f26a98ba27d98c34115e7bf1010f3a0832f090df3c97459c90ba55c3c3df4fc",
+      "tests/ci/product-editor-matrix-controls.test.mjs": "0fd469cca91a990972881b9fcf38961fab75c9f455c57d5b5842c7cf9168e132",
+      "tests/ci/product-editor-matrix-execution.test.mjs": "9eab9ab6f9da74e8949c51655ee1933e73ebb88c1a54ff527bb4304c3244620f",
+      "tests/ci/product-editor-matrix-ledger.test.mjs": "a456714c2a6bb237a5f0fe19f17d87dbf8a0e2be33d7a3bb73ba1ccc62bab23c"
+    }
+  },
+  "source_after": {
+    "commit": "f5339cbfbac632473c0bdb2c4823b557689f0fb7",
+    "hashes": {
+      "scripts/dev/matrix-receipt.mjs": "4237e5eb3e2eb314ec728a12dba5a732dde2519a272cc5fe699799a9a45c4441",
+      "scripts/dev/matrix-test-reporter.mjs": "4f768b7e2591011a9b9b2f6e797f250ae1bc6e72cb6dffa2e0cbff4101134255",
+      "scripts/dev/shard-plan.json": "20560a65d2f15729e1b348c277bec7fc636800a33f428648186de26a50f7f5d4",
+      "scripts/dev/test-local.sh": "5a6dc083463197a9735038d85d87ecbecc474514e5f875dd5362f45457b2d0dd",
+      "scripts/dev/test-node.sh": "0f26a98ba27d98c34115e7bf1010f3a0832f090df3c97459c90ba55c3c3df4fc",
+      "tests/ci/product-editor-matrix-controls.test.mjs": "0fd469cca91a990972881b9fcf38961fab75c9f455c57d5b5842c7cf9168e132",
+      "tests/ci/product-editor-matrix-execution.test.mjs": "9eab9ab6f9da74e8949c51655ee1933e73ebb88c1a54ff527bb4304c3244620f",
+      "tests/ci/product-editor-matrix-ledger.test.mjs": "a456714c2a6bb237a5f0fe19f17d87dbf8a0e2be33d7a3bb73ba1ccc62bab23c"
+    }
+  },
+  "started_at": "2026-10-13T08:28:59.257Z",
+  "exit_code": 0,
+  "outcome": {
+    "ok": false,
+    "violations": [
+      "required Node suite file set differs",
+      "Node per-file summary contains failed, cancelled, skipped, todo, or missing counts"
+    ],
+    "files": [
+      "",
+      "tests/ci/product-editor-matrix-controls.test.mjs",
+      "tests/ci/product-editor-matrix-execution.test.mjs",
+      "tests/ci/product-editor-matrix-ledger.test.mjs"
+    ],
+    "cases": [
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-controls.test.mjs",
+        "name": "actual rendered bulk controls have matching real actions in the canonical table",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-controls.test.mjs",
+        "name": "removing the Apply declaration is RED even when table and ledger agree",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-controls.test.mjs",
+        "name": "a new rendered control without a case is RED",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-controls.test.mjs",
+        "name": "Escape alone is not a select action",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-controls.test.mjs",
+        "name": "changing the production identity is RED",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-controls.test.mjs",
+        "name": "real recorder admits the actual rendered bulk inventory in all three locales",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-controls.test.mjs",
+        "name": "real recorder refuses an undeclared or anonymous production control and duplicates",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-controls.test.mjs",
+        "name": "actual DOM inventory is bound to the real imported recorder method",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-controls.test.mjs",
+        "name": "a swapped method or no-op shadow cannot donate a DOM inventory assertion",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-controls.test.mjs",
+        "name": "tests/ci/product-editor-matrix-controls.test.mjs",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "matrix gates are executed through the actual current commands",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "incidental comment cannot replace the active Node product-editor-matrix-ledger.test.mjs argv",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "incidental comment cannot replace the active Node product-editor-matrix-execution.test.mjs argv",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "CI cannot append an evidence-test skip to the actual balanced dispatch",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation go test must forward the actual RUN selector",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation go test must forward the actual SKIP selector",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node suites cannot retain filenames but add --test-name-pattern '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node suites cannot retain filenames but add --test-name-pattern='.*'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node suites cannot retain filenames but add '--test-name-pattern=.*'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node suites cannot retain filenames but add --test-skip-pattern '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node suites cannot retain filenames but add --test-skip-pattern='.*'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node suites cannot retain filenames but add '--test-skip-pattern=.*'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "filters on a different Node command do not replace or filter the required suites",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation command cannot retain forwarding but add -run '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation command cannot retain forwarding but add -run=^$",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation command cannot retain forwarding but add -run='^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation command cannot retain forwarding but add '-run=^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation command cannot retain forwarding but add -skip '^TestProductEditorMatrix'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation command cannot retain forwarding but add -skip=^TestProductEditorMatrix",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation command cannot retain forwarding but add -skip='^TestProductEditorMatrix'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation command cannot retain forwarding but add '-skip=^TestProductEditorMatrix'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias --run '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias --run=^$",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias --run='^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias '--run=^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias --skip '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias --skip=^$",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias --skip='^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias '--skip=^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias -test.run '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias -test.run=^$",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias -test.run='^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias '-test.run=^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias -test.skip '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias -test.skip=^$",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias -test.skip='^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias '-test.skip=^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "unfiltered required Node command accepts literal env prefix ",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-only",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-only true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-only=true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses '--test-only=true'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-shard",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-shard 1/2",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-shard=1/2",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses '--test-shard=1/2'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-concurrency",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-concurrency 1",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-concurrency=1",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses '--test-concurrency=1'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-name-pattern",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-name-pattern true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-name-pattern=true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses '--test-name-pattern=true'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-skip-pattern",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-skip-pattern true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-skip-pattern=true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses '--test-skip-pattern=true'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "unfiltered required Node command accepts literal env prefix FOO=1 ",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-only",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-only true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-only=true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 '--test-only=true'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-shard",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-shard 1/2",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-shard=1/2",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 '--test-shard=1/2'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-concurrency",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-concurrency 1",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-concurrency=1",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 '--test-concurrency=1'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-name-pattern",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-name-pattern true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-name-pattern=true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 '--test-name-pattern=true'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-skip-pattern",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-skip-pattern true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-skip-pattern=true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 '--test-skip-pattern=true'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "unfiltered required Node command accepts literal env prefix NODE_OPTIONS=\"--trace-warnings\" FOO=1 ",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-only",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-only true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-only=true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 '--test-only=true'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-shard",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-shard 1/2",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-shard=1/2",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 '--test-shard=1/2'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-concurrency",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-concurrency 1",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-concurrency=1",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 '--test-concurrency=1'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-name-pattern",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-name-pattern true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-name-pattern=true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 '--test-name-pattern=true'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-skip-pattern",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-skip-pattern true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-skip-pattern=true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 '--test-skip-pattern=true'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Go selector in literal GOFLAGS cannot suppress the foundation matrix: -run '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Go selector in literal GOFLAGS cannot suppress the foundation matrix: -run=^$",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Go selector in literal GOFLAGS cannot suppress the foundation matrix: -skip '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Go selector in literal GOFLAGS cannot suppress the foundation matrix: -skip=^$",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Go selector in literal GOFLAGS cannot suppress the foundation matrix: --run '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Go selector in literal GOFLAGS cannot suppress the foundation matrix: --run=^$",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Go selector in literal GOFLAGS cannot suppress the foundation matrix: --skip '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Go selector in literal GOFLAGS cannot suppress the foundation matrix: --skip=^$",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Go selector in literal GOFLAGS cannot suppress the foundation matrix: -test.run '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Go selector in literal GOFLAGS cannot suppress the foundation matrix: -test.run=^$",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Go selector in literal GOFLAGS cannot suppress the foundation matrix: -test.skip '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Go selector in literal GOFLAGS cannot suppress the foundation matrix: -test.skip=^$",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "ordinary literal GOFLAGS options remain accepted",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow rejects a Go selector in its literal GOFLAGS environment",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow tokenizes quoted GOFLAGS values containing multiple flags",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Node matrix command cannot hide failures with a trailing shell OR",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation Go command cannot hide failures with a trailing shell OR",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses remove test-node with filename retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses comment test-node with filename retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses wrong runner test-node with filename retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses disabled step test-node with filename retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses disabled expression test-node with filename retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses unreachable block test-node with filename retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow accepts executable test-node run block",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses continue-on-error for test-node",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses expression continue-on-error for test-node",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow accepts literal false continue-on-error for test-node",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses remove test-local with filename retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses comment test-local with filename retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses wrong runner test-local with filename retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses disabled step test-local with filename retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses disabled expression test-local with filename retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses unreachable block test-local with filename retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow accepts executable test-local run block",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses continue-on-error for test-local",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses expression continue-on-error for test-local",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow accepts literal false continue-on-error for test-local",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation job disabled despite both runner filenames retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation job cannot mark runner failures continue-on-error",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation job refuses expression continue-on-error",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation job accepts literal false continue-on-error",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation job condition after steps still disables the runners",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "incidental go test text cannot replace the real foundation executable",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "real Playwright ESM consumer collects the product-editor cases",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical unary signature distinguishes !x from ~x",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical unary signature distinguishes !x from +x",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical unary signature distinguishes ++x from --x",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical unary signature distinguishes x++ from x--",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "CI hook refusal: CI=\"true\" LC_MATRIX_ACTION_MUTATION=\"\"",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "CI hook refusal: CI=\"true\" LC_MATRIX_ACTION_MUTATION=\"enabled\"",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "CI hook refusal: CI=\"true\" LC_MATRIX_MUTATION_SNAPSHOT=\"\"",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "CI hook refusal: CI=\"true\" LC_MATRIX_MUTATION_SNAPSHOT=\"enabled\"",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "CI hook refusal: CI=\"\" LC_MATRIX_ACTION_MUTATION=\"\"",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "CI hook refusal: CI=\"\" LC_MATRIX_ACTION_MUTATION=\"enabled\"",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "CI hook refusal: CI=\"\" LC_MATRIX_MUTATION_SNAPSHOT=\"\"",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "CI hook refusal: CI=\"\" LC_MATRIX_MUTATION_SNAPSHOT=\"enabled\"",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "every actual mobile control operation is enclosed by its recording callback",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "post-action outcome cannot be removed while the action and observed receipt remain",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "post-action outcome cannot be before while the action and observed receipt remain",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "post-action outcome cannot be after-return while the action and observed receipt remain",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "post-action outcome cannot be not-awaited while the action and observed receipt remain",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "post-action outcome cannot be unused-function while the action and observed receipt remain",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "post-action outcome cannot be nested-step while the action and observed receipt remain",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "post-action outcome cannot be unreachable-branch while the action and observed receipt remain",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "each checked state needs its own outcome before the next operation",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "an unrelated-outcome cannot certify the product-name fill",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "an tautological-outcome cannot certify the product-name fill",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "native acceptance cannot certify its earlier dialog message without the persisted replacement outcome",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "native acceptance cannot certify the already-enabled Save button",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "an unrelated effect cannot certify an axis-add action",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "an unresolved outcome cannot certify a known operated control",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects dropped-write-count with action and receipt retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects wrong-value-argument with action and receipt retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects wrong-document-count with action and receipt retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects dropped-reload with action and receipt retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects dropped-persistence with action and receipt retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects wrong-checked-state with action and receipt retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects wrong-ack-source with action and receipt retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects dropped-archived-id with action and receipt retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects dropped-code-stability with action and receipt retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects snapshot-after-action with action and receipt retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects fallback-sku-selector with action and receipt retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects reading the first persisted axis row twice",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects an immutable SKU code with a different value source",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects checking one archived SKU identity twice",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "an unused closure cannot donate the canonical counter snapshot binding",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "a literal locator swap cannot certify the original declared control",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "a lexical alias locator swap cannot certify the original declared control",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "a field factory locator swap cannot certify the original declared control",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "a row coordinate locator swap cannot certify the original declared control",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "a role label locator swap cannot certify the original declared control",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "a CSS ancestor locator swap cannot certify the original declared control",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "a unknown dynamic locator swap cannot certify the original declared control",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "lexical shadowing and mutable field reassignment fail closed",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "native confirmation cannot substitute its receiver",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "native confirmation cannot substitute its method",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "Escape cannot certify another key on the same receiver",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "a new bare click is rejected without running a browser",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "a different control cannot borrow an existing action's recording callback",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "a direct ledger push cannot bypass canonical recording",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "removing the recording wrapper rejects the enclosed real action",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "shared table has only complete meaningful unique declarations",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "actual recorder expands every canonical expectation and preserves detailed observations (zh-TW)",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "actual recorder expands every canonical expectation and preserves detailed observations (zh-CN)",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "actual recorder expands every canonical expectation and preserves detailed observations (en)",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "failed assertion and missing observation cannot emit a PASS or satisfy completeness",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "in-flight action cannot masquerade as complete or admit a concurrent duplicate",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      }
+    ]
+  },
+  "violations": [
+    "required Node suite file set differs",
+    "Node per-file summary contains failed, cancelled, skipped, todo, or missing counts"
+  ],
+  "ended_at": "2026-10-13T08:30:13.692Z",
+  "events": {
+    "ok": false,
+    "violations": [
+      "required Node suite file set differs",
+      "Node per-file summary contains failed, cancelled, skipped, todo, or missing counts"
+    ],
+    "files": [
+      "",
+      "tests/ci/product-editor-matrix-controls.test.mjs",
+      "tests/ci/product-editor-matrix-execution.test.mjs",
+      "tests/ci/product-editor-matrix-ledger.test.mjs"
+    ],
+    "cases": [
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-controls.test.mjs",
+        "name": "actual rendered bulk controls have matching real actions in the canonical table",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-controls.test.mjs",
+        "name": "removing the Apply declaration is RED even when table and ledger agree",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-controls.test.mjs",
+        "name": "a new rendered control without a case is RED",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-controls.test.mjs",
+        "name": "Escape alone is not a select action",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-controls.test.mjs",
+        "name": "changing the production identity is RED",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-controls.test.mjs",
+        "name": "real recorder admits the actual rendered bulk inventory in all three locales",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-controls.test.mjs",
+        "name": "real recorder refuses an undeclared or anonymous production control and duplicates",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-controls.test.mjs",
+        "name": "actual DOM inventory is bound to the real imported recorder method",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-controls.test.mjs",
+        "name": "a swapped method or no-op shadow cannot donate a DOM inventory assertion",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-controls.test.mjs",
+        "name": "tests/ci/product-editor-matrix-controls.test.mjs",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "matrix gates are executed through the actual current commands",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "incidental comment cannot replace the active Node product-editor-matrix-ledger.test.mjs argv",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "incidental comment cannot replace the active Node product-editor-matrix-execution.test.mjs argv",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "CI cannot append an evidence-test skip to the actual balanced dispatch",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation go test must forward the actual RUN selector",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation go test must forward the actual SKIP selector",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node suites cannot retain filenames but add --test-name-pattern '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node suites cannot retain filenames but add --test-name-pattern='.*'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node suites cannot retain filenames but add '--test-name-pattern=.*'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node suites cannot retain filenames but add --test-skip-pattern '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node suites cannot retain filenames but add --test-skip-pattern='.*'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node suites cannot retain filenames but add '--test-skip-pattern=.*'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "filters on a different Node command do not replace or filter the required suites",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation command cannot retain forwarding but add -run '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation command cannot retain forwarding but add -run=^$",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation command cannot retain forwarding but add -run='^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation command cannot retain forwarding but add '-run=^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation command cannot retain forwarding but add -skip '^TestProductEditorMatrix'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation command cannot retain forwarding but add -skip=^TestProductEditorMatrix",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation command cannot retain forwarding but add -skip='^TestProductEditorMatrix'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation command cannot retain forwarding but add '-skip=^TestProductEditorMatrix'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias --run '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias --run=^$",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias --run='^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias '--run=^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias --skip '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias --skip=^$",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias --skip='^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias '--skip=^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias -test.run '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias -test.run=^$",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias -test.run='^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias '-test.run=^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias -test.skip '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias -test.skip=^$",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias -test.skip='^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation refuses Go filter alias '-test.skip=^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "unfiltered required Node command accepts literal env prefix ",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-only",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-only true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-only=true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses '--test-only=true'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-shard",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-shard 1/2",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-shard=1/2",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses '--test-shard=1/2'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-concurrency",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-concurrency 1",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-concurrency=1",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses '--test-concurrency=1'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-name-pattern",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-name-pattern true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-name-pattern=true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses '--test-name-pattern=true'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-skip-pattern",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-skip-pattern true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses --test-skip-pattern=true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses '--test-skip-pattern=true'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "unfiltered required Node command accepts literal env prefix FOO=1 ",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-only",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-only true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-only=true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 '--test-only=true'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-shard",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-shard 1/2",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-shard=1/2",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 '--test-shard=1/2'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-concurrency",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-concurrency 1",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-concurrency=1",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 '--test-concurrency=1'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-name-pattern",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-name-pattern true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-name-pattern=true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 '--test-name-pattern=true'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-skip-pattern",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-skip-pattern true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 --test-skip-pattern=true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses FOO=1 '--test-skip-pattern=true'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "unfiltered required Node command accepts literal env prefix NODE_OPTIONS=\"--trace-warnings\" FOO=1 ",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-only",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-only true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-only=true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 '--test-only=true'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-shard",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-shard 1/2",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-shard=1/2",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 '--test-shard=1/2'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-concurrency",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-concurrency 1",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-concurrency=1",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 '--test-concurrency=1'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-name-pattern",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-name-pattern true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-name-pattern=true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 '--test-name-pattern=true'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-skip-pattern",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-skip-pattern true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 --test-skip-pattern=true",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "required Node command refuses NODE_OPTIONS=\"--trace-warnings\" FOO=1 '--test-skip-pattern=true'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Go selector in literal GOFLAGS cannot suppress the foundation matrix: -run '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Go selector in literal GOFLAGS cannot suppress the foundation matrix: -run=^$",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Go selector in literal GOFLAGS cannot suppress the foundation matrix: -skip '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Go selector in literal GOFLAGS cannot suppress the foundation matrix: -skip=^$",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Go selector in literal GOFLAGS cannot suppress the foundation matrix: --run '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Go selector in literal GOFLAGS cannot suppress the foundation matrix: --run=^$",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Go selector in literal GOFLAGS cannot suppress the foundation matrix: --skip '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Go selector in literal GOFLAGS cannot suppress the foundation matrix: --skip=^$",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Go selector in literal GOFLAGS cannot suppress the foundation matrix: -test.run '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Go selector in literal GOFLAGS cannot suppress the foundation matrix: -test.run=^$",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Go selector in literal GOFLAGS cannot suppress the foundation matrix: -test.skip '^$'",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Go selector in literal GOFLAGS cannot suppress the foundation matrix: -test.skip=^$",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "ordinary literal GOFLAGS options remain accepted",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow rejects a Go selector in its literal GOFLAGS environment",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow tokenizes quoted GOFLAGS values containing multiple flags",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "Node matrix command cannot hide failures with a trailing shell OR",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation Go command cannot hide failures with a trailing shell OR",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses remove test-node with filename retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses comment test-node with filename retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses wrong runner test-node with filename retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses disabled step test-node with filename retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses disabled expression test-node with filename retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses unreachable block test-node with filename retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow accepts executable test-node run block",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses continue-on-error for test-node",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses expression continue-on-error for test-node",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow accepts literal false continue-on-error for test-node",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses remove test-local with filename retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses comment test-local with filename retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses wrong runner test-local with filename retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses disabled step test-local with filename retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses disabled expression test-local with filename retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses unreachable block test-local with filename retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow accepts executable test-local run block",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses continue-on-error for test-local",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow refuses expression continue-on-error for test-local",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation workflow accepts literal false continue-on-error for test-local",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation job disabled despite both runner filenames retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation job cannot mark runner failures continue-on-error",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation job refuses expression continue-on-error",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation job accepts literal false continue-on-error",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "foundation job condition after steps still disables the runners",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-execution.test.mjs",
+        "name": "incidental go test text cannot replace the real foundation executable",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "real Playwright ESM consumer collects the product-editor cases",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical unary signature distinguishes !x from ~x",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical unary signature distinguishes !x from +x",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical unary signature distinguishes ++x from --x",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical unary signature distinguishes x++ from x--",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "CI hook refusal: CI=\"true\" LC_MATRIX_ACTION_MUTATION=\"\"",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "CI hook refusal: CI=\"true\" LC_MATRIX_ACTION_MUTATION=\"enabled\"",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "CI hook refusal: CI=\"true\" LC_MATRIX_MUTATION_SNAPSHOT=\"\"",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "CI hook refusal: CI=\"true\" LC_MATRIX_MUTATION_SNAPSHOT=\"enabled\"",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "CI hook refusal: CI=\"\" LC_MATRIX_ACTION_MUTATION=\"\"",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "CI hook refusal: CI=\"\" LC_MATRIX_ACTION_MUTATION=\"enabled\"",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "CI hook refusal: CI=\"\" LC_MATRIX_MUTATION_SNAPSHOT=\"\"",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "CI hook refusal: CI=\"\" LC_MATRIX_MUTATION_SNAPSHOT=\"enabled\"",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "every actual mobile control operation is enclosed by its recording callback",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "post-action outcome cannot be removed while the action and observed receipt remain",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "post-action outcome cannot be before while the action and observed receipt remain",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "post-action outcome cannot be after-return while the action and observed receipt remain",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "post-action outcome cannot be not-awaited while the action and observed receipt remain",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "post-action outcome cannot be unused-function while the action and observed receipt remain",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "post-action outcome cannot be nested-step while the action and observed receipt remain",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "post-action outcome cannot be unreachable-branch while the action and observed receipt remain",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "each checked state needs its own outcome before the next operation",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "an unrelated-outcome cannot certify the product-name fill",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "an tautological-outcome cannot certify the product-name fill",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "native acceptance cannot certify its earlier dialog message without the persisted replacement outcome",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "native acceptance cannot certify the already-enabled Save button",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "an unrelated effect cannot certify an axis-add action",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "an unresolved outcome cannot certify a known operated control",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects dropped-write-count with action and receipt retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects wrong-value-argument with action and receipt retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects wrong-document-count with action and receipt retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects dropped-reload with action and receipt retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects dropped-persistence with action and receipt retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects wrong-checked-state with action and receipt retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects wrong-ack-source with action and receipt retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects dropped-archived-id with action and receipt retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects dropped-code-stability with action and receipt retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects snapshot-after-action with action and receipt retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects fallback-sku-selector with action and receipt retained",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects reading the first persisted axis row twice",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects an immutable SKU code with a different value source",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "canonical expected claim rejects checking one archived SKU identity twice",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "an unused closure cannot donate the canonical counter snapshot binding",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "a literal locator swap cannot certify the original declared control",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "a lexical alias locator swap cannot certify the original declared control",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "a field factory locator swap cannot certify the original declared control",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "a row coordinate locator swap cannot certify the original declared control",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "a role label locator swap cannot certify the original declared control",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "a CSS ancestor locator swap cannot certify the original declared control",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "a unknown dynamic locator swap cannot certify the original declared control",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "lexical shadowing and mutable field reassignment fail closed",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "native confirmation cannot substitute its receiver",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "native confirmation cannot substitute its method",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "Escape cannot certify another key on the same receiver",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "a new bare click is rejected without running a browser",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "a different control cannot borrow an existing action's recording callback",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "a direct ledger push cannot bypass canonical recording",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "removing the recording wrapper rejects the enclosed real action",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "shared table has only complete meaningful unique declarations",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "actual recorder expands every canonical expectation and preserves detailed observations (zh-TW)",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "actual recorder expands every canonical expectation and preserves detailed observations (zh-CN)",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "actual recorder expands every canonical expectation and preserves detailed observations (en)",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "failed assertion and missing observation cannot emit a PASS or satisfy completeness",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "in-flight action cannot masquerade as complete or admit a concurrent duplicate",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      },
+      {
+        "file": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "name": "tests/ci/product-editor-matrix-ledger.test.mjs",
+        "passed": true,
+        "skipped": false,
+        "todo": false,
+        "only": false
+      }
+    ]
+  }
+}

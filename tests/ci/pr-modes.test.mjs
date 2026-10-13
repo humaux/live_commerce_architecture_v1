@@ -5,6 +5,7 @@
 // Used by: scripts/dev/test-node.sh, CI.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { readFileSync, readdirSync, mkdirSync, mkdtempSync, writeFileSync, rmSync, renameSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
@@ -26,7 +27,12 @@ assert.ok(matrixBody, "the Go evidence consumer must declare its executable prod
 const matrixProducers = [...matrixBody.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
 
 test("matrix evidence producers always select the current live product-editor guard", () => {
-  assert.equal(matrixProducers.length, 14);
+  assert.equal(new Set(matrixProducers).size, matrixProducers.length, "producer declaration must have unique entries");
+  for (const file of ["scripts/dev/matrix-receipt.mjs", "scripts/dev/matrix-receipt-verify.mjs",
+    "scripts/dev/matrix-test-reporter.mjs", "scripts/dev/ci-plan.mjs", "scripts/dev/test-node.sh",
+    "scripts/dev/test-local.sh", "scripts/dev/pr-modes.mjs", "tests/ci/matrix-receipt.test.mjs",
+    "tests/ci/ci-plan.test.mjs", "tests/ci/pr-modes.test.mjs"])
+    assert.ok(matrixProducers.includes(file), `matrix execution producer is missing: ${file}`);
   for (const file of matrixProducers) {
     assert.ok(planPr([file], usage).modes.includes("--browser-product-editor"), file);
   }
@@ -49,6 +55,15 @@ test("real matrix producer CLI outputs reach the CI job matrix", (t) => {
   r.put("scripts/dev/ci-plan.mjs", readFileSync(path.join(root, "scripts/dev/ci-plan.mjs"), "utf8"));
   r.put("scripts/dev/shard-plan.json", readFileSync(path.join(root, "scripts/dev/shard-plan.json"), "utf8"));
   for (const file of matrixProducers) if (file !== matrixOwner) r.put(file, "// synthetic producer\n");
+  // Preserve the real executable producer chain and its imported inventory after creating
+  // unrelated synthetic producer placeholders for the discovery loop.
+  for (const file of ["scripts/dev/pr-modes.mjs", "scripts/dev/ci-plan.mjs", "scripts/dev/matrix-receipt.mjs",
+    "scripts/dev/matrix-test-inventory.json", "scripts/dev/test-local.sh", "scripts/dev/shard-plan.json"])
+    r.put(file, readFileSync(path.join(root, file), "utf8"));
+  const fixtureHashes = Object.fromEntries(matrixProducers.map((file) => [file,
+    createHash("sha256").update(readFileSync(path.join(r.dir, file))).digest("hex")]));
+  r.put("output/matrix-ledger-enforce/DELIVERY.md", "[SOURCE.json](fixture/SOURCE.json)\n");
+  r.put("output/matrix-ledger-enforce/fixture/SOURCE.json", JSON.stringify({ source_files_sha256: fixtureHashes }));
   r.commit();
   for (const [i, file] of matrixProducers.entries()) {
     const output = path.join(r.dir, `output-${i}.txt`);
@@ -95,8 +110,9 @@ test("docs, contracts, deploy files and node-test dirs run foundation-shards onl
   assert.deepEqual(r.modes, FOUNDATION);
 });
 
-test("node tests of deploy scripts and of the CI planner are backend-only (they cannot change a browser)", () => {
-  assert.deepEqual(planPr(["tests/deploy/deploy-prep-r3.test.mjs", "tests/ci/pr-modes.test.mjs"], usage).modes, FOUNDATION);
+test("deploy script tests are backend-only while matrix producer tests retain their live browser guard", () => {
+  assert.deepEqual(planPr(["tests/deploy/deploy-prep-r3.test.mjs"], usage).modes, FOUNDATION);
+  assert.ok(planPr(["tests/ci/pr-modes.test.mjs"], usage).modes.includes("--browser-product-editor"));
   assert.deepEqual(planPr(["tests/deploy/x.test.mjs", "scripts/dev/pr-modes.mjs"], usage).modes.length > 1, true); // the planner itself still counts as UI
 });
 

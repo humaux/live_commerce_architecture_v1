@@ -1,0 +1,11 @@
+{"Time":"2026-10-13T16:49:56.391876+08:00","Action":"start","Package":"livecommerce/tests/foundation"}
+{"Time":"2026-10-13T16:49:57.112555+08:00","Action":"output","Package":"livecommerce/tests/foundation","Output":"TestProductEditorMatrixLedgerEvidenceHistoricalPolicy\n"}
+{"Time":"2026-10-13T16:49:57.114227+08:00","Action":"output","Package":"livecommerce/tests/foundation","Output":"TestProductEditorMatrixLedgerEvidenceCorruption\n"}
+{"Time":"2026-10-13T16:49:57.114236+08:00","Action":"output","Package":"livecommerce/tests/foundation","Output":"TestProductEditorMatrixLedgerEvidenceSharedSources\n"}
+{"Time":"2026-10-13T16:49:57.114238+08:00","Action":"output","Package":"livecommerce/tests/foundation","Output":"TestProductEditorMatrixLedgerEvidenceRunOutcome\n"}
+{"Time":"2026-10-13T16:49:57.114239+08:00","Action":"output","Package":"livecommerce/tests/foundation","Output":"TestProductEditorMatrixLedgerEvidenceRunIdentity\n"}
+{"Time":"2026-10-13T16:49:57.11424+08:00","Action":"output","Package":"livecommerce/tests/foundation","Output":"TestProductEditorMatrixLedgerEvidenceRunIdentityMetadata\n"}
+{"Time":"2026-10-13T16:49:57.114258+08:00","Action":"output","Package":"livecommerce/tests/foundation","Output":"TestProductEditorMatrixLedger\n"}
+{"Time":"2026-10-13T16:49:57.114268+08:00","Action":"output","Package":"livecommerce/tests/foundation","Output":"TestProductEditorMatrixLedgerEvidence\n"}
+{"Time":"2026-10-13T16:49:57.114506+08:00","Action":"output","Package":"livecommerce/tests/foundation","Output":"ok  \tlivecommerce/tests/foundation\t0.717s\n"}
+{"Time":"2026-10-13T16:49:57.114579+08:00","Action":"pass","Package":"livecommerce/tests/foundation","Elapsed":0.723}
