@@ -75,6 +75,18 @@ func oaEnabledProcessWait(t *testing.T, e *lbuEnv, p *mrProcess, predicate strin
 func TestOrderAttemptWorkerEnabledProcessNativeReady(t *testing.T) {
 	e := oaExpiryIsolated(t)
 	e.grantCreator("inbox:read", "inbox:reply", "integration:read", "integration:manage", "customers:read")
+	// The expiry-only isolated fixture does not publish a storefront. READY
+	// requires the same native verified origin as the existing notification flow.
+	e.origin = "https://oa-worker-" + strings.ReplaceAll(randomUUID(), "-", "") + ".example"
+	bhPublish(t, e.p.bcHarness, e.origin, e.tenant(), e.store())
+	var published bool
+	if err := e.p.f.owner.QueryRow(context.Background(), `SELECT EXISTS(SELECT 1
+	 FROM control.storefront_domains d JOIN control.storefront_publications p USING(tenant_id,store_id)
+	 WHERE d.tenant_id=$1 AND d.store_id=$2 AND d.origin=$3 AND d.state='ACTIVE' AND p.published
+	 AND d.ownership_verified_at<=clock_timestamp() AND d.tls_verified_at<=clock_timestamp()
+	 AND d.valid_until>clock_timestamp())`, e.tenant(), e.store(), e.origin).Scan(&published); err != nil || !published {
+		t.Fatal("isolated READY prerequisite: current published origin", err)
+	}
 	m, conversation, binding := oaEnabledProcessConversation(t, e)
 	selection := oaBeginSelection(t, e, "bank_transfer", "duplicate-origins")
 	selection["for"] = map[string]any{"bundle_ids": []string{}, "conversation_id": conversation}
@@ -151,8 +163,8 @@ func oaEnabledProcessReadyOracle(t *testing.T, e *lbuEnv, a orderattempt.Admissi
 	var receipt []byte
 	if err := e.p.f.owner.QueryRow(context.Background(), `SELECT receipt FROM ops.order_attempts WHERE attempt_id=$1`, a.AttemptID).Scan(&receipt); err != nil { t.Fatal(err) }
 	oaExecutorReceipt(t, orderattempt.ExecutionReceipt{State: "COMMITTED", Receipt: receipt}, a, "COMMITTED", "")
-	var send struct { Send struct { State string `json:"state"`; OperationID string `json:"operation_id"`; NotificationID string `json:"notification_id"` } `json:"send"` }
-	if json.Unmarshal(receipt, &send) != nil || send.Send.State != "queued" || send.Send.OperationID == "" || send.Send.NotificationID == "" { t.Fatal("process receipt lost READY notification identities") }
+	var send struct { Send struct { State string `json:"state"`; Reason string `json:"reason"`; OperationID string `json:"operation_id"`; NotificationID string `json:"notification_id"` } `json:"send"` }
+	if json.Unmarshal(receipt, &send) != nil || send.Send.State != "queued" || send.Send.OperationID == "" || send.Send.NotificationID == "" { t.Fatalf("process receipt lost READY notification identities: state=%s reason=%s operation=%t notification=%t", send.Send.State, send.Send.Reason, send.Send.OperationID!="", send.Send.NotificationID!="") }
 	var exact bool
 	err := e.p.f.owner.QueryRow(context.Background(), `SELECT a.state='COMMITTED' AND a.order_id=a.attempt_id
 	 AND a.plan_ciphertext IS NULL AND a.plan_key_version IS NULL AND a.settled_at IS NOT NULL
