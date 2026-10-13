@@ -70,6 +70,7 @@ func oaCancelReadmitSetup(t *testing.T, mode string, priced bool) oaCancelReadmi
 	if payment != "bank_transfer" {
 		base := oaBeginSelection(t, e, payment, "duplicate-origins")
 		selection["delivery"] = base["delivery"]
+		selection["customer"] = base["customer"]
 		selection["payment_mode"] = payment
 	}
 	keys := oaServiceKeys(t)
