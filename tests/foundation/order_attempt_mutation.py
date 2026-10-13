@@ -42,11 +42,11 @@ def main():
             "\tvar result SweepResult\n\tif e != nil { return result, nil }\n",
         )],
         "m5-disclose-principal": [(
-            "migrations/0176_order_attempt_admission.sql",
+            "migrations/0194_order_attempt_plan_key_retirement.sql",
             "    OR a.admission_provenance->>'principal_id' IS DISTINCT FROM auth_principal::text\n",
             "",
         ), (
-            "migrations/0176_order_attempt_admission.sql",
+            "migrations/0194_order_attempt_plan_key_retirement.sql",
             "   IF NOT FOUND OR s.principal_id<>auth_principal THEN\n",
             "   IF NOT FOUND THEN\n",
         )],
@@ -56,12 +56,12 @@ def main():
             "  ;\n",
         )],
         "pending-only-replay": [(
-            "migrations/0176_order_attempt_admission.sql",
+            "migrations/0194_order_attempt_plan_key_retirement.sql",
             "   WHERE x.tenant_id=auth_tenant AND x.operation_family='merchant_order' AND x.transport_key_digest=p_key;\n",
             "   WHERE x.tenant_id=auth_tenant AND x.operation_family='merchant_order' AND x.transport_key_digest=p_key AND x.state='PENDING';\n",
         )],
         "omit-generation-cas": [(
-            "migrations/0176_order_attempt_admission.sql",
+            "migrations/0194_order_attempt_plan_key_retirement.sql",
             "  IF s.retired_at IS NOT NULL OR s.current_generation<>p_generation THEN\n",
             "  IF s.retired_at IS NOT NULL THEN\n",
         )],
@@ -84,6 +84,13 @@ def main():
             "migrations/0186_order_attempt_composite.sql",
             "  PERFORM ops.order_attempt_execution_context(p_attempt,p_plan_plaintext);\n  UPDATE ops.order_attempts a SET state='COMMITTED'",
             "  UPDATE ops.order_attempts a SET state='COMMITTED'",
+        )],
+        "a2-admit-retired-key": [(
+            "migrations/0194_order_attempt_plan_key_retirement.sql",
+            "  IF key_retired_at IS NOT NULL THEN\n"
+            "   RAISE EXCEPTION 'plan_key_retired' USING ERRCODE='PT409';\n"
+            "  END IF;\n",
+            "",
         )],
     }
     if name not in edits:
