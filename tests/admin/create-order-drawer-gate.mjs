@@ -3,6 +3,7 @@
 // Used by: TestBrowserManualOrderLink after unchanged legacy cases; no trace/HAR/body/clipboard logging.
 // Invariants: I02/I03/I06/I09/I11; only fixed case names, status/counts and synthetic screenshots enter evidence.
 import assert from "node:assert/strict";
+import { runManualRecovery } from "./create-order-manual-recovery.mjs";
 import { runCapabilityRecovery } from "./create-order-capability-recovery.mjs";
 import { runPartialRecovery } from "./create-order-partial-recovery.mjs";
 import { spawn } from "node:child_process";
@@ -524,6 +525,17 @@ try {
   await expect(capabilityPage.getByTestId("dashboard-page")).toBeVisible();
   await runCapabilityRecovery({page:capabilityPage,api,origin,store,home,sku,fixture:capabilityFixture,routePath,openConversation,record,results});cases++;
  } finally {await capabilityContext.close();}
+ assert.equal(cases,31,"preserve every existing case before adding ManualOrder recovery");
+ for(const partial of [false,true]) {
+  current=partial?"DU3-manual-partial-recovery":"DU3-manual-absence-recovery";
+  const manualContext=await browser.newContext(ctxOpts({ignoreHTTPSErrors:true,viewport:{width:1440,height:900}})),manualPage=await manualContext.newPage();
+  try {
+   await manualPage.goto(`${origin}/en`);await manualPage.getByRole("button",{name:"Sign in with identity service",exact:true}).click();
+   await expect(manualPage.getByTestId("dashboard-page")).toBeVisible();
+   await runManualRecovery({page:manualPage,api,origin,store,cvs,addCatalog,fillEmpty,record,results,partial});cases++;
+  } finally {await manualContext.close();}
+ }
+ assert.equal(cases,33,"exact additive ManualOrder recovery matrix");
 } catch (error) {
  const coordinate=String(error?.stack||"").match(/create-order-drawer-gate\.mjs:(\d+):(\d+)/);
  failed.push(current);ledger.push({case:current,control:"scenario",action:"run",actual:coordinate?`assertion failed at create-order-drawer-gate.mjs:${coordinate[1]}:${coordinate[2]}`:"assertion failed; private diagnostics suppressed",status:"FAIL"});

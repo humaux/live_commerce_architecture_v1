@@ -233,6 +233,7 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	capabilityFixture := fixtures[7]
 	mustExec(t, e.p.f.owner, `UPDATE inbox.conversation_state SET last_inbound_at=clock_timestamp() WHERE conversation_id=$1`, capabilityFixture.Linked)
 	capabilityControl := newDrawerCapabilityControl(t, e, capabilityFixture.Bundle, openSend.OpenSend)
+	manualControl := newManualRecoveryControl(t, e, partialFixture.Bundle)
 	// The second harness has its own payload key; it must exclusively own the shared consumer queue.
 	metaClaims.stopConsumer()
 	// The existing signed-ingress/real-poller fixture proves the direct CommentStream trigger over real A2.
@@ -288,7 +289,7 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle("/v1/identity/", private)
 	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if partialFault.handle(w, r) || capabilityControl.handleCapability(w, r) {
+		if partialFault.handle(w, r) || capabilityControl.handleCapability(w, r) || manualControl.handleManual(w, r) {
 			return
 		}
 		if r.Method == "POST" && r.URL.Path == "/__test/drawer-bank-transfer" {
@@ -518,22 +519,23 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	if err := e.p.f.owner.QueryRow(ctx, `SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2 AND source='merchant_manual'`, e.tenant(), e.store()).Scan(&orders); err != nil {
 		t.Fatal(err)
 	}
-	// Preserve the original PG14 assertion separately; the seventh and eighth bundles each add exactly one order.
+	// Preserve original PG14 separately; exclude only the two extra bundles and privately observed added manual keys.
+	manualKeys := manualControl.readbackManual(t, evidence, runErr == nil)
 	var legacyOrders int
-	if err := e.p.f.owner.QueryRow(ctx, `SELECT count(*) FROM checkout.orders o WHERE o.tenant_id=$1 AND o.store_id=$2 AND o.source='merchant_manual' AND NOT EXISTS(SELECT 1 FROM inbox.order_for_buyer b WHERE b.tenant_id=o.tenant_id AND b.store_id=o.store_id AND b.bundle_id=ANY($3::uuid[]) AND b.order_id=o.id)`, e.tenant(), e.store(), []string{partialFixture.Bundle, capabilityFixture.Bundle}).Scan(&legacyOrders); err != nil {
+	if err := e.p.f.owner.QueryRow(ctx, `SELECT count(*) FROM checkout.orders o WHERE o.tenant_id=$1 AND o.store_id=$2 AND o.source='merchant_manual' AND NOT EXISTS(SELECT 1 FROM inbox.order_for_buyer b WHERE b.tenant_id=o.tenant_id AND b.store_id=o.store_id AND b.bundle_id=ANY($3::uuid[]) AND b.order_id=o.id) AND NOT EXISTS(SELECT 1 FROM ops.command_results c WHERE c.tenant_id=o.tenant_id AND c.store_id=o.store_id AND c.principal_id=$4 AND c.operation='merchanttools.order.manual' AND c.idempotency_key=ANY($5::text[]) AND c.response->>'order_id'=o.id::text)`, e.tenant(), e.store(), []string{partialFixture.Bundle, capabilityFixture.Bundle}, e.p.f.principalA, manualKeys).Scan(&legacyOrders); err != nil {
 		t.Fatal(err)
 	}
 	partialFault.readback(t, evidence, runErr == nil)
 	capabilityControl.readback(t, evidence, runErr == nil)
-	pg, _ := json.Marshal(map[string]any{"orders": orders, "expected": 16, "single_order": orders == 16, "legacy_orders": legacyOrders, "legacy_expected": 14, "legacy_single_order": legacyOrders == 14})
+	pg, _ := json.Marshal(map[string]any{"orders": orders, "expected": 18, "single_order": orders == 18, "legacy_orders": legacyOrders, "legacy_expected": 14, "legacy_single_order": legacyOrders == 14})
 	if err := os.WriteFile(filepath.Join(evidence, "pg-readback.json"), pg, 0600); err != nil {
 		t.Fatal(err)
 	}
 	if runErr != nil {
-		t.Fatalf("drawer browser gate failed: %v; PG orders=%d expected=16; evidence=%s", runErr, orders, evidence)
+		t.Fatalf("drawer browser gate failed: %v; PG orders=%d expected=18; evidence=%s", runErr, orders, evidence)
 	}
-	if orders != 16 || legacyOrders != 14 {
-		t.Fatalf("drawer single-order PG readback orders=%d expected=16 legacy_orders=%d expected=14; evidence=%s", orders, legacyOrders, evidence)
+	if orders != 18 || legacyOrders != 14 {
+		t.Fatalf("drawer single-order PG readback orders=%d expected=18 legacy_orders=%d expected=14; evidence=%s", orders, legacyOrders, evidence)
 	}
 	for _, fx := range fixtures {
 		if n := e.count(`SELECT count(*) FROM inbox.order_for_buyer WHERE store_id=$1 AND bundle_id=$2 AND state='placed'`, e.store(), fx.Bundle); n != 1 {
@@ -548,9 +550,9 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 		Cases  int      `json:"cases"`
 		Failed []string `json:"failed"`
 	}
-	// Keep all original 29 cases and the partial and capability recovery cases.
-	if json.Unmarshal(data, &result) != nil || result.Cases != 31 || len(result.Failed) != 0 {
-		t.Fatalf("drawer exact 31-case matrix result missing; evidence=%s", evidence)
+	// Keep all original 31 cases and add both ManualOrder recovery cases.
+	if json.Unmarshal(data, &result) != nil || result.Cases != 33 || len(result.Failed) != 0 {
+		t.Fatalf("drawer exact 33-case matrix result missing; evidence=%s", evidence)
 	}
 	ledgerBytes, err := os.ReadFile(filepath.Join(evidence, "click-ledger.json"))
 	if err != nil {
@@ -580,6 +582,22 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 		}
 		if matches != 1 {
 			t.Fatalf("partial case requires exactly one %s click verdict, got %d; evidence=%s", control, matches, evidence)
+		}
+	}
+	for scenario, controls := range map[string][]string{
+		"DU3-manual-absence-recovery": {"manual frozen refusal", "manual absence seal and new intent", "manual new intent persistence"},
+		"DU3-manual-partial-recovery": {"manual partial Begin fault", "manual partial authority", "manual partial retry persistence"},
+	} {
+		for _, control := range controls {
+			matches := 0
+			for _, row := range ledger {
+				if row.Case == scenario && row.Control == control && row.Status == "PASS" {
+					matches++
+				}
+			}
+			if matches != 1 {
+				t.Fatalf("manual recovery case requires exactly one %s click verdict, got %d; evidence=%s", control, matches, evidence)
+			}
 		}
 	}
 	checkCapabilityLedger(t, ledger, evidence)
