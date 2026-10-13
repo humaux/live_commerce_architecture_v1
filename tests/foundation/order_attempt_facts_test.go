@@ -45,8 +45,8 @@ func oaFactsSelection(e *lbuEnv) map[string]any {
 	return map[string]any{
 		"schema_version": 1,
 		"items": []map[string]any{
-			{"sku_id": e.money, "quantity": 2, "ordinal": 0, "origin_id": randomUUID()},
-			{"sku_id": e.money, "quantity": 3, "ordinal": 1, "origin_id": randomUUID()},
+			{"sku_id": e.money, "quantity": 2, "ordinal": 1, "origin_id": randomUUID()},
+			{"sku_id": e.money, "quantity": 3, "ordinal": 2, "origin_id": randomUUID()},
 		},
 		"delivery": map[string]any{"market_id": e.p.market.ID, "country": "TW", "service_code": "home",
 			"home_address": map[string]any{"region": "Synthetic", "city": "Synthetic", "postal_code": "100", "line1": "Synthetic address", "line2": ""}},
@@ -118,7 +118,7 @@ func TestOrderAttemptFactsCatalogOriginsAndPayment(t *testing.T) {
 	if len(out.Lines) != 2 { t.Fatalf("duplicate origins collapsed: %+v", out.Lines) }
 	for i, line := range out.Lines {
 		if line.SKUID != e.money || line.Quantity != int64(2+i) || line.UnitPriceMinor != 30000 || line.PriceRule != "" ||
-			line.Ordinal != i || line.OriginID != items[i]["origin_id"] || line.ProductID == "" || line.SKUVersion < 1 {
+			line.Ordinal != i+1 || line.OriginID != items[i]["origin_id"] || line.ProductID == "" || line.SKUVersion < 1 {
 			t.Fatalf("origin/catalog price %d: %+v", i, line)
 		}
 	}
@@ -151,7 +151,7 @@ func TestOrderAttemptFactsProvenanceAndRuntime(t *testing.T) {
 }
 
 func TestOrderAttemptFactsRefusals(t *testing.T) {
-	for _, name := range []string{"extra_price", "bad_quantity", "missing_sku", "missing_market", "unsupported_payment", "duplicate_ordinal", "currency", "inactive"} {
+	for _, name := range []string{"extra_price", "bad_quantity", "missing_sku", "missing_market", "unsupported_payment", "duplicate_ordinal", "zero_ordinal", "currency", "inactive"} {
 		t.Run(name, func(t *testing.T) {
 			e := lbuNew(t)
 			selection := oaFactsSelection(e)
@@ -163,7 +163,8 @@ func TestOrderAttemptFactsRefusals(t *testing.T) {
 			case "missing_sku": items[0]["sku_id"] = randomUUID(); code, message = "PT404", "sku_not_found"
 			case "missing_market": selection["delivery"].(map[string]any)["market_id"] = randomUUID(); code, message = "PT404", "market_not_found"
 			case "unsupported_payment": selection["payment_mode"] = "card"; code, message = "PT422", "payment_mode_unavailable"
-			case "duplicate_ordinal": items[1]["ordinal"] = 0
+			case "duplicate_ordinal": items[1]["ordinal"] = 1
+			case "zero_ordinal": items[0]["ordinal"] = 0
 			case "currency": code, message = "PT422", "currency_mismatch"
 			case "inactive": code, message = "PT422", "sku_inactive"
 			}
