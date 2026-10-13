@@ -60,4 +60,4 @@ Read-only GitHub snapshot of the earlier docs head `fe4f1a2b`: [Foundation 38381
 
 ## Independent acceptance (integrator)
 
-Full-receipt independent review of `4e80947b` by the integrator's Claude API reviewer (read-only, `claude-opus-5-5`, effort high): **VERDICT PASS, no P0/P1**, 5 P2 recorded in the integrator FOLLOWUPS. Evidence: `output/delivery-report/independent-review-4e80947b.md`. The reviewer had no git access, so PR titles and CI run ids remain cited-but-unverified there; docs/delivery/DELIVERY-REPORT.md was independently reviewed in round 1.
+Full-receipt independent review of `4e80947b` by the integrator's Claude API reviewer (read-only, `claude-sonnet-5-5` (per result.json modelUsage), effort high): **VERDICT PASS, no P0/P1**, 5 P2 recorded in the integrator FOLLOWUPS. Evidence: `output/delivery-report/independent-review-4e80947b.md`. The reviewer had no git access, so PR titles and CI run ids remain cited-but-unverified there; docs/delivery/DELIVERY-REPORT.md was independently reviewed in round 1.
