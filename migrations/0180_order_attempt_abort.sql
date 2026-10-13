@@ -157,7 +157,8 @@ BEGIN
  ctx:=ops.order_attempt_fence_context(p_attempt,p_generation);
  tenant:=(ctx->>'tenant_id')::uuid; store:=(ctx->>'store_id')::uuid;
  owner_id:=(ctx->>'buyer_owner_id')::uuid; principal:=(ctx->>'principal_id')::uuid;
- SELECT decode(string_agg(lpad(to_hex(value::integer),2,'') ,'' ORDER BY ordinal),'hex')
+ -- Each metadata byte needs exactly two hex digits, including values <16.
+ SELECT decode(string_agg(lpad(to_hex(value::integer),2,'0'),'' ORDER BY ordinal),'hex')
   INTO request_digest FROM jsonb_array_elements_text(ctx->'request_hash') WITH ORDINALITY h(value,ordinal);
  PERFORM set_config('app.tenant_id',tenant::text,true),set_config('app.store_id',store::text,true),
   set_config('app.principal_id',principal::text,true),set_config('app.buyer_id','',true),set_config('app.buyer_session_id','',true);
