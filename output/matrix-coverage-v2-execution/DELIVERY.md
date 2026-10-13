@@ -1,3 +1,6 @@
+<!-- Purpose: Record issue45 GROUP2 actual source-bound gates and historical attempts.
+Depends on: execution parser and existing Node/CI registries.
+Used by: integrator and independent review; only observed gate results are acceptance. -->
 # MATRIX-COVERAGE-V2 GROUP2 delivery
 
 - task_id: f597a8bc-ce29-4b68-ab31-815dd5a319cb (parent); sub-element codex4-matrix-v2-sub-execution. Issue #45 GROUP2.
