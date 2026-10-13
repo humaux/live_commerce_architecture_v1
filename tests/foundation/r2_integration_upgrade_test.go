@@ -92,8 +92,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0179 (OA-1 frozen attempt-owned cart and quote materialization) adds one: 102 -> 103.
 	// 0180 (OA1 fenced metadata-only abort) adds one: 103 -> 104.
 	// 0182 (OA1 deferred atomic execution commit guard) adds one: 104 -> 105.
-	if len(r2) != 105 {
-		t.Fatalf("R2 migration set = %d files %v, want 105", len(r2), r2)
+	// 0181 (OA1 frozen attempt destination) adds one: 105 -> 106.
+	if len(r2) != 106 {
+		t.Fatalf("R2 migration set = %d files %v, want 106", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

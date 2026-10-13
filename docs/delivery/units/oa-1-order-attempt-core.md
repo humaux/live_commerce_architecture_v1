@@ -68,6 +68,16 @@ access never admits a new attempt. A protected transaction-ID witness binds
 later private execution helpers to this held fence; caller-set GUCs do not.
 This internal parameter choice implements §1/§3, not a new public HTTP API.
 
+The C2 new-order identifier is the admitted attempt UUID. The order lock uses
+`pg_advisory_xact_lock(hashtextextended('checkout.order|' || tenant || '|' ||
+store || '|' || order, 0))`, with canonical UUID text and server-derived scope.
+This gives the not-yet-inserted order the same serialization key as its later
+lifecycle commands. Existing cancel, expiry and capture entrances must adopt
+that key before activation; a private C2 helper alone does not establish the
+cross-command lock order. Catalog locks follow that order key, before service,
+pickup/destination and inventory. Allocation aggregates demands by SKU using
+the existing Go allocator, while quote/order lines retain separate origins.
+
 ## Required evidence
 
 | Clause | Acceptance surface |
