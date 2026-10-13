@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"livecommerce/internal/checkout"
@@ -60,6 +61,15 @@ func TestOrderAttemptQuoteMaterializationFrozenReadbackAndRollback(t *testing.T)
 			e := lbuNew(t)
 			a := oaQuoteAdmit(t,e,live)
 			ctx := context.Background()
+			// Native fixture preparation gives this exact owner a real-session storefront
+			// cart with a nontrivial version; an empty cart inventory is not a sentinel.
+			session, browserCart := randomUUID(),randomUUID()
+			mustExec(t,e.p.f.owner,`INSERT INTO buyer.capability_sessions(id,tenant_id,store_id,owner_id,token_hash,expires_at)
+			 SELECT $2,tenant_id,store_id,buyer_owner_id,sha256(convert_to($2::text,'UTF8')),clock_timestamp()+interval '1 hour' FROM ops.order_attempts WHERE attempt_id=$1`,a.AttemptID,session)
+			mustExec(t,e.p.f.owner,`INSERT INTO storefront.carts(tenant_id,store_id,owner_id,id,creator_session_id,currency,version)
+			 SELECT tenant_id,store_id,buyer_owner_id,$2,$3,'TWD',7 FROM ops.order_attempts WHERE attempt_id=$1`,a.AttemptID,browserCart,session)
+			mustExec(t,e.p.f.owner,`INSERT INTO storefront.cart_lines(tenant_id,store_id,owner_id,cart_id,sku_id,quantity)
+			 SELECT tenant_id,store_id,buyer_owner_id,$2,$3,1 FROM ops.order_attempts WHERE attempt_id=$1`,a.AttemptID,browserCart,e.money)
 			// Current catalog drift after real C1 must not reprice the attempt quote.
 			mustExec(t,e.p.f.owner,`UPDATE catalog.skus SET price_minor=price_minor+123,version=version+1 WHERE tenant_id=$1 AND store_id=$2 AND id=$3`,e.tenant(),e.store(),e.money)
 			tx, plain := oaFenceDomainTx(t,e,a,true)
@@ -69,6 +79,7 @@ func TestOrderAttemptQuoteMaterializationFrozenReadbackAndRollback(t *testing.T)
 			if err := json.Unmarshal(plan.Facts,&facts); err != nil || len(facts.Catalog.Lines)!=2 { t.Fatalf("frozen facts positive sentinel: %v",err) }
 			var before []byte
 			if err := tx.QueryRow(ctx,`SELECT coalesce(jsonb_agg(to_jsonb(c) ORDER BY id),'[]'::jsonb) FROM storefront.carts c WHERE tenant_id=$1 AND store_id=$2 AND cart_kind='storefront'`,e.tenant(),e.store()).Scan(&before); err != nil { t.Fatal(err) }
+			if bytes.Equal(before,[]byte("[]")) { t.Fatal("storefront cart positive sentinel missing") }
 			if _,err := tx.Exec(ctx,`SELECT set_config('app.tenant_id','caller-marker',true),set_config('app.store_id','caller-marker',true),set_config('app.buyer_id','caller-marker',true),set_config('app.buyer_session_id','caller-marker',true)`); err != nil { t.Fatal(err) }
 			if _,err := tx.Exec(ctx,`SET LOCAL ROLE commerce_order_attempt_owner`); err != nil { t.Fatal(err) }
 			out,_,err := oaQuoteCall(tx,a.AttemptID,plain)
@@ -126,6 +137,33 @@ func TestOrderAttemptQuoteMaterializationFrozenReadbackAndRollback(t *testing.T)
 			if err=e.p.f.owner.QueryRow(ctx,`SELECT (SELECT count(*) FROM storefront.carts WHERE create_attempt_id=$1)+(SELECT count(*) FROM storefront.quotes WHERE create_attempt_id=$1)+(SELECT count(*) FROM storefront.cart_lines WHERE create_attempt_id=$1)+(SELECT count(*) FROM storefront.events WHERE create_attempt_id=$1)`,a.AttemptID).Scan(&effects); err!=nil || effects!=0 { t.Fatalf("outer rollback retained effects=%d err=%v",effects,err) }
 		})
 	}
+}
+
+func TestOrderAttemptQuoteMaterializationFrozenShortTTLIsInformational(t *testing.T) {
+	e:=lbuNew(t)
+	ctx,cancel:=context.WithTimeout(context.Background(),90*time.Second)
+	defer cancel()
+	// Test-only native catalog preparation precedes real C1; attempt metadata and
+	// ciphertext are never rewritten, triggers and time predicates remain enabled.
+	mustExec(t,e.p.f.owner,`UPDATE pricing.policy_versions SET quote_ttl_seconds=60 WHERE tenant_id=$1 AND store_id=$2 AND market_id=$3 AND country='TW' AND method='delivery:home'`,e.tenant(),e.store(),e.p.market.ID)
+	a:=oaQuoteAdmit(t,e,false)
+	seed,plain:=oaFenceDomainTx(t,e,a,true)
+	var plan orderattempt.FrozenPlan
+	if err:=json.Unmarshal(plain,&plan); err!=nil { t.Fatal(err) }
+	if err:=seed.Rollback(ctx); err!=nil { t.Fatal(err) }
+	var facts struct { Catalog struct { Policy pricing.Policy `json:"policy"` } `json:"catalog"` }
+	if err:=json.Unmarshal(plan.Facts,&facts); err!=nil || facts.Catalog.Policy.QuoteTTLSeconds!=60 { t.Fatalf("short frozen TTL positive sentinel: %v",err) }
+	wait:=time.NewTimer(time.Until(plan.AdmittedAt.Add(61*time.Second)))
+	defer wait.Stop()
+	select { case <-ctx.Done(): t.Fatal("bounded short-TTL wait exceeded"); case <-wait.C: }
+	tx,exact:=oaFenceDomainTx(t,e,a,true)
+	var elapsed bool
+	if err:=tx.QueryRow(ctx,`SELECT clock_timestamp()>admitted_at+interval '60 seconds' AND clock_timestamp()<execute_by FROM ops.order_attempts WHERE attempt_id=$1`,a.AttemptID).Scan(&elapsed); err!=nil || !elapsed { t.Fatalf("elapsed original TTL while attempt valid sentinel: %v",err) }
+	if _,err:=tx.Exec(ctx,`SET LOCAL ROLE commerce_order_attempt_owner`); err!=nil { t.Fatal(err) }
+	out,_,err:=oaQuoteCall(tx,a.AttemptID,exact)
+	if err!=nil { t.Fatalf("old policy TTL must not replace frozen execute_by: %v",err) }
+	var quote storefront.Quote
+	if err=json.Unmarshal(out.Quote,&quote); err!=nil || !quote.CreatedAt.Equal(plan.AdmittedAt) || !quote.ExpiresAt.Equal(plan.ExecuteBy) || quote.Policy.QuoteTTLSeconds!=60 { t.Fatalf("original attempt lifetime lost: %v",err) }
 }
 
 func TestOrderAttemptQuoteMaterializationDenialsAndExactACL(t *testing.T) {
