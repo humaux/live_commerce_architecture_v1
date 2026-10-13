@@ -6,6 +6,8 @@ package foundation_test
 // permission split, publish append-only versioning with the template.published audit and the idempotent receipt
 // replay, the §3.5 public-safe refusal, the fixed-id PT409 conflict, and cross-store RLS isolation. No send path
 // (LC-B4), no LIVE Meta traffic, no real buyer PII: fixtures are synthetic UUIDs and fixed template bodies.
+// Depends on: the real PG fixture, native msgtemplates definers and the 0188 fixed-template resolver grant.
+// Called by: foundation CI. Invariant: resolve has the exact C2 writer grant; publish/list keep their original ACL.
 
 import (
 	"context"
@@ -75,7 +77,7 @@ func TestLiveConsoleTemplatesMigration0121ExactACL(t *testing.T) {
 	}
 
 	// The three definers are owned by the NOLOGIN writer, SECURITY DEFINER, pg_catalog search_path, correct
-	// volatility, and EXECUTE is exactly {writer, runtime}.
+	// volatility, and EXECUTE is exactly {writer, runtime}, plus the 0188 integration writer on resolve alone.
 	functions := []struct {
 		signature, owner string
 		stable           bool
@@ -105,8 +107,13 @@ func TestLiveConsoleTemplatesMigration0121ExactACL(t *testing.T) {
 			if fn.stable {
 				wantVolatility = "s"
 			}
+			wantPrincipals := []string{"commerce_msgtemplates_writer", "commerce_runtime"}
+			if fn.signature == "msgtemplates.resolve(text,bigint)" {
+				// 0188 C2 resolves only the fixed order-pay-link/v1 template after its held-plan scope checks.
+				wantPrincipals = []string{"commerce_integration_writer", "commerce_msgtemplates_writer", "commerce_runtime"}
+			}
 			if owner != fn.owner || !definer || !noLogin || !noBypass || !fixedPath || volatility != wantVolatility ||
-				!slices.Equal(principals, []string{"commerce_msgtemplates_writer", "commerce_runtime"}) {
+				!slices.Equal(principals, wantPrincipals) {
 				t.Fatalf("0121 boundary: owner=%s definer=%v noLogin=%v noBypass=%v path=%v volatility=%s ACL=%v", owner, definer, noLogin, noBypass, fixedPath, volatility, principals)
 			}
 			for _, sub := range fn.resultSubstr {

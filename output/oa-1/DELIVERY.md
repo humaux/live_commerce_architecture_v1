@@ -657,3 +657,60 @@ CI115 plan `115585855242` is now GREEN. Native `115590604172`, model
 `115590604205` and compatibility `115590604272` are queued on exact `f079b80a3`;
 there are no formatter artifacts yet. All host runtime/formatting remains
 **NOT_RUN (owner CI-only)**. No READY or whole-run PASS is claimed.
+
+### Round-1 causal RED receipts, 2026-10-13 23:34 UTC
+
+Tests-first source `0cf489ac991e47c88c7ee904068781b71cb073de` leaves both
+reviewed implementations unchanged. [CI116 / 38484018646](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38484018646)
+completed with these exact results:
+
+| Job | Test / result | Evidence |
+| --- | --- | --- |
+| `115593921495` | `TestOrderAttemptCancelReadmitFreshCAS`, `LegacyBegin`, `ConcurrentPrincipals`: RED, top-level PASS=0 FAIL=3, exit 1. Bank-transfer, COD, expiry and catalogue-only fresh CAS all hit `bundle_already_ordered`; concurrent admission accepted zero. The pickup branch separately failed its initial C1 setup with `order_attempt_unavailable` and remains under diagnosis. | `cancel-readmission-red-ci116.log:726,730,732,734,742,745,750` |
+| `115593921556` | `TestOrderAttemptNotificationOriginPin`: RED for both origin A→B and same-origin version change, because the old prepared URL still returned `COMMITTED` without error. Top-level PASS=0 FAIL=1, exit 1. | `notification-origin-red-ci116.log:735,737,750` |
+| `115593921589` | `TestLegacyRuntimeIsolationPopulatedUpgrade`: GREEN, PASS=1 FAIL=0 SKIP=0, exit 0. Full historical row comparison including the exact two new provenance defaults is preserved. | `legacy-provenance-green-ci116.log:736` |
+| `115593921630` | Model tests: GREEN, PASS=2 FAIL=0 SKIP=0, exit 0. CI formatter patch is empty and records the exact source SHA; model proof does not imply native acceptance. | `ci116-authoring/ci-gates/focused__TestOrderAttemptModel.log:39`, `formatter-source-sha.txt`, `oa1-gofmt.patch` |
+
+The two product corrections were authorized only after these causal REDs.
+The origin test uses the actual external-operation River job INSERT as its
+barrier, and independent decryption checks the retry's sealed URL. Its scope is
+the exact prepared origin/version at the finish observation; it does not claim
+that later domain administration can never change eligibility.
+
+CI115 source `f079b80a3` has compatibility job `115590604272` GREEN
+(PASS=5 FAIL=0 SKIP=0, exit 0) and model job `115590604205` GREEN
+(PASS=2 FAIL=0 SKIP=0, exit 0). Its native `^TestOrderAttempt` job
+`115590604172` remains in progress. Raw logs: `compatibility-ci115.log`,
+`model-authoring-ci115.log`. CI-generated authoring artifacts are under
+`ci115-authoring/`; the formatter patch is empty.
+
+CI114's old-source full universe is now finished: 79 jobs, 69 success,
+9 failure (eight Go shards plus required), one skipped. All browser slices
+finished GREEN on that old source. `ci114-final-jobs.json` is the final job
+inventory, not evidence that the current source passed. New completed g01
+failures are `TestRemovePayuniNotifyRM02SeededDataBlocks` and
+`TestPMv2MigrationNineImages` (`shard-g01-red-ci114.log:1376,1403`), under
+read-only historical-upgrade triage. G05's exact resolver ACL needs the
+0188-authorized `commerce_integration_writer` on `msgtemplates.resolve` alone;
+publish/list must retain their original two roles. No product grant is widened.
+
+PR54 remains open. Required Foundation/plan remain
+**BLOCKED(ci-drift-scanner, unit CI-DRIFT-FACTORY)**. All local tests, builds,
+formatters and PG runs are **NOT_RUN (owner CI-only)**. Current whole-unit
+acceptance and independent review remain incomplete; **NOT READY**.
+
+G01's two failures are dependency-order failures in historical test setup:
+`post_river/0023_order_attempt_jobs.sql` tried to use
+`commerce_order_attempt_owner` before the held root 0170 created that role
+(`shard-g01-red-ci114.log:1375,1402`, SQLSTATE `42704`). Both setups now hold
+0023+ alongside the historical root suffix using real file checksums. RM02
+still releases only 0161 for its two `22023` data-preservation refusals; PM1
+releases both suffixes for the populated current upgrade, asserts exact
+post-River checksum rows, and retains all image/no-loss/second-Apply assertions.
+New positive historical-role-absence sentinels prevent a false early upgrade.
+Their GREEN receipts and the exact template-resolver ACL revision are pending.
+
+The shard registry was regenerated in CI116 and copied from its source-pinned
+artifact; four new review test groups remain covered. No local generator or
+formatter ran. The dependency map was unchanged, and the CI formatter patch was
+empty. New product-source changes will require another CI authoring receipt.

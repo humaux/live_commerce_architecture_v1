@@ -6,6 +6,7 @@ package foundation_test
 // Depends on: the catalog-media helpers of catalog_media_test.go (cmiEnv, cmiMerchant, cmiJPEG), buyer_http_test.go (bhHarness),
 //   migrations (0149), internal/httpapi merchant routes, internal/buyerhttp, internal/attribution.FeedHandler.
 // Used by: bash scripts/dev/test-focused.sh '^TestPMv2' (PG lock) and the foundation shards on CI.
+// Invariants: historical post-River consumers follow their root dependencies; upgrade preserves every image and checksum.
 
 import (
 	"bytes"
@@ -153,12 +154,25 @@ func TestPMv2MigrationNineImages(t *testing.T) {
 	if len(held) == 0 || held[0] != "0149_product_media_v2.sql" {
 		t.Fatalf("held-back migrations %v, want 0149_product_media_v2.sql first", held)
 	}
+	// OA1 post-River 0023+ consumes roles/tables from held root 0170+; it belongs to the same suffix.
+	postHeld := rmVersions("zzz", "0023")
+	postSums := rmChecksums(t, postHeld)
+	if _, ok := postSums["post_river/0023_order_attempt_jobs.sql"]; !ok {
+		t.Fatal("pre-0149 baseline must hold the post-River order-attempt consumer")
+	}
+	for _, version := range postHeld {
+		held = append(held, version)
+		mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2)`, version, postSums[version])
+	}
 	waPrecreateRoles(t, owner)
 	if err := migrations.Apply(ctx, owner); err != nil {
 		t.Fatalf("apply every migration before 0149: %v", err)
 	}
 	if n := countRows(t, owner, `SELECT count(*) FROM information_schema.columns WHERE table_schema='catalog' AND table_name='product_images' AND column_name='role'`); n != 0 {
 		t.Fatal("pre-0149 database already has product_images.role")
+	}
+	if n := countRows(t, owner, `SELECT count(*) FROM pg_roles WHERE rolname='commerce_order_attempt_owner'`); n != 0 {
+		t.Fatal("pre-0149 baseline unexpectedly applied the later order-attempt identity migration")
 	}
 	tenant, store := randomUUID(), randomUUID()
 	mustExec(t, owner, `INSERT INTO control.tenants(id,name) VALUES ($1,'pm1')`, tenant)
@@ -192,6 +206,11 @@ func TestPMv2MigrationNineImages(t *testing.T) {
 	}
 	if err := migrations.Apply(ctx, owner); err != nil {
 		t.Fatalf("0149 on the populated database: %v", err)
+	}
+	for _, version := range postHeld {
+		if n := countRows(t, owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version=$1 AND checksum=$2`, version, postSums[version]); n != 1 {
+			t.Fatalf("post-River consumer %s checksum rows=%d, want exactly one after root upgrade", version, n)
+		}
 	}
 	read := func(product, role string) (ids []string, positions []int) {
 		rows, err := owner.Query(ctx, `SELECT id::text,position FROM catalog.product_images WHERE product_id=$1 AND role=$2 ORDER BY position`, product, role)
