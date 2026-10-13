@@ -207,7 +207,7 @@ ALTER FUNCTION customers.order_attempt_sources(jsonb) OWNER TO commerce_privacy_
 REVOKE ALL ON FUNCTION customers.order_attempt_sources(jsonb) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION customers.order_attempt_sources(jsonb) TO commerce_order_attempt_owner;
 COMMENT ON FUNCTION customers.order_attempt_sources(jsonb) IS
- 'Internal C1 coordinator only: validate exact normalized selection, recheck merchant scope and explicit native customer/A14 link, return sorted opaque buyer_owner/customer subjects. No row locks or GUC mutation. Coordinator calls again under complete sorted subject barriers and rejects changed bindings; unlinked contact requires a new private owner.';
+ 'customers internal C1 coordinator only: validate exact normalized selection, recheck merchant scope and explicit native customer/A14 link, return sorted opaque buyer_owner/customer subjects. No row locks or GUC mutation. Coordinator calls again under complete sorted subject barriers and rejects changed bindings; unlinked contact requires a new private owner.';
 
 CREATE FUNCTION buyer.order_attempt_bind_owner(p_attempt uuid,p_selection jsonb)
 RETURNS void LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
