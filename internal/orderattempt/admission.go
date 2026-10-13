@@ -325,6 +325,10 @@ func admissionFailure(err error, committing bool) error {
 			switch pgerr.Message {
 			case "intent_conflict", "idempotency_conflict", "bundle_reserved", "bundle_already_ordered":
 				result.code = pgerr.Message
+			case "notification_reprepare":
+				// C2 rolled back after current notification authority changed.
+				// The admitted intent remains PENDING for a fresh VOID plan.
+				result.code = "order_attempt_retryable"
 			}
 		case "PT422":
 			result.code = "order_attempt_unavailable"
