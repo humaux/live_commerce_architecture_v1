@@ -24,8 +24,7 @@ type oaScopeReceipt struct {
 func TestOrderAttemptAuthorityScopeSurvivesRelogin(t *testing.T) {
 	f := fixture(t)
 	ctx := context.Background()
-	mustExec(t, f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission)
-	 VALUES($1,$2,$3,'orders:read'),($1,$4,$3,'orders:read') ON CONFLICT DO NOTHING`, f.tenantA, f.storeA1, f.principalA, f.storeA2)
+	principal, token := lcPrincipal(t, f, f.tenantA, []string{f.storeA1, f.storeA2}, "store:read", "orders:read")
 	read := func(token, store string) oaScopeReceipt {
 		t.Helper()
 		var raw []byte
@@ -38,8 +37,8 @@ func TestOrderAttemptAuthorityScopeSurvivesRelogin(t *testing.T) {
 		}
 		return out
 	}
-	first := read(f.tokens["a"], f.storeA1)
-	otherStore := read(f.tokens["a"], f.storeA2)
+	first := read(token, f.storeA1)
+	otherStore := read(token, f.storeA2)
 	if first.ScopeID == otherStore.ScopeID {
 		t.Fatal("same principal's different stores share a scope")
 	}
@@ -47,7 +46,7 @@ func TestOrderAttemptAuthorityScopeSurvivesRelogin(t *testing.T) {
 	tx, err := f.owner.Begin(ctx)
 	if err != nil { t.Fatal(err) }
 	defer tx.Rollback(ctx)
-	if err = insertSession(ctx, tx, newToken, f.principalA, "merchant", time.Now().Add(time.Hour), nil); err != nil { t.Fatal(err) }
+	if err = insertSession(ctx, tx, newToken, principal, "merchant", time.Now().Add(time.Hour), nil); err != nil { t.Fatal(err) }
 	if err = tx.Commit(ctx); err != nil { t.Fatal(err) }
 	if got := read(newToken, f.storeA1); got.ScopeID != first.ScopeID {
 		t.Fatalf("new session changed server scope: first=%s new=%s", first.ScopeID, got.ScopeID)
