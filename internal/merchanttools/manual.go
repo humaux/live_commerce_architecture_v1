@@ -6,8 +6,9 @@
 // with a token derived by HMAC from the Idempotency-Key): storefront.SetCart -> CreateQuote (the server price, the request has no price
 // field) -> storefront.SetDestination / checkout.BuyerCVS.EnterStore -> checkout.Service.Begin (stock reserved by begin_hold, the same
 // expiry job, the bank-transfer window, pay-at-pickup limits, the optional buyer email). Afterwards ONE merchant transaction records the
-// command receipt, marks the order source through fulfillment.mark_order_merchant_manual (migration 0094, inventory:reserve re-verified in
-// SQL) and writes the audit row order.manual_created.
+// command receipt, completes source/link through fulfillment.mark_order_intent_manual (0172, exact authenticated durable intent and
+// original Begin receipt; the legacy 0094 marker keeps its ten-minute restriction), and writes order.manual_created. Server intent records
+// preserve the original private owner and frozen request across tab/session changes and signing-key rotation.
 //
 // Non-goals: no card (a merchant cannot take a card for a buyer; ListOptions' card mode is dropped and Begin never sees it), no price,
 // discount or shipping override, no stock write of its own, no payment fact, no message to the buyer, no note column (a free-text note would
@@ -425,9 +426,9 @@ func (m *ManualOrders) Place(ctx context.Context, token, storeID, key string, in
 		var saved manualReceipt
 		err = platform.WithScope(ctx, m.pool, token, storeID, manualPermission, func(tx pgx.Tx, scope platform.Scope) error {
 			return command.Run(ctx, tx, scope, manualOperation, key, in, &saved, func() error {
-				// fulfillment.mark_order_merchant_manual (0094): inventory:reserve re-verified in SQL, order of this store, <= 10 minutes old; it also
-				// records sha256 of the buyer link token (single-use, 7 days), so the plaintext token exists only in this response.
-				if _, err := tx.Exec(ctx, `SELECT fulfillment.mark_order_merchant_manual($1,$2::uuid,$3::uuid,$4)`, hash[:], storeID, receipt.OrderID, linkHash[:]); err != nil {
+				// 0172 proves the exact admitted intent/private Begin before completing provenance, even after a crash's source window.
+				// The old 0094 recent-order marker remains unchanged for callers without this durable proof.
+				if _, err := tx.Exec(ctx, `SELECT fulfillment.mark_order_intent_manual($1,$2::uuid,$3,$4::uuid,$5)`, hash[:], storeID, key, receipt.OrderID, linkHash[:]); err != nil {
 					return err
 				}
 				saved = receipt
@@ -443,7 +444,11 @@ func (m *ManualOrders) Place(ctx context.Context, token, storeID, key string, in
 	out := ManualResult{manualReceipt: receipt, LinkState: state, Source: "merchant_manual"}
 	if state == "configured" && domains.ValidOrigin(origin) {
 		link := origin + "/" + in.Locale + "/order-link#o=" + receipt.OrderID + "&t=" + linkToken
-		out.BuyerLink = &link
+		if valid, err := m.validOrderLink(ctx, token, storeID, receipt.OrderID, linkToken); err != nil {
+			return ManualResult{}, false, mapReceiptError(err)
+		} else if valid {
+			out.BuyerLink = &link
+		}
 	}
 	return out, replayed, nil
 }
@@ -572,6 +577,13 @@ func readOrigin(ctx context.Context, tx pgx.Tx, token string, scope platform.Sco
 // pipeline runs the buyer path. Every step has its own derived key so a retry replays what already finished.
 func (m *ManualOrders) pipeline(ctx context.Context, token, capability, storeID, key string, in ManualInput) (manualReceipt, error) {
 	var zero manualReceipt
+	// A known private Begin commit is the quote/price authority. Current delivery options, token TTL and a rotated secret
+	// cannot override that immutable purchase or cause another Begin. Read only through the authenticated admitted intent.
+	if saved, found, err := m.committedIntent(ctx, token, storeID, key); err != nil {
+		return zero, err
+	} else if found {
+		return saved, nil
+	}
 	if _, err := m.issuer.RegisterForTrustedStore(ctx, storeID, capability); err != nil {
 		return zero, err
 	}
@@ -661,6 +673,34 @@ func (m *ManualOrders) pipeline(ctx context.Context, token, capability, storeID,
 	}
 	return manualReceipt{OrderID: placed.OrderID, CommercialState: placed.CommercialState, PaymentMode: placed.PaymentMode,
 		TotalMinor: quote.Amount.TotalMinor, Currency: quote.Currency, ExpiresAt: placed.ExpiresAt}, nil
+}
+
+// committedIntent is a narrow authenticated server-intent lookup, independent of the transient buyer capability.
+func (m *ManualOrders) committedIntent(ctx context.Context, token, store, key string) (manualReceipt, bool, error) {
+	var out manualReceipt
+	found := false
+	hash := sha256.Sum256([]byte(token))
+	err := platform.WithScope(ctx, m.pool, token, store, manualPermission, func(tx pgx.Tx, scope platform.Scope) error {
+		err := tx.QueryRow(ctx, `SELECT order_id,commercial_state,payment_mode,total_minor,currency,expires_at FROM fulfillment.order_intent_begin($1,$2::uuid,$3)`, hash[:], store, key).
+			Scan(&out.OrderID, &out.CommercialState, &out.PaymentMode, &out.TotalMinor, &out.Currency, &out.ExpiresAt)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil
+		}
+		found = err == nil
+		return err
+	})
+	return out, found, err
+}
+
+// validOrderLink establishes the exact hash's redeemability while holding the shared order pay-link lock.
+func (m *ManualOrders) validOrderLink(ctx context.Context, token, store, orderID, linkToken string) (bool, error) {
+	hash := sha256.Sum256([]byte(token))
+	linkHash := sha256.Sum256([]byte(linkToken))
+	valid := false
+	err := platform.WithScope(ctx, m.pool, token, store, manualPermission, func(tx pgx.Tx, scope platform.Scope) error {
+		return tx.QueryRow(ctx, `SELECT fulfillment.order_pay_link_valid($1,$2::uuid,$3::uuid,$4)`, hash[:], store, orderID, linkHash[:]).Scan(&valid)
+	})
+	return valid, err
 }
 
 // classifyPipeline turns any pipeline failure into a coded refusal; nothing from a driver or a buyer-side error text escapes.
