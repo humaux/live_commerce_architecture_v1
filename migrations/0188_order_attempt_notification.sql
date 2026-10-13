@@ -132,20 +132,20 @@ BEGIN
  tenant:=(ctx->'binding'->>'tenant_id')::uuid; store:=(ctx->'binding'->>'store_id')::uuid;
  t0:=clock_timestamp();
  -- Same eligibility-before-LIMIT2 kernel as0023; no replacement after sole expiry.
- FOR candidate IN SELECT d.origin,d.ownership_verified_at,d.tls_verified_at,d.valid_until
+ FOR candidate IN SELECT d.origin,d.version,d.ownership_verified_at,d.tls_verified_at,d.valid_until
   FROM control.storefront_domains d JOIN control.storefront_publications p USING(tenant_id,store_id)
   JOIN control.stores s ON s.tenant_id=d.tenant_id AND s.id=d.store_id JOIN control.tenants t ON t.id=d.tenant_id
   WHERE d.tenant_id=tenant AND d.store_id=store AND s.active AND t.active AND p.published AND d.state='ACTIVE'
    AND d.ownership_verified_at<=t0 AND d.tls_verified_at<=t0 AND d.valid_until>t0
   ORDER BY d.origin COLLATE "C" LIMIT 2 LOOP
   candidates:=candidates+1;
-  IF candidates=2 THEN RETURN jsonb_build_object('state','domain_selection_required','origin',NULL); END IF;
+  IF candidates=2 THEN RETURN jsonb_build_object('state','domain_selection_required','origin',NULL,'origin_version',NULL); END IF;
  END LOOP;
- IF candidates=0 THEN RETURN jsonb_build_object('state','storefront_unavailable','origin',NULL); END IF;
+ IF candidates=0 THEN RETURN jsonb_build_object('state','storefront_unavailable','origin',NULL,'origin_version',NULL); END IF;
  t1:=clock_timestamp();
  IF candidate.ownership_verified_at>t1 OR candidate.tls_verified_at>t1 OR candidate.valid_until<=t1 THEN
-  RETURN jsonb_build_object('state','storefront_unavailable','origin',NULL); END IF;
- RETURN jsonb_build_object('state','configured','origin',candidate.origin);
+  RETURN jsonb_build_object('state','storefront_unavailable','origin',NULL,'origin_version',NULL); END IF;
+ RETURN jsonb_build_object('state','configured','origin',candidate.origin,'origin_version',candidate.version);
 END $$;
 ALTER FUNCTION buyer.order_attempt_storefront_origin(uuid,text) OWNER TO commerce_buyer_writer;
 REVOKE ALL ON FUNCTION buyer.order_attempt_storefront_origin(uuid,text) FROM PUBLIC;
@@ -216,7 +216,7 @@ BEGIN
            'link_version',1,'conversation_id',conv,'binding_id',binding.id,'takeover_generation',generation,
            'platform',CASE c.object WHEN 'page' THEN 'facebook' ELSE 'instagram' END,
            'template_id',tpl.template_id,'template_version',tpl.version,'template_body',tpl.body,
-           'origin',origin->>'origin','locale',selection->>'locale',
+           'origin',origin->>'origin','origin_version',origin->'origin_version','locale',selection->>'locale',
            'thread_row',jsonb_build_object('event_id',thread.event_id,'key_id',thread.key_id,
             'nonce_hex',encode(thread.nonce,'hex'),'ciphertext_hex',encode(thread.ciphertext,'hex'),
             'app_id',thread.app_id,'object',thread.object,'asset_id',thread.asset_id,'event_key',thread.event_key,
@@ -271,10 +271,12 @@ BEGIN
    OR p_material->>'void_code' IS NULL THEN RAISE EXCEPTION 'notification_material_invalid' USING ERRCODE='PT400'; END IF;
  ELSIF p_material->>'state'='READY' THEN
   IF (p_material-ARRAY['state','operation_id','outbound_id','job_id','body_hmac_hex','key_id','nonce_hex','ciphertext_hex',
-    'dispatch_enc_hex','dispatch_ciphertext_hex','template_id','template_version'])<>'{}'::jsonb
-   OR (SELECT count(*) FROM jsonb_object_keys(p_material))<>12
+    'dispatch_enc_hex','dispatch_ciphertext_hex','template_id','template_version','origin','origin_version'])<>'{}'::jsonb
+   OR (SELECT count(*) FROM jsonb_object_keys(p_material))<>14
    OR EXISTS(SELECT 1 FROM jsonb_each(p_material) e WHERE jsonb_typeof(e.value) IS DISTINCT FROM
-    CASE WHEN e.key IN ('job_id','template_version') THEN 'number' ELSE 'string' END)
+    CASE WHEN e.key IN ('job_id','template_version','origin_version') THEN 'number' ELSE 'string' END)
+   OR octet_length(p_material->>'origin') NOT BETWEEN 11 AND 261
+   OR p_material->>'origin_version' !~ '^[1-9][0-9]{0,18}$'
    OR p_material->>'template_id' IS DISTINCT FROM 'order-pay-link/v1' OR p_material->>'template_version' IS DISTINCT FROM '1'
    OR p_material->>'key_id' !~ '^[A-Za-z0-9_-]{1,64}$'
    OR p_material->>'body_hmac_hex' !~ '^[0-9a-f]{64}$' OR p_material->>'nonce_hex' !~ '^[0-9a-f]{24}$'
@@ -322,6 +324,12 @@ BEGIN
   ELSE
    IF p_material->>'state' IS DISTINCT FROM 'READY' OR prepared->>'state' IS DISTINCT FROM 'PREPARED' THEN
     RAISE EXCEPTION 'notification_material_invalid' USING ERRCODE='PT400'; END IF;
+   -- Go sealed the URL from the original PREPARED snapshot. Current eligible B
+   -- must never authorize ciphertext for A, including renewal of A's version.
+   -- This compares the finish observation; it adds no new cross-domain locks.
+   IF p_material->'origin' IS DISTINCT FROM prepared->'origin'
+    OR p_material->'origin_version' IS DISTINCT FROM prepared->'origin_version' THEN
+    RAISE EXCEPTION 'notification_reprepare' USING ERRCODE='PT409'; END IF;
    SELECT x.id,x.object,x.asset_id,x.app_id,x.peer_key INTO c FROM social.conversations x
     WHERE x.id=(prepared->>'conversation_id')::uuid AND x.tenant_id=tenant AND x.store_id=store;
    SELECT s.mode,s.assignee_principal,s.takeover_generation,s.human_until,s.last_inbound_at INTO st

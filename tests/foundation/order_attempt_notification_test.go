@@ -333,6 +333,10 @@ func TestOrderAttemptNotificationRequiresExactHeldPlan(t *testing.T) {
 func TestOrderAttemptNotificationStorefrontOriginCurrentEligibility(t *testing.T) {
 	e := lbuNew(t)
 	a, tx, plain, _ := oaNotificationNative(t, e, true)
+	var originVersion int64
+	if err := tx.QueryRow(context.Background(), `SELECT version FROM control.storefront_domains WHERE tenant_id=$1 AND store_id=$2 AND origin=$3`, e.tenant(), e.store(), e.origin).Scan(&originVersion); err != nil {
+		t.Fatal(err)
+	}
 	// A continuation has no browser session and resolves only the held native plan's store.
 	oaStateExec(t, tx, `DELETE FROM identity.sessions WHERE token_hash=$1`, tokenHash(e.token()))
 	foreignStore, foreignOrigin := randomUUID(), "https://foreign-"+strings.ReplaceAll(randomUUID(), "-", "")+".example"
@@ -360,22 +364,23 @@ func TestOrderAttemptNotificationStorefrontOriginCurrentEligibility(t *testing.T
 				t.Fatalf("bound current origin helper: %v", err)
 			}
 			var result struct {
-				State  string  `json:"state"`
-				Origin *string `json:"origin"`
+				State         string  `json:"state"`
+				Origin        *string `json:"origin"`
+				OriginVersion *int64  `json:"origin_version"`
 			}
 			var fields map[string]json.RawMessage
 			if err = json.Unmarshal(raw, &result); err != nil {
 				t.Fatal(err)
 			}
-			if err = json.Unmarshal(raw, &fields); err != nil || len(fields) != 2 || result.State != tc.state {
-				t.Fatal("origin must have exact frozen state/origin shape")
+			if err = json.Unmarshal(raw, &fields); err != nil || len(fields) != 3 || result.State != tc.state {
+				t.Fatal("origin must have exact state/origin/version shape")
 			}
 			if tc.state == "configured" {
-				if result.Origin == nil || *result.Origin != e.origin {
+				if result.Origin == nil || *result.Origin != e.origin || result.OriginVersion == nil || *result.OriginVersion != originVersion {
 					t.Fatal("origin did not use existing same-store published proof")
 				}
-			} else if result.Origin != nil || !bytes.Equal(fields["origin"], []byte("null")) {
-				t.Fatal("unavailable/ambiguous origin exposed a private URL")
+			} else if result.Origin != nil || result.OriginVersion != nil || !bytes.Equal(fields["origin"], []byte("null")) || !bytes.Equal(fields["origin_version"], []byte("null")) {
+				t.Fatal("unavailable/ambiguous origin exposed a private URL/version")
 			}
 			oaStateExec(t, tx, `RESET ROLE`)
 			oaStateExec(t, tx, `ROLLBACK TO SAVEPOINT oa_origin_case`)
@@ -489,10 +494,11 @@ func TestOrderAttemptNotificationReadyNativeActualCrypto(t *testing.T) {
 		TemplateID      string          `json:"template_id"`
 		TemplateVersion int64           `json:"template_version"`
 		Origin          string          `json:"origin"`
+		OriginVersion   int64           `json:"origin_version"`
 		Locale          string          `json:"locale"`
 		Thread          json.RawMessage `json:"thread_row"`
 	}
-	if err = json.Unmarshal(prepared, &contextWire); err != nil || contextWire.State != "PREPARED" || contextWire.BindingID != binding || contextWire.ConversationID != conversation || contextWire.TemplateID != "order-pay-link/v1" || contextWire.TemplateVersion != 1 || contextWire.Origin != e.origin || contextWire.Locale != selection["locale"] || len(contextWire.Thread) == 0 {
+	if err = json.Unmarshal(prepared, &contextWire); err != nil || contextWire.State != "PREPARED" || contextWire.BindingID != binding || contextWire.ConversationID != conversation || contextWire.TemplateID != "order-pay-link/v1" || contextWire.TemplateVersion != 1 || contextWire.Origin != e.origin || contextWire.OriginVersion < 1 || contextWire.Locale != selection["locale"] || len(contextWire.Thread) == 0 {
 		t.Fatal("READY must come from current same-store native binding/template/encrypted inbound/published origin and frozen locale")
 	}
 	// tcvNew's existing bhPublish creates the real current publication/domain proof.
@@ -547,8 +553,8 @@ func TestOrderAttemptNotificationReadyNativeActualCrypto(t *testing.T) {
 	if err = json.Unmarshal(material, &artifact); err != nil {
 		t.Fatal(err)
 	}
-	if len(artifact) != 12 || artifact["state"] != "READY" || artifact["operation_id"] != operation || artifact["outbound_id"] != outbound || artifact["job_id"] != float64(job) {
-		t.Fatal("READY artifact must have exact frozen shape and parent-minted IDs/job")
+	if len(artifact) != 14 || artifact["state"] != "READY" || artifact["operation_id"] != operation || artifact["outbound_id"] != outbound || artifact["job_id"] != float64(job) || artifact["origin"] != contextWire.Origin || artifact["origin_version"] != float64(contextWire.OriginVersion) {
+		t.Fatal("READY artifact must retain exact shape, parent-minted IDs/job and prepared origin/version")
 	}
 	var fields map[string]json.RawMessage
 	var thread map[string]json.RawMessage

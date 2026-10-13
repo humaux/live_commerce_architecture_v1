@@ -2,7 +2,8 @@
 // Depends on: existing inbox payload AEAD, frozen classifier and Page HPKE public ring.
 // Used by: the order-attempt executor after SQL preparation, with parent-minted IDs/job.
 // Invariants: no DB/provider IO; exact scoped inbound, fixed template and dormant
-// order-only fragment URL; display copy has no bearer, recipient stays HPKE sealed.
+// order-only fragment URL pinned to its observed origin/version; display copy has
+// no bearer, recipient stays HPKE sealed.
 // OA2 owns the order-attempt-notification/v1 dispatcher and public URL consumer.
 package inbox
 
@@ -60,6 +61,7 @@ type attemptNotificationPrepared struct {
 	TemplateVersion    int64                     `json:"template_version"`
 	TemplateBody       string                    `json:"template_body"`
 	Origin             string                    `json:"origin"`
+	OriginVersion      int64                     `json:"origin_version"`
 	Locale             string                    `json:"locale"`
 	Thread             attemptNotificationThread `json:"thread_row"`
 }
@@ -77,6 +79,8 @@ type attemptNotificationArtifact struct {
 	DispatchCiphertext string `json:"dispatch_ciphertext_hex"`
 	TemplateID         string `json:"template_id"`
 	TemplateVersion    int64  `json:"template_version"`
+	Origin             string `json:"origin"`
+	OriginVersion      int64  `json:"origin_version"`
 }
 
 // PrepareOrderAttemptNotification transforms only the internal SQL PREPARED DTO.
@@ -95,7 +99,7 @@ func (s *Service) PrepareOrderAttemptNotification(prepared json.RawMessage, buye
 	if err := decoder.Decode(&p); err != nil {
 		return nil, ErrOrderAttemptNotificationFormat
 	}
-	if decoder.Decode(new(any)) != io.EOF || p.State != "PREPARED" || !command.ValidID(p.TenantID) || !command.ValidID(p.StoreID) || !command.ValidID(p.OrderID) || !command.ValidID(p.ConversationID) || !command.ValidID(p.BindingID) || p.LinkVersion != 1 || p.TakeoverGeneration < 0 || (p.Platform != "facebook" && p.Platform != "instagram") || p.TemplateID != msgtemplates.FixedOrderPayLink || p.TemplateVersion != 1 || strings.Count(p.TemplateBody, linkPlaceholder) != 1 {
+	if decoder.Decode(new(any)) != io.EOF || p.State != "PREPARED" || !command.ValidID(p.TenantID) || !command.ValidID(p.StoreID) || !command.ValidID(p.OrderID) || !command.ValidID(p.ConversationID) || !command.ValidID(p.BindingID) || p.LinkVersion != 1 || p.TakeoverGeneration < 0 || p.OriginVersion <= 0 || (p.Platform != "facebook" && p.Platform != "instagram") || p.TemplateID != msgtemplates.FixedOrderPayLink || p.TemplateVersion != 1 || strings.Count(p.TemplateBody, linkPlaceholder) != 1 {
 		return nil, ErrOrderAttemptNotificationFormat
 	}
 	// The dormant order-only URL is bounded by SQL's current origin and C1 locale.
@@ -157,7 +161,7 @@ func (s *Service) PrepareOrderAttemptNotification(prepared json.RawMessage, buye
 	if err != nil {
 		return nil, err
 	}
-	artifact, err := json.Marshal(attemptNotificationArtifact{State: "READY", OperationID: operationID, OutboundID: outboundID, JobID: jobID, BodyHMAC: hex.EncodeToString(digest), KeyID: keyID, Nonce: hex.EncodeToString(displayNonce), Ciphertext: hex.EncodeToString(displayCiphertext), DispatchEnc: hex.EncodeToString(enc), DispatchCiphertext: hex.EncodeToString(sealed), TemplateID: p.TemplateID, TemplateVersion: p.TemplateVersion})
+	artifact, err := json.Marshal(attemptNotificationArtifact{State: "READY", OperationID: operationID, OutboundID: outboundID, JobID: jobID, BodyHMAC: hex.EncodeToString(digest), KeyID: keyID, Nonce: hex.EncodeToString(displayNonce), Ciphertext: hex.EncodeToString(displayCiphertext), DispatchEnc: hex.EncodeToString(enc), DispatchCiphertext: hex.EncodeToString(sealed), TemplateID: p.TemplateID, TemplateVersion: p.TemplateVersion, Origin: p.Origin, OriginVersion: p.OriginVersion})
 	if err != nil {
 		return nil, ErrPayload
 	}
