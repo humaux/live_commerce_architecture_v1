@@ -8,8 +8,12 @@ package foundation_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 func TestOrderAttemptProvenanceCreatorXOR(t *testing.T) {
@@ -78,7 +82,7 @@ func TestOrderAttemptProvenanceCreatorXOR(t *testing.T) {
 				local, remote []string
 			}{
 				{"buyer.capability_sessions", []string{"tenant_id", "store_id", tc.owner, tc.session}, []string{"tenant_id", "store_id", "owner_id", "id"}},
-				{"ops.order_attempts", []string{"tenant_id", "store_id", tc.owner, "create_attempt_id"}, []string{"tenant_id", "store_id", "buyer_owner_id", "attempt_id"}},
+				{"ops.order_attempt_creators", []string{"tenant_id", "store_id", tc.owner, "create_attempt_id"}, []string{"tenant_id", "store_id", "buyer_owner_id", "attempt_id"}},
 			} {
 				oaProvenanceFK(t, f, tc.table, target.table, target.local, target.remote, false)
 			}
@@ -138,6 +142,11 @@ func TestOrderAttemptProvenanceRemainingInventoryChecks(t *testing.T) {
 
 func TestOrderAttemptProvenanceScopedAggregate(t *testing.T) {
 	f := fixture(t)
+	// The retained business creator is separated from the 90-day replay record,
+	// whose exact FK still binds every admitted attempt to the same owner and scope.
+	oaProvenanceFK(t, f, "ops.order_attempts", "ops.order_attempt_creators",
+		[]string{"tenant_id", "store_id", "buyer_owner_id", "attempt_id"},
+		[]string{"tenant_id", "store_id", "buyer_owner_id", "attempt_id"}, false)
 	// Every attempt-owned child also binds its exact attempt parent; an FK only to
 	// ops.order_attempts would let two attempts of the same buyer exchange artifacts.
 	for _, tc := range []struct {
@@ -259,7 +268,7 @@ func TestOrderAttemptProvenanceCoordinatorNoDomainDML(t *testing.T) {
 func TestOrderAttemptProvenanceEnteredStore(t *testing.T) {
 	f := fixture(t)
 	ctx := context.Background()
-	oaProvenanceFK(t, f, "fulfillment.pickup_versions", "ops.order_attempts",
+	oaProvenanceFK(t, f, "fulfillment.pickup_versions", "ops.order_attempt_creators",
 		[]string{"tenant_id", "store_id", "buyer_owner_id", "create_attempt_id"},
 		[]string{"tenant_id", "store_id", "buyer_owner_id", "attempt_id"}, false)
 	var expression string
@@ -291,5 +300,82 @@ func TestOrderAttemptProvenanceEnteredStore(t *testing.T) {
 		if err := f.owner.QueryRow(ctx, query, string(data)).Scan(&accepted); err != nil || accepted != tc.want {
 			t.Errorf("entered-store creator %s owner=%v attempt=%v: accepted=%v want=%v err=%v", tc.kind, tc.owner, tc.attempt, accepted, tc.want, err)
 		}
+	}
+}
+
+func TestOrderAttemptProvenanceNativeCartsAndOrigins(t *testing.T) {
+	h := cqSetup(t)
+	browser := h.oneCart(t)
+	f := h.f
+	ctx := context.Background()
+	tx, err := f.owner.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(ctx)
+	// This is a storage fixture in the isolated foundation DB, not fabricated C1
+	// authorization. Runtime admission, entire C2 chain and actual-login rejection
+	// remain separate required gates. No capability session is minted for an attempt.
+	var sessionsBefore int
+	if err := tx.QueryRow(ctx, `SELECT count(*) FROM buyer.capability_sessions WHERE tenant_id=$1 AND store_id=$2 AND owner_id=$3`, f.tenantA, f.storeA1, h.cap.Scope.OwnerID).Scan(&sessionsBefore); err != nil {
+		t.Fatal(err)
+	}
+	attempts := []string{randomUUID(), randomUUID()}
+	carts := []string{randomUUID(), randomUUID()}
+	for i, attempt := range attempts {
+		if _, err := tx.Exec(ctx, `INSERT INTO ops.order_attempt_creators(attempt_id,tenant_id,store_id,buyer_owner_id) VALUES($1,$2,$3,$4)`, attempt, f.tenantA, f.storeA1, h.cap.Scope.OwnerID); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := tx.Exec(ctx, `INSERT INTO storefront.carts(tenant_id,store_id,owner_id,id,currency,version,cart_kind,create_attempt_id)
+		 VALUES($1,$2,$3,$4,$5,1,'order_attempt',$6)`, f.tenantA, f.storeA1, h.cap.Scope.OwnerID, carts[i], browser.Currency, attempt); err != nil {
+			t.Fatalf("native attempt cart %d refused: %v", i, err)
+		}
+	}
+	origins := []string{randomUUID(), randomUUID()}
+	for i, origin := range origins {
+		if _, err := tx.Exec(ctx, `INSERT INTO storefront.cart_lines(tenant_id,store_id,owner_id,cart_id,sku_id,quantity,cart_kind,create_attempt_id,line_ordinal,origin_kind,origin_id)
+		 VALUES($1,$2,$3,$4,$5,$6,'order_attempt',$7,$8,'claim',$9)`, f.tenantA, f.storeA1, h.cap.Scope.OwnerID, carts[0], h.stock.skus[0].ID, i+1, attempts[0], i+1, origin); err != nil {
+			t.Fatalf("distinct origin for same SKU refused: %v", err)
+		}
+	}
+	var count, quantity, sessionsAfter int
+	if err := tx.QueryRow(ctx, `SELECT count(*),sum(quantity) FROM storefront.cart_lines WHERE cart_id=$1`, carts[0]).Scan(&count, &quantity); err != nil || count != 2 || quantity != 3 {
+		t.Fatalf("origin preservation sentinel: lines=%d quantity=%d err=%v", count, quantity, err)
+	}
+	var version int64
+	if err := tx.QueryRow(ctx, `SELECT version FROM storefront.carts WHERE tenant_id=$1 AND store_id=$2 AND owner_id=$3 AND id=$4 AND cart_kind='storefront'`, f.tenantA, f.storeA1, h.cap.Scope.OwnerID, browser.ID).Scan(&version); err != nil || version != browser.Version {
+		t.Fatalf("browser cart changed: version=%d want=%d err=%v", version, browser.Version, err)
+	}
+	if err := tx.QueryRow(ctx, `SELECT count(*) FROM buyer.capability_sessions WHERE tenant_id=$1 AND store_id=$2 AND owner_id=$3`, f.tenantA, f.storeA1, h.cap.Scope.OwnerID).Scan(&sessionsAfter); err != nil || sessionsAfter != sessionsBefore {
+		t.Fatalf("attempt storage minted a capability: before=%d after=%d err=%v", sessionsBefore, sessionsAfter, err)
+	}
+	oaProvenanceRejected(t, tx, "23503", `INSERT INTO storefront.carts(tenant_id,store_id,owner_id,currency,version,cart_kind,create_attempt_id)
+	 VALUES($1,$2,$3,$4,1,'order_attempt',$5)`, f.tenantA, f.storeA1, randomUUID(), browser.Currency, attempts[0])
+	oaProvenanceRejected(t, tx, "23503", `INSERT INTO storefront.carts(tenant_id,store_id,owner_id,currency,version,cart_kind,create_attempt_id)
+	 VALUES($1,$2,$3,$4,1,'order_attempt',$5)`, f.tenantA, f.storeA2, h.cap.Scope.OwnerID, browser.Currency, attempts[0])
+	oaProvenanceRejected(t, tx, "23503", `INSERT INTO storefront.cart_lines(tenant_id,store_id,owner_id,cart_id,sku_id,quantity,cart_kind,create_attempt_id,line_ordinal,origin_kind,origin_id)
+	 VALUES($1,$2,$3,$4,$5,1,'order_attempt',$6,3,'claim',$7)`, f.tenantA, f.storeA1, h.cap.Scope.OwnerID, carts[0], h.stock.skus[0].ID, attempts[1], randomUUID())
+	oaProvenanceRejected(t, tx, "23505", `INSERT INTO storefront.cart_lines(tenant_id,store_id,owner_id,cart_id,sku_id,quantity,cart_kind,create_attempt_id,line_ordinal,origin_kind,origin_id)
+	 VALUES($1,$2,$3,$4,$5,1,'order_attempt',$6,3,'claim',$7)`, f.tenantA, f.storeA1, h.cap.Scope.OwnerID, carts[0], h.stock.skus[0].ID, attempts[0], origins[0])
+	oaProvenanceRejected(t, tx, "23505", `INSERT INTO storefront.cart_lines(tenant_id,store_id,owner_id,cart_id,sku_id,quantity)
+	 VALUES($1,$2,$3,$4,$5,1)`, f.tenantA, f.storeA1, h.cap.Scope.OwnerID, browser.ID, h.stock.skus[0].ID)
+}
+
+func oaProvenanceRejected(t *testing.T, tx pgx.Tx, state, query string, args ...any) {
+	t.Helper()
+	ctx := context.Background()
+	if _, err := tx.Exec(ctx, `SAVEPOINT oa_provenance_negative`); err != nil {
+		t.Fatal(err)
+	}
+	_, err := tx.Exec(ctx, query, args...)
+	var failure *pgconn.PgError
+	if !errors.As(err, &failure) || failure.Code != state {
+		t.Errorf("native provenance rejection: want SQLSTATE %s got %v", state, err)
+	}
+	if _, err := tx.Exec(ctx, `ROLLBACK TO SAVEPOINT oa_provenance_negative`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tx.Exec(ctx, `RELEASE SAVEPOINT oa_provenance_negative`); err != nil {
+		t.Fatal(err)
 	}
 }
