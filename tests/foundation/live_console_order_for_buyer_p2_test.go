@@ -279,6 +279,13 @@ func TestLiveConsoleOrderForBuyerGrantsDoNotOutliveRequest(t *testing.T) {
 		if n := e.count(`SELECT count(*) FROM claims.merchant_origin_grants WHERE request_id=$1`, request); n != 2 || live(request) != 0 {
 			t.Fatalf("grants %d, still usable %d: the unconsumed grant must be expired by finish", n, live(request))
 		}
+		if qty, rows := e.held(b1, e.offerOf(t, b1)); qty != 2 || rows != 1 {
+			t.Fatalf("qualifying bundle consumption: quantity=%d rows=%d", qty, rows)
+		}
+		if qty, rows := e.held(b2, e.offerOf(t, b2)); qty != 0 || rows != 0 {
+			t.Fatalf("the smaller bundle consumed a live price: quantity=%d rows=%d", qty, rows)
+		}
+
 	})
 	t.Run("P2-5: a replay whose eligibility now fails expires the grants an earlier run wrote", func(t *testing.T) {
 		_, _, bundle, conv := e.scenario()

@@ -302,8 +302,24 @@ func TestQueuedOrderLinkForBuyerAtomicHTTP(t *testing.T) {
 	if escaped {
 		return
 	}
-	if got := e.plan.links[0]; got != r.out["buyer_link"].(string) {
-		t.Fatal("HTTP returned URL differs from planner URL")
+	if e.plan.planned() != 1 || len(e.plan.links) != 1 {
+		t.Fatal("atomic HTTP planning lost or duplicated the payment DM")
+	}
+	// Final candidate proof races this synthetic planner's postcommit regeneration: null or the exact planned candidate is valid.
+	// The seam persists no integration operation; the separate real-planner tests enforce the queued-link guard.
+	if candidate := r.out["buyer_link"]; candidate != nil && candidate != e.plan.links[0] {
+		t.Fatal("HTTP returned a candidate other than the exact planned DM link")
+	}
+	plannedOrder, plannedToken := e.mtLinkParts(e.plan.links[0], "zh-TW")
+	regeneratedOrder, regeneratedToken := e.mtLinkParts(lbuStr(rr.out, "buyer_link"), "zh-TW")
+	if plannedOrder != order || regeneratedOrder != order || plannedToken == regeneratedToken {
+		t.Fatal("postcommit regeneration did not supersede the exact planned token for the original order")
+	}
+	if response, _ := e.mtRedeem(order, plannedToken); response.status != 404 {
+		t.Fatalf("postcommit superseded DM token must refuse: %d", response.status)
+	}
+	if response, _ := e.mtRedeem(order, regeneratedToken); response.status != 200 {
+		t.Fatalf("exact postcommit regenerated token must redeem: %d", response.status)
 	}
 	if n := e.count(`SELECT count(*) FROM checkout.order_links WHERE order_id=$1`, order); n != 3 {
 		t.Fatalf("exact original + atomic reissue + postcommit regeneration link count: %d", n)
@@ -312,6 +328,11 @@ func TestQueuedOrderLinkForBuyerAtomicHTTP(t *testing.T) {
 	if replayCode != 200 || replayed["send"].(map[string]any)["operation_id"] != r.out["send"].(map[string]any)["operation_id"] || e.plan.planned() != 1 {
 		t.Fatalf("explicit replay: %d %v", replayCode, replayed)
 	}
+	if e.count(`SELECT count(*) FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND idempotency_key=$3
+ AND operation='merchanttools.order.for_buyer.completed' AND response->>'order_id'=$4`, e.tenant(), e.store(), key, order) != 1 {
+		t.Fatal("atomic planning or replay lost the exact original completion receipt")
+	}
+
 }
 
 func TestQueuedOrderLinkUnknownHTTP(t *testing.T) {

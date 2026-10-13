@@ -1,3 +1,6 @@
+// Purpose: REAL_PG and HTTP ForBuyer price, scope, crash replay and payment-link contract gates.
+// Depends on: scoped merchanttools/claims/checkout SQL and synthetic lbuPlanner; no real Graph or PSP.
+// Used by: foundation CI LCN12 and focused ForBuyer regression acceptance.
 package foundation_test
 
 // LCN12: the gate of unit LC-B6 (live-console-v1 §5 order for a buyer, A15/A16, Amendment 1 A1.3 + P2-7 + P2-8, migration 0129), written from the
@@ -21,6 +24,9 @@ package foundation_test
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -28,6 +34,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 
@@ -428,15 +435,13 @@ func TestLiveConsoleOrderForBuyerLivePrice(t *testing.T) {
 // ---------------------------------------------------------------------------------------------------------------------------------------
 
 func TestLiveConsoleOrderForBuyerFailClosed(t *testing.T) {
-	e := lbuNew(t)
-	token := e.token()
-	grants := func(bundle string) int {
+	grants := func(e *lbuEnv, bundle string) int {
 		return e.count(`SELECT count(*) FROM claims.merchant_origin_grants WHERE bundle_id=$1`, bundle)
 	}
-	reservations := func(bundle string) int {
+	reservations := func(e *lbuEnv, bundle string) int {
 		return e.count(`SELECT count(*) FROM inbox.order_for_buyer WHERE bundle_id=$1`, bundle)
 	}
-	catalogOrder := func(what string, st int, out map[string]any, reason string) {
+	catalogOrder := func(t *testing.T, e *lbuEnv, what string, st int, out map[string]any, reason string) {
 		t.Helper()
 		if st != 201 || out["live_price"] != "not_applied" || out["live_price_reason"] != reason {
 			t.Fatalf("%s: %d %v", what, st, out)
@@ -447,36 +452,43 @@ func TestLiveConsoleOrderForBuyerFailClosed(t *testing.T) {
 	}
 
 	t.Run("a bundle with no peer key: catalog price, bundle_buyer_unverified, no grant", func(t *testing.T) {
+		e := lbuNew(t)
+		token := e.token()
 		s, _ := e.session("A1", ltgLive, 5)
 		bundle := e.h.accepted(t, s, "", "dan-"+t04Tag(), "A1+2").BundleID
 		e.h.closeWindow(t, s)
 		conv := lcConversation(t, e.p.f, e.tenant(), e.store(), "page")
 		st, out := e.post(token, t04Key("lcn12-unverified"), e.body(2, []string{bundle}, conv, false))
-		catalogOrder("unknown bundle peer", st, out, "bundle_buyer_unverified")
-		if grants(bundle) != 0 || reservations(bundle) != 1 {
-			t.Fatalf("grants %d reservations %d: the order still reserves its bundle, but never grants a price", grants(bundle), reservations(bundle))
+		catalogOrder(t, e, "unknown bundle peer", st, out, "bundle_buyer_unverified")
+		if grants(e, bundle) != 0 || reservations(e, bundle) != 1 {
+			t.Fatalf("grants %d reservations %d: the order still reserves its bundle, but never grants a price", grants(e, bundle), reservations(e, bundle))
 		}
 		if qty, rows := e.held(bundle, e.offerOf(t, bundle)); qty != 0 || rows != 0 {
 			t.Fatalf("a catalog order consumed the claim: %d %d", qty, rows)
 		}
 	})
 	t.Run("no conversation (e.g. from a comment with no linked thread): catalog price, no_conversation", func(t *testing.T) {
+		e := lbuNew(t)
+		token := e.token()
 		_, _, bundle, _ := e.scenario()
 		st, out := e.post(token, t04Key("lcn12-noconv"), e.body(2, []string{bundle}, "", false))
-		catalogOrder("no conversation", st, out, "no_conversation")
-		if grants(bundle) != 0 {
-			t.Fatalf("grants written without a conversation: %d", grants(bundle))
+		catalogOrder(t, e, "no conversation", st, out, "no_conversation")
+		if grants(e, bundle) != 0 {
+			t.Fatalf("grants written without a conversation: %d", grants(e, bundle))
 		}
 	})
 	t.Run("a caller without live:manage: catalog price, permission", func(t *testing.T) {
+		e := lbuNew(t)
 		_, _, bundle, conv := e.scenario()
 		st, out := e.post(e.member(), t04Key("lcn12-perm"), e.body(2, []string{bundle}, conv, false))
-		catalogOrder("no live:manage", st, out, "permission")
-		if grants(bundle) != 0 {
-			t.Fatalf("grants written without live:manage: %d", grants(bundle))
+		catalogOrder(t, e, "no live:manage", st, out, "permission")
+		if grants(e, bundle) != 0 {
+			t.Fatalf("grants written without live:manage: %d", grants(e, bundle))
 		}
 	})
 	t.Run("both peer keys known and different: 409 bundle_buyer_mismatch and NOTHING created", func(t *testing.T) {
+		e := lbuNew(t)
+		token := e.token()
 		_, _, bundle, _ := e.scenario()
 		stranger := lcConversation(t, e.p.f, e.tenant(), e.store(), "page")
 		ordersBefore, reservedBefore := e.orders(), e.reserved()
@@ -484,76 +496,95 @@ func TestLiveConsoleOrderForBuyerFailClosed(t *testing.T) {
 		if st != 409 || lbuCode(out) != "bundle_buyer_mismatch" {
 			t.Fatalf("mismatch: %d %v", st, out)
 		}
-		if e.orders() != ordersBefore || e.reserved() != reservedBefore || grants(bundle) != 0 || reservations(bundle) != 0 || e.plan.planned() != 0 {
-			t.Fatalf("a mismatch created something: orders %d reserved %d grants %d reservations %d DMs %d", e.orders(), e.reserved(), grants(bundle), reservations(bundle), e.plan.planned())
+		if e.orders() != ordersBefore || e.reserved() != reservedBefore || grants(e, bundle) != 0 || reservations(e, bundle) != 0 || e.plan.planned() != 0 {
+			t.Fatalf("a mismatch created something: orders %d reserved %d grants %d reservations %d DMs %d", e.orders(), e.reserved(), grants(e, bundle), reservations(e, bundle), e.plan.planned())
 		}
 	})
 	t.Run("a bundle with two peers where one differs is a mismatch too (the server never picks a peer)", func(t *testing.T) {
+		e := lbuNew(t)
+		token := e.token()
 		_, _, bundle, conv := e.scenario()
 		e.linkPeer(bundle, lcConversation(t, e.p.f, e.tenant(), e.store(), "page"))
 		if st, out := e.post(token, t04Key("lcn12-twopeers"), e.body(2, []string{bundle}, conv, false)); st != 409 || lbuCode(out) != "bundle_buyer_mismatch" {
 			t.Fatalf("two peers: %d %v", st, out)
 		}
 	})
-	t.Run("another store's conversation or bundle: 404, nothing created", func(t *testing.T) {
-		_, _, bundle, _ := e.scenario()
-		foreign := lcConversation(t, e.p.f, e.p.f.tenantB, e.p.f.storeB, "page")
-		ordersBefore := e.orders()
-		if st, out := e.post(token, t04Key("lcn12-foreign-conv"), e.body(2, []string{bundle}, foreign, false)); st != 404 {
-			t.Fatalf("foreign conversation: %d %v", st, out)
-		}
-		if st, out := e.post(token, t04Key("lcn12-foreign-bundle"), e.body(2, []string{randomUUID()}, "", false)); st != 404 {
-			t.Fatalf("unknown bundle: %d %v", st, out)
-		}
-		if e.orders() != ordersBefore {
-			t.Fatalf("a 404 created an order")
-		}
-	})
+	for _, foreignTarget := range []string{"conversation", "bundle"} {
+		t.Run("another store's "+foreignTarget+": 404, nothing created", func(t *testing.T) {
+			e := lbuNew(t)
+			_, _, bundle, _ := e.scenario()
+			foreign := lcConversation(t, e.p.f, e.p.f.tenantB, e.p.f.storeB, "page")
+			body := e.body(2, []string{bundle}, foreign, false)
+			if foreignTarget == "bundle" {
+				body = e.body(2, []string{randomUUID()}, "", false)
+			}
+			ordersBefore, reservedBefore := e.orders(), e.reserved()
+			if st, out := e.post(e.token(), t04Key("lcn12-foreign"), body); st != 404 {
+				t.Fatalf("foreign %s: %d %v", foreignTarget, st, out)
+			}
+			if e.orders() != ordersBefore || e.reserved() != reservedBefore || grants(e, bundle) != 0 || reservations(e, bundle) != 0 || e.plan.planned() != 0 {
+				t.Fatal("a 404 created an order, hold, grant, reservation or DM")
+			}
+		})
+	}
 	t.Run("P2-7 b: send_payment_link without inbox:reply is 409 capability, nothing created", func(t *testing.T) {
+		e := lbuNew(t)
 		_, _, bundle, conv := e.scenario()
 		ordersBefore := e.orders()
 		st, out := e.post(e.member("live:manage"), t04Key("lcn12-capability"), e.body(2, []string{bundle}, conv, true))
-		if st != 409 || lbuCode(out) != "capability" || e.orders() != ordersBefore || reservations(bundle) != 0 || grants(bundle) != 0 {
-			t.Fatalf("capability: %d %v orders %d reservations %d grants %d", st, out, e.orders(), reservations(bundle), grants(bundle))
+		if st != 409 || lbuCode(out) != "capability" || e.orders() != ordersBefore || reservations(e, bundle) != 0 || grants(e, bundle) != 0 {
+			t.Fatalf("capability: %d %v orders %d reservations %d grants %d", st, out, e.orders(), reservations(e, bundle), grants(e, bundle))
 		}
 	})
-	t.Run("refused bodies: a price key, unknown keys, bad ids, more than five bundles", func(t *testing.T) {
-		_, _, bundle, conv := e.scenario()
-		base := func() map[string]any { return e.body(2, []string{bundle}, conv, false) }
-		withKey := func(k string, v any) map[string]any { b := base(); b[k] = v; return b }
-		priced := base()
-		priced["items"] = []map[string]any{{"sku_id": e.money, "quantity": 2, "price_minor": 1}}
-		forExtra := base()
-		forExtra["for"] = map[string]any{"bundle_ids": []string{bundle}, "conversation_id": conv, "tenant_id": randomUUID()}
-		missing := base()
-		delete(missing, "send_payment_link")
-		six := make([]string, 6)
-		for i := range six {
-			six[i] = randomUUID()
-		}
-		dup := base()
-		dup["for"] = map[string]any{"bundle_ids": []string{bundle, bundle}, "conversation_id": conv}
-		bad := base()
-		bad["for"] = map[string]any{"bundle_ids": []string{"not-a-uuid"}, "conversation_id": conv}
-		for name, c := range map[string]struct {
-			body map[string]any
-			want int
-		}{
-			"price_minor in an item": {priced, 400}, "total_minor": {withKey("total_minor", 1), 400}, "tenant_id": {withKey("tenant_id", randomUUID()), 400},
-			"unknown key in for": {forExtra, 400}, "missing send_payment_link": {missing, 422}, "six bundles": {withKey("for", map[string]any{"bundle_ids": six, "conversation_id": nil}), 422},
-			"duplicate bundles": {dup, 422}, "bad bundle id": {bad, 422},
-		} {
-			if st, out := e.post(token, t04Key("lcn12-refused"), c.body); st != c.want {
-				t.Fatalf("%s: %d %v want %d", name, st, out, c.want)
+	// Each refused body is an independent attempt. A failed admitted intent deliberately fences this principal until explicit recovery.
+	for _, name := range []string{"price_minor in an item", "total_minor", "tenant_id", "unknown key in for", "missing send_payment_link", "six bundles", "duplicate bundles", "bad bundle id", "no Idempotency-Key"} {
+		t.Run("refused body: "+name, func(t *testing.T) {
+			e := lbuNew(t)
+			_, _, bundle, conv := e.scenario()
+			body := e.body(2, []string{bundle}, conv, false)
+			want, key := 400, t04Key("lcn12-refused")
+			switch name {
+			case "price_minor in an item":
+				body["items"] = []map[string]any{{"sku_id": e.money, "quantity": 2, "price_minor": 1}}
+			case "total_minor":
+				body["total_minor"] = 1
+			case "tenant_id":
+				body["tenant_id"] = randomUUID()
+			case "unknown key in for":
+				body["for"] = map[string]any{"bundle_ids": []string{bundle}, "conversation_id": conv, "tenant_id": randomUUID()}
+			case "missing send_payment_link":
+				delete(body, "send_payment_link")
+				want = 422
+			case "six bundles":
+				six := make([]string, 6)
+				for i := range six {
+					six[i] = randomUUID()
+				}
+				body["for"] = map[string]any{"bundle_ids": six, "conversation_id": nil}
+				want = 422
+			case "duplicate bundles":
+				body["for"] = map[string]any{"bundle_ids": []string{bundle, bundle}, "conversation_id": conv}
+				want = 422
+			case "bad bundle id":
+				body["for"] = map[string]any{"bundle_ids": []string{"not-a-uuid"}, "conversation_id": conv}
+				want = 422
+			case "no Idempotency-Key":
+				key, want = "", 422
 			}
-		}
-		if st, _ := e.post(token, "", base()); st != 422 {
-			t.Fatalf("no Idempotency-Key: %d", st)
-		}
-	})
+			ordersBefore, reservedBefore := e.orders(), e.reserved()
+			if st, out := e.post(e.token(), key, body); st != want {
+				t.Fatalf("%s: %d %v want %d", name, st, out, want)
+			}
+			if e.orders() != ordersBefore || e.reserved() != reservedBefore || grants(e, bundle) != 0 || reservations(e, bundle) != 0 || e.plan.planned() != 0 {
+				t.Fatal("a refused body created an order, hold, grant, reservation or DM")
+			}
+		})
+	}
 	t.Run("a plain manual order through the same route: no bundle, no price, no reservation", func(t *testing.T) {
+		e := lbuNew(t)
+		token := e.token()
 		st, out := e.post(token, t04Key("lcn12-plain"), e.body(2, nil, "", false))
-		catalogOrder("plain order", st, out, "no_bundle")
+		catalogOrder(t, e, "plain order", st, out, "no_bundle")
 		if send, _ := out["send"].(map[string]any); send["state"] != "not_sent" || send["reason"] != "not_requested" {
 			t.Fatalf("send: %v", out["send"])
 		}
@@ -615,6 +646,21 @@ func TestLiveConsoleOrderForBuyerConcurrentStaff(t *testing.T) {
 
 func TestLiveConsoleOrderForBuyerResume(t *testing.T) {
 	e := lbuNew(t)
+	// Retain this synthetic derivation secret only inside the fixture to test the actual superseded Place token.
+	secret := randomBytes(32)
+	issuer, err := buyer.New(e.p.a.issuer, 30*24*time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.manual, err = merchanttools.NewManualOrders(e.p.f.runtime, issuer, e.p.a.runtime, e.svc, secret)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.fb, err = merchanttools.NewForBuyer(e.manual, e.plan)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	token, store := e.token(), e.store()
 	_, offer, bundle, conv := e.scenario()
 	key := t04Key("lcn12-resume")
@@ -664,18 +710,22 @@ func TestLiveConsoleOrderForBuyerResume(t *testing.T) {
 	if qty, rows := e.held(bundle, offer.ID); qty != 2 || rows != 1 {
 		t.Fatalf("ledger after resume: %d %d", qty, rows)
 	}
-	// §5.1 replay clause c: the DM carries a NEW link (regenerate-link logic); the link Place re-derived is superseded and dead.
-	dmLink := e.plan.links[0]
-	if out.BuyerLink == nil || dmLink == *out.BuyerLink {
-		t.Fatalf("the DM must carry a regenerated link: dm=%q place=%v", dmLink, out.BuyerLink)
+	// §5.1 replay clause c: the DM carries a regenerated link; replay does not disclose the superseded Place link.
+	if out.BuyerLink != nil || len(e.plan.links) != 1 {
+		t.Fatal("a resumed placement exposed its old link or lost the single planned DM link")
 	}
-	_, oldToken := e.mtLinkParts(*out.BuyerLink, "zh-TW")
-	_, newToken := e.mtLinkParts(dmLink, "zh-TW")
-	if res, _ := e.mtRedeem(out.OrderID, oldToken); res.status == 200 {
-		t.Fatalf("the superseded link still redeems")
+	mac := hmac.New(sha256.New, secret)
+	mac.Write([]byte("merchanttools.link|" + store + "|" + key))
+	oldToken := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+	dmOrder, newToken := e.mtLinkParts(e.plan.links[0], "zh-TW")
+	if dmOrder != out.OrderID || oldToken == newToken {
+		t.Fatal("the planned DM did not carry a new token for the exact original order")
+	}
+	if res, _ := e.mtRedeem(out.OrderID, oldToken); res.status != 404 {
+		t.Fatalf("the superseded Place token must be refused: %d", res.status)
 	}
 	if res, _ := e.mtRedeem(out.OrderID, newToken); res.status != 200 {
-		t.Fatalf("the DM link does not redeem: %d %s", res.status, res.body)
+		t.Fatalf("the exact planned DM token does not redeem: %d", res.status)
 	}
 
 	// A third call is a pure replay: same order, same DM operation, no new planning, no new link.
@@ -699,11 +749,15 @@ func TestLiveConsoleOrderForBuyerPayLinkOutcomes(t *testing.T) {
 		defer func() { e.plan.closed = false }()
 		st, out := e.post(token, t04Key("lcn12-closed"), e.body(2, []string{bundle}, conv, true))
 		send, _ := out["send"].(map[string]any)
-		if st != 201 || send["state"] != "not_sent" || send["reason"] != "window_closed" || lbuStr(out, "buyer_link") == "" {
+		if st != 201 || send["state"] != "not_sent" || send["reason"] != "window_closed" || out["buyer_link"] != nil {
 			t.Fatalf("closed window: %d %v", st, out)
 		}
-		if e.plan.planned() != 0 {
-			t.Fatalf("a DM was planned in a closed window")
+		order := lbuStr(out, "order_id")
+		if e.plan.planned() != 0 || e.count(`SELECT count(*) FROM checkout.order_links WHERE order_id=$1`, order) != 1 {
+			t.Fatal("a closed window planned a DM or reissued the original link")
+		}
+		if qty, rows := e.held(bundle, e.offerOf(t, bundle)); qty != 2 || rows != 1 {
+			t.Fatalf("closed-window order lost its exact live-price hold: quantity=%d rows=%d", qty, rows)
 		}
 	})
 	t.Run("no conversation: not_sent no_conversation", func(t *testing.T) {
