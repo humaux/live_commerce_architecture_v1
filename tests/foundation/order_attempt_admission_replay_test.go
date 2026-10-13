@@ -115,10 +115,12 @@ func TestOrderAttemptAdmissionReplayKeyOwnershipAndOriginalCAS(t *testing.T) {
 	_, otherToken := lcPrincipal(t, e.p.f, e.tenant(), []string{e.store()}, "store:read", "orders:read")
 	_, err := oaReplayRequest(t, e, otherToken, e.store(), scope, key, selection)
 	oaReplayConflict(t, err, "idempotency_conflict")
+	otherStore := randomUUID()
+	mustExec(t, e.p.f.owner, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'OA replay second store','USD')`, e.tenant(), otherStore)
 	for _, permission := range []string{"store:read", "orders:read"} {
-		mustExec(t, e.p.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING`, e.tenant(), e.p.f.storeA2, e.p.f.principalA, permission)
+		mustExec(t, e.p.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING`, e.tenant(), otherStore, e.p.f.principalA, permission)
 	}
-	_, err = oaReplayRequest(t, e, e.token(), e.p.f.storeA2, scope, key, selection)
+	_, err = oaReplayRequest(t, e, e.token(), otherStore, scope, key, selection)
 	oaReplayConflict(t, err, "idempotency_conflict")
 	for _, mode := range []string{"scope", "generation", "previous"} {
 		wrong := scope
