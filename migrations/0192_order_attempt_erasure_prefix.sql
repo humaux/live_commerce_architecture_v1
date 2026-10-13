@@ -76,6 +76,10 @@ BEGIN
  EXCEPTION WHEN invalid_text_representation THEN
   RAISE EXCEPTION 'invalid_erasure_subjects' USING ERRCODE='PT400';
  END;
+ IF current_setting('app.tenant_id',true) IS DISTINCT FROM subjects->0->>'tenant_id'
+  OR current_setting('app.store_id',true) IS DISTINCT FROM subjects->0->>'store_id' THEN
+  RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403';
+ END IF;
  FOR subject IN SELECT DISTINCT (x.value->>'tenant_id')::uuid AS tenant_id,
    (x.value->>'store_id')::uuid AS store_id,k.kind,(x.value->>'subject_id')::uuid AS subject_id
   FROM jsonb_array_elements(subjects) x CROSS JOIN
@@ -184,7 +188,7 @@ DO $$ DECLARE body text; anchor text; BEGIN
  body:=replace(body,anchor,anchor||E'\n v_subjects jsonb;');
  anchor:=E'BEGIN\n FOR r IN';
  IF (length(body)-length(replace(body,anchor,'')))/length(anchor)<>1 THEN RAISE EXCEPTION 'replay_erasures prefix drift'; END IF;
- body:=replace(body,anchor,E'BEGIN\n -- OA1 restore discovery is unlocked; acquire the entire subject/attempt/owner\n -- prefix once before any owner/domain mutation, then native scoped revalidation.\n SELECT jsonb_agg(jsonb_build_object(''tenant_id'',x.tenant_id,''store_id'',x.store_id,''subject_id'',x.owner_id))\n INTO v_subjects FROM (\n  SELECT o.tenant_id,o.store_id,o.id AS owner_id FROM buyer.owners o WHERE p_owners IS NOT NULL AND o.id=ANY(p_owners)\n  UNION SELECT a.tenant_id,a.store_id,a.owner_id FROM customers.privacy_actions a WHERE p_owners IS NULL AND a.kind=''ERASURE''\n ) x;\n IF v_subjects IS NOT NULL THEN PERFORM ops.order_attempt_erase_batch_prefix(v_subjects); END IF;\n FOR r IN');
+ body:=replace(body,anchor,E'BEGIN\n -- OA1 restore discovery is unlocked; acquire the entire subject/attempt/owner\n -- prefix once before any owner/domain mutation, then native scoped revalidation.\n -- This private restore definer supplies native scoped tuples, not runtime input.\n SELECT jsonb_agg(jsonb_build_object(''tenant_id'',x.tenant_id,''store_id'',x.store_id,''subject_id'',x.owner_id))\n INTO v_subjects FROM (\n  SELECT o.tenant_id,o.store_id,o.id AS owner_id FROM buyer.owners o WHERE p_owners IS NOT NULL AND o.id=ANY(p_owners)\n  UNION SELECT a.tenant_id,a.store_id,a.owner_id FROM customers.privacy_actions a WHERE p_owners IS NULL AND a.kind=''ERASURE''\n ) x;\n IF v_subjects IS NOT NULL THEN\n  PERFORM set_config(''app.tenant_id'',v_subjects->0->>''tenant_id'',true),\n   set_config(''app.store_id'',v_subjects->0->>''store_id'',true);\n  PERFORM ops.order_attempt_erase_batch_prefix(v_subjects);\n END IF;\n FOR r IN');
  anchor:=E'  SELECT o.tenant_id,o.store_id,o.id AS owner_id FROM buyer.owners o WHERE p_owners IS NOT NULL AND o.id=ANY(p_owners)\n  UNION\n  SELECT a.tenant_id,a.store_id,a.owner_id FROM customers.privacy_actions a WHERE p_owners IS NULL AND a.kind=''ERASURE''\n  ORDER BY 3';
  IF (length(body)-length(replace(body,anchor,'')))/length(anchor)<>1 THEN RAISE EXCEPTION 'replay_erasures discovery drift'; END IF;
  body:=replace(body,anchor,E'  SELECT (value->>''tenant_id'')::uuid AS tenant_id,(value->>''store_id'')::uuid AS store_id,\n   (value->>''subject_id'')::uuid AS owner_id FROM jsonb_array_elements(coalesce(v_subjects,''[]''::jsonb))\n  ORDER BY 3');
