@@ -1,4 +1,4 @@
-// Purpose: strict merchant-tools DTO and request grammar with opt-in A16 replay redaction.
+// Purpose: strict merchant-tools DTO and request grammar, including private durable intent recovery.
 // Depends on: customers/orders model validators.
 // Used by: merchant tooling components and authenticated tools BFF.
 // Merchant-tools model (contracts/storefront-v2.md section G): strict parsers for the three BFF answers (dashboard, product import
@@ -211,14 +211,18 @@ export function parseRegenerateResult(value: unknown): RegenerateResult {
 }
 
 // ---- BFF request grammar -----------------------------------------------------------------------------------------------------
-export type ToolsRoute = "dashboard" | "export" | "import-preview" | "import-commit" | "manual-options" | "manual-place" | "manual-regenerate" | "manual-recover" | "order-prefill" | "for-buyer" | "for-buyer-recover";
+export type ToolsRoute = "dashboard" | "export" | "import-preview" | "import-commit" | "manual-options" | "manual-place" | "manual-regenerate" | "manual-recover" | "order-prefill" | "for-buyer" | "for-buyer-recover" | "attempt-recover";
 /** The only resources of the tools BFF, per method. Everything else is a 404 there. */
 export function toolsRoute(method: string, path: string): ToolsRoute | null {
   const table: Record<string, Record<string, ToolsRoute>> = {
     GET: { "inbox/order-prefill": "order-prefill", dashboard: "dashboard", "products/export.csv": "export", "orders/manual/options": "manual-options" },
-    POST: { "orders/for-buyer": "for-buyer", "orders/for-buyer/recover": "for-buyer-recover", "products/import/preview": "import-preview", "products/import/commit": "import-commit", "orders/manual": "manual-place", "orders/manual/recover": "manual-recover", "orders/manual/regenerate-link": "manual-regenerate" },
+    POST: { "orders/attempt/recover": "attempt-recover", "orders/for-buyer": "for-buyer", "orders/for-buyer/recover": "for-buyer-recover", "products/import/preview": "import-preview", "products/import/commit": "import-commit", "orders/manual": "manual-place", "orders/manual/recover": "manual-recover", "orders/manual/regenerate-link": "manual-regenerate" },
   };
   return table[method]?.[path] ?? null;
+}
+/** Current intent recovery accepts only {}; no original key, buyer selector or frozen request can be supplied. */
+export function validAttemptRecoveryBody(body: unknown): boolean {
+  return !!body && typeof body === "object" && !Array.isArray(body) && Object.keys(body).length === 0;
 }
 /** A manual-order body is JSON with exactly these top-level keys and no price-like field anywhere. */
 export function validManualBody(body: unknown): boolean {

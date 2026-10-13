@@ -1,4 +1,4 @@
-// Purpose: merchant-tools HTTP transport, including strict A16R frozen-body recovery.
+// Purpose: merchant-tools HTTP transport, including strict A16R and durable intent recovery.
 // Depends on: merchanttools services, platform authentication and CVS/studio transport gates.
 // Used by: cmd/api via NewHandler and the admin tools BFF; I01/I02/I11.
 // merchanttools.go owns the merchant HTTP adapter of contracts/storefront-v2.md section G: GET dashboard, GET products/export.csv,
@@ -355,12 +355,32 @@ func trackingImportOnlyFailed(r *http.Request) (bool, bool) {
 	return true, true
 }
 
-// registerForBuyerRoutes mounts A15 GET inbox/order-prefill and A16 POST orders/for-buyer (live-console-v1 §5, unit LC-B6). Both stay mounted when the
+// registerForBuyerRoutes mounts A15/A16 and private durable intent recovery (live-console-v1 §5). All stay mounted when the
 // service is nil and answer 503 manual_order_unavailable. Authority is decided in internal/merchanttools and the claims definers below it (A15:
 // orders:read + inventory:reserve; A16: inventory:reserve, +live:manage for the live price, +inbox:reply for the DM); the tenant and store come from the
 // bearer (platform.WithScope). Idempotency-Key is required on A16 and refused on A15.
 func registerForBuyerRoutes(mux *http.ServeMux, forBuyer *merchanttools.ForBuyer) {
 	const base = "/v1/admin/stores/{store_id}"
+	mux.HandleFunc("POST "+base+"/orders/attempt/recover", cvsRoute(http.MethodPost, true, func(w http.ResponseWriter, r *http.Request) {
+		// Only {} selects the current principal/store intent; the original key and frozen PII stay server-private.
+		in, ok := cvsStrictBody[map[string]any](w, r, nil, nil)
+		if !ok {
+			return
+		}
+		if in == nil {
+			respondError(w, http.StatusUnprocessableEntity, "invalid_request")
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 14*time.Second)
+		defer cancel()
+		// RecoverPending rechecks inventory:reserve, catalog:read and orders:read under current server scope.
+		out, err := forBuyer.RecoverPending(ctx, bearerToken(r), r.PathValue("store_id"))
+		if err != nil {
+			respondForBuyerError(w, err)
+			return
+		}
+		respond(w, http.StatusOK, out)
+	}))
 	mux.HandleFunc("GET "+base+"/inbox/order-prefill", studioRoute(http.MethodGet, true, func(w http.ResponseWriter, r *http.Request) {
 		conversation, bundle, ok := prefillQuery(r)
 		if value := r.PathValue("store_id"); !ok || !command.ValidID(value) {

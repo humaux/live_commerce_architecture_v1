@@ -6,7 +6,7 @@
 // browser chose, never retries (a repeated import or order is the caller's explicit, keyed choice), and rebuilds every error locally from an
 // allow-listed code. It is a sibling of the generic stores/[store]/[...resource] BFF because these routes need their own body types and
 // longer upstream budgets (import 75 s, manual order 16 s) than that file's 6 s.
-// Purpose: authenticated, scoped merchant CSV/order transport with bounded bodies and closed tracking replies.
+// Purpose: authenticated, scoped merchant CSV/order transport with bounded, closed private recovery replies.
 // Depends on: auth/CSRF/store membership, merchant-tools/tracking models and Go merchanttools HTTP API.
 // Used by: ProductImport, TrackingImport, dashboard and manual-order clients.
 import {
@@ -20,7 +20,7 @@ import {
   sessionToken,
 } from "@/lib/auth";
 import { fixtureSession } from "@/lib/backend";
-import { MAX_CSV_BYTES, parseImportResult, toolsRoute, validManualBody, validRegenerateBody, type ToolsRoute } from "@/lib/merchant-tools-model";
+import { MAX_CSV_BYTES, parseImportResult, toolsRoute, validManualBody, validRegenerateBody, validAttemptRecoveryBody, type ToolsRoute } from "@/lib/merchant-tools-model";
 import { validPrefillQuery, validForBuyerBody, parseOrderPrefill, parseForBuyerResult, parseForBuyerRecovery, forBuyerError } from "@/lib/create-order-model";
 import { trackingRoute, validTrackingQuery, parseTrackingPreview, parseTrackingCommit, type TrackingRoute } from "@/lib/tracking-import-model";
 
@@ -32,7 +32,7 @@ type Context = { params: Promise<{ store: string; resource: string[] }> };
 
 const budgets: Record<ToolsRoute | TrackingRoute, number> = {
   dashboard: 8000, export: 20000, "manual-options": 10000, "import-preview": 75000, "import-commit": 75000, "manual-place": 16000,
-  "manual-regenerate": 16000, "manual-recover": 16000, "order-prefill": 16000, "for-buyer": 16000, "for-buyer-recover": 16000,
+  "manual-regenerate": 16000, "manual-recover": 16000, "order-prefill": 16000, "for-buyer": 16000, "for-buyer-recover": 16000, "attempt-recover": 16000,
   "tracking-preview": 75000, "tracking-commit": 75000, "tracking-result": 20000,
 };
 
@@ -147,20 +147,20 @@ async function route(request: Request, context: Context) {
       } catch {
         return localError(400, "invalid_json");
       }
-      if (kind === "manual-regenerate" ? !validRegenerateBody(parsed) : kind === "for-buyer" || kind === "for-buyer-recover" ? !validForBuyerBody(parsed) : !validManualBody(parsed)) return localError(422, "invalid_request");
-      init.body = text;
+      if (kind === "attempt-recover" ? !validAttemptRecoveryBody(parsed) : kind === "manual-regenerate" ? !validRegenerateBody(parsed) : kind === "for-buyer" || kind === "for-buyer-recover" ? !validForBuyerBody(parsed) : !validManualBody(parsed)) return localError(422, "invalid_request");
+      init.body = kind === "attempt-recover" ? "{}" : text;
       init.headers = { "Content-Type": "application/json", "Idempotency-Key": key };
     }
   }
 
   const response = await upstream(path + (tracking || kind === "order-prefill" ? search : ""), init, token, store, budgets[kind]);
   if (authConfig && response.status === 401) {
-    const denied = kind === "order-prefill" || kind === "for-buyer" || kind === "for-buyer-recover" || kind === "manual-recover" ? localError(401, "unauthorized") : await safeError(response);
+    const denied = kind === "order-prefill" || kind === "for-buyer" || kind === "for-buyer-recover" || kind === "manual-recover" || kind === "attempt-recover" ? localError(401, "unauthorized") : await safeError(response);
     clearAuthCookies(denied.headers);
     return denied;
   }
   const requestID = response.headers.get("x-request-id") ?? "";
-  if (kind === "order-prefill" || kind === "for-buyer" || kind === "for-buyer-recover" || kind === "manual-recover") {
+  if (kind === "order-prefill" || kind === "for-buyer" || kind === "for-buyer-recover" || kind === "manual-recover" || kind === "attempt-recover") {
     // Revocation outranks a malformed/HTML body; never leave private drawer data visible as UNKNOWN.
     if (response.status === 401 || response.status === 403)
       return localError(response.status, response.status === 401 ? "unauthorized" : "forbidden");
@@ -198,16 +198,20 @@ async function route(request: Request, context: Context) {
       return denied;
     }
     if (
-      kind === "order-prefill" || kind === "for-buyer-recover" || kind === "manual-recover"
+      kind === "order-prefill" || kind === "for-buyer-recover" || kind === "manual-recover" || kind === "attempt-recover"
         ? response.status !== 200
         : response.status !== 200 && response.status !== 201
     )
       return localError(503, "retry_later");
     try {
+      // Only this endpoint may report no durable intent; old A16R/manual recovery still requires a sealed result.
+      const none = kind === "attempt-recover" && value !== null && typeof value === "object" && !Array.isArray(value) &&
+        Object.keys(value).length === 1 && (value as Record<string, unknown>).state === "none";
       const parsed =
         kind === "order-prefill"
           ? parseOrderPrefill(value)
-          : kind === "for-buyer-recover" || kind === "manual-recover" ? parseForBuyerRecovery(value) : parseForBuyerResult(value);
+          : none ? { state: "none" }
+          : kind === "for-buyer-recover" || kind === "manual-recover" || kind === "attempt-recover" ? parseForBuyerRecovery(value) : parseForBuyerResult(value);
       return Response.json(parsed, {
         status: response.status,
         headers: { ...nostore },
