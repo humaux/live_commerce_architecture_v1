@@ -237,6 +237,8 @@ ALTER TABLE inventory.ledger
     OR (creator_kind='order_attempt' AND buyer_session_id IS NULL AND create_attempt_id IS NOT NULL))))),
  ADD CONSTRAINT ledger_attempt_creator_fk FOREIGN KEY(tenant_id,store_id,buyer_owner_id,create_attempt_id)
   REFERENCES ops.order_attempt_creators(tenant_id,store_id,buyer_owner_id,attempt_id),
+ ADD CONSTRAINT ledger_buyer_session_fk FOREIGN KEY(tenant_id,store_id,buyer_owner_id,buyer_session_id)
+  REFERENCES buyer.capability_sessions(tenant_id,store_id,owner_id,id),
  ADD CONSTRAINT ledger_order_attempt_fk FOREIGN KEY(tenant_id,store_id,checkout_id,buyer_owner_id,create_attempt_id)
   REFERENCES checkout.orders(tenant_id,store_id,id,owner_id,create_attempt_id),
  ADD CONSTRAINT ledger_order_kind_fk FOREIGN KEY(tenant_id,store_id,checkout_id,buyer_owner_id,creator_kind)
@@ -330,3 +332,4 @@ COMMENT ON COLUMN inventory.reservations.creator_kind IS 'inventory domain; mean
 COMMENT ON COLUMN inventory.reservations.create_attempt_id IS 'inventory domain; exact order/creator identity; deferred reciprocal FKs preserve the aggregate.';
 COMMENT ON COLUMN inventory.ledger.creator_kind IS 'inventory domain; checkout provenance independent of actor_kind; generic merchant adjustments retain no buyer fields.';
 COMMENT ON COLUMN inventory.ledger.create_attempt_id IS 'inventory domain; exact retained order creator; ledger apply/guard remains the sole stock path, never coordinator DML.';
+COMMENT ON CONSTRAINT ledger_buyer_session_fk ON inventory.ledger IS 'inventory domain; immediate exact real browser capability identity; creator XOR permits NULL session only for a separately validated attempt creator.';
