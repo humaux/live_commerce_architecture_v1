@@ -1,0 +1,1 @@
+{"command": ["node", "--test", "--experimental-strip-types", "tests/admin/ads-model.test.ts", "tests/admin/product-document.test.ts", "tests/ui/visual-scroll-capture.test.mjs", "tests/ui/visual-lint-lib.test.mjs", "tests/ui/sweep-shard-lib.test.mjs"], "exit_code": 0, "seconds": 1.03}

@@ -490,6 +490,9 @@ test("MOU03 controlled delayed detail, pagehide, history and cross-tab logout", 
   await otherTab.getByTestId("workspace-sign-out").click();
   await expect(page.getByTestId("order-detail")).toHaveCount(0);
   await noPII(page);
+  // signOut() ends with location.replace("/en/"); closing mid-navigation hung MOU03 (#39, #44 CI). Wait for the
+  // signed-out landing to render before closing the tab.
+  await expect(otherTab.getByRole("button", { name: "Sign in with identity service" })).toBeVisible();
   await otherTab.close();
 });
 

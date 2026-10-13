@@ -191,6 +191,25 @@ test("money: whole units to minor with integer math; TWD must be whole", () => {
   assert.ok(formatMinor("en", "USD", 1250).includes("12.50"));
 });
 
+test("ads report money: zh-TW TWD metrics display NT$ rather than bare dollars", () => {
+  // Literal output catches the screenshot regression at the same formatter AdsResults calls.
+  assert.equal(formatMinor("zh-TW", "TWD", 0), "NT$0");
+  assert.equal(formatMinor("zh-TW", "TWD", 30000), "NT$300");
+  assert.equal(formatMinor("zh-TW", "TWD", 1250), "NT$12.50");
+});
+
+test("ads report money: all supported locales preserve exact minor-unit amounts and currency", () => {
+  for (const locale of ["zh-TW", "zh-CN", "en"]) {
+    assert.equal(formatMinor(locale, "TWD", 0), "NT$0");
+    assert.equal(formatMinor(locale, "TWD", 1), "NT$0.01");
+    assert.equal(formatMinor(locale, "TWD", 30000), "NT$300");
+    assert.equal(formatMinor(locale, "TWD", 1250), "NT$12.50");
+    assert.match(formatMinor(locale, "USD", 1250), /\$12\.50$/);
+    assert.match(formatMinor(locale, "HKD", 9999), /HK\$99\.99$/);
+  }
+  assert.equal(formatMinor("en", "invalid-currency", 1250), "12.50 invalid-currency");
+});
+
 const now = Date.parse("2026-09-30T04:00:00Z"); // Taipei noon, independent of the test runner's zone.
 const min = 60_000;
 const day = 86_400_000;

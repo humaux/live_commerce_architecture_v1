@@ -1,0 +1,81 @@
+✔ native wheel frames cover tall section interiors, not just section headings (7.119666ms)
+✔ a frozen pane fails instead of claiming complete evidence (1.217875ms)
+✔ document-only wheel movement does not prove that the nested pane scrolled (1.208042ms)
+✔ frame bound fails visibly and retains partial shots (1.643834ms)
+✔ initial offset is rewound using native input before shooting (2.84525ms)
+✔ a hidden final slice is not mistaken for a reached end (2.665667ms)
+✔ a short pane is captured once without unnecessary scrolling (1.385042ms)
+✔ a missing required product pane fails, never skips a page (0.302542ms)
+✖ 1440 supplement covers only affected desktop admin routes without replacing the primary matrix (0.630584ms)
+✖ supplemental 1440 blockers are folded into the real owning verdict without inflating primary captures (0.586375ms)
+✖ supplemental capture failure cannot hide behind an existing successful primary screenshot (0.140083ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 8
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 62.904291
+
+✖ failing tests:
+
+test at tests/ui/visual-scroll-capture.test.mjs:85:1
+✖ 1440 supplement covers only affected desktop admin routes without replacing the primary matrix (0.630584ms)
+  TypeError: Cannot read properties of null (reading 'size')
+      at TestContext.<anonymous> (file://./tests/ui/visual-scroll-capture.test.mjs:90:30)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+
+test at tests/ui/visual-scroll-capture.test.mjs:98:1
+✖ supplemental 1440 blockers are folded into the real owning verdict without inflating primary captures (0.586375ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+    {
+  +   R4: 1
+  -   R1: 1,
+  -   R4: 3
+    }
+
+      at TestContext.<anonymous> (file://./tests/ui/visual-scroll-capture.test.mjs:104:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { R4: 1 },
+    expected: { R1: 1, R4: 3 },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ui/visual-scroll-capture.test.mjs:111:1
+✖ supplemental capture failure cannot hide behind an existing successful primary screenshot (0.140083ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+
+  + undefined
+  - true
+
+      at TestContext.<anonymous> (file://./tests/ui/visual-scroll-capture.test.mjs:115:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

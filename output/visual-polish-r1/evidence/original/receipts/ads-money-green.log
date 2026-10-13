@@ -1,0 +1,32 @@
+✔ Meta rejection wording is preserved as bounded Unicode text, never translated (1.114125ms)
+✔ frozen error codes: model list equals the frozen list, each is read from both error shapes (0.689292ms)
+✔ copy: every code, status, op state and connect error has text in all three locales (0.432667ms)
+✔ copy never calls a budget a hard stop and never offers resume (0.776209ms)
+✔ draft: every §5.1 status parses; unknown status/template/op state is an error, never guessed (0.353291ms)
+✔ draft: optional fields, remote ids and the Ads Manager link (0.424625ms)
+✔ action hints: pause whenever a remote id exists and not ENDED; a paused draft is only ever copied (X7) (0.178917ms)
+✔ money: whole units to minor with integer math; TWD must be whole (10.338833ms)
+✔ ads report money: zh-TW TWD metrics display NT$ rather than bare dollars (0.161208ms)
+✔ ads report money: all supported locales preserve exact minor-unit amounts and currency (0.770875ms)
+✔ Taipei schedule: wall inputs and draft projections ignore the viewer zone (7.428ms)
+✔ Taipei schedule: invalid calendar days are rejected and all copy names UTC+8 (0.172208ms)
+✔ draft input: exact 11-key body and every local rule (2.741167ms)
+✔ draft form round trip and X7 copy (blank schedule, no id, no revision) (0.172167ms)
+✔ settings parser: environment enum, connections, identities, capi (0.944917ms)
+✔ connect state parser: pick list kinds and id match (0.095583ms)
+✔ report: three separate blocks, orders may be null, no combined figure (0.227875ms)
+✔ default report window is the Asia/Taipei store day whatever the viewer's zone is (Taipei midnight boundary) (4.202709ms)
+✔ capi body and validation (0.579125ms)
+✔ W6-06B unbind response: exact keys, account, UUIDs and outcome semantics (0.182791ms)
+✔ W6-06B in-flight details preserve bounded items and total, reject unknown shapes (0.136083ms)
+✔ W6-06B catalog feed has exact public URL/domain pairs or published-store empty (0.138833ms)
+✔ W6-06B copy preserves unbind boundaries and feed recovery in three locales (0.047959ms)
+✔ W6-06B feed selection follows origin order, not full feed URL order (0.054875ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 24
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 114.671708

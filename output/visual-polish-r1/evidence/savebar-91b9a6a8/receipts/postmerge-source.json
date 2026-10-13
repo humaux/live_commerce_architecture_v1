@@ -1,0 +1,82 @@
+{
+  "purpose": "Revalidate after fresh trunk comment-label print merge",
+  "depends_on": "merge3cfb1d22 and six source hashes",
+  "used_by": "VISUAL-POLISH-R1 delivery",
+  "base": "3cfb1d22",
+  "incoming": "1200178c",
+  "recorded_at": "2026-10-12T15:55:08.431262+00:00",
+  "source": {
+    "apps/admin/components/ProductDocument.css": "77f9b59d608f99a2676a26092c9e47129bcaa1d84947cf57497bfae8ca7cb499",
+    "apps/admin/components/ProductReadiness.tsx": "c65cfe792f74373f81ffc0039ce81b61723c6eb42b76975b327c1225c94a64ae",
+    "apps/admin/components/ProductDocumentForm.tsx": "bc00d59041281de359593f2efb4591e91d42bf7d0b1c91650d51793b542112b2",
+    "apps/admin/components/useProductEditorLayout.ts": "374395ff2b0d7e53ecf65ca9a7558e9236b25c8ed934ea178cbf4c00c189615b",
+    "tests/admin/product-document.test.ts": "906161daed466ab751cd991bbe5ca1b4fc9785c77123e31c12bff5497a3413dc",
+    "tests/admin/product-editor.acceptance.ts": "bec9dbd63fe55c334eddca5e59821fe46f7ea0f8fa44d69c63b351cb04641d7a"
+  },
+  "node": {
+    "session": 25657,
+    "state": "COMPLETE",
+    "log": "postmerge-test-node.log",
+    "wake": "root polls bounded session; no silent handoff",
+    "exit": 0
+  },
+  "browser_product_editor": {
+    "session": 8116,
+    "state": "COMPLETE",
+    "log": "postmerge-browser-product-editor.log",
+    "timeout": "Go harness1700s",
+    "wake": "root bounded session polling; source frozen",
+    "exit": 0,
+    "evidence": "output/playwright/run.7mQWsFR1/catalog-core/20261012T155800.411384000"
+  },
+  "browser_visual_lint": {
+    "session": 27352,
+    "state": "COMPLETE",
+    "log": "postmerge-browser-visual-lint.log",
+    "timeout": "Go harness5400s",
+    "wake": "root bounded session polling, source frozen",
+    "exit": 0,
+    "evidence": "output/playwright/run.5B8hddOV/ui-visual-audit/20261012T160338Z"
+  },
+  "check_gates": {
+    "session": 55139,
+    "state": "COMPLETE",
+    "log": "postmerge-check-gates.log",
+    "timeout": "Go test contractdrift default10m; runner observed by root",
+    "wake": "root bounded session polling",
+    "resources": "no PG or browser; runs beside visual capture after fullNode exit",
+    "exit": 0
+  },
+  "admin_typecheck": {
+    "exit": 0,
+    "log": "postmerge-typecheck.log"
+  },
+  "spec_typecheck": {
+    "exit": 0,
+    "log": "postmerge-spec-typecheck.log"
+  },
+  "postmerge-test-node": {
+    "exit": 0,
+    "log": "postmerge-test-node.log"
+  },
+  "postmerge-browser-product-editor": {
+    "exit": 0,
+    "log": "postmerge-browser-product-editor.log"
+  },
+  "postmerge-browser-visual-lint": {
+    "exit": 0,
+    "log": "postmerge-browser-visual-lint.log"
+  },
+  "postmerge-check-gates": {
+    "exit": 0,
+    "log": "postmerge-check-gates.log"
+  },
+  "postmerge-typecheck": {
+    "exit": 0,
+    "log": "postmerge-typecheck.log"
+  },
+  "postmerge-spec-typecheck": {
+    "exit": 0,
+    "log": "postmerge-spec-typecheck.log"
+  }
+}
