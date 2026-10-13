@@ -184,6 +184,14 @@ jobs:
           key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-${{ steps.browsers.outputs.cache }}
       - name: Download pinned test image
         run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+      # Temporary OA1 authoring evidence; removed before PR. Host execution is
+      # prohibited, so CI emits the formatter patch without changing tested code.
+      - name: OA1 formatter evidence
+        if: ${{ github.event_name == 'workflow_dispatch' && github.ref_name == 'unit/oa-1-order-attempt-core' }}
+        run: |
+          mkdir -p output/ci-gates
+          git rev-parse HEAD > output/ci-gates/formatter-source-sha.txt
+          gofmt -d internal/orderattempt internal/inbox/order_attempt_notification.go tests/foundation/order_attempt*.go > output/ci-gates/oa1-gofmt.patch
       - name: Gate
         run: |
           set -o pipefail

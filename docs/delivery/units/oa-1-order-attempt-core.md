@@ -107,7 +107,10 @@ The `finish` input is the exact notification artifact (including the one-field
 `NOT_REQUESTED` disposition). SQL derives the receipt from native order facts;
 no caller-supplied order, money or receipt is accepted. The terminal receipt is
 `{state, attempt_id, intent_generation, order_id, commercial_state, payment_mode,
-total_minor, currency, send}` and contains no bearer or contact. All merchant
+total_minor, currency, send}` and contains no bearer or contact. When a send was
+requested, `send.notification_id` is the frozen §3 initial outbox pointer;
+READY also has `operation_id`, while VOID has the fixed refusal `reason`.
+All merchant
 attempts emit `order.manual_created` with only attempt/order/generation metadata,
 as the existing shared ManualOrders placement does for both entry flows. Its
 membership FK takes KEY SHARE on the membership row, not a recursive principal
