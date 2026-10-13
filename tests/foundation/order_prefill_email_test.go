@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"livecommerce/internal/buyer"
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/inbox"
 	"livecommerce/internal/platform"
@@ -128,6 +127,3 @@ func TestLiveConsoleOrderForBuyerPrefillEmail(t *testing.T) {
 		t.Fatal("optional prefill lost its authorized contact or changed money/stock/receipts/DM")
 	}
 }
-
-// Keep the existing typed buyer scope in the fixture contract visible to dependency gates.
-var _ buyer.Scope

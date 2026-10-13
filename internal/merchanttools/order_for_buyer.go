@@ -6,7 +6,7 @@
 // Depends on: ManualOrders (manual.go: Place, RegenerateLink, Options, hooks), internal/claims (live_price_grant.go: claims.for_buyer_* and
 //   claims.bind_merchant_origin_grant), internal/inbox (PlanOrderPayLink via PayLinkPlanner), internal/customers + internal/merchantorders
 //   (the linked customer's newest order, read-only), internal/command (receipts, audit), internal/platform, internal/storefront (ClaimOrigin),
-//   ops.order_intents (original owner under RLS), fulfillment.order_intent_begin/order_intent_has_catalog_lines/order_pay_link_valid and claims.close_cancelled_for_buyer (0172),
+//   ops.order_intents (original owner under RLS), fulfillment.order_intent_begin/order_intent_has_catalog_lines/order_prefill_email/order_pay_link_valid and claims.close_cancelled_for_buyer (0172),
 //   catalog.skus/products and control.stores (read-only, commerce_runtime under RLS).
 // Used by: internal/httpapi/merchanttools.go (routes A15/A16); cmd/api builds it beside the ManualOrders pipeline and the inbox service.
 // Invariants: I05/I08 (no client price: the body has no price key; the live price is decided by claims.live_prices), I03 (stock only through
@@ -829,14 +829,15 @@ func prefillItems(ctx context.Context, tx pgx.Tx, scope platform.Scope, lines []
 	return items, nil
 }
 
-// fillLinkedCustomer pre-fills the customer and the delivery from the explicitly linked customer's newest order (orders:read + customers:read).
-// Best effort inside a savepoint: any refusal (no customers:read, no order, unknown option) leaves them null.
+// fillLinkedCustomer pre-fills the contact and delivery from the explicitly linked customer's newest authorized order.
+// Best effort inside a savepoint: no contact escapes a refused read; both permissions are rechecked before publishing the optional result.
 func (f *ForBuyer) fillLinkedCustomer(ctx context.Context, token, storeID, customerID string, out *Prefill) {
 	options, err := f.manual.Options(ctx, token, storeID)
 	if err != nil {
 		options = nil
 	}
-	_ = platform.WithScope(ctx, f.manual.pool, token, storeID, "orders:read", func(tx pgx.Tx, scope platform.Scope) error {
+	var contact Prefill
+	err = platform.WithScope(ctx, f.manual.pool, token, storeID, "orders:read", func(tx pgx.Tx, scope platform.Scope) error {
 		sp, err := tx.Begin(ctx) // savepoint: a refusal of the optional read must not abort the transaction
 		if err != nil {
 			return nil
@@ -854,12 +855,24 @@ func (f *ForBuyer) fillLinkedCustomer(ctx context.Context, token, storeID, custo
 			}
 		}
 		order, err := merchantorders.Get(ctx, sp, scope, token, newest.OrderID)
+		var email string
+		if err == nil {
+			// Calls fulfillment.order_prefill_email (0172): only this exact authorized order, gated by orders:read AND customers:read.
+			// The narrow definer avoids a direct runtime buyer_email grant or expanding the public order projection.
+			hash := sha256.Sum256([]byte(token))
+			err = sp.QueryRow(ctx, `SELECT fulfillment.order_prefill_email($1,$2::uuid,$3::uuid)`, hash[:], storeID, newest.OrderID).Scan(&email)
+		}
 		_ = sp.Rollback(ctx) // read-only: nothing to keep
-		if err != nil {
+		if err != nil || (email != "" && (len(email) > 254 || !emailRx.MatchString(email))) {
 			return nil
 		}
+		for _, permission := range []string{"orders:read", "customers:read"} {
+			if err := platform.RequirePermission(ctx, tx, scope, token, permission); err != nil {
+				return err
+			}
+		}
 		d := order.Destination
-		out.Customer = &ManualCustomer{Name: d.RecipientName, Phone: d.Phone}
+		contact.Customer = &ManualCustomer{Name: d.RecipientName, Phone: d.Phone, Email: email}
 		i := slices.IndexFunc(options, func(o ManualOption) bool { return o.Country == order.Country && o.DeliveryCode == order.ServiceCode })
 		if i < 0 {
 			return nil
@@ -870,13 +883,16 @@ func (f *ForBuyer) fillLinkedCustomer(ctx context.Context, token, storeID, custo
 			delivery.CVS = &ManualCVS{StoreCode: d.Pickup.Code, StoreName: d.Pickup.Name, StoreAddress: d.Pickup.Address}
 			if order.ServiceCode == "cvs_711" {
 				key := options[i].OptionKey
-				out.SuggestedOptionKey = &key // 7-ELEVEN pickup, when the customer's last order used it (§5.1 step 1)
+				contact.SuggestedOptionKey = &key // 7-ELEVEN pickup, when the customer's last order used it (§5.1 step 1)
 			}
 		case d.Kind == "home":
 			h := d.HomeAddress
 			delivery.HomeAddress = &h
 		}
-		out.LastDelivery = delivery
+		contact.LastDelivery = delivery
 		return nil
 	})
+	if err == nil {
+		out.Customer, out.LastDelivery, out.SuggestedOptionKey = contact.Customer, contact.LastDelivery, contact.SuggestedOptionKey
+	}
 }
