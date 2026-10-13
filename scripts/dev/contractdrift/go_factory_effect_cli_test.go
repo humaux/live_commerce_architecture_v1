@@ -189,8 +189,8 @@ func TestGoFactoryOA1DeferredErrorClearCLI(t *testing.T) {
 func CloseThenClearError(ctx context.Context, first, second *pgxpool.Pool) (err error) {
  clear := func() { err = nil }
  defer clear()
- first.Close()
- return errors.New("startup pool closed")
+ if first != nil { first.Close(); return errors.New("startup pool closed") }
+ return nil
 }
 `
 	root, p := goFactoryOA1Legacy(t, call, source, platform, nil)
@@ -204,8 +204,8 @@ func CloseThenClearError(ctx context.Context, first, second *pgxpool.Pool) (err 
 func TestGoFactoryOA1CrossFileBoolScannerCLI(t *testing.T) {
 	call := reviewCLI(t)
 	source := strings.Replace(goFactoryOA1Source, "mux := http.NewServeMux()", "platform.OnScan = func() { c.bffKey = \"changed\" }\n mux := http.NewServeMux()", 1)
-	// bool resolves across files to a custom scanner; acquired uses builtin int and valid comparisons.
-	platform := strings.Replace(goFactoryOA1Platform, "var acquired bool", `var acquired int
+	// bool resolves across files to a custom scanner; acquired uses admitted builtin int64.
+	platform := strings.Replace(goFactoryOA1Platform, "var acquired bool", `var acquired int64
 	var destination bool
 	if e = a.QueryRow(bounded, "SELECT pg_catalog.pg_try_advisory_xact_lock($1::bigint)", key).Scan(&destination); e != nil { return denied }`, 1)
 	platform = strings.Replace(platform, "!acquired", "acquired == 0", 1)
@@ -231,5 +231,57 @@ var resetBuyerError = func() bool { errBuyerConfig = nil; return true }()
 	mustWrite(t, p, strings.Replace(source, "_ = mainPool", goFactoryOA1Probe, 1))
 	if code, out := call(root); code != 1 || !strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED") || !strings.Contains(out, "SUMMARY routes go=1 contract=1 bff=1;") || !strings.Contains(out, "UNRESOLVED EXACT /v1/factory-oa1") || !strings.Contains(out, "UNRESOLVED MOUNT /v1/factory-oa1") {
 		t.Fatalf("package initializer clearing error sentinel granted admission exclusion: exit=%d %s", code, out)
+	}
+}
+
+func TestGoFactoryOA1ActualPoolConstructorCLI(t *testing.T) {
+	call := reviewCLI(t)
+	source := strings.Replace(goFactoryOA1Source, "h, _, _, err := buildBuyerWithCVS(context.Background(), c, &pgxpool.Pool{})", `ctx := context.Background()
+ mainPool, err := platform.OpenPool(ctx, "fixture")
+ if err != nil { return }
+ h, _, _, err := buildBuyerWithCVS(ctx, c, mainPool)`, 1)
+	platform := strings.Replace(goFactoryOA1Platform, `"errors"`, `"errors"
+ "fmt"
+ "strings"`, 1)
+	platform = strings.Replace(platform, "return &pgxpool.Pool{}, nil", `return openPool(ctx, dsn, "buyer_issuer")`, 1)
+	platform = strings.Replace(platform, "return &pgxpool.Pool{}, nil", `return openPool(ctx, dsn, "buyer_runtime")`, 1)
+	platform = strings.Replace(platform, "return &pgxpool.Pool{}, nil", `return openPool(ctx, dsn, "checkout_runtime")`, 1)
+	// Literal openPool from root platform.go blob 4b5dc1b531cefc9a04c6dd00f72221df37da9a57.
+	// Authority validation is a parsed-only stub; this gate proves constructor compatibility, not PG authority.
+	platform += `
+const startupTimeout = 2 * time.Second
+func OpenPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) { return openPool(ctx, dsn, "runtime") }
+func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority string) error { return nil }
+func openPool(ctx context.Context, dsn string, authority string) (*pgxpool.Pool, error) {
+	if strings.TrimSpace(dsn) == "" {
+		return nil, errors.New("database url required")
+	}
+	config, err := pgxpool.ParseConfig(dsn)
+	if err != nil {
+		return nil, fmt.Errorf("parse database config: %w", err)
+	}
+	config.MaxConns = 8
+
+	startup, cancel := context.WithTimeout(ctx, startupTimeout)
+	defer cancel()
+	pool, err := pgxpool.NewWithConfig(startup, config)
+	if err != nil {
+		return nil, fmt.Errorf("open database pool: %w", err)
+	}
+	if err := pool.Ping(startup); err != nil {
+		pool.Close()
+		return nil, fmt.Errorf("database unavailable: %w", err)
+	}
+	if err := validatePoolAuthority(startup, pool, authority); err != nil {
+		pool.Close()
+		return nil, err
+	}
+	return pool, nil
+}
+`
+	root, p := goFactoryOA1Legacy(t, call, source, platform, nil)
+	mustWrite(t, p, strings.Replace(source, "_ = mainPool", goFactoryOA1Probe, 1))
+	if code, out := call(root); code != 0 || strings.Contains(out, "TOUCHED") || !strings.Contains(out, "SUMMARY routes go=1 contract=1 bff=1;") || !strings.Contains(out, "WARNING (unresolved) UNRESOLVED EXACT /v1/factory-oa1") || !strings.Contains(out, "WARNING (unresolved) UNRESOLVED MOUNT /v1/factory-oa1") {
+		t.Fatalf("actual pool constructor startup probe changed coverage: exit=%d %s", code, out)
 	}
 }
