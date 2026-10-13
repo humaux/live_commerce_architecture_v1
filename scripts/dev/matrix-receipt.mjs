@@ -161,7 +161,7 @@ export function goFamily(foundationDirectory = "tests/foundation") {
   const names = new Set();
   for (const name of files) {
     const text = readFileSync(resolve(foundationDirectory, name), "utf8");
-    for (const match of text.matchAll(/^func (TestProductEditorMatrix[A-Za-z0-9_]*)\(t \*testing\.T\)/gm)) names.add(match[1]);
+    for (const match of text.matchAll(/^func\s+(TestProductEditorMatrix[A-Za-z0-9_]*)\s*\(\s*(?:[A-Za-z_][A-Za-z0-9_]*\s+)?\*testing\.T\s*,?\s*\)/gm)) names.add(match[1]);
   }
   const plan = JSON.parse(readFileSync("scripts/dev/shard-plan.json", "utf8"));
   const catchAll = plan.groups.filter((group) => group.catch_all === true);

@@ -1,0 +1,23 @@
+{
+  "provenance": "Actual GitHub CI API metadata and raw log download; no local tests or runs",
+  "ci_run_id": "38384409283",
+  "head_sha": "e5bffe018a5309c8df7da8f565cf715b158dfcce",
+  "status": "completed",
+  "conclusion": "success",
+  "url": "https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38384409283",
+  "steps": [
+    {
+      "job": "foundation",
+      "step": "Package docs and gate map are current",
+      "conclusion": "success",
+      "exit_code": 0
+    },
+    {
+      "job": "foundation",
+      "step": "Node unit suites (storefront, i18n)",
+      "conclusion": "success",
+      "exit_code": 0
+    }
+  ],
+  "complete_gates": "PENDING; Foundation alone does not close same-run Go/browser/required receipt chain"
+}

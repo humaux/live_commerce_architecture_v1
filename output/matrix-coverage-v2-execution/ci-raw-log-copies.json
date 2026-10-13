@@ -12,5 +12,26 @@
     "raw_bytes": 255640,
     "lossless_gzip": "ci-red-38382999786.log.gz",
     "gzip_sha256": "1bc68d057ed595d09614bc01d459a626e85a2ac44bd8ee241ec32093e8997465"
+  },
+  {
+    "ci_run_id": "38384409283",
+    "raw_log_sha256": "13f5003a1eedf30cb619c673a58e19971bee7d50611540b0732771e5cf4ea80e",
+    "raw_bytes": 694784,
+    "lossless_gzip": "ci-green-38384409283.log.gz",
+    "gzip_sha256": "81c9f5a5c56234148d98f453d6f1e9c9c2eb6f3fdb368c35ae9e16047651ad93"
+  },
+  {
+    "ci_run_id": "38387315042",
+    "raw_log_sha256": "f4e7bf4984bc852fbe3c40f2c976038810262cbf906e12cf035936ad1f8bf3c1",
+    "raw_bytes": 258044,
+    "lossless_gzip": "ci-red-38387315042.log.gz",
+    "gzip_sha256": "13b980f7b9fc362be91550241f219a6aa8334d06d19c313452e08d1f7faa2e73"
+  },
+  {
+    "ci_run_id": "38388813827",
+    "raw_log_sha256": "879f9ed3ba0d191eb540536c161549f0e9dd2d50ecc7f2c6087e7b5fdd0778e5",
+    "raw_bytes": 257940,
+    "lossless_gzip": "ci-red-38388813827.log.gz",
+    "gzip_sha256": "9caf8bac8792e3136ce7e93cfa71d06d02f2552bee2d9cb6613c3bb1ba17241b"
   }
 ]

@@ -132,6 +132,24 @@ function workflowTriggerBound(text, integration) {
   return !integration || pull.some((line) => /^    branches:\s*\[r3\/integration\]\s*$/.test(line));
 }
 
+// These are positive bindings for the already-required receipt consumers, not
+// shell/env denylists. Comments cannot donate an executable always condition.
+function alwaysReceiptConsumer(step) {
+  const conditions = [...step.matchAll(/^(?:      - if:|        if:)\s*(.*)$/gm)]
+    .map(([, value]) => value.split(/\s+#/)[0].trim());
+  return conditions.length === 1 && ["always()", "${{ always() }}"].includes(conditions[0]);
+}
+function foundationReceiptConsumer(text) {
+  const jobs = text.split(/^jobs:\s*$/m);
+  const foundation = jobs.length === 2
+    ? /^  foundation:\s*\n([\s\S]*?)(?=^  [^ #\n]|^\S|$(?![\s\S]))/m.exec(jobs[1])?.[1] : null;
+  const steps = (foundation || "").split(/^    steps:\s*$/m)[1] || "";
+  const consumers = steps.split(/(?=^      - )/m)
+    .filter((step) => /name: Verify current-run matrix execution receipts/.test(step));
+  return consumers.length === 1 && alwaysReceiptConsumer(consumers[0]) &&
+    consumers[0].includes("env -u NODE_OPTIONS node scripts/dev/matrix-receipt-verify.mjs foundation");
+}
+
 export function matrixExecutionIssues({ node, workflow, registry, receipt = readFileSync("scripts/dev/matrix-receipt.mjs", "utf8"), foundationWorkflow = readFileSync(".github/workflows/foundation.yml", "utf8") }) {
   const issues = [];
   const active = (text) => text.replace(/\\\r?\n/g, " ").split(/\r?\n/)
@@ -154,7 +172,7 @@ export function matrixExecutionIssues({ node, workflow, registry, receipt = read
       !workflow.includes('"scripts/dev/matrix-receipt-verify.mjs", "required"') ||
       !workflow.includes('env: { ...process.env, NODE_OPTIONS: "" }'))
     issues.push("gates.yml required job must invoke the pinned JavaScript receipt verifier with NODE_OPTIONS cleared");
-  if (!foundationWorkflow.includes("env -u NODE_OPTIONS node scripts/dev/matrix-receipt-verify.mjs foundation"))
+  if (!foundationReceiptConsumer(foundationWorkflow))
     issues.push("foundation.yml must always verify positive receipts with NODE_OPTIONS cleared");
   // Bind selectors to their real planner calls; a plan can cover every test yet
   // an extra exclusion at the live dispatch still prevents its execution.
@@ -196,7 +214,7 @@ export function matrixExecutionIssues({ node, workflow, registry, receipt = read
   if (!requiredJob || requiredJobContinuation.some(([, value]) => value !== "false") || resultConsumers.length !== 1 || receiptConsumers.length !== 1 ||
       invalidRequiredStepContinuation ||
       !requiredHeader.includes("name: ${{ github.event_name == 'workflow_dispatch' && 'manual' || 'required' }}") ||
-      !receiptConsumers[0]?.includes("if: always()") ||
+      !alwaysReceiptConsumer(receiptConsumers[0] || "") ||
       !receiptConsumers[0]?.includes('"scripts/dev/matrix-receipt-verify.mjs", "required"') ||
       !resultConsumers[0]?.includes('[[ "$GATE" == success ]]'))
     issues.push("gates.yml required job and both result/receipt consumers must remain mandatory and fail closed");
