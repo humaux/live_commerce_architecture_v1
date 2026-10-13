@@ -36,30 +36,35 @@ func (s *goScanner) opaque(fn *goFunc) {
 		}
 	}
 	// Follow local dispatch helpers, including method Handler -> serveWebhook adapters.
-	seen := map[string]bool{}
+	seen := map[*goFunc]bool{}
 	queue := []*goFunc{fn}
 	dispatch := false
-	refs := []location{s.loc(fn.AST)}
+	refs, _ := s.factoryRefs(fn)
+	originalPackage, originalFile := s.Package, s.File
+	defer func() { s.Package, s.File = originalPackage, originalFile }()
 	for len(queue) > 0 {
 		current := queue[0]
 		queue = queue[1:]
-		if seen[current.Key] {
+		if seen[current] {
 			continue
 		}
-		seen[current.Key] = true
+		seen[current] = true
 		s.File = current.File
-		signal := false
-		ast.Inspect(current.AST.Body, func(n ast.Node) bool {
-			if sel, ok := n.(*ast.SelectorExpr); ok && (sel.Sel.Name == "Path" || sel.Sel.Name == "Method" || strings.HasPrefix(sel.Sel.Name, "Method")) {
-				signal = true
-				dispatch = true
-			}
-			if lit, ok := n.(*ast.BasicLit); ok && lit.Kind == token.STRING {
-				v, _ := strconv.Unquote(lit.Value)
-				if strings.HasPrefix(v, "/") {
-					signal = true
-
+		for _, pkg := range s.Packages {
+			for _, member := range pkg.Funcs {
+				if member == current {
+					s.Package = pkg
 				}
+			}
+		}
+		currentRefs, skipped := s.factoryRefs(current)
+		refs = goRefs(refs, currentRefs)
+		ast.Inspect(current.AST.Body, func(n ast.Node) bool {
+			if skipped[n] {
+				return false
+			}
+			if sel, ok := n.(*ast.SelectorExpr); ok && (sel.Sel.Name == "Path" || sel.Sel.Name == "Method" || strings.HasPrefix(sel.Sel.Name, "Method")) {
+				dispatch = true
 			}
 			if id, ok := n.(*ast.Ident); ok {
 				for _, callee := range s.Package.ByName[id.Name] {
@@ -68,13 +73,17 @@ func (s *goScanner) opaque(fn *goFunc) {
 				v := s.Package.Globals.get(id.Name)
 				for _, text := range v.Text {
 					if strings.HasPrefix(text, "/") {
-						signal = true
 						refs = goRefs(refs, v.Refs)
 
 					}
 				}
 			}
 			if c, ok := n.(*ast.CallExpr); ok {
+				proof := &goAdmissionProof{s: s, pkg: s.Package, file: current.File}
+				if callee, _ := proof.callee(c.Fun, map[string]admissionValue{}); callee != nil {
+					queue = append(queue, callee)
+					refs = goRefs(refs, proof.refs)
+				}
 				name := goCallName(c.Fun)
 				if sel, ok := c.Fun.(*ast.SelectorExpr); ok {
 					name = sel.Sel.Name
@@ -85,9 +94,6 @@ func (s *goScanner) opaque(fn *goFunc) {
 			}
 			return true
 		})
-		if signal {
-			refs = goRefs(refs, []location{s.loc(current.AST)})
-		}
 	}
 	// Only actual custom mount guards provide coverage; provider API strings in
 	// underlying handlers cannot define this API's served namespace.

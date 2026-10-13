@@ -179,7 +179,8 @@ func (s *goScanner) expr(expr ast.Expr, e goEnv) goValue {
 	case *ast.Ident:
 		if _, bound := e.lookup(x.Name); !bound {
 			if fn := s.Package.Named[x.Name]; fn != nil {
-				return goValue{Unknown: true, Refs: []location{s.loc(fn.AST)}}
+				refs, _ := s.factoryRefs(fn)
+				return goValue{Unknown: true, Refs: refs}
 			}
 		}
 		return e.get(x.Name)
