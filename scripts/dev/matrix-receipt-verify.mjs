@@ -174,8 +174,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       catch (error) { throw new Error(`same-run browser receipt: ${error.message}`); }
     };
     if (planned.length === requiredModes.length) {
-      const matrixReceipt = verifyOne("go", `shard:${shard}`);
       verifyOne("node", "shard:unit");
+      const matrixReceipt = verifyOne("go", `shard:${shard}`);
       if (matrixReceipt.outcome?.historical_skip) {
         if (!plannedModes.includes("--browser-product-editor")) throw new Error("historical canonical skip requires a planned --browser-product-editor job");
         verifyBrowser();

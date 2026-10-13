@@ -4,7 +4,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { readFileSync, mkdirSync, writeFileSync, existsSync, rmSync, symlinkSync, mkdtempSync } from "node:fs";
+import { readFileSync, mkdirSync, writeFileSync, existsSync, rmSync, symlinkSync, mkdtempSync, readdirSync, copyFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { createHash } from "node:crypto";
@@ -80,6 +80,60 @@ function persistGateStepResult(directory, mode, runId, outcome = "success", job 
   writeFileSync(receiptPath, `${JSON.stringify({ schema: "matrix-gate-step-receipt/v1", mode,
     run_id: runId, job, step_name: "Gate", outcome, source_commit: sourceCommit }, null, 2)}\n`);
   return receiptPath;
+}
+function workflowArtifactPaths(workflow, visualLint) {
+  const lines = workflow.split(/\r?\n/);
+  const steps = [];
+  for (let i = 0; i < lines.length; i++) {
+    if (!/^      - /.test(lines[i])) continue;
+    let end = i + 1;
+    while (end < lines.length && !/^      - /.test(lines[end])) end++;
+    steps.push(lines.slice(i, end));
+    i = end - 1;
+  }
+  const condition = visualLint ? /startsWith\(matrix\.mode, '--browser-visual-lint'\)/ : /!startsWith\(matrix\.mode, '--browser-visual-lint'\)/;
+  const step = steps.find((block) => block.some((line) => line.includes("actions/upload-artifact@") && condition.test(line)));
+  assert.ok(step, `workflow has the ${visualLint ? "visual" : "ordinary"} artifact upload`);
+  const pathIndex = step.findIndex((line) => /^\s+path:\s*\|\s*$/.test(line));
+  assert.notEqual(pathIndex, -1, "upload step declares a path list");
+  const indent = step[pathIndex].match(/^\s*/)[0].length;
+  const paths = [];
+  for (const line of step.slice(pathIndex + 1)) {
+    const lineIndent = line.match(/^\s*/)[0].length;
+    if (line.trim() && lineIndent <= indent) break;
+    if (line.trim()) paths.push(line.trim());
+  }
+  return paths;
+}
+function artifactPathMatches(pattern, relativePath, runId) {
+  const expanded = pattern.replaceAll("${{ github.run_id }}", runId).replaceAll("${{ github.job }}", "gate");
+  if (expanded.endsWith("/")) return relativePath.startsWith(expanded);
+  const source = expanded.split(/(\*\*|\*)/).map((part) => part === "**" ? ".*" : part === "*" ? "[^/]*" : part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("");
+  return new RegExp(`^${source}$`).test(relativePath);
+}
+function filesUnder(root) {
+  const files = [];
+  if (!existsSync(root)) return files;
+  for (const entry of readdirSync(root, { withFileTypes: true })) {
+    const path = join(root, entry.name);
+    if (entry.isDirectory()) files.push(...filesUnder(path));
+    else if (entry.isFile()) files.push(path);
+  }
+  return files;
+}
+function assembleUploadedArtifacts(workflow, producers, downloadRoot, runId, omittedMode = null) {
+  for (const { mode, root: producerRoot } of producers) {
+    if (mode === omittedMode) continue;
+    const paths = workflowArtifactPaths(workflow, mode.startsWith("--browser-visual-lint"));
+    const artifactRoot = resolve(downloadRoot, mode.replace(/[^A-Za-z0-9_.-]/g, "_"));
+    for (const file of filesUnder(producerRoot)) {
+      const relativePath = file.slice(producerRoot.length + 1).split("\\").join("/");
+      if (!paths.some((pattern) => artifactPathMatches(pattern, relativePath, runId))) continue;
+      const output = resolve(artifactRoot, relativePath);
+      mkdirSync(dirname(output), { recursive: true });
+      copyFileSync(file, output);
+    }
+  }
 }
 function historicalGoEvents({ reason } = {}) {
   const packageName = "livecommerce/tests/foundation";
@@ -335,6 +389,61 @@ test("required verifier requires one successful named Gate step receipt for ever
   const skipped = verify();
   assert.equal(skipped.status, 1, `${skipped.stdout}\n${skipped.stderr}`);
   assert.match(skipped.stderr, /Gate step.*(skipped|outcome|receipt)/i);
+});
+
+test("visual-lint and ordinary artifact uploads both deliver every planned Gate receipt", () => {
+  const workflow = readFileSync(".github/workflows/gates.yml", "utf8");
+  const runId = "gate-artifact-upload-probe";
+  const shard = goFamily().shard;
+  const modes = ["shard:unit", `shard:${shard}`, "--browser-catalog-core", "--browser-visual-lint@0/1"];
+  const plan = JSON.stringify(modes.map((mode) => ({ mode })));
+  const head = spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).stdout.trim();
+  const family = goFamily().family;
+  const producers = modes.map((mode) => {
+    const root = probePath("gate-artifact-producers", mode.replace(/[^A-Za-z0-9_.-]/g, "_"));
+    const jobRoot = resolve(root, "output", "matrix-coverage-v2-execution", runId, "gate");
+    persistGateStepResult(resolve(jobRoot, "gate-results"), mode, runId);
+    if (mode === "shard:unit") persistReceipt(jobRoot, "node", mode, runId, nodeEvents());
+    if (mode === `shard:${shard}`) {
+      const events = [{ Package: "livecommerce/tests/foundation", Action: "start" },
+        ...family.map((Test) => ({ Package: "livecommerce/tests/foundation", Test, Action: "pass" }))];
+      persistReceipt(jobRoot, "go", mode, runId, events);
+    }
+    return { mode, root };
+  });
+  const visualGatePath = `output/matrix-coverage-v2-execution/${runId}/gate/gate-results/${modes[3].replace(/[^A-Za-z0-9_.-]/g, "_")}.gate.json`;
+  assert.ok(workflowArtifactPaths(workflow, true).some((pattern) => artifactPathMatches(pattern, visualGatePath, runId)),
+    "the dedicated visual-lint upload includes the actual Gate receipt path");
+
+  const verifyArtifacts = (omittedMode = null) => {
+    const downloadRoot = probePath("gate-artifact-downloads", omittedMode?.replace(/[^A-Za-z0-9_.-]/g, "_") || "complete");
+    assembleUploadedArtifacts(workflow, producers, downloadRoot, runId, omittedMode);
+    return spawnSync(process.execPath,
+      ["scripts/dev/matrix-receipt-verify.mjs", "required", downloadRoot, runId, head, plan, "pull_request"],
+      { encoding: "utf8", env: { ...process.env, NODE_OPTIONS: "" } });
+  };
+  const complete = verifyArtifacts();
+  assert.equal(complete.status, 0, `${complete.stdout}\n${complete.stderr}`);
+  for (const mode of modes) {
+    const missing = verifyArtifacts(mode);
+    assert.equal(missing.status, 1, `omitting ${mode} must fail required: ${missing.stdout}\n${missing.stderr}`);
+    assert.match(missing.stderr, /Gate step.*receipt/i);
+  }
+});
+
+test("required verifier reports a missing Go receipt after a valid Node receipt", () => {
+  const root = probePath("required-missing-go");
+  const runId = "missing-go-probe";
+  const head = spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).stdout.trim();
+  const modes = ["shard:unit", `shard:${goFamily().shard}`];
+  const plan = JSON.stringify(modes.map((mode) => ({ mode })));
+  persistReceipt(resolve(root, "node"), "node", modes[0], runId, nodeEvents());
+  for (const mode of modes) persistGateStepResult(resolve(root, "gate-results"), mode, runId);
+  const missingGo = spawnSync(process.execPath,
+    ["scripts/dev/matrix-receipt-verify.mjs", "required", root, runId, head, plan, "workflow_dispatch"],
+    { encoding: "utf8", env: { ...process.env, NODE_OPTIONS: "" } });
+  assert.equal(missingGo.status, 1, `${missingGo.stdout}\n${missingGo.stderr}`);
+  assert.match(missingGo.stderr, /expected exactly one go receipt/);
 });
 
 test("Gates captures the actual named Gate step outcome into the required receipt path", () => {

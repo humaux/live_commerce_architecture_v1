@@ -257,6 +257,7 @@ jobs:
             output/playwright/**/ui-visual-audit/**/lint.*
             output/playwright/**/ui-visual-audit/**/index.json
             output/playwright/**/ui-visual-audit/**/shots/**
+            output/matrix-coverage-v2-execution/${{ github.run_id }}/${{ github.job }}/gate-results/*.gate.json
           retention-days: 14
           if-no-files-found: ignore
 
