@@ -58,7 +58,16 @@ func oaBeginSelection(t *testing.T, e *lbuEnv, mode, stock string) map[string]an
 func oaBeginPrepared(t *testing.T, e *lbuEnv, a orderattempt.AdmissionReceipt) (pgx.Tx, []byte, oaQuoteWire, string, oaAllocationWire, []inventory.Line) {
 	t.Helper()
 	tx, plain, quote := oaAllocationPrefix(t, e, a)
-	destination := oaAllocationDestination(t, tx, a, plain, quote)
+	// Native offline-capacity serialization belongs at the service level,
+	// after catalog but before pickup/destination and any warehouse/balance locks.
+	ids, _, err := oaAllocationCatalog(tx, a.AttemptID, plain)
+	if err != nil || len(ids) == 0 { t.Fatalf("catalog safety prerequisite: %v", err) }
+	var offline []byte
+	err = tx.QueryRow(context.Background(), `SELECT checkout.order_attempt_lock_offline_safety($1::uuid,$2::text)`, a.AttemptID, string(plain)).Scan(&offline)
+	if err != nil { t.Fatalf("native offline settings lock before destination/inventory: %v", err) }
+	destinationWire, _, err := oaDestinationCall(tx, a.AttemptID, plain, quote.CartID)
+	if err != nil || destinationWire.DestinationID == "" { t.Fatalf("native destination prerequisite: %v", err) }
+	destination := destinationWire.DestinationID
 	allocation, _, err := oaAllocationCall(tx, a.AttemptID, plain, quote, destination)
 	if err != nil || allocation.OrderID != a.AttemptID || allocation.Demands == nil || allocation.Balances == nil { t.Fatalf("real native allocation prerequisite: %v", err) }
 	lines := []inventory.Line{}
