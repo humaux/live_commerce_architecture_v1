@@ -67,11 +67,11 @@ DECLARE a ops.order_attempts%ROWTYPE; s ops.order_attempt_scopes%ROWTYPE;
  prior_store text:=current_setting('app.store_id',true);
  prior_principal text:=current_setting('app.principal_id',true);
 BEGIN
- IF p_store IS NULL OR p_attempt IS NULL OR p_generation IS NULL OR p_generation<1
+ IF p_attempt IS NULL OR p_generation IS NULL OR p_generation<1
   OR current_setting('transaction_isolation')<>'read committed'
   OR (worker AND runtime) OR NOT (worker OR runtime)
   OR (worker AND p_hash IS NOT NULL)
-  OR (runtime AND (p_hash IS NULL OR octet_length(p_hash)<>32)) THEN
+  OR (runtime AND (p_store IS NULL OR p_hash IS NULL OR octet_length(p_hash)<>32)) THEN
   RAISE EXCEPTION 'invalid_execution_authority' USING ERRCODE='PT400';
  END IF;
  PERFORM set_config('app.tenant_id','',true);
@@ -80,8 +80,12 @@ BEGIN
  IF worker THEN
   -- Actual claims session_user is the only locator lane. This unlocked read is
   -- discovery, not a fence: identity/state/generation are re-read below under lock.
-  SELECT x.* INTO a FROM ops.order_attempts x WHERE x.attempt_id=p_attempt AND x.store_id=p_store;
+  SELECT x.* INTO a FROM ops.order_attempts x WHERE x.attempt_id=p_attempt
+   AND (p_store IS NULL OR x.store_id=p_store);
   IF NOT FOUND THEN RAISE EXCEPTION 'attempt_not_found' USING ERRCODE='PT404'; END IF;
+  -- River carries only attempt_id and generation. Pin the locator's immutable
+  -- store before the locking read; an explicit mismatched store still denies.
+  p_store:=a.store_id;
   PERFORM set_config('app.tenant_id',a.tenant_id::text,true);
   PERFORM set_config('app.store_id',a.store_id::text,true);
  ELSE
