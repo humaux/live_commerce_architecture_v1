@@ -1,0 +1,18 @@
+CI-DRIFT-FACTORY genuine frozen OA1 regression receipt
+Source SHA: 7b652f59fb48cc8ab6f8df4726155bfe690fef1e
+GitHub Foundation run: 38478824210
+Job: 115576095619
+Actual execution: 2026-10-13T22:37:16Z–2026-10-13T22:40:15Z
+Original full job log SHA256: 74d4c4babb4816d49ad5225a257cf2e3b83a33b435ae4fcf253d244b75891fa4
+Retrieved via GitHub job logs API, exit 0. Excerpt is verbatim; local tests NOT_RUN.
+2026-10-13T22:37:26.3282362Z HEAD is now at 16706168 Merge 7b652f59fb48cc8ab6f8df4726155bfe690fef1e into 256e9740ced9c5de05a83f58eb9f4c79a231b7b2
+2026-10-13T22:40:11.9263601Z --- FAIL: TestGoFactoryOA1FrozenDatabaseProbeCLI (0.35s)
+2026-10-13T22:40:11.9265451Z     go_factory_oa1_cli_test.go:168: frozen OA1 startup probe touched stable handler dependencies: exit=1 INFO () GO_MOUNT_OR_FALLBACK  /v1/factory-oa1 cmd/api/main.go:3, cmd/api/main.go:14, cmd/api/main.go:16, cmd/api/main.go:18, cmd/api/main.go:20 methodless registration; child paths remain absolute unless StripPrefix is explicit
+2026-10-13T22:40:11.9267344Z         ERROR (TOUCHED) UNRESOLVED   cmd/api/main.go:20, cmd/api/main.go:52 opaque Go handler dispatch buildBuyerWithCVS; route/method coverage is unknown
+2026-10-13T22:40:11.9268847Z         ERROR (TOUCHED) UNRESOLVED EXACT /v1/factory-oa1 cmd/api/main.go:20, cmd/api/main.go:52, cmd/api/main.go:54 opaque Go handler dispatch mountOA1; route/method coverage is unknown
+2026-10-13T22:40:11.9270608Z         ERROR (TOUCHED) UNRESOLVED MOUNT /v1/factory-oa1 cmd/api/main.go:3, cmd/api/main.go:14, cmd/api/main.go:16, cmd/api/main.go:18, cmd/api/main.go:20 opaque Go methodless mount; child route identity is unproven
+2026-10-13T22:40:11.9272218Z         SUMMARY routes go=1 contract=1 bff=1; errors=3 warnings=0 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
+2026-10-13T22:40:11.9272670Z FAIL
+2026-10-13T22:40:11.9273017Z FAIL	livecommerce/scripts/dev/contractdrift	130.892s
+2026-10-13T22:40:11.9273504Z FAIL
+2026-10-13T22:40:11.9876896Z ##[error]Process completed with exit code 1.
