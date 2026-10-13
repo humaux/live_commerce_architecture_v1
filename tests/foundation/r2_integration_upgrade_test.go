@@ -99,8 +99,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0185 (OA1 original claim locks, uses and complete origin audit) adds one: 109 -> 110.
 	// 0187 (OA1 private reusable pay-entry storage) adds one: 110 -> 111.
 	// 0189 (OA1 native terminal proof and scoped audit) adds one: 111 -> 112.
-	if len(r2) != 112 {
-		t.Fatalf("R2 migration set = %d files %v, want 112", len(r2), r2)
+	// 0188 (OA1 native initial payment notification pair) adds one: 112 -> 113.
+	if len(r2) != 113 {
+		t.Fatalf("R2 migration set = %d files %v, want 113", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
