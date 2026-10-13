@@ -260,7 +260,7 @@ func (f *ForBuyer) Place(ctx context.Context, token, storeID, key string, in For
 	if err != nil {
 		return ForBuyerResult{}, false, err
 	}
-	if out.Send.State == "not_sent" && (out.Send.Reason == "link_unavailable" || out.Send.Reason == "window_closed" || out.Send.Reason == "order_cancelled") {
+	if out.CommercialState == "CANCELLED" || (out.Send.State == "not_sent" && (out.Send.Reason == "link_unavailable" || out.Send.Reason == "window_closed" || out.Send.Reason == "order_cancelled")) {
 		// A competing reminder may have superseded Place's URL before DM planning. Never return that dead token.
 		out.BuyerLink = nil
 	}
@@ -379,6 +379,14 @@ func (f *ForBuyer) placeOrder(ctx context.Context, token, storeID, key string, m
 		if err = f.FaultAfterPlace(); err != nil {
 			return zero, "", "", false, err
 		}
+	}
+	if cancelled {
+		if placed.OrderID != original.OrderID {
+			return zero, "", "", false, mapForBuyerError(command.ErrConflict)
+		}
+		// A historical manual receipt may still describe the pre-cancellation snapshot. Never expose its link, even for a queued DM receipt.
+		placed.CommercialState = original.CommercialState
+		placed.BuyerLink = nil
 	}
 
 	var granted []claims.GrantedLine

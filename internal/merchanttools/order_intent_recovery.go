@@ -1,7 +1,7 @@
 // Purpose: resolve or explicitly resume durable merchant intents using their server-frozen request and original private owner.
 // Depends on: ops.order_intents, fulfillment.order_intent_begin, command receipts/audit, claims.for_buyer_request/release.
 // Used by: manual/for-buyer A16R recovery and pending recovery after tab changes or re-login.
-// Invariants: I01/I02/I03/I06; absent checkout is sealed atomically, partial checkout retains the same key, no buyer secrets in replies.
+// Invariants: I01/I02/I03/I06; absent checkout is sealed atomically, sealed replay requires both original receipts, partial retains the same key.
 package merchanttools
 
 import (
@@ -50,6 +50,33 @@ func (m *ManualOrders) recoverIntentState(ctx context.Context, tx pgx.Tx, scope 
 	}
 	if err = check(); err != nil {
 		return OrderRecovery{}, err
+	}
+	if intent.State == "sealed" {
+		// The Begin definer intentionally accepts only pending/created intents. Sealed state alone is never absence proof:
+		// replay its exact original closure and recovery receipts, without fabricating either if it is missing.
+		if intent.OrderID != "" || !command.ValidID(intent.Owner) || intent.BeginKey != stepKey(key, "begin") {
+			return OrderRecovery{}, command.ErrConflict
+		}
+		owner := struct {
+			OwnerID string `json:"owner_id"`
+		}{intent.Owner}
+		var closure struct {
+			OwnerID string `json:"owner_id"`
+		}
+		if err = command.Run(ctx, tx, scope, checkoutClosureOperation, intent.BeginKey, owner, &closure, func() error { return ErrUnavailable }); err != nil {
+			return OrderRecovery{}, err
+		}
+		if closure.OwnerID != intent.Owner {
+			return OrderRecovery{}, command.ErrConflict
+		}
+		var out OrderRecovery
+		if err = command.Run(ctx, tx, scope, recoveryOperation, key, request, &out, func() error { return ErrUnavailable }); err != nil {
+			return OrderRecovery{}, err
+		}
+		if out != (OrderRecovery{State: "not_created"}) {
+			return OrderRecovery{}, command.ErrConflict
+		}
+		return out, check()
 	}
 	begin, found, err := lookupIntentBegin(ctx, tx, token, scope.StoreID, key)
 	if err != nil {

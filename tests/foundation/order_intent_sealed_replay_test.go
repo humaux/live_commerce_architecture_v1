@@ -5,8 +5,20 @@
 package foundation_test
 
 import (
+	"context"
 	"testing"
+	"time"
 )
+
+func oisCorruptProof(t *testing.T, e *lbuEnv, query string, args ...any) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	tag, err := e.p.f.owner.Exec(ctx, query, args...)
+	if err != nil || tag.RowsAffected() != 1 {
+		t.Fatal("owner corruption fixture did not alter exactly one authoritative receipt")
+	}
+}
 
 func TestOrderIntentSealedRecoveryReplay(t *testing.T) {
 	for _, kind := range []string{"manual", "for_buyer"} {
@@ -51,14 +63,14 @@ func TestOrderIntentSealedRecoveryRequiresReceipts(t *testing.T) {
 			wantStatus, wantCode := 503, "retry_later"
 			switch fault {
 			case "missing_closure":
-				mustExec(t, e.p.f.owner, `DELETE FROM ops.command_results c USING ops.order_intents i WHERE c.tenant_id=i.tenant_id AND c.store_id=i.store_id AND c.operation='merchanttools.order.checkout.closed' AND c.idempotency_key=i.begin_key AND i.tenant_id=$1 AND i.store_id=$2 AND i.idempotency_key=$3`, e.tenant(), e.store(), key)
+				oisCorruptProof(t, e, `DELETE FROM ops.command_results c USING ops.order_intents i WHERE c.tenant_id=i.tenant_id AND c.store_id=i.store_id AND c.operation='merchanttools.order.checkout.closed' AND c.idempotency_key=i.begin_key AND i.tenant_id=$1 AND i.store_id=$2 AND i.idempotency_key=$3`, e.tenant(), e.store(), key)
 			case "missing_recovery":
-				mustExec(t, e.p.f.owner, `DELETE FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND operation='merchanttools.order.attempt.recovery' AND idempotency_key=$3`, e.tenant(), e.store(), key)
+				oisCorruptProof(t, e, `DELETE FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND operation='merchanttools.order.attempt.recovery' AND idempotency_key=$3`, e.tenant(), e.store(), key)
 			case "wrong_closure_owner":
-				mustExec(t, e.p.f.owner, `UPDATE ops.command_results c SET response=jsonb_build_object('owner_id','00000000-0000-4000-8000-000000000001') FROM ops.order_intents i WHERE c.tenant_id=i.tenant_id AND c.store_id=i.store_id AND c.operation='merchanttools.order.checkout.closed' AND c.idempotency_key=i.begin_key AND i.tenant_id=$1 AND i.store_id=$2 AND i.idempotency_key=$3`, e.tenant(), e.store(), key)
+				oisCorruptProof(t, e, `UPDATE ops.command_results c SET response=jsonb_build_object('owner_id','00000000-0000-4000-8000-000000000001') FROM ops.order_intents i WHERE c.tenant_id=i.tenant_id AND c.store_id=i.store_id AND c.operation='merchanttools.order.checkout.closed' AND c.idempotency_key=i.begin_key AND i.tenant_id=$1 AND i.store_id=$2 AND i.idempotency_key=$3`, e.tenant(), e.store(), key)
 				wantStatus, wantCode = 409, "idempotency_conflict"
 			case "wrong_recovery_state":
-				mustExec(t, e.p.f.owner, `UPDATE ops.command_results SET response='{"state":"created","order_id":"00000000-0000-4000-8000-000000000001"}'::jsonb WHERE tenant_id=$1 AND store_id=$2 AND operation='merchanttools.order.attempt.recovery' AND idempotency_key=$3`, e.tenant(), e.store(), key)
+				oisCorruptProof(t, e, `UPDATE ops.command_results SET response='{"state":"created","order_id":"00000000-0000-4000-8000-000000000001"}'::jsonb WHERE tenant_id=$1 AND store_id=$2 AND operation='merchanttools.order.attempt.recovery' AND idempotency_key=$3`, e.tenant(), e.store(), key)
 				wantStatus, wantCode = 409, "idempotency_conflict"
 			}
 			before := e.count(`SELECT count(*) FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store())
