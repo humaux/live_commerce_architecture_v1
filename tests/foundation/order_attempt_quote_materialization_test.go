@@ -218,3 +218,18 @@ func TestOrderAttemptQuoteMaterializationLegacyDTOUnchanged(t *testing.T) {
 	if err=json.Unmarshal(raw,&out); err!=nil { t.Fatal(err) }
 	for _,key:=range []string{"line_id","line_ordinal","origin_kind","origin_id"} { if _,ok:=out[key]; ok { t.Fatalf("legacy storefront serialization added %s",key) } }
 }
+
+func TestOrderAttemptQuoteMaterializationTypedSnapshotOrigins(t *testing.T) {
+	// This tests the actual checkout.Get decode type without a database/helper
+	// dependency so an omitted optional field has its own causal red witness.
+	line:=map[string]any{"sku_id":randomUUID(),"quantity":float64(2),"unit_price_minor":float64(30000),"line_id":randomUUID(),"line_ordinal":float64(7),"origin_kind":"manual","origin_id":randomUUID()}
+	raw,err:=json.Marshal(map[string]any{"quote":map[string]any{"lines":[]map[string]any{line}}})
+	if err!=nil { t.Fatal(err) }
+	var snapshot checkout.Snapshot
+	if err=json.Unmarshal(raw,&snapshot); err!=nil { t.Fatal(err) }
+	roundtrip,err:=json.Marshal(snapshot.Quote)
+	if err!=nil { t.Fatal(err) }
+	var quote struct { Lines []map[string]any `json:"lines"` }
+	if err=json.Unmarshal(roundtrip,&quote); err!=nil || len(quote.Lines)!=1 { t.Fatalf("typed quote line sentinel: %v",err) }
+	for _,key:=range []string{"line_id","line_ordinal","origin_kind","origin_id"} { if quote.Lines[0][key]!=line[key] { t.Fatalf("checkout.Get snapshot decode dropped %s",key) } }
+}
