@@ -550,6 +550,18 @@ func TestProductEditorMatrixLedgerEvidenceSharedSources(t *testing.T) {
 	})
 	t.Run("changed-checkout-review-keeps-frozen-bytes", func(t *testing.T) {
 		checkout := t.TempDir()
+		const evidence = "output/matrix-ledger-enforce/historical-evidence"
+		index := productEditorMatrixJSONFixture(t, "../..", evidence+"/ARTIFACTS.json")
+		packagePaths := []string{evidence + "/ARTIFACTS.json", "output/matrix-ledger-enforce/DELIVERY.md"}
+		for path := range index["artifacts_sha256"].(map[string]any) {
+			packagePaths = append(packagePaths, path)
+		}
+		for _, path := range packagePaths {
+			if err := os.MkdirAll(filepath.Dir(filepath.Join(checkout, path)), 0700); err != nil {
+				t.Fatal(err)
+			}
+			productEditorMatrixWriteFixture(t, checkout, path, productEditorMatrixReadFixture(t, "../..", path))
+		}
 		paths := append([]string{}, productEditorMatrixEvidenceSources...)
 		manifest := productEditorMatrixJSONFixture(t, "../..", "output/matrix-ledger-enforce/historical-evidence/browser/browser-evidence.json")
 		for path := range manifest["informational_source_files_sha256"].(map[string]any) {
