@@ -175,3 +175,32 @@ gates; process wiring and affected browser modes; independent money/privacy
 review. Exact migration numbers will be rechecked against trunk before PR.
 Local notification planning and erasure lock prefix are prerequisites of C2;
 provider dispatch and public cutover remain dependent units.
+
+CI49 `38461389382` at `f07cfefdd` reached native behavior:
+`PASS=20 FAIL=5 SKIP=0 exit=1`, job `115517283149`,
+`full-c2-ci49.log`. Actual runtime and worker full C2 without notification,
+claims, lost-response replay, concurrent executor fencing, transient locks,
+definitive stock abort, terminal custody and settled receipt groups pass.
+Two expiry failures authorize the 0190 compatibility fix: actual bank expiry
+remains retryable, and expiry fails to wait on the canonical order lock.
+READY through the real Go executor fails native `lcn_emit` transaction
+provenance; Go savepoints assign the inserted River row a subtransaction xid.
+The fix removes those savepoints; an exact definitive refusal rolls back C2
+fully before a subsequent fenced absence proof, as permitted by §1. Any late
+notification reclassification rolls back the complete C2 and retains PENDING.
+The direct READY fixture also needed schema qualification of its deferred
+constraint name; its 23514 tamper assertion and all positive counts are intact.
+
+CI48 `38461005406` at `c57e09eaa`, job `115515972477`, is a causal
+API startup RED: the same-physical-database positive control passes, while
+all three cloned-database cases keep listening instead of refusing startup.
+`process-api-first-ci48.log` retains `PASS=0 FAIL=1 SKIP=0 exit=1` (one top-level
+test, three negative subcases). API startup now uses the existing physical
+advisory-lock probe for merchant→issuer, merchant→buyer and merchant→checkout.
+The expiry producer borrows that exact checkout pool. No extra role grants.
+
+The worker repair helpers in 0191/post-River0025 follow CI47's native missing
+helper RED. The exact upgrade count is 114; reserved 0190 is not yet present.
+Eight real-PG crash barriers were added tests-first in `cd32362f0`, with a full
+combined claims/READY control. They remain NOT_RUN until the next CI result.
+All local execution remains NOT_RUN by owner directive; no complete OA1 claim.

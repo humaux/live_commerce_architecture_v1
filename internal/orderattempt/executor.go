@@ -114,34 +114,22 @@ func (e *Executor) Execute(ctx context.Context, merchantToken, store, attempt st
 		return ExecutionReceipt{}, &AdmissionError{code: "order_attempt_invalid_response"}
 	}
 	defer clear(fence.Envelope.Ciphertext)
-	// The fence is outside the savepoint. On a definitive failure only local C2
-	// effects/locks roll back; the original attempt fence still proves ownership.
-	if _, err = tx.Exec(bounded, `SAVEPOINT order_attempt_c2`); err != nil {
-		return ExecutionReceipt{}, admissionFailure(err, false)
-	}
+	// Native notification planning pins the River row to the top-level xid.
+	// C2 therefore runs without Go savepoints; a definitive refusal first rolls
+	// back everything and then proves absence in a new, attempt-first fence.
 	out, executionErr := e.executeFenced(bounded, tx, *fence.Binding, *fence.Envelope)
 	if executionErr != nil {
 		code := executionAbortCode(executionErr)
 		if code == "" {
 			return ExecutionReceipt{}, admissionFailure(executionErr, false)
 		}
-		if _, err = tx.Exec(bounded, `ROLLBACK TO SAVEPOINT order_attempt_c2`); err != nil {
-			return ExecutionReceipt{}, admissionFailure(err, false)
+		if err = tx.Rollback(bounded); err != nil {
+			return ExecutionReceipt{}, admissionFailure(err, true)
 		}
-		// SECURITY DEFINER: ops.abort_order_attempt reuses the held fence and
-		// proves native absence before releasing admission custody and sealing.
-		err = tx.QueryRow(bounded, `SELECT ops.abort_order_attempt($1::bytea,$2::uuid,$3::uuid,$4::bigint,$5::text)`,
-			authHash, storeID, attempt, generation, code).Scan(&raw)
-		if err != nil {
-			return ExecutionReceipt{}, admissionFailure(err, false)
-		}
-		out, err = readExecutionReceipt(raw, attempt, generation)
-		if err != nil {
-			return ExecutionReceipt{}, err
-		}
-	}
-	if _, err = tx.Exec(bounded, `RELEASE SAVEPOINT order_attempt_c2`); err != nil {
-		return ExecutionReceipt{}, admissionFailure(err, false)
+		// Abort rechecks durable state under its own fence. A competing executor
+		// that committed meanwhile wins as terminal replay, never as ABORTED.
+		// The original five-second budget also bounds this second transaction.
+		return (&Service{pool: e.pool}).Abort(bounded, merchantToken, store, attempt, generation, code)
 	}
 	if err = tx.Commit(bounded); err != nil {
 		return ExecutionReceipt{}, admissionFailure(err, true)
@@ -233,48 +221,16 @@ func (e *Executor) executeFenced(ctx context.Context, tx pgx.Tx, binding PlanBin
 		return ExecutionReceipt{}, &AdmissionError{code: "order_attempt_invalid_response"}
 	}
 	defer clear(pay.Notification)
-	// Only the notification stage may need reclassification as its time window
-	// closes. Roll back the fresh job as well; never leave an unpaired job behind
-	// a VOID disposition, and never roll back the native order independently.
-	if _, err = tx.Exec(ctx, `SAVEPOINT order_attempt_notification`); err != nil {
-		return ExecutionReceipt{}, err
-	}
+	// If the notification window closes before finish, roll back all C2 effects
+	// and retain PENDING. The next same-intent execution derives VOID afresh;
+	// there can be no orphan job or partial order from this transaction.
 	artifact, err := e.notificationArtifact(ctx, tx, pay.Notification, payBinding, material)
 	if err != nil {
 		return ExecutionReceipt{}, err
 	}
 	defer clear(artifact)
 	raw, err = executeStage(ctx, tx, binding, plain, "finish", artifact)
-	var pgerr *pgconn.PgError
-	if errors.As(err, &pgerr) && pgerr.Code == "PT409" && pgerr.Message == "notification_reprepare" {
-		if _, err = tx.Exec(ctx, `ROLLBACK TO SAVEPOINT order_attempt_notification`); err != nil {
-			return ExecutionReceipt{}, err
-		}
-		raw, err = executeStage(ctx, tx, binding, plain, "pay", payInput)
-		if err != nil {
-			return ExecutionReceipt{}, err
-		}
-		if json.Unmarshal(raw, &pay) != nil || pay.Stage != "PAY_PREPARED" || pay.Entry.OrderID != binding.AttemptID || pay.Entry.Version != 1 {
-			return ExecutionReceipt{}, &AdmissionError{code: "order_attempt_invalid_response"}
-		}
-		defer clear(pay.Notification)
-		var refreshed struct {
-			State string `json:"state"`
-		}
-		if json.Unmarshal(pay.Notification, &refreshed) != nil || refreshed.State != "VOID" {
-			return ExecutionReceipt{}, &AdmissionError{code: "order_attempt_unavailable"}
-		}
-		artifact, err = e.notificationArtifact(ctx, tx, pay.Notification, payBinding, material)
-		if err != nil {
-			return ExecutionReceipt{}, err
-		}
-		defer clear(artifact)
-		raw, err = executeStage(ctx, tx, binding, plain, "finish", artifact)
-	}
 	if err != nil {
-		return ExecutionReceipt{}, err
-	}
-	if _, err = tx.Exec(ctx, `RELEASE SAVEPOINT order_attempt_notification`); err != nil {
 		return ExecutionReceipt{}, err
 	}
 	return readExecutionReceipt(raw, binding.AttemptID, binding.Generation)
