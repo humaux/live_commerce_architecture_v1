@@ -1720,7 +1720,7 @@ export function registerProductEditorAcceptance() {
         ["UXH03/readiness-media", "click", "readiness navigation selects and reveals the media tab"],
         ["UXH04/overflow-hint", "resize 390→890→390", "hint visibility follows overflow while its reserved row stays stable"],
         ["UXH05/section-seo", "click then resize 901→390", "desktop-selected SEO stays selected and fully visible after resize"],
-        ["UXH06/section-seo", "click then resize 600→390", "already-overflowing selected SEO stays selected and fully visible after resize"],
+        ["UXH06/section-seo", "click then resize 500→390", "already-overflowing selected SEO stays selected and fully visible after resize"],
         ["UXH07/list-status-archived", "click then real count arrival", "same selected status button stays fully visible after asynchronous real count-label growth"],
       ] as const;
       for (const locale of ["zh-TW", "zh-CN", "en"]) for (const [control, action, expected] of required) {

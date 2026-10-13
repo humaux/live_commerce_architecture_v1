@@ -36,6 +36,7 @@ export async function assertProductListAsyncTabGrowth(page: Page) {
       fullyVisible: tab.width > 0 && tab.left >= frame.left - 1 && tab.right <= frame.right + 1 };
   }); // READ/MEASURE: only actual data arrival changes production labels.
   await page.route(pattern, handler);
+  let failed = false;
   try {
     // Four localized status tabs genuinely overflow this narrow frame; this is
     // an extra hardening viewport, outside the canonical mobile matrix cases.
@@ -61,15 +62,28 @@ export async function assertProductListAsyncTabGrowth(page: Page) {
     await expect.soft.poll(async () => (await measure()).fullyVisible,
       { message: "UXH07 existing selected tab is revealed after real asynchronous count-label growth", timeout: 1000 }).toBe(true);
     console.log("UXH07", JSON.stringify({ locale, before, after: await measure() }));
+  } catch (error) {
+    failed = true;
+    throw error;
   } finally {
     release();
-    // Complete the held request before navigating away so cleanup cannot abort
-    // it into a stale transport error. The caller's test timeout bounds the flow.
-    if (delivery) await delivery;
-    await page.unroute(pattern, handler);
-    await page.setViewportSize(originalViewport);
-    await page.getByTestId("products-tab-all").click();
-    await expect(page.getByTestId("products-table")).toBeVisible();
+    const cleanup = async () => {
+      // Complete the held request before safe navigation, but transport failure
+      // must not skip route removal or viewport restoration.
+      try {
+        if (delivery) await delivery;
+      } finally {
+        try { await page.unroute(pattern, handler); }
+        finally { if (!page.isClosed()) await page.setViewportSize(originalViewport); }
+      }
+      if (!failed && !page.isClosed()) {
+        await page.getByTestId("products-tab-all").click();
+        await expect(page.getByTestId("products-table")).toBeVisible();
+      }
+    };
+    // A cleanup error is secondary to the original assertion/transport failure.
+    if (failed) await cleanup().catch(() => console.error("UXH07 secondary cleanup failure; original failure retained"));
+    else await cleanup();
   }
 }
 
@@ -226,12 +240,13 @@ async function assertProductEditorHardening(page: Page) {
     console.log("UXH05", JSON.stringify({ locale, direction: "901→390", ...await measureSelected() }));
 
     // Unlike UXH05, overflow exists on both sides of this resize. Select once
-    // at the starting width; no click/focus/wheel after resize may reveal SEO.
-    await resize(600);
+    // at 500px, where all three locales overflow; no click/focus/wheel after
+    // resize may reveal SEO. The 600px Chinese strip has spare room.
+    await resize(500);
     await seo.click();
-    await expect(seo, "UXH06 native click selects SEO at 600px").toHaveAttribute("aria-current", "location");
+    await expect(seo, "UXH06 native click selects SEO at 500px").toHaveAttribute("aria-current", "location");
     const beforeClipping = await measureSelected();
-    expect(beforeClipping.overflow, "UXH06 600px strip already overflows").toBeGreaterThan(1);
+    expect(beforeClipping.overflow, "UXH06 500px strip already overflows").toBeGreaterThan(1);
     expect(beforeClipping.fullyVisible, "UXH06 selected SEO starts fully visible").toBe(true);
     await resize(390);
     const afterClipping = await measureSelected();
@@ -239,8 +254,8 @@ async function assertProductEditorHardening(page: Page) {
     expect(afterClipping.tabWidth, "UXH06 selected tab fits inside the resized strip").toBeLessThanOrEqual(afterClipping.frameWidth);
     await verify(seo, "UXH06 clipping resize retains SEO selection").toHaveAttribute("aria-current", "location");
     await verify.poll(async () => (await measureSelected()).fullyVisible,
-      { message: "UXH06 already-overflowing selected SEO is fully visible after 600→390 resize" }).toBe(true);
-    console.log("UXH06", JSON.stringify({ locale, direction: "600→390", before: beforeClipping, after: await measureSelected() }));
+      { message: "UXH06 already-overflowing selected SEO is fully visible after 500→390 resize" }).toBe(true);
+    console.log("UXH06", JSON.stringify({ locale, direction: "500→390", before: beforeClipping, after: await measureSelected() }));
     seen.add(locale);
     hardenedLocales.set(page, seen);
   } finally {
