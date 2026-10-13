@@ -45,7 +45,7 @@ function nodeEvents({ skipped = false, only = false, omit = null, removeCase = n
   events.push({ type: "test:plan", data: { nesting: 0, count: total } });
   return events;
 }
-function persistReceipt(directory, kind, mode, runId, events, command = []) {
+function persistReceipt(directory, kind, mode, runId, events, command = [], job = "gate") {
   const receiptPath = resolve(directory, `${kind}.json`);
   mkdirSync(dirname(receiptPath), { recursive: true });
   const raw = events.map((event) => JSON.stringify(event)).join("\n") + "\n";
@@ -56,7 +56,7 @@ function persistReceipt(directory, kind, mode, runId, events, command = []) {
   if (kind === "node") outcome = nodeOutcome(events, nodeSuites);
   else if (kind === "go") outcome = goOutcome(events, goFamily().family);
   else outcome = browserOutcome(events);
-  const receipt = { schema: "matrix-execution-receipt/v1", kind, mode, run_id: runId, job: "gate", command,
+  const receipt = { schema: "matrix-execution-receipt/v1", kind, mode, run_id: runId, job, command,
     source_before: { commit: identity, hashes }, source_after: { commit: identity, hashes }, exit_code: 0,
     event_file: `${kind}.json.events`, event_sha256: createHash("sha256").update(raw).digest("hex"), outcome, violations: [] };
   if (kind === "go") receipt.shard = goFamily().shard;
@@ -168,6 +168,22 @@ test("Go family cannot remove or rename the canonical historical-evidence test",
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });
 
+test("Go family discovery is independent of testing parameter names and formatting", () => {
+  const directory = resolve("output/matrix-coverage-v2-execution/probes/go-signature-forms");
+  const { family } = goFamily();
+  mkdirSync(directory, { recursive: true });
+  const put = (source) => writeFileSync(resolve(directory, "fixture_test.go"), source);
+  try {
+    const declarations = family.map((name, index) => {
+      if (index % 3 === 0) return `func ${name}(tb *testing.T) {}`;
+      if (index % 3 === 1) return `func ${name}(*testing.T) {}`;
+      return `func ${name}(\n\ttb *testing.T,\n) {}`;
+    });
+    put(`package foundation\n\n${declarations.join("\n\n")}\n`);
+    assert.deepEqual(goFamily(directory).family, family);
+  } finally { rmSync(directory, { recursive: true, force: true }); }
+});
+
 test("Go outcomes reject a reduced family even when every remaining test passed", () => {
   const family = goFamily().family.filter((name) => name !== "TestProductEditorMatrixLedgerEvidence");
   const events = [{ Package: "livecommerce/tests/foundation", Action: "start" },
@@ -257,6 +273,49 @@ test("required verifier accepts a source-drift skip only with a verified same-ru
   writeFileSync(resolve(root, "unrelated-ledger.json"), "not a receipt");
   const accepted = verify(runId);
   assert.equal(accepted.status, 0, `${accepted.stdout}\n${accepted.stderr}`);
+});
+
+test("Foundation verifier requires fresh same-run browser proof only for a historical Go skip", () => {
+  const root = "output/matrix-coverage-v2-execution/probes/foundation-historical";
+  rmSync(root, { recursive: true, force: true });
+  const runId = "foundation-historical-probe";
+  const head = spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).stdout.trim();
+  const browserCommand = ["PRODUCT_EDITOR_ACCEPTANCE=1", "LC_BROWSER_CATALOG_CORE_ACCEPTANCE=1", "-tags", "browser", "-run", "^TestBrowserCatalogCore$", "./tests/foundation"];
+  const runVerifier = (goEvents, browserOutcome, browserRunId = null) => {
+    rmSync(root, { recursive: true, force: true });
+    persistReceipt(root, "node", "foundation", runId, nodeEvents(), [], "foundation");
+    persistReceipt(root, "go", "foundation", runId, goEvents, [], "foundation");
+    if (browserRunId !== null) {
+      const browserEvents = ["TestBrowserCatalogCore", "TestBrowserCatalogCore/PE12-17-TWD", "TestBrowserCatalogCore/CC12-frozen"]
+        .map((Test) => ({ Package: "livecommerce/tests/foundation", Test, Action: "pass" }));
+      persistReceipt(root, "browser", "--browser-product-editor", browserRunId, browserEvents, browserCommand, "foundation");
+    }
+    return spawnSync(process.execPath, ["scripts/dev/matrix-receipt-verify.mjs", "foundation", root, "success", "success",
+      browserOutcome, "true", runId, head], { encoding: "utf8", env: { ...process.env, GITHUB_JOB: "foundation", NODE_OPTIONS: "" } });
+  };
+  try {
+    const { family } = goFamily();
+    const passingGoEvents = [{ Package: "livecommerce/tests/foundation", Action: "start" },
+      ...family.map((Test) => ({ Package: "livecommerce/tests/foundation", Test, Action: "pass" }))];
+    const allPass = runVerifier(passingGoEvents, "skipped");
+    assert.equal(allPass.status, 0, `${allPass.stdout}\n${allPass.stderr}`);
+
+    const historical = historicalGoEvents();
+    const missing = runVerifier(historical, "skipped");
+    assert.equal(missing.status, 1);
+    assert.match(missing.stderr, /same-run browser receipt/);
+
+    const wrongRun = runVerifier(historical, "success", `${runId}-old`);
+    assert.equal(wrongRun.status, 1);
+    assert.match(wrongRun.stderr, /same-run browser receipt/);
+
+    const failedBrowser = runVerifier(historical, "failure", runId);
+    assert.equal(failedBrowser.status, 1);
+    assert.match(failedBrowser.stderr, /browser.*outcome|browser.*receipt/i);
+
+    const accepted = runVerifier(historical, "success", runId);
+    assert.equal(accepted.status, 0, `${accepted.stdout}\n${accepted.stderr}`);
+  } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
 test("Go historical skip rejects a matching-source skip and a wrong reason at the verifier's parser boundary", () => {
