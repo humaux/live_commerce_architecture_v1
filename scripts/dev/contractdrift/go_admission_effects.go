@@ -789,8 +789,8 @@ func (p *goAdmissionProof) borrowedContext(fn *goFunc, index int, active map[*go
 		if caller == fn {
 			continue
 		}
-		// An unreferenced private wrapper cannot be a source of runtime arguments.
-		used := caller.AST.Name.Name == "main"
+		// Exported wrappers remain callable externally even without an in-package caller.
+		used := caller.AST.Name.Name == "main" || ast.IsExported(caller.AST.Name.Name)
 		for _, other := range p.pkg.Funcs {
 			ast.Inspect(other.AST.Body, func(n ast.Node) bool {
 				if id, ok := n.(*ast.Ident); ok && id.Name == caller.AST.Name.Name && (id.Obj == nil || id.Obj.Kind == ast.Fun) {
