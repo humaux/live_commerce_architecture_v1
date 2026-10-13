@@ -408,9 +408,7 @@ func run(ctx context.Context, getenv func(string) string) error {
 	}
 }
 
-// sameDatabase compares current_database() of the two pools (one bounded query each).
+// sameDatabase proves both pools reach the same physical database with a bounded lock probe.
 func sameDatabase(ctx context.Context, a, b *pgxpool.Pool) bool {
-	var na, nb string
-	return a.QueryRow(ctx, `SELECT current_database()`).Scan(&na) == nil &&
-		b.QueryRow(ctx, `SELECT current_database()`).Scan(&nb) == nil && na == nb
+	return platform.ValidateSameDatabase(ctx, a, b) == nil
 }
