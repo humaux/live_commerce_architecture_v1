@@ -170,6 +170,31 @@ REVOKE ALL ON FUNCTION fulfillment.order_intent_has_catalog_lines(bytea,uuid,tex
 GRANT EXECUTE ON FUNCTION fulfillment.order_intent_has_catalog_lines(bytea,uuid,text) TO commerce_runtime;
 COMMENT ON FUNCTION fulfillment.order_intent_has_catalog_lines(bytea,uuid,text) IS 'merchanttools replay only: authenticated principal/store and exact original private-owner Begin prove the immutable Quote. Boolean catalog-price provenance, no current repricing, private snapshot disclosure or writes.';
 
+-- The optional linked-customer prefill reads the latest order's contact only after both existing read permissions.
+CREATE FUNCTION fulfillment.order_prefill_email(p_hash bytea,p_store uuid,p_order uuid) RETURNS text
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE s record; c record; v_email text;
+BEGIN
+ SELECT * INTO s FROM identity.resolve_access(p_hash,p_store,'orders:read');
+ IF s.access_status='unauthorized' THEN RAISE EXCEPTION 'unauthorized' USING ERRCODE='PT401'; END IF;
+ IF s.access_status='not_found' THEN RAISE EXCEPTION 'not found' USING ERRCODE='PT404'; END IF;
+ IF s.access_status IS DISTINCT FROM 'ok' THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403'; END IF;
+ SELECT * INTO c FROM identity.resolve_access(p_hash,p_store,'customers:read');
+ IF c.access_status IS DISTINCT FROM 'ok' OR c.principal_id IS DISTINCT FROM s.principal_id THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403'; END IF;
+ IF nullif(current_setting('app.tenant_id',true),'')::uuid IS DISTINCT FROM s.tenant_id
+  OR nullif(current_setting('app.store_id',true),'')::uuid IS DISTINCT FROM p_store
+  OR nullif(current_setting('app.principal_id',true),'')::uuid IS DISTINCT FROM s.principal_id THEN
+  RAISE EXCEPTION 'invalid scope' USING ERRCODE='PT404'; END IF;
+ SELECT coalesce(o.buyer_email,'') INTO v_email FROM checkout.orders o
+  WHERE o.tenant_id=s.tenant_id AND o.store_id=p_store AND o.id=p_order;
+ IF NOT FOUND THEN RAISE EXCEPTION 'order not found' USING ERRCODE='PT404'; END IF;
+ RETURN v_email;
+END $$;
+ALTER FUNCTION fulfillment.order_prefill_email(bytea,uuid,uuid) OWNER TO commerce_checkout_writer;
+REVOKE ALL ON FUNCTION fulfillment.order_prefill_email(bytea,uuid,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION fulfillment.order_prefill_email(bytea,uuid,uuid) TO commerce_runtime;
+COMMENT ON FUNCTION fulfillment.order_prefill_email(bytea,uuid,uuid) IS 'merchanttools optional explicit-customer prefill: read only the selected newest authorized order email after orders:read and customers:read checks in the authenticated tenant/store/principal scope. No runtime column grant, identity guessing or writes.';
+
 -- Only an admitted intent and its exact private-owner Begin commit can establish manual provenance beyond ten minutes.
 CREATE FUNCTION fulfillment.mark_order_intent_manual(p_hash bytea,p_store uuid,p_key text,p_order uuid,p_link bytea) RETURNS void
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
