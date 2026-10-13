@@ -10,6 +10,41 @@ GRANT EXECUTE ON FUNCTION identity.resolve_access(bytea,uuid,text)
 GRANT EXECUTE ON FUNCTION identity.merchant_access_denied(bytea,uuid,text[],uuid,uuid,bigint)
  TO commerce_order_attempt_owner;
 
+-- PostgreSQL requires an UPDATE column grant for FOR UPDATE. Only the existing
+-- NOLOGIN authentication owner gets it; the coordinator receives EXECUTE only.
+GRANT UPDATE(id) ON identity.principals TO commerce_auth;
+CREATE FUNCTION identity.lock_order_attempt_principal(p_hash bytea,p_store uuid)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE s record; denied text;
+BEGIN
+ IF NOT pg_has_role(session_user,'commerce_runtime','MEMBER')
+  OR p_hash IS NULL OR octet_length(p_hash)<>32 OR p_store IS NULL
+  OR current_setting('transaction_isolation')<>'read committed' THEN
+  RAISE EXCEPTION 'invalid order attempt authority' USING ERRCODE='PT400';
+ END IF;
+ SELECT * INTO s FROM identity.resolve_access(p_hash,p_store,'orders:read');
+ IF s.access_status='unauthorized' THEN RAISE EXCEPTION 'unauthorized' USING ERRCODE='PT401'; END IF;
+ IF s.access_status='not_found' THEN RAISE EXCEPTION 'not found' USING ERRCODE='PT404'; END IF;
+ IF s.access_status IS DISTINCT FROM 'ok' OR s.authz_revision<1 THEN
+  RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403';
+ END IF;
+ -- No client principal argument or GUC can select the row to be locked. Holding
+ -- this lock until commit serializes activation with principal lifecycle changes.
+ PERFORM 1 FROM identity.principals p WHERE p.id=s.principal_id AND p.active FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'unauthorized' USING ERRCODE='PT401'; END IF;
+ -- This VOLATILE check uses fresh clock/snapshot after any wait, unlike a nested
+ -- STABLE resolve_access call. It also preserves exact store/revision binding.
+ denied:=identity.merchant_access_denied(p_hash,p_store,ARRAY['orders:read'],s.tenant_id,s.principal_id,s.authz_revision);
+ IF denied IS NOT NULL THEN RAISE EXCEPTION 'order attempt access denied' USING ERRCODE=denied; END IF;
+ RETURN jsonb_build_object('tenant_id',s.tenant_id,'store_id',p_store,
+  'principal_id',s.principal_id,'authz_revision',s.authz_revision);
+END $$;
+ALTER FUNCTION identity.lock_order_attempt_principal(bytea,uuid) OWNER TO commerce_auth;
+REVOKE ALL ON FUNCTION identity.lock_order_attempt_principal(bytea,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION identity.lock_order_attempt_principal(bytea,uuid) TO commerce_order_attempt_owner;
+COMMENT ON FUNCTION identity.lock_order_attempt_principal(bytea,uuid) IS
+ 'Internal coordinator activation helper, order-attempt-v1 §2/A1: authenticate current orders:read, lock actual principal before any scope lock, fresh recheck after wait, no GUC mutation or direct table grants. Ordinary C1 and retired replay use authenticate_order_attempt without this lock.';
+
 -- Only the admission/sweep entries mint a witness; the INSERT-only River guard
 -- consumes its empty job slot. A caller cannot forge it with GUCs or UPDATE(kind),
 -- and a transaction ID from a prior committed admission authorizes no new job.
@@ -61,22 +96,22 @@ RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_cata
 DECLARE auth jsonb; scope_row ops.order_attempt_scopes%ROWTYPE; last_attempt ops.order_attempts%ROWTYPE;
  prior_tenant text; prior_store text; prior_principal text; result jsonb;
 BEGIN
- auth:=ops.authenticate_order_attempt(p_hash,p_store,ARRAY['orders:read']);
  prior_tenant:=current_setting('app.tenant_id',true);
  prior_store:=current_setting('app.store_id',true);
  prior_principal:=current_setting('app.principal_id',true);
+ -- A1 activation takes principal before scope. This entry accepts no client CAS
+ -- identity; a retired scope remains available to separate exact replay entries.
+ auth:=identity.lock_order_attempt_principal(p_hash,p_store);
  PERFORM set_config('app.tenant_id',auth->>'tenant_id',true);
  PERFORM set_config('app.store_id',auth->>'store_id',true);
  PERFORM set_config('app.principal_id',auth->>'principal_id',true);
  INSERT INTO ops.order_attempt_scopes(tenant_id,store_id,principal_id)
   VALUES((auth->>'tenant_id')::uuid,p_store,(auth->>'principal_id')::uuid)
-  ON CONFLICT(tenant_id,store_id,principal_id,operation_family) DO NOTHING;
+  ON CONFLICT(tenant_id,store_id,principal_id,operation_family) WHERE retired_at IS NULL DO NOTHING;
  SELECT * INTO STRICT scope_row FROM ops.order_attempt_scopes
   WHERE tenant_id=(auth->>'tenant_id')::uuid AND store_id=p_store
-   AND principal_id=(auth->>'principal_id')::uuid AND operation_family='merchant_order';
- IF scope_row.retired_at IS NOT NULL THEN
-  RAISE EXCEPTION 'intent_conflict' USING ERRCODE='PT409';
- END IF;
+   AND principal_id=(auth->>'principal_id')::uuid AND operation_family='merchant_order'
+   AND retired_at IS NULL FOR SHARE;
  SELECT * INTO last_attempt FROM ops.order_attempts
   WHERE scope_id=scope_row.scope_id AND intent_generation=scope_row.current_generation;
  result:=jsonb_build_object('scope_id',scope_row.scope_id,'intent_generation',scope_row.current_generation,
@@ -87,6 +122,11 @@ BEGIN
  PERFORM set_config('app.store_id',coalesce(prior_store,''),true);
  PERFORM set_config('app.principal_id',coalesce(prior_principal,''),true);
  RETURN result;
+EXCEPTION WHEN OTHERS THEN
+ PERFORM set_config('app.tenant_id',coalesce(prior_tenant,''),true);
+ PERFORM set_config('app.store_id',coalesce(prior_store,''),true);
+ PERFORM set_config('app.principal_id',coalesce(prior_principal,''),true);
+ RAISE;
 END $$;
 ALTER FUNCTION ops.read_order_attempt_scope(bytea,uuid) OWNER TO commerce_order_attempt_owner;
 REVOKE ALL ON FUNCTION ops.read_order_attempt_scope(bytea,uuid) FROM PUBLIC;

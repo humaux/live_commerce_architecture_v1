@@ -33,11 +33,14 @@ CREATE TABLE ops.order_attempt_scopes (
  current_generation bigint NOT NULL DEFAULT 0 CHECK(current_generation>=0),
  retired_at timestamptz,
  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
- UNIQUE(tenant_id,store_id,principal_id,operation_family),
  UNIQUE(tenant_id,store_id,scope_id,operation_family),
  FOREIGN KEY(tenant_id,store_id) REFERENCES control.stores(tenant_id,id),
  FOREIGN KEY(tenant_id,principal_id) REFERENCES identity.memberships(tenant_id,principal_id)
 );
+-- A1: retired identities remain replay-addressable but cannot block a fresh
+-- activation. scope_id remains the permanent identity, never an alias to a new row.
+CREATE UNIQUE INDEX order_attempt_one_active_scope ON ops.order_attempt_scopes
+ (tenant_id,store_id,principal_id,operation_family) WHERE retired_at IS NULL;
 
 CREATE TABLE ops.order_attempts (
  attempt_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -165,6 +168,7 @@ COMMENT ON COLUMN ops.order_attempts.execution_job_id IS
 -- in a future admission helper; a retired scope cannot be silently reactivated.
 CREATE FUNCTION ops.guard_order_attempt_scope() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE prior_tenant text; prior_store text; pending boolean;
 BEGIN
  IF ROW(NEW.scope_id,NEW.tenant_id,NEW.store_id,NEW.principal_id,NEW.operation_family,NEW.created_at)
   IS DISTINCT FROM ROW(OLD.scope_id,OLD.tenant_id,OLD.store_id,OLD.principal_id,OLD.operation_family,OLD.created_at)
@@ -172,12 +176,28 @@ BEGIN
   OR (OLD.retired_at IS NOT NULL AND NEW IS DISTINCT FROM OLD) THEN
   RAISE EXCEPTION 'order attempt scope is immutable' USING ERRCODE='PT409';
  END IF;
+ IF OLD.retired_at IS NULL AND NEW.retired_at IS NOT NULL THEN
+  -- A lifecycle writer locks principal before scope. This trigger already owns
+  -- the scope row lock, so it must not introduce a reverse principal wait.
+  -- The trusted row establishes RLS even after an entry restored caller GUCs.
+  prior_tenant:=current_setting('app.tenant_id',true);
+  prior_store:=current_setting('app.store_id',true);
+  PERFORM set_config('app.tenant_id',OLD.tenant_id::text,true);
+  PERFORM set_config('app.store_id',OLD.store_id::text,true);
+  SELECT EXISTS(SELECT 1 FROM ops.order_attempts a WHERE a.scope_id=OLD.scope_id
+   AND a.tenant_id=OLD.tenant_id AND a.store_id=OLD.store_id AND a.state='PENDING') INTO pending;
+  PERFORM set_config('app.tenant_id',coalesce(prior_tenant,''),true);
+  PERFORM set_config('app.store_id',coalesce(prior_store,''),true);
+  IF pending THEN
+   RAISE EXCEPTION 'intent_conflict' USING ERRCODE='PT409';
+  END IF;
+ END IF;
  RETURN NEW;
 END $$;
 ALTER FUNCTION ops.guard_order_attempt_scope() OWNER TO commerce_order_attempt_owner;
 REVOKE ALL ON FUNCTION ops.guard_order_attempt_scope() FROM PUBLIC;
 COMMENT ON FUNCTION ops.guard_order_attempt_scope() IS
- 'Internal trigger only, order-attempt-v1 §2: preserve scope identity and monotonic CAS generation; no external EXECUTE.';
+ 'Internal trigger only, order-attempt-v1 §2/A1: preserve scope identity and monotonic CAS generation; refuse retirement while PENDING; no external EXECUTE.';
 CREATE TRIGGER order_attempt_scope_immutable BEFORE UPDATE ON ops.order_attempt_scopes
  FOR EACH ROW EXECUTE FUNCTION ops.guard_order_attempt_scope();
 
