@@ -1,0 +1,273 @@
+# Purpose: preserve unchanged normal card-payments CI artifact bytes below these headers.
+# Depends on: Gates38466746876 attempt1 job115536760460 head46c21310accd6498e21e0e28ab8ce90b4ec63094 artifact11850574995; original SHA256 82fe3c35c6624e18130fad359ab6c06e2eb7f369f77ed64fdface4b5a96f7940.
+# Used by: CARD-PAY-FLAKE reviewers; Stripe MOCK, real Go/Next/PG; original single plus eight permanent one-attempt primary contexts.
+✔ collector projection: admitted for derived connections, absent/null for primary (1.348658ms)
+✔ collector rejects identifiers, extra keys and malformed text (0.37734ms)
+✔ disclosure renders the contract §5 line with all three slots substituted (0.223088ms)
+✔ the disclosure line exists exactly when the hosted view returns a collector (1.153884ms)
+✔ a shop or collector name with a replacement pattern is shown literally (0.122955ms)
+✔ OrderPayment renders the disclosure with the view, above every pay button, through the helper only (0.501007ms)
+✔ card-payments copy: identical key sets in all three locales (2.177512ms)
+✔ merchant terms are quoted verbatim (contract §5) in the enable dialog (0.227103ms)
+✔ ruling-fixed strings: platform not OPEN and BLOCKED note (0.102395ms)
+✔ error map covers every frozen refusal code from migrations/0137 (0.272331ms)
+✔ no Stripe account id, key or approval id shape appears in any copy string (0.557052ms)
+✔ storefront collector disclosure matches contract §5 templates in three languages (1.252368ms)
+✔ the merchant terms in the dialog are the contract §5 sentence, extracted from the contract (0.247243ms)
+✔ the storefront templates are the contract §5 lines, extracted from the contract (0.219973ms)
+✔ settlement copy: deduction columns are labelled as deductions in every language, with a legend and the net formula (0.587457ms)
+✔ there is no separate 'not on the allowlist' message: it reads as not open (review P1-2) (0.89043ms)
+✔ card summary accepts the frozen shape incl. all-null platform NONE (1.790186ms)
+✔ card summary rejects unknown keys, bad enums, bad money, bad version (0.599847ms)
+✔ card result is exactly {state, version, max_minor, currency, descriptor_preview} (0.21783ms)
+✔ descriptor suffix rule: charset, 2..10 chars, must contain a letter (0.256618ms)
+✔ the suffix length rule is the charset rule's 10; the 22-character descriptor total stays the server's (SANDBOX L=10, LIVE PrefixLength) (0.959621ms)
+✔ descriptor preview mirrors the contract projection (base + '* ' + suffix) (0.148384ms)
+✔ settlement list accepts statements without payout/lines keys (omitempty) (0.780089ms)
+✔ settlement detail carries lines whose count and sums match the totals (2.521481ms)
+✔ settlement parsers reject malformed reads (1.72695ms)
+✔ fees, refunds and disputes are signed exactly as the ledger stores them (1.427688ms)
+✔ a returned fee is a positive line fee; the detail's lines must add up to the statement totals (0.343099ms)
+✔ closed_at/paid_at accept the offsets PostgreSQL emits as well as Z (0.255867ms)
+✔ a payout reference shaped like a Stripe key or account id is never displayed (0.267574ms)
+✔ platform not OPEN: 'not open yet' and no enable control, for every non-OPEN state; the platform badge still tells why (0.843975ms)
+✔ allowlisted + OPEN: enable from NONE/DISABLED, disable from ENABLED (1.006942ms)
+✔ not allowlisted on an OPEN platform reads exactly like not open: the same message, no 'platform open' badge, no enable (review P1-2) (0.259543ms)
+✔ BLOCKED: the suspended note, disable only, never enable (whatever the platform says) (0.116866ms)
+✔ without billing:manage nothing can be changed, but the state is still readable (0.096506ms)
+✔ enable carries the platform's current terms, the suffix and the version read; NONE starts at 0 (0.121613ms)
+✔ disable never sends a suffix and quotes the terms the store accepted (the platform's may have moved on) (0.080952ms)
+✔ a retained suffix is recovered from the final preview so a re-enable can keep it (0.08619ms)
+✔ the period label shows the last day inside the (exclusive-end) week (0.347625ms)
+✔ payout state: paid, pending only when money is due, none when the week nets to zero or less (0.087623ms)
+✔ card-payments and settlements are nav:false routes, so no group loses or gains a nav button (0.281906ms)
+✔ settlements need billing:manage, the card page integration:read; the owner opens both (0.225912ms)
+✔ statement cells: a dispute reversal and a returned fee read as credits (+) and every deduction as -, and the columns add up to the server's net (16.535872ms)
+✔ the detail parser requires the lines of a statement that has lines; a quiet week (line_count 0) may omit them (0.378442ms)
+✔ route table: exactly the four resources, nothing generic (1.205562ms)
+✔ query grammar: card and settlement-detail are exact; settlements takes before/limit only (0.467397ms)
+✔ request fence: keyless PUT (CAS), bodyless GETs, no transfer-encoding (31.394015ms)
+✔ PUT body is the exact frozen shape {enabled, terms_version, descriptor_suffix, expected_version} (1.043757ms)
+✔ the BFF route wires the card grammar: keyless CAS PUT, exact body, no-store, auth required (0.585776ms)
+✔ the real card summary parses and drives the display state machine (3.002979ms)
+✔ the real statement list parses: newest first, no lines, three payout states (1.241045ms)
+✔ every real detail parses with its lines and the lines add up to the statement (1.352063ms)
+✔ an empty ledger parses to no statements (0.190628ms)
+✔ no account id, key or approval shape is in any real body (0.705256ms)
+✔ the real statements display literally as signed contributions that add up to the server's net (13.776142ms)
+ℹ tests 54
+ℹ suites 0
+ℹ pass 54
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 292.202314
+
+> live-commerce-workspace@ build:storefront /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+> pnpm --filter @live-commerce/storefront build
+
+
+> @live-commerce/storefront@ build /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/apps/storefront
+> next build
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 17ms
+⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 3.8s
+  Running TypeScript ...
+  Finished TypeScript in 414ms ...
+  Collecting page data using 3 workers ...
+  Generating static pages using 3 workers (0/2) ...
+✓ Generating static pages using 3 workers (2/2) in 70ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/cart
+├ ƒ /[locale]/checkout
+├ ƒ /[locale]/claim
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/collections/[slug]
+├ ƒ /[locale]/data-deletion
+├ ƒ /[locale]/legal/[slug]
+├ ƒ /[locale]/legal/anti-fraud
+├ ƒ /[locale]/order-link
+├ ƒ /[locale]/orders/[orderID]
+├ ƒ /[locale]/orders/lookup
+├ ƒ /[locale]/pages/[slug]
+├ ƒ /[locale]/privacy
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[slug]
+├ ƒ /[locale]/search
+├ ƒ /api/buyer/[...path]
+├ ƒ /api/shop/product/[key]
+├ ƒ /api/shop/products
+├ ƒ /feeds/meta.csv
+├ ƒ /media/c/[collectionID]/[imageID]
+├ ƒ /media/p/[productID]/[imageID]
+├ ƒ /media/s/[imageID]
+├ ƒ /payment/return
+├ ƒ /products/[productID]
+├ ƒ /robots.txt
+└ ƒ /sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+> live-commerce-workspace@ build:admin /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 22ms
+⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 7.7s
+  Running TypeScript ...
+  Finished TypeScript in 972ms ...
+  Collecting page data using 3 workers ...
+  Generating static pages using 3 workers (0/15) ...
+  Generating static pages using 3 workers (3/15) 
+  Generating static pages using 3 workers (7/15) 
+  Generating static pages using 3 workers (11/15) 
+✓ Generating static pages using 3 workers (15/15) in 109ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/ads
+├ ƒ /[locale]/ads/attribution
+├ ƒ /[locale]/billing
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/customers
+├ ƒ /[locale]/customers/[customer]
+├ ƒ /[locale]/customers/import
+├ ƒ /[locale]/design
+├ ƒ /[locale]/finance
+├ ƒ /[locale]/finance/reports
+├ ƒ /[locale]/inventory
+├ ƒ /[locale]/invite/[token]
+├ ƒ /[locale]/messages
+├ ƒ /[locale]/orders
+├ ƒ /[locale]/orders/cvs-print
+├ ƒ /[locale]/orders/new
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[product]
+├ ƒ /[locale]/products/import
+├ ƒ /[locale]/promotions
+├ ƒ /[locale]/reset
+├ ƒ /[locale]/returns
+├ ƒ /[locale]/settings
+├ ƒ /[locale]/settings/operations
+├ ƒ /[locale]/settings/payments/card
+├ ƒ /[locale]/settings/settlements
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/studio
+├ ƒ /[locale]/studio/claims
+├ ƒ /[locale]/studio/console
+├ ƒ /[locale]/studio/settings
+├ ƒ /[locale]/team
+├ ƒ /api/ads/meta/callback
+├ ƒ /api/ads/meta/connect
+├ ƒ /api/auth/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/password/login
+├ ƒ /api/auth/password/reset
+├ ƒ /api/auth/password/signup
+├ ƒ /api/auth/password/verify
+├ ƒ /api/meta/callback
+├ ƒ /api/meta/connect
+├ ƒ /api/onboarding/initial-store
+├ ƒ /api/stores
+├ ƒ /api/stores/[store]/[...resource]
+├ ƒ /api/stores/[store]/customers
+├ ƒ /api/stores/[store]/customers/[customer]/historical-orders
+├ ƒ /api/stores/[store]/customers/[customer]/notes
+├ ƒ /api/stores/[store]/customers/[customer]/notes/[note]
+├ ƒ /api/stores/[store]/customers/[customer]/tags
+├ ƒ /api/stores/[store]/customers/tags
+├ ƒ /api/stores/[store]/customers/tags/[tag]
+├ ƒ /api/stores/[store]/imports/[param]/[action]
+├ ƒ /api/stores/[store]/live-sessions/[session]/claims/blocklist
+├ ƒ /api/stores/[store]/live-sessions/[session]/claims/blocklist/check
+├ ƒ /api/stores/[store]/live-sessions/[session]/claims/blocklist/entries/[entry]
+├ ƒ /api/stores/[store]/live-sessions/[session]/reminders
+├ ƒ /api/stores/[store]/live-settings/sold-out-reply
+├ ƒ /api/stores/[store]/message-templates
+├ ƒ /api/stores/[store]/orders/export
+├ ƒ /api/stores/[store]/orders/pick-list
+├ ƒ /api/stores/[store]/reports/[report]
+├ ƒ /api/stores/[store]/shipments/cvs-batch
+├ ƒ /api/stores/[store]/tools/[...resource]
+├ ƒ /api/team/[action]
+├ ƒ /site/[locale]/[page]
+├ ƒ /site/robots.txt
+└ ƒ /site/sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packaged standalone admin server and static assets.
+go: downloading github.com/jackc/pgx/v5 v5.11.0
+go: downloading github.com/riverqueue/river v0.40.0
+go: downloading github.com/riverqueue/river/riverdriver/riverpgxv5 v0.40.0
+go: downloading github.com/riverqueue/river/rivertype v0.40.0
+go: downloading github.com/riverqueue/river/riverdriver v0.40.0
+go: downloading golang.org/x/crypto v0.57.0
+go: downloading github.com/jackc/pgpassfile v1.0.0
+go: downloading github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761
+go: downloading golang.org/x/text v0.42.0
+go: downloading github.com/jackc/puddle/v2 v2.2.2
+go: downloading github.com/riverqueue/river/rivershared v0.40.0
+go: downloading golang.org/x/image v0.46.0
+go: downloading golang.org/x/net v0.60.0
+go: downloading github.com/coreos/go-oidc/v3 v3.21.0
+go: downloading golang.org/x/oauth2 v0.37.0
+go: downloading golang.org/x/sync v0.23.0
+go: downloading github.com/tidwall/gjson v1.19.0
+go: downloading github.com/tidwall/sjson v1.2.5
+go: downloading golang.org/x/sys v0.48.0
+go: downloading github.com/go-jose/go-jose/v4 v4.1.4
+go: downloading github.com/stretchr/testify v1.11.1
+go: downloading go.uber.org/goleak v1.3.0
+go: downloading github.com/tidwall/match v1.2.0
+go: downloading github.com/tidwall/pretty v1.2.1
+go: downloading github.com/davecgh/go-spew v1.1.1
+go: downloading github.com/pmezard/go-difflib v1.0.0
+go: downloading gopkg.in/yaml.v3 v3.0.1
+=== RUN   TestBrowserCardPayments
+    browser_card_payments_test.go:197: W4-U1 BROWSER (MOCK Stripe): admin half passed (card-payments + settlements); screenshots hashed; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.a17MV1Mw/card-payments/20261013T212702.783207482
+    browser_card_payments_test.go:198: CARD_PAY_FIXTURE released_setup_pools=24 before_buyer=true
+    browser_card_payments_test.go:218: W4-U1 BROWSER buyer half passed (disclosure present above the pay button and on the paid page, absent for a primary connection); evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.a17MV1Mw/card-payments/20261013T212702.783207482
+--- PASS: TestBrowserCardPayments (46.31s)
+PASS
+ok  	livecommerce/tests/foundation	47.389s
+PASS: W4-U1 isolated admin + storefront Next, Go, PG, real worker; platform Stripe = MOCK (independent fake; designate/open/allowlist/block through the operator definers; statements through sync -> close -> payout record), no Stripe, no key, test mode only; merchant enable/disable (CAS PUT, 409 reload), every state badge, platform-not-OPEN hides the toggle, BLOCKED disable-only, settlements list + detail, no acct_/sk_/rk_ in DOM/network/storage; buyer collector disclosure in zh-TW + zh-CN + en above the pay button and on the paid page, absent for a primary connection; desktop + 390px; not Stripe, provider or deployment acceptance; SANDBOX and LIVE are NOT_RUN.
