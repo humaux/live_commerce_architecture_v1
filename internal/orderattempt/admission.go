@@ -332,6 +332,10 @@ func admissionFailure(err error, committing bool) error {
 			}
 		case "PT422":
 			result.code = "order_attempt_unavailable"
+			if pgerr.Message == "ERASED" {
+				// Native source/binding rechecks prove the exact scoped owner inactive.
+				result.code = "ERASED"
+			}
 		case "40001", "40P01", "55P03", "57014":
 			result.code = "order_attempt_retryable"
 		}
