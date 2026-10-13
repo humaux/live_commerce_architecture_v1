@@ -189,6 +189,7 @@ func oaSweepExpired(t *testing.T, e *lbuEnv) orderattempt.AdmissionReceipt {
 	owner := randomUUID()
 	// Past-seeded storage fixture, matching the existing abort deadline test.
 	// It is deliberately not a real C1/AEAD positive and disables no trigger.
+	oaStateExec(t, tx, `SELECT set_config('app.tenant_id',$1,true),set_config('app.store_id',$2,true)`, e.tenant(), e.store())
 	oaStateExec(t, tx, `INSERT INTO buyer.owners(id,tenant_id,store_id) VALUES($1,$2,$3)`, owner, e.tenant(), e.store())
 	oaStateExec(t, tx, `INSERT INTO ops.order_attempt_creators(attempt_id,tenant_id,store_id,buyer_owner_id) VALUES($1,$2,$3,$4)`, a.AttemptID, e.tenant(), e.store(), owner)
 	oaStateExec(t, tx, `INSERT INTO ops.order_attempt_scopes(scope_id,tenant_id,store_id,principal_id,current_generation) VALUES($1,$2,$3,$4,1)`, a.ScopeID, e.tenant(), e.store(), e.p.f.principalA)
