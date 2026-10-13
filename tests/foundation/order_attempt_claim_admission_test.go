@@ -296,8 +296,8 @@ func TestOrderAttemptClaimAdmissionCatalogQuantityBoundary(t *testing.T) {
 				return
 			}
 			out, err := oaClaimCall(tx, attempt, selection)
-			if err != nil || len(out.Lines) != 1 || out.Lines[0].Quantity != 1000 || out.Lines[0].LivePriceMinor != nil {
-				t.Fatalf("catalog boundary must survive claim resolver without a live price: %+v err=%v", out, err)
+			if err != nil || out.RequestID != nil || out.Reason != "no_bundle" || len(out.Lines) != 0 {
+				t.Fatalf("catalog boundary must survive without inventing claim facts: %+v err=%v", out, err)
 			}
 		})
 	}
