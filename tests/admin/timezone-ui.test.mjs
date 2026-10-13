@@ -108,6 +108,9 @@ test("ManualOrder bank-transfer expiry uses Taipei at the year boundary", () => 
     "./customers.css": {}, "./merchant-tools.css": {},
     "@/lib/manual-order-form": { emptyManualForm: () => ({ home: {}, cvs: {} }) },
     "./ManualOrderFormFields": {},
+    "@/lib/create-order-client": {},
+    "@/lib/create-order-copy": { createOrderCopy: { "zh-TW": {} } },
+    "@/src/features/messages/use-privacy": { useInboxPrivacy: () => ({ visible: true, revision: 0 }) },
     "@/lib/create-order-attempt": compile("apps/admin/lib/create-order-attempt.ts", {
       "./create-order-model.ts": createOrderModel,
     }),

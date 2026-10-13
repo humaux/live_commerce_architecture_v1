@@ -211,12 +211,12 @@ export function parseRegenerateResult(value: unknown): RegenerateResult {
 }
 
 // ---- BFF request grammar -----------------------------------------------------------------------------------------------------
-export type ToolsRoute = "dashboard" | "export" | "import-preview" | "import-commit" | "manual-options" | "manual-place" | "manual-regenerate" | "order-prefill" | "for-buyer" | "for-buyer-recover";
+export type ToolsRoute = "dashboard" | "export" | "import-preview" | "import-commit" | "manual-options" | "manual-place" | "manual-regenerate" | "manual-recover" | "order-prefill" | "for-buyer" | "for-buyer-recover";
 /** The only resources of the tools BFF, per method. Everything else is a 404 there. */
 export function toolsRoute(method: string, path: string): ToolsRoute | null {
   const table: Record<string, Record<string, ToolsRoute>> = {
     GET: { "inbox/order-prefill": "order-prefill", dashboard: "dashboard", "products/export.csv": "export", "orders/manual/options": "manual-options" },
-    POST: { "orders/for-buyer": "for-buyer", "orders/for-buyer/recover": "for-buyer-recover", "products/import/preview": "import-preview", "products/import/commit": "import-commit", "orders/manual": "manual-place", "orders/manual/regenerate-link": "manual-regenerate" },
+    POST: { "orders/for-buyer": "for-buyer", "orders/for-buyer/recover": "for-buyer-recover", "products/import/preview": "import-preview", "products/import/commit": "import-commit", "orders/manual": "manual-place", "orders/manual/recover": "manual-recover", "orders/manual/regenerate-link": "manual-regenerate" },
   };
   return table[method]?.[path] ?? null;
 }

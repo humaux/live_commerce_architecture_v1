@@ -32,7 +32,7 @@ type Context = { params: Promise<{ store: string; resource: string[] }> };
 
 const budgets: Record<ToolsRoute | TrackingRoute, number> = {
   dashboard: 8000, export: 20000, "manual-options": 10000, "import-preview": 75000, "import-commit": 75000, "manual-place": 16000,
-  "manual-regenerate": 16000, "order-prefill": 16000, "for-buyer": 16000, "for-buyer-recover": 16000,
+  "manual-regenerate": 16000, "manual-recover": 16000, "order-prefill": 16000, "for-buyer": 16000, "for-buyer-recover": 16000,
   "tracking-preview": 75000, "tracking-commit": 75000, "tracking-result": 20000,
 };
 
@@ -155,12 +155,12 @@ async function route(request: Request, context: Context) {
 
   const response = await upstream(path + (tracking || kind === "order-prefill" ? search : ""), init, token, store, budgets[kind]);
   if (authConfig && response.status === 401) {
-    const denied = kind === "order-prefill" || kind === "for-buyer" || kind === "for-buyer-recover" ? localError(401, "unauthorized") : await safeError(response);
+    const denied = kind === "order-prefill" || kind === "for-buyer" || kind === "for-buyer-recover" || kind === "manual-recover" ? localError(401, "unauthorized") : await safeError(response);
     clearAuthCookies(denied.headers);
     return denied;
   }
   const requestID = response.headers.get("x-request-id") ?? "";
-  if (kind === "order-prefill" || kind === "for-buyer" || kind === "for-buyer-recover") {
+  if (kind === "order-prefill" || kind === "for-buyer" || kind === "for-buyer-recover" || kind === "manual-recover") {
     // Revocation outranks a malformed/HTML body; never leave private drawer data visible as UNKNOWN.
     if (response.status === 401 || response.status === 403)
       return localError(response.status, response.status === 401 ? "unauthorized" : "forbidden");
@@ -198,7 +198,7 @@ async function route(request: Request, context: Context) {
       return denied;
     }
     if (
-      kind === "order-prefill" || kind === "for-buyer-recover"
+      kind === "order-prefill" || kind === "for-buyer-recover" || kind === "manual-recover"
         ? response.status !== 200
         : response.status !== 200 && response.status !== 201
     )
@@ -207,7 +207,7 @@ async function route(request: Request, context: Context) {
       const parsed =
         kind === "order-prefill"
           ? parseOrderPrefill(value)
-          : kind === "for-buyer-recover" ? parseForBuyerRecovery(value) : parseForBuyerResult(value);
+          : kind === "for-buyer-recover" || kind === "manual-recover" ? parseForBuyerRecovery(value) : parseForBuyerResult(value);
       return Response.json(parsed, {
         status: response.status,
         headers: { ...nostore },

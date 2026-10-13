@@ -208,6 +208,31 @@ const result = () => ({
   live_price_reason: "no_conversation",
   send: { state: "not_sent", reason: "not_requested" },
 });
+test("manual recovery real BFF preserves original body/key and only forwards closed, scoped results", async () => {
+  const { for: _target, send_payment_link: _send, ...manual } = body();
+  for (const value of [{ state: "not_created" }, { state: "created", order_id: customer }]) {
+    answer = { status: 200, body: JSON.stringify(value) };
+    const before = seen.length;
+    const out = await call("orders/manual/recover", { method: "POST", body: manual });
+    assert.equal(out.status, 200); assert.deepEqual(out.body, value);
+    assert.equal(seen.length, before + 1);
+    assert.equal(seen.at(-1)?.url, `/v1/admin/stores/${store}/orders/manual/recover`);
+    assert.equal(seen.at(-1)?.body, JSON.stringify(manual));
+    assert.equal(seen.at(-1)?.headers["idempotency-key"], "synthetic-receipt");
+    assert.match(out.headers.get("cache-control") ?? "", /no-store/);
+  }
+  for (const value of [{ state: "not_created", order_id: customer }, { state: "unknown" }, { state: "created", order_id: "invalid" }, { state: "created", order_id: customer, buyer_link: "PRIVATE_DIAGNOSTIC" }]) {
+    answer = { status: 200, body: JSON.stringify(value) };
+    const out = await call("orders/manual/recover", { method: "POST", body: manual });
+    assert.equal(out.status, 503); assert.equal(JSON.stringify(out.body).includes("PRIVATE_DIAGNOSTIC"), false);
+  }
+  const before = seen.length;
+  for (const over of [{ query: "?tenant_id=x" }, { body: { ...manual, total_minor: 1 } }, { headers: { origin: "https://foreign.invalid" } }, { headers: { "x-csrf-token": "invalid" } }]) {
+    assert.notEqual((await call("orders/manual/recover", { method: "POST", body: manual, ...over })).status, 200);
+  }
+  assert.equal(seen.length, before, "rejected input never forwards");
+});
+
 test("A16R real BFF preserves the frozen body/key and accepts only an authoritative closed recovery result", async () => {
   for (const state of [{ state: "not_created" }, { state: "created", order_id: customer }]) {
     answer = { status: 200, body: JSON.stringify(state) };

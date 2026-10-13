@@ -1,10 +1,11 @@
-// Purpose: transient A15/A16 transport with real session fences and immutable attempt receipts.
-// Depends on: settings-client CSRF/sessionBoundary, create-order-model and browser fetch.
-// Used by: CreateOrderDrawer; BFF /tools/inbox/order-prefill and /tools/orders/for-buyer -> Go merchanttools.
+// Purpose: transient A15/A16 and manual recovery transport with real session fences and immutable attempt receipts.
+// Depends on: settings-client CSRF/sessionBoundary, create-order-model, manual body validation and browser fetch.
+// Used by: CreateOrderDrawer and ManualOrder; scoped tools BFF -> Go merchanttools.
 // Invariants: I01/I02/I05/I08/I09; no storage, logging, automatic retry or client price inputs.
 import { csrfCookie, sessionBoundary } from "./settings-client";
 import { canonicalUUID } from "./orders-model.ts";
 import { validClaimRestriction } from "./claims-request.ts";
+import { validManualBody } from "./merchant-tools-model.ts";
 import {
   forBuyerError,
   parseOrderPrefill,
@@ -156,9 +157,16 @@ export async function recoverForBuyerOrder(
 ): Promise<{ ok: true; value: ForBuyerRecovery; status: number } | Extract<ForBuyerOutcome, { ok: false }>> {
   return sendForBuyer(store, attempt, boundary, signal, "orders/for-buyer/recover", parseForBuyerRecovery, [200]);
 }
+/** Resolve/seal an ordinary manual attempt through the same strict recovery transport, without guessing buyer identity. */
+export async function recoverManualOrder(
+  store: string, attempt: { key: string; body: string }, boundary: string, signal?: AbortSignal,
+): Promise<{ ok: true; value: ForBuyerRecovery; status: number } | Extract<ForBuyerOutcome, { ok: false }>> {
+  return sendForBuyer(store, attempt, boundary, signal, "orders/manual/recover", parseForBuyerRecovery, [200], validManualBody);
+}
 async function sendForBuyer<T>(
   store: string, attempt: { key: string; body: string }, boundary: string, signal: AbortSignal | undefined,
   endpoint: string, parse: (value: unknown) => T, accepted: readonly number[],
+  validBody: (body: unknown) => boolean = validForBuyerBody,
 ): Promise<{ ok: true; value: T; status: number } | Extract<ForBuyerOutcome, { ok: false }>> {
   const resource = path(store, endpoint);
   let body: unknown;
@@ -167,7 +175,7 @@ async function sendForBuyer<T>(
   } catch {
     throw new CreateOrderError("invalid_request", 422);
   }
-  if (!/^[A-Za-z0-9_.:-]{8,128}$/.test(attempt.key) || !validForBuyerBody(body))
+  if (!/^[A-Za-z0-9_.:-]{8,128}$/.test(attempt.key) || !validBody(body))
     throw new CreateOrderError("invalid_request", 422);
   const csrf = csrfCookie();
   await fence(csrf, boundary);

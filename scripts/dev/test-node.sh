@@ -73,7 +73,7 @@ node --input-type=module -e 'import assert from "node:assert/strict"; import {re
 # LC-U3 exact A15/A16 seams, immutable retries and localized money-path guidance.
 node --test --experimental-strip-types tests/admin/create-order-model.test.ts tests/admin/create-order-client.test.ts tests/admin/create-order-bff.test.ts tests/admin/create-order-copy.test.ts
 node --test --experimental-transform-types tests/admin/create-order-attempt.test.ts
-node --test --experimental-strip-types tests/admin/create-order-review.test.ts
+node --test --experimental-strip-types tests/admin/create-order-review.test.ts tests/admin/manual-order-recovery.test.ts
 # W3-U2 actual BFF Request seams and closed command/copy policy.
 node --test --experimental-strip-types tests/admin/live-settings-bff.test.ts tests/admin/live-settings-model.test.ts
 node --test --experimental-transform-types tests/admin/live-settings-hooks.test.ts
