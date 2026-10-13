@@ -300,6 +300,42 @@ func TestOrderAttemptClaimExecutionAvailabilityRefusals(t *testing.T) {
 			a := oaAllocationAdmit(t, e, selection)
 			if kind == "reservation" || kind == "request-hash" {
 				oaClaimCustodyDiagnostic(t, e, a, kind, "before_fault", false)
+				// These deliberately committed faults must not poison later global
+				// sweeps. Restore only this reservation's captured custody fields.
+				var originalState string
+				var originalHash []byte
+				var rows int
+				var exact bool
+				baseline, stop := context.WithTimeout(context.Background(), 5*time.Second)
+				err := e.p.f.owner.QueryRow(baseline, `SELECT state,request_hash,count(*) OVER (),
+				 tenant_id=$2::uuid AND store_id=$3::uuid AND request_id=$1::uuid
+				 AND bundle_id=$4::uuid AND order_id IS NULL
+				 FROM inbox.order_for_buyer WHERE create_attempt_id=$1::uuid`,
+					a.AttemptID, e.tenant(), e.store(), bundle).Scan(&originalState, &originalHash, &rows, &exact)
+				stop()
+				if err != nil || rows != 1 || !exact || originalState != "pending" || len(originalHash) != 32 {
+					t.Fatalf("native reservation baseline: rows=%d exact=%v err=%v", rows, exact, err)
+				}
+				// Register before fault injection, including cleanup after Fatal.
+				// Later prefix rollback cleanup runs first in testing's LIFO order.
+				t.Cleanup(func() {
+					clean, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+					defer cancel()
+					var restored int
+					var unchanged bool
+					err := e.p.f.owner.QueryRow(clean, `WITH restored AS (
+					 UPDATE inbox.order_for_buyer SET state=$5,request_hash=$6
+					 WHERE create_attempt_id=$1::uuid AND request_id=$1::uuid
+					 AND tenant_id=$2::uuid AND store_id=$3::uuid AND bundle_id=$4::uuid AND order_id IS NULL
+					 RETURNING state,request_hash,order_id)
+					 SELECT count(*),coalesce(bool_and(state=$5 AND request_hash=$6 AND order_id IS NULL),false)
+					 FROM restored`, a.AttemptID, e.tenant(), e.store(), bundle, originalState, originalHash).Scan(&restored, &unchanged)
+					if err != nil || restored != 1 || !unchanged {
+						t.Errorf("restore exact reservation custody: rows=%d exact=%v err=%v", restored, unchanged, err)
+						return
+					}
+					oaClaimCustodyDiagnostic(t, e, a, kind, "after_fault_cleanup", false)
+				})
 			}
 			want := "PT409"
 			switch kind {
