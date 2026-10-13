@@ -88,8 +88,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0177 (OA-1 legacy claim paths exclude attempt-owned reservations/grants) adds one: 98 -> 99.
 	// 0174 (OA-1 explicit subject discovery and exact private-owner binding) adds one: 99 -> 100.
 	// 0176 (OA-1 C1 admission and same-transaction seal) adds one: 100 -> 101.
-	if len(r2) != 101 {
-		t.Fatalf("R2 migration set = %d files %v, want 101", len(r2), r2)
+	// 0178 (OA-1 attempt-first execution fence and private plan context) adds one: 101 -> 102.
+	if len(r2) != 102 {
+		t.Fatalf("R2 migration set = %d files %v, want 102", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
