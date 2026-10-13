@@ -1,0 +1,26 @@
+{
+  "name": "run-receipt-red",
+  "command": [
+    "go",
+    "test",
+    "./tests/foundation",
+    "-run",
+    "^TestProductEditorMatrixLedgerEvidenceRunReceipt$",
+    "-count=1",
+    "-v"
+  ],
+  "exit_code": 1,
+  "head": "8c3beed745fc9fcad0615596184c723b48886824",
+  "source_before": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "6a05dd9a3e081c8ba3cf09b9f52f7220d299f484c9c17c17ac0e67e0f182a899",
+    "tests/foundation/catalog_matrix_evidence_test.go": "94324882172769000c436bb6dc449dd9ef2c581d5f7974928f29fbfe3240bb03",
+    "docs/delivery/GATES.md": "3f1aaf60c275c1f6d7562d45f5ae61235094d40ba82be6b52bb5c07edd83f2b6"
+  },
+  "source_after": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "6a05dd9a3e081c8ba3cf09b9f52f7220d299f484c9c17c17ac0e67e0f182a899",
+    "tests/foundation/catalog_matrix_evidence_test.go": "94324882172769000c436bb6dc449dd9ef2c581d5f7974928f29fbfe3240bb03",
+    "docs/delivery/GATES.md": "3f1aaf60c275c1f6d7562d45f5ae61235094d40ba82be6b52bb5c07edd83f2b6"
+  },
+  "unchanged": true,
+  "elapsed_seconds": 60.438
+}

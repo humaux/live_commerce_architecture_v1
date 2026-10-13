@@ -408,6 +408,33 @@ func validateProductEditorMatrixEvidence(root string) error {
 	if source.Tested != manifest.Tested || !reflect.DeepEqual(source.Sources, manifest.Sources) {
 		return fmt.Errorf("SOURCE.json must bind the same tested source and source files as the manifest")
 	}
+	// The separately indexed frozen run receipt corroborates the OLD producer
+	// set. A changed gate comment cannot excuse dropping an already tested source.
+	runPath := evidence + "/browser-product-editor.json"
+	runData, err := productEditorMatrixEvidenceRead(root, runPath)
+	if err != nil {
+		return err
+	}
+	if err := productEditorMatrixEvidenceHash(runPath, runData, index.Artifacts[runPath]); err != nil {
+		return err
+	}
+	var run struct {
+		Command []string          `json:"command"`
+		Exit    *int              `json:"exit_code"`
+		Tested  string            `json:"tested_source_commit"`
+		After   string            `json:"source_commit_after"`
+		Sources map[string]string `json:"source_files_sha256"`
+		Final   map[string]string `json:"source_files_sha256_after"`
+	}
+	if err := json.Unmarshal(runData, &run); err != nil {
+		return fmt.Errorf("canonical full browser run receipt: %w", err)
+	}
+	if !reflect.DeepEqual(run.Command, []string{"bash", "scripts/dev/test-local.sh", "--browser-product-editor"}) || run.Exit == nil || *run.Exit != 0 {
+		return fmt.Errorf("canonical browser run receipt must record the original full mode and exit 0")
+	}
+	if run.Tested != manifest.Tested || run.After != manifest.Tested || !reflect.DeepEqual(run.Sources, manifest.Sources) || !reflect.DeepEqual(run.Final, manifest.Sources) {
+		return fmt.Errorf("canonical browser run receipt must bind the same tested commit and unchanged producer hashes as the manifest")
+	}
 	seen := map[string]bool{}
 	for _, copy := range manifest.Copies {
 		if filepath.Dir(copy.Canonical) != strings.TrimSuffix(canonical, "/") || seen[copy.Canonical] {
@@ -485,6 +512,7 @@ func validateProductEditorMatrixEvidence(root string) error {
 		if _, present := manifest.Sources[path]; present {
 			continue
 		}
+		// The independent run receipt already corroborates the recorded OLD set.
 		// Only an evolved producer declaration permits a new unrecorded producer.
 		// The old package has no Git-history dependency (e.g. squash/shallow CI).
 		if !gateChanged {

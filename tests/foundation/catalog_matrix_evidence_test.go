@@ -233,6 +233,71 @@ func TestProductEditorMatrixLedgerEvidenceProducerEvolution(t *testing.T) {
 	}
 }
 
+// A changed declaration alone cannot excuse an omitted OLD producer. The
+// separately indexed frozen run receipt must corroborate the recorded source set.
+func TestProductEditorMatrixLedgerEvidenceRunReceipt(t *testing.T) {
+	for _, mutation := range []string{"old-producer-omitted", "missing", "unindexed", "tested-commit", "after-commit", "before-sources", "after-sources", "command", "exit", "missing-exit"} {
+		t.Run(mutation, func(t *testing.T) {
+			root, canonical := productEditorMatrixEvidenceFixture(t)
+			gate := "tests/foundation/catalog_matrix_ledger_test.go"
+			productEditorMatrixWriteFixture(t, root, gate, append(productEditorMatrixReadFixture(t, root, gate), []byte("\n// unrelated comment\n")...))
+			evidence := filepath.Dir(canonical)
+			path := evidence + "/browser-product-editor.json"
+			indexPath := evidence + "/ARTIFACTS.json"
+			index := productEditorMatrixJSONFixture(t, root, indexPath)
+			receipt := productEditorMatrixJSONFixture(t, root, path)
+			switch mutation {
+			case "old-producer-omitted":
+				producer := "tests/admin/product-editor.acceptance.ts"
+				for _, boundPath := range []string{canonical + "/browser-evidence.json", evidence + "/SOURCE.json"} {
+					bound := productEditorMatrixJSONFixture(t, root, boundPath)
+					delete(bound["source_files_sha256"].(map[string]any), producer)
+					data, _ := json.Marshal(bound)
+					productEditorMatrixWriteFixture(t, root, boundPath, data)
+					index["artifacts_sha256"].(map[string]any)[boundPath] = fmt.Sprintf("%x", sha256.Sum256(data))
+				}
+				delete(index["source_files_sha256"].(map[string]any), producer)
+			case "missing":
+				if err := os.Remove(filepath.Join(root, path)); err != nil {
+					t.Fatal(err)
+				}
+				delete(index["artifacts_sha256"].(map[string]any), path)
+			case "unindexed":
+				delete(index["artifacts_sha256"].(map[string]any), path)
+			case "tested-commit":
+				receipt["tested_source_commit"] = strings.Repeat("0", 40)
+			case "after-commit":
+				receipt["source_commit_after"] = strings.Repeat("0", 40)
+			case "before-sources", "after-sources":
+				field := "source_files_sha256"
+				if mutation == "after-sources" {
+					field += "_after"
+				}
+				delete(receipt[field].(map[string]any), "tests/admin/product-editor.acceptance.ts")
+			case "command":
+				receipt["command"] = []string{"bash", "scripts/dev/test-local.sh", "--browser-product-editor", "--grep", "PE12"}
+			case "exit":
+				receipt["exit_code"] = 1
+			case "missing-exit":
+				delete(receipt, "exit_code")
+			}
+			if mutation != "old-producer-omitted" && mutation != "missing" && mutation != "unindexed" {
+				data, _ := json.Marshal(receipt)
+				productEditorMatrixWriteFixture(t, root, path, data)
+				index["artifacts_sha256"].(map[string]any)[path] = fmt.Sprintf("%x", sha256.Sum256(data))
+			}
+			data, _ := json.Marshal(index)
+			productEditorMatrixWriteFixture(t, root, indexPath, data)
+			err := validateProductEditorMatrixEvidence(root)
+			var drift productEditorMatrixEvidenceDrift
+			if err == nil || errors.As(err, &drift) {
+				t.Fatalf("frozen run receipt %s must fail before drift: %v", mutation, err)
+			}
+			t.Logf("run receipt %s rejected: %v", mutation, err)
+		})
+	}
+}
+
 func TestProductEditorMatrixLedgerEvidenceTableEvolution(t *testing.T) {
 	root, _ := productEditorMatrixEvidenceFixture(t)
 	path := "tests/foundation/testdata/product_editor_matrix_cases.json"
@@ -428,6 +493,18 @@ func productEditorMatrixEvidenceFixture(t *testing.T) (string, string) {
 	source, _ := json.Marshal(map[string]any{"tested_source_commit": manifest["tested_source_commit"], "source_files_sha256": sources})
 	write("output/matrix-ledger-enforce/fixture/SOURCE.json", source)
 	artifacts["output/matrix-ledger-enforce/fixture/SOURCE.json"] = hash(source)
+	// MODEL_ONLY rebinds a COPY of the independent frozen run receipt. This is
+	// fixture support, never an actual browser acceptance or canonical mutation.
+	runReceipt := productEditorMatrixJSONFixture(t, "../..", "output/matrix-ledger-enforce/"+string(dir[1])+"/browser-product-editor.json")
+	runReceipt["fixture_evidence_class"] = "MODEL_ONLY"
+	runReceipt["tested_source_commit"] = manifest["tested_source_commit"]
+	runReceipt["source_commit_after"] = manifest["tested_source_commit"]
+	runReceipt["source_files_sha256"] = sources
+	runReceipt["source_files_sha256_after"] = sources
+	runData, _ := json.Marshal(runReceipt)
+	runPath := "output/matrix-ledger-enforce/fixture/browser-product-editor.json"
+	write(runPath, runData)
+	artifacts[runPath] = hash(runData)
 	index, _ := json.Marshal(map[string]any{"tested_source_commit": manifest["tested_source_commit"], "source_files_sha256": sources, "artifacts_sha256": artifacts})
 	write("output/matrix-ledger-enforce/fixture/ARTIFACTS.json", index)
 	write("output/matrix-ledger-enforce/DELIVERY.md", []byte(fmt.Sprintf("Tested source: **`%s`**\n[SOURCE.json](fixture/SOURCE.json)\n", manifest["tested_source_commit"])))
