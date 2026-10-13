@@ -29,6 +29,22 @@ const log=createWriteStream(path.join(evidence,"admin.log"),{flags:"wx",mode:0o6
 // spawn requires an opened file descriptor; passing a pending WriteStream throws before Next starts.
 await once(log,"open");
 const record=(control,action,actual)=>ledger.push({case:current,control,action,actual,status:"PASS"});
+const saveEvidence=async()=>{
+ await writeFile(path.join(evidence,"click-ledger.json"),JSON.stringify(ledger,null,2),{mode:0o600});
+ await writeFile(path.join(evidence,"result.json"),JSON.stringify({cases,failed,results},null,2),{mode:0o600});
+};
+function recordFailure(error,control="scenario") {
+ // Error messages/stacks may include signed headers or private DOM; retain only test coordinates.
+ const coordinate=String(error?.stack||"").match(/\b(create-order-(?:drawer-gate|manual-recovery|partial-recovery|capability-recovery)\.mjs):(\d+):(\d+)/);
+ failed.push(current);ledger.push({case:current,control,action:"run",actual:coordinate?`assertion failed at ${coordinate[1]}:${coordinate[2]}:${coordinate[3]}`:"assertion failed; private diagnostics suppressed",status:"FAIL"});
+}
+async function drainContext(context) {
+ for(const page of context.pages()) await page.unrouteAll({behavior:"wait"});
+ await context.unrouteAll({behavior:"wait"});
+}
+async function closeContext(context) {
+ try {await drainContext(context);} finally {await context.close();}
+}
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const routePath=`/api/stores/${store}/tools/orders/for-buyer`;
 const isSubmit=r=>r.request().method()==="POST" && new URL(r.url()).pathname===routePath;
@@ -222,7 +238,7 @@ try {
   await page.getByTestId("manual-order-another").click();await expect(form).toBeVisible();
   await addCatalog(form,"mo");await fillEmpty(form,"mo");
   await definitiveRefusal(page,form,{requestPath:manualPath,submitId:"manual-order-submit",errorId:"manual-order-error",newAttemptId:"manual-order-new-attempt",editDraft:true});
-  await context.close();
+  await closeContext(context);
  }
  let index=0;
  for(const locale of ["en","zh-TW","zh-CN"]) for(const width of [1440,390]) {
@@ -361,8 +377,12 @@ try {
    page.on("request",observeRegenerate);
   }
   const before=await (await fetch(`${api}/__test/drawer-facts`)).json();
-  const attempts=[];let armed=true;
+  const attempts=[];let armed=true,firstDropError,finishFirstDrop;
+  // Await the real201, exact initial PG facts and completed abort; UI expectation timeouts are not upstream request budgets.
+  const firstDrop=new Promise(resolve=>{finishFirstDrop=resolve;});
   await page.route(`**${routePath}`,async route=>{
+   const first=armed;
+   try {
    const req=route.request(), headers={...req.headers()};
    if(!armed && calibration==="new-key-on-retry" && locale==="en" && width===1440) headers["idempotency-key"]=crypto.randomUUID();
    const body=req.postData();attempts.push({key:headers["idempotency-key"],body});
@@ -378,8 +398,15 @@ try {
     }
     await real.dispose();await route.abort("failed");}
    else await route.fulfill({response:real});
+   }catch(error){
+    if(!first) throw error;
+    // Deliver first-handler failures to the awaiting scenario, never an unhandled rejection with raw headers.
+    firstDropError=error;
+    try {await route.abort("failed");}catch(abortError){firstDropError=new AggregateError([error,abortError],"first response drop failed");}
+   }finally{if(first) finishFirstDrop();}
   });
   await drawer.getByTestId("drawer-submit").click();
+  await firstDrop;if(firstDropError) throw firstDropError;
   await expect(drawer.getByTestId("drawer-error")).toBeVisible();
   await expect(drawer.getByTestId("drawer-name")).toBeDisabled();
   await expect(drawer.getByTestId(`drawer-quantity-${sku}`)).toBeDisabled();
@@ -448,7 +475,7 @@ try {
   assert.equal(boundaryPosts,0,"rejected session boundary must never POST A16");
   assert.equal(afterBoundary.orders,beforeBoundary.orders,"session boundary creates no order");
   record("CSRF session boundary","rotate actual cookie then click submit","private draft removed; zero A16 requests; PG order count unchanged");
-  await context.close();
+  await closeContext(context);
  }
  // Open directly from the real signed-ingress claimed comment row in the actual console.
  const context=await browser.newContext({viewport:{width:1440,height:900}}),page=await context.newPage();
@@ -459,7 +486,7 @@ try {
  await expect(page.getByTestId("create-order-drawer")).toBeVisible();
  await expect(page.getByTestId("drawer-live-warning")).toBeVisible();
  record("claimed comment direct create","click","real CommentStream opens bundle-prefilled drawer without guessed conversation");
- await context.close();
+ await closeContext(context);
  // Switch only this owned issuer/subject to a real narrow staff principal; authenticate through normal clicks.
  const switched=await fetch(`${api}/__test/drawer-principal`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({limited:true})});
  assert.equal(switched.status,204);
@@ -509,7 +536,7 @@ try {
     assert.deepEqual(requests,[],"real narrow CommentStream entry/reload sends no A15/options/A16");
     record("catalog permission entry gates","real signed login/conversation click/reload/console navigation","real fulfilment grants; buyer retained; create controls disabled; zero A15/options/A16");
     cases++;
-   } finally { await limited.close(); }
+   } finally { await closeContext(limited); }
   }
  } finally {
   const restored=await fetch(`${api}/__test/drawer-principal`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({limited:false})});
@@ -523,7 +550,7 @@ try {
   await expect(partialPage.getByTestId("dashboard-page")).toBeVisible();
   await runPartialRecovery({page:partialPage,api,origin,store,cvs,sku,fixture:partialFixture,routePath,openConversation,record,results});
   cases++;
- } finally {await partialContext.close();}
+ } finally {await closeContext(partialContext);}
  assert.equal(cases,30,"preserve partial recovery and every original case before capability recovery");
  current="DU3-capability-after-unknown-recovery";
  const capabilityContext=await browser.newContext(ctxOpts({ignoreHTTPSErrors:true,viewport:{width:1440,height:900}})),capabilityPage=await capabilityContext.newPage();
@@ -531,7 +558,7 @@ try {
   await capabilityPage.goto(`${origin}/en`);await capabilityPage.getByRole("button",{name:"Sign in with identity service",exact:true}).click();
   await expect(capabilityPage.getByTestId("dashboard-page")).toBeVisible();
   await runCapabilityRecovery({page:capabilityPage,api,origin,store,home,sku,fixture:capabilityFixture,routePath,openConversation,record,results});cases++;
- } finally {await capabilityContext.close();}
+ } finally {await closeContext(capabilityContext);}
  assert.equal(cases,31,"preserve every existing case before adding ManualOrder recovery");
  for(const partial of [false,true]) {
   current=partial?"DU3-manual-partial-recovery":"DU3-manual-absence-recovery";
@@ -540,7 +567,7 @@ try {
    await manualPage.goto(`${origin}/en`);await manualPage.getByRole("button",{name:"Sign in with identity service",exact:true}).click();
    await expect(manualPage.getByTestId("dashboard-page")).toBeVisible();
    await runManualRecovery({page:manualPage,api,origin,store,cvs,addCatalog,fillEmpty,record,results,partial});cases++;
-  } finally {await manualContext.close();}
+  } finally {await closeContext(manualContext);}
  }
  assert.equal(cases,33,"exact additive ManualOrder recovery matrix");
  // Final money regression B: inject exactly one invalid generator value, then run the actual client's pre-dispatch validation.
@@ -580,7 +607,7 @@ try {
    await expect(page.getByTestId(`order-row-${value.order_id}`)).toBeVisible();
    results.push({case:current,invalid_generator_calls:1,invalid_posts:0,uncertain:false,guard_armed:false,valid_posts:1,pg_delta:1,reload_persisted:true});
    record("never sent close reopen persistence","click close/create/fill/valid submit/vieworder/reload","newvalidintent actual201; one persisted order/receipt; no guard or duplicate");cases++;
-  } finally {page.off("request",observe);await context.close();}
+  } finally {page.off("request",observe);await closeContext(context);}
  }
  assert.equal(cases,34,"all33 previouscases plus actual pre-dispatch validation");
  // Final money regression A: a real lost successful reply and real401 must not be escaped by re-login/rotated CSRF.
@@ -634,7 +661,7 @@ try {
    assert.equal(posts,2);assert.deepEqual(await exact(),{orders:1,receipts:1});assert.equal((await (await fetch(`${api}/__test/drawer-facts`)).json()).orders-before.orders,1);
    results.push({case:current,attempts:2,same_key:true,same_body:true,real_auth_status:401,csrf_rotated:true,stable_scope:true,relogin_guard_loaded:true,reload_guard_loaded:true,other_store_unaffected:true,pg_delta:1,request_orders:1,request_receipts:1});
    record("guard scope and persisted order","click guard vieworders/otherstore comment create/close","original ordervisible; independentstore formloaded; zero newwrites; PGdelta1");cases++;
-  }finally{await page.unroute(`**${routePath}`);page.off("request",observe);await context.close();}
+  }finally{await page.unroute(`**${routePath}`);page.off("request",observe);await closeContext(context);}
  }
  assert.equal(cases,35,"exact additive final money matrix preservesall33previouscases");
  const priorCreated=await fetch(`${api}/__test/drawer-facts`);assert.equal(priorCreated.status,200);
@@ -645,18 +672,25 @@ try {
   await createdPage.goto(`${origin}/en`);await createdPage.getByRole("button",{name:"Sign in with identity service",exact:true}).click();
   await expect(createdPage.getByTestId("dashboard-page")).toBeVisible();
   await runManualCreatedRecovery({page:createdPage,api,origin,store,cvs,addCatalog,fillEmpty,record,results});cases++;
- } finally {await createdContext.close();}
+ } finally {await closeContext(createdContext);}
  assert.equal(cases,36,"preserve all35 prior cases and add created ManualOrder recovery detail persistence");
 } catch (error) {
- // Only allowlisted test file/line coordinates are retained; assertion messages may contain private request or DOM material.
- const coordinate=String(error?.stack||"").match(/\b(create-order-(?:drawer-gate|manual-recovery|partial-recovery|capability-recovery)\.mjs):(\d+):(\d+)/);
- failed.push(current);ledger.push({case:current,control:"scenario",action:"run",actual:coordinate?`assertion failed at ${coordinate[1]}:${coordinate[2]}:${coordinate[3]}`:"assertion failed; private diagnostics suppressed",status:"FAIL"});
+ recordFailure(error);
 } finally {
- if(browser) await browser.close();
- if(child && child.exitCode===null) {child.kill("SIGTERM");await Promise.race([new Promise(resolve=>child.once("exit",resolve)),wait(1500)]);if(child.exitCode===null) child.kill("SIGKILL");}
- await writeFile(path.join(evidence,"click-ledger.json"),JSON.stringify(ledger,null,2),{mode:0o600});
- await writeFile(path.join(evidence,"result.json"),JSON.stringify({cases,failed,results},null,2),{mode:0o600});
- log.end();
+ // Preserve the primary failure before teardown can dispose a still-running route.fetch.
+ try {
+  await saveEvidence();
+  if(browser) {
+   try {for(const context of browser.contexts()) await drainContext(context);}
+   catch(error){recordFailure(error,"route drain");}
+   finally {try {await browser.close();}catch(error){recordFailure(error,"browser close");}}
+  }
+ } finally {
+  try {
+   if(child && child.exitCode===null) {child.kill("SIGTERM");await Promise.race([new Promise(resolve=>child.once("exit",resolve)),wait(1500)]);if(child.exitCode===null) child.kill("SIGKILL");}
+   await saveEvidence();
+  } finally {log.end();}
+ }
 }
 for(const name of failed) console.error(`FAIL ${name}`);
 console.log(`drawer cases=${cases} failed=${failed.length}`);
