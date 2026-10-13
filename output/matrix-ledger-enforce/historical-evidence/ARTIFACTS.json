@@ -17,9 +17,9 @@
     "tests/ci/product-editor-matrix-controls.test.mjs": "0fd469cca91a990972881b9fcf38961fab75c9f455c57d5b5842c7cf9168e132"
   },
   "artifacts_sha256": {
-    "output/matrix-ledger-enforce/historical-evidence/SOURCE.json": "468ca57d4ccdb12d0684376a54bfe23c89dd03711eb710b094d2ea3624e2b417",
+    "output/matrix-ledger-enforce/historical-evidence/SOURCE.json": "c4512a5b3a0b176141ea1218e8b5e5fea55403fa98312a1606f39611fdb595c3",
     "output/matrix-ledger-enforce/historical-evidence/artifact-review.json": "2d91f6c7081f02b840547b502d554aadac8ec5ab13ee9208610878fc515132ba",
-    "output/matrix-ledger-enforce/historical-evidence/browser/browser-evidence.json": "41040bf7396eac1cf7101c52bb3dcb2bd4fa8da6fea7524abde8f39fffc92532",
+    "output/matrix-ledger-enforce/historical-evidence/browser/browser-evidence.json": "228cca94c585a6351c5bd0af2b669e289be7e55e63c2fb01e55aa15e451d83c9",
     "output/matrix-ledger-enforce/historical-evidence/browser/cc12-last-run.json": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
     "output/matrix-ledger-enforce/historical-evidence/browser/cc12-playwright.log": "ae73e1acc705770bcec69aad94b883715ca1dd2a6b1bdbdf73bd6cc8f2852d9b",
     "output/matrix-ledger-enforce/historical-evidence/browser/pe-last-run.json": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
@@ -61,6 +61,14 @@
     "output/matrix-ledger-enforce/historical-evidence/strict-ledger.runner.json": "569be9926deb0e0a7524c421d7ff8dfbc8c508535966d1200d30cb99bca5229b",
     "output/matrix-ledger-enforce/historical-evidence/test-node.json": "0cd6980c8bbfe259f73b8f526d31a6809e40542044940570dc13bcafdc1da2c3",
     "output/matrix-ledger-enforce/historical-evidence/test-node.log": "079ce87bbdec16619ba49c1c5b766f1c4f154fdc86fc08bc2ad92cded1686925",
-    "output/matrix-ledger-enforce/historical-evidence/test-node.runner.json": "aa8fbe0ef3c50bf1ce05af224ca47b93672cf2cf62c9fa650c59ccfc84f747e1"
+    "output/matrix-ledger-enforce/historical-evidence/test-node.runner.json": "aa8fbe0ef3c50bf1ce05af224ca47b93672cf2cf62c9fa650c59ccfc84f747e1",
+    "output/matrix-ledger-enforce/historical-evidence/FROZEN-IDENTITIES.json": "afd55e756cbeec4a1787141bd37ac5a562a2187e10b16ba8871674b79289dec7",
+    "output/matrix-ledger-enforce/historical-evidence/frozen/tests/foundation/catalog_matrix_ledger_test.go.source.txt": "0bca90d283d8bf73eefdb0689ab68b4c2b3c97d619a53de6bf01e95d7c594371",
+    "output/matrix-ledger-enforce/historical-evidence/frozen/tests/foundation/testdata/product_editor_matrix_cases.json.source.txt": "d380f3e06babf7a96b77fe4ff46ddf77b38d84da521c8f0f378704e7f0ebca0d",
+    "output/matrix-ledger-enforce/historical-evidence/frozen/tests/admin/product-editor.acceptance.ts.source.txt": "42c62c527424bc0d611c29f15ca9570330ee8a7fb2f4aeb2a5f9cbd3c8f44e69",
+    "output/matrix-ledger-enforce/historical-evidence/frozen/tests/admin/product-editor-matrix-ledger.ts.source.txt": "8f316ca5d61458e5c01f98891d784677998acca1240d1270311c0b4235e48e09",
+    "output/matrix-ledger-enforce/historical-evidence/frozen/tests/admin/product-review.acceptance.ts.source.txt": "e9fb97fb23762ffede5ee3b755e88c88263bb5d458075b05b214e44766f077a4",
+    "output/matrix-ledger-enforce/historical-evidence/frozen/tests/admin/product-feedback.acceptance.ts.source.txt": "ac098dafcd7f782901c87523878a37768cf6530a024dd1bf75999a908219a173",
+    "output/matrix-ledger-enforce/historical-evidence/frozen/tests/admin/catalog-core.spec.ts.source.txt": "18db7e6e25ddfc05bdd6b9fecc6f80b3bd47e92f1e31addddf6ff318c21da0d8"
   }
 }

@@ -1,0 +1,108 @@
+{
+  "task_id": "f597a8bc-ce29-4b68-ab31-815dd5a319cb-sub-evidence-review",
+  "base_commit": "8ab590779d9ed0e22c5f39031143e3e93dcf893a",
+  "author_model": "gpt-6.1-sol",
+  "author_reasoning": "high",
+  "author_provenance": "Explicit parent spawn metadata for NEW review repair author only; original author/root model and effort UNKNOWN",
+  "evidence_level": "E1 STATIC SOURCE EDITS ONLY; compile/lint/tests/gates NOT_RUN locally; CI owned by parent",
+  "source_files_sha256": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "a14424b393163915296a576fcde497d6fe748002afc1b47ffc950849ec88269c",
+    "tests/foundation/catalog_matrix_evidence_test.go": "cd923b64bcd87a51d736e8cb3bfc0ce9da3057161582b001f633afc2e825052e"
+  },
+  "frozen_record_sha256": "afd55e756cbeec4a1787141bd37ac5a562a2187e10b16ba8871674b79289dec7",
+  "static_read_whitespace_observations": [
+    {
+      "path": "output/matrix-coverage-v2-evidence/test-node-final.log",
+      "trailing_whitespace_lines": [
+        1621,
+        1626
+      ],
+      "count": 2,
+      "sha256_raw": "ad5ae5be3d96465b4a252768d585e252ffb2da6587ef7f48501c758eac866ec7"
+    },
+    {
+      "path": "output/matrix-coverage-v2-evidence/check-gates-final.log",
+      "trailing_whitespace_lines": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "count": 249,
+      "sha256_raw": "cf7bc257c8358f64bb368a76c8728f94d22a869130e96c15e96a508397670a5a"
+    },
+    {
+      "path": "output/matrix-coverage-v2-evidence/shard-registration-red.log",
+      "trailing_whitespace_lines": [
+        23,
+        28
+      ],
+      "count": 2,
+      "sha256_raw": "0900837ac5374edbaf2767915098a678a103c3c7b1bf1e170a4773eb32bf47f3"
+    },
+    {
+      "path": "output/matrix-coverage-v2-evidence/check-gates-registry-final.log",
+      "trailing_whitespace_lines": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "count": 249,
+      "sha256_raw": "977eb3126270ceffa24840631bbe58e0b8c83a1f6c0a1a456becd7c4e9c8c77a"
+    }
+  ],
+  "actual_commands": [
+    {
+      "command": "git status --short / git rev-parse HEAD / directed rg,sed reads",
+      "exit_code": 0,
+      "scope": "read-only source and ownership context; no acceptance gate"
+    },
+    {
+      "command": "git show 2e10084b3f5e96548c15953cc40488aef9e1c86d:<each source_snapshots key>",
+      "exit_code": 0,
+      "scope": "actual frozen Git object reads; 7 producer snapshots"
+    },
+    {
+      "command": "git rev-parse 2e10084b3f5e96548c15953cc40488aef9e1c86d:<each source_snapshots key>",
+      "exit_code": 0,
+      "scope": "7 frozen blob provenance IDs"
+    },
+    {
+      "command": "python3 - (static file edits, snapshot extraction, SHA-256 and lossless gzip preserving historical raw bytes)",
+      "exit_code": 0,
+      "scope": "file editing/provenance only; no test/check process"
+    },
+    {
+      "command": "git add tests/foundation/catalog_matrix_evidence_test.go; git commit -m test(matrix-evidence): add review regression controls before repair",
+      "exit_code": 0,
+      "commit": "f03b76ba"
+    },
+    {
+      "command": "directed obsolete canonical path reads before DELIVERY link resolved",
+      "exit_code": 2,
+      "scope": "read lookup only; corrected to historical-evidence; no tests run"
+    },
+    {
+      "command": "local go/node/pnpm/playwright/devserver/PG/gate/formatter",
+      "exit_code": "NOT_RUN",
+      "scope": "owner CI-only restriction"
+    }
+  ]
+}

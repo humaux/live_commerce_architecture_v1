@@ -83,5 +83,6 @@
       "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
     }
   ],
-  "scope": "Original full browser mode at merged frozen source; fourteen owned executable hashes delivery-bound. Default source drift is historical SKIP; strict1 verifies delivery. Shared context and CI selector hashes informational. Matching sources require all exact artifact bytes, file/title/outcomes and identities."
+  "scope": "Original full browser mode at merged frozen source; fourteen owned executable hashes delivery-bound. Default source drift is historical SKIP; strict1 verifies delivery. Shared context and CI selector hashes informational. Matching sources require all exact artifact bytes, file/title/outcomes and identities.",
+  "frozen_identity_record_sha256": "afd55e756cbeec4a1787141bd37ac5a562a2187e10b16ba8871674b79289dec7"
 }

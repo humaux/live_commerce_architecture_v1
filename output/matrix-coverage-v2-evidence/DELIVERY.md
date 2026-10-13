@@ -5,7 +5,8 @@ Used by: parent integrator and independent reviewer. -->
 
 - task_id: `f597a8bc-ce29-4b68-ab31-815dd5a319cb` (parent); subcanvas `codex4-matrix-v2-sub-evidence`.
 - base_commit: `0bfe36e53acb694f4697521202e24f0790638941`; branch `unit/matrix-coverage-v2-evidence`; worktree `.worktrees/matrix-coverage-v2-evidence`.
-- Author: `/root/matrix_v2_evidence`, implementation/test role; inherited actual model/reasoning **UNKNOWN** (not exposed). No delegation, push or PR.
+- Original author: `/root/matrix_v2_evidence`; actual model/reasoning **UNKNOWN** (not exposed in trusted original runtime metadata). Original root model/effort also **UNKNOWN**; never retroactively inferred from the new repair author.
+- New round1review author: `/root/matrix_v2_evidence_review`, model `gpt-6.1-sol`, reasoning `high`, from explicit parent spawn metadata. No recursive delegation or author push.
 - Changed paths: `tests/foundation/catalog_matrix_ledger_test.go`, `tests/foundation/catalog_matrix_evidence_test.go`, focused strict-delivery section of `docs/delivery/GATES.md`, `output/matrix-coverage-v2-evidence/**`; root explicitly extended write_paths to `scripts/dev/shard-plan.json` for four g06 registrations, with integrator owning final JSON merge.
 - Contract/dependency/migration changes: none. The 14-entry producer declaration and current live-browser exact-ledger interface stay unchanged.
 
@@ -13,7 +14,7 @@ The root cause was the typed drift return preceding native copy, required-file a
 
 Historical ledgers retain schema, unique identity, nonempty claim, PASS, locale/390px and receipt/count validation without requiring a future table or Git history. Matching sources retain the exact current table identity/expected-claim gate. Immutable corruption remains fatal under strict and default policies. Isolated mutation fixtures rebind the sole current source table and explicitly synthesize a **MODEL_ONLY** ledger/counts from its expected keys; they also explicitly rebind a copied run receipt marked `fixture_evidence_class=MODEL_ONLY`; they never modify or establish delivered canonical browser evidence. `TestProductEditorMatrixLedger` still independently checks the recorded golden projection.
 
-## Actual commands and receipts
+## Historical commands and receipts (prior implementation; not current repair acceptance)
 
 The runner [run.py](run.py) bounds each command, preserves full logs and binds the validator/docs sources before/after, and adds `scripts/dev/shard-plan.json` from the focused registration red onwards; every recorded run has unchanged source hashes. All focused commands use `-count=1 -v`.
 
@@ -27,15 +28,15 @@ The runner [run.py](run.py) bounds each command, preserves full logs and binds t
 | same focused command after schema correction | 0 | [focused-final.json](focused-final.json), [log](focused-final.log) |
 | `go test ./tests/foundation -run '^TestProductEditorMatrix' -count=1 -v` after MODEL_ONLY fixture generalization | 0 | prior implementation [focused-model-final.json](focused-model-final.json), [uncompressed log](focused-model-final.log) |
 | `LC_MATRIX_EVIDENCE_STRICT=1 go test ./tests/foundation -run '^TestProductEditorMatrixLedgerEvidence$' -count=1 -v` | 1 (expected historical negative) | [strict-historical.json](strict-historical.json), [log](strict-historical.log): immutable original package validates, current edited sources drift; not current-source delivery acceptance |
-| `git diff --check` | 0 | [diff-check.txt](diff-check.txt) |
+| Historical working-tree-only `git diff --check` (does not validate the delivered PR patch) | 0 | [diff-check.txt](diff-check.txt) |
 | `go test ./tests/foundation -run '^TestProductEditorMatrixLedgerEvidenceRunReceipt$' -count=1 -v` on the prior validator | 1 (RED) | [run-receipt-red.json](run-receipt-red.json), [uncompressed log](run-receipt-red.log): all 10 immutable run-receipt defects incorrectly drifted, including unrelated gate comment + omitted old producer |
 | `go test ./tests/foundation -run '^TestProductEditorMatrix' -count=1 -v` after independent receipt binding | 0 | **final source** [focused-receipt-final.json](focused-receipt-final.json), [uncompressed log](focused-receipt-final.log): 10 new receipt controls plus existing strict/default policy and genuine new-producer/table evolution |
 | `LC_MATRIX_EVIDENCE_STRICT=1 go test ./tests/foundation -run '^TestProductEditorMatrixLedgerEvidence$' -count=1 -v` after receipt binding | 1 (expected historical negative) | [strict-receipt-historical.json](strict-receipt-historical.json), [log](strict-receipt-historical.log): actual canonical full-run receipt validates; source drift remains fatal in strict mode |
-| `git diff --check` after receipt binding | 0 | [diff-receipt-final.json](diff-receipt-final.json), [log](diff-receipt-final.log) |
+| Historical working-tree-only `git diff --check` after receipt binding (does not validate the delivered PR patch) | 0 | [diff-receipt-final.json](diff-receipt-final.json), [log](diff-receipt-final.log) |
 | `pnpm install --frozen-lockfile` | 0 | [deps-frozen-install.json](deps-frozen-install.json), [log](deps-frozen-install.log), [deps-state.json](deps-state.json): existing store reused49/downloaded0, lockfile/source unchanged |
-| `bash scripts/dev/test-node.sh` on `a7abaefe` | 1 (RED) | [test-node-final.json](test-node-final.json), [full log](test-node-final.log): sole failure is existing shard-plan synthetic +3 test capacity control, 59 existing unplanned +3 =62 >60 |
-| `bash scripts/dev/check-gates.sh` on `a7abaefe` | 0 | [check-gates-final.json](check-gates-final.json), [full log](check-gates-final.log): actual plan59 unplanned and1276 top-level names valid; prior to explicit registration |
-| `node --test tests/ci/shard-plan.test.mjs` before explicit registration | 1 (RED) | [shard-registration-red.json](shard-registration-red.json), [full log](shard-registration-red.log): same +3 capacity failure |
+| `bash scripts/dev/test-node.sh` on `a7abaefe` | 1 (RED) | [test-node-final.json](test-node-final.json), [full log](test-node-final.log.gz): sole failure is existing shard-plan synthetic +3 test capacity control, 59 existing unplanned +3 =62 >60 |
+| `bash scripts/dev/check-gates.sh` on `a7abaefe` | 0 | [check-gates-final.json](check-gates-final.json), [full log](check-gates-final.log.gz): actual plan59 unplanned and1276 top-level names valid; prior to explicit registration |
+| `node --test tests/ci/shard-plan.test.mjs` before explicit registration | 1 (RED) | [shard-registration-red.json](shard-registration-red.json), [full log](shard-registration-red.log.gz): same +3 capacity failure |
 | `node --test tests/ci/shard-plan.test.mjs` after explicit registration | 0 (7/7) | [shard-registration-green.json](shard-registration-green.json), [full log](shard-registration-green.log), [registry-only-diff.json](registry-only-diff.json) |
 
 Unchanged final validator/docs SHA-256 values are bound in `focused-receipt-final.json`; its checkout base SHA is recorded with dirty-source content hashes, not asserted as a pristine tested commit. The final registry SHA-256 is bound in `shard-registration-green.json`. E3 evidence proves the filesystem validator, test-entrypoint behavior and focused shard registration in the tested DB-free environment; full broad reruns on frozen `67cfc86f` are complete below. It does not prove current UI clicks, provider, production or independent acceptance.
@@ -71,3 +72,22 @@ Frozen implementation: `67cfc86f2bc1a9a88bad795fcd290f4decc80dbe`; all four sour
 | `bash scripts/dev/check-gates.sh` | 0 | `check-gates-registry-final.json/log`, all83 documented modes executed; four new Go names explicitly registered |
 
 The initial unrelated deadline is retained and no timer, assertion, suite or filter was relaxed. Current UI browser and strict fresh delivery remain NOT_RUN for this static evidence-policy group; the original canonical package remains unchanged historical evidence. E3 author-local filesystem/gate validation, independent review and GitHub CI pending.
+
+## PR47 round1review repair — CI only, pending acceptance
+
+- task_id: `f597a8bc-ce29-4b68-ab31-815dd5a319cb-sub-evidence-review`.
+- base_commit: `8ab590779d9ed0e22c5f39031143e3e93dcf893a`; negative-control commit `f03b76ba`.
+- Current repair evidence: **E1 static edits only**; compilation, lint, all Go/Node/browser/PG/gate runs and independent review **NOT_RUN by this author**. GitHub CI and independent acceptance belong to the parent; historical local PASS receipts above do not prove this repair.
+- Allowed paths: both foundation matrix validators, this output directory, canonical `historical-evidence` source/manifest/index and necessary frozen snapshots. Workflow/shard-plan/shared contracts untouched by this repair.
+
+4256257030: safe lexical source paths and valid recorded digests precede source reads; actual producer ENOENT becomes typed historical drift. Missing artifacts, dangling source links, source directories and all non-ENOENT errors remain fatal. Existing child-policy test includes removed/renamed producer default SKIP and strict FAIL, plus directory/link hard failures.
+
+4256257042 / 4256257073: [FROZEN-IDENTITIES.json](../matrix-ledger-enforce/historical-evidence/FROZEN-IDENTITIES.json) binds the actual `2e10084b3f5e96548c15953cc40488aef9e1c86d` Git blobs (SHA-256 and Git blob IDs), raw case table, original locale source, matrix recorder and all PE/review/feedback/CC12 consumer sources. Its identities come from the unchanged native list reporter: full12 PE/review +2 CC12, each file/title exactly once and zero skips. SOURCE and manifest bind the new record digest; the full package index binds the record/snapshots. This is added provenance for an existing run, not a fresh browser run. Historical expected claims are checked against the frozen table plus parsed original locale labels, and logs against the recorded identities before any drift return. Current matching sources retain exact current ledger and title contracts. Added rename/add/remove current-title and locale controls use the existing MODEL_ONLY fixture; delivered native bytes are never synthesized from current PASS rows.
+
+4256257059: recursively enumerate every canonical package regular file (outer and nested), excluding only root `ARTIFACTS.json`, reject symlinks/special files and require exact index membership before drift. Child controls cover unindexed outer/nested files under both policies with matching and changed source; frozen record corruption and rehashed fake/duplicate/missing case identities remain fatal under drift.
+
+4256257049: the original author/root runtime model and effort remain UNKNOWN. The explicit new author identity above applies only to this review repair.
+
+4256257065: parent owns CI `git diff --check` over the explicit PR base..head and the committed whitespace negative control. No local diff check was run for this repair. Static reading found whitespace in four historical author-local logs; [historical-raw-log-copies.json](historical-raw-log-copies.json) records lossless gzip paths, original byte sizes and SHA-256 values. All original failed/red bytes remain recoverable. Native canonical bytes remain unchanged.
+
+Actual operations this repair: repository/Humaux directed reads, static file edits, `git add` and `git commit` (exit0 for negative-control commit); no test/gate/formatter process executed locally. [round1review-static.json](round1review-static.json) binds current source hashes and static observations. New GitHub CI red/green, delivered-patch whitespace receipt and independent review remain NOT_RUN here; the parent must bind them to the implementation head SHA before completion.

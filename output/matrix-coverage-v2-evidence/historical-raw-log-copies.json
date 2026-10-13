@@ -1,0 +1,38 @@
+[
+  {
+    "original_path": "output/matrix-coverage-v2-evidence/test-node-final.log",
+    "preserved_path": "output/matrix-coverage-v2-evidence/test-node-final.log.gz",
+    "uncompressed_bytes": 138024,
+    "raw_sha256": "ad5ae5be3d96465b4a252768d585e252ffb2da6587ef7f48501c758eac866ec7",
+    "gzip_sha256": "c95dcedc90dedd55c62800b90f0ff369857468b6d23a9ad4b6e0c2777441a5a8",
+    "encoding": "gzip; exact original bytes, not normalized text",
+    "scope": "historical author-local receipts only; canonical native bytes unchanged"
+  },
+  {
+    "original_path": "output/matrix-coverage-v2-evidence/check-gates-final.log",
+    "preserved_path": "output/matrix-coverage-v2-evidence/check-gates-final.log.gz",
+    "uncompressed_bytes": 239586,
+    "raw_sha256": "cf7bc257c8358f64bb368a76c8728f94d22a869130e96c15e96a508397670a5a",
+    "gzip_sha256": "1b6fa1fae46b642577933128775341a1d474290ad264aca1498a89713210ad73",
+    "encoding": "gzip; exact original bytes, not normalized text",
+    "scope": "historical author-local receipts only; canonical native bytes unchanged"
+  },
+  {
+    "original_path": "output/matrix-coverage-v2-evidence/shard-registration-red.log",
+    "preserved_path": "output/matrix-coverage-v2-evidence/shard-registration-red.log.gz",
+    "uncompressed_bytes": 2074,
+    "raw_sha256": "0900837ac5374edbaf2767915098a678a103c3c7b1bf1e170a4773eb32bf47f3",
+    "gzip_sha256": "36a38a28545303011e4cc0bd4642fa3d337cb8178cb93918d1d5e6f3ecef3b50",
+    "encoding": "gzip; exact original bytes, not normalized text",
+    "scope": "historical author-local receipts only; canonical native bytes unchanged"
+  },
+  {
+    "original_path": "output/matrix-coverage-v2-evidence/check-gates-registry-final.log",
+    "preserved_path": "output/matrix-coverage-v2-evidence/check-gates-registry-final.log.gz",
+    "uncompressed_bytes": 239592,
+    "raw_sha256": "977eb3126270ceffa24840631bbe58e0b8c83a1f6c0a1a456becd7c4e9c8c77a",
+    "gzip_sha256": "e96acf722ae7c52f0397547bc628cdd94f6ecf3efea5d32bc1edfaeece988600",
+    "encoding": "gzip; exact original bytes, not normalized text",
+    "scope": "historical author-local receipts only; canonical native bytes unchanged"
+  }
+]
