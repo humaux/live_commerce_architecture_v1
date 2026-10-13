@@ -91,6 +91,19 @@ func TestOrderAttemptErasurePrefixExactAuthority(t *testing.T) {
 	if err = ownerTx.Rollback(context.Background()); err != nil {
 		t.Fatal(err)
 	}
+	batchTx, err := e.p.f.owner.Begin(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	oaAbortCleanupTx(t, batchTx)
+	oaStateExec(t, batchTx, `SET LOCAL ROLE commerce_privacy_writer`)
+	_, err = batchTx.Exec(context.Background(), `SELECT ops.order_attempt_erase_batch_prefix(
+	 jsonb_build_array(jsonb_build_object('tenant_id',$1::uuid,'store_id',$2::uuid,'subject_id',$3::uuid)))`,
+		e.tenant(), e.store(), randomUUID())
+	oaFenceCode(t, nil, err, "PT403")
+	if err = batchTx.Rollback(context.Background()); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestOrderAttemptErasureSerializesConcurrentC1BeforeOwner(t *testing.T) {
