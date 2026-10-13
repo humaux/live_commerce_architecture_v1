@@ -91,7 +91,9 @@ function workflowArtifactPaths(workflow, visualLint) {
     steps.push(lines.slice(i, end));
     i = end - 1;
   }
-  const condition = visualLint ? /startsWith\(matrix\.mode, '--browser-visual-lint'\)/ : /!startsWith\(matrix\.mode, '--browser-visual-lint'\)/;
+  const condition = visualLint
+    ? /^\s*if:\s*always\(\)\s*&&\s*startsWith\(matrix\.mode, '--browser-visual-lint'\)/
+    : /^\s*if:\s*always\(\)\s*&&\s*!startsWith\(matrix\.mode, '--browser-visual-lint'\)/;
   const step = steps.find((block) => block.some((line) => line.includes("actions/upload-artifact@") && condition.test(line)));
   assert.ok(step, `workflow has the ${visualLint ? "visual" : "ordinary"} artifact upload`);
   const pathIndex = step.findIndex((line) => /^\s+path:\s*\|\s*$/.test(line));
@@ -414,10 +416,12 @@ test("visual-lint and ordinary artifact uploads both deliver every planned Gate 
   const visualGatePath = `output/matrix-coverage-v2-execution/${runId}/gate/gate-results/${modes[3].replace(/[^A-Za-z0-9_.-]/g, "_")}.gate.json`;
   assert.ok(workflowArtifactPaths(workflow, true).some((pattern) => artifactPathMatches(pattern, visualGatePath, runId)),
     "the dedicated visual-lint upload includes the actual Gate receipt path");
+  assert.ok(workflowArtifactPaths(workflow, false).some((pattern) => pattern === "output/matrix-coverage-v2-execution/"),
+    "the ordinary upload remains configured independently");
 
-  const verifyArtifacts = (omittedMode = null) => {
-    const downloadRoot = probePath("gate-artifact-downloads", omittedMode?.replace(/[^A-Za-z0-9_.-]/g, "_") || "complete");
-    assembleUploadedArtifacts(workflow, producers, downloadRoot, runId, omittedMode);
+  const verifyArtifacts = (omittedMode = null, uploadWorkflow = workflow, artifactSet = null) => {
+    const downloadRoot = probePath("gate-artifact-downloads", artifactSet || omittedMode?.replace(/[^A-Za-z0-9_.-]/g, "_") || "complete");
+    assembleUploadedArtifacts(uploadWorkflow, producers, downloadRoot, runId, omittedMode);
     return spawnSync(process.execPath,
       ["scripts/dev/matrix-receipt-verify.mjs", "required", downloadRoot, runId, head, plan, "pull_request"],
       { encoding: "utf8", env: { ...process.env, NODE_OPTIONS: "" } });
@@ -429,6 +433,17 @@ test("visual-lint and ordinary artifact uploads both deliver every planned Gate 
     assert.equal(missing.status, 1, `omitting ${mode} must fail required: ${missing.stdout}\n${missing.stderr}`);
     assert.match(missing.stderr, /Gate step.*receipt/i);
   }
+
+  const visualReceiptGlob = "            output/matrix-coverage-v2-execution/${{ github.run_id }}/${{ github.job }}/gate-results/*.gate.json\n";
+  assert.equal(workflow.split(visualReceiptGlob).length, 2, "the visual upload has one dedicated Gate receipt glob");
+  const withoutVisualReceipt = workflow.replace(visualReceiptGlob, "");
+  const stillHasOrdinaryUpload = workflowArtifactPaths(withoutVisualReceipt, false).some((pattern) => pattern === "output/matrix-coverage-v2-execution/");
+  assert.ok(stillHasOrdinaryUpload, "mutation retains the ordinary artifact upload");
+  assert.equal(workflowArtifactPaths(withoutVisualReceipt, true).some((pattern) => artifactPathMatches(pattern, visualGatePath, runId)), false,
+    "the visual upload selector cannot borrow the ordinary upload paths");
+  const missingVisualReceipt = verifyArtifacts(null, withoutVisualReceipt, "visual-glob-removed");
+  assert.equal(missingVisualReceipt.status, 1, `${missingVisualReceipt.stdout}\n${missingVisualReceipt.stderr}`);
+  assert.match(missingVisualReceipt.stderr, /Gate step.*receipt/i);
 });
 
 test("required verifier reports a missing Go receipt after a valid Node receipt", () => {
