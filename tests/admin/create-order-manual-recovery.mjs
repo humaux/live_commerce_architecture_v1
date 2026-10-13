@@ -26,7 +26,7 @@ export async function runManualRecovery({page,api,origin,store,cvs,addCatalog,fi
  await form.getByTestId("mo-store-address").fill("1 Synthetic Recovery Road");
  await form.getByTestId("mo-mode-bank_transfer").check();
  await expect(form.getByTestId("manual-order-submit")).toBeEnabled();
- const before=await counts(),attempts=[];let posts=0,recoveryPosts=0,firstFacts;
+ const before=await counts(),attempts=[],completedReplies=[];let posts=0,recoveryPosts=0,firstFacts;
  const observe=request=>{if(request.method()==="POST"){const pathname=new URL(request.url()).pathname;if(pathname===path)posts++;if(pathname===recoveryPath)recoveryPosts++;}};
  page.on("request",observe);
  if(partial)assert.deepEqual(await control("arm"),{armed:1});else await bank(false);
@@ -38,6 +38,11 @@ export async function runManualRecovery({page,api,origin,store,cvs,addCatalog,fi
    else {real=await route.fetch();assert.equal(real.status(),422);assert.equal((await real.json()).code,"bank_transfer_unavailable");}
    // Drop only the actual server reply; no mock HTTP refusal/recovery is substituted.
    await real.dispose();await route.abort("failed");
+  }else if(partial){
+   // A durable Begin resumes from its immutable checkout, even after a delivery/payment option disappears.
+   // Lose only the real 201 replies so the merchant must explicitly recover the completed original request.
+   const real=await route.fetch();assert.equal(real.status(),201);const value=await real.json();assert(value.order_id);
+   completedReplies.push(value);await real.dispose();await route.abort("failed");
   }else await route.fulfill({response:await route.fetch()});
  };
  await page.route(`**${path}`,handleAttempt);
@@ -48,37 +53,72 @@ export async function runManualRecovery({page,api,origin,store,cvs,addCatalog,fi
   if(partial)await bank(false);
   await form.getByTestId("mo-name").fill("SYNTHETIC Recovery Edited Draft");
   await expect(form.getByTestId("mo-name")).toHaveValue("SYNTHETIC Recovery Edited Draft");
+  if(partial){
+   record("manual partial Begin fault","submit/terminate exact PG waiter/drop actual503/edit draft","one real Begin/order; source/link/manual receipt absent; edited draft creates no new request");
+   await expect(form.getByTestId("manual-order-recover-attempt")).toBeVisible();assert.equal(await guardCount(),1);
+   const [unknown]=await Promise.all([page.waitForResponse(r=>isPost(r,recoveryPath)),form.getByTestId("manual-order-recover-attempt").click()]);
+   assert.equal(unknown.status(),503);assert.equal((await unknown.json()).code,"retry_later");
+   assert.equal(unknown.request().headers()["idempotency-key"],attempts[0].key);assert.equal(unknown.request().postData(),attempts[0].body);
+   assert(unknown.headers()["cache-control"]?.includes("no-store"));
+   await expect(form.getByTestId("manual-order-error")).toBeVisible();await expect(form.getByTestId("manual-order-submit")).toBeEnabled();
+   await expect(form.getByTestId("manual-order-new-attempt")).toHaveCount(0);await expect(form.getByTestId("manual-order-recovered-order")).toHaveCount(0);
+   await expect(page.getByTestId("manual-order-result")).toHaveCount(0);assert.equal(await guardCount(),1);
+   assert.equal(posts,1);assert.equal(recoveryPosts,1);
+   const {killed,...initial}=firstFacts;assert.deepEqual(await control("facts",{key:attempts[0].key}),initial,"partial recovery cannot invent upper completion or seal");
+   assert.deepEqual(await control("request-facts",{keys:[attempts[0].key]}),{orders:0,receipts:0});
+   record("manual partial authority","click original recovery","actual503 retry_later; no seal/result/newattempt; original frozen request remains retryable");
+   const complete={...initial,manual_source:1,links:1,valid_links:1,manual_receipts:1,manual_audits:1};
+   for(let index=1;index<=2;index++){
+    await form.getByTestId("manual-order-submit").click();
+    await expect.poll(()=>completedReplies.length).toBe(index);
+    await expect(form.getByTestId("manual-order-error")).toBeVisible();await expect(form.getByTestId("manual-order-submit")).toBeEnabled();
+    assert.equal(attempts.length,index+1);assert.equal(attempts[index].key,attempts[0].key);assert.equal(attempts[index].body,attempts[0].body);
+    assert.equal(completedReplies[index-1].order_id,completedReplies[0].order_id,"same frozen intent resumes/replays the original order");
+    await expect(form.getByTestId("manual-order-new-attempt")).toHaveCount(0);await expect(page.getByTestId("manual-order-result")).toHaveCount(0);
+    assert.equal(await guardCount(),1);assert.equal((await counts()).orders-before.orders,1);
+    assert.deepEqual(await control("facts",{key:attempts[0].key}),complete,"resume/replay produces exactly one source/link/audit/receipt");
+    assert.deepEqual(await control("request-facts",{keys:[attempts[0].key]}),{orders:1,receipts:1});
+   }
+   await expect(form.getByTestId("manual-order-recover-attempt")).toBeVisible();
+   const [created]=await Promise.all([page.waitForResponse(r=>isPost(r,recoveryPath)),form.getByTestId("manual-order-recover-attempt").click()]);
+   assert.equal(created.status(),200);assert.deepEqual(await created.json(),{state:"created",order_id:completedReplies[0].order_id});
+   assert.equal(created.request().headers()["idempotency-key"],attempts[0].key);assert.equal(created.request().postData(),attempts[0].body);
+   assert(created.headers()["cache-control"]?.includes("no-store"));
+   await expect(page.getByTestId("manual-order-recovery-status")).toBeVisible();
+   const viewOrder=page.getByTestId("manual-order-recovered-order");await expect(viewOrder).toBeVisible();await expect(viewOrder).toHaveText("View order");
+   await expect(viewOrder).toHaveAttribute("href",`/en/orders?store=${store}&order=${completedReplies[0].order_id}`);
+   await expect(form.getByTestId("manual-order-new-attempt")).toHaveCount(0);await expect(page.getByTestId("manual-order-result")).toHaveCount(0);
+   assert.equal(await guardCount(),0);assert.equal(posts,3);assert.equal(recoveryPosts,2);
+   await page.unroute(`**${path}`,handleAttempt);
+   await viewOrder.click();await page.waitForURL(url=>url.pathname==="/en/orders"&&url.searchParams.get("store")===store&&url.searchParams.get("order")===completedReplies[0].order_id);
+   await expect(page.getByTestId("orders-table")).toBeVisible();await expect(page.getByTestId(`order-row-${completedReplies[0].order_id}`)).toBeVisible();
+   await expect(page.getByTestId("order-detail")).toBeVisible();await expect(page.getByTestId("order-detail")).toHaveAttribute("aria-label",`Order ${completedReplies[0].order_id}`);
+   await page.reload();await expect(page.getByTestId("orders-table")).toBeVisible();await expect(page.getByTestId(`order-row-${completedReplies[0].order_id}`)).toBeVisible();
+   await expect(page.getByTestId("order-detail")).toBeVisible();await expect(page.getByTestId("order-detail")).toHaveAttribute("aria-label",`Order ${completedReplies[0].order_id}`);
+   assert.deepEqual(await control("facts",{key:attempts[0].key}),complete);assert.equal((await counts()).orders-before.orders,1);
+   assert.deepEqual(await control("request-facts",{keys:[attempts[0].key]}),{orders:1,receipts:1});
+   assert.equal(attempts.length,3);assert.equal(posts,3);assert.equal(recoveryPosts,2);
+   results.push({case:caseName,attempts:3,same_key:true,same_body:true,first_recovery_status:503,completed_response_losses:2,resume_status:201,recover_status:200,recovered_original:true,seals:0,pg_delta:1,request_orders:1,request_receipts:1,source:1,links:1,audits:1,reload_detail_identity:true});
+   record("manual partial retry persistence","retry same frozen intent twice/drop actual201/click created recovery/view order/reload","bank remains disabled; same original order completes/replays; source/link/audit/receipt1; exact query detail persists; no new intent");
+   return;
+  }
   const [refusal]=await Promise.all([page.waitForResponse(r=>isPost(r)),form.getByTestId("manual-order-submit").click()]);
   assert.equal(refusal.status(),422);assert.equal((await refusal.json()).code,"bank_transfer_unavailable");
   assert.equal(attempts.length,2);assert.equal(attempts[1].key,attempts[0].key);assert.equal(attempts[1].body,attempts[0].body);
   await expect(form.getByTestId("manual-order-error")).toBeVisible();
   await expect(form.getByTestId("manual-order-new-attempt")).toHaveCount(0);
-  results.push({case:caseName,refusal_status:422,same_key:true,same_body:true,partial:partial});
+  results.push({case:caseName,refusal_status:422,same_key:true,same_body:true,partial:false});
   // RED target4254715306: existing ManualOrder retains the attempt but exposes no recovery control.
   await expect(form.getByTestId("manual-order-recover-attempt")).toBeVisible();
   assert.equal(await guardCount(),1,"retained manual attempt keeps opaque guard");
-  if(partial)record("manual partial Begin fault","submit/terminate exact PG waiter/drop reply/edit/retry","actual503 lost reply then real422; one Begin and order; source/link/manual receipt absent");
-  else record("manual frozen refusal","load options/disable bank/submit/drop reply/edit/retry","two actual422; edited draft retains exact original key/body; no new attempt");
+  record("manual frozen refusal","load options/disable bank/submit/drop reply/edit/retry","two actual422; edited draft retains exact original key/body; no new attempt");
   const [recovery]=await Promise.all([page.waitForResponse(r=>isPost(r,recoveryPath)),form.getByTestId("manual-order-recover-attempt").click()]);
   assert.equal(recovery.request().headers()["idempotency-key"],attempts[0].key);assert.equal(recovery.request().postData(),attempts[0].body);
   assert(recovery.headers()["cache-control"]?.includes("no-store"));
   const seal=await fetch(`${api}/__test/drawer-recovery-facts`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({key:attempts[0].key})});
   assert.equal(seal.status,200);
   const exactBefore=await control("request-facts",{keys:[attempts[0].key]});assert.deepEqual(exactBefore,{orders:0,receipts:0});
-  if(partial){
-   assert.equal(recovery.status(),503);assert.equal((await recovery.json()).code,"retry_later");
-   assert.deepEqual(await seal.json(),{not_created_seals:0});
-   await expect(form.getByTestId("manual-order-new-attempt")).toHaveCount(0);
-   await expect(form.getByTestId("manual-order-recovered-order")).toHaveCount(0);
-   await expect(page.getByTestId("manual-order-result")).toHaveCount(0);
-   await expect(form.getByTestId("manual-order-submit")).toBeEnabled();
-   assert.equal(await guardCount(),1,"503 recovery retains opaque guard");
-   await form.getByTestId("mo-name").fill("SYNTHETIC Partial Edited Again");
-   assert.equal(posts,2,"draft edit after503 cannot create a new intent or POST");assert.equal(recoveryPosts,1);
-   const {killed,...initial}=firstFacts;assert.deepEqual(await control("facts",{key:attempts[0].key}),initial,"503 recovery writes no seal or false completion");
-   record("manual partial authority","click recover","actual503 retry_later; no seal/result/newattempt; original request remains retryable");
-   await bank(true);
-  }else{
+  {
    assert.equal(recovery.status(),200);assert.deepEqual(await recovery.json(),{state:"not_created"});
    assert.deepEqual(await seal.json(),{not_created_seals:1});
    await expect(form.getByTestId("manual-order-recovery-status")).toBeVisible();
@@ -103,9 +143,8 @@ export async function runManualRecovery({page,api,origin,store,cvs,addCatalog,fi
   }
   const [created]=await Promise.all([page.waitForResponse(r=>isPost(r)),form.getByTestId("manual-order-submit").click()]);
   assert.equal(created.status(),201);const value=await created.json();assert(value.order_id);
-  assert.equal(attempts.length,3);assert.equal(posts,partial?3:4,"only explicit submits and disclosed closed-key probe");assert.equal(recoveryPosts,1,"only explicit recovery click");
-  if(partial){assert.equal(attempts[2].key,attempts[0].key);assert.equal(attempts[2].body,attempts[0].body);}
-  else {assert.notEqual(attempts[2].key,attempts[0].key);assert.notEqual(attempts[2].body,attempts[0].body,"explicit new attempt adopts edited draft");}
+  assert.equal(attempts.length,3);assert.equal(posts,4,"only explicit submits and disclosed closed-key probe");assert.equal(recoveryPosts,1,"only explicit recovery click");
+  assert.notEqual(attempts[2].key,attempts[0].key);assert.notEqual(attempts[2].body,attempts[0].body,"explicit new attempt adopts edited draft");
   await expect(page.getByTestId("manual-order-result")).toBeVisible();
   assert.equal(await guardCount(),0,"successful original/new intent clears opaque guard");
   await page.unroute(`**${path}`);
@@ -125,8 +164,8 @@ export async function runManualRecovery({page,api,origin,store,cvs,addCatalog,fi
   await page.getByTestId(`order-expand-${value.order_id}`).click();await expect(page.getByTestId("order-detail")).toBeVisible();
   await expect(page.getByTestId("order-detail")).toHaveAttribute("aria-label",new RegExp(value.order_id));
   assert.deepEqual(await control("request-facts",{keys:[attempts[2].key]}),completed);assert.equal((await counts()).orders-before.orders,1);
-  results.push({case:caseName,attempts:3,same_key:partial,new_key:!partial,recover_status:partial?503:200,seals:partial?0:1,pg_delta:1,request_orders:1,request_receipts:1,reload_persisted:true});
-  record(partial?"manual partial retry persistence":"manual new intent persistence","restore bank/submit/click vieworders/reload/expand exact order","exactone persisted manual order and receipt; no duplicate onreload");
+  results.push({case:caseName,attempts:3,same_key:false,new_key:true,recover_status:200,seals:1,pg_delta:1,request_orders:1,request_receipts:1,reload_persisted:true});
+  record("manual new intent persistence","restore bank/submit/click vieworders/reload/expand exact order","exactone persisted manual order and receipt; no duplicate onreload");
  }finally{await page.unroute(`**${path}`);page.off("request",observe);await bank(true);}
 }
 
