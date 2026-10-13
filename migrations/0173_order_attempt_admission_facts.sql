@@ -36,7 +36,7 @@ DECLARE
  v_result jsonb; v_home boolean; v_profiled boolean:=false;
 BEGIN
  -- Calls ops.order_attempt_admission_context, §2: exact authenticated candidate,
- -- unfinished admission stage and sha256(selection::text::bytea), before domain reads.
+ -- unfinished admission stage and canonical UTF8 JSON digest, before domain reads.
  v_context:=ops.order_attempt_admission_context(p_attempt,p_selection);
  v_tenant:=(v_context->>'tenant_id')::uuid;
  v_store:=(v_context->>'store_id')::uuid;

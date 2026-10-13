@@ -81,7 +81,7 @@ CREATE TABLE ops.order_attempts (
   OR (admission_finished AND facts_digest IS NOT NULL AND plan_digest IS NOT NULL
    AND ((state='PENDING' AND order_id IS NULL AND receipt IS NULL AND settled_at IS NULL
    AND plan_ciphertext IS NOT NULL AND octet_length(plan_ciphertext) BETWEEN 29 AND 1048604
-   AND plan_key_version IS NOT NULL AND plan_key_version ~ '^[A-Za-z0-9_-]{1,64}$')
+   AND plan_key_version IS NOT NULL AND plan_key_version ~ '^[A-Za-z0-9_.-]{1,64}$')
   OR (state IN ('COMMITTED','ABORTED') AND plan_ciphertext IS NULL AND plan_key_version IS NULL
    AND receipt IS NOT NULL AND jsonb_typeof(receipt)='object' AND octet_length(receipt::text)<=16384
    AND settled_at IS NOT NULL AND settled_at>=admitted_at
