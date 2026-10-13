@@ -7,8 +7,8 @@
   `cb4256f37586aad5139f1216fc92d6226fa70003`, merged in `0f1060a72`.
   Retired scopes reject fresh CAS, but preserve authorized exact replay during
   retention. Backend separate from paused PR #32.
-- Current artifact: independent schema/authority acceptance tests and storage;
-  production admission/execution is not implemented or enabled.
+- Current artifact: storage, private admission helpers and C1 SQL coordinator;
+  C1 Go orchestration and C2 execution remain incomplete and are not enabled.
 
 ## Evidence
 
@@ -24,7 +24,7 @@
 | `b54e4ee0b` | [38430742365](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38430742365) | real C1 preparation | `PASS=0 FAIL=2 SKIP=0 exit=1`; same migration setup failure, not causal C1 proof. Job `115412090363`, `admission-first-ci.log`. |
 | `ce14e8892` | [38432101298](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38432101298) | `focused:^TestOrderAttempt` | `PASS=32 FAIL=18 SKIP=0 exit=1`; storage/provenance/authority/facts and codec/model pass; absent C1, subject and job helpers are causal RED. One subject isolation fixture has a wrong tenant/store pair (23503) before its assertion; corrected separately, not counted as isolation proof. Job `115416759643`, `c1-seams-red-ci.log`. |
 | `4f1d17643` | [38432782403](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38432782403) | A1 retirement/schema baseline | RED `PASS=1 FAIL=5 SKIP=0 exit=1`: missing partial unique predicate, reactivation refused, pending retirement accepted, principal lock absent. Job `115419129700`, `scope-retirement-red-ci.log`. |
-| `21cf485b3` | [38433099080](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38433099080) | claim/job implementations plus native fixtures and replay RED | PENDING at dispatch; source isolated to this revision. No green claim. |
+| `21cf485b3` | [38433099080](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38433099080) | claim/job implementations plus native fixtures and replay RED | `PASS=27 FAIL=2 SKIP=0 exit=1`; claims, job guards, state, facts and provenance pass. Two exact-replay tests causally RED because prepare is absent (42883). Job `115421727992`, `c1-claims-jobs-ci.log`. |
 
 CI is the only execution environment. Local tests/builds/gates/server/PG:
 **NOT_RUN(owner CI-only directive)**. Static source review does not prove C2.

@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
@@ -275,6 +276,28 @@ func TestOrderAttemptClaimAdmissionLateDeadline(t *testing.T) {
 			 JOIN claims.merchant_origin_grants g ON g.create_attempt_id=a.attempt_id WHERE a.attempt_id=$1`, attempt).Scan(&ok)
 			if err != nil || !ok {
 				t.Fatalf("late C1 extended deadline: %v/%v", ok, err)
+			}
+		})
+	}
+}
+
+// Catalog-only lines share A16's 1000-unit bound even though an individual
+// comment claim remains bounded by its smaller native claims.lines allowance.
+func TestOrderAttemptClaimAdmissionCatalogQuantityBoundary(t *testing.T) {
+	for _, quantity := range []int{1000, 1001} {
+		t.Run(fmt.Sprint(quantity), func(t *testing.T) {
+			e := lbuNew(t)
+			selection := oaFactsSelection(e)
+			selection["for"] = map[string]any{"bundle_ids": []string{}, "conversation_id": nil}
+			selection["items"] = []map[string]any{{"sku_id": e.money, "quantity": quantity, "ordinal": 1, "origin_id": nil}}
+			tx, attempt := oaFactsCandidate(t, e, selection)
+			if quantity == 1001 {
+				oaClaimReject(t, tx, func(probe pgx.Tx) error { _, err := oaClaimCall(probe, attempt, selection); return err }, "PT400", "invalid_selection")
+				return
+			}
+			out, err := oaClaimCall(tx, attempt, selection)
+			if err != nil || len(out.Lines) != 1 || out.Lines[0].Quantity != 1000 || out.Lines[0].LivePriceMinor != nil {
+				t.Fatalf("catalog boundary must survive claim resolver without a live price: %+v err=%v", out, err)
 			}
 		})
 	}
