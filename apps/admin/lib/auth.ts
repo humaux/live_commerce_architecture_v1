@@ -501,7 +501,7 @@ export async function authenticatedStores(token: string) {
       typeof (item as Store).name === "string" &&
       /^[A-Z]{3}$/.test(String((item as Store).currency)) &&
       // Guard identity is server-derived and independent of login credentials; older read-only mocks can omit it.
-      ((item as Store).order_guard_scope === undefined || /^[a-f0-9]{64}$/.test(String((item as Store).order_guard_scope))) &&
+      ((item as Store).order_guard_scope === undefined || (typeof (item as Store).order_guard_scope === "string" && /^[a-f0-9]{64}$/.test((item as Store).order_guard_scope!))) &&
       // role/permissions are optional (mock servers omit them) but, when present, must be well-formed.
       ((item as Store).role === undefined || (item as Store).role === null || typeof (item as Store).role === "string") &&
       ((item as Store).permissions === undefined ||

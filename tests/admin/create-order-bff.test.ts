@@ -61,6 +61,7 @@ let answer: { status: number; body: string; contentType?: string } = {
   body: JSON.stringify({ items: [], next_cursor: "", unread_total: 0 }),
 };
 let storesStatus = 200;
+let orderGuardScope: unknown;
 const upstream = createServer((req, res) => {
   const chunks: Buffer[] = [];
   req.on("data", (chunk) => chunks.push(chunk));
@@ -73,7 +74,7 @@ const upstream = createServer((req, res) => {
           storesStatus === 200
             ? {
                 items: [
-                  { id: store, name: "Synthetic store", currency: "TWD" },
+                  { id: store, name: "Synthetic store", currency: "TWD", ...(orderGuardScope === undefined ? {} : { order_guard_scope: orderGuardScope }) },
                 ],
               }
             : { code: "unauthorized" },
@@ -107,6 +108,21 @@ const route = await import(
 );
 const rootRoute = await import(pathToFileURL(adminRoot + "app/api/stores/[store]/[...resource]/route.ts").href);
 test.after(() => upstream.close());
+test("actual stores BFF only accepts a string stable guard scope and preserves its exact opaque digest", async () => {
+  const { GET } = await import(pathToFileURL(adminRoot + "app/api/stores/route.ts").href);
+  const request = () => new Request(origin + "/api/stores", { headers: { cookie: `__Host-commerce_session=${session}` } });
+  try {
+    for (const malformed of [["c".repeat(64)], { scope: "c".repeat(64) }, "C".repeat(64), "c".repeat(63), null]) {
+      orderGuardScope = malformed;
+      const rejected = await GET(request());
+      assert.equal(rejected.status, 503, "a malformed identity hint must not become a writable store");
+    }
+    orderGuardScope = "c".repeat(64);
+    const accepted = await GET(request()); assert.equal(accepted.status, 200);
+    assert.equal(accepted.headers.get("cache-control"), "no-store");
+    assert.deepEqual(await accepted.json(), { items: [{ id: store, name: "Synthetic store", currency: "TWD", order_guard_scope: orderGuardScope }] });
+  } finally { orderGuardScope = undefined; }
+});
 type Options = {
   root?: boolean;
   method?: string;
