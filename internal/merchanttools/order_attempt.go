@@ -139,12 +139,13 @@ func (m *ManualOrders) withAttempt(ctx context.Context, token, store, key, kind 
 					s.TenantID, s.StoreID, attemptOperation, key).Scan(&previouslyBound); err != nil {
 					return err
 				}
+				// Calls fulfillment.order_intent_legacy_owner (0172) for EVERY missing intent before admission or capability creation.
+				// An exact old Begin without a canonical binding is UNKNOWN, even when today's secret would derive another owner.
+				hash := sha256.Sum256([]byte(token))
+				if err = inner.QueryRow(ctx, `SELECT coalesce(fulfillment.order_intent_legacy_owner($1,$2::uuid,$3,$4)::text,'')`, hash[:], store, key, stepKey(key, "begin")).Scan(&legacyOwner); err != nil {
+					return err
+				}
 				if previouslyBound {
-					// Calls fulfillment.order_intent_legacy_owner (0172): adoption proves the original owner from an exact durable Begin.
-					hash := sha256.Sum256([]byte(token))
-					if err = inner.QueryRow(ctx, `SELECT coalesce(fulfillment.order_intent_legacy_owner($1,$2::uuid,$3,$4)::text,'')`, hash[:], store, key, stepKey(key, "begin")).Scan(&legacyOwner); err != nil {
-						return err
-					}
 					if !command.ValidID(legacyOwner) {
 						return ErrUnavailable
 					}
@@ -158,17 +159,7 @@ func (m *ManualOrders) withAttempt(ctx context.Context, token, store, key, kind 
 				Bound bool `json:"bound"`
 			}
 			if err = command.Run(ctx, inner, s, attemptOperation, key, request, &binding, func() error {
-				if !legacyFound {
-					// A pre-amendment partial order has no full canonical A16 binding. The key alone cannot
-					// prove the target/send/customer body. Never let a newly supplied body claim that legacy order.
-					_, found, err := m.lookupAttempt(ctx, store, key)
-					if err != nil {
-						return err
-					}
-					if found {
-						return ErrUnavailable
-					}
-				}
+				// The definer already excluded every unbound exact old Begin; no current-secret buyer lookup can prove absence.
 				binding.Bound = true
 				return nil
 			}); err != nil {
@@ -262,14 +253,4 @@ func (m *ManualOrders) checkoutGuard(ctx context.Context, token, store, key, own
 		}
 		return checkout.ErrAttemptClosed
 	})
-}
-
-// lookupAttempt derives the private original capability/key and verifies actual durable checkout facts.
-func (m *ManualOrders) lookupAttempt(ctx context.Context, store, key string) (checkout.Result, bool, error) {
-	capability := m.capability("order", store, key)
-	// buyer.register_capability_limited: repeated tokens preserve the original owner and expiry; never replace an expired attempt.
-	if _, err := m.issuer.RegisterForTrustedStore(ctx, store, capability); err != nil {
-		return checkout.Result{}, false, err
-	}
-	return m.checkout.LookupBegin(ctx, capability, store, stepKey(key, "begin"))
 }

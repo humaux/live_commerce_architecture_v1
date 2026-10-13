@@ -42,6 +42,9 @@ func TestOrderIntentLegacyUnboundSecretRotationReturnsUnknown(t *testing.T) {
 			sessions := e.count(`SELECT count(*) FROM buyer.capability_sessions WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store())
 			orders, held := e.count(`SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store()), e.reserved()
 			links := e.count(`SELECT count(*) FROM checkout.order_links WHERE tenant_id=$1 AND store_id=$2 AND order_id=$3`, e.tenant(), e.store(), original)
+			if orders != 1 || held != 2 || links != 1 || e.orders() != 1 {
+				t.Fatal("legacy gap removed the original checkout, source, hold or redeemable link")
+			}
 			issuer, err := buyer.New(e.p.a.issuer, 30*24*time.Hour)
 			if err != nil {
 				t.Fatal("rotated issuer construction failed")
@@ -72,7 +75,7 @@ func TestOrderIntentLegacyUnboundSecretRotationReturnsUnknown(t *testing.T) {
 			if e.count(`SELECT count(*) FROM ops.order_intents WHERE tenant_id=$1 AND store_id=$2 AND idempotency_key=$3`, e.tenant(), e.store(), key) != 0 || e.count(`SELECT count(*) FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND operation IN ('merchanttools.order.attempt','merchanttools.order.attempt.recovery','merchanttools.order.checkout.closed')`, e.tenant(), e.store()) != 0 {
 				t.Fatal("unknown legacy body was admitted or falsely sealed as not_created")
 			}
-			if e.count(`SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store()) != orders || e.reserved() != held || e.count(`SELECT count(*) FROM checkout.order_links WHERE tenant_id=$1 AND store_id=$2 AND order_id=$3`, e.tenant(), e.store(), original) != links || e.plan.planned() != 0 {
+			if e.count(`SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store()) != orders || e.reserved() != held || e.orders() != 1 || e.count(`SELECT count(*) FROM checkout.order_links WHERE tenant_id=$1 AND store_id=$2 AND order_id=$3`, e.tenant(), e.store(), original) != links || e.plan.planned() != 0 {
 				t.Fatal("unknown legacy body changed checkout/hold/link/DM")
 			}
 		})
