@@ -326,6 +326,10 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const) for (const entry of ["se
       assert.equal(ready.env.saved.size, 1); assert.ok(node(h, n => n.props["data-testid"] === "drawer-unresolved-guard"));
       assert.equal(nodes(h.output).some(n => n.props["data-testid"] === "drawer-form"), false);
       assert.equal(node(h, n => n.props["data-testid"] === "drawer-recover-pending").props.disabled, false);
+      node(h, n => n.props["data-testid"] === "drawer-recover-pending").props.onClick();await h.settle();
+      assert.equal(recoveryWrites.length, 2);assert.equal(recoveryWrites[1].key, recoveryWrites[0].key, "ambiguous explicit recovery retries target the same server receipt");
+      assert.equal(recoveryWrites[1].body, "{}");assert.equal(ready.env.saved.size, 1);
+      assert.equal(ready.writes.length, entry === "server_refusal" ? 1 : 0, "recovery retry creates no new order intent");
     } else {
       assert.equal(ready.env.saved.size, 0, "only authoritative server response discharges the UX flag");
       if (state === "created") {
