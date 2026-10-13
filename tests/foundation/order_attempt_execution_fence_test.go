@@ -477,7 +477,7 @@ func TestOrderAttemptExecutionFencePrivateContext(t *testing.T) {
 	if err := seed.Commit(ctx); err != nil {
 		t.Fatal(err)
 	}
-	for _, role := range []string{"commerce_buyer_writer", "commerce_checkout_writer", "commerce_claims_writer", "commerce_inbox_writer"} {
+	for _, role := range []string{"commerce_buyer_writer", "commerce_checkout_writer", "commerce_claims_writer", "commerce_inbox_writer", "commerce_integration_writer"} {
 		t.Run(role, func(t *testing.T) {
 			tx, exact := oaFenceDomainTx(t, e, a, true)
 			if _, err := tx.Exec(ctx, `SELECT set_config('app.tenant_id','caller-marker',true),set_config('app.store_id','caller-marker',true),set_config('app.principal_id','caller-marker',true)`); err != nil {
@@ -557,6 +557,24 @@ func TestOrderAttemptExecutionFencePrivateContext(t *testing.T) {
 			oaFenceCode(t, raw, err, want)
 		})
 	}
+	// 0188's notification owner can read only the exact plan under the same
+	// protected current-xid fence; its EXECUTE grant supplies no fence authority.
+	for _, mode := range []string{"old-xid", "guc-only"} {
+		t.Run("commerce_integration_writer-"+mode, func(t *testing.T) {
+			tx, _ := oaFenceDomainTx(t, e, a, false)
+			if mode == "guc-only" {
+				if _, err := tx.Exec(ctx, `SELECT set_config('app.tenant_id',$1,true),set_config('app.store_id',$2,true),set_config('app.principal_id',$3,true),set_config('app.order_attempt_execution_xid',pg_current_xact_id()::text,true)`, e.tenant(), e.store(), e.p.f.principalA); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if _, err := tx.Exec(ctx, `SET LOCAL ROLE commerce_integration_writer`); err != nil {
+				t.Fatal(err)
+			}
+			var raw []byte
+			err := tx.QueryRow(ctx, `SELECT ops.order_attempt_execution_context($1,$2)`, a.AttemptID, string(plain)).Scan(&raw)
+			oaFenceCode(t, raw, err, "PT409")
+		})
+	}
 	for _, role := range []string{"commerce_runtime", "commerce_claims_worker"} {
 		t.Run(role+"-direct-context-denied", func(t *testing.T) {
 			pool := miPool(t, e.p.f, role)
@@ -569,7 +587,7 @@ func TestOrderAttemptExecutionFencePrivateContext(t *testing.T) {
 	err := e.p.f.owner.QueryRow(ctx, `SELECT p.prosecdef AND p.provolatile='v' AND p.prorettype='jsonb'::regtype
 	 AND r.rolname='commerce_order_attempt_owner' AND NOT (r.rolcanlogin OR r.rolsuper OR r.rolbypassrls)
 	 AND p.proconfig=ARRAY['search_path=pg_catalog']::text[] AND length(obj_description(p.oid,'pg_proc'))>0
-	 AND ARRAY(SELECT pg_get_userbyid(a.grantee)::text FROM aclexplode(p.proacl) a WHERE a.grantee<>p.proowner AND a.privilege_type='EXECUTE' ORDER BY 1)=ARRAY['commerce_buyer_writer','commerce_checkout_writer','commerce_claims_writer','commerce_inbox_writer']::text[]
+	 AND ARRAY(SELECT pg_get_userbyid(a.grantee)::text FROM aclexplode(p.proacl) a WHERE a.grantee<>p.proowner AND a.privilege_type='EXECUTE' ORDER BY 1)=ARRAY['commerce_buyer_writer','commerce_checkout_writer','commerce_claims_writer','commerce_inbox_writer','commerce_integration_writer']::text[]
 	 AND NOT EXISTS(SELECT 1 FROM aclexplode(p.proacl) a WHERE a.grantee<>p.proowner AND a.is_grantable)
 	 FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner WHERE p.oid=to_regprocedure('ops.order_attempt_execution_context(uuid,text)')`).Scan(&safe)
 	if err != nil || !safe {

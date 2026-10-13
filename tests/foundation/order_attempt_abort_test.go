@@ -494,20 +494,24 @@ func TestOrderAttemptAbortExpiredNativeMetadata(t *testing.T) {
 		t.Fatal(err)
 	}
 	oaAbortCleanupTx(t, tx)
-	attempt, scope, owner := randomUUID(), randomUUID(), randomUUID()
+	attempt, scope, owner, principal := randomUUID(), randomUUID(), randomUUID(), randomUUID()
 	// Storage-only past-seeded metadata proves the DB deadline boundary without
 	// altering immutable C1 rows/triggers or waiting fifteen minutes. Independent
 	// tests above use real Service.Admit; this fixture claims no C1/crypto success.
 	// The synthetic request digest also pins leading-zero byte decoding: one
 	// two-digit byte plus 31 low bytes must remain 32 bytes, never odd hex.
-	oaStateExec(t, tx, `SELECT set_config('app.tenant_id',$1,true),set_config('app.store_id',$2,true),set_config('app.principal_id',$3,true)`, f.tenantA, f.storeA1, f.principalA)
+	// This committed synthetic scope belongs to its own principal; an ABORTED
+	// attempt correctly leaves its active scope intact for the next explicit CAS.
+	oaStateExec(t, tx, `INSERT INTO identity.principals(id) VALUES($1)`, principal)
+	oaStateExec(t, tx, `INSERT INTO identity.memberships(tenant_id,principal_id) VALUES($1,$2)`, f.tenantA, principal)
+	oaStateExec(t, tx, `SELECT set_config('app.tenant_id',$1,true),set_config('app.store_id',$2,true),set_config('app.principal_id',$3,true)`, f.tenantA, f.storeA1, principal)
 	oaStateExec(t, tx, `INSERT INTO buyer.owners(id,tenant_id,store_id) VALUES($1,$2,$3)`, owner, f.tenantA, f.storeA1)
 	oaStateExec(t, tx, `INSERT INTO ops.order_attempt_creators(attempt_id,tenant_id,store_id,buyer_owner_id) VALUES($1,$2,$3,$4)`, attempt, f.tenantA, f.storeA1, owner)
-	oaStateExec(t, tx, `INSERT INTO ops.order_attempt_scopes(scope_id,tenant_id,store_id,principal_id,current_generation) VALUES($1,$2,$3,$4,1)`, scope, f.tenantA, f.storeA1, f.principalA)
+	oaStateExec(t, tx, `INSERT INTO ops.order_attempt_scopes(scope_id,tenant_id,store_id,principal_id,current_generation) VALUES($1,$2,$3,$4,1)`, scope, f.tenantA, f.storeA1, principal)
 	oaStateExec(t, tx, `INSERT INTO ops.order_attempts(attempt_id,tenant_id,store_id,scope_id,intent_generation,
 	 transport_key_digest,request_hash,request_schema_version,buyer_owner_id,admission_provenance,admitted_at,execute_by,state,enqueue_xid)
 	 VALUES($1,$2,$3,$4,1,sha256($1::uuid::text::bytea),decode('10'||repeat('01',31),'hex'),1,$5,
-	 jsonb_build_object('principal_id',$6::text),statement_timestamp()-interval '16 minutes',statement_timestamp()-interval '1 minute','PENDING',pg_current_xact_id())`, attempt, f.tenantA, f.storeA1, scope, owner, f.principalA)
+	 jsonb_build_object('principal_id',$6::text),statement_timestamp()-interval '16 minutes',statement_timestamp()-interval '1 minute','PENDING',pg_current_xact_id())`, attempt, f.tenantA, f.storeA1, scope, owner, principal)
 	oaJobInsert(t, tx, attempt)
 	oaJobFinish(t, tx, attempt)
 	oaStateExec(t, tx, `INSERT INTO ops.order_attempt_subjects(tenant_id,store_id,subject_kind,subject_id,attempt_id) VALUES($1,$2,'buyer_owner',$3,$4)`, f.tenantA, f.storeA1, owner, attempt)
