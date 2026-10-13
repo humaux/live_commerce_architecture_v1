@@ -3,7 +3,8 @@
   "runs": [
     38380064266,
     38381067824,
-    38381815228
+    38381815228,
+    38383142992
   ],
   "logs": [
     {
@@ -26,6 +27,13 @@
       "raw_sha256": "37a2ec642d6365e6b9f8bb35ff49247d169a1972db433e55c4647f96d8e99219",
       "lossless_archive": "ci-fix-38381815228.log.gz",
       "archive_sha256": "9d156db66f4455261d80c8f50a4f39cd81b4f230e3afa86e3138fd7613604675"
+    },
+    {
+      "raw_name": "ci-red-38383142992.log",
+      "raw_size_bytes": 281838,
+      "raw_sha256": "3bcc5abdf6cdd8ac478ac123501d056524e2629713d2e2a565319323e56955dc",
+      "lossless_archive": "ci-red-38383142992.log.gz",
+      "archive_sha256": "78cd7099b2a88e93bf7a0fc32cf1131b9c82f720ff1fd5b7d65d4fee1b5911ab"
     }
   ]
 }
