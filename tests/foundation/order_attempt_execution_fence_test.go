@@ -72,7 +72,7 @@ func TestOrderAttemptExecutionFenceWireAndTransactionWitness(t *testing.T) {
 	a := oaFenceAdmit(t, e)
 	ctx := context.Background()
 	var before []byte
-	if err := e.p.f.owner.QueryRow(ctx, `SELECT to_jsonb(a)-'execution_xid' FROM ops.order_attempts a WHERE attempt_id=$1`, a.AttemptID).Scan(&before); err != nil {
+	if err := e.p.f.owner.QueryRow(ctx, `SELECT to_jsonb(a) FROM ops.order_attempts a WHERE attempt_id=$1`, a.AttemptID).Scan(&before); err != nil {
 		t.Fatal(err)
 	}
 	// Revoking placement permission cannot invalidate the durable admission.
@@ -106,7 +106,7 @@ func TestOrderAttemptExecutionFenceWireAndTransactionWitness(t *testing.T) {
 	var persisted string
 	var after []byte
 	var orders, carts, jobs int
-	err = e.p.f.owner.QueryRow(ctx, `SELECT execution_xid::text,to_jsonb(a)-'execution_xid',
+	err = e.p.f.owner.QueryRow(ctx, `SELECT (SELECT f.execution_xid::text FROM ops.order_attempt_execution_fences f WHERE f.attempt_id=a.attempt_id),to_jsonb(a),
 	 (SELECT count(*) FROM checkout.orders WHERE tenant_id=a.tenant_id AND store_id=a.store_id AND owner_id=a.buyer_owner_id),
 	 (SELECT count(*) FROM storefront.carts WHERE tenant_id=a.tenant_id AND store_id=a.store_id AND owner_id=a.buyer_owner_id),
 	 (SELECT count(*) FROM river.river_job WHERE kind='order_attempt_v1' AND args->>'attempt_id'=a.attempt_id::text)
@@ -123,7 +123,7 @@ func TestOrderAttemptExecutionFenceWireAndTransactionWitness(t *testing.T) {
 	if err = next.QueryRow(ctx, `SELECT pg_current_xact_id()::text`).Scan(&nextXID); err != nil || nextXID == xid {
 		t.Fatalf("committed witness must not authorize the next transaction: %v", err)
 	}
-	_, err = next.Exec(ctx, `UPDATE ops.order_attempts SET execution_xid=pg_current_xact_id() WHERE attempt_id=$1`, a.AttemptID)
+	_, err = next.Exec(ctx, `UPDATE ops.order_attempt_execution_fences SET execution_xid=pg_current_xact_id() WHERE attempt_id=$1`, a.AttemptID)
 	oaFenceCode(t, nil, err, "42501")
 }
 
@@ -241,7 +241,7 @@ func TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure(t *testing.T) {
 		})
 	}
 	var witnessAbsent bool
-	if err := e.p.f.owner.QueryRow(ctx, `SELECT execution_xid IS NULL FROM ops.order_attempts WHERE attempt_id=$1`, a.AttemptID).Scan(&witnessAbsent); err != nil || !witnessAbsent {
+	if err := e.p.f.owner.QueryRow(ctx, `SELECT NOT EXISTS(SELECT 1 FROM ops.order_attempt_execution_fences WHERE attempt_id=$1)`, a.AttemptID).Scan(&witnessAbsent); err != nil || !witnessAbsent {
 		t.Fatal("rollback/denied callers persisted execution authority")
 	}
 }

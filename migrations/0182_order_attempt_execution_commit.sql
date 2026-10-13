@@ -37,7 +37,9 @@ BEGIN
   WHERE x.attempt_id=NEW.create_attempt_id AND x.tenant_id=NEW.tenant_id
    AND x.store_id=NEW.store_id AND x.buyer_owner_id=NEW.owner_id;
  IF NOT FOUND OR NOT a.admission_finished OR a.state IS DISTINCT FROM 'COMMITTED'
-  OR a.execution_xid IS DISTINCT FROM pg_current_xact_id() OR a.order_id IS NULL THEN
+  OR a.order_id IS NULL OR NOT EXISTS(SELECT 1 FROM ops.order_attempt_execution_fences f
+   WHERE f.attempt_id=a.attempt_id AND f.tenant_id=a.tenant_id AND f.store_id=a.store_id
+    AND f.execution_xid=pg_current_xact_id()) THEN
   RAISE EXCEPTION 'order attempt execution is unfinished' USING ERRCODE='23514';
  END IF;
  -- 0170 binds receipt state/attempt/generation/order to this immutable terminal

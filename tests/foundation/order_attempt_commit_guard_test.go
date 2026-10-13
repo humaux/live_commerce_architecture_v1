@@ -45,9 +45,11 @@ func TestOrderAttemptCommitGuardRejectsTerminalPartials(t *testing.T) {
 				order := randomUUID()
 				oaStateExec(t, tx, `UPDATE ops.order_attempts SET state='COMMITTED',order_id=$2::uuid,
 				 plan_ciphertext=NULL,plan_key_version=NULL,settled_at=clock_timestamp(),
-				 execution_xid=CASE WHEN $3::boolean THEN $4::xid8 ELSE execution_xid END,
 				 receipt=jsonb_build_object('state','COMMITTED','attempt_id',attempt_id,'intent_generation',intent_generation,'order_id',$2::uuid)
-				 WHERE attempt_id=$1`, a.AttemptID, order, mode == "old-xid", oldXID)
+				 WHERE attempt_id=$1`, a.AttemptID, order)
+				if mode == "old-xid" {
+					oaStateExec(t, tx, `UPDATE ops.order_attempt_execution_fences SET execution_xid=$2::xid8 WHERE attempt_id=$1`, a.AttemptID, oldXID)
+				}
 				if mode == "committed-fake-order" {
 					want = "order attempt order is missing"
 				}

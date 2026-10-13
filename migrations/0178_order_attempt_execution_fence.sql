@@ -5,12 +5,37 @@
 -- runtime disclosure; only a protected current-transaction witness admits helpers.
 -- This migration does not execute, settle, abort or enqueue an order attempt.
 
-ALTER TABLE ops.order_attempts ADD COLUMN execution_xid xid8;
-COMMENT ON COLUMN ops.order_attempts.execution_xid IS
- 'Protected execution fence witness: assigned only after attempt FOR UPDATE; private helpers require pg_current_xact_id(), never a caller GUC or a previous transaction witness.';
+-- Keep the mutable witness off the attempt row. Updating that row here and
+-- again at settlement makes PostgreSQL recheck even unchanged FKs (the old
+-- tuple then belongs to this Tx), acquiring scope KEY SHARE after the attempt.
+-- The separate witness references only the already-held attempt, never scope.
+CREATE TABLE ops.order_attempt_execution_fences (
+ attempt_id uuid PRIMARY KEY,
+ tenant_id uuid NOT NULL,
+ store_id uuid NOT NULL,
+ execution_xid xid8 NOT NULL,
+ FOREIGN KEY(tenant_id,store_id,attempt_id)
+  REFERENCES ops.order_attempts(tenant_id,store_id,attempt_id) ON DELETE CASCADE
+);
+ALTER TABLE ops.order_attempt_execution_fences OWNER TO commerce_order_attempt_owner;
+ALTER TABLE ops.order_attempt_execution_fences ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ops.order_attempt_execution_fences FORCE ROW LEVEL SECURITY;
+CREATE POLICY order_attempt_fence_owner ON ops.order_attempt_execution_fences
+ TO commerce_order_attempt_owner
+ USING(execution_xid=pg_current_xact_id() OR
+  (tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid
+   AND store_id=nullif(current_setting('app.store_id',true),'')::uuid))
+ WITH CHECK(tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid
+  AND store_id=nullif(current_setting('app.store_id',true),'')::uuid);
+REVOKE ALL ON ops.order_attempt_execution_fences FROM PUBLIC;
+COMMENT ON TABLE ops.order_attempt_execution_fences IS
+ 'Protected current-xid witness written only after attempt FOR UPDATE. Separate storage avoids a second attempt UPDATE and implicit reverse scope-FK lock. Old transaction witnesses grant no authority; cascade with retained attempt deletion. No runtime grants or PII.';
 CREATE POLICY order_attempt_execution_locator ON ops.order_attempts
  FOR SELECT TO commerce_order_attempt_owner
- USING(execution_xid=pg_current_xact_id() AND state='PENDING' AND admission_finished);
+ USING(state='PENDING' AND admission_finished AND EXISTS(
+  SELECT 1 FROM ops.order_attempt_execution_fences f WHERE f.attempt_id=order_attempts.attempt_id
+   AND f.tenant_id=order_attempts.tenant_id AND f.store_id=order_attempts.store_id
+   AND f.execution_xid=pg_current_xact_id()));
 
 -- Schema visibility is required to call the exact granted entries; it does not
 -- grant table access, admission, or EXECUTE on any private context helper.
@@ -30,7 +55,8 @@ BEGIN
  PERFORM set_config('app.principal_id','',true);
  SELECT x.* INTO a FROM ops.order_attempts x WHERE x.attempt_id=p_attempt
   AND x.intent_generation=p_generation AND x.state='PENDING' AND x.admission_finished
-  AND x.execution_xid=pg_current_xact_id();
+  AND EXISTS(SELECT 1 FROM ops.order_attempt_execution_fences f WHERE f.attempt_id=x.attempt_id
+   AND f.tenant_id=x.tenant_id AND f.store_id=x.store_id AND f.execution_xid=pg_current_xact_id());
  IF NOT FOUND THEN RAISE EXCEPTION 'attempt_not_fenced' USING ERRCODE='PT409'; END IF;
  result:=jsonb_build_object('schema',a.request_schema_version,'attempt_id',a.attempt_id,
   'scope_id',a.scope_id,'generation',a.intent_generation,'tenant_id',a.tenant_id,
@@ -122,11 +148,13 @@ BEGIN
   RAISE EXCEPTION 'receipt_expired' USING ERRCODE='PT409';
  END IF;
  IF a.state IN ('COMMITTED','ABORTED') THEN
-  -- Terminal replay does not update even execution_xid and needs no plan body.
+  -- Terminal replay writes no witness and needs no plan body.
   result:=jsonb_build_object('state',a.state,'receipt',a.receipt);
  ELSE
   IF a.state<>'PENDING' THEN RAISE EXCEPTION 'intent_conflict' USING ERRCODE='PT409'; END IF;
-  UPDATE ops.order_attempts SET execution_xid=pg_current_xact_id() WHERE attempt_id=a.attempt_id;
+  INSERT INTO ops.order_attempt_execution_fences(attempt_id,tenant_id,store_id,execution_xid)
+   VALUES(a.attempt_id,a.tenant_id,a.store_id,pg_current_xact_id())
+   ON CONFLICT(attempt_id) DO UPDATE SET execution_xid=EXCLUDED.execution_xid;
   binding:=ops.order_attempt_fence_context(a.attempt_id,a.intent_generation);
   result:=jsonb_build_object('state',a.state,'receipt',a.receipt,'binding',binding,
    'envelope',jsonb_build_object('key_version',a.plan_key_version,
@@ -161,7 +189,9 @@ BEGIN
  PERFORM set_config('app.store_id','',true);
  PERFORM set_config('app.principal_id','',true);
  SELECT x.* INTO a FROM ops.order_attempts x WHERE x.attempt_id=p_attempt
-  AND x.execution_xid=pg_current_xact_id() AND x.state='PENDING' AND x.admission_finished;
+  AND x.state='PENDING' AND x.admission_finished
+  AND EXISTS(SELECT 1 FROM ops.order_attempt_execution_fences f WHERE f.attempt_id=x.attempt_id
+   AND f.tenant_id=x.tenant_id AND f.store_id=x.store_id AND f.execution_xid=pg_current_xact_id());
  IF NOT FOUND THEN RAISE EXCEPTION 'attempt_not_fenced' USING ERRCODE='PT409'; END IF;
  binding:=ops.order_attempt_fence_context(p_attempt,a.intent_generation);
  IF clock_timestamp()>=a.execute_by THEN
