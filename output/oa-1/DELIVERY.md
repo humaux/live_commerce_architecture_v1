@@ -36,6 +36,11 @@
 | `3a9659561` | [38442987734](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38442987734) | destination/arithmetic/atomic boundary FIRST | Compile failure: undefined test helper `oaStateCode`; `PASS=0 FAIL=0 SKIP=0 exit=1`. Behavioral **NOT_RUN**. Corrected to existing `oaFenceCode` in `03e831309`. Job `115454631450`, `destination-atomic-red-ci.log`. |
 | `447f0b64b` | [38443900143](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38443900143) | same destination/arithmetic/atomic boundary assertions, positive browser-cart sentinel | Causal RED `PASS=0 FAIL=8 SKIP=0 exit=1`: frozen arithmetic verifier absent; native PG COMMIT incorrectly accepts a partial C2 while PENDING; six destination groups reach absent helper/ACL after real C1/fence/quote. Job `115457395814`, `destination-atomic-behavior-red-ci.log`. |
 
+| `02e32a928` | [38444964650](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38444964650) | execution fence, frozen calculation, quote and source facts | GREEN `PASS=19 FAIL=0 SKIP=0 exit=0`; job `115462207527`, `quote-calculation-green-ci.log`. This verifies these seams, not full C2 placement. |
+| `5c4b05944` | [38445363970](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38445363970) | abort implementation | `PASS=5 FAIL=5 SKIP=0 exit=1`; odd hex (22023), scoped subject fixture and own-admission refusal require repair. Job `115464038511`, `abort-first-ci.log`. |
+| `f86a8538c` | [38445601229](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38445601229) | atomic commit guard plus abort | `PASS=6 FAIL=7 SKIP=0 exit=1`; atomic guard assertions pass, abort errors remain and worker earlier-lock test times out. Job `115464160350`, `atomic-abort-first-ci.log`. No abort GREEN claim. |
+| `d0427f355` | [38446333503](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38446333503) | destination plus atomic commit guard | Running; parent owns result polling. No result claimed. |
+
 CI is the only execution environment. Local tests/builds/gates/server/PG:
 **NOT_RUN(owner CI-only directive)**. Static source review does not prove C2.
 CI workflow gate timeout is 150 minutes; the parent tracks the run and reads
@@ -61,6 +66,14 @@ its terminal result/log. No acceptance claim until assertions execute.
 - §1/§3.1/§6k → `TestOrderAttemptExecutionFence*`: actual login roles,
   attempt-first native waits, protected current-transaction witness,
   current-read recheck and retained terminal replay.
+- §1/§3 all-or-nothing C2 → `TestOrderAttemptExecutionAtomicBoundary*`,
+  `TestOrderAttemptCommitGuard*`: native COMMIT refuses a PENDING/ABORTED
+  cart, fake order binding or old execution witness; lock-only PENDING stays legal.
+- §2 frozen monetary facts → `TestOrderAttemptExecutionArithmetic*` verifies
+  the accepted calculation using the original pricing algorithm and ordered lines.
+- §2/§6j frozen destination and no browser side effects →
+  `TestOrderAttemptDestination*`: home/CVS native rows, immutable source facts,
+  enabled service barrier, private helper ACL and attempt namespace isolation.
 - Remaining §6 matrix and mutation proofs: NOT_RUN / implementation pending;
   planned mapping is in the unit brief. No schema-only or MODEL_ONLY result
   is described as REAL_PG placement acceptance.
