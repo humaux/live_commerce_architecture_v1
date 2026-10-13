@@ -84,5 +84,5 @@
     }
   ],
   "scope": "Original full browser mode at merged frozen source; fourteen owned executable hashes delivery-bound. Default source drift is historical SKIP; strict1 verifies delivery. Shared context and CI selector hashes informational. Matching sources require all exact artifact bytes, file/title/outcomes and identities.",
-  "frozen_identity_record_sha256": "f1a92950a92fd854f18e05ea9b3119e88a40977d52cdbd602c569da9289f2c95"
+  "frozen_identity_record_sha256": "642cea683c15e6cfbedfffba7bfcbf982d6cdbc208edfdbcfe0fc7793254a188"
 }

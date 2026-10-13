@@ -1,9 +1,10 @@
 // Purpose: Exercise canonical matrix evidence with isolated byte, source and run-outcome corruptions.
-// Depends on: the real evidence validator and canonical receipts; isolated current-table fixtures are MODEL_ONLY.
+// Depends on: the real evidence validator and immutable canonical receipts/snapshots; no runtime Git objects.
 // Used by: foundation shards; fixture mutations never modify delivered evidence or source files.
 package foundation_test
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/json"
@@ -530,6 +531,69 @@ func productEditorMatrixReadFixture(t *testing.T, root, path string) []byte {
 // unit's source-bound evidence; its executable producers remain fail-closed.
 func TestProductEditorMatrixLedgerEvidenceSharedSources(t *testing.T) {
 	productEditorMatrixEvidenceMembershipControls(t)
+	t.Run("content-rehashed-test-node-receipt", func(t *testing.T) {
+		root, canonical := productEditorMatrixEvidenceFixture(t)
+		path := filepath.Dir(canonical) + "/test-node.json"
+		receipt := productEditorMatrixJSONFixture(t, root, path)
+		if receipt["exit_code"] != float64(0) {
+			t.Fatal("original test-node receipt must retain its recorded success")
+		}
+		receipt["exit_code"] = 1
+		data, _ := json.Marshal(receipt)
+		productEditorMatrixRehashFixture(t, root, canonical, path, data)
+		gate := "tests/foundation/catalog_matrix_ledger_test.go"
+		productEditorMatrixWriteFixture(t, root, gate, append(productEditorMatrixReadFixture(t, root, gate), '\n'))
+		var drift productEditorMatrixEvidenceDrift
+		if err := validateProductEditorMatrixEvidence(root); err == nil || errors.As(err, &drift) {
+			t.Fatalf("rehashed original receipt corruption must fail before drift: %v", err)
+		}
+	})
+	t.Run("changed-checkout-review-keeps-frozen-bytes", func(t *testing.T) {
+		checkout := t.TempDir()
+		const evidence = "output/matrix-ledger-enforce/historical-evidence"
+		index := productEditorMatrixJSONFixture(t, "../..", evidence+"/ARTIFACTS.json")
+		packagePaths := []string{evidence + "/ARTIFACTS.json", "output/matrix-ledger-enforce/DELIVERY.md"}
+		for path := range index["artifacts_sha256"].(map[string]any) {
+			packagePaths = append(packagePaths, path)
+		}
+		for _, path := range packagePaths {
+			if err := os.MkdirAll(filepath.Dir(filepath.Join(checkout, path)), 0700); err != nil {
+				t.Fatal(err)
+			}
+			productEditorMatrixWriteFixture(t, checkout, path, productEditorMatrixReadFixture(t, "../..", path))
+		}
+		paths := append([]string{}, productEditorMatrixEvidenceSources...)
+		manifest := productEditorMatrixJSONFixture(t, "../..", "output/matrix-ledger-enforce/historical-evidence/browser/browser-evidence.json")
+		for path := range manifest["informational_source_files_sha256"].(map[string]any) {
+			paths = append(paths, path)
+		}
+		record := productEditorMatrixJSONFixture(t, "../..", "output/matrix-ledger-enforce/historical-evidence/FROZEN-IDENTITIES.json")
+		for path := range record["source_snapshots"].(map[string]any) {
+			paths = append(paths, path)
+		}
+		for _, path := range paths {
+			if err := os.MkdirAll(filepath.Dir(filepath.Join(checkout, path)), 0700); err != nil {
+				t.Fatal(err)
+			}
+			productEditorMatrixWriteFixture(t, checkout, path, productEditorMatrixReadFixture(t, "../..", path))
+		}
+		const consumer = "tests/admin/product-review.acceptance.ts"
+		changed := append(productEditorMatrixReadFixture(t, checkout, consumer), []byte("\n// future checkout review change\n")...)
+		productEditorMatrixWriteFixture(t, checkout, consumer, changed)
+		root, canonical := productEditorMatrixEvidenceFixtureFromCheckout(t, checkout)
+		frozen := productEditorMatrixJSONFixture(t, root, filepath.Dir(canonical)+"/FROZEN-IDENTITIES.json")
+		snapshot := frozen["source_snapshots"].(map[string]any)[consumer].(string)
+		original := record["source_snapshots"].(map[string]any)[consumer].(string)
+		if !bytes.Equal(productEditorMatrixReadFixture(t, root, snapshot), productEditorMatrixReadFixture(t, "../..", original)) {
+			t.Fatal("fixture must preserve original frozen consumer bytes after a checkout edit")
+		}
+		if !bytes.Equal(productEditorMatrixReadFixture(t, root, consumer), changed) {
+			t.Fatal("fixture must retain the changed informational checkout consumer")
+		}
+		if err := validateProductEditorMatrixEvidence(root); err != nil {
+			t.Fatalf("future informational consumer must not invalidate fixed historical fixture: %v", err)
+		}
+	})
 	for _, path := range []string{
 		"scripts/dev/test-node.sh", "scripts/dev/test-local.sh", "docs/delivery/GATES.md", "playwright.config.ts",
 		"tests/foundation/testdata/product_editor_mobile_matrix_ledger.json",
@@ -634,151 +698,53 @@ func productEditorMatrixEvidenceMembershipControls(t *testing.T) {
 
 func productEditorMatrixEvidenceFixture(t *testing.T) (string, string) {
 	t.Helper()
+	return productEditorMatrixEvidenceFixtureFromCheckout(t, "../..")
+}
+
+// Copy the immutable canonical package without regenerating claims or native
+// outcomes. Packaged tested-source snapshots support shallow CI checkouts;
+// informational working consumers remain the caller's current checkout bytes.
+func productEditorMatrixEvidenceFixtureFromCheckout(t *testing.T, checkout string) (string, string) {
+	t.Helper()
 	root := t.TempDir()
-	const canonical = "output/matrix-ledger-enforce/fixture/browser"
 	delivery := productEditorMatrixReadFixture(t, "../..", "output/matrix-ledger-enforce/DELIVERY.md")
 	dir := regexp.MustCompile(`\[SOURCE\.json\]\(([A-Za-z0-9._-]+)/SOURCE\.json\)`).FindSubmatch(delivery)
 	if dir == nil {
 		t.Fatal("fixture needs DELIVERY's current canonical evidence directory")
 	}
-	var manifest map[string]any
-	if err := json.Unmarshal(productEditorMatrixReadFixture(t, "../..", "output/matrix-ledger-enforce/"+string(dir[1])+"/browser/browser-evidence.json"), &manifest); err != nil {
-		t.Fatal(err)
-	}
+	evidence := "output/matrix-ledger-enforce/" + string(dir[1])
+	canonical := evidence + "/browser"
 	write := func(path string, data []byte) {
 		t.Helper()
 		full := filepath.Join(root, path)
 		if err := os.MkdirAll(filepath.Dir(full), 0700); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(full, data, 0600); err != nil {
-			t.Fatal(err)
-		}
+		productEditorMatrixWriteFixture(t, root, path, data)
 	}
-	hash := func(data []byte) string { return fmt.Sprintf("%x", sha256.Sum256(data)) }
-	sources := map[string]string{}
-	for path := range manifest["source_files_sha256"].(map[string]any) {
-		data := productEditorMatrixReadFixture(t, "../..", path)
-		write(path, data)
-		sources[path] = hash(data)
+	index := productEditorMatrixJSONFixture(t, "../..", evidence+"/ARTIFACTS.json")
+	for path := range index["artifacts_sha256"].(map[string]any) {
+		write(path, productEditorMatrixReadFixture(t, "../..", path))
 	}
-	// Isolated corruption fixtures rebind current executable bytes; delivered
-	// canonical evidence still must come from an actual run on frozen sources.
-	for _, path := range productEditorMatrixEvidenceSources {
-		data := productEditorMatrixReadFixture(t, "../..", path)
-		write(path, data)
-		sources[path] = hash(data)
-	}
-	manifest["source_files_sha256"] = sources
+	write(evidence+"/ARTIFACTS.json", productEditorMatrixReadFixture(t, "../..", evidence+"/ARTIFACTS.json"))
+	write("output/matrix-ledger-enforce/DELIVERY.md", delivery)
+	manifest := productEditorMatrixJSONFixture(t, "../..", canonical+"/browser-evidence.json")
+	record := productEditorMatrixJSONFixture(t, "../..", evidence+"/FROZEN-IDENTITIES.json")
+	sources := manifest["source_files_sha256"].(map[string]any)
 	if shared, ok := manifest["informational_source_files_sha256"].(map[string]any); ok {
 		for path := range shared {
-			data := productEditorMatrixReadFixture(t, "../..", path)
-			write(path, data)
-			shared[path] = hash(data)
+			write(path, productEditorMatrixReadFixture(t, checkout, path))
 		}
 	}
-	// MODEL_ONLY: these isolated corruption fixtures exercise the validator with
-	// the current table, which can evolve beyond the historical real browser run.
-	// This modeled ledger never modifies or proves the delivered canonical package.
-	rows := []productEditorMatrixLedgerRow{}
-	perLocale := map[string]int{}
-	for key, claim := range productEditorMatrixLedgerExpected() {
-		expected, _ := json.Marshal(claim)
-		rows = append(rows, productEditorMatrixLedgerRow{productEditorMatrixLedgerKey: key, Expected: expected, Actual: "PASS"})
-		perLocale[key.Locale]++
-	}
-	sort.Slice(rows, func(i, j int) bool {
-		left, _ := json.Marshal(rows[i].productEditorMatrixLedgerKey)
-		right, _ := json.Marshal(rows[j].productEditorMatrixLedgerKey)
-		return string(left) < string(right)
-	})
-	ledgerData, _ := json.Marshal(rows)
-	manifest["ledger"] = map[string]any{"raw_rows": len(rows), "required_unique_PASS": len(rows), "per_locale": perLocale, "width": 390}
-	artifacts := map[string]string{}
-	// Copy the entire original package before MODEL_ONLY semantic rebinding.
-	// Its complete names stay subject to the same independent oracle as delivery.
-	originalEvidence := "output/matrix-ledger-enforce/" + string(dir[1])
-	originalIndex := productEditorMatrixJSONFixture(t, "../..", originalEvidence+"/ARTIFACTS.json")
-	for path := range originalIndex["artifacts_sha256"].(map[string]any) {
-		if strings.HasSuffix(path, "/FROZEN-MEMBERSHIP.json") {
+	for path, raw := range record["source_snapshots"].(map[string]any) {
+		if _, bound := sources[path]; !bound {
+			write(path, productEditorMatrixReadFixture(t, checkout, path))
 			continue
 		}
-		data := productEditorMatrixReadFixture(t, "../..", path)
-		copyPath := filepath.Dir(canonical) + strings.TrimPrefix(path, originalEvidence)
-		write(copyPath, data)
-		artifacts[copyPath] = hash(data)
+		// All fourteen historical producer hashes remain authoritative; no
+		// current consumer bytes are synthesized into frozen evidence.
+		write(path, productEditorMatrixReadFixture(t, "../..", raw.(string)))
 	}
-	copies := []map[string]string{}
-	for _, entry := range manifest["copied_native_bytes"].([]any) {
-		old := entry.(map[string]any)
-		name := filepath.Base(old["canonical"].(string))
-		path := canonical + "/" + name
-		data := productEditorMatrixReadFixture(t, "../..", old["canonical"].(string))
-		if name == "product-editor-click-ledger.json" {
-			data = ledgerData
-		}
-		write(path, data)
-		artifacts[path] = hash(data)
-		copies = append(copies, map[string]string{"canonical": path, "source_native": "fixture-only/" + name, "sha256": hash(data)})
-	}
-	manifest["copied_native_bytes"] = copies
-	// MODEL_ONLY frozen metadata and source snapshots rebind the copied fixture,
-	// never native delivered evidence. Its case source remains the sole table.
-	frozen := productEditorMatrixJSONFixture(t, "../..", "output/matrix-ledger-enforce/"+string(dir[1])+"/FROZEN-IDENTITIES.json")
-	frozen["fixture_evidence_class"] = "MODEL_ONLY"
-	frozen["locale_labels"] = productEditorMatrixLedgerLocales
-	frozen["test_identities"] = map[string][]string{"playwright.log": productEditorMatrixCurrentRunIdentities(12), "cc12-playwright.log": productEditorMatrixCurrentRunIdentities(2)}
-	frozenHashes, snapshots, blobs := map[string]string{}, map[string]string{}, map[string]string{}
-	for path := range frozen["source_snapshots"].(map[string]any) {
-		data := productEditorMatrixReadFixture(t, "../..", path)
-		write(path, data)
-		snapshot := filepath.Dir(canonical) + strings.TrimPrefix(frozen["source_snapshots"].(map[string]any)[path].(string), originalEvidence)
-		write(snapshot, data)
-		snapshots[path], frozenHashes[path], artifacts[snapshot], blobs[path] = snapshot, hash(data), hash(data), productEditorMatrixGitBlob(data)
-	}
-	frozen["source_files_sha256"], frozen["source_snapshots"], frozen["git_blob_ids"] = frozenHashes, snapshots, blobs
-	// MODEL_ONLY membership records this isolated package, including metadata
-	// written below. Names only avoid a circular dependency on their digests.
-	evidence := filepath.Dir(canonical)
-	membershipPath := evidence + "/FROZEN-MEMBERSHIP.json"
-	members := []string{"FROZEN-MEMBERSHIP.json"}
-	for path := range artifacts {
-		members = append(members, strings.TrimPrefix(path, evidence+"/"))
-	}
-	sort.Strings(members)
-	membershipData, _ := json.Marshal(map[string]any{"tested_source_commit": manifest["tested_source_commit"], "package_members": members, "fixture_evidence_class": "MODEL_ONLY"})
-	write(membershipPath, membershipData)
-	artifacts[membershipPath] = hash(membershipData)
-	frozen["package_membership_sha256"] = hash(membershipData)
-	frozenData, _ := json.Marshal(frozen)
-	frozenPath := filepath.Dir(canonical) + "/FROZEN-IDENTITIES.json"
-	write(frozenPath, frozenData)
-	artifacts[frozenPath] = hash(frozenData)
-	manifest["frozen_identity_record_sha256"] = hash(frozenData)
-	data, err := json.Marshal(manifest)
-	if err != nil {
-		t.Fatal(err)
-	}
-	write(canonical+"/browser-evidence.json", data)
-	artifacts[canonical+"/browser-evidence.json"] = hash(data)
-	source, _ := json.Marshal(map[string]any{"tested_source_commit": manifest["tested_source_commit"], "source_files_sha256": sources, "frozen_identity_record_sha256": hash(frozenData)})
-	write("output/matrix-ledger-enforce/fixture/SOURCE.json", source)
-	artifacts["output/matrix-ledger-enforce/fixture/SOURCE.json"] = hash(source)
-	// MODEL_ONLY rebinds a COPY of the independent frozen run receipt. This is
-	// fixture support, never an actual browser acceptance or canonical mutation.
-	runReceipt := productEditorMatrixJSONFixture(t, "../..", "output/matrix-ledger-enforce/"+string(dir[1])+"/browser-product-editor.json")
-	runReceipt["fixture_evidence_class"] = "MODEL_ONLY"
-	runReceipt["tested_source_commit"] = manifest["tested_source_commit"]
-	runReceipt["source_commit_after"] = manifest["tested_source_commit"]
-	runReceipt["source_files_sha256"] = sources
-	runReceipt["source_files_sha256_after"] = sources
-	runData, _ := json.Marshal(runReceipt)
-	runPath := "output/matrix-ledger-enforce/fixture/browser-product-editor.json"
-	write(runPath, runData)
-	artifacts[runPath] = hash(runData)
-	index, _ := json.Marshal(map[string]any{"tested_source_commit": manifest["tested_source_commit"], "source_files_sha256": sources, "artifacts_sha256": artifacts})
-	write("output/matrix-ledger-enforce/fixture/ARTIFACTS.json", index)
-	write("output/matrix-ledger-enforce/DELIVERY.md", []byte(fmt.Sprintf("Tested source: **`%s`**\n[SOURCE.json](fixture/SOURCE.json)\n", manifest["tested_source_commit"])))
 	return root, canonical
 }
 
@@ -1187,8 +1153,24 @@ func TestProductEditorMatrixLedgerEvidenceRunIdentityMetadata(t *testing.T) {
 		text = regexp.MustCompile(`(?m) \([\d.]+(?:ms|s|m)\)$`).ReplaceAllString(text, " (999.9s)")
 		productEditorMatrixRehashFixture(t, root, canonical, path, []byte(text))
 	}
-	if err := validateProductEditorMatrixEvidence(root); err != nil {
+	native := map[string][]byte{}
+	for _, name := range []string{"product-editor-click-ledger.json", "playwright.log", "cc12-playwright.log", "pe-last-run.json", "cc12-last-run.json"} {
+		native[name] = productEditorMatrixReadFixture(t, root, canonical+"/"+name)
+	}
+	required, err := productEditorMatrixHistoricalLedger(native["product-editor-click-ledger.json"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	var frozen productEditorMatrixFrozenRecord
+	if err := json.Unmarshal(productEditorMatrixReadFixture(t, root, filepath.Dir(canonical)+"/FROZEN-IDENTITIES.json"), &frozen); err != nil {
+		t.Fatal(err)
+	}
+	if err := validateProductEditorMatrixRunOutcome(productEditorMatrixReadFixture(t, root, canonical+"/browser-evidence.json"), native, required, frozen.Tests); err != nil {
 		t.Fatalf("changed line numbers and durations must preserve identities: %v", err)
+	}
+	var drift productEditorMatrixEvidenceDrift
+	if err := validateProductEditorMatrixEvidence(root); err == nil || errors.As(err, &drift) {
+		t.Fatalf("identity-equivalent metadata must still retain exact original package bytes: %v", err)
 	}
 }
 

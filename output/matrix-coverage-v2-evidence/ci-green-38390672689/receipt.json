@@ -1,0 +1,51 @@
+{
+  "run_id": 38390672689,
+  "head_sha": "24f645795b0be55d82d978332bc642de982adf99",
+  "evidence_class": "E3 actual GitHub Foundation subset at exact SHA only",
+  "full_gates_conclusion": "NOT_CLAIMED pending observation only",
+  "original_native_package_fresh_run": "NOT_RUN",
+  "local_tests_checks_formatters": "NOT_RUN",
+  "raw_bytes": 805114,
+  "raw_sha256": "dca3e27ea44fed81dd82b5e84e519a421aaf5a40c8b2978e9b6390dd0f3862bc",
+  "gzip_bytes": 107632,
+  "gzip_sha256": "c156590f8e6b645f4a26e98bc633ea946cb747841e1656efe0165431af7063bf",
+  "commands": [
+    {
+      "command": "gh api repos/humaux/live_commerce_architecture_v1/actions/runs/38390672689",
+      "saved": "run.json",
+      "exit_code": 0
+    },
+    {
+      "command": "gh api repos/humaux/live_commerce_architecture_v1/actions/runs/38390672689/jobs",
+      "saved": "jobs.json",
+      "exit_code": 0
+    },
+    {
+      "command": "gh run view 38390672689 --repo humaux/live_commerce_architecture_v1 --log",
+      "saved": "raw.log.gz lossless",
+      "exit_code": 0
+    }
+  ],
+  "artifacts": {
+    "run.json": {
+      "bytes": 14276,
+      "sha256": "fb2e51519e82edaa9285f96a1641a7828d504042c302d37e7e30cceb3f011104"
+    },
+    "gates-observation.json": {
+      "bytes": 239,
+      "sha256": "fd4ca427aadb0ede389675736f97173b07eb61d4336ac5348426a2f0743150d3"
+    },
+    "raw.log.gz": {
+      "bytes": 107632,
+      "sha256": "c156590f8e6b645f4a26e98bc633ea946cb747841e1656efe0165431af7063bf"
+    },
+    "focused-results.json": {
+      "bytes": 4595,
+      "sha256": "89778f7034e3b7ca1620d5c616ba164cc594e9df06290849cd5acf33a6c2ba33"
+    },
+    "jobs.json": {
+      "bytes": 4662,
+      "sha256": "978c0b0ce2d4f5c47be9dda0f4e98e2e5ff7eee5232297bc30fb8c224b3bca8c"
+    }
+  }
+}

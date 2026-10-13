@@ -1,0 +1,118 @@
+{
+  "run_id": 38390672689,
+  "head_sha": "24f645795b0be55d82d978332bc642de982adf99",
+  "conclusion": "success",
+  "job_steps": [
+    {
+      "name": "Set up job",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Preserve evidence-validator formatting patch",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Evidence-validator focused integrity controls",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Delivered patch whitespace",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Preserve evidence-validator CI diagnostics",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "No key-shaped secret literals",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Dependency map is current",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Node dependencies (frozen lockfile)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Package docs and gate map are current",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Node unit suites (storefront, i18n)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Download pinned test image",
+      "status": "completed",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Real PostgreSQL, race detector and vet",
+      "status": "completed",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Reachable vulnerability scan",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Post Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Complete job",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "focused_control_lines": [
+    "foundation\tEvidence-validator focused integrity controls\t2026-10-13T11:32:28.5594542Z     catalog_matrix_evidence_test.go:381: run receipt old-producer-omitted-everywhere rejected: tested producer set disagrees with frozen declaration",
+    "foundation\tEvidence-validator focused integrity controls\t2026-10-13T11:32:28.7757636Z     --- PASS: TestProductEditorMatrixLedgerEvidenceRunReceipt/old-producer-omitted-everywhere (0.03s)",
+    "foundation\tEvidence-validator focused integrity controls\t2026-10-13T11:32:30.5094825Z     --- PASS: TestProductEditorMatrixLedgerEvidenceSharedSources/membership-all-rehashed-deleted-test-node.json (0.02s)",
+    "foundation\tEvidence-validator focused integrity controls\t2026-10-13T11:32:30.5096878Z     --- PASS: TestProductEditorMatrixLedgerEvidenceSharedSources/membership-all-rehashed-deleted-frozen/tests/admin/product-editor-matrix-ledger.ts.source.txt (0.02s)",
+    "foundation\tEvidence-validator focused integrity controls\t2026-10-13T11:32:32.2226318Z     --- PASS: TestProductEditorMatrixLedgerEvidenceRunIdentity/frozen-title-editor-rehashed (0.06s)",
+    "foundation\tEvidence-validator focused integrity controls\t2026-10-13T11:32:32.2227339Z     --- PASS: TestProductEditorMatrixLedgerEvidenceRunIdentity/frozen-title-review-rehashed (0.05s)",
+    "foundation\tEvidence-validator focused integrity controls\t2026-10-13T11:32:32.2228548Z     --- PASS: TestProductEditorMatrixLedgerEvidenceRunIdentity/frozen-title-feedback-rehashed (0.03s)",
+    "foundation\tEvidence-validator focused integrity controls\t2026-10-13T11:32:32.2229587Z     --- PASS: TestProductEditorMatrixLedgerEvidenceRunIdentity/frozen-title-cc12-rehashed (0.03s)"
+  ],
+  "scope": "Historical exact SHA Foundation subset; new7504/faa60 controls not present; full Gates not claimed"
+}

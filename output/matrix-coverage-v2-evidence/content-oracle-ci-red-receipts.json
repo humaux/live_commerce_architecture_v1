@@ -1,0 +1,68 @@
+{
+  "source_fix_commit": "66a2f7b50c4cf0c4d765c78c435646c5ee4e430a",
+  "green_status": "PENDING root GitHub CI",
+  "local_tests_checks_formatter": "NOT_RUN",
+  "runs": [
+    {
+      "run_id": 38393232461,
+      "head_sha": "7504f7962a63fcafddcff773d27e8da477d81245",
+      "conclusion": "failure",
+      "focused_exit_code": 1,
+      "raw_size_bytes": 99978,
+      "raw_sha256": "69f828d498eb7e5d9a6e9aa13cdcc4acac238a42c3c229669dc1d8a987265b85",
+      "gzip_size_bytes": 8301,
+      "gzip_sha256": "a56e0f7e37113a0af9525013f5c634e2e2e43c03292af2d2a0161ec6779ddf52",
+      "controls": [
+        "foundation\tEvidence-validator focused integrity controls\t2026-10-13T11:54:15.1569264Z     catalog_matrix_evidence_test.go:548: rehashed original receipt corruption must fail before drift: canonical evidence is historical (source drift: tests/foundation/catalog_matrix_ledger_test.go)",
+        "foundation\tEvidence-validator focused integrity controls\t2026-10-13T11:54:15.6236260Z     --- FAIL: TestProductEditorMatrixLedgerEvidenceSharedSources/changed-checkout-review-keeps-frozen-bytes (0.01s)"
+      ],
+      "consumer_behavioral_red": false,
+      "commands": [
+        {
+          "command": "gh api repos/humaux/live_commerce_architecture_v1/actions/runs/38393232461",
+          "exit_code": 0
+        },
+        {
+          "command": "gh api repos/humaux/live_commerce_architecture_v1/actions/runs/38393232461/jobs",
+          "exit_code": 0
+        },
+        {
+          "command": "gh run view 38393232461 --repo humaux/live_commerce_architecture_v1 --log",
+          "executor": "root; supplied raw log",
+          "exit_code": "root supplied successful read"
+        }
+      ]
+    },
+    {
+      "run_id": 38393757202,
+      "head_sha": "faa60f2a23799e670292cd67517bea4ed1db15c4",
+      "conclusion": "failure",
+      "focused_exit_code": 1,
+      "raw_size_bytes": 99865,
+      "raw_sha256": "cd4d7249cf366e83d157627cd0a6daf8e99c9a22f1afbc7b3783004169625723",
+      "gzip_size_bytes": 8282,
+      "gzip_sha256": "04ee2694fb9eaafa2eb3e4f79210f5181bb3cb2ee533d33468f3849fde2c427e",
+      "controls": [
+        "foundation\tEvidence-validator focused integrity controls\t2026-10-13T12:00:46.6872389Z     catalog_matrix_evidence_test.go:548: rehashed original receipt corruption must fail before drift: canonical evidence is historical (source drift: tests/foundation/catalog_matrix_ledger_test.go)",
+        "foundation\tEvidence-validator focused integrity controls\t2026-10-13T12:00:46.7151473Z     catalog_matrix_evidence_test.go:588: fixture must preserve original frozen consumer bytes after a checkout edit",
+        "foundation\tEvidence-validator focused integrity controls\t2026-10-13T12:00:47.2095519Z     --- FAIL: TestProductEditorMatrixLedgerEvidenceSharedSources/changed-checkout-review-keeps-frozen-bytes (0.03s)"
+      ],
+      "consumer_behavioral_red": true,
+      "commands": [
+        {
+          "command": "gh api repos/humaux/live_commerce_architecture_v1/actions/runs/38393757202",
+          "exit_code": 0
+        },
+        {
+          "command": "gh api repos/humaux/live_commerce_architecture_v1/actions/runs/38393757202/jobs",
+          "exit_code": 0
+        },
+        {
+          "command": "gh run view 38393757202 --repo humaux/live_commerce_architecture_v1 --log",
+          "executor": "root; supplied raw log",
+          "exit_code": "root supplied successful read"
+        }
+      ]
+    }
+  ]
+}

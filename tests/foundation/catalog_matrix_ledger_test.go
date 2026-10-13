@@ -529,6 +529,17 @@ func validateProductEditorMatrixEvidence(root string) error {
 	if err := validateProductEditorMatrixRunOutcome(manifestData, native, required, frozen.Tests); err != nil {
 		return err
 	}
+	// Every artifact was read and hash-checked above. Pin the complete original
+	// path/digest set independently of mutable receipts before any drift skip.
+	entries := make([]string, 0, len(index.Artifacts))
+	for path, digest := range index.Artifacts {
+		entries = append(entries, strings.TrimPrefix(path, evidence+"/")+"\t"+digest)
+	}
+	sort.Strings(entries)
+	const originalContents = "0adf525e35daf95fc5862914c1d5f34cef1448737a695f382109b33da9121fc5"
+	if fmt.Sprintf("%x", sha256.Sum256([]byte(strings.Join(entries, "\n")))) != originalContents {
+		return fmt.Errorf("canonical artifact contents disagree with original package oracle")
+	}
 	// Validate ALL recorded digests first: an absent newly introduced path can be
 	// history, but a present malformed digest is always a broken receipt.
 	const gate = "tests/foundation/catalog_matrix_ledger_test.go"
@@ -802,7 +813,7 @@ func productEditorMatrixFrozenMembership(root, evidence, tested, hash string, ar
 	// New package versions need an explicit reviewed oracle, just like consumers.
 	members := append([]string{}, membership.Members...)
 	sort.Strings(members)
-	const originalMembers = "ec82c6dcbd9f3804791239c358cac0e592c6d9d9bee1b2515d35c40478a8fdff"
+	const originalMembers = "d09b85d2dfe178a433e53feb16e056a2b1a605ee1227603228c0700ccf740c10"
 	if fmt.Sprintf("%x", sha256.Sum256([]byte(strings.Join(members, "\n")))) != originalMembers {
 		return fmt.Errorf("frozen package membership disagrees with original package oracle")
 	}
