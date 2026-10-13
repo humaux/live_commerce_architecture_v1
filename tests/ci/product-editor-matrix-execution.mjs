@@ -170,7 +170,10 @@ export function matrixExecutionIssues({ node, workflow, registry, receipt = read
     issues.push("gates.yml GOFLAGS must not use Go test selection filters");
   if (!workflowTriggerBound(foundationWorkflow, false)) issues.push("foundation.yml must retain its pull_request trigger");
   if (!workflowTriggerBound(workflow, true)) issues.push("gates.yml must retain pull_request targeting r3/integration");
-  if (!workflow.includes("LC_MATRIX_RECEIPT_MODE: shard:unit") || !workflow.includes("node scripts/dev/matrix-receipt.mjs node"))
+  const nodeModeBound = workflow.includes("LC_MATRIX_RECEIPT_MODE: shard:unit") ||
+    (workflow.includes("LC_MATRIX_RECEIPT_MODE: ${{ matrix.mode }}") &&
+     workflow.includes("if: matrix.mode == 'shard:unit' || matrix.mode == 'foundation'"));
+  if (!nodeModeBound || !workflow.includes("node scripts/dev/matrix-receipt.mjs node"))
     issues.push("gates.yml must execute the matrix Node receipt in shard:unit");
   if (!workflow.includes('uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd') ||
       !workflow.includes('"scripts/dev/matrix-receipt-verify.mjs", "required"') ||
@@ -229,9 +232,9 @@ export function matrixExecutionIssues({ node, workflow, registry, receipt = read
   const selectors = ['${LC_FOUNDATION_RUN:+-run "$LC_FOUNDATION_RUN"}', '${LC_FOUNDATION_SKIP:+-skip "$LC_FOUNDATION_SKIP"}', '${LC_FOUNDATION_PKGS:-./...}'];
   const cleanCommands = commands.map((line) => ({ line, argv: executableArgv(selectors.reduce((clean, token) => clean.replace(token, ""), line)) }));
   if (commands.length !== 2 || cleanCommands.some(({ line, argv }) => selectors.some((token) => !line.includes(token)) ||
-      !invokesActualGoTest(argv) ||
+      !invokesActualGoTest(argv) || !argv?.includes("-race") || argv.includes("-race=false") ||
       hasGoSelectionFlags(argv) || hasSelectingGoFlags(commandArgv(line) ?? [])))
-    issues.push("foundation go test must forward RUN, SKIP and package selectors without extra filters");
+    issues.push("foundation go test must retain -race and forward RUN, SKIP and package selectors without extra filters");
   const goCondition = "${{ !(github.event_name == 'pull_request' && github.base_ref == 'r3/integration') }}";
   for (const [runner, condition] of [["test-node", null], ["test-local", goCondition]]) {
     if (!foundationRunnerBound(foundationWorkflow, runner, condition))

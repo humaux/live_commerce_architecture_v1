@@ -1,7 +1,7 @@
 {
   "base_commit": "f5339cbfbac632473c0bdb2c4823b557689f0fb7",
   "dependency_commit": "cf64271fd99fbda3e773606451f5ca7a3e3a4f28",
-  "precommit_parent": "f3396049e183e6fa07a9b80e93dca6107cdcc6cb",
+  "precommit_parent": "5e63839246c96764dae9c2c294c6d1fc057fdcea",
   "hashes": {
     ".github/workflows/foundation.yml": "6e91b978a623e849f792703942187009a71f7eabf7e7a8f9d86ff5d463f4129e",
     ".github/workflows/gates.yml": "47294870e3607456ab3d01a7449fb5999ad2c614d1c29a401c7f50d772554998",
@@ -15,7 +15,7 @@
     "tests/ci/ci-plan.test.mjs": "dbc54a5fd2e316f86a0c7f449ec306265ec4d0d94517dc6f67bc80b08a6bdc0b",
     "tests/ci/matrix-receipt.test.mjs": "a06b6114428f11b6158f298d070284190da94b2c47d5a2a6556dcd0be5d24ebd",
     "tests/ci/pr-modes.test.mjs": "19afb76278c6db5788dc980898967f8b547376cb1929f5923cf07816ed476bb4",
-    "tests/ci/product-editor-matrix-execution.mjs": "0cce927169ad1c42c1b168e057c3ecbef071516d548339178524f2fd5b224f9e",
+    "tests/ci/product-editor-matrix-execution.mjs": "853f1b6ead6b92873b1e616f53b26197d7f2250e0babcb7fd247f737c6658ead",
     "tests/ci/product-editor-matrix-execution.test.mjs": "52aeb641420331af405ad19004d8f60d77238db62c414b6be05ddacfe97b2733",
     "tests/foundation/catalog_matrix_ledger_test.go": "0b10d80b6285442b4c5680574c6a96ee06d55b275e3fe0e075d10c838a4d857d",
     "tests/foundation/catalog_matrix_evidence_test.go": "deb7452b22e20084e487e33f7221f381812e88ccbeb18d90cf331023ecf4ff19"
