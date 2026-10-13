@@ -184,6 +184,13 @@ jobs:
           key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-${{ steps.browsers.outputs.cache }}
       - name: Download pinned test image
         run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+      # Temporary OA-1 authoring receipt: formatting executes only in CI under
+      # the owner's host restriction. It never edits source or masks gate errors.
+      - name: OA-1 formatting patch
+        if: github.ref == 'refs/heads/unit/oa-1-order-attempt-core'
+        run: |
+          mkdir -p output/ci-gates
+          gofmt -d internal/orderattempt tests/foundation/order_attempt*.go > output/ci-gates/oa1-gofmt.patch
       - name: Gate
         run: |
           set -o pipefail
