@@ -9,7 +9,7 @@
     "tests/foundation/catalog_matrix_ledger_test.go": "bf5fb1c6df8f73c8469862d1ec16879307a3387ec7e263ed701ebb99fa02e1b0",
     "tests/foundation/catalog_matrix_evidence_test.go": "224a9e1843616e3b83121849b774350144a2bea723ee97daa961b70627d443b7"
   },
-  "frozen_record_sha256": "afd55e756cbeec4a1787141bd37ac5a562a2187e10b16ba8871674b79289dec7",
+  "frozen_record_sha256": "bee23db00d350a23d999078119239f4afc8499df80572e1538b883af0f678e07",
   "static_read_whitespace_observations": [
     {
       "path": "output/matrix-coverage-v2-evidence/test-node-final.log",
@@ -125,5 +125,18 @@
     "local_test_formatter_check": "NOT_RUN owner CI-only",
     "ci_compile_behavior": "NOT_RUN for this correction; parent owns exact-source CI",
     "delivery_note_owner": "Parent preserves and commits its uncommitted DELIVERY and lossless CI logs; integration note transmitted in handoff."
+  },
+  "inert_snapshot_rename": {
+    "base_commit": "b416e482",
+    "ci_red_run": "38383142992",
+    "old_path": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/admin/catalog-core.spec.ts.source.txt",
+    "new_path": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/admin/catalog-core-spec.source.txt",
+    "preserved_raw_sha256": "18db7e6e25ddfc05bdd6b9fecc6f80b3bd47e92f1e31addddf6ff318c21da0d8",
+    "frozen_record_sha256_before": "afd55e756cbeec4a1787141bd37ac5a562a2187e10b16ba8871674b79289dec7",
+    "frozen_record_sha256_after": "bee23db00d350a23d999078119239f4afc8499df80572e1538b883af0f678e07",
+    "scope": "Path and metadata only; original tested Git source key, SHA256, Git blob ID, all raw snapshot/native bytes and all validation assertions remain unchanged.",
+    "commands": "python3 static rename/metadata edits/hash receipt; git add/commit",
+    "exit_code": 0,
+    "acceptance": "NOT_RUN for new artifact metadata; parent GitHub CI only"
   }
 }

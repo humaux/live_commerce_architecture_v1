@@ -8,7 +8,7 @@
     "tests/admin/product-editor-matrix-ledger.ts": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/admin/product-editor-matrix-ledger.ts.source.txt",
     "tests/admin/product-review.acceptance.ts": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/admin/product-review.acceptance.ts.source.txt",
     "tests/admin/product-feedback.acceptance.ts": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/admin/product-feedback.acceptance.ts.source.txt",
-    "tests/admin/catalog-core.spec.ts": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/admin/catalog-core.spec.ts.source.txt"
+    "tests/admin/catalog-core.spec.ts": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/admin/catalog-core-spec.source.txt"
   },
   "source_files_sha256": {
     "tests/foundation/catalog_matrix_ledger_test.go": "0bca90d283d8bf73eefdb0689ab68b4c2b3c97d619a53de6bf01e95d7c594371",
