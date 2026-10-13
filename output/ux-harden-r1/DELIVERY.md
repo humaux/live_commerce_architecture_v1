@@ -3,14 +3,15 @@
      Used by: owner, integrator and independent PR reviewers. -->
 # UX-HARDEN-R1 delivery
 
-Status: PR #49 round 1 root fixes are ready for CI. Genuine CI red evidence covers UXH05 in all three locales and the default TabStrip empty-hint regression. Earlier scoped green receipts remain historical; final current-head gates and independent acceptance are pending.
+Status: exact `b2edee56` Foundation is green, but the completed Gates round remains red on English UXH05. The next batch first adds persisted-ledger and clipping-geometry regression assertions, with product behavior unchanged, to obtain CI red evidence. Earlier scoped green receipts remain historical; final current-head gates and independent acceptance are pending.
 
 - Branch: `unit/ux-harden-r1`; PR target: `r3/integration`.
 - Base after `git fetch origin`: `0bfe36e53acb694f4697521202e24f0790638941`.
 - Before the red-test commit, `git fetch origin` succeeded; `origin/unit/ux-harden-r1` did not yet exist (ref lookup exit 128), so there was no own remote branch to merge.
 - Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/ux-harden-r1`.
 - Author: primary agent, UI implementation/integration role; actual model `gpt-6.1-sol`, reasoning `ultra`. Config top-level model/effort and own session turn context verify these values.
-- Behavioral-test delegate: `/root/ux_browser_red`, `test_worker`, actual `gpt-6.1-sol`, reasoning `high`; same assigned unit worktree, exclusive ownership of `tests/admin/product-editor-layout.acceptance.ts` while root reads product source. No recursive delegation.
+- Historical behavioral-test delegate: `/root/ux_browser_red`, `test_worker`, actual `gpt-6.1-sol`, reasoning `high`; unit base `0bfe36e5`, branch `unit/ux-harden-r1`, same root worktree `/Volumes/data/live_commerce_architecture_v1/.worktrees/ux-harden-r1`. It wrote only `tests/admin/product-editor-layout.acceptance.ts`. This was exclusive file ownership in a shared worktree, **not isolated-worktree compliance**; the historical deviation is retained rather than relabeled. No recursive delegation.
+- New isolated behavioral-test delegate: `/root/ux_ledger_isolated`, `test_worker`, actual `gpt-6.1-sol`, reasoning `high`; base `b2edee56c279d1da8a21377c8ee0ac2531d76832`, branch `unit/ux-harden-r1-ledger`, worktree `/Volumes/data/live_commerce_architecture_v1/.worktrees/ux-harden-r1-ledger`. Its only write paths are `tests/admin/product-editor-layout.acceptance.ts` and `tests/admin/product-editor.acceptance.ts`; root does not write those files during its assignment. Its commits are reviewed and integrated into the parent branch; no recursive delegation, product writes, local tests or independent push.
 - Read-only delegate: `/root/ux_shop_static`, `explorer`, actual `gpt-6.1-sol`, reasoning `medium`; same worktree, no write paths.
 - Author write paths: `apps/admin/components/ProductDocumentForm.tsx`, `ProductDocument.css`, `apps/admin/lib/product-editor-copy.ts` (round-1 owner authorization), shared `packages/ui/src/Presentation.tsx`/`Presentation.module.css` (TabStrip only), product-editor browser acceptance and product-document/shell-render tests, `tests/storefront/shop-real-gate.mjs`, and this unit's `output/ux-harden-r1/` evidence. No other module is edited.
 
@@ -29,7 +30,20 @@ The round-1 batch makes hint reservation opt-in (`reserveHint=false` by default;
 
 Read-only delegate `/root/ux_shop_static` (`explorer`, `gpt-6.1-sol`, `medium`) reviewed the eight-file round-1 source diff against `d5331148`: E1, no concrete P0/P1/P2 or weakened geometry assertions. The SSR test executes a production JSX fragment; complete visibility remains a browser obligation. This source review is not final runtime acceptance.
 
-Fix CI outcomes are **NOT_RUN** until the new head has its own GitHub receipts. No local test, script, build or server was executed.
+Exact `b2edee56c279d1da8a21377c8ee0ac2531d76832` outcomes:
+
+| CI run | Result and portable receipt |
+| --- | --- |
+| [Foundation 38414578284](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38414578284), job `115355481247` | **SUCCESS**: the actual TabStrip opt-in SSR test and production toggle localized-label tests pass; check-gates reports 83 modes. [round1-fix-foundation.log](round1-fix-foundation.log). |
+| [Gates 38414578750](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38414578750), editor job `115357440849`, artifact `11829846718` | **FAILURE**: English UXH05 still has `scrollLeft=0` and the selected SEO tab outside the frame after 901→390. zh-TW/zh-CN UXH05 pass; UXH01–04 observations pass in all three locales. [round1-fix-editor.log](round1-fix-editor.log). Eleven later editor tests are **NOT_RUN**; frozen CC12 passes separately. No other test mode failed in this completed round. |
+
+Source diagnosis is an E1 hypothesis: inherited `white-space: nowrap` lets the English desktop label overflow the vertical strip, so raw horizontal overflow can remain true before the mobile transition. The owner's subsequent direct ruling includes the clipping-resize P2 in this batch, superseding the earlier transition-only limitation when actual horizontal geometry changes. The unrelated-draft/manual-scroll assertion remains unchanged. The batch also carries the persisted-interaction-ledger and historical delegate-worktree P1s. No local test, script, build or server was executed.
+
+The isolated delegate's first tests-only commit is `3da7b35a57670907589f8b65a35c5f237b5acd5f`; its reviewed correction is `8797b2928677bae5faf57ff7edebbde0cc498d04`, integrated by fast-forward. Static review found that the proposed 600px starting width has spare room in Chinese, so UXH06 uses 500→390 and retains every overflow/fit/visibility assertion. It also guarantees route removal and viewport restoration when the held transport fails. The delegate fetched before each commit; its own remote branch was absent (ref lookup exit 128), so there was no delegate remote to merge. No local runtime checks were run.
+
+The new regression assertions read the saved `product-editor-click-ledger.json` and require 33 real interaction records across the three locales, with explicit expected/actual/pass, viewport and measured metrics. They use a separate `product editor hardening` namespace; the canonical 267-case matrix and its validator remain unchanged. UXH06 selects SEO once at 500px and measures clipping after 390px. UXH07 holds an unchanged real BFF/Go/PG catalog response at an additional 220px viewport, then measures the same selected button as real status counts arrive. The 220px setup and all new runtime results remain **NOT_RUN** until CI executes them. Recording and product repairs await genuine CI red receipts; source-only review is E1, not runtime acceptance.
+
+Portable exact-b2 receipts: `round1-fix-editor.log` SHA-256 `49c59d142ab3e5bca82cc382ce73d1a748d3a34cf948708ce5c9be255056cb81`; `round1-fix-foundation.log` SHA-256 `833bb424934b0e33ed97f385d6f0cbc74a420a722f21497f3cddcff3c5169686`. Both are committed under this unit's evidence directory; downloaded scratch artifacts and raw logs are excluded.
 
 ## Scope and acceptance
 
@@ -92,6 +106,6 @@ The selected-section reveal assertion remains unchanged. A read-only independent
 
 ## NOT_RUN
 
-- PR-required shared TabStrip consumer regressions, foundation checks and final PR acceptance are pending; no release-readiness claim.
+- Full editor acceptance and final PR acceptance remain pending after the exact-b2 English UXH05 failure; no release-readiness claim. Exact-b2 Foundation and the other test modes succeeded, but any subsequent source change needs new exact-head evidence.
 - Local tests, typechecks, builds and servers are intentionally NOT_RUN under the CI-only directive.
 - Production, physical-device rotation, vendor SANDBOX/LIVE requests and deployment are outside scope.
