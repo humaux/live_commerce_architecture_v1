@@ -24,10 +24,10 @@ Change rules: 命令必须与脚本保持一致；改脚本行为时同步本文
 - 以下上线阻塞项关闭前，不得宣称"可生产"：
   - B1：已关闭。`cmd/migrate` 存在，是唯一的生产迁移入口（`deploy.sh` 与 smoke S12 使用它）。
   - B2：未选定 IdP（OIDC），商家无法登录。
-  - B3：PAYUNi 商户资质和 LIVE 批准。
-  - B4：PAYUNi NotifyURL 没有接收端（`/payuni/notify` 由 Caddy 保留并返回 404）。支付结果只来自 worker 查询。
+  - B3：owner 决策仍待确认（`pay-remove-payuni` OPEN-1）：保留或移除基础 PAYUNi 卡付路径，或明确本次 LIVE 范围不启用任何 PAYUNi 付款方式。选择启用时，PAYUNi 商户资质和 LIVE 批准仍是前置；代码移除 NotifyURL 接收端不能替代该决策。
+  - B4：接收端已从代码移除（`cmd/api/payuni_notify.go` 不存在；`contracts/payuni-wire-v1.md` 的 PAY-RM1 amendment），本节已同步。它是已移除功能，不再作为待建接收端的工程阻塞，也不代表 PAYUNi LIVE 获批；基础卡付路径的去留见 B3。
   - B5：直播/Studio（LiveKit 仅 MOCK）。
-  - B6：Meta 未开放给客户：Meta App Review / Access Tier 是 owner 事项；评论 → 认领 → 私信链路的运维缺口见 §6.3 与 merchant-onboarding.md（G1 路由激活已由 `meta-admin route` 关闭；**claim-source 路由未挂载 G2 仍开放**）。
+  - B6：Meta 未开放给客户：Meta App Review / Access Tier 是 owner 事项；评论 → 认领 → 私信链路的开通步骤见 §6.3 与 merchant-onboarding.md。G1 路由激活已由 `meta-admin route` 关闭；**G2 已关闭**：场次规划与媒体开关已拆分，开启 Studio/claims 并配置有效 label key 后挂载 claim-source（§6.3 第 7 项；`cmd/api/main.go` → `internal/httpapi/claims.go` → `claimsource.go`）。工程路由可用不等于 App Review 通过或真实私信获准发送。
   - B7：T21 独立评审未完成。
   - B8：Compose 作为生产环境与 §4.2 的定位冲突。
 - 状态词汇：DESIGN / MODEL_ONLY / MOCK / SANDBOX / LIVE / NOT_RUN / BLOCKED。本地 smoke 通过不等于产品通过。
@@ -282,8 +282,8 @@ deploy/scripts/deploy.sh upgrade <tag>
      --binding <binding-id> --provider facebook --asset <page-id> --expected-version 0 --scopes pages_messaging
    # 提示输入 META_PAGE_ACCESS_TOKEN（无回显）；输出 {"version":1}。明文 token 从不进入 PG、日志或仓库
    ```
-4. **认领来源绑定**（**当前部署包内不可用，见已知缺口 G2**）：设计上商家在后台把直播场次绑定到具体的 Facebook 贴文/Instagram media（`PUT .../live-sessions/{session}/claim-source`，需要 `live:manage` + `integration:execute`，owner 已具备，裁决 24）。
-   `private_reply=true` 还要求该绑定已登记 Page token（否则 `page_token_missing`）。**这个路由现在不能靠部署配置打开**：在本包构建的 api 里它返回 404（原因见 G2）。
+4. **认领来源绑定（G2 已关闭）**：商家在后台把直播场次绑定到具体的 Facebook 贴文/Instagram media（`PUT .../live-sessions/{session}/claim-source`，需要 `live:manage` + `integration:execute`，owner 已具备，裁决 24）。
+   按第 7 项开启 `COMMERCE_STUDIO_ENABLED=1`、`COMMERCE_CLAIMS_ENABLED=1` 并配置有效 claims label key 后，api 挂载该 GET/PUT 路由；`COMMERCE_STUDIO_MEDIA_ENABLED=0` 不阻断绑定。`private_reply=true` 仍要求该绑定已登记 Page token（否则 `page_token_missing`）。关闭 Studio/claims 时不挂载该路由；开启路由不放行第 5 项的真实私信发送。
 5. 启用真实私信发送（**需要 owner 明确批准**，因为这会向真实买家发消息）：填好 `claims-worker.env` 的 Graph 版本，`COMPOSE_PROFILES` 增加 `claims`，
    `deploy.sh upgrade`；部署后检查会等待 `claims_worker_ready`。日志里的 `claims_worker_routes` 行列出该进程服务的路由（IR-13）。
    R2（U08）：claims-worker 还需要 `dsn_lc_retention_job`（`secrets-init.sh` 生成、provisioning 建登录），每小时跑保留期清理；
@@ -316,8 +316,8 @@ deploy/scripts/deploy.sh upgrade <tag>
 2. 配置：api.env 设 `COMMERCE_META_ADS_APP_ID`、`COMMERCE_META_ADS_CONFIG_ID`（Facebook Login for Business 配置）、`COMMERCE_META_ADS_REDIRECT_URI=https://<LC_ADMIN_HOST>/api/ads/meta/callback`（同时登记到 Meta 应用后台，contract §11）、`COMMERCE_META_ADS_GRAPH_VERSION=v26.0`；ads-worker.env 设同一版本和 `COMMERCE_META_ADS_PARTNER_AGENT`；`COMPOSE_PROFILES` 加 `ads`。`preflight.sh` P03/P05/P06/P08/P09 全绿后 `deploy.sh upgrade`（post-check 等 `ads_worker_ready`）。
 3. 回调 URL 的 `code`/`state` 由 Caddy 访问日志改写为 REDACTED（smoke S40 覆盖 `/api/ads/meta/callback`）；admin 对该路径发 `Referrer-Policy: no-referrer`。
 4. 关闭：清空 `COMMERCE_META_ADS_APP_ID` 并重启 api（路由 404）。**不要先停 ads-worker**：暂停（pause）只有它能发到 Meta；先在 admin 暂停所有投放，确认 ops 终态后再去掉 `ads` profile。
-5. CAPI 与商品 feed（ads-capi，0080）：`secrets-init.sh` 生成 `commerce_capi_external_id_key`（b64std32，**只有 ads-worker 挂载**；缺失则 ads-worker 拒绝启动，已部署环境升级前先重跑 `secrets-init.sh` 补齐）。轮换会改变所有买家的 external_id（匹配率重置，不丢数据）。商品 feed 为 `https://<LC_STORE_HOST>/feeds/meta.csv`（storefront → api `GET /v1/buyer/feeds/meta.csv`，只按已验证 Host 解析店铺，Caddy 无需改动）。买家在隐私页授予 `ads_personalization` 时，同一事务写入 `ads.capi_contexts`（浏览器 UA，8 天后清除）。**生产挂载阻塞项**：`ads.capi_contexts`/`ads.capi_events`/`ads.insights_daily` 尚未登记 customers-billing CD7 保留类（meta-ads-v1 §12），登记前不得在生产开启 CAPI。
-6. 广告权限开通（meta-ads-v1 A-1）：0074 只放宽权限 CHECK，`create_initial_store` 不授予 `ads:*`，已部署店铺的 Ads 页在开通前不可用。owner 在聊天批准后，用迁移属主连接运行（幂等、只作用于一个店铺的创建者；需该主体已持有完整创建者权限集，否则整笔回滚）：`psql "$MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 -v store_id=<店铺 uuid> -v principal_id=<主体 uuid> -f scripts/ops/grant-ads-permissions.sql`，输出 `granted=<0..3>`。授予权限不等于可投放：每店广告上限默认 NT$0（关闭，裁决 O4），由运营另行设置。
+5. CAPI 与商品 feed（ads-capi，0080）：`secrets-init.sh` 生成 `commerce_capi_external_id_key`（b64std32，**只有 ads-worker 挂载**；缺失则 ads-worker 拒绝启动，已部署环境升级前先重跑 `secrets-init.sh` 补齐）。轮换会改变所有买家的 external_id（匹配率重置，不丢数据）。商品 feed 为 `https://<LC_STORE_HOST>/feeds/meta.csv`（storefront → api `GET /v1/buyer/feeds/meta.csv`，只按已验证 Host 解析店铺，Caddy 无需改动）。买家在隐私页授予 `ads_personalization` 时，同一事务写入 `ads.capi_contexts`（浏览器 UA；超过8天或撤回同意时清理，单批≤1000，见 `0080_meta_capi.sql` / attribution sweeper）。**生产挂载阻塞项分两项**：为 `ads.insights_daily` / `ads.capi_events` 登记保留类，并为 `ads.capi_contexts` 登记擦除处理（T14 / customers-billing CD7，meta-ads-v1 §12）；登记前不得在生产开启 CAPI。现有清理机制不替代登记，已经发出的事件不能召回。
+6. 广告权限核对（meta-ads-v1 A-1）：`0089_staff_team.sql` 的创建者触发器会应用完整 owner bundle，并回填既有 owner，包含 `ads:*`；不能再按 0074 时的旧权限列表要求所有店铺补发。先核对实际主体、角色和缺失权限；仅对确实缺权的历史创建者，在 owner 批准后用迁移属主连接运行（幂等、只作用于一个店铺的创建者；需该主体已持有完整创建者权限集，否则整笔回滚）：`psql "$MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 -v store_id=<店铺 uuid> -v principal_id=<主体 uuid> -f scripts/ops/grant-ads-permissions.sql`，输出 `granted=<0..3>`。授予权限不等于可投放：每店 allowance 默认 NT$0（关闭，裁决 O4），由运营另设 `max_active_budget_minor` / currency；这是内部批准预算上限，不等于 Meta `spend_cap` 或实时硬停止，也不替代真实投放批准。
 7. 卡住的草稿（无法解绑广告账户）：解绑会被触发器 `bindings_ads_disable_guard` 以 `binding_in_use`（409）拒绝，直到该店所有草稿都不再“可能花费”（AD6）。先在 admin 暂停；暂停 op 需到 SUCCEEDED。若暂停一直到不了：(a) 令牌被 Meta 撤销 → 商家用**同一个**广告账户重新连接（令牌换新、binding 不变），advance sweeper 会再规划下一个 pause seq；(b) 激活 op 停在 UNKNOWN → 等 reconcile（不要手工改 ops 行）；(c) 以上都不成立 → 在 Ads Manager 核实广告已停，草稿在 `ends_at + 1 天` 后自动不再计入，解绑随之放行。没有操作员强制覆盖（有意：覆盖等于允许“看不见的花费”）；如需加速，先记录根因再另立契约。
 
 ### 6.7 Meta：商家自助连接 Facebook 主页 / Instagram（meta-connect，R4）
@@ -345,8 +345,7 @@ deploy/scripts/deploy.sh upgrade <tag>
 2. 启用：`compose.env` 设 `LC_BILLING_ENABLED=1`、`LC_BILLING_PRICE_IDS=price_...`（逗号分隔，1–10 个），`deploy.sh upgrade`。
    未设 = 关闭（`0` 会让 api 启动失败，preflight P06 拦截）；preflight P08 校验 price id，P09 校验两个密钥文件格式。
    webhook 复用 `commerce_stripe_ingress` 登录（`COMMERCE_STRIPE_INGRESS_DATABASE_URL`）。
-3. **R2 权限补发**（0079 只给新建店铺的创建者 `customers:read`、`customers:privacy`、`billing:manage`；0079 之前建的店铺需手动补发，
-   **需 owner 在聊天中批准**）：
+3. **R2 权限核对／按需补发**：0079 曾仅给新建店铺创建者 `customers:read`、`customers:privacy`、`billing:manage`；当前 `0089_staff_team.sql` 已回填既有 owner 的完整权限集。先核对实际主体、角色和权限，不以店铺创建日期单独判定需要补发；只有确实缺权的历史创建者，才按下面旧补发路径处理，**需 owner 在聊天中批准**：
    ```sh
    # 以迁移 owner（数据库 owner）连接执行，见脚本头部 HOW；部署包暂无该脚本的 ops 包装（DESIGN）：
    psql "$MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 -v store_id=<store uuid> -v principal_id=<创建者 principal uuid> \
