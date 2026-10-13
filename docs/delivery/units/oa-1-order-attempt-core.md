@@ -18,8 +18,12 @@ all execution and tests run in GitHub CI only. PR #32 stays untouched.
   composition roots `cmd/{api,claims-worker}/`; associated exact ACL/upgrade,
   schema, model, real-PG and process-wiring tests under `tests/foundation/`;
   generated dependency documentation and CI selection only where required;
-  `contracts/order-attempt-v1.md` amendment A2 and the dedicated key-retirement
-  admin login in `deploy/postgres/logins.tsv` per owner approval 2026-10-14.
+  `contracts/order-attempt-v1.md` amendment A2, the external key-retirement
+  operator procedure in `docs/runbooks/deploy.md`, and its credential-custody
+  regression in `tests/foundation/deploy_provision_logins_test.go`, per owner
+  approval 2026-10-14. The dedicated admin login is provisioned separately;
+  it must not appear in the core `deploy/postgres/logins.tsv`, Compose mounts,
+  or API/claims-worker credential inputs.
 - Excluded: UI, production, provider I/O, dependency/lock files, shared OpenAPI,
   old migrations, PR #32, and unreviewed deviations from frozen contract semantics.
   Owner-approved A2 is submitted with OA-1 for independent review.

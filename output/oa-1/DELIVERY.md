@@ -1,6 +1,7 @@
 # OA-1 delivery — in progress
 
-- Branch: `unit/oa-1-order-attempt-core`; base: `55e98ba0434557e94e3b7c9e31ff0e98352623b1`.
+- Branch: `unit/oa-1-order-attempt-core`; current merged base:
+  `256e9740ced9c5de05a83f58eb9f4c79a231b7b2` (fetch reconfirmed 2026-10-14).
 - Implementer: Codex-3; reasoning: high. Allowed paths and boundaries:
   `docs/delivery/units/oa-1-order-attempt-core.md`.
 - Contract: frozen order-attempt-v1 plus reviewed A1/A1.1 at
@@ -348,3 +349,42 @@ compatibility (upgrade pin 117); 0194 A2 remains pending integration. The admin
 credential follows the existing external-operator provisioning pattern: it is
 not a deployed core login or a secret mounted into API/claims-worker. Final
 numbering, metadata, whole-unit gates and independent review remain required.
+
+## A2 implementation and current acceptance receipts
+
+A2 is integrated in `54c1d8d2c` (0194), with the exact upgrade pin at 118 in
+`d806d7745`. Fresh C1 supplies and locks its chosen key version before the
+subject/scope/attempt prefix; its finish cannot substitute another version.
+Retirement uses the same row lock and global pending-reference check, through
+the isolated admin login's sole definer. Exact terminal replay and unmarked
+PLAN_UNAVAILABLE settlement retain their independent paths. The admin credential
+is an external operator credential, never a core deployment/worker secret.
+The runbook and an injected-custody regression are in `a75a15f78`.
+
+| CI / source / job | Observed result |
+| --- | --- |
+| 74 `38467528473` / `d08d72741` / `115540476298` | **GREEN** `PASS=1 FAIL=0 exit=0`: actual River consumer versus inline executor; `worker-consumer-race-green-ci74.log`. |
+| 77 `38468325801` / `a3e005c6b` / `115542054097` | **GREEN** `PASS=17 FAIL=0 exit=0`: native attempt cancellation and existing cancellation/returns/CVS regressions; `native-cancel-green-ci77.log`. |
+| 78 `38468487041` / `b718fe476` / `115542098647` | **RED** `PASS=0 FAIL=1 exit=1`: C1 reaches owner/refusal without the required erasure subject barrier; `erasure-c1-race-first-ci78.log`. |
+| 79 `38468605984` / `f922272dd` / `115543720389` | **GREEN** `PASS=3 FAIL=0 exit=0`: native CVS crash, actual configured-key rotation and terminal generation CAS; `native-matrix-green-ci79.log`. |
+| 80 `38468649299` / `b2b58d998` / `115542921233` | `PASS=6 FAIL=2 exit=1`: erasure settlement/authority cases pass; native post-erasure C1 returns unavailable instead of ERASED, and the historical upgrade fixture applies OA before its held 0129 dependency. `erasure-prefix-ci80.log`. |
+| 81 `38469036123` / `4fe3f5eea` / `115546036519` | **GREEN** `PASS=1 FAIL=0 exit=0`: packaged worker enabled/native READY, disabled non-consumption and malformed enabled custody rejection; `native-worker-process-green-ci81.log`. |
+| 83 `38469282415` / `422d4a355` / `115547012797` | Owner-rederivation mutation **RED**, `PASS=0 FAIL=1 exit=1`: configured key rotation causes actual C2 `order_attempt_conflict` at matrix test line 143; `owner-rotation-mutation-ci83.log`. |
+
+CI80 supplies causal native red for `73d95f008`: only exact PT422/ERASED maps
+to ERASED, while every other business/unknown error retains its classification.
+The additional 11-case unit counterexample was committed first (`435448289`)
+and dispatched separately as CI92. Historical upgrade still applies every real
+OA migration/checksum on populated data; it now holds the dependent suffix until
+the native reservation table exists. No historical assertion is removed.
+
+Pending root-monitored CI registrations (not PASS): 82 `38469249744` genuine
+15-minute C2 deadline; 84 `38469287812` final-check mutation; 85 `38470325208`
+A2 normal; 86 `38470330821` A2-M1; 87 `38470580829` model/fuzz, generated
+metadata, backend-classification acceptance and normal admin custody; 88
+`38470585873` injected admin custody; 89 `38470591029` omitted cancellation
+revocation; 90 `38470594970` body shredding before settlement; 91 `38470600332`
+rejected CANCELLED replay; 92 `38471182736` exact ERASED unit FIRST. Existing
+workflow/per-case deadlines are unchanged. All local runtime/tests remain
+**NOT_RUN (owner CI-only directive)**. Whole-unit acceptance and independent
+review remain incomplete.
