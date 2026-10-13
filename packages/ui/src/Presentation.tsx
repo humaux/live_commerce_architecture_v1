@@ -140,7 +140,7 @@ function useScrollFrame() {
   return { ref, edges };
 }
 
-/** Reveals a newly selected tab without undoing user scrolling on unrelated renders. */
+/** Reveals selected tabs after horizontal layout changes; unrelated renders preserve user scrolling. */
 export function TabStrip({
   children,
   label,
@@ -160,7 +160,6 @@ export function TabStrip({
     const element = ref.current;
     if (!element) return;
     let previous: HTMLElement | null = null;
-    let wasOverflowing = element.scrollWidth - element.clientWidth > 1;
     const reveal = (force = false) => {
       const selected = element.querySelector<HTMLElement>(
         '[aria-selected="true"],[aria-pressed="true"],[aria-current="location"],.active',
@@ -174,18 +173,37 @@ export function TabStrip({
       if (inner.left < outer.left) element.scrollLeft -= outer.left - inner.left;
       else if (inner.right > outer.right) element.scrollLeft += inner.right - outer.right;
     };
-    const observer = new MutationObserver(() => reveal());
-    observer.observe(element, { childList: true, subtree: true, attributes: true,
-      attributeFilter: ["aria-selected", "aria-pressed", "aria-current", "class"] });
     reveal();
-    const resize = new ResizeObserver(() => {
-      const overflowing = element.scrollWidth - element.clientWidth > 1;
-      // A responsive strip may overflow while the selected node stays identical.
-      // Reveal only on this transition; other resizes preserve manual scrolling.
-      if (overflowing && !wasOverflowing) reveal(true);
-      wasOverflowing = overflowing;
-    });
+    // Content offsets and widths exclude manual scroll and viewport translation.
+    const horizontalGeometry = () => [element.clientWidth, element.scrollWidth,
+      previous ? previous.getBoundingClientRect().left - element.getBoundingClientRect().left + element.scrollLeft : 0,
+      ...Array.from(element.children, child => child.getBoundingClientRect().width)];
+    let previousGeometry = horizontalGeometry();
+    const checkGeometry = () => {
+      const next = horizontalGeometry();
+      const changed = next.length !== previousGeometry.length ||
+        next.some((value, index) => Math.abs(value - previousGeometry[index]!) > .5);
+      previousGeometry = next;
+      if (changed) reveal(true);
+    };
+    const resize = new ResizeObserver(checkGeometry);
+    const observed = new Set<Element>();
+    const syncChildren = () => {
+      const children = new Set(Array.from(element.children));
+      for (const child of observed) if (!children.has(child)) {
+        resize.unobserve(child);
+        observed.delete(child);
+      }
+      for (const child of children) if (!observed.has(child)) {
+        resize.observe(child);
+        observed.add(child);
+      }
+    };
+    const observer = new MutationObserver(() => { syncChildren(); reveal(); checkGeometry(); });
+    observer.observe(element, { childList: true, subtree: true, characterData: true, attributes: true,
+      attributeFilter: ["aria-selected", "aria-pressed", "aria-current", "class"] });
     resize.observe(element);
+    syncChildren();
     return () => { observer.disconnect(); resize.disconnect(); };
   }, [ref]);
   return (
