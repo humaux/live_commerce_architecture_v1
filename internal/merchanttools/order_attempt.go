@@ -175,9 +175,8 @@ func (m *ManualOrders) withAttempt(ctx context.Context, token, store, key, kind 
 			if err != nil {
 				return err
 			}
-			if recovery.State == "not_created" {
-				return settleIntent(ctx, inner, s, key, "sealed", "")
-			}
+			// Historical not_created receipts can predate reservation cleanup. The recovery transaction must
+			// verify the original seal and release its pending rows before settling, never in this binding transaction.
 			return nil
 		})
 		if err != nil {

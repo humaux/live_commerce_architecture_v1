@@ -399,7 +399,10 @@ func (f *ForBuyer) RecoverPending(ctx context.Context, token, store, recoveryKey
 	}
 	terminal := func() (OrderRecovery, error) {
 		out, err := f.manual.terminalIntent(ctx, token, store, intent.Key)
-		return out, mapForBuyerError(err)
+		if err != nil {
+			return OrderRecovery{}, mapForBuyerError(err)
+		}
+		return out, nil
 	}
 	if intent.State == "created" || intent.State == "sealed" {
 		return terminal()

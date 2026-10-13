@@ -116,6 +116,12 @@ func lookupIntentBegin(ctx context.Context, tx pgx.Tx, token, store, key string)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return manualReceipt{}, false, nil
 	}
+	var pg *pgconn.PgError
+	if errors.As(err, &pg) && pg.Code == "PT409" {
+		// This exact lookup uses PT409 for missing or inconsistent original checkout evidence.
+		// It is UNKNOWN, unlike a verified same-key/body conflict elsewhere; never turn it into an absence seal.
+		return manualReceipt{}, false, ErrUnavailable
+	}
 	return out, err == nil, err
 }
 
