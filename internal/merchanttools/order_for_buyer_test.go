@@ -58,6 +58,34 @@ func TestPickOriginsFailsClosedPerLine(t *testing.T) {
 	}
 }
 
+// Only server-priced winners that cover the full quantity are candidates; ignored rows must not hide that winner.
+func TestPickOriginsIgnoresSupersededAndInsufficientLines(t *testing.T) {
+	winner := claims.ForBuyerLine{BundleID: "winner", OfferID: "active", SKUID: "sku", Quantity: 2, LivePriceMinor: price(100), LiveRemaining: 2}
+	ignored := []claims.ForBuyerLine{
+		{BundleID: "winner", OfferID: "paused", SKUID: "sku", Quantity: 5, LiveRemaining: 5},
+		{BundleID: "small", OfferID: "active", SKUID: "sku", Quantity: 1, LivePriceMinor: price(100), LiveRemaining: 1},
+		{BundleID: "held", OfferID: "active", SKUID: "sku", Quantity: 5, LivePriceMinor: price(100), LiveRemaining: 1},
+	}
+	for _, lines := range [][]claims.ForBuyerLine{append(append([]claims.ForBuyerLine{}, ignored...), winner), append([]claims.ForBuyerLine{winner}, ignored...)} {
+		origins, skipped := pickOrigins([]ManualItem{{SKUID: "sku", Quantity: 2}}, lines)
+		if len(origins) != 1 || origins["sku"].BundleID != winner.BundleID || origins["sku"].OfferID != winner.OfferID || skipped != 0 {
+			t.Fatalf("server winner hidden by a superseded or insufficient line: origins=%+v skipped=%d", origins, skipped)
+		}
+	}
+}
+
+func TestPickOriginsRefusesMultipleQualifyingOrigins(t *testing.T) {
+	a := claims.ForBuyerLine{BundleID: "a", OfferID: "offer", SKUID: "sku", Quantity: 2, LivePriceMinor: price(100), LiveRemaining: 2}
+	b := a
+	b.BundleID = "b"
+	for _, lines := range [][]claims.ForBuyerLine{{a, b}, {b, a}} {
+		origins, skipped := pickOrigins([]ManualItem{{SKUID: "sku", Quantity: 2}}, lines)
+		if len(origins) != 0 || skipped != 1 {
+			t.Fatalf("ambiguous server origins became a live price: origins=%+v skipped=%d", origins, skipped)
+		}
+	}
+}
+
 func TestGrantAuditStaysUnderTheDetailCap(t *testing.T) {
 	var granted []claims.GrantedLine
 	for i := 0; i < 50; i++ {

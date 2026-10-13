@@ -33,7 +33,7 @@ func TestOrderIntentReplayPreservesOriginalPriceReason(t *testing.T) {
 				e.h.livePriceOffer(t, session, "B1", catalogSKU, 5, ltgLive)
 				// One B1 origin alone covers the requested aggregate, but two distinct B1 origins force catalog pricing.
 				e.h.accepted(t, session, bundle, "", "B1+2")
-				secondCatalogBundle = e.h.accepted(t, session, "", "extra-"+t04Tag(), "B1+1").BundleID
+				secondCatalogBundle = e.h.accepted(t, session, "", "extra-"+t04Tag(), "B1+2").BundleID
 				e.h.closeWindow(t, session)
 				e.linkPeer(secondCatalogBundle, conversation)
 				bundles = append(bundles, secondCatalogBundle)
@@ -52,9 +52,9 @@ func TestOrderIntentReplayPreservesOriginalPriceReason(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 			var order string
-			if err := e.p.f.owner.QueryRow(ctx, `SELECT order_id::text FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2
+			if err := e.p.f.owner.QueryRow(ctx, `SELECT response->>'order_id' FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2
  AND operation='merchanttools.order.manual' AND idempotency_key=$3`, e.tenant(), e.store(), key).Scan(&order); err != nil {
-				t.Fatal("barrier has no original completed manual receipt")
+				t.Fatalf("barrier has no original completed manual receipt: %v", err)
 			}
 			originalSnapshot, originalQuote := oiprReadSnapshot(t, e, order)
 			quoteCount := e.count(`SELECT count(*) FROM storefront.quotes WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store())
