@@ -89,7 +89,13 @@ BEGIN
   OR nullif(current_setting('app.principal_id',true),'')::uuid IS DISTINCT FROM s.principal_id THEN
   RAISE EXCEPTION 'invalid scope' USING ERRCODE='PT404'; END IF;
  IF NOT EXISTS(SELECT 1 FROM ops.command_results r WHERE r.tenant_id=s.tenant_id AND r.store_id=p_store
-  AND r.principal_id=s.principal_id AND r.operation='merchanttools.order.attempt' AND r.idempotency_key=p_key) THEN RETURN NULL; END IF;
+  AND r.principal_id=s.principal_id AND r.operation='merchanttools.order.attempt' AND r.idempotency_key=p_key) THEN
+  -- Older Begin-only orders have no full canonical merchant binding. Their owner or request cannot be adopted from today's secret.
+  IF EXISTS(SELECT 1 FROM checkout.command_results r WHERE r.tenant_id=s.tenant_id AND r.store_id=p_store
+   AND r.operation='checkout.begin' AND r.idempotency_key=p_begin) THEN
+   RAISE EXCEPTION 'unresolved legacy checkout' USING ERRCODE='PT503'; END IF;
+  RETURN NULL;
+ END IF;
  SELECT count(*),(array_agg(r.owner_id))[1] INTO v_count,v_owner FROM checkout.command_results r
  JOIN checkout.orders o ON o.tenant_id=r.tenant_id AND o.store_id=r.store_id AND o.owner_id=r.owner_id AND o.id=r.order_id
  WHERE r.tenant_id=s.tenant_id AND r.store_id=p_store AND r.operation='checkout.begin' AND r.idempotency_key=p_begin;
