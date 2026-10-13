@@ -1,6 +1,6 @@
 # Order attempt v1
 
-Status: **DRAFT — DESIGN, not implementation or runtime acceptance**. Owner: integrator; freeze requires independent review. Date: 2026-10-13.
+Status: **FROZEN 2026-10-13 (DESIGN; implementation and runtime acceptance NOT_RUN)**. Frozen by the integrator after independent adversarial review: r1 @99674d85 FAIL (6 P1), r2 @2251abe4 FAIL (1 new P1 N1, all r1 items closed), N1–N7 and the owner decisions (scope principal+store, tombstones 90 days, pay entry 72 hours) applied in 10bb4dbf and checked by the integrator. Reviews: output/order-attempt-contract/independent-review-*.md. Changes after freeze need an amendment with its own review.
 
 Responsibility: atomic merchant-created orders, durable intent/replay, and payment-notification validity. Dependencies: PostgreSQL, existing checkout/inventory/claims domain rules, River, merchant authentication and privacy contracts. Consumers: ManualOrder, LC-U3, A15/A16, recovery, reminders, cancellation and the dispatcher. Invariants: I01–I09, I11, I14–I16, I18–I24 in `invariants.json`.
 
