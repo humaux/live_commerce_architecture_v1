@@ -184,6 +184,16 @@ jobs:
           key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-${{ steps.browsers.outputs.cache }}
       - name: Download pinned test image
         run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+      # Probe-only: unchanged f691f2bcd UI, new assertions execute through actual client seams.
+      - name: RED settled recovery and cancellation UI seams
+        run: |
+          mkdir -p output/ci-gates
+          rc=0
+          node --test --experimental-transform-types tests/admin/create-order-model.test.ts tests/admin/create-order-client.test.ts tests/admin/create-order-attempt.test.ts 2>&1 | tee output/ci-gates/red-settled-client.log
+          test "${PIPESTATUS[0]}" = 0 || rc=1
+          node --test --experimental-strip-types tests/admin/create-order-review.test.ts tests/admin/manual-order-recovery.test.ts 2>&1 | tee output/ci-gates/red-settled-ui.log
+          test "${PIPESTATUS[0]}" = 0 || rc=1
+          exit "$rc"
       - name: Gate
         run: |
           set -o pipefail
