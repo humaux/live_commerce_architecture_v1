@@ -113,6 +113,38 @@ def main():
             "    AND x.state='PENDING' AND x.admission_finished;\n"
             "  UPDATE ops.order_attempts x SET state='ABORTED',settled_at=clock_timestamp(),\n",
         )],
+        "reject-cancelled-replay": [(
+            "internal/orderattempt/executor.go",
+            '\tif fence.State == "COMMITTED" || fence.State == "ABORTED" {\n',
+            '''\tif fence.State == "COMMITTED" || fence.State == "ABORTED" {
+		if fence.State == "COMMITTED" && merchantToken != "" {
+			if _, err = tx.Exec(bounded, `SELECT
+			 set_config('app.tenant_id',s.tenant_id::text,true),
+			 set_config('app.store_id',($2::uuid)::text,true),
+			 set_config('app.principal_id',s.principal_id::text,true)
+			 FROM identity.resolve_access($1::bytea,$2::uuid,'orders:read') s
+			 WHERE s.access_status='ok'`, authHash, storeID); err != nil {
+				return ExecutionReceipt{}, admissionFailure(err, false)
+			}
+			var one bool
+			var orderID, state string
+			err = tx.QueryRow(bounded, `SELECT jsonb_array_length(j)=1,
+			 j->0->>'order_id',j->0->>'commercial_state'
+			 FROM (SELECT identity.read_merchant_orders(
+			 $1::bytea,$2::uuid,$3::uuid,1,NULL::timestamptz,NULL::uuid,'all'
+			 ) AS j) d`, authHash, storeID, attempt).Scan(&one, &orderID, &state)
+			if err != nil {
+				return ExecutionReceipt{}, admissionFailure(err, false)
+			}
+			if !one || orderID != attempt {
+				return ExecutionReceipt{}, &AdmissionError{code: "order_attempt_invalid_response"}
+			}
+			if state == "CANCELLED" {
+				return ExecutionReceipt{}, &AdmissionError{code: "mutation_reject_cancelled"}
+			}
+		}
+''',
+        )],
     }
     if name not in edits:
         raise SystemExit("unknown OA mutation")
