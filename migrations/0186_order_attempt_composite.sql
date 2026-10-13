@@ -41,9 +41,20 @@ BEGIN
   -- No earlier prefix locks recur here. The domain helper requires the exact
   -- native cart/quote/destination from this fenced attempt and validates the
   -- existing Go allocation against the locked native inventory facts.
-  result:=checkout.order_attempt_begin(p_attempt,p_plan_plaintext,
-   (p_input->>'cart_id')::uuid,(p_input->>'quote_id')::uuid,
-   (p_input->>'destination_id')::uuid,p_input->'allocation');
+  BEGIN
+   result:=checkout.order_attempt_begin(p_attempt,p_plan_plaintext,
+    (p_input->>'cart_id')::uuid,(p_input->>'quote_id')::uuid,
+    (p_input->>'destination_id')::uuid,p_input->'allocation');
+  EXCEPTION WHEN SQLSTATE 'PT409' THEN
+   -- A caller changed this transaction's materialized identities/allocation.
+   -- Classify only these exact internal-input failures as invalid stage input;
+   -- stock, capacity, deadline and other dynamic refusals keep their own codes.
+   IF SQLERRM IN ('attempt_cart_conflict','attempt_quote_conflict',
+    'attempt_destination_conflict','stock_plan_differs_from_quote','invalid_stock_plan') THEN
+    RAISE EXCEPTION 'attempt_stage_invalid' USING ERRCODE='PT400';
+   END IF;
+   RAISE;
+  END;
  ELSE
  -- All indexed owners precede every claim, parcel or order resource. Neither
  -- this continuation nor domain helpers resolve a placement-time session again.

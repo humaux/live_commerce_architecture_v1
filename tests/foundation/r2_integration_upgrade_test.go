@@ -96,8 +96,10 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0183 (OA1 locked catalog and native allocation facts) adds one: 106 -> 107.
 	// 0184 (OA1 native Begin, expiry prerequisite and stock conservation) adds one: 107 -> 108.
 	// 0186 (OA1 protected composite preparation entry) adds one: 108 -> 109.
-	if len(r2) != 109 {
-		t.Fatalf("R2 migration set = %d files %v, want 109", len(r2), r2)
+	// 0185 (OA1 original claim locks, uses and complete origin audit) adds one: 109 -> 110.
+	// 0187 (OA1 private reusable pay-entry storage) adds one: 110 -> 111.
+	if len(r2) != 111 {
+		t.Fatalf("R2 migration set = %d files %v, want 111", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
