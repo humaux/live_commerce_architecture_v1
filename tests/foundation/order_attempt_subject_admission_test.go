@@ -107,7 +107,10 @@ func TestOrderAttemptSubjectsScopeAndSelection(t *testing.T) {
 	e := lbuNew(t)
 	tx := oaSubjectTx(t, e)
 	owner := randomUUID()
-	oaStateExec(t, tx, `INSERT INTO buyer.owners(id,tenant_id,store_id) VALUES($1,$2,$3)`, owner, e.p.f.tenantA, e.p.f.storeA2)
+	// lbu's cloned fixture replaces tenantA/storeA1, but keeps the original storeA2.
+	// Read that store's actual tenant; mixing the cloned tenant with it fails its FK.
+	oaStateExec(t, tx, `INSERT INTO buyer.owners(id,tenant_id,store_id)
+	 SELECT $1,tenant_id,id FROM control.stores WHERE id=$2`, owner, e.p.f.storeA2)
 	oaStateExec(t, tx, `SET LOCAL ROLE commerce_order_attempt_owner`)
 	selection := oaFactsSelection(e)
 	selection["for"] = map[string]any{"bundle_ids": []string{}, "conversation_id": nil, "customer_id": owner}
