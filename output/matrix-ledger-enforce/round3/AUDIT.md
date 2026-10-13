@@ -1,0 +1,7 @@
+# PR28 r3 bounded read-only audits
+
+- Reviewer: independent read-only child `gpt-6.1-sol` / high, parent task `649181d5-6d98-4fa2-b9a7-e78ebe429271`; no source edits, browser/PG rerun or push.
+- `b5c7252b-6bc0-45b8-9154-87dfed0a2db1`: gate hash `099136e87e16831a44c408338edf75a33c6a821a72e1a24a37def493040ed1a9`; 37 focused tests exit 0 and eight independent in-memory receiver/effect/attribute/polarity/dependency probes exit 0. Other wrong-target CLI calibrations returned required exit 1. No confirmed P0/P1 in the required scope. This audit precedes only the modal pre-read relocation.
+- `cc05f37b-4331-4634-95bb-11952e1f1c2c`: final ec94 source/receipt audit, automated verification exit 0. All 16 source hashes match Git ec94/current files/local and browser maps. Mutations are exact transformations of final spec; isolated native RED has only the three native failures. 77 logical declarations remain; raw 286/required 231 unique PASS/native three receipts transition null to replacement UUID equal to same axis-save active SKU, excluded from archived SKU IDs.
+- Moving the DOM pre-read before opening the native dialog is consistent with [Playwright's documented modal behavior](https://playwright.dev/docs/dialogs); post-accept UUID uses retrying UI assertion.
+- Scope: focused E3 and source/artifact E1/E3 validation. No new Claude/K3, remote CI, provider or independent runtime approval is claimed. Browser/PG rows were audited from actual original-run receipts, not independently rerun by this reviewer.

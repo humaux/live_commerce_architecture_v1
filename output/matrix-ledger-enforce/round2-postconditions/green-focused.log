@@ -1,0 +1,40 @@
+✔ real Playwright ESM consumer collects the product-editor cases (1201.623625ms)
+✔ every actual mobile control operation is enclosed by its recording callback (72.691042ms)
+✔ post-action outcome cannot be removed while the action and observed receipt remain (38.550333ms)
+✔ post-action outcome cannot be before while the action and observed receipt remain (38.257708ms)
+✔ post-action outcome cannot be after-return while the action and observed receipt remain (33.821125ms)
+✔ post-action outcome cannot be not-awaited while the action and observed receipt remain (30.978958ms)
+✔ post-action outcome cannot be unused-function while the action and observed receipt remain (29.77625ms)
+✔ post-action outcome cannot be nested-step while the action and observed receipt remain (33.4055ms)
+✔ post-action outcome cannot be unreachable-branch while the action and observed receipt remain (31.005625ms)
+✔ each checked state needs its own outcome before the next operation (29.649125ms)
+✔ native acceptance cannot certify its earlier dialog message without the visible save outcome (30.195084ms)
+✔ a literal locator swap cannot certify the original declared control (36.795708ms)
+✔ a lexical alias locator swap cannot certify the original declared control (29.509291ms)
+✔ a field factory locator swap cannot certify the original declared control (32.302042ms)
+✔ a row coordinate locator swap cannot certify the original declared control (26.633833ms)
+✔ a role label locator swap cannot certify the original declared control (30.283959ms)
+✔ a CSS ancestor locator swap cannot certify the original declared control (25.873708ms)
+✔ a unknown dynamic locator swap cannot certify the original declared control (11.761875ms)
+✔ lexical shadowing and mutable field reassignment fail closed (49.547458ms)
+✔ native confirmation cannot substitute its receiver (26.858542ms)
+✔ native confirmation cannot substitute its method (30.378833ms)
+✔ Escape cannot certify another key on the same receiver (26.016583ms)
+✔ a new bare click is rejected without running a browser (21.257292ms)
+✔ a different control cannot borrow an existing action's recording callback (43.419875ms)
+✔ a direct ledger push cannot bypass canonical recording (26.100042ms)
+✔ removing the recording wrapper rejects the enclosed real action (29.06125ms)
+✔ shared table has only complete meaningful unique declarations (0.259875ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (zh-TW) (0.86475ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (zh-CN) (0.341042ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (en) (0.2655ms)
+✔ failed assertion and missing observation cannot emit a PASS or satisfy completeness (0.174042ms)
+✔ in-flight action cannot masquerade as complete or admit a concurrent duplicate (0.294958ms)
+ℹ tests 32
+ℹ suites 0
+ℹ pass 32
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2235.364375

@@ -1,0 +1,39 @@
+{
+  "base_commit": "760e354e8d466e2e5876d1fb5d433d74e3d10d2e",
+  "source_files_sha256": {
+    "tests/ci/product-editor-matrix-controls.mjs": "9eb9694d1cbf2e5ecab581152d5e9ee9b40838913bc1a72b342bcd46718f0894",
+    "tests/ci/product-editor-matrix-controls.test.mjs": "f376156d0da5dac0e41e043ad632e997377f8637a5578344c98beb32296e92ba",
+    "tests/admin/product-editor-matrix-ledger.ts": "8f316ca5d61458e5c01f98891d784677998acca1240d1270311c0b4235e48e09",
+    "tests/foundation/testdata/product_editor_matrix_cases.json": "4f7f25bb1874c09e3730480f969f846da11cec8bbafa3c4c60bd40b2b8bc0364",
+    "apps/admin/components/ProductBulkFill.tsx": "6de889201888064efb4b055354cd07599cc605c7c25686009f84a5c8c4106c0f"
+  },
+  "initial_red": {
+    "command": "node --test tests/ci/product-editor-matrix-controls.test.mjs",
+    "exit": 1,
+    "state": "production seven controls have no canonical real actions"
+  },
+  "final_mutation_red": {
+    "command": "node --input-type=module (bulkControlIssues with all bulk-apply declarations removed)",
+    "exit": 1,
+    "mutation": "table omits rendered Apply control despite internally complete remaining table",
+    "gate_source": "final_source_files_sha256"
+  },
+  "green": {
+    "command": "node --test tests/ci/product-editor-matrix-controls.test.mjs",
+    "exit": 0,
+    "cases": 9
+  },
+  "final_source_commit": "d93700a4ab0fb541aa8d3ee2d540c0d94b29f50f",
+  "final_source_files_sha256": {
+    "tests/ci/product-editor-matrix-controls.mjs": "d688d5822ac86c041f017af7c3361ac5bf48524ddcc29386dcd6ff9312abb617",
+    "tests/ci/product-editor-matrix-controls.test.mjs": "0fd469cca91a990972881b9fcf38961fab75c9f455c57d5b5842c7cf9168e132",
+    "tests/admin/product-editor-matrix-ledger.ts": "8f316ca5d61458e5c01f98891d784677998acca1240d1270311c0b4235e48e09",
+    "tests/foundation/testdata/product_editor_matrix_cases.json": "d380f3e06babf7a96b77fe4ff46ddf77b38d84da521c8f0f378704e7f0ebca0d",
+    "apps/admin/components/ProductBulkFill.tsx": "6de889201888064efb4b055354cd07599cc605c7c25686009f84a5c8c4106c0f"
+  },
+  "noop_inventory_red": {
+    "command": "node --input-type=module (bulkInventoryBindingIssues with recorder method replaced by assertComplete)",
+    "exit": 1,
+    "mutation": "actual DOM expression and invocation retained, wrong recorder method"
+  }
+}

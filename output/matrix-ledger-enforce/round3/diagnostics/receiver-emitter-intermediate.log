@@ -1,0 +1,300 @@
+✔ real Playwright ESM consumer collects the product-editor cases (1045.879875ms)
+✖ every actual mobile control operation is enclosed by its recording callback (46.722ms)
+✖ post-action outcome cannot be removed while the action and observed receipt remain (24.733333ms)
+✖ post-action outcome cannot be before while the action and observed receipt remain (20.186083ms)
+✖ post-action outcome cannot be after-return while the action and observed receipt remain (19.326792ms)
+✖ post-action outcome cannot be not-awaited while the action and observed receipt remain (21.676666ms)
+✖ post-action outcome cannot be unused-function while the action and observed receipt remain (16.904083ms)
+✖ post-action outcome cannot be nested-step while the action and observed receipt remain (16.698ms)
+✖ post-action outcome cannot be unreachable-branch while the action and observed receipt remain (18.016625ms)
+✖ each checked state needs its own outcome before the next operation (16.617542ms)
+✖ an unrelated-outcome cannot certify the product-name fill (17.487334ms)
+✖ an tautological-outcome cannot certify the product-name fill (14.557875ms)
+✖ native acceptance cannot certify its earlier dialog message without the persisted replacement outcome (0.1595ms)
+✔ a literal locator swap cannot certify the original declared control (14.964917ms)
+✔ a lexical alias locator swap cannot certify the original declared control (18.028ms)
+✔ a field factory locator swap cannot certify the original declared control (14.954375ms)
+✔ a row coordinate locator swap cannot certify the original declared control (15.002416ms)
+✔ a role label locator swap cannot certify the original declared control (15.004917ms)
+✔ a CSS ancestor locator swap cannot certify the original declared control (14.944459ms)
+✔ a unknown dynamic locator swap cannot certify the original declared control (13.886ms)
+✔ lexical shadowing and mutable field reassignment fail closed (29.754958ms)
+✔ native confirmation cannot substitute its receiver (15.329ms)
+✔ native confirmation cannot substitute its method (18.587042ms)
+✔ Escape cannot certify another key on the same receiver (29.648833ms)
+✔ a new bare click is rejected without running a browser (14.731125ms)
+✔ a different control cannot borrow an existing action's recording callback (29.15275ms)
+✔ a direct ledger push cannot bypass canonical recording (13.5475ms)
+✔ removing the recording wrapper rejects the enclosed real action (20.092ms)
+✔ shared table has only complete meaningful unique declarations (0.688125ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (zh-TW) (0.947042ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (zh-CN) (0.346084ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (en) (0.288958ms)
+✔ failed assertion and missing observation cannot emit a PASS or satisfy completeness (0.194875ms)
+✔ in-flight action cannot masquerade as complete or admit a concurrent duplicate (0.298834ms)
+ℹ tests 34
+ℹ suites 0
+ℹ pass 22
+ℹ fail 12
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1822.309292
+
+✖ failing tests:
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:504:1
+✖ every actual mobile control operation is enclosed by its recording callback (46.722ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   "identity mismatch: unsupported source binding: Cannot read properties of undefined (reading 'kind')"
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/tests/ci/product-editor-matrix-ledger.test.mjs:505:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ "identity mismatch: unsupported source binding: Cannot read properties of undefined (reading 'kind')" ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:509:3
+✖ post-action outcome cannot be removed while the action and observed receipt remain (24.733333ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(uncoveredActions(changePostcondition(spec, mode)).some((line) => line.includes("missing outcome assertion")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/tests/ci/product-editor-matrix-ledger.test.mjs:510:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:509:3
+✖ post-action outcome cannot be before while the action and observed receipt remain (20.186083ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(uncoveredActions(changePostcondition(spec, mode)).some((line) => line.includes("missing outcome assertion")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/tests/ci/product-editor-matrix-ledger.test.mjs:510:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:509:3
+✖ post-action outcome cannot be after-return while the action and observed receipt remain (19.326792ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(uncoveredActions(changePostcondition(spec, mode)).some((line) => line.includes("missing outcome assertion")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/tests/ci/product-editor-matrix-ledger.test.mjs:510:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:509:3
+✖ post-action outcome cannot be not-awaited while the action and observed receipt remain (21.676666ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(uncoveredActions(changePostcondition(spec, mode)).some((line) => line.includes("missing outcome assertion")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/tests/ci/product-editor-matrix-ledger.test.mjs:510:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:509:3
+✖ post-action outcome cannot be unused-function while the action and observed receipt remain (16.904083ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(uncoveredActions(changePostcondition(spec, mode)).some((line) => line.includes("missing outcome assertion")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/tests/ci/product-editor-matrix-ledger.test.mjs:510:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:509:3
+✖ post-action outcome cannot be nested-step while the action and observed receipt remain (16.698ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(uncoveredActions(changePostcondition(spec, mode)).some((line) => line.includes("missing outcome assertion")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/tests/ci/product-editor-matrix-ledger.test.mjs:510:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:509:3
+✖ post-action outcome cannot be unreachable-branch while the action and observed receipt remain (18.016625ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(uncoveredActions(changePostcondition(spec, mode)).some((line) => line.includes("missing outcome assertion")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/tests/ci/product-editor-matrix-ledger.test.mjs:510:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:513:1
+✖ each checked state needs its own outcome before the next operation (16.617542ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(uncoveredActions(spec.replace(assertion, "")).some((line) => line.includes("missing outcome assertion")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/tests/ci/product-editor-matrix-ledger.test.mjs:516:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:519:3
+✖ an unrelated-outcome cannot certify the product-name fill (17.487334ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(uncoveredActions(changePostcondition(spec, mode)).some((line) => line.includes("missing outcome assertion")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/tests/ci/product-editor-matrix-ledger.test.mjs:520:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:519:3
+✖ an tautological-outcome cannot certify the product-name fill (14.557875ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(uncoveredActions(changePostcondition(spec, mode)).some((line) => line.includes("missing outcome assertion")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/tests/ci/product-editor-matrix-ledger.test.mjs:520:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:523:1
+✖ native acceptance cannot certify its earlier dialog message without the persisted replacement outcome (0.1595ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(at > start)
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/tests/ci/product-editor-matrix-ledger.test.mjs:527:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

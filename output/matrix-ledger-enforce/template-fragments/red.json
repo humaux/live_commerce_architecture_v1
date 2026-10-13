@@ -1,0 +1,24 @@
+{
+  "base_commit": "da911f4251434460b62cca81eb52c5652072a87f",
+  "argv": [
+    "node",
+    "--test",
+    "--test-name-pattern=canonical expected claim rejects fallback-sku-selector",
+    "tests/ci/product-editor-matrix-ledger.test.mjs"
+  ],
+  "exit_code": 1,
+  "elapsed_seconds": 1.89,
+  "source_sha256": {
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "4700547960668f7281745d9411ae964e5ca8e8804fa29cc121fb9c2faeb31541",
+    "tests/ci/product-editor-matrix-claims.mjs": "2ac67c3f99524e38e8bf448434f6cfa67e41f8fa28dbf55c37b4ff7a0b11c7a4",
+    "tests/admin/product-editor.acceptance.ts": "9c2c883ee9677805dccbfcb47d0582984955a7ea9bbb4db3c88ce8f5a0ca37bc"
+  },
+  "snapshots": {
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "output/matrix-ledger-enforce/template-fragments/red-gate.source.txt",
+    "tests/ci/product-editor-matrix-claims.mjs": "output/matrix-ledger-enforce/template-fragments/red-claims.source.txt",
+    "tests/admin/product-editor.acceptance.ts": "output/matrix-ledger-enforce/template-fragments/acceptance.source.txt"
+  },
+  "log": "output/matrix-ledger-enforce/template-fragments/red.log",
+  "log_sha256": "57d99288214fe6bd485f36e90d3856aec84ba0543b961c349e3c39c115ec7079",
+  "status": "RED before implementation"
+}

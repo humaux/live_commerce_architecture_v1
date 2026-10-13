@@ -1,0 +1,53 @@
+{
+  "command": [
+    "go",
+    "test",
+    "./tests/foundation",
+    "-run",
+    "^TestProductEditorMatrixLedger",
+    "-count=1",
+    "-v"
+  ],
+  "timeout_seconds": 600,
+  "started_at": "2026-10-13T03:55:05Z",
+  "runner_pid": 51301,
+  "tested_source_commit": "e0fb76ce4034721a5429f701469a3e9fd4b756e7",
+  "source_files_sha256": {
+    "apps/admin/components/ProductBulkFill.tsx": "6de889201888064efb4b055354cd07599cc605c7c25686009f84a5c8c4106c0f",
+    "tests/admin/product-editor.acceptance.ts": "22058c90fd04c9c5939b7db835802204ba664a9ac63aef85845d98437898eaed",
+    "tests/admin/product-editor-matrix-ledger.ts": "8f316ca5d61458e5c01f98891d784677998acca1240d1270311c0b4235e48e09",
+    "tests/foundation/testdata/product_editor_matrix_cases.json": "d380f3e06babf7a96b77fe4ff46ddf77b38d84da521c8f0f378704e7f0ebca0d",
+    "tests/foundation/catalog_matrix_ledger_test.go": "064d5bb7152eeb66ee63df28dfebc824c5c4c1e60dc2d2e28473c7b65b699292",
+    "tests/foundation/catalog_matrix_evidence_test.go": "f81717a6970a6cb2b4e149eb33d27c885bae1015ca2cd4468688cbe908f7f317",
+    "tests/foundation/browser_catalog_core_test.go": "7630208cfdee79f5c80297e82b6d927b7896e44c57c5b7f69d79b32ad405a29d",
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "a456714c2a6bb237a5f0fe19f17d87dbf8a0e2be33d7a3bb73ba1ccc62bab23c",
+    "tests/ci/product-editor-matrix-claims.mjs": "86cc2ea894433aefe150d312f02f757c932297d3c2b0c5f01f3a2a956cb50523",
+    "tests/ci/product-editor-matrix-source.mjs": "e6d26feb29c99ea258d9881cb2e44ece1445049497e578ebc778910e5d2569de",
+    "tests/ci/product-editor-matrix-execution.mjs": "16c2ea1f2db41bb8b4b7ab6c991fce370b79cbc7054cd0ecbcc9b0bb78d51fe1",
+    "tests/ci/product-editor-matrix-execution.test.mjs": "5bdd3529c62d223e442c2a8d72e3f15de95ce03f5a17c1a19989c9f3bf451c15",
+    "tests/ci/product-editor-matrix-controls.mjs": "d688d5822ac86c041f017af7c3361ac5bf48524ddcc29386dcd6ff9312abb617",
+    "tests/ci/product-editor-matrix-controls.test.mjs": "0fd469cca91a990972881b9fcf38961fab75c9f455c57d5b5842c7cf9168e132"
+  },
+  "environment": {},
+  "child_pid": 51331,
+  "exit_code": 0,
+  "duration_seconds": 9.022,
+  "finished_at": "2026-10-13T03:55:14Z",
+  "source_commit_after": "e0fb76ce4034721a5429f701469a3e9fd4b756e7",
+  "source_files_sha256_after": {
+    "apps/admin/components/ProductBulkFill.tsx": "6de889201888064efb4b055354cd07599cc605c7c25686009f84a5c8c4106c0f",
+    "tests/admin/product-editor.acceptance.ts": "22058c90fd04c9c5939b7db835802204ba664a9ac63aef85845d98437898eaed",
+    "tests/admin/product-editor-matrix-ledger.ts": "8f316ca5d61458e5c01f98891d784677998acca1240d1270311c0b4235e48e09",
+    "tests/foundation/testdata/product_editor_matrix_cases.json": "d380f3e06babf7a96b77fe4ff46ddf77b38d84da521c8f0f378704e7f0ebca0d",
+    "tests/foundation/catalog_matrix_ledger_test.go": "064d5bb7152eeb66ee63df28dfebc824c5c4c1e60dc2d2e28473c7b65b699292",
+    "tests/foundation/catalog_matrix_evidence_test.go": "f81717a6970a6cb2b4e149eb33d27c885bae1015ca2cd4468688cbe908f7f317",
+    "tests/foundation/browser_catalog_core_test.go": "7630208cfdee79f5c80297e82b6d927b7896e44c57c5b7f69d79b32ad405a29d",
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "a456714c2a6bb237a5f0fe19f17d87dbf8a0e2be33d7a3bb73ba1ccc62bab23c",
+    "tests/ci/product-editor-matrix-claims.mjs": "86cc2ea894433aefe150d312f02f757c932297d3c2b0c5f01f3a2a956cb50523",
+    "tests/ci/product-editor-matrix-source.mjs": "e6d26feb29c99ea258d9881cb2e44ece1445049497e578ebc778910e5d2569de",
+    "tests/ci/product-editor-matrix-execution.mjs": "16c2ea1f2db41bb8b4b7ab6c991fce370b79cbc7054cd0ecbcc9b0bb78d51fe1",
+    "tests/ci/product-editor-matrix-execution.test.mjs": "5bdd3529c62d223e442c2a8d72e3f15de95ce03f5a17c1a19989c9f3bf451c15",
+    "tests/ci/product-editor-matrix-controls.mjs": "d688d5822ac86c041f017af7c3361ac5bf48524ddcc29386dcd6ff9312abb617",
+    "tests/ci/product-editor-matrix-controls.test.mjs": "0fd469cca91a990972881b9fcf38961fab75c9f455c57d5b5842c7cf9168e132"
+  }
+}

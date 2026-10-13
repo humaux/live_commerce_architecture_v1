@@ -1,0 +1,29 @@
+{
+  "hard_sources": [
+    "tests/foundation/catalog_matrix_ledger_test.go",
+    "tests/foundation/browser_catalog_core_test.go",
+    "tests/admin/product-editor.acceptance.ts",
+    "tests/admin/product-editor-matrix-ledger.ts",
+    "tests/foundation/testdata/product_editor_matrix_cases.json",
+    "tests/ci/product-editor-matrix-ledger.test.mjs",
+    "tests/ci/product-editor-matrix-claims.mjs",
+    "tests/ci/product-editor-matrix-source.mjs",
+    "tests/foundation/catalog_matrix_evidence_test.go",
+    "tests/ci/product-editor-matrix-execution.mjs",
+    "tests/ci/product-editor-matrix-execution.test.mjs"
+  ],
+  "informational_sources": [
+    "tests/foundation/testdata/product_editor_mobile_matrix_ledger.json",
+    "scripts/dev/test-node.sh",
+    "docs/delivery/GATES.md",
+    "scripts/dev/test-local.sh",
+    "playwright.config.ts",
+    "apps/admin/lib/product-editor-copy.ts",
+    "apps/admin/components/ProductDocumentVariants.tsx",
+    "apps/admin/components/ProductDocumentForm.tsx",
+    "apps/admin/lib/use-product-document.ts",
+    "apps/admin/lib/product-document.ts",
+    "scripts/dev/check-gates.sh",
+    ".github/workflows/gates.yml"
+  ]
+}

@@ -1,0 +1,14 @@
+✔ matrix gates are executed through the actual current commands (6.153958ms)
+✔ incidental comment cannot replace the active Node product-editor-matrix-ledger.test.mjs argv (3.099625ms)
+✔ incidental comment cannot replace the active Node product-editor-matrix-execution.test.mjs argv (2.809792ms)
+✔ CI cannot append an evidence-test skip to the actual balanced dispatch (9.692083ms)
+✔ foundation go test must forward the actual RUN selector (1.748916ms)
+✔ foundation go test must forward the actual SKIP selector (1.568417ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 119.121167

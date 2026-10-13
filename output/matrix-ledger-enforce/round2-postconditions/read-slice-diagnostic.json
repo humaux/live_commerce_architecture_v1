@@ -1,0 +1,13 @@
+{
+  "argv": [
+    "node",
+    "--test",
+    "tests/ci/product-editor-matrix-ledger.test.mjs"
+  ],
+  "exit_code": 1,
+  "elapsed_seconds": 2.195,
+  "log": "output/matrix-ledger-enforce/round2-postconditions/read-slice-diagnostic.log",
+  "log_sha256": "6e39ea832c5ec84fd655a1436dba7a96429c2a57109741422ab0fa9b54b40016",
+  "original_log": "output/matrix-ledger-enforce/round2-postconditions/green-focused.log",
+  "classification": "Historical implementation diagnostic, not acceptance"
+}

@@ -1,0 +1,126 @@
+{
+  "source_commit": "05c2af77a6f90cef0fc797520b2f6361d1635527",
+  "producer_sha256": {
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "310b363d1725993750106ef697c7f4264390a9faf7d8aab9589e6590320980ff",
+    "tests/ci/product-editor-matrix-claims.mjs": "2ac67c3f99524e38e8bf448434f6cfa67e41f8fa28dbf55c37b4ff7a0b11c7a4",
+    "tests/ci/product-editor-matrix-source.mjs": "e6d26feb29c99ea258d9881cb2e44ece1445049497e578ebc778910e5d2569de",
+    "tests/foundation/testdata/product_editor_matrix_cases.json": "d07a76d8a5891a227be57d195b505714437dcd17401ab3e848d57c7f79d1022a",
+    "tests/admin/product-editor.acceptance.ts": "9c2c883ee9677805dccbfcb47d0582984955a7ea9bbb4db3c88ce8f5a0ca37bc",
+    "tests/admin/product-editor-matrix-ledger.ts": "323eee50ca22baf00429bac778473563191e3aae96d43d725b68e2ec5b00e4c6"
+  },
+  "records": [
+    {
+      "mode": "dropped-write-count",
+      "argv": [
+        "node",
+        "--test",
+        "--test-name-pattern=every actual mobile",
+        "tests/ci/product-editor-matrix-ledger.test.mjs"
+      ],
+      "env": {
+        "LC_MATRIX_ACTION_MUTATION": "dropped-write-count",
+        "LC_MATRIX_MUTATION_SNAPSHOT": "output/matrix-ledger-enforce/round3-canonical/dropped-write-count.source.txt"
+      },
+      "exit_code": 1,
+      "elapsed_seconds": 4.294780015945435,
+      "source_snapshot": "output/matrix-ledger-enforce/round3-canonical/dropped-write-count.source.txt",
+      "source_sha256": "b63cbb59ca13b4c77270f4c41ec49df6a85cc69bd60c6d1062157c9cfa0c2c9b",
+      "log": "output/matrix-ledger-enforce/round3-canonical/dropped-write-count.log",
+      "log_sha256": "eded76d2842afbd9b7b795cb83efa4f7b67f4f4f613e7e12f29b17e05c4d64c5"
+    },
+    {
+      "mode": "dropped-persistence",
+      "argv": [
+        "node",
+        "--test",
+        "--test-name-pattern=every actual mobile",
+        "tests/ci/product-editor-matrix-ledger.test.mjs"
+      ],
+      "env": {
+        "LC_MATRIX_ACTION_MUTATION": "dropped-persistence",
+        "LC_MATRIX_MUTATION_SNAPSHOT": "output/matrix-ledger-enforce/round3-canonical/dropped-persistence.source.txt"
+      },
+      "exit_code": 1,
+      "elapsed_seconds": 1.3506419658660889,
+      "source_snapshot": "output/matrix-ledger-enforce/round3-canonical/dropped-persistence.source.txt",
+      "source_sha256": "abe1fe63afa1bc4e227035024cc7c80e708961fe6a3e8fba947941eec9957f53",
+      "log": "output/matrix-ledger-enforce/round3-canonical/dropped-persistence.log",
+      "log_sha256": "42e59c78ec465de2e58e14560499ad46f88da3004a88541ae128b5400f0d081d"
+    },
+    {
+      "mode": "unrelated-outcome",
+      "argv": [
+        "node",
+        "--test",
+        "--test-name-pattern=every actual mobile",
+        "tests/ci/product-editor-matrix-ledger.test.mjs"
+      ],
+      "env": {
+        "LC_MATRIX_ACTION_MUTATION": "unrelated-outcome",
+        "LC_MATRIX_MUTATION_SNAPSHOT": "output/matrix-ledger-enforce/round3-canonical/unrelated-outcome.source.txt"
+      },
+      "exit_code": 1,
+      "elapsed_seconds": 1.3690621852874756,
+      "source_snapshot": "output/matrix-ledger-enforce/round3-canonical/unrelated-outcome.source.txt",
+      "source_sha256": "4a9575b54299c8da98dd2345ab9e8c6f5baaa6b1e300884a25a8e3bbb32dea26",
+      "log": "output/matrix-ledger-enforce/round3-canonical/unrelated-outcome.log",
+      "log_sha256": "0667c232182bf115eb80d6b55e3d7b7ef40e78cabdfc297fb29455e360297288"
+    },
+    {
+      "mode": "nested-step",
+      "argv": [
+        "node",
+        "--test",
+        "--test-name-pattern=every actual mobile",
+        "tests/ci/product-editor-matrix-ledger.test.mjs"
+      ],
+      "env": {
+        "LC_MATRIX_ACTION_MUTATION": "nested-step",
+        "LC_MATRIX_MUTATION_SNAPSHOT": "output/matrix-ledger-enforce/round3-canonical/nested-step.source.txt"
+      },
+      "exit_code": 1,
+      "elapsed_seconds": 0.6618156433105469,
+      "source_snapshot": "output/matrix-ledger-enforce/round3-canonical/nested-step.source.txt",
+      "source_sha256": "d162152543ab89156b5a915cc13ed3bf953154c69cef108f6d0ecdc4033afeb3",
+      "log": "output/matrix-ledger-enforce/round3-canonical/nested-step.log",
+      "log_sha256": "3474193f39c4d563b92933c521ce8410f0b3682ca21a9e45eebd131b24ca006c"
+    },
+    {
+      "mode": "native-missing-outcome",
+      "argv": [
+        "node",
+        "--test",
+        "--test-name-pattern=every actual mobile",
+        "tests/ci/product-editor-matrix-ledger.test.mjs"
+      ],
+      "env": {
+        "LC_MATRIX_ACTION_MUTATION": "native-missing-outcome",
+        "LC_MATRIX_MUTATION_SNAPSHOT": "output/matrix-ledger-enforce/round3-canonical/native-missing-outcome.source.txt"
+      },
+      "exit_code": 1,
+      "elapsed_seconds": 1.4510321617126465,
+      "source_snapshot": "output/matrix-ledger-enforce/round3-canonical/native-missing-outcome.source.txt",
+      "source_sha256": "ed0e0c725ff1db48bf6183f9b1babbc88a97ab2906ebd9351a1ae89ded871839",
+      "log": "output/matrix-ledger-enforce/round3-canonical/native-missing-outcome.log",
+      "log_sha256": "3dd23034c2596074c0610668cee7ec4d8c2c30f0f82d0f0cdb0d41186ccba59f"
+    },
+    {
+      "mode": null,
+      "argv": [
+        "node",
+        "--test",
+        "--test-name-pattern=every actual mobile",
+        "tests/ci/product-editor-matrix-ledger.test.mjs"
+      ],
+      "env": {
+        "LC_MATRIX_MUTATION_SNAPSHOT": "output/matrix-ledger-enforce/round3-canonical/restored.source.txt"
+      },
+      "exit_code": 0,
+      "elapsed_seconds": 0.8538539409637451,
+      "source_snapshot": "output/matrix-ledger-enforce/round3-canonical/restored.source.txt",
+      "source_sha256": "9c2c883ee9677805dccbfcb47d0582984955a7ea9bbb4db3c88ce8f5a0ca37bc",
+      "log": "output/matrix-ledger-enforce/round3-canonical/restored.log",
+      "log_sha256": "5750f1e8d77bda5463f3b7c395574fc572a72ace9f71a1f7c9455982176e65e5"
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+TypeError: Module "file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/tests/foundation/testdata/product_editor_matrix_cases.json" needs an import attribute of "type: json"
+    at eval (<anonymous>:1:1)
+Error: No tests found

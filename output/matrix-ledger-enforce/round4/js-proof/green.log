@@ -1,0 +1,20 @@
+✔ canonical unary signature distinguishes !x from ~x (0.950334ms)
+✔ canonical unary signature distinguishes !x from +x (0.235583ms)
+✔ canonical unary signature distinguishes ++x from --x (0.133291ms)
+✔ canonical unary signature distinguishes x++ from x-- (0.137625ms)
+✔ CI hook refusal: CI="true" LC_MATRIX_ACTION_MUTATION="" (168.147958ms)
+✔ CI hook refusal: CI="true" LC_MATRIX_ACTION_MUTATION="enabled" (159.19575ms)
+✔ CI hook refusal: CI="true" LC_MATRIX_MUTATION_SNAPSHOT="" (152.495167ms)
+✔ CI hook refusal: CI="true" LC_MATRIX_MUTATION_SNAPSHOT="enabled" (152.36325ms)
+✔ CI hook refusal: CI="" LC_MATRIX_ACTION_MUTATION="" (144.626333ms)
+✔ CI hook refusal: CI="" LC_MATRIX_ACTION_MUTATION="enabled" (151.902084ms)
+✔ CI hook refusal: CI="" LC_MATRIX_MUTATION_SNAPSHOT="" (153.888916ms)
+✔ CI hook refusal: CI="" LC_MATRIX_MUTATION_SNAPSHOT="enabled" (152.55675ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1452.811667

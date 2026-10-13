@@ -1,0 +1,284 @@
+✖ canonical unary signature distinguishes !x from ~x (2.09875ms)
+✖ canonical unary signature distinguishes !x from +x (0.327083ms)
+✖ canonical unary signature distinguishes ++x from --x (0.151833ms)
+✖ canonical unary signature distinguishes x++ from x-- (0.180709ms)
+✖ CI hook refusal: CI="true" LC_MATRIX_ACTION_MUTATION="" (44.155167ms)
+✖ CI hook refusal: CI="true" LC_MATRIX_ACTION_MUTATION="enabled" (47.325917ms)
+✖ CI hook refusal: CI="true" LC_MATRIX_MUTATION_SNAPSHOT="" (59.694167ms)
+✖ CI hook refusal: CI="true" LC_MATRIX_MUTATION_SNAPSHOT="enabled" (62.692ms)
+✖ CI hook refusal: CI="" LC_MATRIX_ACTION_MUTATION="" (56.378ms)
+✖ CI hook refusal: CI="" LC_MATRIX_ACTION_MUTATION="enabled" (46.124417ms)
+✖ CI hook refusal: CI="" LC_MATRIX_MUTATION_SNAPSHOT="" (54.821125ms)
+✖ CI hook refusal: CI="" LC_MATRIX_MUTATION_SNAPSHOT="enabled" (52.185208ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 0
+ℹ fail 12
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 712.344625
+
+✖ failing tests:
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:309:3
+✖ canonical unary signature distinguishes !x from ~x (2.09875ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be strictly unequal to:
+  
+  '["PrefixUnaryExpression",["identifier","x"]]'
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-r4-js-proof/tests/ci/product-editor-matrix-ledger.test.mjs:312:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '["PrefixUnaryExpression",["identifier","x"]]',
+    expected: '["PrefixUnaryExpression",["identifier","x"]]',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:309:3
+✖ canonical unary signature distinguishes !x from +x (0.327083ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be strictly unequal to:
+  
+  '["PrefixUnaryExpression",["identifier","x"]]'
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-r4-js-proof/tests/ci/product-editor-matrix-ledger.test.mjs:312:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '["PrefixUnaryExpression",["identifier","x"]]',
+    expected: '["PrefixUnaryExpression",["identifier","x"]]',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:309:3
+✖ canonical unary signature distinguishes ++x from --x (0.151833ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be strictly unequal to:
+  
+  '["PrefixUnaryExpression",["identifier","x"]]'
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-r4-js-proof/tests/ci/product-editor-matrix-ledger.test.mjs:312:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '["PrefixUnaryExpression",["identifier","x"]]',
+    expected: '["PrefixUnaryExpression",["identifier","x"]]',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:309:3
+✖ canonical unary signature distinguishes x++ from x-- (0.180709ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be strictly unequal to:
+  
+  '["PostfixUnaryExpression",["identifier","x"]]'
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-r4-js-proof/tests/ci/product-editor-matrix-ledger.test.mjs:312:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '["PostfixUnaryExpression",["identifier","x"]]',
+    expected: '["PostfixUnaryExpression",["identifier","x"]]',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:317:40
+✖ CI hook refusal: CI="true" LC_MATRIX_ACTION_MUTATION="" (44.155167ms)
+  AssertionError [ERR_ASSERTION]: (node:19563) Warning: node:test run() is being called recursively within a test file. skipping running files.
+  (Use `node --trace-warnings ...` to show where the warning was created)
+  
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-r4-js-proof/tests/ci/product-editor-matrix-ledger.test.mjs:331:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:317:40
+✖ CI hook refusal: CI="true" LC_MATRIX_ACTION_MUTATION="enabled" (47.325917ms)
+  AssertionError [ERR_ASSERTION]: (node:19564) Warning: node:test run() is being called recursively within a test file. skipping running files.
+  (Use `node --trace-warnings ...` to show where the warning was created)
+  
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-r4-js-proof/tests/ci/product-editor-matrix-ledger.test.mjs:331:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:317:40
+✖ CI hook refusal: CI="true" LC_MATRIX_MUTATION_SNAPSHOT="" (59.694167ms)
+  AssertionError [ERR_ASSERTION]: (node:19565) Warning: node:test run() is being called recursively within a test file. skipping running files.
+  (Use `node --trace-warnings ...` to show where the warning was created)
+  
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-r4-js-proof/tests/ci/product-editor-matrix-ledger.test.mjs:331:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:317:40
+✖ CI hook refusal: CI="true" LC_MATRIX_MUTATION_SNAPSHOT="enabled" (62.692ms)
+  AssertionError [ERR_ASSERTION]: (node:19566) Warning: node:test run() is being called recursively within a test file. skipping running files.
+  (Use `node --trace-warnings ...` to show where the warning was created)
+  
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-r4-js-proof/tests/ci/product-editor-matrix-ledger.test.mjs:331:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:317:40
+✖ CI hook refusal: CI="" LC_MATRIX_ACTION_MUTATION="" (56.378ms)
+  AssertionError [ERR_ASSERTION]: (node:19567) Warning: node:test run() is being called recursively within a test file. skipping running files.
+  (Use `node --trace-warnings ...` to show where the warning was created)
+  
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-r4-js-proof/tests/ci/product-editor-matrix-ledger.test.mjs:331:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:317:40
+✖ CI hook refusal: CI="" LC_MATRIX_ACTION_MUTATION="enabled" (46.124417ms)
+  AssertionError [ERR_ASSERTION]: (node:19568) Warning: node:test run() is being called recursively within a test file. skipping running files.
+  (Use `node --trace-warnings ...` to show where the warning was created)
+  
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-r4-js-proof/tests/ci/product-editor-matrix-ledger.test.mjs:331:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:317:40
+✖ CI hook refusal: CI="" LC_MATRIX_MUTATION_SNAPSHOT="" (54.821125ms)
+  AssertionError [ERR_ASSERTION]: (node:19569) Warning: node:test run() is being called recursively within a test file. skipping running files.
+  (Use `node --trace-warnings ...` to show where the warning was created)
+  
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-r4-js-proof/tests/ci/product-editor-matrix-ledger.test.mjs:331:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:317:40
+✖ CI hook refusal: CI="" LC_MATRIX_MUTATION_SNAPSHOT="enabled" (52.185208ms)
+  AssertionError [ERR_ASSERTION]: (node:19570) Warning: node:test run() is being called recursively within a test file. skipping running files.
+  (Use `node --trace-warnings ...` to show where the warning was created)
+  
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-r4-js-proof/tests/ci/product-editor-matrix-ledger.test.mjs:331:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

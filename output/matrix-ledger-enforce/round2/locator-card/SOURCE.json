@@ -1,0 +1,47 @@
+{
+  "task_id": "61406236-sub-locator",
+  "parent_task_id": "61406236-763f-47fa-876a-871945976431",
+  "base_commit": "6feb3890a5006a4583f7cc158041694e8104a491",
+  "branch": "codex/pr28-locator-binding",
+  "worktree": ".worktrees/pr28-locator-binding",
+  "role": "writer",
+  "configured_model": "gpt-6.1-sol",
+  "configured_reasoning": "high",
+  "actual_model": "UNKNOWN",
+  "actual_reasoning": "UNKNOWN",
+  "write_paths": [
+    "tests/ci/product-editor-matrix-ledger.test.mjs"
+  ],
+  "scope": "Node-only locator identity gate; no real browser/server/PG/provider action",
+  "created_at": "2026-10-09T17:19:39.837281+00:00",
+  "source_sha256": {
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "deff2b4ca0cea6bfb91d59b5a1b387f3ab4818d1ec8f904a6132eb1881014c4a",
+    "tests/admin/product-editor.acceptance.ts": "eb359bb73f13d3185935f34fc782a9f686d9ebe0704c18912386689af542f88e",
+    "tests/admin/product-editor-matrix-ledger.ts": "bca2b1bed9cc9810cf7225b8f67b42efb9fd7453c979909df6c802cb3d827f1d",
+    "tests/foundation/testdata/product_editor_matrix_cases.json": "17ac97d4e2b3146cb5775a6cc0d1352c7806516ba96d74c1b8b610d53d339855",
+    "apps/admin/lib/product-editor-copy.ts": "aff626c4a8a8a8c889ef5c4bfeeb77d5359df7a8692bc83f3162bae4d3aa0cc2",
+    "apps/admin/components/ProductDocumentVariants.tsx": "1ec1bf7b57e7a76ea10fee10620eebbd7b0e34b687d8b427b20fb5c20d6386a6"
+  },
+  "static_callbacks": 32,
+  "cases": 77,
+  "locales": [
+    "zh-TW",
+    "zh-CN",
+    "en"
+  ],
+  "expanded_identities": 231,
+  "expected_node_tests": 23,
+  "not_run": [
+    "real browser runtime",
+    "build",
+    "full suite",
+    "Go/PG",
+    "independent acceptance",
+    "production/sandbox provider"
+  ],
+  "humaux": "NOT_AVAILABLE: ALL_TOOLS memory_(search|grep|store)|task_canvas|coord_lock returned []",
+  "head_commit": "c7b5126cc765bb9dcf8dfe6f2e346b522aef3edd",
+  "tested_source_commit": "c7b5126cc765bb9dcf8dfe6f2e346b522aef3edd",
+  "source_binding": "Final tests ran immediately before the code-only commit; every tested source SHA256 is unchanged at this commit.",
+  "baseline_reproduction": "output/matrix-ledger-enforce/round2/locator-card/baseline-reproduction.json"
+}

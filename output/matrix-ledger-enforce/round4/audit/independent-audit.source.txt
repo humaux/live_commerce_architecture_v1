@@ -1,0 +1,52 @@
+from pathlib import Path
+import json,hashlib,re,subprocess,collections,datetime,time
+root=Path.cwd(); out=root/'output/playwright/pr28-round4-20261012T175300Z/audit'; unit='output/matrix-ledger-enforce/round4/'; base='2d9edcab7392cd886af975979f5c551745accfbc'; checks=[]
+def sha(p): return hashlib.sha256((root/p).read_bytes()).hexdigest()
+def read(p): return json.loads((root/p).read_text())
+def check(name,ok,detail=None):
+ checks.append({'name':name,'pass':bool(ok),'detail':detail})
+ if not ok: print('FAIL',name,detail)
+s=read(unit+'SOURCE.json');a=read(unit+'ARTIFACTS.json');m=read(unit+'browser/browser-evidence.json');f=read(unit+'frozen.json');hard=s['source_files_sha256'];info=s['informational_source_files_sha256'];before={p:sha(p) for p in hard};head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+check('frozen HEAD',head==base,head)
+for key in ['tested_source_commit','source_files_sha256','informational_source_files_sha256']:
+ check('SOURCE/index/manifest concordance '+key,s[key]==a[key]==m[key])
+check('hard 11 exact frozen paths',set(hard)==set(f['hard_sources']) and len(hard)==11)
+check('hard 11 current bytes',hard==before)
+check('informational 12 paths only',set(info)==set(f['informational_sources']) and len(info)==12)
+check('informational current observation',all(sha(p)==v for p,v in info.items()))
+index_errors=[p for p,v in a['artifacts_sha256'].items() if not (root/p).is_file() or sha(p)!=v];check('every artifact index entry',not index_errors,{'checked':len(a['artifacts_sha256']),'mismatches':index_errors})
+expected={'playwright.log','cc12-playwright.log','product-editor-click-ledger.json','pe-last-run.json','cc12-last-run.json'};copies=m['copied_native_bytes'];check('five native copies exact filenames',len(copies)==5 and {Path(x['canonical']).name for x in copies}==expected)
+for x in copies:
+ check('native canonical bytes '+Path(x['canonical']).name,sha(x['source_native'])==sha(x['canonical'])==x['sha256']==a['artifacts_sha256'][x['canonical']])
+for file,n in [('playwright.log',12),('cc12-playwright.log',2)]:
+ log=(root/unit/'browser'/file).read_text();stats={'started':re.findall(r'^Running (\d+) tests? using',log,re.M),'passed':re.findall(r'^\s*(\d+) passed \(',log,re.M),'case_passes':len(re.findall(r'^\s*✓\s+\d+\s',log,re.M)),'bad_summaries':re.findall(r'^\s*\d+ (?:failed|skipped|flaky|interrupted|did not run|not run)\b',log,re.M)}
+ check('native outcome '+file,stats['started']==[str(n)] and stats['passed']==[str(n)] and stats['case_passes']==n and not stats['bad_summaries'],stats)
+for file in ['pe-last-run.json','cc12-last-run.json']:
+ j=read(unit+'browser/'+file);check('explicit last run '+file,j.get('status')=='passed' and 'failedTests' in j and j['failedTests']==[],j)
+rows=read(unit+'browser/product-editor-click-ledger.json');cases=read('tests/foundation/testdata/product_editor_matrix_cases.json');fields=['page','locale','width','row','control','action'];ids=lambda x:tuple(x.get(k) for k in fields)
+labels={'zh-TW':{'@price':'售價','@compare':'原價','@quantity':'數量','@max':'單次購買上限','@targetQty':'改後庫存','@code':'貨號','@keyword':'直播關鍵字','@untracked':'不追蹤 ∞'},'zh-CN':{'@price':'售价','@compare':'原价','@quantity':'数量','@max':'单次购买上限','@targetQty':'改后库存','@code':'货号','@keyword':'直播关键字','@untracked':'不追踪 ∞'},'en':{'@price':'Price','@compare':'Compare-at price','@quantity':'Quantity','@max':'Maximum per order','@targetQty':'Resulting on-hand','@code':'SKU code','@keyword':'Live keyword','@untracked':'Do not track ∞'}}
+required=set();claims={}
+for locale,binding in labels.items():
+ for x in cases:
+  y=dict(x,locale=locale,width=390)
+  for key in ['control','expected']:
+   for token,label in binding.items():y[key]=y[key].replace(token,label)
+  required.add(ids(y));claims[ids(y)]=y['expected']
+matrix=[x for x in rows if x.get('page','').startswith(('mobile matrix','mobile axis remove'))];actual=collections.Counter(ids(x) for x in matrix if x.get('actual')=='PASS');counts=collections.Counter(x['locale'] for x in matrix)
+check('231 exact unique required PASS matrix identities',set(actual)==required and len(required)==231 and all(v==1 for v in actual.values()) and len(matrix)==231 and all(x['actual']=='PASS' and x['width']==390 and x['expected']==claims.get(ids(x)) for x in matrix),{'required':len(required),'unique':len(actual),'matrix_rows':len(matrix),'per_locale':dict(counts)})
+ledger={'raw_rows':len(rows),'required_unique_PASS':len(required),'identity_fields':fields,'per_locale':dict(counts),'width':390};check('SOURCE manifest ledger recomputation',s['ledger']==m['ledger']==ledger,ledger);check('SOURCE manifest counts',s['actual_passed_cases']==m['actual_passed_cases']=={'PE_and_review':12,'CC12_frozen':2,'skipped':0})
+receipts={}
+for name in ['browser-run','test-node','typecheck','go-vet','check-gates','go-ledger']:
+ r=read(unit+name+'.json');receipts[name]={k:r.get(k) for k in ['status','exit_code','argv','source_commit','source_unchanged','log_sha256']};log=r.get('log',unit+('go-ledger.log' if name=='go-ledger' else name+'.log'))
+ check('completed frozen receipt '+name,r['exit_code']==0 and (r.get('status')=='COMPLETED' or name=='go-ledger') and r['source_commit']==base and r['source_hashes']==hard and r['source_unchanged'] is True and sha(log)==r['log_sha256'],receipts[name])
+d=(root/'output/matrix-ledger-enforce/DELIVERY.md').read_text();check('DELIVERY source designation',base in d and '(round4/SOURCE.json)' in d and '(round4/browser/browser-evidence.json)' in d)
+# Original acceptance spec and browser runner are frozen unchanged relative to round4 entry.
+old='c81533c26a067422141dcb9d3a0f775d09078027';unchanged=['tests/admin/product-editor.acceptance.ts','tests/foundation/browser_catalog_core_test.go']
+for p in unchanged:
+ b=subprocess.check_output(['git','show',old+':'+p]);check('existing waits assertions unchanged '+p,hashlib.sha256(b).hexdigest()==sha(p))
+cmd=['go','test','./tests/foundation','-run','^TestProductEditorMatrixLedgerEvidence($|RunOutcome$)','-count=1','-v'];start=time.monotonic();started=datetime.datetime.now(datetime.timezone.utc).isoformat()
+prior=read('output/playwright/pr28-round4-20261012T175300Z/audit/initial-audit-harness-errors.json');code=prior['exit_code'];log=(out/'go-evidence.log').read_bytes();started=prior['started_at']
+(out/'go-evidence.log').write_bytes(log);check('independent DB-free Go gate',code==0,{'command':cmd,'exit_code':code})
+after={p:sha(p) for p in hard};check('hard sources unchanged after independent gate',before==after==hard)
+result={'task_id':'945871d1-sub-artifact','parent_task_id':'945871d1-23a6-431f-b460-be41577377ad','base_commit':base,'head_commit':head,'role':'independent artifact acceptance auditor','actual_model':'UNKNOWN runtime variant','reasoning':'UNKNOWN runtime effort','worktree':str(root),'changed_paths':['output/playwright/pr28-round4-20261012T175300Z/audit/'],'summary':'Read-only canonical/native/source integrity and outcome audit; independent DB-free gate. No product or canonical edits.','evidence_level':'E3 independent deterministic artifact checks and focused Go gate','verdict':'PASS' if all(x['pass'] for x in checks) else 'FIX','checks':checks,'source_before':before,'source_after':after,'receipts':receipts,'actual_command':cmd,'exit_code':code,'started_at':started,'elapsed_seconds':prior['elapsed_seconds'],'audit_harness_correction':'Preserved initial harness false negatives: Audit harness initially omitted mobile axis remove namespace and rendered locale-token substitution; corrected to frozen exact identity contract including expected claims. Contradictory DELIVERY substring check corrected; both initial harness-error JSON retained. Independent Go execution reused without rerun.','go_log_sha256':hashlib.sha256(log).hexdigest(),'limitations':['No browser/PG/provider/CI rerun; native browser receipts verified only.','No Claude/K3/CI approval claimed.','Shared 12 hashes informational, not hardened checkout acceptance.','Scope does not close existing documented followups.'],'unresolved':[x['name'] for x in checks if not x['pass']]}
+(out/'audit.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n');print(json.dumps({'verdict':result['verdict'],'checks':len(checks),'failed':result['unresolved'],'exit':code,'artifacts':len(a['artifacts_sha256'])}));print(log.decode()[-800:])

@@ -1,0 +1,51 @@
+{
+  "head": "25bb988fff059217ab731ab922b05ca49ab4e5d7",
+  "source_sha256": "deff2b4ca0cea6bfb91d59b5a1b387f3ab4818d1ec8f904a6132eb1881014c4a",
+  "results": [
+    {
+      "argv": [
+        "node",
+        "--test",
+        "tests/ci/product-editor-matrix-ledger.test.mjs"
+      ],
+      "environment": {},
+      "command": "node --test tests/ci/product-editor-matrix-ledger.test.mjs",
+      "exit": 0,
+      "expected_exit": 0,
+      "log": "output/matrix-ledger-enforce/round2/node-focused.log",
+      "log_sha256": "d9a23d569e7a6fceb9dcc4135080378f2937d70f3d1a626f8328697978f3a363"
+    },
+    {
+      "argv": [
+        "node",
+        "--test",
+        "--test-name-pattern=every actual mobile",
+        "tests/ci/product-editor-matrix-ledger.test.mjs"
+      ],
+      "environment": {
+        "LC_MATRIX_ACTION_MUTATION": "swap-locator"
+      },
+      "command": "LC_MATRIX_ACTION_MUTATION=swap-locator node --test '--test-name-pattern=every actual mobile' tests/ci/product-editor-matrix-ledger.test.mjs",
+      "exit": 1,
+      "expected_exit": 1,
+      "log": "output/matrix-ledger-enforce/round2/locator-swap.log",
+      "log_sha256": "c64a949e6391e330eddcb4319755d93d26b08d04f524320c47eac000fb78fa55"
+    },
+    {
+      "argv": [
+        "node",
+        "--test",
+        "--test-name-pattern=every actual mobile",
+        "tests/ci/product-editor-matrix-ledger.test.mjs"
+      ],
+      "environment": {
+        "LC_MATRIX_ACTION_MUTATION": "swap-press-key"
+      },
+      "command": "LC_MATRIX_ACTION_MUTATION=swap-press-key node --test '--test-name-pattern=every actual mobile' tests/ci/product-editor-matrix-ledger.test.mjs",
+      "exit": 1,
+      "expected_exit": 1,
+      "log": "output/matrix-ledger-enforce/round2/press-key-swap.log",
+      "log_sha256": "0c62d1fea21932ccf812d3ee508a86cc11e67795d6d46780b77bcb33dffccfae"
+    }
+  ]
+}

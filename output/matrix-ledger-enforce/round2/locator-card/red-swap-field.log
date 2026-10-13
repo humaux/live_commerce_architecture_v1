@@ -1,0 +1,93 @@
+✖ every actual mobile control operation is enclosed by its recording callback (88.608209ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 321.136375
+
+✖ failing tests:
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:413:1
+✖ every actual mobile control operation is enclosed by its recording callback (88.608209ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   'identity mismatch: {"page":"mobile matrix new","row":"White / S","control":"售價","action":"fill"} (zh-TW): operated [["testId","matrix-row-0"],["testId","matrix-compare-0"]]; expected [["testId","matrix-row-0"],["testId","new-price-0"]]\n' +
+  +     '+ actual - expected\n' +
+  +     '\n' +
+  +     `+ '[["testId","matrix-row-0"],["testId","matrix-compare-0"]]'\n` +
+  +     `- '[["testId","matrix-row-0"],["testId","new-price-0"]]'\n`,
+  +   'identity mismatch: {"page":"mobile matrix new","row":"Black / S","control":"售價","action":"fill"} (zh-TW): operated [["testId","matrix-row-1"],["testId","matrix-compare-1"]]; expected [["testId","matrix-row-1"],["testId","new-price-1"]]\n' +
+  +     '+ actual - expected\n' +
+  +     '\n' +
+  +     `+ '[["testId","matrix-row-1"],["testId","matrix-compare-1"]]'\n` +
+  +     `- '[["testId","matrix-row-1"],["testId","new-price-1"]]'\n`,
+  +   'identity mismatch: {"page":"mobile matrix edit","row":"White / S","control":"售價","action":"fill"} (zh-TW): operated [["testId","matrix-row-0"],["testId","matrix-compare-0"]]; expected [["testId","matrix-row-0"],["testId","new-price-0"]]\n' +
+  +     '+ actual - expected\n' +
+  +     '\n' +
+  +     `+ '[["testId","matrix-row-0"],["testId","matrix-compare-0"]]'\n` +
+  +     `- '[["testId","matrix-row-0"],["testId","new-price-0"]]'\n`,
+  +   'identity mismatch: {"page":"mobile matrix edit","row":"Black / S","control":"售價","action":"fill"} (zh-TW): operated [["testId","matrix-row-1"],["testId","matrix-compare-1"]]; expected [["testId","matrix-row-1"],["testId","new-price-1"]]\n' +
+  +     '+ actual - expected\n' +
+  +     '\n' +
+  +     `+ '[["testId","matrix-row-1"],["testId","matrix-compare-1"]]'\n` +
+  +     `- '[["testId","matrix-row-1"],["testId","new-price-1"]]'\n`,
+  +   'identity mismatch: {"page":"mobile matrix new","row":"White / S","control":"售价","action":"fill"} (zh-CN): operated [["testId","matrix-row-0"],["testId","matrix-compare-0"]]; expected [["testId","matrix-row-0"],["testId","new-price-0"]]\n' +
+  +     '+ actual - expected\n' +
+  +     '\n' +
+  +     `+ '[["testId","matrix-row-0"],["testId","matrix-compare-0"]]'\n` +
+  +     `- '[["testId","matrix-row-0"],["testId","new-price-0"]]'\n`,
+  +   'identity mismatch: {"page":"mobile matrix new","row":"Black / S","control":"售价","action":"fill"} (zh-CN): operated [["testId","matrix-row-1"],["testId","matrix-compare-1"]]; expected [["testId","matrix-row-1"],["testId","new-price-1"]]\n' +
+  +     '+ actual - expected\n' +
+  +     '\n' +
+  +     `+ '[["testId","matrix-row-1"],["testId","matrix-compare-1"]]'\n` +
+  +     `- '[["testId","matrix-row-1"],["testId","new-price-1"]]'\n`,
+  +   'identity mismatch: {"page":"mobile matrix edit","row":"White / S","control":"售价","action":"fill"} (zh-CN): operated [["testId","matrix-row-0"],["testId","matrix-compare-0"]]; expected [["testId","matrix-row-0"],["testId","new-price-0"]]\n' +
+  +     '+ actual - expected\n' +
+  +     '\n' +
+  +     `+ '[["testId","matrix-row-0"],["testId","matrix-compare-0"]]'\n` +
+  +     `- '[["testId","matrix-row-0"],["testId","new-price-0"]]'\n`,
+  +   'identity mismatch: {"page":"mobile matrix edit","row":"Black / S","control":"售价","action":"fill"} (zh-CN): operated [["testId","matrix-row-1"],["testId","matrix-compare-1"]]; expected [["testId","matrix-row-1"],["testId","new-price-1"]]\n' +
+  +     '+ actual - expected\n' +
+  +     '\n' +
+  +     `+ '[["testId","matrix-row-1"],["testId","matrix-compare-1"]]'\n` +
+  +     `- '[["testId","matrix-row-1"],["testId","new-price-1"]]'\n`,
+  +   'identity mismatch: {"page":"mobile matrix new","row":"White / S","control":"Price","action":"fill"} (en): operated [["testId","matrix-row-0"],["testId","matrix-compare-0"]]; expected [["testId","matrix-row-0"],["testId","new-price-0"]]\n' +
+  +     '+ actual - expected\n' +
+  +     '\n' +
+  +     `+ '[["testId","matrix-row-0"],["testId","matrix-compare-0"]]'\n` +
+  +     `- '[["testId","matrix-row-0"],["testId","new-price-0"]]'\n`,
+  +   'identity mismatch: {"page":"mobile matrix new","row":"Black / S","control":"Price","action":"fill"} (en): operated [["testId","matrix-row-1"],["testId","matrix-compare-1"]]; expected [["testId","matrix-row-1"],["testId","new-price-1"]]\n' +
+  +     '+ actual - expected\n' +
+  +     '\n' +
+  +     `+ '[["testId","matrix-row-1"],["testId","matrix-compare-1"]]'\n` +
+  +     `- '[["testId","matrix-row-1"],["testId","new-price-1"]]'\n`,
+  +   'identity mismatch: {"page":"mobile matrix edit","row":"White / S","control":"Price","action":"fill"} (en): operated [["testId","matrix-row-0"],["testId","matrix-compare-0"]]; expected [["testId","matrix-row-0"],["testId","new-price-0"]]\n' +
+  +     '+ actual - expected\n' +
+  +     '\n' +
+  +     `+ '[["testId","matrix-row-0"],["testId","matrix-compare-0"]]'\n` +
+  +     `- '[["testId","matrix-row-0"],["testId","new-price-0"]]'\n`,
+  +   'identity mismatch: {"page":"mobile matrix edit","row":"Black / S","control":"Price","action":"fill"} (en): operated [["testId","matrix-row-1"],["testId","matrix-compare-1"]]; expected [["testId","matrix-row-1"],["testId","new-price-1"]]\n' +
+  +     '+ actual - expected\n' +
+  +     '\n' +
+  +     `+ '[["testId","matrix-row-1"],["testId","matrix-compare-1"]]'\n` +
+  +     `- '[["testId","matrix-row-1"],["testId","new-price-1"]]'\n`
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-locator-binding/tests/ci/product-editor-matrix-ledger.test.mjs:414:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ `identity mismatch: {"page":"mobile matrix new","row":"White / S","control":"售價","action":"fill"} (zh-TW): operated [["testId","matrix-row-0"],["testId","matrix-compare-0"]]; expected [["testId","matrix-row-0"],["testId","new-price-0"]]\n+ actual - expected\n\n+ '[["testId","matrix-row-0"],["testId","matrix-compare-0"]]'\n- '[["testId","matrix-row-0"],["testId","new-price-0"]]'\n`, `identity mismatch: {"page":"mobile matrix new","row":"Black / S","control":"售價","action":"fill"} (zh-TW): operated [["testId","matrix-row-1"],["testId","matrix-compare-1"]]; expected [["testId","matrix-row-1"],["testId","new-price-1"]]\n+ actual - expected\n\n+ '[["testId","matrix-row-1"],["testId","matrix-compare-1"]]'\n- '[["testId","matrix-row-1"],["testId","new-price-1"]]'\n`, `identity mismatch: {"page":"mobile matrix edit","row":"White / S","control":"售價","action":"fill"} (zh-TW): operated [["testId","matrix-row-0"],["testId","matrix-compare-0"]]; expected [["testId","matrix-row-0"],["testId","new-price-0"]]\n+ actual - expected\n\n+ '[["testId","matrix-row-0"],["testId","matrix-compare-0"]]'\n- '[["testId","matrix-row-0"],["testId","new-price-0"]]'\n`, `identity mismatch: {"page":"mobile matrix edit","row":"Black / S","control":"售價","action":"fill"} (zh-TW): operated [["testId","matrix-row-1"],["testId","matrix-compare-1"]]; expected [["testId","matrix-row-1"],["testId","new-price-1"]]\n+ actual - expected\n\n+ '[["testId","matrix-row-1"],["testId","matrix-compare-1"]]'\n- '[["testId","matrix-row-1"],["testId","new-price-1"]]'\n`, `identity mismatch: {"page":"mobile matrix new","row":"White / S","control":"售价","action":"fill"} (zh-CN): operated [["testId","matrix-row-0"],["testId","matrix-compare-0"]]; expected [["testId","matrix-row-0"],["testId","new-price-0"]]\n+ actual - expected\n\n+ '[["testId","matrix-row-0"],["testId","matrix-compare-0"]]'\n- '[["testId","matrix-row-0"],["testId","new-price-0"]]'\n`, `identity mismatch: {"page":"mobile matrix new","row":"Black / S","control":"售价","action":"fill"} (zh-CN): operated [["testId","matrix-row-1"],["testId","matrix-compare-1"]]; expected [["testId","matrix-row-1"],["testId","new-price-1"]]\n+ actual - expected\n\n+ '[["testId","matrix-row-1"],["testId","matrix-compare-1"]]'\n- '[["testId","matrix-row-1"],["testId","new-price-1"]]'\n`, `identity mismatch: {"page":"mobile matrix edit","row":"White / S","control":"售价","action":"fill"} (zh-CN): operated [["testId","matrix-row-0"],["testId","matrix-compare-0"]]; expected [["testId","matrix-row-0"],["testId","new-price-0"]]\n+ actual - expected\n\n+ '[["testId","matrix-row-0"],["testId","matrix-compare-0"]]'\n- '[["testId","matrix-row-0"],["testId","new-price-0"]]'\n`, `identity mismatch: {"page":"mobile matrix edit","row":"Black / S","control":"售价","action":"fill"} (zh-CN): operated [["testId","matrix-row-1"],["testId","matrix-compare-1"]]; expected [["testId","matrix-row-1"],["testId","new-price-1"]]\n+ actual - expected\n\n+ '[["testId","matrix-row-1"],["testId","matrix-compare-1"]]'\n- '[["testId","matrix-row-1"],["testId","new-price-1"]]'\n`, `identity mismatch: {"page":"mobile matrix new","row":"White / S","control":"Price","action":"fill"} (en): operated [["testId","matrix-row-0"],["testId","matrix-compare-0"]]; expected [["testId","matrix-row-0"],["testId","new-price-0"]]\n+ actual - expected\n\n+ '[["testId","matrix-row-0"],["testId","matrix-compare-0"]]'\n- '[["testId","matrix-row-0"],["testId","new-price-0"]]'\n`, `identity mismatch: {"page":"mobile matrix new","row":"Black / S","control":"Price","action":"fill"} (en): operated [["testId","matrix-row-1"],["testId","matrix-compare-1"]]; expected [["testId","matrix-row-1"],["testId","new-price-1"]]\n+ actual - expected\n\n+ '[["testId","matrix-row-1"],["testId","matrix-compare-1"]]'\n- '[["testId","matrix-row-1"],["testId","new-price-1"]]'\n`, `identity mismatch: {"page":"mobile matrix edit","row":"White / S","control":"Price","action":"fill"} (en): operated [["testId","matrix-row-0"],["testId","matrix-compare-0"]]; expected [["testId","matrix-row-0"],["testId","new-price-0"]]\n+ actual - expected\n\n+ '[["testId","matrix-row-0"],["testId","matrix-compare-0"]]'\n- '[["testId","matrix-row-0"],["testId","new-price-0"]]'\n`, `identity mismatch: {"page":"mobile matrix edit","row":"Black / S","control":"Price","action":"fill"} (en): operated [["testId","matrix-row-1"],["testId","matrix-compare-1"]]; expected [["testId","matrix-row-1"],["testId","new-price-1"]]\n+ actual - expected\n\n+ '[["testId","matrix-row-1"],["testId","matrix-compare-1"]]'\n- '[["testId","matrix-row-1"],["testId","new-price-1"]]'\n` ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

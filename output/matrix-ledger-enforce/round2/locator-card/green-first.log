@@ -1,0 +1,23 @@
+✔ real Playwright ESM consumer collects the product-editor cases (1115.164041ms)
+✔ every actual mobile control operation is enclosed by its recording callback (67.336834ms)
+✔ a literal locator swap cannot certify the original declared control (33.659084ms)
+✔ a lexical alias locator swap cannot certify the original declared control (30.463ms)
+✔ a field factory locator swap cannot certify the original declared control (33.223208ms)
+✔ a new bare click is rejected without running a browser (21.44125ms)
+✔ a different control cannot borrow an existing action's recording callback (38.806166ms)
+✔ a direct ledger push cannot bypass canonical recording (24.707791ms)
+✔ removing the recording wrapper rejects the enclosed real action (27.087417ms)
+✔ shared table has only complete meaningful unique declarations (0.420333ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (zh-TW) (0.913875ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (zh-CN) (0.326416ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (en) (0.321834ms)
+✔ failed assertion and missing observation cannot emit a PASS or satisfy completeness (0.168708ms)
+✔ in-flight action cannot masquerade as complete or admit a concurrent duplicate (0.2955ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1574.451083

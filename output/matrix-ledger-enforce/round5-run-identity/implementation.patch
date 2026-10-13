@@ -1,0 +1,126 @@
+diff --git a/tests/foundation/catalog_matrix_evidence_test.go b/tests/foundation/catalog_matrix_evidence_test.go
+index 398cda52..6c54ed5c 100644
+--- a/tests/foundation/catalog_matrix_evidence_test.go
++++ b/tests/foundation/catalog_matrix_evidence_test.go
+@@ -250,6 +250,47 @@ func productEditorMatrixPlaywrightSummary(data []byte, expected int) error {
+ 	if passed != 1 {
+ 		return fmt.Errorf("must contain one completed passing summary")
+ 	}
++	// Frozen consumer identities come from catalog-core's registered acceptance
++	// cases, corroborated by round4 native list-reporter output. Positions and
++	// durations vary; each exact consumer file/title must pass once, no substitutes.
++	identities := map[string]int{}
++	add := func(file, title string) { identities["tests/admin/"+file+" › "+title]++ }
++	switch expected {
++	case 12:
++		add("product-editor.acceptance.ts", "PE12-17 document workflow, matrix, list actions and click ledger")
++		add("product-review.acceptance.ts", "review: bulk price 80 plus archive sends exclusive archive entry and persists")
++		for _, action := range []string{"create", "copy"} {
++			for _, denial := range []string{"client", "401", "403"} {
++				add("product-review.acceptance.ts", fmt.Sprintf("review: %s UNKNOWN then %s preserves receipt fence after reload", action, denial))
++			}
++		}
++		for _, action := range []string{"order", "publish"} {
++			add("product-review.acceptance.ts", fmt.Sprintf("review: %s UNKNOWN then 403 preserves receipt fence after reload", action))
++		}
++		for _, width := range []int{1586, 390} {
++			add("product-feedback.acceptance.ts", fmt.Sprintf("feedback: identical image-required validation reveals again at %dpx", width))
++		}
++	case 2:
++		for _, variant := range []struct{ viewport, locale string }{{"desktop", "en"}, {"mobile", "zh-TW"}} {
++			add("catalog-core.spec.ts", fmt.Sprintf("CC12 %s %s › catalog v2: draft product, 2x3 matrix, prices, compare-at, stock, photo, collection, activate, shopper view, archive a variant, deactivate (%s, %s)", variant.viewport, variant.locale, variant.viewport, variant.locale))
++		}
++	default:
++		return fmt.Errorf("no frozen case identities for %d cases", expected)
++	}
++	cases := regexp.MustCompile(`(?m)^\s*✓\s+\d+\s+(tests/[^\r\n]+):\d+:\d+ › (.+) \([^()\r\n]*\)\s*$`).FindAllStringSubmatch(text, -1)
++	if len(cases) != expected {
++		return fmt.Errorf("must report exactly %d passing case identities, got %d", expected, len(cases))
++	}
++	for _, executed := range cases {
++		identity := executed[1] + " › " + executed[2]
++		if identities[identity] != 1 {
++			return fmt.Errorf("unexpected or duplicate executed case identity: %s", identity)
++		}
++		delete(identities, identity)
++	}
++	if len(identities) != 0 {
++		return fmt.Errorf("missing %d frozen executed case identities", len(identities))
++	}
+ 	return nil
+ }
+ 
+@@ -363,3 +404,73 @@ func productEditorMatrixRehashFixture(t *testing.T, root, canonical, path string
+ 	data, _ = json.Marshal(index)
+ 	write(indexPath, data)
+ }
++
++// Identity controls keep summaries, final receipts and all hashes consistent.
++// Only the executed consumer file/title multiset may make these runs invalid.
++func TestProductEditorMatrixLedgerEvidenceRunIdentity(t *testing.T) {
++	for _, log := range []string{"playwright.log", "cc12-playwright.log"} {
++		for _, mutation := range []string{"wrong-file", "wrong-title", "substituted-case", "drop-case", "duplicate-case", "same-counts-fake-run"} {
++			t.Run(log+"/"+mutation, func(t *testing.T) {
++				root, canonical := productEditorMatrixEvidenceFixture(t)
++				if err := validateProductEditorMatrixEvidence(root); err != nil {
++					t.Fatalf("untampered evidence: %v", err)
++				}
++				path := canonical + "/" + log
++				original := string(productEditorMatrixReadFixture(t, root, path))
++				lines := regexp.MustCompile(`(?m)^\s*✓[^\r\n]+`).FindAllString(original, -1)
++				if len(lines) < 2 {
++					t.Fatal("native case mutation anchors missing")
++				}
++				replacement := lines[0]
++				switch mutation {
++				case "wrong-file":
++					replacement = strings.Replace(replacement, "tests/admin/", "tests/unrelated/", 1)
++				case "wrong-title":
++					replacement = strings.Replace(replacement, " › ", " › unrelated case: ", 1)
++				case "substituted-case":
++					replacement = "  ✓  1 tests/admin/catalog-core.spec.ts:1:1 › unrelated substituted case (1s)"
++				case "drop-case":
++					replacement = ""
++				case "duplicate-case":
++					replacement = lines[1]
++				case "same-counts-fake-run":
++					for _, line := range lines {
++						original = strings.Replace(original, line, strings.Replace(line, "tests/admin/", "tests/fake/", 1), 1)
++					}
++					replacement = ""
++				}
++				data := []byte(original)
++				if mutation != "same-counts-fake-run" {
++					data = []byte(strings.Replace(original, lines[0], replacement, 1))
++				}
++				if string(data) == string(productEditorMatrixReadFixture(t, root, path)) {
++					t.Fatal("identity mutation did not change bytes")
++				}
++				productEditorMatrixRehashFixture(t, root, canonical, path, data)
++				if err := validateProductEditorMatrixEvidence(root); err == nil {
++					t.Fatalf("consistently rehashed %s must reject executed case identity", mutation)
++				} else {
++					if strings.Contains(err.Error(), "SHA-256") {
++						t.Fatalf("must reject identity, not hashes: %v", err)
++					}
++					t.Logf("rejected rehashed %s: %v", mutation, err)
++				}
++			})
++		}
++	}
++}
++
++// Native list metadata is not identity: numeric locations and timings may vary.
++func TestProductEditorMatrixLedgerEvidenceRunIdentityMetadata(t *testing.T) {
++	root, canonical := productEditorMatrixEvidenceFixture(t)
++	for _, log := range []string{"playwright.log", "cc12-playwright.log"} {
++		path := canonical + "/" + log
++		text := string(productEditorMatrixReadFixture(t, root, path))
++		text = regexp.MustCompile(`(?m)(tests/admin/[^\r\n]+):\d+:\d+ › `).ReplaceAllString(text, "${1}:9000:99 › ")
++		text = regexp.MustCompile(`(?m) \([\d.]+(?:ms|s|m)\)$`).ReplaceAllString(text, " (999.9s)")
++		productEditorMatrixRehashFixture(t, root, canonical, path, []byte(text))
++	}
++	if err := validateProductEditorMatrixEvidence(root); err != nil {
++		t.Fatalf("changed line numbers and durations must preserve identities: %v", err)
++	}
++}

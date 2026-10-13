@@ -1,0 +1,33 @@
+Traceback (most recent call last):
+  File "/opt/homebrew/bin/node", line 6, in <module>
+    sys.exit(_node_entry_point())
+             ~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/lib/python3.14/site-packages/nodejs_wheel/executable.py", line 300, in _node_entry_point
+    raise SystemExit(node(close_fds=False))
+                     ~~~~^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/nodejs_wheel/executable.py", line 132, in node
+    return call_node(*args, return_completed_process=return_completed_process, **kwargs)
+  File "/opt/homebrew/lib/python3.14/site-packages/nodejs_wheel/executable.py", line 78, in call_node
+    return _program(
+        "node" + suffix,
+    ...<2 lines>...
+        **kwargs,
+    )
+  File "/opt/homebrew/lib/python3.14/site-packages/nodejs_wheel/executable.py", line 50, in _program
+    complete_process = subprocess.run([os.path.join(bin_dir, name), *args], **kwargs)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 557, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 1213, in communicate
+    self.wait()
+    ~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 1279, in wait
+    return self._wait(timeout=timeout)
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 2084, in _wait
+    (pid, sts) = self._try_wait(0)
+                 ~~~~~~~~~~~~~~^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 2042, in _try_wait
+    (pid, sts) = os.waitpid(self.pid, wait_flags)
+                 ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

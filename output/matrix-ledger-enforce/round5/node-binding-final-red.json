@@ -1,0 +1,13 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/check-gates.sh"
+  ],
+  "exit_code": 1,
+  "tested_source_commit": "d93700a4ab0fb541aa8d3ee2d540c0d94b29f50f",
+  "mutated_file": "scripts/dev/test-node.sh",
+  "before_sha256": "4b377f7f792d6cccdab0f9644befbe6e9eb6191726d1aaefbe06cebf16ab2c78",
+  "mutated_sha256": "d149574b899df251d95bf940aa77f0ab780a0b554a30dc97f0d94a88b96d0fb4",
+  "restored_sha256": "4b377f7f792d6cccdab0f9644befbe6e9eb6191726d1aaefbe06cebf16ab2c78",
+  "mutation": "remove actual ledger Node argv"
+}

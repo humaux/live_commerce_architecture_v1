@@ -1,0 +1,36 @@
+✖ every actual mobile control operation is enclosed by its recording callback (1082.181125ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2212.288042
+
+✖ failing tests:
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:306:1
+✖ every actual mobile control operation is enclosed by its recording callback (1082.181125ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   'identity mismatch: {"page":"mobile matrix edit","control":"product-save","action":"uncheck White, click save, reload"} (zh-TW): canonical expected claim One document write archives White by SKU identity; only original Black remains active with price 81, compare 121, tracked quantity 8 and immutable code and live keyword: binding savedBlack has the wrong value/source',
+  +   'identity mismatch: {"page":"mobile matrix edit","control":"product-save","action":"uncheck White, click save, reload"} (zh-CN): canonical expected claim One document write archives White by SKU identity; only original Black remains active with price 81, compare 121, tracked quantity 8 and immutable code and live keyword: binding savedBlack has the wrong value/source',
+  +   'identity mismatch: {"page":"mobile matrix edit","control":"product-save","action":"uncheck White, click save, reload"} (en): canonical expected claim One document write archives White by SKU identity; only original Black remains active with price 81, compare 121, tracked quantity 8 and immutable code and live keyword: binding savedBlack has the wrong value/source'
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/tests/ci/product-editor-matrix-ledger.test.mjs:307:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'identity mismatch: {"page":"mobile matrix edit","control":"product-save","action":"uncheck White, click save, reload"} (zh-TW): canonical expected claim One document write archives White by SKU identity; only original Black remains active with price 81, compare 121, tracked quantity 8 and immutable code and live keyword: binding savedBlack has the wrong value/source', 'identity mismatch: {"page":"mobile matrix edit","control":"product-save","action":"uncheck White, click save, reload"} (zh-CN): canonical expected claim One document write archives White by SKU identity; only original Black remains active with price 81, compare 121, tracked quantity 8 and immutable code and live keyword: binding savedBlack has the wrong value/source', 'identity mismatch: {"page":"mobile matrix edit","control":"product-save","action":"uncheck White, click save, reload"} (en): canonical expected claim One document write archives White by SKU identity; only original Black remains active with price 81, compare 121, tracked quantity 8 and immutable code and live keyword: binding savedBlack has the wrong value/source' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

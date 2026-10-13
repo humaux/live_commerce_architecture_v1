@@ -1,0 +1,10 @@
+{
+  "command": [
+    "node",
+    "--test",
+    "tests/ci/product-editor-matrix-execution.test.mjs"
+  ],
+  "exit": 1,
+  "seconds": 0.125,
+  "log_sha256": "658c9a401437430e75af364442f1b272c3507991be44ac7f48382246edb93ab6"
+}

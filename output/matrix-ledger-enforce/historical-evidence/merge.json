@@ -1,0 +1,13 @@
+{
+  "command": [
+    "git fetch origin",
+    "git merge origin/r3/integration"
+  ],
+  "exit_code": 0,
+  "merged_commit": "54eb4cec43d7ebdba8c2e094a7b072ae54d13897",
+  "parents": [
+    "875ab57fb0619a845765b0754dd3bae85ad73efa",
+    "5a54d41b7e86a72eeec2afbe1f7b0458daaf742b"
+  ],
+  "trunk": "5a54d41b7e86a72eeec2afbe1f7b0458daaf742b"
+}

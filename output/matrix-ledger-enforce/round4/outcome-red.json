@@ -1,0 +1,14 @@
+{
+  "command": [
+    "go",
+    "test",
+    "./tests/foundation",
+    "-run",
+    "^TestProductEditorMatrixLedgerEvidenceRunOutcome$",
+    "-count=1",
+    "-v"
+  ],
+  "exit": 1,
+  "seconds": 21.878,
+  "log_sha256": "abb6c135402b7facaf8deca4484362c082bc9d41ad918e42eee7b1ac76f0f20a"
+}

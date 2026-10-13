@@ -1,0 +1,79 @@
+[
+  {
+    "command": [
+      "env",
+      "GOTOOLCHAIN=go1.27.2",
+      "go",
+      "test",
+      "-tags",
+      "browser",
+      "-run",
+      "^TestProductEditorMatrixLedger$",
+      "-count=1",
+      "-v",
+      "./tests/foundation"
+    ],
+    "exit": 0,
+    "source": "b390ee7a43e5e2c42b6607ea76d1b95bb4ddcfd9",
+    "log": "output/matrix-ledger-enforce/go-browser.log",
+    "sha256": "954cb9a8d59f6e75ae38a2151ac2f49034cb16435c3216d647ca74348229e1f1"
+  },
+  {
+    "command": [
+      "env",
+      "GOTOOLCHAIN=go1.27.2",
+      "go",
+      "vet",
+      "-tags",
+      "browser",
+      "./..."
+    ],
+    "exit": 0,
+    "source": "b390ee7a43e5e2c42b6607ea76d1b95bb4ddcfd9",
+    "log": "output/matrix-ledger-enforce/vet.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "command": [
+      "bash",
+      "scripts/dev/test-node.sh"
+    ],
+    "exit": 0,
+    "source": "b390ee7a43e5e2c42b6607ea76d1b95bb4ddcfd9",
+    "log": "output/matrix-ledger-enforce/node.log",
+    "sha256": "ad6f282cb7b6883ea84f611a6af45a1a47ad51ba203d72fd4413c1718a4385be"
+  },
+  {
+    "command": [
+      "pnpm",
+      "--filter",
+      "@live-commerce/admin",
+      "typecheck"
+    ],
+    "exit": 0,
+    "source": "b390ee7a43e5e2c42b6607ea76d1b95bb4ddcfd9",
+    "log": "output/matrix-ledger-enforce/typecheck.log",
+    "sha256": "cf9f71cac65bd70eb8b31d05c6ac5a8f83f2a0a2a0ca3e687314c034cd2184e8"
+  },
+  {
+    "command": [
+      "bash",
+      "scripts/dev/test-local.sh",
+      "--list"
+    ],
+    "exit": 0,
+    "source": "b390ee7a43e5e2c42b6607ea76d1b95bb4ddcfd9",
+    "log": "output/matrix-ledger-enforce/registry-list.log",
+    "sha256": "5e780dc27ce8a1089b7191e5aa0a0a800d2a9144d7aa53ef5ffe91b5bd9cfd66"
+  },
+  {
+    "command": [
+      "bash",
+      "scripts/dev/check-gates.sh"
+    ],
+    "exit": 0,
+    "source": "b390ee7a43e5e2c42b6607ea76d1b95bb4ddcfd9",
+    "log": "output/matrix-ledger-enforce/check-gates.log",
+    "sha256": "610a526f92a15212507fdb8a5d766615d10418400fc1ed3693f43f2dbe8aa688"
+  }
+]

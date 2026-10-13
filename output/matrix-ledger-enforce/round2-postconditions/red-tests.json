@@ -1,0 +1,13 @@
+{
+  "argv": [
+    "node",
+    "--test",
+    "--test-name-pattern=post-action outcome|each checked state",
+    "tests/ci/product-editor-matrix-ledger.test.mjs"
+  ],
+  "exit_code": 1,
+  "elapsed_seconds": 0.747,
+  "base_sha": "da5a28b38a0dff16c88738a1e3615ca98d24d621",
+  "log": "output/matrix-ledger-enforce/round2-postconditions/red-tests.log",
+  "log_sha256": "14ce61348a73b210879afbcde306308a34ae7a624bf5dcf5fa58dcc838055157"
+}

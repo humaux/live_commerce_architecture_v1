@@ -1,0 +1,106 @@
+{
+  "tested_source_commit": "25bb988fff059217ab731ab922b05ca49ab4e5d7",
+  "results": [
+    {
+      "argv": [
+        "bash",
+        "scripts/dev/test-node.sh"
+      ],
+      "command": "bash scripts/dev/test-node.sh",
+      "exit": 0,
+      "log": "output/matrix-ledger-enforce/round2/node.log",
+      "sha256": "42435ab0c92e631bbce0b03da12c01eac428d5b8ac30e2daa2a295a2334e4d77",
+      "started_utc": "2026-10-09T17:25:38.225921+00:00"
+    },
+    {
+      "argv": [
+        "pnpm",
+        "typecheck:admin"
+      ],
+      "command": "pnpm typecheck:admin",
+      "exit": 0,
+      "log": "output/matrix-ledger-enforce/round2/typecheck.log",
+      "sha256": "c00ff4e6ec5ce52c4b0790c7ca968c30b9b2f3478ed09bbca43c9bc416c4c0f5",
+      "started_utc": "2026-10-09T17:26:07.655424+00:00"
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "tsc",
+        "--noEmit",
+        "--strict",
+        "--target",
+        "ES2023",
+        "--module",
+        "ESNext",
+        "--moduleResolution",
+        "Bundler",
+        "--resolveJsonModule",
+        "--esModuleInterop",
+        "--skipLibCheck",
+        "--typeRoots",
+        "node_modules/.pnpm/@types+node@24.13.6/node_modules/@types",
+        "tests/admin/product-editor-matrix-ledger.ts"
+      ],
+      "command": "pnpm exec tsc --noEmit --strict --target ES2023 --module ESNext --moduleResolution Bundler --resolveJsonModule --esModuleInterop --skipLibCheck --typeRoots node_modules/.pnpm/@types+node@24.13.6/node_modules/@types tests/admin/product-editor-matrix-ledger.ts",
+      "exit": 0,
+      "log": "output/matrix-ledger-enforce/round2/helper-typecheck.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "started_utc": "2026-10-09T17:26:08.585694+00:00"
+    },
+    {
+      "argv": [
+        "bash",
+        "scripts/dev/test-local.sh",
+        "--list"
+      ],
+      "command": "bash scripts/dev/test-local.sh --list",
+      "exit": 0,
+      "log": "output/matrix-ledger-enforce/round2/registry-list.log",
+      "sha256": "5e780dc27ce8a1089b7191e5aa0a0a800d2a9144d7aa53ef5ffe91b5bd9cfd66",
+      "started_utc": "2026-10-09T17:26:09.088459+00:00"
+    },
+    {
+      "argv": [
+        "bash",
+        "scripts/dev/check-gates.sh"
+      ],
+      "command": "bash scripts/dev/check-gates.sh",
+      "exit": 0,
+      "log": "output/matrix-ledger-enforce/round2/check-gates.log",
+      "sha256": "d0bcba8771b0214e0da5464d3e3226ba2becdd61f3855792844dec5f645ddd59",
+      "started_utc": "2026-10-09T17:26:09.169032+00:00"
+    },
+    {
+      "argv": [
+        "go",
+        "test",
+        "-run",
+        "Ledger",
+        "-count=1",
+        "-v",
+        "./tests/foundation"
+      ],
+      "command": "GOTOOLCHAIN=go1.27.2 go test -run Ledger -count=1 -v ./tests/foundation",
+      "exit": 0,
+      "log": "output/matrix-ledger-enforce/round2/go-ledger.log",
+      "sha256": "c738d051c7386144a46afc9493fe244ddfa43222720eaa668aeb98113060fa6d",
+      "started_utc": "2026-10-09T17:26:14.202887+00:00"
+    },
+    {
+      "argv": [
+        "go",
+        "vet",
+        "-tags",
+        "browser",
+        "./..."
+      ],
+      "command": "GOTOOLCHAIN=go1.27.2 go vet -tags browser ./...",
+      "exit": 0,
+      "log": "output/matrix-ledger-enforce/round2/vet.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "started_utc": "2026-10-09T17:26:18.461633+00:00"
+    }
+  ]
+}

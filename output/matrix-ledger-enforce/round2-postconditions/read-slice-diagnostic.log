@@ -1,0 +1,88 @@
+✔ real Playwright ESM consumer collects the product-editor cases (1100.974666ms)
+✖ every actual mobile control operation is enclosed by its recording callback (76.925542ms)
+✔ post-action outcome cannot be removed while the action and observed receipt remain (44.017084ms)
+✔ post-action outcome cannot be before while the action and observed receipt remain (40.612834ms)
+✔ post-action outcome cannot be after-return while the action and observed receipt remain (36.831875ms)
+✔ post-action outcome cannot be not-awaited while the action and observed receipt remain (34.607375ms)
+✔ post-action outcome cannot be unused-function while the action and observed receipt remain (31.78575ms)
+✔ post-action outcome cannot be unreachable-branch while the action and observed receipt remain (35.205458ms)
+✔ each checked state needs its own outcome before the next operation (36.385458ms)
+✔ a literal locator swap cannot certify the original declared control (33.388875ms)
+✔ a lexical alias locator swap cannot certify the original declared control (30.713333ms)
+✔ a field factory locator swap cannot certify the original declared control (34.534916ms)
+✔ a row coordinate locator swap cannot certify the original declared control (28.126958ms)
+✔ a role label locator swap cannot certify the original declared control (30.524708ms)
+✔ a CSS ancestor locator swap cannot certify the original declared control (39.982375ms)
+✔ a unknown dynamic locator swap cannot certify the original declared control (12.851375ms)
+✔ lexical shadowing and mutable field reassignment fail closed (49.897542ms)
+✔ native confirmation cannot substitute its receiver (32.343333ms)
+✔ native confirmation cannot substitute its method (28.787292ms)
+✔ Escape cannot certify another key on the same receiver (33.054708ms)
+✔ a new bare click is rejected without running a browser (23.06975ms)
+✔ a different control cannot borrow an existing action's recording callback (43.244917ms)
+✔ a direct ledger push cannot bypass canonical recording (31.058333ms)
+✔ removing the recording wrapper rejects the enclosed real action (26.842ms)
+✔ shared table has only complete meaningful unique declarations (0.215875ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (zh-TW) (0.830375ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (zh-CN) (0.358459ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (en) (0.288666ms)
+✔ failed assertion and missing observation cannot emit a PASS or satisfy completeness (0.245584ms)
+✔ in-flight action cannot masquerade as complete or admit a concurrent duplicate (0.857667ms)
+ℹ tests 30
+ℹ suites 0
+ℹ pass 29
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2131.279917
+
+✖ failing tests:
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:472:1
+✖ every actual mobile control operation is enclosed by its recording callback (76.925542ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   'identity mismatch: {"page":"mobile matrix new","control":"saved axis-0","action":"UI save, editor reopen/reload"} (zh-TW): missing declared DOM read [["testId","axis-name-0"]]',
+  +   'identity mismatch: {"page":"mobile matrix new","control":"saved axis-1","action":"UI save, editor reopen/reload"} (zh-TW): missing declared DOM read [["testId","axis-name-1"]]',
+  +   'identity mismatch: {"page":"mobile matrix new","row":"White / S","control":"saved row readback","action":"UI save, editor reopen/reload, read visible fields"} (zh-TW): missing declared DOM read [["testId","matrix-row-0"],["css","strong"]]',
+  +   'identity mismatch: {"page":"mobile matrix new","row":"Black / S","control":"saved row readback","action":"UI save, editor reopen/reload, read visible fields"} (zh-TW): missing declared DOM read [["testId","matrix-row-1"],["css","strong"]]',
+  +   'identity mismatch: {"page":"mobile matrix edit","control":"saved axis-0","action":"UI save, editor reopen/reload"} (zh-TW): missing declared DOM read [["testId","axis-name-0"]]',
+  +   'identity mismatch: {"page":"mobile matrix edit","control":"saved axis-1","action":"UI save, editor reopen/reload"} (zh-TW): missing declared DOM read [["testId","axis-name-1"]]',
+  +   'identity mismatch: {"page":"mobile matrix edit","row":"White / S","control":"saved row readback","action":"UI save, editor reopen/reload, read visible fields"} (zh-TW): missing declared DOM read [["testId","matrix-row-0"],["css","strong"]]',
+  +   'identity mismatch: {"page":"mobile matrix edit","row":"Black / S","control":"saved row readback","action":"UI save, editor reopen/reload, read visible fields"} (zh-TW): missing declared DOM read [["testId","matrix-row-1"],["css","strong"]]',
+  +   'identity mismatch: {"page":"mobile matrix new","control":"saved axis-0","action":"UI save, editor reopen/reload"} (zh-CN): missing declared DOM read [["testId","axis-name-0"]]',
+  +   'identity mismatch: {"page":"mobile matrix new","control":"saved axis-1","action":"UI save, editor reopen/reload"} (zh-CN): missing declared DOM read [["testId","axis-name-1"]]',
+  +   'identity mismatch: {"page":"mobile matrix new","row":"White / S","control":"saved row readback","action":"UI save, editor reopen/reload, read visible fields"} (zh-CN): missing declared DOM read [["testId","matrix-row-0"],["css","strong"]]',
+  +   'identity mismatch: {"page":"mobile matrix new","row":"Black / S","control":"saved row readback","action":"UI save, editor reopen/reload, read visible fields"} (zh-CN): missing declared DOM read [["testId","matrix-row-1"],["css","strong"]]',
+  +   'identity mismatch: {"page":"mobile matrix edit","control":"saved axis-0","action":"UI save, editor reopen/reload"} (zh-CN): missing declared DOM read [["testId","axis-name-0"]]',
+  +   'identity mismatch: {"page":"mobile matrix edit","control":"saved axis-1","action":"UI save, editor reopen/reload"} (zh-CN): missing declared DOM read [["testId","axis-name-1"]]',
+  +   'identity mismatch: {"page":"mobile matrix edit","row":"White / S","control":"saved row readback","action":"UI save, editor reopen/reload, read visible fields"} (zh-CN): missing declared DOM read [["testId","matrix-row-0"],["css","strong"]]',
+  +   'identity mismatch: {"page":"mobile matrix edit","row":"Black / S","control":"saved row readback","action":"UI save, editor reopen/reload, read visible fields"} (zh-CN): missing declared DOM read [["testId","matrix-row-1"],["css","strong"]]',
+  +   'identity mismatch: {"page":"mobile matrix new","control":"saved axis-0","action":"UI save, editor reopen/reload"} (en): missing declared DOM read [["testId","axis-name-0"]]',
+  +   'identity mismatch: {"page":"mobile matrix new","control":"saved axis-1","action":"UI save, editor reopen/reload"} (en): missing declared DOM read [["testId","axis-name-1"]]',
+  +   'identity mismatch: {"page":"mobile matrix new","row":"White / S","control":"saved row readback","action":"UI save, editor reopen/reload, read visible fields"} (en): missing declared DOM read [["testId","matrix-row-0"],["css","strong"]]',
+  +   'identity mismatch: {"page":"mobile matrix new","row":"Black / S","control":"saved row readback","action":"UI save, editor reopen/reload, read visible fields"} (en): missing declared DOM read [["testId","matrix-row-1"],["css","strong"]]',
+  +   'identity mismatch: {"page":"mobile matrix edit","control":"saved axis-0","action":"UI save, editor reopen/reload"} (en): missing declared DOM read [["testId","axis-name-0"]]',
+  +   'identity mismatch: {"page":"mobile matrix edit","control":"saved axis-1","action":"UI save, editor reopen/reload"} (en): missing declared DOM read [["testId","axis-name-1"]]',
+  +   'identity mismatch: {"page":"mobile matrix edit","row":"White / S","control":"saved row readback","action":"UI save, editor reopen/reload, read visible fields"} (en): missing declared DOM read [["testId","matrix-row-0"],["css","strong"]]',
+  +   'identity mismatch: {"page":"mobile matrix edit","row":"Black / S","control":"saved row readback","action":"UI save, editor reopen/reload, read visible fields"} (en): missing declared DOM read [["testId","matrix-row-1"],["css","strong"]]'
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/tests/ci/product-editor-matrix-ledger.test.mjs:473:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'identity mismatch: {"page":"mobile matrix new","control":"saved axis-0","action":"UI save, editor reopen/reload"} (zh-TW): missing declared DOM read [["testId","axis-name-0"]]', 'identity mismatch: {"page":"mobile matrix new","control":"saved axis-1","action":"UI save, editor reopen/reload"} (zh-TW): missing declared DOM read [["testId","axis-name-1"]]', 'identity mismatch: {"page":"mobile matrix new","row":"White / S","control":"saved row readback","action":"UI save, editor reopen/reload, read visible fields"} (zh-TW): missing declared DOM read [["testId","matrix-row-0"],["css","strong"]]', 'identity mismatch: {"page":"mobile matrix new","row":"Black / S","control":"saved row readback","action":"UI save, editor reopen/reload, read visible fields"} (zh-TW): missing declared DOM read [["testId","matrix-row-1"],["css","strong"]]', 'identity mismatch: {"page":"mobile matrix edit","control":"saved axis-0","action":"UI save, editor reopen/reload"} (zh-TW): missing declared DOM read [["testId","axis-name-0"]]', 'identity mismatch: {"page":"mobile matrix edit","control":"saved axis-1","action":"UI save, editor reopen/reload"} (zh-TW): missing declared DOM read [["testId","axis-name-1"]]', 'identity mismatch: {"page":"mobile matrix edit","row":"White / S","control":"saved row readback","action":"UI save, editor reopen/reload, read visible fields"} (zh-TW): missing declared DOM read [["testId","matrix-row-0"],["css","strong"]]', 'identity mismatch: {"page":"mobile matrix edit","row":"Black / S","control":"saved row readback","action":"UI save, editor reopen/reload, read visible fields"} (zh-TW): missing declared DOM read [["testId","matrix-row-1"],["css","strong"]]', 'identity mismatch: {"page":"mobile matrix new","control":"saved axis-0","action":"UI save, editor reopen/reload"} (zh-CN): missing declared DOM read [["testId","axis-name-0"]]', 'identity mismatch: {"page":"mobile matrix new","control":"saved axis-1","action":"UI save, editor reopen/reload"} (zh-CN): missing declared DOM read [["testId","axis-name-1"]]', 'identity mismatch: {"page":"mobile matrix new","row":"White / S","control":"saved row readback","action":"UI save, editor reopen/reload, read visible fields"} (zh-CN): missing declared DOM read [["testId","matrix-row-0"],["css","strong"]]', 'identity mismatch: {"page":"mobile matrix new","row":"Black / S","control":"saved row readback","action":"UI save, editor reopen/reload, read visible fields"} (zh-CN): missing declared DOM read [["testId","matrix-row-1"],["css","strong"]]', 'identity mismatch: {"page":"mobile matrix edit","control":"saved axis-0","action":"UI save, editor reopen/reload"} (zh-CN): missing declared DOM read [["testId","axis-name-0"]]', 'identity mismatch: {"page":"mobile matrix edit","control":"saved axis-1","action":"UI save, editor reopen/reload"} (zh-CN): missing declared DOM read [["testId","axis-name-1"]]', 'identity mismatch: {"page":"mobile matrix edit","row":"White / S","control":"saved row readback","action":"UI save, editor reopen/reload, read visible fields"} (zh-CN): missing declared DOM read [["testId","matrix-row-0"],["css","strong"]]', 'identity mismatch: {"page":"mobile matrix edit","row":"Black / S","control":"saved row readback","action":"UI save, editor reopen/reload, read visible fields"} (zh-CN): missing declared DOM read [["testId","matrix-row-1"],["css","strong"]]', 'identity mismatch: {"page":"mobile matrix new","control":"saved axis-0","action":"UI save, editor reopen/reload"} (en): missing declared DOM read [["testId","axis-name-0"]]', 'identity mismatch: {"page":"mobile matrix new","control":"saved axis-1","action":"UI save, editor reopen/reload"} (en): missing declared DOM read [["testId","axis-name-1"]]', 'identity mismatch: {"page":"mobile matrix new","row":"White / S","control":"saved row readback","action":"UI save, editor reopen/reload, read visible fields"} (en): missing declared DOM read [["testId","matrix-row-0"],["css","strong"]]', 'identity mismatch: {"page":"mobile matrix new","row":"Black / S","control":"saved row readback","action":"UI save, editor reopen/reload, read visible fields"} (en): missing declared DOM read [["testId","matrix-row-1"],["css","strong"]]', 'identity mismatch: {"page":"mobile matrix edit","control":"saved axis-0","action":"UI save, editor reopen/reload"} (en): missing declared DOM read [["testId","axis-name-0"]]', 'identity mismatch: {"page":"mobile matrix edit","control":"saved axis-1","action":"UI save, editor reopen/reload"} (en): missing declared DOM read [["testId","axis-name-1"]]', 'identity mismatch: {"page":"mobile matrix edit","row":"White / S","control":"saved row readback","action":"UI save, editor reopen/reload, read visible fields"} (en): missing declared DOM read [["testId","matrix-row-0"],["css","strong"]]', 'identity mismatch: {"page":"mobile matrix edit","row":"Black / S","control":"saved row readback","action":"UI save, editor reopen/reload, read visible fields"} (en): missing declared DOM read [["testId","matrix-row-1"],["css","strong"]]' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

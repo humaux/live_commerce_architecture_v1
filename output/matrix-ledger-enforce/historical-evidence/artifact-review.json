@@ -1,0 +1,27 @@
+{
+  "evidence_level": "E1 independent read-only artifact review; not CI/K3 approval",
+  "reviewer": "/root/matrix_drift_ci_select",
+  "role": "explorer",
+  "model": "gpt-6.1-sol",
+  "reasoning": "medium",
+  "tested_source_commit": "2e10084b3f5e96548c15953cc40488aef9e1c86d",
+  "verdict": "PASS; scoped canonical artifacts",
+  "checks": [
+    "Go source table matches exact14manifest paths; all source digests match frozen Git and current checkout",
+    "SOURCE/browser files match digest index",
+    "All5 native canonical copies equal original native paths and recorded SHA-256",
+    "12PE+2CC12 distinct expected file/title entries with passed summaries and no failed/skipped/flaky; last-run passed empty failedTests",
+    "267 identity/expected/PASS entries exactly once;331raw,89per locale390px",
+    "Browser/Node/strictGo receipts0 and before-after sourceSHA/digests equal; wrapper fresh-ledger267PASS and DB persisted readback"
+  ],
+  "not_audited": [
+    "Growing outer check-gates receipt/index completeness",
+    "New CI/final independent review"
+  ],
+  "provenance": "Read-only subagent Python assertions reported exit0, chunk729084; root separately verifies final index after check-gates.",
+  "bindings_at_review": {
+    "output/matrix-ledger-enforce/historical-evidence/SOURCE.json": "48e44f6a1d5640bad91decfa9dcd9739287c22b66d6f97474b43e3cebfe0cc11",
+    "output/matrix-ledger-enforce/historical-evidence/browser/browser-evidence.json": "41040bf7396eac1cf7101c52bb3dcb2bd4fa8da6fea7524abde8f39fffc92532"
+  },
+  "subsequent_metadata_only_change": "SOURCE actual command receipts enriched after check-gates completed; source/manifest/browser native bytes unchanged. Root verifies final digest index and strict Go entry point after enrichment."
+}

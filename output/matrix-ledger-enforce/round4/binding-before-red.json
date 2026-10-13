@@ -1,0 +1,12 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/check-gates.sh"
+  ],
+  "mutation": "remove actual Node gate argv entry; preserve incidental source-hash reference",
+  "exit": 0,
+  "acceptance_assertion_exit": 1,
+  "seconds": 21.444,
+  "restored_sha256": "8245473a25422dca7d81a2f13fd9efe74452caad61fc23a1d04a49572d0a0a57",
+  "log_sha256": "357e018fd6ba444959e34fe64c70e1e418c5f80924e41164a5cfe62ff49d5cd6"
+}

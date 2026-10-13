@@ -1,0 +1,9 @@
+{
+  "tests/foundation/catalog_matrix_ledger_test.go": "244523a7b3c93af8e71e14f317ff9d05c306be50e777f263e5c30dbcd2c55f76",
+  "tests/foundation/browser_catalog_core_test.go": "677c2903574f91f4b61445bb1a743ecd17404a196b92ad72a9e313b56b44ad45",
+  "tests/admin/product-editor.acceptance.ts": "9d14a9fe89407a1b2c3a8f4fd59754335eb5e6fd2f0f45a8539a65c833fed84a",
+  "tests/admin/product-editor-matrix-ledger.ts": "bca2b1bed9cc9810cf7225b8f67b42efb9fd7453c979909df6c802cb3d827f1d",
+  "tests/foundation/testdata/product_editor_matrix_cases.json": "17ac97d4e2b3146cb5775a6cc0d1352c7806516ba96d74c1b8b610d53d339855",
+  "tests/ci/product-editor-matrix-ledger.test.mjs": "14e629bebbf9f1b6d2f1d1c80a2ba3d5b1fbbbdf1809ebcf8970cbd03bbc1f71",
+  "scripts/dev/test-node.sh": "aa910da13767dd6594f581e81ac0a53ffa9535ea581d45210856af2d75db13c9"
+}

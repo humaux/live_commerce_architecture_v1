@@ -1,0 +1,19 @@
+✔ every actual mobile control operation is enclosed by its recording callback (20.827833ms)
+✔ a new bare click is rejected without running a browser (18.524125ms)
+✔ a different control cannot borrow an existing action's recording callback (34.119083ms)
+✔ a direct ledger push cannot bypass canonical recording (14.538541ms)
+✔ removing the recording wrapper rejects the enclosed real action (8.992333ms)
+✔ shared table has only complete meaningful unique declarations (0.447375ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (zh-TW) (1.459917ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (zh-CN) (0.5345ms)
+✔ actual recorder expands every canonical expectation and preserves detailed observations (en) (0.557333ms)
+✔ failed assertion and missing observation cannot emit a PASS or satisfy completeness (0.462166ms)
+✔ in-flight action cannot masquerade as complete or admit a concurrent duplicate (0.516125ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 472.917

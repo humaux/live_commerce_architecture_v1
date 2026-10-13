@@ -1,0 +1,39 @@
+{
+  "source_hashes": {
+    "tests/ci/product-editor-matrix-claims.mjs": "5537978ab895dae0d5cf6e59bc6780876e55564cd74924c26de2db5ae988d137",
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "4700547960668f7281745d9411ae964e5ca8e8804fa29cc121fb9c2faeb31541",
+    "tests/admin/product-editor.acceptance.ts": "9c2c883ee9677805dccbfcb47d0582984955a7ea9bbb4db3c88ce8f5a0ca37bc"
+  },
+  "runs": [
+    {
+      "argv": [
+        "node",
+        "--test",
+        "--test-name-pattern=every actual mobile",
+        "tests/ci/product-editor-matrix-ledger.test.mjs"
+      ],
+      "env": {
+        "LC_MATRIX_ACTION_MUTATION": "fallback-sku-selector"
+      },
+      "exit_code": 1,
+      "seconds": 2.4610024160065223,
+      "log": "output/matrix-ledger-enforce/template-fragments/fallback-injection.log",
+      "log_sha256": "d491a97f7918104988ce1de6302ac729b18642ff8c12f28c45fb384fe73ab056"
+    },
+    {
+      "argv": [
+        "node",
+        "--test",
+        "--test-name-pattern=every actual mobile",
+        "tests/ci/product-editor-matrix-ledger.test.mjs"
+      ],
+      "env": {
+        "LC_MATRIX_ACTION_MUTATION": null
+      },
+      "exit_code": 0,
+      "seconds": 1.3696153750061058,
+      "log": "output/matrix-ledger-enforce/template-fragments/fallback-restored.log",
+      "log_sha256": "09434e8cd7906c29c120df9a34a9470c093d0f9f9991d428163d66ba7cba7676"
+    }
+  ]
+}

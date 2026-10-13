@@ -210,6 +210,15 @@ func runCatalogCoreBrowser(t *testing.T, productEditor bool) {
 	}
 	brfPlaywright(t, ctx, stack, []string{"catalog-core.spec.ts"}, env)
 	if productEditor {
+		ledgerPath := filepath.Join(evidence, "product-editor-click-ledger.json")
+		ledger, err := os.ReadFile(ledgerPath)
+		if err != nil {
+			t.Fatalf("PE mobile matrix ledger unavailable: %v; evidence=%s", err, evidence)
+		}
+		if err := validateProductEditorMatrixLedger(ledger); err != nil {
+			t.Fatalf("PE mobile matrix ledger rejected: %v; evidence=%s", err, evidence)
+		}
+		t.Logf("PASS mobile matrix click ledger: %d declared unique PASS identities; evidence=%s", len(productEditorMatrixLedgerExpected()), ledgerPath)
 		prefix := "pe" + tag
 		// Preserve the original exact four-product fence. Exclude only the
 		// three explicitly named mobile matrices and three axis-removal
@@ -276,7 +285,7 @@ func runCatalogCoreBrowser(t *testing.T, productEditor bool) {
 			for _, row := range []struct {
 				option, index            string
 				price, compare, quantity int64
-			}{{"White", "0", 9000, 13000, 3}, {"Black", "1", 9100, 13100, 4}} {
+			}{{"White", "0", 9000, 13000, 5}, {"Black", "1", 9100, 13100, 4}} {
 				if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.skus s
 					JOIN catalog.products p ON p.id=s.product_id AND p.tenant_id=s.tenant_id AND p.store_id=s.store_id
 					WHERE p.tenant_id=$1 AND p.store_id=$2 AND p.name=$3
@@ -287,7 +296,7 @@ func runCatalogCoreBrowser(t *testing.T, productEditor bool) {
 					AND (SELECT coalesce(sum(b.on_hand),0) FROM inventory.balances b
 					  WHERE b.tenant_id=s.tenant_id AND b.store_id=s.store_id AND b.sku_id=s.id)=$9`,
 					tenant, store, name, row.option, row.price, row.compare, locale.index, row.index, row.quantity); n != 1 {
-					t.Fatalf("PE axis remove %s %s/S: old SKU not archived with original values intact (matches=%d)", locale.name, row.option, n)
+					t.Fatalf("PE axis remove %s %s/S: old SKU not archived with saved bulk values intact (matches=%d)", locale.name, row.option, n)
 				}
 			}
 			if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.skus s

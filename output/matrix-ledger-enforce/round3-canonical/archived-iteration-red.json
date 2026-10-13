@@ -1,0 +1,15 @@
+{
+  "argv": [
+    "node",
+    "--test",
+    "--test-name-pattern=canonical expected claim rejects checking one archived",
+    "tests/ci/product-editor-matrix-ledger.test.mjs"
+  ],
+  "exit_code": 1,
+  "source_sha256": {
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "310b363d1725993750106ef697c7f4264390a9faf7d8aab9589e6590320980ff",
+    "tests/ci/product-editor-matrix-claims.mjs": "5af19f07858579a2002a235a800c5780f5d42fd1aace5caeb3b5132766ddf29b",
+    "tests/ci/product-editor-matrix-source.mjs": "f89c2e3722d8d45992dd283330ddaef02f9c548fe2f7fcc97f06d06ac0214ec9",
+    "tests/foundation/testdata/product_editor_matrix_cases.json": "912fe90338140719d48b89754e05b8b2b79a90303ce4f5615f261c01614bd897"
+  }
+}

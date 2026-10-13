@@ -1,0 +1,175 @@
+✔ R11: controls narrower than a usable width (0.3415ms)
+ℹ tests 452
+ℹ suites 0
+ℹ pass 452
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+✔ ledger read navigation requires effective integration:read permission regardless of role (0.083ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+✔ ManualOrder bank-transfer expiry uses Taipei at the year boundary (2.825667ms)
+ℹ tests 53
+ℹ suites 0
+ℹ pass 53
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+✔ ManualOrder bank-transfer expiry uses Taipei at the year boundary (3.1955ms)
+ℹ tests 53
+ℹ suites 0
+ℹ pass 53
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+✔ all three locales label every task queue, payment and delivery mode (0.323084ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+✔ numeric store IDs have no suggestion BFF or browser client (0.975334ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+✔ PS review: admin image installs the manifests for its workspace dependencies before building (0.319125ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+✔ route fails closed without ads:read and is not a duplicate navigation entry; locale keys match (0.098958ms)
+ℹ tests 37
+ℹ suites 0
+ℹ pass 37
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+✔ the real statements display literally as signed contributions that add up to the server's net (9.835833ms)
+ℹ tests 48
+ℹ suites 0
+ℹ pass 48
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+✔ PE14 replacement SKU edit excludes create-only code from the strict patch grammar (0.205125ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+✔ a conclusive command rejection stays distinct from authorization loss (0.719542ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+✔ LC-U1 receipt fence survives cookie rotation; pending replay still has a separate session boundary (0.514292ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 27
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+✔ filter resources have only authorised opaque ids; backoff is capped and success resets (0.050125ms)
+ℹ tests 74
+ℹ suites 0
+ℹ pass 74
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+✔ SessionCopy submit uses latest version; UNKNOWN request survives later draft/input changes (24.204708ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+✔ host prompt copy is the frozen text, verbatim (0.247833ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+✔ a new product issues the image-axis stage only for a chosen axis (0.729208ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+✔ a large transparent PNG stays alpha-capable and is never painted with an opaque matte (0.397875ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+✔ pick fixture serves the scoped parcel reads required by the orders page (4.8485ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+✔ captured parent groups callback refuses hidden scope (2.376708ms)
+ℹ tests 30
+ℹ suites 0
+ℹ pass 30
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+✔ P2 report malformed query and wrong CSRF are rejected by actual helpers before upstream (0.2695ms)
+ℹ tests 118
+ℹ suites 0
+ℹ pass 118
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+✔ commit receipt has exactly five keys and no extra customer cells (0.216291ms)
+ℹ tests 57
+ℹ suites 0
+ℹ pass 57
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+✔ aggregate visual: honest shards pass; a missing shard, a missing shot, a blocking verdict and a registry route outside the universe each fail (4.973417ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+✔ parseDurations: top-level lines only (0.229583ms)
+ℹ tests 54
+ℹ suites 0
+ℹ pass 54
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+✔ focus while already visible preserves the active epoch and the uncertain reply receipt (0.086083ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 24
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+✔ quota recovery gives exact en comment-quota and DM-window instructions beside copy only (0.088167ms)
+ℹ tests 125
+ℹ suites 0
+ℹ pass 125
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0

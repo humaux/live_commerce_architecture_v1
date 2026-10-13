@@ -1,0 +1,30 @@
+{
+  "native_directory": "output/playwright/pr28-round4-20261012T175300Z/audit",
+  "files": {
+    "audit.json": {
+      "copied_as": "audit.json",
+      "sha256": "957f645d2d285830cb8dff53e43311a06da35e576e0b74148a5be4275cfe41a3"
+    },
+    "command-receipt.json": {
+      "copied_as": "command-receipt.json",
+      "sha256": "fdf292b5fe7cbd03341e73e46487777ed12a1a1d7dbac748953ca4bf540aa2fc"
+    },
+    "go-evidence.log": {
+      "copied_as": "go-evidence.log",
+      "sha256": "2d98a7b7d06c37eff0134dde859a6eaf1884902d9817534f133aabf55f8e4c18"
+    },
+    "independent-audit.py": {
+      "copied_as": "independent-audit.source.txt",
+      "sha256": "0e1e310f020296cac61e82aec70e8cf2c7439c1ceb8444347602bcc031e10697"
+    },
+    "initial-audit-harness-errors.json": {
+      "copied_as": "initial-audit-harness-errors.json",
+      "sha256": "a4d72eb815782f4118a99127d20f8a510e46e8cac435ade30c90b3205e373968"
+    },
+    "second-audit-harness-errors.json": {
+      "copied_as": "second-audit-harness-errors.json",
+      "sha256": "2240d694849dd5deb50196517b9387c69905b8d22b29e26375d03b1a2319a1d4"
+    }
+  },
+  "note": "Independent receipts copied unchanged; the audit script is an inert source snapshot. Commands in native receipts retain their actual original paths."
+}

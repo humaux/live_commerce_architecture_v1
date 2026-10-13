@@ -19,6 +19,55 @@ const full = browserModes(usage);
 // from the same registry data. Backend changes that must reach every PG-backed browser mode are asserted against this.
 const pgFull = modeEntries(usage).filter((e) => full.includes(e.name) && e.fixture === "pg").map((e) => e.name);
 
+const matrixOwner = "tests/foundation/catalog_matrix_ledger_test.go";
+const matrixDeclaration = readFileSync(path.join(root, matrixOwner), "utf8");
+const matrixBody = /var productEditorMatrixEvidenceSources = \[\]string\{([\s\S]*?)\n\}/.exec(matrixDeclaration)?.[1];
+assert.ok(matrixBody, "the Go evidence consumer must declare its executable producers once");
+const matrixProducers = [...matrixBody.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+
+test("matrix evidence producers always select the current live product-editor guard", () => {
+  assert.equal(matrixProducers.length, 14);
+  for (const file of matrixProducers) {
+    assert.ok(planPr([file], usage).modes.includes("--browser-product-editor"), file);
+  }
+});
+
+test("matrix evidence producer discovery unions base, head and merge checkout", () => {
+  const paths = ["tests/ci/base-only.mjs", "tests/ci/head-only.mjs", "tests/ci/checkout-only.mjs"];
+  const declare = (file) => `var productEditorMatrixEvidenceSources = []string{\n  "${file}",\n}\n`;
+  const observations = [null, ...paths.map(declare)];
+  for (const file of paths) {
+    const plan = planPr([file], usage, (read) => read === matrixOwner ? observations : ["package foundation_test\n"]);
+    assert.deepEqual(plan.modes, ["foundation-shards", "--browser-product-editor"]);
+  }
+  assert.throws(() => planPr([paths[0]], usage, () => ['var productEditorMatrixEvidenceSources = []string{ dynamicCall() }']), /matrix evidence source declaration/);
+});
+
+test("real matrix producer CLI outputs reach the CI job matrix", (t) => {
+  const r = repository(t);
+  r.put(matrixOwner, matrixDeclaration);
+  r.put("scripts/dev/ci-plan.mjs", readFileSync(path.join(root, "scripts/dev/ci-plan.mjs"), "utf8"));
+  r.put("scripts/dev/shard-plan.json", readFileSync(path.join(root, "scripts/dev/shard-plan.json"), "utf8"));
+  for (const file of matrixProducers) if (file !== matrixOwner) r.put(file, "// synthetic producer\n");
+  r.commit();
+  for (const [i, file] of matrixProducers.entries()) {
+    const output = path.join(r.dir, `output-${i}.txt`);
+    const actual = JSON.parse(execFileSync(process.execPath, [path.join(r.dir, "scripts/dev/pr-modes.mjs"), "--stdin"], {
+      cwd: r.dir, encoding: "utf8", input: `${file}\n`, env: { ...process.env, GITHUB_OUTPUT: output }, stdio: ["pipe", "pipe", "pipe"],
+    }));
+    const modes = JSON.parse(/^modes=(.*)$/m.exec(readFileSync(output, "utf8"))[1]);
+    assert.deepEqual(modes, actual.modes);
+    assert.ok(modes.includes("--browser-product-editor"), `${file} real CLI`);
+    const matrixOutput = path.join(r.dir, `matrix-${i}.txt`);
+    execFileSync(process.execPath, [path.join(r.dir, "scripts/dev/ci-plan.mjs")], {
+      cwd: r.dir, env: { ...process.env, MODES: JSON.stringify(modes), GITHUB_OUTPUT: matrixOutput }, stdio: ["ignore", "pipe", "pipe"],
+    });
+    const matrix = JSON.parse(/^matrix=(.*)$/m.exec(readFileSync(matrixOutput, "utf8"))[1]);
+    assert.ok(matrix.some((job) => job.mode === "--browser-product-editor"), `${file} actual CI matrix`);
+    t.diagnostic(`${file}: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor`);
+  }
+});
+
 
 // Append exactly one native registry entry; mode position/usage spelling is irrelevant. covers !== null adds the
 // lc_covers declaration line (CI-SELECT registry data: the internal packages the mode's harness wires).

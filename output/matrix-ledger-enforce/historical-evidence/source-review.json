@@ -1,0 +1,26 @@
+{
+  "scope": "Independent read-only source diff review; E1 only, not browser/CI/K3 approval",
+  "reviewer": "/root/matrix_drift_ci_select",
+  "role": "explorer",
+  "model": "gpt-6.1-sol",
+  "reasoning": "medium",
+  "verdict": "PASS; no P0/P1 blockers",
+  "frozen_source": "2e10084b3f5e96548c15953cc40488aef9e1c86d",
+  "source_files_sha256": {
+    "scripts/dev/pr-modes.mjs": "11b8791effbc1c74e2378677d06c0984e860e5b0fcdb80ec12b2768c549938f2",
+    "tests/ci/pr-modes.test.mjs": "47e9149da7c30d53d703911cd37d9188cbcd39adcdc845de8eb888ddf77b8743",
+    "tests/foundation/catalog_matrix_ledger_test.go": "0bca90d283d8bf73eefdb0689ab68b4c2b3c97d619a53de6bf01e95d7c594371",
+    "tests/foundation/catalog_matrix_evidence_test.go": "d360e785f8519418eb4ab593c59a4408f28ed453fec63848eaf894ac092cf7c1"
+  },
+  "findings": [
+    "Selection only appends existing mode; Set deduplicates, base/head/checkout union preserves producer additions/removals",
+    "Typed drift requires valid recorded digest, successful source read and real byte mismatch; strict1 remains FAIL",
+    "Matching source path retains all native hashes, exact identities and runtime outcome checks",
+    "Fresh current Playwright ledger consumer unchanged; historical canonical is not its input"
+  ],
+  "not_run": [
+    "Full browser",
+    "Full Node/check-gates",
+    "CI/final independent review"
+  ]
+}

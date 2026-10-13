@@ -1,0 +1,30 @@
+[
+  {
+    "command": "LC_MATRIX_ACTION_MUTATION=bare-click node --test tests/ci/product-editor-matrix-ledger.test.mjs",
+    "exit": 1,
+    "log": "output/matrix-ledger-enforce/round1/current-bare-click-red.log",
+    "sha256": "29bf268314c377fa5208c98a03a16701a732eb38bc975102083dd81dc4ebbee8",
+    "raw_sha256": "97a5729de6f3039516f9b34d7ffc09bcb2834a595491b47620ed749f34e1bb33"
+  },
+  {
+    "command": "LC_MATRIX_ACTION_MUTATION=removed-wrapper node --test tests/ci/product-editor-matrix-ledger.test.mjs",
+    "exit": 1,
+    "log": "output/matrix-ledger-enforce/round1/current-removed-wrapper-red.log",
+    "sha256": "ad9ad9d2f3ee7f562ba1708094adfc6746364048860bfd50713bb17a95ba90ad",
+    "raw_sha256": "741e9eb65c9b6b3050accef5856b0794af4c3dfe079ea996230b55b20a9d9315"
+  },
+  {
+    "command": "LC_MATRIX_ACTION_MUTATION=extra-control node --test tests/ci/product-editor-matrix-ledger.test.mjs",
+    "exit": 1,
+    "log": "output/matrix-ledger-enforce/round1/current-extra-control-red.log",
+    "sha256": "776b6448e8bcb7c051ee7a49c429f098d3e86c7d8829a33511c06aa7eac48cf4",
+    "raw_sha256": "127dc18815036c1a9bdfda0277546c6a57e80a99efca3c32c13dc551d29d987d"
+  },
+  {
+    "command": "LC_MATRIX_ACTION_MUTATION=direct-push node --test tests/ci/product-editor-matrix-ledger.test.mjs",
+    "exit": 1,
+    "log": "output/matrix-ledger-enforce/round1/current-direct-push-red.log",
+    "sha256": "f812e52ab2f39bf0feb77e8a71d34f12753652400600049d582cd714c02e472e",
+    "raw_sha256": "a70d61725e65fc192854aa2e3ef753560e6cd41477eaa390c30b9aaa805309ab"
+  }
+]

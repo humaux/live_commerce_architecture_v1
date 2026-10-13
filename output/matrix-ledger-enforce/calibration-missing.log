@@ -1,0 +1,6 @@
+=== RUN   TestMatrixLedgerEvidenceProbe
+    matrix_ledger_evidence_probe_test.go:11: mobile matrix ledger is missing 1 required rows
+--- FAIL: TestMatrixLedgerEvidenceProbe (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	1.187s
+FAIL

@@ -1,0 +1,9 @@
+=== RUN   TestProductEditorMatrixLedgerEvidence
+    catalog_matrix_ledger_test.go:270: delivery evidence must use repository-relative paths
+    catalog_matrix_ledger_test.go:275: canonical browser evidence product-editor-click-ledger.json: open ../../output/matrix-ledger-enforce/browser/product-editor-click-ledger.json: no such file or directory
+    catalog_matrix_ledger_test.go:275: canonical browser evidence playwright.log: open ../../output/matrix-ledger-enforce/browser/playwright.log: no such file or directory
+    catalog_matrix_ledger_test.go:275: canonical browser evidence browser-evidence.json: open ../../output/matrix-ledger-enforce/browser/browser-evidence.json: no such file or directory
+--- FAIL: TestProductEditorMatrixLedgerEvidence (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	2.370s
+FAIL

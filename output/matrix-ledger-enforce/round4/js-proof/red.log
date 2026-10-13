@@ -1,0 +1,332 @@
+✖ canonical unary signature distinguishes !x from ~x (2.142167ms)
+✖ canonical unary signature distinguishes !x from +x (0.2845ms)
+✖ canonical unary signature distinguishes ++x from --x (0.198041ms)
+✖ canonical unary signature distinguishes x++ from x-- (0.191875ms)
+✖ CI hook refusal: CI="true" LC_MATRIX_ACTION_MUTATION="" (466.913416ms)
+✖ CI hook refusal: CI="true" LC_MATRIX_ACTION_MUTATION="enabled" (828.858458ms)
+✖ CI hook refusal: CI="true" LC_MATRIX_MUTATION_SNAPSHOT="" (975.977208ms)
+✖ CI hook refusal: CI="true" LC_MATRIX_MUTATION_SNAPSHOT="enabled" (517.745875ms)
+✖ CI hook refusal: CI="" LC_MATRIX_ACTION_MUTATION="" (461.156375ms)
+✖ CI hook refusal: CI="" LC_MATRIX_ACTION_MUTATION="enabled" (497.917083ms)
+✖ CI hook refusal: CI="" LC_MATRIX_MUTATION_SNAPSHOT="" (387.711833ms)
+✖ CI hook refusal: CI="" LC_MATRIX_MUTATION_SNAPSHOT="enabled" (524.668708ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 0
+ℹ fail 12
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5599.28975
+
+✖ failing tests:
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:309:3
+✖ canonical unary signature distinguishes !x from ~x (2.142167ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be strictly unequal to:
+  
+  '["PrefixUnaryExpression",["identifier","x"]]'
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-r4-js-proof/tests/ci/product-editor-matrix-ledger.test.mjs:312:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '["PrefixUnaryExpression",["identifier","x"]]',
+    expected: '["PrefixUnaryExpression",["identifier","x"]]',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:309:3
+✖ canonical unary signature distinguishes !x from +x (0.2845ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be strictly unequal to:
+  
+  '["PrefixUnaryExpression",["identifier","x"]]'
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-r4-js-proof/tests/ci/product-editor-matrix-ledger.test.mjs:312:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '["PrefixUnaryExpression",["identifier","x"]]',
+    expected: '["PrefixUnaryExpression",["identifier","x"]]',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:309:3
+✖ canonical unary signature distinguishes ++x from --x (0.198041ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be strictly unequal to:
+  
+  '["PrefixUnaryExpression",["identifier","x"]]'
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-r4-js-proof/tests/ci/product-editor-matrix-ledger.test.mjs:312:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '["PrefixUnaryExpression",["identifier","x"]]',
+    expected: '["PrefixUnaryExpression",["identifier","x"]]',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:309:3
+✖ canonical unary signature distinguishes x++ from x-- (0.191875ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be strictly unequal to:
+  
+  '["PostfixUnaryExpression",["identifier","x"]]'
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-r4-js-proof/tests/ci/product-editor-matrix-ledger.test.mjs:312:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '["PostfixUnaryExpression",["identifier","x"]]',
+    expected: '["PostfixUnaryExpression",["identifier","x"]]',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:317:40
+✖ CI hook refusal: CI="true" LC_MATRIX_ACTION_MUTATION="" (466.913416ms)
+  AssertionError [ERR_ASSERTION]: ℹ tests 0
+  ℹ suites 0
+  ℹ pass 0
+  ℹ fail 0
+  ℹ cancelled 0
+  ℹ skipped 0
+  ℹ todo 0
+  ℹ duration_ms 370.995125
+  
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-r4-js-proof/tests/ci/product-editor-matrix-ledger.test.mjs:331:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:317:40
+✖ CI hook refusal: CI="true" LC_MATRIX_ACTION_MUTATION="enabled" (828.858458ms)
+  AssertionError [ERR_ASSERTION]: ℹ tests 0
+  ℹ suites 0
+  ℹ pass 0
+  ℹ fail 0
+  ℹ cancelled 0
+  ℹ skipped 0
+  ℹ todo 0
+  ℹ duration_ms 682.785083
+  
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-r4-js-proof/tests/ci/product-editor-matrix-ledger.test.mjs:331:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:317:40
+✖ CI hook refusal: CI="true" LC_MATRIX_MUTATION_SNAPSHOT="" (975.977208ms)
+  AssertionError [ERR_ASSERTION]: ℹ tests 0
+  ℹ suites 0
+  ℹ pass 0
+  ℹ fail 0
+  ℹ cancelled 0
+  ℹ skipped 0
+  ℹ todo 0
+  ℹ duration_ms 912.422583
+  
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-r4-js-proof/tests/ci/product-editor-matrix-ledger.test.mjs:331:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:317:40
+✖ CI hook refusal: CI="true" LC_MATRIX_MUTATION_SNAPSHOT="enabled" (517.745875ms)
+  AssertionError [ERR_ASSERTION]: ℹ tests 0
+  ℹ suites 0
+  ℹ pass 0
+  ℹ fail 0
+  ℹ cancelled 0
+  ℹ skipped 0
+  ℹ todo 0
+  ℹ duration_ms 463.2025
+  
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-r4-js-proof/tests/ci/product-editor-matrix-ledger.test.mjs:331:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:317:40
+✖ CI hook refusal: CI="" LC_MATRIX_ACTION_MUTATION="" (461.156375ms)
+  AssertionError [ERR_ASSERTION]: ℹ tests 0
+  ℹ suites 0
+  ℹ pass 0
+  ℹ fail 0
+  ℹ cancelled 0
+  ℹ skipped 0
+  ℹ todo 0
+  ℹ duration_ms 372.258375
+  
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-r4-js-proof/tests/ci/product-editor-matrix-ledger.test.mjs:331:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:317:40
+✖ CI hook refusal: CI="" LC_MATRIX_ACTION_MUTATION="enabled" (497.917083ms)
+  AssertionError [ERR_ASSERTION]: ℹ tests 0
+  ℹ suites 0
+  ℹ pass 0
+  ℹ fail 0
+  ℹ cancelled 0
+  ℹ skipped 0
+  ℹ todo 0
+  ℹ duration_ms 443.273583
+  
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-r4-js-proof/tests/ci/product-editor-matrix-ledger.test.mjs:331:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:317:40
+✖ CI hook refusal: CI="" LC_MATRIX_MUTATION_SNAPSHOT="" (387.711833ms)
+  AssertionError [ERR_ASSERTION]: ℹ tests 0
+  ℹ suites 0
+  ℹ pass 0
+  ℹ fail 0
+  ℹ cancelled 0
+  ℹ skipped 0
+  ℹ todo 0
+  ℹ duration_ms 335.837917
+  
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-r4-js-proof/tests/ci/product-editor-matrix-ledger.test.mjs:331:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-ledger.test.mjs:317:40
+✖ CI hook refusal: CI="" LC_MATRIX_MUTATION_SNAPSHOT="enabled" (524.668708ms)
+  AssertionError [ERR_ASSERTION]: ℹ tests 0
+  ℹ suites 0
+  ℹ pass 0
+  ℹ fail 0
+  ℹ cancelled 0
+  ℹ skipped 0
+  ℹ todo 0
+  ℹ duration_ms 482.73675
+  
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr28-r4-js-proof/tests/ci/product-editor-matrix-ledger.test.mjs:331:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

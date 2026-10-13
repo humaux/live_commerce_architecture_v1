@@ -1,0 +1,137 @@
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption/playwright-log
+    catalog_matrix_evidence_test.go:61: rejected playwright-log: SHA-256 mismatch for canonical evidence/source output/matrix-ledger-enforce/fixture/browser/playwright.log
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption/cc12-log
+    catalog_matrix_evidence_test.go:61: rejected cc12-log: SHA-256 mismatch for canonical evidence/source output/matrix-ledger-enforce/fixture/browser/cc12-playwright.log
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption/ledger
+    catalog_matrix_evidence_test.go:61: rejected ledger: SHA-256 mismatch for canonical evidence/source output/matrix-ledger-enforce/fixture/browser/product-editor-click-ledger.json
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption/manifest
+    catalog_matrix_evidence_test.go:61: rejected manifest: SHA-256 mismatch for canonical evidence/source output/matrix-ledger-enforce/fixture/browser/browser-evidence.json
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption/source
+    catalog_matrix_evidence_test.go:61: rejected source: SHA-256 mismatch for canonical evidence/source tests/admin/product-editor.acceptance.ts
+=== RUN   TestProductEditorMatrixLedgerEvidenceCorruption/gate-source
+    catalog_matrix_evidence_test.go:61: rejected gate-source: SHA-256 mismatch for canonical evidence/source tests/foundation/catalog_matrix_ledger_test.go
+--- PASS: TestProductEditorMatrixLedgerEvidenceCorruption (0.09s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceCorruption/playwright-log (0.02s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceCorruption/cc12-log (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceCorruption/ledger (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceCorruption/manifest (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceCorruption/source (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceCorruption/gate-source (0.01s)
+=== RUN   TestProductEditorMatrixLedgerEvidenceSharedSources
+=== RUN   TestProductEditorMatrixLedgerEvidenceSharedSources/scripts/dev/test-node.sh
+=== RUN   TestProductEditorMatrixLedgerEvidenceSharedSources/scripts/dev/test-local.sh
+=== RUN   TestProductEditorMatrixLedgerEvidenceSharedSources/docs/delivery/GATES.md
+=== RUN   TestProductEditorMatrixLedgerEvidenceSharedSources/playwright.config.ts
+=== RUN   TestProductEditorMatrixLedgerEvidenceSharedSources/tests/foundation/testdata/product_editor_mobile_matrix_ledger.json
+=== RUN   TestProductEditorMatrixLedgerEvidenceSharedSources/apps/admin/lib/product-editor-copy.ts
+=== RUN   TestProductEditorMatrixLedgerEvidenceSharedSources/apps/admin/components/ProductDocumentVariants.tsx
+=== RUN   TestProductEditorMatrixLedgerEvidenceSharedSources/apps/admin/components/ProductDocumentForm.tsx
+=== RUN   TestProductEditorMatrixLedgerEvidenceSharedSources/apps/admin/lib/use-product-document.ts
+=== RUN   TestProductEditorMatrixLedgerEvidenceSharedSources/apps/admin/lib/product-document.ts
+--- PASS: TestProductEditorMatrixLedgerEvidenceSharedSources (0.11s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceSharedSources/scripts/dev/test-node.sh (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceSharedSources/scripts/dev/test-local.sh (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceSharedSources/docs/delivery/GATES.md (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceSharedSources/playwright.config.ts (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceSharedSources/tests/foundation/testdata/product_editor_mobile_matrix_ledger.json (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceSharedSources/apps/admin/lib/product-editor-copy.ts (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceSharedSources/apps/admin/components/ProductDocumentVariants.tsx (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceSharedSources/apps/admin/components/ProductDocumentForm.tsx (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceSharedSources/apps/admin/lib/use-product-document.ts (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceSharedSources/apps/admin/lib/product-document.ts (0.01s)
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/pe-failed
+    catalog_matrix_evidence_test.go:368: rejected rehashed pe-failed: canonical run outcome pe-last-run.json must be passed with explicit empty failedTests
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/cc12-failed
+    catalog_matrix_evidence_test.go:368: rejected rehashed cc12-failed: canonical run outcome cc12-last-run.json must be passed with explicit empty failedTests
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/failed-tests
+    catalog_matrix_evidence_test.go:368: rejected rehashed failed-tests: canonical run outcome pe-last-run.json must be passed with explicit empty failedTests
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/missing-failed-tests
+    catalog_matrix_evidence_test.go:368: rejected rehashed missing-failed-tests: canonical run outcome pe-last-run.json must be passed with explicit empty failedTests
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/null-failed-tests
+    catalog_matrix_evidence_test.go:368: rejected rehashed null-failed-tests: canonical run outcome pe-last-run.json must be passed with explicit empty failedTests
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/log-failed
+    catalog_matrix_evidence_test.go:368: rejected rehashed log-failed: canonical run outcome playwright.log: must finish exactly 12 passed cases, got 11
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/cc12-log-failed
+    catalog_matrix_evidence_test.go:368: rejected rehashed cc12-log-failed: canonical run outcome cc12-playwright.log: must finish exactly 2 passed cases, got 1
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/log-skipped
+    catalog_matrix_evidence_test.go:368: rejected rehashed log-skipped: canonical run outcome playwright.log: must finish exactly 12 passed cases, got 11
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/log-flaky
+    catalog_matrix_evidence_test.go:368: rejected rehashed log-flaky: canonical run outcome playwright.log: must finish exactly 12 passed cases, got 11
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/log-incomplete
+    catalog_matrix_evidence_test.go:368: rejected rehashed log-incomplete: canonical run outcome playwright.log: must finish exactly 12 passed cases, got 11
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/log-extra-failed
+    catalog_matrix_evidence_test.go:368: rejected rehashed log-extra-failed: canonical run outcome playwright.log: unexpected failed cases: 1
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/log-extra-skipped
+    catalog_matrix_evidence_test.go:368: rejected rehashed log-extra-skipped: canonical run outcome playwright.log: unexpected skipped cases: 1
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/log-extra-flaky
+    catalog_matrix_evidence_test.go:368: rejected rehashed log-extra-flaky: canonical run outcome playwright.log: unexpected flaky cases: 1
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/missing-summary
+    catalog_matrix_evidence_test.go:368: rejected rehashed missing-summary: canonical run outcome playwright.log: must contain one completed passing summary
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/manifest-passed
+    catalog_matrix_evidence_test.go:368: rejected rehashed manifest-passed: canonical manifest passed count PE_and_review must be 12
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/manifest-skipped
+    catalog_matrix_evidence_test.go:368: rejected rehashed manifest-skipped: canonical manifest must record zero skipped cases
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/manifest-ledger
+    catalog_matrix_evidence_test.go:368: rejected rehashed manifest-ledger: canonical manifest ledger counts must match the exact validated PASS ledger
+--- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome (0.27s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/pe-failed (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/cc12-failed (0.02s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/failed-tests (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/missing-failed-tests (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/null-failed-tests (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/log-failed (0.02s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/cc12-log-failed (0.02s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/log-skipped (0.02s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/log-flaky (0.02s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/log-incomplete (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/log-extra-failed (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/log-extra-skipped (0.02s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/log-extra-flaky (0.02s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/missing-summary (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/manifest-passed (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/manifest-skipped (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/manifest-ledger (0.01s)
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity/playwright.log/wrong-file
+    catalog_matrix_evidence_test.go:456: rejected rehashed wrong-file: canonical run outcome playwright.log: unexpected or duplicate executed case identity: tests/unrelated/product-editor.acceptance.ts › PE12-17 document workflow, matrix, list actions and click ledger
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity/playwright.log/wrong-title
+    catalog_matrix_evidence_test.go:456: rejected rehashed wrong-title: canonical run outcome playwright.log: unexpected or duplicate executed case identity: tests/admin/product-editor.acceptance.ts › unrelated case: PE12-17 document workflow, matrix, list actions and click ledger
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity/playwright.log/substituted-case
+    catalog_matrix_evidence_test.go:456: rejected rehashed substituted-case: canonical run outcome playwright.log: unexpected or duplicate executed case identity: tests/admin/catalog-core.spec.ts › unrelated substituted case
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity/playwright.log/drop-case
+    catalog_matrix_evidence_test.go:456: rejected rehashed drop-case: canonical run outcome playwright.log: must report exactly 12 passing case identities, got 11
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity/playwright.log/duplicate-case
+    catalog_matrix_evidence_test.go:456: rejected rehashed duplicate-case: canonical run outcome playwright.log: unexpected or duplicate executed case identity: tests/admin/product-review.acceptance.ts › review: bulk price 80 plus archive sends exclusive archive entry and persists
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity/playwright.log/same-counts-fake-run
+    catalog_matrix_evidence_test.go:456: rejected rehashed same-counts-fake-run: canonical run outcome playwright.log: unexpected or duplicate executed case identity: tests/fake/product-editor.acceptance.ts › PE12-17 document workflow, matrix, list actions and click ledger
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity/cc12-playwright.log/wrong-file
+    catalog_matrix_evidence_test.go:456: rejected rehashed wrong-file: canonical run outcome cc12-playwright.log: unexpected or duplicate executed case identity: tests/unrelated/catalog-core.spec.ts › CC12 desktop en › catalog v2: draft product, 2x3 matrix, prices, compare-at, stock, photo, collection, activate, shopper view, archive a variant, deactivate (desktop, en)
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity/cc12-playwright.log/wrong-title
+    catalog_matrix_evidence_test.go:456: rejected rehashed wrong-title: canonical run outcome cc12-playwright.log: unexpected or duplicate executed case identity: tests/admin/catalog-core.spec.ts › unrelated case: CC12 desktop en › catalog v2: draft product, 2x3 matrix, prices, compare-at, stock, photo, collection, activate, shopper view, archive a variant, deactivate (desktop, en)
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity/cc12-playwright.log/substituted-case
+    catalog_matrix_evidence_test.go:456: rejected rehashed substituted-case: canonical run outcome cc12-playwright.log: unexpected or duplicate executed case identity: tests/admin/catalog-core.spec.ts › unrelated substituted case
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity/cc12-playwright.log/drop-case
+    catalog_matrix_evidence_test.go:456: rejected rehashed drop-case: canonical run outcome cc12-playwright.log: must report exactly 2 passing case identities, got 1
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity/cc12-playwright.log/duplicate-case
+    catalog_matrix_evidence_test.go:456: rejected rehashed duplicate-case: canonical run outcome cc12-playwright.log: unexpected or duplicate executed case identity: tests/admin/catalog-core.spec.ts › CC12 mobile zh-TW › catalog v2: draft product, 2x3 matrix, prices, compare-at, stock, photo, collection, activate, shopper view, archive a variant, deactivate (mobile, zh-TW)
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentity/cc12-playwright.log/same-counts-fake-run
+    catalog_matrix_evidence_test.go:456: rejected rehashed same-counts-fake-run: canonical run outcome cc12-playwright.log: unexpected or duplicate executed case identity: tests/fake/catalog-core.spec.ts › CC12 desktop en › catalog v2: draft product, 2x3 matrix, prices, compare-at, stock, photo, collection, activate, shopper view, archive a variant, deactivate (desktop, en)
+--- PASS: TestProductEditorMatrixLedgerEvidenceRunIdentity (0.23s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunIdentity/playwright.log/wrong-file (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunIdentity/playwright.log/wrong-title (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunIdentity/playwright.log/substituted-case (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunIdentity/playwright.log/drop-case (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunIdentity/playwright.log/duplicate-case (0.01s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunIdentity/playwright.log/same-counts-fake-run (0.02s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunIdentity/cc12-playwright.log/wrong-file (0.02s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunIdentity/cc12-playwright.log/wrong-title (0.03s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunIdentity/cc12-playwright.log/substituted-case (0.03s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunIdentity/cc12-playwright.log/drop-case (0.03s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunIdentity/cc12-playwright.log/duplicate-case (0.02s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunIdentity/cc12-playwright.log/same-counts-fake-run (0.02s)
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunIdentityMetadata
+--- PASS: TestProductEditorMatrixLedgerEvidenceRunIdentityMetadata (0.02s)
+PASS
+ok  	livecommerce/tests/foundation	1.355s

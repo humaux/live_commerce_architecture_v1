@@ -1,0 +1,12 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/check-gates.sh"
+  ],
+  "mutation": "append exact evidence-test exclusion to live CI foundation skip selector",
+  "exit": 0,
+  "acceptance_assertion_exit": 1,
+  "seconds": 11.634,
+  "restored_sha256": "9bc46d8fc42e36253df350fb7f5bfaf644c0a37d70705d662461ecfbdd3f9100",
+  "log_sha256": "94ec43cb2aa14b6ae630cab4d2003f30d4c9b98047a8ba9db216664e10583a95"
+}

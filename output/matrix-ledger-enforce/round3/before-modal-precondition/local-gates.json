@@ -1,0 +1,90 @@
+{
+  "source_commit": "bcc24338c6ca9eff892368849468a682dbd778a7",
+  "source_hashes": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "a3be2d3102f59cc6888389ff5b157558507a7bb89c4ac78003193d11da128a37",
+    "tests/foundation/browser_catalog_core_test.go": "677c2903574f91f4b61445bb1a743ecd17404a196b92ad72a9e313b56b44ad45",
+    "tests/admin/product-editor.acceptance.ts": "73b44b28dabf9d1c8df44c0f0f9390fc6ad093fe63d0c8ac327c121b9f9a28ad",
+    "tests/admin/product-editor-matrix-ledger.ts": "bca2b1bed9cc9810cf7225b8f67b42efb9fd7453c979909df6c802cb3d827f1d",
+    "tests/foundation/testdata/product_editor_matrix_cases.json": "1bf2b6be619fd7fb2f03989feeda402f79ba2c9466a031bfe6fb1cf47a362d4a",
+    "tests/foundation/testdata/product_editor_mobile_matrix_ledger.json": "c3af74c89f8d9ea8b30299a3a5281eb0a3b41b8d47892f1a235e0affbf9dcc23",
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "099136e87e16831a44c408338edf75a33c6a821a72e1a24a37def493040ed1a9",
+    "scripts/dev/test-node.sh": "72fcdb5577fe6b03c2771d25d560e1b59aa80856c78546ac85ccca1315d37685",
+    "docs/delivery/GATES.md": "3dae1ad0232209cba6ba322f813202b33c4a09a67f4434826e14bdc9afe59065",
+    "scripts/dev/test-local.sh": "540a8988d91990c2f189d12323d870e0e467951d70969e03efafa29366868a8e",
+    "playwright.config.ts": "11b84b5c5557d671c17dea8859a7d7d450f43fec134b27318b61c3923d01eb4a",
+    "apps/admin/lib/product-editor-copy.ts": "aff626c4a8a8a8c889ef5c4bfeeb77d5359df7a8692bc83f3162bae4d3aa0cc2",
+    "apps/admin/components/ProductDocumentVariants.tsx": "1ec1bf7b57e7a76ea10fee10620eebbd7b0e34b687d8b427b20fb5c20d6386a6",
+    "apps/admin/components/ProductDocumentForm.tsx": "a12b7e0172e5b145d3bf9ee3d0b92bdec98b88c9a1f06cdd09c1c170beb2b255",
+    "apps/admin/lib/use-product-document.ts": "98c13f78bc07bc00dcbfabfb52e8a25160556837a8a26440380064441e0fda93",
+    "apps/admin/lib/product-document.ts": "26287b066b2d1168e140c02cc35e51c265c65008deea519bcb398b008355fb78"
+  },
+  "runner_pid": 94975,
+  "runs": [
+    {
+      "argv": [
+        "bash",
+        "scripts/dev/test-node.sh"
+      ],
+      "timeout_seconds": 900,
+      "log": "output/matrix-ledger-enforce/round3/test-node.log",
+      "started_at_utc": "2026-10-12T10:57:00.104638+00:00",
+      "status": "COMPLETED",
+      "pid": 94988,
+      "exit_code": 0,
+      "elapsed_seconds": 44.384,
+      "ended_at_utc": "2026-10-12T10:57:44.487665+00:00",
+      "log_sha256": "f2f0337f848705b7a0f79571a24575f6f6cf9cce3c51d780fc5cd3f11ec44539"
+    },
+    {
+      "argv": [
+        "pnpm",
+        "typecheck:admin"
+      ],
+      "timeout_seconds": 300,
+      "log": "output/matrix-ledger-enforce/round3/typecheck.log",
+      "started_at_utc": "2026-10-12T10:57:44.502609+00:00",
+      "status": "COMPLETED",
+      "pid": 99375,
+      "exit_code": 0,
+      "elapsed_seconds": 1.135,
+      "ended_at_utc": "2026-10-12T10:57:45.637283+00:00",
+      "log_sha256": "c00ff4e6ec5ce52c4b0790c7ca968c30b9b2f3478ed09bbca43c9bc416c4c0f5"
+    },
+    {
+      "argv": [
+        "go",
+        "test",
+        "./tests/foundation",
+        "-run",
+        "^TestProductEditorMatrixLedger",
+        "-count=1",
+        "-v"
+      ],
+      "timeout_seconds": 300,
+      "log": "output/matrix-ledger-enforce/round3/go-ledger.log",
+      "started_at_utc": "2026-10-12T10:57:45.646583+00:00",
+      "status": "COMPLETED",
+      "pid": 99451,
+      "exit_code": 0,
+      "elapsed_seconds": 19.091,
+      "ended_at_utc": "2026-10-12T10:58:04.737831+00:00",
+      "log_sha256": "7dcb44415be5e036dd826350b672314490e62b6ab3ccb2e076617b5988f6ebc0"
+    },
+    {
+      "argv": [
+        "bash",
+        "scripts/dev/check-gates.sh"
+      ],
+      "timeout_seconds": 900,
+      "log": "output/matrix-ledger-enforce/round3/check-gates.log",
+      "started_at_utc": "2026-10-12T10:58:04.756962+00:00",
+      "status": "COMPLETED",
+      "pid": 99857,
+      "exit_code": 0,
+      "elapsed_seconds": 155.158,
+      "ended_at_utc": "2026-10-12T11:00:39.915862+00:00",
+      "log_sha256": "552bafdb6aa31d5149c298a51ed1131cb3bcef1a6f2815535f16dcc91be99b62"
+    }
+  ],
+  "completed_at_utc": "2026-10-12T11:00:39.917521+00:00"
+}

@@ -1,0 +1,87 @@
+{
+  "tested_source_commit": "2e10084b3f5e96548c15953cc40488aef9e1c86d",
+  "merged_trunk_commit": "5a54d41b7e86a72eeec2afbe1f7b0458daaf742b",
+  "source_files_sha256": {
+    "apps/admin/components/ProductBulkFill.tsx": "6de889201888064efb4b055354cd07599cc605c7c25686009f84a5c8c4106c0f",
+    "tests/admin/product-editor.acceptance.ts": "42c62c527424bc0d611c29f15ca9570330ee8a7fb2f4aeb2a5f9cbd3c8f44e69",
+    "tests/admin/product-editor-matrix-ledger.ts": "8f316ca5d61458e5c01f98891d784677998acca1240d1270311c0b4235e48e09",
+    "tests/foundation/testdata/product_editor_matrix_cases.json": "d380f3e06babf7a96b77fe4ff46ddf77b38d84da521c8f0f378704e7f0ebca0d",
+    "tests/foundation/catalog_matrix_ledger_test.go": "0bca90d283d8bf73eefdb0689ab68b4c2b3c97d619a53de6bf01e95d7c594371",
+    "tests/foundation/catalog_matrix_evidence_test.go": "d360e785f8519418eb4ab593c59a4408f28ed453fec63848eaf894ac092cf7c1",
+    "tests/foundation/browser_catalog_core_test.go": "7630208cfdee79f5c80297e82b6d927b7896e44c57c5b7f69d79b32ad405a29d",
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "a456714c2a6bb237a5f0fe19f17d87dbf8a0e2be33d7a3bb73ba1ccc62bab23c",
+    "tests/ci/product-editor-matrix-claims.mjs": "86cc2ea894433aefe150d312f02f757c932297d3c2b0c5f01f3a2a956cb50523",
+    "tests/ci/product-editor-matrix-source.mjs": "e6d26feb29c99ea258d9881cb2e44ece1445049497e578ebc778910e5d2569de",
+    "tests/ci/product-editor-matrix-execution.mjs": "16c2ea1f2db41bb8b4b7ab6c991fce370b79cbc7054cd0ecbcc9b0bb78d51fe1",
+    "tests/ci/product-editor-matrix-execution.test.mjs": "5bdd3529c62d223e442c2a8d72e3f15de95ce03f5a17c1a19989c9f3bf451c15",
+    "tests/ci/product-editor-matrix-controls.mjs": "d688d5822ac86c041f017af7c3361ac5bf48524ddcc29386dcd6ff9312abb617",
+    "tests/ci/product-editor-matrix-controls.test.mjs": "0fd469cca91a990972881b9fcf38961fab75c9f455c57d5b5842c7cf9168e132"
+  },
+  "informational_source_files_sha256": {
+    "tests/foundation/testdata/product_editor_mobile_matrix_ledger.json": "32efc349f9a75952df38a9e0f4526d579c3902629805cc44e65823da308a32ef",
+    "scripts/dev/test-node.sh": "0f26a98ba27d98c34115e7bf1010f3a0832f090df3c97459c90ba55c3c3df4fc",
+    "docs/delivery/GATES.md": "8d3c90e493883cc51b7973d21169853e9b2baeb9dbb62e1e24aff2a6e35a124e",
+    "scripts/dev/test-local.sh": "5a6dc083463197a9735038d85d87ecbecc474514e5f875dd5362f45457b2d0dd",
+    "playwright.config.ts": "659853d6b0a627aec3235c6ad91c999b72d3c2a4e85579f3b84c0b631c5695d0",
+    "apps/admin/lib/product-editor-copy.ts": "aff626c4a8a8a8c889ef5c4bfeeb77d5359df7a8692bc83f3162bae4d3aa0cc2",
+    "apps/admin/components/ProductDocumentVariants.tsx": "1ec1bf7b57e7a76ea10fee10620eebbd7b0e34b687d8b427b20fb5c20d6386a6",
+    "apps/admin/components/ProductDocumentForm.tsx": "bc00d59041281de359593f2efb4591e91d42bf7d0b1c91650d51793b542112b2",
+    "apps/admin/lib/use-product-document.ts": "98c13f78bc07bc00dcbfabfb52e8a25160556837a8a26440380064441e0fda93",
+    "apps/admin/lib/product-document.ts": "26287b066b2d1168e140c02cc35e51c265c65008deea519bcb398b008355fb78",
+    "scripts/dev/check-gates.sh": "2ec2678aad8cd56558161567ab764099ab0e96a9ff62b869c5a7c09d4f92a727",
+    ".github/workflows/gates.yml": "9bc46d8fc42e36253df350fb7f5bfaf644c0a37d70705d662461ecfbdd3f9100",
+    "scripts/dev/pr-modes.mjs": "11b8791effbc1c74e2378677d06c0984e860e5b0fcdb80ec12b2768c549938f2",
+    "tests/ci/pr-modes.test.mjs": "47e9149da7c30d53d703911cd37d9188cbcd39adcdc845de8eb888ddf77b8743"
+  },
+  "actual_passed_cases": {
+    "PE_and_review": 12,
+    "CC12_frozen": 2,
+    "skipped": 0
+  },
+  "ledger": {
+    "raw_rows": 331,
+    "required_unique_PASS": 267,
+    "identity_fields": [
+      "page",
+      "locale",
+      "width",
+      "row",
+      "control",
+      "action"
+    ],
+    "per_locale": {
+      "zh-TW": 89,
+      "zh-CN": 89,
+      "en": 89
+    },
+    "width": 390
+  },
+  "copied_native_bytes": [
+    {
+      "source_native": "output/playwright/pr28-historical-evidence-20261013/catalog-core/20261013T051456.840409000/playwright.log",
+      "canonical": "output/matrix-ledger-enforce/historical-evidence/browser/playwright.log",
+      "sha256": "d5a57123723a580915503b5e57d84078459789fb78d6b759a9b19b03e77ab2a9"
+    },
+    {
+      "source_native": "output/playwright/pr28-historical-evidence-20261013/catalog-core/20261013T051610.951358000/playwright.log",
+      "canonical": "output/matrix-ledger-enforce/historical-evidence/browser/cc12-playwright.log",
+      "sha256": "ae73e1acc705770bcec69aad94b883715ca1dd2a6b1bdbdf73bd6cc8f2852d9b"
+    },
+    {
+      "source_native": "output/playwright/pr28-historical-evidence-20261013/catalog-core/20261013T051456.840409000/product-editor-click-ledger.json",
+      "canonical": "output/matrix-ledger-enforce/historical-evidence/browser/product-editor-click-ledger.json",
+      "sha256": "a3108d75435684a4d51565c98de82ab0ab5403d7f3b1434551272ac194beaa4d"
+    },
+    {
+      "source_native": "output/playwright/pr28-historical-evidence-20261013/catalog-core/20261013T051456.840409000/results/.last-run.json",
+      "canonical": "output/matrix-ledger-enforce/historical-evidence/browser/pe-last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "source_native": "output/playwright/pr28-historical-evidence-20261013/catalog-core/20261013T051610.951358000/results/.last-run.json",
+      "canonical": "output/matrix-ledger-enforce/historical-evidence/browser/cc12-last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    }
+  ],
+  "scope": "Original full browser mode at merged frozen source; fourteen owned executable hashes delivery-bound. Default source drift is historical SKIP; strict1 verifies delivery. Shared context and CI selector hashes informational. Matching sources require all exact artifact bytes, file/title/outcomes and identities."
+}

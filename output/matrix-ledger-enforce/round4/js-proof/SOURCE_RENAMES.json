@@ -1,0 +1,12 @@
+[
+  {
+    "received_name": "product-editor-matrix-claims.mjs.fixed.source.txt",
+    "canonical_inert_snapshot": "output/matrix-ledger-enforce/round4/js-proof/fixed-claims.source.txt",
+    "sha256": "86cc2ea894433aefe150d312f02f757c932297d3c2b0c5f01f3a2a956cb50523"
+  },
+  {
+    "received_name": "product-editor-matrix-ledger.test.mjs.fixed.source.txt",
+    "canonical_inert_snapshot": "output/matrix-ledger-enforce/round4/js-proof/fixed-ledger.source.txt",
+    "sha256": "bffc05c36685e1bcd637e25371d7d7ce5c59832ffc5741183d2e2fd908d5e7a3"
+  }
+]
