@@ -42,6 +42,16 @@
 | `cdb39af25` | [38447000640](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38447000640) | allocation tests FIRST | Causal RED `PASS=0 FAIL=6 SKIP=0 exit=1`; real C1/fence/owners/quote preparation succeeds, private catalog/allocation helpers and ACL are absent (42883). Job `115468047167`, `allocation-red-ci.log`. |
 | `8a5d1c574` | [38447322750](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38447322750) | fence, abort, destination and atomic commit guard | GREEN `PASS=28 FAIL=0 SKIP=0 exit=0`; native worker no-earlier-lock barrier and 750ms bound unchanged. Job `115469135979`, `fence-abort-destination-green-ci.log`. |
 
+| `5db1ba040` | [38448591686](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38448591686) | allocation | GREEN `PASS=6 FAIL=0 SKIP=0 exit=0`; native aggregate/mixed/untracked allocation facts, current safety, frozen prices, barriers and exact ACL. Job `115473491889`, `allocation-green-ci.log`. |
+| `31130f771` | [38449036549](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38449036549) | native Begin FIRST | Causal RED `PASS=0 FAIL=4 SKIP=0 exit=1`: real C1, quote, destination and allocation succeed; native Begin helper/ACL absent (42883). Job `115475000788`, `begin-red-ci.log`. |
+| `1c591f311` | [38449590596](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38449590596) | payment-entry codec FIRST | Compile/API absence `PASS=0 FAIL=0 SKIP=0 exit=1`: undefined PayEntry types. Behavioral **NOT_RUN**, not a red security proof; independent AAD mutation remains required. Job `115476875309`, `pay-entry-api-absent-ci.log`. |
+
+Owner trunk update: fetched `origin/r3/integration` at `228a1c877` and merged
+without conflicts as `a35423055`. The merged frozen contract includes A1/A1.1;
+its file has no difference from trunk. Trunk root migration maximum remains
+0169; the next root slots must be checked again before the PR. No local gates
+ran during the merge. This does not claim complete C2 or OA-1 acceptance.
+
 CI is the only execution environment. Local tests/builds/gates/server/PG:
 **NOT_RUN(owner CI-only directive)**. Static source review does not prove C2.
 CI workflow gate timeout is 150 minutes; the parent tracks the run and reads

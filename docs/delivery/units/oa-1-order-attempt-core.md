@@ -1,14 +1,16 @@
 # OA-1 — atomic order-attempt core
 
 Owner dispatch: 2026-10-13. Contract: `contracts/order-attempt-v1.md`, frozen
-at PR #50 `5e6ef2e97fabd587936be8bd5c951767017b4ed5`. This implementation
+with A1/A1.1 and merged as PR #50 `2d97c2027eefaa7df6553a832ffa38aa9fcd9d93`. This implementation
 brief does not amend that contract. Backend work is explicitly authorized;
 all execution and tests run in GitHub CI only. PR #32 stays untouched.
 
 ## Ownership and boundaries
 
-- Implementer: Codex-3; reasoning: high; base: `55e98ba0434557e94e3b7c9e31ff0e98352623b1`
-  (frozen #50 plus trunk `221539a7f6634824dbabb5e0f3681a270a3e7b8b`).
+- Implementer: Codex-3; reasoning: high; current trunk base:
+  `228a1c877f63b2be0955060d03ed621a05f4bdcf`, fetched and merged in
+  `a354230555e572a5cb488f7847db938b5ffbaa1e`. The contract branch is no longer
+  the dependency base; all implementation and retained tests remain on this branch.
 - Worktree: `.worktrees/oa-1-order-attempt-core`; branch: `unit/oa-1-order-attempt-core`.
 - Allowed paths: this brief; `output/oa-1/`; new OA migrations under `migrations/`
   and `migrations/post_river/`; `internal/orderattempt/`; transaction-aware helpers
@@ -77,6 +79,22 @@ that key before activation; a private C2 helper alone does not establish the
 cross-command lock order. Catalog locks follow that order key, before service,
 pickup/destination and inventory. Allocation aggregates demands by SKU using
 the existing Go allocator, while quote/order lines retain separate origins.
+
+The composite entry uses one internal signature:
+`ops.execute_order_attempt(attempt uuid, generation bigint, exact_plan text,
+step text, input jsonb) RETURNS jsonb`. `prepare`, `begin`, and `finish` are
+in-transaction call stages, not durable attempt states or separate commits.
+`prepare` takes the owner/claim/order prefix, materializes the quote and
+destination, and returns locked allocation facts. Go runs the existing pure
+allocator. `begin` validates that result, writes native order effects and returns
+the context needed for local encryption. Go prepares the order-only credential
+and sealed notification. `finish` validates/stores those artifacts, completes
+source/claims/outbox and the terminal receipt. Every call revalidates the held
+current-transaction fence and the exact stored plan; native creator identities
+prove the earlier stage. Only the Go executor commits. Deferred constraints
+reject partial materialization; no runtime may call the domain helpers directly.
+This preserves the frozen single-transaction design while keeping pricing,
+allocation and cryptography in their existing Go implementations.
 
 ## Required evidence
 
