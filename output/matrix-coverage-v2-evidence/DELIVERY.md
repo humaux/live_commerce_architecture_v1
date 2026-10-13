@@ -38,7 +38,7 @@ The runner [run.py](run.py) bounds each command, preserves full logs and binds t
 | `node --test tests/ci/shard-plan.test.mjs` before explicit registration | 1 (RED) | [shard-registration-red.json](shard-registration-red.json), [full log](shard-registration-red.log): same +3 capacity failure |
 | `node --test tests/ci/shard-plan.test.mjs` after explicit registration | 0 (7/7) | [shard-registration-green.json](shard-registration-green.json), [full log](shard-registration-green.log), [registry-only-diff.json](registry-only-diff.json) |
 
-Unchanged final validator/docs SHA-256 values are bound in `focused-receipt-final.json`; its checkout base SHA is recorded with dirty-source content hashes, not asserted as a pristine tested commit. The final registry SHA-256 is bound in `shard-registration-green.json`. E3 evidence proves the filesystem validator, test-entrypoint behavior and focused shard registration in the tested DB-free environment; full broad reruns on this registry freeze are pending. It does not prove current UI clicks, provider, production or independent acceptance.
+Unchanged final validator/docs SHA-256 values are bound in `focused-receipt-final.json`; its checkout base SHA is recorded with dirty-source content hashes, not asserted as a pristine tested commit. The final registry SHA-256 is bound in `shard-registration-green.json`. E3 evidence proves the filesystem validator, test-entrypoint behavior and focused shard registration in the tested DB-free environment; full broad reruns on frozen `67cfc86f` are complete below. It does not prove current UI clicks, provider, production or independent acceptance.
 
 ## Delivery checklist and remaining work
 
@@ -48,8 +48,8 @@ Unchanged final validator/docs SHA-256 values are bound in `focused-receipt-fina
 LC_MATRIX_EVIDENCE_STRICT=1 go test ./tests/foundation -run '^TestProductEditorMatrixLedgerEvidence$' -count=1 -v
 ```
 
-- `bash scripts/dev/test-node.sh`: first run **exit1** above; after focused registry repair, final full rerun **NOT_RUN/HOLD**, parent started GROUP1 native after actual PG slot became free.
-- `bash scripts/dev/check-gates.sh`: initial pre-registration run **exit0**; final registry-freeze rerun **NOT_RUN/HOLD**, same native resource window.
+- `bash scripts/dev/test-node.sh`: first run **exit1** above; after focused registry repair, final full rerun **exit0**, see the final serialized receipts below.
+- `bash scripts/dev/check-gates.sh`: initial pre-registration run **exit0**; final registry-freeze rerun **exit0**, see the final serialized receipts below.
 - Current full browser/PG: **NOT_RUN and not required for unchanged GROUP3 UI**; CI and independent review **NOT_RUN** here, parent owns resources, push and review.
 - Strict current-source canonical delivery: **NOT_RUN**; old canonical remains historical, unmodified. The strict historical failure is expected and is not PASS.
 - Historical old expected claims are not compared to a future current table during drift; immutable schema/outcomes remain checked. A historical SKIP cannot certify current controls.
@@ -58,3 +58,16 @@ LC_MATRIX_EVIDENCE_STRICT=1 go test ./tests/foundation -run '^TestProductEditorM
 ## Minimal shared registry integration
 
 The first Node run found that the four new GROUP3 Go names left the existing plan at59 unplanned; the unchanged synthetic +3 control then correctly failed at62 >60. Root authorized appending exactly these four names to existing g06. Other groups, existing names, estimates and thresholds are byte/structure preserved; no repack or assertion change. The same tests remain selected by g06. Root owns final shared JSON integration; full broad reruns will resume after the GROUP1 native resource window.
+
+## Final serialized broad gates
+
+Frozen implementation: `67cfc86f2bc1a9a88bad795fcd290f4decc80dbe`; all four source hashes before/after match.
+
+| Exact command | Exit | Receipt |
+| --- | ---: | --- |
+| `bash scripts/dev/test-node.sh` first final freeze run | 1 | `test-node-registry-final.json/log`, sole pre-existing PR18 WebCrypto child10s deadline failure |
+| `node --test --experimental-strip-types tests/admin/inbox-review.test.ts` isolated unchanged reproduction | 0 | `inbox-timeout-isolated.json/log` |
+| `bash scripts/dev/test-node.sh` serialized repeat | 0 | `test-node-registry-retry.json/log`, 1690 passed, zero failed/skipped (`final-static-counts.json`) |
+| `bash scripts/dev/check-gates.sh` | 0 | `check-gates-registry-final.json/log`, all83 documented modes executed; four new Go names explicitly registered |
+
+The initial unrelated deadline is retained and no timer, assertion, suite or filter was relaxed. Current UI browser and strict fresh delivery remain NOT_RUN for this static evidence-policy group; the original canonical package remains unchanged historical evidence. E3 author-local filesystem/gate validation, independent review and GitHub CI pending.
