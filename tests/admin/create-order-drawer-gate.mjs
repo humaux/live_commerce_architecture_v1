@@ -726,6 +726,42 @@ try {
   } finally {await page.unroute(`**${commandPath}`);page.off("request",observe);await closeContext(context);}
  }
  assert.equal(cases,40,"all36 prior cases plus drawer/manual fresh and UNKNOWN pre-dispatch fence clicks");
+ current="DU3-reminder-link-unavailable-390";
+ // Named MOCK response-edge fault only. The actual201/order/queuedDM and its sealed link remain real and are read back from PG.
+ const reminderContext=await browser.newContext(ctxOpts({ignoreHTTPSErrors:true,viewport:{width:390,height:844}})),reminderPage=await reminderContext.newPage();
+ let reminderPosts=0,reminderRegenerations=0,reminderKey,realQueued,originalReminderLink="",initialReminderFacts;
+ const observeReminder=request=>{if(request.method()==="POST") {const pathname=new URL(request.url()).pathname;if(pathname===routePath)reminderPosts++;if(pathname.endsWith("/orders/manual/regenerate-link"))reminderRegenerations++;}};
+ reminderPage.on("request",observeReminder);
+ try {
+  assert.equal((await fetch(`${api}/__test/drawer-queued-window`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({open:true})})).status,204);
+  await reminderPage.goto(`${origin}/en`);await reminderPage.getByRole("button",{name:"Sign in with identity service",exact:true}).click();await expect(reminderPage.getByTestId("dashboard-page")).toBeVisible();
+  const drawer=await openConversation(reminderPage,"en",fixtures[0].Unlinked);await addCatalog(drawer);await fillEmpty(drawer);await drawer.getByTestId("drawer-send-payment-link").check();
+  const before=await (await fetch(`${api}/__test/drawer-facts`)).json();
+  await reminderPage.route(`**${routePath}`,async route=>{
+   reminderKey=route.request().headers()["idempotency-key"];assert(reminderKey);
+   const real=await route.fetch();assert.equal(real.status(),201,"response-edge fault starts only after a real committed order");
+   realQueued=await real.json();assert.equal(realQueued.send.state,"queued");assert(realQueued.send.operation_id);originalReminderLink=realQueued.buyer_link;assert.equal(typeof originalReminderLink,"string");
+   const facts=await fetch(`${api}/__test/drawer-queued-facts`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({order_id:realQueued.order_id,operation_id:realQueued.send.operation_id,link:originalReminderLink})});assert.equal(facts.status,200);initialReminderFacts=await facts.json();
+   assert.equal(initialReminderFacts.operations,1);assert.equal(initialReminderFacts.valid_links,1);assert.equal(initialReminderFacts.original_link,true);
+   // The contract permits link_unavailable when another planned payment send owns the active link.
+   await route.fulfill({response:real,json:{...realQueued,buyer_link:null,send:{state:"not_sent",reason:"link_unavailable"}}});
+  });
+  const shown=await submit(reminderPage,drawer);assert.equal(shown.status(),201);const shownResult=await shown.json();assert.equal(shownResult.send.reason,"link_unavailable");
+  await expect(drawer.getByTestId("drawer-result")).toBeVisible();await expect(drawer.getByTestId("drawer-send-result")).toContainText("The payment link is unavailable.");
+  await expect(drawer.getByTestId("drawer-queued-link")).toContainText("existing link");
+  await expect(drawer.getByTestId("drawer-copy-link")).toHaveCount(0);assert.equal(reminderRegenerations,0);assert.equal(reminderPosts,1);
+  const exact=await fetch(`${api}/__test/drawer-link-unavailable-request-facts`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({keys:[reminderKey]})});assert.equal(exact.status,200);assert.deepEqual(await exact.json(),{orders:1,receipts:1});
+  const after=await (await fetch(`${api}/__test/drawer-facts`)).json();assert.equal(after.orders-before.orders,1);
+  const facts=await fetch(`${api}/__test/drawer-queued-facts`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({order_id:realQueued.order_id,operation_id:realQueued.send.operation_id,link:originalReminderLink})});assert.equal(facts.status,200);assert.deepEqual(await facts.json(),initialReminderFacts,"copy-unavailable UI never mutates the real queued payment link");
+  await privateBoundary(reminderPage,originalReminderLink);await drawer.screenshot({path:path.join(evidence,"reminder-link-unavailable-390.png")});
+  await drawer.getByTestId("drawer-view-order").click();await expect(reminderPage.getByTestId("order-detail")).toHaveAttribute("aria-label",new RegExp(realQueued.order_id));await reminderPage.reload();await expect(reminderPage.getByTestId("order-detail")).toHaveAttribute("aria-label",new RegExp(realQueued.order_id));
+  record("reminder-owned link safety","real create click/response-edge fault/view order/reload","real201/order/queuedDM; positive link_unavailable/inflight copy; copy0/regenerate0; exactPG1; persisted order");
+  results.push({case:current,evidence:"REAL_PG + real clicks + MOCK response-edge link_unavailable",posts:reminderPosts,regenerate_posts:reminderRegenerations,request_orders:1,request_receipts:1,preserved_planned_link:true,reload_persisted:true});cases++;
+ } finally {
+  await reminderPage.unroute(`**${routePath}`);reminderPage.off("request",observeReminder);await closeContext(reminderContext);originalReminderLink="";
+  assert.equal((await fetch(`${api}/__test/drawer-queued-window`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({open:false})})).status,204);
+ }
+ assert.equal(cases,41,"retain all40 cases plus explicit reminder-owned link response boundary");
 } catch (error) {
  recordFailure(error);
 } finally {
