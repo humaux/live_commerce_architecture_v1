@@ -145,18 +145,22 @@ func canonicalForBuyer(in ForBuyerInput) forBuyerRequest {
 	return forBuyerRequest{Manual: manual, For: normalizeTarget(in.For), Send: in.SendPaymentLink}
 }
 
-// pickOrigins derives a cart-line origin only when exactly one claim line matches its SKU and covers its quantity.
-// Multiple claim origins cannot be represented by the cart's one-origin-per-SKU shape, so that aggregate stays catalog priced.
-// A line that does not qualify
-// stays at the catalog price (fail closed; carryOrigins would drop it anyway). skipped counts requested SKUs that had a claim line but none
-// qualified. Pure: the Quote, not this, decides the price.
+// pickOrigins derives an origin only when exactly one server-priced winner covers the full requested quantity.
+// claims.for_buyer_lines (0158) clears superseded lines' prices; those rows and insufficient claims are not candidates.
+// Multiple qualifying origins still fail closed because a cart has only one origin per SKU. The Quote decides the price.
+// skipped counts requested SKUs that had claims but no unique qualifying origin.
 func pickOrigins(items []ManualItem, lines []claims.ForBuyerLine) (origins map[string]storefront.ClaimOrigin, skipped int) {
 	origins = map[string]storefront.ClaimOrigin{}
 	for _, it := range items {
 		matches := 0
+		hasClaim := false
 		var candidate claims.ForBuyerLine
 		for _, l := range lines {
 			if l.SKUID != it.SKUID {
+				continue
+			}
+			hasClaim = true
+			if l.LivePriceMinor == nil || l.Quantity < it.Quantity || l.LiveRemaining < it.Quantity {
 				continue
 			}
 			matches++
@@ -165,9 +169,9 @@ func pickOrigins(items []ManualItem, lines []claims.ForBuyerLine) (origins map[s
 				break
 			}
 		}
-		if matches == 1 && candidate.LivePriceMinor != nil && candidate.Quantity >= it.Quantity && candidate.LiveRemaining >= it.Quantity {
+		if matches == 1 {
 			origins[it.SKUID] = storefront.ClaimOrigin{BundleID: candidate.BundleID, OfferID: candidate.OfferID, Quantity: candidate.Quantity}
-		} else if matches > 0 {
+		} else if hasClaim {
 			skipped++
 		}
 	}

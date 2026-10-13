@@ -265,7 +265,12 @@ func TestLiveConsoleOrderForBuyerGrantsDoNotOutliveRequest(t *testing.T) {
 		return e.count(`SELECT count(*) FROM claims.merchant_origin_grants WHERE request_id=$1 AND consumed_at IS NULL AND expires_at>clock_timestamp()`, request)
 	}
 	t.Run("P2-3: a grant of a bundle that priced no line expires when the request finishes", func(t *testing.T) {
-		b1, b2, conv := e.twoBundles()
+		// Two full-quantity origins intentionally fail closed. This unused-grant case has one qualifying claim and one smaller claim.
+		session, _, b1, conv := e.scenario()
+		e.h.open(t, session, claims.MatchExact)
+		b2 := e.h.accepted(t, session, "", "small-"+t04Tag(), "A1+1").BundleID
+		e.h.closeWindow(t, session)
+		e.linkPeer(b2, conv)
 		st, out := e.post(token, t04Key("lcn12-p23"), e.body(2, []string{b1, b2}, conv, false))
 		if st != 201 || out["live_price"] != "applied" {
 			t.Fatalf("two-bundle order: %d %v", st, out)
