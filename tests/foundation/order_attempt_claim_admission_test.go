@@ -57,6 +57,33 @@ func oaClaimCall(tx pgx.Tx, attempt string, selection map[string]any) (oaClaimRe
 	return out, err
 }
 
+// A native unfinished C1 candidate with an old admitted_at proves the grant does
+// not start a fresh 15-minute TTL when the helper is reached late.
+func oaClaimLateCandidate(t *testing.T, e *lbuEnv, selection map[string]any, age string) (pgx.Tx, string) {
+	t.Helper()
+	tx, err := e.p.f.owner.Begin(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = tx.Rollback(context.Background()) })
+	attempt, scope, owner := randomUUID(), randomUUID(), randomUUID()
+	raw, err := json.Marshal(selection)
+	if err != nil {
+		t.Fatal(err)
+	}
+	oaStateExec(t, tx, `SELECT set_config('app.tenant_id',$1,true),set_config('app.store_id',$2,true),
+	 set_config('app.principal_id',$3,true),set_config('app.buyer_id','',true),set_config('app.buyer_session_id','',true)`, e.tenant(), e.store(), e.p.f.principalA)
+	oaStateExec(t, tx, `INSERT INTO buyer.owners(id,tenant_id,store_id) VALUES($1,$2,$3)`, owner, e.tenant(), e.store())
+	oaStateExec(t, tx, `INSERT INTO ops.order_attempt_creators(attempt_id,tenant_id,store_id,buyer_owner_id) VALUES($1,$2,$3,$4)`, attempt, e.tenant(), e.store(), owner)
+	oaStateExec(t, tx, `INSERT INTO ops.order_attempt_scopes(scope_id,tenant_id,store_id,principal_id,current_generation) VALUES($1,$2,$3,$4,1)`, scope, e.tenant(), e.store(), e.p.f.principalA)
+	oaStateExec(t, tx, `INSERT INTO ops.order_attempts(attempt_id,tenant_id,store_id,scope_id,intent_generation,
+	 transport_key_digest,request_hash,request_schema_version,buyer_owner_id,admission_provenance,admitted_at,execute_by,state)
+	 VALUES($1,$2,$3,$4,1,sha256($1::uuid::text::bytea),sha256(convert_to(($6::jsonb)::text,'UTF8')),1,$5,'{}',
+	 statement_timestamp()-$7::interval,statement_timestamp()-$7::interval+interval '15 minutes','PENDING')`, attempt, e.tenant(), e.store(), scope, owner, string(raw), age)
+	oaStateExec(t, tx, `SET LOCAL ROLE commerce_order_attempt_owner`)
+	return tx, attempt
+}
+
 func oaClaimReject(t *testing.T, tx pgx.Tx, call func(pgx.Tx) error, code, message string) {
 	t.Helper()
 	probe, err := tx.Begin(context.Background())
@@ -106,6 +133,17 @@ func TestOrderAttemptClaimAdmissionOriginsDeadlineAndLegacyFence(t *testing.T) {
 	 WHERE a.attempt_id=$1 AND g.request_id=a.attempt_id AND g.buyer_id=a.buyer_owner_id AND g.expires_at=a.execute_by)`, attempt).Scan(&reservations, &grants); err != nil || reservations != 2 || grants != 2 {
 		t.Fatalf("exact owner/deadline/count binding: reservations=%d grants=%d err=%v", reservations, grants, err)
 	}
+	// Storefront must not borrow the still-unbound attempt grant, even for its owner.
+	oaStateExec(t, tx, `SELECT set_config('app.principal_id','',true),
+	 set_config('app.buyer_id',(SELECT buyer_owner_id::text FROM ops.order_attempts WHERE attempt_id=$1),true),
+	 set_config('app.buyer_session_id',$2,true)`, attempt, randomUUID())
+	oaStateExec(t, tx, `SET LOCAL ROLE commerce_buyer_runtime`)
+	var legacyPrices int
+	if err := tx.QueryRow(context.Background(), `SELECT count(*) FROM claims.live_prices(ARRAY[$1::uuid],ARRAY[$2::uuid],ARRAY[$3::uuid],ARRAY[2::bigint])`, b1, first.ID, e.money).Scan(&legacyPrices); err != nil || legacyPrices != 0 {
+		t.Fatalf("legacy quote borrowed attempt grant: %d/%v", legacyPrices, err)
+	}
+	oaStateExec(t, tx, `RESET ROLE`)
+	oaStateExec(t, tx, `SELECT set_config('app.principal_id',$1,true),set_config('app.buyer_id','',true),set_config('app.buyer_session_id','',true)`, e.p.f.principalA)
 	// Age the legacy timestamps without moving the immutable attempt deadline.
 	oaStateExec(t, tx, `UPDATE inbox.order_for_buyer SET updated_at=clock_timestamp()-interval '2 hours' WHERE request_id=$1`, attempt)
 	oaStateExec(t, tx, `SET LOCAL ROLE commerce_runtime`)
@@ -147,10 +185,10 @@ func TestOrderAttemptClaimAdmissionAuthorityAndHash(t *testing.T) {
 }
 
 func TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin(t *testing.T) {
-	for _, scenario := range []string{"no_conversation", "bundle_buyer_unverified", "bundle_buyer_mismatch", "foreign_origin", "quantity", "bundles", "duplicate_origin"} {
+	for _, scenario := range []string{"no_conversation", "bundle_buyer_unverified", "permission", "no_live_price", "superseded_origin", "bundle_buyer_mismatch", "foreign_origin", "quantity", "bundles", "duplicate_origin"} {
 		t.Run(scenario, func(t *testing.T) {
 			e := lbuNew(t)
-			_, offer, bundle, conversation := e.scenario()
+			session, offer, bundle, conversation := e.scenario()
 			if scenario == "no_conversation" {
 				conversation = ""
 			}
@@ -159,6 +197,19 @@ func TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin(t *testing.T) {
 			}
 			if scenario == "bundle_buyer_mismatch" {
 				conversation = lcConversation(t, e.p.f, e.tenant(), e.store(), "page")
+			}
+			if scenario == "permission" {
+				mustExec(t, e.p.f.owner, `DELETE FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission='live:manage'`, e.tenant(), e.store(), e.p.f.principalA)
+			}
+			if scenario == "no_live_price" {
+				mustExec(t, e.p.f.owner, `UPDATE live.offers SET live_price_minor=NULL WHERE id=$1`, offer.ID)
+			}
+			if scenario == "superseded_origin" {
+				mustExec(t, e.p.f.owner, `UPDATE live.offers SET active=false WHERE id=$1`, offer.ID)
+				winner := e.h.livePriceOffer(t, session, "B2", e.money, 5, ltgLive+700)
+				// Owner fixture inserts a second native claim for the same bundle/SKU.
+				mustExec(t, e.p.f.owner, `INSERT INTO claims.lines(tenant_id,store_id,session_id,bundle_id,offer_id,sku_id,quantity,version)
+				 SELECT tenant_id,store_id,session_id,bundle_id,$2,sku_id,2,1 FROM claims.lines WHERE bundle_id=$1 AND offer_id=$3`, bundle, winner.ID, offer.ID)
 			}
 			selection := oaClaimSelection(e, []string{bundle}, []string{offer.ID}, conversation)
 			items := selection["items"].([]map[string]any)
@@ -173,7 +224,7 @@ func TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin(t *testing.T) {
 				selection["items"] = append(items, map[string]any{"ordinal": 2, "origin_id": randomUUID(), "bundle_id": bundle, "offer_id": offer.ID, "sku_id": e.money, "quantity": 2})
 			}
 			tx, attempt := oaFactsCandidate(t, e, selection)
-			if scenario == "no_conversation" || scenario == "bundle_buyer_unverified" {
+			if scenario == "no_conversation" || scenario == "bundle_buyer_unverified" || scenario == "permission" || scenario == "no_live_price" || scenario == "superseded_origin" {
 				out, err := oaClaimCall(tx, attempt, selection)
 				if err != nil || out.Reason != scenario || len(out.Lines) != 1 || out.Lines[0].LivePriceMinor != nil {
 					t.Fatalf("fallback %s: %+v err=%v", scenario, out, err)
@@ -197,6 +248,33 @@ func TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin(t *testing.T) {
 			var n int
 			if err := tx.QueryRow(context.Background(), `SELECT count(*) FROM inbox.order_for_buyer WHERE create_attempt_id=$1`, attempt).Scan(&n); err != nil || n != 0 {
 				t.Fatalf("refusal wrote reservations: %d/%v", n, err)
+			}
+		})
+	}
+}
+
+func TestOrderAttemptClaimAdmissionLateDeadline(t *testing.T) {
+	for _, age := range []string{"14 minutes", "16 minutes"} {
+		t.Run(age, func(t *testing.T) {
+			e := lbuNew(t)
+			_, offer, bundle, conversation := e.scenario()
+			selection := oaClaimSelection(e, []string{bundle}, []string{offer.ID}, conversation)
+			tx, attempt := oaClaimLateCandidate(t, e, selection, age)
+			if age == "16 minutes" {
+				oaClaimReject(t, tx, func(probe pgx.Tx) error { _, err := oaClaimCall(probe, attempt, selection); return err }, "PT409", "attempt_expired")
+				return
+			}
+			if _, err := oaClaimCall(tx, attempt, selection); err != nil {
+				t.Fatal(err)
+			}
+			oaStateExec(t, tx, `RESET ROLE`)
+			var ok bool
+			err := tx.QueryRow(context.Background(), `SELECT r.expires_at=a.execute_by AND g.expires_at=a.execute_by
+			 AND g.expires_at<clock_timestamp()+interval '2 minutes'
+			 FROM ops.order_attempts a JOIN inbox.order_for_buyer r ON r.create_attempt_id=a.attempt_id
+			 JOIN claims.merchant_origin_grants g ON g.create_attempt_id=a.attempt_id WHERE a.attempt_id=$1`, attempt).Scan(&ok)
+			if err != nil || !ok {
+				t.Fatalf("late C1 extended deadline: %v/%v", ok, err)
 			}
 		})
 	}
