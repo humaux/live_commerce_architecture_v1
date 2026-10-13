@@ -6,7 +6,7 @@
 // Depends on: ManualOrders (manual.go: Place, RegenerateLink, Options, hooks), internal/claims (live_price_grant.go: claims.for_buyer_* and
 //   claims.bind_merchant_origin_grant), internal/inbox (PlanOrderPayLink via PayLinkPlanner), internal/customers + internal/merchantorders
 //   (the linked customer's newest order, read-only), internal/command (receipts, audit), internal/platform, internal/storefront (ClaimOrigin),
-//   ops.order_intents (original owner under RLS), fulfillment.order_intent_begin/order_pay_link_valid and claims.close_cancelled_for_buyer (0172),
+//   ops.order_intents (original owner under RLS), fulfillment.order_intent_begin/order_intent_has_catalog_lines/order_pay_link_valid and claims.close_cancelled_for_buyer (0172),
 //   catalog.skus/products and control.stores (read-only, commerce_runtime under RLS).
 // Used by: internal/httpapi/merchanttools.go (routes A15/A16); cmd/api builds it beside the ManualOrders pipeline and the inbox service.
 // Invariants: I05/I08 (no client price: the body has no price key; the live price is decided by claims.live_prices), I03 (stock only through
@@ -408,7 +408,16 @@ func (f *ForBuyer) placeOrder(ctx context.Context, token, storeID, key string, m
 			receipt = forBuyerReceipt{manualReceipt: placed.manualReceipt, LivePrice: "not_applied", LivePriceReason: notAppliedReason(begun.Reason, len(hooks.origins))}
 			if len(granted) > 0 {
 				receipt.LivePrice, receipt.LivePriceReason = "applied", ""
-				if skipped > 0 {
+				catalogLines := skipped > 0
+				if committed {
+					// Calls fulfillment.order_intent_has_catalog_lines (0172): original private Begin + immutable Quote rules.
+					// Current claims may be purged or changed; the consumed ledger and original Quote alone prove mixed pricing.
+					hash := sha256.Sum256([]byte(token))
+					if err := tx.QueryRow(ctx, `SELECT fulfillment.order_intent_has_catalog_lines($1,$2::uuid,$3)`, hash[:], storeID, key).Scan(&catalogLines); err != nil {
+						return err
+					}
+				}
+				if catalogLines {
 					receipt.LivePriceReason = "some_lines_catalog"
 				}
 			}
