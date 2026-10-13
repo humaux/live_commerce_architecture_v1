@@ -4,7 +4,7 @@ Used by: integrator and independent reviewers of unit/delivery-report; no produc
 # DELIVERY-REPORT delivery
 
 - Branch: `unit/delivery-report`; frozen base `0bfe36e53acb694f4697521202e24f0790638941` from fetched `origin/r3/integration`.
-- Write paths: `docs/delivery/DELIVERY-REPORT.md`, this receipt. No contract, product, migration, workflow, dependency or test changes.
+- Write paths: `docs/delivery/DELIVERY-REPORT.md`, this receipt (author Codex-2); `output/delivery-report/independent-review-*.md` (integrator, Claude Code `claude-opus-5-5`, worktree `.worktrees/delivery-report`, copied verbatim from the read-only reviewer's output under untracked `output/ext-agents/`). No contract, product, migration, workflow, dependency or test changes.
 - Summary: eleven business areas mapped to units/PRs, contract boundaries and real CI jobs; distinguishes ancestor browser proof from candidate foundation proof. Includes issue #45, stale/resolved FOLLOWUPS, owner launch prerequisites and red lines. Full release gate is explicitly pending.
 - Sources: `gh` reads of PRs #2–#47, issue #45, CI runs and the current contracts/GATES; the integrator's untracked FOLLOWUPS record is summarized with PR/thread references, not presented as a committed release ledger.
 
@@ -60,4 +60,5 @@ Read-only GitHub snapshot of the earlier docs head `fe4f1a2b`: [Foundation 38381
 
 ## Independent acceptance (integrator)
 
-Full-receipt independent review of `4e80947b` by the integrator's Claude API reviewer (read-only, `claude-sonnet-5-5` (per result.json modelUsage), effort high): **VERDICT PASS, no P0/P1**, 5 P2 recorded in the integrator FOLLOWUPS. Evidence: `output/delivery-report/independent-review-4e80947b.md`. The reviewer had no git access, so PR titles and CI run ids remain cited-but-unverified there; docs/delivery/DELIVERY-REPORT.md was independently reviewed in round 1.
+- `independent-review-4e80947b.md`: read-only reviewer `claude-sonnet-5-5` (per result.json modelUsage), effort high, **scope: this receipt only**. VERDICT PASS for the receipt (no P0/P1). It did not read `docs/delivery/DELIVERY-REPORT.md` and had no git access.
+- **Full owner-facing report acceptance: PENDING** until a review covering `docs/delivery/DELIVERY-REPORT.md` is committed here. The round-1 report review was not committed and is not relied on.
