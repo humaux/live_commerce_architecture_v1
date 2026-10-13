@@ -124,9 +124,9 @@ BEGIN
  FOREACH v_field IN ARRAY (CASE WHEN v_home THEN ARRAY['city','line1'] ELSE ARRAY['store_code','store_name','store_address'] END) LOOP
   v_value:=v_item->>v_field;
   IF jsonb_typeof(v_item->v_field) IS DISTINCT FROM 'string' OR v_value<>btrim(v_value)
-   OR v_value ~ '[[:cntrl:]]' OR char_length(v_value)<CASE WHEN v_field='store_address' THEN 5 ELSE 1 END
-   OR char_length(v_value)>CASE v_field WHEN 'line1' THEN 200 WHEN 'city' THEN 100
-    WHEN 'store_code' THEN 32 WHEN 'store_name' THEN 40 ELSE 120 END THEN
+   OR v_value ~ '[[:cntrl:]]' OR char_length(v_value)<(CASE WHEN v_field='store_address' THEN 5 ELSE 1 END)
+   OR char_length(v_value)>(CASE v_field WHEN 'line1' THEN 200 WHEN 'city' THEN 100
+    WHEN 'store_code' THEN 32 WHEN 'store_name' THEN 40 ELSE 120 END) THEN
    RAISE EXCEPTION 'invalid_selection' USING ERRCODE='PT400';
   END IF;
  END LOOP;
@@ -135,7 +135,7 @@ BEGIN
    IF v_item ? v_field THEN
     v_value:=v_item->>v_field;
     IF jsonb_typeof(v_item->v_field) IS DISTINCT FROM 'string' OR v_value<>btrim(v_value)
-     OR v_value ~ '[[:cntrl:]]' OR char_length(v_value)>CASE v_field WHEN 'region' THEN 100 WHEN 'postal_code' THEN 20 ELSE 200 END THEN
+     OR v_value ~ '[[:cntrl:]]' OR char_length(v_value)>(CASE v_field WHEN 'region' THEN 100 WHEN 'postal_code' THEN 20 ELSE 200 END) THEN
      RAISE EXCEPTION 'invalid_selection' USING ERRCODE='PT400';
     END IF;
    END IF;
@@ -147,7 +147,7 @@ BEGIN
  FOREACH v_field IN ARRAY ARRAY['name','phone','email'] LOOP
   v_value:=v_customer->>v_field;
   IF jsonb_typeof(v_customer->v_field) IS DISTINCT FROM 'string' OR v_value<>btrim(v_value)
-   OR v_value ~ '[[:cntrl:]]' OR char_length(v_value)>CASE v_field WHEN 'name' THEN 120 WHEN 'phone' THEN 32 ELSE 254 END THEN
+   OR v_value ~ '[[:cntrl:]]' OR char_length(v_value)>(CASE v_field WHEN 'name' THEN 120 WHEN 'phone' THEN 32 ELSE 254 END) THEN
    RAISE EXCEPTION 'invalid_selection' USING ERRCODE='PT400';
   END IF;
  END LOOP;
