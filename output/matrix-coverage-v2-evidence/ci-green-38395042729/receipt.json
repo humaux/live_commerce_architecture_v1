@@ -1,0 +1,19 @@
+{
+  "run_id": "38395042729",
+  "branch_head": "cf64271fd99fbda3e773606451f5ca7a3e3a4f28",
+  "source_fix": "66a2f7b50c4cf0c4d765c78c435646c5ee4e430a",
+  "evidence_level": "E3 Foundation subset only",
+  "focused_matrix_go_exit": 0,
+  "delivered_patch_whitespace_exit": 0,
+  "check_gates_exit": 0,
+  "test_node_exit": 0,
+  "complete_gates_run": "38395043141",
+  "complete_gates_outcome": "PENDING",
+  "raw_bytes": 805558,
+  "raw_sha256": "9dabd90ae49e813b71cb98adfcaf3d8a23d1acc505b045476c350cc2e1c7d900",
+  "copied_files_sha256": {
+    "run.json": "a188a118cd8c36f0d2e1238ecae6ed147e5b43052942b8842fa45045dff21f55",
+    "raw.log.gz": "de847ffe9161d094e8eda5f374c9bb37de6227b2049845a9d07ad7a92f19eca9",
+    "jobs.json": "c3ded7da6615c5d7f35a590ad59200ae0efdbf6d3af7c34883113e180e7ee06d"
+  }
+}

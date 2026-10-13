@@ -1,0 +1,7 @@
+gate (--browser-product-editor)	Node dependencies (frozen lockfile)	2026-10-13T13:05:41.1060714Z Lockfile is up to date, resolution step is skipped
+gate (--browser-product-editor)	Gate	2026-10-13T13:09:21.7610420Z     browser_catalog_core_test.go:358: CC12 BROWSER+REAL_PG: admin catalog v2 pages passed (desktop+390px, en+zh-TW); screenshots hashed; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.bL1vbyNE/catalog-core/20261013T130903.622445225
+gate (--browser-product-editor)	Gate	2026-10-13T13:09:21.7856599Z --- PASS: TestBrowserCatalogCore (117.95s)
+gate (--browser-product-editor)	Gate	2026-10-13T13:09:21.7857161Z     --- PASS: TestBrowserCatalogCore/PE12-17-TWD (99.53s)
+gate (--browser-product-editor)	Gate	2026-10-13T13:09:21.7857611Z     --- PASS: TestBrowserCatalogCore/CC12-frozen (18.42s)
+gate (--browser-product-editor)	Failure summary	﻿2026-10-13T13:09:23.3697493Z ##[group]Run grep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log | head -200 || true
+gate (--browser-product-editor)	Failure summary	2026-10-13T13:09:23.3698001Z [36;1mgrep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log | head -200 || true[0m

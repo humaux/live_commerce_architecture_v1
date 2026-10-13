@@ -1,0 +1,52 @@
+gate (shard:g06)	Node dependencies (frozen lockfile)	2026-10-13T12:36:09.1146884Z Lockfile is up to date, resolution step is skipped
+gate (shard:g06)	Gate	2026-10-13T12:38:57.1778497Z             catalog_matrix_ledger_test.go:309: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+gate (shard:g06)	Gate	2026-10-13T12:38:57.4148270Z             catalog_matrix_ledger_test.go:311: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+gate (shard:g06)	Gate	2026-10-13T12:38:57.4149401Z         --- FAIL: TestProductEditorMatrixLedgerEvidence (0.12s)
+gate (shard:g06)	Gate	2026-10-13T12:38:58.6511198Z             catalog_matrix_ledger_test.go:309: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+gate (shard:g06)	Gate	2026-10-13T12:38:58.9005990Z             catalog_matrix_ledger_test.go:311: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+gate (shard:g06)	Gate	2026-10-13T12:38:58.9007374Z         --- FAIL: TestProductEditorMatrixLedgerEvidence (0.12s)
+gate (shard:g06)	Gate	2026-10-13T12:39:00.1364290Z             catalog_matrix_ledger_test.go:309: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+gate (shard:g06)	Gate	2026-10-13T12:39:00.3713155Z             catalog_matrix_ledger_test.go:311: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+gate (shard:g06)	Gate	2026-10-13T12:39:00.3714018Z         --- FAIL: TestProductEditorMatrixLedgerEvidence (0.12s)
+gate (shard:g06)	Gate	2026-10-13T12:39:00.4930259Z         --- FAIL: TestProductEditorMatrixLedgerEvidence (0.00s)
+gate (shard:g06)	Gate	2026-10-13T12:39:00.7236120Z         --- FAIL: TestProductEditorMatrixLedgerEvidence (0.11s)
+gate (shard:g06)	Gate	2026-10-13T12:39:00.9567430Z         --- FAIL: TestProductEditorMatrixLedgerEvidence (0.11s)
+gate (shard:g06)	Gate	2026-10-13T12:39:01.1902132Z         --- FAIL: TestProductEditorMatrixLedgerEvidence (0.12s)
+gate (shard:g06)	Gate	2026-10-13T12:39:01.4225919Z         --- FAIL: TestProductEditorMatrixLedgerEvidence (0.11s)
+gate (shard:g06)	Gate	2026-10-13T12:39:01.5561815Z         --- FAIL: TestProductEditorMatrixLedgerEvidence (0.02s)
+gate (shard:g06)	Gate	2026-10-13T12:39:01.6910924Z         --- FAIL: TestProductEditorMatrixLedgerEvidence (0.02s)
+gate (shard:g06)	Gate	2026-10-13T12:39:01.8242770Z         --- FAIL: TestProductEditorMatrixLedgerEvidence (0.02s)
+gate (shard:g06)	Gate	2026-10-13T12:39:01.9579063Z         --- FAIL: TestProductEditorMatrixLedgerEvidence (0.02s)
+gate (shard:g06)	Gate	2026-10-13T12:39:02.0914731Z         --- FAIL: TestProductEditorMatrixLedgerEvidence (0.02s)
+gate (shard:g06)	Gate	2026-10-13T12:39:02.2277694Z         --- FAIL: TestProductEditorMatrixLedgerEvidence (0.02s)
+gate (shard:g06)	Gate	2026-10-13T12:39:02.3588209Z         --- FAIL: TestProductEditorMatrixLedgerEvidence (0.02s)
+gate (shard:g06)	Gate	2026-10-13T12:39:02.4908321Z         --- FAIL: TestProductEditorMatrixLedgerEvidence (0.02s)
+gate (shard:g06)	Gate	2026-10-13T12:39:02.6121806Z         --- FAIL: TestProductEditorMatrixLedgerEvidence (0.00s)
+gate (shard:g06)	Gate	2026-10-13T12:39:02.7365595Z         --- FAIL: TestProductEditorMatrixLedgerEvidence (0.01s)
+gate (shard:g06)	Gate	2026-10-13T12:39:02.8737117Z         --- FAIL: TestProductEditorMatrixLedgerEvidence (0.02s)
+gate (shard:g06)	Gate	2026-10-13T12:39:03.0125900Z         --- FAIL: TestProductEditorMatrixLedgerEvidence (0.02s)
+gate (shard:g06)	Gate	2026-10-13T12:39:03.1467147Z         --- FAIL: TestProductEditorMatrixLedgerEvidence (0.02s)
+gate (shard:g06)	Gate	2026-10-13T12:39:03.2815370Z         --- FAIL: TestProductEditorMatrixLedgerEvidence (0.01s)
+gate (shard:g06)	Gate	2026-10-13T12:39:03.6327169Z     catalog_matrix_evidence_test.go:288: immutable failed-outcome rejected: canonical run outcome pe-last-run.json must be passed with explicit empty failedTests
+gate (shard:g06)	Gate	2026-10-13T12:39:03.8399951Z     catalog_matrix_evidence_test.go:288: immutable failed-ledger rejected: canonical browser ledger: invalid mobile matrix ledger identity/result at row 59
+gate (shard:g06)	Gate	2026-10-13T12:39:04.8717195Z     catalog_matrix_evidence_test.go:313: producer evolution: canonical evidence is historical (source drift: tests/foundation/catalog_matrix_ledger_test.go, tests/fixture/new-producer.ts)
+gate (shard:g06)	Gate	2026-10-13T12:39:06.2958384Z     catalog_matrix_evidence_test.go:455: table evolution: canonical evidence is historical (source drift: tests/foundation/testdata/product_editor_matrix_cases.json)
+gate (shard:g06)	Gate	2026-10-13T12:39:07.2821227Z     catalog_matrix_evidence_test.go:515: rejected source: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+gate (shard:g06)	Gate	2026-10-13T12:39:07.5703103Z     catalog_matrix_evidence_test.go:515: rejected gate-source: canonical evidence is historical (source drift: tests/foundation/catalog_matrix_ledger_test.go)
+gate (shard:g06)	Gate	2026-10-13T12:39:10.6767422Z     catalog_matrix_evidence_test.go:973: rejected rehashed pe-failed: canonical run outcome pe-last-run.json must be passed with explicit empty failedTests
+gate (shard:g06)	Gate	2026-10-13T12:39:10.9492009Z     catalog_matrix_evidence_test.go:973: rejected rehashed cc12-failed: canonical run outcome cc12-last-run.json must be passed with explicit empty failedTests
+gate (shard:g06)	Gate	2026-10-13T12:39:11.2098594Z     catalog_matrix_evidence_test.go:973: rejected rehashed failed-tests: canonical run outcome pe-last-run.json must be passed with explicit empty failedTests
+gate (shard:g06)	Gate	2026-10-13T12:39:11.4657149Z     catalog_matrix_evidence_test.go:973: rejected rehashed missing-failed-tests: canonical run outcome pe-last-run.json must be passed with explicit empty failedTests
+gate (shard:g06)	Gate	2026-10-13T12:39:11.7225754Z     catalog_matrix_evidence_test.go:973: rejected rehashed null-failed-tests: canonical run outcome pe-last-run.json must be passed with explicit empty failedTests
+gate (shard:g06)	Gate	2026-10-13T12:39:11.9883634Z     catalog_matrix_evidence_test.go:973: rejected rehashed log-failed: canonical run outcome playwright.log: must finish exactly 12 passed cases, got 11
+gate (shard:g06)	Gate	2026-10-13T12:39:12.2615530Z     catalog_matrix_evidence_test.go:973: rejected rehashed cc12-log-failed: canonical run outcome cc12-playwright.log: must finish exactly 2 passed cases, got 1
+gate (shard:g06)	Gate	2026-10-13T12:39:12.5353366Z     catalog_matrix_evidence_test.go:973: rejected rehashed log-skipped: canonical run outcome playwright.log: must finish exactly 12 passed cases, got 11
+gate (shard:g06)	Gate	2026-10-13T12:39:12.8023874Z     catalog_matrix_evidence_test.go:973: rejected rehashed log-flaky: canonical run outcome playwright.log: must finish exactly 12 passed cases, got 11
+gate (shard:g06)	Gate	2026-10-13T12:39:13.0706305Z     catalog_matrix_evidence_test.go:973: rejected rehashed log-incomplete: canonical run outcome playwright.log: must finish exactly 12 passed cases, got 11
+gate (shard:g06)	Gate	2026-10-13T12:39:13.3380658Z     catalog_matrix_evidence_test.go:973: rejected rehashed log-extra-failed: canonical run outcome playwright.log: unexpected failed cases: 1
+gate (shard:g06)	Gate	2026-10-13T12:39:13.6045708Z     catalog_matrix_evidence_test.go:973: rejected rehashed log-extra-skipped: canonical run outcome playwright.log: unexpected skipped cases: 1
+gate (shard:g06)	Gate	2026-10-13T12:39:14.3937047Z     catalog_matrix_evidence_test.go:973: rejected rehashed manifest-passed: canonical manifest passed count PE_and_review must match frozen identities
+gate (shard:g06)	Gate	2026-10-13T12:39:14.6685365Z     catalog_matrix_evidence_test.go:973: rejected rehashed manifest-skipped: canonical manifest must record zero skipped cases
+gate (shard:g06)	Gate	2026-10-13T12:39:20.9250556Z     catalog_matrix_ledger_test.go:309: canonical evidence is historical (source drift: tests/foundation/catalog_matrix_evidence_test.go, tests/foundation/catalog_matrix_ledger_test.go)
+gate (shard:g06)	Failure summary	﻿2026-10-13T12:49:43.1826703Z ##[group]Run grep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log | head -200 || true
+gate (shard:g06)	Failure summary	2026-10-13T12:49:43.1827547Z [36;1mgrep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log | head -200 || true[0m

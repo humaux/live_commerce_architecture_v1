@@ -1,0 +1,18 @@
+{
+  "run_id": 38395043141,
+  "tested_commit": "cf64271fd99fbda3e773606451f5ca7a3e3a4f28",
+  "workflow_conclusion": "success",
+  "all_required": true,
+  "native_files_sha256": {
+    "g06.log.gz": "0159773f4d1e7bf7f8b02064a514c6d70b0cacc9e3443931eb1b03bf64082abd",
+    "g06-summary.txt": "23e998da8836b331b4df4b9cbb7733a338a3fae8c2885c03aace9e79a87c5967",
+    "product-editor-summary.txt": "dbd79b2833f47f3e1692315eeecc71ba7919f7aabe32d8c32dcddd6dd80150c1",
+    "product-editor.log.gz": "82b47e3035e8d94e1568dc249aadbb75d253ad3cd7838fc1117c5458400c3ef1",
+    "product-editor.json": "f6379c99aba96e34255dac9b3250cc585b0f074541bdc6f35a496049065c01d6",
+    "g06.json": "815e0f315d7523c1d75c6285cd8a27ee0a7f6cc6b7b64e327391126a72175f49",
+    "run.json": "17624bdd48c331864c857aa1c50536bbd622833231bed537050966c1fd572e57",
+    "jobs.json": "45f35cf628f616f6691af84679c0e4af87433985afd300f5af08a04d708ead7d"
+  },
+  "scope": "actual complete Gates workflow, no new provider/production or strict canonical package claim",
+  "summary_files": "derived filtered lines with trailing whitespace trimmed; lossless native bytes retained in log.gz"
+}

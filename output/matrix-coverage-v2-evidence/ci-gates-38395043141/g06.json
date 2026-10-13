@@ -1,0 +1,10 @@
+{
+  "run_id": 38395043141,
+  "job_id": 115288219052,
+  "ci_head": "cf64271fd99fbda3e773606451f5ca7a3e3a4f28",
+  "read_command": "gh run view 38395043141 --job 115288219052 --log",
+  "read_exit": 0,
+  "raw_bytes": 383506,
+  "raw_sha256": "ccd6881ea8cc76600fce3e38669ec2fe0be8c5a1ac0bf90568329fcaa8811c37",
+  "gzip_sha256": "0159773f4d1e7bf7f8b02064a514c6d70b0cacc9e3443931eb1b03bf64082abd"
+}

@@ -39,6 +39,93 @@
       "reply_id": 4258198794,
       "url": "https://github.com/humaux/live_commerce_architecture_v1/pull/47#discussion_r4258198794",
       "body": "Fixed: historical case identities and counts are derived from frozen consumer sources and independently pinned original PE/CC12 declarations before any drift skip. Invented or duplicated identities are rejected. CI behavior red 38389630299 -> Matrix family green 38390672689 at 24f64579."
+    },
+    {
+      "thread_comment": 4257302507,
+      "reply_id": 4258638131,
+      "url": "https://github.com/humaux/live_commerce_architecture_v1/pull/47#discussion_r4258638131",
+      "body": "Fixed with an independent frozen identity/expected-claim oracle; altered historical claims are rejected rather than excused as source drift. The assertion was preserved. Current Matrix-family controls pass in Foundation 38395042729 at cf64271f (source 66a2f7b5); full Gates are still pending.",
+      "source_commit": "66a2f7b50c4cf0c4d765c78c435646c5ee4e430a",
+      "ci_foundation": 38395042729
+    },
+    {
+      "thread_comment": 4257302531,
+      "reply_id": 4258638491,
+      "url": "https://github.com/humaux/live_commerce_architecture_v1/pull/47#discussion_r4258638491",
+      "body": "Fixed: original producer membership comes from the independently pinned frozen Go declaration, not from equality between mutable receipt maps or gateChanged. Coordinated omission of an old producer is rejected. Foundation 38395042729 passes the complete Matrix family, including producer-evolution negative controls.",
+      "source_commit": "66a2f7b50c4cf0c4d765c78c435646c5ee4e430a",
+      "ci_foundation": 38395042729
+    },
+    {
+      "thread_comment": 4257349294,
+      "reply_id": 4258638843,
+      "url": "https://github.com/humaux/live_commerce_architecture_v1/pull/47#discussion_r4258638843",
+      "body": "Applied the complete GitHub-generated formatting patch without running a local formatter. Current Foundation 38395042729 passes formatting, executes the full focused Matrix family, and passes delivered base..head whitespace, check-gates and Node. The formatting artifact is 11812090278; full Gates remain pending.",
+      "source_commit": "66a2f7b50c4cf0c4d765c78c435646c5ee4e430a",
+      "ci_foundation": 38395042729
+    },
+    {
+      "thread_comment": 4257351932,
+      "reply_id": 4258639316,
+      "url": "https://github.com/humaux/live_commerce_architecture_v1/pull/47#discussion_r4258639316",
+      "body": "Fixed: the expected immutable package membership is pinned independently of ARTIFACTS.json, and 66a2f7b5 additionally binds the complete 64 path/digest pairs. Deleting a receipt plus its mutable index entry cannot reach historical drift. Matching/drift deletion controls pass in Foundation 38395042729.",
+      "source_commit": "66a2f7b50c4cf0c4d765c78c435646c5ee4e430a",
+      "ci_foundation": 38395042729
+    },
+    {
+      "thread_comment": 4257351947,
+      "reply_id": 4258639695,
+      "url": "https://github.com/humaux/live_commerce_architecture_v1/pull/47#discussion_r4258639695",
+      "body": "Fixed: historical test titles are checked against independently pinned frozen consumer sources and the exact 12 product-editor / 2 CC12 identities. Consistently replacing titles and log lines is rejected before drift. The current full Matrix family passes in Foundation 38395042729.",
+      "source_commit": "66a2f7b50c4cf0c4d765c78c435646c5ee4e430a",
+      "ci_foundation": 38395042729
+    },
+    {
+      "thread_comment": 4257956439,
+      "reply_id": 4258640121,
+      "url": "https://github.com/humaux/live_commerce_architecture_v1/pull/47#discussion_r4258640121",
+      "body": "Moved retained artifact setup into the fixture builder with its own dir/write/hash scope and preserved the corruption assertions. The current Foundation 38395042729 compiles and executes the entire Matrix family; outer/nested coordinated-deletion controls pass rather than failing during fixture construction.",
+      "source_commit": "66a2f7b50c4cf0c4d765c78c435646c5ee4e430a",
+      "ci_foundation": 38395042729
+    },
+    {
+      "thread_comment": 4258126469,
+      "reply_id": 4258640568,
+      "url": "https://github.com/humaux/live_commerce_architecture_v1/pull/47#discussion_r4258640568",
+      "body": "Fixed in 66a2f7b5: the independently compiled oracle binds all 64 relative-path/SHA-256 pairs after byte/index checks and before drift. Replacing test-node.json and consistently rehashing it is rejected. Actual behavioral RED 38393757202 -> GREEN 38395042729, with native CI logs retained.",
+      "source_commit": "66a2f7b50c4cf0c4d765c78c435646c5ee4e430a",
+      "ci_foundation": 38395042729
+    },
+    {
+      "thread_comment": 4258126481,
+      "reply_id": 4258641000,
+      "url": "https://github.com/humaux/live_commerce_architecture_v1/pull/47#discussion_r4258641000",
+      "body": "Fixed in 66a2f7b5: fixtures copy the original immutable package/snapshot bytes; future checkout sources only supply explicitly informational inputs. No MODEL_ONLY receipt/ledger synthesis remains. The changed-review-consumer frozen-byte assertion is preserved: actual RED 38393757202 -> GREEN 38395042729.",
+      "source_commit": "66a2f7b50c4cf0c4d765c78c435646c5ee4e430a",
+      "ci_foundation": 38395042729
+    },
+    {
+      "thread_comment": 4258285607,
+      "reply_id": 4258641329,
+      "url": "https://github.com/humaux/live_commerce_architecture_v1/pull/47#discussion_r4258641329",
+      "body": "The tests-only correction faa60f2a copies the complete original historical package into the scratch checkout, preserving the later semantic assertions. CI 38393757202 then reached and failed the frozen-byte assertion (not ENOENT setup); 66a2f7b5 fixes the underlying snapshot overwrite, and Foundation 38395042729 passes both controls.",
+      "source_commit": "66a2f7b50c4cf0c4d765c78c435646c5ee4e430a",
+      "ci_foundation": 38395042729
+    },
+    {
+      "comment_id": 4258457073,
+      "reply_id": 4259003431,
+      "reply_url": "https://github.com/humaux/live_commerce_architecture_v1/pull/47#discussion_r4259003431",
+      "body": "Recorded the coordinating Codex-4 writer as gpt-6.1-sol / ultra from owner-observed thread metadata: child01a13014-88a4-7351-b3c4-18b3c2a2df7d, parent01a11484-d84f-7681-86c8-bf316050411d, six turn_context records2026-10-13T06:35:01Z–07:52:40Z. DELIVERY names the exact owner-identified rollout source, distinguishes this from Carver/high, and states that this repair did not read local session memory. The doc is staged for the next evidence commit; current source66a2f7b5 Foundation38395042729 is green, fullGates38395043141 pending.",
+      "source": "owner-observed thread metadata, delivery documentation pending commit"
     }
-  ]
+  ],
+  "current_foundation": {
+    "run_id": 38395042729,
+    "head_sha": "cf64271fd99fbda3e773606451f5ca7a3e3a4f28",
+    "source_commit": "66a2f7b50c4cf0c4d765c78c435646c5ee4e430a",
+    "conclusion": "success",
+    "full_gates_run": 38395043141,
+    "full_gates_status": "pending"
+  }
 }
