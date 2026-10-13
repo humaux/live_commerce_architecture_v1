@@ -1,3 +1,6 @@
+# Purpose: preserve GitHub CI SFR01–09 REAL application-stack storefront success.
+# Depends on: Gates run 38390368168, head bc9e9310c33ac4d0f1b0cf831ff5a49eaacdaf19, artifact 11808812314.
+# Used by: UX-HARDEN-R1 reviewers; original artifact shop-real-gate.log follows unchanged.
 browser engine: chromium
 PASS SFR01 home renders the five section types from the published design (photos from PG), nav-less phone layout, accent, footer contact, newest-first grid
 PASS SFR02 title/canonical/Open Graph, Product JSON-LD (real price range, availability, absolute photos), sitemap = active products only, robots, noindex on cart and checkout
@@ -9,6 +12,3 @@ PASS SFR07 merchant unpublish through control.set_storefront_published closes th
 PASS SFR08 UI chrome follows the locale while merchant text stays as entered; unknown locale is a 404
 PASS SFR09 /{locale}/checkout is the checkout page; no page errors or hydration warnings across the walk-through
 engine=chromium cases=9 REAL-STACK (SANDBOX)
-# Purpose: preserve GitHub CI SFR01–09 REAL application-stack storefront success.
-# Depends on: Gates run 38390368168, head bc9e9310c33ac4d0f1b0cf831ff5a49eaacdaf19, artifact 11808812314.
-# Used by: UX-HARDEN-R1 reviewers; original artifact shop-real-gate.log follows unchanged.
