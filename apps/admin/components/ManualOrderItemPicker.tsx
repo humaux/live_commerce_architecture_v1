@@ -45,6 +45,8 @@ export function ManualOrderItemPicker({ locale, store, lines, setLines, idPrefix
     controller.current?.abort();
     const active = new AbortController();
     controller.current = active;
+    // Expansion now owns the request slot; the aborted search cannot clear its own busy state.
+    setSearching(false);
     try {
       const detail = await readProduct(store.id, id, active.signal);
       if (!active.signal.aborted) setOpen(detail);

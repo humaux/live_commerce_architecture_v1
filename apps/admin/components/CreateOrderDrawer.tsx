@@ -453,7 +453,7 @@ export function CreateOrderDrawer({
   }
   async function copy() {
     // A planned DM owns its sealed link. Regenerating would invalidate the URL it will send.
-    if (copying.current || !result || result.send.state !== "not_sent" || !privacy.visible) return;
+    if (copying.current || !result || result.send.state !== "not_sent" || result.send.reason === "link_unavailable" || !privacy.visible) return;
     const ticket = privacy.fence.begin();
     copying.current = true;
     setCopyBusy(true);
@@ -568,8 +568,8 @@ export function CreateOrderDrawer({
               ? createOrderReason(locale, result.send.reason)
               : ""}
           </p>
-          {result.send.state === "queued" && <p data-testid="drawer-queued-link">{c.queuedLink}</p>}
-          {result.link_state === "configured" && result.send.state === "not_sent" && (
+          {(result.send.state === "queued" || result.send.reason === "link_unavailable") && <p data-testid="drawer-queued-link">{c.queuedLink}</p>}
+          {result.link_state === "configured" && result.send.state === "not_sent" && result.send.reason !== "link_unavailable" && (
             <button
               type="button"
               data-testid="drawer-copy-link"

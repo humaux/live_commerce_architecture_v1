@@ -1,5 +1,5 @@
 // Purpose: closed A15/A16 DTOs and transient for-buyer form mapping; no client quote or identity inference.
-// Depends on: shared format, manual-order-form, merchant-tools-model and customers/orders validation.
+// Depends on: shared format, manual-order-form, merchant-tools-model, create-order-copy and customers/orders validation.
 // Used by: CreateOrderDrawer, create-order-client and authenticated tools catchall BFF.
 // Invariants: I01/I02/I05/I08/I09; live-console-v1 §5, A15/A16.
 import { money as formatMoney } from '../../../packages/format/src/index.ts';
@@ -16,6 +16,7 @@ import {
   type ManualResult,
 } from "./merchant-tools-model.ts";
 import { emptyManualForm, type ManualFormValues } from "./manual-order-form.ts";
+import { createOrderCopy } from "./create-order-copy.ts";
 
 /** Exactly one private target selector for A15. */
 export type DrawerTarget = { conversationId?: string; bundleId?: string };
@@ -390,6 +391,8 @@ export function prefillForm(
     const prior = form.lines.find((l) => l.sku_id === item.sku_id);
     if (prior) {
       prior.quantity += item.quantity;
+      // The endpoint accepts one line per SKU; the server excludes multiple claim origins from live pricing.
+      prior.note = createOrderCopy[locale].mergedClaimWarning;
       continue;
     }
     form.lines.push({

@@ -1,6 +1,6 @@
 // Purpose: three-locale buyer-order guidance and closed reason/error labels.
 // Depends on: Locale and the existing manual-order error copy; never renders backend prose.
-// Used by: CreateOrderDrawer and LC-U3 copy acceptance.
+// Used by: CreateOrderDrawer, transient prefill item notes and LC-U3 copy acceptance.
 import type { Locale } from "@live-commerce/i18n";
 import { toolsCopy } from "./merchant-tools-copy.ts";
 const en = {
@@ -21,6 +21,7 @@ const en = {
   restrictionUnavailable: "The restriction status could not be checked. Review the buyer's status before creating an order.",
   liveWarning:
     "Live pricing does not apply to this order. Send the claim link instead.",
+  mergedClaimWarning: "Multiple claims are combined in this item. It uses the catalog price; live pricing cannot apply to this merged line.",
   quote:
     "Catalog unit prices are for reference. The server confirms the order total and any eligible live pricing.",
   permission: "Catalog-read, order-read and inventory-reservation permissions are required.",
@@ -73,6 +74,7 @@ const tw: Copy = {
   restricted: "此買家已在限制名單中。仍可手動建立訂單，這不會解除限制。",
   restrictionUnavailable: "無法確認限制名單狀態。建立訂單前請留意買家的狀態。",
   liveWarning: "直播價不適用代建訂單，請改傳認領連結",
+  mergedClaimWarning: "此商品合併了多筆認領，使用目錄價格；合併後的單一品項無法套用直播價。",
   quote: "目錄單價僅供參考。訂單總額與適用的直播價由伺服器確認。",
   permission: "需要讀取商品目錄、讀取訂單及預留庫存權限。",
   livePermission: "使用直播價需要直播管理權限。",
@@ -118,6 +120,7 @@ const cn: Copy = {
   restricted: "此买家已在限制名单中。仍可手动创建订单，这不会解除限制。",
   restrictionUnavailable: "无法确认限制名单状态。创建订单前请留意买家的状态。",
   liveWarning: "直播价不适用代建订单，请改传认领链接",
+  mergedClaimWarning: "此商品合并了多笔认领，使用目录价格；合并后的单一品项无法应用直播价。",
   quote: "目录单价仅供参考。订单总额与适用的直播价由服务器确认。",
   permission: "需要读取商品目录、读取订单及预留库存权限。",
   livePermission: "使用直播价需要直播管理权限。",
