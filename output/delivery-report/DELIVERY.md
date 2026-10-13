@@ -55,7 +55,7 @@ Read-only GitHub snapshot of the earlier docs head `fe4f1a2b`: [Foundation 38381
 ## PR #48 provenance and full-report acceptance corrections
 
 - Thread `4257368780`: author and both delegates now have concrete role, observed model/effort, release-source base SHA, task worktree, branch and thread metadata provenance above.
-- Thread `4257368785`: removed the unverifiable historical blob-based audit claim. Full final-report independent acceptance is explicitly PENDING for the integrator's review and committed JSON on the final SHA; no author-issued PASS replaces it.
+- (Historical, at that commit.) Thread `4257368785`: removed the unverifiable historical blob-based audit claim. Full final-report independent acceptance is explicitly PENDING for the integrator's review and committed JSON on the final SHA; no author-issued PASS replaces it.
 - No local tests, gates, scripts, servers or containers were run for these documentation corrections. GitHub checks for the new commit and the independent full-report review remain separate requirements.
 
 ## Independent acceptance (integrator)
@@ -65,4 +65,5 @@ Read-only GitHub snapshot of the earlier docs head `fe4f1a2b`: [Foundation 38381
 - `independent-review-report-r2-348ed215.md`: delta review at `348ed215` of the fix. **VERDICT PASS**: P1 and P2s closed, 3 new P2s. N1 (B3/B4 wording) and N2 (T21 merge citation) were fixed in the next commit, as wording-only changes; N3 is deferred to the integrator FOLLOWUPS.
 - `independent-review-final-5d549660.md`: full re-audit of the complete final `docs/delivery/DELIVERY-REPORT.md` at `5d549660`, every row including unchanged ones. Read-only `claude-sonnet-5-5`, effort high; git log and PR list supplied as files. **VERDICT PASS, no P0/P1**; 5 P2 deferred to the integrator FOLLOWUPS.
 - `independent-review-delta-0f2296d3.md`: delta review of the only report change after `5d549660` (the launch-table row for per-store and retention prerequisites, and the pre-upgrade backup wording). **VERDICT PASS**, 2 optional P2s deferred.
-- **Full owner-facing report acceptance: PASS** for `docs/delivery/DELIVERY-REPORT.md` at `0f2296d3`: the full re-audit at `5d549660` plus the delta review of the only change since. Later commits only add this receipt text and review artifacts. Documentation acceptance only, never launch approval: every launch row stays NOT_RUN until the owner acts.
+- `independent-review-delta-2d632f7e.md`: delta review of the U01–U08 launch row and the receipt reconciliation. **VERDICT PASS**; P2s deferred, and its §2.3 sourcing P2 is incorrect because 架构.md §2.3 states the no-industry-average rule.
+- **Full owner-facing report acceptance: PASS** for `docs/delivery/DELIVERY-REPORT.md` at `2d632f7e`: the full re-audit at `5d549660` plus the delta reviews at `0f2296d3` and `2d632f7e`, which cover every report change since. Later commits only add this receipt text and review artifacts. Documentation acceptance only, never launch approval.
