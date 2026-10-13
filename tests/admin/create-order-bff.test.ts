@@ -1,4 +1,4 @@
-// Purpose: LC-U3 real-handler Request counterexamples for frozen A15/A16.
+// Purpose: LC-U3 real-handler Request counterexamples for frozen A15/A16 and durable intent recovery.
 // Depends on: Node test/http/registerHooks; actual store catchall BFF and a synthetic Go HTTP boundary.
 // Used by: focused Node gate and integrator independent verification; no real PII or provider traffic.
 import assert from "node:assert/strict";
@@ -247,6 +247,88 @@ test("manual recovery real BFF preserves original body/key and only forwards clo
     assert.notEqual((await call("orders/manual/recover", { method: "POST", body: manual, ...over })).status, 200);
   }
   assert.equal(seen.length, before, "rejected input never forwards");
+});
+
+test("intent recovery real BFF accepts only the closed durable states and forwards no frozen request", async () => {
+  for (const state of [{ state: "none" }, { state: "not_created" }, { state: "created", order_id: customer }]) {
+    answer = { status: 200, body: JSON.stringify(state) };
+    const before = seen.length;
+    const out = await call("orders/attempt/recover", { method: "POST", body: {} });
+    assert.equal(out.status, 200);
+    assert.deepEqual(out.body, state);
+    assert.equal(seen.length, before + 1, "one explicit command, never an automatic retry");
+    assert.equal(seen.at(-1)?.url, `/v1/admin/stores/${store}/orders/attempt/recover`);
+    assert.equal(seen.at(-1)?.method, "POST");
+    assert.equal(seen.at(-1)?.body, "{}");
+    assert.equal(seen.at(-1)?.headers["idempotency-key"], "synthetic-receipt");
+    assert.equal(seen.at(-1)?.headers.authorization, `Bearer ${session}`);
+    assert.equal(seen.at(-1)?.headers.cookie, undefined);
+    assert.match(out.headers.get("cache-control") ?? "", /private, no-store/);
+    assert.equal(out.headers.get("referrer-policy"), "no-referrer");
+  }
+});
+
+test("intent recovery real BFF refuses body selectors, query, foreign scope and broken write authority before forwarding", async () => {
+  answer = { status: 200, body: JSON.stringify({ state: "none" }) };
+  const before = seen.length;
+  for (const over of [
+    { method: "GET" }, { query: "?" }, { query: "?key=PRIVATE_CANARY" },
+    { body: body() }, { body: { key: "PRIVATE_CANARY" } }, { body: { kind: "manual" } },
+    { body: { store_id: store } }, { body: { tenant_id: store } },
+    { raw: "null" }, { raw: "[]" }, { raw: '""' }, { raw: "0" }, { raw: "false" },
+    { raw: "{}{}" }, { raw: "{" }, { raw: '{"state":"none","state":"none"}' },
+    { headers: { "idempotency-key": "" } }, { headers: { "idempotency-key": "bad" } },
+    { headers: { "x-csrf-token": "invalid" } }, { headers: { origin: "https://foreign.invalid" } },
+    { cookie: "" }, { storeId: crypto.randomUUID() },
+  ]) {
+    const out = await call("orders/attempt/recover", { method: "POST", body: {}, ...over });
+    assert.notEqual(out.status, 200);
+    assert.equal(JSON.stringify(out.body).includes("PRIVATE_CANARY"), false);
+  }
+  assert.equal(seen.length, before, "rejected input never reaches merchant recovery");
+});
+
+test("intent recovery real BFF keeps malformed, oversized and ambiguous replies UNKNOWN and private", async () => {
+  for (const reply of [
+    { status: 200, body: { state: "none", order_id: customer } },
+    { status: 200, body: { state: "none", buyer_link: "PRIVATE_CANARY" } },
+    { status: 200, body: { state: "not_created", frozen_body: "PRIVATE_CANARY" } },
+    { status: 200, body: { state: "created", order_id: customer, original_key: "PRIVATE_CANARY" } },
+    { status: 200, body: { state: "created", order_id: "invalid" } },
+    { status: 200, body: { state: "pending" } },
+    { status: 200, body: null }, { status: 200, body: [] },
+    { status: 201, body: { state: "created", order_id: customer } },
+    { status: 201, body: { state: "none" } },
+    { status: 500, body: { state: "not_created" } },
+    { status: 200, body: { state: "none", diagnostic: "PRIVATE_CANARY".repeat(12000) } },
+  ]) {
+    answer = { status: reply.status, body: JSON.stringify(reply.body) };
+    const before = seen.length;
+    const out = await call("orders/attempt/recover", { method: "POST", body: {} });
+    assert.equal(out.status, 503);
+    assert.equal(out.body.code, "retry_later");
+    assert.equal(seen.length, before + 1, "UNKNOWN is not retried automatically");
+    assert.equal(JSON.stringify(out.body).includes("PRIVATE_CANARY"), false);
+  }
+  for (const malformed of ["{", "PRIVATE_CANARY"]) {
+    answer = { status: 200, body: malformed, contentType: "text/html" };
+    assert.equal((await call("orders/attempt/recover", { method: "POST", body: {} })).status, 503);
+  }
+});
+
+test("intent recovery real BFF makes malformed upstream revocation outrank UNKNOWN and none stays endpoint-local", async () => {
+  for (const status of [401, 403]) {
+    answer = { status, body: "PRIVATE_CANARY", contentType: "text/html" };
+    const out = await call("orders/attempt/recover", { method: "POST", body: {} });
+    assert.equal(out.status, status);
+    assert.equal(out.body.code, status === 401 ? "unauthorized" : "forbidden");
+    assert.equal(JSON.stringify(out.body).includes("PRIVATE_CANARY"), false);
+    if (status === 401) assert.match(out.headers.get("set-cookie") ?? "", /Max-Age=0/);
+  }
+  answer = { status: 200, body: JSON.stringify({ state: "none" }) };
+  const { for: _target, send_payment_link: _send, ...manual } = body();
+  assert.equal((await call("orders/for-buyer/recover", { method: "POST", body: body() })).status, 503);
+  assert.equal((await call("orders/manual/recover", { method: "POST", body: manual })).status, 503);
 });
 
 test("A16R real BFF preserves the frozen body/key and accepts only an authoritative closed recovery result", async () => {
