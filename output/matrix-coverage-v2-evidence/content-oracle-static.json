@@ -1,0 +1,123 @@
+{
+  "tested_source_commit": "2e10084b3f5e96548c15953cc40488aef9e1c86d",
+  "original_native_bytes_changed": false,
+  "added_source_snapshots": [
+    {
+      "source": "apps/admin/components/ProductBulkFill.tsx",
+      "snapshot": "output/matrix-ledger-enforce/historical-evidence/frozen/apps/admin/components/ProductBulkFill.tsx.source.txt",
+      "sha256": "6de889201888064efb4b055354cd07599cc605c7c25686009f84a5c8c4106c0f",
+      "git_blob_id": "51aa1b1ece1e2b4eb6a1b257fd7d1ad8bef8002f",
+      "size_bytes": 4814,
+      "git_show_exit_code": 0
+    },
+    {
+      "source": "tests/foundation/catalog_matrix_evidence_test.go",
+      "snapshot": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/foundation/catalog_matrix_evidence_test.go.source.txt",
+      "sha256": "d360e785f8519418eb4ab593c59a4408f28ed453fec63848eaf894ac092cf7c1",
+      "git_blob_id": "91880bbf81c32f5f4c8a86d150d6139599721d34",
+      "size_bytes": 23516,
+      "git_show_exit_code": 0
+    },
+    {
+      "source": "tests/foundation/browser_catalog_core_test.go",
+      "snapshot": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/foundation/browser_catalog_core_test.go.source.txt",
+      "sha256": "7630208cfdee79f5c80297e82b6d927b7896e44c57c5b7f69d79b32ad405a29d",
+      "git_blob_id": "04c79c7470c3e02b874fb824c6f82206282ffa8e",
+      "size_bytes": 21703,
+      "git_show_exit_code": 0
+    },
+    {
+      "source": "tests/ci/product-editor-matrix-ledger.test.mjs",
+      "snapshot": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/ci/product-editor-matrix-ledger-test-mjs.source.txt",
+      "sha256": "a456714c2a6bb237a5f0fe19f17d87dbf8a0e2be33d7a3bb73ba1ccc62bab23c",
+      "git_blob_id": "e819f2905a3523a15dae74d6a480dff07229aee0",
+      "size_bytes": 37782,
+      "git_show_exit_code": 0
+    },
+    {
+      "source": "tests/ci/product-editor-matrix-claims.mjs",
+      "snapshot": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/ci/product-editor-matrix-claims.mjs.source.txt",
+      "sha256": "86cc2ea894433aefe150d312f02f757c932297d3c2b0c5f01f3a2a956cb50523",
+      "git_blob_id": "373ca10c3baa175def5b1abdff2781f42902f79d",
+      "size_bytes": 9826,
+      "git_show_exit_code": 0
+    },
+    {
+      "source": "tests/ci/product-editor-matrix-source.mjs",
+      "snapshot": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/ci/product-editor-matrix-source.mjs.source.txt",
+      "sha256": "e6d26feb29c99ea258d9881cb2e44ece1445049497e578ebc778910e5d2569de",
+      "git_blob_id": "552d3f38aaf54c3da7c400666992abf7fdc0d579",
+      "size_bytes": 21417,
+      "git_show_exit_code": 0
+    },
+    {
+      "source": "tests/ci/product-editor-matrix-execution.mjs",
+      "snapshot": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/ci/product-editor-matrix-execution.mjs.source.txt",
+      "sha256": "16c2ea1f2db41bb8b4b7ab6c991fce370b79cbc7054cd0ecbcc9b0bb78d51fe1",
+      "git_blob_id": "9af27a14ac6b1b1ae88f9af2b05f13e7e815a6d2",
+      "size_bytes": 4312,
+      "git_show_exit_code": 0
+    },
+    {
+      "source": "tests/ci/product-editor-matrix-execution.test.mjs",
+      "snapshot": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/ci/product-editor-matrix-execution-test-mjs.source.txt",
+      "sha256": "5bdd3529c62d223e442c2a8d72e3f15de95ce03f5a17c1a19989c9f3bf451c15",
+      "git_blob_id": "b1ea2856b30a8050213d819d57b5f7852fecd594",
+      "size_bytes": 4321,
+      "git_show_exit_code": 0
+    },
+    {
+      "source": "tests/ci/product-editor-matrix-controls.mjs",
+      "snapshot": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/ci/product-editor-matrix-controls.mjs.source.txt",
+      "sha256": "d688d5822ac86c041f017af7c3361ac5bf48524ddcc29386dcd6ff9312abb617",
+      "git_blob_id": "4d44e0f7511dfcfa505d3db3aa32de906d14b3b6",
+      "size_bytes": 3537,
+      "git_show_exit_code": 0
+    },
+    {
+      "source": "tests/ci/product-editor-matrix-controls.test.mjs",
+      "snapshot": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/ci/product-editor-matrix-controls-test-mjs.source.txt",
+      "sha256": "0fd469cca91a990972881b9fcf38961fab75c9f455c57d5b5842c7cf9168e132",
+      "git_blob_id": "529d4e46b4db3baebcd24077eecf7042b4105d9e",
+      "size_bytes": 4406,
+      "git_show_exit_code": 0
+    }
+  ],
+  "package_file_count": 64,
+  "sorted_relative_names_sha256": "d09b85d2dfe178a433e53feb16e056a2b1a605ee1227603228c0700ccf740c10",
+  "sorted_relative_path_tab_digest_lines_sha256": "0adf525e35daf95fc5862914c1d5f34cef1448737a695f382109b33da9121fc5",
+  "frozen_identity_record_sha256": "642cea683c15e6cfbedfffba7bfcbf982d6cdbc208edfdbcfe0fc7793254a188",
+  "evidence_class": "E1 static provenance; CI NOT_RUN",
+  "base_commit": "faa60f2a23799e670292cd67517bea4ed1db15c4",
+  "source_files_sha256": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "bf36169fb3b9070df17c2cdeef52b0d04427907e4a3fc088bed1aa96aaf6792c",
+    "tests/foundation/catalog_matrix_evidence_test.go": "deb7452b22e20084e487e33f7221f381812e88ccbeb18d90cf331023ecf4ff19"
+  },
+  "acceptance": "Actual behavioral RED38393757202 atfaa60 both target assertions; fix GitHub GREEN pending; local tests/checks/formatter NOT_RUN",
+  "trailing_whitespace_in_added_snapshots": {
+    "output/matrix-ledger-enforce/historical-evidence/frozen/apps/admin/components/ProductBulkFill.tsx.source.txt": [],
+    "output/matrix-ledger-enforce/historical-evidence/frozen/tests/foundation/catalog_matrix_evidence_test.go.source.txt": [],
+    "output/matrix-ledger-enforce/historical-evidence/frozen/tests/foundation/browser_catalog_core_test.go.source.txt": [],
+    "output/matrix-ledger-enforce/historical-evidence/frozen/tests/ci/product-editor-matrix-ledger-test-mjs.source.txt": [],
+    "output/matrix-ledger-enforce/historical-evidence/frozen/tests/ci/product-editor-matrix-claims.mjs.source.txt": [],
+    "output/matrix-ledger-enforce/historical-evidence/frozen/tests/ci/product-editor-matrix-source.mjs.source.txt": [],
+    "output/matrix-ledger-enforce/historical-evidence/frozen/tests/ci/product-editor-matrix-execution.mjs.source.txt": [],
+    "output/matrix-ledger-enforce/historical-evidence/frozen/tests/ci/product-editor-matrix-execution-test-mjs.source.txt": [],
+    "output/matrix-ledger-enforce/historical-evidence/frozen/tests/ci/product-editor-matrix-controls.mjs.source.txt": [],
+    "output/matrix-ledger-enforce/historical-evidence/frozen/tests/ci/product-editor-matrix-controls-test-mjs.source.txt": []
+  },
+  "canonical_metadata_files_sha256": {
+    "output/matrix-ledger-enforce/historical-evidence/FROZEN-IDENTITIES.json": "642cea683c15e6cfbedfffba7bfcbf982d6cdbc208edfdbcfe0fc7793254a188",
+    "output/matrix-ledger-enforce/historical-evidence/SOURCE.json": "c1c491d85c9bd2f8d54bdc3247053f60d4b9d02481f373779c28ba125254fbe3",
+    "output/matrix-ledger-enforce/historical-evidence/FROZEN-MEMBERSHIP.json": "3ef94593a913f8334b621bc3afd535443a72493412caf61ecc8db837de76b6e4",
+    "output/matrix-ledger-enforce/historical-evidence/ARTIFACTS.json": "497fb50a68f79992ef8cecde0bc47b685e5dd5bf0b76812b878320d5cace0b75",
+    "output/matrix-ledger-enforce/historical-evidence/browser/browser-evidence.json": "c7fa8cfa7b4e7b38ca27871699698dfdddaf54688a0577d3a69c412de41add84"
+  },
+  "actual_red_controls": {
+    "run_id": 38393757202,
+    "head_sha": "faa60f2a23799e670292cd67517bea4ed1db15c4",
+    "focused_exit_code": 1,
+    "content-rehashed-test-node-receipt": "historical drift accepted corrupted receipt",
+    "changed-checkout-review-keeps-frozen-bytes": "original frozen consumer byte assertion failed"
+  }
+}

@@ -8,7 +8,17 @@
     "tests/admin/product-editor-matrix-ledger.ts": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/admin/product-editor-matrix-ledger.ts.source.txt",
     "tests/admin/product-review.acceptance.ts": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/admin/product-review.acceptance.ts.source.txt",
     "tests/admin/product-feedback.acceptance.ts": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/admin/product-feedback.acceptance.ts.source.txt",
-    "tests/admin/catalog-core.spec.ts": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/admin/catalog-core-spec.source.txt"
+    "tests/admin/catalog-core.spec.ts": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/admin/catalog-core-spec.source.txt",
+    "apps/admin/components/ProductBulkFill.tsx": "output/matrix-ledger-enforce/historical-evidence/frozen/apps/admin/components/ProductBulkFill.tsx.source.txt",
+    "tests/foundation/catalog_matrix_evidence_test.go": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/foundation/catalog_matrix_evidence_test.go.source.txt",
+    "tests/foundation/browser_catalog_core_test.go": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/foundation/browser_catalog_core_test.go.source.txt",
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/ci/product-editor-matrix-ledger-test-mjs.source.txt",
+    "tests/ci/product-editor-matrix-claims.mjs": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/ci/product-editor-matrix-claims.mjs.source.txt",
+    "tests/ci/product-editor-matrix-source.mjs": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/ci/product-editor-matrix-source.mjs.source.txt",
+    "tests/ci/product-editor-matrix-execution.mjs": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/ci/product-editor-matrix-execution.mjs.source.txt",
+    "tests/ci/product-editor-matrix-execution.test.mjs": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/ci/product-editor-matrix-execution-test-mjs.source.txt",
+    "tests/ci/product-editor-matrix-controls.mjs": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/ci/product-editor-matrix-controls.mjs.source.txt",
+    "tests/ci/product-editor-matrix-controls.test.mjs": "output/matrix-ledger-enforce/historical-evidence/frozen/tests/ci/product-editor-matrix-controls-test-mjs.source.txt"
   },
   "source_files_sha256": {
     "tests/foundation/catalog_matrix_ledger_test.go": "0bca90d283d8bf73eefdb0689ab68b4c2b3c97d619a53de6bf01e95d7c594371",
@@ -17,7 +27,17 @@
     "tests/admin/product-editor-matrix-ledger.ts": "8f316ca5d61458e5c01f98891d784677998acca1240d1270311c0b4235e48e09",
     "tests/admin/product-review.acceptance.ts": "e9fb97fb23762ffede5ee3b755e88c88263bb5d458075b05b214e44766f077a4",
     "tests/admin/product-feedback.acceptance.ts": "ac098dafcd7f782901c87523878a37768cf6530a024dd1bf75999a908219a173",
-    "tests/admin/catalog-core.spec.ts": "18db7e6e25ddfc05bdd6b9fecc6f80b3bd47e92f1e31addddf6ff318c21da0d8"
+    "tests/admin/catalog-core.spec.ts": "18db7e6e25ddfc05bdd6b9fecc6f80b3bd47e92f1e31addddf6ff318c21da0d8",
+    "apps/admin/components/ProductBulkFill.tsx": "6de889201888064efb4b055354cd07599cc605c7c25686009f84a5c8c4106c0f",
+    "tests/foundation/catalog_matrix_evidence_test.go": "d360e785f8519418eb4ab593c59a4408f28ed453fec63848eaf894ac092cf7c1",
+    "tests/foundation/browser_catalog_core_test.go": "7630208cfdee79f5c80297e82b6d927b7896e44c57c5b7f69d79b32ad405a29d",
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "a456714c2a6bb237a5f0fe19f17d87dbf8a0e2be33d7a3bb73ba1ccc62bab23c",
+    "tests/ci/product-editor-matrix-claims.mjs": "86cc2ea894433aefe150d312f02f757c932297d3c2b0c5f01f3a2a956cb50523",
+    "tests/ci/product-editor-matrix-source.mjs": "e6d26feb29c99ea258d9881cb2e44ece1445049497e578ebc778910e5d2569de",
+    "tests/ci/product-editor-matrix-execution.mjs": "16c2ea1f2db41bb8b4b7ab6c991fce370b79cbc7054cd0ecbcc9b0bb78d51fe1",
+    "tests/ci/product-editor-matrix-execution.test.mjs": "5bdd3529c62d223e442c2a8d72e3f15de95ce03f5a17c1a19989c9f3bf451c15",
+    "tests/ci/product-editor-matrix-controls.mjs": "d688d5822ac86c041f017af7c3361ac5bf48524ddcc29386dcd6ff9312abb617",
+    "tests/ci/product-editor-matrix-controls.test.mjs": "0fd469cca91a990972881b9fcf38961fab75c9f455c57d5b5842c7cf9168e132"
   },
   "git_blob_ids": {
     "tests/foundation/catalog_matrix_ledger_test.go": "9c13933c87d535981e254399d142f5c05f963105",
@@ -26,7 +46,17 @@
     "tests/admin/product-editor-matrix-ledger.ts": "65a4f17d004a602ec5e1ec974bd019e766d26c45",
     "tests/admin/product-review.acceptance.ts": "d269460071e5a2b21128be0bdbecbe563c62556b",
     "tests/admin/product-feedback.acceptance.ts": "bc8c2c966e9694571fb6b78272ad02b02c4784cf",
-    "tests/admin/catalog-core.spec.ts": "311a6397747015c26d0e0ec94a65081689f542e3"
+    "tests/admin/catalog-core.spec.ts": "311a6397747015c26d0e0ec94a65081689f542e3",
+    "apps/admin/components/ProductBulkFill.tsx": "51aa1b1ece1e2b4eb6a1b257fd7d1ad8bef8002f",
+    "tests/foundation/catalog_matrix_evidence_test.go": "91880bbf81c32f5f4c8a86d150d6139599721d34",
+    "tests/foundation/browser_catalog_core_test.go": "04c79c7470c3e02b874fb824c6f82206282ffa8e",
+    "tests/ci/product-editor-matrix-ledger.test.mjs": "e819f2905a3523a15dae74d6a480dff07229aee0",
+    "tests/ci/product-editor-matrix-claims.mjs": "373ca10c3baa175def5b1abdff2781f42902f79d",
+    "tests/ci/product-editor-matrix-source.mjs": "552d3f38aaf54c3da7c400666992abf7fdc0d579",
+    "tests/ci/product-editor-matrix-execution.mjs": "9af27a14ac6b1b1ae88f9af2b05f13e7e815a6d2",
+    "tests/ci/product-editor-matrix-execution.test.mjs": "b1ea2856b30a8050213d819d57b5f7852fecd594",
+    "tests/ci/product-editor-matrix-controls.mjs": "4d44e0f7511dfcfa505d3db3aa32de906d14b3b6",
+    "tests/ci/product-editor-matrix-controls.test.mjs": "529d4e46b4db3baebcd24077eecf7042b4105d9e"
   },
   "locale_labels": {
     "zh-TW": {
@@ -80,5 +110,5 @@
       "tests/admin/catalog-core.spec.ts › CC12 mobile zh-TW › catalog v2: draft product, 2x3 matrix, prices, compare-at, stock, photo, collection, activate, shopper view, archive a variant, deactivate (mobile, zh-TW)"
     ]
   },
-  "package_membership_sha256": "ca4468a7cb5559fded29d22044d28d2215cedd3acd7ac2e9bb9a3d692244ccf2"
+  "package_membership_sha256": "3ef94593a913f8334b621bc3afd535443a72493412caf61ecc8db837de76b6e4"
 }

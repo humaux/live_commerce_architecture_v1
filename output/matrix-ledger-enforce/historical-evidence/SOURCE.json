@@ -144,5 +144,5 @@
     "source_observations": "union of base/head/merge checkout; missing old declaration allowed, malformed declaration fails closed",
     "selection": "monotone addition of existing browser-product-editor mode"
   },
-  "frozen_identity_record_sha256": "f1a92950a92fd854f18e05ea9b3119e88a40977d52cdbd602c569da9289f2c95"
+  "frozen_identity_record_sha256": "642cea683c15e6cfbedfffba7bfcbf982d6cdbc208edfdbcfe0fc7793254a188"
 }
