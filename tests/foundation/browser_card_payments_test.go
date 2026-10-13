@@ -32,6 +32,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"livecommerce/internal/buyerhttp"
 	"livecommerce/internal/httpapi"
 )
@@ -80,6 +82,31 @@ func cpbrRequire(t *testing.T) {
 	if os.Getenv("LC_BROWSER_CARD_PAYMENTS_ACCEPTANCE") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
 		t.Fatal("use scripts/dev/test-local.sh --browser-card-payments")
 	}
+}
+
+// cpbrReleaseSetupPools ends fixture-only lifetimes before buyer requests can grow their live pools.
+// Keep A/P buyer runtime, issuer and checkout pools, the hosted service and all shared/live workers.
+// Copies in the seeded orders alias these families; pointer deduplication also preserves cleanup safety.
+func cpbrReleaseSetupPools(t *testing.T, e *pslEnv) {
+	t.Helper()
+	seen := make(map[*pgxpool.Pool]bool)
+	closePool := func(pool *pgxpool.Pool) {
+		if !seen[pool] {
+			pool.Close() // existing t.Cleanup closes remain safe: pgxpool.Close is idempotent
+			seen[pool] = true
+		}
+	}
+	for _, p := range []psHarness{e.a, e.b, e.c, e.plat.p, e.ox1.s.p} {
+		closePool(p.a.identity)
+		closePool(p.worker)
+		closePool(p.expiry)
+	}
+	for _, p := range []psHarness{e.b, e.c, e.ox1.s.p} {
+		closePool(p.a.runtime)
+		closePool(p.a.issuer)
+		closePool(p.pool)
+	}
+	t.Logf("CARD_PAY_FIXTURE released_setup_pools=%d before_buyer=true", len(seen))
 }
 
 // cpbrBuyerNode starts the real buyerhttp handler for the store of p and runs tests/storefront/collector-buyer.mjs against the production
@@ -243,6 +270,7 @@ func TestBrowserCardPayments(t *testing.T) {
 	}
 	cbbrShots(t, evidence, 14, "en", "zh-TW")
 	t.Logf("W4-U1 BROWSER (MOCK Stripe): admin half passed (card-payments + settlements); screenshots hashed; evidence=%s", evidence)
+	cpbrReleaseSetupPools(t, e)
 
 	// ---- buyer half: the §5 disclosure on the real order payment page ----
 	summary := e.read(t, e.a)
