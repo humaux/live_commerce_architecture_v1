@@ -139,6 +139,8 @@ const (
 // The two commerce_ads_writer grantees are R3's, not 0078/0079's: meta-ads-v1 §4.3/§4.4 rows of
 // 0080_meta_capi.sql (A-3 consent, §5.2 standing), placed after 0079 by C-7; the C-7 subtest proves where they live.
 var cbsFunctions = []cbsFn{
+	// OA-1 (0174): exact internal subject projection; no privacy-writer table grant changes.
+	{"customers.order_attempt_sources(jsonb)", "commerce_privacy_writer", []string{"commerce_order_attempt_owner"}, false},
 	{"customers.consent_allows(uuid,uuid,uuid,text,text)", "commerce_privacy_writer", []string{"commerce_auth", "commerce_ads_writer"}, true},
 	{"customers.buyer_set_consent(bytea,uuid,text,text,boolean,text,text,uuid)", "commerce_privacy_writer", []string{"commerce_buyer_runtime"}, false},
 	{"customers.merchant_withdraw_consent(bytea,uuid,uuid,text,text,uuid)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
