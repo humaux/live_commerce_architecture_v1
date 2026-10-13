@@ -3,7 +3,7 @@
 // Used by: TestBrowserManualOrderLink after unchanged legacy cases; no trace/HAR/body/clipboard logging.
 // Invariants: I02/I03/I06/I09/I11; only fixed case names, status/counts and synthetic screenshots enter evidence.
 import assert from "node:assert/strict";
-import { runManualRecovery } from "./create-order-manual-recovery.mjs";
+import { runManualRecovery, runManualCreatedRecovery } from "./create-order-manual-recovery.mjs";
 import { runCapabilityRecovery } from "./create-order-capability-recovery.mjs";
 import { runPartialRecovery } from "./create-order-partial-recovery.mjs";
 import { spawn } from "node:child_process";
@@ -637,6 +637,16 @@ try {
   }finally{await page.unroute(`**${routePath}`);page.off("request",observe);await context.close();}
  }
  assert.equal(cases,35,"exact additive final money matrix preservesall33previouscases");
+ const priorCreated=await fetch(`${api}/__test/drawer-facts`);assert.equal(priorCreated.status,200);
+ assert.equal((await priorCreated.json()).orders,20,"preserve exact previous35-case PG20 before created recovery");
+ current="DU3-manual-created-recovery";
+ const createdContext=await browser.newContext(ctxOpts({ignoreHTTPSErrors:true,viewport:{width:1440,height:900}})),createdPage=await createdContext.newPage();
+ try {
+  await createdPage.goto(`${origin}/en`);await createdPage.getByRole("button",{name:"Sign in with identity service",exact:true}).click();
+  await expect(createdPage.getByTestId("dashboard-page")).toBeVisible();
+  await runManualCreatedRecovery({page:createdPage,api,origin,store,cvs,addCatalog,fillEmpty,record,results});cases++;
+ } finally {await createdContext.close();}
+ assert.equal(cases,36,"preserve all35 prior cases and add created ManualOrder recovery detail persistence");
 } catch (error) {
  // Only allowlisted test file/line coordinates are retained; assertion messages may contain private request or DOM material.
  const coordinate=String(error?.stack||"").match(/\b(create-order-(?:drawer-gate|manual-recovery|partial-recovery|capability-recovery)\.mjs):(\d+):(\d+)/);

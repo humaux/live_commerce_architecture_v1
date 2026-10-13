@@ -98,7 +98,7 @@ func (f *manualRecoveryControl) handleManual(w http.ResponseWriter, r *http.Requ
 	return true
 }
 
-// readback preserves failed-run evidence and independently checks both added manual orders and the exact partial receipts.
+// readback preserves failed-run evidence and independently checks all three manual recovery orders and the exact partial receipts.
 func (f *manualRecoveryControl) readbackManual(t *testing.T, evidence string, complete bool) []string {
 	t.Helper()
 	f.mu.Lock()
@@ -137,7 +137,7 @@ func (f *manualRecoveryControl) readbackManual(t *testing.T, evidence string, co
 	if err = os.WriteFile(filepath.Join(evidence, "manual-recovery-pg-readback.json"), raw, 0600); err != nil {
 		t.Fatal(err)
 	}
-	if complete && (orders != 2 || receipts != 2 || seals != 1 || len(f.keys) != 3) {
+	if complete && (orders != 3 || receipts != 3 || seals != 1 || len(f.keys) != 4) {
 		t.Fatalf("manual independent PG orders=%d receipts=%d seals=%d observedkeys=%d", orders, receipts, seals, len(f.keys))
 	}
 	return append([]string(nil), f.keys...)

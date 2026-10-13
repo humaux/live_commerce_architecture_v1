@@ -537,7 +537,7 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	if err := e.p.f.owner.QueryRow(ctx, `SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2 AND source='merchant_manual'`, e.tenant(), e.store()).Scan(&orders); err != nil {
 		t.Fatal(err)
 	}
-	// Independent additive readback preserves the prior PG18 slice and all original PG14 orders.
+	// Independent additive readback includes created recovery while preserving all original PG14 orders and final two orders.
 	finalMu.Lock()
 	observedFinalKeys := append([]string(nil), finalKeys...)
 	finalMu.Unlock()
@@ -546,7 +546,7 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 		t.Fatal("final money independent PG observation failed")
 	}
 	if err := e.p.f.owner.QueryRow(ctx, `SELECT count(*) FROM checkout.orders o WHERE o.tenant_id=$1 AND o.store_id=$2 AND o.source='merchant_manual' AND NOT EXISTS(SELECT 1 FROM ops.command_results c WHERE c.tenant_id=o.tenant_id AND c.store_id=o.store_id AND c.principal_id=$3 AND c.operation='merchanttools.order.for_buyer' AND c.idempotency_key=ANY($4::text[]) AND c.response->>'order_id'=o.id::text)`, e.tenant(), e.store(), e.p.f.principalA, observedFinalKeys).Scan(&priorOrders); err != nil {
-		t.Fatal("prior PG18 independent observation failed")
+		t.Fatal("prior PG19 independent observation failed")
 	}
 	manualKeys := manualControl.readbackManual(t, evidence, runErr == nil)
 	var legacyOrders int
@@ -555,15 +555,15 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	}
 	partialFault.readback(t, evidence, runErr == nil)
 	capabilityControl.readback(t, evidence, runErr == nil)
-	pg, _ := json.Marshal(map[string]any{"orders": orders, "expected": 20, "single_order": orders == 20, "prior_orders": priorOrders, "prior_expected": 18, "prior_single_order": priorOrders == 18, "final_request_orders": finalOrders, "final_request_receipts": finalReceipts, "final_observed_keys": len(observedFinalKeys), "legacy_orders": legacyOrders, "legacy_expected": 14, "legacy_single_order": legacyOrders == 14})
+	pg, _ := json.Marshal(map[string]any{"orders": orders, "expected": 21, "single_order": orders == 21, "prior_orders": priorOrders, "prior_expected": 19, "prior_single_order": priorOrders == 19, "final_request_orders": finalOrders, "final_request_receipts": finalReceipts, "final_observed_keys": len(observedFinalKeys), "legacy_orders": legacyOrders, "legacy_expected": 14, "legacy_single_order": legacyOrders == 14})
 	if err := os.WriteFile(filepath.Join(evidence, "pg-readback.json"), pg, 0600); err != nil {
 		t.Fatal(err)
 	}
 	if runErr != nil {
-		t.Fatalf("drawer browser gate failed: %v; PG orders=%d expected=20; evidence=%s", runErr, orders, evidence)
+		t.Fatalf("drawer browser gate failed: %v; PG orders=%d expected=21; evidence=%s", runErr, orders, evidence)
 	}
-	if orders != 20 || priorOrders != 18 || legacyOrders != 14 || finalOrders != 2 || finalReceipts != 2 || len(observedFinalKeys) != 2 {
-		t.Fatalf("drawer PG orders=%d expected=20 prior_orders=%d expected=18 legacy_orders=%d expected=14 added_orders=%d expected=2 added_receipts=%d expected=2 keys=%d expected=2; evidence=%s", orders, priorOrders, legacyOrders, finalOrders, finalReceipts, len(observedFinalKeys), evidence)
+	if orders != 21 || priorOrders != 19 || legacyOrders != 14 || finalOrders != 2 || finalReceipts != 2 || len(observedFinalKeys) != 2 {
+		t.Fatalf("drawer PG orders=%d expected=21 prior_orders=%d expected=19 legacy_orders=%d expected=14 added_orders=%d expected=2 added_receipts=%d expected=2 keys=%d expected=2; evidence=%s", orders, priorOrders, legacyOrders, finalOrders, finalReceipts, len(observedFinalKeys), evidence)
 	}
 	for _, fx := range fixtures {
 		if n := e.count(`SELECT count(*) FROM inbox.order_for_buyer WHERE store_id=$1 AND bundle_id=$2 AND state='placed'`, e.store(), fx.Bundle); n != 1 {
@@ -578,9 +578,9 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 		Cases  int      `json:"cases"`
 		Failed []string `json:"failed"`
 	}
-	// Preserve all prior33 cases and add never-sent and stable-principal recovery guards.
-	if json.Unmarshal(data, &result) != nil || result.Cases != 35 || len(result.Failed) != 0 {
-		t.Fatalf("drawer exact 35-case matrix result missing; evidence=%s", evidence)
+	// Preserve all prior35 cases and add the created recovery link/detail/reload path.
+	if json.Unmarshal(data, &result) != nil || result.Cases != 36 || len(result.Failed) != 0 {
+		t.Fatalf("drawer exact 36-case matrix result missing; evidence=%s", evidence)
 	}
 	ledgerBytes, err := os.ReadFile(filepath.Join(evidence, "click-ledger.json"))
 	if err != nil {
