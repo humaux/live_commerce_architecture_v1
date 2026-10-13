@@ -256,6 +256,26 @@ test("A16 replay null link is opt-in; send and price states stay closed", () => 
   }
 });
 
+for (const payment_mode of ["bank_transfer", "pay_at_pickup", "cash_on_delivery"] as const) {
+  test(`manual/A16 ${payment_mode} CANCELLED replay is terminal and never carries a capability`, () => {
+    const cancelled = { ...result(), commercial_state: "CANCELLED", payment_mode };
+    const { live_price, live_price_reason, send, ...manual } = cancelled;
+    assert.equal(parseManualResult(manual).commercial_state, "CANCELLED", "ordinary manual BFF accepts the locked original terminal state");
+    assert.equal(parseManualResult(manual).buyer_link, null);
+    for (const send of [{ state: "not_sent", reason: "order_cancelled" }, { state: "not_sent", reason: "not_requested" }, { state: "queued", operation_id: id }]) {
+      const value = parseForBuyerResult({ ...cancelled, send });
+      assert.equal(value.commercial_state, "CANCELLED");assert.equal(value.buyer_link, null);
+    }
+    for (const bad of [
+      { ...manual, buyer_link: `https://synthetic.invalid/en/order-link#o=${id}&t=${"a".repeat(43)}` },
+      { ...manual, payment_mode: "card" }, { ...manual, commercial_state: "FAILED" },
+      { ...manual, extra: true }, { ...manual, link_state: "unknown" },
+    ]) assert.throws(() => parseManualResult(bad), "terminal support cannot relax the exact manual DTO or allow a usable link");
+    assert.throws(() => parseForBuyerResult({ ...cancelled, buyer_link: `https://synthetic.invalid/en/order-link#o=${id}&t=${"a".repeat(43)}` }));
+    assert.throws(() => parseForBuyerResult({ ...cancelled, send: { state: "not_sent", reason: "order_cancelled", extra: true } }));
+  });
+}
+
 test("A16 coded errors close status/code pairs and preserve only the permitted order pointer", () => {
   for (const [status, codes] of Object.entries(forBuyerErrors))
     for (const code of codes) {

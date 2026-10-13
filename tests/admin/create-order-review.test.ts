@@ -222,7 +222,7 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const) for (const linkState of 
 }
 
 /** Supply valid read DTOs at the fetch edge; all form, client, session and receipt code stays real. */
-async function readyRecoveryForm(t: any, locale: "en" | "zh-TW" | "zh-CN", outcome: (path: string, init?: RequestInit) => Response | Promise<Response>) {
+async function readyRecoveryForm(t: any, locale: "en" | "zh-TW" | "zh-CN", outcome: (path: string, init?: RequestInit) => Response | Promise<Response>, paymentMode: "bank_transfer" | "pay_at_pickup" | "cash_on_delivery" = "bank_transfer") {
   const env = browserEnvironment(t); network(); const upstream = globalThis.fetch;
   const optionKey = `${session}|TW|home1`;
   const writes: { path: string; body: string; key: string | null }[] = [];
@@ -230,11 +230,13 @@ async function readyRecoveryForm(t: any, locale: "en" | "zh-TW" | "zh-CN", outco
     const path = String(input);
     if (path.includes("/tools/inbox/order-prefill?")) return response({ ...prefill,
       customer: { name: "SYNTHETIC_REVIEW_BUYER", phone: "0912345678", email: "" },
-      last_delivery: { option_key: optionKey, home_address: { region: "", city: "Taipei", postal_code: "", line1: "Synthetic road", line2: "" } }, suggested_option_key: optionKey });
+      last_delivery: paymentMode === "pay_at_pickup" ? { option_key: optionKey, cvs: { store_code: "123456", store_name: "Synthetic pickup", store_address: "Synthetic pickup road" } }
+        : { option_key: optionKey, home_address: { region: "", city: "Taipei", postal_code: "", line1: "Synthetic road", line2: "" } }, suggested_option_key: optionKey });
     if (path.endsWith("/tools/orders/manual/options")) return response({ options: [{ option_key: optionKey,
-      market_id: session, country: "TW", delivery_code: "home1", delivery_kind: "home", mode: "MANUAL",
+      market_id: session, country: "TW", delivery_code: "home1", delivery_kind: paymentMode === "pay_at_pickup" ? "cvs_711" : "home", mode: "MANUAL",
       name_hans: "宅配", name_hant: "宅配", name_en: "Home", currency: "TWD", service_version: 1, allocation_version: 1,
-      payment_modes: ["bank_transfer"], pickup_selection: null }] });
+      payment_modes: [paymentMode], pickup_selection: paymentMode === "pay_at_pickup" ? "buyer_entered" : null,
+      ...(paymentMode === "cash_on_delivery" ? { cod_carrier: "black_cat", cod_max_minor: 100000 } : {}) }] });
     if (path.includes("/tools/orders/for-buyer")) {
       writes.push({ path, body: init!.body as string, key: new Headers(init!.headers).get("Idempotency-Key") });
       return outcome(path, init);
@@ -244,13 +246,30 @@ async function readyRecoveryForm(t: any, locale: "en" | "zh-TW" | "zh-CN", outco
   let revoked = 0, closed = 0;
   const h = env.mount(() => CreateOrderDrawer({ locale, store: allowedStore, bundleId: bundle, sessionId: session,
     onClose() { closed++; }, onUnauthorized() { revoked++; } } as any));
-  await h.settle(); node(h, n => n.props["data-testid"] === "drawer-mode-bank_transfer").props.onChange({ target: { checked: true } });
+  await h.settle(); node(h, n => n.props["data-testid"] === `drawer-mode-${paymentMode}`).props.onChange({ target: { checked: true } });
   await h.settle();
   const submit = async () => {
     assert.equal(node(h, n => n.props["data-testid"] === "drawer-submit").props.disabled, false);
     node(h, n => n.props["data-testid"] === "drawer-form").props.onSubmit({ preventDefault() {} }); await h.settle();
   };
   return { h, env, writes, submit, revoked: () => revoked, closed: () => closed };
+}
+for (const locale of ["en", "zh-TW", "zh-CN"] as const) for (const payment_mode of ["bank_transfer", "pay_at_pickup", "cash_on_delivery"] as const) {
+  test(`PR32 ${locale} actual ${payment_mode} cancelled replay renders a terminal result with no payment action`, async t => {
+    const ready = await readyRecoveryForm(t, locale, () => response({ order_id: offer, commercial_state: "CANCELLED", payment_mode,
+      total_minor: 200, currency: "TWD", expires_at: "2030-01-01T00:00:00Z", buyer_link: null, link_state: "configured", source: "merchant_manual",
+      live_price: "not_applied", live_price_reason: "no_conversation", send: { state: "not_sent", reason: "not_requested" } }, 201), payment_mode);
+    await ready.submit();
+    assert.equal(ready.writes.length, 1);assert.equal(JSON.parse(ready.writes[0].body).payment_mode, payment_mode);
+    const result = node(ready.h, n => n.props["data-testid"] === "drawer-result");
+    assert.ok(textOf(result).includes({ en: "Order cancelled", "zh-TW": "訂單已取消", "zh-CN": "订单已取消" }[locale]));
+    assert.equal(textOf(node(ready.h, n => n.props["data-testid"] === "drawer-cancelled")), createOrderReason(locale, "order_cancelled"), "positive terminal state before absence checks");
+    assert.equal(nodes(ready.h.output).some(n => n.props["data-testid"] === "drawer-copy-link"), false);
+    assert.equal(nodes(ready.h.output).some(n => n.props["data-testid"] === "drawer-form" || n.props["data-testid"] === "drawer-new-attempt"), false);
+    assert.equal(ready.env.saved.size, 0, "terminal server result settles this intent");
+    assert.equal(node(ready.h, n => n.props["data-testid"] === "drawer-view-order").props.href, `/en/orders?store=${allowedStore.id}&order=${offer}`.replace("/en/", `/${locale}/`));
+    assert.equal(ready.writes.length, 1);
+  });
 }
 async function recoveryForm(t: any, locale: "en" | "zh-TW" | "zh-CN", outcome: (path: string, init?: RequestInit) => Response | Promise<Response>) {
   const ready = await readyRecoveryForm(t, locale, outcome);
