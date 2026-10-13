@@ -15,7 +15,7 @@ registerHooks({
     return next(specifier, context);
   },
 });
-const { readOrderPrefill, createForBuyerOrder, recoverForBuyerOrder, CreateOrderError } =
+const { readOrderPrefill, createForBuyerOrder, recoverForBuyerOrder, recoverPendingOrder, CreateOrderError } =
   await import("../../apps/admin/lib/create-order-client.ts");
 const { sessionBoundary } =
   await import("../../apps/admin/lib/settings-client.ts");
@@ -182,6 +182,33 @@ test("recovery transport auth loss outranks malformed private error bodies", asy
     assert.deepEqual(await recoverForBuyerOrder(id, { key: "synthetic-receipt", body }, boundary),
       { ok: false, code: status === 401 ? "unauthorized" : "forbidden", status, uncertain: false });
   }
+});
+test("server pending recovery locates the authenticated intent with an empty request and recovery-only keys", async () => {
+  cookie = "A".repeat(43); const boundary = await sessionBoundary(); const keys: string[] = [];
+  for (const result of [{ state: "none" }, { state: "not_created" }, { state: "created", order_id: id }]) {
+    globalThis.fetch = async (input, init) => {
+      assert.equal(String(input), `/api/stores/${id}/tools/orders/attempt/recover`);
+      assert.equal(init!.method, "POST"); assert.equal(init!.body, "{}", "no lost browser body/key or buyer fields are reconstructed");
+      const headers = new Headers(init!.headers), key = headers.get("Idempotency-Key")!;
+      assert.match(key, /^[0-9a-f-]{36}$/); assert.equal(headers.get("X-CSRF-Token"), cookie); keys.push(key);
+      assert.equal(init!.credentials, "same-origin"); assert.equal(init!.cache, "no-store"); assert.equal(init!.redirect, "error"); assert.equal(init!.referrerPolicy, "no-referrer");
+      return reply(result);
+    };
+    assert.deepEqual(await recoverPendingOrder(id, boundary), { ok: true, status: 200, value: result });
+  }
+  assert.equal(new Set(keys).size, 3, "a recovery-only key never becomes a replacement order key");
+  for (const invalid of [{ state: "none", order_id: id }, { state: "none", key: "private" }, { state: "pending" }, { state: "created" }]) {
+    globalThis.fetch = async () => reply(invalid);
+    assert.deepEqual(await recoverPendingOrder(id, boundary), { ok: false, code: "retry_later", status: 503, uncertain: true });
+  }
+  let dispatched = 0; globalThis.fetch = async () => { dispatched++; return reply({ state: "none" }); };
+  cookie = "B".repeat(43);
+  await assert.rejects(recoverPendingOrder(id, boundary), error => error instanceof CreateOrderError && error.neverSent === true && error.status === 401);
+  assert.equal(dispatched, 0);
+  cookie = "A".repeat(43);
+  globalThis.fetch = async () => { dispatched++; cookie = "B".repeat(43); return reply({ state: "none" }); };
+  await assert.rejects(recoverPendingOrder(id, boundary), error => error instanceof CreateOrderError && error.neverSent === false && error.status === 401);
+  assert.equal(dispatched, 1, "post-response privacy rejection cannot prove prior order absence"); cookie = "A".repeat(43);
 });
 test("real csrf/session helpers fence both reads and immutable receipt writes", async () => {
   const calls: { url: string; init: RequestInit }[] = [];

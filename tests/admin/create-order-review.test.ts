@@ -8,6 +8,7 @@ const { CreateOrderDrawer } = await import("../../apps/admin/components/CreateOr
 const { CommentStream } = await import("../../apps/admin/components/CommentStream.tsx");
 const { createOrderCopy } = await import("../../apps/admin/lib/create-order-copy.ts");
 const { retainOrderAttempt } = await import("../../apps/admin/lib/create-order-attempt.ts");
+const { OrderGuard } = await import("../../apps/admin/lib/create-order-attempt.ts");
 
 const session = "22222222-2222-4222-8222-222222222222";
 const otherSession = "33333333-3333-4333-8333-333333333333";
@@ -255,6 +256,51 @@ async function recoveryForm(t: any, locale: "en" | "zh-TW" | "zh-CN", outcome: (
   assert.equal(nodes(h.output).some(n => n.props["data-testid"] === "drawer-new-attempt"), false, "no blind new key after 422");
   return ready;
 }
+
+for (const locale of ["en", "zh-TW", "zh-CN"] as const) for (const entry of ["server_refusal", "lost_browser_receipt"] as const)
+  for (const state of ["none", "not_created", "created", "unknown"] as const) test(`PR32 ${locale} drawer ${entry} recovers ${state} from server-owned pending intent`, async t => {
+    const ready = await readyRecoveryForm(t, locale, () => response({ code: "attempt_pending" }, 409));
+    const upstream = globalThis.fetch, recoveryWrites: { body: string; key: string | null }[] = [];
+    globalThis.fetch = async (input, init) => {
+      if (String(input).endsWith("/tools/orders/attempt/recover")) {
+        recoveryWrites.push({ body: String(init!.body), key: new Headers(init!.headers).get("Idempotency-Key") });
+        return state === "unknown" ? response({ code: "retry_later" }, 503) : response(state === "created" ? { state, order_id: offer } : { state });
+      }
+      return upstream(input, init);
+    };
+    let h = ready.h;
+    if (entry === "server_refusal") await ready.submit();
+    else {
+      const guard = new OrderGuard(ready.env.window.sessionStorage, store.id, allowedStore.order_guard_scope);
+      assert.equal(guard.arm(), true); h.dispose();
+      h = ready.env.mount(() => CreateOrderDrawer({ locale, store: allowedStore, bundleId: bundle, sessionId: session, onClose() {} } as any));
+      await h.settle();
+    }
+    assert.ok(node(h, n => n.props["data-testid"] === "drawer-unresolved-guard"), "positive pending state precedes recovery");
+    assert.equal(nodes(h.output).some(n => n.props["data-testid"] === "drawer-form"), false, "no fresh order intent until server recovery");
+    const control = node(h, n => n.props["data-testid"] === "drawer-recover-pending");
+    assert.equal(textOf(control), createOrderCopy[locale].recoverPending); assert.equal(control.props.disabled, false);
+    assert.equal(recoveryWrites.length, 0, "recovery requires an explicit click");
+    control.props.onClick(); await h.settle();
+    assert.equal(recoveryWrites.length, 1); assert.equal(recoveryWrites[0].body, "{}");
+    assert.ok(recoveryWrites[0].key); assert.notEqual(recoveryWrites[0].key, ready.writes[0]?.key, "unadmitted order key is not used to identify the server intent");
+    assert.equal(ready.writes.length, entry === "server_refusal" ? 1 : 0, "recovery creates no second client order request");
+    if (state === "unknown") {
+      assert.equal(ready.env.saved.size, 1); assert.ok(node(h, n => n.props["data-testid"] === "drawer-unresolved-guard"));
+      assert.equal(nodes(h.output).some(n => n.props["data-testid"] === "drawer-form"), false);
+      assert.equal(node(h, n => n.props["data-testid"] === "drawer-recover-pending").props.disabled, false);
+    } else {
+      assert.equal(ready.env.saved.size, 0, "only authoritative server response discharges the UX flag");
+      if (state === "created") {
+        const link = node(h, n => n.props["data-testid"] === "drawer-view-order");
+        assert.equal(link.props.href, `/${locale}/orders?store=${store.id}&order=${offer}`);
+        assert.equal(nodes(h.output).some(n => n.props["data-testid"] === "drawer-form"), false);
+      } else {
+        assert.ok(node(h, n => n.props["data-testid"] === "drawer-form"), "none or durable seal restores an editable form");
+        assert.ok(textOf(node(h, n => n.props["data-testid"] === "drawer-recovery-result")).includes(state === "none" ? createOrderCopy[locale].noPending : createOrderCopy[locale].recovered));
+      }
+    }
+  });
 for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
   test(`PR32 ${locale} UNKNOWN then business422 permits a new intent only after durable not-created recovery`, async t => {
     let placed = 0;
