@@ -130,7 +130,8 @@ export async function runManualRecovery({page,api,origin,store,cvs,addCatalog,fi
  }finally{await page.unroute(`**${path}`);page.off("request",observe);await bank(true);}
 }
 
-// The server commits the first order; only its response is lost. A later options refusal cannot erase that fact.
+// A completed upper receipt replays before dynamic options; bank removal cannot yield a real retry422.
+// Recover the genuinely UNKNOWN lost201 directly, with its original frozen request and current bank disabled.
 export async function runManualCreatedRecovery({page,api,origin,store,cvs,addCatalog,fillEmpty,record,results}) {
  const caseName="DU3-manual-created-recovery",path=`/api/stores/${store}/tools/orders/manual`,recoveryPath=`${path}/recover`;
  const isPost=(r,p=path)=>r.request().method()==="POST"&&new URL(r.url()).pathname===p;
@@ -165,12 +166,11 @@ export async function runManualCreatedRecovery({page,api,origin,store,cvs,addCat
   assert.equal(await guardCount(),1);
   await bank(false);
   await form.getByTestId("mo-name").fill("SYNTHETIC Created Recovery Edited Draft");
-  const [refusal]=await Promise.all([page.waitForResponse(r=>isPost(r)),form.getByTestId("manual-order-submit").click()]);
-  assert.equal(refusal.status(),422);assert.equal((await refusal.json()).code,"bank_transfer_unavailable");
-  assert.equal(attempts.length,2);assert.equal(attempts[1].key,attempts[0].key);assert.equal(attempts[1].body,attempts[0].body);
+  await expect(form.getByTestId("mo-name")).toHaveValue("SYNTHETIC Created Recovery Edited Draft");
+  assert.equal(attempts.length,1);assert.equal(posts,1);assert.equal(recoveryPosts,0,"draft edits and bank removal send no order/recovery request");
   await expect(form.getByTestId("manual-order-error")).toBeVisible();await expect(form.getByTestId("manual-order-new-attempt")).toHaveCount(0);
   await expect(form.getByTestId("manual-order-recover-attempt")).toBeVisible();assert.equal(await guardCount(),1);
-  record("manual committed response loss","submit/drop only actual201 reply/disable bank/edit/click frozen retry","real422 bank_transfer_unavailable; same original key/body; no new attempt; PG one order/receipt");
+  record("manual committed response loss","submit/drop only actual201 reply/disable bank/edit draft","genuine UNKNOWN retains original frozen request; no retry/new attempt; PG one order/receipt");
   const [recovery]=await Promise.all([page.waitForResponse(r=>isPost(r,recoveryPath)),form.getByTestId("manual-order-recover-attempt").click()]);
   assert.equal(recovery.status(),200);assert.deepEqual(await recovery.json(),{state:"created",order_id:committed.order_id});
   assert.equal(recovery.request().headers()["idempotency-key"],attempts[0].key);assert.equal(recovery.request().postData(),attempts[0].body);
@@ -179,7 +179,7 @@ export async function runManualCreatedRecovery({page,api,origin,store,cvs,addCat
   const viewOrder=page.getByTestId("manual-order-recovered-order");await expect(viewOrder).toBeVisible();await expect(viewOrder).toHaveText("View order");
   await expect(page.getByTestId("manual-order-new-attempt")).toHaveCount(0);await expect(page.getByTestId("manual-order-result")).toHaveCount(0);
   assert.equal(await guardCount(),0);assert.deepEqual(await exact(),{orders:1,receipts:1});assert.equal((await counts()).orders-before.orders,1);
-  results.push({case:caseName,checkpoint:"recovered_created",first_status:201,refusal_status:422,recover_status:200,same_key:true,same_body:true,recovered_original:true,created_status_visible:true,pg_delta:1,request_orders:1,request_receipts:1});
+  results.push({case:caseName,checkpoint:"recovered_created",first_status:201,recover_status:200,same_key:true,same_body:true,recovered_original:true,bank_disabled:true,created_status_visible:true,pg_delta:1,request_orders:1,request_receipts:1});
   record("manual created authority","click original recovery","real200 created matches original committed order; visible View order; guard0; PG one order/receipt");
   await viewOrder.click();await page.waitForURL(url=>url.pathname!=="/en/orders/new");
   const destination=new URL(page.url()),correctPath=destination.pathname==="/en/orders",correctStore=destination.searchParams.get("store")===store,correctOrder=destination.searchParams.get("order")===committed.order_id;
@@ -192,8 +192,8 @@ export async function runManualCreatedRecovery({page,api,origin,store,cvs,addCat
   await expect(page.getByTestId("orders-table")).toBeVisible();await expect(page.getByTestId(`order-row-${committed.order_id}`)).toBeVisible();
   await expect(page.getByTestId("order-detail")).toBeVisible();await expect(page.getByTestId("order-detail")).toHaveAttribute("aria-label",`Order ${committed.order_id}`);
   const completed=await exact(),delta=(await counts()).orders-before.orders;
-  assert.deepEqual(completed,{orders:1,receipts:1});assert.equal(delta,1);assert.equal(posts,2);assert.equal(recoveryPosts,1);
+  assert.deepEqual(completed,{orders:1,receipts:1});assert.equal(delta,1);assert.equal(attempts.length,1);assert.equal(posts,1);assert.equal(recoveryPosts,1);
   results.push({case:caseName,attempts:attempts.length,placement_posts:posts,recovery_posts:recoveryPosts,pg_delta:delta,request_orders:completed.orders,request_receipts:completed.receipts,detail_identity:true,reload_detail_identity:true});
-  record("recovered detail reload persistence","reload exact scoped detail","same exact aria identity loaded; PGdelta1/requestorder1/receipt1; placements2/recovery1; no duplicate");
+  record("recovered detail reload persistence","reload exact scoped detail","same exact aria identity loaded; PGdelta1/requestorder1/receipt1; placements1/recovery1; no duplicate");
  }finally{await page.unroute(`**${path}`);page.off("request",observe);await bank(true);}
 }
