@@ -28,6 +28,11 @@ type oaCrashScenario struct {
 
 func oaCrashNativeScenario(t *testing.T) oaCrashScenario {
 	t.Helper()
+	return oaCrashNativeDeliveryScenario(t, false)
+}
+
+func oaCrashNativeDeliveryScenario(t *testing.T, cvs bool) oaCrashScenario {
+	t.Helper()
 	e := lbuNew(t)
 	session, offer := e.session("A1",ltgLive,5)
 	bundle := e.h.accepted(t,session,"","crash-"+t04Tag(),"A1+2").BundleID
@@ -37,6 +42,10 @@ func oaCrashNativeScenario(t *testing.T) oaCrashScenario {
 	// peer association, exactly as the other native claim acceptance tests do.
 	e.linkPeer(bundle, conversation)
 	selection := oaClaimSelection(e, []string{bundle}, []string{offer.ID}, conversation)
+	if cvs {
+		pickup := oaMaterialCVS(t, e, "cvs_711", "001234", "bank_transfer")
+		selection["delivery"], selection["customer"] = pickup["delivery"], pickup["customer"]
+	}
 	selection["send_payment_link"] = true
 	a := oaAllocationAdmit(t, e, selection)
 	config := e.p.f.runtime.Config().Copy()
