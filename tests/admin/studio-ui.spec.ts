@@ -32,6 +32,18 @@ test.setTimeout(240_000);
 async function signedLogin(page: Page) {
   await page.goto(new URL("/en/", origin).toString());
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
+  const selector = page.getByTestId("shell-store-selector");
+  await expect(selector).toBeVisible();
+  // Exercise A2's denied Overview and real fallback on every run, independent
+  // of random UUID order. Settle its auto-expanded Live group before switching.
+  await selector.selectOption(foreignStore);
+  await expect(page).toHaveURL(url => url.pathname === "/en/studio" && url.searchParams.get("store") === foreignStore);
+  await expect(page.getByTestId("merchant-studio")).toBeVisible();
+  await expect(selector).toHaveValue(foreignStore);
+  await selector.selectOption(store);
+  await expect(page).toHaveURL(url => ["/en", "/en/"].includes(url.pathname) && url.searchParams.get("store") === store);
+  await expect(selector).toHaveValue(store);
+  await expect(page.getByTestId("dashboard-page")).toBeVisible();
   await page.getByTestId("nav-group-live").waitFor({ state: "attached" });
   const menu = page.locator('button[aria-controls="workspace-navigation"]');
   if (await menu.isVisible()) await menu.click();
@@ -220,8 +232,16 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   const competing = await context.newPage();
   await competing.goto(createdURL);
   await expect(competing.getByLabel("Scene name")).toHaveValue("STU04 browser-edited scene");
+  const competingVersion = await displayedVersion(competing);
   await competing.getByLabel("Scene name").fill("STU04 competing edit");
-  await competing.getByRole("button", { name: "Save draft" }).click();
+  const [competingSaved] = await Promise.all([
+    competing.waitForResponse(response => response.request().method() === "PATCH" &&
+      new URL(response.url()).pathname === `/api/stores/${store}/live-sessions/${new URL(createdURL).searchParams.get("scene")}`),
+    competing.getByRole("button", { name: "Save draft" }).click(),
+  ]);
+  expect(competingSaved.status()).toBe(200);
+  // Input text is local draft state; only the returned version proves commit.
+  await expect.poll(() => displayedVersion(competing)).toBe(competingVersion + 1);
   await expect(competing.getByLabel("Scene name")).toHaveValue("STU04 competing edit");
   await competing.close();
   await page.getByRole("button", { name: "Save draft" }).click();
