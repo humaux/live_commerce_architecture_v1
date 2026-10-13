@@ -43,7 +43,7 @@ jobs:
         if: github.event_name == 'pull_request' && github.head_ref == 'unit/matrix-coverage-v2-evidence'
         run: |
           mkdir -p output/matrix-coverage-v2-evidence/ci-format
-          gofmt -d tests/foundation/catalog_matrix_ledger_test.go tests/foundation/catalog_matrix_evidence_test.go > output/matrix-coverage-v2-evidence/ci-format/gofmt.patch
+          gofmt -d tests/foundation/catalog_matrix_ledger_test.go tests/foundation/catalog_matrix_evidence_test.go > output/matrix-coverage-v2-evidence/ci-format/gofmt.patch || [[ -s output/matrix-coverage-v2-evidence/ci-format/gofmt.patch ]]
       - name: Evidence-validator focused integrity controls
         if: github.event_name == 'pull_request' && github.head_ref == 'unit/matrix-coverage-v2-evidence'
         run: go test ./tests/foundation -run '^TestProductEditorMatrix' -count=1 -v
@@ -53,6 +53,28 @@ jobs:
           PATCH_BASE: ${{ github.event.pull_request.base.sha }}
           PATCH_HEAD: ${{ github.event.pull_request.head.sha }}
         run: |
+          # Inject a committed whitespace defect while keeping the worktree
+          # clean: only the delivered base..head check can find this defect.
+          probe=$(mktemp -d)
+          trap 'rm -rf "$probe"' EXIT
+          git -C "$probe" init -q
+          git -C "$probe" config user.name ci-whitespace-probe
+          git -C "$probe" config user.email ci-whitespace-probe@example.invalid
+          printf 'clean\n' > "$probe/source.txt"
+          git -C "$probe" add source.txt
+          git -C "$probe" commit -qm base
+          probe_base=$(git -C "$probe" rev-parse HEAD)
+          printf 'defect \n' > "$probe/source.txt"
+          git -C "$probe" add source.txt
+          git -C "$probe" commit -qm injected-defect
+          git -C "$probe" diff --check
+          if git -C "$probe" diff --check "$probe_base..HEAD"; then
+            echo 'committed whitespace injection unexpectedly passed' >&2; exit 1
+          fi
+          printf 'fixed\n' > "$probe/source.txt"
+          git -C "$probe" add source.txt
+          git -C "$probe" commit -qm fixed
+          git -C "$probe" diff --check "$probe_base..HEAD"
           git diff --check "$PATCH_BASE..$PATCH_HEAD"
           printf 'delivered patch checked: %s..%s\n' "$PATCH_BASE" "$PATCH_HEAD"
       - name: Preserve evidence-validator CI diagnostics
