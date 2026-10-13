@@ -316,7 +316,9 @@ func TestOrderAttemptExecutionFencePrivateContext(t *testing.T) {
 			err:=tx.QueryRow(ctx,`SELECT ops.order_attempt_execution_context($1,$2)`,a.AttemptID,string(exact)).Scan(&raw)
 			if err!=nil { t.Fatal(err) }
 			var got struct { Binding orderattempt.PlanBinding `json:"binding"`; Plan orderattempt.FrozenPlan `json:"plan"` }
-			if err=json.Unmarshal(raw,&got); err!=nil || got.Binding.AttemptID!=a.AttemptID || got.Binding.Generation!=a.Generation || got.Plan.Binding()!=got.Binding || len(got.Plan.Calculation.Lines)!=2 { t.Fatal("domain accessor did not return trusted binding and exact parsed plan") }
+			if err=json.Unmarshal(raw,&got); err!=nil { t.Fatal(err) }
+			got.Binding.AdmittedAt=got.Binding.AdmittedAt.UTC(); got.Binding.ExecuteBy=got.Binding.ExecuteBy.UTC()
+			if got.Binding.AttemptID!=a.AttemptID || got.Binding.Generation!=a.Generation || got.Plan.Binding()!=got.Binding || len(got.Plan.Calculation.Lines)!=2 { t.Fatal("domain accessor did not return trusted binding and exact parsed plan") }
 		})
 	}
 	for _,mode:=range []string{"old-xid","guc-only","altered-money","altered-owner","altered-facts","altered-hash","same-json-different-bytes","wrong-attempt"} {
