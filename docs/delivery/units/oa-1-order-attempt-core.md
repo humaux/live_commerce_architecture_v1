@@ -17,9 +17,12 @@ all execution and tests run in GitHub CI only. PR #32 stays untouched.
   in `internal/{buyer,storefront,checkout,claims,merchanttools,inbox,platform}/`;
   composition roots `cmd/{api,claims-worker}/`; associated exact ACL/upgrade,
   schema, model, real-PG and process-wiring tests under `tests/foundation/`;
-  generated dependency documentation and CI selection only where required.
+  generated dependency documentation and CI selection only where required;
+  `contracts/order-attempt-v1.md` amendment A2 and the dedicated key-retirement
+  admin login in `deploy/postgres/logins.tsv` per owner approval 2026-10-14.
 - Excluded: UI, production, provider I/O, dependency/lock files, shared OpenAPI,
-  old migrations, PR #32, and changes to frozen contract semantics.
+  old migrations, PR #32, and unreviewed deviations from frozen contract semantics.
+  Owner-approved A2 is submitted with OA-1 for independent review.
 - Provisional migration slots: root 0170 onward, post-River 0023 onward;
   re-fetch/check the trunk maximum before the PR and record exact final slots.
 

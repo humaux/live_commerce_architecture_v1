@@ -285,3 +285,35 @@ proof and final full gates/independent review are still required. No local
 test/build/formatter/server/container was run. OA2/OA3 public activation remains
 disabled. Trunk `256e9740` is merged; root migration maximum remains 0169,
 while this unit currently adds 0170–0191 and post-River0023–0025 (upgrade115).
+
+## A2 and native acceptance continuation
+
+Owner approved DB-enforced plan-key retirement on 2026-10-14. Contract amendment
+A2 is `71907ac74`: dedicated admin login/role with one EXECUTE entry, permanent
+version marker, C1 key-row-before-attempt locking, pending-reference refusal,
+and independent unmarked PLAN_UNAVAILABLE cleanup. Its implementation and
+A2-M1 mutation require independent review with this PR. Provisional slots 0192
+(erasure prefix), 0193 (native cancellation), 0194 (A2) are separate child-owned
+changes; final numbering is checked against trunk before the PR.
+
+| Run / source | Result and exact scope |
+| --- | --- |
+| CI56 `38464446087` / `f957aafbf` | **RED**: all three actual worker configuration tests fail (off flag unrecognized, on flag ignored, incomplete custody accepted). `worker-config-first-ci56.log`. Composition `6e7de3753` follows this red; green run `38466720785` pending. |
+| CI57 `38464543045` / `8b90761a2` | **GREEN** `PASS=1 FAIL=0 SKIP=0 exit=0`: actual worker physical-DB positive and three independent same-name-cluster refusals. `worker-probe-green-ci57.log`. |
+| CI58 `38464813911` / `73c745928` | **GREEN** `PASS=4 FAIL=0 SKIP=0 exit=0`: real C1/C2/recovery COMMIT acknowledgement losses and native late message-revocation continuation. `ack-resume-green-ci58.log`. |
+| CI59 `38464950233` / `ff84da1c1` | M1 **RED**, `PASS=0 FAIL=1`: current-fee-version refusal breaks frozen-money execution. `mutation-m1-ci59.log`. |
+| CI60 `38464954147` / `ff84da1c1` | M5 **RED**, `PASS=0 FAIL=1`: removing principal checks discloses terminal receipt. `mutation-m5-ci60.log`. |
+| CI61 `38464957914` / `ff84da1c1` | M3 **RED**, `PASS=0 FAIL=1`: real startup/periodic consumer cannot repair its orphan after Sweep is disabled. `mutation-m3-ci61.log`. |
+| CI62 `38465027466` / `ac9b51b8d` | `PASS=1 FAIL=1`: all four actual-login first-fence/stale-generation barriers pass. Consumer race stops at nullable River errors readback, before its oracle; **NOT_RUN** for that behavior. `ccb50a9d2` counts NULL error history as zero with unchanged exact one-attempt/zero-error assertions. `worker-race-first-ci62.log`. |
+| CI63 `38465032646` / `ac9b51b8d` | M6 **RED**, `PASS=0 FAIL=1`: all four SQL fence barriers return before a held FOR NO KEY UPDATE lock when the fence FOR UPDATE is removed. `mutation-m6-ci63.log`. |
+| CI64 `38465241103` / `81f98d8e2` | **RED** `PASS=0 FAIL=3`: pickup/COD cancel unavailable, unpaid bank cancel refused; native erasure neither seals PENDING nor locks attempt before owner. `cancel-erasure-first-ci64.log`. |
+
+Registered and root-monitored, **not yet accepted**: genuine unchanged 15-minute
+C1 deadline through actual periodic River (`38465747856` @`5ef841656`);
+restored M1/M3/M5/M6 plus real consumer race (`38465859673` @`5ef841656`);
+pending-only replay mutation (`38466883637` @`6e7de3753`);
+generation CAS/unique and partial Begin-commit mutations (`38467152494`,
+`38467159295`, `38467163852` @`9e648aff0`); actual packaged enabled worker
+(`38467298823` @`6a2f0cea9`). Existing workflow and per-test bounds are unchanged.
+GitHub job-status calls intermittently returned HTTP 502; those are monitoring
+failures, not product test verdicts. No local run substitutes for CI.
