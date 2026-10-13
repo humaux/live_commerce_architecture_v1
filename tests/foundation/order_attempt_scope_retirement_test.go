@@ -89,6 +89,9 @@ func TestOrderAttemptScopeRetirementReenable(t *testing.T) {
 
 func TestOrderAttemptScopeRetirementPendingRefused(t *testing.T) {
 	h := oaStateBegin(t)
+	// The native row is the authority even when a lifecycle entry has restored
+	// caller GUCs. FORCE RLS must not hide a pending child from the trigger.
+	oaStateExec(t, h.tx, `SELECT set_config('app.tenant_id','',true),set_config('app.store_id','',true)`)
 	oaStateReject(t, h.tx, "PT409", `UPDATE ops.order_attempt_scopes SET retired_at=clock_timestamp() WHERE scope_id=$1`, h.scope)
 	oaStateSettle(t, h.tx, h.attempt, "ABORTED")
 	oaStateExec(t, h.tx, `UPDATE ops.order_attempt_scopes SET retired_at=clock_timestamp() WHERE scope_id=$1`, h.scope)
