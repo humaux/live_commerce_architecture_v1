@@ -1,0 +1,12 @@
+{
+  "source_commit": "da058bfe531861bd5cda2e8bec53bebb99c0d2ca",
+  "store_path": "/Volumes/data/.pnpm-store/v11",
+  "lockfile_before": "4bfe9088d35d37f80e45cb317a15a1bf00fcb58919f765be597429ed2a7d3f7f",
+  "lockfile_after": "4bfe9088d35d37f80e45cb317a15a1bf00fcb58919f765be597429ed2a7d3f7f",
+  "lockfile_unchanged": true,
+  "tracked_diff": [],
+  "root_node_modules": true,
+  "admin_node_modules": true,
+  "broad_node": "NOT_RUN HOLD",
+  "check_gates": "NOT_RUN HOLD"
+}

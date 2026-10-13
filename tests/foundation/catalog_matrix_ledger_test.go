@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -356,6 +357,25 @@ func validateProductEditorMatrixEvidence(root string) error {
 	if err := productEditorMatrixEvidenceHash(manifestPath, manifestData, index.Artifacts[manifestPath]); err != nil {
 		return err
 	}
+	// Every indexed artifact, including Node/policy/CI receipts outside browser/,
+	// belongs to this immutable package and must validate before a historical skip.
+	paths := make([]string, 0, len(index.Artifacts))
+	for path := range index.Artifacts {
+		paths = append(paths, path)
+	}
+	sort.Strings(paths)
+	for _, path := range paths {
+		if !strings.HasPrefix(path, evidence+"/") {
+			return fmt.Errorf("indexed evidence path outside canonical package: %s", path)
+		}
+		data, err := productEditorMatrixEvidenceRead(root, path)
+		if err != nil {
+			return err
+		}
+		if err := productEditorMatrixEvidenceHash(path, data, index.Artifacts[path]); err != nil {
+			return err
+		}
+	}
 	entries, err := os.ReadDir(filepath.Join(root, canonical))
 	if err != nil {
 		return err
@@ -388,27 +408,32 @@ func validateProductEditorMatrixEvidence(root string) error {
 	if source.Tested != manifest.Tested || !reflect.DeepEqual(source.Sources, manifest.Sources) {
 		return fmt.Errorf("SOURCE.json must bind the same tested source and source files as the manifest")
 	}
-	// Validate receipt structure before classifying drift. Missing or malformed
-	// digests remain failures; only actual checkout-byte differences are history.
-	var drift productEditorMatrixEvidenceDrift
-	for _, path := range productEditorMatrixEvidenceSources {
-		hash := manifest.Sources[path]
-		if hash == "" {
-			return fmt.Errorf("canonical source receipt missing tested producer: %s", path)
-		}
-		if !regexp.MustCompile(`^[0-9a-f]{64}$`).MatchString(hash) {
-			return fmt.Errorf("invalid recorded source SHA-256: %s", path)
-		}
-		data, err := productEditorMatrixEvidenceRead(root, path)
-		if err != nil {
-			return err
-		}
-		if err := productEditorMatrixEvidenceHash(path, data, hash); err != nil {
-			drift = append(drift, path)
-		}
+	// The separately indexed frozen run receipt corroborates the OLD producer
+	// set. A changed gate comment cannot excuse dropping an already tested source.
+	runPath := evidence + "/browser-product-editor.json"
+	runData, err := productEditorMatrixEvidenceRead(root, runPath)
+	if err != nil {
+		return err
 	}
-	if len(drift) != 0 {
-		return drift
+	if err := productEditorMatrixEvidenceHash(runPath, runData, index.Artifacts[runPath]); err != nil {
+		return err
+	}
+	var run struct {
+		Command []string          `json:"command"`
+		Exit    *int              `json:"exit_code"`
+		Tested  string            `json:"tested_source_commit"`
+		After   string            `json:"source_commit_after"`
+		Sources map[string]string `json:"source_files_sha256"`
+		Final   map[string]string `json:"source_files_sha256_after"`
+	}
+	if err := json.Unmarshal(runData, &run); err != nil {
+		return fmt.Errorf("canonical full browser run receipt: %w", err)
+	}
+	if !reflect.DeepEqual(run.Command, []string{"bash", "scripts/dev/test-local.sh", "--browser-product-editor"}) || run.Exit == nil || *run.Exit != 0 {
+		return fmt.Errorf("canonical browser run receipt must record the original full mode and exit 0")
+	}
+	if run.Tested != manifest.Tested || run.After != manifest.Tested || !reflect.DeepEqual(run.Sources, manifest.Sources) || !reflect.DeepEqual(run.Final, manifest.Sources) {
+		return fmt.Errorf("canonical browser run receipt must bind the same tested commit and unchanged producer hashes as the manifest")
 	}
 	seen := map[string]bool{}
 	for _, copy := range manifest.Copies {
@@ -440,14 +465,65 @@ func validateProductEditorMatrixEvidence(root string) error {
 		if len(strings.TrimSpace(string(data))) == 0 {
 			return fmt.Errorf("canonical browser evidence %s is empty", name)
 		}
-		if name == "product-editor-click-ledger.json" {
-			if err := validateProductEditorMatrixLedger(data); err != nil {
-				return fmt.Errorf("canonical browser ledger: %w", err)
-			}
-		}
 		native[name] = data
 	}
-	return validateProductEditorMatrixRunOutcome(manifestData, native)
+	// Historical records cannot be compared to a future control table. Their
+	// immutable ledger must still be internally coherent and corroborate outcomes.
+	required, err := productEditorMatrixHistoricalLedger(native["product-editor-click-ledger.json"])
+	if err != nil {
+		return fmt.Errorf("canonical browser ledger: %w", err)
+	}
+	if err := validateProductEditorMatrixRunOutcome(manifestData, native, required); err != nil {
+		return err
+	}
+	// Validate ALL recorded digests first: an absent newly introduced path can be
+	// history, but a present malformed digest is always a broken receipt.
+	const gate = "tests/foundation/catalog_matrix_ledger_test.go"
+	const table = "tests/foundation/testdata/product_editor_matrix_cases.json"
+	for _, path := range []string{gate, table} {
+		if manifest.Sources[path] == "" {
+			return fmt.Errorf("canonical source receipt missing tested producer: %s", path)
+		}
+	}
+	var drift productEditorMatrixEvidenceDrift
+	sourcePaths := make([]string, 0, len(manifest.Sources))
+	for path := range manifest.Sources {
+		sourcePaths = append(sourcePaths, path)
+	}
+	sort.Strings(sourcePaths)
+	gateChanged := false
+	for _, path := range sourcePaths {
+		hash := manifest.Sources[path]
+		if !regexp.MustCompile(`^[0-9a-f]{64}$`).MatchString(hash) {
+			return fmt.Errorf("invalid recorded source SHA-256: %s", path)
+		}
+		data, err := productEditorMatrixEvidenceRead(root, path)
+		if err != nil {
+			return err
+		}
+		if err := productEditorMatrixEvidenceHash(path, data, hash); err != nil {
+			drift = append(drift, path)
+			if path == gate {
+				gateChanged = true
+			}
+		}
+	}
+	for _, path := range productEditorMatrixEvidenceSources {
+		if _, present := manifest.Sources[path]; present {
+			continue
+		}
+		// The independent run receipt already corroborates the recorded OLD set.
+		// Only an evolved producer declaration permits a new unrecorded producer.
+		// The old package has no Git-history dependency (e.g. squash/shallow CI).
+		if !gateChanged {
+			return fmt.Errorf("canonical source receipt missing tested producer: %s", path)
+		}
+		drift = append(drift, path)
+	}
+	if len(drift) != 0 {
+		return drift
+	}
+	return validateProductEditorMatrixLedger(native["product-editor-click-ledger.json"])
 }
 
 func productEditorMatrixEvidenceHash(path string, data []byte, expected string) error {

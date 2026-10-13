@@ -1,0 +1,6 @@
+=== RUN   TestProductEditorMatrixLedgerEvidence
+    catalog_matrix_ledger_test.go:298: canonical evidence is historical (source drift: tests/foundation/catalog_matrix_evidence_test.go, tests/foundation/catalog_matrix_ledger_test.go)
+--- FAIL: TestProductEditorMatrixLedgerEvidence (0.03s)
+FAIL
+FAIL	livecommerce/tests/foundation	0.832s
+FAIL

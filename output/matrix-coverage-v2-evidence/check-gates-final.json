@@ -1,0 +1,21 @@
+{
+  "name": "check-gates-final",
+  "command": [
+    "bash",
+    "scripts/dev/check-gates.sh"
+  ],
+  "exit_code": 0,
+  "head": "a7abaefeb98585659e46c64db44aad4ee6856bdd",
+  "source_before": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "a516fbad39073cd47482bad5653c7645120f2415bf3b5405cc052bad2b17181d",
+    "tests/foundation/catalog_matrix_evidence_test.go": "94324882172769000c436bb6dc449dd9ef2c581d5f7974928f29fbfe3240bb03",
+    "docs/delivery/GATES.md": "94fff611f8b2d41ddbc64df7c598affccdc2ee95f4071179fadbfd1286599709"
+  },
+  "source_after": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "a516fbad39073cd47482bad5653c7645120f2415bf3b5405cc052bad2b17181d",
+    "tests/foundation/catalog_matrix_evidence_test.go": "94324882172769000c436bb6dc449dd9ef2c581d5f7974928f29fbfe3240bb03",
+    "docs/delivery/GATES.md": "94fff611f8b2d41ddbc64df7c598affccdc2ee95f4071179fadbfd1286599709"
+  },
+  "unchanged": true,
+  "elapsed_seconds": 219.253
+}

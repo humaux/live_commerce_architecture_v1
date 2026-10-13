@@ -1,0 +1,11 @@
+=== RUN   TestProductEditorMatrixLedgerEvidenceProducerEvolution
+=== RUN   TestProductEditorMatrixLedgerEvidenceProducerEvolution/gate-drift-false
+    catalog_matrix_evidence_test.go:201: producer evolution: canonical source receipt missing tested producer: tests/fixture/new-producer.ts
+=== RUN   TestProductEditorMatrixLedgerEvidenceProducerEvolution/gate-drift-true
+    catalog_matrix_evidence_test.go:196: new producer on changed declaration must be historical drift: canonical source receipt missing tested producer: tests/fixture/new-producer.ts
+--- FAIL: TestProductEditorMatrixLedgerEvidenceProducerEvolution (0.04s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceProducerEvolution/gate-drift-false (0.02s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceProducerEvolution/gate-drift-true (0.02s)
+FAIL
+FAIL	livecommerce/tests/foundation	0.601s
+FAIL

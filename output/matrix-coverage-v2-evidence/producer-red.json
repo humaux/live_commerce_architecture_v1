@@ -1,0 +1,26 @@
+{
+  "name": "producer-red",
+  "command": [
+    "go",
+    "test",
+    "./tests/foundation",
+    "-run",
+    "^TestProductEditorMatrixLedgerEvidenceProducerEvolution$",
+    "-count=1",
+    "-v"
+  ],
+  "exit_code": 1,
+  "head": "0bfe36e53acb694f4697521202e24f0790638941",
+  "source_before": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "0bca90d283d8bf73eefdb0689ab68b4c2b3c97d619a53de6bf01e95d7c594371",
+    "tests/foundation/catalog_matrix_evidence_test.go": "5f9038142007771f198a3d2635a50de5c1f621b81aff8512f022c27034d860b4",
+    "docs/delivery/GATES.md": "8d3c90e493883cc51b7973d21169853e9b2baeb9dbb62e1e24aff2a6e35a124e"
+  },
+  "source_after": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "0bca90d283d8bf73eefdb0689ab68b4c2b3c97d619a53de6bf01e95d7c594371",
+    "tests/foundation/catalog_matrix_evidence_test.go": "5f9038142007771f198a3d2635a50de5c1f621b81aff8512f022c27034d860b4",
+    "docs/delivery/GATES.md": "8d3c90e493883cc51b7973d21169853e9b2baeb9dbb62e1e24aff2a6e35a124e"
+  },
+  "unchanged": true,
+  "elapsed_seconds": 32.773
+}

@@ -1,0 +1,24 @@
+{
+  "name": "shard-registration-red",
+  "command": [
+    "node",
+    "--test",
+    "tests/ci/shard-plan.test.mjs"
+  ],
+  "exit_code": 1,
+  "head": "a7abaefeb98585659e46c64db44aad4ee6856bdd",
+  "source_before": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "a516fbad39073cd47482bad5653c7645120f2415bf3b5405cc052bad2b17181d",
+    "tests/foundation/catalog_matrix_evidence_test.go": "94324882172769000c436bb6dc449dd9ef2c581d5f7974928f29fbfe3240bb03",
+    "docs/delivery/GATES.md": "94fff611f8b2d41ddbc64df7c598affccdc2ee95f4071179fadbfd1286599709",
+    "scripts/dev/shard-plan.json": "20560a65d2f15729e1b348c277bec7fc636800a33f428648186de26a50f7f5d4"
+  },
+  "source_after": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "a516fbad39073cd47482bad5653c7645120f2415bf3b5405cc052bad2b17181d",
+    "tests/foundation/catalog_matrix_evidence_test.go": "94324882172769000c436bb6dc449dd9ef2c581d5f7974928f29fbfe3240bb03",
+    "docs/delivery/GATES.md": "94fff611f8b2d41ddbc64df7c598affccdc2ee95f4071179fadbfd1286599709",
+    "scripts/dev/shard-plan.json": "20560a65d2f15729e1b348c277bec7fc636800a33f428648186de26a50f7f5d4"
+  },
+  "unchanged": true,
+  "elapsed_seconds": 5.492
+}

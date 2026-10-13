@@ -1,0 +1,5 @@
+=== RUN   TestProductEditorMatrixLedgerEvidenceTableEvolution
+    catalog_matrix_evidence_test.go:218: table evolution: canonical evidence is historical (source drift: tests/foundation/testdata/product_editor_matrix_cases.json)
+--- PASS: TestProductEditorMatrixLedgerEvidenceTableEvolution (0.03s)
+PASS
+ok  	livecommerce/tests/foundation	0.638s

@@ -285,6 +285,18 @@ Excluded from the PR browser set (EXCLUDED_MODES in `pr-modes.mjs`): `--stripe-b
 - A newer push to the same PR cancels the older run (`gates-pr-<number>`).
 - Merge is a squash, only after `required` is green AND the commit status `review/independent` on the PR head SHA is success (posted by the reviewer or integrator).
 
+## Product-editor canonical delivery evidence (DB-free)
+
+The current `--browser-product-editor` run validates its fresh ledger against the current shared control table. `TestProductEditorMatrixLedgerEvidence` separately verifies the immutable package linked by `output/matrix-ledger-enforce/DELIVERY.md`: every artifact-index entry, canonical native copies, required files, passing native outcomes and internally coherent ledger must validate before historical source drift can skip. Matching source hashes also require the exact current table identities and expected claims. Under drift, the historical ledger checks schema, unique PASS identities, locale/width coverage and manifest counts; it does not compare old claims against a future table, and requires no historical Git objects.
+
+Delivery checklist: freeze the executable sources, run the original full browser mode, package its native bytes and receipts including indexed `browser-product-editor.json` (the exact full-mode command, explicit exit 0, identical tested/after commit and before/after producer hashes matching the manifest), then record this exact strict invocation and its exit code before claiming current-source delivery acceptance:
+
+```sh
+LC_MATRIX_EVIDENCE_STRICT=1 go test ./tests/foundation -run '^TestProductEditorMatrixLedgerEvidence$' -count=1 -v
+```
+
+Strict mode rejects source drift; default mode reports an explicit historical SKIP after immutable validation. The independently indexed full-run receipt must corroborate the old manifest producer set before drift; omitting an old producer while its frozen run still records it fails. A newly declared producer absent from both old records is historical only when the receipt-bound declaration source has changed; missing digests on an unchanged declaration, malformed recorded hashes and corrupt artifacts remain failures. A SKIP is not current browser or delivery acceptance. This strict delivery step is not forced onto CI's historical package check.
+
 ## Node unit suites (no Docker; `bash scripts/dev/test-node.sh`, run by CI and release-gate G06n)
 
 | Suite | Covers | Note |
