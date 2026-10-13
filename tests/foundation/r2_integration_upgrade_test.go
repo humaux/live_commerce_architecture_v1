@@ -81,8 +81,10 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0167 (Stripe A6 terminal observations) adds one: 91 -> 92.
 	// 0169 (LC-R2 C3x purge of comment prints, their A3 receipts and inbox bundle peers) adds one: 92 -> 93.
 	// 0170 (LC-U3 A16R original reservation lookup, runtime EXECUTE only) adds one: 93 -> 94.
-	if len(r2) != 94 {
-		t.Fatalf("R2 migration set = %d files %v, want 94", len(r2), r2)
+	// 0171 (LC-U3 reminder order guard, exact queued payment-link ownership) adds one: 94 -> 95.
+	// 0172 (LC-U3 server order-intent authority, original-owner recovery and private payload erasure) adds one: 95 -> 96.
+	if len(r2) != 96 {
+		t.Fatalf("R2 migration set = %d files %v, want 96", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

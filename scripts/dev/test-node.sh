@@ -71,8 +71,7 @@ node --test --experimental-strip-types tests/admin/inbox-customer-link.test.ts t
 node --input-type=module -e 'import assert from "node:assert/strict"; import {readFileSync,existsSync} from "node:fs"; assert.ok(existsSync("tests/foundation/browser_inbox_ui_test.go")); assert.ok(existsSync("tests/admin/inbox-ui.spec.ts")); assert.ok(readFileSync("playwright.config.ts","utf8").includes(`"inbox": ["inbox-ui.spec.ts", "inbox-bundle-ui.spec.ts", "inbox-customer-ui.spec.ts"]`),"inbox authority suite missing"); assert.ok(readFileSync("scripts/dev/test-local.sh","utf8").includes("TestBrowserInboxUIRealChain"),"inbox Go gate missing"); assert.ok(readFileSync("docs/delivery/GATES.md","utf8").includes("--browser-inbox"),"inbox gate registry missing");'
 
 # LC-U3 exact A15/A16 seams, immutable retries and localized money-path guidance.
-# The actual ManualOrder transport imports ReadError's parameter property; stripping alone cannot execute this seam.
-node --test --experimental-transform-types tests/admin/create-order-model.test.ts tests/admin/create-order-client.test.ts tests/admin/create-order-bff.test.ts tests/admin/create-order-copy.test.ts
+node --test --experimental-strip-types tests/admin/create-order-model.test.ts tests/admin/create-order-client.test.ts tests/admin/create-order-bff.test.ts tests/admin/create-order-copy.test.ts
 node --test --experimental-transform-types tests/admin/create-order-attempt.test.ts
 node --test --experimental-strip-types tests/admin/create-order-review.test.ts tests/admin/manual-order-recovery.test.ts
 # W3-U2 actual BFF Request seams and closed command/copy policy.

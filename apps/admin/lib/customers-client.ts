@@ -23,8 +23,10 @@ import {
 
 export type ReadCode = "signed-out" | "forbidden" | "not-found" | "unavailable";
 export class ReadError extends Error {
-  constructor(readonly code: ReadCode) {
+  readonly code: ReadCode;
+  constructor(code: ReadCode) {
     super(code);
+    this.code = code;
   }
 }
 
