@@ -1,60 +1,54 @@
-# CI-DRIFT-FACTORY
+# CI-DRIFT-FACTORY — regression tests only
 
-Author record; runtime acceptance is pending GitHub CI and independent review.
+作者自述记录。Independent acceptance of the final tests-only revision is pending; earlier source reviews do not accept this revision.
 
-## Scope and provenance
+## Owner decision and scope
 
-Base: `256e9740ced9c5de05a83f58eb9f4c79a231b7b2` (`origin/r3/integration`). Branch: `unit/ci-drift-factory`. Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-drift-factory`.
+The owner selected option (a) on 2026-10-14: Codex-3 moves OA-1's database probe into a separate DSN-level preflight called from main, leaving the buyer factory body unchanged. That product change belongs to OA-1 / PR #53 and is not implemented in this worktree.
 
-| Participant | Role / model / reasoning | Worktree and allowed writes |
+PR #54 withdraws **all scanner implementation changes**. go_eval.go and go_opaque.go are restored from origin/r3/integration; the added go_admission_effects.go and go_factory_refs.go are removed. No existing trunk test, route, baseline, threshold, dependency or workflow is changed. The earlier tests requiring startup-probe exclusion are retired with the rejected implementation. Their historical failure receipts below remain historical evidence only.
+
+The retained regression tests exercise the actual scanner CLI against Git-backed fixtures. Required cases are conditional mounts, an early different handler, defer/go calls, a swapped pool after a probe, field/global writes, a mutated struct passed onward, method values, aliased/dot imports, nested reassignment/shadowing of mainPool and ctx, and factory calls through function values or package-level initializers. Every case initially requires **TOUCHED**. A real miss on the unchanged scanner will be recorded as an explicit expected-fail and unit FOLLOWUPS entry after GitHub CI confirms it; fixture/setup errors are not expected failures.
+
+The isolated test commit is `0e16475b6fc5ddb05d65db3908f68393e0c43ae8`, file blob `112edffbfa8d9fdd219dfe66252b10e34d34b374`: 27 active subcases in go_factory_trunk_cli_test.go. Each first proves legacy EXACT and MOUNT coverage, then requires candidate TOUCHED for both. Fixtures are parsed in the CI test before scanner assertions. The caller-origin fixtures keep the unsafe caller in the baseline and add only the factory probe in the candidate.
+
+## Provenance
+
+Original branch base: `256e9740ced9c5de05a83f58eb9f4c79a231b7b2`. Tests-only revision also includes trunk `5497e55c3a0ad8ead2a4a8c30c5500c73af0c5c5`, merged as `6556251fac0c8390b9a4c9e4d14ff3ba1b209603`.
+
+Author worktree: /Volumes/data/live_commerce_architecture_v1/.worktrees/ci-drift-factory; branch unit/ci-drift-factory. Author role integration, model gpt-6.1-sol, reasoning ultra (root configuration checked). Allowed paths: scripts/dev/contractdrift/** for this rollback and new tests, output/ci-drift-factory/** for receipts and author record. Scanner source must have no remaining diff from trunk.
+
+| Delegate | Role / model / reasoning | Actual worktree / branch / base / writes |
 | --- | --- | --- |
-| Author | Integration / `gpt-6.1-sol` / `ultra`; model and reasoning read from the local Codex configuration | Root worktree above; `scripts/dev/contractdrift/**`, `output/ci-drift-factory/**` |
-| `drift_factory_boundary` | Read-only explorer / `gpt-6.1-sol` / `high`, explicit dispatch | Root worktree; no writes |
-| `drift_factory_tests` | Independent test worker / `gpt-6.1-sol` / `high`, explicit dispatch | `/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-drift-factory-tests`, branch `unit/ci-drift-factory-tests`; initial base above, frozen-OA1 follow-up base `bfcfa5eb`; only `scripts/dev/contractdrift/go_factory_cli_test.go` and the subsequently assigned `go_factory_oa1_cli_test.go` |
-| `factory_effect_audit` | Read-only explorer / `gpt-6.1-sol` / `high`, explicit dispatch | Root worktree at `7b652f59`; no writes; bounded effect audit `6939691e-0328-4c74-9145-3b7dbfbb13e0` |
-| `factory_boundary_impl` | Integration worker / `gpt-6.1-sol` / `high`, explicit dispatch | `/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-drift-factory-effects`, branch `unit/ci-drift-factory-effects`, base `7b652f59`; only the two new factory/effect scanner files and small `go_opaque.go` / `go_eval.go` integrations |
-| `factory_counter_tests` | Test worker / `gpt-6.1-sol` / `high`, explicit dispatch | Tests worktree and branch above, follow-up base `7b652f59`; only new `scripts/dev/contractdrift/go_factory_effect_cli_test.go` |
+| factory_trunk_regressions | test_worker / gpt-6.1-sol / high | /Volumes/data/live_commerce_architecture_v1/.worktrees/ci-drift-factory-regressions; unit/ci-drift-factory-regressions; base 6556251fac0c8390b9a4c9e4d14ff3ba1b209603; only new go_factory_trunk_cli_test.go |
+| Historical drift_factory_boundary | explorer / gpt-6.1-sol / high | Root worktree; original base above; read-only |
+| Historical drift_factory_tests | test_worker / gpt-6.1-sol / high | /Volumes/data/live_commerce_architecture_v1/.worktrees/ci-drift-factory-tests; unit/ci-drift-factory-tests; original base then bfcfa5eb; only the two now-retired CLI test files |
+| Historical factory_effect_audit | explorer / gpt-6.1-sol / high | Root worktree at 7b652f59 and source follow-ups; read-only |
+| Tests-only factory_effect_audit | explorer / gpt-6.1-sol / high | Root worktree at test commit 0e16475b6; read-only static audit; Humaux research 0a185907-1730-4af4-8472-eb4d0f8f695e |
+| Historical factory_boundary_impl | integration_worker / gpt-6.1-sol / high | /Volumes/data/live_commerce_architecture_v1/.worktrees/ci-drift-factory-effects; unit/ci-drift-factory-effects; base 7b652f59; only the four now-withdrawn scanner source changes |
+| Historical factory_counter_tests | test_worker / gpt-6.1-sol / high | Tests worktree / branch above; base 7b652f59; only now-retired go_factory_effect_cli_test.go |
+| Historical factory_round1_review_audit | explorer / gpt-6.1-sol / high | Root worktree at 42f29ae0; read-only |
 
-Delegate model/effort records describe the actual dispatch configuration, not independently measured provider telemetry. No product, migration, dependency, contract, baseline or gate-threshold change is authorized by this unit.
+Delegate model/effort records describe explicit dispatch configurations, not independent provider telemetry. Writers used isolated worktrees. Historical implementation work is withdrawn, not described as accepted.
 
-## Reproduction and acceptance
+## Historical CI receipts — not final acceptance
 
-OA-1 PR #53 added a startup database identity check inside `buildBuyerWithCVS`. Its historical Foundation run [38474388216](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38474388216), job `115561367494`, reported 71 TOUCHED unknown-route findings at `a047e48812139cb172794b04c8df13d2f7fea532`. The factory's complete source span enters both opaque dispatch and handler-expression provenance, then spreads to the custom mount's subroutes. Codex-3 supplied the exact reproduction at `316848601032b434885dd513b11f0a8871ef57e5`: [Gates 38475612050 / job 115565420528](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38475612050/job/115565420528) reports the same 71 errors, exit 1. The retrieved original log binds the actual synthetic merge of that source into `256e9740`; see [portable excerpt](evidence/oa1-plan.log).
-
-The second test fixture freezes the complete `ValidateSameDatabase` body and original `buyer.go` call block from that SHA, including the named error, deferred local cleanup, advisory-lock query, fresh Scan destination, and `closePools` failure branch. Source blobs are recorded in the test. The fixture's helper and imports predate the added call block. It retains aligned Go/contract/BFF route counts and EXACT/MOUNT warning coverage, plus counterexamples for captured configuration writes and a fake PGx receiver. The scanner never executes this fixture or contacts a database.
-
-Acceptance uses the existing compiled scanner CLI and Git-backed fixtures. A startup-only validation addition must produce zero touched routes without changing the inventory or baseline. Handler-input changes, routing edits, middleware changes and state/alias mutations must remain TOUCHED. All existing CI-DRIFT cases remain required.
-
-## CI receipts
-
-| Check | Status |
+| Revision / run | Observed result and portable receipt |
 | --- | --- |
-| Tests-first scanner regression at `bfcfa5eb` | **RED** — [Foundation 38477346748 / job 115571192630](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38477346748/job/115571192630), actual execution 22:27:46–22:30:42 UTC, 2026-10-13. Both startup-only factory names incorrectly return exit 1/errors 3. The new middleware and child-handler dependency cases also expose false negatives (exit 0). [Portable receipt](evidence/red-factory.log). This is regression evidence, not acceptance. |
-| Frozen OA1 probe regression at `7b652f59` | **RED** — [Foundation 38478824210 / job 115576095619](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38478824210/job/115576095619), actual execution 22:37:16–22:40:15 UTC, 2026-10-13. The aligned baseline passes, then adding the literal frozen probe produces exit 1/errors 3. The two toy false positives and both dependency false negatives also reproduce. [Portable receipt](evidence/red-frozen-oa1.log). |
-| Full scanner package and `check-gates.sh` | RED at the scanner regression above; later Foundation checks NOT_RUN after the failing scanner batch |
-| Required PR Gates / Foundation checks on final SHA | NOT_RUN |
-| Independent final review | NOT_RUN |
+| OA-1 316848601032b434885dd513b11f0a8871ef57e5, [Gates 38475612050 / job 115565420528](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38475612050/job/115565420528) | 71 TOUCHED findings, exit 1, after a probe was added inside the buyer factory. [Receipt](evidence/oa1-plan.log). This is the historical repro motivating the separate preflight. |
+| Retired tests-first bfcfa5eb, [Foundation 38477346748 / job 115571192630](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38477346748/job/115571192630) | RED: startup-probe exclusion expectations failed; toy middleware/child-body cases also missed. [Receipt](evidence/red-factory.log). Those exclusion expectations are no longer this PR's contract. |
+| Retired frozen-probe tests 7b652f59, [Foundation 38478824210 / job 115576095619](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38478824210/job/115576095619) | RED: the added frozen probe produced errors 3. [Receipt](evidence/red-frozen-oa1.log). |
+| Withdrawn scanner at 42f29ae0 | Independent adversarial review by claude-opus-5-5 found P1 false negatives in caller-origin name binding and indirect/initializer call enumeration. Owner rejected further analyzer hardening; restoring trunk removes this implementation from the PR. This is not acceptance of the final tests. |
 
-Every local test, build and application run is NOT_RUN under the owner's CI-only rule. No local Go, Node, pnpm, gofmt, Playwright, server or PostgreSQL was executed. Production, provider LIVE/SANDBOX and deployment are outside this static scanner unit.
+## Current acceptance
 
-## Source batch and remaining acceptance
-
-Independent fixtures were integrated through `a3197998` (including `701f9057`, `9f0ce4aa`, `8874719c`, `2b56d03b` and `75397ad3`): fifteen cases in the new effect fixture cover renamed imports, retained helper edits, pool callbacks, shared entropy, successful continuation Close, mutable error sentinels, custom Context/Scan hooks, nested unsafe constructor returns, deferred error clearing, cross-file builtin shadowing, a package initializer mutation and named factory results. A positive case freezes the real `openPool` constructor body, with a transparently declared parsed-only authority stub. The tests and their inputs are source-reviewed only; their runtime results remain NOT_RUN. The deferred-Close case uses a conditional nonnil-error return, and the shadowed Scan case uses an otherwise admitted builtin `int64`, so an unrelated rejection cannot mask either defect.
-
-The isolated source worker's `f0892aee` was not accepted: independent static review found a deferred named-error reset after helper Close, a cross-file type shadowing an assumed builtin Scan destination, and a package initializer resetting a global error sentinel. Follow-up `0df27419` restricts Close to terminating factory failure, checks package-wide builtin declarations, scans initializer closures for global mutation, and conservatively retains named factory results. `79ef9479` also includes exported context wrappers in source-origin checks. These source commits were merged as `a5840120`; the test and source writers used separate worktrees and did not overlap paths. Their final commits were independently inspected before integration.
-
-Read-only `factory_effect_audit` reviewed the three known repairs at `0df27419`, finding no remaining P0/P1 in that scoped E1 review (Humaux record `92a6543e-1b3d-442c-afc8-1700004f733a`). Its final four-line delta review of `79ef9479` and named-factory counter at `a3197998` also found no scoped P0/P1 (`3f77303d-15a3-43bc-94db-74466fc5328b`). This is source evidence, not compiler, formatter or runtime acceptance. The final GitHub scanner package, format check, required PR checks and independent final acceptance remain pending.
-
-Final source-file SHA-256 bindings for this batch:
-
-| File | SHA-256 |
+| Check | Result |
 | --- | --- |
-| `go_admission_effects.go` | `2235d4113f4867b13b1c36e16a77dd3a2702dfcc5398d1387985d9d4339d9d0a` |
-| `go_factory_refs.go` | `8823691b891fc6457292dc0ce96f10909ac90d070cf41edfb909d4057a8e4e4f` |
-| `go_factory_effect_cli_test.go` | `e98a2f7d5310fa1271f752a7ae72352ed0548e4737b4a3d32f25c4704dd40897` |
+| Scanner source equals current trunk | E1: effective non-test scanner diff against trunk 5497e55c is empty after integration; all existing trunk tests are unchanged |
+| Independent scoped static review | E1: no scoped P0/P1 at test commit 0e16475b6; test file SHA256 d478e83bd4cbc97f92241b7f14dad9e282101f9c11cb85631a53c020941332b9. Runtime and final integrator acceptance remain pending |
+| New must-be-TOUCHED regressions on unchanged scanner | NOT_RUN — GitHub CI required |
+| Existing complete CI-DRIFT package / Foundation / required Gates | NOT_RUN on final tests-only SHA |
+| Confirmed existing scanner false negatives | NOT_RUN — no speculative expected-fail entries |
+| Independent final tests-only review | NOT_RUN; integrator reviews after push |
 
-## Implemented boundary; CI acceptance pending
-
-The proof removes only complete, proven startup admission statement intervals from factory provenance. It keeps actual helper bodies, imports, argument definitions, construction, middleware and request-handler dependencies. Unknown mutations, callbacks, receivers or calls retain the original span. The same boundary applies to opaque dispatch and handler-expression provenance. Resolved dependency bodies are retained independently of routing signals; routing signals establish inventory.
-
-This is a bounded routing-effect analysis, not a general purity claim. Standard-library operations and borrowed PGx resources need verified import/type/producer identities and closed operation rules; a real PGx type alone does not establish callback-free construction. Configuration-writing cleanup and callback-configured pool counterexamples remain required. No git-diff, baseline or threshold exemption is used.
+Every local test, build and application run is **NOT_RUN** under the owner's CI-only directive. No local Go, gofmt, Node, pnpm, scripts, Playwright, server or PostgreSQL was executed. Product runtime, provider SANDBOX/LIVE, buyer data and deployment are outside this unit. CI run IDs and exact source bindings will replace pending entries only after actual execution.
