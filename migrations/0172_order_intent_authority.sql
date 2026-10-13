@@ -205,7 +205,9 @@ COMMENT ON FUNCTION fulfillment.order_pay_link_valid(bytea,uuid,uuid,bytea) IS '
 
 -- The privacy writer can erase only the payload for its exact owner, retaining the unresolved money fence.
 GRANT SELECT(tenant_id,store_id,buyer_owner_id,state),UPDATE(frozen_request) ON ops.order_intents TO commerce_privacy_writer;
-CREATE POLICY order_intent_privacy ON ops.order_intents TO commerce_privacy_writer
+CREATE POLICY order_intent_privacy_read ON ops.order_intents FOR SELECT TO commerce_privacy_writer
+ USING(tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid AND store_id=nullif(current_setting('app.store_id',true),'')::uuid);
+CREATE POLICY order_intent_privacy_update ON ops.order_intents FOR UPDATE TO commerce_privacy_writer
  USING(tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid AND store_id=nullif(current_setting('app.store_id',true),'')::uuid)
  WITH CHECK(tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid AND store_id=nullif(current_setting('app.store_id',true),'')::uuid);
 CREATE FUNCTION customers.erase_order_intent_payload(p_tenant uuid,p_store uuid,p_owner uuid) RETURNS void
