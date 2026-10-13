@@ -131,6 +131,9 @@ func TestOrderAttemptSubjectsScopeAndSelection(t *testing.T) {
 		func(s map[string]any) { s["for"].(map[string]any)["customer_id"] = "not-a-uuid" },
 		func(s map[string]any) { s["delivery"].(map[string]any)["subject_id"] = owner },
 		func(s map[string]any) { s["items"].([]map[string]any)[0]["quantity"] = 1001 },
+		func(s map[string]any) {
+			s["for"].(map[string]any)["bundle_ids"] = []string{randomUUID(), randomUUID(), randomUUID(), randomUUID(), randomUUID(), randomUUID()}
+		},
 		func(s map[string]any) { s["send_payment_link"] = "true" },
 	} {
 		selection = oaFactsSelection(e)
