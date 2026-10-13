@@ -21,7 +21,6 @@ func TestOrderAttemptSchemaDurableIdentities(t *testing.T) {
 		table   string
 		columns []string
 	}{
-		{"ops.order_attempt_scopes", []string{"tenant_id", "store_id", "principal_id", "operation_family"}},
 		{"ops.order_attempts", []string{"tenant_id", "operation_family", "transport_key_digest"}},
 		{"ops.order_attempts", []string{"scope_id", "intent_generation"}},
 		{"ops.order_attempt_subjects", []string{"tenant_id", "store_id", "subject_kind", "subject_id", "attempt_id"}},
@@ -47,6 +46,24 @@ func TestOrderAttemptSchemaDurableIdentities(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("one_active_scope_per_principal_store_family", func(t *testing.T) {
+		var partial, obsolete bool
+		err := f.owner.QueryRow(ctx, `WITH keys AS (
+		 SELECT i.indpred,pg_get_expr(i.indpred,i.indrelid) AS predicate
+		 FROM pg_index i WHERE i.indrelid=to_regclass('ops.order_attempt_scopes')
+		 AND i.indisunique AND i.indisvalid AND i.indisready AND i.indislive
+		 AND i.indexprs IS NULL AND i.indnkeyatts=4
+		 AND ARRAY(SELECT a.attname::text FROM unnest(i.indkey) WITH ORDINALITY k(attnum,pos)
+		  JOIN pg_attribute a ON a.attrelid=i.indrelid AND a.attnum=k.attnum
+		  WHERE k.pos<=i.indnkeyatts ORDER BY a.attname::text)
+		 = ARRAY['operation_family','principal_id','store_id','tenant_id']::text[])
+		 SELECT EXISTS(SELECT 1 FROM keys WHERE regexp_replace(predicate,'\s|\(|\)','','g')='retired_atISNULL'),
+		 EXISTS(SELECT 1 FROM keys WHERE indpred IS NULL)`).Scan(&partial, &obsolete)
+		if err != nil || !partial || obsolete {
+			t.Fatalf("A1 active-only scope uniqueness: partial=%v obsolete_all_state=%v err=%v", partial, obsolete, err)
+		}
+	})
 
 	t.Run("one_pending_per_scope", func(t *testing.T) {
 		var present bool
