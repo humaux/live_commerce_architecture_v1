@@ -31,10 +31,10 @@ const (
 )
 
 const (
-	oaPending = 1
-	oaCommitted = 2
-	oaAborted = 3
-	oaEffects = 8 // cart/quote, destination, order, source, claims, pay-entry, outbox, receipt
+	oaPending      = 1
+	oaCommitted    = 2
+	oaAborted      = 3
+	oaEffects      = 8 // cart/quote, destination, order, source, claims, pay-entry, outbox, receipt
 	oaInitialStock = 8
 )
 
@@ -43,16 +43,16 @@ type oaModelCommand struct {
 }
 
 type oaModelReply struct {
-	code string
+	code                         string
 	id, generation, owner, order int
 }
 
 type oaModelAttempt struct {
 	id, actor, generation, key, body, owner, deadline, state, order int
-	hold int
-	subjects uint8
-	effects [oaEffects]int // durable creation records; active resources use hold
-	job, cancelled bool
+	hold                                                            int
+	subjects                                                        uint8
+	effects                                                         [oaEffects]int // durable creation records; active resources use hold
+	job, cancelled                                                  bool
 }
 
 type oaModelDraft struct {
@@ -60,10 +60,10 @@ type oaModelDraft struct {
 }
 
 type oaIntentModel struct {
-	now, count, stock int
+	now, count, stock      int
 	generation, credential [2]int
-	drafts [2]oaModelDraft
-	attempts [16]oaModelAttempt
+	drafts                 [2]oaModelDraft
+	attempts               [16]oaModelAttempt
 }
 
 func oaNewIntentModel() oaIntentModel {
@@ -111,12 +111,12 @@ func (m *oaIntentModel) step(c oaModelCommand) oaModelReply {
 		m.generation[actor]++
 		m.count++
 		a := oaModelAttempt{id: m.count, actor: actor, generation: m.generation[actor], key: key, body: body,
-			owner: m.credential[actor], deadline: m.now+15, state: oaPending, subjects: 1<<actor | 1<<(body+2), job: true}
+			owner: m.credential[actor], deadline: m.now + 15, state: oaPending, subjects: 1<<actor | 1<<(body+2), job: true}
 		m.attempts[m.count-1] = a
 		return oaReceipt(a)
 	}
 	if c.op == oaTick {
-		m.now += int(c.arg%32)
+		m.now += int(c.arg % 32)
 		return oaModelReply{code: "clock"}
 	}
 	if c.op == oaRotate {
@@ -219,8 +219,8 @@ func (m *oaIntentModel) step(c oaModelCommand) oaModelReply {
 // Observation histories survive crashes and terminal settlement. They are not
 // read by the transition implementation, and supply its invariant oracle.
 type oaModelObserver struct {
-	identity map[int][6]int
-	terminal map[int]oaModelReply
+	identity       map[int][6]int
+	terminal       map[int]oaModelReply
 	lastGeneration [2]int
 }
 
@@ -356,8 +356,8 @@ func oaModelTrace(t testing.TB, commands []oaModelCommand) oaIntentModel {
 				t.Fatalf("MODEL_ONLY exact all-state replay failed: step=%d id=%d reply=%+v", i, a.id, got)
 			}
 			for _, invalid := range []oaModelCommand{
-				{op: oaReplay, actor: byte(1-a.actor), key: byte(a.key), body: byte(a.body)},
-				{op: oaAdmit, actor: byte(a.actor), key: byte(a.key), body: byte((a.body+1)%4)},
+				{op: oaReplay, actor: byte(1 - a.actor), key: byte(a.key), body: byte(a.body)},
+				{op: oaAdmit, actor: byte(a.actor), key: byte(a.key), body: byte((a.body + 1) % 4)},
 			} {
 				if got := m.step(invalid); got != (oaModelReply{code: "rejected"}) || m != readBefore {
 					t.Fatalf("MODEL_ONLY key conflict disclosed identity or changed state: step=%d reply=%+v", i, got)
@@ -488,7 +488,7 @@ func FuzzOrderAttemptModel(f *testing.F) {
 		}
 		commands := make([]oaModelCommand, 0, len(input)/6)
 		for i := 0; i+5 < len(input); i += 6 {
-			commands = append(commands, oaModelCommand{input[i]%oaCommandCount, input[i+1], input[i+2], input[i+3], input[i+4], input[i+5]})
+			commands = append(commands, oaModelCommand{input[i] % oaCommandCount, input[i+1], input[i+2], input[i+3], input[i+4], input[i+5]})
 		}
 		// Explicit fair scheduling: crash releases dead executors, then an available
 		// periodic sweeper settles every expired PENDING even with discarded jobs.

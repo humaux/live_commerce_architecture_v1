@@ -18,8 +18,8 @@ import (
 )
 
 type oaStateFixture struct {
-	tx pgx.Tx
-	f *testFixture
+	tx                    pgx.Tx
+	f                     *testFixture
 	scope, attempt, owner string
 }
 

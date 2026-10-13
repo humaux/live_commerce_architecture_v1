@@ -16,9 +16,9 @@ import (
 )
 
 type oaScopeReceipt struct {
-	ScopeID string `json:"scope_id"`
-	Generation int64 `json:"intent_generation"`
-	AttemptID *string `json:"attempt_id"`
+	ScopeID    string  `json:"scope_id"`
+	Generation int64   `json:"intent_generation"`
+	AttemptID  *string `json:"attempt_id"`
 }
 
 func TestOrderAttemptAuthorityScopeSurvivesRelogin(t *testing.T) {
@@ -44,17 +44,25 @@ func TestOrderAttemptAuthorityScopeSurvivesRelogin(t *testing.T) {
 	}
 	newToken := "oa-relogin-" + randomUUID()
 	tx, err := f.owner.Begin(ctx)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer tx.Rollback(ctx)
-	if err = insertSession(ctx, tx, newToken, principal, "merchant", time.Now().Add(time.Hour), nil); err != nil { t.Fatal(err) }
-	if err = tx.Commit(ctx); err != nil { t.Fatal(err) }
+	if err = insertSession(ctx, tx, newToken, principal, "merchant", time.Now().Add(time.Hour), nil); err != nil {
+		t.Fatal(err)
+	}
+	if err = tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
 	if got := read(newToken, f.storeA1); got.ScopeID != first.ScopeID {
 		t.Fatalf("new session changed server scope: first=%s new=%s", first.ScopeID, got.ScopeID)
 	}
 	var scopes, attempts int
 	err = f.owner.QueryRow(ctx, `SELECT count(*),(SELECT count(*) FROM ops.order_attempts WHERE scope_id=$1)
 	 FROM ops.order_attempt_scopes WHERE scope_id=$1`, first.ScopeID).Scan(&scopes, &attempts)
-	if err != nil || scopes != 1 || attempts != 0 { t.Fatalf("scope read admitted intent: scopes=%d attempts=%d err=%v", scopes, attempts, err) }
+	if err != nil || scopes != 1 || attempts != 0 {
+		t.Fatalf("scope read admitted intent: scopes=%d attempts=%d err=%v", scopes, attempts, err)
+	}
 }
 
 func TestOrderAttemptAuthorityRejectsSpoofedContext(t *testing.T) {
@@ -63,12 +71,18 @@ func TestOrderAttemptAuthorityRejectsSpoofedContext(t *testing.T) {
 	for _, token := range []string{"revoked", "expired", "buyer"} {
 		t.Run(token, func(t *testing.T) {
 			tx, err := f.runtime.Begin(ctx)
-			if err != nil { t.Fatal(err) }
+			if err != nil {
+				t.Fatal(err)
+			}
 			defer tx.Rollback(ctx)
-			if _, err = tx.Exec(ctx, `SELECT set_config('app.tenant_id',$1,true),set_config('app.store_id',$2,true),set_config('app.principal_id',$3,true)`, f.tenantA, f.storeA1, f.principalA); err != nil { t.Fatal(err) }
+			if _, err = tx.Exec(ctx, `SELECT set_config('app.tenant_id',$1,true),set_config('app.store_id',$2,true),set_config('app.principal_id',$3,true)`, f.tenantA, f.storeA1, f.principalA); err != nil {
+				t.Fatal(err)
+			}
 			_, err = tx.Exec(ctx, `SELECT ops.read_order_attempt_scope($1,$2)`, tokenHash(f.tokens[token]), f.storeA1)
 			var pgerr *pgconn.PgError
-			if !errors.As(err, &pgerr) || pgerr.Code != "PT401" { t.Fatalf("spoofed context bypassed session: %v", err) }
+			if !errors.As(err, &pgerr) || pgerr.Code != "PT401" {
+				t.Fatalf("spoofed context bypassed session: %v", err)
+			}
 		})
 	}
 }
@@ -82,5 +96,7 @@ func TestOrderAttemptAuthorityInternalAccessorIsNotRuntimeAPI(t *testing.T) {
 	}
 	_, err := f.runtime.Exec(ctx, `SELECT ops.order_attempt_admission_context($1,'{}'::jsonb)`, randomUUID())
 	var pgerr *pgconn.PgError
-	if !errors.As(err, &pgerr) || pgerr.Code != "42501" { t.Fatalf("runtime reached internal accessor: %v", err) }
+	if !errors.As(err, &pgerr) || pgerr.Code != "42501" {
+		t.Fatalf("runtime reached internal accessor: %v", err)
+	}
 }

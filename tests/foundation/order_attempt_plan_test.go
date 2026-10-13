@@ -96,16 +96,19 @@ func TestOrderAttemptPlanTamperAndSwap(t *testing.T) {
 	}
 	otherID := "00000000-0000-4000-8000-000000000099"
 	changes := map[string]func(*orderattempt.PlanBinding){
-		"attempt": func(b *orderattempt.PlanBinding) { b.AttemptID = otherID },
-		"scope": func(b *orderattempt.PlanBinding) { b.ScopeID = otherID },
-		"tenant": func(b *orderattempt.PlanBinding) { b.TenantID = otherID },
-		"store": func(b *orderattempt.PlanBinding) { b.StoreID = otherID },
-		"principal": func(b *orderattempt.PlanBinding) { b.PrincipalID = otherID },
-		"owner": func(b *orderattempt.PlanBinding) { b.BuyerOwnerID = otherID },
+		"attempt":    func(b *orderattempt.PlanBinding) { b.AttemptID = otherID },
+		"scope":      func(b *orderattempt.PlanBinding) { b.ScopeID = otherID },
+		"tenant":     func(b *orderattempt.PlanBinding) { b.TenantID = otherID },
+		"store":      func(b *orderattempt.PlanBinding) { b.StoreID = otherID },
+		"principal":  func(b *orderattempt.PlanBinding) { b.PrincipalID = otherID },
+		"owner":      func(b *orderattempt.PlanBinding) { b.BuyerOwnerID = otherID },
 		"generation": func(b *orderattempt.PlanBinding) { b.Generation++ },
-		"request": func(b *orderattempt.PlanBinding) { b.RequestHash[0] ^= 1 },
-		"facts": func(b *orderattempt.PlanBinding) { b.FactsDigest[0] ^= 1 },
-		"deadline": func(b *orderattempt.PlanBinding) { b.AdmittedAt = b.AdmittedAt.Add(time.Minute); b.ExecuteBy = b.ExecuteBy.Add(time.Minute) },
+		"request":    func(b *orderattempt.PlanBinding) { b.RequestHash[0] ^= 1 },
+		"facts":      func(b *orderattempt.PlanBinding) { b.FactsDigest[0] ^= 1 },
+		"deadline": func(b *orderattempt.PlanBinding) {
+			b.AdmittedAt = b.AdmittedAt.Add(time.Minute)
+			b.ExecuteBy = b.ExecuteBy.Add(time.Minute)
+		},
 		"schema": func(b *orderattempt.PlanBinding) { b.Schema++ },
 	}
 	for name, change := range changes {
@@ -115,7 +118,7 @@ func TestOrderAttemptPlanTamperAndSwap(t *testing.T) {
 			oaPlanMustReject(t, ring, binding, sealed, orderattempt.ErrPlanInvalid)
 		})
 	}
-	for _, offset := range []int{0, 12, len(sealed.Ciphertext)-1} {
+	for _, offset := range []int{0, 12, len(sealed.Ciphertext) - 1} {
 		t.Run(fmt.Sprintf("cipher-byte-%d", offset), func(t *testing.T) {
 			bad := sealed
 			bad.Ciphertext = bytes.Clone(sealed.Ciphertext)
@@ -205,14 +208,14 @@ func TestOrderAttemptPlanValidationAndBounds(t *testing.T) {
 	}
 	ring := oaPlanKeys(t, "v1", map[string][]byte{"v1": bytes.Repeat([]byte{0x41}, 32)})
 	changes := map[string]func(*orderattempt.FrozenPlan){
-		"schema": func(p *orderattempt.FrozenPlan) { p.Schema = 0 },
-		"identity": func(p *orderattempt.FrozenPlan) { p.AttemptID = "" },
-		"generation": func(p *orderattempt.FrozenPlan) { p.Generation = 0 },
-		"admitted": func(p *orderattempt.FrozenPlan) { p.AdmittedAt = time.Time{} },
-		"deadline": func(p *orderattempt.FrozenPlan) { p.ExecuteBy = p.ExecuteBy.Add(time.Second) },
-		"request": func(p *orderattempt.FrozenPlan) { p.RequestHash = [32]byte{} },
-		"facts-hash": func(p *orderattempt.FrozenPlan) { p.FactsDigest = [32]byte{} },
-		"facts-nil": func(p *orderattempt.FrozenPlan) { p.Facts = nil },
+		"schema":          func(p *orderattempt.FrozenPlan) { p.Schema = 0 },
+		"identity":        func(p *orderattempt.FrozenPlan) { p.AttemptID = "" },
+		"generation":      func(p *orderattempt.FrozenPlan) { p.Generation = 0 },
+		"admitted":        func(p *orderattempt.FrozenPlan) { p.AdmittedAt = time.Time{} },
+		"deadline":        func(p *orderattempt.FrozenPlan) { p.ExecuteBy = p.ExecuteBy.Add(time.Second) },
+		"request":         func(p *orderattempt.FrozenPlan) { p.RequestHash = [32]byte{} },
+		"facts-hash":      func(p *orderattempt.FrozenPlan) { p.FactsDigest = [32]byte{} },
+		"facts-nil":       func(p *orderattempt.FrozenPlan) { p.Facts = nil },
 		"facts-malformed": func(p *orderattempt.FrozenPlan) { p.Facts = json.RawMessage(`{"synthetic-secret":`) },
 	}
 	for name, change := range changes {
@@ -268,10 +271,10 @@ func TestOrderAttemptPlanIndependentEnvelope(t *testing.T) {
 	}
 	// Independent wire definition: key version and digest are authenticated with the trusted PG binding.
 	aad, err := json.Marshal(struct {
-		Domain string `json:"domain"`
-		KeyVersion string `json:"key_version"`
-		Binding orderattempt.PlanBinding `json:"binding"`
-		Digest [32]byte `json:"digest"`
+		Domain     string                   `json:"domain"`
+		KeyVersion string                   `json:"key_version"`
+		Binding    orderattempt.PlanBinding `json:"binding"`
+		Digest     [32]byte                 `json:"digest"`
 	}{"livecommerce/order-attempt-plan/v1", "v1", plan.Binding(), sealed.Digest})
 	if err != nil {
 		t.Fatal(err)
@@ -284,10 +287,10 @@ func TestOrderAttemptPlanIndependentEnvelope(t *testing.T) {
 	wrongDigest := sealed
 	wrongDigest.Digest = sha256.Sum256([]byte("different plaintext"))
 	wrongAAD, err := json.Marshal(struct {
-		Domain string `json:"domain"`
-		KeyVersion string `json:"key_version"`
-		Binding orderattempt.PlanBinding `json:"binding"`
-		Digest [32]byte `json:"digest"`
+		Domain     string                   `json:"domain"`
+		KeyVersion string                   `json:"key_version"`
+		Binding    orderattempt.PlanBinding `json:"binding"`
+		Digest     [32]byte                 `json:"digest"`
 	}{"livecommerce/order-attempt-plan/v1", "v1", plan.Binding(), wrongDigest.Digest})
 	if err != nil {
 		t.Fatal(err)
@@ -304,10 +307,10 @@ func TestOrderAttemptPlanIndependentEnvelope(t *testing.T) {
 	forged.Digest = sha256.Sum256(wrongPlain)
 	originalPlan := oaPlanFixture(t)
 	forgedAAD, err := json.Marshal(struct {
-		Domain string `json:"domain"`
-		KeyVersion string `json:"key_version"`
-		Binding orderattempt.PlanBinding `json:"binding"`
-		Digest [32]byte `json:"digest"`
+		Domain     string                   `json:"domain"`
+		KeyVersion string                   `json:"key_version"`
+		Binding    orderattempt.PlanBinding `json:"binding"`
+		Digest     [32]byte                 `json:"digest"`
 	}{"livecommerce/order-attempt-plan/v1", "v1", originalPlan.Binding(), forged.Digest})
 	if err != nil {
 		t.Fatal(err)

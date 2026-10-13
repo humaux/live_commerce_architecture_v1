@@ -25,7 +25,7 @@ type oaRawJob struct {
 	args json.RawMessage
 }
 
-func (j oaRawJob) Kind() string { return j.kind }
+func (j oaRawJob) Kind() string                 { return j.kind }
 func (j oaRawJob) MarshalJSON() ([]byte, error) { return j.args, nil }
 
 func oaJobError(t *testing.T, err error, code string) {
@@ -50,7 +50,9 @@ func TestOrderAttemptJobsPrivateGuardACL(t *testing.T) {
 		 AND NOT EXISTS(SELECT 1 FROM unnest(ARRAY['commerce_runtime','commerce_claims_worker','commerce_ads_worker',
 		 'commerce_payment_worker','commerce_expiry_worker','commerce_worker']) r(name) WHERE has_function_privilege(r.name,p.oid,'EXECUTE'))
 		 FROM pg_proc p WHERE p.oid=to_regprocedure($1)`, signature).Scan(&valid)
-		if err != nil || !valid { t.Fatalf("private guard %s: valid=%v err=%v", signature, valid, err) }
+		if err != nil || !valid {
+			t.Fatalf("private guard %s: valid=%v err=%v", signature, valid, err)
+		}
 	}
 }
 
@@ -58,11 +60,16 @@ func TestOrderAttemptJobsRealRuntimeInsertTxRefusals(t *testing.T) {
 	f := fixture(t)
 	ctx := context.Background()
 	client, err := river.NewClient(riverpgxv5.New(f.runtime), &river.Config{Schema: "river"})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	valid := fmt.Sprintf(`{"attempt_id":%q,"intent_generation":1}`, randomUUID())
-	for _, tc := range []struct { name, kind, args, queue string; priority int }{
+	for _, tc := range []struct {
+		name, kind, args, queue string
+		priority                int
+	}{
 		{"no_witness", "order_attempt_v1", valid, "claims", 1},
-		{"extra_pii", "order_attempt_v1", valid[:len(valid)-1]+`,"contact":"synthetic"}`, "claims", 1},
+		{"extra_pii", "order_attempt_v1", valid[:len(valid)-1] + `,"contact":"synthetic"}`, "claims", 1},
 		{"string_generation", "order_attempt_v1", fmt.Sprintf(`{"attempt_id":%q,"intent_generation":"1"}`, randomUUID()), "claims", 1},
 		{"zero_generation", "order_attempt_v1", fmt.Sprintf(`{"attempt_id":%q,"intent_generation":0}`, randomUUID()), "claims", 1},
 		{"bad_uuid", "order_attempt_v1", `{"attempt_id":"invalid","intent_generation":1}`, "claims", 1},
@@ -72,9 +79,13 @@ func TestOrderAttemptJobsRealRuntimeInsertTxRefusals(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			tx, err := f.runtime.Begin(ctx)
-			if err != nil { t.Fatal(err) }
+			if err != nil {
+				t.Fatal(err)
+			}
 			defer tx.Rollback(ctx)
-			if _, err = tx.Exec(ctx, `SELECT set_config('app.tenant_id',$1,true),set_config('app.store_id',$2,true)`, f.tenantA, f.storeA1); err != nil { t.Fatal(err) }
+			if _, err = tx.Exec(ctx, `SELECT set_config('app.tenant_id',$1,true),set_config('app.store_id',$2,true)`, f.tenantA, f.storeA1); err != nil {
+				t.Fatal(err)
+			}
 			_, err = client.InsertTx(ctx, tx, oaRawJob{tc.kind, json.RawMessage(tc.args)}, &river.InsertOpts{Queue: tc.queue, Priority: tc.priority})
 			oaJobError(t, err, "22023")
 		})
@@ -87,17 +98,30 @@ func TestOrderAttemptJobsSweepUsesClaimsLoginOnly(t *testing.T) {
 	for _, role := range []string{waClaims, waAds} {
 		t.Run(role, func(t *testing.T) {
 			pool, err := pgxpool.New(ctx, bcRole(t, f, role))
-			if err != nil { t.Fatal(err) }
+			if err != nil {
+				t.Fatal(err)
+			}
 			defer pool.Close()
 			client, err := river.NewClient(riverpgxv5.New(pool), &river.Config{Schema: "river"})
-			if err != nil { t.Fatal(err) }
+			if err != nil {
+				t.Fatal(err)
+			}
 			tx, err := pool.Begin(ctx)
-			if err != nil { t.Fatal(err) }
+			if err != nil {
+				t.Fatal(err)
+			}
 			defer tx.Rollback(ctx)
 			job, err := client.InsertTx(ctx, tx, oaRawJob{"order_attempt_sweep_v1", json.RawMessage(`{}`)}, &river.InsertOpts{Queue: "claims", Priority: 1})
-			if role != waClaims { oaJobError(t, err, "22023"); return }
-			if err != nil || job.Job.ID <= 0 { t.Fatalf("claims sweep positive sentinel: %v", err) }
-			if _, err = tx.Exec(ctx, `SET CONSTRAINTS ALL IMMEDIATE`); err != nil { t.Fatal(err) }
+			if role != waClaims {
+				oaJobError(t, err, "22023")
+				return
+			}
+			if err != nil || job.Job.ID <= 0 {
+				t.Fatalf("claims sweep positive sentinel: %v", err)
+			}
+			if _, err = tx.Exec(ctx, `SET CONSTRAINTS ALL IMMEDIATE`); err != nil {
+				t.Fatal(err)
+			}
 			_, err = tx.Exec(ctx, `UPDATE river.river_job SET kind='order_attempt_v1' WHERE id=$1`, job.Job.ID)
 			oaJobError(t, err, "22023")
 		})
@@ -110,7 +134,9 @@ func oaJobCandidate(t *testing.T) (*testFixture, pgx.Tx, string) {
 	t.Helper()
 	f := fixture(t)
 	tx, err := f.owner.Begin(context.Background())
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	t.Cleanup(func() { _ = tx.Rollback(context.Background()) })
 	attempt, owner, scope := randomUUID(), randomUUID(), randomUUID()
 	oaStateExec(t, tx, `INSERT INTO buyer.owners(id,tenant_id,store_id) VALUES($1,$2,$3)`, owner, f.tenantA, f.storeA1)
@@ -131,7 +157,9 @@ func oaJobInsert(t *testing.T, tx pgx.Tx, attempt string) int64 {
 	var job int64
 	err := tx.QueryRow(context.Background(), `INSERT INTO river.river_job(kind,args,queue,priority,max_attempts)
 	 VALUES('order_attempt_v1',jsonb_build_object('attempt_id',$1::text,'intent_generation',1),'claims',1,25) RETURNING id`, attempt).Scan(&job)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	return job
 }
 
@@ -150,26 +178,44 @@ func TestOrderAttemptJobsNativeReciprocalCommit(t *testing.T) {
 			if fault == "stale_witness" {
 				oaStateExec(t, tx, `UPDATE ops.order_attempts SET enqueue_xid='1'::xid8 WHERE attempt_id=$1`, attempt)
 				_, err := tx.Exec(ctx, `INSERT INTO river.river_job(kind,args,queue,priority,max_attempts) VALUES('order_attempt_v1',jsonb_build_object('attempt_id',$1::text,'intent_generation',1),'claims',1,25)`, attempt)
-				oaJobError(t, err, "22023"); return
+				oaJobError(t, err, "22023")
+				return
 			}
 			if fault == "wrong_generation" {
 				_, err := tx.Exec(ctx, `INSERT INTO river.river_job(kind,args,queue,priority,max_attempts) VALUES('order_attempt_v1',jsonb_build_object('attempt_id',$1::text,'intent_generation',2),'claims',1,25)`, attempt)
-				oaJobError(t, err, "22023"); return
+				oaJobError(t, err, "22023")
+				return
 			}
 			var job int64
-			if fault != "missing_job" { job = oaJobInsert(t, tx, attempt) }
+			if fault != "missing_job" {
+				job = oaJobInsert(t, tx, attempt)
+			}
 			if fault == "duplicate_job" {
 				_, err := tx.Exec(ctx, `INSERT INTO river.river_job(kind,args,queue,priority,max_attempts) VALUES('order_attempt_v1',jsonb_build_object('attempt_id',$1::text,'intent_generation',1),'claims',1,25)`, attempt)
-				oaJobError(t, err, "22023"); return
+				oaJobError(t, err, "22023")
+				return
 			}
-			if fault != "unfinished" { oaJobFinish(t, tx, attempt) }
-			if fault == "deleted_job" { oaStateExec(t, tx, `DELETE FROM river.river_job WHERE id=$1`, job) }
-			if fault == "wrong_pointer" { oaStateExec(t, tx, `UPDATE ops.order_attempts SET execution_job_id=$2 WHERE attempt_id=$1`, attempt, job+1) }
+			if fault != "unfinished" {
+				oaJobFinish(t, tx, attempt)
+			}
+			if fault == "deleted_job" {
+				oaStateExec(t, tx, `DELETE FROM river.river_job WHERE id=$1`, job)
+			}
+			if fault == "wrong_pointer" {
+				oaStateExec(t, tx, `UPDATE ops.order_attempts SET execution_job_id=$2 WHERE attempt_id=$1`, attempt, job+1)
+			}
 			_, err := tx.Exec(ctx, `SET CONSTRAINTS ALL IMMEDIATE`)
-			if fault != "none" { oaJobError(t, err, "23514"); return }
-			if err != nil { t.Fatalf("native final-row reciprocal sentinel: %v", err) }
+			if fault != "none" {
+				oaJobError(t, err, "23514")
+				return
+			}
+			if err != nil {
+				t.Fatalf("native final-row reciprocal sentinel: %v", err)
+			}
 			var tenant, store string
-			if err = tx.QueryRow(ctx, `SELECT current_setting('app.tenant_id',true),current_setting('app.store_id',true)`).Scan(&tenant, &store); err != nil || tenant != "" || store != "" { t.Fatalf("guard leaked scoped context: %q/%q %v", tenant, store, err) }
+			if err = tx.QueryRow(ctx, `SELECT current_setting('app.tenant_id',true),current_setting('app.store_id',true)`).Scan(&tenant, &store); err != nil || tenant != "" || store != "" {
+				t.Fatalf("guard leaked scoped context: %q/%q %v", tenant, store, err)
+			}
 		})
 	}
 }

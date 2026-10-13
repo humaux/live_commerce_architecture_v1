@@ -50,7 +50,7 @@ func oaFactsSelection(e *lbuEnv) map[string]any {
 		},
 		"delivery": map[string]any{"market_id": e.p.market.ID, "country": "TW", "service_code": "home",
 			"home_address": map[string]any{"region": "Synthetic", "city": "Synthetic", "postal_code": "100", "line1": "Synthetic address", "line2": ""}},
-		"customer": map[string]any{"name": "Synthetic Buyer", "phone": "0912345678", "email": "synthetic@example.invalid"},
+		"customer":     map[string]any{"name": "Synthetic Buyer", "phone": "0912345678", "email": "synthetic@example.invalid"},
 		"payment_mode": "bank_transfer", "locale": "en",
 		"for": map[string]any{"bundle_ids": []string{}, "conversation_id": nil}, "send_payment_link": false,
 	}
