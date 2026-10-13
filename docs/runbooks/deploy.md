@@ -27,7 +27,7 @@ Change rules: 命令必须与脚本保持一致；改脚本行为时同步本文
   - B3：PAYUNi 商户资质和 LIVE 批准。
   - B4：PAYUNi NotifyURL 没有接收端（`/payuni/notify` 由 Caddy 保留并返回 404）。支付结果只来自 worker 查询。
   - B5：直播/Studio（LiveKit 仅 MOCK）。
-  - B6：Meta 未开放给客户：Meta App Review / Access Tier 是 owner 事项；评论 → 认领 → 私信链路的运维缺口见 §6.3 与 merchant-onboarding.md（G1 路由激活已由 `meta-admin route` 关闭；**claim-source 路由未挂载 G2 仍开放**）。
+  - B6：Meta 未开放给客户：Meta App Review / Access Tier 是 owner 事项；评论 → 认领 → 私信链路的开通步骤见 §6.3 与 merchant-onboarding.md。G1 路由激活已由 `meta-admin route` 关闭；**G2 已关闭**：场次规划与媒体开关已拆分，开启 Studio/claims 并配置有效 label key 后挂载 claim-source（§6.3 第 7 项；`cmd/api/main.go` → `internal/httpapi/claims.go` → `claimsource.go`）。工程路由可用不等于 App Review 通过或真实私信获准发送。
   - B7：T21 独立评审未完成。
   - B8：Compose 作为生产环境与 §4.2 的定位冲突。
 - 状态词汇：DESIGN / MODEL_ONLY / MOCK / SANDBOX / LIVE / NOT_RUN / BLOCKED。本地 smoke 通过不等于产品通过。
@@ -282,8 +282,8 @@ deploy/scripts/deploy.sh upgrade <tag>
      --binding <binding-id> --provider facebook --asset <page-id> --expected-version 0 --scopes pages_messaging
    # 提示输入 META_PAGE_ACCESS_TOKEN（无回显）；输出 {"version":1}。明文 token 从不进入 PG、日志或仓库
    ```
-4. **认领来源绑定**（**当前部署包内不可用，见已知缺口 G2**）：设计上商家在后台把直播场次绑定到具体的 Facebook 贴文/Instagram media（`PUT .../live-sessions/{session}/claim-source`，需要 `live:manage` + `integration:execute`，owner 已具备，裁决 24）。
-   `private_reply=true` 还要求该绑定已登记 Page token（否则 `page_token_missing`）。**这个路由现在不能靠部署配置打开**：在本包构建的 api 里它返回 404（原因见 G2）。
+4. **认领来源绑定（G2 已关闭）**：商家在后台把直播场次绑定到具体的 Facebook 贴文/Instagram media（`PUT .../live-sessions/{session}/claim-source`，需要 `live:manage` + `integration:execute`，owner 已具备，裁决 24）。
+   按第 7 项开启 `COMMERCE_STUDIO_ENABLED=1`、`COMMERCE_CLAIMS_ENABLED=1` 并配置有效 claims label key 后，api 挂载该 GET/PUT 路由；`COMMERCE_STUDIO_MEDIA_ENABLED=0` 不阻断绑定。`private_reply=true` 仍要求该绑定已登记 Page token（否则 `page_token_missing`）。关闭 Studio/claims 时不挂载该路由；开启路由不放行第 5 项的真实私信发送。
 5. 启用真实私信发送（**需要 owner 明确批准**，因为这会向真实买家发消息）：填好 `claims-worker.env` 的 Graph 版本，`COMPOSE_PROFILES` 增加 `claims`，
    `deploy.sh upgrade`；部署后检查会等待 `claims_worker_ready`。日志里的 `claims_worker_routes` 行列出该进程服务的路由（IR-13）。
    R2（U08）：claims-worker 还需要 `dsn_lc_retention_job`（`secrets-init.sh` 生成、provisioning 建登录），每小时跑保留期清理；
