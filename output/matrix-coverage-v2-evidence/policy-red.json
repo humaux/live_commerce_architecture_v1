@@ -1,0 +1,26 @@
+{
+  "name": "policy-red",
+  "command": [
+    "go",
+    "test",
+    "./tests/foundation",
+    "-run",
+    "^TestProductEditorMatrixLedgerEvidenceHistoricalPolicy$",
+    "-count=1",
+    "-v"
+  ],
+  "exit_code": 1,
+  "head": "0bfe36e53acb694f4697521202e24f0790638941",
+  "source_before": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "f3d22936d9eefec9b73b6a57529e16eb98ad1caa999286358bd665719ed8a107",
+    "tests/foundation/catalog_matrix_evidence_test.go": "e0a640ba437699e52e24374c5ad35b8b7e9b6d9f685d88b112201216de698904",
+    "docs/delivery/GATES.md": "3f1aaf60c275c1f6d7562d45f5ae61235094d40ba82be6b52bb5c07edd83f2b6"
+  },
+  "source_after": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "f3d22936d9eefec9b73b6a57529e16eb98ad1caa999286358bd665719ed8a107",
+    "tests/foundation/catalog_matrix_evidence_test.go": "e0a640ba437699e52e24374c5ad35b8b7e9b6d9f685d88b112201216de698904",
+    "docs/delivery/GATES.md": "3f1aaf60c275c1f6d7562d45f5ae61235094d40ba82be6b52bb5c07edd83f2b6"
+  },
+  "unchanged": true,
+  "elapsed_seconds": 163.169
+}

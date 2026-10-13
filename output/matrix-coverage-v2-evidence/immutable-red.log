@@ -1,0 +1,44 @@
+=== RUN   TestProductEditorMatrixLedgerEvidenceDriftIntegrity
+=== RUN   TestProductEditorMatrixLedgerEvidenceDriftIntegrity/deleted-native
+    catalog_matrix_evidence_test.go:174: immutable deleted-native corruption must fail before drift: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+=== RUN   TestProductEditorMatrixLedgerEvidenceDriftIntegrity/omitted-native
+    catalog_matrix_evidence_test.go:174: immutable omitted-native corruption must fail before drift: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+=== RUN   TestProductEditorMatrixLedgerEvidenceDriftIntegrity/copy-hash
+    catalog_matrix_evidence_test.go:174: immutable copy-hash corruption must fail before drift: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+=== RUN   TestProductEditorMatrixLedgerEvidenceDriftIntegrity/unindexed-copy
+    catalog_matrix_evidence_test.go:176: immutable unindexed-copy rejected: SHA-256 mismatch for canonical evidence/source output/matrix-ledger-enforce/fixture/browser/playwright.log
+=== RUN   TestProductEditorMatrixLedgerEvidenceDriftIntegrity/extra-index-bytes
+    catalog_matrix_evidence_test.go:174: immutable extra-index-bytes corruption must fail before drift: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+=== RUN   TestProductEditorMatrixLedgerEvidenceDriftIntegrity/extra-index-missing
+    catalog_matrix_evidence_test.go:174: immutable extra-index-missing corruption must fail before drift: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+=== RUN   TestProductEditorMatrixLedgerEvidenceDriftIntegrity/extra-index-path
+    catalog_matrix_evidence_test.go:174: immutable extra-index-path corruption must fail before drift: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+=== RUN   TestProductEditorMatrixLedgerEvidenceDriftIntegrity/failed-outcome
+    catalog_matrix_evidence_test.go:174: immutable failed-outcome corruption must fail before drift: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+=== RUN   TestProductEditorMatrixLedgerEvidenceDriftIntegrity/duplicate-ledger
+    catalog_matrix_evidence_test.go:174: immutable duplicate-ledger corruption must fail before drift: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+=== RUN   TestProductEditorMatrixLedgerEvidenceDriftIntegrity/failed-ledger
+    catalog_matrix_evidence_test.go:174: immutable failed-ledger corruption must fail before drift: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+=== RUN   TestProductEditorMatrixLedgerEvidenceDriftIntegrity/missing-claim
+    catalog_matrix_evidence_test.go:174: immutable missing-claim corruption must fail before drift: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+=== RUN   TestProductEditorMatrixLedgerEvidenceDriftIntegrity/manifest-ledger
+    catalog_matrix_evidence_test.go:174: immutable manifest-ledger corruption must fail before drift: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+=== RUN   TestProductEditorMatrixLedgerEvidenceDriftIntegrity/malformed-source
+    catalog_matrix_evidence_test.go:176: immutable malformed-source rejected: invalid recorded source SHA-256: tests/admin/product-editor.acceptance.ts
+--- FAIL: TestProductEditorMatrixLedgerEvidenceDriftIntegrity (0.23s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceDriftIntegrity/deleted-native (0.03s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceDriftIntegrity/omitted-native (0.02s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceDriftIntegrity/copy-hash (0.02s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceDriftIntegrity/unindexed-copy (0.03s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceDriftIntegrity/extra-index-bytes (0.02s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceDriftIntegrity/extra-index-missing (0.01s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceDriftIntegrity/extra-index-path (0.01s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceDriftIntegrity/failed-outcome (0.01s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceDriftIntegrity/duplicate-ledger (0.01s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceDriftIntegrity/failed-ledger (0.01s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceDriftIntegrity/missing-claim (0.01s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceDriftIntegrity/manifest-ledger (0.02s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceDriftIntegrity/malformed-source (0.01s)
+FAIL
+FAIL	livecommerce/tests/foundation	0.864s
+FAIL

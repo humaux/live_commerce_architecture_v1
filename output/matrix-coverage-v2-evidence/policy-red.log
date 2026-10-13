@@ -1,0 +1,80 @@
+=== RUN   TestProductEditorMatrixLedgerEvidenceHistoricalPolicy
+=== RUN   TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/matching
+    catalog_matrix_evidence_test.go:90: actual canonical child exit=0:
+        === RUN   TestProductEditorMatrixLedgerEvidence
+        --- PASS: TestProductEditorMatrixLedgerEvidence (0.01s)
+        PASS
+=== RUN   TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/drift-default
+    catalog_matrix_evidence_test.go:90: actual canonical child exit=0:
+        === RUN   TestProductEditorMatrixLedgerEvidence
+            catalog_matrix_ledger_test.go:295: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+        --- SKIP: TestProductEditorMatrixLedgerEvidence (0.00s)
+        PASS
+=== RUN   TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/drift-strict
+    catalog_matrix_evidence_test.go:90: actual canonical child exit=1:
+        === RUN   TestProductEditorMatrixLedgerEvidence
+            catalog_matrix_ledger_test.go:297: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+        --- FAIL: TestProductEditorMatrixLedgerEvidence (0.01s)
+        FAIL
+=== RUN   TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/tampered-matching
+    catalog_matrix_evidence_test.go:90: actual canonical child exit=1:
+        === RUN   TestProductEditorMatrixLedgerEvidence
+            catalog_matrix_ledger_test.go:297: SHA-256 mismatch for canonical evidence/source output/matrix-ledger-enforce/fixture/browser/playwright.log
+        --- FAIL: TestProductEditorMatrixLedgerEvidence (0.01s)
+        FAIL
+=== RUN   TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/deleted-drift-default
+    catalog_matrix_evidence_test.go:90: actual canonical child exit=0:
+        === RUN   TestProductEditorMatrixLedgerEvidence
+            catalog_matrix_ledger_test.go:295: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+        --- SKIP: TestProductEditorMatrixLedgerEvidence (0.01s)
+        PASS
+    catalog_matrix_evidence_test.go:92: want exit 1 and "--- FAIL: TestProductEditorMatrixLedgerEvidence"
+=== RUN   TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/deleted-drift-strict
+    catalog_matrix_evidence_test.go:90: actual canonical child exit=1:
+        === RUN   TestProductEditorMatrixLedgerEvidence
+            catalog_matrix_ledger_test.go:297: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+        --- FAIL: TestProductEditorMatrixLedgerEvidence (0.01s)
+        FAIL
+    catalog_matrix_evidence_test.go:96: corrupted historical package must fail for immutable integrity in both policies
+=== RUN   TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/copy-drift-default
+    catalog_matrix_evidence_test.go:90: actual canonical child exit=0:
+        === RUN   TestProductEditorMatrixLedgerEvidence
+            catalog_matrix_ledger_test.go:295: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+        --- SKIP: TestProductEditorMatrixLedgerEvidence (0.02s)
+        PASS
+    catalog_matrix_evidence_test.go:92: want exit 1 and "--- FAIL: TestProductEditorMatrixLedgerEvidence"
+=== RUN   TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/copy-drift-strict
+    catalog_matrix_evidence_test.go:90: actual canonical child exit=1:
+        === RUN   TestProductEditorMatrixLedgerEvidence
+            catalog_matrix_ledger_test.go:297: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+        --- FAIL: TestProductEditorMatrixLedgerEvidence (0.08s)
+        FAIL
+    catalog_matrix_evidence_test.go:96: corrupted historical package must fail for immutable integrity in both policies
+=== RUN   TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/index-drift-default
+    catalog_matrix_evidence_test.go:90: actual canonical child exit=0:
+        === RUN   TestProductEditorMatrixLedgerEvidence
+            catalog_matrix_ledger_test.go:295: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+        --- SKIP: TestProductEditorMatrixLedgerEvidence (0.12s)
+        PASS
+    catalog_matrix_evidence_test.go:92: want exit 1 and "--- FAIL: TestProductEditorMatrixLedgerEvidence"
+=== RUN   TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/index-drift-strict
+    catalog_matrix_evidence_test.go:90: actual canonical child exit=1:
+        === RUN   TestProductEditorMatrixLedgerEvidence
+            catalog_matrix_ledger_test.go:297: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+        --- FAIL: TestProductEditorMatrixLedgerEvidence (0.02s)
+        FAIL
+    catalog_matrix_evidence_test.go:96: corrupted historical package must fail for immutable integrity in both policies
+--- FAIL: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy (37.19s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/matching (0.17s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/drift-default (0.63s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/drift-strict (0.66s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/tampered-matching (0.24s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/deleted-drift-default (0.31s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/deleted-drift-strict (0.57s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/copy-drift-default (2.20s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/copy-drift-strict (7.13s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/index-drift-default (24.47s)
+    --- FAIL: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/index-drift-strict (0.80s)
+FAIL
+FAIL	livecommerce/tests/foundation	39.537s
+FAIL

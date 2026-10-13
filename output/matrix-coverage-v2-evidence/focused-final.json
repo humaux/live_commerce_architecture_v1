@@ -1,0 +1,26 @@
+{
+  "name": "focused-final",
+  "command": [
+    "go",
+    "test",
+    "./tests/foundation",
+    "-run",
+    "^TestProductEditorMatrix",
+    "-count=1",
+    "-v"
+  ],
+  "exit_code": 0,
+  "head": "0bfe36e53acb694f4697521202e24f0790638941",
+  "source_before": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "6a05dd9a3e081c8ba3cf09b9f52f7220d299f484c9c17c17ac0e67e0f182a899",
+    "tests/foundation/catalog_matrix_evidence_test.go": "bbc4786941f6b2eddf9e34cc7d03792cab887014078e53fc30cb0b9dc06cb152",
+    "docs/delivery/GATES.md": "3f1aaf60c275c1f6d7562d45f5ae61235094d40ba82be6b52bb5c07edd83f2b6"
+  },
+  "source_after": {
+    "tests/foundation/catalog_matrix_ledger_test.go": "6a05dd9a3e081c8ba3cf09b9f52f7220d299f484c9c17c17ac0e67e0f182a899",
+    "tests/foundation/catalog_matrix_evidence_test.go": "bbc4786941f6b2eddf9e34cc7d03792cab887014078e53fc30cb0b9dc06cb152",
+    "docs/delivery/GATES.md": "3f1aaf60c275c1f6d7562d45f5ae61235094d40ba82be6b52bb5c07edd83f2b6"
+  },
+  "unchanged": true,
+  "elapsed_seconds": 147.476
+}
