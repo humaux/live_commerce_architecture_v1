@@ -1,0 +1,39 @@
+# Tests-first CI RED; scanner implementation unchanged
+# Run: 38477346748; job: 115571192630
+# URL: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38477346748/job/115571192630
+# Source head: bfcfa5eb43ccd30f970fc553e7f32ec94b165590
+# Tested checkout: 6a8c6561, merge of source into 256e9740ced9c5de05a83f58eb9f4c79a231b7b2
+# Actual job execution: 2026-10-13T22:27:46Z to 2026-10-13T22:30:42Z
+# Retrieval: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/115571192630/logs, exit 0
+# Raw receipt SHA256: de6b6e16729babe53b989d2351e7a392f859297bdfde8bcd498eb10c012e90c5
+# Excerpt below: original lines 609 through 638, unchanged text
+2026-10-13T22:30:40.1954615Z --- FAIL: TestGoFactoryStartupProbeCLI (0.41s)
+2026-10-13T22:30:40.1955685Z     --- FAIL: TestGoFactoryStartupProbeCLI/buildBuyerWithCVS (0.07s)
+2026-10-13T22:30:40.1962661Z         go_factory_cli_test.go:108: startup-only validation touched unchanged handler dependencies: exit=1 INFO () GO_MOUNT_OR_FALLBACK  /v1/factory cmd/api/main.go:3, cmd/api/main.go:10, cmd/api/main.go:12, cmd/api/main.go:15 methodless registration; child paths remain absolute unless StripPrefix is explicit
+2026-10-13T22:30:40.1967050Z             ERROR (TOUCHED) UNRESOLVED   cmd/api/main.go:8, cmd/api/main.go:15, cmd/api/main.go:59 opaque Go handler dispatch buildBuyerWithCVS; route/method coverage is unknown
+2026-10-13T22:30:40.1970684Z             ERROR (TOUCHED) UNRESOLVED EXACT /v1/factory cmd/api/main.go:8, cmd/api/main.go:15, cmd/api/main.go:59, cmd/api/main.go:61 opaque Go handler dispatch mountFactory; route/method coverage is unknown
+2026-10-13T22:30:40.1974330Z             ERROR (TOUCHED) UNRESOLVED MOUNT /v1/factory cmd/api/main.go:3, cmd/api/main.go:10, cmd/api/main.go:12, cmd/api/main.go:15 opaque Go methodless mount; child route identity is unproven
+2026-10-13T22:30:40.1976778Z             SUMMARY routes go=1 contract=1 bff=1; errors=3 warnings=0 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
+2026-10-13T22:30:40.1978042Z     --- FAIL: TestGoFactoryStartupProbeCLI/assembleCheckout (0.07s)
+2026-10-13T22:30:40.1981877Z         go_factory_cli_test.go:108: startup-only validation touched unchanged handler dependencies: exit=1 INFO () GO_MOUNT_OR_FALLBACK  /v1/factory cmd/api/main.go:3, cmd/api/main.go:10, cmd/api/main.go:12, cmd/api/main.go:15 methodless registration; child paths remain absolute unless StripPrefix is explicit
+2026-10-13T22:30:40.1985848Z             ERROR (TOUCHED) UNRESOLVED   cmd/api/main.go:8, cmd/api/main.go:15, cmd/api/main.go:59 opaque Go handler dispatch assembleCheckout; route/method coverage is unknown
+2026-10-13T22:30:40.1989718Z             ERROR (TOUCHED) UNRESOLVED EXACT /v1/factory cmd/api/main.go:8, cmd/api/main.go:15, cmd/api/main.go:59, cmd/api/main.go:61 opaque Go handler dispatch mountFactory; route/method coverage is unknown
+2026-10-13T22:30:40.1993300Z             ERROR (TOUCHED) UNRESOLVED MOUNT /v1/factory cmd/api/main.go:3, cmd/api/main.go:10, cmd/api/main.go:12, cmd/api/main.go:15 opaque Go methodless mount; child route identity is unproven
+2026-10-13T22:30:40.1995822Z             SUMMARY routes go=1 contract=1 bff=1; errors=3 warnings=0 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
+2026-10-13T22:30:40.1997197Z --- FAIL: TestGoFactoryHandlerDependenciesCLI (0.68s)
+2026-10-13T22:30:40.1998223Z     --- FAIL: TestGoFactoryHandlerDependenciesCLI/middleware (0.07s)
+2026-10-13T22:30:40.2001878Z         go_factory_cli_test.go:134: handler-affecting middleware escaped legacy gate: exit=0 INFO () GO_MOUNT_OR_FALLBACK  /v1/factory cmd/api/main.go:3, cmd/api/main.go:10, cmd/api/main.go:12, cmd/api/main.go:15 methodless registration; child paths remain absolute unless StripPrefix is explicit
+2026-10-13T22:30:40.2005657Z             WARNING (unresolved) UNRESOLVED   cmd/api/main.go:15, cmd/api/main.go:55 opaque Go handler dispatch buildBuyerWithCVS; route/method coverage is unknown
+2026-10-13T22:30:40.2009688Z             WARNING (unresolved) UNRESOLVED EXACT /v1/factory cmd/api/main.go:15, cmd/api/main.go:55, cmd/api/main.go:57 opaque Go handler dispatch mountFactory; route/method coverage is unknown
+2026-10-13T22:30:40.2013369Z             WARNING (unresolved) UNRESOLVED MOUNT /v1/factory cmd/api/main.go:3, cmd/api/main.go:10, cmd/api/main.go:12, cmd/api/main.go:15 opaque Go methodless mount; child route identity is unproven
+2026-10-13T22:30:40.2015718Z             SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=3 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
+2026-10-13T22:30:40.2017368Z     --- FAIL: TestGoFactoryHandlerDependenciesCLI/child_dependency_comment (0.07s)
+2026-10-13T22:30:40.2021308Z         go_factory_cli_test.go:134: handler-affecting child dependency comment escaped legacy gate: exit=0 INFO () GO_MOUNT_OR_FALLBACK  /v1/factory cmd/api/main.go:3, cmd/api/main.go:10, cmd/api/main.go:12, cmd/api/main.go:15 methodless registration; child paths remain absolute unless StripPrefix is explicit
+2026-10-13T22:30:40.2025126Z             WARNING (unresolved) UNRESOLVED   cmd/api/main.go:15, cmd/api/main.go:55 opaque Go handler dispatch buildBuyerWithCVS; route/method coverage is unknown
+2026-10-13T22:30:40.2028614Z             WARNING (unresolved) UNRESOLVED EXACT /v1/factory cmd/api/main.go:15, cmd/api/main.go:55, cmd/api/main.go:57 opaque Go handler dispatch mountFactory; route/method coverage is unknown
+2026-10-13T22:30:40.2032185Z             WARNING (unresolved) UNRESOLVED MOUNT /v1/factory cmd/api/main.go:3, cmd/api/main.go:10, cmd/api/main.go:12, cmd/api/main.go:15 opaque Go methodless mount; child route identity is unproven
+2026-10-13T22:30:40.2034523Z             SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=3 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
+2026-10-13T22:30:40.2035348Z FAIL
+2026-10-13T22:30:40.2035967Z FAIL	livecommerce/scripts/dev/contractdrift	128.664s
+2026-10-13T22:30:40.2036721Z FAIL
+2026-10-13T22:30:40.2585871Z ##[error]Process completed with exit code 1.
