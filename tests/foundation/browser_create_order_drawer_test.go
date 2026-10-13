@@ -289,6 +289,7 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	}
 	var finalMu sync.Mutex
 	var finalKeys []string // Private test-only observations for the two added A16 requests.
+	var prefetchKeys []string // Two separate real writes before the drawer/manual retry fence faults.
 	mux := http.NewServeMux()
 	mux.Handle("/v1/identity/", private)
 	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -438,9 +439,9 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-		if r.Method == "POST" && (r.URL.Path == "/__test/drawer-request-facts" || r.URL.Path == "/__test/manual-request-facts" || r.URL.Path == "/__test/drawer-final-request-facts") {
+		if r.Method == "POST" && (r.URL.Path == "/__test/drawer-request-facts" || r.URL.Path == "/__test/manual-request-facts" || r.URL.Path == "/__test/drawer-final-request-facts" || r.URL.Path == "/__test/drawer-prefetch-request-facts" || r.URL.Path == "/__test/manual-prefetch-request-facts") {
 			operation := "merchanttools.order.for_buyer"
-			if r.URL.Path == "/__test/manual-request-facts" {
+			if r.URL.Path == "/__test/manual-request-facts" || r.URL.Path == "/__test/manual-prefetch-request-facts" {
 				operation = "merchanttools.order.manual"
 			}
 			var input struct {
@@ -478,6 +479,11 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 						finalKeys = append(finalKeys, key)
 					}
 				}
+				finalMu.Unlock()
+			}
+			if r.URL.Path == "/__test/drawer-prefetch-request-facts" || r.URL.Path == "/__test/manual-prefetch-request-facts" {
+				finalMu.Lock()
+				prefetchKeys = append(prefetchKeys, input.Keys...)
 				finalMu.Unlock()
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -540,30 +546,34 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	// Independent additive readback includes created recovery while preserving all original PG14 orders and final two orders.
 	finalMu.Lock()
 	observedFinalKeys := append([]string(nil), finalKeys...)
+	observedPrefetchKeys := append([]string(nil), prefetchKeys...)
 	finalMu.Unlock()
-	var finalOrders, finalReceipts, priorOrders int
+	var finalOrders, finalReceipts, prefetchOrders, prefetchReceipts, priorOrders int
 	if err := e.p.f.owner.QueryRow(ctx, `SELECT count(DISTINCT o.id),count(*) FROM ops.command_results c JOIN checkout.orders o ON o.id=(c.response->>'order_id')::uuid AND o.tenant_id=c.tenant_id AND o.store_id=c.store_id WHERE c.tenant_id=$1 AND c.store_id=$2 AND c.principal_id=$3 AND c.operation='merchanttools.order.for_buyer' AND c.idempotency_key=ANY($4::text[])`, e.tenant(), e.store(), e.p.f.principalA, observedFinalKeys).Scan(&finalOrders, &finalReceipts); err != nil {
 		t.Fatal("final money independent PG observation failed")
 	}
-	if err := e.p.f.owner.QueryRow(ctx, `SELECT count(*) FROM checkout.orders o WHERE o.tenant_id=$1 AND o.store_id=$2 AND o.source='merchant_manual' AND NOT EXISTS(SELECT 1 FROM ops.command_results c WHERE c.tenant_id=o.tenant_id AND c.store_id=o.store_id AND c.principal_id=$3 AND c.operation='merchanttools.order.for_buyer' AND c.idempotency_key=ANY($4::text[]) AND c.response->>'order_id'=o.id::text)`, e.tenant(), e.store(), e.p.f.principalA, observedFinalKeys).Scan(&priorOrders); err != nil {
+	if err := e.p.f.owner.QueryRow(ctx, `SELECT count(DISTINCT o.id),count(*) FROM ops.command_results c JOIN checkout.orders o ON o.id=(c.response->>'order_id')::uuid AND o.tenant_id=c.tenant_id AND o.store_id=c.store_id WHERE c.tenant_id=$1 AND c.store_id=$2 AND c.principal_id=$3 AND c.operation IN ('merchanttools.order.for_buyer','merchanttools.order.manual') AND c.idempotency_key=ANY($4::text[])`, e.tenant(), e.store(), e.p.f.principalA, observedPrefetchKeys).Scan(&prefetchOrders, &prefetchReceipts); err != nil {
+		t.Fatal("pre-fetch fence independent PG observation failed")
+	}
+	if err := e.p.f.owner.QueryRow(ctx, `SELECT count(*) FROM checkout.orders o WHERE o.tenant_id=$1 AND o.store_id=$2 AND o.source='merchant_manual' AND NOT EXISTS(SELECT 1 FROM ops.command_results c WHERE c.tenant_id=o.tenant_id AND c.store_id=o.store_id AND c.principal_id=$3 AND c.operation='merchanttools.order.for_buyer' AND c.idempotency_key=ANY($4::text[]) AND c.response->>'order_id'=o.id::text) AND NOT EXISTS(SELECT 1 FROM ops.command_results c WHERE c.tenant_id=o.tenant_id AND c.store_id=o.store_id AND c.principal_id=$3 AND c.operation IN ('merchanttools.order.for_buyer','merchanttools.order.manual') AND c.idempotency_key=ANY($5::text[]) AND c.response->>'order_id'=o.id::text)`, e.tenant(), e.store(), e.p.f.principalA, observedFinalKeys, observedPrefetchKeys).Scan(&priorOrders); err != nil {
 		t.Fatal("prior PG19 independent observation failed")
 	}
 	manualKeys := manualControl.readbackManual(t, evidence, runErr == nil)
 	var legacyOrders int
-	if err := e.p.f.owner.QueryRow(ctx, `SELECT count(*) FROM checkout.orders o WHERE o.tenant_id=$1 AND o.store_id=$2 AND o.source='merchant_manual' AND NOT EXISTS(SELECT 1 FROM inbox.order_for_buyer b WHERE b.tenant_id=o.tenant_id AND b.store_id=o.store_id AND b.bundle_id=ANY($3::uuid[]) AND b.order_id=o.id) AND NOT EXISTS(SELECT 1 FROM ops.command_results c WHERE c.tenant_id=o.tenant_id AND c.store_id=o.store_id AND c.principal_id=$4 AND c.operation='merchanttools.order.manual' AND c.idempotency_key=ANY($5::text[]) AND c.response->>'order_id'=o.id::text) AND NOT EXISTS(SELECT 1 FROM ops.command_results c WHERE c.tenant_id=o.tenant_id AND c.store_id=o.store_id AND c.principal_id=$4 AND c.operation='merchanttools.order.for_buyer' AND c.idempotency_key=ANY($6::text[]) AND c.response->>'order_id'=o.id::text)`, e.tenant(), e.store(), []string{partialFixture.Bundle, capabilityFixture.Bundle}, e.p.f.principalA, manualKeys, observedFinalKeys).Scan(&legacyOrders); err != nil {
+	if err := e.p.f.owner.QueryRow(ctx, `SELECT count(*) FROM checkout.orders o WHERE o.tenant_id=$1 AND o.store_id=$2 AND o.source='merchant_manual' AND NOT EXISTS(SELECT 1 FROM inbox.order_for_buyer b WHERE b.tenant_id=o.tenant_id AND b.store_id=o.store_id AND b.bundle_id=ANY($3::uuid[]) AND b.order_id=o.id) AND NOT EXISTS(SELECT 1 FROM ops.command_results c WHERE c.tenant_id=o.tenant_id AND c.store_id=o.store_id AND c.principal_id=$4 AND c.operation='merchanttools.order.manual' AND c.idempotency_key=ANY($5::text[]) AND c.response->>'order_id'=o.id::text) AND NOT EXISTS(SELECT 1 FROM ops.command_results c WHERE c.tenant_id=o.tenant_id AND c.store_id=o.store_id AND c.principal_id=$4 AND c.operation='merchanttools.order.for_buyer' AND c.idempotency_key=ANY($6::text[]) AND c.response->>'order_id'=o.id::text) AND NOT EXISTS(SELECT 1 FROM ops.command_results c WHERE c.tenant_id=o.tenant_id AND c.store_id=o.store_id AND c.principal_id=$4 AND c.operation IN ('merchanttools.order.for_buyer','merchanttools.order.manual') AND c.idempotency_key=ANY($7::text[]) AND c.response->>'order_id'=o.id::text)`, e.tenant(), e.store(), []string{partialFixture.Bundle, capabilityFixture.Bundle}, e.p.f.principalA, manualKeys, observedFinalKeys, observedPrefetchKeys).Scan(&legacyOrders); err != nil {
 		t.Fatal(err)
 	}
 	partialFault.readback(t, evidence, runErr == nil)
 	capabilityControl.readback(t, evidence, runErr == nil)
-	pg, _ := json.Marshal(map[string]any{"orders": orders, "expected": 21, "single_order": orders == 21, "prior_orders": priorOrders, "prior_expected": 19, "prior_single_order": priorOrders == 19, "final_request_orders": finalOrders, "final_request_receipts": finalReceipts, "final_observed_keys": len(observedFinalKeys), "legacy_orders": legacyOrders, "legacy_expected": 14, "legacy_single_order": legacyOrders == 14})
+	pg, _ := json.Marshal(map[string]any{"orders": orders, "expected": 23, "single_order": orders == 23, "prior_orders": priorOrders, "prior_expected": 19, "prior_single_order": priorOrders == 19, "final_request_orders": finalOrders, "final_request_receipts": finalReceipts, "final_observed_keys": len(observedFinalKeys), "prefetch_request_orders": prefetchOrders, "prefetch_request_receipts": prefetchReceipts, "prefetch_observed_keys": len(observedPrefetchKeys), "legacy_orders": legacyOrders, "legacy_expected": 14, "legacy_single_order": legacyOrders == 14})
 	if err := os.WriteFile(filepath.Join(evidence, "pg-readback.json"), pg, 0600); err != nil {
 		t.Fatal(err)
 	}
 	if runErr != nil {
-		t.Fatalf("drawer browser gate failed: %v; PG orders=%d expected=21; evidence=%s", runErr, orders, evidence)
+		t.Fatalf("drawer browser gate failed: %v; PG orders=%d expected=23; evidence=%s", runErr, orders, evidence)
 	}
-	if orders != 21 || priorOrders != 19 || legacyOrders != 14 || finalOrders != 2 || finalReceipts != 2 || len(observedFinalKeys) != 2 {
-		t.Fatalf("drawer PG orders=%d expected=21 prior_orders=%d expected=19 legacy_orders=%d expected=14 added_orders=%d expected=2 added_receipts=%d expected=2 keys=%d expected=2; evidence=%s", orders, priorOrders, legacyOrders, finalOrders, finalReceipts, len(observedFinalKeys), evidence)
+	if orders != 23 || priorOrders != 19 || legacyOrders != 14 || finalOrders != 2 || finalReceipts != 2 || len(observedFinalKeys) != 2 || prefetchOrders != 2 || prefetchReceipts != 2 || len(observedPrefetchKeys) != 2 {
+		t.Fatalf("drawer PG orders=%d expected=23 prior_orders=%d expected=19 legacy_orders=%d expected=14 added_orders=%d expected=2 added_receipts=%d expected=2 keys=%d expected=2 prefetch_orders=%d expected=2 prefetch_receipts=%d expected=2 prefetch_keys=%d expected=2; evidence=%s", orders, priorOrders, legacyOrders, finalOrders, finalReceipts, len(observedFinalKeys), prefetchOrders, prefetchReceipts, len(observedPrefetchKeys), evidence)
 	}
 	for _, fx := range fixtures {
 		if n := e.count(`SELECT count(*) FROM inbox.order_for_buyer WHERE store_id=$1 AND bundle_id=$2 AND state='placed'`, e.store(), fx.Bundle); n != 1 {
@@ -578,9 +588,9 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 		Cases  int      `json:"cases"`
 		Failed []string `json:"failed"`
 	}
-	// Preserve all prior35 cases and add the created recovery link/detail/reload path.
-	if json.Unmarshal(data, &result) != nil || result.Cases != 36 || len(result.Failed) != 0 {
-		t.Fatalf("drawer exact 36-case matrix result missing; evidence=%s", evidence)
+	// Preserve all prior36 cases and add both forms' fresh/UNKNOWN pre-fetch session fence clicks.
+	if json.Unmarshal(data, &result) != nil || result.Cases != 40 || len(result.Failed) != 0 {
+		t.Fatalf("drawer exact 40-case matrix result missing; evidence=%s", evidence)
 	}
 	ledgerBytes, err := os.ReadFile(filepath.Join(evidence, "click-ledger.json"))
 	if err != nil {

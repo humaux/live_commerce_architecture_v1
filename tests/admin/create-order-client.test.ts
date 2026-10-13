@@ -19,6 +19,8 @@ const { readOrderPrefill, createForBuyerOrder, recoverForBuyerOrder, CreateOrder
   await import("../../apps/admin/lib/create-order-client.ts");
 const { sessionBoundary } =
   await import("../../apps/admin/lib/settings-client.ts");
+const { placeManualOrder } =
+  await import("../../apps/admin/lib/merchant-tools-client.ts");
 const id = "11111111-1111-4111-8111-111111111111";
 let cookie = "A".repeat(43);
 Object.defineProperty(globalThis, "document", {
@@ -73,6 +75,53 @@ const value = {
 };
 const reply = (payload: unknown, status = 200) =>
   Response.json(payload, { status, headers: { "Cache-Control": "no-store" } });
+test("PR32 a changed or missing pre-dispatch CSRF is explicitly never-sent for both order transports", async () => {
+  cookie = "A".repeat(43);
+  const boundary = await sessionBoundary();
+  let calls = 0;
+  globalThis.fetch = async () => { calls++; return reply({ code: "retry_later" }, 503); };
+  for (const nextCookie of ["B".repeat(43), ""]) {
+    cookie = nextCookie;
+    await assert.rejects(createForBuyerOrder(id, { key: "synthetic-receipt", body }, boundary), (error: any) => {
+      assert.ok(error instanceof CreateOrderError);
+      assert.equal(error.code, "unauthorized");
+      assert.equal(error.status, 401);
+      assert.equal(error.neverSent, true, "the real session fence rejected before fetch");
+      return true;
+    });
+    assert.deepEqual(await placeManualOrder(id, "synthetic-receipt", JSON.parse(body), boundary),
+      { ok: false, code: "unauthorized", uncertain: false, status: 401, neverSent: true });
+  }
+  assert.equal(calls, 0, "neither command was dispatched");
+  cookie = "A".repeat(43);
+});
+test("PR32 an async pre-dispatch CSRF rotation is never-sent, but a post-fetch fence loss is not", async t => {
+  cookie = "A".repeat(43);
+  const boundary = await sessionBoundary();
+  let calls = 0;
+  globalThis.fetch = async () => { calls++; return reply(value); };
+  const digest = crypto.subtle.digest.bind(crypto.subtle);
+  const mock = t.mock.method(crypto.subtle, "digest", async (...args: Parameters<typeof digest>) => {
+    const result = await digest(...args); cookie = "B".repeat(43); return result;
+  });
+  await assert.rejects(createForBuyerOrder(id, { key: "synthetic-receipt", body }, boundary), (error: any) => {
+    assert.ok(error instanceof CreateOrderError); assert.equal(error.neverSent, true); return true;
+  });
+  cookie = "A".repeat(43);
+  assert.deepEqual(await placeManualOrder(id, "synthetic-receipt", JSON.parse(body), boundary),
+    { ok: false, code: "unauthorized", uncertain: false, status: 401, neverSent: true });
+  assert.equal(calls, 0);
+  mock.mock.restore(); cookie = "A".repeat(43);
+  globalThis.fetch = async () => {
+    calls++; const r = reply(value);
+    r.json = async () => { cookie = "B".repeat(43); return value; };
+    return r;
+  };
+  await assert.rejects(createForBuyerOrder(id, { key: "synthetic-receipt", body }, boundary), (error: any) => {
+    assert.ok(error instanceof CreateOrderError); assert.equal(error.neverSent, false, "the request may have committed before privacy loss"); return true;
+  });
+  assert.equal(calls, 1); cookie = "A".repeat(43);
+});
 test("PR32 static validation is explicitly never-sent, unlike a post-dispatch refusal", async () => {
   cookie = "A".repeat(43);
   const boundary = await sessionBoundary();

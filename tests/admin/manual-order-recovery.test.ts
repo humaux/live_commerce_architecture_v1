@@ -23,7 +23,7 @@ const option = { option_key: optionKey, market_id: sku, country: "TW", delivery_
   mode: "offline", name_en: "Synthetic home", name_hans: "测试宅配", name_hant: "測試宅配", currency: "TWD",
   service_version: 1, allocation_version: 1, payment_modes: ["bank_transfer"], pickup_selection: null };
 
-async function form(t: any, locale: "en" | "zh-TW" | "zh-CN", resolution: "not_created" | "created" | "unknown" | "unauthorized" | "initial_created" | Promise<Response>) {
+async function form(t: any, locale: "en" | "zh-TW" | "zh-CN", resolution: "not_created" | "created" | "unknown" | "unauthorized" | "initial_created" | "ready" | Promise<Response>) {
   const env = environment(t);
   const saved = new Map<string, string>();
   Object.assign(env.window, { sessionStorage: { getItem: (key: string) => saved.get(key) ?? null,
@@ -57,15 +57,31 @@ async function form(t: any, locale: "en" | "zh-TW" | "zh-CN", resolution: "not_c
     assert.equal(node(h, n => n.props["data-testid"] === "manual-order-submit").props.disabled, false);
     node(h, n => n.props["data-testid"] === "manual-order-form").props.onSubmit({ preventDefault() {} }); await h.settle();
   };
+  if (resolution === "ready") return { h, writes, submit, env, render, saved };
   await submit();
-  if (resolution === "initial_created") return { h, writes, submit, env, render };
+  if (resolution === "initial_created") return { h, writes, submit, env, render, saved };
   node(h, n => n.props["data-testid"] === "mo-name").props.onChange({ target: { value: "SYNTHETIC EDITED DRAFT" } });
   await h.settle(); await submit();
   assert.ok(textOf(node(h, n => n.props["data-testid"] === "manual-order-error")), "UNKNOWN then dynamic refusal loaded");
   assert.equal(nodes(h.output).some(n => n.props["data-testid"] === "manual-order-new-attempt"), false);
   assert.equal(writes.length, 2); assert.equal(writes[0].key, writes[1].key); assert.equal(writes[0].body, writes[1].body);
-  return { h, writes, submit, env, render };
+  return { h, writes, submit, env, render, saved };
 }
+for (const priorUnknown of [false, true]) test(`ManualOrder preflight session loss ${priorUnknown ? "retains UNKNOWN" : "releases fresh never-sent"} before privacy teardown`, async t => {
+  const { h, env, writes, submit, saved } = await form(t, "en", priorUnknown ? "unknown" : "ready");
+  const before = writes.length;
+  if (priorUnknown) {
+    assert.equal(saved.size, 1, "positive unresolved guard before fence loss");
+    env.document.cookie = `__Host-commerce_csrf=${"b".repeat(43)}`;
+  } else {
+    const uuid = crypto.randomUUID.bind(crypto);
+    t.mock.method(crypto, "randomUUID", () => { const key = uuid(); env.document.cookie = `__Host-commerce_csrf=${"b".repeat(43)}`; return key; });
+  }
+  await submit();
+  assert.equal(nodes(h.output).some(n => n.props["data-testid"] === "manual-order-form"), false, "privacy still clears private fields");
+  assert.equal(writes.length, before, "actual production preflight rejects before fetch");
+  assert.equal(saved.size, priorUnknown ? 1 : 0, "never-sent fresh attempts leave no guard; old UNKNOWN survives");
+});
 for (const event of ["hide", "logout", "forbidden", "not-found"] as const) {
   test(`ManualOrder late link regeneration after ${event} cannot restore a discarded order or buyer link`, async t => {
     const { h, env, render, writes } = await form(t, "en", "initial_created");
