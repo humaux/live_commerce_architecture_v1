@@ -49,6 +49,16 @@ func TestQueuedOrderLinkForBuyerResponseAfterConcurrentPlan(t *testing.T) {
 	lb, e := lbSetup(t), lbuNew(t)
 	ctx := context.Background()
 	e.grantCreator("integration:execute")
+	// lbuNew -> psSetup already commits one real storefront hold. Account for that exact fixture order without hiding new orders.
+	baseOrders := e.count(`SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store())
+	if baseOrders != 1 || e.count(`SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2 AND id=$3 AND source='storefront'`, e.tenant(), e.store(), e.p.hold.OrderID) != 1 || e.orders() != 0 {
+		t.Fatal("fixture must contain only its known storefront hold and no merchant manual order")
+	}
+	// Ordinary claim-checkout origins are a separate ledger: A16 attests its buyer via a quote-bound merchant-origin grant.
+	baseOrigins := e.count(`SELECT count(*) FROM claims.order_origins WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store())
+	if baseOrigins != 0 {
+		t.Fatal("fixture must have no ordinary claim-checkout origin")
+	}
 	// lbuNew owns a fresh trade store, unlike lbSetup. Register a separate synthetic binding into that store explicitly;
 	// reuse only lb's real signed consumer, inbox planner, River and loopback worker. No operation/order is owner-inserted.
 	meta := *lb.mciEnv
@@ -189,19 +199,40 @@ func TestQueuedOrderLinkForBuyerResponseAfterConcurrentPlan(t *testing.T) {
 	assertResponse(code, out)
 	assertFacts := func() {
 		t.Helper()
+		if n := e.count(`SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store()); n != baseOrders+1 {
+			t.Errorf("store orders=%d want baseline %d + exactly one new order", n, baseOrders)
+		}
+		if n := e.count(`SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2 AND source='merchant_manual'`, e.tenant(), e.store()); n != 1 {
+			t.Errorf("merchant manual orders=%d want=1", n)
+		}
+		if n := e.count(`SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2 AND id=$3 AND source='storefront'`, e.tenant(), e.store(), e.p.hold.OrderID); n != 1 {
+			t.Error("the exact baseline storefront hold must remain unchanged")
+		}
+		if n := e.count(`SELECT count(*) FROM claims.order_origins WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store()); n != baseOrigins {
+			t.Errorf("ordinary claim-checkout origins=%d want unchanged baseline=%d", n, baseOrigins)
+		}
+		// Prove the actual A16 origin, rather than expecting its independently owned claim to appear in the ordinary checkout ledger.
+		if n := e.count(`SELECT count(*) FROM checkout.orders o
+			JOIN inbox.order_for_buyer f ON f.tenant_id=o.tenant_id AND f.store_id=o.store_id AND f.order_id=o.id AND f.buyer_id=o.owner_id
+			JOIN claims.merchant_origin_grants g ON g.tenant_id=f.tenant_id AND g.store_id=f.store_id AND g.request_id=f.request_id
+			 AND g.bundle_id=f.bundle_id AND g.buyer_id=f.buyer_id AND g.quote_id=o.quote_id AND g.consumed_at IS NOT NULL
+			JOIN claims.live_price_uses u ON u.tenant_id=o.tenant_id AND u.store_id=o.store_id AND u.order_id=o.id AND u.bundle_id=f.bundle_id
+			WHERE o.tenant_id=$1 AND o.store_id=$2 AND o.id=$3 AND o.source='merchant_manual' AND o.commercial_state='AWAITING_TRANSFER'
+			AND f.bundle_id=$4 AND f.conversation_id=$5 AND f.state='placed' AND f.principal_id=$6 AND g.principal_id=$6
+			AND u.offer_id=$7 AND u.quantity=1 AND u.unit_price_minor=$8`, e.tenant(), e.store(), order, bundle, conv, e.p.f.principalA, meta.offer.ID, ltgLive); n != 1 {
+			t.Errorf("exact committed A16 order/bundle/conversation/consumed quote grant/live-price origin=%d want=1", n)
+		}
 		queries := map[string]string{
-			"orders":             `SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2`,
 			"links":              `SELECT count(*) FROM checkout.order_links WHERE tenant_id=$1 AND store_id=$2`,
 			"active_links":       `SELECT count(*) FROM checkout.order_links WHERE tenant_id=$1 AND store_id=$2 AND redeemed_at IS NULL AND expires_at>clock_timestamp()`,
 			"placed":             `SELECT count(*) FROM inbox.order_for_buyer WHERE tenant_id=$1 AND store_id=$2 AND state='placed'`,
-			"origins":            `SELECT count(*) FROM claims.order_origins WHERE tenant_id=$1 AND store_id=$2`,
 			"manual_audit":       `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='order.manual_created'`,
 			"for_buyer_audit":    `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='order.for_buyer_created'`,
 			"grant_audit":        `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='claims.merchant_origin_granted'`,
 			"regeneration_audit": `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='order.manual_link_regenerated'`,
 			"dm_operations":      `SELECT count(*) FROM integration.operations WHERE tenant_id=$1 AND store_id=$2 AND action='meta.dm_send'`,
 		}
-		for label, want := range map[string]int{"orders": 1, "links": 2, "active_links": 1, "placed": 1, "origins": 1, "manual_audit": 1, "for_buyer_audit": 1, "grant_audit": 1, "regeneration_audit": 1, "dm_operations": 1} {
+		for label, want := range map[string]int{"links": 2, "active_links": 1, "placed": 1, "manual_audit": 1, "for_buyer_audit": 1, "grant_audit": 1, "regeneration_audit": 1, "dm_operations": 1} {
 			if got := e.count(queries[label], e.tenant(), e.store()); got != want {
 				t.Errorf("%s=%d want=%d", label, got, want)
 			}
