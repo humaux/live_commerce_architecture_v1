@@ -84,3 +84,29 @@ func TestGoFactoryOA1SharedEntropyCLI(t *testing.T) {
 		t.Fatalf("admission probe writing shared entropy escaped gate: exit=%d %s", code, out)
 	}
 }
+
+func TestGoFactoryOA1SuccessContinuationCloseCLI(t *testing.T) {
+	call := reviewCLI(t)
+	// The handler already depends on this pool before the probe addition.
+	source := strings.Replace(goFactoryOA1Source, "newBuyer(runtime, c)", "newBuyer(mainPool, c)", 1)
+	source = strings.Replace(source, `w.Header().Set("X-Factory-Configuration", c.bffKey)`, `if err := pool.Ping(r.Context()); err != nil { http.NotFound(w, r); return }
+  w.Header().Set("X-Factory-Configuration", c.bffKey)`, 1)
+	root, p := goFactoryOA1Legacy(t, call, source, goFactoryOA1Platform, nil)
+	// Closing after the loop affects the successful handler path, not an error-only return.
+	probe := strings.TrimSuffix(goFactoryOA1Probe, "\t}") + "\t\tmainPool.Close()\n\t}"
+	mustWrite(t, p, strings.Replace(source, "_ = mainPool", probe, 1))
+	if code, out := call(root); code != 1 || !strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED") || !strings.Contains(out, "SUMMARY routes go=1 contract=1 bff=1;") || !strings.Contains(out, "UNRESOLVED EXACT /v1/factory-oa1") || !strings.Contains(out, "UNRESOLVED MOUNT /v1/factory-oa1") {
+		t.Fatalf("success-path pool close escaped admission gate: exit=%d %s", code, out)
+	}
+}
+
+func TestGoFactoryOA1MutableErrorSentinelCLI(t *testing.T) {
+	call := reviewCLI(t)
+	// The initializer is nonnil, but this unchanged caller assignment invalidates that proof.
+	source := strings.Replace(goFactoryOA1Source, "mux := http.NewServeMux()", "errBuyerConfig = nil\n mux := http.NewServeMux()", 1)
+	root, p := goFactoryOA1Legacy(t, call, source, goFactoryOA1Platform, nil)
+	mustWrite(t, p, strings.Replace(source, "_ = mainPool", goFactoryOA1Probe, 1))
+	if code, out := call(root); code != 1 || !strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED") || !strings.Contains(out, "SUMMARY routes go=1 contract=1 bff=1;") || !strings.Contains(out, "UNRESOLVED EXACT /v1/factory-oa1") || !strings.Contains(out, "UNRESOLVED MOUNT /v1/factory-oa1") {
+		t.Fatalf("mutable nil error sentinel granted admission exclusion: exit=%d %s", code, out)
+	}
+}
