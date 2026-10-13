@@ -20,6 +20,7 @@ function commandArgv(command) {
       if (char === quote) quote = null;
       else word += char;
     } else if (char === "'" || char === '"') quote = char;
+    else if (/[;&|<>]/.test(char)) return null;
     else if (/\s/.test(char)) {
       if (word) argv.push(word);
       word = "";
@@ -38,6 +39,29 @@ function executableArgv(command) {
   return argv;
 }
 
+const goSelectionFlags = new Set(["-run", "-skip", "--run", "--skip", "-test.run", "-test.skip"]);
+function hasGoSelectionFlags(args) {
+  return args.some((arg) => goSelectionFlags.has(arg.split("=", 1)[0]));
+}
+
+function hasSelectingGoFlags(argv) {
+  return argv.some((arg) => {
+    const match = /^GOFLAGS=(.*)$/.exec(arg);
+    if (!match) return false;
+    const flags = commandArgv(match[1]);
+    return flags === null || hasGoSelectionFlags(flags);
+  });
+}
+
+function workflowHasSelectingGoFlags(text) {
+  return text.split(/\r?\n/).some((line) => {
+    const match = /^\s+GOFLAGS:\s*(.*?)\s*(?:#.*)?$/.exec(line);
+    if (!match) return false;
+    const flags = commandArgv(match[1]);
+    return flags === null || hasGoSelectionFlags(flags);
+  });
+}
+
 // Fail closed on the repository's small, indentation-based workflow subset.
 // A filename in a name/env/comment or a disabled/unreachable run is not a binding;
 // changed YAML/shell structure needs an explicit reviewed binding update.
@@ -47,6 +71,7 @@ function foundationRunnerBound(text, runner, condition = null) {
   const blocks = [...jobs[1].matchAll(/^  foundation:\s*\n([\s\S]*?)(?=^  [^ #\n]|^\S|(?![\s\S]))/gm)];
   if (blocks.length !== 1) return false;
   const job = blocks[0][1];
+  if (/^\s+continue-on-error:\s*(?:true|yes|on)\s*(?:#.*)?$/im.test(job)) return false;
   const steps = job.split(/^    steps:\s*$/m);
   if (steps.length !== 2 || /^    if:/m.test(job)) return false;
   return steps[1].split(/^      - /m).slice(1).some((step) => {
@@ -80,6 +105,8 @@ export function matrixExecutionIssues({ node, workflow, registry, foundationWork
     const token = `tests/ci/${name}`;
     if (!nodeCommands.some((argv) => argv.includes(token))) issues.push(`active node --test argv missing ${name}`);
   }
+  if (workflowHasSelectingGoFlags(foundationWorkflow))
+    issues.push("foundation.yml GOFLAGS must not use Go test selection filters");
   if (nodeCommands.some((argv) => required.some((name) => argv.includes(`tests/ci/${name}`)) &&
       argv.some((arg) => ["--test-name-pattern", "--test-skip-pattern", "--test-only", "--test-shard", "--test-concurrency"].includes(arg.split("=")[0]))))
     issues.push("required matrix Node suites must not use test selection/concurrency filters");
@@ -93,7 +120,7 @@ export function matrixExecutionIssues({ node, workflow, registry, foundationWork
   const selectors = ['${LC_FOUNDATION_RUN:+-run "$LC_FOUNDATION_RUN"}', '${LC_FOUNDATION_SKIP:+-skip "$LC_FOUNDATION_SKIP"}', '${LC_FOUNDATION_PKGS:-./...}'];
   const extraArgv = executableArgv(selectors.reduce((line, token) => line.replace(token, ""), commands[0] ?? ""));
   if (commands.length !== 1 || selectors.some((token) => !commands[0].includes(token)) ||
-      !extraArgv || extraArgv[0] !== "go" || extraArgv[1] !== "test" || extraArgv.some((arg) => ["-run", "-skip", "--run", "--skip", "-test.run", "-test.skip"].includes(arg.split("=")[0])))
+      !extraArgv || extraArgv[0] !== "go" || extraArgv[1] !== "test" || hasGoSelectionFlags(extraArgv) || hasSelectingGoFlags(commandArgv(commands[0] ?? "") ?? []))
     issues.push("foundation go test must forward RUN, SKIP and package selectors without extra filters");
   const goCondition = "${{ !(github.event_name == 'pull_request' && github.base_ref == 'r3/integration') }}";
   for (const [runner, condition] of [["test-node", null], ["test-local", goCondition]]) {

@@ -37,3 +37,13 @@ Final source hashes: implementation `b39b4377c1f1e9592ab351cfc500279f8eec2482f38
 - bash scripts/dev/test-node.sh → exit 0, 144.138s, completed Node totals {'tests': 1786, 'pass': 1786, 'fail': 0, 'skipped': 0, 'cancelled': 0}: test-node-retry.log/.json/.exit, unchanged=true.
 - bash scripts/dev/check-gates.sh → exit 0, 293.167s: check-gates-retry.log/.json/.exit, unchanged=true.
 - No executable/test bytes changed since the final focused GREEN. Final receipt commit changes output only; no further retries. Local gates E3 within tested source environment. Browser/REAL_PG/independent review/CI remain NOT_RUN by author. No P0/P1 identified in scoped self-review; independent acceptance belongs to parent.
+
+## Issue #45 audit bypass follow-up (base 8040c36605666a283a7eb048f9f99794b40a27e2)
+
+- Scope remains only `tests/ci/product-editor-matrix-execution.mjs`, `tests/ci/product-editor-matrix-execution.test.mjs`, and this evidence directory.
+- Added fail-closed checks for literal `GOFLAGS` selection switches (all existing Go aliases, space and equals forms) on the command and workflow environment; shell control operators in parsed command argv; and `continue-on-error: true` in the foundation job/steps.
+- `node --test tests/ci/product-editor-matrix-execution.test.mjs` before implementation → exit 1, 124 tests: pass 118, fail 6. This reproduces GOFLAGS `-run=^$`, Node/Go trailing `|| true`, and job/step `continue-on-error: true`; see `issue45-red.log`.
+- Same focused command after implementation → exit 0, 136 tests: pass 136, fail 0; see `issue45-focused-green.log`.
+- `git diff --check` → exit 0. Full `bash scripts/dev/test-node.sh` and `bash scripts/dev/check-gates.sh` → NOT_RUN for this follow-up (HOLD pending root's serialized slot). Browser, REAL_PG, provider SANDBOX/LIVE and CI → NOT_RUN.
+- Current source SHA256: implementation `754d0855c6dd1bd35022e797059f2f714e3cd3e2a37ff24df66efdfaaff4cd70`; tests `869cf7173ce8b1615391eb03053b4843eda69e65e30ac148ba60b3b74a0cfa93`.
+- Parent task: `f597a8bc-ce29-4b68-ab31-815dd5a319cb`; current base at follow-up start: `8040c36605666a283a7eb048f9f99794b40a27e2`; commit for these changes: pending.

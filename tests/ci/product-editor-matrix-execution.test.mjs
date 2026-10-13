@@ -89,6 +89,32 @@ for (const prefix of ["", "FOO=1 ", 'NODE_OPTIONS="--trace-warnings" FOO=1 ']) {
     }
   }
 }
+for (const flag of ["-run", "-skip", "--run", "--skip", "-test.run", "-test.skip"]) {
+  for (const filter of [`${flag} '^$'`, `${flag}=^$`]) {
+    test(`Go selector in literal GOFLAGS cannot suppress the foundation matrix: ${filter}`, () => {
+      const prefix = `GOFLAGS='${filter}' `;
+      const registry = source.registry.replace(goCommand, () => `${prefix}${goCommand}`);
+      assert.ok(registry.includes(`${prefix}${goCommand}`));
+      assert.ok(matrixExecutionIssues({ ...source, registry }).some((issue) => issue.includes("forward")));
+    });
+  }
+}
+test("ordinary literal GOFLAGS options remain accepted", () => {
+  const registry = source.registry.replace(goCommand, () => `GOFLAGS='-mod=readonly' ${goCommand}`);
+  assert.deepEqual(matrixExecutionIssues({ ...source, registry }), []);
+});
+test("foundation workflow rejects a Go selector in its literal GOFLAGS environment", () => {
+  const foundationWorkflow = source.foundationWorkflow.replace("      GOFLAGS: -mod=readonly", "      GOFLAGS: '-test.run=^$'");
+  assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("GOFLAGS")));
+});
+test("Node matrix command cannot hide failures with a trailing shell OR", () => {
+  const node = source.node.replace(nodeCommand, () => `${nodeCommand} || true`);
+  assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("missing")));
+});
+test("foundation Go command cannot hide failures with a trailing shell OR", () => {
+  const registry = source.registry.replace(goCommand, () => `${goCommand} || true`);
+  assert.ok(matrixExecutionIssues({ ...source, registry }).some((issue) => issue.includes("forward")));
+});
 const goCondition = "${{ !(github.event_name == 'pull_request' && github.base_ref == 'r3/integration') }}";
 for (const runner of ["test-node", "test-local"]) {
   const line = `        run: bash scripts/dev/${runner}.sh`;
@@ -112,9 +138,17 @@ for (const runner of ["test-node", "test-local"]) {
     const foundationWorkflow = source.foundationWorkflow.replace(line, () => `        run: |\n          # actual runner\n          bash scripts/dev/${runner}.sh`);
     assert.deepEqual(matrixExecutionIssues({ ...source, foundationWorkflow }), []);
   });
+  test(`foundation workflow refuses continue-on-error for ${runner}`, () => {
+    const foundationWorkflow = source.foundationWorkflow.replace(line, () => `        continue-on-error: true\n${line}`);
+    assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("foundation.yml")));
+  });
 }
 test("foundation job disabled despite both runner filenames retained", () => {
   const foundationWorkflow = source.foundationWorkflow.replace("  foundation:\n", "  foundation:\n    if: false\n");
+  assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("foundation.yml")));
+});
+test("foundation job cannot mark runner failures continue-on-error", () => {
+  const foundationWorkflow = source.foundationWorkflow.replace("    runs-on: ubuntu-24.04\n", "    runs-on: ubuntu-24.04\n    continue-on-error: true\n");
   assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("foundation.yml")));
 });
 
