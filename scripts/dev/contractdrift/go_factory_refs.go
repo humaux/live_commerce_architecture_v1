@@ -19,6 +19,10 @@ func (s *goScanner) factoryRefs(fn *goFunc) ([]location, map[ast.Node]bool) {
 	}
 	handler := false
 	for _, field := range fn.AST.Type.Results.List {
+		// Deferred rewrites of named results can turn an apparent abort into success.
+		if len(field.Names) != 0 {
+			return []location{full}, skipped
+		}
 		if sel, ok := field.Type.(*ast.SelectorExpr); ok {
 			if id, ok := sel.X.(*ast.Ident); ok && fn.File.ImportPaths[id.Name] == "net/http" && sel.Sel.Name == "Handler" {
 				handler = true

@@ -52,13 +52,17 @@ func (s *goScanner) opaque(fn *goFunc) {
 		s.File = current.File
 		for _, pkg := range s.Packages {
 			for _, member := range pkg.Funcs {
-				if member == current { s.Package = pkg }
+				if member == current {
+					s.Package = pkg
+				}
 			}
 		}
 		currentRefs, skipped := s.factoryRefs(current)
 		refs = goRefs(refs, currentRefs)
 		ast.Inspect(current.AST.Body, func(n ast.Node) bool {
-			if skipped[n] { return false }
+			if skipped[n] {
+				return false
+			}
 			if sel, ok := n.(*ast.SelectorExpr); ok && (sel.Sel.Name == "Path" || sel.Sel.Name == "Method" || strings.HasPrefix(sel.Sel.Name, "Method")) {
 				dispatch = true
 			}
