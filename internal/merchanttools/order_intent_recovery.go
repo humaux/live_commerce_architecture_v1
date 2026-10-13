@@ -1,7 +1,7 @@
 // Purpose: resolve or explicitly resume durable merchant intents using their server-frozen request and original private owner.
 // Depends on: ops.order_intents, fulfillment.order_intent_begin, command receipts/audit, claims.for_buyer_request/release.
-// Used by: manual/for-buyer A16R recovery and pending recovery after tab changes or re-login.
-// Invariants: I01/I02/I03/I06; absent checkout is sealed atomically, sealed replay requires both original receipts, partial retains the same key.
+// Used by: manual/for-buyer A16R recovery and transport-key-bound recovery after tab changes or re-login.
+// Invariants: I01/I02/I03/I06; absent checkout is sealed atomically, terminal replay requires original proofs, lost responses cannot retarget an intent.
 package merchanttools
 
 import (
@@ -16,6 +16,8 @@ import (
 	"livecommerce/internal/command"
 	"livecommerce/internal/platform"
 )
+
+const recoveryTargetOperation = "merchanttools.order.intent.recovery.target"
 
 func recoveryPermissions(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string) error {
 	for _, permission := range []string{manualPermission, "catalog:read", "orders:read"} {
@@ -187,24 +189,178 @@ func (m *ManualOrders) sealRefusedIntent(ctx context.Context, token, store, key 
 	})
 }
 
-// pendingIntent returns only the current authenticated principal's pending server request, never to the browser.
-func (m *ManualOrders) pendingIntent(ctx context.Context, token, store string) (orderIntent, bool, error) {
+// recoveryIntent commits a canonical transport-key -> original intent binding before any pipeline side effect.
+// A repeated transport key never selects a later pending intent. A new browser key may select the latest settled intent,
+// which prevents a lost created response from becoming none merely because settlement released the pending slot.
+func (m *ManualOrders) recoveryIntent(ctx context.Context, token, store, recoveryKey string) (orderIntent, bool, error) {
 	var intent orderIntent
 	var found bool
 	err := platform.WithScope(ctx, m.pool, token, store, manualPermission, func(tx pgx.Tx, scope platform.Scope) error {
 		if err := recoveryPermissions(ctx, tx, scope, token); err != nil {
 			return err
 		}
-		err := tx.QueryRow(ctx, `SELECT idempotency_key,operation,state,buyer_owner_id::text,begin_key,coalesce(order_id::text,''),request_hash,frozen_request
-			FROM ops.order_intents WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND state='pending'`,
-			scope.TenantID, scope.StoreID, scope.PrincipalID).Scan(&intent.Key, &intent.Kind, &intent.State, &intent.Owner, &intent.BeginKey, &intent.OrderID, &intent.Hash, &intent.Frozen)
-		if errors.Is(err, pgx.ErrNoRows) {
+		if _, err := tx.Exec(ctx, `SELECT set_config('lock_timeout','0',true)`); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, "merchanttools.intent|"+scope.TenantID+"|"+scope.StoreID+"|"+scope.PrincipalID); err != nil {
+			return err
+		}
+		if err := recoveryPermissions(ctx, tx, scope, token); err != nil {
+			return err
+		}
+		request := struct {
+			StoreID     string `json:"store_id"`
+			PrincipalID string `json:"principal_id"`
+		}{scope.StoreID, scope.PrincipalID}
+		var target struct {
+			Key string `json:"intent_key"`
+		}
+		if err := command.Run(ctx, tx, scope, recoveryTargetOperation, recoveryKey, request, &target, func() error {
+			err := tx.QueryRow(ctx, `SELECT idempotency_key FROM ops.order_intents
+				WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3
+				ORDER BY (state='pending') DESC,updated_at DESC,created_at DESC,idempotency_key LIMIT 1`,
+				scope.TenantID, scope.StoreID, scope.PrincipalID).Scan(&target.Key)
+			if errors.Is(err, pgx.ErrNoRows) {
+				return nil
+			}
+			return err
+		}); err != nil {
+			return err
+		}
+		if target.Key == "" {
 			return nil
 		}
+		var err error
+		intent, err = readIntent(ctx, tx, scope, target.Key)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrUnavailable // A saved target disappearing is UNKNOWN, never absence.
+		}
 		found = err == nil
-		return err
+		if err != nil {
+			return err
+		}
+		return recoveryPermissions(ctx, tx, scope, token)
 	})
 	return intent, found, err
+}
+
+// intentReceipt reads only this principal's original command proof. It never creates or repairs a receipt.
+func intentReceipt(ctx context.Context, tx pgx.Tx, scope platform.Scope, operation, key string, expectedHash []byte, result any) ([]byte, error) {
+	var hash, response []byte
+	err := tx.QueryRow(ctx, `SELECT request_hash,response FROM ops.command_results
+		WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND operation=$4 AND idempotency_key=$5`,
+		scope.TenantID, scope.StoreID, scope.PrincipalID, operation, key).Scan(&hash, &response)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrUnavailable
+	}
+	if err != nil {
+		return nil, err
+	}
+	if len(hash) != sha256.Size || (expectedHash != nil && !bytes.Equal(hash, expectedHash)) {
+		return nil, command.ErrConflict
+	}
+	if json.Unmarshal(response, result) != nil {
+		return nil, ErrUnavailable
+	}
+	return hash, nil
+}
+
+// terminalIntent verifies the immutable server binding and exact original upper/closure receipts even after frozen PII is removed.
+// No cached transport result or bare terminal state can prove created/not_created on its own.
+func (m *ManualOrders) terminalIntent(ctx context.Context, token, store, key string) (OrderRecovery, error) {
+	var out OrderRecovery
+	err := platform.WithScope(ctx, m.pool, token, store, manualPermission, func(tx pgx.Tx, scope platform.Scope) error {
+		check := func() error { return recoveryPermissions(ctx, tx, scope, token) }
+		if err := check(); err != nil {
+			return err
+		}
+		intent, err := readIntent(ctx, tx, scope, key)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrUnavailable
+		}
+		if err != nil {
+			return err
+		}
+		if !command.ValidID(intent.Owner) || intent.BeginKey != stepKey(key, "begin") ||
+			(intent.Kind != manualOperation && intent.Kind != forBuyerOperation) || (intent.State != "created" && intent.State != "sealed") {
+			return ErrUnavailable
+		}
+		if err = intentBeginLock(ctx, tx, scope, intent); err != nil {
+			return err
+		}
+		if err = check(); err != nil {
+			return err
+		}
+		var binding struct {
+			Bound bool `json:"bound"`
+		}
+		if _, err = intentReceipt(ctx, tx, scope, attemptOperation, key, intent.Hash, &binding); err != nil {
+			return err
+		}
+		if !binding.Bound {
+			return command.ErrConflict
+		}
+		if intent.State == "sealed" {
+			if intent.OrderID != "" {
+				return command.ErrConflict
+			}
+			owner := struct {
+				OwnerID string `json:"owner_id"`
+			}{intent.Owner}
+			encoded, err := json.Marshal(owner)
+			if err != nil {
+				return ErrUnavailable
+			}
+			hash := sha256.Sum256(encoded)
+			var closure struct {
+				OwnerID string `json:"owner_id"`
+			}
+			if _, err = intentReceipt(ctx, tx, scope, checkoutClosureOperation, intent.BeginKey, hash[:], &closure); err != nil {
+				return err
+			}
+			if closure.OwnerID != intent.Owner {
+				return command.ErrConflict
+			}
+			if _, err = intentReceipt(ctx, tx, scope, recoveryOperation, key, intent.Hash, &out); err != nil {
+				return err
+			}
+			if out != (OrderRecovery{State: "not_created"}) {
+				return command.ErrConflict
+			}
+			return check()
+		}
+		begin, found, err := lookupIntentBegin(ctx, tx, token, store, key)
+		if err != nil {
+			return err
+		}
+		if !found || !command.ValidID(intent.OrderID) || begin.OrderID != intent.OrderID {
+			return command.ErrConflict
+		}
+		var manual manualReceipt
+		if _, err = intentReceipt(ctx, tx, scope, manualOperation, key, nil, &manual); err != nil {
+			return err
+		}
+		if manual.OrderID != intent.OrderID {
+			return command.ErrConflict
+		}
+		if intent.Kind == forBuyerOperation {
+			var placed forBuyerReceipt
+			hash, err := intentReceipt(ctx, tx, scope, forBuyerOperation, key, nil, &placed)
+			if err != nil {
+				return err
+			}
+			var complete forBuyerCompletion
+			if _, err = intentReceipt(ctx, tx, scope, forBuyerCompleteOperation, key, hash, &complete); err != nil {
+				return err
+			}
+			if placed.OrderID != intent.OrderID || complete.OrderID != intent.OrderID {
+				return command.ErrConflict
+			}
+		}
+		out = OrderRecovery{State: "created", OrderID: intent.OrderID}
+		return check()
+	})
+	return out, err
 }
 
 func (m *ManualOrders) pendingHasBegin(ctx context.Context, token, store, key string) (bool, error) {
@@ -226,18 +382,27 @@ func (m *ManualOrders) pendingHasBegin(ctx context.Context, token, store, key st
 	return found, err
 }
 
-// RecoverPending seals absence or explicitly resumes a Begin-only order from its durable original request.
-// It supports both manual and for-buyer intents, never exposes their body/key, and sends only idempotent requested side effects.
-func (f *ForBuyer) RecoverPending(ctx context.Context, token, store string) (OrderRecovery, error) {
+// RecoverPending binds the transport key, then seals absence or resumes the exact durable intent.
+// It supports pending and settled manual/for-buyer intents without exposing their frozen body/key.
+func (f *ForBuyer) RecoverPending(ctx context.Context, token, store, recoveryKey string) (OrderRecovery, error) {
 	if f == nil || f.manual == nil {
 		return OrderRecovery{}, ErrManualDisabled
 	}
-	intent, found, err := f.manual.pendingIntent(ctx, token, store)
+	ctx, cancel := context.WithTimeout(ctx, attemptBudget)
+	defer cancel()
+	intent, found, err := f.manual.recoveryIntent(ctx, token, store, recoveryKey)
 	if err != nil {
 		return OrderRecovery{}, mapForBuyerError(err)
 	}
 	if !found {
 		return OrderRecovery{State: "none"}, nil
+	}
+	terminal := func() (OrderRecovery, error) {
+		out, err := f.manual.terminalIntent(ctx, token, store, intent.Key)
+		return out, mapForBuyerError(err)
+	}
+	if intent.State == "created" || intent.State == "sealed" {
+		return terminal()
 	}
 	var envelope struct {
 		Kind string          `json:"kind"`
@@ -268,7 +433,10 @@ func (f *ForBuyer) RecoverPending(ctx context.Context, token, store string) (Ord
 	} else {
 		out, err = f.Recover(ctx, token, store, intent.Key, forBuyer)
 	}
-	if err == nil || !errors.Is(err, ErrUnavailable) {
+	if err == nil {
+		return terminal()
+	}
+	if !errors.Is(err, ErrUnavailable) {
 		return out, err
 	}
 	// Recovery's 503 can also mean unknown DB facts. Only an established original Begin permits pipeline completion.
@@ -276,15 +444,15 @@ func (f *ForBuyer) RecoverPending(ctx context.Context, token, store string) (Ord
 		return OrderRecovery{}, err
 	}
 	if intent.Kind == manualOperation {
-		result, _, placeErr := f.manual.Place(ctx, token, store, intent.Key, manual)
+		_, _, placeErr := f.manual.Place(ctx, token, store, intent.Key, manual)
 		if placeErr != nil {
 			return OrderRecovery{}, placeErr
 		}
-		return OrderRecovery{State: "created", OrderID: result.OrderID}, nil
+		return terminal()
 	}
-	result, _, err := f.Place(ctx, token, store, intent.Key, forBuyer)
+	_, _, err = f.Place(ctx, token, store, intent.Key, forBuyer)
 	if err != nil {
 		return OrderRecovery{}, err
 	}
-	return OrderRecovery{State: "created", OrderID: result.OrderID}, nil
+	return terminal()
 }
