@@ -902,6 +902,7 @@ func TestCheckoutReminderMigration0144ExactACL(t *testing.T) {
 	}{
 		{"inbox.checkout_reminder_candidates(uuid,text,int,uuid)", runtimeAndOwner, false},
 		{"inbox.plan_checkout_reminder(uuid,uuid,uuid,text,bigint,text,uuid,bigint,uuid,bytea,text,bytea,bytea,bytea,bytea,text,bigint)", runtimeAndOwner, false},
+		{"inbox.order_pay_link_pending(uuid)", runtimeAndOwner, false}, // 0171: scoped legacy reminder/order correlation, no table-grant expansion.
 		{"inbox.reminder_report(uuid)", runtimeAndOwner, false},
 		{"inbox.crm_bundle_facts(uuid,uuid,uuid)", []string{"commerce_integration_writer"}, true},
 		{"inbox.check_send(uuid)", []string{"commerce_claims_worker", "commerce_integration_writer"}, false},
@@ -926,7 +927,7 @@ func TestCheckoutReminderMigration0144ExactACL(t *testing.T) {
 	}
 	// The worker side gained nothing: no claims/payment/expiry/ads worker may run a reminder producer (the automatic leg is deferred).
 	for _, role := range []string{"commerce_claims_worker", "commerce_payment_worker", "commerce_expiry_worker", "commerce_ads_worker"} {
-		for _, sig := range []string{"inbox.checkout_reminder_candidates(uuid,text,int,uuid)", "inbox.reminder_report(uuid)"} {
+		for _, sig := range []string{"inbox.checkout_reminder_candidates(uuid,text,int,uuid)", "inbox.reminder_report(uuid)", "inbox.order_pay_link_pending(uuid)"} {
 			var can bool
 			if err := f.owner.QueryRow(ctx, `SELECT has_function_privilege($1,$2::regprocedure,'EXECUTE')`, role, sig).Scan(&can); err != nil || can {
 				t.Fatalf("%s can execute %s (err=%v)", role, sig, err)
