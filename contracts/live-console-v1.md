@@ -494,11 +494,13 @@ reservation rows (`placed`, `order_id`), (c) if `send_payment_link` and no `meta
 **reused** `regenerate-link` logic (the previous buyer link is superseded) and plans the DM with the new link. A
 replay otherwise returns the same order and operation, with `buyer_link` null (as today).
 
-### 5.1.1 A16R authoritative recovery (LC-U3, frozen 2026-10-12)
+### 5.1.1 A16R authoritative recovery (LC-U3; durable-intent amendment 0172, 2026-10-13)
 
 `POST /v1/admin/stores/{store_id}/orders/for-buyer/recover` takes the **same** original A16 JSON body and
 `Idempotency-Key`. Authority is `inventory:reserve` + `catalog:read` + `orders:read`
-under the authenticated store scope. It creates no order, stock hold, buyer link or DM.
+under the authenticated store scope and the intent's **original principal**. A different
+merchant cannot take over the attempt, even when currently authorized for the same store.
+It creates no order, stock hold, buyer link or DM.
 It answers 200 with exactly `{state:"created", order_id:uuid}` only when the durable
 `checkout.begin` receipt **and** the full A16 completion receipt exist and agree on the order.
 The append-only `merchanttools.order.for_buyer.completed` receipt binds the original canonical
@@ -506,7 +508,8 @@ A16 body and key to `{order_id}`; it commits only after manual source/link/audit
 bookkeeping and the requested DM planning (or definitive `not_sent`) have completed.
 A Begin-only order, or an inner A16 receipt preceding DM planning, returns `503 retry_later`
 with no definitive recovery receipt or closure. The drawer retains its frozen body/key and
-requires an explicit same-key placement retry to finish the idempotent pipeline. An older
+requires an explicit same-key placement retry, or §5.1.2's explicit server-held recovery,
+to finish the idempotent pipeline. An older
 `created` recovery receipt alone cannot bypass this completion proof. Otherwise it answers
 exactly `{state:"not_created"}` only after committing a permanent closed-attempt receipt.
 No bearer links or customer data leave this endpoint. A pre-amendment partial checkout
@@ -515,8 +518,10 @@ remains UNKNOWN; a key alone cannot establish its original target/send/customer 
 Recovery must be enabled only after every manual/for-buyer writer uses the shared attempt
 lock and guarded checkout Begin (drain requests from older binaries during rollout).
 
-Manual and for-buyer entry points serialize the entire pipeline and recovery under
-one server-scoped store/key advisory lock, held across the existing step transactions.
+Manual and for-buyer entry points first serialize admission under the authenticated
+tenant/store/principal advisory lock, then the original store/key lock, held across the
+existing step transactions. Migration 0172's `ops.order_intents` is the server authority;
+§5.1.2 defines its pending fence and immutable private-owner binding.
 An append-only `ops.command_results` request binding fixes the normalized request (including
 A16 target and send flag) before static or dynamic placement validation. Canonicalization
 copies delivery data without mutating caller input; invalid recipient/payment business
@@ -524,14 +529,16 @@ values can still be recovered with the same frozen body. Recovery keeps structur
 body/key conflict and scope checks, and does not repeat placement's business validation.
 The separate append-only
 recovery receipt never overwrites a successful merchant/checkout receipt. Resolution probes
-checkout with the server-derived buyer capability and begin step key; absence of an upper
-merchant receipt or a bounded order list is never absence authority. Missing/invalid scope,
-expired capability, timeout or database error retains UNKNOWN, without sealing.
+checkout with the **stored original** private buyer owner and Begin step key through
+`fulfillment.order_intent_begin`. Today's signing secret, a newly derived capability or
+its expiry cannot prove absence. Missing upper merchant receipts or bounded order lists
+are never absence authority. Missing/invalid scope, missing durable owner proof, timeout
+or database error retains UNKNOWN, without sealing.
 
 The outer attempt connection alone is not absence authority. Recovery also holds the exact
 tenant/store/private-owner/begin-step checkout advisory lock on the merchant transaction
 that commits **both** the checkout-closure and upper recovery receipts. The authenticated
-checkout reader verifies the issued buyer scope and durable receipt/order without acquiring
+checkout reader verifies the original principal/store intent and exact durable receipt/order without acquiring
 that already-held lock. Permission/session/store authority is checked again after the lock
 wait, after lookup and before committing either result. Losing this transaction rolls back
 the seal. Original manual/for-buyer Begin holds the same checkout lock through money commit
@@ -551,8 +558,8 @@ authenticated merchant scope, no buyer GUC, read committed isolation and `invent
 Every matching tenant/store/key row, including placed or released history, must agree on one
 request id, body hash and buyer owner, otherwise `PT409 idempotency_conflict`. It returns
 that request id only while pending rows remain, otherwise NULL, so repeated recovery does
-not retimestamp already-expired grants. The stored
-principal is not a filter: another currently authorized merchant can recover the same attempt.
+not retimestamp already-expired grants. Reservation bookkeeping does not delegate recovery:
+the enclosing intent lookup and settlement require the immutable original principal.
 When a request exists, the existing `claims.for_buyer_release` releases only its eligible
 pending reservations and expires its unconsumed grants in the **same** scoped transaction
 as both receipts. Cleanup runs outside receipt callbacks so old `not_created` receipt replays
@@ -569,6 +576,63 @@ with the same body/key and return the committed result. `created` preserves the 
 order and never authorizes a replacement key; the UI opens that order. A business 422 by
 itself still does not establish absence. Recovery does not require `inbox:reply`, because
 it sends no message, even when the frozen A16 body requested a payment link.
+
+### 5.1.2 Durable current-intent authority and explicit recovery (0172)
+
+`POST /v1/admin/stores/{store_id}/orders/attempt/recover` is the sole current-intent command.
+Its BFF resource is `POST /api/stores/{store_id}/tools/orders/attempt/recover`. Both require
+JSON with exactly `{}`: no original key, kind, customer, bundle, order or store selector in
+the body, and no query. The existing keyed-write transport still requires one valid
+`Idempotency-Key`; this transport key does not select or replace the original intent key.
+The BFF keeps its current origin/CSRF/session/store checks and forwards canonical `{}`.
+Current `inventory:reserve` + `catalog:read` + `orders:read` are all required on the server.
+Go gets a 14 s context inside its existing server cap; the BFF upstream budget is 16 s.
+
+Manual and A16 placement commit the admitted intent **before** any pipeline side effect.
+`ops.order_intents` binds tenant/store/principal, original key, operation, canonical request
+hash, frozen normalized request, original buyer owner and Begin key. The binding is immutable;
+the private pending payload may only be cleared. A unique partial index permits at most one
+`pending` intent per tenant/store/principal; another key returns `409 attempt_pending`.
+Closing a tab, re-login, another tab, a new browser key, capability expiry, elapsed time or
+secret rotation cannot release this fence. Other principals/stores have independent scopes,
+but cannot adopt this principal's intent or reuse its bound store/key.
+
+States are monotone: `pending` becomes `created` only with the exact full upper completion
+receipt; `pending` becomes `sealed` only with locked original Begin absence, checkout closure,
+recovery receipt, required reservation cleanup and audit committed atomically. A business
+refusal by itself proves neither state. Settlement clears `frozen_request`; customer erasure
+also clears that payload while retaining the pending key/hash/owner fence. Missing erased
+payload remains UNKNOWN and cannot justify a replacement attempt or guessed reconstruction.
+
+The reply is 200 with exactly one of `{"state":"none"}`, `{"state":"not_created"}` or
+`{"state":"created","order_id":"<canonical UUID>"}`. `none` means no current pending
+intent in this authenticated principal/store scope, not proof about an arbitrary old key;
+it is accepted only by this endpoint, never by known-key A16R/manual recovery. `not_created`
+means durable absence was sealed; `created` names only the original completed scoped order.
+Every unresolved lookup, partial completion, timeout or malformed upstream result remains
+`503 retry_later`/UNKNOWN. Replies are private/no-store, bounded to 128 KiB at the BFF, and
+closed; malformed upstream 401/403 still revokes the UI before reply parsing. Neither the
+original key, frozen buyer input, capability nor payment URL appears in a reply or error.
+
+This explicit command may finish a Begin-only intent using its server-held **original**
+kind/body/key, only after a locked lookup positively proves that exact Begin. It never uses
+a 503 alone as permission to retry, never starts a replacement Begin and never changes the
+original quote, amount, holds or order. Current action-specific permissions and send safety
+still apply; a requested DM uses its original idempotent planning, with no blind UNKNOWN send
+retry. The narrow `fulfillment.mark_order_intent_manual` proof path may finish the original
+source/link/audit receipt after 0094's ten-minute source window or options change. The old
+0094 arbitrary recent-order marker keeps its original restriction. Source and link completion
+requires the exact stored owner, Begin receipt and locked order; a `CANCELLED` order gets no
+fresh usable payment link, hold revival or payment side effect. Its scoped order pointer may
+still identify the completed original order.
+
+`fulfillment.order_intent_begin` resolves the stored original owner even after derivation
+secret rotation; re-deriving an owner with the current secret is forbidden as recovery proof.
+Legacy adoption through `fulfillment.order_intent_legacy_owner` requires the same original
+principal/store request binding and its unique exact original Begin receipt/order. Missing
+or conflicting durable evidence stays UNKNOWN; there is no fallback absence seal. Rollout
+still drains writers lacking the shared intent/Begin fences. These rules require REAL_PG,
+rotation, cross-session and real-browser gates; this amendment alone is DESIGN, not PASS.
 
 ### 5.2 Reused vs new
 
@@ -605,6 +669,12 @@ it sends no message, even when the frozen A16 body requested a payment link.
     the live price.
   - both peer keys known and different → `409 bundle_buyer_mismatch`, nothing created.
 - Draft orders are not introduced (deviation A9/D5): the order exists and holds stock as soon as it is created.
+- Multiple claim-origin lines for one requested SKU cannot be represented by the cart's
+  one-origin-per-SKU contract. That aggregate stays at catalog price; never choose the first
+  origin, sum incompatible live-price grants or infer a discount/amount in the UI. Prefill
+  and result show the conservative catalog-price warning before confirmation; only the
+  server Quote can establish the price. A uniquely qualified origin remains eligible under
+  the same peer, quantity, grant and permission rules above.
 
 ## 6. Capability states (§10.2), exposed to the UI
 
