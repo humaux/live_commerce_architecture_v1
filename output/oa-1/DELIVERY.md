@@ -531,10 +531,11 @@ COMMENT gate, which requires the owning package name. The new
 ACL and erasure tests passed. `176ad6d01` adds that word, with no behavior or
 assertion changes. Red evidence: `privacy-upgrade-restored-ci110.log`.
 
-Full OA1 CI98 `38473112949` on `008b52dec` is still being collected; its
+Full OA1 CI98 `38473112949` on `008b52dec` completed **RED**; the exact
+failure inventory and current restoration status are recorded below. Its
 superseded post-commit cross-client assertion is already fixed by `27a20b227`.
-The pending full run is not claimed as a green job. Runtime acceptance remains
-blocked on the required PR plan and independent review.
+Runtime acceptance remains blocked on unresolved native failures, the required
+PR plan and independent review.
 
 To continue the other gates without waiving the failed PR plan, CI
 [38476605638](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38476605638)
@@ -555,3 +556,48 @@ exact log: `identity-green-ci114.log`. Remaining modes and CI98's full OA1
 focused job are still running/queued, with no new failure yet; no full-run PASS
 is claimed. External scanner [PR #54](https://github.com/humaux/live_commerce_architecture_v1/pull/54)
 is OPEN at `bfcfa5eb`, so no rebase has started.
+
+### CI98 / CI114 consolidated triage, 2026-10-13 23:05 UTC
+
+CI98 [38473112949](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38473112949),
+job `115557144109`, source `008b52dec4b5e06b7f4a9017e0ff251365962849`,
+completed with **PASS=183 FAIL=20 SKIP=0 exit=1**. Exact receipt:
+`full-native-ci98.log`. One old cross-client assertion is already closed by
+`27a20b227` and CI110; the other failures cannot be attributed to the scanner.
+
+| Failure group | Root cause / current revision | New GREEN |
+| --- | --- | --- |
+| AdmissionState (five tests), JobsNativeReciprocalCommit, SchemaIncompleteAdmissionCannotCommit, ScopeRetirementPendingRefused | A committed synthetic expired fixture used the shared principal/store, leaving its correctly active scope occupied. `4d308cf69` gives that committed fixture its own synthetic principal; uniqueness and denial assertions stay exact. | Pending CI |
+| ExecutionFencePrivateContext | Its exact four-owner inventory omitted the approved notification-domain owner. `4d308cf69` pins the exact five, exercises the fifth, and retains old-xid and forged-context denials. | Pending CI |
+| ServiceSealFailureRollsBackNativeAdmission | The old invalid empty key ring now fails the A2 preflight before preparation. `92f37576e` uses the real key ring and native oversized-after-escaping facts to reach `ErrPlanInvalid` after preparation, then verifies rollback and same-key/CAS retry. | Pending CI |
+| NotificationResumeWorkerCommitsCurrentVoid, NotificationResumeLateRefusalRollsBackThenVoid | A global absence sentinel counted unrelated stores' successful notification jobs in the shared database. `59cb27ff5` requires zero operations/jobs for this fixture's authenticated tenant/store and keeps the positive native C1/window/permission sentinels. | Pending CI |
+| DeadlineRealClaimPeriodicLiveness; SweepNativeOrphanRepairAndLiveJobs, RepairNeverTakesScopeOrPrincipalLock, SkipsHeldAttemptWithoutRepair, ExpiredIntentIgnoresJobLiveness, RealRiverStartupAndPeriodicOrphanRecovery; WorkerRealConsumerRacesInline | The global first-candidate Sweep returns masked PT409; its precise native cause is not established. `9ad562cd2` adds failure-only, bounded, rollback-only native probes with fixed non-PII output. No product error is swallowed, test assertion removed, or acceptance budget raised. | Unresolved; diagnostic CI pending |
+
+CI114 [38476605638](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38476605638)
+is still running on exact `0bdb85d359aff8fd544086513e1daf4d879d91fe`.
+At this checkpoint 40 jobs completed, ten were running and 27 queued; the four
+actual failed jobs are below. Completed browser modes, including Studio UI,
+card payments, admin shell, claim checkout and live claims, passed at that old
+source. Their success is not a full-run or current-source PASS.
+
+| CI114 failed job | Cause / exact restoration | Receipt |
+| --- | --- | --- |
+| `115569819233` / shard g02 | Existing exact `social.read_thread` ACL omitted the integration-writer definer caller granted by 0188. The list adds exactly that caller; no product grant changes. | `shard-g02-red-ci114.log` |
+| `115569819318` / shard g04 | CC01 holds root 0170+ but prematurely applies dependent post-River 0023+. `59cb27ff5` holds both suffixes, proves historical OA absence and exact upgraded checksums. KC03 exact ACL/schema/function inventories also omitted the approved four private helpers, three provenance columns and narrow coordinator grants; `c2e6c67ca` enumerates only those additions. | `shard-g04-red-ci114.log` |
+| `115569819317` / shard g06 | CogTransferACL's exact native updater inventory omitted 0193's existing authenticated cancel function. `c2e6c67ca` pins its exact runtime-only signature and updater names; the CONFIRMED, proof-clear and trigger pins are unchanged. | `shard-g06-red-ci114.log` |
+| `115569819627` / shard g07 | MultiPage's populated historical fixture has the same root/post-River hold gap; both chains now use actual file checksums and upgrade receipts. NotificationResume has the store-sentinel issue above. | `shard-g07-red-ci114.log` |
+
+Additional old-source GREEN job logs retained: ads attribution, click slices
+1/2, design, home COD, promotions, refund/fulfilment, Studio BFF and Studio UI.
+The logged `shipments.go` call-site advisory is not a failing MF08 test; this
+unit has no diff in that file. Other predicted historical-fixture gaps have
+not been declared fixed without CI evidence.
+
+This batch is test-fixture/pin restoration and failure diagnosis, **E1 source
+only** until its CI finishes. A temporary dispatch-only authoring step emits
+format/dependency/shard artifacts without modifying the tested source, as in
+CI97; it will be removed after collection. All local test/build/formatter/
+server/PG execution remains **NOT_RUN (owner CI-only)**. Full PR required
+checks are still **BLOCKED(ci-drift-scanner, unit CI-DRIFT-FACTORY)**; PR54 is
+OPEN and no scanner, baseline or actual-pool probe was changed. Independent
+review is pending. **NOT READY**.
