@@ -73,6 +73,17 @@ func TestOrderAttemptDestinationFrozenReadbackAndRollback(t *testing.T) {
 			e := lbuNew(t)
 			a := oaDestinationAdmit(t, e, kind, "bank_transfer")
 			ctx := context.Background()
+			browserCart, browserBefore := "", ""
+			if kind == "home" {
+				browserCart = randomUUID()
+				session := randomUUID()
+				// Positive same-owner browser-cart sentinel, independent of the attempt cart.
+				mustExec(t, e.p.f.owner, `INSERT INTO buyer.capability_sessions(id,tenant_id,store_id,owner_id,token_hash,expires_at)
+				 SELECT $2::uuid,tenant_id,store_id,buyer_owner_id,sha256(convert_to(($2::uuid)::text,'UTF8')),clock_timestamp()+interval '1 hour' FROM ops.order_attempts WHERE attempt_id=$1`, a.AttemptID, session)
+				mustExec(t, e.p.f.owner, `INSERT INTO storefront.carts(tenant_id,store_id,owner_id,id,creator_session_id,currency,version)
+				 SELECT tenant_id,store_id,buyer_owner_id,$2::uuid,$3::uuid,'TWD',7 FROM ops.order_attempts WHERE attempt_id=$1`, a.AttemptID, browserCart, session)
+				if err := e.p.f.owner.QueryRow(ctx, `SELECT to_jsonb(c)::text FROM storefront.carts c WHERE id=$1`, browserCart).Scan(&browserBefore); err != nil { t.Fatal(err) }
+			}
 			tx, plain := oaFenceDomainTx(t, e, a, true)
 			quote := oaDestinationQuote(t, tx, a, plain)
 			var plan orderattempt.FrozenPlan
@@ -112,7 +123,13 @@ func TestOrderAttemptDestinationFrozenReadbackAndRollback(t *testing.T) {
 			var decoded checkout.Snapshot
 			if err = json.Unmarshal(encoded, &decoded); err != nil || !reflect.DeepEqual(decoded.Destination, d) { t.Fatal("typed checkout destination snapshot loses fields") }
 			var effects int
-			if err = tx.QueryRow(ctx, `SELECT (SELECT count(*) FROM checkout.orders WHERE create_attempt_id=$1)+(SELECT count(*) FROM buyer.capability_sessions WHERE owner_id=$2::uuid)+(SELECT count(*) FROM inventory.reservations WHERE create_attempt_id=$1)`, a.AttemptID, plan.BuyerOwnerID).Scan(&effects); err != nil || effects != 0 { t.Fatalf("destination acquired order/hold/session effects: count=%d err=%v", effects, err) }
+			if err = tx.QueryRow(ctx, `SELECT (SELECT count(*) FROM checkout.orders WHERE create_attempt_id=$1)+(SELECT count(*) FROM inventory.reservations WHERE create_attempt_id=$1)`, a.AttemptID).Scan(&effects); err != nil || effects != 0 { t.Fatalf("destination acquired order/hold effects: count=%d err=%v", effects, err) }
+			var sessions int
+			if err = tx.QueryRow(ctx, `SELECT count(*) FROM buyer.capability_sessions WHERE owner_id=$1`, plan.BuyerOwnerID).Scan(&sessions); err != nil || sessions != map[bool]int{false:0,true:1}[kind=="home"] { t.Fatalf("destination minted browser session: count=%d err=%v", sessions, err) }
+			if browserCart != "" {
+				var browserAfter string
+				if err = tx.QueryRow(ctx, `SELECT to_jsonb(c)::text FROM storefront.carts c WHERE id=$1`, browserCart).Scan(&browserAfter); err != nil || browserBefore != browserAfter { t.Fatalf("successful attempt materialization changed browser cart: %v", err) }
+			}
 			if err = tx.Rollback(ctx); err != nil { t.Fatal(err) }
 			if err = e.p.f.owner.QueryRow(ctx, `SELECT (SELECT count(*) FROM storefront.destination_snapshots WHERE create_attempt_id=$1)+(SELECT count(*) FROM storefront.destination_events WHERE create_attempt_id=$1)+(SELECT count(*) FROM fulfillment.pickup_versions WHERE create_attempt_id=$1)+(SELECT count(*) FROM storefront.carts WHERE create_attempt_id=$1)+(SELECT count(*) FROM storefront.quotes WHERE create_attempt_id=$1)`, a.AttemptID).Scan(&effects); err != nil || effects != 0 { t.Fatalf("outer rollback left destination/store/cart/quote effects: count=%d err=%v", effects, err) }
 		})
