@@ -1,0 +1,37 @@
+go: downloading github.com/jackc/pgx/v5 v5.11.0
+go: downloading github.com/riverqueue/river v0.40.0
+go: downloading github.com/riverqueue/river/riverdriver/riverpgxv5 v0.40.0
+go: downloading github.com/riverqueue/river/rivertype v0.40.0
+go: downloading github.com/riverqueue/river/riverdriver v0.40.0
+go: downloading golang.org/x/crypto v0.57.0
+go: downloading github.com/jackc/pgpassfile v1.0.0
+go: downloading github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761
+go: downloading golang.org/x/text v0.42.0
+go: downloading github.com/jackc/puddle/v2 v2.2.2
+go: downloading github.com/riverqueue/river/rivershared v0.40.0
+go: downloading golang.org/x/image v0.46.0
+go: downloading golang.org/x/net v0.60.0
+go: downloading github.com/coreos/go-oidc/v3 v3.21.0
+go: downloading golang.org/x/oauth2 v0.37.0
+go: downloading golang.org/x/sync v0.23.0
+go: downloading github.com/tidwall/gjson v1.19.0
+go: downloading github.com/tidwall/sjson v1.2.5
+go: downloading golang.org/x/sys v0.48.0
+go: downloading github.com/go-jose/go-jose/v4 v4.1.4
+go: downloading github.com/stretchr/testify v1.11.1
+go: downloading go.uber.org/goleak v1.3.0
+go: downloading github.com/tidwall/match v1.2.0
+go: downloading github.com/tidwall/pretty v1.2.1
+go: downloading github.com/davecgh/go-spew v1.1.1
+go: downloading github.com/pmezard/go-difflib v1.0.0
+go: downloading gopkg.in/yaml.v3 v3.0.1
+=== RUN   TestQueuedOrderLinkTwoBuyerReminderBatch
+    queued_order_link_batch_test.go:22: two-buyer batch must queue both unpaid orders: status=200 queued=1 refused=1
+--- FAIL: TestQueuedOrderLinkTwoBuyerReminderBatch (10.59s)
+=== RUN   TestQueuedOrderLinkForBuyerResponseAfterConcurrentPlan
+    queued_order_link_response_test.go:199: buyer_link must be explicitly null after the competing payment DM plan supersedes the original link
+--- FAIL: TestQueuedOrderLinkForBuyerResponseAfterConcurrentPlan (2.11s)
+FAIL
+FAIL	livecommerce/tests/foundation	12.909s
+FAIL
+test-focused: top-level PASS=0 FAIL=2 SKIP=0 exit=1
