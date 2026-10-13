@@ -198,7 +198,7 @@ export function registerProductEditorAcceptance() {
           );
           await page
             .getByRole("navigation", {
-              name: productEditorCopy[locale].progress,
+              name: locale === "en" ? "Product editor navigation" : locale === "zh-TW" ? "商品編輯導覽" : "商品编辑导航",
             })
             .getByRole("button", {
               name: productEditorCopy[locale].media,
