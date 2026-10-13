@@ -1,15 +1,79 @@
 // Purpose: Verify real editor navigation, visible field focus and reserved savebar geometry without synthetic DOM changes.
-// Depends on: Playwright Page/expect and the production ProductDocumentForm markup; caller-owned browser/PG fixture.
+// Depends on: Playwright Page/Route/expect, production ProductDocumentForm/ProductList markup and localized copy; caller-owned browser/PG fixture.
 // Used by: product-editor.acceptance.ts under --browser-product-editor; reads geometry and performs real nav clicks.
-import { expect, type Page } from "@playwright/test";
+import { expect, type Page, type Route } from "@playwright/test";
 import { presentationCopy } from "../../apps/admin/lib/presentation-copy";
 import { productEditorCopy } from "../../apps/admin/lib/product-editor-copy";
+import { catalogCopy } from "../../apps/admin/lib/catalog-v2-copy";
 
 // Run the additional interaction sequence once per locale on the caller's page;
 // the existing reserved-layout checks still run on every create/edit fixture.
 const hardenedLocales = new WeakMap<Page, Set<string>>();
 
-/** Exercises UXH01–05 with native input and read-only browser measurements. */
+/** Delays an unchanged real catalog response to measure native status-count label growth. */
+export async function assertProductListAsyncTabGrowth(page: Page) {
+  const locale = new URL(page.url()).pathname.split("/")[1] as keyof typeof catalogCopy;
+  const originalViewport = page.viewportSize()!;
+  const archived = page.getByTestId("products-tab-archived");
+  const pattern = (url: URL) => url.pathname.endsWith("/catalog-products") && url.searchParams.get("status") === "archived";
+  let release!: () => void;
+  const held = new Promise<void>(resolve => { release = resolve; });
+  let received = false;
+  let delivery: Promise<void> | undefined;
+  const handler = (route: Route) => delivery = (async () => {
+    // Fixture timing only: retain the actual BFF/Go/PG response, never invent
+    // counts, labels, DOM nodes, or a successful transport response.
+    const response = await route.fetch();
+    expect(response.status(), "UXH07 real catalog read succeeds").toBe(200);
+    received = true;
+    await held;
+    await route.fulfill({ response });
+  })();
+  const measure = () => archived.evaluate(el => {
+    const strip = el.parentElement!, tab = el.getBoundingClientRect(), frame = strip.getBoundingClientRect();
+    return { tabWidth: tab.width, frameWidth: frame.width, overflow: strip.scrollWidth - strip.clientWidth,
+      scrollLeft: strip.scrollLeft, tabLeft: tab.left, tabRight: tab.right, frameLeft: frame.left, frameRight: frame.right,
+      fullyVisible: tab.width > 0 && tab.left >= frame.left - 1 && tab.right <= frame.right + 1 };
+  }); // READ/MEASURE: only actual data arrival changes production labels.
+  await page.route(pattern, handler);
+  try {
+    // Four localized status tabs genuinely overflow this narrow frame; this is
+    // an extra hardening viewport, outside the canonical mobile matrix cases.
+    await page.setViewportSize({ width: 220, height: originalViewport.height });
+    await archived.click();
+    await expect.poll(() => received, { message: "UXH07 unchanged real response is held", timeout: 10000 }).toBe(true);
+    await expect(archived).toHaveAttribute("aria-pressed", "true");
+    await expect(archived).toHaveText(catalogCopy[locale].status.archived);
+    await expect.poll(async () => (await measure()).fullyVisible).toBe(true);
+    const selectedNode = await archived.elementHandle();
+    expect(selectedNode, "UXH07 selected production button exists").toBeTruthy();
+    const before = await measure();
+    expect(before.overflow, "UXH07 strip already overflows before status counts arrive").toBeGreaterThan(1);
+    release();
+    await expect(archived).toHaveText(new RegExp(`^${catalogCopy[locale].status.archived} \\d+$`));
+    await expect.poll(async () => (await measure()).tabWidth,
+      { message: "UXH07 real count arrival grows the selected label" }).toBeGreaterThan(before.tabWidth);
+    const after = await measure();
+    expect(await selectedNode!.evaluate(el => el.isConnected), "UXH07 count arrival keeps the same selected DOM button").toBe(true);
+    await expect(archived).toHaveAttribute("aria-pressed", "true");
+    expect(after.overflow, "UXH07 strip still overflows after label growth").toBeGreaterThan(1);
+    expect(after.tabWidth, "UXH07 selected label fits the frame").toBeLessThanOrEqual(after.frameWidth);
+    await expect.soft.poll(async () => (await measure()).fullyVisible,
+      { message: "UXH07 existing selected tab is revealed after real asynchronous count-label growth", timeout: 1000 }).toBe(true);
+    console.log("UXH07", JSON.stringify({ locale, before, after: await measure() }));
+  } finally {
+    release();
+    // Complete the held request before navigating away so cleanup cannot abort
+    // it into a stale transport error. The caller's test timeout bounds the flow.
+    if (delivery) await delivery;
+    await page.unroute(pattern, handler);
+    await page.setViewportSize(originalViewport);
+    await page.getByTestId("products-tab-all").click();
+    await expect(page.getByTestId("products-table")).toBeVisible();
+  }
+}
+
+/** Exercises UXH01–06 with native input and read-only browser measurements. */
 async function assertProductEditorHardening(page: Page) {
   const locale = new URL(page.url()).pathname.split("/")[1] as "zh-TW" | "zh-CN" | "en";
   const c = productEditorCopy[locale];
@@ -160,6 +224,23 @@ async function assertProductEditorHardening(page: Page) {
     await verify.poll(async () => (await measureSelected()).fullyVisible,
       { message: "UXH05 desktop-selected SEO is fully visible after 901→390 resize" }).toBe(true);
     console.log("UXH05", JSON.stringify({ locale, direction: "901→390", ...await measureSelected() }));
+
+    // Unlike UXH05, overflow exists on both sides of this resize. Select once
+    // at the starting width; no click/focus/wheel after resize may reveal SEO.
+    await resize(600);
+    await seo.click();
+    await expect(seo, "UXH06 native click selects SEO at 600px").toHaveAttribute("aria-current", "location");
+    const beforeClipping = await measureSelected();
+    expect(beforeClipping.overflow, "UXH06 600px strip already overflows").toBeGreaterThan(1);
+    expect(beforeClipping.fullyVisible, "UXH06 selected SEO starts fully visible").toBe(true);
+    await resize(390);
+    const afterClipping = await measureSelected();
+    expect(afterClipping.overflow, "UXH06 390px strip still overflows").toBeGreaterThan(1);
+    expect(afterClipping.tabWidth, "UXH06 selected tab fits inside the resized strip").toBeLessThanOrEqual(afterClipping.frameWidth);
+    await verify(seo, "UXH06 clipping resize retains SEO selection").toHaveAttribute("aria-current", "location");
+    await verify.poll(async () => (await measureSelected()).fullyVisible,
+      { message: "UXH06 already-overflowing selected SEO is fully visible after 600→390 resize" }).toBe(true);
+    console.log("UXH06", JSON.stringify({ locale, direction: "600→390", before: beforeClipping, after: await measureSelected() }));
     seen.add(locale);
     hardenedLocales.set(page, seen);
   } finally {
