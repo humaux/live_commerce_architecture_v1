@@ -249,6 +249,10 @@ if (kind === "node") {
   raw = result.stdout;
   const events = parseNodeEvents(raw);
   outcome = nodeOutcome(events, suites.filter((arg) => arg.startsWith("tests/")).map((arg) => arg.split("=")[0]));
+  for (const event of events.filter((event) => event.type === "test:complete" && event.data?.details?.passed === false)) {
+    console.error(`matrix-receipt: failed ${event.data.file} / ${event.data.name}: ${event.data.details.error?.stack || event.data.details.error?.message || "see raw events"}`);
+  }
+  console.error(`matrix-receipt: Node actual ${outcome.cases.filter((item) => item.passed).length} passed; ${outcome.files.length} suite files`);
 } else {
   let command = rawArgs;
   const env = { ...process.env };

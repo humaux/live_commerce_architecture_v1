@@ -351,6 +351,10 @@ jobs:
         with:
           script: |
             const { spawnSync } = require("node:child_process");
+            const expected = { PLAN: "success", GATE: "success", AGG: process.env.AGG_EXPECTED === "true" ? "success" : "skipped", DEPLOY: process.env.DEPLOY_EXPECTED === "true" ? "success" : "skipped" };
+            for (const [job, outcome] of Object.entries(expected)) {
+              if (process.env[job] !== outcome) core.setFailed(`${job} outcome ${process.env[job]}; required ${outcome}`);
+            }
             const result = spawnSync(process.execPath, ["scripts/dev/matrix-receipt-verify.mjs", "required", "evidence/gates", process.env.GITHUB_RUN_ID, process.env.SOURCE_SHA, process.env.MATRIX, process.env.GITHUB_EVENT_NAME], { stdio: "inherit", env: { ...process.env, NODE_OPTIONS: "" } });
             if (result.error) throw result.error;
             if (result.status !== 0) core.setFailed(`matrix receipt verification exited ${result.status}`);

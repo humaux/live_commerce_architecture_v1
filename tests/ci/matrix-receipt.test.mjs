@@ -7,8 +7,29 @@ import { spawnSync } from "node:child_process";
 import { readFileSync, mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { createHash } from "node:crypto";
+import { runInNewContext } from "node:vm";
 import { nodeSuites, nodeCaseInventory, nodeOutcome, goOutcome, goFamily, validateHistoricalSkip, browserOutcome, sourceHashes, canonicalEvidenceDrift } from "../../scripts/dev/matrix-receipt.mjs";
 import { verifyReceipt } from "../../scripts/dev/matrix-receipt-verify.mjs";
+
+test("the independent receipt action refuses failed job outcomes even with valid receipts and a commented shell check", () => {
+  const workflow = readFileSync(".github/workflows/gates.yml", "utf8")
+    .replace('[[ "$GATE" == success ]] || rc=1', '# [[ "$GATE" == success ]] || rc=1');
+  const required = workflow.slice(workflow.indexOf("\n  required:"));
+  const body = required.slice(required.indexOf("          script: |\n") + "          script: |\n".length)
+    .split("\n").filter((line) => line.startsWith("            ")).map((line) => line.slice(12)).join("\n");
+  const execute = (changes) => {
+    const failures = [];
+    runInNewContext(body, { require: () => ({ spawnSync: () => ({ status: 0 }) }),
+      core: { setFailed: (message) => failures.push(message) }, process: { execPath: process.execPath,
+        env: { PLAN: "success", GATE: "success", AGG: "skipped", DEPLOY: "skipped", AGG_EXPECTED: "false", DEPLOY_EXPECTED: "false", ...changes } } });
+    return failures;
+  };
+  assert.deepEqual(execute({}), []);
+  for (const job of ["PLAN", "GATE", "AGG", "DEPLOY"]) {
+    assert.ok(execute({ [job]: "failure" }).some((message) => message.startsWith(job)), `${job} cannot be donated by passing receipts`);
+  }
+  assert.ok(execute({ AGG_EXPECTED: "true" }).some((message) => message.startsWith("AGG")));
+});
 
 function nodeEvents({ skipped = false, only = false, omit = null, removeCase = null } = {}) {
   const events = [];
