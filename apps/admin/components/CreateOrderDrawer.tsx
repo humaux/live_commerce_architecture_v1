@@ -397,6 +397,13 @@ export function CreateOrderDrawer({
         if ([401, 403].includes(outcome.status)) expire();
       }
     } catch (cause) {
+      // Discharge only this fresh, never-dispatched attempt before privacy teardown forgets the guard.
+      // A same-key retry's pre-fetch failure says nothing about its earlier UNKNOWN dispatch.
+      if (privacy.fence.current(ticket) && !pending && cause instanceof CreateOrderError && cause.neverSent) {
+        attempt.current.clear();
+        setUncertain(false);
+        setGuarded(!guard.current?.clear());
+      }
       if (privacy.fence.current(ticket) && denied(cause)) {
         expire();
         return;
@@ -405,13 +412,7 @@ export function CreateOrderDrawer({
         setError(
           cause instanceof CreateOrderError ? cause.code : "unavailable",
         );
-        // Only a newly prepared request rejected by local transport validation is proven never dispatched.
-        // A prior UNKNOWN receipt (or any server refusal) still needs authoritative recovery.
-        if (!pending && cause instanceof CreateOrderError && cause.neverSent) {
-          attempt.current.clear();
-          setUncertain(false);
-          setGuarded(!guard.current?.clear());
-        } else if (attempt.current.pending()) setUncertain(true);
+        if (attempt.current.pending()) setUncertain(true);
       }
     } finally {
       if (privacy.fence.current(ticket)) {

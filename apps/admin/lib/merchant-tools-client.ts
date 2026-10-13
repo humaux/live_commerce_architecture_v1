@@ -7,7 +7,7 @@ import { csrfCookie, safeError, sessionBoundary } from "./settings-client";
 import { get } from "./customers-client";
 import { parseDashboard, parseImportResult, parseManualOptions, parseManualResult, parseRegenerateResult, type Dashboard, type ImportResult, type ManualOption, type ManualResult, type RegenerateResult } from "./merchant-tools-model";
 
-export type Outcome<T> = { ok: true; value: T; status: number } | { ok: false; code: string; uncertain: boolean; status: number };
+export type Outcome<T> = { ok: true; value: T; status: number } | { ok: false; code: string; uncertain: boolean; status: number; neverSent?: true };
 const base = (store: string) => `/api/stores/${store}/tools`;
 
 export const readDashboard = (store: string, signal: AbortSignal): Promise<Dashboard> => get(`${base(store)}/dashboard`, parseDashboard, signal);
@@ -27,7 +27,8 @@ async function fenced(boundary: string): Promise<string | null> {
 async function write<T>(url: string, init: { headers: Record<string, string>; body: string | Blob }, boundary: string, parse: (v: unknown, status: number) => T, timeoutMs: number,
   accept: (status: number) => boolean): Promise<Outcome<T>> {
   const csrf = await fenced(boundary);
-  if (!csrf) return { ok: false, code: "unauthorized", uncertain: false, status: 401 };
+  // This is before fetch; a lost response or any server refusal never receives this provenance.
+  if (!csrf) return { ok: false, code: "unauthorized", uncertain: false, status: 401, neverSent: true };
   try {
     const response = await fetch(url, {
       method: "POST", credentials: "same-origin", cache: "no-store", headers: { ...init.headers, "X-CSRF-Token": csrf }, body: init.body,

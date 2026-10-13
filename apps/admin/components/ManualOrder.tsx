@@ -128,6 +128,7 @@ export function ManualOrder({
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!store || sending.current || guarded || revoked || !privacy.visible || attempt.current.resolved() || (!attempt.current.pending() && (problem || mapOnly))) return;
+    const pendingBeforeSubmit = !!attempt.current.pending();
     // Draft edits never alter a submitted request. Even an invalid new draft can retry the old valid receipt.
     if (!attempt.current.pending()) {
       if (!guard.current?.arm()) { setGuarded(true); return; }
@@ -144,6 +145,15 @@ export function ManualOrder({
         attempt.current.finish(); guard.current?.clear(); setUncertain(false);
         setCodDue(outcome.value.payment_mode === "cash_on_delivery" ? outcome.value.total_minor + (attemptOption.current?.cod_surcharge_minor ?? 0) : null);
         setPlaced(outcome.value); return;
+      }
+      // The production transport's pre-fetch fence proves only a fresh intent was never sent.
+      // Disarm before revoke forgets the receipt; an older UNKNOWN still requires server recovery.
+      if (outcome.neverSent && !pendingBeforeSubmit) {
+        attempt.current.clear(); attemptOption.current = null;
+        setUncertain(false); setGuarded(!guard.current?.clear());
+        setFailure(c.errors[outcome.code] ?? c.errors.default);
+        if ([401, 403].includes(outcome.status)) revoke();
+        return;
       }
       const retain = retainOrderAttempt(outcome, uncertain);
       setUncertain(retain); setFailure(c.errors[outcome.code] ?? c.errors.default);

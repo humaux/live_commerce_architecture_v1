@@ -37,13 +37,13 @@ function path(store: string, resource: string): string {
     throw new CreateOrderError("invalid_request", 422, true);
   return `/api/stores/${store}/tools/${resource}`;
 }
-async function fence(csrf: string, boundary?: string): Promise<string> {
+async function fence(csrf: string, boundary?: string, neverSent = false): Promise<string> {
   try {
     const current = await sessionBoundary(csrf);
     if (boundary !== undefined && current !== boundary) throw new Error();
     return current;
   } catch {
-    throw new CreateOrderError("unauthorized", 401);
+    throw new CreateOrderError("unauthorized", 401, neverSent);
   }
 }
 const timeout = (signal?: AbortSignal) =>
@@ -180,7 +180,8 @@ async function sendForBuyer<T>(
   if (!/^[A-Za-z0-9_.:-]{8,128}$/.test(attempt.key) || !validBody(body))
     throw new CreateOrderError("invalid_request", 422, true);
   const csrf = csrfCookie();
-  await fence(csrf, boundary);
+  // Only this fence precedes fetch. Later privacy fences must preserve possible committed writes.
+  await fence(csrf, boundary, true);
   signal?.throwIfAborted();
   const unknown: Extract<ForBuyerOutcome, { ok: false }> = {
     ok: false,
