@@ -529,6 +529,9 @@ func TestProductEditorMatrixLedgerEvidenceSharedSources(t *testing.T) {
 		"tests/foundation/testdata/product_editor_mobile_matrix_ledger.json",
 		"apps/admin/lib/product-editor-copy.ts", "apps/admin/components/ProductDocumentVariants.tsx",
 		"apps/admin/components/ProductDocumentForm.tsx", "apps/admin/lib/use-product-document.ts", "apps/admin/lib/product-document.ts",
+		// Frozen consumer snapshots corroborate historical run identities; their
+		// current checkout bytes are outside SOURCE.json's owned producer set.
+		"tests/admin/product-review.acceptance.ts", "tests/admin/product-feedback.acceptance.ts", "tests/admin/catalog-core.spec.ts",
 	} {
 		t.Run(path, func(t *testing.T) {
 			root, _ := productEditorMatrixEvidenceFixture(t)
