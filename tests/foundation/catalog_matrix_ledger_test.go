@@ -528,23 +528,16 @@ func validateProductEditorMatrixEvidence(root string) error {
 		}
 	}
 	var drift productEditorMatrixEvidenceDrift
-	// Frozen test consumers may be shared context outside the fourteen owned
-	// producers; their tested snapshots still define historical test identities.
-	recordedSources := make(map[string]string, len(manifest.Sources)+len(frozen.Hashes))
-	for path, hash := range manifest.Sources {
-		recordedSources[path] = hash
-	}
-	for path, hash := range frozen.Hashes {
-		recordedSources[path] = hash
-	}
-	sourcePaths := make([]string, 0, len(recordedSources))
-	for path := range recordedSources {
+	// SOURCE.json's corroborated owned producer set defines checkout drift.
+	// Frozen consumers prove historical identities above without expanding it.
+	sourcePaths := make([]string, 0, len(manifest.Sources))
+	for path := range manifest.Sources {
 		sourcePaths = append(sourcePaths, path)
 	}
 	sort.Strings(sourcePaths)
 	gateChanged := false
 	for _, path := range sourcePaths {
-		hash := recordedSources[path]
+		hash := manifest.Sources[path]
 		if !regexp.MustCompile(`^[0-9a-f]{64}$`).MatchString(hash) {
 			return fmt.Errorf("invalid recorded source SHA-256: %s", path)
 		}

@@ -6,8 +6,8 @@
   "author_provenance": "Explicit parent spawn metadata for NEW review repair author only; original author/root model and effort UNKNOWN",
   "evidence_level": "E1 STATIC SOURCE EDITS ONLY; compile/lint/tests/gates NOT_RUN locally; CI owned by parent",
   "source_files_sha256": {
-    "tests/foundation/catalog_matrix_ledger_test.go": "5f3fed0cbadc9efd9b7aa9979f82141ceeb0cfe21558c54009808a194e4f7b15",
-    "tests/foundation/catalog_matrix_evidence_test.go": "f80848fc47016ab53a40b327f1c56954878f5a3401391da7cad16a7c055c4e60"
+    "tests/foundation/catalog_matrix_ledger_test.go": "bf5fb1c6df8f73c8469862d1ec16879307a3387ec7e263ed701ebb99fa02e1b0",
+    "tests/foundation/catalog_matrix_evidence_test.go": "224a9e1843616e3b83121849b774350144a2bea723ee97daa961b70627d443b7"
   },
   "frozen_record_sha256": "afd55e756cbeec4a1787141bd37ac5a562a2187e10b16ba8871674b79289dec7",
   "static_read_whitespace_observations": [
@@ -105,10 +105,25 @@
       "scope": "file mutation using exact CI patch; no local formatter/check/test"
     },
     {
+      "command": "static apply_patch; python3 static source SHA-256 receipt refresh; git add/commit for integration regression and fix",
+      "exit_code": 0,
+      "scope": "file mutation and commit only; no formatter/test/check"
+    },
+    {
       "command": "local go/node/pnpm/playwright/devserver/PG/gate/formatter",
       "exit_code": "NOT_RUN",
       "scope": "owner CI-only restriction"
     }
   ],
-  "ci_formatter_patch": "output/matrix-coverage-v2-evidence/ci-format-38381067824/receipt.json"
+  "ci_formatter_patch": "output/matrix-coverage-v2-evidence/ci-format-38381067824/receipt.json",
+  "integration_correction": {
+    "base_commit": "31781cbf42a0c72c4e1432eb161118d03a8feaeb",
+    "regression_test_commit": "b60e4c57",
+    "root_cause": "Frozen auxiliary consumer hashes expanded Go checkout drift beyond SOURCE.json bound producer set, while PR46 independently recomputes only SOURCE bindings and requires exact skip-reason set equality.",
+    "fix": "Checkout drift iterates manifest.Sources corroborated with SOURCE.json only; frozen snapshots, identity, locale, case table and native outcome validation remain unchanged. Frozen consumer provenance corroborates historical evidence rather than authorizing additional current checkout bindings.",
+    "controls": "Existing TestProductEditorMatrixLedgerEvidenceSharedSources now includes product-review.acceptance.ts, product-feedback.acceptance.ts, catalog-core.spec.ts and requires nil error after each current context change; all frozen history corruption controls retained.",
+    "local_test_formatter_check": "NOT_RUN owner CI-only",
+    "ci_compile_behavior": "NOT_RUN for this correction; parent owns exact-source CI",
+    "delivery_note_owner": "Parent preserves and commits its uncommitted DELIVERY and lossless CI logs; integration note transmitted in handoff."
+  }
 }
