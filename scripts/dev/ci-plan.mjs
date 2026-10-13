@@ -33,7 +33,8 @@ export function expand(modes, { groupIds, sweep = SWEEP_SHARDS, visual = VISUAL_
     else out.push(m);
   }
   const unique = [...new Set(out)];
-  if (matrixDrift && catchAllId && unique.includes("shard:unit") && unique.includes(`shard:${catchAllId}`) &&
+  const completeShardFamily = catchAllId && unique.includes("shard:unit") && unique.includes(`shard:${catchAllId}`);
+  if (matrixDrift && (unique.includes("foundation") || completeShardFamily) &&
       !unique.includes("--browser-product-editor"))
     unique.push("--browser-product-editor");
   const matrix = unique.map((mode) => ({ mode, art: artifactName(mode) }));
@@ -54,7 +55,7 @@ export function main(env = process.env) {
   const modes = JSON.parse(env.MODES ?? "");
   const catchAll = plan.groups.filter((group) => group.catch_all === true);
   if (catchAll.length !== 1) throw new Error("shard plan must have exactly one catch-all group");
-  const hasMatrixFamily = modes.includes("foundation-shards") || modes.includes(`shard:${catchAll[0].id}`);
+  const hasMatrixFamily = modes.includes("foundation") || modes.includes("foundation-shards") || modes.includes(`shard:${catchAll[0].id}`);
   const matrixDrift = hasMatrixFamily && canonicalEvidenceDrift().length > 0;
   const result = expand(modes, { groupIds: plan.groups.map((g) => g.id), catchAllId: catchAll[0].id, matrixDrift });
   console.log(`ci-plan: ${result.matrix.length} job(s)${result.sweepN ? `; click-sweep x${result.sweepN} (aggregate)` : ""}${result.visualN ? `; visual-lint x${result.visualN} (aggregate)` : ""}`);

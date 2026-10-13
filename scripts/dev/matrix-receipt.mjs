@@ -257,6 +257,19 @@ export function browserOutcome(events) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
 const [kind, ...rawArgs] = process.argv.slice(2);
+if (kind === "gate-step") {
+  const { LC_MATRIX_GATE_MODE: mode, LC_MATRIX_GATE_OUTCOME: outcome, GITHUB_RUN_ID: runId,
+    GITHUB_JOB: job, GITHUB_SHA: sourceCommit } = process.env;
+  if (!mode || !/^[\x20-\x7e]+$/.test(mode)) throw new Error("Gate step receipt requires a printable matrix mode");
+  if (!new Set(["success", "failure", "cancelled", "skipped"]).has(outcome)) throw new Error("Gate step receipt requires the actual GitHub step outcome");
+  if (!runId || !job || !/^[0-9a-f]{40,64}$/i.test(sourceCommit || "")) throw new Error("Gate step receipt requires GitHub run, job and source identities");
+  const safeMode = mode.replace(/[^A-Za-z0-9_.-]/g, "_");
+  const path = resolve("output/matrix-coverage-v2-execution", runId, job, "gate-results", `${safeMode}.gate.json`);
+  const receipt = { schema: "matrix-gate-step-receipt/v1", mode, run_id: runId, job, step_name: "Gate", outcome, source_commit: sourceCommit };
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, `${JSON.stringify(receipt, null, 2)}\n`);
+  console.error(`matrix-receipt: Gate step wrote ${relative(process.cwd(), path)}`);
+} else {
 if (!["node", "go", "browser"].includes(kind)) throw new Error("usage: matrix-receipt.mjs node|go|browser <command and args>");
 const receipt = baseReceipt(kind, rawArgs);
 let result;
@@ -305,4 +318,5 @@ if (result.stdout && kind === "go") {
 }
 if (result.error) throw result.error;
 if (result.status !== 0 || !outcome.ok) process.exit(result.status || 1);
+}
 }

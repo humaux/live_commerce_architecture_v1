@@ -148,10 +148,10 @@ jobs:
           pnpm install --frozen-lockfile --ignore-scripts
       - name: Product-editor matrix Node suites
         id: node-matrix
-        if: matrix.mode == 'shard:unit'
+        if: matrix.mode == 'shard:unit' || matrix.mode == 'foundation'
         env:
           LC_MATRIX_RECEIPT_KIND: node
-          LC_MATRIX_RECEIPT_MODE: shard:unit
+          LC_MATRIX_RECEIPT_MODE: ${{ matrix.mode }}
         run: node scripts/dev/matrix-receipt.mjs node
       - name: Browser requirements from registry
         id: browsers
@@ -192,6 +192,7 @@ jobs:
       - name: Download pinned test image
         run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
       - name: Gate
+        id: gate
         run: |
           set -o pipefail
           mkdir -p output/ci-gates
@@ -227,6 +228,12 @@ jobs:
             --*)        bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$log" ;;
             *) echo "unknown mode: $MODE" >&2; exit 2 ;;
           esac
+      - name: Capture named Gate step execution receipt
+        if: always()
+        env:
+          LC_MATRIX_GATE_MODE: ${{ matrix.mode }}
+          LC_MATRIX_GATE_OUTCOME: ${{ steps.gate.outcome }}
+        run: env -u NODE_OPTIONS node scripts/dev/matrix-receipt.mjs gate-step
       - name: Failure summary
         if: always()
         run: grep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log | head -200 || true

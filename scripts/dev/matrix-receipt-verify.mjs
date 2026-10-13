@@ -15,6 +15,16 @@ function head() {
   if (result.status !== 0) throw new Error("cannot resolve current source commit");
   return result.stdout.trim();
 }
+function verifyGoCommand(command) {
+  const errors = [];
+  if (!Array.isArray(command) || command.some((part) => typeof part !== "string")) return ["actual Go command argv is missing"];
+  const argv = [...command];
+  while (argv.length && /^[A-Za-z_][A-Za-z0-9_]*=/.test(argv[0])) argv.shift();
+  if (argv[0] !== "go" || argv[1] !== "test") errors.push("actual command argv is not go test");
+  if (argv.slice(2).includes("-race=false")) errors.push("actual go test command disables -race");
+  if (!argv.slice(2).includes("-race")) errors.push("actual go test command is missing -race");
+  return errors;
+}
 export function verifyReceipt(receipt, { receiptPath, kind, mode, runId, job, sourceCommit }) {
   const errors = [];
   if (receipt.schema !== "matrix-execution-receipt/v1") errors.push("schema mismatch");
@@ -39,9 +49,13 @@ export function verifyReceipt(receipt, { receiptPath, kind, mode, runId, job, so
     else if (kind === "go") {
       const { family, shard } = goFamily();
       if (receipt.shard !== shard) throw new Error("Go shard is not the source-derived catch-all");
+      const commandErrors = verifyGoCommand(receipt.command);
+      if (commandErrors.length) throw new Error(commandErrors.join("; "));
       actual = goOutcome(events, family);
     } else {
       actual = browserOutcome(events);
+      const commandErrors = verifyGoCommand(receipt.command);
+      if (commandErrors.length) throw new Error(commandErrors.join("; "));
       const command = receipt.command || [];
       for (const token of ["PRODUCT_EDITOR_ACCEPTANCE=1", "LC_BROWSER_CATALOG_CORE_ACCEPTANCE=1", "-tags", "browser", "-run", "^TestBrowserCatalogCore$", "./tests/foundation"])
         if (!command.includes(token)) throw new Error(`browser command missing ${token}`);
@@ -68,7 +82,7 @@ function collectJsonFiles(root) {
     if (entry.isDirectory()) found.push(...collectJsonFiles(path));
     // Gate artifacts also contain native ledgers, manifests and historical
     // probes. Only these named execution receipts belong to this verifier.
-    else if (entry.isFile() && ["node.json", "go.json", "browser.json"].includes(entry.name)) found.push(path);
+    else if (entry.isFile() && (["node.json", "go.json", "browser.json"].includes(entry.name) || entry.name.endsWith(".gate.json"))) found.push(path);
   }
   return found;
 }
@@ -122,31 +136,66 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     const receipts = files.map((path) => ({ path, receipt: readJson(path) }));
     const shard = catchAllShard();
     let plannedModes;
-    try { plannedModes = JSON.parse(matrixText).map((entry) => entry.mode); }
+    try {
+      const entries = JSON.parse(matrixText);
+      if (!Array.isArray(entries) || entries.some((entry) => !entry || typeof entry.mode !== "string")) throw new Error("bad mode entries");
+      plannedModes = entries.map((entry) => entry.mode);
+      if (new Set(plannedModes).size !== plannedModes.length) throw new Error("duplicate planned modes");
+    }
     catch { throw new Error("plan matrix is missing or invalid"); }
+    const gateReceipts = receipts.filter(({ receipt }) => receipt.schema === "matrix-gate-step-receipt/v1");
+    if (gateReceipts.length !== plannedModes.length)
+      throw new Error(`expected exactly ${plannedModes.length} Gate step receipts for the planned modes; found ${gateReceipts.length}`);
+    for (const plannedMode of plannedModes) {
+      const matches = gateReceipts.filter(({ receipt }) => receipt.mode === plannedMode);
+      if (matches.length !== 1) throw new Error(`expected exactly one Gate step receipt for ${plannedMode}; found ${matches.length}`);
+      const { receipt } = matches[0];
+      if (receipt.run_id !== runId || receipt.job !== "gate" || receipt.step_name !== "Gate" ||
+          receipt.outcome !== "success" || receipt.source_commit !== sha)
+        throw new Error(`Gate step receipt for ${plannedMode} must prove same-run successful Gate execution on the planned source`);
+    }
     const requiredModes = ["shard:unit", `shard:${shard}`];
     const planned = requiredModes.filter((mode) => plannedModes.includes(mode));
-    if (planned.length !== requiredModes.length) {
-      if (["pull_request", "push", "schedule"].includes(eventName) || planned.length !== 0)
-        throw new Error(`automatic required plan must include ${requiredModes.join(" and ")}`);
-      console.log("matrix-receipt-verify: custom manual run has no matrix receipt modes");
-      process.exit(0);
-    }
-    let matrixReceipt;
-    for (const [kind, expectedMode] of [["node", "shard:unit"], ["go", `shard:${shard}`]]) {
+    const automatic = ["pull_request", "push", "schedule"].includes(eventName);
+    const foundationPlanned = plannedModes.includes("foundation");
+    if (planned.length > 0 && planned.length !== requiredModes.length && !foundationPlanned)
+      throw new Error(`matrix plan must include both ${requiredModes.join(" and ")}`);
+    if (foundationPlanned && planned.length > 0 && planned.length !== requiredModes.length)
+      throw new Error(`foundation cannot be combined with a partial matrix plan; include ${requiredModes.join(" and ")}`);
+    const verifyOne = (kind, expectedMode) => {
       const matches = receipts.filter(({ receipt }) => receipt.kind === kind && receipt.mode === expectedMode && receipt.job === "gate" && receipt.run_id === runId);
       if (matches.length !== 1) throw new Error(`expected exactly one ${kind} receipt for ${expectedMode}; found ${matches.length}`);
       const errors = verifyReceipt(matches[0].receipt, { receiptPath: matches[0].path, kind, mode: expectedMode, runId, job: "gate", sourceCommit: sha });
       if (errors.length) throw new Error(`${kind} receipt ${matches[0].path}: ${errors.join("; ")}`);
-      if (kind === "go") matrixReceipt = matches[0].receipt;
+      return matches[0].receipt;
+    };
+    const verifyBrowser = () => {
+      try { return verifyOne("browser", "--browser-product-editor"); }
+      catch (error) { throw new Error(`same-run browser receipt: ${error.message}`); }
+    };
+    if (planned.length === requiredModes.length) {
+      const matrixReceipt = verifyOne("go", `shard:${shard}`);
+      verifyOne("node", "shard:unit");
+      if (matrixReceipt.outcome?.historical_skip) {
+        if (!plannedModes.includes("--browser-product-editor")) throw new Error("historical canonical skip requires a planned --browser-product-editor job");
+        verifyBrowser();
+      }
+    } else if (automatic) {
+      throw new Error(`automatic required plan must include ${requiredModes.join(" and ")}`);
     }
-    if (matrixReceipt?.outcome?.historical_skip) {
-      if (!plannedModes.includes("--browser-product-editor")) throw new Error("historical canonical skip requires a planned --browser-product-editor job");
-      const matches = receipts.filter(({ receipt }) => receipt.kind === "browser" && receipt.mode === "--browser-product-editor" && receipt.job === "gate" && receipt.run_id === runId);
-      if (matches.length !== 1) throw new Error(`historical canonical skip requires one same-run browser receipt; found ${matches.length}`);
-      const errors = verifyReceipt(matches[0].receipt, { receiptPath: matches[0].path, kind: "browser", mode: "--browser-product-editor", runId, job: "gate", sourceCommit: sha });
-      if (errors.length) throw new Error(`fresh browser receipt ${matches[0].path}: ${errors.join("; ")}`);
+    if (foundationPlanned) {
+      verifyOne("node", "foundation");
+      const goReceipt = verifyOne("go", "foundation");
+      if (goReceipt.outcome?.historical_skip) {
+        if (!plannedModes.includes("--browser-product-editor")) throw new Error("manual foundation historical skip requires a planned --browser-product-editor job");
+        verifyBrowser();
+      } else if (plannedModes.includes("--browser-product-editor")) {
+        verifyBrowser();
+      }
+    } else if (planned.length === 0) {
+      console.log("matrix-receipt-verify: custom manual run has no matrix receipt modes");
     }
+    if (plannedModes.includes("--browser-product-editor")) verifyBrowser();
   } else throw new Error("usage: matrix-receipt-verify.mjs foundation-browser-required|foundation|required ...");
   console.log(`matrix-receipt-verify: ${mode} positive execution receipts verified`);
 } catch (error) { fail(error.message); }
