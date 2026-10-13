@@ -110,3 +110,72 @@ func TestGoFactoryOA1MutableErrorSentinelCLI(t *testing.T) {
 		t.Fatalf("mutable nil error sentinel granted admission exclusion: exit=%d %s", code, out)
 	}
 }
+
+func TestGoFactoryOA1CustomContextCLI(t *testing.T) {
+	call := reviewCLI(t)
+	source := strings.Replace(goFactoryOA1Source, "buildBuyerWithCVS(context.Background(), c,", "buildBuyerWithCVS(&routingContext{Context: context.Background(), c: c}, c,", 1)
+	source += `
+type routingContext struct { context.Context; c *buyerConfig }
+func (ctx *routingContext) Err() error { ctx.c.bffKey = "changed"; return ctx.Context.Err() }
+`
+	// Context's interface type does not prove its method bodies are effect-free.
+	platform := strings.Replace(goFactoryOA1Platform, "bounded, cancel := context.WithTimeout", "if ctx.Err() != nil { return denied }\n\tbounded, cancel := context.WithTimeout", 1)
+	root, p := goFactoryOA1Legacy(t, call, source, platform, nil)
+	mustWrite(t, p, strings.Replace(source, "_ = mainPool", goFactoryOA1Probe, 1))
+	if code, out := call(root); code != 1 || !strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED") || !strings.Contains(out, "SUMMARY routes go=1 contract=1 bff=1;") || !strings.Contains(out, "UNRESOLVED EXACT /v1/factory-oa1") || !strings.Contains(out, "UNRESOLVED MOUNT /v1/factory-oa1") {
+		t.Fatalf("custom context method writing buyer configuration escaped gate: exit=%d %s", code, out)
+	}
+}
+
+func TestGoFactoryOA1CustomScanDestinationCLI(t *testing.T) {
+	call := reviewCLI(t)
+	source := strings.Replace(goFactoryOA1Source, "mux := http.NewServeMux()", "platform.OnScan = func() { c.bffKey = \"changed\" }\n mux := http.NewServeMux()", 1)
+	// The ordinary bool remains separate from this fresh destination's sql.Scanner hook.
+	platform := strings.Replace(goFactoryOA1Platform, "var acquired bool", `var acquired bool
+	destination := routingScan{}
+	if e = a.QueryRow(bounded, "SELECT pg_catalog.pg_try_advisory_xact_lock($1::bigint)", key).Scan(&destination); e != nil { return denied }`, 1)
+	platform += `
+var OnScan func()
+type routingScan struct{}
+func (*routingScan) Scan(src any) error { OnScan(); return nil }
+`
+	root, p := goFactoryOA1Legacy(t, call, source, platform, nil)
+	mustWrite(t, p, strings.Replace(source, "_ = mainPool", goFactoryOA1Probe, 1))
+	if code, out := call(root); code != 1 || !strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED") || !strings.Contains(out, "SUMMARY routes go=1 contract=1 bff=1;") || !strings.Contains(out, "UNRESOLVED EXACT /v1/factory-oa1") || !strings.Contains(out, "UNRESOLVED MOUNT /v1/factory-oa1") {
+		t.Fatalf("fresh custom scan destination callback escaped gate: exit=%d %s", code, out)
+	}
+}
+
+func TestGoFactoryOA1NestedPoolReturnCLI(t *testing.T) {
+	call := reviewCLI(t)
+	source := strings.Replace(goFactoryOA1Source, `"github.com/jackc/pgx/v5/pgxpool"`, `"github.com/jackc/pgx/v5"
+ "github.com/jackc/pgx/v5/pgxpool"`, 1)
+	source = strings.Replace(source, "h, _, _, err := buildBuyerWithCVS(context.Background(), c, &pgxpool.Pool{})", `ctx := context.Background()
+ seed, err := callbackPool(ctx, c)
+ if err != nil { return }
+ sharedPool = seed
+ mainPool, err := makePool(ctx, c)
+ if err != nil { return }
+ h, _, _, err := buildBuyerWithCVS(ctx, c, mainPool)`, 1)
+	// A safe final return cannot erase the nested return of a callback-configured global pool.
+	source += `
+var sharedPool *pgxpool.Pool
+func callbackPool(ctx context.Context, c *buyerConfig) (*pgxpool.Pool, error) {
+ cfg, err := pgxpool.ParseConfig("fixture")
+ if err != nil { return nil, err }
+ cfg.BeforeAcquire = func(context.Context, *pgx.Conn) bool { c.bffKey = "changed"; return true }
+ return pgxpool.NewWithConfig(ctx, cfg)
+}
+func makePool(ctx context.Context, c *buyerConfig) (*pgxpool.Pool, error) {
+ if c.enabled { if c.bffKey != "" { return sharedPool, nil } }
+ cfg, err := pgxpool.ParseConfig("fixture")
+ if err != nil { return nil, err }
+ return pgxpool.NewWithConfig(ctx, cfg)
+}
+`
+	root, p := goFactoryOA1Legacy(t, call, source, goFactoryOA1Platform, nil)
+	mustWrite(t, p, strings.Replace(source, "_ = mainPool", goFactoryOA1Probe, 1))
+	if code, out := call(root); code != 1 || !strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED") || !strings.Contains(out, "SUMMARY routes go=1 contract=1 bff=1;") || !strings.Contains(out, "UNRESOLVED EXACT /v1/factory-oa1") || !strings.Contains(out, "UNRESOLVED MOUNT /v1/factory-oa1") {
+		t.Fatalf("nested callback-configured pool return escaped gate: exit=%d %s", code, out)
+	}
+}
