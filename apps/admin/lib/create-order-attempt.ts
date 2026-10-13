@@ -1,4 +1,4 @@
-// Purpose: freeze one order request and retain only an opaque unresolved flag across privacy boundaries.
+// Purpose: freeze one order request and retain an opaque UX flag; the server is the unresolved-intent authority.
 // Depends on: closed A16/manual refusal vocabulary, authenticated stable store/principal scope, key generator and sessionStorage.
 // Used by: ManualOrder, CreateOrderDrawer and Node acceptance; buyer fields and request keys never enter storage.
 type StoragePort = Pick<Storage, "getItem" | "setItem" | "removeItem">;
@@ -68,6 +68,18 @@ export class OrderGuard {
   clear() {
     try {
       this.storage.removeItem(this.key);
+      return !this.blocked();
+    } catch {
+      return false;
+    }
+  }
+  /** Call only after a scoped successful server reconciliation (none, not_created or created). */
+  authoritativeRecovered() {
+    try {
+      this.storage.removeItem(this.key);
+      for (const key of Object.keys(this.storage)) {
+        if (key.startsWith(this.legacyPrefix)) this.storage.removeItem(key);
+      }
       return !this.blocked();
     } catch {
       return false;

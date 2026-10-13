@@ -165,6 +165,19 @@ export async function recoverManualOrder(
 ): Promise<{ ok: true; value: ForBuyerRecovery; status: number } | Extract<ForBuyerOutcome, { ok: false }>> {
   return sendForBuyer(store, attempt, boundary, signal, "orders/manual/recover", parseForBuyerRecovery, [200], validManualBody);
 }
+/** Ask the server to reconcile its authenticated principal/store intent when no browser receipt remains. */
+export async function recoverPendingOrder(
+  store: string, boundary: string, signal?: AbortSignal,
+): Promise<{ ok: true; value: ForBuyerRecovery | { state: "none" }; status: number } | Extract<ForBuyerOutcome, { ok: false }>> {
+  const emptyBody = (value: unknown) => value !== null && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length === 0;
+  const parse = (value: unknown): ForBuyerRecovery | { state: "none" } => {
+    if (value !== null && typeof value === "object" && !Array.isArray(value) && (value as Record<string, unknown>).state === "none" && Object.keys(value).length === 1)
+      return { state: "none" };
+    return parseForBuyerRecovery(value);
+  };
+  // This key belongs only to a recovery action. The server discovers the admitted frozen order intent itself.
+  return sendForBuyer(store, { key: crypto.randomUUID(), body: "{}" }, boundary, signal, "orders/attempt/recover", parse, [200], emptyBody);
+}
 async function sendForBuyer<T>(
   store: string, attempt: { key: string; body: string }, boundary: string, signal: AbortSignal | undefined,
   endpoint: string, parse: (value: unknown) => T, accepted: readonly number[],

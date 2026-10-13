@@ -27,6 +27,7 @@ import {
   readOrderRestricted,
   createForBuyerOrder,
   recoverForBuyerOrder,
+  recoverPendingOrder,
   CreateOrderError,
 } from "@/lib/create-order-client";
 import {
@@ -119,6 +120,7 @@ export function CreateOrderDrawer({
   const [duplicate, setDuplicate] = useState<{ id: string | null } | null>(
     null,
   );
+  const [recoveredOrder, setRecoveredOrder] = useState<string | null>(null);
   const [send, setSend] = useState(false),
     [cap, setCap] = useState({ allowed: false, review: false, closed: false });
   const [copyState, setCopyState] = useState(""),
@@ -149,6 +151,7 @@ export function CreateOrderDrawer({
     setGuarded(false);
     setResult(null);
     setDuplicate(null);
+    setRecoveredOrder(null);
     setSend(false);
     setCap({ allowed: false, review: false, closed: false });
     setCopyState("");
@@ -330,6 +333,7 @@ export function CreateOrderDrawer({
       guarded ||
       result ||
       duplicate ||
+      recoveredOrder ||
       attempt.current.resolved() ||
       (!pending && (problem || mapOnly || prefill.bundles.length > 5))
     )
@@ -379,7 +383,13 @@ export function CreateOrderDrawer({
         guard.current?.clear();
       } else {
         setError(outcome.code);
-        if (outcome.code === "bundle_already_ordered") {
+        if (!pending && outcome.status === 409 && outcome.code === "attempt_pending") {
+          // This new key was not admitted. The server owns the earlier frozen intent; do not replay this body.
+          attempt.current.clear();
+          setGuarded(true);
+          setUncertain(false);
+          setRecoverable(false);
+        } else if (outcome.code === "bundle_already_ordered") {
           setDuplicate({ id: outcome.order_id ?? null });
           attempt.current.finish();
           guard.current?.clear();
@@ -440,7 +450,7 @@ export function CreateOrderDrawer({
       }
       // Only the durable A16R seal can prove absence; bounded order lists and generic 422s cannot.
       attempt.current.finish();
-      if (!guard.current?.clear()) { setGuarded(true); return; }
+      if (!guard.current?.authoritativeRecovered()) { setGuarded(true); return; }
       setError(""); setUncertain(false); setRecoverable(false);
       if (outcome.value.state === "created") setDuplicate({ id: outcome.value.order_id });
       else setRecoveryNote(c.recovered);
@@ -451,9 +461,35 @@ export function CreateOrderDrawer({
       if (privacy.fence.current(ticket)) { sending.current = false; setBusy(false); }
     }
   }
+  async function recoverPending() {
+    if (sending.current || !guarded || !canCreate || !boundary || !privacy.visible) return;
+    const ticket = privacy.fence.begin();
+    sending.current = true; setBusy(true); setError("");
+    try {
+      if ((await checkedBoundary(boundary)) !== boundary || !privacy.fence.current(ticket)) return;
+      const outcome = await recoverPendingOrder(store.id, boundary, ticket.signal);
+      if (!privacy.fence.current(ticket)) return;
+      if (!outcome.ok) {
+        if ([401, 403].includes(outcome.status)) { expire(); return; }
+        setError(outcome.code); return;
+      }
+      // Only the server can find and reconcile a lost receipt; the recovery transport creates no order intent.
+      if (!guard.current?.authoritativeRecovered()) { setError("unavailable"); return; }
+      attempt.current.clear();
+      setGuarded(false); setUncertain(false); setRecoverable(false); setError("");
+      if (outcome.value.state === "created") {
+        setRecoveredOrder(outcome.value.order_id); setRecoveryNote(c.success);
+      } else setRecoveryNote(outcome.value.state === "none" ? c.noPending : c.recovered);
+    } catch (cause) {
+      if (privacy.fence.current(ticket) && denied(cause)) { expire(); return; }
+      if (privacy.fence.current(ticket)) setError("unavailable");
+    } finally {
+      if (privacy.fence.current(ticket)) { sending.current = false; setBusy(false); }
+    }
+  }
   async function copy() {
     // A planned DM owns its sealed link. Regenerating would invalidate the URL it will send.
-    if (copying.current || !result || result.send.state !== "not_sent" || result.send.reason === "link_unavailable" || !privacy.visible) return;
+    if (copying.current || !result || result.send.state !== "not_sent" || ["link_unavailable", "order_cancelled"].includes(result.send.reason) || !privacy.visible) return;
     const ticket = privacy.fence.begin();
     copying.current = true;
     setCopyBusy(true);
@@ -508,7 +544,7 @@ export function CreateOrderDrawer({
     }
   }
   if (!privacy.visible) return null;
-  const orderId = result?.order_id ?? duplicate?.id;
+  const orderId = result?.order_id ?? duplicate?.id ?? recoveredOrder;
   const orderHref = `/${locale}/orders?store=${encodeURIComponent(store.id)}${orderId ? `&order=${encodeURIComponent(orderId)}` : ""}`;
   return (
     <dialog
@@ -535,9 +571,11 @@ export function CreateOrderDrawer({
       {!canCreate ? (
         <p role="status">{c.permission}</p>
       ) : guarded ? (
-        <p role="alert" data-testid="drawer-unresolved-guard">
-          {c.guard} <a href={orderHref}>{c.orders}</a>
-        </p>
+        <section>
+          <p role="alert" data-testid="drawer-unresolved-guard">{c.guard} <a href={orderHref}>{c.orders}</a></p>
+          <p>{c.pendingExplanation}</p>
+          <button type="button" data-testid="drawer-recover-pending" disabled={busy || !boundary} onClick={() => void recoverPending()}>{c.recoverPending}</button>
+        </section>
       ) : !prefill && !error ? (
         <p role="status">{c.loading}</p>
       ) : null}
@@ -569,7 +607,7 @@ export function CreateOrderDrawer({
               : ""}
           </p>
           {(result.send.state === "queued" || result.send.reason === "link_unavailable") && <p data-testid="drawer-queued-link">{c.queuedLink}</p>}
-          {result.link_state === "configured" && result.send.state === "not_sent" && result.send.reason !== "link_unavailable" && (
+          {result.link_state === "configured" && result.send.state === "not_sent" && !["link_unavailable", "order_cancelled"].includes(result.send.reason) && (
             <button
               type="button"
               data-testid="drawer-copy-link"
@@ -584,7 +622,7 @@ export function CreateOrderDrawer({
       ) : (
         prefill &&
         !guarded &&
-        !duplicate && (
+        !duplicate && !recoveredOrder && (
           <form data-testid="drawer-form" onSubmit={submit}>
             {restriction !== "clear" && <p role="status" data-testid="drawer-blocklist-warning">{restriction === "restricted" ? c.restricted : c.restrictionUnavailable}</p>}
             {prefill.customer && (

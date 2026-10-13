@@ -25,7 +25,7 @@ import { draftProblem, manualBody, type ManualDraft, type ManualOption, type Man
 import { toolsCopy } from "@/lib/merchant-tools-copy";
 import { emptyManualForm, type ManualFormLine, type ManualFormValues } from "@/lib/manual-order-form";
 import { OrderAttempt, OrderGuard, retainOrderAttempt } from "@/lib/create-order-attempt";
-import { recoverManualOrder, CreateOrderError } from "@/lib/create-order-client";
+import { recoverManualOrder, recoverPendingOrder, CreateOrderError } from "@/lib/create-order-client";
 import { createOrderCopy } from "@/lib/create-order-copy";
 import { useInboxPrivacy } from "@/src/features/messages/use-privacy";
 import { ManualOrderFormFields } from "./ManualOrderFormFields";
@@ -155,6 +155,12 @@ export function ManualOrder({
         if ([401, 403].includes(outcome.status)) revoke();
         return;
       }
+      if (!pendingBeforeSubmit && outcome.status === 409 && outcome.code === "attempt_pending") {
+        // A different server intent owns the unresolved slot. This draft/key was never admitted.
+        attempt.current.clear(); attemptOption.current = null;
+        setGuarded(true); setUncertain(false); setRecoverable(false); setFailure("");
+        return;
+      }
       const retain = retainOrderAttempt(outcome, uncertain);
       setUncertain(retain); setFailure(c.errors[outcome.code] ?? c.errors.default);
       if (!retain) { attempt.current.finish(); guard.current?.clear(); }
@@ -186,10 +192,33 @@ export function ManualOrder({
       }
       // The server serialized Begin and sealed absence; a generic business refusal alone never releases this key.
       attempt.current.finish();
-      if (!guard.current?.clear()) { setGuarded(true); return; }
+      if (!guard.current?.authoritativeRecovered()) { setGuarded(true); return; }
       setFailure(""); setUncertain(false); setRecoverable(false);
       if (outcome.value.state === "created") setRecoveredOrder(outcome.value.order_id);
       else setRecoveryNote(recoveryCopy.recovered);
+    } catch (cause) {
+      if (!privacy.fence.current(ticket)) return;
+      if (cause instanceof CreateOrderError && [401, 403].includes(cause.status)) { revoke(); return; }
+      setFailure(c.errors.retry_later);
+    } finally { if (privacy.fence.current(ticket)) { sending.current = false; setBusy(false); } }
+  }
+  async function recoverPending() {
+    if (!store || sending.current || !guarded || revoked || !boundary || !privacy.visible) return;
+    const scope = guardScope.current, ticket = privacy.fence.begin();
+    sending.current = true; setBusy(true); setFailure("");
+    try {
+      const outcome = await recoverPendingOrder(store.id, boundary, ticket.signal);
+      if (scope !== guardScope.current || !privacy.fence.current(ticket)) return;
+      if (!outcome.ok) {
+        if ([401, 403].includes(outcome.status)) { revoke(); return; }
+        setFailure(c.errors[outcome.code] ?? c.errors.default); return;
+      }
+      // The server reconciles its principal/store intent even when browser-private key/body was forgotten.
+      if (!guard.current?.authoritativeRecovered()) { setFailure(c.errors.retry_later); return; }
+      attempt.current.clear(); attemptOption.current = null;
+      setGuarded(false); setFailure(""); setUncertain(false); setRecoverable(false);
+      if (outcome.value.state === "created") setRecoveredOrder(outcome.value.order_id);
+      else setRecoveryNote(outcome.value.state === "none" ? recoveryCopy.noPending : recoveryCopy.recovered);
     } catch (cause) {
       if (!privacy.fence.current(ticket)) return;
       if (cause instanceof CreateOrderError && [401, 403].includes(cause.status)) { revoke(); return; }
@@ -249,7 +278,12 @@ export function ManualOrder({
         )}
         {(options.status === "loading" || options.status === "hidden") && !placed && <p className="orders-message" role="status">{c.loading}</p>}
         {listFailure && <p className="orders-message" role="status">{listFailure}</p>}
-        {guarded && <p className="mt-warn" role="alert" data-testid="manual-order-guard">{recoveryCopy.guard} <Link href={`/${locale}/orders${storeQuery}`}>{c.viewOrders}</Link></p>}
+        {privacy.visible && guarded && <section>
+          <p className="mt-warn" role="alert" data-testid="manual-order-guard">{recoveryCopy.guard} <Link href={`/${locale}/orders${storeQuery}`}>{c.viewOrders}</Link></p>
+          <p className="mt-note">{recoveryCopy.pendingExplanation}</p>
+          <button type="button" data-testid="manual-order-recover-pending" disabled={busy || !boundary || revoked} onClick={() => void recoverPending()}>{recoveryCopy.recoverPending}</button>
+          {failure && <p className="mt-warn" role="alert">{failure}</p>}
+        </section>}
         {privacy.visible && recoveredOrder && store && <section className="mt-card" data-testid="manual-order-recovery-status"><h2>{c.created}</h2><Link data-testid="manual-order-recovered-order" href={`/${locale}/orders?store=${store.id}&order=${recoveredOrder}`}>{recoveryCopy.view}</Link></section>}
         {privacy.visible && placed && store && (
           <section className="mt-card" data-testid="manual-order-result" aria-label={c.created}>
