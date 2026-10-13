@@ -194,6 +194,13 @@
   font-size: var(--ui-text-helper);
   color: var(--ui-muted);
 }
+/* Only TabStrip reserves its complete localized hint row; TableFrame is unchanged. */
+.tabs > .scrollHint {
+  min-height: 1.4em;
+}
+.tabs > .scrollHint[aria-hidden="true"] {
+  visibility: hidden;
+}
 .filePicker {
   display: flex;
   flex-wrap: wrap;

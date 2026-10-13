@@ -140,7 +140,7 @@ function useScrollFrame() {
   return { ref, edges };
 }
 
-/** Observes tab layout and scrolls the selected tab into view. */
+/** Reveals a newly selected tab without undoing user scrolling on unrelated renders. */
 export function TabStrip({
   children,
   label,
@@ -156,24 +156,33 @@ export function TabStrip({
   const { ref, edges } = useScrollFrame();
   useEffect(() => {
     const element = ref.current;
-    const selected = element?.querySelector<HTMLElement>(
-      '[aria-selected="true"],[aria-pressed="true"],.active',
-    );
-    if (!element || !selected) return;
-    const outer = element.getBoundingClientRect(),
-      inner = selected.getBoundingClientRect();
-    if (inner.left < outer.left) element.scrollLeft -= outer.left - inner.left;
-    else if (inner.right > outer.right)
-      element.scrollLeft += inner.right - outer.right;
-  }, [children, ref]);
+    if (!element) return;
+    let previous: HTMLElement | null = null;
+    const reveal = () => {
+      const selected = element.querySelector<HTMLElement>(
+        '[aria-selected="true"],[aria-pressed="true"],[aria-current="location"],.active',
+      );
+      // React recreates children while editing and polling; stable tab identity,
+      // rather than JSX identity, decides when the user's scroll may change.
+      if (selected === previous) return;
+      previous = selected;
+      if (!selected) return;
+      const outer = element.getBoundingClientRect(), inner = selected.getBoundingClientRect();
+      if (inner.left < outer.left) element.scrollLeft -= outer.left - inner.left;
+      else if (inner.right > outer.right) element.scrollLeft += inner.right - outer.right;
+    };
+    const observer = new MutationObserver(reveal);
+    observer.observe(element, { childList: true, subtree: true, attributes: true,
+      attributeFilter: ["aria-selected", "aria-pressed", "aria-current", "class"] });
+    reveal();
+    return () => observer.disconnect();
+  }, [ref]);
   return (
     <div className={s.tabs}>
       <div role="group" {...props} aria-label={props["aria-label"] ?? label} ref={ref} className={`${s.tabStrip} ${props.className ?? ""}`}>
         {children}
       </div>
-      {(edges.before || edges.after) && (
-        <p className={s.scrollHint}>{previousLabel} · {nextLabel}</p>
-      )}
+      <p className={s.scrollHint} aria-hidden={!(edges.before || edges.after)}>{previousLabel} · {nextLabel}</p>
     </div>
   );
 }

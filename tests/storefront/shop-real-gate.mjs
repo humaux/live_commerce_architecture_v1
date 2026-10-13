@@ -175,6 +175,8 @@ try {
   await expect(p.locator(".sf-filter")).toHaveAttribute("open", "");
   await p.goto(`${origin}/en/products`);
   // React streaming briefly keeps the finished segment in a hidden <div hidden id="S:…"> before swapping it in; only the visible chips are the UI.
+  // Match shop-r5-checks: measure the 390px chip layout after loading/streaming settles.
+  await p.waitForLoadState("networkidle");
   const categoryChips = p.getByTestId("collection-chips").filter({ visible: true });
   await expect(categoryChips).toBeVisible();
   // After the streaming swap exactly one copy remains; a lasting (even hidden) duplicate still fails.
