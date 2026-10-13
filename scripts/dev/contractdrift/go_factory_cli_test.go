@@ -46,6 +46,14 @@ func checkedPool(ctx context.Context, main, participant *pool) (*pool, error) {
  return participant, nil
 }
 func configurePool(p *pool, callback func(*pool)) { callback(p) }
+func admissionMutates(ctx context.Context, main, participant *pool) error {
+ main.route = "changed"
+ return ValidateSameDatabase(ctx, main, participant)
+}
+func admissionCallback(ctx context.Context, main, participant *pool) error {
+ configurePool(main, func(p *pool) { p.route = "changed" })
+ return ValidateSameDatabase(ctx, main, participant)
+}
 func constructBuyer(p *pool) (http.Handler, error) {
  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
   w.Header().Set("X-Factory-Pool", p.route)
@@ -137,6 +145,25 @@ func TestGoFactorySharedStateCLI(t *testing.T) {
 	mustWrite(t, p, strings.Replace(source, "_ = participants", `factoryLabel = "changed"`, 1))
 	if code, out := call(root); code != 1 || !strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED") {
 		t.Fatalf("shared-state startup mutation escaped gate: exit=%d %s", code, out)
+	}
+}
+
+func TestGoFactoryAdmissionEffectsCLI(t *testing.T) {
+	call := reviewCLI(t)
+	for _, probe := range []string{"admissionMutates", "admissionCallback", "validator.ValidateSameDatabase"} {
+		t.Run(probe, func(t *testing.T) {
+			source := goFactorySource
+			if strings.HasPrefix(probe, "validator.") {
+				// The unresolved import is already legacy: only the admission call is added.
+				source = strings.Replace(source, `"errors"`, "\"errors\"\n validator \"example/validator\"", 1)
+			}
+			root, p := goFactoryLegacy(t, call, source)
+			startup := strings.Replace(goFactoryStartupProbe, "ValidateSameDatabase", probe, 1)
+			mustWrite(t, p, strings.Replace(source, "_ = participants", startup, 1))
+			if code, out := call(root); code != 1 || !strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED") {
+				t.Fatalf("unproved error-only admission %s escaped gate: exit=%d %s", probe, code, out)
+			}
+		})
 	}
 }
 
