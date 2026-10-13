@@ -246,6 +246,8 @@ func TestOrderIntentAuthoritySchemaPrivacyAndScope(t *testing.T) {
 		execute                      []string
 	}{
 		{"fulfillment.order_intent_begin(bytea,uuid,text)", "commerce_checkout_writer", "s", []string{"commerce_checkout_writer", "commerce_runtime"}},
+		{"fulfillment.order_intent_has_catalog_lines(bytea,uuid,text)", "commerce_checkout_writer", "s", []string{"commerce_checkout_writer", "commerce_runtime"}},
+		{"fulfillment.order_prefill_email(bytea,uuid,uuid)", "commerce_checkout_writer", "s", []string{"commerce_checkout_writer", "commerce_runtime"}},
 		{"fulfillment.mark_order_intent_manual(bytea,uuid,text,uuid,bytea)", "commerce_checkout_writer", "v", []string{"commerce_checkout_writer", "commerce_runtime"}},
 		{"fulfillment.order_pay_link_valid(bytea,uuid,uuid,bytea)", "commerce_checkout_writer", "v", []string{"commerce_checkout_writer", "commerce_runtime"}},
 		{"fulfillment.order_intent_legacy_owner(bytea,uuid,text,text)", "commerce_checkout_writer", "s", []string{"commerce_checkout_writer", "commerce_runtime"}},

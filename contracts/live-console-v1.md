@@ -604,10 +604,20 @@ refusal by itself proves neither state. Settlement clears `frozen_request`; cust
 also clears that payload while retaining the pending key/hash/owner fence. Missing erased
 payload remains UNKNOWN and cannot justify a replacement attempt or guessed reconstruction.
 
+The recovery transport key commits an original-intent target in the existing scoped
+command receipts before any completion side effect. A retry of that key selects the same
+intent even after settlement or a later pending intent. A new transport key selects the
+current pending intent, or the latest terminal intent when there is no pending one.
+Terminal rows and their order pointers are retained; every replay rechecks the original
+owner/Begin and upper completion or closure proofs, including after private input erasure.
+The client retains this separate recovery key across ambiguous responses; it never changes
+the frozen placement key or body.
+
 The reply is 200 with exactly one of `{"state":"none"}`, `{"state":"not_created"}` or
-`{"state":"created","order_id":"<canonical UUID>"}`. `none` means no current pending
-intent in this authenticated principal/store scope, not proof about an arbitrary old key;
-it is accepted only by this endpoint, never by known-key A16R/manual recovery. `not_created`
+`{"state":"created","order_id":"<canonical UUID>"}`. `none` means this transport target
+was bound when no intent existed in this authenticated principal/store scope; it can never
+replace a created result merely because settlement released the pending slot. It is accepted
+only by this endpoint, never by known-key A16R/manual recovery. `not_created`
 means durable absence was sealed; `created` names only the original completed scoped order.
 Every unresolved lookup, partial completion, timeout or malformed upstream result remains
 `503 retry_later`/UNKNOWN. Replies are private/no-store, bounded to 128 KiB at the BFF, and

@@ -374,7 +374,7 @@ func registerForBuyerRoutes(mux *http.ServeMux, forBuyer *merchanttools.ForBuyer
 		ctx, cancel := context.WithTimeout(r.Context(), 14*time.Second)
 		defer cancel()
 		// RecoverPending rechecks inventory:reserve, catalog:read and orders:read under current server scope.
-		out, err := forBuyer.RecoverPending(ctx, bearerToken(r), r.PathValue("store_id"))
+		out, err := forBuyer.RecoverPending(ctx, bearerToken(r), r.PathValue("store_id"), r.Header.Get("Idempotency-Key"))
 		if err != nil {
 			respondForBuyerError(w, err)
 			return
