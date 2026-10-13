@@ -35,16 +35,26 @@
 | `d765b64c3` | [38441649790](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38441649790) | quote/fence/facts/abort | **CANCELLED**, no completed aggregate. Two Go Abort tests causally RED on missing method after real C1; SQL NoKey/Reasons/Expired tests reach missing `ops.abort_order_attempt` (42883). Reasons omitted rollback on fatal assertions, exhausting the eight-connection pool; later setup times out. Those later behaviors **NOT_RUN**, not product failures. Root canceled its hung run; bounded cleanup repair `8f6466f9b` preserves assertions. Job `115449623737`, `quote-abort-ci.log`. |
 | `3a9659561` | [38442987734](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38442987734) | destination/arithmetic/atomic boundary FIRST | Compile failure: undefined test helper `oaStateCode`; `PASS=0 FAIL=0 SKIP=0 exit=1`. Behavioral **NOT_RUN**. Corrected to existing `oaFenceCode` in `03e831309`. Job `115454631450`, `destination-atomic-red-ci.log`. |
 | `447f0b64b` | [38443900143](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38443900143) | same destination/arithmetic/atomic boundary assertions, positive browser-cart sentinel | Causal RED `PASS=0 FAIL=8 SKIP=0 exit=1`: frozen arithmetic verifier absent; native PG COMMIT incorrectly accepts a partial C2 while PENDING; six destination groups reach absent helper/ACL after real C1/fence/quote. Job `115457395814`, `destination-atomic-behavior-red-ci.log`. |
-
 | `02e32a928` | [38444964650](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38444964650) | execution fence, frozen calculation, quote and source facts | GREEN `PASS=19 FAIL=0 SKIP=0 exit=0`; job `115462207527`, `quote-calculation-green-ci.log`. This verifies these seams, not full C2 placement. |
 | `5c4b05944` | [38445363970](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38445363970) | abort implementation | `PASS=5 FAIL=5 SKIP=0 exit=1`; odd hex (22023), scoped subject fixture and own-admission refusal require repair. Job `115464038511`, `abort-first-ci.log`. |
 | `f86a8538c` | [38445601229](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38445601229) | atomic commit guard plus abort | `PASS=6 FAIL=7 SKIP=0 exit=1`; atomic guard assertions pass, abort errors remain and worker earlier-lock test times out. Job `115464160350`, `atomic-abort-first-ci.log`. No abort GREEN claim. |
-| `d0427f355` | [38446333503](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38446333503) | destination plus atomic commit guard | Running; parent owns result polling. No result claimed. |
+| `d0427f355` | [38446333503](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38446333503) | destination plus atomic commit guard | `PASS=9 FAIL=1 SKIP=0 exit=1`; native fields and destination guards pass; typed snapshot roundtrip compares equivalent UTC instants with different Go location objects. Replaced struct identity with complete JSON roundtrip equality plus instant equality, retaining all field checks. Job `115465711516`, `destination-first-ci.log`. |
+| `cdb39af25` | [38447000640](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38447000640) | allocation tests FIRST | Causal RED `PASS=0 FAIL=6 SKIP=0 exit=1`; real C1/fence/owners/quote preparation succeeds, private catalog/allocation helpers and ACL are absent (42883). Job `115468047167`, `allocation-red-ci.log`. |
+| `8a5d1c574` | [38447322750](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38447322750) | fence, abort, destination and atomic commit guard | GREEN `PASS=28 FAIL=0 SKIP=0 exit=0`; native worker no-earlier-lock barrier and 750ms bound unchanged. Job `115469135979`, `fence-abort-destination-green-ci.log`. |
 
 CI is the only execution environment. Local tests/builds/gates/server/PG:
 **NOT_RUN(owner CI-only directive)**. Static source review does not prove C2.
 CI workflow gate timeout is 150 minutes; the parent tracks the run and reads
 its terminal result/log. No acceptance claim until assertions execute.
+
+The worker abort lock failure was an implicit PostgreSQL foreign-key recheck:
+updating the attempt's witness and then its terminal state in the same transaction
+reacquired the immutable scope after the attempt. `8a5d1c574` moves the witness to
+a protected, current-transaction fence table; C2 locks the attempt without
+updating it before settlement. The separate witness has no runtime DML grants
+and cascades with its retained attempt. The real held-scope barrier now passes;
+PENDING requeue and terminal execution must continue to use separate transactions
+so a future job-pointer update cannot reintroduce that dependency.
 
 ## Contract-clause → test mapping
 
