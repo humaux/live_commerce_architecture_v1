@@ -71,7 +71,9 @@ export async function runPartialRecovery({page,api,origin,store,cvs,sku,fixture,
   await expect(drawer.getByTestId("drawer-result")).toBeVisible();await expect(drawer.getByTestId("drawer-send-result")).toContainText("queued");
   assert.equal(attempts.length,3);assert(attempts.every(a=>a.key===attempts[0].key&&a.body===attempts[0].body),"every explicit A16 retry retains frozen body and original key");
   const complete=await control("facts",{key:attempts[0].key});
-  assert.deepEqual(complete,{begin:1,bindings:1,orders:1,manual_source:1,links:1,valid_links:1,manual_receipts:1,for_buyer_receipts:1,completion_receipts:1,recovery_receipts:0,closures:0,manual_audits:1,for_buyer_audits:1,pending_bundles:0,placed_bundles:1,operations:1,secrets:1,jobs:1,dm_valid_links:1});
+  // Place's original link is superseded by atomic DM issuance: exactly two historical rows,
+  // only one redeemable link, and that exact live link is sealed in the one planned DM.
+  assert.deepEqual(complete,{begin:1,bindings:1,orders:1,manual_source:1,links:2,valid_links:1,manual_receipts:1,for_buyer_receipts:1,completion_receipts:1,recovery_receipts:0,closures:0,manual_audits:1,for_buyer_audits:1,pending_bundles:0,placed_bundles:1,operations:1,secrets:1,jobs:1,dm_valid_links:1});
   assert.equal(await page.evaluate(()=>Object.keys(sessionStorage).filter(key=>key.startsWith("buyer-order-unresolved:")).length),0);
   await drawer.getByTestId("drawer-close").click();
   await page.goto(`${origin}/en/orders?store=${store}`);await page.reload();
@@ -79,6 +81,6 @@ export async function runPartialRecovery({page,api,origin,store,cvs,sku,fixture,
   await page.getByTestId(`order-expand-${value.order_id}`).click();await expect(page.getByTestId("order-detail")).toBeVisible();await expect(page.getByTestId("order-detail")).toHaveAttribute("aria-label",new RegExp(value.order_id));
   assert.deepEqual(await control("facts",{key:attempts[0].key}),complete,"reload creates no second order/link/operation or receipt");
   results.push({case:"DU3-partial-begin-recovery",attempts:3,same_key:true,same_body:true,recover_status:503,completion:complete,reload_persisted:true});
-  record("partial original retry persistence","restore bank/click original retry/close/reload/click exact order","one source/link/manual+for-buyer+completion receipt/audit/placed bundle and real queued DM job; no new key");
+  record("partial original retry persistence","restore bank/click original retry/close/reload/click exact order","one source/valid sealed link/manual+for-buyer+completion receipt/audit/placed bundle and real queued DM job; exact original+atomic-issuance history; no new key");
  } finally {await page.unroute(`**${routePath}`);await bank(true);}
 }

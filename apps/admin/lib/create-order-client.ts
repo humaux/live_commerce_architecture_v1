@@ -23,11 +23,13 @@ import {
 export class CreateOrderError extends Error {
   readonly code: string;
   readonly status: number;
-  constructor(code: string, status: number, readonly neverSent = false) {
+  readonly neverSent: boolean;
+  constructor(code: string, status: number, neverSent = false) {
     super(code);
     this.name = "CreateOrderError";
     this.code = code;
     this.status = status;
+    this.neverSent = neverSent;
   }
 }
 function path(store: string, resource: string): string {

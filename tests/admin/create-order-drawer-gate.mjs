@@ -351,7 +351,7 @@ try {
   // Keep the original new-key calibration isolated from queued replay assertions:
   // a deliberately new key creates a second link, which must reach the exact-order verdict below.
   const queued=locale==="en"&&width===1440&&calibration!=="new-key-on-retry";
-  let committed, originalLink="", regeneratePosts=0;
+  let committed, initialQueuedFacts, originalLink="", regeneratePosts=0;
   const observeRegenerate=request=>{if(request.method()==="POST"&&new URL(request.url()).pathname.endsWith("/orders/manual/regenerate-link")) regeneratePosts++;};
   if(queued) {
    // Fixture-only window control; acceptance itself remains real BuyerPanel/form clicks.
@@ -368,7 +368,14 @@ try {
    const body=req.postData();attempts.push({key:headers["idempotency-key"],body});
    const real=await route.fetch({headers});
    if(armed){armed=false;assert.equal(real.status(),201,"lost reply first commits through real Go");
-    if(queued){committed=await real.json();assert.equal(committed.send.state,"queued");assert(committed.send.operation_id);originalLink=committed.buyer_link;assert(typeof originalLink==="string");}
+    if(queued){
+     committed=await real.json();assert.equal(committed.send.state,"queued");assert(committed.send.operation_id);originalLink=committed.buyer_link;assert(typeof originalLink==="string");
+     // Initial DM issuance and planning now commit atomically. Establish the sealed-link PG baseline
+     // before dropping the reply; replay must preserve every fact, including the one initial issuance audit.
+     const facts=await fetch(`${api}/__test/drawer-queued-facts`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({order_id:committed.order_id,operation_id:committed.send.operation_id,link:originalLink})});
+     assert.equal(facts.status,200);initialQueuedFacts=await facts.json();
+     assert.deepEqual(initialQueuedFacts,{operations:1,secrets:1,original_link:true,valid_links:1,regenerations:1});
+    }
     await real.dispose();await route.abort("failed");}
    else await route.fulfill({response:real});
   });
@@ -391,7 +398,7 @@ try {
    else record("queued replay copy safety","real submit retry then inspect control","queued result; copy absent/disabled; no regeneration");
    await privateBoundary(page,originalLink);
    const facts=await fetch(`${api}/__test/drawer-queued-facts`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({order_id:value.order_id,operation_id:value.send.operation_id,link:originalLink})});
-   assert.equal(facts.status,200);const dm=await facts.json();results.push({case:current,queued_observation:dm});assert.deepEqual(dm,{operations:1,secrets:1,original_link:true,valid_links:1,regenerations:0});assert.equal(regeneratePosts,0);
+   assert.equal(facts.status,200);const dm=await facts.json();results.push({case:current,queued_observation:dm,initial_queued_observation:initialQueuedFacts});assert.deepEqual(dm,initialQueuedFacts,"UNKNOWN replay must not rotate the queued payment link or duplicate its sealed operation");assert.equal(regeneratePosts,0);
    results.push({case:current,queued_replay:true,copy_blocked:copyBlocked,regenerate_posts:regeneratePosts,...dm});
    // Reload and click the persisted order, using a positive loaded table and detail sentinel.
    await page.goto(`${origin}/${locale}/orders?store=${store}`);await page.reload();

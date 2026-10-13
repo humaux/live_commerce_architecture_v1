@@ -32,7 +32,9 @@ export async function runCapabilityRecovery({page,api,origin,store,home,sku,fixt
   await drawer.getByTestId("drawer-submit").click();await expect(drawer.getByTestId("drawer-error")).toBeVisible();
   await expect(drawer.getByTestId("drawer-close")).toBeDisabled();await expect(drawer.getByTestId("drawer-new-attempt")).toHaveCount(0);
   const finishedFacts=await control("facts",{key:attempts[0].key});
-  assert.deepEqual(finishedFacts,{begin:1,bindings:1,orders:1,manual_source:1,links:1,valid_links:1,manual_receipts:1,for_buyer_receipts:1,completion_receipts:1,recovery_receipts:0,closures:0,manual_audits:1,for_buyer_audits:1,pending_bundles:0,placed_bundles:1,operations:1,secrets:1,jobs:1,dm_valid_links:1});
+  // The original Place link is superseded once by atomic DM issuance, before the lost response.
+  // Recovery must preserve both historical rows and exactly one redeemable sealed link thereafter.
+  assert.deepEqual(finishedFacts,{begin:1,bindings:1,orders:1,manual_source:1,links:2,valid_links:1,manual_receipts:1,for_buyer_receipts:1,completion_receipts:1,recovery_receipts:0,closures:0,manual_audits:1,for_buyer_audits:1,pending_bundles:0,placed_bundles:1,operations:1,secrets:1,jobs:1,dm_valid_links:1});
   record("capability lost completed reply","submit then drop actual201","durable full A16 completion and queued DM; original opaque guard retained");
   assert.deepEqual(await control("revoke"),{reply_grants:0});
   const [refusal]=await Promise.all([page.waitForResponse(r=>r.request().method()==="POST"&&new URL(r.url()).pathname===routePath),drawer.getByTestId("drawer-submit").click()]);

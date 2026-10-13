@@ -294,7 +294,8 @@ func (f *drawerPartialFault) readback(t *testing.T, evidence string, complete bo
 	if !complete {
 		return
 	}
-	want := map[string]int{"begin": 1, "bindings": 1, "orders": 1, "manual_source": 1, "links": 1, "valid_links": 1, "manual_receipts": 1, "for_buyer_receipts": 1, "completion_receipts": 1, "recovery_receipts": f.recoveryCount, "closures": 0, "manual_audits": 1, "for_buyer_audits": 1, "pending_bundles": 0, "placed_bundles": 1, "operations": 1, "secrets": 1, "jobs": 1, "dm_valid_links": 1}
+	// Place's link is superseded once by atomic DM issuance; preserve exact history and one redeemable sealed URL.
+	want := map[string]int{"begin": 1, "bindings": 1, "orders": 1, "manual_source": 1, "links": 2, "valid_links": 1, "manual_receipts": 1, "for_buyer_receipts": 1, "completion_receipts": 1, "recovery_receipts": f.recoveryCount, "closures": 0, "manual_audits": 1, "for_buyer_audits": 1, "pending_bundles": 0, "placed_bundles": 1, "operations": 1, "secrets": 1, "jobs": 1, "dm_valid_links": 1}
 	for label, count := range want {
 		if facts[label] != count {
 			t.Fatalf("partial independent PG %s=%d expected=%d; evidence=%s", label, facts[label], count, evidence)

@@ -234,7 +234,7 @@ func (f *ForBuyer) Place(ctx context.Context, token, storeID, key string, in For
 	}
 
 	out := ForBuyerResult{}
-	freshLink := false // true only when this very call created the order, so Place's own link is the one the DM carries
+	freshLink := false // Place created here; update its returned BuyerLink after successful atomic DM planning.
 	if receiptReplayed {
 		receipt.ExpiresAt = receipt.ExpiresAt.UTC()
 		out.ManualResult = ManualResult{manualReceipt: receipt.manualReceipt, LinkState: linkState, Source: "merchant_manual"}
@@ -483,6 +483,7 @@ func (f *ForBuyer) sendPayLink(ctx context.Context, token, storeID, key string, 
 			return inner
 		}
 		// A new private key excludes legacy relink-only receipts from the former two-transaction implementation.
+		// Place already committed, so even its fresh link may have been superseded. Reissue and seal under the order lock.
 		regenerated, _, inner := m.regenerateLink(ctx, tx, scope, token, stepKey(key, "dm-plan-link"), ManualRegenerateInput{OrderID: orderID, Locale: locale})
 		if inner != nil {
 			return inner
