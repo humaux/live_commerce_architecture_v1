@@ -31,6 +31,7 @@
 | `598aa6b44` | [38436791173](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38436791173) | C1 repairs plus execution-fence/context tests FIRST | `PASS=20 FAIL=7 SKIP=0 exit=1`: C1 repairs, exact retired replay, post-wait read revocation and atomic admission PASS. Seven execution-fence cases causally RED on absent entry/ACL. Job `115433959896`, `execution-fence-red-ci.log`. |
 | `8cdb9f8a4` | [38438426265](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38438426265) | frozen origin/CVS source facts FIRST | RED `PASS=0 FAIL=5 SKIP=0 exit=1`: missing frozen origins/pickup facts, zero origins and invalid/disabled CVS codes accepted. Pay-at-pickup positive also returned unavailable and requires separate diagnosis. Job `115439047589`, `materialization-facts-red-ci.log`. |
 | `ad9a0efa9` | [38439304096](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38439304096) | CI-only formatting receipt before focused fence/quote tests | Formatting emitted `oa1-gofmt.patch` then exited 1; Gate step did not run: **NOT_RUN**, not behavioral RED. Applied the CI-produced formatting diff without executing a local formatter, and removed the temporary workflow step. Job `115441543152`, `execution-fence-first-ci.log`; artifact `gate-focused_TestOrderAttempt_ExecutionFence_QuoteMaterialization`. |
+| `b89e34670` | [38439812016](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38439812016) | `focused:^TestOrderAttempt(ExecutionFence\|QuoteMaterialization\|MaterializationFacts)` | `PASS=13 FAIL=5 SKIP=0 exit=1`: all five materialization-facts tests and eight fence/context tests PASS. Actual-logins failure is only the new worker NULL-store case (PT400); fixed nullable worker discovery. Quote helper/schema ACL absent and typed checkout snapshot loses origins: causal RED. Readback fixture separately fails UUID/text parameter inference (42P08), not product proof; fix explicit UUID cast. Job `115443290001`, `fence-quote-facts-ci.log`. |
 
 CI is the only execution environment. Local tests/builds/gates/server/PG:
 **NOT_RUN(owner CI-only directive)**. Static source review does not prove C2.
@@ -41,6 +42,22 @@ its terminal result/log. No acceptance claim until assertions execute.
 
 - §1/§2/§6k → `TestOrderAttemptSchemaDurableIdentities`,
   `TestOrderAttemptSchemaTableAuthority`, `TestOrderAttemptSchemaExecutionDefinerACL`.
+- §2/A1/A1.1 → `TestOrderAttemptScopeRetirement*`,
+  `TestOrderAttemptAdmissionReplayPendingAndRetiredTerminal`,
+  `TestOrderAttemptAdmissionReplayKeyOwnershipAndOriginalCAS`:
+  fresh active identity/CAS, exact retained replay and all-state key ownership.
+- §1/§2/§6a–d → `TestOrderAttemptService*`: actual runtime C1,
+  frozen calculator, sealed plan, one same-Tx job, rollback and competing keys.
+- §5 current-read authority →
+  `TestOrderAttemptAdmissionReplayRechecksReadAuthorityAfterScopeWait`:
+  native scope wait plus orders/session revocation; catalog-only revocation
+  remains an allowed exact replay.
+- §2/§6j → `TestOrderAttemptMaterializationFacts*`,
+  `TestOrderAttemptQuoteMaterialization*`: frozen origins, CVS source,
+  separate attempt quote, real buyer cart preservation and typed origin DTO.
+- §1/§3.1/§6k → `TestOrderAttemptExecutionFence*`: actual login roles,
+  attempt-first native waits, protected current-transaction witness,
+  current-read recheck and retained terminal replay.
 - Remaining §6 matrix and mutation proofs: NOT_RUN / implementation pending;
   planned mapping is in the unit brief. No schema-only or MODEL_ONLY result
   is described as REAL_PG placement acceptance.
