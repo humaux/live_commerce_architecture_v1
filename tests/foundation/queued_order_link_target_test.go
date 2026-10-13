@@ -2,6 +2,7 @@
 // Depends on: disposable PG, qlSetup/crOrder fixtures, real CheckoutReminders, inbox planner, River and sealed dispatch copy.
 // Used by: PR32 focused REAL_PG regression acceptance; synthetic order B is disclosed, Meta LIVE is NOT_RUN.
 // Invariants: I01/I02/I06/I11; candidate identity and bearer target agree; refusal rolls back link rotation, secret and job.
+// Transaction seams return errors; never call testing.Fatal/Goexit inside WithScope, so failures release the transaction.
 package foundation_test
 
 import (
@@ -9,8 +10,10 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 
@@ -25,16 +28,54 @@ import (
 type qltAfterIssue struct {
 	*inbox.Service
 	target string
-	before func(context.Context, inbox.ReminderCandidate, string)
+	before func(context.Context, inbox.ReminderCandidate, string) error
 }
 
 func (p *qltAfterIssue) PlanCheckoutReminder(ctx context.Context, tx pgx.Tx, scope platform.Scope, session string, c inbox.ReminderCandidate, link string) error {
 	if p.before != nil && c.BundleID == p.target {
 		f := p.before
 		p.before = nil
-		f(ctx, c, link)
+		if err := f(ctx, c, link); err != nil {
+			return err
+		}
 	}
 	return p.Service.PlanCheckoutReminder(ctx, tx, scope, session, c, link)
+}
+
+// qltNewerOrder is the disclosed crOrder fixture with an error-only API for an in-transaction seam.
+// Its owner-pool acquisition, statements and commit share the caller's deadline; no testing helper can invoke Goexit.
+func qltNewerOrder(ctx context.Context, e *lbEnv, bundle, orderA string) (string, error) {
+	f := e.h.f
+	tx, err := f.owner.Begin(ctx)
+	if err != nil {
+		return "", fmt.Errorf("begin concurrent synthetic order: %w", err)
+	}
+	defer tx.Rollback(ctx)
+	// As with crOrder: omit the irrelevant commerce FK graph, retaining CHECKs, real origins, active owner and link issuer.
+	if _, err := tx.Exec(ctx, `SET LOCAL session_replication_role = replica`); err != nil {
+		return "", fmt.Errorf("prepare concurrent synthetic order: %w", err)
+	}
+	order := randomUUID()
+	if _, err := tx.Exec(ctx, `INSERT INTO checkout.orders(tenant_id,store_id,owner_id,id,creator_session_id,cart_id,cart_version,quote_id,destination_id,market_id,
+		country,service_code,service_version,allocation_version,currency,total_minor,commercial_state,fulfillment_state,generation,expires_at,job_id,snapshot,created_at,updated_at,source)
+		VALUES($1,$2,gen_random_uuid(),$3,gen_random_uuid(),gen_random_uuid(),1,gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),
+		'TW','std',1,1,'TWD',1000,'AWAITING_PAYMENT','MANUAL_UNASSIGNED',1,
+		(SELECT expires_at+interval '1 minute' FROM checkout.orders WHERE id=$4),
+		(random()*9e12)::bigint+1000000000000,'{"cr":"1"}'::jsonb,now()-interval '5 minutes',now()-interval '5 minutes','merchant_manual')`,
+		f.tenantA, f.storeA1, order, orderA); err != nil {
+		return "", fmt.Errorf("insert concurrent synthetic order: %w", err)
+	}
+	if _, err := tx.Exec(ctx, `INSERT INTO buyer.owners(tenant_id,store_id,id) SELECT tenant_id,store_id,owner_id FROM checkout.orders WHERE id=$1`, order); err != nil {
+		return "", fmt.Errorf("insert concurrent synthetic owner: %w", err)
+	}
+	if _, err := tx.Exec(ctx, `INSERT INTO claims.order_origins(tenant_id,store_id,order_id,bundle_id,offer_id,line_version,session_id,occurred_at)
+		VALUES($1,$2,$3,$4,gen_random_uuid(),1,$5,clock_timestamp())`, f.tenantA, f.storeA1, order, bundle, e.session); err != nil {
+		return "", fmt.Errorf("insert concurrent synthetic origin: %w", err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return "", fmt.Errorf("commit concurrent synthetic order: %w", err)
+	}
+	return order, nil
 }
 
 func TestQueuedOrderLinkReminderCandidateIdentity(t *testing.T) {
@@ -55,20 +96,29 @@ func TestQueuedOrderLinkReminderCandidateIdentity(t *testing.T) {
 	var orderB string
 	callbacks := 0
 	planner := &qltAfterIssue{Service: e.svc, target: b.bundle}
-	planner.before = func(_ context.Context, c inbox.ReminderCandidate, issued string) {
+	planner.before = func(callCtx context.Context, c inbox.ReminderCandidate, issued string) error {
+		callCtx, cancel := context.WithTimeout(callCtx, 10*time.Second)
+		defer cancel()
 		callbacks++
 		if c.BundleID != b.bundle || c.OrderID != orderA || c.State != inbox.StateAwaitingPayment || !strings.Contains(issued, "/order-link#o="+orderA+"&t=") {
-			t.Fatal("interposition must occur after issuing the real scanned order A link")
+			return fmt.Errorf("interposition must occur after issuing the real scanned order A link")
 		}
-		issuedHash := sha256.Sum256([]byte(crTokenOf(t, issued)))
+		parsed, err := url.Parse(issued)
+		if err != nil {
+			return fmt.Errorf("issued A link has an invalid URL") // never include the bearer-containing parser error
+		}
+		fragment, err := url.ParseQuery(parsed.Fragment)
+		if err != nil || fragment.Get("o") != orderA || fragment.Get("t") == "" {
+			return fmt.Errorf("issued A link has an invalid target/token fragment")
+		}
+		issuedHash := sha256.Sum256([]byte(fragment.Get("t")))
 		if issuedHash == originalHash {
-			t.Fatal("the real issuer must have attempted a new A bearer before planning")
+			return fmt.Errorf("the real issuer must have attempted a new A bearer before planning")
 		}
 		// Disclosed concurrent synthetic checkout of the SAME bundle. The real fact query chooses the latest expiry,
 		// so make B unambiguously newer; random UUID ordering and clock resolution must not decide this race.
-		orderB = e.crOrder(t, b.bundle, "AWAITING_PAYMENT", "merchant_manual", false)
-		mustExec(t, f.owner, `INSERT INTO buyer.owners(tenant_id,store_id,id) SELECT tenant_id,store_id,owner_id FROM checkout.orders WHERE id=$1`, orderB)
-		mustExec(t, f.owner, `UPDATE checkout.orders SET expires_at=(SELECT expires_at+interval '1 minute' FROM checkout.orders WHERE id=$2) WHERE id=$1`, orderB, orderA)
+		orderB, err = qltNewerOrder(callCtx, e, b.bundle, orderA)
+		return err
 	}
 	r, err := merchanttools.NewCheckoutReminders(f.runtime, m, planner)
 	if err != nil {

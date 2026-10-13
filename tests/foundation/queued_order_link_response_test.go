@@ -2,6 +2,7 @@
 // Depends on: real checkout/claims/merchant HTTP pipeline, inbox planners, River and HPKE; lbSetup's signed Meta intake.
 // Used by: PR32 thread 4256912975 focused REAL_PG regression; loopback Graph remains paused (Meta LIVE NOT_RUN).
 // Invariants: I01/I02/I04/I06/I11; exactly one order/reminder/secret/job, no dead response URL or extra work on replay.
+// Transaction seams return errors; never call testing.Fatal/Goexit inside WithScope, so failures release the transaction.
 package foundation_test
 
 import (
@@ -26,15 +27,18 @@ import (
 
 // qlrBeforeProbe delays only the first empty-link probe. Both the competing reminder and every planner call are real.
 type qlrBeforeProbe struct {
-	delegate *inbox.Service
-	before   func(context.Context, string)
+	delegate  *inbox.Service
+	before    func(context.Context, string) error
+	beforeErr error
 }
 
 func (p *qlrBeforeProbe) PlanOrderPayLink(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, conv, order, link string) (inbox.SendOutput, error) {
 	if link == "" && p.before != nil {
 		before := p.before
 		p.before = nil
-		before(ctx, order)
+		if p.beforeErr = before(ctx, order); p.beforeErr != nil {
+			return inbox.SendOutput{}, p.beforeErr
+		}
 	}
 	return p.delegate.PlanOrderPayLink(ctx, tx, scope, key, conv, order, link)
 }
@@ -104,25 +108,35 @@ func TestQueuedOrderLinkForBuyerResponseAfterReminder(t *testing.T) {
 	var order string
 	var originalHash []byte
 	probes := 0
-	planner := &qlrBeforeProbe{delegate: lb.svc, before: func(callCtx context.Context, committedOrder string) {
+	planner := &qlrBeforeProbe{delegate: lb.svc, before: func(callCtx context.Context, committedOrder string) error {
 		callCtx, cancel := context.WithTimeout(callCtx, 10*time.Second)
 		defer cancel()
 		probes++
 		order = committedOrder
 		// Positive seam sentinel: Place and the upper bundle receipt have committed before the real reminder starts.
-		if n := e.count(`SELECT count(*) FROM checkout.orders o JOIN inbox.order_for_buyer f ON f.order_id=o.id
-			WHERE o.id=$1 AND o.source='merchant_manual' AND o.commercial_state='AWAITING_PAYMENT' AND f.bundle_id=$2 AND f.state='placed'`, order, bundle); n != 1 {
-			t.Fatal("probe arrived before the real order and placed bundle committed")
+		var n int
+		if err := e.p.f.owner.QueryRow(callCtx, `SELECT count(*) FROM checkout.orders o JOIN inbox.order_for_buyer f ON f.order_id=o.id
+			WHERE o.id=$1 AND o.source='merchant_manual' AND o.commercial_state='AWAITING_PAYMENT' AND f.bundle_id=$2 AND f.state='placed'`, order, bundle).Scan(&n); err != nil {
+			return fmt.Errorf("read committed order/bundle seam sentinel: %w", err)
+		}
+		if n != 1 {
+			return fmt.Errorf("probe arrived before the real order and placed bundle committed: rows=%d", n)
 		}
 		if err := e.p.f.owner.QueryRow(callCtx, `SELECT token_hash FROM checkout.order_links WHERE order_id=$1 AND redeemed_at IS NULL`, order).Scan(&originalHash); err != nil {
-			t.Fatal("read initial committed link hash", err)
+			return fmt.Errorf("read initial committed link hash: %w", err)
 		}
 		reminded, err := reminders.Trigger(callCtx, e.token(), e.store(), lbKey(), meta.session, bundle)
-		mustExec(t, e.p.f.owner, `UPDATE river.river_job SET queue='cr_hold' WHERE kind='external_operation_v1' AND state='available' AND queue='default'
-			AND args->>'operation_id' IN (SELECT id::text FROM integration.operations WHERE tenant_id=$1 AND store_id=$2 AND request->>'message_type'='checkout_reminder')`, e.tenant(), e.store())
-		if err != nil || reminded.Queued != 1 || reminded.Refused != 0 || reminded.AlreadyReminded != 0 || len(reminded.Results) != 1 || reminded.Results[0].BundleID != bundle || reminded.Results[0].Outcome != "queued" {
-			t.Fatalf("real competing reminder: queued=%d refused=%d already=%d rows=%d err=%v", reminded.Queued, reminded.Refused, reminded.AlreadyReminded, len(reminded.Results), err)
+		if _, parkErr := e.p.f.owner.Exec(callCtx, `UPDATE river.river_job SET queue='cr_hold' WHERE kind='external_operation_v1' AND state='available' AND queue='default'
+			AND args->>'operation_id' IN (SELECT id::text FROM integration.operations WHERE tenant_id=$1 AND store_id=$2 AND request->>'message_type'='checkout_reminder')`, e.tenant(), e.store()); parkErr != nil {
+			return fmt.Errorf("hold real competing reminder job: %w", parkErr)
 		}
+		if err != nil {
+			return fmt.Errorf("real competing reminder: %w", err)
+		}
+		if reminded.Queued != 1 || reminded.Refused != 0 || reminded.AlreadyReminded != 0 || len(reminded.Results) != 1 || reminded.Results[0].BundleID != bundle || reminded.Results[0].Outcome != "queued" {
+			return fmt.Errorf("real competing reminder: queued=%d refused=%d already=%d rows=%d", reminded.Queued, reminded.Refused, reminded.AlreadyReminded, len(reminded.Results))
+		}
+		return nil
 	}}
 	e.fb, err = merchanttools.NewForBuyer(e.manual, planner)
 	if err != nil {
@@ -132,6 +146,9 @@ func TestQueuedOrderLinkForBuyerResponseAfterReminder(t *testing.T) {
 	key := lbKey()
 	body := e.body(1, []string{bundle}, conv, true)
 	code, out := e.post(e.token(), key, body)
+	if planner.beforeErr != nil {
+		t.Fatalf("real competing reminder interposition: %v", planner.beforeErr)
+	}
 	if code != 201 || probes != 1 || lbuStr(out, "order_id") != order {
 		t.Fatalf("fresh placement: status=%d probes=%d same_order=%v", code, probes, lbuStr(out, "order_id") == order)
 	}
