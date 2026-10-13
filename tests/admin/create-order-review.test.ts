@@ -17,7 +17,7 @@ const bundle = "66666666-6666-4666-8666-666666666666";
 const sku = "77777777-7777-4777-8777-777777777777";
 const permissions = ["inbox:read", "live:read", "orders:read", "inventory:reserve"];
 const limitedStore = { ...store, role: "staff", permissions };
-const allowedStore = { ...limitedStore, permissions: [...permissions, "catalog:read"] };
+const allowedStore = { ...limitedStore, order_guard_scope: "c".repeat(64), permissions: [...permissions, "catalog:read"] };
 const claim = (offer_id: string, session_id: string) => ({ offer_id, session_id, keyword: "A1", quantity: 1, status: "ACCEPTED", total_minor: 100 });
 const panel = (claims: unknown[]) => ({ display_name: "SYNTHETIC_REVIEW_BUYER", platform: "facebook", purchase_ordinal: 1, claims, claim_total_minor: 100, orders: [], link_pending_manual: false });
 const prefill = {
@@ -40,7 +40,7 @@ function browserEnvironment(t: any) {
   const saved = new Map<string, string>();
   Object.assign(env.window, { sessionStorage: { getItem: (key: string) => saved.get(key) ?? null, setItem: (key: string, value: string) => saved.set(key, value), removeItem: (key: string) => saved.delete(key) } });
   t.after(() => { (globalThis as any).HTMLElement = previousHTMLElement; });
-  return env;
+  return { ...env, saved };
 }
 function network(claims = [claim(otherOffer, otherSession), claim(offer, session)]) {
   const calls: string[] = [];
@@ -195,7 +195,7 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
 }
 
 /** Supply valid read DTOs at the fetch edge; all form, client, session and receipt code stays real. */
-async function recoveryForm(t: any, locale: "en" | "zh-TW" | "zh-CN", outcome: (path: string, init?: RequestInit) => Response | Promise<Response>) {
+async function readyRecoveryForm(t: any, locale: "en" | "zh-TW" | "zh-CN", outcome: (path: string, init?: RequestInit) => Response | Promise<Response>) {
   const env = browserEnvironment(t); network(); const upstream = globalThis.fetch;
   const optionKey = `${session}|TW|home1`;
   const writes: { path: string; body: string; key: string | null }[] = [];
@@ -214,20 +214,25 @@ async function recoveryForm(t: any, locale: "en" | "zh-TW" | "zh-CN", outcome: (
     }
     return upstream(input, init);
   };
-  let revoked = 0;
+  let revoked = 0, closed = 0;
   const h = env.mount(() => CreateOrderDrawer({ locale, store: allowedStore, bundleId: bundle, sessionId: session,
-    onClose() {}, onUnauthorized() { revoked++; } } as any));
+    onClose() { closed++; }, onUnauthorized() { revoked++; } } as any));
   await h.settle(); node(h, n => n.props["data-testid"] === "drawer-mode-bank_transfer").props.onChange({ target: { checked: true } });
   await h.settle();
   const submit = async () => {
     assert.equal(node(h, n => n.props["data-testid"] === "drawer-submit").props.disabled, false);
     node(h, n => n.props["data-testid"] === "drawer-form").props.onSubmit({ preventDefault() {} }); await h.settle();
   };
-  await submit(); await submit();
+  return { h, env, writes, submit, revoked: () => revoked, closed: () => closed };
+}
+async function recoveryForm(t: any, locale: "en" | "zh-TW" | "zh-CN", outcome: (path: string, init?: RequestInit) => Response | Promise<Response>) {
+  const ready = await readyRecoveryForm(t, locale, outcome);
+  const { h, writes } = ready;
+  await ready.submit(); await ready.submit();
   assert.ok(nodes(h.output).some(n => n.props["data-testid"] === "drawer-error"), "UNKNOWN then business refusal positively loaded");
   assert.equal(node(h, n => n.props["data-testid"] === "drawer-close").props.disabled, true);
   assert.equal(nodes(h.output).some(n => n.props["data-testid"] === "drawer-new-attempt"), false, "no blind new key after 422");
-  return { h, env, writes, revoked: () => revoked };
+  return ready;
 }
 for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
   test(`PR32 ${locale} UNKNOWN then business422 permits a new intent only after durable not-created recovery`, async t => {
@@ -330,4 +335,41 @@ for (const revoke of ["hide", "logout"] as const) test(`PR32 delayed recovery af
   resolve(response({ state: "not_created" })); await h.settle();
   assert.equal(h.output, null);
   assert.equal(writes.length, 3, "a late recovery never submits a new intent");
+});
+
+for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
+  test(`PR32 ${locale} never-sent validation unlocks close and retains no order guard`, async t => {
+    const { h, env, writes, submit, closed } = await readyRecoveryForm(t, locale, () => { throw new Error("local validation must precede fetch"); });
+    t.mock.method(crypto, "randomUUID", () => "bad");
+    await submit();
+    assert.equal(writes.length, 0, "actual production client rejected the key before fetch");
+    assert.ok(node(h, n => n.props["data-testid"] === "drawer-error"), "positive validation error sentinel");
+    assert.notEqual(textOf(node(h, n => n.props["data-testid"] === "drawer-error")), createOrderCopy[locale].uncertain);
+    assert.equal(node(h, n => n.props["data-testid"] === "drawer-close").props.disabled, false);
+    assert.equal(nodes(h.output).some(n => n.props["data-testid"] === "drawer-new-attempt"), false, "never-dispatched input does not need a new receipt");
+    assert.equal(env.saved.size, 0, "never-sent receipt leaves no persistent guard");
+    node(h, n => n.props["data-testid"] === "drawer-close").props.onClick(); await h.settle();
+    assert.equal(closed(), 1);
+  });
+}
+
+test("PR32 UNKNOWN then401 and actual new CSRF cannot bypass a same-principal store guard", async t => {
+  let placed = 0;
+  const { h, env, writes, submit, revoked } = await readyRecoveryForm(t, "en", () => ++placed === 1
+    ? response({ code: "retry_later" }, 503) : response({ code: "unauthorized" }, 401));
+  await submit();
+  assert.equal(textOf(node(h, n => n.props["data-testid"] === "drawer-error")), createOrderCopy.en.uncertain);
+  await submit(); assert.equal(revoked(), 1); assert.equal(h.output, null);
+  h.dispose();
+  env.document.cookie = `__Host-commerce_csrf=${"b".repeat(43)}`;
+  for (let reload = 0; reload < 2; reload++) {
+    const next = env.mount(() => CreateOrderDrawer({ locale: "en", store: allowedStore, bundleId: bundle, sessionId: session, onClose() {}, onUnauthorized() {} } as any));
+    await next.settle();
+    assert.ok(textOf(next.output).includes(createOrderCopy.en.guard), "positive unresolved-store guard after valid relogin and reload");
+    assert.equal(nodes(next.output).some(n => n.props["data-testid"] === "drawer-form"), false);
+    assert.equal(nodes(next.output).some(n => n.props["data-testid"] === "drawer-submit"), false);
+    next.dispose();
+  }
+  assert.equal(writes.length, 2, "new login must not create a third request with a fresh key");
+  assert.equal(writes[0].key, writes[1].key); assert.equal(writes[0].body, writes[1].body);
 });

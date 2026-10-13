@@ -59,3 +59,12 @@ backend.ts uses cookie-derived current session and store list; chooses an explic
 9. Existing ledger/production-denial/i18n gates preserved. Root independently replays combined changes, separate reviewer closes P0/P1.
 
 NOT_RUN remains real IdP/registration/email/MFA, deployment ingress/rate-limit policy, shared session cleanup/retention policy and full SaaS release gates. These are deployment requirements, not implied by a local login protocol pass.
+
+LC-U3 order guard amendment (2026-10-13): each `GET /v1/admin/stores` item also carries
+`order_guard_scope`, a 64-character lowercase SHA256 digest domain-separated over the server-resolved
+tenant/store/principal IDs. It is stable across login credentials, contains no token or raw identity,
+and grants no authority. The handler joins the existing live store list with `resolve_access(..., 'store:read')`;
+no function/ACL or support-store projection is replaced. Manual and for-buyer UI keep only the opaque
+unresolved Boolean under this scope; a re-login cannot remove it. Legacy CSRF-keyed flags remain
+fail-closed for that store because they cannot be attributed to a new principal. CSRF digests remain
+request/privacy fences only. Missing or malformed stable guard identity never permits a new money write.

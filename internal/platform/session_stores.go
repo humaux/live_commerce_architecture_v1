@@ -1,9 +1,13 @@
+// Purpose: project active merchant stores and a stable opaque order guard identity.
+// Depends on: live session list/resolve_access definers and Go SHA256; used by admin identity-enabled store list.
+// Invariant: scopes derive only from authenticated tenant/store/principal, never credentials or browser identity hints.
 package platform
 
 import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"net/http"
 
@@ -32,7 +36,9 @@ func sessionStoresHandler(pool *pgxpool.Pool) http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(r.Context(), requestTimeout)
 		defer cancel()
 		hash := sha256.Sum256([]byte(token))
-		rows, err := pool.Query(ctx, `SELECT id::text,name,currency,role,permissions FROM identity.list_session_stores($1)`, hash[:])
+		rows, err := pool.Query(ctx, `SELECT s.id::text,s.name,s.currency,s.role,s.permissions,a.tenant_id::text,a.principal_id::text
+ FROM identity.list_session_stores($1) s
+ CROSS JOIN LATERAL identity.resolve_access($1,s.id,'store:read') a WHERE a.access_status='ok'`, hash[:])
 		if err != nil {
 			sessionStoresError(w, err)
 			return
@@ -44,16 +50,20 @@ func sessionStoresHandler(pool *pgxpool.Pool) http.HandlerFunc {
 			Currency string `json:"currency"`
 			// Role/Permissions (0089, role-aware navigation): the caller's own staff role (null for pre-0089 members) and effective
 			// permissions in this store. Display hint only: every request is still authorized by resolve_access.
-			Role        *string  `json:"role"`
-			Permissions []string `json:"permissions"`
+			Role            *string  `json:"role"`
+			Permissions     []string `json:"permissions"`
+			OrderGuardScope string   `json:"order_guard_scope"`
 		}
 		items := make([]store, 0)
 		for rows.Next() {
 			var item store
-			if err := rows.Scan(&item.ID, &item.Name, &item.Currency, &item.Role, &item.Permissions); err != nil {
+			var tenant, principal string
+			if err := rows.Scan(&item.ID, &item.Name, &item.Currency, &item.Role, &item.Permissions, &tenant, &principal); err != nil {
 				sessionStoresError(w, err)
 				return
 			}
+			guard := sha256.Sum256([]byte("merchant-order-guard/v1|" + tenant + "|" + item.ID + "|" + principal))
+			item.OrderGuardScope = hex.EncodeToString(guard[:])
 			items = append(items, item)
 		}
 		if err := rows.Err(); err != nil {

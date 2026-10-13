@@ -23,7 +23,7 @@ import {
 export class CreateOrderError extends Error {
   readonly code: string;
   readonly status: number;
-  constructor(code: string, status: number) {
+  constructor(code: string, status: number, readonly neverSent = false) {
     super(code);
     this.name = "CreateOrderError";
     this.code = code;
@@ -32,7 +32,7 @@ export class CreateOrderError extends Error {
 }
 function path(store: string, resource: string): string {
   if (!canonicalUUID.test(store))
-    throw new CreateOrderError("invalid_request", 422);
+    throw new CreateOrderError("invalid_request", 422, true);
   return `/api/stores/${store}/tools/${resource}`;
 }
 async function fence(csrf: string, boundary?: string): Promise<string> {
@@ -173,10 +173,10 @@ async function sendForBuyer<T>(
   try {
     body = JSON.parse(attempt.body);
   } catch {
-    throw new CreateOrderError("invalid_request", 422);
+    throw new CreateOrderError("invalid_request", 422, true);
   }
   if (!/^[A-Za-z0-9_.:-]{8,128}$/.test(attempt.key) || !validBody(body))
-    throw new CreateOrderError("invalid_request", 422);
+    throw new CreateOrderError("invalid_request", 422, true);
   const csrf = csrfCookie();
   await fence(csrf, boundary);
   signal?.throwIfAborted();

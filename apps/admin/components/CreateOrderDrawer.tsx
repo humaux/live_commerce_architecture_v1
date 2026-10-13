@@ -207,7 +207,7 @@ export function CreateOrderDrawer({
         if (!privacy.fence.current(ticket) || (await checkedBoundary(scope)) !== scope || !privacy.fence.current(ticket)) return;
         let receipt: OrderGuard;
         try {
-          receipt = new OrderGuard(window.sessionStorage, store.id, scope);
+        receipt = new OrderGuard(window.sessionStorage, store.id, store.order_guard_scope ?? "");
         } catch {
           setGuarded(true);
           return;
@@ -405,7 +405,13 @@ export function CreateOrderDrawer({
         setError(
           cause instanceof CreateOrderError ? cause.code : "unavailable",
         );
-        if (attempt.current.pending()) setUncertain(true);
+        // Only a newly prepared request rejected by local transport validation is proven never dispatched.
+        // A prior UNKNOWN receipt (or any server refusal) still needs authoritative recovery.
+        if (!pending && cause instanceof CreateOrderError && cause.neverSent) {
+          attempt.current.clear();
+          setUncertain(false);
+          setGuarded(!guard.current?.clear());
+        } else if (attempt.current.pending()) setUncertain(true);
       }
     } finally {
       if (privacy.fence.current(ticket)) {
@@ -528,7 +534,7 @@ export function CreateOrderDrawer({
       {!canCreate ? (
         <p role="status">{c.permission}</p>
       ) : guarded ? (
-        <p role="alert">
+        <p role="alert" data-testid="drawer-unresolved-guard">
           {c.guard} <a href={orderHref}>{c.orders}</a>
         </p>
       ) : !prefill && !error ? (

@@ -1,3 +1,6 @@
+// Purpose: verify real browser identity/session projections and stable money guard scope against disposable PostgreSQL.
+// Depends on: production platform/identity/HTTP handlers and foundation fixtures; used by focused and foundation gates.
+// Invariants: live authority gates every store; re-login preserves opaque principal/store guard identity without credentials.
 package foundation_test
 
 import (
@@ -17,9 +20,50 @@ import (
 )
 
 type sessionStore struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Currency string `json:"currency"`
+	ID              string `json:"id"`
+	Name            string `json:"name"`
+	Currency        string `json:"currency"`
+	OrderGuardScope string `json:"order_guard_scope"`
+}
+
+// An unresolved receipt must survive new login credentials without exposing either credential or identity.
+func TestBrowserSessionOrderGuardStableAcrossLogin(t *testing.T) {
+	s, _, _ := identityFixture(t)
+	first := identityLogin(t, s)
+	created, err := s.CreateInitialStore(context.Background(), first.Token, "stable-order-guard", firstStoreRequest())
+	if err != nil {
+		t.Fatal(err)
+	}
+	a := sessionStoreList(t, first.Token, 200)
+	second := identityLogin(t, s)
+	if first.PrincipalID != second.PrincipalID || first.Token == second.Token {
+		t.Fatal("relogin fixture must use same principal and a new credential")
+	}
+	b := sessionStoreList(t, second.Token, 200)
+	if len(a) != 1 || len(b) != 1 || a[0].ID != created.StoreID || b[0].ID != created.StoreID {
+		t.Fatal("store positively loaded on both logins")
+	}
+	if len(a[0].OrderGuardScope) != 64 || a[0].OrderGuardScope != b[0].OrderGuardScope {
+		t.Fatal("order guard must use a stable opaque principal/store scope, independent of login credential")
+	}
+	otherService, _, _ := identityFixture(t)
+	other := identityLogin(t, otherService)
+	f := fixture(t)
+	if _, err := f.owner.Exec(context.Background(), `INSERT INTO identity.memberships(tenant_id,principal_id) VALUES($1,$2)`, created.TenantID, other.PrincipalID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.owner.Exec(context.Background(), `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'store:read')`, created.TenantID, created.StoreID, other.PrincipalID); err != nil {
+		t.Fatal(err)
+	}
+	c := sessionStoreList(t, other.Token, 200)
+	if len(c) != 1 || c[0].ID != created.StoreID || len(c[0].OrderGuardScope) != 64 || c[0].OrderGuardScope == a[0].OrderGuardScope {
+		t.Fatal("a different authenticated principal in the same store needs a different opaque guard scope")
+	}
+	for _, item := range a {
+		if strings.Contains(item.OrderGuardScope, first.Token) || strings.Contains(item.OrderGuardScope, first.PrincipalID) {
+			t.Fatal("guard scope exposed credential or principal")
+		}
+	}
 }
 
 func sessionStoreList(t *testing.T, token string, status int) []sessionStore {

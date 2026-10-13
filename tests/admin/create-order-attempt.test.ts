@@ -31,11 +31,11 @@ test("navigation guard stores only an opaque boolean and blocks replacement atte
       map.delete(k);
     },
   };
-  const guard = new OrderGuard(storage, "store", "opaque-session");
+  const guard = new OrderGuard(storage, "store", "c".repeat(64));
   assert.equal(guard.blocked(), false);
   assert.equal(guard.arm(), true);
   assert.deepEqual([...map.values()], ["1"]);
-  assert.equal(new OrderGuard(storage, "store", "opaque-session").arm(), false);
+  assert.equal(new OrderGuard(storage, "store", "c".repeat(64)).arm(), false);
   assert.equal(guard.clear(), true);
   assert.equal(guard.blocked(), false);
 });
@@ -46,7 +46,7 @@ test("unavailable storage never permits an unguarded money write", () => {
   const guard = new OrderGuard(
     { getItem: fail, setItem: fail, removeItem: fail },
     "store",
-    "scope",
+    "c".repeat(64),
   );
   assert.equal(guard.blocked(), true);
   assert.equal(guard.arm(), false);
@@ -133,4 +133,13 @@ test("a coded definitive refusal settles an UNKNOWN replay without relaxing ambi
   for (const previouslyUncertain of [false, true]) for (const outcome of [
     { status: 409, code: "conflict" }, { status: 404, code: "not_found" },
   ]) assert.equal(retainOrderAttempt({ ...outcome, uncertain: false }, previouslyUncertain), true, "post-commit generic errors retain even on first response");
+});
+
+test("legacy CSRF guard is retained fail-closed across a different stable principal scope", () => {
+  const oldKey = "buyer-order-unresolved:store:old-csrf-digest";
+  const storage = { [oldKey]: "1", getItem: (key: string) => key === oldKey ? "1" : null, setItem() {}, removeItem() {} };
+  const guard = new OrderGuard(storage, "store", "c".repeat(64));
+  assert.equal(guard.blocked(), true, "a legacy flag cannot be assigned to a new principal or silently discarded");
+  assert.equal(guard.arm(), false);
+  assert.equal(guard.clear(), false, "clearing this principal's guard cannot erase an unattributed legacy receipt");
 });

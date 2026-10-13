@@ -1,5 +1,5 @@
 // Purpose: freeze one order request and retain only an opaque unresolved flag across privacy boundaries.
-// Depends on: closed A16/manual refusal vocabulary, caller session scope, key generator and browser sessionStorage port.
+// Depends on: closed A16/manual refusal vocabulary, authenticated stable store/principal scope, key generator and sessionStorage.
 // Used by: ManualOrder, CreateOrderDrawer and Node acceptance; buyer fields and request keys never enter storage.
 type StoragePort = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 import { forBuyerErrors } from "./create-order-model.ts";
@@ -36,19 +36,22 @@ export class OrderAttempt {
     this.definitive = false;
   }
 }
-/** A coarse store/session flag prevents a fresh key after private request memory was cleared. */
+/** A stable store/principal flag survives re-login; unattributed legacy flags fail closed for the store. */
 export class OrderGuard {
   private key: string;
   constructor(
     private storage: StoragePort,
     store: string,
-    boundary: string,
+    scope: string,
   ) {
-    this.key = `buyer-order-unresolved:${store}:${boundary}`;
+    this.key = /^[a-f0-9]{64}$/.test(scope) ? `buyer-order-unresolved:v2:${store}:${scope}` : "";
+    this.legacyPrefix = `buyer-order-unresolved:${store}:`;
   }
+  private legacyPrefix: string;
   blocked() {
     try {
-      return this.storage.getItem(this.key) !== null;
+      return !this.key || this.storage.getItem(this.key) !== null ||
+        Object.keys(this.storage).some(key => key.startsWith(this.legacyPrefix) && this.storage.getItem(key) !== null);
     } catch {
       return true;
     }

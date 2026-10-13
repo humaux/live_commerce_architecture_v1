@@ -371,6 +371,7 @@ function clickText(host: Host, label: string) {
 const store = {
   id: "10000000-0000-4000-8000-000000000001",
   name: "MOCK_STORE",
+  order_guard_scope: "c".repeat(64),
   currency: "TWD",
   role: "owner",
 };

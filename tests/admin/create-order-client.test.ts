@@ -73,6 +73,30 @@ const value = {
 };
 const reply = (payload: unknown, status = 200) =>
   Response.json(payload, { status, headers: { "Cache-Control": "no-store" } });
+test("PR32 static validation is explicitly never-sent, unlike a post-dispatch refusal", async () => {
+  cookie = "A".repeat(43);
+  const boundary = await sessionBoundary();
+  let calls = 0;
+  globalThis.fetch = async () => { calls++; return reply({ code: "invalid_request" }, 422); };
+  for (const [store, attempt] of [
+    [id, { key: "bad", body }],
+    [id, { key: "synthetic-receipt", body: "{" }],
+    [id, { key: "synthetic-receipt", body: body.replace('"quantity":1', '"price_minor":1') }],
+    ["bad", { key: "synthetic-receipt", body }],
+  ] as const) {
+    await assert.rejects(createForBuyerOrder(store, attempt, boundary), (error: any) => {
+      assert.ok(error instanceof CreateOrderError);
+      assert.equal(error.code, "invalid_request");
+      assert.equal(error.status, 422);
+      assert.equal(error.neverSent, true, "only actual local validation proves zero dispatch");
+      return true;
+    });
+  }
+  assert.equal(calls, 0);
+  const sent = await createForBuyerOrder(id, { key: "synthetic-receipt", body }, boundary);
+  assert.equal(calls, 1);
+  assert.deepEqual(sent, { ok: false, code: "invalid_request", status: 422, uncertain: false });
+});
 test("authoritative recovery sends the frozen receipt through the real session/CSRF seam and only accepts closed 200 results", async () => {
   cookie = "A".repeat(43);
   const boundary = await sessionBoundary(), attempt = { key: "synthetic-receipt", body };

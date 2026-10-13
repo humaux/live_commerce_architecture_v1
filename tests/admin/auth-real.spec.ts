@@ -257,6 +257,7 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
           id: created.store_id,
           name: initialBody.store_name,
           currency: "TWD",
+          order_guard_scope: expect.stringMatching(/^[a-f0-9]{64}$/),
           // staff-team (migration 0089, storefront-v2 §D): each item carries the caller's role and effective permissions; the
           // initial-store creator is a full owner = the whole store_grants_permission_check catalogue, sorted by the SQL definer;
           // LC-B3 (0119, live-console-v1 §11 role defaults) adds inbox read/reply and bounded live inventory adjustment to that catalogue.

@@ -104,9 +104,9 @@ export function ManualOrder({
     }
     guardScope.current = scope;
     // Only the opaque unresolved flag survives reload. No request, key or buyer fields enter browser storage.
-    guard.current = new OrderGuard(window.sessionStorage, store.id, boundary);
+    guard.current = new OrderGuard(window.sessionStorage, store.id, store.order_guard_scope ?? "");
     setGuarded(guard.current.blocked() && !attempt.current.pending());
-  }, [boundary, store?.id]);
+  }, [boundary, store?.id, store?.order_guard_scope]);
 
   const available: ManualOption[] = options.data ?? [];
   const option = available.find((item) => item.option_key === optionKey) ?? null;

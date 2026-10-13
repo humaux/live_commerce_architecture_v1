@@ -2,6 +2,9 @@
 // app/api/auth/{login,callback,logout}, app/api/auth/password/*, app/api/onboarding, app/api/stores*,
 // lib/backend.ts. Go endpoints: /v1/identity/* (internal/identityhttp). Password-login config (U4)
 // mirrors COMMERCE_PASSWORD_LOGIN_ENABLED of cmd/api/identity.go (merchant-password-auth-v1 §5).
+// Purpose: enforce authenticated admin BFF cookies, CSRF, upstream scope and safe response contracts.
+// Depends on: Next server boundaries, configured identity/API origins and real fetch; used by admin BFF routes/pages.
+// Invariants: credentials stay server-side; stable order guard scope is validated display metadata, never authorization.
 import "server-only";
 import { timingSafeEqual } from "node:crypto";
 import type { APIError, Store } from "./model";
@@ -497,6 +500,8 @@ export async function authenticatedStores(token: string) {
       /^[0-9a-f-]{36}$/.test(String((item as Store).id)) &&
       typeof (item as Store).name === "string" &&
       /^[A-Z]{3}$/.test(String((item as Store).currency)) &&
+      // Guard identity is server-derived and independent of login credentials; older read-only mocks can omit it.
+      ((item as Store).order_guard_scope === undefined || /^[a-f0-9]{64}$/.test(String((item as Store).order_guard_scope))) &&
       // role/permissions are optional (mock servers omit them) but, when present, must be well-formed.
       ((item as Store).role === undefined || (item as Store).role === null || typeof (item as Store).role === "string") &&
       ((item as Store).permissions === undefined ||
