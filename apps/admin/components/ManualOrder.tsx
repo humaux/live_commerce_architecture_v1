@@ -240,7 +240,7 @@ export function ManualOrder({
         {(options.status === "loading" || options.status === "hidden") && !placed && <p className="orders-message" role="status">{c.loading}</p>}
         {listFailure && <p className="orders-message" role="status">{listFailure}</p>}
         {guarded && <p className="mt-warn" role="alert" data-testid="manual-order-guard">{recoveryCopy.guard} <Link href={`/${locale}/orders${storeQuery}`}>{c.viewOrders}</Link></p>}
-        {privacy.visible && recoveredOrder && <section className="mt-card" data-testid="manual-order-recovery-status"><h2>{c.created}</h2><Link data-testid="manual-order-recovered-order" href={`/${locale}/orders/${recoveredOrder}${storeQuery}`}>{recoveryCopy.view}</Link></section>}
+        {privacy.visible && recoveredOrder && store && <section className="mt-card" data-testid="manual-order-recovery-status"><h2>{c.created}</h2><Link data-testid="manual-order-recovered-order" href={`/${locale}/orders?store=${store.id}&order=${recoveredOrder}`}>{recoveryCopy.view}</Link></section>}
         {privacy.visible && placed && store && (
           <section className="mt-card" data-testid="manual-order-result" aria-label={c.created}>
             <h2>{c.created}</h2>

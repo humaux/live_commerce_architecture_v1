@@ -119,11 +119,11 @@ test("ManualOrder partial recovery retains the original key/body and prevents a 
   await submit(); assert.equal(writes.length, 4);
   assert.ok(writes.every(w => w.key === writes[0].key && w.body === writes[0].body));
 });
-test("ManualOrder created recovery shows the existing order without offering a replacement key", async t => {
-  const { h, writes } = await form(t, "en", "created");
+for (const locale of ["en", "zh-TW", "zh-CN"] as const) test(`ManualOrder ${locale} created recovery opens the existing orders detail entry without a replacement key`, async t => {
+  const { h, writes } = await form(t, locale, "created");
   node(h, n => n.props["data-testid"] === "manual-order-recover-attempt").props.onClick(); await h.settle();
   const link = node(h, n => n.props["data-testid"] === "manual-order-recovered-order");
-  assert.ok(link.props.href.includes(order));
+  assert.equal(link.props.href, `/${locale}/orders?store=${store.id}&order=${order}`);
   assert.equal(nodes(h.output).some(n => n.props["data-testid"] === "manual-order-submit"), false);
   assert.equal(nodes(h.output).some(n => n.props["data-testid"] === "manual-order-new-attempt"), false);
   assert.equal(writes.length, 3);
