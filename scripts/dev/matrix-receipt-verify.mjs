@@ -102,7 +102,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       const historicalSkip = go.outcome?.historical_skip?.ok === true;
       const hasBrowserReceipt = historicalSkip || browserStepOutcome === "success";
       if (historicalSkip && browserStepOutcome !== "success")
-        throw new Error(`historical canonical skip requires same-run browser step success; outcome is ${browserStepOutcome}`);
+        throw new Error(`historical canonical skip requires a same-run browser receipt and successful browser step; browser outcome is ${browserStepOutcome}`);
       if (hasBrowserReceipt) {
         const browserPath = resolve(directory, "browser.json");
         const browser = readJson(browserPath);

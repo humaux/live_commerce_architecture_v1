@@ -40,5 +40,17 @@
     "raw_bytes": 256147,
     "lossless_gzip": "ci-red-38390763488.log.gz",
     "gzip_sha256": "23cb4be0106ac9240c149c33f0a8d404c9807e08f56cc4a52f12c2ac9100ad88"
+  },
+  {
+    "run_id": 38391591681,
+    "source_head": "f754dd58aaefd6ae3c1b5a3ae923047e07d6c2e9",
+    "command": "gh run view 38391591681 --log-failed",
+    "exit_code": 0,
+    "log_scope": "actual failed CI steps",
+    "conclusion": "failure",
+    "raw_sha256": "09f1e8a131567da627addf89e87cebc279192a217e00a6e95688a1ca1d18cc99",
+    "raw_bytes": 256394,
+    "archive": "ci-red-38391591681.log.gz",
+    "archive_sha256": "2cb31fc45493eb48b9414a2748aa403303ba92fb49117174a0ade6a82b254a44"
   }
 ]
