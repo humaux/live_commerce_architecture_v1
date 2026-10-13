@@ -10,13 +10,7 @@ import type { Locale } from "@live-commerce/i18n";
 import type { Store, ProductImageList } from "@/lib/model";
 import { currencySign } from "@/lib/client";
 import { readCollections, readWarehouses } from "@/lib/catalog-v2-client";
-import {
-  fromMinor,
-  toMinor,
-  type Collection,
-  type OptionAxis,
-  type ProductDetail,
-} from "@/lib/catalog-v2-model";
+import { fromMinor, toMinor, type Collection, type OptionAxis, type ProductDetail } from "@/lib/catalog-v2-model";
 import { imageURL } from "@/lib/images-client";
 import {
   newRow,

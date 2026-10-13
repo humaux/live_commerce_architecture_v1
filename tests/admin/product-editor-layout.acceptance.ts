@@ -8,7 +8,7 @@ import { presentationCopy } from "../../apps/admin/lib/presentation-copy";
 // the existing reserved-layout checks still run on every create/edit fixture.
 const hardenedLocales = new WeakMap<Page, Set<string>>();
 
-/** Exercises UXH01–04 with native input and read-only browser measurements. */
+/** Exercises UXH01–05 with native input and read-only browser measurements. */
 async function assertProductEditorHardening(page: Page) {
   const locale = new URL(page.url()).pathname.split("/")[1] as "zh-TW" | "zh-CN" | "en";
   const labels = {
@@ -137,6 +137,29 @@ async function assertProductEditorHardening(page: Page) {
     await verify(hint, "UXH04 hint returns with overflow").toBeVisible();
     verify(Math.abs(narrowAgain.reserved - wide.reserved), "UXH04 hint row stays reserved when overflow returns").toBeLessThanOrEqual(1);
     console.log("UXH04", JSON.stringify({ locale, narrow, wide, narrowAgain }));
+
+    // Select on desktop before the responsive layout introduces horizontal
+    // overflow. No mobile tab click or keyboard focus may scroll it into view.
+    await resize(901);
+    const seo = nav.locator('button[aria-controls="seo"]');
+    await seo.click();
+    await expect(seo, "UXH05 desktop click selects SEO before resize").toHaveAttribute("aria-current", "location");
+    await resize(390);
+    const measureSelected = () => seo.evaluate(el => {
+      const strip = el.closest('[data-testid="product-section-tabs"]')!;
+      const tab = el.getBoundingClientRect(), frame = strip.getBoundingClientRect();
+      return { tabLeft: tab.left, tabRight: tab.right, tabWidth: tab.width,
+        frameLeft: frame.left, frameRight: frame.right, frameWidth: frame.width,
+        overflow: strip.scrollWidth - strip.clientWidth, scrollLeft: strip.scrollLeft,
+        fullyVisible: tab.width > 0 && tab.left >= frame.left - 1 && tab.right <= frame.right + 1 };
+    }); // READ/MEASURE only: native desktop selection and viewport resize drive the flow.
+    const resizedSelected = await measureSelected();
+    expect(resizedSelected.overflow, "UXH05 mobile strip has real horizontal overflow").toBeGreaterThan(1);
+    expect(resizedSelected.tabWidth, "UXH05 selected tab fits inside the mobile strip").toBeLessThanOrEqual(resizedSelected.frameWidth);
+    await verify(seo, "UXH05 resize preserves the selected SEO section").toHaveAttribute("aria-current", "location");
+    await verify.poll(async () => (await measureSelected()).fullyVisible,
+      { message: "UXH05 desktop-selected SEO is fully visible after 901→390 resize" }).toBe(true);
+    console.log("UXH05", JSON.stringify({ locale, direction: "901→390", ...await measureSelected() }));
     seen.add(locale);
     hardenedLocales.set(page, seen);
   } finally {

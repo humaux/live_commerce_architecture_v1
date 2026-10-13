@@ -3,7 +3,7 @@
      Used by: owner, integrator and independent PR reviewers. -->
 # UX-HARDEN-R1 delivery
 
-Status: scoped GitHub CI is green: UXH01–04, complete PE12–17/review/feedback acceptance, frozen CC12, and the REAL-stack storefront gate. PR-required shared-consumer regressions and final PR acceptance remain pending.
+Status: PR #49 round 1 is in remediation. Earlier scoped GitHub CI covered UXH01–04, complete PE12–17/review/feedback acceptance, frozen CC12, and the REAL-stack storefront gate. New UXH05 and opt-in hint regressions await CI red evidence; the independent review is FAIL and final PR acceptance remains pending.
 
 - Branch: `unit/ux-harden-r1`; PR target: `r3/integration`.
 - Base after `git fetch origin`: `0bfe36e53acb694f4697521202e24f0790638941`.
@@ -12,7 +12,13 @@ Status: scoped GitHub CI is green: UXH01–04, complete PE12–17/review/feedbac
 - Author: primary agent, UI implementation/integration role; actual model `gpt-6.1-sol`, reasoning `ultra`. Config top-level model/effort and own session turn context verify these values.
 - Behavioral-test delegate: `/root/ux_browser_red`, `test_worker`, actual `gpt-6.1-sol`, reasoning `high`; same assigned unit worktree, exclusive ownership of `tests/admin/product-editor-layout.acceptance.ts` while root reads product source. No recursive delegation.
 - Read-only delegate: `/root/ux_shop_static`, `explorer`, actual `gpt-6.1-sol`, reasoning `medium`; same worktree, no write paths.
-- Author write paths: `apps/admin/components/ProductDocumentForm.tsx`, `ProductDocument.css`, shared `packages/ui/src/Presentation.tsx`/`Presentation.module.css` (TabStrip only), the three touched product-editor browser acceptance files, `tests/storefront/shop-real-gate.mjs`, and this unit's `output/ux-harden-r1/` evidence. No other module is edited.
+- Author write paths: `apps/admin/components/ProductDocumentForm.tsx`, `ProductDocument.css`, `apps/admin/lib/product-editor-copy.ts` (round-1 owner authorization), shared `packages/ui/src/Presentation.tsx`/`Presentation.module.css` (TabStrip only), product-editor browser acceptance and product-document/shell-render tests, `tests/storefront/shop-real-gate.mjs`, and this unit's `output/ux-harden-r1/` evidence. No other module is edited.
+
+## PR #49 round 1
+
+Independent review by Claude API `claude-sonnet-5-5` of `b379b0a8` is **FAIL**. The owner requires all five findings: a visible copy-based toggle test, UXH05 desktop-selected SEO visible after 901→390 resize, `reserveHint` opt-in for the editor only, all navigation labels in the three-locale copy, and a copy-based feedback locator. Final independent acceptance is pending.
+
+[Foundation run 38395845906](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38395845906), exact `b379b0a85bc632da056697f167c234a6f0aff953`, failed before Node units: the architecture gate reports `ProductDocumentForm.tsx: lines 801 > 0`. The red-test revision only compacts an unchanged import declaration to stay below the existing 800-line limit; no threshold, JSX or runtime behavior changes. This allows CI to reach the stale toggle assertion. UXH05 and the actual TabStrip SSR opt-in test are added before the behavioral fixes. Their CI outcomes remain **NOT_RUN** until receipts arrive; this architecture failure is not claimed as their red proof.
 
 ## Scope and acceptance
 
