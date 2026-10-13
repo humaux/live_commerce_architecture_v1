@@ -220,6 +220,27 @@ test("required Gates job and result/receipt consumers reject continuation, inclu
     assert.ok(matrixExecutionIssues({ ...source, workflow }).some((issue) => issue.includes("required job and both result/receipt consumers")));
   }
 });
+test("foundation receipt verifier cannot be disabled while its command remains", () => {
+  const foundationWorkflow = source.foundationWorkflow.replace(
+    "      - name: Verify current-run matrix execution receipts\n        if: always()",
+    "      - name: Verify current-run matrix execution receipts\n        if: false");
+  assert.notEqual(foundationWorkflow, source.foundationWorkflow);
+  assert.ok(matrixExecutionIssues({ ...source, foundationWorkflow }).some((issue) => issue.includes("foundation.yml")));
+});
+test("required receipt verifier condition cannot borrow always from a comment", () => {
+  const workflow = source.workflow.replace(
+    "      - name: Verify current-run matrix execution receipts\n        if: always()",
+    "      - name: Verify current-run matrix execution receipts\n        if: false # if: always()");
+  assert.notEqual(workflow, source.workflow);
+  assert.ok(matrixExecutionIssues({ ...source, workflow }).some((issue) => issue.includes("required job and both result/receipt consumers")));
+});
+test("receipt verifier actual always condition accepts an explanatory comment", () => {
+  const update = (text) => text.replace(
+    "      - name: Verify current-run matrix execution receipts\n        if: always()",
+    "      - name: Verify current-run matrix execution receipts\n        if: always() # mandatory positive receipt consumer");
+  assert.deepEqual(matrixExecutionIssues({ ...source, workflow: update(source.workflow), foundationWorkflow: update(source.foundationWorkflow) }), []);
+});
+
 test("manual partial runs use a separate check context from the branch-protection required receipt gate", () => {
   const workflow = source.workflow.replace("name: ${{ github.event_name == 'workflow_dispatch' && 'manual' || 'required' }}", "name: required");
   assert.ok(matrixExecutionIssues({ ...source, workflow }).some((issue) => issue.includes("required job and both result/receipt consumers")));

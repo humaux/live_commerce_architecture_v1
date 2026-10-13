@@ -71,7 +71,7 @@
       ]
     },
     "tests/ci/product-editor-matrix-execution.test.mjs": {
-      "source_sha256": "7b7758ca0c5ba882f5aec438ad503bd9792051e882c1168a2c6d156a71735ce8",
+      "source_sha256": "5eae4a08c56cf5f1e7aaa30e4bb12f2ad4b48e4f33fc6d6f3ee4324548fcc0ac",
       "tests": [
         "CI cannot append an evidence-test skip to the actual balanced dispatch",
         "Gates job and Gate step reject continue-on-error, including expressions",
@@ -109,6 +109,7 @@
         "foundation job condition after steps still disables the runners",
         "foundation job disabled despite both runner filenames retained",
         "foundation job refuses expression continue-on-error",
+        "foundation receipt verifier cannot be disabled while its command remains",
         "foundation refuses Go filter alias '--run=^$'",
         "foundation refuses Go filter alias '--skip=^$'",
         "foundation refuses Go filter alias '-test.run=^$'",
@@ -153,6 +154,7 @@
         "manual partial runs use a separate check context from the branch-protection required receipt gate",
         "matrix gates are executed through the actual current commands",
         "ordinary literal GOFLAGS options remain accepted",
+        "receipt verifier actual always condition accepts an explanatory comment",
         "required Gates job and result/receipt consumers reject continuation, including the first-key step form",
         "required Gates verifier clears inherited NODE_OPTIONS",
         "required Node command refuses '--test-concurrency=1'",
@@ -221,6 +223,7 @@
         "required Node suites cannot retain filenames but add --test-name-pattern='.*'",
         "required Node suites cannot retain filenames but add --test-skip-pattern '^$'",
         "required Node suites cannot retain filenames but add --test-skip-pattern='.*'",
+        "required receipt verifier condition cannot borrow always from a comment",
         "unfiltered required Node command accepts literal env prefix ",
         "unfiltered required Node command accepts literal env prefix FOO=1 ",
         "unfiltered required Node command accepts literal env prefix NODE_OPTIONS=\"--trace-warnings\" FOO=1 "
