@@ -42,13 +42,13 @@ BEGIN
  IF o.source IS DISTINCT FROM 'merchant_manual' OR o.generation IS DISTINCT FROM 1
   OR o.cart_version IS DISTINCT FROM 1 OR o.payment_mode IS DISTINCT FROM mode
   OR o.commercial_state IS DISTINCT FROM state OR o.fulfillment_state IS DISTINCT FROM 'MANUAL_UNASSIGNED'
-  OR o.collection_state IS DISTINCT FROM CASE WHEN mode='bank_transfer' THEN NULL::text ELSE 'PENDING' END
+  OR o.collection_state IS DISTINCT FROM (CASE WHEN mode='bank_transfer' THEN NULL::text ELSE 'PENDING' END)
   OR o.currency IS DISTINCT FROM plan->'facts'->'catalog'->'market'->>'currency'
   OR o.total_minor IS DISTINCT FROM (plan->'calculation'->>'total_minor')::bigint
-  OR o.cod_surcharge_minor IS DISTINCT FROM CASE WHEN mode='cash_on_delivery'
-   THEN (plan->'facts'->'catalog'->'payment'->>'surcharge_minor')::bigint ELSE NULL::bigint END
-  OR o.cod_carrier IS DISTINCT FROM CASE WHEN mode='cash_on_delivery'
-   THEN plan->'facts'->'catalog'->'payment'->>'carrier' ELSE NULL::text END
+  OR o.cod_surcharge_minor IS DISTINCT FROM (CASE WHEN mode='cash_on_delivery'
+   THEN (plan->'facts'->'catalog'->'payment'->>'surcharge_minor')::bigint ELSE NULL::bigint END)
+  OR o.cod_carrier IS DISTINCT FROM (CASE WHEN mode='cash_on_delivery'
+   THEN plan->'facts'->'catalog'->'payment'->>'carrier' ELSE NULL::text END)
   OR o.snapshot->'quote'->'amount' IS DISTINCT FROM plan->'calculation'
   OR o.created_at<(binding->>'admitted_at')::timestamptz OR o.created_at>now_at
   OR o.expires_at IS DISTINCT FROM expected_expiry OR o.expires_at<=now_at

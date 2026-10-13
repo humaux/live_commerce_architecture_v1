@@ -89,8 +89,18 @@ This run proves neither C2 behavior nor a product red/green.
 CI `38459352221` at `2e407f05d` is the replacement run for
 `focused:^TestOrderAttempt(Notification|Settlement|Executor|Expiry)` and
 `shard:unit`, including the actual signed-ingress READY executor case. Root
-monitors the unchanged 150-minute workflow bound and its logs/artifacts; result
-is pending. Startup key configuration FIRST tests are also on this head.
+monitors the unchanged 150-minute workflow bound and its logs/artifacts.
+Focused job `115512700152` reached migration 0189 but failed its PL/pgSQL
+IF/CASE parsing (42601), before any C2 assertion: `PASS=0 FAIL=24 SKIP=0 exit=1`.
+`full-c2-ci45.log` retains the setup failure; behavioral acceptance is NOT_RUN.
+The RHS CASE expressions are now parenthesized without changing predicates.
+Startup key configuration FIRST tests are also on this head; the unit job
+is still running.
+
+CI `38459781617` at `f781f06cf`, job `115511819647`, gives sweep API-only RED:
+missing `Sweep`, `AddWorkers` and `PeriodicJob`, `PASS=0 FAIL=0 SKIP=0 exit=1`.
+`sweep-api-red-ci.log` preserves the compile diagnostics. Native sweep behavior
+must run after the implementation; this is not a SQL behavior result.
 
 The full C2 composite and terminal proof are in progress; notification helpers,
 Go executor, native expiry compatibility, worker/sweep and the complete matrix
