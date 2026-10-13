@@ -32,3 +32,33 @@ for (const selector of ["RUN", "SKIP"]) {
     assert.ok(matrixExecutionIssues({ ...source, registry }).some((x) => x.includes("forward")));
   });
 }
+
+const nodeCommand = source.node.split("\n").find((line) => line.startsWith("node --test ") && line.includes("tests/ci/product-editor-matrix-ledger.test.mjs"));
+assert.ok(nodeCommand, "real Node command mutation anchor");
+for (const flag of ["--test-name-pattern", "--test-skip-pattern"]) {
+  for (const filter of [`${flag} '^$'`, `${flag}='.*'`, `'${flag}=.*'`]) {
+    test(`required Node suites cannot retain filenames but add ${filter}`, () => {
+      const node = source.node.replace(nodeCommand, () => `${nodeCommand} ${filter}`);
+      assert.ok(node.includes(`${nodeCommand} ${filter}`), "exact filter appended to real command");
+      for (const name of ["ledger", "execution", "controls"])
+        assert.ok(node.includes(`tests/ci/product-editor-matrix-${name}.test.mjs`), "suite filename retained");
+      assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")));
+    });
+  }
+}
+test("filters on a different Node command do not replace or filter the required suites", () => {
+  const node = source.node + "\nnode --test --test-name-pattern='^$' tests/ci/shard-plan.test.mjs\n";
+  assert.deepEqual(matrixExecutionIssues({ ...source, node }), []);
+});
+
+const goCommand = source.registry.split("\n").find((line) => line.includes("go test ") && line.includes('${LC_FOUNDATION_PKGS:-./...}'));
+assert.ok(goCommand, "real foundation command mutation anchor");
+for (const [flag, pattern] of [["-run", "^$"], ["-skip", "^TestProductEditorMatrix"]]) {
+  for (const filter of [`${flag} '${pattern}'`, `${flag}=${pattern}`, `${flag}='${pattern}'`, `'${flag}=${pattern}'`]) {
+    test(`foundation command cannot retain forwarding but add ${filter}`, () => {
+      const registry = source.registry.replace(goCommand, () => `${goCommand} ${filter}`);
+      assert.ok(registry.includes(`${goCommand} ${filter}`), "exact filter appended to real command");
+      assert.ok(matrixExecutionIssues({ ...source, registry }).some((issue) => issue.includes("forward")));
+    });
+  }
+}

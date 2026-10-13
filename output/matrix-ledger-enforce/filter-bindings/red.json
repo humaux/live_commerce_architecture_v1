@@ -1,0 +1,17 @@
+{
+  "command": [
+    "node",
+    "--test",
+    "tests/ci/product-editor-matrix-execution.test.mjs"
+  ],
+  "exit_code": 1,
+  "base_commit": "f1f404a15d15f08d01269e1ec06a07df9de8d492",
+  "source_files_sha256": {
+    "tests/ci/product-editor-matrix-execution.mjs": "91f33d3a617cadafaee85988bb1329a26d56c8de26c2b612356355898242f493",
+    "tests/ci/product-editor-matrix-execution.test.mjs": "5bdd3529c62d223e442c2a8d72e3f15de95ce03f5a17c1a19989c9f3bf451c15"
+  },
+  "failed_controls": 12,
+  "passed_controls": 9,
+  "tests": 21,
+  "mutation_note": "Replacement callback preserves literal $ in regex filters; exact appended command assertions retained"
+}

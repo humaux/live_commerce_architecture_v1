@@ -1,0 +1,73 @@
+✔ matrix gates are executed through the actual current commands (81.8325ms)
+✔ incidental comment cannot replace the active Node product-editor-matrix-ledger.test.mjs argv (43.180083ms)
+✔ incidental comment cannot replace the active Node product-editor-matrix-execution.test.mjs argv (109.958917ms)
+✔ CI cannot append an evidence-test skip to the actual balanced dispatch (20.453333ms)
+✔ foundation go test must forward the actual RUN selector (3.961791ms)
+✔ foundation go test must forward the actual SKIP selector (5.925458ms)
+✖ required Node suites cannot retain filenames but add --test-name-pattern '^$' (28.076083ms)
+✔ required Node suites cannot retain filenames but add --test-name-pattern='.*' (6.446167ms)
+✔ required Node suites cannot retain filenames but add '--test-name-pattern=.*' (3.380041ms)
+✖ required Node suites cannot retain filenames but add --test-skip-pattern '^$' (129.959417ms)
+✔ required Node suites cannot retain filenames but add --test-skip-pattern='.*' (2.872334ms)
+✔ required Node suites cannot retain filenames but add '--test-skip-pattern=.*' (1.431167ms)
+✔ filters on a different Node command do not replace or filter the required suites (1.430667ms)
+✔ foundation command cannot retain forwarding but add -run '^$' (1.613333ms)
+✔ foundation command cannot retain forwarding but add -run=^$ (1.384834ms)
+✔ foundation command cannot retain forwarding but add -run='^$' (1.393833ms)
+✔ foundation command cannot retain forwarding but add '-run=^$' (2.32725ms)
+✔ foundation command cannot retain forwarding but add -skip '^TestProductEditorMatrix' (1.585375ms)
+✔ foundation command cannot retain forwarding but add -skip=^TestProductEditorMatrix (2.397625ms)
+✔ foundation command cannot retain forwarding but add -skip='^TestProductEditorMatrix' (1.664417ms)
+✔ foundation command cannot retain forwarding but add '-skip=^TestProductEditorMatrix' (1.601042ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 19
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 781.744167
+
+✖ failing tests:
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:40:5
+✖ required Node suites cannot retain filenames but add --test-name-pattern '^$' (28.076083ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/tests/ci/product-editor-matrix-execution.test.mjs:44:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/ci/product-editor-matrix-execution.test.mjs:40:5
+✖ required Node suites cannot retain filenames but add --test-skip-pattern '^$' (129.959417ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(matrixExecutionIssues({ ...source, node }).some((issue) => issue.includes("filters")))
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/matrix-ledger-enforce/tests/ci/product-editor-matrix-execution.test.mjs:44:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

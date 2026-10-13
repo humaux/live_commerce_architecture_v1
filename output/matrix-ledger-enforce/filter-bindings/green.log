@@ -1,0 +1,29 @@
+✔ matrix gates are executed through the actual current commands (5.415333ms)
+✔ incidental comment cannot replace the active Node product-editor-matrix-ledger.test.mjs argv (2.387459ms)
+✔ incidental comment cannot replace the active Node product-editor-matrix-execution.test.mjs argv (2.551625ms)
+✔ CI cannot append an evidence-test skip to the actual balanced dispatch (1.84775ms)
+✔ foundation go test must forward the actual RUN selector (3.420333ms)
+✔ foundation go test must forward the actual SKIP selector (1.968125ms)
+✔ required Node suites cannot retain filenames but add --test-name-pattern '^$' (1.517959ms)
+✔ required Node suites cannot retain filenames but add --test-name-pattern='.*' (1.420792ms)
+✔ required Node suites cannot retain filenames but add '--test-name-pattern=.*' (1.347875ms)
+✔ required Node suites cannot retain filenames but add --test-skip-pattern '^$' (1.505125ms)
+✔ required Node suites cannot retain filenames but add --test-skip-pattern='.*' (1.875041ms)
+✔ required Node suites cannot retain filenames but add '--test-skip-pattern=.*' (2.10825ms)
+✔ filters on a different Node command do not replace or filter the required suites (2.853625ms)
+✔ foundation command cannot retain forwarding but add -run '^$' (1.7645ms)
+✔ foundation command cannot retain forwarding but add -run=^$ (1.952083ms)
+✔ foundation command cannot retain forwarding but add -run='^$' (3.286208ms)
+✔ foundation command cannot retain forwarding but add '-run=^$' (1.321541ms)
+✔ foundation command cannot retain forwarding but add -skip '^TestProductEditorMatrix' (1.467041ms)
+✔ foundation command cannot retain forwarding but add -skip=^TestProductEditorMatrix (1.989916ms)
+✔ foundation command cannot retain forwarding but add -skip='^TestProductEditorMatrix' (1.652042ms)
+✔ foundation command cannot retain forwarding but add '-skip=^TestProductEditorMatrix' (1.375125ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 147.179666
