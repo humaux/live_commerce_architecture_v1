@@ -156,11 +156,11 @@ export function nodeOutcome(events, actualFiles) {
   if (actualFiles && actualFiles.some((path) => !expected.has(resolve(path)))) violations.push("unexpected Node suite argument");
   return { ok: violations.length === 0, violations, files: [...actual].map((path) => relative(process.cwd(), path)).sort(), cases };
 }
-export function goFamily() {
-  const files = readdirSync("tests/foundation").filter((name) => name.endsWith("_test.go"));
+export function goFamily(foundationDirectory = "tests/foundation") {
+  const files = readdirSync(foundationDirectory).filter((name) => name.endsWith("_test.go"));
   const names = new Set();
   for (const name of files) {
-    const text = readFileSync(resolve("tests/foundation", name), "utf8");
+    const text = readFileSync(resolve(foundationDirectory, name), "utf8");
     for (const match of text.matchAll(/^func (TestProductEditorMatrix[A-Za-z0-9_]*)\(t \*testing\.T\)/gm)) names.add(match[1]);
   }
   const plan = JSON.parse(readFileSync("scripts/dev/shard-plan.json", "utf8"));
@@ -168,6 +168,8 @@ export function goFamily() {
   if (catchAll.length !== 1) throw new Error("shard plan must have exactly one catch-all group");
   const otherNames = new Set(plan.groups.filter((group) => !group.catch_all).flatMap((group) => group.tests));
   const family = [...names].sort();
+  if (!names.has("TestProductEditorMatrixLedgerEvidence"))
+    throw new Error("Go matrix family is missing the required canonical evidence test");
   if (!family.length || family.some((name) => otherNames.has(name)))
     throw new Error("Go matrix family must not be assigned outside its catch-all group");
   return { family, shard: catchAll[0].id };
@@ -191,6 +193,8 @@ export function goOutcome(events, family) {
   }
   const expectedPackage = "livecommerce/tests/foundation";
   const violations = [...malformed];
+  if (!family.includes("TestProductEditorMatrixLedgerEvidence"))
+    violations.push("Go matrix family is missing the required canonical evidence test");
   if (!packages.has(expectedPackage)) violations.push("Go test JSON did not execute tests/foundation");
   for (const event of events) if (event.Test?.startsWith("TestProductEditorMatrix") && ["skip", "fail"].includes(event.Action) &&
       !(event.Test === "TestProductEditorMatrixLedgerEvidence" && event.Action === "skip"))
