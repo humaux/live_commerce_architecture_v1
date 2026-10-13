@@ -679,6 +679,19 @@ func productEditorMatrixEvidenceFixture(t *testing.T) (string, string) {
 		snapshots[path], frozenHashes[path], artifacts[snapshot], blobs[path] = snapshot, hash(data), hash(data), productEditorMatrixGitBlob(data)
 	}
 	frozen["source_files_sha256"], frozen["source_snapshots"], frozen["git_blob_ids"] = frozenHashes, snapshots, blobs
+	// MODEL_ONLY membership records this isolated package, including metadata
+	// written below. Names only avoid a circular dependency on their digests.
+	evidence := filepath.Dir(canonical)
+	membershipPath := evidence + "/FROZEN-MEMBERSHIP.json"
+	members := []string{"FROZEN-MEMBERSHIP.json", "FROZEN-IDENTITIES.json", "SOURCE.json", "browser/browser-evidence.json", "browser-product-editor.json"}
+	for path := range artifacts {
+		members = append(members, strings.TrimPrefix(path, evidence+"/"))
+	}
+	sort.Strings(members)
+	membershipData, _ := json.Marshal(map[string]any{"tested_source_commit": manifest["tested_source_commit"], "package_members": members, "fixture_evidence_class": "MODEL_ONLY"})
+	write(membershipPath, membershipData)
+	artifacts[membershipPath] = hash(membershipData)
+	frozen["package_membership_sha256"] = hash(membershipData)
 	frozenData, _ := json.Marshal(frozen)
 	frozenPath := filepath.Dir(canonical) + "/FROZEN-IDENTITIES.json"
 	write(frozenPath, frozenData)
