@@ -1,0 +1,15 @@
+{
+  "schema": "github-ci-red-archive/v1",
+  "run_id": 38398298494,
+  "head_sha": "98506095d099c5332fe556a145d029950e5cdc20",
+  "node_exit": 1,
+  "failure_names": [
+    "manual foundation mode schedules the drift-aware browser backstop",
+    "required verifier requires one successful named Gate step receipt for every planned mode",
+    "Go execution receipts bind the actual race-enabled command",
+    "manual full foundation execution cannot bypass historical-skip browser verification"
+  ],
+  "raw_log_sha256": "339dc6c85e303b5456b63895f34006efb51d5447adce463d83037864c259ff89",
+  "local_tests": "NOT_RUN",
+  "scope": "actual Node semantic RED after inventory correction; no GREEN claim"
+}
