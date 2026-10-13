@@ -1,0 +1,9 @@
+{
+  "checked_at": "2026-10-13T04:06:06Z",
+  "load_average": [
+    48.93408203125,
+    40.07080078125,
+    32.33203125
+  ],
+  "note": "Final staged check-gates failed nested contractdrift CLI deadline; no product/argv assertion failed."
+}

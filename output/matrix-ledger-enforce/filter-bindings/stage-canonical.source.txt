@@ -1,0 +1,44 @@
+# Purpose: stage completed native PR28 evidence without rewriting any browser result.
+# Depends on: a successful bounded run receipt, native logs/results/ledger and frozen unit sources.
+# Used by: final canonical evidence gate; shared harness hashes remain informational.
+import json, hashlib, shutil, subprocess, re
+from pathlib import Path
+base=Path('output/matrix-ledger-enforce/filter-bindings');browser=base/'browser'
+receipt=json.loads((base/'browser-product-editor.json').read_text())
+assert receipt['exit_code']==0 and receipt['source_files_sha256']==receipt['source_files_sha256_after']
+assert receipt['tested_source_commit']==receipt['source_commit_after']==subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+root=Path(receipt['environment']['LC_BROWSER_EVIDENCE_ROOT'])/'catalog-core'
+folders=list(root.iterdir()); pe=[d for d in folders if (d/'product-editor-click-ledger.json').exists()];assert len(pe)==1
+cc=[d for d in folders if d not in pe and (d/'playwright.log').exists()];assert len(cc)==1
+pe,cc=pe[0],cc[0]
+for folder,count in [(pe,12),(cc,2)]:
+ text=(folder/'playwright.log').read_text();assert re.search(r'(?m)^\s*'+str(count)+r' passed\b',text)
+ assert not re.search(r'(?m)^\s*[1-9][0-9]* (failed|skipped|flaky|interrupted|did not run)\b',text)
+ result=json.loads((folder/'results/.last-run.json').read_text());assert result=={'status':'passed','failedTests':[]}
+browser.mkdir(parents=True,exist_ok=True)
+sha=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
+copies=[]
+for source,name in [(pe/'playwright.log','playwright.log'),(cc/'playwright.log','cc12-playwright.log'),(pe/'product-editor-click-ledger.json','product-editor-click-ledger.json'),(pe/'results/.last-run.json','pe-last-run.json'),(cc/'results/.last-run.json','cc12-last-run.json')]:
+ dest=browser/name;shutil.copyfile(source,dest);copies.append({'source_native':str(source),'canonical':str(dest),'sha256':sha(dest)});assert sha(dest)==sha(source)
+rows=json.loads((browser/'product-editor-click-ledger.json').read_text());required=[r for r in rows if r.get('page','').startswith('mobile matrix') or r.get('page','').startswith('mobile axis remove')]
+assert all(r['actual']=='PASS' and r['width']==390 for r in required)
+identity=lambda r:tuple(r.get(k,'') for k in ['page','locale','width','row','control','action'])
+assert len(set(map(identity,required)))==len(required)
+cases=json.loads(Path('tests/foundation/testdata/product_editor_matrix_cases.json').read_text());assert len(required)==len(cases)*3
+per={loc:len([r for r in required if r['locale']==loc]) for loc in ['zh-TW','zh-CN','en']};assert all(n==len(cases) for n in per.values())
+# Update the independent golden corruption fixture from actual native bytes, never synthesized PASS rows.
+fields=['page','locale','width','row','control','action','expected','actual']
+golden=[{key:row.get(key,'') for key in fields} for row in required]
+assert golden==json.loads(Path('tests/foundation/testdata/product_editor_mobile_matrix_ledger.json').read_text()), 'new actual projection must match unchanged golden fixture'
+old=json.loads(Path('output/matrix-ledger-enforce/round4/SOURCE.json').read_text())
+info={p:sha(p) for p in old['informational_source_files_sha256']}
+hard=receipt['source_files_sha256'];assert all(sha(p)==v for p,v in hard.items())
+trunk=subprocess.check_output(['git','merge-base','HEAD','origin/r3/integration'],text=True).strip()
+counts={'PE_and_review':12,'CC12_frozen':2,'skipped':0}
+ledger={'raw_rows':len(rows),'required_unique_PASS':len(required),'identity_fields':['page','locale','width','row','control','action'],'per_locale':per,'width':390}
+manifest={'tested_source_commit':receipt['tested_source_commit'],'merged_trunk_commit':trunk,'source_files_sha256':hard,'informational_source_files_sha256':info,'actual_passed_cases':counts,'ledger':ledger,'copied_native_bytes':copies,'scope':'Original full browser mode; fourteen owned executable hashes hard-bound, shared context informational. Exact Go consumer file/title and passed/no-failure/no-skip outcomes required.'}
+(browser/'browser-evidence.json').write_text(json.dumps(manifest,indent=2)+'\n')
+source={k:manifest[k] for k in ['tested_source_commit','merged_trunk_commit','source_files_sha256','informational_source_files_sha256','actual_passed_cases','ledger']}
+source.update(source_before_after_unchanged=True,source_scope=manifest['scope'],evidence_level='E3 automated local native browser plus current-source hash and semantic gates',canonical_manifest=str(browser/'browser-evidence.json'),actual_commands=[{'command':receipt['command'],'exit_code':receipt['exit_code'],'receipt':str(base/'browser-product-editor.json')}])
+(base/'SOURCE.json').write_text(json.dumps(source,indent=2)+'\n')
+print(json.dumps({'tested_source_commit':source['tested_source_commit'],'counts':counts,'ledger':ledger,'hard_sources':len(hard),'native_pe':str(pe),'native_cc12':str(cc)}))

@@ -1,63 +1,43 @@
-# matrix-ledger-enforce — PR28 round-5
+# matrix-ledger-enforce — PR28 final execution-filter binding
 
-- Branch: `unit/matrix-ledger-enforce`; starting remote head `40bad95377741ebcb76b371e9d42f03bce1df581`.
-- `git fetch origin && git merge origin/unit/matrix-ledger-enforce && git merge origin/r3/integration` → exit 0; trunk union merge `760e354e8d466e2e5876d1fb5d433d74e3d10d2e`, merged trunk `fef7920378c0b8cde843d22b27d33c62b07451b7`.
-- Tested source: **`d93700a4ab0fb541aa8d3ee2d540c0d94b29f50f`**, [SOURCE.json](round5/SOURCE.json). Fourteen unit executable producers (including the modified bulk widget/test selectors) are checkout-bound; twelve unchanged shared context files remain informational. Harness execution is independently content-bound. Golden ledger fixture projects only the 267 mobile rows unchanged from the final real native run, not synthesized; evidence/fixture handoff does not change frozen executable bytes.
-- Author: Codex-4 `/root`; parent runtime/effort not exposed. Go worker `test_worker`, `gpt-6.1-sol`, medium, isolated `.worktrees/pr28-r5-run-identity` at `760e354e`; owned only the Go outcome module and [worker proof](round5-run-identity/NOTES.md). Independent scoped reviewer `explorer`, same model/medium, read-only; Humaux `d6cfc5d0-932a-4f75-ad6d-d88f0d849a6e`. No recursive delegation.
-- Contract/interface changes: none. Required CI gates: foundation-shards and original `--browser-product-editor`; new CI results pending integrator.
-- Native logs/worker patch are retained unchanged, including tool-emitted whitespace. `git diff --cached --check` for source/docs/fixture passes (exit 0); the unrestricted receipt diff reports native whitespace (exit 2) and is not used to rewrite evidence.
-- Foreign `output/ext-agents/` is excluded. Application changes are stable test IDs only; original waits/assertions remain, with stronger bulk operation/readback assertions.
+- Branch: `unit/matrix-ledger-enforce`; remote base `f1f404a15d15f08d01269e1ec06a07df9de8d492`.
+- `git fetch origin && git merge origin/unit/matrix-ledger-enforce` → exit 0, already up to date. No new trunk merge in this filter-only round; merged trunk ancestor remains `fef7920378c0b8cde843d22b27d33c62b07451b7`.
+- Tested source: **`e0fb76ce4034721a5429f701469a3e9fd4b756e7`**, [SOURCE.json](filter-bindings/SOURCE.json). Fourteen unit executable hashes are checkout-bound, including both changed execution files; twelve shared context hashes are informational. The evidence-only handoff changes no frozen executable bytes.
+- Author: Codex-4 `/root`; parent model/effort not exposed. Scoped reviewer `/root/filter_binding_audit`, `explorer`, `gpt-6.1-sol`, medium, read-only at the tested SHA; E1 PASS, no recursive delegation or writes. Humaux task `d5aa1878-b297-4184-b95d-420fece44aa4`.
+- Scope: only threads **4251056896** and **4251056902**. No product, route, contract, migration, dependency, browser wait/assertion, suite-filter or calibration change. Execution/content binding and all prior outcome/identity/expected-claim checks remain.
 
-## This round: red → green
+## Red → green
 
-**4251070834 (P1):** table-only completeness omitted seven actual bulk controls. The JSX scanner derives controls from production select/input/button nodes; the browser enumerates the mounted DOM and binds its call to the real imported recorder method. Removing a rendered control's table row is RED even when the reduced table/ledger agree. Each locale at 390px now actually selects a SKU, opens, fills/cancels/reopens, selects field/target/scope/operation, fills/apply, saves and reloads. Cancel compares every matrix input/select value, checked and disabled state. Apply adds 2 only to White (3→5), leaves Black at 4; exactly one document write, original SKU identities/prices/compare-at/codes and quantities persist after reload and REAL_PG archive readback.
+Required Node suite commands now refuse either `--test-name-pattern` or `--test-skip-pattern`, including space, equals and quoted forms. Go command argv is inspected after verifying/removing its three genuine planner forwarding tokens; additional `-run` or `-skip` is refused in both space and equals forms. Literal argv is parsed without shell evaluation. An unrelated filtered Node command remains permitted; the original actual registry commands remain positive.
 
-[Initial controls RED](round5/bulk-controls-red.log): exit 1, all seven missing controls reproduced. On final gate, [missing Apply RED](round5/missing-control-red.log) and [swapped/no-op recorder RED](round5/noop-inventory-red.log): exit 1 each; [controls GREEN](round5/bulk-controls-green.log): 9/9, exit 0. [Proof/hash record](round5/bulk-proof.json). Canonical action/outcome/expected-claim gates and identity checks are preserved.
-
-**4251070846 (P2/test integrity):** counts alone admitted a different suite saying 12/2 passed. Go now requires the exact consumer files and complete titles, once each, for all PE/review/feedback and CC12 cases; line numbers/durations may change. [Worker native RED](round5-run-identity/red.receipt.json): exit 1, 12 consistently rehashed wrong-file/title/substitute/drop/duplicate/fake-run corruptions accepted by the old gate. [Worker GREEN](round5-run-identity/green.receipt.json): exit 0 (prior 33 controls + 12 identity controls + metadata positive). This is isolated-fixture evidence; final current-source canonical gate follows below.
-
-The first full run at `d10e499d` had 12+2 Playwright passes and a valid 267-row ledger, but the Go archive expectation still said White=3. Its [actual composite RED](round5/browser-initial-archive-red.json) is exit 1 and retained uncompressed. `d93700a4` changes that exact expected quantity to the saved bulk result 5, retaining Black=4 and every other archive/replacement field and condition. The original full mode then exits 0; this is an updated exact assertion for the added flow, not a relaxed assertion.
+The real command mutations retain all required suite filenames and Go forwarding. [Unchanged old module RED](filter-bindings/red.json): `node --test tests/ci/product-editor-matrix-execution.test.mjs` exits **1**, 12 failed / 9 passed. [Final GREEN](filter-bindings/green.json): same command exits **0**, 21 passed / zero failed. Six original tests are retained. [Uncompressed proof and preparation history](filter-bindings/NOTES.md) explains the initial replacement-string fixture error, corrected callback mutation, exact-append assertion and genuine rerun; initial logs do not substitute for RED evidence.
 
 ## Current actual gates
 
-The original full `--browser-product-editor` mode passes 12 PE/review/feedback + 2 frozen CC12, zero skips. Both native last-run receipts are passed with empty failedTests. Ledger: 322 raw rows, 267 unique required PASS identities, 89 per locale (`zh-TW`, `zh-CN`, `en`) at 390px. [Canonical manifest](round5/browser/browser-evidence.json); five native files copied byte-for-byte, with [external artifact hashes](round5/ARTIFACTS.json). No generated runnable test/spec snapshots are committed.
-
-| Exact command | Exit | Evidence |
+| Exact command | Exit | Current evidence |
 |---|---:|---|
-| `bash scripts/dev/test-local.sh --browser-product-editor` | 0 | [native/full receipt](round5/browser-product-editor.json) |
-| `bash scripts/dev/test-node.sh` | 0 | [final source receipt](round5/test-node-final.json) |
-| `bash scripts/dev/check-gates.sh` | 0 | [receipt](round5/check-gates.json), all 83 modes documented/run and contract drift errors=0 |
-| `pnpm typecheck:admin` | 0 | [receipt](round5/typecheck-final.json) |
-| `go vet -tags browser ./tests/foundation` | 0 | [receipt](round5/go-vet.json), identical final file hashes before source commit |
-| `node --test tests/ci/product-editor-matrix-controls.test.mjs` | 0 | [9 tests](round5/bulk-controls-green.log) |
-| `go test ./tests/foundation -run '^TestProductEditorMatrixLedger' -count=1 -v` | 0 | [current canonical and all corruption controls](round5/go-ledger.json) |
+| `node --test tests/ci/product-editor-matrix-execution.test.mjs` | 0 | [21 controls](filter-bindings/green.json) |
+| `bash scripts/dev/test-node.sh` | 0 | [full Node receipt](filter-bindings/test-node.json) |
+| `bash scripts/dev/check-gates.sh` | 0 | [first complete receipt](filter-bindings/check-gates.json) and [final source-identical retry](filter-bindings/check-gates-retry.json); execution binding, contract drift and documented/run mode registry |
+| `bash scripts/dev/test-local.sh --browser-product-editor` | 0 | [original full mode](filter-bindings/browser-product-editor.json) |
+| `go test ./tests/foundation -run '^TestProductEditorMatrixLedger' -count=1 -v` | 0 | [canonical and corruption controls](filter-bindings/go-ledger.json), [final evidence-index validation](filter-bindings/go-ledger-final.json) |
 
-| `bash scripts/dev/check-gates.sh` (after actual execution-binding injections/restoration) | 0 | [final restored receipt](round5/check-gates-restored.json), errors=0 and all modes documented |
-| `go test ./tests/foundation -run '^TestProductEditorMatrixLedger' -count=1 -v` (final staged artifact set) | 0 | [final receipt](round5/go-ledger-final.json) |
+The fresh original browser mode ran on the frozen source: **12** PE/review/feedback + **2** CC12, zero skips; both native receipts are passed with empty failedTests. Go confirms archived/replacement SKU persistence in isolated REAL_PG. Ledger: 322 raw rows, **267** unique required PASS identities, 89 per `zh-TW`/`zh-CN`/`en` at 390px. Its projected rows exactly match the unchanged golden fixture. [Canonical manifest](filter-bindings/browser/browser-evidence.json) records five byte-exact native copies, source hashes and counts; [ARTIFACTS.json](filter-bindings/ARTIFACTS.json) binds their bytes externally.
 
-## Retained round-4 fixes
+The first fresh attempt exited **1 before Playwright** because the unchanged 20-second foundation first-migration context timed out; browser cases were **NOT_RUN**. [Original failure](filter-bindings/browser-fixture-not-run.json), [log](filter-bindings/browser-fixture-not-run.log) and [scope note](filter-bindings/browser-fixture-not-run-note.json) are retained. The source-identical second original mode passes in full; no timeout or assertion was changed. Resource snapshots are observations, not a proven timeout cause.
 
-P1-a still requires both native receipts passed, no failed tests, exact log outcomes and manifest/ledger agreement. P1-b still independently requires active Node argv and balanced foundation CI selector forwarding (now also the new controls suite). Prefix/postfix operator signatures and refusal of both mutation hooks whenever CI is present (even empty) are retained. [Historical round-4 proof](round4/PROOF.json), [outcome red](round4/outcome-red.json), [Node removal red](round4/binding-after-red.json), [Go skip red](round4/go-binding-after-red.json), [unary/CI-hook red-green](round4/js-proof/green.log). These historical runs bind their own source; round5 alone is the designated current canonical evidence.
+Supplementary exact-staged `bash scripts/dev/check-gates.sh` exited **1** after 486.049s: its execution binding passed, but the unchanged contractdrift `TestReviewR1bSinkValuesRealCLI/spread` exceeded the existing CLI deadline. [Actual receipt](filter-bindings/check-gates-final.json) and [uncompressed log](filter-bindings/check-gates-final.log) are retained separately from the earlier complete exit-0 gate. No fixture, timeout, assertion or executable source was changed. The resource snapshot is observational, not proof of cause. The single bounded source-identical retry of the exact original command exited **0** after 411.037s, with all fourteen frozen executable hashes unchanged; [retry receipt](filter-bindings/check-gates-retry.json) and [log](filter-bindings/check-gates-retry.log) preserve that distinct result. No further retry was needed.
 
-The current-source P1-b injection actually removes the ledger suite from Node argv, then separately excludes the Go evidence test in the CI dispatch: [Node RED](round5/node-binding-final-red.json) and [Go CI RED](round5/go-ci-binding-final-red.json) each exit 1. Both receipts prove byte-for-byte restoration. [Restored final check-gates](round5/check-gates-restored.json) and [final canonical Go](round5/go-ledger-final.json) both exit 0 on the final staged artifact/fixture set.
+## Prior rounds and limits
 
-Independent scoped artifact acceptance [audit](round5/audit/canonical-audit.json) passes 128 assertions plus an [independent actual Go run](round5/audit/go-ledger-independent.receipt.json), exit 0. Its 59-artifact snapshot was audited before this final metadata/receipt expansion; it is local E3 artifact proof, not new full browser, CI or K3 approval.
+[Previous round-5 DELIVERY](filter-bindings/previous-round5-delivery.source.txt) retains all round-4/5 fixes, exact commands, red injections, initial archive failure and scoped audit. [Historical round-5 source](round5/SOURCE.json) remains bound to `d93700a4ab0fb541aa8d3ee2d540c0d94b29f50f`; its native bytes were not rehashed to claim this new execution source. **filter-bindings is the designated current canonical directory.** Accepted FOLLOWUPS remain; the owner explicitly defers further flag spellings (`-test.run`/`--run`/`--skip`), per-option bulk coverage and more control types to FOLLOWUPS. This handoff implements none of them.
 
-| Review item | Integrator reply text |
+- Required CI: foundation-shards and original `--browser-product-editor`; new CI/final independent review **NOT_RUN locally**, retained for the integrator. Scoped E1 review is not K3/CI approval.
+- MOCK identity + isolated REAL_PG/browser only; no provider, production, deployment, PR merge or thread resolution.
+- No TypeScript changed; prior round's typecheck remains historical, not a new current-source typecheck claim. Optional media r04 remains NOT_RUN because its pinned binary is unset; required Node suites pass.
+- Native logs retain tool-emitted bytes; source/docs diff checks exclude native receipt whitespace. Inert source snapshots do not use runnable `.spec`/`.test` filenames. Foreign `output/ext-agents/` is excluded from this handoff.
+
+| Thread | One-line integrator reply |
 |---|---|
-| 4251070834 | All seven rendered bulk controls now receive real select/fill/click actions, Cancel is unchanged-state checked, Apply persists White=5/Black=4 through save/reload and REAL_PG; actual JSX/DOM completeness rejects a missing Apply row. |
-| 4251070846 | Canonical logs require the exact 12 PE/review/feedback and two CC12 file/title identities once each; consistently rehashed wrong-file/title and same-count substitutions are rejected. |
-| R4 P1-a | Both last-run receipts and logs require passed outcomes with no failures/skips, and manifest counts must match the real ledger; all rehashed outcome corruptions are rejected. |
-| R4 P1-b | Removing active Node argv or excluding the Go test from the actual CI selector turns check-gates red; byte-exact restoration is green. |
-| R4 cheap P2s | Unary operators remain signature-bound and CI presence refuses either mutation hook; full current Node suite is green. |
-
-## Limits
-
-- MOCK identity + isolated REAL_PG/browser only; no real provider, production, deployment, PR merge or thread resolution.
-- New CI/K3/external approval: NOT_RUN; focused read-only source review is not a new full independent approval.
-- Optional media r04 runner remains NOT_RUN because its pinned binary is unset; required Node suites pass.
-- One initial artifact preparation attempt used the wrong fixture projection and DELIVERY header; [receipt](round5/canonical-preparation-error.json) is exit 1, retained as a preparation error, not red-test acceptance. After restoring the original projection/header contract, the same complete Go gate exits 0.
-- The initial full composite failure remains honestly recorded; its passing Playwright receipts are not designated final complete evidence.
-- Accepted FOLLOWUPS (source-list/path expansion, self-attesting receipts, unrelated merge-ref context drift) remain unchanged. Execution content checks support the current bounded runner shapes, not arbitrary shell control flow.
-
-Owned isolated worker worktree was removed after byte-exact proof/patch comparison (exit 0); native test processes completed and the browser-build resource was released. Parent checkout retains all RED/GREEN evidence.
+| 4251056896 | Required matrix Node suite commands reject both test-name and test-skip filters in space/equals/quoted forms; retained-filename negatives are RED on the old gate and GREEN on the final gate, and the original command remains positive. |
+| 4251056902 | Go selector checks parse literal argv and reject extra run/skip filters in space and equals forms while preserving real planner forwarding; both equals-form bypasses have RED→GREEN controls. |

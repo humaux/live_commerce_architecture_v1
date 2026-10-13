@@ -1,0 +1,8 @@
+{
+  "checked_at": "2026-10-13T03:40:21Z",
+  "lock_path": "/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/lc-test-pg.lock",
+  "exists": true,
+  "pid": "60038",
+  "heartbeat_age_seconds": 4.34,
+  "process_observation": "60038 03:11 bash"
+}
