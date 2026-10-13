@@ -184,6 +184,19 @@ jobs:
           key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-${{ steps.browsers.outputs.cache }}
       - name: Download pinned test image
         run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+      # Tests-only probe diagnostics; each real seam suite keeps its native failure receipt.
+      - name: RED UI seams at unchanged 05ac4f75 product
+        continue-on-error: true
+        run: |
+          mkdir -p output/ci-gates
+          rc=0
+          node --test --experimental-strip-types tests/admin/create-order-model.test.ts tests/admin/create-order-client.test.ts tests/admin/create-order-bff.test.ts 2>&1 | tee output/ci-gates/red-client.log
+          test "${PIPESTATUS[0]}" = 0 || rc=1
+          node --test --experimental-transform-types tests/admin/create-order-attempt.test.ts 2>&1 | tee output/ci-gates/red-guard.log
+          test "${PIPESTATUS[0]}" = 0 || rc=1
+          node --test --experimental-strip-types tests/admin/create-order-review.test.ts tests/admin/manual-order-recovery.test.ts 2>&1 | tee output/ci-gates/red-ui.log
+          test "${PIPESTATUS[0]}" = 0 || rc=1
+          exit "$rc"
       - name: Gate
         run: |
           set -o pipefail
@@ -209,7 +222,8 @@ jobs:
             # A balanced group of scripts/dev/shard-plan.json: an anchored explicit -run list, or (the catch-all) -skip of every other group's tests.
             shard:g[0-9][0-9]) LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="$(node scripts/dev/shard-plan.mjs run "${MODE#shard:}")" LC_FOUNDATION_SKIP="$(node scripts/dev/shard-plan.mjs skip "${MODE#shard:}")" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
             shard:*)    LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="${MODE#shard:}" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
-            focused:*)  LC_FOCUSED_TIMEOUT=7200s bash scripts/dev/test-focused.sh "${MODE#focused:}" 2>&1 | tee "$log" ;;
+            # Tests-only RED probe: product stays at 05ac4f75; run the package that owns these tests.
+            focused:*)  LC_FOCUSED_TIMEOUT=7200s bash scripts/dev/test-focused.sh "${MODE#focused:}" ./internal/httpapi ./internal/merchanttools 2>&1 | tee "$log" ;;
             # One slice of the sweep / visual lint (tests/ui/sweep-shard-lib.mjs): its own PG, fixture and store, so click-sweep runs its single worker race-free.
             --browser-click-sweep@*|--browser-visual-lint@*) LC_SWEEP_SHARD="${MODE##*@}" xvfb-run -a bash scripts/dev/test-local.sh "${MODE%@*}" 2>&1 | tee "$log" ;;
             # Some browser suites run headed on purpose (MOU03 native bfcache/visibility); the runner has no display.
