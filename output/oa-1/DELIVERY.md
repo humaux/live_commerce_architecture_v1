@@ -13,7 +13,9 @@
   do not constitute complete OA-1 acceptance. A2 and focused privacy/upgrade
   compatibility are verified below; the full suite remains under verification.
   Draft PR #53's required plan is blocked by the existing opaque-handler
-  provenance boundary in CI-DRIFT. The public placement path is not enabled.
+  provenance boundary in CI-DRIFT: **BLOCKED(ci-drift-scanner, unit
+  CI-DRIFT-FACTORY)**, separately owned by Codex-2. The public placement path
+  is not enabled.
 
 ## Evidence
 
@@ -467,7 +469,7 @@ CI and independent review are still pending. All local runtime execution is
 
 ## Draft PR #53 acceptance checkpoint
 
-Source `a047e48812139cb172794b04c8df13d2f7fea532`; draft
+Latest tested source `316848601032b434885dd513b11f0a8871ef57e5`; draft
 [PR #53](https://github.com/humaux/live_commerce_architecture_v1/pull/53).
 
 | CI run / job | Exact result |
@@ -475,13 +477,49 @@ Source `a047e48812139cb172794b04c8df13d2f7fea532`; draft
 | CI102 `38473180467` / `115557351591`, source `008b52dec` | Unit shard **GREEN**, including restored `TestAdmissionFailureExactErasedOwner`. `unit-green-ci102.log`. |
 | CI107 `38474387657` / `115561516593`, source `a047e4881` | REAL_PG test result **PASS=31 FAIL=0 SKIP=0 exit=0**: cross-client barriers, C1 crash, A2, restored mutation targets, exact privacy ACL/erasure and populated historical upgrade. The **job failed** because the long focused regex produced a log filename exceeding the filesystem limit: `tee: … File name too long`. Test success is not workflow success. `restored-focused-ci107.log`. |
 | CI108 Foundation `38474388216` / `115561367494`; CI109 Gates `38474388284` / plan `115561367812`, source `a047e4881` | **FAIL**, contract drift `errors=71`: `TOUCHED UNRESOLVED` rooted in `cmd/api/buyer.go`'s `buildBuyerWithCVS`. Required browser/foundation matrix **NOT_RUN** because plan failed. `foundation-pr53-ci108.log`, `plan-pr53-ci109.log`. |
+| CI111 `38475613210` / `115566376862`, source `316848601` | **GREEN**, `PASS=5 FAIL=0 SKIP=0 exit=0`: populated historical upgrade, CB02 schema and COMMENT, ads erasure and claim retention. Workflow required also **GREEN**. `privacy-upgrade-comment-green-ci111.log`. |
+| Current Gates `38475612050` / plan `115565420528`; Foundation `38475611871` / `115565419670`, source `316848601` | **FAIL**, unchanged `errors=71` TOUCHED UNRESOLVED; required matrix **NOT_RUN**. `plan-pr53-ci112.log`, `foundation-pr53-ci113.log`. |
 
 The only change inside the buyer handler factory is the actual-pool physical
 database startup probe. CI-DRIFT retains the entire opaque factory span, then
 propagates it to 70 buyer route findings. Static diagnosis is **E1**, not a
 waiver of the gate. Keep the probe, baseline, route assertions and parser
-conservatism. A bounded handler-dependency parser enhancement needs its own
-adversarial tests and independent review; scheduling approval is pending.
+conservatism. The owner assigned the bounded handler-dependency parser fix to
+Codex-2's independent **CI-DRIFT-FACTORY** unit (coord
+`46cbaab7-27af-40ea-8919-0050c7b91b9e`, branch `unit/ci-drift-factory`). OA-1
+does not change the scanner, baseline or gate. Other CI continues; after that
+unit merges, the owner authorizes rebasing OA-1 and rerunning the required PR
+gates. This is **BLOCKED(ci-drift-scanner, unit CI-DRIFT-FACTORY)**, not READY.
+
+### CI-DRIFT-FACTORY minimal repro (E1 static diagnosis; E3 CI failure)
+
+Failing job: [Gates plan 115565420528](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38475612050/job/115565420528),
+source `316848601`. Foundation job `115565419670` fails on the same report.
+`scripts/dev/contractdrift/go_opaque.go:42` starts opaque provenance with the
+whole factory AST span; `:180–192` propagates those spans to assembled mounts.
+The factory is classified at `:17`. No HTTP registration was changed.
+
+On trunk base `256e9740`, inside `buildBuyerWithCVS`, after the three buyer
+pools and `closePools` exist, add the following existing-function call. This is
+the product diff at `cmd/api/buyer.go:123–130` (probe call at `:125`):
+
+```go
+if mainPool != nil {
+    for _, participant := range []*pgxpool.Pool{issuer, runtime, checkoutPool} {
+        if err = platform.ValidateSameDatabase(ctx, mainPool, participant); err != nil {
+            closePools()
+            return nil, cvsParts{}, nil, errBuyerConfig
+        }
+    }
+}
+```
+
+In CI, run `go run ./scripts/dev/contractdrift`: the startup-only insertion
+produces **71 TOUCHED UNRESOLVED errors, exit 1**, including the opaque factory
+and its buyer mount/route coverage. The unchanged legacy dispatch was already
+in the warning baseline. Retain the physical-database safety probe; the
+separate unit must distinguish startup statements without losing real handler
+dependencies or unresolved-route coverage. No local execution was performed.
 
 CI110 `38475039696` at `a047e4881` split the restoration into two shorter
 focused modes, with unchanged time bounds. Native job `115563672077` is
