@@ -105,6 +105,8 @@ func TestQueuedOrderLinkForBuyerResponseAfterReminder(t *testing.T) {
 	var originalHash []byte
 	probes := 0
 	planner := &qlrBeforeProbe{delegate: lb.svc, before: func(callCtx context.Context, committedOrder string) {
+		callCtx, cancel := context.WithTimeout(callCtx, 10*time.Second)
+		defer cancel()
 		probes++
 		order = committedOrder
 		// Positive seam sentinel: Place and the upper bundle receipt have committed before the real reminder starts.
