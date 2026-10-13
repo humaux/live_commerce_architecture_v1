@@ -627,3 +627,33 @@ Additional CI114 completed jobs `115569819826` (inbox) and `115569819936`
 `ci114-<job>-gate-browser-*.log`. `ci114-jobs-snapshot.json` records an explicitly
 partial job snapshot; it is not a final aggregate verdict. CI115 plan remains
 queued at collection. No acceptance or independent-review completion is claimed.
+
+### Round-1 review and Foundation triage, 2026-10-13 23:21 UTC
+
+Review findings `4264535427` (cancelled bundle re-admission) and `4264535438`
+(prepared notification origin/version) are being reproduced in separate real-PG
+tests before implementation. Their RED/GREEN CI receipts are still pending.
+
+Foundation [38476795409](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38476795409),
+job `115569353424`, source `54669331f6525723aa52a5452a2b23c92c0fcd0e`,
+failed only at **Package docs and gate map are current**: `contractdrift`
+reported 71 `TOUCHED UNRESOLVED` errors, including `cmd/api/buyer.go:92,185,190`
+(`buildBuyerWithCVS`). Node/PG/race/vet/vulnerability steps were skipped.
+Exact log: `foundation-review-head-red-ci.log:957,1083`. This is the existing
+**BLOCKED(ci-drift-scanner, unit CI-DRIFT-FACTORY)**; no scanner, baseline or
+actual-pool probe was changed. PR54 remains open.
+
+CI114 also completed RED jobs `115569819687` / g08 and `115569820115` / g09.
+The latter is the already-addressed fixture-local notification absence sentinel
+(`59cb27ff5`), still pending CI115 GREEN. G08 failed
+`TestLegacyRuntimeIsolationPopulatedUpgrade` because 0171 adds exactly
+`creator_kind='storefront', create_attempt_id=NULL` to historical orders,
+reservations and ledger rows. The restoration adds precisely those expected
+JSON keys, requires populated inventory sources, and retains full-row equality
+for every old field; it does not omit provenance or alter migration behavior.
+RED: `shard-g08-red-ci114.log:927`; new GREEN pending a focused CI.
+
+CI115 plan `115585855242` is now GREEN. Native `115590604172`, model
+`115590604205` and compatibility `115590604272` are queued on exact `f079b80a3`;
+there are no formatter artifacts yet. All host runtime/formatting remains
+**NOT_RUN (owner CI-only)**. No READY or whole-run PASS is claimed.

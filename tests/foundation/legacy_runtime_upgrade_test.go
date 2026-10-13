@@ -1,3 +1,7 @@
+// Purpose: prove populated legacy River cutovers preserve complete historical jobs and business rows.
+// Depends on: real PostgreSQL migration fixtures, historical adapters and native River family guards.
+// Used by: Foundation's legacy-runtime isolation and populated-upgrade acceptance gates.
+// Invariants: unchanged historical values and exact additive defaults; no attempt provenance is fabricated.
 package foundation_test
 
 import (
@@ -769,7 +773,9 @@ func TestLegacyRuntimeIsolationPopulatedUpgrade(t *testing.T) {
 	// (collected_at=updated_at) for rows already collection_state='COLLECTED'. Every fixture order here is a historical card order
 	// (collection_state NULL), so the backfill matches no row and collected_at stays NULL; a card order that DID gain a non-null
 	// collected_at, or any other changed value, still fails the equality below.
-	const addedOrderKeys = `{"payment_mode":"card","collection_state":null,"buyer_email":null,"source":"storefront","locale":null,"cod_surcharge_minor":null,"cod_carrier":null,"collected_at":null}`
+	// 0171 (OA1) adds creator_kind='storefront' and create_attempt_id=NULL. Pin
+	// both exact historical defaults instead of dropping provenance from equality.
+	const addedOrderKeys = `{"payment_mode":"card","collection_state":null,"buyer_email":null,"source":"storefront","locale":null,"cod_surcharge_minor":null,"cod_carrier":null,"collected_at":null,"creator_kind":"storefront","create_attempt_id":null}`
 	var expectedOrders string
 	if err := f.owner.QueryRow(ctx, `SELECT coalesce(jsonb_agg(
 	 value || $2::jsonb
@@ -778,6 +784,21 @@ func TestLegacyRuntimeIsolationPopulatedUpgrade(t *testing.T) {
 		t.Fatal("expected additive CVS order columns", err)
 	}
 	business["checkout.orders"] = expectedOrders
+	// 0171 adds the same provenance to both inventory tables. Each historical
+	// row must retain every value and acquire only these exact storefront defaults.
+	for _, table := range []string{"inventory.reservations", "inventory.ledger"} {
+		if business[table] == "[]" {
+			t.Fatalf("historical populated %s source was empty", table)
+		}
+		var expected string
+		if err := f.owner.QueryRow(ctx, `SELECT coalesce(jsonb_agg(
+	 value || '{"creator_kind":"storefront","create_attempt_id":null}'::jsonb
+	 ORDER BY (value || '{"creator_kind":"storefront","create_attempt_id":null}'::jsonb)::text),'[]'::jsonb)::text
+	 FROM jsonb_array_elements($1::jsonb)`, business[table]).Scan(&expected); err != nil {
+			t.Fatal("expected additive OA1 inventory provenance", err)
+		}
+		business[table] = expected
+	}
 	// Apply also includes 0041's five nullable recovery event columns. Keep
 	// comparing every historical event value, with only these new keys NULL.
 	var expectedEvents string
