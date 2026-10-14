@@ -5,11 +5,14 @@ package foundation_test
 // Used by: browser harnesses; observation errors and any sampled breach remain failures.
 // INV: sampled client-backend high-water includes this observer, across the cluster;
 // it is not a claim about unsampled instantaneous peaks or production capacity.
+// Coverage begins at each caller's post-release browser/retained-service boundary;
+// setup and fixture teardown are outside this watcher (the native release test is separate).
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -18,6 +21,8 @@ import (
 )
 
 const harnessCapacityMargin = 3
+
+var errHarnessCapacityTimeout = errors.New("PG capacity observation timed out")
 
 type harnessCapacitySample struct {
 	ClientBackends, MaxConnections, ReservedConnections, SuperuserReservedConnections int
@@ -38,6 +43,9 @@ func harnessReadCapacityFrom(ctx context.Context, q harnessCapacityQuerier) (har
 	 current_setting('superuser_reserved_connections')::int FROM pg_stat_activity`).Scan(
 		&s.ClientBackends, &s.MaxConnections, &s.ReservedConnections, &s.SuperuserReservedConnections)
 	if err != nil {
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) || errors.Is(err, context.DeadlineExceeded) {
+			return s, errHarnessCapacityTimeout
+		}
 		return s, errors.New("PG capacity observation failed") // never include connection configuration in evidence
 	}
 	return s, nil
@@ -48,9 +56,23 @@ func harnessReadCapacity(ctx context.Context, owner *pgxpool.Pool) (harnessCapac
 }
 
 type harnessCapacityState struct {
-	peak, samples int
-	last          harnessCapacitySample
-	err           error
+	peak, samples  int
+	timeoutRetries int
+	last           harnessCapacitySample
+	err            error
+}
+
+// Only a timed-out observation gets one fresh-connection read. A valid breach,
+// invalid reading, or other observation error goes directly to the sticky gate.
+func (s *harnessCapacityState) sample(read func() (harnessCapacitySample, error), reconnect func() error) {
+	v, err := read()
+	if errors.Is(err, errHarnessCapacityTimeout) {
+		s.timeoutRetries++
+		if err = reconnect(); err == nil {
+			v, err = read()
+		}
+	}
+	s.observe(v, err)
 }
 
 func (s *harnessCapacityState) observe(v harnessCapacitySample, err error) error {
@@ -97,13 +119,29 @@ func harnessWatchCapacity(t *testing.T, owner *pgxpool.Pool) {
 		}
 	}
 	var state harnessCapacityState
-	sample := func(parent context.Context) {
-		ctx, cancel := context.WithTimeout(parent, time.Second)
+	read := func() (harnessCapacitySample, error) {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
-		v, err := harnessReadCapacityFrom(ctx, conn)
-		if parent.Err() == nil {
-			state.observe(v, err)
+		return harnessReadCapacityFrom(ctx, conn)
+	}
+	reconnect := func() error {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		err := conn.Close(ctx)
+		cancel()
+		if err != nil {
+			return errors.New("PG capacity observer replacement cleanup failed")
 		}
+		ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		replacement, err := pgx.ConnectConfig(ctx, config.Copy())
+		if err != nil {
+			return errors.New("PG capacity observer replacement connection failed")
+		}
+		conn = replacement
+		return nil
+	}
+	sample := func(context.Context) {
+		state.sample(read, reconnect)
 	}
 	sample(context.Background())
 	if state.err != nil {
@@ -118,9 +156,9 @@ func harnessWatchCapacity(t *testing.T, owner *pgxpool.Pool) {
 		ticker.Stop()
 		sample(context.Background())
 		closeObserver()
-		t.Logf("HARNESS_PG_CAPACITY sampled_peak=%d samples=%d limit=%d max=%d reserved=%d super=%d margin=%d",
+		t.Logf("HARNESS_PG_CAPACITY sampled_peak=%d samples=%d limit=%d max=%d reserved=%d super=%d margin=%d observer_timeout_retries=%d",
 			state.peak, state.samples, state.last.limit(), state.last.MaxConnections,
-			state.last.ReservedConnections, state.last.SuperuserReservedConnections, harnessCapacityMargin)
+			state.last.ReservedConnections, state.last.SuperuserReservedConnections, harnessCapacityMargin, state.timeoutRetries)
 		if state.err != nil {
 			t.Error(state.err)
 		}
@@ -129,20 +167,25 @@ func harnessWatchCapacity(t *testing.T, owner *pgxpool.Pool) {
 
 // harnessStartCapacitySampler shares the guard loop with controlled-tick tests.
 func harnessStartCapacitySampler(ticks <-chan time.Time, sample func(context.Context)) (requestStop func(), done <-chan struct{}) {
-	watch, stop := context.WithCancel(context.Background())
+	stop := make(chan struct{})
 	joined := make(chan struct{})
 	go func() {
 		defer close(joined)
 		for {
 			select {
-			case <-watch.Done():
+			case <-stop:
+				return
+			default:
+			}
+			select {
+			case <-stop:
 				return
 			case <-ticks:
-				sample(watch)
+				sample(context.Background())
 			}
 		}
 	}()
-	return stop, joined
+	return sync.OnceFunc(func() { close(stop) }), joined
 }
 
 func TestHarnessPoolCapacityBoundary(t *testing.T) {
@@ -158,6 +201,50 @@ func TestHarnessPoolCapacityBoundary(t *testing.T) {
 }
 
 func TestHarnessPoolCapacityObservationFailureIsSticky(t *testing.T) {
+	t.Run("timeout_reconnect_once", func(t *testing.T) {
+		// MODEL_ONLY: injected reads verify recovery policy, not native PG timing.
+		safe := harnessCapacitySample{ClientBackends: 2, MaxConnections: 60, SuperuserReservedConnections: 3}
+		breach := safe
+		breach.ClientBackends = 55
+		for _, tc := range []struct {
+			name       string
+			first      harnessCapacitySample
+			firstErr   error
+			secondErr  error
+			connectErr error
+			reads      int
+			reconnects int
+			wantErr    bool
+		}{
+			{name: "timeout_recovers", firstErr: errHarnessCapacityTimeout, reads: 2, reconnects: 1},
+			{name: "timeout_stays_error", firstErr: errHarnessCapacityTimeout, secondErr: errHarnessCapacityTimeout, reads: 2, reconnects: 1, wantErr: true},
+			{name: "reconnect_fails", firstErr: errHarnessCapacityTimeout, connectErr: errors.New("replacement unavailable"), reads: 1, reconnects: 1, wantErr: true},
+			{name: "saturation_never_retries", first: breach, reads: 1, wantErr: true},
+			{name: "invalid_never_retries", reads: 1, wantErr: true},
+			{name: "query_error_never_retries", firstErr: errors.New("query unavailable"), reads: 1, wantErr: true},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				var state harnessCapacityState
+				reads, reconnects := 0, 0
+				state.sample(func() (harnessCapacitySample, error) {
+					reads++
+					if reads == 1 {
+						return tc.first, tc.firstErr
+					}
+					return safe, tc.secondErr
+				}, func() error {
+					reconnects++
+					return tc.connectErr
+				})
+				if reads != tc.reads || reconnects != tc.reconnects || state.timeoutRetries != tc.reconnects || (state.err != nil) != tc.wantErr {
+					t.Fatalf("observation recovery: reads=%d reconnects=%d retries=%d failed=%t", reads, reconnects, state.timeoutRetries, state.err != nil)
+				}
+				if tc.wantErr && state.observe(safe, nil) == nil {
+					t.Fatal("later recovery erased a guard failure")
+				}
+			})
+		}
+	})
 	t.Run("stop_mid_query_final_sample", func(t *testing.T) {
 		// MODEL_ONLY: cancellation closes this fake observer, modeling native
 		// pgconn cancellation fallout without claiming a real PostgreSQL run.
@@ -197,6 +284,7 @@ func TestHarnessPoolCapacityObservationFailureIsSticky(t *testing.T) {
 		ticks <- time.Time{}
 		<-entered
 		requestStop() // synchronous stop while the query is gated
+		requestStop() // stop is idempotent and never cancels an observation
 		close(release)
 		<-done
 		if queryCanceled {

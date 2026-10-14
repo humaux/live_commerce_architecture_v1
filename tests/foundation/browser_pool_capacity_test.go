@@ -8,12 +8,10 @@ package foundation_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jackc/puddle/v2"
 )
 
 func harnessPoolHeadroomRegression(t *testing.T) {
@@ -79,7 +77,7 @@ func harnessPoolHeadroomRegression(t *testing.T) {
 			}
 		}
 	}
-	if sample.ClientBackends != target {
+	if sample.ClientBackends < target {
 		t.Fatalf("headroom workload backend barrier: observed=%d target=%d", sample.ClientBackends, target)
 	}
 	t.Logf("headroom workload barrier: client_backends=%d usable=%d margin=3 owned_pools=%d held=%d", sample.ClientBackends, usable, len(pools), len(held))
@@ -90,12 +88,15 @@ func harnessPoolHeadroomRegression(t *testing.T) {
 	harnessReleaseSetupPools(t, protected, pools)
 	harnessReleaseSetupPools(t, protected, pools) // real pools: Close remains idempotent
 	for i, pool := range pools {
-		conn, err := pool.Acquire(ctx)
+		acquireCtx, acquireCancel := context.WithTimeout(context.Background(), 2*time.Second)
+		conn, err := pool.Acquire(acquireCtx)
+		contextErr := acquireCtx.Err()
+		acquireCancel()
 		if conn != nil {
 			conn.Release()
 		}
-		if !errors.Is(err, puddle.ErrClosedPool) {
-			t.Fatalf("setup pool %d did not report closed", i)
+		if err == nil || contextErr != nil || pool.Stat().TotalConns() != 0 {
+			t.Fatalf("setup pool %d accepted an acquisition, timed out, or retained sessions after Close", i)
 		}
 	}
 	for _, pool := range protected {
@@ -104,7 +105,28 @@ func harnessPoolHeadroomRegression(t *testing.T) {
 			t.Fatal("setup release closed a protected live pool")
 		}
 	}
-	after := read()
+	// Closing a native connection and its disappearance from pg_stat_activity
+	// need not be simultaneous. Wait within a fixed budget, then assert headroom.
+	settle, settleCancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer settleCancel()
+	ticker := time.NewTicker(20 * time.Millisecond)
+	defer ticker.Stop()
+	var after harnessCapacitySample
+	for {
+		var err error
+		after, err = harnessReadCapacity(settle, f.owner)
+		if err != nil {
+			t.Fatal("headroom recovery observation failed within budget")
+		}
+		if after.ClientBackends <= after.limit() {
+			break
+		}
+		select {
+		case <-settle.Done():
+			t.Fatalf("headroom did not recover after release: client_backends=%d limit=%d", after.ClientBackends, after.limit())
+		case <-ticker.C:
+		}
+	}
 	t.Logf("headroom after release: client_backends=%d limit=%d", after.ClientBackends, after.limit())
 	harnessWatchCapacity(t, f.owner)
 }

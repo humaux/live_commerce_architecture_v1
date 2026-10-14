@@ -8,13 +8,11 @@ package foundation_test
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jackc/puddle/v2"
 	"livecommerce/internal/checkout"
 )
 
@@ -33,12 +31,13 @@ func harnessStripeMockPoolLifetime(t *testing.T) {
 	} {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		conn, err := pool.Acquire(ctx)
+		contextErr := ctx.Err()
 		cancel()
 		if conn != nil {
 			conn.Release()
 		}
-		if !errors.Is(err, puddle.ErrClosedPool) {
-			t.Fatalf("Stripe MOCK setup pool %s did not report closed", name)
+		if err == nil || contextErr != nil || pool.Stat().TotalConns() != 0 {
+			t.Fatalf("Stripe MOCK setup pool %s accepted an acquisition, timed out, or retained sessions after Close", name)
 		}
 	}
 

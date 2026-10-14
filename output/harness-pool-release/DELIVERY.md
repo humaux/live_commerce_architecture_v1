@@ -1,9 +1,13 @@
 # HARNESS-POOL-RELEASE
 
-Status at 2026-10-14 05:24 UTC: phase-2 SHA `70c613010cc3764284c8548a7a3ffadbc8899278`
-has genuine same-workload capacity GREEN and completed Gates SUCCESS. Foundation
-failed registry bookkeeping; its three-name registration and separate Stripe MOCK
-coverage are the next source batch, not yet CI-verified. This is an author record, not independent
+Status at 2026-10-14 05:56 UTC: registration-only commit
+`5f59affae1cc60342680070c141d7957642b9c41` has Foundation SUCCESS
+(`38517428884`, job `115699361962`, actual `05:35:37–05:40:50Z`), including
+213/213 Node checks. Its raw log SHA256 is
+`3bac248e2749890b0d6ec31c3623ea330df9968c1eae6de41421e23671d80e6f`.
+The independent round-1 review of pool-release source `70c61301` found a watcher
+shutdown P1; the lifetime audit itself was clean. Its controlled regression is now
+genuinely RED in CI; the source repair below awaits new exact-head CI. This is an author record, not independent
 acceptance. All local tests, builds and application runs: `NOT_RUN` by owner rule.
 
 ## Tests-first capacity boundary
@@ -11,7 +15,9 @@ acceptance. All local tests, builds and application runs: `NOT_RUN` by owner rul
 The guard observes cluster-wide native client backends, including its one dedicated
 observer connection. The limit is `max_connections - reserved_connections -
 superuser_reserved_connections - 3`. Query/settings/connect/cleanup failures fail
-the gate. The log calls its high-water `sampled_peak`; it cannot establish an
+the gate. This sustained guard covers the **post-release browser/retained-service
+phase only**, not normal fixture setup or teardown. The deliberate native setup
+load below is a separate bounded regression. The log calls its high-water `sampled_peak`; it cannot establish an
 unsampled instantaneous peak. No connection settings or DSNs are logged.
 
 TrackingBackfill now first runs a real two-family regression: twelve distinct owned
@@ -72,6 +78,76 @@ the repair PR and automatic checks are registered in the canvas after creation.
    assertion weakening or PostgreSQL capacity increase.
 5. Guard positive/negative/observation-error tests, all fifteen affected browser
    modes, required current-head checks and independent review must pass.
+
+## Round-1 review repair — pending CI
+
+The reviewer found that canceling the watcher context can abort an in-flight
+query and invalidate its connection before the final sample. The repair uses
+signal-only shutdown, a join before the final sample, independent bounded query
+contexts, and a deterministic mid-query stop regression. Only a timed-out
+observation may be retried once on a fresh connection; a valid over-limit reading
+remains a sticky failure without retry. This does not retry a browser action.
+
+P2 changes also require a two-second native headroom recovery assertion, removal
+of direct puddle imports, CardPayments conversion with its original exact 24-pool
+release set, and actual Stripe `sbNew(MOCK)` lifetime proof in normal Tracking CI.
+The registration-only commit is preserved separately; the cap remains 60.
+
+Genuine stop regression: exact `08121b2831e3a35f9263b82f7f722a2cd4db8662`,
+Gates `38518508850`, focused job `115702744696`, actual `05:48:26–05:50:34Z`.
+It reached all three expected assertions and exited 1 (one top-level FAIL, no
+PASS/SKIP). This models cancellation fallout with a controlled fake observer;
+it does not claim a native PG cancellation reproduction. Portable receipt:
+`evidence/stop-query-red-08121.log`; full raw SHA256
+`de9897949d18f02f3e063419c2fe019b157d8bcb505ff3a0cbac0be785ef98f1`.
+The unchanged mid-query/final-sample assertions now exercise signal-only stop,
+idempotent stop calls and join. Timeout recovery tests cover one successful
+replacement, repeated timeout, replacement failure, and no retry for a real
+breach, invalid reading or other query error. No browser action is retried.
+
+P2-4 deliberately uses the owner's permitted operational oracle: failed Acquire
+with a still-live bounded context and zero sessions after real Close, plus
+protected-pool SELECT 1. It does not assert a specific ErrClosedPool sentinel.
+Direct puddle imports were removed without changing go.mod. Historical receipts
+below describe the earlier exact-error assertion as it actually ran at 70.
+
+Round-1 isolated assignments (parent dispatch, not verified provider telemetry):
+
+- `/root/harness_stop_query_red`, test_worker, assigned `gpt-6.1-sol/high`,
+  base 5f59, WT `harness-pool-stop-red`, branch `unit/harness-pool-stop-red`,
+  exclusive `harness_pool_capacity_test.go`, delivered `08121b2831`;
+  root integrated as `dd809bcb1` before the minimal stop fix. Child runtime
+  model identity was unavailable; the assigned tier is recorded truthfully.
+- `/root/harness_card_shared_release`, integration_worker, assigned
+  `gpt-6.1-sol/high`, base 5f59, WT `harness-pool-card`, branch
+  `unit/harness-pool-card`, exclusive `browser_card_payments_test.go`,
+  delivered `ccdd6143e54c35e04379b900231500c801dc70e9`, integrated as
+  `2cda63aff`. Its original 24 setup-only pointers and protected live borrowers
+  are unchanged; it now calls the shared helper and starts the watcher after
+  admin facts and release, before buyer browsers. Single and eight-context
+  browser assertions and existing deadlines are unchanged. E1 boundary audit
+  `855eafc0-8536-4b77-ba40-fd79b70a689b`; current normal-card runtime pending.
+
+Separate Stripe MOCK proof is permanently wired through the existing normal
+TrackingBackfill mode (before the main fixture), directly exercising sbNew(MOCK),
+retained issuer/runtime/checkout, registrar toggles and hosted-worker REDIRECT.
+The new final SHA must produce that receipt; full Stripe SANDBOX/LIVE is NOT_RUN.
+
+Other named harnesses remain unconverted and require their own lifetime audits:
+
+| Harness family | Why no speculative pool closure is added here |
+| --- | --- |
+| live_tools | Poller, consumer, ingress and buyer/admin API remain borrowers. |
+| input_delivery | Two registration fixtures, socket/edge/API and child processes need a joint lifetime audit. |
+| studio_ui / studio_bff | Separate authority, API/media workers and child processes need individual boundaries. |
+| buyer_comms | `bgNew`, control server and later database assertions need lifetime review. |
+| merchant_orders_ui | `pqSetup` is shared by normal/focused paths; no release boundary is established here. |
+| live_console_comments_fixture | `lbSetup` lifetime boundary has not been audited. |
+| identity chain / meta_connect / migration_import / store_design | Shared-fixture handler/authority lifetimes have not been audited individually. |
+
+E2E retains guard-only treatment: it already closes setup identity/registrar/curator
+pools and still uses its independent buyer and worker pools. The earlier observed
+33 is a sampled browser high-water, not proof that any additional pool is dead.
 
 Families: rfxNew (Refund, ManualFulfilment, CustomersBilling, E2EDealLoop,
 TrackingBackfill); psSetup/stripeStore (StripeCheckout); bhSetup/bcSetup
