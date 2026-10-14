@@ -27,8 +27,14 @@ const (
 	oaRotate
 	oaCancel
 	oaDiscardJob
+	oaHoldSubjectBarrier
+	oaReleaseSubjectBarrier
+	oaHoldScope
+	oaReleaseScope
 	oaCommandCount
 )
+
+const oaModelFenceLock uint8 = 1
 
 const (
 	oaPending      = 1
@@ -53,6 +59,7 @@ type oaModelAttempt struct {
 	subjects                                                        uint8
 	effects                                                         [oaEffects]int // durable creation records; active resources use hold
 	job, cancelled                                                  bool
+	executionLocks                                                  uint8
 }
 
 type oaModelDraft struct {
@@ -64,6 +71,8 @@ type oaIntentModel struct {
 	generation, credential [2]int
 	drafts                 [2]oaModelDraft
 	attempts               [16]oaModelAttempt
+	subjectBarriers        uint8
+	scopeHeld              [2]bool
 }
 
 func oaNewIntentModel() oaIntentModel {
