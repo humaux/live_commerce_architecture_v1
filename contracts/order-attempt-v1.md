@@ -4,6 +4,10 @@ Status: **FROZEN 2026-10-13 (DESIGN; implementation and runtime acceptance NOT_R
 
 Responsibility: atomic merchant-created orders, durable intent/replay, and payment-notification validity. Dependencies: PostgreSQL, existing checkout/inventory/claims domain rules, River, merchant authentication and privacy contracts. Consumers: ManualOrder, LC-U3, A15/A16, recovery, reminders, cancellation and the dispatcher. Invariants: I01–I09, I11, I14–I16, I18–I24 in `invariants.json`.
 
+Amendment **A2** (database-enforced plan-key retirement) is owner-approved and
+submitted for independent review with OA-1/PR #53; its review is not yet frozen.
+The frozen status above includes A1/A1.1 and does not imply A2 runtime acceptance.
+
 This draft is based on trunk `0bfe36e53acb694f4697521202e24f0790638941`, the integrator's `output/integrator/research/pr32-attempt-research.md`, and paused PR #32 `77e08616`. It proposes replacing the separate-commit placement/recovery rules in live-console-v1 §5.1 and manual-order portions of storefront-v2. It also absorbs **DM-CANCEL-GUARD**. Existing contracts remain effective until this draft is frozen and implemented; #32 UI work must then consume the backend contract, not implement a second authority.
 
 ## 1. Transaction feasibility and choice

@@ -3,6 +3,7 @@
 // Used by: API and claims-worker startup after their own activation decision.
 // Invariants: no ambient I/O, duplicate or trailing JSON, cross-purpose key
 // reuse, partial keyrings, or configuration values in returned errors.
+
 package orderattempt
 
 import (

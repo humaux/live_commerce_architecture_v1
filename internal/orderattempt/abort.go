@@ -3,6 +3,7 @@
 // Used by: inline/River execution and authoritative recovery after classification.
 // Invariants: order-attempt-v1 §3; SQL owns absence proof, no plan decryption,
 // no new key, no business effects and no success before the single commit.
+
 package orderattempt
 
 import (

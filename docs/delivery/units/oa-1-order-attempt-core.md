@@ -2,7 +2,8 @@
 
 Owner dispatch: 2026-10-13. Contract: `contracts/order-attempt-v1.md`, frozen
 with A1/A1.1 and merged as PR #50 `2d97c2027eefaa7df6553a832ffa38aa9fcd9d93`. This implementation
-brief does not amend that contract. Backend work is explicitly authorized;
+brief implements that contract plus the separately owner-approved amendment A2,
+which receives independent review with this unit. Backend work is explicitly authorized;
 all execution and tests run in GitHub CI only. PR #32 stays untouched.
 
 ## Ownership and boundaries
@@ -24,6 +25,8 @@ all execution and tests run in GitHub CI only. PR #32 stays untouched.
   approval 2026-10-14. The dedicated admin login is provisioned separately;
   it must not appear in the core `deploy/postgres/logins.tsv`, Compose mounts,
   or API/claims-worker credential inputs.
+  Round-1 review additionally authorizes literal disabled activation pins in
+  `deploy/compose.yml` until OA-2 is accepted; this is packaging, not deployment.
 - Excluded: UI, production, provider I/O, dependency/lock files, shared OpenAPI,
   old migrations, PR #32, and unreviewed deviations from frozen contract semantics.
   Owner-approved A2 is submitted with OA-1 for independent review.
@@ -138,7 +141,8 @@ belongs to the later locked read surface.
 | §1/§2/§6k | `TestOrderAttemptSchema*`: all-state identity, RLS, exact ACL; actual-login negative and cross-pool tests follow |
 | §2 creator chain/§6j | `TestOrderAttemptProvenance*`: exclusive session/attempt FKs, own carts, per-origin duplicate SKU lines |
 | §3/§6 model | `TestOrderAttemptModelSeeds`, `FuzzOrderAttemptModel`: independent MODEL_ONLY oracle, injected invalid traces rejected |
-| §6a–f/h–k | REAL_PG C1/C2 barriers, crash/ack loss, CAS, settled replay, rotation, erasure, cancellation, deadline and frozen facts |
+| §6a–f/i–k | REAL_PG C1/C2 barriers, crash/ack loss, CAS, settled replay, rotation, erasure, cancellation, deadline and frozen facts |
+| §6h | Internal generation/replay fences here; versioned public API and old-client acceptance belongs to OA-3 |
 | §6g/l | Transaction-local pay-entry/outbox checks here; full provider/dispatch acceptance belongs to OA-2 |
 | §6m | Subject cleanup/erasure lock prefix here; versioned HTTP, retention and old-client cutover in OA-3 |
 

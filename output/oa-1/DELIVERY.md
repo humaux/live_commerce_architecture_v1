@@ -987,3 +987,86 @@ has a successful plan (`115619584628`) and running/queued selected gates.
 This is the pre-repair required SHA, not acceptance for changed tests.
 Whole OA-1 remains **NOT READY** pending the repair's full native CI,
 current required gates and independent acceptance.
+
+CI124 `38493692280`, exact repair source
+`abd54687aaa76221836cc98e893a3e20388dedb8`, targeted job `115625663085`:
+**GREEN: PASS=2 FAIL=0 SKIP=0, exit=0**. Receipt
+`sweep-isolation-green-ci124.log:723,725,728` records both real lock/repair
+tests passing with the new positive discovery and exact counters. Full native
+job `115625663039` is still running; this targeted result does not replace it.
+Current required Foundation `38493655269`, job `115624399663`, exact same
+source, is **GREEN**; `foundation-green-abd54687a.log:1085,3131` retains
+unchanged-scanner errors=0 and the complete Node/header/vulnerability checks.
+Required Gates `38493655318`, plan `115625777105` GREEN, has 77 selected jobs
+running/queued. Overall status remains **NOT READY** until their final results
+and independent acceptance. These receipts are collected before an evidence
+commit; no source change is made while the pinned CI jobs run.
+
+### Area review round 1, 2026-10-14 — current acceptance pending
+
+Review source is `abd54687a`; SQL/tests FAIL and Go PASS-with-P2 receipts are
+owner-provided under `output/ext-agents/claude-review-pr53-{sql,go,tests}/`.
+The old full native CI124 `38493692280`, job `115625663039`, has now finished:
+**207 PASS / 0 FAIL / 0 SKIP, exit 0**, source `abd54687a`, raw
+`full-native-green-ci124.log:2216`. This is historical proof, not acceptance
+for the subsequent round-1 changes.
+
+Tests-first CI125 `38496508000` (`76c1924fa`) has three causal native failures
+in job `115634019853`: a poisoned sweep head stops other attempts, a local
+plan-ring miss incorrectly settles, and both executor lanes stop waiting at
+the first fence. `area-go-red-ci125.log` retains them. Unit job `115634019923`
+also fails the empty live-price fallback reason (`null-live-reason-red-ci125.log:7694`).
+CI126 `38497235866` (`d1a6a11e9`) records five causal SQL/model failures in
+`115635968970` (`sql-model-red-ci126.log`), plus the authenticated recipient
+refusal in `115635969023` (`recipient-red-ci126.log`). Erasure job `115635969049`
+is **1 PASS / 1 FAIL**, with both erasure-first subject variants passing.
+C2-first fails its *first* executor-to-pay-entry barrier, before erasure starts
+(`erasure-barrier-ci126.log:720`); this is not claimed as an erasure defect.
+A sanitized outcome diagnostic preserves its positive blocking sentinel and
+original deadline. CI127 `38497440241` (`4603aff4d`), job `115636906243`, is
+**structural RED** for the missing kept-pool helper, not behavioural PG proof
+(`kept-pools-red-ci127.log:728–730`).
+
+Current source changes use C1 `FOR SHARE` while retirement keeps `FOR UPDATE`,
+retain local-ring skew as PENDING, continue/count sweep errors, wait for the
+first fence within the unchanged five-second total C2 budget, and reject a
+null live price without an explicit fallback reason. The actual retained
+issuer/runtime/checkout pools are now probed after factory assembly and before
+handler mounting; factory blob remains `fba31947511f02e001fb892cc0dabd73eb88e1a5`.
+Only an authenticated recipient refusal becomes notification VOID before any
+operation job is inserted. Format/DTO/AEAD-key faults remain retryable;
+normalized native origin constraints do not permit the hypothetical trailing
+slash. Storage now enforces stage/timestamp and monotone notification state,
+and business receipts use a non-PII exact-attempt custody digest.
+
+The SQL finish comparison is an observation check, not an HPKE-decryption claim.
+`TestOrderAttemptNotificationOriginPin` independently decrypts the actual
+stored dispatch ciphertext and compares its recipient and full current-origin
+URL. A current-SHA mutation lies inside the sealed text while preserving the
+declared origin, so this oracle must turn red. The three current 0194 mutations
+and new split-outbox, generation-recheck and privacy-grant mutations are pending.
+
+Native safety limits now cover actual max-per-order PT422 and offline-capacity
+PT429. Payment option/bank-detail edits after C1 are HONORED frozen facts:
+they cannot be relabelled as payment_unavailable to manufacture a test.
+Similarly, foreign bundle conflicts after a valid C1 are unreachable under its
+retained exact custody/one-live-order constraints; the closed error table is
+defensive, and those native code branches remain **NOT_RUN** rather than using
+invalid plans. MODEL_ONLY now includes fixed local a–h traces, subject/scope
+barriers, exact C2 fence ownership and three minimal fixed regression seeds;
+dispatch and public adapter proofs stay with OA-2/OA-3.
+
+Activation remains **BLOCKED(OA-2)**: C3/C4, READY cancellation/expiry pairing,
+and cutover backfill-VOID for already-CANCELLED orders must pass before enabling
+the executor. The §3.2 sweep heartbeat/counters/oldest-overdue alert is explicitly
+deferred to that activation gate; fixed-code errors currently have no production
+monitoring output. The new production configuration pin is tests-FIRST and
+not yet implemented. SQL abort remains a trusted executor classification boundary
+after the authoritative zero-effects proof; the optional SQL-domain hardening
+is not claimed. Proven permanent key loss needs an authority separate from a
+local ring miss; the proposed durable witness is awaiting the owner amendment.
+
+No local test, build, formatter, script runner, server, container or PG was run.
+Current required gates, current mutation receipts and independent delta review
+are pending: **NOT READY**. The existing 15-minute same-thread heartbeat remains
+the wakeup owner; CI jobs stay SHA-pinned and budgets/thresholds unchanged.

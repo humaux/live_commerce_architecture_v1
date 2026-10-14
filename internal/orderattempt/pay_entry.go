@@ -3,6 +3,7 @@
 // Used by: OA1 local C2 preparation; SQL owns issuance version, lifetime and validity.
 // Invariants: dedicated immutable keyring, authenticated order/version/digest, no buyer
 // capability, plaintext persistence, provider call or credential-bearing error.
+
 package orderattempt
 
 import (

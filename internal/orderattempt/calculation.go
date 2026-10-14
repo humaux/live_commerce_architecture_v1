@@ -3,6 +3,7 @@
 // Used by: the Go execution transaction after authenticated plan decryption.
 // Invariants: I08; preserve each origin/ordinal, honor frozen price/fee versions,
 // and reject changed aggregates or lines without consulting current catalog data.
+
 package orderattempt
 
 import "slices"

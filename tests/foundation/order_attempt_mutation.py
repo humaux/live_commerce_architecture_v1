@@ -37,6 +37,19 @@ def main():
             "\t}\n",
             "",
         )],
+        "api-all-preflight-bypass": [(
+            "cmd/api/main.go",
+            "\tif err = buyerDatabasePreflight(startup, buyerConfig, pool); err != nil {\n"
+            "\t\treturn err\n"
+            "\t}\n",
+            "",
+        ), (
+            "cmd/api/main.go",
+            "\tif err = buyerKeptDatabasePreflight(startup, buyerConfig, cvs); err != nil {\n"
+            "\t\treturn err\n"
+            "\t}\n",
+            "",
+        )],
         "m1-fee-version": [(
             "migrations/0181_order_attempt_destination.sql",
             " IF NOT FOUND OR NOT v_current_service.enabled\n",
@@ -61,6 +74,27 @@ def main():
             "migrations/0178_order_attempt_execution_fence.sql",
             "  FOR UPDATE;\n",
             "  ;\n",
+        )],
+        "m6-skip-generation-recheck": [(
+            "migrations/0178_order_attempt_execution_fence.sql",
+            " IF a.intent_generation<>p_generation OR NOT a.admission_finished THEN\n"
+            "  RAISE EXCEPTION 'intent_conflict' USING ERRCODE='PT409';\n"
+            " END IF;\n",
+            "",
+        )],
+        "expose-privacy-fence": [(
+            "migrations/0178_order_attempt_execution_fence.sql",
+            " TO commerce_runtime,commerce_claims_worker;\n"
+            "COMMENT ON FUNCTION ops.lock_order_attempt(bytea,uuid,uuid,bigint)",
+            " TO commerce_runtime,commerce_claims_worker;\n"
+            "GRANT EXECUTE ON FUNCTION ops.lock_order_attempt(bytea,uuid,uuid,bigint) TO commerce_privacy_writer;\n"
+            "COMMENT ON FUNCTION ops.lock_order_attempt(bytea,uuid,uuid,bigint)",
+        )],
+        "expose-privacy-attempt-dml": [(
+            "migrations/0170_order_attempt_identity.sql",
+            "REVOKE ALL ON ops.order_attempt_scopes,ops.order_attempts,ops.order_attempt_subjects FROM PUBLIC;\n",
+            "REVOKE ALL ON ops.order_attempt_scopes,ops.order_attempts,ops.order_attempt_subjects FROM PUBLIC;\n"
+            "GRANT INSERT ON ops.order_attempts TO commerce_privacy_writer;\n",
         )],
         "pending-only-replay": [(
             "migrations/0194_order_attempt_plan_key_retirement.sql",
@@ -103,11 +137,21 @@ def main():
         )],
         "resume-placement-grants": [(
             "migrations/0185_order_attempt_claim_execution.sql",
-            " v_deadline:=(v_binding->>'execute_by')::timestamptz; v_hash:=sha256(convert_to(v_selection::text,'UTF8'));\n",
-            " v_deadline:=(v_binding->>'execute_by')::timestamptz; v_hash:=sha256(convert_to(v_selection::text,'UTF8'));\n"
+            " -- One deterministic domain prefix. No current offer/session/window/permission\n",
             " IF NOT identity.principal_holds(v_tenant,v_store,v_principal,ARRAY['catalog:read','inventory:reserve']) THEN\n"
             "  RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403';\n"
-            " END IF;\n",
+            " END IF;\n"
+            " -- One deterministic domain prefix. No current offer/session/window/permission\n",
+        )],
+        "sealed-origin-echo-lie": [(
+            "internal/inbox/order_attempt_notification.go",
+            "json.Marshal(sendSecret{PSID: view.senderID, Text: text})",
+            "json.Marshal(sendSecret{PSID: view.senderID, Text: strings.Replace(text, p.Origin, \"https://stale-origin.example\", 1)})",
+        )],
+        "independent-outbox-commit": [(
+            "migrations/0188_order_attempt_notification.sql",
+            "OR (n.state='VOID' AND o.state IN ('CANCELLED','BLOCKED_POLICY','STALE_BINDING','FAILED_FINAL')))",
+            "OR (n.state='VOID' AND o.state IN ('READY','CANCELLED','BLOCKED_POLICY','STALE_BINDING','FAILED_FINAL')))",
         )],
         "merge-claim-origins": [(
             "migrations/0179_order_attempt_quote_materialization.sql",

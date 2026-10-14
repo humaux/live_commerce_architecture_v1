@@ -2,6 +2,7 @@
 // Depends on: standard-library crypto/JSON/time, command UUID validation and pricing.Calculation.
 // Used by: Go order-attempt C1 admission and C2 inline/River execution, with trusted PG metadata.
 // Invariants: order-attempt-v1 §§1–3; I01, I08, I11. No SQL, price calculation or business-fact validation.
+
 package orderattempt
 
 import (
