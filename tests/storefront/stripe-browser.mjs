@@ -517,7 +517,7 @@ async function su09(){
   const noDupes=async(from)=>{const live=(await page.evaluate(i=>window.__live.slice(i),from));for(let i=1;i<live.length;i++)assert(!(live[i].text===live[i-1].text&&live[i].role===live[i-1].role&&live[i].t-live[i-1].t<1500),`announcement repeated: ${live[i].role} ${JSON.stringify(live.map(x=>[x.role,x.text.slice(0,30)]))}`);return live.length;};
   // roles and names, three locales
   let id=await newOrder(page);
-  for(const loc of ["zh-CN","zh-TW","en"]){await setLocale(page,loc);await ex(payBtn(page,loc)).toBeVisible();}
+  for(const loc of ["zh-CN","zh-TW","en"]){await setLocale(page,loc);await ex(payBtn(page,loc)).toBeVisible();await ex(page.getByTestId("payment-test-mode")).toBeVisible();} // test-mode disclosure moved from the retired PAYUNi BPU02 (server test_mode = profile<>LIVE, migration 0026)
   await ex(page.getByRole("button",{name:LOC.en.refresh,exact:true})).toBeVisible().catch(()=>{});
   await setLocale(page,"en");
   await three("01-fresh-pay");
