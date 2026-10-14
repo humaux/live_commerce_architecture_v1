@@ -956,6 +956,68 @@ test.describe("PE-FIX-1 media failure, recovery and editor lock", () => {
     await removeDetail(page, before + 1);
   });
 
+  test("an active product saves a name edit while the image list cannot be read", async ({
+    page,
+  }) => {
+    await openEditor(page);
+    const detailRows = await page.getByTestId("photo-row-detail").count();
+    const original = await page.getByTestId("product-name").inputValue();
+    const renamed = `${original} PE2`;
+    const documentPath = `/api/stores/${store}/products/${product.id}/document`;
+    // FIXTURE: the image-list read fails; every other request reaches the real backend.
+    await page.route(imagesPath, (route) =>
+      route.request().method() === "GET"
+        ? route.fulfill({
+            status: 500,
+            contentType: "application/json",
+            body: "{}",
+          })
+        : route.fallback(),
+    );
+    await page.reload();
+    await expect(
+      page.getByRole("button", { name: mc.refresh, exact: true }).first(),
+      "image list read failure is shown",
+    ).toBeVisible();
+    await page.getByTestId("product-name").fill(renamed);
+    await expect(page.getByTestId("product-save")).toBeEnabled();
+    const saved = page.waitForResponse(
+      (r) =>
+        r.request().method() === "PUT" &&
+        new URL(r.url()).pathname === documentPath,
+    );
+    await page.getByTestId("product-save").click();
+    expect(
+      (await saved).status(),
+      "save is sent although the image list is unknown",
+    ).toBe(200);
+    await page.unroute(imagesPath);
+    await page.reload();
+    await expect(
+      page.getByTestId("product-name"),
+      "name persisted after reload",
+    ).toHaveValue(renamed);
+    await expect(
+      page.getByTestId("photo-row-detail"),
+      "images unchanged",
+    ).toHaveCount(detailRows);
+    pass(
+      page_,
+      "product-name + product-save",
+      "fill, click, reload with the image list failing",
+      "name saved, images unchanged",
+      renamed,
+    );
+    await page.getByTestId("product-name").fill(original);
+    const restored = page.waitForResponse(
+      (r) =>
+        r.request().method() === "PUT" &&
+        new URL(r.url()).pathname === documentPath,
+    );
+    await page.getByTestId("product-save").click();
+    expect((await restored).status()).toBe(200);
+  });
+
   test("leaving while an upload is in flight shows a message; the section nav stays usable", async ({
     page,
   }) => {

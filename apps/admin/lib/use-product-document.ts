@@ -256,7 +256,7 @@ export function useProductDocument(
   }
   function save(
     draft: ProductDraft,
-    photos: DraftPhoto[],
+    photos: DraftPhoto[] | null,
     publish: boolean,
     status?: "draft" | "active",
     imageAxis?: string | null,
@@ -298,7 +298,7 @@ export function useProductDocument(
           : command("POST", "products/document", body),
         edit: !!baseline,
         expectedStatus: baseline ? (target ?? baseline.status) : undefined,
-        photos: baseline ? [] : [...photos],
+        photos: baseline || !photos ? [] : [...photos],
         publish: baseline ? false : publish,
         uploaded: [],
         imageAxis: baseline ? undefined : imageAxis,

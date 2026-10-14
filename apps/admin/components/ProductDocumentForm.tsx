@@ -264,7 +264,8 @@ export function ProductDocumentForm({
       return;
     void write.save(
       draft,
-      photos,
+      // Unknown image list (edit): skip the client main-image check; the server still enforces it.
+      mode === "edit" && !mediaKnown ? null : photos,
       publish || (mode === "edit" && requestedStatus === "active"),
       mode === "edit" && requestedStatus !== "archived"
         ? requestedStatus

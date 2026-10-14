@@ -295,6 +295,8 @@ export function ProductMediaManager({
     setPending(null);
     if (!remember(null)) {
       setLost(true);
+      // The server already accepted this operation: never present it as a plain failure that invites a duplicate upload.
+      failure.current = { text: c.unknown, halt: true };
       return false;
     }
     setLost(false);
