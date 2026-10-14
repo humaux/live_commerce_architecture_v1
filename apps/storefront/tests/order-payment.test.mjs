@@ -134,6 +134,22 @@ test("SU03 fresh Stripe pay: marker before prepare, one prepare, one handoff, na
   assert.equal(g.locks.filter(x=>x==="commerce-purchase-write-v1").length,2,"lock released after prepare and re-taken for the handoff POST");
 }));
 
+// Restored from base 625544483 (BPU01), re-expressed through the Stripe path.
+test("BPU01 Stripe marker has exactly the six keys and no PII/redirect URL in storage",async()=>fixture(async g=>{
+  stripeServer(g);await stripePay(g);
+  const marker=pendingOrderPayment(context,orderID);
+  assert.deepEqual(Object.keys(marker).sort(),["body","context","key","order_id","stage","v"]);
+  const stored=JSON.stringify([...g.data])+JSON.stringify(g.writes);
+  assert(!stored.includes("Synthetic Recipient"));assert(!stored.includes("+886900000001"));assert(!stored.includes("Synthetic Street"));
+}));
+
+test("BPU01 document/child loss after prepare but before handoff leaves exact replay marker",async()=>fixture(async g=>{
+  stripeServer(g);
+  const normal=g.route;g.route=async req=>{const result=await normal(req);if(req.path.endsWith("/prepare"))g.ready=false;return result;};
+  await assert.rejects(stripePay(g));assert.equal(pendingOrderPayment(context,orderID).stage,"prepare");
+  assert.equal(posts(g,"prepare").length,1);assert.equal(posts(g,"handoff").length,0);assert.equal(g.navigated.length,0);assert(g.closed>0,"the child tab is closed after prepare");
+}));
+
 test("SU03 marker replay: lost prepare response replays key/body, no uncertain on PENDING view with leftover marker",async()=>{
   await fixture(async g=>{
     stripeServer(g);let count=0;const normal=g.route;

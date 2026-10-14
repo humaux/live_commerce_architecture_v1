@@ -87,7 +87,6 @@ test("settings: the merchant enables cash on delivery with a cap, surcharge and 
   const { context, page } = await merchant(browser, false);
   await page.goto(new URL(`/${locale}/settings?store=${store}`, origin).toString());
   await expect(page.getByTestId("settings-wizard")).toBeVisible();
-  await page.getByLabel(c.manual, { exact: true }).check();
   await page.getByRole("button", { name: c.next, exact: true }).click();
   // step 2: the cash-on-delivery card sits in the merchant-arranged branch
   const card = page.getByTestId("cod-settings-card");

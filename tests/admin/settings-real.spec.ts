@@ -312,6 +312,93 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
       .getByTestId("settings-service-form")
       .getByLabel("English name", { exact: true }),
   ).toHaveValue("Standard delivery");
+
+  // Restored from base 625544483 (they ran on the PAYUNi method write), now on the delivery-service write.
+  const svcForm = page.getByTestId("settings-service-form");
+  const svcName = svcForm.getByLabel("English name", { exact: true });
+  // An unsaved field survives a locale switch.
+  await svcName.fill("Local unsaved name");
+  await page.getByLabel("Language", { exact: true }).selectOption("zh-CN");
+  await expect(page.getByRole("heading", { name: "店铺设置", exact: true })).toBeVisible();
+  await page.getByLabel("语言", { exact: true }).selectOption("en");
+  await expect(page.getByRole("heading", { name: "Store settings", exact: true })).toBeVisible();
+  await expect(svcName).toHaveValue("Local unsaved name");
+  // Stale-version conflict: another operator saves first; our save is refused and only an explicit reload rebases.
+  // G-UI8 audit [FIXTURE/SETUP]: a concurrent write by another operator (stale-form fixture)
+  const concurrent = await page.evaluate(async (store) => {
+    const prefix = `/api/stores/${store}/markets`;
+    const markets = await (await fetch(prefix)).json();
+    const path = `${prefix}/${markets.items[0].id}/countries/TW/delivery-services/home`;
+    const saved = await (await fetch(path)).json();
+    const csrf =
+      document.cookie
+        .split(";")
+        .map((part) => part.trim())
+        .find((part) => part.startsWith("__Host-commerce_csrf="))
+        ?.split("=")[1] ?? "";
+    const response = await fetch(path, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": crypto.randomUUID(),
+        "X-CSRF-Token": csrf,
+      },
+      body: JSON.stringify({
+        market_id: saved.market_id,
+        country: saved.country,
+        code: saved.code,
+        expected_version: saved.version,
+        policy_version: saved.policy_version,
+        name_hans: saved.name_hans,
+        name_hant: saved.name_hant,
+        name_en: "Remote saved name",
+        delivery_kind: saved.delivery_kind,
+        mode: saved.mode,
+        enabled: saved.enabled,
+        visible: saved.visible,
+        sort_order: saved.sort_order,
+      }),
+    });
+    return response.status;
+  }, receipt.store_id);
+  expect(concurrent).toBe(200);
+  await svcForm.getByRole("button", { name: "Save delivery service", exact: true }).click();
+  await expect(
+    page.getByRole("alert").filter({ hasText: /Configuration changed/ }),
+  ).toBeVisible();
+  await expect(svcName).toHaveValue("Local unsaved name"); // not silently rebased
+  await page.getByTestId("settings-reload-current").click();
+  await expect(svcName).toHaveValue("Remote saved name");
+  await page.reload();
+  await page.getByRole("button", { name: "Market and delivery", exact: false }).click();
+  await expect(svcName).toHaveValue("Remote saved name"); // persisted
+  // Lost response WITHOUT a page reload: the write commits, the reply is lost, the pending banner offers an exact-replay retry.
+  const svcWrites: Array<{ key: string; body: string }> = [];
+  let loseSvc = true;
+  const svcPath = new RegExp(`/api/stores/${receipt.store_id}/markets/[0-9a-f-]{36}/countries/TW/delivery-services/home$`);
+  await page.route(svcPath, async (route) => {
+    if (route.request().method() !== "PUT") return route.continue();
+    svcWrites.push({
+      key: route.request().headers()["idempotency-key"],
+      body: route.request().postData() ?? "",
+    });
+    if (loseSvc) {
+      loseSvc = false;
+      expect((await route.fetch()).status()).toBe(200);
+      await route.abort("failed");
+    } else await route.continue();
+  });
+  await svcName.fill("Lost reply name");
+  await svcForm.getByRole("button", { name: "Save delivery service", exact: true }).click();
+  await expect(page.getByTestId("settings-pending")).toBeVisible();
+  await page.getByRole("button", { name: "Retry pending command", exact: true }).click();
+  await expect.poll(() => svcWrites.length).toBe(2);
+  expect(svcWrites[0].key === svcWrites[1].key && svcWrites[0].body === svcWrites[1].body).toBe(true);
+  await expect(page.getByTestId("settings-pending")).toBeHidden();
+  await page.unroute(svcPath);
+  await page.reload();
+  await page.getByRole("button", { name: "Market and delivery", exact: false }).click();
+  await expect(svcName).toHaveValue("Lost reply name"); // persisted after the replay
   const originalCSRF = (await context.cookies()).find(
     (c) => c.name === "__Host-commerce_csrf",
   )!;

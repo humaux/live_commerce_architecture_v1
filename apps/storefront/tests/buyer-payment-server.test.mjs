@@ -271,6 +271,11 @@ test("BPT03 hostile upstream success is sanitized, never returned as payment dat
       globalThis.fetch = async () => response;
       await safeFailure(await payment("POST", "/handoff", auth), 503);
     }
+    // A duplicate key NESTED inside the Stripe view (methods[0].version) is rejected too (was form.fields.Version on the removed PAYUNi form).
+    const nested = JSON.stringify(view).replace('"version":1', '"version":1,"version":1');
+    assert.notEqual(nested, JSON.stringify(view));
+    globalThis.fetch = async () => new Response(nested, { status: 200, headers: { "Content-Type": "application/json" } });
+    await safeFailure(await payment("GET", "", auth), 503, false);
   } finally {
     globalThis.fetch = old;
   }

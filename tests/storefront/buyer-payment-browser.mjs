@@ -133,7 +133,7 @@ try{
   browser=await launch({headless:true,proxy:{server:`http://127.0.0.1:${await listen(proxy)}`}});
   const c=await context(),page=await c.newPage();
   const entry=await page.goto(product);assert(entry);const csp=entry.headers()["content-security-policy"]??"";
-  assert.match(csp,/form-action/);assert(csp.includes("'self'")&&csp.includes(psp)&&csp.includes("https://api.payuni.com.tw/api/upp"));
+  assert.match(csp,/form-action/);assert(csp.includes("'self'")&&!/payuni/i.test(csp)); // pay-rm2: the PSP form-action allowance was removed from the CSP
   const a=await makeOrder(page);passed("BPU02 actual fresh order/payment snapshot and exact PSP CSP");
   await expect(page.getByTestId("payment-status")).toHaveText("Payment status: Not paid");
   await expect(page.getByTestId("payment-commercial-status")).toHaveText("Order status: Not paid");

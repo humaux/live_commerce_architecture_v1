@@ -39,10 +39,17 @@ Status: DESIGN/MOCK-level only. **No test, typecheck or build was run locally** 
   scenario now runs on the market create POST; policy/service/changed-session segments unchanged.
 - `tests/deploy/deploy-prep-r3.test.mjs`: tripwire test inverted: template has no PAYUNI, a stale `COMMERCE_PAYUNI_NOTIFY_ENABLED` (0 or 1) is a P06 FAIL unknown knob.
 
-## Deleted cases (reason)
-- BPU01 "lost handoff is permanently GET-only" / "marker replacement before/after Take" / "lost prepare replay on PAYUNi": PAYUNi one-shot `TakeHosted` marker (`handoff_started`) no longer exists; replaced by the legacy-marker-is-never-replayed test (Stripe replay semantics stay covered by SU03).
-- settings-real.spec.ts stale-baseline segment (method version vs second provider account, "Connect account"/"Configure methods" steps) and `provider-accounts` secret-retry mismatch (409) segment: both only existed for PAYUNi account/method binding; policy/service baseline-conflict hold tests remain.
-- BPT03 `prepared receipt enforces exact original credit-card amount` (PAYUNi TWD 100–19,999,900): replaced, not dropped (Stripe table + removed-code rejection).
+## Deleted cases (reason) — every remaining deletion is PAYUNi-only
+- BPU01 "lost handoff is permanently GET-only" / "marker replacement before/after Take" / "lost prepare replay on PAYUNi": exist only for the PAYUNi one-shot `TakeHosted` marker (`handoff_started`), which is gone; replaced by the legacy-marker-is-never-replayed test. The generic parts of the old cases were restored on Stripe (round 2, below).
+- settings-real.spec.ts `provider-accounts` HashKey/HashIV secret-retry mismatch (409) segment and "Connect account"/"Configure methods" second-provider-account binding segment: PAYUNi credential/account binding only. Its generic checks (stale-version conflict + explicit reload, unsaved field across locale switch, lost response without reload) were restored on the delivery-service write.
+- BPT03 `prepared receipt enforces exact original credit-card amount` (PAYUNi TWD 100–19,999,900 table): PAYUNi-only rule; replaced by Stripe table + removed-code rejection.
+
+## Round 2 (Opus review CHANGES) — evidence
+- P1-3: `tests/admin/checkout-offline.spec.ts:96,:239` and `tests/admin/home-cod.spec.ts:90` no longer tick the removed provider radio (step 1 has no radio; they click "Continue" straight to the delivery/COD cards). Remaining `git grep -i payuni -- tests apps/*/tests` hits outside Go: `settings-real.spec.ts` (absence assertions), `deploy-prep-r3.test.mjs` (stale-knob rejection), `apps/storefront/tests/**` (inverse assertions + guard), `tests/storefront/buyer-payment-browser.mjs:136` CSP assertion inverted (must NOT contain the PSP host). Left for phase 2 (needs Go backend/harness change): `tests/admin/auth-real.spec.ts:337-540` (BFF transport vs Go provider-accounts), the rest of `buyer-payment-browser.mjs` (Go-driven PAYUNi form flow, run by `tests/foundation/browser_payment_chain_test.go`), `tests/storefront/payuni-ui-baseline.mjs`, `tests/payments/*payuni*.golden.json`, `tests/admin/baselines/w0/manifest.json` (historic capture), all `tests/foundation/**`.
+- P1-4: `apps/storefront/tests/order-payment.test.mjs` new "BPU01 Stripe marker has exactly the six keys and no PII/redirect URL in storage" (key set = base :40, no-PII = base :47) and "BPU01 document/child loss after prepare but before handoff leaves exact replay marker" (child closed, base :82-86).
+- P1-5: `tests/admin/settings-real.spec.ts`, after the "Standard delivery" readback: unsaved English name survives zh-CN→en locale switch; concurrent write → Save shows "Configuration changed", not silently rebased, `settings-reload-current` rebases, persists after reload; lost response (write commits, reply aborted) without page reload → pending banner → Retry → same Idempotency-Key + body, persists after reload.
+- P2-1: `apps/storefront/tests/buyer-payment-server.test.mjs` BPT03: duplicate key nested at `methods[0].version` in the Stripe view GET is rejected 503 (base had nested `form.fields.Version`).
+- NOT_RUN: nothing executed locally; selectors in the new Playwright block were copied from the existing spec and are unverified against a live page.
 
 ## Click ledger (settings-real.spec.ts, real Playwright actions; NOT_RUN)
 | Page | Control | Action | Expected |
