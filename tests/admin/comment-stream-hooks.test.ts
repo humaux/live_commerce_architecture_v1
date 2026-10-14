@@ -221,15 +221,27 @@ test("PR18 quiet A2 stream refreshes delayed claim marks without a new sequence 
 test("PR18 late claim automatically exposes keyword view and the reused BuyerPanel",async t=>{
   const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-08T01:00:00Z")});
   let completed=false,panelReads=0;
+  let onLateClaim = () => {};
+  const lateClaim = new Promise<void>(resolve => { onLateClaim = resolve; });
+  let onPanelRead = () => {};
+  const panelRead = new Promise<void>(resolve => { onPanelRead = resolve; });
   globalThis.fetch=async input=>{
     const url=String(input);
-    if(url.includes("buyer-panel?")){panelReads++;assert.ok(url.includes(`bundle_id=${sid}`));return response({display_name:"SYNTHETIC_LATE_BUYER",platform:"facebook",purchase_ordinal:1,claims:[],claim_total_minor:0,orders:[],link_pending_manual:false});}
+    if(url.includes("buyer-panel?")){
+      panelReads++;assert.ok(url.includes(`bundle_id=${sid}`));
+      onPanelRead();
+      return response({display_name:"SYNTHETIC_LATE_BUYER",platform:"facebook",purchase_ordinal:1,claims:[],claim_total_minor:0,orders:[],link_pending_manual:false});
+    }
     if(url.includes("message-templates"))return response({items:[]});
+    if(completed && !url.includes("after_seq"))onLateClaim();
     return response(url.includes("after_seq")?page(1,[]):page(1,[completed?{...row,marks:{...row.marks,claim:{status:"ACCEPTED",reason:null,offer_id:sid,keyword:"A1",quantity:1,bundle_id:sid}}}:row]));
   };
   const h=env.mount(()=>CommentStream({store,session:sid,locale:"en",platform:"facebook",capabilities:{}} as any));await h.settle();
   node(h,n=>n.props["data-testid"]===`comment-select-${row.ref}`).props.onClick();await h.settle();assert.equal(panelReads,0);
   completed=true;for(let n=0;n<4;n++){t.mock.timers.tick(3000);await h.settle();}
+  await lateClaim;
+  await panelRead;
+  await h.settle();
   assert.equal(panelReads,1);assert.ok(textOf(h.output).includes("SYNTHETIC_LATE_BUYER"));
   node(h,n=>n.props["data-testid"]==="comment-filter-keyword").props.onClick();await h.settle();assert.ok(textOf(h.output).includes("A1"));
 });

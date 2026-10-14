@@ -417,6 +417,18 @@ func TestPasswordPA08HTTP(t *testing.T) {
 	t.Run("rate_limits_run_before_hashing_hibp_mail_and_lookup", func(t *testing.T) {
 		e := e.sub(t)
 		_ = e
+		// Align throttle window so the test does not cross a window boundary mid-test.
+		// If less than minSlack remains in the window, wait for the fresh window to begin.
+		alignThrottle := func(windowSec int64, minSlack time.Duration) {
+			epochMS := e.q1("SELECT (extract(epoch FROM clock_timestamp()) * 1000)::bigint")
+			windowMS := windowSec * 1000
+			remMS := windowMS - (epochMS % windowMS)
+			rem := time.Duration(remMS) * time.Millisecond
+			if rem < minSlack {
+				time.Sleep(rem + 50*time.Millisecond)
+			}
+		}
+		alignThrottle(3600, 10*time.Second)
 		src := pwaIP()
 		for i := 0; i < 5; i++ {
 			e.signupFrom(src, pwaEmail(), pwaSecret())
@@ -444,6 +456,7 @@ func TestPasswordPA08HTTP(t *testing.T) {
 			t.Error("a malformed code reached HIBP or Argon2")
 		}
 		// binding throttle: the 11th complete on one binding is 429 before HIBP/Argon
+		alignThrottle(600, 10*time.Second)
 		for i := 0; i < 10; i++ {
 			_ = record(e.post("complete", pwaIP().String(), map[string]string{"binding": binding, "purpose": "reset", "code": "000000", "new_password": pwaSecret()}))
 		}
