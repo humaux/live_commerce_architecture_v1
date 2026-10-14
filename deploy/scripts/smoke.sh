@@ -690,7 +690,7 @@ sys.exit(1 if bad else 0)'; then :; else why46+=" an operator retention DSN is c
   r2=$(edge api.localhost /v1/admin/stores)
   if [[ "$r1" == "404||0" && "$r2" == "404||0" ]]; then rec S18 PASS "api host default-deny"; else rec S18 FAIL "readyz=$r1 stores=$r2"; fi
   r=$(edge hooks.localhost /v1/meta/webhooks/1/page)
-  r1=$(edge hooks.localhost /payuni/notify)
+  r1=$(edge hooks.localhost /payment/notify)
   r2=$(edge hooks.localhost /)
   # Stripe: a POST with an empty JSON body to an unregistered endpoint id must be ANSWERED BY THE GO API
   # (a status and a content type; Caddy's own default-deny answer is the empty "404||0").

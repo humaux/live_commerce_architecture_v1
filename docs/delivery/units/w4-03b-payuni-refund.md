@@ -1,3 +1,5 @@
+> Superseded: PAYUNi removed by owner decision 2026-10-14, see pay-rm2.
+
 # Unit W4-03B — PAYUNi 信用卡退款（后端，钱路）
 
 **CANCELLED（owner 2026-10-06，同上）。** Stripe 退款沿用 stripe-refund-v1；迁移号 0138 改给 W4-S2。正文仅存档，勿实现。

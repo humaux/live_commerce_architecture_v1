@@ -1,3 +1,5 @@
+> Superseded: PAYUNi removed by owner decision 2026-10-14, see pay-rm2.
+
 # Unit W4-01B — PAYUNi NotifyURL 接收器（后端，钱路）
 
 **REMOVED（PAY-RM1, 2026-10-07, 迁移 0161）：曾合并（651c5744, 0136）但从未部署；owner 2026-10-06 取消 PAYUNi → 接收器路由、`internal/payments/payuninotify`、schema（两张 notify 表、四个 definer、review_cases 放宽）与 `commerce_payuni_ingress` 角色已由 PAY-RM1 前向删除；0161 若发现任何回执行或 `NOTIFY_MISMATCH` 复核行会 RAISE（22023）拒绝执行，绝不静默删数据。本文其余内容仅作历史记录。**

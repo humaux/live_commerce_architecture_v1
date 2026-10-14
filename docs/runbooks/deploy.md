@@ -24,8 +24,8 @@ Change rules: 命令必须与脚本保持一致；改脚本行为时同步本文
 - 以下上线阻塞项关闭前，不得宣称"可生产"：
   - B1：已关闭。`cmd/migrate` 存在，是唯一的生产迁移入口（`deploy.sh` 与 smoke S12 使用它）。
   - B2：未选定 IdP（OIDC），商家无法登录。
-  - B3：owner 决策仍待确认（`pay-remove-payuni` OPEN-1）：保留或移除基础 PAYUNi 卡付路径，或明确本次 LIVE 范围不启用任何 PAYUNi 付款方式。选择启用时，PAYUNi 商户资质和 LIVE 批准仍是前置；代码移除 NotifyURL 接收端不能替代该决策。
-  - B4：接收端已从代码移除（`cmd/api/payuni_notify.go` 不存在；`contracts/payuni-wire-v1.md` 的 PAY-RM1 amendment），本节已同步。它是已移除功能，不再作为待建接收端的工程阻塞，也不代表 PAYUNi LIVE 获批；基础卡付路径的去留见 B3。
+  - B3：已由 owner 决策移除（2026-10-06 / 2026-10-14，pay-rm）：不再使用 PAYUNi，商家收款使用平台 Stripe；不再有 PAYUNi 资质或 LIVE 批准前置。
+  - B4：已由 owner 决策移除（同 B3）：PAYUNi NotifyURL 接收端不存在也不再构建。
   - B5：直播/Studio（LiveKit 仅 MOCK）。
   - B6：Meta 未开放给客户：Meta App Review / Access Tier 是 owner 事项；评论 → 认领 → 私信链路的开通步骤见 §6.3 与 merchant-onboarding.md。G1 路由激活已由 `meta-admin route` 关闭；**G2 已关闭**：场次规划与媒体开关已拆分，开启 Studio/claims 并配置有效 label key 后挂载 claim-source（§6.3 第 7 项；`cmd/api/main.go` → `internal/httpapi/claims.go` → `claimsource.go`）。工程路由可用不等于 App Review 通过或真实私信获准发送。
   - B7：T21 独立评审未完成。
@@ -218,9 +218,9 @@ deploy/scripts/deploy.sh upgrade <tag>
 `media-worker` **不是** compose 服务：LiveKit 全部硬编码 MOCK（`worker_env.go:174`，B5），见 `deploy/env/media-worker.env.example`（仅参考）。
 
 - **Phase A**：identity + accounts + buyer + payments **SANDBOX**（`COMPOSE_PROFILES=db,app,payments-sandbox`），加 Stripe SANDBOX（§6.1）。
-- **Phase B**：**LIVE** 需要 owner 批准和 PAYUNi/Stripe 资质。切换 profile 为 `payments-live`，把 `COMMERCE_PAYMENT_PROFILE` 改为 `LIVE`；Stripe 需要 compose.env 的
+- **Phase B**：**LIVE** 需要 owner 批准和 Stripe 资质。切换 profile 为 `payments-live`，把 `COMMERCE_PAYMENT_PROFILE` 改为 `LIVE`；Stripe 需要 compose.env 的
   LIVE 配对（`LC_STRIPE_LIVE_ENABLED=1` + `LC_STRIPE_LIVE_APPROVAL_REF`，§2），完整顺序、cutover 前置 SQL 与 canary 见 `docs/runbooks/stripe-live.md`。
-  PAYUNi 在 LIVE 下仍不可用，直到 PAYUNi B3 LIVE 批准。在历史 sandbox job 处理完之前保留 `payments-sandbox`。preflight 会对 `payments-live` 给出 WARN 提醒。
+  在历史 sandbox job 处理完之前保留 `payments-sandbox`。preflight 会对 `payments-live` 给出 WARN 提醒。
 - Meta 评论入口：`meta` profile + `COMMERCE_META_WEBHOOK_ENABLED=1` + owner 提供的 `commerce_meta_apps_json`（§6.3）。
 - Meta 私信发送：`claims` profile。**这是唯一会向买家发送 Meta 消息的进程**，只在 owner 批准真实发送后启用（§6.3）。
 - Studio（R1 裁决 G2）：场次规划 + 关键词下单 + 认领来源开启（`COMMERCE_STUDIO_ENABLED=1`、`COMMERCE_CLAIMS_ENABLED=1`，密钥 `commerce_claims_label_key` 由 secrets-init 生成）；LiveKit 媒体保持关闭（P06 强制 `COMMERCE_STUDIO_MEDIA_ENABLED=0`，media 路由不挂载＝404，media worker 不部署）。smoke S45 验证。

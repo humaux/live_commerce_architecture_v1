@@ -540,14 +540,18 @@ case "$1" in
   --browser-payment)
     lc_build=storefront
     lc_fixture=pg
-    lc_covers="internal/attribution internal/buyer internal/buyerhttp internal/checkout internal/claims internal/customers internal/design internal/domains internal/fulfillment internal/httpapi/blocklist.go internal/httpapi/blocklist_test.go internal/httpapi/claimsource.go internal/httpapi/claimsource_test.go internal/httpapi/customer_historical.go internal/httpapi/customer_tags.go internal/httpapi/customer_tags_test.go internal/httpapi/customers.go internal/httpapi/customers_test.go internal/httpapi/cvs.go internal/httpapi/cvs_test.go internal/httpapi/design.go internal/httpapi/design_test.go internal/httpapi/images.go internal/httpapi/images_test.go internal/httpapi/keyword_tools.go internal/httpapi/keyword_tools_test.go internal/httpapi/live_lifecycle.go internal/httpapi/live_lifecycle_test.go internal/httpapi/merchanttools.go internal/httpapi/merchanttools_test.go internal/httpapi/offline.go internal/httpapi/parcels.go internal/httpapi/parcels_test.go internal/httpapi/picklist.go internal/httpapi/picklist_test.go internal/httpapi/promotions.go internal/httpapi/returns.go internal/httpapi/returns_test.go internal/httpapi/settings_discovery.go internal/httpapi/shipments.go internal/httpapi/shipments_test.go internal/httpapi/storefront.go internal/httpapi/storefront_test.go internal/integrations/psp/payuni internal/jobqueue internal/promotions internal/storefront internal/storefrontdomains internal/twcity"
+    lc_covers="internal/attribution internal/buyer internal/buyerhttp internal/checkout internal/claims internal/customers internal/design internal/domains internal/fulfillment internal/httpapi/blocklist.go internal/httpapi/blocklist_test.go internal/httpapi/claimsource.go internal/httpapi/claimsource_test.go internal/httpapi/customer_historical.go internal/httpapi/customer_tags.go internal/httpapi/customer_tags_test.go internal/httpapi/customers.go internal/httpapi/customers_test.go internal/httpapi/cvs.go internal/httpapi/cvs_test.go internal/httpapi/design.go internal/httpapi/design_test.go internal/httpapi/images.go internal/httpapi/images_test.go internal/httpapi/keyword_tools.go internal/httpapi/keyword_tools_test.go internal/httpapi/live_lifecycle.go internal/httpapi/live_lifecycle_test.go internal/httpapi/merchanttools.go internal/httpapi/merchanttools_test.go internal/httpapi/offline.go internal/httpapi/parcels.go internal/httpapi/parcels_test.go internal/httpapi/picklist.go internal/httpapi/picklist_test.go internal/httpapi/promotions.go internal/httpapi/returns.go internal/httpapi/returns_test.go internal/httpapi/settings_discovery.go internal/httpapi/shipments.go internal/httpapi/shipments_test.go internal/httpapi/storefront.go internal/httpapi/storefront_test.go internal/integrations/psp/payuni internal/jobqueue internal/payments internal/promotions internal/storefront internal/storefrontdomains internal/twcity"
     lc_browsers=chromium
     lc_prepare() {
-  test -f tests/foundation/browser_payment_chain_test.go
+  # pay-rm2 p1: the PAYUNi buyer payment gate (TestBrowserBuyerPaymentUI) is retired; this mode runs the Stripe buyer payment-page MOCK
+  # specs (SU07 + SU09) against the fake Stripe transport, no key needed. Refuse a no-test success.
+  test -f tests/foundation/browser_stripe_test.go
+  test -f tests/storefront/stripe-browser.mjs
+  grep -q 'SU07_popup_reuse_dedupe_reload_return' tests/foundation/browser_stripe_test.go
     }
     lc_run() {
-  LC_BROWSER_PAYMENT_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.2 go test -race -tags browser -count=1 -timeout=600s -run '^TestBrowserBuyerPaymentUI$' -v ./tests/foundation
-  printf 'PASS: isolated buyer payment UI/native POST gate with a local mock PSP; not provider payment or deployment acceptance.\n'
+  LC_STRIPE_BROWSER_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.2 go test -race -tags browser -count=1 -timeout=1500s -run '^TestBrowserStripeCheckout$/^(SU07|SU09)' -v ./tests/foundation
+  printf 'PASS: isolated buyer payment-page UI gate (Stripe MOCK: SU07 popup/dedupe/return + phone profile, SU09 keyboard/locales/states); not provider payment or deployment acceptance.\n'
     }
     ;;
   --stripe-browser)
@@ -559,8 +563,7 @@ case "$1" in
   # LC_STRIPE_BROWSER_STEPS (default: all); only sp18/su07/su09 need the SANDBOX variables.
   test -f tests/foundation/browser_stripe_test.go
   test -f tests/storefront/stripe-browser.mjs
-  test -f tests/storefront/payuni-ui-baseline.mjs
-  stripe_steps=",${LC_STRIPE_BROWSER_STEPS:-node-env,payuni-baseline,sp18,su07,su09},"
+  stripe_steps=",${LC_STRIPE_BROWSER_STEPS:-node-env,sp18,su07,su09},"
   stripe_key=""
   if [[ "$stripe_steps" == *,sp18,* || "$stripe_steps" == *,su07,* || "$stripe_steps" == *,su09,* || "$stripe_steps" == *,obs,* ]]; then
     if [[ "${STRIPE_BROWSER:-}" != 1 || "${STRIPE_SANDBOX:-}" != 1 ]]; then
@@ -601,7 +604,7 @@ case "$1" in
     stripe_fresh_pg
     started="$(date +%s)"
     # Only this go test process (never Node) receives the Stripe key; the Go test strips it again.
-    env "$@" LC_STRIPE_BROWSER_ACCEPTANCE=1 LC_STRIPE_EVIDENCE_ROOT="$stripe_out" LC_BASELINE_OUT_DIR="$stripe_out" \
+    env "$@" LC_STRIPE_BROWSER_ACCEPTANCE=1 LC_STRIPE_EVIDENCE_ROOT="$stripe_out" \
       GOTOOLCHAIN=go1.27.2 go test -race -tags browser -count=1 -timeout="$tmo" -json -run "$regex" ./tests/foundation >"$log" 2>"$log.stderr" || rc=$?
     counts="$(go_json_counts "$log" "$min")"
     verdict="${counts##*VERDICT=}"; counts="${counts%% VERDICT=*}"
@@ -611,9 +614,6 @@ case "$1" in
   sandbox_env=(STRIPE_BROWSER=1 STRIPE_SANDBOX=1 STRIPE_ACCOUNT_ID="${stripe_account:-}" STRIPE_SECRET_KEY="$stripe_key")
   if [[ "$stripe_steps" == *,node-env,* ]]; then
     run_stripe_step node-env '^TestBrowserStripeNodeEnv$' 120s 0
-  fi
-  if [[ "$stripe_steps" == *,payuni-baseline,* ]]; then
-    run_stripe_step payuni-baseline '^TestBrowserPayuniBaseline$' 300s 0 LC_BASELINE_SHA="$stripe_sha" LC_BASELINE_MUTATE="${LC_BASELINE_MUTATE:-}"
   fi
   if [[ "$stripe_steps" == *,sp18,* ]]; then
     if [[ "${STRIPE_BROWSER_SPLIT:-}" == 1 ]]; then
@@ -629,7 +629,7 @@ case "$1" in
   if [[ "$stripe_steps" == *,su07,* ]]; then run_stripe_step su07 '^TestBrowserStripeCheckout$/^SU07' 900s 1 "${sandbox_env[@]}"; fi
   if [[ "$stripe_steps" == *,su09,* ]]; then run_stripe_step su09 '^TestBrowserStripeCheckout$/^SU09' 900s 2 "${sandbox_env[@]}"; fi
   if [[ "$stripe_status" != 0 ]]; then printf 'FAIL: --stripe-browser (see logs in %s)\n' "$stripe_out" >&2; exit 1; fi
-  printf 'PASS: stripe-browser steps [%s] (SP18 = SANDBOX, SU07/SU09 = MOCK, SU05 baseline capture).\n' "${stripe_steps//,/ }"
+  printf 'PASS: stripe-browser steps [%s] (SP18 = SANDBOX, SU07/SU09 = MOCK).\n' "${stripe_steps//,/ }"
   if [[ -n "$stripe_key" ]]; then printf 'SANDBOX checkout.stripe.com test mode; no live charge; SP17 webhook NOT_RUN\n'; fi
     }
     ;;
@@ -868,7 +868,7 @@ case "$1" in
   --browser-webkit)
     lc_build=both
     lc_fixture=pg
-    lc_covers="internal/ads internal/attribution internal/buyer internal/buyerhttp internal/catalog internal/checkout internal/claims internal/csvguard internal/customers internal/design internal/domains internal/fulfillment internal/httpapi/accounts.go internal/httpapi/accounts_test.go internal/httpapi/ads.go internal/httpapi/ads_test.go internal/httpapi/blocklist.go internal/httpapi/blocklist_test.go internal/httpapi/claimsource.go internal/httpapi/claimsource_test.go internal/httpapi/cod.go internal/httpapi/collections.go internal/httpapi/customer_historical.go internal/httpapi/customer_tags.go internal/httpapi/customer_tags_test.go internal/httpapi/customers.go internal/httpapi/customers_test.go internal/httpapi/cvs.go internal/httpapi/cvs_test.go internal/httpapi/design.go internal/httpapi/design_test.go internal/httpapi/for_buyer_test.go internal/httpapi/images.go internal/httpapi/images_test.go internal/httpapi/keyword_tools.go internal/httpapi/keyword_tools_test.go internal/httpapi/live_console.go internal/httpapi/live_console_test.go internal/httpapi/live_lifecycle.go internal/httpapi/live_lifecycle_test.go internal/httpapi/merchanttools.go internal/httpapi/merchanttools_test.go internal/httpapi/meta_connect.go internal/httpapi/meta_health.go internal/httpapi/offline.go internal/httpapi/operations.go internal/httpapi/operations_test.go internal/httpapi/orders.go internal/httpapi/orders_test.go internal/httpapi/parcels.go internal/httpapi/parcels_test.go internal/httpapi/picklist.go internal/httpapi/picklist_test.go internal/httpapi/promotions.go internal/httpapi/refunds.go internal/httpapi/refunds_env_test.go internal/httpapi/refunds_test.go internal/httpapi/returns.go internal/httpapi/returns_test.go internal/httpapi/settings_discovery.go internal/httpapi/shipments.go internal/httpapi/shipments_test.go internal/httpapi/storefront.go internal/httpapi/storefront_test.go internal/integrations/accounts internal/integrations/core internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/integrations/shipping/ecpay/ecpayroute internal/integrations/shipping/ecpay/ecpaytest internal/inventory internal/jobqueue internal/mail internal/merchantorders internal/metaconnect internal/promotions internal/returns internal/storefront internal/storefrontadmin internal/storefrontdomains internal/storehandles internal/twcity"
+    lc_covers="internal/ads internal/attribution internal/buyer internal/buyerhttp internal/catalog internal/checkout internal/claims internal/csvguard internal/customers internal/design internal/domains internal/fulfillment internal/httpapi/accounts.go internal/httpapi/accounts_test.go internal/httpapi/ads.go internal/httpapi/ads_test.go internal/httpapi/blocklist.go internal/httpapi/blocklist_test.go internal/httpapi/claimsource.go internal/httpapi/claimsource_test.go internal/httpapi/cod.go internal/httpapi/collections.go internal/httpapi/customer_historical.go internal/httpapi/customer_tags.go internal/httpapi/customer_tags_test.go internal/httpapi/customers.go internal/httpapi/customers_test.go internal/httpapi/cvs.go internal/httpapi/cvs_test.go internal/httpapi/design.go internal/httpapi/design_test.go internal/httpapi/for_buyer_test.go internal/httpapi/images.go internal/httpapi/images_test.go internal/httpapi/keyword_tools.go internal/httpapi/keyword_tools_test.go internal/httpapi/live_console.go internal/httpapi/live_console_test.go internal/httpapi/live_lifecycle.go internal/httpapi/live_lifecycle_test.go internal/httpapi/merchanttools.go internal/httpapi/merchanttools_test.go internal/httpapi/meta_connect.go internal/httpapi/meta_health.go internal/httpapi/offline.go internal/httpapi/operations.go internal/httpapi/operations_test.go internal/httpapi/orders.go internal/httpapi/orders_test.go internal/httpapi/parcels.go internal/httpapi/parcels_test.go internal/httpapi/picklist.go internal/httpapi/picklist_test.go internal/httpapi/promotions.go internal/httpapi/refunds.go internal/httpapi/refunds_env_test.go internal/httpapi/refunds_test.go internal/httpapi/returns.go internal/httpapi/returns_test.go internal/httpapi/settings_discovery.go internal/httpapi/shipments.go internal/httpapi/shipments_test.go internal/httpapi/storefront.go internal/httpapi/storefront_test.go internal/integrations/accounts internal/integrations/core internal/integrations/psp/payuni internal/integrations/shipping/ecpay internal/integrations/shipping/ecpay/ecpayroute internal/integrations/shipping/ecpay/ecpaytest internal/inventory internal/jobqueue internal/mail internal/merchantorders internal/metaconnect internal/payments internal/promotions internal/returns internal/storefront internal/storefrontadmin internal/storefrontdomains internal/storehandles internal/twcity"
     lc_browsers="chromium webkit"
     lc_prepare() {
   # WebKit/iPhone Safari coverage of the buyer-critical flows (MOCK tier; docs/delivery/GATES.md). Refuse before any build when the WebKit
@@ -906,7 +906,8 @@ case "$1" in
   }
   run_webkit_step buyer LC_BROWSER_BUYER_ACCEPTANCE '^TestBrowserBuyerRealChain$' 900s 0
   run_webkit_step order LC_BROWSER_ORDER_ACCEPTANCE '^TestBrowserBuyerOrderUI$' 900s 0
-  run_webkit_step payment LC_BROWSER_PAYMENT_ACCEPTANCE '^TestBrowserBuyerPaymentUI$' 900s 0
+  # payment = the Stripe buyer payment page (SU07 MOCK: popup/dedupe/return plus the iPhone 15 profile pass); SU09's keyboard Tab walk stays Chromium-only.
+  run_webkit_step payment LC_STRIPE_BROWSER_ACCEPTANCE '^TestBrowserStripeCheckout$/^SU07' 900s 1
   run_webkit_step merchant-buyer LC_BROWSER_MERCHANT_BUYER_ACCEPTANCE '^TestBrowserMerchantBuyerRealChain$' 900s 0
   run_webkit_step cvs LC_BROWSER_CVS_ACCEPTANCE '^TestBrowserTaiwanCvs$/^WebKit$' 1700s 1
   run_webkit_step password-auth LC_BROWSER_PASSWORD_AUTH_ACCEPTANCE '^TestBrowserPasswordAuth$' 1200s 0

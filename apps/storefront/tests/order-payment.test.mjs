@@ -4,6 +4,7 @@ import {payOrder,pendingOrderPayment,readOrderPayment,openPaymentDestination,req
 
 const id=n=>`00000000-0000-0000-0000-${String(n).padStart(12,"0")}`;
 const context="a".repeat(43),orderID=id(6),expiry=new Date(Date.now()+3600000).toISOString();
+// PAYUNi was removed (owner decision 2026-10-14). `method`/`form`/`fresh`/`pending` model a legacy backend that still serves it.
 const method={code:"payuni_credit",version:1,name_hans:"测试",name_hant:"測試",name_en:"Mock"};
 const form={action:"https://sandbox-api.payuni.com.tw/api/upp",fields:{Version:"2.0",MerID:"synthetic_merchant",EncryptInfo:"ab".repeat(8),HashInfo:"A".repeat(64)}};
 const fresh={order_id:orderID,currency:"TWD",total_minor:2500,commercial_state:"DRAFT",test_mode:true,payment_state:"NOT_STARTED",handoff_state:"NONE",handoff_expires_at:null,methods:[method]};
@@ -33,101 +34,63 @@ async function fixture(run){
   try{return await run(gate);}finally{globalThis.fetch=old.fetch;globalThis.localStorage=old.storage;globalThis.window=old.window;if(old.locks)Object.defineProperty(navigator,"locks",old.locks);else delete navigator.locks;}
 }
 const posts=(gate,suffix)=>gate.calls.filter(x=>x.path===`orders/${orderID}/payment/${suffix}`&&x.method==="POST");
+const markerKey=`commerce-order-payment-v1:${context}:${orderID}`;
+const nothingSent=(g,name)=>{assert.equal(posts(g,"prepare").length,0,name);assert.equal(posts(g,"handoff").length,0,name);assert.equal(g.submitted.length,0,name);assert.equal(g.navigated.length,0,name);};
 
-test("BPU01 fresh payment writes exact metadata before prepare, one bodyless Take, no persistent form",async()=>fixture(async g=>{
-  await g.pay();
-  const marker=pendingOrderPayment(context,orderID);
-  assert.deepEqual(Object.keys(marker).sort(),["body","context","key","order_id","stage","v"]);
-  assert.deepEqual(marker.body,{method_code:"payuni_credit",method_version:1,locale:"en"});assert.equal(marker.stage,"handoff_started");
-  assert.equal(posts(g,"prepare").length,1);assert.equal(posts(g,"handoff").length,1);
-  assert.deepEqual(posts(g,"prepare")[0].body,marker.body);assert.equal(posts(g,"prepare")[0].key,marker.key);
-  assert.equal(posts(g,"handoff")[0].body,undefined);assert.equal(posts(g,"handoff")[0].key,null);
-  assert.deepEqual(g.submitted,[form]);assert(g.locks.includes("commerce-purchase-write-v1"));
-  assert.deepEqual(g.writes.map(([,value])=>JSON.parse(value).stage),["prepare","handoff_started"]);
-  assert(!JSON.stringify(g.writes).includes("EncryptInfo"));assert(!JSON.stringify(g.writes).includes("Synthetic Recipient"));
-  await assert.rejects(g.pay(),{code:"uncertain"});assert.equal(posts(g,"handoff").length,1);
+// ---- BPU01 inverted (was: PAYUNi one-shot form release). A PAYUNi provider/code from the API never produces a form.
+test("BPU01 legacy PAYUNi view: pay sends nothing, writes no marker, submits no form, closes the child",async()=>fixture(async g=>{
+  await assert.rejects(g.pay(),{code:"invalid_response"});
+  nothingSent(g);assert.equal(g.writes.length,0);assert.equal(pendingOrderPayment(context,orderID),null);assert(g.closed>0);
+  g.view=pending;await assert.rejects(g.pay(),{code:"request_failed"});nothingSent(g);assert.equal(g.writes.length,0);
 }));
 
-test("BPU01 lost prepare response replays original key/body only on explicit next click",async()=>fixture(async g=>{
-  let count=0;const normal=g.route;
-  g.route=async req=>{if(req.path.endsWith("/prepare")&&++count===1){g.view=pending;throw Error("synthetic response loss");}return normal(req);};
-  await assert.rejects(g.pay(),{code:"uncertain"});const first=pendingOrderPayment(context,orderID);assert.equal(first.stage,"prepare");
-  assert.equal(posts(g,"handoff").length,0);assert.equal(g.submitted.length,0);
-  assert.equal((await readOrderPayment(context,orderID)).payment_state,"PENDING");assert.equal(posts(g,"prepare").length,1);
-  await g.pay({locale:"zh-TW",method:undefined});
-  assert.equal(posts(g,"prepare").length,2);assert.equal(posts(g,"prepare")[0].key,posts(g,"prepare")[1].key);
-  assert.deepEqual(posts(g,"prepare")[0].body,posts(g,"prepare")[1].body);assert.equal(posts(g,"prepare")[1].body.locale,"en");
-  assert.equal(posts(g,"handoff").length,1);assert.equal(g.submitted.length,1);
+test("BPU01 legacy PAYUNi marker in storage (prepare or handoff_started) is never replayed",async()=>{
+  for(const stage of ["prepare","handoff_started"])for(const view of [pending,stripeFresh])
+    await fixture(async g=>{
+      stripeServer(g);g.view=view;g.data.set(markerKey,JSON.stringify({v:1,context,order_id:orderID,key:id(77),body:{method_code:"payuni_credit",method_version:1,locale:"en"},stage}));
+      await assert.rejects(g.pay(),{code:"uncertain"},stage);nothingSent(g,stage);assert.equal(g.writes.length,0);assert(g.closed>0);
+    });
+});
+
+test("BPU01 legacy backend returning an ISSUED hosted form on handoff never submits or navigates",async()=>fixture(async g=>{
+  stripeServer(g,{handoff:{order_id:orderID,disposition:"ISSUED",expires_at:expiry,form}});g.view=attemptView("READY");
+  await assert.rejects(g.pay({method:undefined}),{code:"invalid_response"});
+  assert.equal(g.submitted.length,0);assert.equal(g.navigated.length,0);assert(g.closed>0);
+  assert.equal(posts(g,"handoff").length,1,"one POST, never retried");
+  await fixture(async h=>{
+    const doc={URL:"about:blank",head:{appendChild(){}},body:{appendChild(){}},createElement:()=>({isConnected:true})};
+    const child={closed:false,opener:{},location:{href:"about:blank",replace(){}},document:doc,close(){}};
+    globalThis.window.open=()=>child;
+    const d=openPaymentDestination("en");
+    assert.equal(d.submit,undefined,"the destination has no form-submit capability any more");
+    assert.deepEqual(Object.keys(d).sort(),["close","navigate","ready"]);
+  });
 }));
 
-test("BPU01 lost handoff is permanently GET-only, even after a second click",async()=>fixture(async g=>{
-  const normal=g.route;g.route=req=>req.path.endsWith("/handoff")?Promise.reject(Error("synthetic lost handoff")):normal(req);
-  await assert.rejects(g.pay(),{code:"uncertain"});assert.equal(pendingOrderPayment(context,orderID).stage,"handoff_started");
-  assert.equal(posts(g,"handoff").length,1);assert.equal(g.submitted.length,0);
-  await readOrderPayment(context,orderID);await assert.rejects(g.pay(),{code:"uncertain"});
-  assert.equal(posts(g,"prepare").length,1);assert.equal(posts(g,"handoff").length,1);assert.equal(g.submitted.length,0);
-}));
-
+// Generic fences, now exercised through the Stripe path (they used to run on the PAYUNi path).
 test("BPU01 storage, amount, scope and child/screen fences reject before irreversible writes",async()=>{
   for(const change of [
     g=>{g.failWrite=true;},
-    g=>{g.view={...fresh,total_minor:2501};},
+    g=>{g.view={...stripeFresh,total_minor:2501};},
     g=>{g.active="b".repeat(43);},
     g=>{g.ready=false;},
-    g=>{g.data.set(`commerce-order-payment-v1:${context}:${orderID}`,"{}");},
-  ])await fixture(async g=>{change(g);await assert.rejects(g.pay());assert.equal(posts(g,"prepare").length,0);assert.equal(posts(g,"handoff").length,0);});
-  await fixture(async g=>{await assert.rejects(g.pay({isCurrent:()=>false}),{code:"uncertain"});assert.equal(posts(g,"prepare").length,0);});
+    g=>{g.data.set(markerKey,"{}");},
+  ])await fixture(async g=>{stripeServer(g);change(g);await assert.rejects(stripePay(g));nothingSent(g);});
+  await fixture(async g=>{stripeServer(g);await assert.rejects(stripePay(g,{isCurrent:()=>false}),{code:"uncertain"});nothingSent(g);});
 });
 
-test("BPU01 document/child loss after prepare but before Take leaves exact replay marker",async()=>fixture(async g=>{
-  const normal=g.route;g.route=async req=>{const result=await normal(req);if(req.path.endsWith("/prepare"))g.ready=false;return result;};
-  await assert.rejects(g.pay(),{code:"uncertain"});assert.equal(pendingOrderPayment(context,orderID).stage,"prepare");
-  assert.equal(posts(g,"prepare").length,1);assert.equal(posts(g,"handoff").length,0);assert.equal(g.submitted.length,0);
-}));
-
-test("BPU01 malformed server handoff never submits and Take remains nonretryable",async()=>fixture(async g=>{
-  const normal=g.route;g.route=req=>req.path.endsWith("/handoff")?Response.json({order_id:orderID,disposition:"ISSUED",expires_at:expiry,form:{...form,action:"https://evil.example/charge"}}):normal(req);
-  await assert.rejects(g.pay(),{code:"uncertain"});assert.equal(g.submitted.length,0);
-  assert.equal(pendingOrderPayment(context,orderID).stage,"handoff_started");await assert.rejects(g.pay());assert.equal(posts(g,"handoff").length,1);
-}));
-
-test("BPU01 marker replacement before Take and after Take blocks release/form reuse",async()=>{
+test("BPU01 context replacement after prepare and after handoff closes destination without navigating",async()=>{
   await fixture(async g=>{
-    const original=localStorage.getItem.bind(localStorage);let changed=false;
-    localStorage.getItem=key=>{
-      const value=original(key);
-      if(!changed&&key.startsWith("commerce-order-payment-v1:")&&value?.includes('"handoff_started"')){
-        changed=true;g.data.set(key,JSON.stringify({...JSON.parse(value),key:id(99)}));
-      }
-      return value;
-    };
-    await assert.rejects(g.pay(),{code:"uncertain"});assert(changed);
-    assert.equal(posts(g,"prepare").length,1);assert.equal(posts(g,"handoff").length,0);assert.equal(g.submitted.length,0);
-  });
-  await fixture(async g=>{
-    const normal=g.route;g.route=async req=>{
-      const response=await normal(req);
-      if(req.path.endsWith("/handoff")){
-        const key=`commerce-order-payment-v1:${context}:${orderID}`;
-        g.data.set(key,JSON.stringify({...JSON.parse(g.data.get(key)),key:id(98)}));
-      }
-      return response;
-    };
-    await assert.rejects(g.pay(),{code:"uncertain"});
-    assert.equal(posts(g,"handoff").length,1);assert.equal(g.submitted.length,0);
-  });
-});
-
-test("BPU01 context replacement after prepare and after Take closes destination without form",async()=>{
-  await fixture(async g=>{
+    stripeServer(g);
     const normal=g.route;g.route=async req=>{const response=await normal(req);if(req.path.endsWith("/prepare"))g.active="b".repeat(43);return response;};
-    await assert.rejects(g.pay(),{code:"context_changed"});assert.equal(posts(g,"prepare").length,1);
-    assert.equal(posts(g,"handoff").length,0);assert.equal(g.submitted.length,0);assert(g.closed>0);
+    await assert.rejects(stripePay(g),{code:"context_changed"});assert.equal(posts(g,"prepare").length,1);
+    assert.equal(posts(g,"handoff").length,0);assert.equal(g.navigated.length,0);assert(g.closed>0);
   });
   await fixture(async g=>{
+    stripeServer(g);
     const normal=g.route;g.route=async req=>{const response=await normal(req);if(req.path.endsWith("/handoff"))g.active="b".repeat(43);return response;};
-    await assert.rejects(g.pay(),{code:"context_changed"});assert.equal(posts(g,"handoff").length,1);
-    assert.equal(g.submitted.length,0);assert(g.closed>0);
+    await assert.rejects(stripePay(g),{code:"context_changed"});assert.equal(posts(g,"handoff").length,1);
+    assert.equal(g.navigated.length,0);assert(g.closed>0);
   });
 });
 
@@ -152,7 +115,7 @@ function stripeServer(g,{after=attemptView("READY"),handoff=redirect}={}){
     throw Error("unexpected request "+req.path);
   };
 }
-const stripePay=g=>g.pay({method:stripeMethod});
+const stripePay=(g,extra={})=>g.pay({method:stripeMethod,...extra});
 const gets=g=>g.calls.filter(x=>x.path===`orders/${orderID}/payment`&&x.method==="GET").length;
 
 test("SU03 fresh Stripe pay: marker before prepare, one prepare, one handoff, navigate, URL never stored",async()=>fixture(async g=>{
@@ -169,6 +132,22 @@ test("SU03 fresh Stripe pay: marker before prepare, one prepare, one handoff, na
   assert.equal(JSON.stringify([...g.data]).includes("checkout.stripe.com"),false);
   assert.equal(JSON.stringify(g.writes).includes("cs_test"),false);
   assert.equal(g.locks.filter(x=>x==="commerce-purchase-write-v1").length,2,"lock released after prepare and re-taken for the handoff POST");
+}));
+
+// Restored from base 625544483 (BPU01), re-expressed through the Stripe path.
+test("BPU01 Stripe marker has exactly the six keys and no PII/redirect URL in storage",async()=>fixture(async g=>{
+  stripeServer(g);await stripePay(g);
+  const marker=pendingOrderPayment(context,orderID);
+  assert.deepEqual(Object.keys(marker).sort(),["body","context","key","order_id","stage","v"]);
+  const stored=JSON.stringify([...g.data])+JSON.stringify(g.writes);
+  assert(!stored.includes("Synthetic Recipient"));assert(!stored.includes("+886900000001"));assert(!stored.includes("Synthetic Street"));
+}));
+
+test("BPU01 document/child loss after prepare but before handoff leaves exact replay marker",async()=>fixture(async g=>{
+  stripeServer(g);
+  const normal=g.route;g.route=async req=>{const result=await normal(req);if(req.path.endsWith("/prepare"))g.ready=false;return result;};
+  await assert.rejects(stripePay(g));assert.equal(pendingOrderPayment(context,orderID).stage,"prepare");
+  assert.equal(posts(g,"prepare").length,1);assert.equal(posts(g,"handoff").length,0);assert.equal(g.navigated.length,0);assert(g.closed>0,"the child tab is closed after prepare");
 }));
 
 test("SU03 marker replay: lost prepare response replays key/body, no uncertain on PENDING view with leftover marker",async()=>{
@@ -199,17 +178,21 @@ test("SU03 cross-device Continue needs no marker and never prepares",async()=>fi
   assert.equal(pendingOrderPayment(context,orderID),null);assert.deepEqual(g.navigated,[checkoutURL]);
 }));
 
-test("SU03 marker/view matrix: PAYUNi marker on Stripe view and Stripe marker on PAYUNi view send nothing",async()=>{
-  const key=`commerce-order-payment-v1:${context}:${orderID}`;
+test("SU03 marker/view matrix: a removed-provider marker or a Stripe marker on a view that is not ours sends nothing",async()=>{
   const marker=code=>JSON.stringify({v:1,context,order_id:orderID,key:id(77),body:{method_code:code,method_version:1,locale:"en"},stage:"prepare"});
-  for(const [markerCode,view] of [["payuni_credit",attemptView("READY")],["payuni_credit",stripeFresh],["stripe_checkout",pending],["stripe_checkout",fresh]])
+  // PAYUNi marker (formerly a mismatch with a Stripe view): now unparseable, so uncertain.
+  for(const view of [attemptView("READY"),stripeFresh])
     await fixture(async g=>{
-      stripeServer(g);g.view=view;g.data.set(key,marker(markerCode));
-      await assert.rejects(g.pay(),{code:"request_failed"});
-      assert.equal(posts(g,"prepare").length,0);assert.equal(posts(g,"handoff").length,0);assert(g.closed>0);
+      stripeServer(g);g.view=view;g.data.set(markerKey,marker("payuni_credit"));
+      await assert.rejects(g.pay(),{code:"uncertain"});nothingSent(g);assert(g.closed>0);
+    });
+  for(const [view,code] of [[pending,"request_failed"],[fresh,"invalid_response"]])
+    await fixture(async g=>{
+      stripeServer(g);g.view=view;g.data.set(markerKey,marker("stripe_checkout"));
+      await assert.rejects(g.pay(),{code});nothingSent(g);assert(g.closed>0);
     });
   await fixture(async g=>{
-    stripeServer(g);g.view=attemptView("READY");g.data.set(key,JSON.stringify({...JSON.parse(marker("stripe_checkout")),stage:"handoff_started"}));
+    stripeServer(g);g.view=attemptView("READY");g.data.set(markerKey,JSON.stringify({...JSON.parse(marker("stripe_checkout")),stage:"handoff_started"}));
     await assert.rejects(g.pay(),{code:"request_failed"});assert.equal(posts(g,"handoff").length,0);
   });
 });
@@ -263,7 +246,8 @@ test("SU03 handoff outcomes: CREATING closes child, CLOSED/UNAVAILABLE/error/mal
     ["CREATING",{order_id:orderID,disposition:"CREATING",expires_at:expiry},"creating"],
     ["CLOSED",{order_id:orderID,disposition:"CLOSED",expires_at:expiry},{code:"unavailable"}],
     ["UNAVAILABLE",{order_id:orderID,disposition:"UNAVAILABLE",expires_at:expiry},{code:"unavailable"}],
-    ["PAYUNi ISSUED on Stripe",{order_id:orderID,disposition:"ISSUED",expires_at:expiry,form},{code:"invalid_response"}],
+    ["legacy hosted-form ISSUED on Stripe",{order_id:orderID,disposition:"ISSUED",expires_at:expiry,form},{code:"invalid_response"}],
+    ["legacy ALREADY_ISSUED on Stripe",{order_id:orderID,disposition:"ALREADY_ISSUED",expires_at:expiry},{code:"invalid_response"}],
     ["evil host",{...redirect,redirect_url:"https://checkout.stripe.com.evil.example/x"},{code:"invalid_response"}],
     ["http",{...redirect,redirect_url:"http://checkout.stripe.com/x"},{code:"invalid_response"}],
     ["503",()=>Response.json({code:"unavailable"},{status:503}),{code:"unavailable"}],

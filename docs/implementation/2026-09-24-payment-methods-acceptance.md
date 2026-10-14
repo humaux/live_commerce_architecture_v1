@@ -1,3 +1,5 @@
+> Superseded: PAYUNi removed by owner decision 2026-10-14, see pay-rm2.
+
 # 支付方式配置：内部验收
 
 2026-09-24；实现 b49e6e2，完整测试基线 1b38df5。
