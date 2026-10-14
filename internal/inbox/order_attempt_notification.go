@@ -5,6 +5,7 @@
 // order-only fragment URL pinned to its observed origin/version; display copy has
 // no bearer, recipient stays HPKE sealed.
 // OA2 owns the order-attempt-notification/v1 dispatcher and public URL consumer.
+
 package inbox
 
 import (
@@ -19,12 +20,13 @@ import (
 	"time"
 
 	"livecommerce/internal/command"
+	"livecommerce/internal/integrations/meta"
 	"livecommerce/internal/msgtemplates"
 	"livecommerce/internal/platform"
 )
 
-// These private invariant failures do not authorize a business VOID. The SQL
-// helper alone can rederive a refusal; callers retain retryable error custody.
+// Format and crypto failures retain retryable custody. Recipient refusal is
+// returned only after authenticated plaintext passes the message invariants.
 var ErrOrderAttemptNotificationFormat = errors.New("inbox: order attempt notification format invariant")
 var ErrOrderAttemptNotificationRecipient = errors.New("inbox: order attempt notification recipient invariant")
 
@@ -87,60 +89,14 @@ type attemptNotificationArtifact struct {
 // IDs/job are minted by the caller in its outer transaction; this method cannot
 // create a job, obtain authority, redeem a credential or contact a provider.
 func (s *Service) PrepareOrderAttemptNotification(prepared json.RawMessage, buyerLink, operationID, outboundID string, jobID int64) (json.RawMessage, error) {
-	if s == nil || s.keys == nil || s.seal == nil {
-		return nil, ErrSendUnavailable
-	}
-	if len(prepared) == 0 || len(prepared) > 1048576 || !command.ValidID(operationID) || !command.ValidID(outboundID) || operationID == outboundID || jobID <= 0 {
+	if !command.ValidID(operationID) || !command.ValidID(outboundID) || operationID == outboundID || jobID <= 0 {
 		return nil, ErrOrderAttemptNotificationFormat
 	}
-	var p attemptNotificationPrepared
-	decoder := json.NewDecoder(bytes.NewReader(prepared))
-	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(&p); err != nil {
-		return nil, ErrOrderAttemptNotificationFormat
-	}
-	if decoder.Decode(new(any)) != io.EOF || p.State != "PREPARED" || !command.ValidID(p.TenantID) || !command.ValidID(p.StoreID) || !command.ValidID(p.OrderID) || !command.ValidID(p.ConversationID) || !command.ValidID(p.BindingID) || p.LinkVersion != 1 || p.TakeoverGeneration < 0 || p.OriginVersion <= 0 || (p.Platform != "facebook" && p.Platform != "instagram") || p.TemplateID != msgtemplates.FixedOrderPayLink || p.TemplateVersion != 1 || strings.Count(p.TemplateBody, linkPlaceholder) != 1 {
-		return nil, ErrOrderAttemptNotificationFormat
-	}
-	// The dormant order-only URL is bounded by SQL's current origin and C1 locale.
-	// Its token is never sent to a URL consumer during OA1 or stored as display text.
-	u, err := url.Parse(buyerLink)
-	origin, originErr := url.Parse(p.Origin)
-	if err != nil || originErr != nil || len(buyerLink) > 2048 || origin.Scheme != "https" || origin.Host == "" || origin.User != nil || origin.Path != "" || origin.RawQuery != "" || origin.Fragment != "" || u.Scheme != "https" || u.Host != origin.Host || u.User != nil || u.RawQuery != "" || u.RawPath != "" || u.Path != "/"+p.Locale+"/pay-entry" || (p.Locale != "en" && p.Locale != "zh-TW" && p.Locale != "zh-CN") {
-		return nil, ErrOrderAttemptNotificationFormat
-	}
-	fragment, err := url.ParseQuery(u.Fragment)
-	if err != nil || len(fragment) != 2 || len(fragment["o"]) != 1 || len(fragment["t"]) != 1 || fragment.Get("o") != p.OrderID {
-		return nil, ErrOrderAttemptNotificationFormat
-	}
-	token, err := base64.RawURLEncoding.DecodeString(fragment.Get("t"))
-	if err != nil || len(token) != 32 || base64.RawURLEncoding.EncodeToString(token) != fragment.Get("t") {
-		clear(token)
-		return nil, ErrOrderAttemptNotificationFormat
-	}
-	clear(token)
-	r := p.Thread
-	if r.TenantID != p.TenantID || r.StoreID != p.StoreID || !command.ValidID(r.EventID) || !command.ValidID(r.RouteID) || r.RouteEpoch <= 0 || r.ServerSeq <= 0 || r.Direction != "in" || r.AssetID == "" || (p.Platform == "facebook" && r.Object != "page") || (p.Platform == "instagram" && r.Object != "instagram") {
-		return nil, ErrOrderAttemptNotificationFormat
-	}
-	nonce, err := hex.DecodeString(r.Nonce)
-	if err != nil || len(nonce) != 12 {
-		return nil, ErrOrderAttemptNotificationFormat
-	}
-	ciphertext, err := hex.DecodeString(r.Ciphertext)
-	if err != nil || len(ciphertext) < 17 || len(ciphertext) > maxPayload+16 {
-		return nil, ErrOrderAttemptNotificationFormat
-	}
-	plain, err := s.keys.open(eventContext{EventID: r.EventID, AppID: r.AppID, Object: r.Object, EventKey: r.EventKey, PayloadHash: r.PayloadHash, TenantID: r.TenantID, StoreID: r.StoreID, RouteID: r.RouteID, RouteEpoch: r.RouteEpoch}, r.KeyID, nonce, ciphertext)
+	p, view, err := s.openOrderAttemptNotification(prepared, buyerLink)
 	if err != nil {
-		return nil, ErrPayload
+		return nil, err
 	}
-	defer clear(plain)
-	view, err := replayMessage(plain, r.AssetID)
-	if err != nil || view.senderID == "" {
-		return nil, ErrOrderAttemptNotificationRecipient
-	}
-	text, err := checkText(KindDM, p.Platform, strings.Replace(p.TemplateBody, linkPlaceholder, buyerLink, 1))
+	text, err := orderAttemptNotificationText(p, buyerLink)
 	if err != nil {
 		return nil, ErrOrderAttemptNotificationFormat
 	}
@@ -166,4 +122,99 @@ func (s *Service) PrepareOrderAttemptNotification(prepared json.RawMessage, buye
 		return nil, ErrPayload
 	}
 	return artifact, nil
+}
+
+// CheckOrderAttemptNotificationRecipient runs before the caller creates a River
+// operation job. It performs no writes and never returns the decrypted recipient.
+func (s *Service) CheckOrderAttemptNotificationRecipient(prepared json.RawMessage, buyerLink string) error {
+	_, _, err := s.openOrderAttemptNotification(prepared, buyerLink)
+	return err
+}
+
+func (s *Service) openOrderAttemptNotification(prepared json.RawMessage, buyerLink string) (attemptNotificationPrepared, messageView, error) {
+	var p attemptNotificationPrepared
+	var view messageView
+	if s == nil || s.keys == nil || s.seal == nil {
+		return p, view, ErrSendUnavailable
+	}
+	if len(prepared) == 0 || len(prepared) > 1048576 {
+		return p, view, ErrOrderAttemptNotificationFormat
+	}
+	decoder := json.NewDecoder(bytes.NewReader(prepared))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&p); err != nil {
+		return p, view, ErrOrderAttemptNotificationFormat
+	}
+	if decoder.Decode(new(any)) != io.EOF || p.State != "PREPARED" || !command.ValidID(p.TenantID) || !command.ValidID(p.StoreID) || !command.ValidID(p.OrderID) || !command.ValidID(p.ConversationID) || !command.ValidID(p.BindingID) || p.LinkVersion != 1 || p.TakeoverGeneration < 0 || p.OriginVersion <= 0 || (p.Platform != "facebook" && p.Platform != "instagram") || p.TemplateID != msgtemplates.FixedOrderPayLink || p.TemplateVersion != 1 || strings.Count(p.TemplateBody, linkPlaceholder) != 1 {
+		return p, view, ErrOrderAttemptNotificationFormat
+	}
+	if _, err := orderAttemptNotificationText(p, buyerLink); err != nil {
+		return p, view, ErrOrderAttemptNotificationFormat
+	}
+	r := p.Thread
+	if r.TenantID != p.TenantID || r.StoreID != p.StoreID || !command.ValidID(r.EventID) || !command.ValidID(r.RouteID) || r.RouteEpoch <= 0 || r.ServerSeq <= 0 || r.Direction != "in" || r.AssetID == "" || (p.Platform == "facebook" && r.Object != "page") || (p.Platform == "instagram" && r.Object != "instagram") {
+		return p, view, ErrOrderAttemptNotificationFormat
+	}
+	nonce, err := hex.DecodeString(r.Nonce)
+	if err != nil || len(nonce) != 12 {
+		return p, view, ErrOrderAttemptNotificationFormat
+	}
+	ciphertext, err := hex.DecodeString(r.Ciphertext)
+	if err != nil || len(ciphertext) < 17 || len(ciphertext) > maxPayload+16 {
+		return p, view, ErrOrderAttemptNotificationFormat
+	}
+	plain, err := s.keys.open(eventContext{EventID: r.EventID, AppID: r.AppID, Object: r.Object, EventKey: r.EventKey, PayloadHash: r.PayloadHash, TenantID: r.TenantID, StoreID: r.StoreID, RouteID: r.RouteID, RouteEpoch: r.RouteEpoch}, r.KeyID, nonce, ciphertext)
+	if err != nil {
+		return p, view, ErrPayload
+	}
+	defer clear(plain)
+	// Missing identities are deterministic recipient refusals only within an
+	// otherwise valid message. Malformed JSON, message IDs and echo markers do
+	// not establish a business refusal, even when sender is also missing.
+	unit, err := meta.ParseStrict(plain)
+	if err != nil {
+		return p, view, ErrOrderAttemptNotificationFormat
+	}
+	message, ok := unit["message"].(map[string]any)
+	if !ok || !messageID(stringField(message, "mid")) {
+		return p, view, ErrOrderAttemptNotificationFormat
+	}
+	if echo, present := message["is_echo"]; present && echo != false {
+		return p, view, ErrOrderAttemptNotificationFormat
+	}
+	sender, senderOK := unit["sender"].(map[string]any)
+	recipient, recipientOK := unit["recipient"].(map[string]any)
+	if !senderOK || !recipientOK || !digits(stringField(sender, "id")) || !digits(stringField(recipient, "id")) || stringField(sender, "id") == r.AssetID || stringField(recipient, "id") != r.AssetID {
+		return p, view, ErrOrderAttemptNotificationRecipient
+	}
+	view, err = replayMessage(plain, r.AssetID)
+	if err != nil {
+		return p, view, ErrOrderAttemptNotificationFormat
+	}
+	return p, view, nil
+}
+
+func orderAttemptNotificationText(p attemptNotificationPrepared, buyerLink string) (string, error) {
+	// Validate the complete URL/template before any recipient-only refusal.
+	// The dormant fragment credential is never stored in the display copy.
+	u, err := url.Parse(buyerLink)
+	origin, originErr := url.Parse(p.Origin)
+	if err != nil || originErr != nil || len(buyerLink) > 2048 || origin.Scheme != "https" || origin.Host == "" || origin.User != nil || origin.Path != "" || origin.RawQuery != "" || origin.Fragment != "" || u.Scheme != "https" || u.Host != origin.Host || u.User != nil || u.RawQuery != "" || u.RawPath != "" || u.Path != "/"+p.Locale+"/pay-entry" || (p.Locale != "en" && p.Locale != "zh-TW" && p.Locale != "zh-CN") {
+		return "", ErrOrderAttemptNotificationFormat
+	}
+	fragment, err := url.ParseQuery(u.Fragment)
+	if err != nil || len(fragment) != 2 || len(fragment["o"]) != 1 || len(fragment["t"]) != 1 || fragment.Get("o") != p.OrderID {
+		return "", ErrOrderAttemptNotificationFormat
+	}
+	token, err := base64.RawURLEncoding.DecodeString(fragment.Get("t"))
+	if err != nil || len(token) != 32 || base64.RawURLEncoding.EncodeToString(token) != fragment.Get("t") {
+		clear(token)
+		return "", ErrOrderAttemptNotificationFormat
+	}
+	clear(token)
+	text, err := checkText(KindDM, p.Platform, strings.Replace(p.TemplateBody, linkPlaceholder, buyerLink, 1))
+	if err != nil {
+		return "", ErrOrderAttemptNotificationFormat
+	}
+	return text, nil
 }

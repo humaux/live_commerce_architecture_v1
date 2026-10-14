@@ -249,10 +249,11 @@ func (e *Executor) executeFenced(ctx context.Context, tx pgx.Tx, binding PlanBin
 
 func (e *Executor) notificationArtifact(ctx context.Context, tx pgx.Tx, prepared json.RawMessage, binding PayEntryBinding, material PayEntryMaterial) (json.RawMessage, error) {
 	var disposition struct {
-		State  string `json:"state"`
-		Code   string `json:"void_code"`
-		Origin string `json:"origin"`
-		Locale string `json:"locale"`
+		State         string `json:"state"`
+		Code          string `json:"void_code"`
+		Origin        string `json:"origin"`
+		OriginVersion int64  `json:"origin_version"`
+		Locale        string `json:"locale"`
 	}
 	if json.Unmarshal(prepared, &disposition) != nil {
 		return nil, &AdmissionError{code: "order_attempt_invalid_response"}
@@ -270,6 +271,13 @@ func (e *Executor) notificationArtifact(ctx context.Context, tx pgx.Tx, prepared
 			return nil, err
 		}
 		link := disposition.Origin + "/" + disposition.Locale + "/pay-entry#o=" + binding.OrderID + "&t=" + token
+		if err := e.notifications.CheckOrderAttemptNotificationRecipient(prepared, link); err != nil {
+			if errors.Is(err, inbox.ErrOrderAttemptNotificationRecipient) {
+				return json.Marshal(map[string]any{"state": "VOID", "void_code": "recipient_invalid",
+					"origin": disposition.Origin, "origin_version": disposition.OriginVersion})
+			}
+			return nil, err
+		}
 		var operation, outbound string
 		if err = tx.QueryRow(ctx, `SELECT gen_random_uuid()::text,gen_random_uuid()::text`).Scan(&operation, &outbound); err != nil {
 			return nil, err
