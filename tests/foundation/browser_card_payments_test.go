@@ -48,24 +48,20 @@ func cpbrRequire(t *testing.T) {
 // Copies in the seeded orders alias these families; pointer deduplication also preserves cleanup safety.
 func cpbrReleaseSetupPools(t *testing.T, e *pslEnv) {
 	t.Helper()
-	seen := make(map[*pgxpool.Pool]bool)
-	closePool := func(pool *pgxpool.Pool) {
-		if !seen[pool] {
-			pool.Close() // existing t.Cleanup closes remain safe: pgxpool.Close is idempotent
-			seen[pool] = true
-		}
+	protected := []*pgxpool.Pool{
+		e.f.owner, e.f.runtime,
+		e.a.a.runtime, e.a.a.issuer, e.a.pool,
+		e.plat.p.a.runtime, e.plat.p.a.issuer, e.plat.p.pool,
+		e.hosted, e.pool, e.ingress,
 	}
+	var setupOnly []*pgxpool.Pool
 	for _, p := range []psHarness{e.a, e.b, e.c, e.plat.p, e.ox1.s.p} {
-		closePool(p.a.identity)
-		closePool(p.worker)
-		closePool(p.expiry)
+		setupOnly = append(setupOnly, p.a.identity, p.worker, p.expiry)
 	}
 	for _, p := range []psHarness{e.b, e.c, e.ox1.s.p} {
-		closePool(p.a.runtime)
-		closePool(p.a.issuer)
-		closePool(p.pool)
+		setupOnly = append(setupOnly, p.a.runtime, p.a.issuer, p.pool)
 	}
-	t.Logf("CARD_PAY_FIXTURE released_setup_pools=%d before_buyer=true", len(seen))
+	harnessReleaseSetupPools(t, protected, setupOnly)
 }
 
 // cpbrBuyerNode starts the real buyerhttp handler for the store of p and runs tests/storefront/collector-buyer.mjs against the production
@@ -196,6 +192,8 @@ func TestBrowserCardPayments(t *testing.T) {
 	cbbrShots(t, evidence, 14, "en", "zh-TW")
 	t.Logf("W4-U1 BROWSER (MOCK Stripe): admin half passed (card-payments + settlements); screenshots hashed; evidence=%s", evidence)
 	cpbrReleaseSetupPools(t, e)
+	// Observe the post-release buyer browser phase; this does not cover setup peaks.
+	harnessWatchCapacity(t, e.f.owner)
 
 	// ---- buyer half: the §5 disclosure on the real order payment page ----
 	summary := e.read(t, e.a)
