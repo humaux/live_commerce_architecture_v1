@@ -239,8 +239,17 @@ test("PR18 late claim automatically exposes keyword view and the reused BuyerPan
   const h=env.mount(()=>CommentStream({store,session:sid,locale:"en",platform:"facebook",capabilities:{}} as any));await h.settle();
   node(h,n=>n.props["data-testid"]===`comment-select-${row.ref}`).props.onClick();await h.settle();assert.equal(panelReads,0);
   completed=true;for(let n=0;n<4;n++){t.mock.timers.tick(3000);await h.settle();}
-  await lateClaim;
-  await panelRead;
+  const awaitTurns = async (p: Promise<void>, maxTurns = 2000, desc = "promise") => {
+    let resolved = false;
+    p.then(() => { resolved = true; });
+    for (let i = 0; i < maxTurns; i++) {
+      if (resolved) return;
+      await new Promise<void>(done => setImmediate(done));
+    }
+    assert.fail(`timed out waiting for ${desc} after ${maxTurns} event-loop turns`);
+  };
+  await awaitTurns(lateClaim, 2000, "late claim poll");
+  await awaitTurns(panelRead, 2000, "buyer panel fetch");
   await h.settle();
   assert.equal(panelReads,1);assert.ok(textOf(h.output).includes("SYNTHETIC_LATE_BUYER"));
   node(h,n=>n.props["data-testid"]==="comment-filter-keyword").props.onClick();await h.settle();assert.ok(textOf(h.output).includes("A1"));

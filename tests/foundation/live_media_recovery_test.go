@@ -1478,7 +1478,10 @@ func TestLiveMediaRecoveryMRR02RealNinetySecondMiss(t *testing.T) {
 		http.Error(w, "local provider fault", http.StatusServiceUnavailable)
 	}))
 
+	binary := mrBuild(t, "../../cmd/media-worker", "media-recovery-timeout")
+
 	// Background samplers: measure CPU scheduling jitter and DB latency over the 90s run.
+	// Started AFTER mrBuild so compilation CPU load does not artificially inflate jitter.
 	samplerCtx, stopSampler := context.WithCancel(context.Background())
 	defer stopSampler()
 	var maxSchedulingJitter atomic.Int64 // nanoseconds
@@ -1533,7 +1536,6 @@ func TestLiveMediaRecoveryMRR02RealNinetySecondMiss(t *testing.T) {
 		}
 	}()
 
-	binary := mrBuild(t, "../../cmd/media-worker", "media-recovery-timeout")
 	env := lmwEnvironment(h, tlsServer.Listener.Addr().String(), ca)
 	env = append(env, "COMMERCE_MEDIA_RECOVERY_SUPERVISED=1", "COMMERCE_MEDIA_RECOVERY_DATABASE_URL="+recovery.Config().ConnString())
 	launched = time.Now()
@@ -1562,26 +1564,43 @@ func TestLiveMediaRecoveryMRR02RealNinetySecondMiss(t *testing.T) {
 	t0 := launchedAt.Load().(time.Time)
 	jitter := time.Duration(maxSchedulingJitter.Load())
 	dbLat := time.Duration(maxDBLatency.Load())
+
 	// Contract MRR02 bounds the recovery decision at 90 s. A query legitimately scheduled
 	// before t0+90s (e.g. at t0+89.8s) must traverse goroutine dispatch, DB claim RPC, and loopback TLS.
-	// Tolerance is derived from measured scheduling jitter and DB latency:
-	// 2*jitter (goroutine wakeup + HTTP transit) + dbLat + 50ms baseline TLS network margin.
+	// On loaded runners, this transit requires a small physical budget. We bound this transit budget
+	// strictly at 500 ms (mrr02TransitBudget). If the measured runner scheduling jitter plus DB latency
+	// exceeds this budget, the environment is deemed too degraded to certify the 90s bound, and the run fails.
+	const mrr02TransitBudget = 500 * time.Millisecond
 	tolerance := 2*jitter + dbLat + 50*time.Millisecond
+	if tolerance > mrr02TransitBudget {
+		t.Fatalf("runner scheduling jitter (%s) and DB latency (%s) derived tolerance %s exceeds %s transit budget; environment too degraded", jitter, dbLat, tolerance, mrr02TransitBudget)
+	}
 	deadline := 90*time.Second + tolerance
-	t.Logf("MRR02 jitter=%s dbLat=%s derived_tolerance=%s deadline=%s", jitter, dbLat, tolerance, deadline)
+	t.Logf("MRR02 jitter=%s dbLat=%s derived_tolerance=%s (capped at %s) deadline=%s", jitter, dbLat, tolerance, mrr02TransitBudget, deadline)
 
-	var lateCalls int
+	// Negative control: verify that any arrival exceeding 90s + mrr02TransitBudget is strictly flagged.
+	syntheticLate := []time.Duration{90*time.Second + mrr02TransitBudget + 1*time.Millisecond}
+	var syntheticViolations []time.Duration
+	for _, arr := range syntheticLate {
+		if arr > 90*time.Second+tolerance {
+			syntheticViolations = append(syntheticViolations, arr)
+		}
+	}
+	if len(syntheticViolations) != 1 {
+		t.Fatal("negative control failed: synthetic arrival past transit budget was not flagged")
+	}
+
+	var lateArrivals []time.Duration
 	arrivalsMu.Lock()
 	for _, arr := range queryArrivals {
 		if elapsed := arr.Sub(t0); elapsed > deadline {
-			lateCalls++
-			t.Errorf("query arrived at t0+%s (exceeds 90s + %s tolerance)", elapsed, tolerance)
+			lateArrivals = append(lateArrivals, elapsed)
 		}
 	}
 	arrivalsMu.Unlock()
 
-	if queryCount.Load() == 0 || lateCalls != 0 {
-		t.Fatalf("provider fault not exercised or I/O scheduled after t0+90s: calls=%d late=%d", queryCount.Load(), lateCalls)
+	if queryCount.Load() == 0 || len(lateArrivals) != 0 {
+		t.Fatalf("provider fault not exercised or I/O scheduled after t0+90s: calls=%d late=%d arrivals=%v", queryCount.Load(), len(lateArrivals), lateArrivals)
 	}
 	log, err := os.ReadFile(parent.logPath)
 	if err != nil {
