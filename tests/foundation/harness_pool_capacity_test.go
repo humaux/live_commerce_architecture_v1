@@ -110,24 +110,12 @@ func harnessWatchCapacity(t *testing.T, owner *pgxpool.Pool) {
 		closeObserver()
 		t.Fatal(state.err)
 	}
-	watch, stop := context.WithCancel(context.Background())
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		ticker := time.NewTicker(50 * time.Millisecond)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-watch.Done():
-				return
-			case <-ticker.C:
-				sample(watch)
-			}
-		}
-	}()
+	ticker := time.NewTicker(50 * time.Millisecond)
+	stop, done := harnessStartCapacitySampler(ticker.C, sample)
 	t.Cleanup(func() {
 		stop()
 		<-done
+		ticker.Stop()
 		sample(context.Background())
 		closeObserver()
 		t.Logf("HARNESS_PG_CAPACITY sampled_peak=%d samples=%d limit=%d max=%d reserved=%d super=%d margin=%d",
@@ -137,6 +125,24 @@ func harnessWatchCapacity(t *testing.T, owner *pgxpool.Pool) {
 			t.Error(state.err)
 		}
 	})
+}
+
+// harnessStartCapacitySampler shares the guard loop with controlled-tick tests.
+func harnessStartCapacitySampler(ticks <-chan time.Time, sample func(context.Context)) (requestStop func(), done <-chan struct{}) {
+	watch, stop := context.WithCancel(context.Background())
+	joined := make(chan struct{})
+	go func() {
+		defer close(joined)
+		for {
+			select {
+			case <-watch.Done():
+				return
+			case <-ticks:
+				sample(watch)
+			}
+		}
+	}()
+	return stop, joined
 }
 
 func TestHarnessPoolCapacityBoundary(t *testing.T) {
@@ -152,6 +158,58 @@ func TestHarnessPoolCapacityBoundary(t *testing.T) {
 }
 
 func TestHarnessPoolCapacityObservationFailureIsSticky(t *testing.T) {
+	t.Run("stop_mid_query_final_sample", func(t *testing.T) {
+		// MODEL_ONLY: cancellation closes this fake observer, modeling native
+		// pgconn cancellation fallout without claiming a real PostgreSQL run.
+		ticks := make(chan time.Time, 1)
+		entered := make(chan struct{})
+		release := make(chan struct{})
+		var state harnessCapacityState
+		var closed, queryCanceled bool
+		first := true
+		read := func(ctx context.Context) (harnessCapacitySample, error) {
+			if first {
+				first = false
+				close(entered)
+				<-release
+				queryCanceled = ctx.Err() != nil
+				if queryCanceled {
+					closed = true
+					return harnessCapacitySample{}, ctx.Err()
+				}
+			}
+			if closed {
+				return harnessCapacitySample{}, errors.New("fake observer closed after canceled query")
+			}
+			return harnessCapacitySample{ClientBackends: 2, MaxConnections: 60, SuperuserReservedConnections: 3}, nil
+		}
+		sample := func(parent context.Context) {
+			// The barrier owns query completion; no wall-clock deadline can
+			// create the cancellation this regression is testing.
+			ctx, cancel := context.WithCancel(parent)
+			defer cancel()
+			v, err := read(ctx)
+			if parent.Err() == nil {
+				state.observe(v, err)
+			}
+		}
+		requestStop, done := harnessStartCapacitySampler(ticks, sample)
+		ticks <- time.Time{}
+		<-entered
+		requestStop() // synchronous stop while the query is gated
+		close(release)
+		<-done
+		if queryCanceled {
+			t.Error("stopping sampler canceled the in-flight query context")
+		}
+		if state.samples != 1 || state.peak != 2 || state.err != nil {
+			t.Errorf("in-flight observation was not retained: samples=%d peak=%d err=%v", state.samples, state.peak, state.err)
+		}
+		sample(context.Background()) // final sample must reuse the same observer
+		if state.samples != 2 || state.err != nil || closed {
+			t.Errorf("final sample failed after sampler stop: samples=%d closed=%t err=%v", state.samples, closed, state.err)
+		}
+	})
 	for _, first := range []struct {
 		name string
 		v    harnessCapacitySample
