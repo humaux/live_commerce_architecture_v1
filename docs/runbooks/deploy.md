@@ -426,9 +426,12 @@ API、claims-worker 或它们的容器。它不持有计划密钥。
    `ALTER ROLE lc_order_attempt_key_admin NOLOGIN PASSWORD NULL`，清除临时口令。
    凭据只存在于本次管理操作，禁止留下常驻环境或服务挂载。
 
-永久丢钥是另一条路径：执行器和 Sweep 保持可启动，在 attempt fence 内完成
-`ABORTED(PLAN_UNAVAILABLE)` 及占用释放，不等待退役标记或管理员；引用清空后
-才可再次请求退役。验收见 `TestOrderAttemptKeyRetirement*`、精确权限测试及
+本进程缺少某个版本不能证明永久丢钥；C2 保持可重试 PENDING，不释放占用。
+`PLAN_UNAVAILABLE` 保留但不启用。原始 `execute_by = admitted_at + 15 分钟`
+不随重试延长，到期由 Sweep 在 attempt fence 内结算 `ABORTED(EXPIRED)` 并
+释放占用，不需要缺失密钥、退役标记或管理员；引用清空后才可再次请求退役。
+验收见 `TestOrderAttemptLocalKeyMissingExpiresAtRealDeadline`、
+`TestOrderAttemptKeyRetirement*`、精确权限测试及
 A2-M1（移除 C1 退役检查必须红），均由 GitHub CI 执行。
 
 ## 8. 证书与域名

@@ -322,7 +322,8 @@ while this unit currently adds 0170–0191 and post-River0023–0025 (upgrade115
 Owner approved DB-enforced plan-key retirement on 2026-10-14. Contract amendment
 A2 is `71907ac74`: dedicated admin login/role with one EXECUTE entry, permanent
 version marker, C1 key-row-before-attempt locking, pending-reference refusal,
-and independent unmarked PLAN_UNAVAILABLE cleanup. Its implementation and
+and key-independent bounded expiry cleanup (the earlier PLAN_UNAVAILABLE
+settlement design is superseded by the owner ruling below). Its implementation and
 A2-M1 mutation require independent review with this PR. Provisional slots 0192
 (erasure prefix), 0193 (native cancellation), 0194 (A2) are separate child-owned
 changes; final numbering is checked against trunk before the PR.
@@ -385,8 +386,9 @@ A2 is integrated in `54c1d8d2c` (0194), with the exact upgrade pin at 118 in
 `d806d7745`. Fresh C1 supplies and locks its chosen key version before the
 subject/scope/attempt prefix; its finish cannot substitute another version.
 Retirement uses the same row lock and global pending-reference check, through
-the isolated admin login's sole definer. Exact terminal replay and unmarked
-PLAN_UNAVAILABLE settlement retain their independent paths. The admin credential
+the isolated admin login's sole definer. Exact terminal replay and key-independent
+EXPIRED settlement retain their independent paths under the latest owner ruling.
+PLAN_UNAVAILABLE is reserved/unused. The admin credential
 is an external operator credential, never a core deployment/worker secret.
 The runbook and an injected-custody regression are in `a75a15f78`.
 
@@ -1108,9 +1110,9 @@ CI129 `38499182388` is separately registered on the same exact c957 source for
 the correctly named native PT-disposition tests plus isolated sweep/crash/resume
 coverage. It is not a green receipt and is not replaced by a subset. No local
 test, build, formatter, dev server or PG was run. These regression fixes await
-fresh CI; the complete unit is **NOT_READY**. Permanent plan-key-loss authority
-still awaits the owner's requested contract clarification; local ring absence
-remains retryable PENDING and cannot justify PLAN_UNAVAILABLE.
+fresh CI; the complete unit is **NOT_READY**. The later owner option-2 ruling
+closes the plan-key-loss design question: local ring absence stays retryable
+PENDING and cannot justify PLAN_UNAVAILABLE; immutable deadline Sweep uses EXPIRED.
 
 # Round-1 continuation: CI130 receipts and independent oracle strengthening
 
@@ -1155,6 +1157,91 @@ and restored GREEN receipts remain pending. Original 0194 and granular mutants
 will run against this batch's exact source, with path/hash echoes in each log.
 
 Whole unit remains NOT_READY: current PR-required/complete native gates and
-independent delta review are pending, as is the owner decision for a durable
-permanent plan-key-loss witness (4265883878). A local ring miss stays PENDING;
-it is not proof of permanent loss. All local runtime/build/formatter/PG NOT_RUN.
+independent delta review are pending. The later owner option-2 ruling for
+4265883878 rejects a new loss registry/amendment; PLAN_UNAVAILABLE stays
+reserved/unused. A local ring miss stays PENDING until fenced deadline expiry.
+All local runtime/build/formatter/PG NOT_RUN.
+
+## Current SHA 8947a775c: CI registration and Foundation closure
+
+PR Foundation `38501799644` / job `115650236970` is GREEN at exact
+`8947a775c7494d2aca0e58acdbf3274a1aab4255` (E3 for this check).
+Raw `foundation-green-8947a775c.log`: dependency map up-to-date at 557,
+contract drift errors=0 at 1086, check-gates success at 1138; the complete
+Foundation job also runs the frozen Node and typecheck checks. Reply
+`4266218228` addresses 4266038988; the thread was not resolved by the implementer.
+
+Normal CI131 `38501852047` did not run tests: its plan `115650410669` succeeds
+and reports four modes, but the actual run contains zero gate jobs. Required
+`115650894101` therefore fails with gate=failure. Exact cause of the job-creation
+failure is NOT_PROVEN; receipts are `ci131-plan.log` and `ci131-required-red.log`.
+This is NOT_RUN(matrix-planning), not a native/model test RED. Normal CI132
+`38502551113` is registered on the same SHA with shorter regexes covering a
+superset of the original cases and the correctly named cross-tenant C1 case.
+Workflow, assertions and every runtime budget are unchanged. PR Gates
+`38501799851` remains the required acceptance run; supplemental dispatch is
+never its replacement.
+
+Current-SHA independent mutation runs (pending, no causal result claimed):
+
+| Mutation | CI run |
+| --- | --- |
+| m5-disclose-principal (0194) | 38501855315 |
+| pending-only-replay (0194) | 38501855296 |
+| omit-generation-cas (0194) | 38501855217 |
+| custody-rehash-canonical | 38501855435 |
+| custody-constant | 38501855586 |
+| kept-pools-reopen-config | 38501855281 |
+| kept-pools-ignore-main | 38501855069 |
+| m6-skip-generation-recheck | 38502028107 |
+| expose-privacy-fence | 38502028358 |
+| expose-privacy-attempt-dml | 38502028182 |
+| independent-outbox-commit | 38502028126 |
+| api-all-preflight-bypass | 38502028180 |
+| sealed-origin-echo-lie | 38502028118 |
+| production-enable-api | 38502028560 |
+| production-enable-worker | 38502028413 |
+
+## Owner option 2: bounded missing-key liveness (2026-10-14)
+
+No new amendment or loss registry. A process-local missing key is retryable
+PENDING; `PLAN_UNAVAILABLE` remains reserved/unused. The original database
+`execute_by = admitted_at + 15 minutes` is never extended, and fenced Sweep
+settles EXPIRED without needing the plan key. Contract/runbook references are
+clarified by this explicit owner ruling, not an invented loss-proof authority.
+
+Tests FIRST `45456d08eb554fe3505e20d24bd160ed142bc95b` is on the owned temporary
+RED ref `unit/oa-1-plan-key-deadline-red`. CI133 `38503715894`, no calibration env,
+runs `TestOrderAttemptReservedPlanUnavailableCannotAbortPending` (runtime and
+actual claims-worker reject the unused reason with zero effects) and
+`TestOrderAttemptLocalKeyMissingExpiresAtRealDeadline` (real C1 claim, missing
+ring twice, unchanged real 15-minute deadline, no early release, exact Sweep
+EXPIRED, release proof, key-free replay and next-generation CAS). These are
+pending; the unused classifier/SQL entry is not yet changed before causal RED.
+The existing key-rotation and retirement cases now retain PENDING on local skew
+and prove another process holding the original key can commit, with exact
+terminal replay. Receipt/atomicity-only fixtures use explicit trusted
+PLAN_INVALID classifications or native inactive-owner ERASED proof; they do not
+claim permanent-key-loss evidence. Worker stale-generation setup completes a
+real C2, and the existing actual-deadline test now completes its successor C2.
+Tests-only follow-up commits: `c26bcb628`, `b4cb44243`.
+
+Current 8947 mutation causal receipts collected: m5 `38501855315`/
+`115650979315` and pending-only `38501855296`/`115650993901` each FAIL=1 exit=1
+at their original isolation/terminal-replay assertion, with patched 0194
+path/hash echoes. Kept-pool reopen `38501855281`/`115651107068` fails the
+actual-primary/config-split case and all actual-split/config-primary cases;
+ignore-main `38501855069`/`115650906867` fails all-clone/config-primary.
+Raw receipts are `m5-red-8947a775c.log`, `pending-only-red-8947a775c.log`,
+`kept-reopen-config-red-8947a775c.log`, `kept-ignore-main-red-8947a775c.log`.
+Their restored GREEN and remaining mutations are pending; no setup/compile
+failure is counted as causal RED. PR Gates `38501799851` is still in progress;
+the prior 8947 Foundation GREEN does not validate these newer test sources.
+All local runtime/build/formatter/PG remain NOT_RUN. Whole unit NOT_READY.
+
+Each disposable CI mutation prints its patched source paths and before/after
+hashes. A setup/compile failure cannot count as a causal RED. After these
+receipts, run the restored cases chronologically on the exact source for GREEN.
+The same-thread 15-minute heartbeat is registered to collect and reconcile every
+run, update this delivery and Humaux, and notify only substantive failure or
+completion. All local runtime remains NOT_RUN(owner CI-only); whole NOT_READY.

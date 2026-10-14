@@ -1,0 +1,194 @@
+﻿2026-10-14T02:37:13.1914188Z Current runner version: '2.337.0'
+2026-10-14T02:37:13.1938225Z ##[group]Runner Image Provisioner
+2026-10-14T02:37:13.1939211Z Hosted Compute Agent
+2026-10-14T02:37:13.1939925Z Version: 20261002.596
+2026-10-14T02:37:13.1940547Z Commit: c3d12f3313a95f25162a1503be624f3b0617f8c0
+2026-10-14T02:37:13.1941310Z Build Date: 2026-10-02T22:28:27Z
+2026-10-14T02:37:13.1942069Z Worker ID: {cf410375-debe-4e60-a4cd-f55bfa7dae04}
+2026-10-14T02:37:13.1942779Z Region: westus2
+2026-10-14T02:37:13.1943373Z Cloud: Azure
+2026-10-14T02:37:13.1943902Z ##[endgroup]
+2026-10-14T02:37:13.1945651Z ##[group]Operating System
+2026-10-14T02:37:13.1946687Z Ubuntu
+2026-10-14T02:37:13.1947240Z 24.04.5
+2026-10-14T02:37:13.1947787Z LTS
+2026-10-14T02:37:13.1948349Z ##[endgroup]
+2026-10-14T02:37:13.1948885Z ##[group]Runner Image
+2026-10-14T02:37:13.1949578Z Image: ubuntu-24.04
+2026-10-14T02:37:13.1950145Z Version: 20261004.327.1
+2026-10-14T02:37:13.1951440Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/Ubuntu2404-Readme.md
+2026-10-14T02:37:13.1952972Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261004.327
+2026-10-14T02:37:13.1954046Z ##[endgroup]
+2026-10-14T02:37:13.1955150Z ##[group]GITHUB_TOKEN Permissions
+2026-10-14T02:37:13.1957745Z Contents: read
+2026-10-14T02:37:13.1958336Z Metadata: read
+2026-10-14T02:37:13.1958982Z ##[endgroup]
+2026-10-14T02:37:13.1960996Z Secret source: Actions
+2026-10-14T02:37:13.1962007Z Cache mode: write
+2026-10-14T02:37:13.1962740Z Prepare workflow directory
+2026-10-14T02:37:13.2293146Z Prepare all required actions
+2026-10-14T02:37:13.2343201Z Getting action download info
+2026-10-14T02:37:13.5782843Z Download action repository 'actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09' (SHA:fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09)
+2026-10-14T02:37:13.6801759Z Download action repository 'actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16' (SHA:924ae3a1cded613372ab5595356fb5720e22ba16)
+2026-10-14T02:37:14.0128959Z Complete job name: plan
+2026-10-14T02:37:14.0920626Z ##[group]Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+2026-10-14T02:37:14.0921682Z with:
+2026-10-14T02:37:14.0922122Z   persist-credentials: false
+2026-10-14T02:37:14.0922627Z   fetch-depth: 1
+2026-10-14T02:37:14.0923145Z   repository: humaux/live_commerce_architecture_v1
+2026-10-14T02:37:14.0927728Z   token: ***
+2026-10-14T02:37:14.0928174Z   ssh-strict: true
+2026-10-14T02:37:14.0928602Z   ssh-user: git
+2026-10-14T02:37:14.0929010Z   clean: true
+2026-10-14T02:37:14.0929446Z   sparse-checkout-cone-mode: true
+2026-10-14T02:37:14.0929965Z   fetch-tags: false
+2026-10-14T02:37:14.0930407Z   show-progress: true
+2026-10-14T02:37:14.0930834Z   lfs: false
+2026-10-14T02:37:14.0931233Z   submodules: false
+2026-10-14T02:37:14.0931667Z   set-safe-directory: true
+2026-10-14T02:37:14.0932170Z   allow-unsafe-pr-checkout: false
+2026-10-14T02:37:14.0933124Z ##[endgroup]
+2026-10-14T02:37:14.1964140Z Syncing repository: humaux/live_commerce_architecture_v1
+2026-10-14T02:37:14.1967557Z ##[group]Getting Git version info
+2026-10-14T02:37:14.1969132Z Working directory is '/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1'
+2026-10-14T02:37:14.1971220Z [command]/usr/bin/git version
+2026-10-14T02:37:14.2050734Z git version 2.55.0
+2026-10-14T02:37:14.2072245Z ##[endgroup]
+2026-10-14T02:37:14.2101945Z Temporarily overriding HOME='/home/runner/work/_temp/06b31180-6185-4dbd-95c5-d0afc0200b45' before making global git config changes
+2026-10-14T02:37:14.2103335Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-14T02:37:14.2105319Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+2026-10-14T02:37:14.2151227Z Deleting the contents of '/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1'
+2026-10-14T02:37:14.2155390Z ##[group]Initializing the repository
+2026-10-14T02:37:14.2160186Z [command]/usr/bin/git init /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+2026-10-14T02:37:14.2281920Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-10-14T02:37:14.2283776Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-10-14T02:37:14.2285616Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-10-14T02:37:14.2287301Z hint: call:
+2026-10-14T02:37:14.2288448Z hint:
+2026-10-14T02:37:14.2289514Z hint: 	git config --global init.defaultBranch <name>
+2026-10-14T02:37:14.2290756Z hint:
+2026-10-14T02:37:14.2291964Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-10-14T02:37:14.2293756Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-10-14T02:37:14.2295163Z hint:
+2026-10-14T02:37:14.2296322Z hint: 	git branch -m <name>
+2026-10-14T02:37:14.2298186Z hint:
+2026-10-14T02:37:14.2299442Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-10-14T02:37:14.2301701Z Initialized empty Git repository in /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/.git/
+2026-10-14T02:37:14.2305738Z [command]/usr/bin/git remote add origin https://github.com/humaux/live_commerce_architecture_v1
+2026-10-14T02:37:14.2349933Z ##[endgroup]
+2026-10-14T02:37:14.2351397Z ##[group]Disabling automatic garbage collection
+2026-10-14T02:37:14.2354562Z [command]/usr/bin/git config --local gc.auto 0
+2026-10-14T02:37:14.2388255Z ##[endgroup]
+2026-10-14T02:37:14.2389542Z ##[group]Setting up auth
+2026-10-14T02:37:14.2399183Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-14T02:37:14.2454930Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-14T02:37:14.2934140Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-14T02:37:14.2986749Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-14T02:37:14.3242736Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-14T02:37:14.3281230Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-14T02:37:14.3507472Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-10-14T02:37:14.3548667Z ##[endgroup]
+2026-10-14T02:37:14.3549540Z ##[group]Fetching the repository
+2026-10-14T02:37:14.3558696Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +8947a775c7494d2aca0e58acdbf3274a1aab4255:refs/remotes/origin/unit/oa-1-order-attempt-core
+2026-10-14T02:37:22.2969284Z From https://github.com/humaux/live_commerce_architecture_v1
+2026-10-14T02:37:22.2971132Z  * [new ref]         8947a775c7494d2aca0e58acdbf3274a1aab4255 -> origin/unit/oa-1-order-attempt-core
+2026-10-14T02:37:22.2987214Z ##[endgroup]
+2026-10-14T02:37:22.2988128Z ##[group]Determining the checkout info
+2026-10-14T02:37:22.2989019Z ##[endgroup]
+2026-10-14T02:37:22.2989573Z [command]/usr/bin/git sparse-checkout disable
+2026-10-14T02:37:22.3047640Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-10-14T02:37:22.3085016Z ##[group]Checking out the ref
+2026-10-14T02:37:22.3090665Z [command]/usr/bin/git checkout --progress --force -B unit/oa-1-order-attempt-core refs/remotes/origin/unit/oa-1-order-attempt-core
+2026-10-14T02:37:23.3280749Z Updating files:  53% (6514/12083)
+2026-10-14T02:37:23.3642133Z Updating files:  54% (6525/12083)
+2026-10-14T02:37:23.4096266Z Updating files:  55% (6646/12083)
+2026-10-14T02:37:23.4206390Z Updating files:  56% (6767/12083)
+2026-10-14T02:37:23.4361071Z Updating files:  57% (6888/12083)
+2026-10-14T02:37:23.4781607Z Updating files:  58% (7009/12083)
+2026-10-14T02:37:23.5167546Z Updating files:  59% (7129/12083)
+2026-10-14T02:37:23.5398866Z Updating files:  60% (7250/12083)
+2026-10-14T02:37:23.5504699Z Updating files:  61% (7371/12083)
+2026-10-14T02:37:23.5564153Z Updating files:  62% (7492/12083)
+2026-10-14T02:37:23.5742218Z Updating files:  63% (7613/12083)
+2026-10-14T02:37:23.5977240Z Updating files:  64% (7734/12083)
+2026-10-14T02:37:23.6186274Z Updating files:  65% (7854/12083)
+2026-10-14T02:37:23.6366417Z Updating files:  66% (7975/12083)
+2026-10-14T02:37:23.6544735Z Updating files:  67% (8096/12083)
+2026-10-14T02:37:23.6685772Z Updating files:  68% (8217/12083)
+2026-10-14T02:37:23.6768428Z Updating files:  69% (8338/12083)
+2026-10-14T02:37:23.7022244Z Updating files:  70% (8459/12083)
+2026-10-14T02:37:23.7288185Z Updating files:  71% (8579/12083)
+2026-10-14T02:37:23.7389196Z Updating files:  72% (8700/12083)
+2026-10-14T02:37:23.7551306Z Updating files:  73% (8821/12083)
+2026-10-14T02:37:23.7905427Z Updating files:  74% (8942/12083)
+2026-10-14T02:37:23.8141884Z Updating files:  75% (9063/12083)
+2026-10-14T02:37:23.8237065Z Updating files:  76% (9184/12083)
+2026-10-14T02:37:23.8403768Z Updating files:  77% (9304/12083)
+2026-10-14T02:37:23.8506959Z Updating files:  78% (9425/12083)
+2026-10-14T02:37:23.8629750Z Updating files:  79% (9546/12083)
+2026-10-14T02:37:23.8687627Z Updating files:  80% (9667/12083)
+2026-10-14T02:37:23.8806390Z Updating files:  81% (9788/12083)
+2026-10-14T02:37:23.8883410Z Updating files:  82% (9909/12083)
+2026-10-14T02:37:23.9023497Z Updating files:  83% (10029/12083)
+2026-10-14T02:37:23.9183060Z Updating files:  84% (10150/12083)
+2026-10-14T02:37:23.9284665Z Updating files:  85% (10271/12083)
+2026-10-14T02:37:23.9435581Z Updating files:  86% (10392/12083)
+2026-10-14T02:37:23.9500988Z Updating files:  87% (10513/12083)
+2026-10-14T02:37:23.9559015Z Updating files:  88% (10634/12083)
+2026-10-14T02:37:23.9632147Z Updating files:  89% (10754/12083)
+2026-10-14T02:37:23.9697917Z Updating files:  90% (10875/12083)
+2026-10-14T02:37:23.9825668Z Updating files:  91% (10996/12083)
+2026-10-14T02:37:23.9965768Z Updating files:  92% (11117/12083)
+2026-10-14T02:37:24.0151065Z Updating files:  93% (11238/12083)
+2026-10-14T02:37:24.0252194Z Updating files:  94% (11359/12083)
+2026-10-14T02:37:24.0362005Z Updating files:  95% (11479/12083)
+2026-10-14T02:37:24.0509602Z Updating files:  96% (11600/12083)
+2026-10-14T02:37:24.0649837Z Updating files:  97% (11721/12083)
+2026-10-14T02:37:24.0786097Z Updating files:  98% (11842/12083)
+2026-10-14T02:37:24.0915026Z Updating files:  99% (11963/12083)
+2026-10-14T02:37:24.0915811Z Updating files: 100% (12083/12083)
+2026-10-14T02:37:24.0916723Z Updating files: 100% (12083/12083), done.
+2026-10-14T02:37:24.1040595Z Switched to a new branch 'unit/oa-1-order-attempt-core'
+2026-10-14T02:37:24.1047811Z branch 'unit/oa-1-order-attempt-core' set up to track 'origin/unit/oa-1-order-attempt-core'.
+2026-10-14T02:37:24.1111842Z ##[endgroup]
+2026-10-14T02:37:24.1160896Z [command]/usr/bin/git log -1 --format=%H
+2026-10-14T02:37:24.1189175Z 8947a775c7494d2aca0e58acdbf3274a1aab4255
+2026-10-14T02:37:24.1199443Z ##[group]Removing auth
+2026-10-14T02:37:24.1203519Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-14T02:37:24.1237694Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-14T02:37:24.1476760Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-14T02:37:24.1508557Z http.https://github.com/.extraheader
+2026-10-14T02:37:24.1516135Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-10-14T02:37:24.1551798Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-14T02:37:24.1785003Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-14T02:37:24.1816848Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-14T02:37:24.2047537Z ##[endgroup]
+2026-10-14T02:37:24.2366502Z ##[group]Run node scripts/dev/ci-plan.mjs
+2026-10-14T02:37:24.2366954Z [36;1mnode scripts/dev/ci-plan.mjs[0m
+2026-10-14T02:37:24.2650064Z shell: /usr/bin/bash -e {0}
+2026-10-14T02:37:24.2650412Z env:
+2026-10-14T02:37:24.2655108Z   MODES: ["focused:^TestOrderAttempt(Admission(RequiresExactCASAndPlacementGrant|ReplayPendingAndRetiredTerminal|ReplayKeyOwnershipAndOriginalCAS)|ExecutionFence(ActualLoginsAndNoDisclosure|ExactACL)|WorkerFirstFenceAndStaleGeneration|SchemaTableAuthority|SQLNoRetainedSelectionDigest|NotificationOriginPin|OutboxOnlyCommitRejectsSplitNativeReadyPair|ProductionActivationRemainsDisabled)$|^TestBuyerKeptPoolPreflightActualFactory$","focused:^TestOrderAttempt(Native(BankDisableAndPriceVersionHonorFrozenFacts|MaxPerOrderRevocationSealsLimitExceeded|OfflineCapacitySealsLimitExceeded)|Sweep|DeadlineRealClaimPeriodicLiveness|Crash|Notification(Executor|Resume)|ServiceSealFailure|C1Crash)","focused:^TestOrderAttempt(C2FenceBeforeErasure|ErasureBeforeC2Fence|PlanKeyShared)|^TestProcessAPIRejectsSplitBuyerPools","focused:^TestOrderAttemptModel"]
+2026-10-14T02:37:24.2660091Z ##[endgroup]
+2026-10-14T02:37:24.4722837Z ci-plan: 4 job(s)
+2026-10-14T02:37:24.4731921Z   focused:^TestOrderAttempt(Admission(RequiresExactCASAndPlacementGrant|ReplayPendingAndRetiredTerminal|ReplayKeyOwnershipAndOriginalCAS)|ExecutionFence(ActualLoginsAndNoDisclosure|ExactACL)|WorkerFirstFenceAndStaleGeneration|SchemaTableAuthority|SQLNoRetainedSelectionDigest|NotificationOriginPin|OutboxOnlyCommitRejectsSplitNativeReadyPair|ProductionActivationRemainsDisabled)$|^TestBuyerKeptPoolPreflightActualFactory$  -> artifact gate-focused_TestOrderAttempt_Admission_RequiresExactCASAndPlacementGrant_ReplayPendingAndRetiredTerminal_ReplayKeyOwnershipAndOriginalCAS_ExecutionFence_ActualLoginsAndNoDisclosure_ExactACL_WorkerFirstFenceAndStaleGeneration_SchemaTableAuthority_SQLNoRetainedSelectionDigest_NotificationOriginPin_OutboxOnlyCommitRejectsSplitNativeReadyPair_ProductionActivationRemainsDisabled_TestBuyerKeptPoolPreflightActualFactory
+2026-10-14T02:37:24.4743056Z   focused:^TestOrderAttempt(Native(BankDisableAndPriceVersionHonorFrozenFacts|MaxPerOrderRevocationSealsLimitExceeded|OfflineCapacitySealsLimitExceeded)|Sweep|DeadlineRealClaimPeriodicLiveness|Crash|Notification(Executor|Resume)|ServiceSealFailure|C1Crash)  -> artifact gate-focused_TestOrderAttempt_Native_BankDisableAndPriceVersionHonorFrozenFacts_MaxPerOrderRevocationSealsLimitExceeded_OfflineCapacitySealsLimitExceeded_Sweep_DeadlineRealClaimPeriodicLiveness_Crash_Notification_Executor_Resume_ServiceSealFailure_C1Crash
+2026-10-14T02:37:24.4748891Z   focused:^TestOrderAttempt(C2FenceBeforeErasure|ErasureBeforeC2Fence|PlanKeyShared)|^TestProcessAPIRejectsSplitBuyerPools  -> artifact gate-focused_TestOrderAttempt_C2FenceBeforeErasure_ErasureBeforeC2Fence_PlanKeyShared_TestProcessAPIRejectsSplitBuyerPools
+2026-10-14T02:37:24.4751267Z   focused:^TestOrderAttemptModel  -> artifact gate-focused_TestOrderAttemptModel
+2026-10-14T02:37:24.4914229Z Post job cleanup.
+2026-10-14T02:37:24.5780882Z [command]/usr/bin/git version
+2026-10-14T02:37:24.5823346Z git version 2.55.0
+2026-10-14T02:37:24.5862769Z Temporarily overriding HOME='/home/runner/work/_temp/acba1ece-832a-43a5-b5a8-a28e74e90220' before making global git config changes
+2026-10-14T02:37:24.5864178Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-14T02:37:24.5869745Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+2026-10-14T02:37:24.5912564Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-14T02:37:24.5947863Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-14T02:37:24.6206884Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-14T02:37:24.6251753Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-14T02:37:24.6519339Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-14T02:37:24.6556481Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-14T02:37:24.6956490Z Evaluate and set job outputs
+2026-10-14T02:37:24.6969940Z Set output 'matrix'
+2026-10-14T02:37:24.6971514Z Set output 'sweep_n'
+2026-10-14T02:37:24.6972154Z Set output 'visual_n'
+2026-10-14T02:37:24.6972456Z Set output 'deploy'
+2026-10-14T02:37:24.6973106Z Cleaning up orphan processes
