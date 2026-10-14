@@ -1,5 +1,5 @@
 // Purpose: REAL_PG tests-first crash acceptance at every native C2 write boundary.
-// Depends on: real signed ingress, C1 claim custody, concrete Executor and native writers.
+// Depends on: real signed ingress, merchant payment settings, C1 claim custody, concrete Executor and native writers.
 // Used by: parent-owned OA1 CI; isolated fixture triggers never become product hooks.
 // Invariants: a positively witnessed precommit connection kill preserves PENDING and
 // zero C2 effects; one explicit retry commits the complete set and replay is immutable.
@@ -45,6 +45,20 @@ func oaCrashNativeDeliveryScenario(t *testing.T, cvs bool) oaCrashScenario {
 	if cvs {
 		pickup := oaMaterialCVS(t, e, "cvs_711", "001234", "bank_transfer")
 		selection["delivery"], selection["customer"] = pickup["delivery"], pickup["customer"]
+		// The isolated expiry seed forbids CVS bank transfers. Enable this
+		// scenario through the merchant route before asserting native C1/C2.
+		status, _, _ := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/bank-transfer-settings", t04Key("oa-crash-cvs"),
+			`{"expected_version":1,"enabled":true,"allow_cvs":true,"bank_name":"Synthetic bank","branch":"","account_name":"Synthetic merchant","account_number":"12345678","window_hours":6}`)
+		if status != 200 {
+			t.Fatalf("native CVS transfer settings prerequisite: status=%d", status)
+		}
+		var enabled bool
+		if err := e.p.f.owner.QueryRow(context.Background(), `SELECT enabled AND allow_cvs AND version=2
+		 AND bank_name='Synthetic bank' AND branch='' AND account_name='Synthetic merchant'
+		 AND account_number='12345678' AND window_hours=6 FROM checkout.bank_transfer_settings
+		 WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store()).Scan(&enabled); err != nil || !enabled {
+			t.Fatal("native CVS transfer settings readback prerequisite", err)
+		}
 	}
 	selection["send_payment_link"] = true
 	a := oaAllocationAdmit(t, e, selection)
