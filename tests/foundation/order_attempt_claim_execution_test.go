@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"livecommerce/internal/claims"
@@ -231,6 +232,60 @@ func TestOrderAttemptClaimExecutionRetainsNativePrefixLocks(t *testing.T) {
 	}
 }
 
+// Read the exact native abort guard inputs without exposing request hashes or
+// contact facts. The opaque identity ties a later sweep refusal to this fixture.
+func oaClaimCustodyDiagnostic(t *testing.T, e *lbuEnv, a orderattempt.AdmissionReceipt, kind, phase string, corrupted bool) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	var pending, exactCustody, hashMatches, statePending bool
+	var buyerEffects, checkoutEffects, audits int
+	err := e.p.f.owner.QueryRow(ctx, `SELECT
+	 a.state='PENDING' AND a.admission_finished AND a.order_id IS NULL AND a.intent_generation=$2,
+	 (SELECT count(*)=1 AND bool_and(r.request_id=a.attempt_id AND r.buyer_id=a.buyer_owner_id
+	  AND r.principal_id=(a.admission_provenance->>'principal_id')::uuid AND r.order_id IS NULL)
+	  FROM inbox.order_for_buyer r WHERE r.tenant_id=a.tenant_id AND r.store_id=a.store_id AND r.create_attempt_id=a.attempt_id)
+	 AND (SELECT count(*)=1 AND bool_and(g.request_id=a.attempt_id AND g.buyer_id=a.buyer_owner_id
+	  AND g.principal_id=(a.admission_provenance->>'principal_id')::uuid AND g.quote_id IS NULL AND g.consumed_at IS NULL
+	  AND EXISTS(SELECT 1 FROM inbox.order_for_buyer r WHERE r.tenant_id=g.tenant_id AND r.store_id=g.store_id
+	   AND r.create_attempt_id=a.attempt_id AND r.request_id=g.request_id AND r.bundle_id=g.bundle_id))
+	  FROM claims.merchant_origin_grants g WHERE g.tenant_id=a.tenant_id AND g.store_id=a.store_id AND g.create_attempt_id=a.attempt_id),
+	 coalesce((SELECT bool_and(r.request_hash IS NOT DISTINCT FROM a.request_hash) FROM inbox.order_for_buyer r
+	  WHERE r.tenant_id=a.tenant_id AND r.store_id=a.store_id AND r.create_attempt_id=a.attempt_id),false),
+	 coalesce((SELECT bool_and(r.state='pending') FROM inbox.order_for_buyer r
+	  WHERE r.tenant_id=a.tenant_id AND r.store_id=a.store_id AND r.create_attempt_id=a.attempt_id),false),
+	 (SELECT count(*) FROM (
+	  SELECT 1 FROM storefront.carts x WHERE x.tenant_id=a.tenant_id AND x.store_id=a.store_id AND x.create_attempt_id=a.attempt_id
+	  UNION ALL SELECT 1 FROM storefront.cart_lines x WHERE x.tenant_id=a.tenant_id AND x.store_id=a.store_id AND x.create_attempt_id=a.attempt_id
+	  UNION ALL SELECT 1 FROM storefront.quotes x WHERE x.tenant_id=a.tenant_id AND x.store_id=a.store_id AND x.create_attempt_id=a.attempt_id
+	  UNION ALL SELECT 1 FROM storefront.events x WHERE x.tenant_id=a.tenant_id AND x.store_id=a.store_id AND x.create_attempt_id=a.attempt_id
+	  UNION ALL SELECT 1 FROM storefront.destination_snapshots x WHERE x.tenant_id=a.tenant_id AND x.store_id=a.store_id AND x.create_attempt_id=a.attempt_id
+	  UNION ALL SELECT 1 FROM storefront.destination_events x WHERE x.tenant_id=a.tenant_id AND x.store_id=a.store_id AND x.create_attempt_id=a.attempt_id
+	  UNION ALL SELECT 1 FROM buyer.command_results x WHERE x.tenant_id=a.tenant_id AND x.store_id=a.store_id AND x.create_attempt_id=a.attempt_id
+	 ) x),
+	 (SELECT count(*) FROM (
+	  SELECT 1 FROM checkout.orders x WHERE x.tenant_id=a.tenant_id AND x.store_id=a.store_id AND x.create_attempt_id=a.attempt_id
+	  UNION ALL SELECT 1 FROM checkout.command_results x WHERE x.tenant_id=a.tenant_id AND x.store_id=a.store_id AND x.create_attempt_id=a.attempt_id
+	  UNION ALL SELECT 1 FROM checkout.events x WHERE x.tenant_id=a.tenant_id AND x.store_id=a.store_id AND x.create_attempt_id=a.attempt_id
+	  UNION ALL SELECT 1 FROM fulfillment.pickup_versions x WHERE x.tenant_id=a.tenant_id AND x.store_id=a.store_id AND x.create_attempt_id=a.attempt_id
+	  UNION ALL SELECT 1 FROM inventory.reservations x WHERE x.tenant_id=a.tenant_id AND x.store_id=a.store_id AND x.create_attempt_id=a.attempt_id
+	  UNION ALL SELECT 1 FROM inventory.ledger x WHERE x.tenant_id=a.tenant_id AND x.store_id=a.store_id AND x.create_attempt_id=a.attempt_id
+	 ) x),
+	 (SELECT count(*) FROM ops.audit_events x WHERE x.tenant_id=a.tenant_id AND x.store_id=a.store_id
+	  AND x.action='order.manual_created' AND x.details->>'attempt_id'=a.attempt_id::text)
+	 FROM ops.order_attempts a WHERE a.attempt_id=$1 AND a.tenant_id=$3 AND a.store_id=$4`,
+		a.AttemptID, a.Generation, e.tenant(), e.store()).Scan(&pending, &exactCustody, &hashMatches, &statePending, &buyerEffects, &checkoutEffects, &audits)
+	if err != nil {
+		t.Fatal("native custody diagnostic read failed")
+	}
+	t.Logf("custody diagnostic attempt=%s generation=%d kind=%s phase=%s pending=%t exact_custody=%t hash_matches=%t state_pending=%t buyer_effects=%d checkout_effects=%d creation_audits=%d",
+		a.AttemptID, a.Generation, kind, phase, pending, exactCustody, hashMatches, statePending, buyerEffects, checkoutEffects, audits)
+	if !pending || !exactCustody || buyerEffects != 0 || checkoutEffects != 0 || audits != 0 ||
+		hashMatches != !(corrupted && kind == "request-hash") || statePending != !(corrupted && kind == "reservation") {
+		t.Fatal("native custody diagnostic did not isolate the deliberate abort-guard violation")
+	}
+}
+
 func TestOrderAttemptClaimExecutionAvailabilityRefusals(t *testing.T) {
 	for _, kind := range []string{"quantity", "quantity-duplicate", "purged", "reservation", "request-hash", "grant-deadline", "missing-grant"} {
 		t.Run(kind, func(t *testing.T) {
@@ -243,6 +298,9 @@ func TestOrderAttemptClaimExecutionAvailabilityRefusals(t *testing.T) {
 				selection["items"] = append(items, map[string]any{"ordinal": 2, "origin_id": randomUUID(), "bundle_id": bundle, "offer_id": offer.ID, "sku_id": e.money, "quantity": 1})
 			}
 			a := oaAllocationAdmit(t, e, selection)
+			if kind == "reservation" || kind == "request-hash" {
+				oaClaimCustodyDiagnostic(t, e, a, kind, "before_fault", false)
+			}
 			want := "PT409"
 			switch kind {
 			case "quantity", "quantity-duplicate":
@@ -269,6 +327,9 @@ func TestOrderAttemptClaimExecutionAvailabilityRefusals(t *testing.T) {
 			oaFenceCode(t, nil, err, want)
 			_ = tx.Rollback(context.Background())
 			oaBeginZeroEffects(t, e, a.AttemptID)
+			if kind == "reservation" || kind == "request-hash" {
+				oaClaimCustodyDiagnostic(t, e, a, kind, "after_refusal_rollback", true)
+			}
 		})
 	}
 }
