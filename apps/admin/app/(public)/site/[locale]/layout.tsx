@@ -1,5 +1,5 @@
-// Purpose: Public platform-site layout: locale guard, host check, header/language switcher and the company footer.
-// Depends on: next/headers, next/navigation, lib/company (host parser, locales), lib/platform-copy, components/OperatorFooter.
+// Purpose: Public platform-site layout: locale and host guard, page chrome and the company footer.
+// Depends on: next/headers, next/navigation, lib/company (host parser, locales, footer facts), components/platform/platform.css.
 // Used by: Next.js App Router for every page under app/(public)/site/[locale].
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
