@@ -1,0 +1,22 @@
+Portable CI excerpt; author-prepared, exact raw lines 1099–1112.
+PR56 head 70c613010cc3764284c8548a7a3ffadbc8899278
+Run 38509983875 attempt1; job 115676289205 SUCCESS 04:47:18–04:51:45Z 2026-10-14
+Actual checkout 7027b5b746c60ef2efd8f3434b868cfc860197fe (70 into 9604e4278333101125a1d1ab00e63bdf2efb572f)
+Raw tracking70.raw.log SHA256 adfd56f3bf7428ce57f2506f1c2980fc806ee9e7948017807eea2a97e6bfb853
+Artifact 11871012778 digest 4336a654ccbab9be92ff0dc60321c6dff3a908a58b90e5ff9deb09428c5dd963
+Sampled high-water only; no unsampled peak/provider/deploy claim.
+
+2026-10-14T04:49:44.2954067Z     browser_tracking_backfill_test.go:32: headroom workload barrier: client_backends=55 usable=57 margin=3 owned_pools=12 held=53
+2026-10-14T04:49:44.3004922Z     browser_tracking_backfill_test.go:32: HARNESS_SETUP_POOLS released=12
+2026-10-14T04:49:44.3006482Z     browser_tracking_backfill_test.go:32: HARNESS_SETUP_POOLS released=12
+2026-10-14T04:49:44.3241390Z     browser_tracking_backfill_test.go:32: headroom after release: client_backends=2 limit=54
+2026-10-14T04:49:44.3359437Z     harness_pool_capacity_test.go:133: HARNESS_PG_CAPACITY sampled_peak=3 samples=2 limit=54 max=60 reserved=0 super=3 margin=3
+2026-10-14T04:51:17.7725938Z === NAME  TestBrowserTrackingBackfill
+2026-10-14T04:51:17.7731854Z     browser_tracking_backfill_test.go:54: HARNESS_SETUP_POOLS released=12
+2026-10-14T04:51:39.8279326Z     browser_tracking_backfill_test.go:210: PASS tracking backfill BROWSER MOCK + REAL_PG: 15 single-version shipments and store audit rows; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.sYlcabXs/tracking-backfill/20261014T045117.793638840
+2026-10-14T04:51:39.8423551Z     harness_pool_capacity_test.go:133: HARNESS_PG_CAPACITY sampled_peak=14 samples=442 limit=54 max=60 reserved=0 super=3 margin=3
+2026-10-14T04:51:40.0109992Z --- PASS: TestBrowserTrackingBackfill (122.32s)
+2026-10-14T04:51:40.0111572Z     --- PASS: TestBrowserTrackingBackfill/setup-pool-headroom (6.96s)
+2026-10-14T04:51:40.0131897Z PASS
+2026-10-14T04:51:41.0194632Z ok  	livecommerce/tests/foundation	123.415s
+2026-10-14T04:51:41.3254384Z test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0

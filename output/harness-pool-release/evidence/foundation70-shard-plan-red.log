@@ -1,0 +1,32 @@
+HARNESS-POOL-RELEASE: current-head Foundation failure receipt
+Evidence: GitHub CI completed-job log; selected excerpt, not a local test run.
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/56
+Head: 70c613010cc3764284c8548a7a3ffadbc8899278
+Base: 9604e4278333101125a1d1ab00e63bdf2efb572f
+Actual synthetic merge checkout: 7027b5b746c60ef2efd8f3434b868cfc860197fe
+Run: 38509983803, attempt 1
+Job: 115676027878, foundation
+Actual start: 2026-10-14T04:10:12Z
+Completed: 2026-10-14T04:15:04Z
+Conclusion: FAILURE; process exit 1
+Raw log: foundation70.raw.log
+Raw SHA256: 963b2cc5077785a82f6b076d191b25b2ac127e7b5b0be1712075f7d131cfaa80
+Retrieval: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/115676027878/logs, exit 0
+Source raw lines: 2747-2792; timestamps removed below for portability.
+
+tests 213
+pass 212
+fail 1
+cancelled 0
+skipped 0
+todo 0
+test at tests/ci/shard-plan.test.mjs:43:1
+failing: a test listed in two groups is red; drift beyond the limit is red
+AssertionError [ERR_ASSERTION]: a few unplanned tests are fine: they run in the catch-all
+actual: [ '61 unplanned tests (> 60): the catch-all shard has drifted; run `node scripts/dev/shard-plan.mjs --write` and commit scripts/dev/shard-plan.json' ]
+expected: []
+operator: deepStrictEqual
+at tests/ci/shard-plan.test.mjs:49:10
+Process completed with exit code 1.
+
+Classification: shard-plan bookkeeping failure. No capacity or pool-release runtime failure is established by this receipt. Other exact-head Gates jobs are still active; no claim that their results pass or fail. No timeout/assertion/threshold change or local run was used.

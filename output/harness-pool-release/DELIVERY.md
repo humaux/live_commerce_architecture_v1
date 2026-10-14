@@ -1,6 +1,9 @@
 # HARNESS-POOL-RELEASE
 
-Status: genuine capacity RED obtained; phase-2 release source authored, GREEN pending. This is an author record, not independent
+Status at 2026-10-14 05:24 UTC: phase-2 SHA `70c613010cc3764284c8548a7a3ffadbc8899278`
+has genuine same-workload capacity GREEN and completed Gates SUCCESS. Foundation
+failed registry bookkeeping; its three-name registration and separate Stripe MOCK
+coverage are the next source batch, not yet CI-verified. This is an author record, not independent
 acceptance. All local tests, builds and application runs: `NOT_RUN` by owner rule.
 
 ## Tests-first capacity boundary
@@ -47,7 +50,8 @@ assertions and timeouts are unchanged; a failed subtest stops before browser sta
   `/root/harness_buyer_catalog_audit`, explorer, assigned `gpt-6.1-sol/high`;
   same base/worktree, no write paths and no recursive delegation. These are
   parent assignment records, not independently verified provider telemetry.
-- Allowed writes: `tests/foundation/**`, `output/harness-pool-release/**`.
+- Allowed writes: `tests/foundation/**`, `output/harness-pool-release/**`, plus the
+  owner's narrow `scripts/dev/shard-plan.json` test-name registration exception.
   No product, SQL, pool-capacity configuration, assertions or timeout changes.
 
 Fresh fetch and worktree creation exited 0. The initial CI run is recorded below;
@@ -89,6 +93,9 @@ acceptance: pending. Local execution remains `NOT_RUN`.
 Provider LIVE, production, screenshot pixel review and deployment: `NOT_RUN`.
 
 ## 2026-10-14 phase-2 source batch
+
+The pending statements in this section describe the phase-2 submission time;
+the timestamped completed-round receipt below supersedes those statuses.
 
 Genuine tests-first Gates `38508131962`, attempt 1, exact SHA
 `a6d47a64a65d29f2d98922e507abe11d30f1c9de`, completed FAILURE. Tracking
@@ -155,3 +162,86 @@ be recorded before claiming the Stripe family verified. Do not infer fifteen
 verified families from the available mode count. No assertion, timeout, capacity
 configuration, retry or product change. Current-head CI and independent review
 are required before READY.
+
+## Completed phase-2 CI round — exact SHA 70c61301
+
+Gates `38509983875`, attempt 1, completed SUCCESS at `2026-10-14T05:21:17Z`:
+80 completed jobs, no failures. The actual checkout was synthetic merge
+`7027b5b746c60ef2efd8f3434b868cfc860197fe`, merging the full SHA above into
+`9604e4278333101125a1d1ab00e63bdf2efb572f`. These receipts prove this SHA;
+they do not certify the subsequent registry/Stripe MOCK source batch.
+
+Tracking job `115676289205` ran `04:47:18–04:51:45Z`. The same twelve-pool
+barrier reached 55 with 53 held acquisitions. Returning handles and releasing
+each pool twice left two native client backends; the enforcing guard sampled
+3 against limit 54. Each closed-pointer error and both protected SELECTs were
+asserted before PASS. The original browser then passed fifteen shipments and
+audit rows, sampled 14 across 442 observations, and final Go PASS `123.415s`.
+Independent exact-workload receipt audit:
+`b3858c4b-b9a0-4d2e-8d42-b7305f4aefe6` (E3, scoped to these receipts).
+Portable excerpt: `evidence/capacity-green70.log`; raw log SHA256
+`adfd56f3bf7428ce57f2506f1c2980fc806ee9e7948017807eea2a97e6bfb853`.
+
+Affected runtime jobs all succeeded. Observed sampled high-water marks (all
+against limit 54; these are not exact unsampled peaks):
+
+| Family/mode | Job | Sampled high-water |
+| --- | --- | --- |
+| StoreDomains | 115676288835 | 15 |
+| CatalogMedia | 115676288849 | 17 |
+| BuyerOrderUI | 115676288807 | 12 |
+| CustomersBilling | 115676288846 | 25 |
+| ManualFulfilment / Refund | 115676288872 | 21 / 22 |
+| BuyerRealChain | 115676288997 | 10 |
+| MerchantBuyerRealChain | 115676289073 | 16 |
+| E2EDealLoop | 115676288948 | 33 |
+| WebKit Buyer / Order / Merchant | 115676289087 | 11 / 12 / 14 |
+| TrackingBackfill | 115676289205 | 14 |
+| LiveClaimsRealChain | 115676289133 | 16 |
+| StorefrontPublish | 115676289209 | 16 |
+| CatalogCore | 115676289972 | 11 |
+| Product editor | 115676290045 | 10 / 10 |
+| ProductMediaV2RealUpload | 115676290368 | 16 |
+
+Independent immutable receipt audits: `7a0f7cb1-b33f-4cdf-b362-170f9384f1ac`,
+`fbb52f97-20bf-481a-9939-4396cd71d785`,
+`f982a7d8-5814-4775-8585-d78c8ce0beef`,
+`f0f5c15b-10c6-46b1-9c9f-0773ad7de554`,
+`77e59943-7065-484e-b2a9-728ef7bfd03c`. Editor finished Go PASS `170.400s`
+(one top-level, two subtests); ProductMedia finished Go PASS `62.824s`
+(one top-level). Neither emitted test FAIL/SKIP. ProductMedia also emitted 34
+TLS unknown-certificate handshake errors; their cause/expectedness was not
+verified by the receipt audit, so this is not a claim of error-free logs.
+WebKit's seven mode summaries passed;
+only the three affected Buyer/Order/Merchant JSONLs were independently inspected.
+Historical SANDBOX/LIVE/upgrade skips stay `NOT_RUN`. Screenshot pixels and real
+provider/DNS/deploy acceptance are not established.
+
+Foundation `38509983803`, job `115676027878`, failed at `04:15:04Z`:
+Node tests 212 PASS / 1 FAIL / 0 SKIP. The shard-plan drift test counted 58
+unregistered actual tests plus three synthetic names, exceeding the unchanged
+cap of 60. The owner's repair registers only the three new native capacity
+tests, sorted in existing g06: Boundary, ObservationFailureIsSticky, ReleasePlan
+(all prefixed `TestHarnessPoolCapacity`). They already executed through catch-all
+in successful g06 job `115676288772`, including fifteen new pure subcases.
+Execution selection, estimates, groups, generator, cap and assertions remain
+unchanged. Registration does not exclude a test or raise the cap. Portable RED:
+`evidence/foundation70-shard-plan-red.log` SHA256
+`ad5711df5940fbca5f4b92dcd1f8d81af4df5a75fdd027f7b697f8167ac39158`.
+
+The separate permanent Stripe MOCK lifetime gate is assigned to isolated
+`/root/harness_stripe_mock_lifetime`, test_worker, `gpt-6.1-sol/high`, base full70,
+WT `/Volumes/data/live_commerce_architecture_v1/.worktrees/harness-pool-release-stripe-mock`,
+branch `unit/harness-pool-release-stripe-mock`. Its exclusive paths are the new
+`browser_stripe_pool_lifetime_test.go` and a TrackingBackfill subtest insertion.
+Delivered commit `fc38f4c71cf04d082fc8ad462940c909db01ba78`, fast-forward
+integrated (exit 0). It reuses `sbNew(MOCK)`, checks the three released pointers and retained
+issuer/runtime/checkout/registrar/hosted-worker behavior. The Tracking mode
+permanently invokes it before its main fixture. Source SHA256:
+`455c4ce7db4eafd3b7a8b94947cd8b618c71d6384939eef135651f399011d386`
+(helper), `bb4f4bf70d21361403bc4fcda5d41b813b99645f24919129c03d75ffc4557443`
+(Tracking). Browser-tagged standalone tests are outside the existing untagged
+shard registry; the nested call provides permanent normal-mode execution.
+This batch's compilation, formatting and current-head CI remain `NOT_RUN`
+until the next timestamped receipt; original Stripe SANDBOX
+guards stay intact. Assignment records are not provider runtime telemetry.
