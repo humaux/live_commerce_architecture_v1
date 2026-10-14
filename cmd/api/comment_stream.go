@@ -8,6 +8,7 @@
 // (std base64, 32 bytes, shared with claims-worker), optional COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID +
 // COMMERCE_META_PAYLOAD_KEYS_JSON (the payload keyring; both-or-neither for the IG fallback).
 // Used by: cmd/api main.go → httpapi.Options.CommentStream.
+
 package main
 
 import (

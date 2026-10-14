@@ -400,6 +400,40 @@ deploy/scripts/deploy.sh upgrade <tag>
 - 完成后更新离线加密的密钥副本（backup-restore.md §7）。PITR 不受影响：临时集群用 peer 认证，`--promote` 会把超级用户口令设为当前值。
 - Meta 广告 HPKE 环：私钥环只**追加**新 key（不得删除仍能打开已存 token 的 key）→ `secrets-init.sh --rederive`（重新派生公钥环）→ 把 `commerce_meta_ads_hpke_active_key_id` 改成新 id → 重启 ads-worker，再重启 api。P04 检查公私钥环 id 一致、P05 检查 active id 在公钥环中。
 
+### 7.1 Order-attempt 计划密钥退役（契约 A2）
+
+**DESIGN；生产 NOT_RUN。** 此处只说明操作入口，执行生产密钥变更仍须
+owner 批准。`lc_order_attempt_key_admin` 是临时外部运维登录，不登记到
+`deploy/postgres/logins.tsv`、secret manifest 或 Compose，也不把凭据交给
+API、claims-worker 或它们的容器。它不持有计划密钥。
+
+1. 在独立管理连接中按 `claims-data-deletion.md` §1 的临时口令生命周期
+   创建登录：`LOGIN INHERIT NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE
+   NOREPLICATION CONNECTION LIMIT 1`。唯一 membership 是
+   `GRANT commerce_order_attempt_key_admin TO lc_order_attempt_key_admin WITH
+   INHERIT TRUE, SET FALSE`。已有登录若含其他 membership 或属性，不自动修复，
+   停止并查明来源。设置口令的管理会话关闭 statement/error/duration logging；
+   口令只走秘密输入，不放命令参数、URI、工单或日志。
+2. 从独立运维客户端用该登录连接同一个业务数据库；`READ COMMITTED` 下调用
+   唯一业务入口 `SELECT ops.retire_order_attempt_plan_key($1::text)`，参数是
+   非秘密的版本 ID。客户端使用参数绑定，记录版本 ID 与固定返回码即可。
+   `retired` 表示永久标记已提交；`PT409 plan_key_referenced` 表示仍有 PENDING
+   引用，事务不退役。未知版本也可留下永久拒绝标记；版本 ID 永不复用。
+3. 数据库在版本行锁内和 C1 串行；成功后旧进程的新 admission 必须得到
+   `plan_key_retired`，不依赖停机顺序。切换新的 active 版本，并按独立密钥保留
+   政策处置旧密钥；此入口不删除密钥文件。已有精确重放仍可读取保留回执。
+4. 成功或失败均关闭该运维连接，在管理连接执行
+   `ALTER ROLE lc_order_attempt_key_admin NOLOGIN PASSWORD NULL`，清除临时口令。
+   凭据只存在于本次管理操作，禁止留下常驻环境或服务挂载。
+
+本进程缺少某个版本不能证明永久丢钥；C2 保持可重试 PENDING，不释放占用。
+`PLAN_UNAVAILABLE` 保留但不启用。原始 `execute_by = admitted_at + 15 分钟`
+不随重试延长，到期由 Sweep 在 attempt fence 内结算 `ABORTED(EXPIRED)` 并
+释放占用，不需要缺失密钥、退役标记或管理员；引用清空后才可再次请求退役。
+验收见 `TestOrderAttemptLocalKeyMissingExpiresAtRealDeadline`、
+`TestOrderAttemptKeyRetirement*`、精确权限测试及
+A2-M1（移除 C1 退役检查必须红），均由 GitHub CI 执行。
+
 ## 8. 证书与域名
 
 - Caddy 自动申请和续期证书，数据在 `caddy-data` 卷（/data），需要随主机备份。

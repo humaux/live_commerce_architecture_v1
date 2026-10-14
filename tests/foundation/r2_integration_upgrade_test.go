@@ -80,8 +80,36 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0166 (W3-U4 open parcel-group read + server-masked merge suggestions) follows merged 0165: 90 -> 91.
 	// 0167 (Stripe A6 terminal observations) adds one: 91 -> 92.
 	// 0169 (LC-R2 C3x purge of comment prints, their A3 receipts and inbox bundle peers) adds one: 92 -> 93.
-	if len(r2) != 93 {
-		t.Fatalf("R2 migration set = %d files %v, want 93", len(r2), r2)
+	// 0170 (OA-1 durable order-attempt identity and subject fences) adds one: 93 -> 94.
+	// 0171 (OA-1 attempt-owned domain provenance and per-origin carts) adds one: 94 -> 95.
+	// 0172 (OA-1 authenticated admission scope and private context) adds one: 95 -> 96.
+	// 0173 (OA-1 locked admission catalog and delivery/payment facts) adds one: 96 -> 97.
+	// 0175 (OA-1 claim-origin admission and deadline-bound reservations) adds one: 97 -> 98.
+	// 0177 (OA-1 legacy claim paths exclude attempt-owned reservations/grants) adds one: 98 -> 99.
+	// 0174 (OA-1 explicit subject discovery and exact private-owner binding) adds one: 99 -> 100.
+	// 0176 (OA-1 C1 admission and same-transaction seal) adds one: 100 -> 101.
+	// 0178 (OA-1 attempt-first execution fence and private plan context) adds one: 101 -> 102.
+	// 0179 (OA-1 frozen attempt-owned cart and quote materialization) adds one: 102 -> 103.
+	// 0180 (OA1 fenced metadata-only abort) adds one: 103 -> 104.
+	// 0182 (OA1 deferred atomic execution commit guard) adds one: 104 -> 105.
+	// 0181 (OA1 frozen attempt destination) adds one: 105 -> 106.
+	// 0183 (OA1 locked catalog and native allocation facts) adds one: 106 -> 107.
+	// 0184 (OA1 native Begin, expiry prerequisite and stock conservation) adds one: 107 -> 108.
+	// 0186 (OA1 protected composite preparation entry) adds one: 108 -> 109.
+	// 0185 (OA1 original claim locks, uses and complete origin audit) adds one: 109 -> 110.
+	// 0187 (OA1 private reusable pay-entry storage) adds one: 110 -> 111.
+	// 0189 (OA1 native terminal proof and scoped audit) adds one: 111 -> 112.
+	// 0188 (OA1 native initial payment notification pair) adds one: 112 -> 113.
+	// 0191 (OA1 fenced orphan-job sweep repair) adds one: 113 -> 114.
+	// 0190 (OA1 expiry provenance and canonical order lock) adds one: 114 -> 115.
+	// 0193 (OA1 native cancellation provenance and credential invalidation) adds one: 115 -> 116.
+	// 0192 (OA1 native erasure subject/attempt prefix and private reconciliation) adds one: 116 -> 117.
+	// 0194 (OA1 A2 durable plan-key retirement and version-bound C1) adds one: 117 -> 118.
+	// post_river/0023 (OA1 execution job guards and native admission enqueue) adds one: 118 -> 119.
+	// post_river/0024 (OA1 attempt-owned checkout expiry job guard) adds one: 119 -> 120.
+	// post_river/0025 (OA1 fenced orphan execution job repair) adds one: 120 -> 121.
+	if len(r2) != 121 {
+		t.Fatalf("R2 migration set = %d files %v, want 121", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

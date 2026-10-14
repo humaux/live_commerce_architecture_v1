@@ -1,5 +1,10 @@
 package foundation_test
 
+// Purpose: native merchant inbox read, permission and exact definer ACL gates.
+// Depends on: foundation real-PG fixtures, platform.WithScope and social/inbox definers.
+// Used by: foundation LC-B3 acceptance and CI ACL shards.
+// Invariants: store isolation and exact grants, including OA1's private encrypted DTO reader.
+//
 // Real-PG gate for the LC-B3 merchant inbox read side (contracts/live-console-v1.md §3.2/§3.6/§3.7,
 // §11 A8-A11/A13/A14). Exercises migration 0119 exactly once (the shared fixture already applies it
 // twice), the frozen definer/owner/EXECUTE-grant ACL, the inbox:read vs inbox:reply permission split
@@ -195,9 +200,11 @@ func TestLiveConsoleInboxMigration0122ExactACL(t *testing.T) {
 		{"inbox.dm_window(uuid,uuid,uuid)", "commerce_meta_writer",
 			"TABLE(last_inbound_at timestamp with time zone, mode text, takeover_generation bigint, human_until timestamp with time zone)", true,
 			[]string{"commerce_claims_worker", "commerce_meta_writer"}},
+		// order-attempt-v1 §1/§4: 0188 grants the private notification definer's owner
+		// this encrypted DTO reader; preserve the exact caller list and all boundary pins.
 		{"social.read_thread(uuid,bigint,int)", "commerce_meta_writer",
 			"TABLE(event_id uuid, key_id text, nonce bytea, ciphertext bytea, app_id text, object text, asset_id text, event_key text, payload_hash text, tenant_id uuid, store_id uuid, route_id uuid, route_epoch bigint, server_seq bigint, occurred_at timestamp with time zone, direction text)", true,
-			[]string{"commerce_meta_writer", "commerce_runtime"}},
+			[]string{"commerce_integration_writer", "commerce_meta_writer", "commerce_runtime"}},
 		{"social.list_conversations(text,uuid,timestamptz,uuid,int)", "commerce_meta_writer",
 			"TABLE(conversation_id uuid, platform text, last_at timestamp with time zone, unread boolean, unreplied boolean, mode text, assignee uuid, window_open_until timestamp with time zone, linked_customer_id uuid, link_version bigint)", true,
 			[]string{"commerce_meta_writer", "commerce_runtime"}},

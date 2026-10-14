@@ -1,0 +1,311 @@
+# Purpose: CI-only, exact-source mutations of OA1 authority and liveness rules.
+# Depends on: Python standard library, a disposable GitHub checkout, real PG gates.
+# Used by: workflow-dispatch LC_OA_MUTATION; ordinary PR gates never mutate source.
+# Invariants: a mutation must match exactly, preserve a source/hash/diff receipt,
+# and let the unchanged designated acceptance test fail; never swallow failures.
+
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+
+
+def replace_exact(path, before, after, expected_count=1):
+    file = Path(path)
+    original = file.read_text()
+    if original.count(before) != expected_count:
+        raise SystemExit("mutation source did not match exactly: " + path)
+    changed = original.replace(before, after, expected_count)
+    file.write_text(changed)
+    return {
+        "path": path,
+        "before_sha256": hashlib.sha256(original.encode()).hexdigest(),
+        "after_sha256": hashlib.sha256(changed.encode()).hexdigest(),
+    }
+
+
+def custody_mutations(rehash):
+    # Mutate every writer and reader consistently; only the independent test
+    # oracle may distinguish a rehash/constant from the six-field custody.
+    specs = [
+        ("migrations/0175_order_attempt_claim_admission.sql", "sha256(convert_to('order-attempt-custody/v1|'||v[1]::text||'|'||v[2]::text||'|'||p_attempt::text\n  ||'|'||(ctx->>'intent_generation')::bigint::text||'|'||v_owner::text||'|'||v[3]::text,'UTF8'))", "ctx", True, 1),
+        ("migrations/0180_order_attempt_abort.sql", "sha256(convert_to('order-attempt-custody/v1|'||tenant::text||'|'||store::text||'|'||p_attempt::text\n  ||'|'||(ctx->>'generation')::bigint::text||'|'||owner_id::text||'|'||principal::text,'UTF8'))", "ctx", False, 1),
+        ("migrations/0184_order_attempt_begin.sql", "sha256(convert_to('order-attempt-custody/v1|'||tenant::text||'|'||store::text||'|'||p_attempt::text\n  ||'|'||(binding->>'generation')::bigint::text||'|'||owner_id::text||'|'||principal::text,'UTF8'))", "binding", False, 1),
+        ("migrations/0185_order_attempt_claim_execution.sql", "sha256(convert_to('order-attempt-custody/v1|'||v_tenant::text||'|'||v_store::text||'|'||p_attempt::text\n  ||'|'||(v_binding->>'generation')::bigint::text||'|'||v_owner::text||'|'||v_principal::text,'UTF8'))", "v_binding", False, 2),
+        ("migrations/0189_order_attempt_settlement.sql", "sha256(convert_to('order-attempt-custody/v1|'||tenant::text||'|'||store::text||'|'||p_attempt::text\n    ||'|'||(binding->>'generation')::bigint::text||'|'||buyer_id::text||'|'||(binding->>'principal_id')::uuid::text,'UTF8'))", "binding", False, 1),
+    ]
+    result = []
+    for path, before, alias, hex_value, count in specs:
+        after = "decode(repeat('5a',32),'hex')"
+        if rehash:
+            if hex_value:
+                after = "sha256(decode(" + alias + "->>'request_hash','hex'))"
+            else:
+                after = "sha256(decode((SELECT string_agg(lpad(to_hex(x.b::integer),2,'0'),'' ORDER BY x.n) FROM jsonb_array_elements_text(" + alias + "->'request_hash') WITH ORDINALITY AS x(b,n)),'hex'))"
+        result.append((path, before, after, count))
+    return result
+
+
+def main():
+    if os.environ.get("GITHUB_ACTIONS") != "true":
+        raise SystemExit("OA mutations run only in disposable GitHub CI checkouts")
+    name = os.environ.get("LC_OA_MUTATION", "")
+    edits = {
+        "custody-rehash-canonical": custody_mutations(True),
+        "custody-constant": custody_mutations(False),
+        "kept-pools-reopen-config": [(
+            "cmd/api/buyer_kept_preflight.go",
+            'import "context"',
+            'import ("context"; "os"; "livecommerce/internal/platform")',
+        ), (
+            "cmd/api/buyer_kept_preflight.go",
+            "\tif ctx == nil || parts.Manual == nil || parts.Manual.ValidateSameDatabase(ctx) != nil {\n\t\treturn errBuyerConfig\n\t}\n\treturn nil\n",
+            "\tif ctx == nil { return errBuyerConfig }\n\treference, err := platform.OpenPool(ctx, os.Getenv(\"LC_BUYER_KEPT_MAIN_DSN\"))\n\tif err != nil { return errBuyerConfig }\n\tdefer reference.Close()\n\treturn buyerDatabasePreflight(ctx, c, reference)\n",
+        )],
+        "kept-pools-ignore-main": [(
+            "internal/merchanttools/database.go",
+            '\n\t"livecommerce/internal/platform"',
+            "",
+        ), (
+            "internal/merchanttools/database.go",
+            "\tif m.issuer.ValidateSameDatabase(ctx, m.pool) != nil ||\n\t\tplatform.ValidateSameDatabase(ctx, m.pool, m.buyerPool) != nil ||\n\t\tm.checkout.ValidateSameDatabase(ctx, m.pool) != nil {\n",
+            "\tif m.issuer.ValidateSameDatabase(ctx, m.buyerPool) != nil ||\n\t\tm.checkout.ValidateSameDatabase(ctx, m.buyerPool) != nil {\n",
+        )],
+        "production-enable-api": [(
+            "deploy/compose.yml",
+            '      LC_ORDER_ATTEMPT_ENABLED: "0"\n      COMMERCE_IDENTITY_ENABLED:',
+            '      LC_ORDER_ATTEMPT_ENABLED: "1"\n      COMMERCE_IDENTITY_ENABLED:',
+        )],
+        "production-enable-worker": [(
+            "deploy/compose.yml",
+            '      LC_ORDER_ATTEMPT_ENABLED: "0"\n      # Two logins, two authorities, one database:',
+            '      LC_ORDER_ATTEMPT_ENABLED: "1"\n      # Two logins, two authorities, one database:',
+        )],
+        "api-preflight-bypass": [(
+            "cmd/api/main.go",
+            "\tif err = buyerDatabasePreflight(startup, buyerConfig, pool); err != nil {\n"
+            "\t\treturn err\n"
+            "\t}\n",
+            "",
+        )],
+        "api-all-preflight-bypass": [(
+            "cmd/api/main.go",
+            "\tif err = buyerDatabasePreflight(startup, buyerConfig, pool); err != nil {\n"
+            "\t\treturn err\n"
+            "\t}\n",
+            "",
+        ), (
+            "cmd/api/main.go",
+            "\tif err = buyerKeptDatabasePreflight(startup, buyerConfig, cvs); err != nil {\n"
+            "\t\treturn err\n"
+            "\t}\n",
+            "",
+        )],
+        "m1-fee-version": [(
+            "migrations/0181_order_attempt_destination.sql",
+            " IF NOT FOUND OR NOT v_current_service.enabled\n",
+            " IF NOT FOUND OR NOT v_current_service.enabled\n"
+            "  OR v_current<>(v_service->>'version')::bigint\n",
+        )],
+        "m3-remove-sweep": [(
+            "internal/orderattempt/worker.go",
+            "\tvar result SweepResult\n",
+            "\tvar result SweepResult\n\tif e != nil { return result, nil }\n",
+        )],
+        "m5-disclose-principal": [(
+            "migrations/0194_order_attempt_plan_key_retirement.sql",
+            "    OR a.admission_provenance->>'principal_id' IS DISTINCT FROM auth_principal::text\n",
+            "",
+        ), (
+            "migrations/0194_order_attempt_plan_key_retirement.sql",
+            "   IF NOT FOUND OR s.principal_id<>auth_principal THEN\n",
+            "   IF NOT FOUND THEN\n",
+        )],
+        "m6-skip-fence": [(
+            "migrations/0178_order_attempt_execution_fence.sql",
+            "  FOR UPDATE;\n",
+            "  ;\n",
+        )],
+        "m6-skip-generation-recheck": [(
+            "migrations/0178_order_attempt_execution_fence.sql",
+            " IF a.intent_generation<>p_generation OR NOT a.admission_finished THEN\n"
+            "  RAISE EXCEPTION 'intent_conflict' USING ERRCODE='PT409';\n"
+            " END IF;\n",
+            "",
+        )],
+        "expose-privacy-fence": [(
+            "migrations/0178_order_attempt_execution_fence.sql",
+            " TO commerce_runtime,commerce_claims_worker;\n"
+            "COMMENT ON FUNCTION ops.lock_order_attempt(bytea,uuid,uuid,bigint)",
+            " TO commerce_runtime,commerce_claims_worker;\n"
+            "GRANT EXECUTE ON FUNCTION ops.lock_order_attempt(bytea,uuid,uuid,bigint) TO commerce_privacy_writer;\n"
+            "COMMENT ON FUNCTION ops.lock_order_attempt(bytea,uuid,uuid,bigint)",
+        )],
+        "expose-privacy-attempt-dml": [(
+            "migrations/0170_order_attempt_identity.sql",
+            "REVOKE ALL ON ops.order_attempt_scopes,ops.order_attempts,ops.order_attempt_subjects FROM PUBLIC;\n",
+            "REVOKE ALL ON ops.order_attempt_scopes,ops.order_attempts,ops.order_attempt_subjects FROM PUBLIC;\n"
+            "GRANT INSERT ON ops.order_attempts TO commerce_privacy_writer;\n",
+        )],
+        "pending-only-replay": [(
+            "migrations/0194_order_attempt_plan_key_retirement.sql",
+            "   WHERE x.tenant_id=auth_tenant AND x.operation_family='merchant_order' AND x.transport_key_digest=p_key;\n",
+            "   WHERE x.tenant_id=auth_tenant AND x.operation_family='merchant_order' AND x.transport_key_digest=p_key AND x.state='PENDING';\n",
+        )],
+        "omit-generation-cas": [(
+            "migrations/0194_order_attempt_plan_key_retirement.sql",
+            "  IF s.retired_at IS NOT NULL OR s.current_generation<>p_generation THEN\n",
+            "  IF s.retired_at IS NOT NULL THEN\n",
+        )],
+        "omit-generation-unique": [(
+            "migrations/0170_order_attempt_identity.sql",
+            " UNIQUE(scope_id,intent_generation),\n",
+            "",
+        )],
+        "permit-partial-commit": [(
+            "migrations/0182_order_attempt_execution_commit.sql",
+            "BEGIN\n -- Deferred NEW is the trusted inserted cart, not the final attempt version.\n",
+            "BEGIN\n RETURN NULL;\n -- Deferred NEW is the trusted inserted cart, not the final attempt version.\n",
+        )],
+        "finalize-from-begin": [(
+            "internal/orderattempt/executor.go",
+            "\tpayBinding := PayEntryBinding{TenantID: binding.TenantID, StoreID: binding.StoreID, OrderID: binding.AttemptID, Version: 1}\n",
+            '''\tif begun.OrderID != "" {
+\t\treceipt, marshalErr := json.Marshal(map[string]any{
+\t\t\t"state": "COMMITTED", "attempt_id": binding.AttemptID,
+\t\t\t"intent_generation": binding.Generation, "order_id": begun.OrderID,
+\t\t})
+\t\treturn ExecutionReceipt{State: "COMMITTED", Receipt: receipt}, marshalErr
+\t}
+\tpayBinding := PayEntryBinding{TenantID: binding.TenantID, StoreID: binding.StoreID, OrderID: binding.AttemptID, Version: 1}
+''',
+        )],
+        "expose-quote-helper": [(
+            "migrations/0179_order_attempt_quote_materialization.sql",
+            "GRANT EXECUTE ON FUNCTION storefront.order_attempt_materialize_quote(uuid,text) TO commerce_order_attempt_owner;\n",
+            "GRANT EXECUTE ON FUNCTION storefront.order_attempt_materialize_quote(uuid,text) TO commerce_order_attempt_owner;\n"
+            "GRANT EXECUTE ON FUNCTION storefront.order_attempt_materialize_quote(uuid,text) TO commerce_runtime;\n",
+        )],
+        "resume-placement-grants": [(
+            "migrations/0185_order_attempt_claim_execution.sql",
+            " -- One deterministic domain prefix. No current offer/session/window/permission\n",
+            " IF NOT identity.principal_holds(v_tenant,v_store,v_principal,ARRAY['catalog:read','inventory:reserve']) THEN\n"
+            "  RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403';\n"
+            " END IF;\n"
+            " -- One deterministic domain prefix. No current offer/session/window/permission\n",
+        )],
+        "sealed-origin-echo-lie": [(
+            "internal/inbox/order_attempt_notification.go",
+            "json.Marshal(sendSecret{PSID: view.senderID, Text: text})",
+            "json.Marshal(sendSecret{PSID: view.senderID, Text: strings.Replace(text, p.Origin, \"https://stale-origin.example\", 1)})",
+        )],
+        "independent-outbox-commit": [(
+            "migrations/0188_order_attempt_notification.sql",
+            "OR (n.state='VOID' AND o.state IN ('CANCELLED','BLOCKED_POLICY','STALE_BINDING','FAILED_FINAL')))",
+            "OR (n.state='VOID' AND o.state IN ('READY','CANCELLED','BLOCKED_POLICY','STALE_BINDING','FAILED_FINAL')))",
+        )],
+        "merge-claim-origins": [(
+            "migrations/0179_order_attempt_quote_materialization.sql",
+            " FOR v_line IN SELECT value FROM jsonb_array_elements(v_lines)\n"
+            "  ORDER BY (value->>'sku_id')::uuid,(value->>'line_ordinal')::bigint LOOP\n",
+            " FOR v_line IN SELECT\n"
+            "  (jsonb_agg(value ORDER BY (value->>'line_ordinal')::bigint)->0)\n"
+            "   ||jsonb_build_object('quantity',sum((value->>'quantity')::bigint))\n"
+            "  FROM jsonb_array_elements(v_lines) GROUP BY (value->>'sku_id')::uuid\n"
+            "  ORDER BY (value->>'sku_id')::uuid LOOP\n",
+        )],
+        "derive-current-owner": [(
+            "migrations/0187_order_attempt_pay_entry.sql",
+            "  AND x.owner_id=buyer_id AND x.id=p_attempt AND x.create_attempt_id=p_attempt\n",
+            "  AND x.owner_id=md5('oa-current-owner|'||p_key_version)::uuid AND x.id=p_attempt AND x.create_attempt_id=p_attempt\n",
+        )],
+        "omit-final-deadline": [(
+            "migrations/0186_order_attempt_composite.sql",
+            "  PERFORM ops.order_attempt_execution_context(p_attempt,p_plan_plaintext);\n  UPDATE ops.order_attempts a SET state='COMMITTED'",
+            "  UPDATE ops.order_attempts a SET state='COMMITTED'",
+        )],
+        "a2-admit-retired-key": [(
+            "migrations/0194_order_attempt_plan_key_retirement.sql",
+            "  IF key_retired_at IS NOT NULL THEN\n"
+            "   RAISE EXCEPTION 'plan_key_retired' USING ERRCODE='PT409';\n"
+            "  END IF;\n",
+            "",
+        )],
+        "a2-deploy-admin-custody": [(
+            "deploy/postgres/logins.tsv",
+            "# Change rules: a new login needs (1) a row here, (2) pw_/dsn_ rows in deploy/secrets.manifest.tsv,\n",
+            "# Change rules: a new login needs (1) a row here, (2) pw_/dsn_ rows in deploy/secrets.manifest.tsv,\n"
+            "lc_order_attempt_key_admin\tcommerce_order_attempt_key_admin\tinherit_noset\tcore\tapi:COMMERCE_ORDER_ATTEMPT_KEY_ADMIN_DATABASE_URL\tmutation\n",
+        )],
+        "m2b-omit-cancel-revocation": [(
+            "migrations/0193_order_attempt_native_cancel.sql",
+            "   AND order_id=NEW.id AND create_attempt_id=NEW.create_attempt_id AND revoked_at IS NULL;\n",
+            "   AND order_id=NEW.id AND create_attempt_id=NEW.create_attempt_id AND revoked_at IS NULL AND false;\n",
+        )],
+        "erase-body-before-seal": [(
+            "migrations/0192_order_attempt_erasure_prefix.sql",
+            "  UPDATE ops.order_attempts x SET state='ABORTED',settled_at=clock_timestamp(),\n",
+            "  UPDATE ops.order_attempts x SET plan_ciphertext=NULL,plan_key_version=NULL\n"
+            "   WHERE x.attempt_id=(entry->>'attempt_id')::uuid\n"
+            "    AND x.intent_generation=(entry->>'generation')::bigint\n"
+            "    AND x.tenant_id=(ctx->>'tenant_id')::uuid AND x.store_id=(ctx->>'store_id')::uuid\n"
+            "    AND x.state='PENDING' AND x.admission_finished;\n"
+            "  UPDATE ops.order_attempts x SET state='ABORTED',settled_at=clock_timestamp(),\n",
+        )],
+        "reject-cancelled-replay": [(
+            "internal/orderattempt/executor.go",
+            '\tif fence.State == "COMMITTED" || fence.State == "ABORTED" {\n',
+            '''\tif fence.State == "COMMITTED" || fence.State == "ABORTED" {
+		if fence.State == "COMMITTED" && merchantToken != "" {
+			if _, err = tx.Exec(bounded, `SELECT
+			 set_config('app.tenant_id',s.tenant_id::text,true),
+			 set_config('app.store_id',($2::uuid)::text,true),
+			 set_config('app.principal_id',s.principal_id::text,true)
+			 FROM identity.resolve_access($1::bytea,$2::uuid,'orders:read') s
+			 WHERE s.access_status='ok'`, authHash, storeID); err != nil {
+				return ExecutionReceipt{}, admissionFailure(err, false)
+			}
+			var one bool
+			var orderID, state string
+			err = tx.QueryRow(bounded, `SELECT jsonb_array_length(j)=1,
+			 j->0->>'order_id',j->0->>'commercial_state'
+			 FROM (SELECT identity.read_merchant_orders(
+			 $1::bytea,$2::uuid,$3::uuid,1,NULL::timestamptz,NULL::uuid,'all'
+			 ) AS j) d`, authHash, storeID, attempt).Scan(&one, &orderID, &state)
+			if err != nil {
+				return ExecutionReceipt{}, admissionFailure(err, false)
+			}
+			if !one || orderID != attempt {
+				return ExecutionReceipt{}, &AdmissionError{code: "order_attempt_invalid_response"}
+			}
+			if state == "CANCELLED" {
+				return ExecutionReceipt{}, &AdmissionError{code: "mutation_reject_cancelled"}
+			}
+		}
+''',
+        )],
+    }
+    if name not in edits:
+        raise SystemExit("unknown OA mutation")
+    root = Path(subprocess.check_output(["git", "rev-parse", "--show-toplevel"], text=True).strip())
+    os.chdir(root)
+    if subprocess.check_output(["git", "diff", "--name-only"], text=True).strip():
+        raise SystemExit("refusing to mutate an already modified checkout")
+    receipt = {
+        "mutation": name,
+        "source_sha": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+        "changes": [replace_exact(*edit) for edit in edits[name]],
+    }
+    evidence = root / "output/ci-gates"
+    evidence.mkdir(parents=True, exist_ok=True)
+    (evidence / "oa1-mutation.json").write_text(json.dumps(receipt, indent=2) + "\n")
+    (evidence / "oa1-mutation.patch").write_bytes(subprocess.check_output(["git", "diff", "--no-ext-diff"]))
+    print("Applied OA mutation " + name + " at " + receipt["source_sha"], flush=True)
+    for change in receipt["changes"]:
+        print("Patched " + change["path"] + " before=" + change["before_sha256"]
+              + " after=" + change["after_sha256"], flush=True)
+
+
+if __name__ == "__main__":
+    main()

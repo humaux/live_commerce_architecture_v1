@@ -1,0 +1,65 @@
+=== RUN   TestOrderAttemptModelContractSeedsAH
+=== RUN   TestOrderAttemptModelContractSeedsAH/a_crash_resume
+=== RUN   TestOrderAttemptModelContractSeedsAH/b_cross_client
+=== RUN   TestOrderAttemptModelContractSeedsAH/c_lost_recovery_ack
+=== RUN   TestOrderAttemptModelContractSeedsAH/d_rotate_original_owner
+=== RUN   TestOrderAttemptModelContractSeedsAH/e_erase_subject_then_CAS
+=== RUN   TestOrderAttemptModelContractSeedsAH/f_cancel_terminal_replay
+=== RUN   TestOrderAttemptModelContractSeedsAH/g_local_cancel_notification_deferred
+=== RUN   TestOrderAttemptModelContractSeedsAH/h_generation_required_HTTP_deferred
+--- PASS: TestOrderAttemptModelContractSeedsAH (0.00s)
+    --- PASS: TestOrderAttemptModelContractSeedsAH/a_crash_resume (0.00s)
+    --- PASS: TestOrderAttemptModelContractSeedsAH/b_cross_client (0.00s)
+    --- PASS: TestOrderAttemptModelContractSeedsAH/c_lost_recovery_ack (0.00s)
+    --- PASS: TestOrderAttemptModelContractSeedsAH/d_rotate_original_owner (0.00s)
+    --- PASS: TestOrderAttemptModelContractSeedsAH/e_erase_subject_then_CAS (0.00s)
+    --- PASS: TestOrderAttemptModelContractSeedsAH/f_cancel_terminal_replay (0.00s)
+    --- PASS: TestOrderAttemptModelContractSeedsAH/g_local_cancel_notification_deferred (0.00s)
+    --- PASS: TestOrderAttemptModelContractSeedsAH/h_generation_required_HTTP_deferred (0.00s)
+=== RUN   TestOrderAttemptModelSubjectAndScopeBarriers
+=== RUN   TestOrderAttemptModelSubjectAndScopeBarriers/hold=a
+=== RUN   TestOrderAttemptModelSubjectAndScopeBarriers/hold=c
+--- PASS: TestOrderAttemptModelSubjectAndScopeBarriers (0.00s)
+    --- PASS: TestOrderAttemptModelSubjectAndScopeBarriers/hold=a (0.00s)
+    --- PASS: TestOrderAttemptModelSubjectAndScopeBarriers/hold=c (0.00s)
+=== RUN   TestOrderAttemptModelRejectsEarlierC2Locks
+--- PASS: TestOrderAttemptModelRejectsEarlierC2Locks (0.00s)
+=== RUN   TestOrderAttemptModelSeeds
+=== RUN   TestOrderAttemptModelSeeds/cross_tab_terminal_generation_and_cancel
+=== RUN   TestOrderAttemptModelSeeds/discard_sweep_expiry_and_new_generation
+=== RUN   TestOrderAttemptModelSeeds/deadline_crossed_inside_C2
+=== RUN   TestOrderAttemptModelSeeds/linked_subject_erasure_waits_for_fence
+--- PASS: TestOrderAttemptModelSeeds (0.00s)
+    --- PASS: TestOrderAttemptModelSeeds/cross_tab_terminal_generation_and_cancel (0.00s)
+    --- PASS: TestOrderAttemptModelSeeds/discard_sweep_expiry_and_new_generation (0.00s)
+    --- PASS: TestOrderAttemptModelSeeds/deadline_crossed_inside_C2 (0.00s)
+    --- PASS: TestOrderAttemptModelSeeds/linked_subject_erasure_waits_for_fence (0.00s)
+=== RUN   TestOrderAttemptModelOracleMutations
+=== RUN   TestOrderAttemptModelOracleMutations/drop_lock
+    order_attempt_model_test.go:515: MODEL_ONLY injected drop_lock rejected: commit lacked exact owner/generation/fence/deadline/resources
+=== RUN   TestOrderAttemptModelOracleMutations/partial_C2
+    order_attempt_model_test.go:515: MODEL_ONLY injected partial_C2 rejected: partial durable C2: {id:1 actor:0 generation:1 key:0 body:0 owner:100 deadline:15 state:1 order:0 hold:0 subjects:5 effects:[1 0 0 0 0 0 0 0] job:true cancelled:false executionLocks:1}
+=== RUN   TestOrderAttemptModelOracleMutations/pending_only_replay
+    order_attempt_model_test.go:515: MODEL_ONLY injected pending_only_replay rejected: all-state replay/conflict changed or disclosed authority
+=== RUN   TestOrderAttemptModelOracleMutations/stale_generation
+    order_attempt_model_test.go:515: MODEL_ONLY injected stale_generation rejected: commit lacked exact owner/generation/fence/deadline/resources
+=== RUN   TestOrderAttemptModelOracleMutations/replace_owner
+    order_attempt_model_test.go:515: MODEL_ONLY injected replace_owner rejected: immutable identity changed: id=1 old=[0 1 0 0 100 15] new=[0 1 0 0 101 15]
+=== RUN   TestOrderAttemptModelOracleMutations/retain_subjects
+    order_attempt_model_test.go:515: MODEL_ONLY injected retain_subjects rejected: terminal retained subjects/job: {id:1 actor:0 generation:1 key:0 body:0 owner:100 deadline:15 state:2 order:1 hold:1 subjects:1 effects:[1 1 1 1 1 1 1 1] job:false cancelled:false executionLocks:0}
+=== RUN   TestOrderAttemptModelOracleMutations/terminal_regression
+    order_attempt_model_test.go:515: MODEL_ONLY injected terminal_regression rejected: acknowledgement loss changed authority
+=== RUN   TestOrderAttemptModelOracleMutations/cancel_without_release
+    order_attempt_model_test.go:515: MODEL_ONLY injected cancel_without_release rejected: stock conservation: available=7 held=0
+--- PASS: TestOrderAttemptModelOracleMutations (0.00s)
+    --- PASS: TestOrderAttemptModelOracleMutations/drop_lock (0.00s)
+    --- PASS: TestOrderAttemptModelOracleMutations/partial_C2 (0.00s)
+    --- PASS: TestOrderAttemptModelOracleMutations/pending_only_replay (0.00s)
+    --- PASS: TestOrderAttemptModelOracleMutations/stale_generation (0.00s)
+    --- PASS: TestOrderAttemptModelOracleMutations/replace_owner (0.00s)
+    --- PASS: TestOrderAttemptModelOracleMutations/retain_subjects (0.00s)
+    --- PASS: TestOrderAttemptModelOracleMutations/terminal_regression (0.00s)
+    --- PASS: TestOrderAttemptModelOracleMutations/cancel_without_release (0.00s)
+PASS
+ok  	livecommerce/tests/foundation	1.115s
+test-focused: top-level PASS=5 FAIL=0 SKIP=0 exit=0

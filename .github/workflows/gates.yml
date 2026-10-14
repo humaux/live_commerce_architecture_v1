@@ -193,6 +193,12 @@ jobs:
             [[ "$kv" =~ ^LC_[A-Z0-9_]+=[A-Za-z0-9._:-]*$ ]] || { echo "refusing extra_env entry: $kv" >&2; exit 2; }
             export "$kv"; echo "extra_env: ${kv%%=*} set"
           done
+          # Explicit dispatch only: inject a real source fault before native PG
+          # setup. The ordinary gate keeps its verdict and must go red.
+          if [[ -n "${LC_OA_MUTATION:-}" ]]; then
+            [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]] || exit 2
+            python3 tests/foundation/order_attempt_mutation.py
+          fi
           log_root=output/ci-gates
           case "$MODE" in
             --browser*|--stripe-browser*|--ops-disk-guard)

@@ -152,6 +152,8 @@ services:
       LISTEN_ADDR: "127.0.0.1:8080"                     # must be literal loopback (C1)
       GOMEMLIMIT: 410MiB                                # ~80 % of mem_limit
       COMMERCE_FIXTURE_ENABLED: "0"                     # fixture mode is test-only
+      # OA1 core remains disabled until OA2 notification/cancel cutover is independently accepted.
+      LC_ORDER_ATTEMPT_ENABLED: "0"
       COMMERCE_IDENTITY_ENABLED: ${LC_IDENTITY_ENABLED:-0}
       COMMERCE_OIDC_ISSUER: ${LC_OIDC_ISSUER:-}
       # Merchant password login (merchant-password-auth-v1 §5). Default off; OIDC stays required while it is off.
@@ -481,6 +483,8 @@ services:
     env_file: ["${LC_ENV_DIR:?set LC_ENV_DIR}/claims-worker.env"]   # Graph version (U5), auth-header mode
     environment:
       COMMERCE_CLAIMS_WORKER_ENABLED: "1"
+      # OA1 core remains disabled until OA2 notification/cancel cutover is independently accepted.
+      LC_ORDER_ATTEMPT_ENABLED: "0"
       # Two logins, two authorities, one database: intake (claims apply + reply planning) and the
       # main-schema external_operation_v1 dispatcher (commerce_claims_worker).
       COMMERCE_CLAIMS_INTAKE_DATABASE_URL_FILE: /run/secrets/dsn_lc_claims_intake

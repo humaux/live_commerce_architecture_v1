@@ -471,8 +471,9 @@ func exprText(e ast.Expr) string {
 
 // TestMetaClaimsMCI10SecretEnvOwnership: each secret is read by the process the contract names and
 // no other. K_actor belongs to the meta-worker consumer, K_link and the Page-token keyring to the
-// claims-worker (and the registrar CLI for the keyring; K_actor also the retention-admin operator CLI); the claims-worker never reads the Meta
-// payload keyring, K_actor or Stripe keys.
+// claims-worker (and the registrar CLI for the keyring; K_actor also the retention-admin operator CLI).
+// OA1 §4 permits opt-in payload custody only in its dedicated composition file;
+// K_actor and Stripe remain forbidden throughout the claims-worker.
 func TestMetaClaimsMCI10SecretEnvOwnership(t *testing.T) {
 	srcs := mciSources(t, "internal", "cmd")
 	allow := map[string][]string{
@@ -499,7 +500,19 @@ func TestMetaClaimsMCI10SecretEnvOwnership(t *testing.T) {
 		}
 		if strings.HasPrefix(s.path, "cmd/claims-worker/") || strings.HasPrefix(s.path, "internal/claimsintake/") || strings.HasPrefix(s.path, "internal/integrations/metareply/") {
 			for _, forbidden := range []string{"COMMERCE_CLAIMS_ACTOR_KEY", "COMMERCE_META_PAYLOAD_", "STRIPE_"} {
-				if strings.Contains(s.text, forbidden) {
+				text := s.text
+				if forbidden == "COMMERCE_META_PAYLOAD_" {
+					// Frozen order-attempt-v1 §4: only the opt-in OA1 loader may
+					// load notification custody. Disabled non-reads are tested
+					// by TestOrderAttemptWorkerConfigDisabledDoesNotReadCustody.
+					if s.path == "cmd/claims-worker/order_attempt.go" {
+						continue
+					}
+					if s.path == "cmd/claims-worker/doc.go" {
+						text = strings.ReplaceAll(text, "// COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID + COMMERCE_META_PAYLOAD_KEYS_JSON for notification body encryption.\n", "")
+					}
+				}
+				if strings.Contains(text, forbidden) {
 					t.Errorf("%s references %s; the reply/intake process must not read it", s.path, forbidden)
 				}
 			}

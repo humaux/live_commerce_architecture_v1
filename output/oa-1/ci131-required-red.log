@@ -1,0 +1,50 @@
+﻿2026-10-14T02:42:24.1503554Z Current runner version: '2.337.0'
+2026-10-14T02:42:24.1525386Z ##[group]Runner Image Provisioner
+2026-10-14T02:42:24.1526279Z Hosted Compute Agent
+2026-10-14T02:42:24.1526832Z Version: 20261002.596
+2026-10-14T02:42:24.1527392Z Commit: c3d12f3313a95f25162a1503be624f3b0617f8c0
+2026-10-14T02:42:24.1528116Z Build Date: 2026-10-02T22:28:27Z
+2026-10-14T02:42:24.1528731Z Worker ID: {80230625-b1b3-4cbb-99dd-0978b9033852}
+2026-10-14T02:42:24.1529371Z Region: westus3
+2026-10-14T02:42:24.1529884Z Cloud: Azure
+2026-10-14T02:42:24.1530377Z ##[endgroup]
+2026-10-14T02:42:24.1531669Z ##[group]Operating System
+2026-10-14T02:42:24.1532224Z Ubuntu
+2026-10-14T02:42:24.1532702Z 24.04.5
+2026-10-14T02:42:24.1533406Z LTS
+2026-10-14T02:42:24.1533913Z ##[endgroup]
+2026-10-14T02:42:24.1534437Z ##[group]Runner Image
+2026-10-14T02:42:24.1534982Z Image: ubuntu-24.04
+2026-10-14T02:42:24.1535487Z Version: 20261004.327.1
+2026-10-14T02:42:24.1536676Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/Ubuntu2404-Readme.md
+2026-10-14T02:42:24.1538097Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261004.327
+2026-10-14T02:42:24.1538964Z ##[endgroup]
+2026-10-14T02:42:24.1539994Z ##[group]GITHUB_TOKEN Permissions
+2026-10-14T02:42:24.1541804Z Contents: read
+2026-10-14T02:42:24.1542338Z Metadata: read
+2026-10-14T02:42:24.1543049Z ##[endgroup]
+2026-10-14T02:42:24.1544895Z Secret source: Actions
+2026-10-14T02:42:24.1545714Z Cache mode: write
+2026-10-14T02:42:24.1546353Z Prepare workflow directory
+2026-10-14T02:42:24.2013866Z Prepare all required actions
+2026-10-14T02:42:24.2067719Z Complete job name: required
+2026-10-14T02:42:24.2571439Z ##[group]Run echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"
+2026-10-14T02:42:24.2573819Z [36;1mecho "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"[0m
+2026-10-14T02:42:24.2575280Z [36;1mrc=0[0m
+2026-10-14T02:42:24.2576142Z [36;1m[[ "$PLAN" == success ]] || rc=1[0m
+2026-10-14T02:42:24.2577065Z [36;1m[[ "$GATE" == success ]] || rc=1[0m
+2026-10-14T02:42:24.2578394Z [36;1mif [[ "$AGG_EXPECTED" == true ]]; then [[ "$AGG" == success ]] || rc=1; else [[ "$AGG" == skipped ]] || rc=1; fi[0m
+2026-10-14T02:42:24.2580140Z [36;1mif [[ "$DEPLOY_EXPECTED" == true ]]; then [[ "$DEPLOY" == success ]] || rc=1; else [[ "$DEPLOY" == skipped ]] || rc=1; fi[0m
+2026-10-14T02:42:24.2581477Z [36;1mexit "$rc"[0m
+2026-10-14T02:42:24.3596017Z shell: /usr/bin/bash -e {0}
+2026-10-14T02:42:24.3596901Z env:
+2026-10-14T02:42:24.3597361Z   PLAN: success
+2026-10-14T02:42:24.3597951Z   GATE: failure
+2026-10-14T02:42:24.3598428Z   AGG: skipped
+2026-10-14T02:42:24.3598875Z   AGG_EXPECTED: false
+2026-10-14T02:42:24.3599391Z   DEPLOY: skipped
+2026-10-14T02:42:24.3599846Z   DEPLOY_EXPECTED: false
+2026-10-14T02:42:24.3600324Z ##[endgroup]
+2026-10-14T02:42:24.3794975Z plan=success gate=failure aggregate=skipped (expected false) deploy=skipped (expected false)
+2026-10-14T02:42:24.3813359Z ##[error]Process completed with exit code 1.
+2026-10-14T02:42:24.3955113Z Cleaning up orphan processes

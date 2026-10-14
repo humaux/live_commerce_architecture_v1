@@ -1085,6 +1085,8 @@ func TestCogTransferACL(t *testing.T) {
 		"checkout.clear_buyer_email(uuid,uuid,uuid)":                                                                    {"commerce_privacy_writer"},
 		"checkout.expire_held(uuid,bigint)":                                                                             {"commerce_expiry_worker"}, // 0096 (T21-02): cmd/expiry-worker runs as lc_expiry_worker -> commerce_expiry_worker (deploy/postgres/logins.tsv)
 		"checkout.bank_transfer_json(uuid,uuid,uuid,boolean)":                                                           nil,
+		// order-attempt-v1 §1/§6f / 0193: existing authenticated native cancel remains runtime-only.
+		"fulfillment.merchant_cancel_order(bytea,uuid,uuid,text,bytea,text,text)": {"commerce_runtime"},
 	} {
 		got := grantees(sig)
 		if fmt.Sprint(got) != fmt.Sprint(want) {
@@ -1110,13 +1112,14 @@ func TestCogTransferACL(t *testing.T) {
 			return out
 		}
 		// 0099 K3-03: checkout.clear_buyer_email (erasure) also UPDATEs the table, but only proof_last5 (asserted below); it can never set a state.
-		if got := names(`update\s+checkout\.bank_transfers`); fmt.Sprint(got) != "[checkout.clear_buyer_email checkout.expire_held checkout.submit_transfer_proof payments.decide_bank_transfer]" {
+		// order-attempt-v1 §1/§6f / 0193: native cancel only expires the exact unpaid attempt transfer; it cannot confirm or clear proof.
+		if got := names(`update\s+checkout\.bank_transfers`); fmt.Sprint(got) != "[checkout.clear_buyer_email checkout.expire_held checkout.submit_transfer_proof fulfillment.merchant_cancel_order payments.decide_bank_transfer]" {
 			t.Errorf("functions that UPDATE the transfer: %v", got)
 		}
 		if got := names(`update\s+checkout\.bank_transfers\s+set\s+proof_last5\s*=\s*null`); fmt.Sprint(got) != "[checkout.clear_buyer_email]" {
 			t.Errorf("functions that clear the proof: %v", got)
 		}
-		if got := names(`update\s+checkout\.bank_transfers\s+set\s+state`); fmt.Sprint(got) != "[checkout.expire_held checkout.submit_transfer_proof payments.decide_bank_transfer]" {
+		if got := names(`update\s+checkout\.bank_transfers\s+set\s+state`); fmt.Sprint(got) != "[checkout.expire_held checkout.submit_transfer_proof fulfillment.merchant_cancel_order payments.decide_bank_transfer]" {
 			t.Errorf("functions that set a transfer state with their first assignment: %v (clear_buyer_email must never)", got)
 		}
 		if got := names(`set\s+state\s*=\s*'CONFIRMED'`); fmt.Sprint(got) != "[payments.decide_bank_transfer]" {

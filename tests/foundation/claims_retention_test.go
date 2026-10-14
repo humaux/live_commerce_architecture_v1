@@ -3935,7 +3935,8 @@ func crClusterLogin(t *testing.T, owner *pgxpool.Pool, authority string) *pgxpoo
 }
 
 // crUpgradeAndPreconditions is CRP02's populated-upgrade clause on a throw-away PG cluster: everything up to and
-// including 0070 (and every migration except 0071) is applied, claims rows are populated, then 0071 is applied.
+// including 0070 (except 0071 and its dependent root/post-River suffixes) is applied, claims rows are populated,
+// then 0071 and every held dependency are applied with their exact file checksums.
 func crUpgradeAndPreconditions(t *testing.T) {
 	ctx := context.Background()
 	owner := mciStartPG(t)
@@ -4014,10 +4015,42 @@ func crUpgradeAndPreconditions(t *testing.T) {
 	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0167_stripe_untracked_reservation.sql',$1)`, stripeSum)
 	// hold 0169 back: its 55000 precondition demands the 0127 definers it recreates (held back above), so it must run after 0127
 	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0169_lc_r2_c3x_purge.sql',$1)`, lcR2Sum)
-	if err := migrations.Apply(ctx, owner); err != nil {
-		t.Fatalf("apply every migration but 0071, 0127, 0129, 0144, 0151, 0154, 0158, 0165, 0166, 0167 and 0169: %v", err)
+	// The post-0169 OA chain depends on the held 0129 native reservation table.
+	// Its post-River suffix also requires OA roles, tables and private helpers.
+	// Keep both current SQL suffixes out of the historical first stage,
+	// then apply every held file on the populated schema with its real checksum.
+	heldOA := make(map[string]string)
+	heldOANames := make([]string, 0)
+	for _, suffix := range []struct{ dir, first string }{{"", "0170_"}, {"post_river", "0023_"}} {
+		entries, err := os.ReadDir(filepath.Join("../../migrations", suffix.dir))
+		if err != nil {
+			t.Fatal(err)
+		}
+		beforeSuffix := len(heldOANames)
+		for _, entry := range entries {
+			name := entry.Name()
+			if entry.IsDir() || !strings.HasSuffix(name, ".sql") || name < suffix.first {
+				continue
+			}
+			version := filepath.ToSlash(filepath.Join(suffix.dir, name))
+			contents, err := os.ReadFile(filepath.Join("../../migrations", version))
+			if err != nil {
+				t.Fatal(err)
+			}
+			checksum := fmt.Sprintf("%x", sha256.Sum256(contents))
+			heldOA[version] = checksum
+			heldOANames = append(heldOANames, version)
+			mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2)`, version, checksum)
+		}
+		if len(heldOANames) == beforeSuffix {
+			t.Fatalf("historical upgrade fixture did not discover dependent OA suffix %q from %s", suffix.dir, suffix.first)
+		}
 	}
-	for _, q := range []string{`SELECT to_regclass('claims.retention_policy')::text`, `SELECT to_regclass('claims.retention_log')::text`} {
+	if err := migrations.Apply(ctx, owner); err != nil {
+		t.Fatalf("apply historical stage with 0071 and its dependent migrations held: %v", err)
+	}
+	for _, q := range []string{`SELECT to_regclass('claims.retention_policy')::text`, `SELECT to_regclass('claims.retention_log')::text`,
+		`SELECT to_regclass('ops.order_attempts')::text`, `SELECT to_regclass('inbox.order_for_buyer')::text`} {
 		var got *string
 		if err := owner.QueryRow(ctx, q).Scan(&got); err != nil || got != nil {
 			t.Fatalf("pre-0071 database already has %s: %v %v", q, got, err)
@@ -4025,6 +4058,20 @@ func crUpgradeAndPreconditions(t *testing.T) {
 	}
 	if n := crCount(t, owner, `SELECT count(*) FROM pg_roles WHERE rolname LIKE 'commerce\_retention\_%'`); n != 0 {
 		t.Fatalf("pre-0071 database already has %d retention roles", n)
+	}
+	if n := crCount(t, owner, `SELECT count(*) FROM pg_roles WHERE rolname='commerce_order_attempt_owner'`); n != 0 {
+		t.Fatalf("historical database already has %d OA coordinator roles", n)
+	}
+	postOAProbes := []string{
+		`SELECT to_regprocedure('ops.order_attempt_job_matches(bigint,uuid,bigint)')::text`,
+		`SELECT to_regprocedure('checkout.order_attempt_enqueue_expiry(uuid,text,timestamptz)')::text`,
+		`SELECT to_regprocedure('ops.order_attempt_job_live(bigint,uuid,bigint)')::text`,
+	}
+	for _, q := range postOAProbes {
+		var got *string
+		if err := owner.QueryRow(ctx, q).Scan(&got); err != nil || got != nil {
+			t.Fatalf("historical database already has post-River OA helper %s: %v %v", q, got, err)
+		}
 	}
 	// populated claims rows (owner-seeded, synthetic): manual + Meta bundles with binding and link, intake, ledger, conversation
 	w := crFreshWorld(t, owner)
@@ -4093,9 +4140,25 @@ func crUpgradeAndPreconditions(t *testing.T) {
 	// 0127 A1.4 amendment that depends on it)
 	mustExec(t, owner, `UPDATE claims.bundles SET label='renamed-by-operator' WHERE id=$1`, reserved.id)
 	mustExec(t, owner, `DELETE FROM public.lc_schema_migrations WHERE version IN ('0127_lc_r1_retention.sql','0129_lc_b6_order_for_buyer.sql','0144_checkout_reminders.sql','0151_sold_out_reply.sql','0154_buyer_blocklist.sql','0158_live_price_keep_on_pause.sql','0165_lc_b3b_buyer_panel.sql','0166_open_parcel_groups.sql','0167_stripe_untracked_reservation.sql','0169_lc_r2_c3x_purge.sql')`)
+	mustExec(t, owner, `DELETE FROM public.lc_schema_migrations WHERE version=ANY($1::text[])`, heldOANames)
 	before = snap()
 	if err := migrations.Apply(ctx, owner); err != nil {
-		t.Fatalf("0071 + 0127 + 0129 + 0144 + 0151 + 0154 + 0158 + 0165 + 0166 + 0167 + 0169 on the populated database: %v", err)
+		t.Fatalf("0071 and every held dependent migration including OA on the populated database: %v", err)
+	}
+	for _, name := range heldOANames {
+		if n := crCount(t, owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version=$1 AND checksum=$2`, name, heldOA[name]); n != 1 {
+			t.Fatalf("held migration %s not applied exactly once with its file checksum: %d", name, n)
+		}
+	}
+	var upgradedOA *string
+	if err := owner.QueryRow(ctx, `SELECT to_regclass('ops.order_attempts')::text`).Scan(&upgradedOA); err != nil || upgradedOA == nil {
+		t.Fatalf("populated upgrade omitted native OA schema: %v %v", upgradedOA, err)
+	}
+	for _, q := range postOAProbes {
+		var got *string
+		if err := owner.QueryRow(ctx, q).Scan(&got); err != nil || got == nil {
+			t.Fatalf("populated upgrade omitted post-River OA helper %s: %v %v", q, got, err)
+		}
 	}
 	afterFirst := crExplicitDigest(t, owner, "public.lc_schema_migrations", "applied_at")
 	if err := migrations.Apply(ctx, owner); err != nil {

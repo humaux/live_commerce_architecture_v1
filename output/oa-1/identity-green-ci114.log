@@ -1,0 +1,1584 @@
+﻿2026-10-13T22:21:33.8465343Z Current runner version: '2.337.0'
+2026-10-13T22:21:33.8506804Z ##[group]Runner Image Provisioner
+2026-10-13T22:21:33.8507544Z Hosted Compute Agent
+2026-10-13T22:21:33.8508030Z Version: 20261002.596
+2026-10-13T22:21:33.8508609Z Commit: c3d12f3313a95f25162a1503be624f3b0617f8c0
+2026-10-13T22:21:33.8509212Z Build Date: 2026-10-02T22:28:27Z
+2026-10-13T22:21:33.8509752Z Worker ID: {ad6e5151-0b41-42be-abcb-93c1ec9567f0}
+2026-10-13T22:21:33.8510401Z Region: eastus
+2026-10-13T22:21:33.8510845Z Cloud: Azure
+2026-10-13T22:21:33.8511384Z ##[endgroup]
+2026-10-13T22:21:33.8512767Z ##[group]Operating System
+2026-10-13T22:21:33.8513280Z Ubuntu
+2026-10-13T22:21:33.8513798Z 24.04.5
+2026-10-13T22:21:33.8514222Z LTS
+2026-10-13T22:21:33.8514673Z ##[endgroup]
+2026-10-13T22:21:33.8515168Z ##[group]Runner Image
+2026-10-13T22:21:33.8515648Z Image: ubuntu-24.04
+2026-10-13T22:21:33.8516135Z Version: 20261004.327.1
+2026-10-13T22:21:33.8517147Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/Ubuntu2404-Readme.md
+2026-10-13T22:21:33.8518551Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261004.327
+2026-10-13T22:21:33.8519351Z ##[endgroup]
+2026-10-13T22:21:33.8520313Z ##[group]GITHUB_TOKEN Permissions
+2026-10-13T22:21:33.8522090Z Contents: read
+2026-10-13T22:21:33.8522821Z Metadata: read
+2026-10-13T22:21:33.8523312Z ##[endgroup]
+2026-10-13T22:21:33.8525069Z Secret source: Actions
+2026-10-13T22:21:33.8525811Z Cache mode: write
+2026-10-13T22:21:33.8526575Z Prepare workflow directory
+2026-10-13T22:21:33.8945328Z Prepare all required actions
+2026-10-13T22:21:33.8985167Z Getting action download info
+2026-10-13T22:21:34.1432155Z Download action repository 'actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09' (SHA:fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09)
+2026-10-13T22:21:34.2808786Z Download action repository 'actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16' (SHA:924ae3a1cded613372ab5595356fb5720e22ba16)
+2026-10-13T22:21:34.4878220Z Download action repository 'actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444' (SHA:a0853c24544627f65ddf259abe73b1d18a591444)
+2026-10-13T22:21:34.6677438Z Download action repository 'actions/cache@caa296126883cff596d87d8935842f9db880ef25' (SHA:caa296126883cff596d87d8935842f9db880ef25)
+2026-10-13T22:21:34.8555430Z Download action repository 'actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f' (SHA:b7c566a772e6b6bfb58ed0dc250532a479d7789f)
+2026-10-13T22:21:35.1744510Z Complete job name: gate (--browser-identity)
+2026-10-13T22:21:35.2463352Z ##[group]Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+2026-10-13T22:21:35.2464370Z with:
+2026-10-13T22:21:35.2464757Z   persist-credentials: false
+2026-10-13T22:21:35.2465236Z   fetch-depth: 0
+2026-10-13T22:21:35.2465728Z   repository: humaux/live_commerce_architecture_v1
+2026-10-13T22:21:35.2471188Z   token: ***
+2026-10-13T22:21:35.2471552Z   ssh-strict: true
+2026-10-13T22:21:35.2471937Z   ssh-user: git
+2026-10-13T22:21:35.2472299Z   clean: true
+2026-10-13T22:21:35.2472864Z   sparse-checkout-cone-mode: true
+2026-10-13T22:21:35.2473374Z   fetch-tags: false
+2026-10-13T22:21:35.2473782Z   show-progress: true
+2026-10-13T22:21:35.2474201Z   lfs: false
+2026-10-13T22:21:35.2474560Z   submodules: false
+2026-10-13T22:21:35.2474965Z   set-safe-directory: true
+2026-10-13T22:21:35.2475454Z   allow-unsafe-pr-checkout: false
+2026-10-13T22:21:35.2476093Z env:
+2026-10-13T22:21:35.2476438Z   GOTOOLCHAIN: go1.27.2
+2026-10-13T22:21:35.2476881Z   GOFLAGS: -mod=readonly
+2026-10-13T22:21:35.2477456Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+2026-10-13T22:21:35.2478057Z   MODE: --browser-identity
+2026-10-13T22:21:35.2478505Z   LC_SWEEP_WORKERS: 1
+2026-10-13T22:21:35.2478903Z   EXTRA_ENV: 
+2026-10-13T22:21:35.2479259Z ##[endgroup]
+2026-10-13T22:21:35.3307137Z Syncing repository: humaux/live_commerce_architecture_v1
+2026-10-13T22:21:35.3309485Z ##[group]Getting Git version info
+2026-10-13T22:21:35.3311009Z Working directory is '/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1'
+2026-10-13T22:21:35.3313279Z [command]/usr/bin/git version
+2026-10-13T22:21:35.3392653Z git version 2.55.0
+2026-10-13T22:21:35.3412341Z ##[endgroup]
+2026-10-13T22:21:35.3427177Z Temporarily overriding HOME='/home/runner/work/_temp/dc072164-c8b7-43b1-9d3d-d4500c3111d1' before making global git config changes
+2026-10-13T22:21:35.3429656Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-13T22:21:35.3434102Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+2026-10-13T22:21:35.3482185Z Deleting the contents of '/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1'
+2026-10-13T22:21:35.3485686Z ##[group]Initializing the repository
+2026-10-13T22:21:35.3490040Z [command]/usr/bin/git init /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+2026-10-13T22:21:35.3571055Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-10-13T22:21:35.3574241Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-10-13T22:21:35.3575279Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-10-13T22:21:35.3576072Z hint: call:
+2026-10-13T22:21:35.3576439Z hint:
+2026-10-13T22:21:35.3576962Z hint: 	git config --global init.defaultBranch <name>
+2026-10-13T22:21:35.3577569Z hint:
+2026-10-13T22:21:35.3578171Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-10-13T22:21:35.3579154Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-10-13T22:21:35.3579903Z hint:
+2026-10-13T22:21:35.3580272Z hint: 	git branch -m <name>
+2026-10-13T22:21:35.3580701Z hint:
+2026-10-13T22:21:35.3581328Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-10-13T22:21:35.3583256Z Initialized empty Git repository in /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/.git/
+2026-10-13T22:21:35.3586264Z [command]/usr/bin/git remote add origin https://github.com/humaux/live_commerce_architecture_v1
+2026-10-13T22:21:35.3636346Z ##[endgroup]
+2026-10-13T22:21:35.3637295Z ##[group]Disabling automatic garbage collection
+2026-10-13T22:21:35.3639494Z [command]/usr/bin/git config --local gc.auto 0
+2026-10-13T22:21:35.3672990Z ##[endgroup]
+2026-10-13T22:21:35.3674053Z ##[group]Setting up auth
+2026-10-13T22:21:35.3679002Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-13T22:21:35.3708489Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-13T22:21:35.4391000Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-13T22:21:35.4423727Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-13T22:21:35.4610575Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-13T22:21:35.4641147Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-13T22:21:35.4832042Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-10-13T22:21:35.4868031Z ##[endgroup]
+2026-10-13T22:21:35.4869051Z ##[group]Fetching the repository
+2026-10-13T22:21:35.4876024Z [command]/usr/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+2026-10-13T22:21:41.3362926Z From https://github.com/humaux/live_commerce_architecture_v1
+2026-10-13T22:21:41.3363600Z  * [new branch]        checkout-go-20260924    -> origin/checkout-go-20260924
+2026-10-13T22:21:41.3364352Z  * [new branch]        checkout-sql-20260924   -> origin/checkout-sql-20260924
+2026-10-13T22:21:41.3364831Z  * [new branch]        claude/gallant-bohr-9rs3yo -> origin/claude/gallant-bohr-9rs3yo
+2026-10-13T22:21:41.3365398Z  * [new branch]        codex/account-intake-http-20260924 -> origin/codex/account-intake-http-20260924
+2026-10-13T22:21:41.3366124Z  * [new branch]        codex/admin-assets      -> origin/codex/admin-assets
+2026-10-13T22:21:41.3366712Z  * [new branch]        codex/admin-fixture     -> origin/codex/admin-fixture
+2026-10-13T22:21:41.3367288Z  * [new branch]        codex/admin-ledger      -> origin/codex/admin-ledger
+2026-10-13T22:21:41.3367953Z  * [new branch]        codex/admin-ledger-tests -> origin/codex/admin-ledger-tests
+2026-10-13T22:21:41.3368600Z  * [new branch]        codex/admin-pagination  -> origin/codex/admin-pagination
+2026-10-13T22:21:41.3369316Z  * [new branch]        codex/admin-transport-tests -> origin/codex/admin-transport-tests
+2026-10-13T22:21:41.3370115Z  * [new branch]        codex/buyer-history-backend -> origin/codex/buyer-history-backend
+2026-10-13T22:21:41.3370674Z  * [new branch]        codex/catalog-inventory -> origin/codex/catalog-inventory
+2026-10-13T22:21:41.3371307Z  * [new branch]        codex/catalog-inventory-tests -> origin/codex/catalog-inventory-tests
+2026-10-13T22:21:41.3372018Z  * [new branch]        codex/commerce-buyer-payment-assembly-gate-20260925 -> origin/codex/commerce-buyer-payment-assembly-gate-20260925
+2026-10-13T22:21:41.3373095Z  * [new branch]        codex/commerce-buyer-payment-browser-tests-20260925 -> origin/codex/commerce-buyer-payment-browser-tests-20260925
+2026-10-13T22:21:41.3373874Z  * [new branch]        codex/commerce-buyer-payment-http-20260925 -> origin/codex/commerce-buyer-payment-http-20260925
+2026-10-13T22:21:41.3374747Z  * [new branch]        codex/commerce-buyer-payment-pg-20260925 -> origin/codex/commerce-buyer-payment-pg-20260925
+2026-10-13T22:21:41.3375415Z  * [new branch]        codex/commerce-buyer-payment-public-20260925 -> origin/codex/commerce-buyer-payment-public-20260925
+2026-10-13T22:21:41.3376178Z  * [new branch]        codex/commerce-buyer-payment-public-tests-20260925 -> origin/codex/commerce-buyer-payment-public-tests-20260925
+2026-10-13T22:21:41.3376955Z  * [new branch]        codex/commerce-buyer-payment-ui-controller-20260925 -> origin/codex/commerce-buyer-payment-ui-controller-20260925
+2026-10-13T22:21:41.3377657Z  * [new branch]        codex/commerce-hosted-go-20260925 -> origin/codex/commerce-hosted-go-20260925
+2026-10-13T22:21:41.3378502Z  * [new branch]        codex/commerce-hosted-pg-20260925 -> origin/codex/commerce-hosted-pg-20260925
+2026-10-13T22:21:41.3379086Z  * [new branch]        codex/engineering-maintenance -> origin/codex/engineering-maintenance
+2026-10-13T22:21:41.3379601Z  * [new branch]        codex/expiry-runtime-go -> origin/codex/expiry-runtime-go
+2026-10-13T22:21:41.3380066Z  * [new branch]        codex/expiry-runtime-pg -> origin/codex/expiry-runtime-pg
+2026-10-13T22:21:41.3380647Z  * [new branch]        codex/foundation-platform -> origin/codex/foundation-platform
+2026-10-13T22:21:41.3381188Z  * [new branch]        codex/foundation-tests  -> origin/codex/foundation-tests
+2026-10-13T22:21:41.3381843Z  * [new branch]        codex/locale-routing    -> origin/codex/locale-routing
+2026-10-13T22:21:41.3382412Z  * [new branch]        codex/merchant-orders-bff -> origin/codex/merchant-orders-bff
+2026-10-13T22:21:41.3385465Z  * [new branch]        codex/merchant-orders-bff-test -> origin/codex/merchant-orders-bff-test
+2026-10-13T22:21:41.3386227Z  * [new branch]        codex/merchant-orders-go -> origin/codex/merchant-orders-go
+2026-10-13T22:21:41.3386905Z  * [new branch]        codex/merchant-orders-pg -> origin/codex/merchant-orders-pg
+2026-10-13T22:21:41.3387731Z  * [new branch]        codex/merchant-settings-http-20260924 -> origin/codex/merchant-settings-http-20260924
+2026-10-13T22:21:41.3388482Z  * [new branch]        codex/oidclogin         -> origin/codex/oidclogin
+2026-10-13T22:21:41.3389777Z  * [new branch]        codex/payment-capture-go-20260924 -> origin/codex/payment-capture-go-20260924
+2026-10-13T22:21:41.3390686Z  * [new branch]        codex/payment-capture-sql-20260924 -> origin/codex/payment-capture-sql-20260924
+2026-10-13T22:21:41.3391517Z  * [new branch]        codex/payment-query-20260924 -> origin/codex/payment-query-20260924
+2026-10-13T22:21:41.3392404Z  * [new branch]        codex/payment-runtime-pg-gate-20260925 -> origin/codex/payment-runtime-pg-gate-20260925
+2026-10-13T22:21:41.3393484Z  * [new branch]        codex/payment-start-20260924 -> origin/codex/payment-start-20260924
+2026-10-13T22:21:41.3394365Z  * [new branch]        codex/payment-worker-runtime-20260925 -> origin/codex/payment-worker-runtime-20260925
+2026-10-13T22:21:41.3395263Z  * [new branch]        codex/pr32-email-envelope-red -> origin/codex/pr32-email-envelope-red
+2026-10-13T22:21:41.3396014Z  * [new branch]        codex/pr32-intent-ci-red -> origin/codex/pr32-intent-ci-red
+2026-10-13T22:21:41.3396721Z  * [new branch]        codex/pr32-lock-scope-red -> origin/codex/pr32-lock-scope-red
+2026-10-13T22:21:41.3397478Z  * [new branch]        codex/pr32-price-correct-red -> origin/codex/pr32-price-correct-red
+2026-10-13T22:21:41.3398272Z  * [new branch]        codex/pr32-price-reason-red -> origin/codex/pr32-price-reason-red
+2026-10-13T22:21:41.3398993Z  * [new branch]        codex/pr32-r5-red       -> origin/codex/pr32-r5-red
+2026-10-13T22:21:41.3399750Z  * [new branch]        codex/pr32-recovery-replay-red -> origin/codex/pr32-recovery-replay-red
+2026-10-13T22:21:41.3400565Z  * [new branch]        codex/pr32-reservation-red -> origin/codex/pr32-reservation-red
+2026-10-13T22:21:41.3401335Z  * [new branch]        codex/pr32-server-intent-red -> origin/codex/pr32-server-intent-red
+2026-10-13T22:21:41.3402045Z  * [new branch]        codex/pr32-settled-ui-red -> origin/codex/pr32-settled-ui-red
+2026-10-13T22:21:41.3403098Z  * [new branch]        codex/published-resolver-go-20260925 -> origin/codex/published-resolver-go-20260925
+2026-10-13T22:21:41.3404079Z  * [new branch]        codex/settings-discovery-20260924 -> origin/codex/settings-discovery-20260924
+2026-10-13T22:21:41.3405042Z  * [new branch]        codex/settings-documenter-20260925 -> origin/codex/settings-documenter-20260925
+2026-10-13T22:21:41.3406079Z  * [new branch]        codex/settings-ledger-regression-20260924 -> origin/codex/settings-ledger-regression-20260924
+2026-10-13T22:21:41.3407239Z  * [new branch]        codex/settings-ui-20260924 -> origin/codex/settings-ui-20260924
+2026-10-13T22:21:41.3408008Z  * [new branch]        codex/t03-browser-bff   -> origin/codex/t03-browser-bff
+2026-10-13T22:21:41.3408748Z  * [new branch]        codex/t03-buyer-capability -> origin/codex/t03-buyer-capability
+2026-10-13T22:21:41.3409634Z  * [new branch]        commerce/allocation-config-20260924 -> origin/commerce/allocation-config-20260924
+2026-10-13T22:21:41.3410794Z  * [new branch]        commerce/browser-input-cleanup-fault-tests-20260927 -> origin/commerce/browser-input-cleanup-fault-tests-20260927
+2026-10-13T22:21:41.3412013Z  * [new branch]        commerce/browser-input-config-20260927 -> origin/commerce/browser-input-config-20260927
+2026-10-13T22:21:41.3413302Z  * [new branch]        commerce/browser-input-config-tests-20260927 -> origin/commerce/browser-input-config-tests-20260927
+2026-10-13T22:21:41.3414579Z  * [new branch]        commerce/browser-input-delivery-acceptance-20260927 -> origin/commerce/browser-input-delivery-acceptance-20260927
+2026-10-13T22:21:41.3415782Z  * [new branch]        commerce/browser-input-execution-20260927 -> origin/commerce/browser-input-execution-20260927
+2026-10-13T22:21:41.3416922Z  * [new branch]        commerce/browser-input-execution-tests-20260927 -> origin/commerce/browser-input-execution-tests-20260927
+2026-10-13T22:21:41.3418134Z  * [new branch]        commerce/browser-input-fault-tests-20260927 -> origin/commerce/browser-input-fault-tests-20260927
+2026-10-13T22:21:41.3419325Z  * [new branch]        commerce/browser-input-holds-tests-20260927 -> origin/commerce/browser-input-holds-tests-20260927
+2026-10-13T22:21:41.3420679Z  * [new branch]        commerce/browser-input-http-tests-20260927 -> origin/commerce/browser-input-http-tests-20260927
+2026-10-13T22:21:41.3421873Z  * [new branch]        commerce/browser-input-plan-fault-tests-20260927 -> origin/commerce/browser-input-plan-fault-tests-20260927
+2026-10-13T22:21:41.3423274Z  * [new branch]        commerce/browser-input-studio-read-20260927 -> origin/commerce/browser-input-studio-read-20260927
+2026-10-13T22:21:41.3424415Z  * [new branch]        commerce/browser-input-token-go-20260927 -> origin/commerce/browser-input-token-go-20260927
+2026-10-13T22:21:41.3425458Z  * [new branch]        commerce/brw07-composite-go-20260928 -> origin/commerce/brw07-composite-go-20260928
+2026-10-13T22:21:41.3426458Z  * [new branch]        commerce/brw07-composite-sql-20260928 -> origin/commerce/brw07-composite-sql-20260928
+2026-10-13T22:21:41.3427396Z  * [new branch]        commerce/buyer-catalog-20260925 -> origin/commerce/buyer-catalog-20260925
+2026-10-13T22:21:41.3428351Z  * [new branch]        commerce/buyer-design-record-20260925 -> origin/commerce/buyer-design-record-20260925
+2026-10-13T22:21:41.3429340Z  * [new branch]        commerce/buyer-destination-20260924 -> origin/commerce/buyer-destination-20260924
+2026-10-13T22:21:41.3430509Z  * [new branch]        commerce/buyer-history-browser-extension-20260925 -> origin/commerce/buyer-history-browser-extension-20260925
+2026-10-13T22:21:41.3431785Z  * [new branch]        commerce/buyer-history-design-record-20260925 -> origin/commerce/buyer-history-design-record-20260925
+2026-10-13T22:21:41.3432991Z  * [new branch]        commerce/buyer-http-20260925 -> origin/commerce/buyer-http-20260925
+2026-10-13T22:21:41.3433843Z  * [new branch]        commerce/buyer-options-20260925 -> origin/commerce/buyer-options-20260925
+2026-10-13T22:21:41.3434890Z  * [new branch]        commerce/buyer-order-design-record-20260925 -> origin/commerce/buyer-order-design-record-20260925
+2026-10-13T22:21:41.3436006Z  * [new branch]        commerce/buyer-order-gate-20260925 -> origin/commerce/buyer-order-gate-20260925
+2026-10-13T22:21:41.3437095Z  * [new branch]        commerce/buyer-projections-20260925 -> origin/commerce/buyer-projections-20260925
+2026-10-13T22:21:41.3438153Z  * [new branch]        commerce/buyer-public-bff-20260925 -> origin/commerce/buyer-public-bff-20260925
+2026-10-13T22:21:41.3439335Z  * [new branch]        commerce/buyer-registration-20260925 -> origin/commerce/buyer-registration-20260925
+2026-10-13T22:21:41.3440327Z  * [new branch]        commerce/checkout-quote-20260920 -> origin/commerce/checkout-quote-20260920
+2026-10-13T22:21:41.3441355Z  * [new branch]        commerce/delivery-config-20260920 -> origin/commerce/delivery-config-20260920
+2026-10-13T22:21:41.3442422Z  * [new branch]        commerce/legacy-family-go-20260926 -> origin/commerce/legacy-family-go-20260926
+2026-10-13T22:21:41.3443613Z  * [new branch]        commerce/legacy-family-integration-20260926 -> origin/commerce/legacy-family-integration-20260926
+2026-10-13T22:21:41.3444710Z  * [new branch]        commerce/legacy-family-tests-20260926 -> origin/commerce/legacy-family-tests-20260926
+2026-10-13T22:21:41.3445770Z  * [new branch]        commerce/legacy-maintenance-tests-20260926 -> origin/commerce/legacy-maintenance-tests-20260926
+2026-10-13T22:21:41.3446960Z  * [new branch]        commerce/legacy-upgrade-tests-20260926 -> origin/commerce/legacy-upgrade-tests-20260926
+2026-10-13T22:21:41.3448028Z  * [new branch]        commerce/live-draft-go-20260927 -> origin/commerce/live-draft-go-20260927
+2026-10-13T22:21:41.3448794Z  * [new branch]        commerce/live-draft-tests-20260927 -> origin/commerce/live-draft-tests-20260927
+2026-10-13T22:21:41.3449394Z  * [new branch]        commerce/livekit-input-tests-20260927 -> origin/commerce/livekit-input-tests-20260927
+2026-10-13T22:21:41.3449991Z  * [new branch]        commerce/livekit-input-wire-20260927 -> origin/commerce/livekit-input-wire-20260927
+2026-10-13T22:21:41.3450778Z  * [new branch]        commerce/livekit-material-go-20260927 -> origin/commerce/livekit-material-go-20260927
+2026-10-13T22:21:41.3451403Z  * [new branch]        commerce/livekit-material-tests-20260927 -> origin/commerce/livekit-material-tests-20260927
+2026-10-13T22:21:41.3452014Z  * [new branch]        commerce/livekit-protocol-go-20260927 -> origin/commerce/livekit-protocol-go-20260927
+2026-10-13T22:21:41.3452843Z  * [new branch]        commerce/livekit-protocol-tests-20260927 -> origin/commerce/livekit-protocol-tests-20260927
+2026-10-13T22:21:41.3453434Z  * [new branch]        commerce/livekit-room-go-20260927 -> origin/commerce/livekit-room-go-20260927
+2026-10-13T22:21:41.3453994Z  * [new branch]        commerce/livekit-room-tests-20260927 -> origin/commerce/livekit-room-tests-20260927
+2026-10-13T22:21:41.3454547Z  * [new branch]        commerce/local-recovery-20260927 -> origin/commerce/local-recovery-20260927
+2026-10-13T22:21:41.3455170Z  * [new branch]        commerce/local-recovery-independent-20260927 -> origin/commerce/local-recovery-independent-20260927
+2026-10-13T22:21:41.3455824Z  * [new branch]        commerce/local-recovery-tests-20260927 -> origin/commerce/local-recovery-tests-20260927
+2026-10-13T22:21:41.3456497Z  * [new branch]        commerce/lri-additive-event-snapshot-20260927 -> origin/commerce/lri-additive-event-snapshot-20260927
+2026-10-13T22:21:41.3457144Z  * [new branch]        commerce/media-authority-sql-20260927 -> origin/commerce/media-authority-sql-20260927
+2026-10-13T22:21:41.3457761Z  * [new branch]        commerce/media-authority-tests-20260927 -> origin/commerce/media-authority-tests-20260927
+2026-10-13T22:21:41.3458430Z  * [new branch]        commerce/media-execution-20260927 -> origin/commerce/media-execution-20260927
+2026-10-13T22:21:41.3459418Z  * [new branch]        commerce/media-execution-tests-20260927 -> origin/commerce/media-execution-tests-20260927
+2026-10-13T22:21:41.3460436Z  * [new branch]        commerce/media-input-source-20260927 -> origin/commerce/media-input-source-20260927
+2026-10-13T22:21:41.3461324Z  * [new branch]        commerce/media-input-tests-20260927 -> origin/commerce/media-input-tests-20260927
+2026-10-13T22:21:41.3462253Z  * [new branch]        commerce/media-login-source-20260927 -> origin/commerce/media-login-source-20260927
+2026-10-13T22:21:41.3463294Z  * [new branch]        commerce/media-login-tests-20260927 -> origin/commerce/media-login-tests-20260927
+2026-10-13T22:21:41.3464307Z  * [new branch]        commerce/media-plan-20260927 -> origin/commerce/media-plan-20260927
+2026-10-13T22:21:41.3465263Z  * [new branch]        commerce/media-plan-tests-20260927 -> origin/commerce/media-plan-tests-20260927
+2026-10-13T22:21:41.3466342Z  * [new branch]        commerce/media-recovery-observer-20260927 -> origin/commerce/media-recovery-observer-20260927
+2026-10-13T22:21:41.3466997Z  * [new branch]        commerce/media-recovery-tests-20260927 -> origin/commerce/media-recovery-tests-20260927
+2026-10-13T22:21:41.3467561Z  * [new branch]        commerce/media-runtime-20260927 -> origin/commerce/media-runtime-20260927
+2026-10-13T22:21:41.3468183Z  * [new branch]        commerce/media-runtime-tests-20260927 -> origin/commerce/media-runtime-tests-20260927
+2026-10-13T22:21:41.3469032Z  * [new branch]        commerce/media-stop-20260927 -> origin/commerce/media-stop-20260927
+2026-10-13T22:21:41.3469630Z  * [new branch]        commerce/media-stop-tests-20260927 -> origin/commerce/media-stop-tests-20260927
+2026-10-13T22:21:41.3470372Z  * [new branch]        commerce/merchant-buyer-joint-20260925 -> origin/commerce/merchant-buyer-joint-20260925
+2026-10-13T22:21:41.3471281Z  * [new branch]        commerce/merchant-orders-c-tests-20260927 -> origin/commerce/merchant-orders-c-tests-20260927
+2026-10-13T22:21:41.3471911Z  * [new branch]        commerce/merchant-orders-c-ui-20260927 -> origin/commerce/merchant-orders-c-ui-20260927
+2026-10-13T22:21:41.3472675Z  * [new branch]        commerce/merchant-purchase-entry-20260925 -> origin/commerce/merchant-purchase-entry-20260925
+2026-10-13T22:21:41.3473475Z  * [new branch]        commerce/merchant-purchase-entry-ui-20260925 -> origin/commerce/merchant-purchase-entry-ui-20260925
+2026-10-13T22:21:41.3474081Z  * [new branch]        commerce/meta-consumer-go-20260926 -> origin/commerce/meta-consumer-go-20260926
+2026-10-13T22:21:41.3474876Z  * [new branch]        commerce/meta-consumer-prefixed-repro-20260926 -> origin/commerce/meta-consumer-prefixed-repro-20260926
+2026-10-13T22:21:41.3475942Z  * [new branch]        commerce/meta-consumer-tests-20260926 -> origin/commerce/meta-consumer-tests-20260926
+2026-10-13T22:21:41.3476500Z  * [new branch]        commerce/meta-inbox-go-20260926 -> origin/commerce/meta-inbox-go-20260926
+2026-10-13T22:21:41.3477028Z  * [new branch]        commerce/meta-inbox-tests-20260926 -> origin/commerce/meta-inbox-tests-20260926
+2026-10-13T22:21:41.3477585Z  * [new branch]        commerce/meta-isolation-go-20260926 -> origin/commerce/meta-isolation-go-20260926
+2026-10-13T22:21:41.3478119Z  * [new branch]        commerce/meta-payload-20260926 -> origin/commerce/meta-payload-20260926
+2026-10-13T22:21:41.3478668Z  * [new branch]        commerce/meta-payload-tests-20260926 -> origin/commerce/meta-payload-tests-20260926
+2026-10-13T22:21:41.3479209Z  * [new branch]        commerce/meta-protocol-20260926 -> origin/commerce/meta-protocol-20260926
+2026-10-13T22:21:41.3479770Z  * [new branch]        commerce/meta-protocol-tests-20260926 -> origin/commerce/meta-protocol-tests-20260926
+2026-10-13T22:21:41.3480370Z  * [new branch]        commerce/meta-runtime-go-20260926 -> origin/commerce/meta-runtime-go-20260926
+2026-10-13T22:21:41.3481119Z  * [new branch]        commerce/meta-runtime-isolation-tests-20260926 -> origin/commerce/meta-runtime-isolation-tests-20260926
+2026-10-13T22:21:41.3481758Z  * [new branch]        commerce/meta-runtime-tests-20260926 -> origin/commerce/meta-runtime-tests-20260926
+2026-10-13T22:21:41.3482412Z  * [new branch]        commerce/orders-native-visibility-tests-20260927 -> origin/commerce/orders-native-visibility-tests-20260927
+2026-10-13T22:21:41.3483300Z  * [new branch]        commerce/pickup-source-20260924 -> origin/commerce/pickup-source-20260924
+2026-10-13T22:21:41.3483793Z  * [new branch]        commerce/pricing-20260920 -> origin/commerce/pricing-20260920
+2026-10-13T22:21:41.3484307Z  * [new branch]        commerce/r04-local-input-20260927 -> origin/commerce/r04-local-input-20260927
+2026-10-13T22:21:41.3484999Z  * [new branch]        commerce/r04-local-input-tests-20260927 -> origin/commerce/r04-local-input-tests-20260927
+2026-10-13T22:21:41.3485593Z  * [new branch]        commerce/seed-pool-lifetime-20260927 -> origin/commerce/seed-pool-lifetime-20260927
+2026-10-13T22:21:41.3486182Z  * [new branch]        commerce/startup-diagnostics-20260927 -> origin/commerce/startup-diagnostics-20260927
+2026-10-13T22:21:41.3486717Z  * [new branch]        commerce/studio-b-ui-20260927 -> origin/commerce/studio-b-ui-20260927
+2026-10-13T22:21:41.3487247Z  * [new branch]        commerce/studio-bff-source-20260927 -> origin/commerce/studio-bff-source-20260927
+2026-10-13T22:21:41.3487813Z  * [new branch]        commerce/studio-bff-tests-20260927 -> origin/commerce/studio-bff-tests-20260927
+2026-10-13T22:21:41.3488371Z  * [new branch]        commerce/studio-input-tests-20260927 -> origin/commerce/studio-input-tests-20260927
+2026-10-13T22:21:41.3488993Z  * [new branch]        commerce/studio-native-device-tests-20260927 -> origin/commerce/studio-native-device-tests-20260927
+2026-10-13T22:21:41.3489579Z  * [new branch]        commerce/studio-source-20260927 -> origin/commerce/studio-source-20260927
+2026-10-13T22:21:41.3490086Z  * [new branch]        commerce/studio-tests-20260927 -> origin/commerce/studio-tests-20260927
+2026-10-13T22:21:41.3490600Z  * [new branch]        commerce/studio-ui-tests-20260927 -> origin/commerce/studio-ui-tests-20260927
+2026-10-13T22:21:41.3491144Z  * [new branch]        commerce/t03-design-record-20260920 -> origin/commerce/t03-design-record-20260920
+2026-10-13T22:21:41.3491783Z  * [new branch]        commerce/t06-dispatcher-20260920 -> origin/commerce/t06-dispatcher-20260920
+2026-10-13T22:21:41.3492349Z  * [new branch]        commerce/t06-operation-service-20260920 -> origin/commerce/t06-operation-service-20260920
+2026-10-13T22:21:41.3493032Z  * [new branch]        commerce/wizard-20260920 -> origin/commerce/wizard-20260920
+2026-10-13T22:21:41.3493444Z  * [new branch]        int/lc-u1-shell         -> origin/int/lc-u1-shell
+2026-10-13T22:21:41.3493859Z  * [new branch]        int/product-media-v2-ui -> origin/int/product-media-v2-ui
+2026-10-13T22:21:41.3494317Z  * [new branch]        int/storefront-card-gutter -> origin/int/storefront-card-gutter
+2026-10-13T22:21:41.3494746Z  * [new branch]        int/w1-01u-banner       -> origin/int/w1-01u-banner
+2026-10-13T22:21:41.3495165Z  * [new branch]        int/w3-u1b-picklist-ui  -> origin/int/w3-u1b-picklist-ui
+2026-10-13T22:21:41.3495553Z  * [new branch]        main                    -> origin/main
+2026-10-13T22:21:41.3495975Z  * [new branch]        merchant-accounts-go-20260924 -> origin/merchant-accounts-go-20260924
+2026-10-13T22:21:41.3496481Z  * [new branch]        payment-methods-go-20260924 -> origin/payment-methods-go-20260924
+2026-10-13T22:21:41.3496931Z  * [new branch]        payuni-wire-go-20260924 -> origin/payuni-wire-go-20260924
+2026-10-13T22:21:41.3497333Z  * [new branch]        r3/integration          -> origin/r3/integration
+2026-10-13T22:21:41.3497788Z  * [new branch]        unit/browser-evidence-untracked -> origin/unit/browser-evidence-untracked
+2026-10-13T22:21:41.3498298Z  * [new branch]        unit/cancel-closes-work-item -> origin/unit/cancel-closes-work-item
+2026-10-13T22:21:41.3498743Z  * [new branch]        unit/card-pay-flake     -> origin/unit/card-pay-flake
+2026-10-13T22:21:41.3499184Z  * [new branch]        unit/cart-refresh-generation -> origin/unit/cart-refresh-generation
+2026-10-13T22:21:41.3499637Z  * [new branch]        unit/ci-actions-node24  -> origin/unit/ci-actions-node24
+2026-10-13T22:21:41.3500064Z  * [new branch]        unit/ci-browser-linux   -> origin/unit/ci-browser-linux
+2026-10-13T22:21:41.3500477Z  * [new branch]        unit/ci-contract-drift  -> origin/unit/ci-contract-drift
+2026-10-13T22:21:41.3500889Z  * [new branch]        unit/ci-dedupe-serial   -> origin/unit/ci-dedupe-serial
+2026-10-13T22:21:41.3501351Z  * [new branch]        unit/ci-playwright-deps-cache -> origin/unit/ci-playwright-deps-cache
+2026-10-13T22:21:41.3501810Z  * [new branch]        unit/ci-pr-gates        -> origin/unit/ci-pr-gates
+2026-10-13T22:21:41.3502353Z  * [new branch]        unit/ci-pr-modes-coverage -> origin/unit/ci-pr-modes-coverage
+2026-10-13T22:21:41.3502984Z  * [new branch]        unit/ci-select-backend-browser -> origin/unit/ci-select-backend-browser
+2026-10-13T22:21:41.3503433Z  * [new branch]        unit/ci-speed           -> origin/unit/ci-speed
+2026-10-13T22:21:41.3503821Z  * [new branch]        unit/delivery-report    -> origin/unit/delivery-report
+2026-10-13T22:21:41.3504238Z  * [new branch]        unit/delivery-report-r2 -> origin/unit/delivery-report-r2
+2026-10-13T22:21:41.3504665Z  * [new branch]        unit/deploy-prep-r3     -> origin/unit/deploy-prep-r3
+2026-10-13T22:21:41.3505100Z  * [new branch]        unit/deploy-prep-r3-p2  -> origin/unit/deploy-prep-r3-p2
+2026-10-13T22:21:41.3505515Z  * [new branch]        unit/e2e-price-regex    -> origin/unit/e2e-price-regex
+2026-10-13T22:21:41.3505938Z  * [new branch]        unit/ext-agent-anthropic -> origin/unit/ext-agent-anthropic
+2026-10-13T22:21:41.3506438Z  * [new branch]        unit/fix-ads-draft-midnight-flake -> origin/unit/fix-ads-draft-midnight-flake
+2026-10-13T22:21:41.3506980Z  * [new branch]        unit/fix-manual-order-regen-race -> origin/unit/fix-manual-order-regen-race
+2026-10-13T22:21:41.3507489Z  * [new branch]        unit/fix-merchant-buyer-pmv2 -> origin/unit/fix-merchant-buyer-pmv2
+2026-10-13T22:21:41.3507942Z  * [new branch]        unit/fix-meta-ads-ma09a -> origin/unit/fix-meta-ads-ma09a
+2026-10-13T22:21:41.3508389Z  * [new branch]        unit/fix-report-funnel-clock -> origin/unit/fix-report-funnel-clock
+2026-10-13T22:21:41.3509002Z  * [new branch]        unit/fix-settings-real-flake -> origin/unit/fix-settings-real-flake
+2026-10-13T22:21:41.3509513Z  * [new branch]        unit/fix-storefront-chips-stream -> origin/unit/fix-storefront-chips-stream
+2026-10-13T22:21:41.3510055Z  * [new branch]        unit/fix-untracked-stripe-capture -> origin/unit/fix-untracked-stripe-capture
+2026-10-13T22:21:41.3510552Z  * [new branch]        unit/followups-polish-1 -> origin/unit/followups-polish-1
+2026-10-13T22:21:41.3510975Z  * [new branch]        unit/gate-dep-register  -> origin/unit/gate-dep-register
+2026-10-13T22:21:41.3511388Z  * [new branch]        unit/gate-port-retry    -> origin/unit/gate-port-retry
+2026-10-13T22:21:41.3511835Z  * [new branch]        unit/lc-a3-print-idempotency -> origin/unit/lc-a3-print-idempotency
+2026-10-13T22:21:41.3512302Z  * [new branch]        unit/lc-b2-deletion-eviction -> origin/unit/lc-b2-deletion-eviction
+2026-10-13T22:21:41.3513134Z  * [new branch]        unit/lc-b3b-buyer-panel -> origin/unit/lc-b3b-buyer-panel
+2026-10-13T22:21:41.3513575Z  * [new branch]        unit/lc-b7-console-read -> origin/unit/lc-b7-console-read
+2026-10-13T22:21:41.3514008Z  * [new branch]        unit/lc-r2-c3-print-purge -> origin/unit/lc-r2-c3-print-purge
+2026-10-13T22:21:41.3514424Z  * [new branch]        unit/lc-u1-shell        -> origin/unit/lc-u1-shell
+2026-10-13T22:21:41.3514849Z  * [new branch]        unit/lc-u2a-comment-stream -> origin/unit/lc-u2a-comment-stream
+2026-10-13T22:21:41.3515292Z  * [new branch]        unit/lc-u2b-inbox-page  -> origin/unit/lc-u2b-inbox-page
+2026-10-13T22:21:41.3515724Z  * [new branch]        unit/lc-u2b2-customer-link -> origin/unit/lc-u2b2-customer-link
+2026-10-13T22:21:41.3516201Z  * [new branch]        unit/lc-u3-create-order-drawer -> origin/unit/lc-u3-create-order-drawer
+2026-10-13T22:21:41.3516704Z  * [new branch]        unit/live-price-keep-on-pause -> origin/unit/live-price-keep-on-pause
+2026-10-13T22:21:41.3517239Z  * [new branch]        unit/matrix-coverage-v2-evidence -> origin/unit/matrix-coverage-v2-evidence
+2026-10-13T22:21:41.3517777Z  * [new branch]        unit/matrix-coverage-v2-execution -> origin/unit/matrix-coverage-v2-execution
+2026-10-13T22:21:41.3518273Z  * [new branch]        unit/matrix-ledger-enforce -> origin/unit/matrix-ledger-enforce
+2026-10-13T22:21:41.3518817Z  * [new branch]        unit/oa-1-order-attempt-core -> origin/unit/oa-1-order-attempt-core
+2026-10-13T22:21:41.3519409Z  * [new branch]        unit/ops-01b-store-suspend -> origin/unit/ops-01b-store-suspend
+2026-10-13T22:21:41.3519865Z  * [new branch]        unit/ops-02b-support-grant -> origin/unit/ops-02b-support-grant
+2026-10-13T22:21:41.3520322Z  * [new branch]        unit/order-attempt-contract -> origin/unit/order-attempt-contract
+2026-10-13T22:21:41.3520780Z  * [new branch]        unit/order-gate-bo01-race -> origin/unit/order-gate-bo01-race
+2026-10-13T22:21:41.3521227Z  * [new branch]        unit/pay-rm1-remove-payuni -> origin/unit/pay-rm1-remove-payuni
+2026-10-13T22:21:41.3521682Z  * [new branch]        unit/perf-dashboard-todos -> origin/unit/perf-dashboard-todos
+2026-10-13T22:21:41.3522113Z  * [new branch]        unit/pr1-ui-followups   -> origin/unit/pr1-ui-followups
+2026-10-13T22:21:41.3522756Z  * [new branch]        unit/product-media-v2-backend -> origin/unit/product-media-v2-backend
+2026-10-13T22:21:41.3523232Z  * [new branch]        unit/ruleset-acceptance -> origin/unit/ruleset-acceptance
+2026-10-13T22:21:41.3523661Z  * [new branch]        unit/scope-revoke-404   -> origin/unit/scope-revoke-404
+2026-10-13T22:21:41.3524120Z  * [new branch]        unit/security-go-1272-xnet-060 -> origin/unit/security-go-1272-xnet-060
+2026-10-13T22:21:41.3524577Z  * [new branch]        unit/settlement-resolve -> origin/unit/settlement-resolve
+2026-10-13T22:21:41.3525019Z  * [new branch]        unit/storefront-image-cap -> origin/unit/storefront-image-cap
+2026-10-13T22:21:41.3525434Z  * [new branch]        unit/tz-audit           -> origin/unit/tz-audit
+2026-10-13T22:21:41.3525950Z  * [new branch]        unit/ux-harden-r1       -> origin/unit/ux-harden-r1
+2026-10-13T22:21:41.3526348Z  * [new branch]        unit/visual-polish-r1   -> origin/unit/visual-polish-r1
+2026-10-13T22:21:41.3526799Z  * [new branch]        unit/w3-03b-checkout-reminder -> origin/unit/w3-03b-checkout-reminder
+2026-10-13T22:21:41.3527261Z  * [new branch]        unit/w3-04b-sold-out-reply -> origin/unit/w3-04b-sold-out-reply
+2026-10-13T22:21:41.3527684Z  * [new branch]        unit/w3-05b-blocklist   -> origin/unit/w3-05b-blocklist
+2026-10-13T22:21:41.3528102Z  * [new branch]        unit/w3-06b-keyword-tools -> origin/unit/w3-06b-keyword-tools
+2026-10-13T22:21:41.3528530Z  * [new branch]        unit/w3-07b-parcel-merge -> origin/unit/w3-07b-parcel-merge
+2026-10-13T22:21:41.3528938Z  * [new branch]        unit/w3-08b-returns     -> origin/unit/w3-08b-returns
+2026-10-13T22:21:41.3529362Z  * [new branch]        unit/w3-u2-live-settings-ui -> origin/unit/w3-u2-live-settings-ui
+2026-10-13T22:21:41.3529883Z  * [new branch]        unit/w3-u3-comment-label-print -> origin/unit/w3-u3-comment-label-print
+2026-10-13T22:21:41.3530574Z  * [new branch]        unit/w3-u4-parcel-merge-ui -> origin/unit/w3-u4-parcel-merge-ui
+2026-10-13T22:21:41.3531269Z  * [new branch]        unit/w3-u5-returns-ui   -> origin/unit/w3-u5-returns-ui
+2026-10-13T22:21:41.3531777Z  * [new branch]        unit/w4-02b-payuni-activation -> origin/unit/w4-02b-payuni-activation
+2026-10-13T22:21:41.3532252Z  * [new branch]        unit/w4-s1-platform-stripe -> origin/unit/w4-s1-platform-stripe
+2026-10-13T22:21:41.3532917Z  * [new branch]        unit/w4-s2-platform-settlement -> origin/unit/w4-s2-platform-settlement
+2026-10-13T22:21:41.3533441Z  * [new branch]        unit/w4-u1-payment-activation-ui -> origin/unit/w4-u1-payment-activation-ui
+2026-10-13T22:21:41.3533930Z  * [new branch]        unit/w5-02b-customer-import -> origin/unit/w5-02b-customer-import
+2026-10-13T22:21:41.3534421Z  * [new branch]        unit/w5-03b-order-history-import -> origin/unit/w5-03b-order-history-import
+2026-10-13T22:21:41.3534920Z  * [new branch]        unit/w5-u1-import-wizard-ui -> origin/unit/w5-u1-import-wizard-ui
+2026-10-13T22:21:41.3535347Z  * [new branch]        unit/w6-02b-reports     -> origin/unit/w6-02b-reports
+2026-10-13T22:21:41.3535797Z  * [new branch]        unit/w6-05b-operations-ledger -> origin/unit/w6-05b-operations-ledger
+2026-10-13T22:21:41.3536371Z  * [new branch]        unit/w6-06b-ads-unbind  -> origin/unit/w6-06b-ads-unbind
+2026-10-13T22:21:41.3536846Z  * [new branch]        unit/w6-u1-customers-reports-ui -> origin/unit/w6-u1-customers-reports-ui
+2026-10-13T22:21:41.3537339Z  * [new branch]        unit/w6-u2-ops-ledger-ads-ui -> origin/unit/w6-u2-ops-ledger-ads-ui
+2026-10-13T22:21:41.3538657Z [command]/usr/bin/git branch --list --remote origin/unit/oa-1-order-attempt-core
+2026-10-13T22:21:41.3539104Z   origin/unit/oa-1-order-attempt-core
+2026-10-13T22:21:41.3539803Z [command]/usr/bin/git rev-parse refs/remotes/origin/unit/oa-1-order-attempt-core
+2026-10-13T22:21:41.3540179Z 54669331f6525723aa52a5452a2b23c92c0fcd0e
+2026-10-13T22:21:41.3541129Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules origin +0bdb85d359aff8fd544086513e1daf4d879d91fe:refs/remotes/origin/unit/oa-1-order-attempt-core
+2026-10-13T22:21:41.3588463Z From https://github.com/humaux/live_commerce_architecture_v1
+2026-10-13T22:21:41.3589336Z  + 54669331...0bdb85d3 0bdb85d359aff8fd544086513e1daf4d879d91fe -> origin/unit/oa-1-order-attempt-core  (forced update)
+2026-10-13T22:21:41.3592259Z ##[endgroup]
+2026-10-13T22:21:41.3592838Z ##[group]Determining the checkout info
+2026-10-13T22:21:41.3593908Z ##[endgroup]
+2026-10-13T22:21:41.3597834Z [command]/usr/bin/git sparse-checkout disable
+2026-10-13T22:21:41.3643086Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-10-13T22:21:41.3678167Z ##[group]Checking out the ref
+2026-10-13T22:21:41.3680632Z [command]/usr/bin/git checkout --progress --force -B unit/oa-1-order-attempt-core refs/remotes/origin/unit/oa-1-order-attempt-core
+2026-10-13T22:21:42.3851592Z Updating files:  62% (7405/11927)
+2026-10-13T22:21:42.4130658Z Updating files:  63% (7515/11927)
+2026-10-13T22:21:42.4228663Z Updating files:  64% (7634/11927)
+2026-10-13T22:21:42.4422157Z Updating files:  65% (7753/11927)
+2026-10-13T22:21:42.4568479Z Updating files:  66% (7872/11927)
+2026-10-13T22:21:42.4702314Z Updating files:  67% (7992/11927)
+2026-10-13T22:21:42.4793644Z Updating files:  68% (8111/11927)
+2026-10-13T22:21:42.5004287Z Updating files:  69% (8230/11927)
+2026-10-13T22:21:42.5072299Z Updating files:  70% (8349/11927)
+2026-10-13T22:21:42.5312318Z Updating files:  71% (8469/11927)
+2026-10-13T22:21:42.5389043Z Updating files:  72% (8588/11927)
+2026-10-13T22:21:42.5532795Z Updating files:  73% (8707/11927)
+2026-10-13T22:21:42.5890083Z Updating files:  74% (8826/11927)
+2026-10-13T22:21:42.6008747Z Updating files:  75% (8946/11927)
+2026-10-13T22:21:42.6083266Z Updating files:  76% (9065/11927)
+2026-10-13T22:21:42.6223117Z Updating files:  77% (9184/11927)
+2026-10-13T22:21:42.6307332Z Updating files:  78% (9304/11927)
+2026-10-13T22:21:42.6409637Z Updating files:  79% (9423/11927)
+2026-10-13T22:21:42.6454122Z Updating files:  80% (9542/11927)
+2026-10-13T22:21:42.6548775Z Updating files:  81% (9661/11927)
+2026-10-13T22:21:42.6608246Z Updating files:  82% (9781/11927)
+2026-10-13T22:21:42.6706919Z Updating files:  83% (9900/11927)
+2026-10-13T22:21:42.6838343Z Updating files:  84% (10019/11927)
+2026-10-13T22:21:42.6929788Z Updating files:  85% (10138/11927)
+2026-10-13T22:21:42.7047769Z Updating files:  86% (10258/11927)
+2026-10-13T22:21:42.7099437Z Updating files:  87% (10377/11927)
+2026-10-13T22:21:42.7144048Z Updating files:  88% (10496/11927)
+2026-10-13T22:21:42.7201788Z Updating files:  89% (10616/11927)
+2026-10-13T22:21:42.7252939Z Updating files:  90% (10735/11927)
+2026-10-13T22:21:42.7351803Z Updating files:  91% (10854/11927)
+2026-10-13T22:21:42.7480184Z Updating files:  92% (10973/11927)
+2026-10-13T22:21:42.7640403Z Updating files:  93% (11093/11927)
+2026-10-13T22:21:42.7726508Z Updating files:  94% (11212/11927)
+2026-10-13T22:21:42.7816440Z Updating files:  95% (11331/11927)
+2026-10-13T22:21:42.7942323Z Updating files:  96% (11450/11927)
+2026-10-13T22:21:42.8070795Z Updating files:  97% (11570/11927)
+2026-10-13T22:21:42.8192996Z Updating files:  98% (11689/11927)
+2026-10-13T22:21:42.8302913Z Updating files:  99% (11808/11927)
+2026-10-13T22:21:42.8303274Z Updating files: 100% (11927/11927)
+2026-10-13T22:21:42.8304135Z Updating files: 100% (11927/11927), done.
+2026-10-13T22:21:42.8413419Z Switched to a new branch 'unit/oa-1-order-attempt-core'
+2026-10-13T22:21:42.8417877Z branch 'unit/oa-1-order-attempt-core' set up to track 'origin/unit/oa-1-order-attempt-core'.
+2026-10-13T22:21:42.8484972Z ##[endgroup]
+2026-10-13T22:21:42.8526275Z [command]/usr/bin/git log -1 --format=%H
+2026-10-13T22:21:42.8552645Z 0bdb85d359aff8fd544086513e1daf4d879d91fe
+2026-10-13T22:21:42.8561354Z ##[group]Removing auth
+2026-10-13T22:21:42.8564595Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-13T22:21:42.8591573Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-13T22:21:42.8794532Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-13T22:21:42.8820773Z http.https://github.com/.extraheader
+2026-10-13T22:21:42.8827094Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-10-13T22:21:42.8858619Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-13T22:21:42.9057614Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-13T22:21:42.9084764Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-13T22:21:42.9279437Z ##[endgroup]
+2026-10-13T22:21:42.9470748Z ##[group]Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+2026-10-13T22:21:42.9471047Z with:
+2026-10-13T22:21:42.9471227Z   go-version-file: go.mod
+2026-10-13T22:21:42.9471422Z   cache: false
+2026-10-13T22:21:42.9471591Z   check-latest: false
+2026-10-13T22:21:42.9473634Z   token: ***
+2026-10-13T22:21:42.9473804Z env:
+2026-10-13T22:21:42.9473959Z   GOTOOLCHAIN: go1.27.2
+2026-10-13T22:21:42.9474143Z   GOFLAGS: -mod=readonly
+2026-10-13T22:21:42.9474358Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+2026-10-13T22:21:42.9474595Z   MODE: --browser-identity
+2026-10-13T22:21:42.9474791Z   LC_SWEEP_WORKERS: 1
+2026-10-13T22:21:42.9474959Z   EXTRA_ENV: 
+2026-10-13T22:21:42.9475119Z ##[endgroup]
+2026-10-13T22:21:43.0476972Z Setup go version spec 1.27.2
+2026-10-13T22:21:43.0487519Z Attempting to download 1.27.2...
+2026-10-13T22:21:43.5031452Z matching 1.27.2...
+2026-10-13T22:21:43.5051515Z Acquiring 1.27.2 from https://github.com/actions/go-versions/releases/download/1.27.2-37875086547/go-1.27.2-linux-x64.tar.gz
+2026-10-13T22:21:43.7925384Z Extracting Go...
+2026-10-13T22:21:43.8012130Z [command]/usr/bin/tar xz --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/06db1af9-6424-4b04-932e-57ec2aa4b9ad -f /home/runner/work/_temp/767f5024-e8aa-4a10-98f3-b50bcd230b6f
+2026-10-13T22:21:45.2638669Z Successfully extracted go to /home/runner/work/_temp/06db1af9-6424-4b04-932e-57ec2aa4b9ad
+2026-10-13T22:21:45.2639254Z Adding to the cache ...
+2026-10-13T22:21:50.2788630Z Successfully cached go to /opt/hostedtoolcache/go/1.27.2/x64
+2026-10-13T22:21:50.2790231Z Added go to the path
+2026-10-13T22:21:50.2792237Z Successfully set up Go version 1.27.2
+2026-10-13T22:21:50.2979213Z go version go1.27.2 linux/amd64
+2026-10-13T22:21:50.2979480Z 
+2026-10-13T22:21:50.2979841Z ##[group]go env
+2026-10-13T22:21:51.0347125Z AR='ar'
+2026-10-13T22:21:51.0347351Z CC='gcc'
+2026-10-13T22:21:51.0347693Z CGO_CFLAGS='-O2 -g'
+2026-10-13T22:21:51.0347949Z CGO_CPPFLAGS=''
+2026-10-13T22:21:51.0348225Z CGO_CXXFLAGS='-O2 -g'
+2026-10-13T22:21:51.0348472Z CGO_ENABLED='1'
+2026-10-13T22:21:51.0348697Z CGO_FFLAGS='-O2 -g'
+2026-10-13T22:21:51.0348932Z CGO_LDFLAGS='-O2 -g'
+2026-10-13T22:21:51.0349163Z CXX='g++'
+2026-10-13T22:21:51.0349376Z GCCGO='gccgo'
+2026-10-13T22:21:51.0349613Z GO111MODULE=''
+2026-10-13T22:21:51.0349844Z GOAMD64='v1'
+2026-10-13T22:21:51.0350079Z GOARCH='amd64'
+2026-10-13T22:21:51.0350304Z GOAUTH='netrc'
+2026-10-13T22:21:51.0350549Z GOBIN='/home/runner/go/bin'
+2026-10-13T22:21:51.0350836Z GOCACHE='/home/runner/.cache/go-build'
+2026-10-13T22:21:51.0351127Z GOCACHEPROG=''
+2026-10-13T22:21:51.0351372Z GODEBUG=''
+2026-10-13T22:21:51.0351691Z GOENV='/home/runner/.config/go/env'
+2026-10-13T22:21:51.0352043Z GOEXE=''
+2026-10-13T22:21:51.0352287Z GOEXPERIMENT=''
+2026-10-13T22:21:51.0352716Z GOFIPS140='off'
+2026-10-13T22:21:51.0353006Z GOFLAGS='-mod=readonly'
+2026-10-13T22:21:51.0353684Z GOGCCFLAGS='-fPIC -m64 -pthread -Wl,--no-gc-sections -fmessage-length=0 -ffile-prefix-map=/tmp/go-build3894989984=/tmp/go-build -gno-record-gcc-switches'
+2026-10-13T22:21:51.0354206Z GOHOSTARCH='amd64'
+2026-10-13T22:21:51.0354383Z GOHOSTOS='linux'
+2026-10-13T22:21:51.0354551Z GOINSECURE=''
+2026-10-13T22:21:51.0354866Z GOMOD='/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/go.mod'
+2026-10-13T22:21:51.0355228Z GOMODCACHE='/home/runner/go/pkg/mod'
+2026-10-13T22:21:51.0355435Z GONOPROXY=''
+2026-10-13T22:21:51.0355599Z GONOSUMDB=''
+2026-10-13T22:21:51.0355753Z GOOS='linux'
+2026-10-13T22:21:51.0355911Z GOPACKAGESDRIVER=''
+2026-10-13T22:21:51.0356095Z GOPATH='/home/runner/go'
+2026-10-13T22:21:51.0356595Z GOPRIVATE=''
+2026-10-13T22:21:51.0357215Z GOPROXY='https://proxy.golang.org,direct'
+2026-10-13T22:21:51.0358051Z GOROOT='/opt/hostedtoolcache/go/1.27.2/x64'
+2026-10-13T22:21:51.0358595Z GOSUMDB='sum.golang.org'
+2026-10-13T22:21:51.0359377Z GOTELEMETRY='local'
+2026-10-13T22:21:51.0359897Z GOTELEMETRYDIR='/home/runner/.config/go/telemetry'
+2026-10-13T22:21:51.0360435Z GOTMPDIR=''
+2026-10-13T22:21:51.0361098Z GOTOOLCHAIN='local'
+2026-10-13T22:21:51.0361670Z GOTOOLDIR='/opt/hostedtoolcache/go/1.27.2/x64/pkg/tool/linux_amd64'
+2026-10-13T22:21:51.0362244Z GOVCS=''
+2026-10-13T22:21:51.0362838Z GOVERSION='go1.27.2'
+2026-10-13T22:21:51.0363284Z GOWORK=''
+2026-10-13T22:21:51.0363714Z PKG_CONFIG='pkg-config'
+2026-10-13T22:21:51.0364056Z 
+2026-10-13T22:21:51.0364735Z ##[endgroup]
+2026-10-13T22:21:51.0589453Z ##[group]Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+2026-10-13T22:21:51.0589764Z with:
+2026-10-13T22:21:51.0589924Z   node-version: 24
+2026-10-13T22:21:51.0590117Z   package-manager-cache: false
+2026-10-13T22:21:51.0590315Z   always-auth: false
+2026-10-13T22:21:51.0590490Z   check-latest: false
+2026-10-13T22:21:51.0592291Z   token: ***
+2026-10-13T22:21:51.0592451Z env:
+2026-10-13T22:21:51.0592786Z   GOTOOLCHAIN: local
+2026-10-13T22:21:51.0592978Z   GOFLAGS: -mod=readonly
+2026-10-13T22:21:51.0593202Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+2026-10-13T22:21:51.0593445Z   MODE: --browser-identity
+2026-10-13T22:21:51.0593637Z   LC_SWEEP_WORKERS: 1
+2026-10-13T22:21:51.0593807Z   EXTRA_ENV: 
+2026-10-13T22:21:51.0593962Z ##[endgroup]
+2026-10-13T22:21:51.2179502Z Found in cache @ /opt/hostedtoolcache/node/24.21.0/x64
+2026-10-13T22:21:51.2182874Z (node:2244) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-13T22:21:51.2183750Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-13T22:21:51.2185034Z ##[group]Environment details
+2026-10-13T22:21:54.9839716Z node: v24.21.0
+2026-10-13T22:21:54.9839968Z npm: 11.19.0
+2026-10-13T22:21:54.9840289Z yarn: 1.22.22
+2026-10-13T22:21:54.9841386Z ##[endgroup]
+2026-10-13T22:21:54.9957885Z ##[group]Run corepack enable
+2026-10-13T22:21:54.9958166Z [36;1mcorepack enable[0m
+2026-10-13T22:21:54.9958441Z [36;1mpnpm install --frozen-lockfile --ignore-scripts[0m
+2026-10-13T22:21:55.1312283Z shell: /usr/bin/bash -e {0}
+2026-10-13T22:21:55.1312695Z env:
+2026-10-13T22:21:55.1312879Z   GOTOOLCHAIN: local
+2026-10-13T22:21:55.1313085Z   GOFLAGS: -mod=readonly
+2026-10-13T22:21:55.1313309Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+2026-10-13T22:21:55.1313560Z   MODE: --browser-identity
+2026-10-13T22:21:55.1313749Z   LC_SWEEP_WORKERS: 1
+2026-10-13T22:21:55.1313927Z   EXTRA_ENV: 
+2026-10-13T22:21:55.1314103Z ##[endgroup]
+2026-10-13T22:21:55.2832859Z ! Corepack is about to download https://registry.npmjs.org/pnpm/-/pnpm-10.33.0.tgz
+2026-10-13T22:21:56.7947550Z Scope: all 6 workspace projects
+2026-10-13T22:21:56.8154513Z Lockfile is up to date, resolution step is skipped
+2026-10-13T22:21:56.8267816Z Progress: resolved 1, reused 0, downloaded 0, added 0
+2026-10-13T22:21:56.8338044Z Packages: +49
+2026-10-13T22:21:56.8343457Z +++++++++++++++++++++++++++++++++++++++++++++++++
+2026-10-13T22:21:57.8313977Z Progress: resolved 49, reused 0, downloaded 40, added 19
+2026-10-13T22:21:58.8295340Z Progress: resolved 49, reused 0, downloaded 48, added 48
+2026-10-13T22:21:59.0866975Z Progress: resolved 49, reused 0, downloaded 49, added 49, done
+2026-10-13T22:21:59.5243869Z 
+2026-10-13T22:21:59.5245277Z devDependencies:
+2026-10-13T22:21:59.5245769Z + @playwright/test 1.63.0
+2026-10-13T22:21:59.5246149Z + axe-core 4.13.0
+2026-10-13T22:21:59.5254970Z + livekit-client 2.22.3
+2026-10-13T22:21:59.5255380Z + prettier 3.9.8
+2026-10-13T22:21:59.5255698Z + typescript 7.0.2
+2026-10-13T22:21:59.5256061Z + typescript-api <- typescript 6.0.3
+2026-10-13T22:21:59.5256282Z 
+2026-10-13T22:21:59.5528674Z Done in 3.2s using pnpm v10.33.0
+2026-10-13T22:21:59.6213200Z ##[group]Run node scripts/dev/ci-playwright-browsers.mjs "$MODE"
+2026-10-13T22:21:59.6213624Z [36;1mnode scripts/dev/ci-playwright-browsers.mjs "$MODE"[0m
+2026-10-13T22:21:59.6270417Z shell: /usr/bin/bash -e {0}
+2026-10-13T22:21:59.6270624Z env:
+2026-10-13T22:21:59.6270791Z   GOTOOLCHAIN: local
+2026-10-13T22:21:59.6271183Z   GOFLAGS: -mod=readonly
+2026-10-13T22:21:59.6271408Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+2026-10-13T22:21:59.6271648Z   MODE: --browser-identity
+2026-10-13T22:21:59.6271832Z   LC_SWEEP_WORKERS: 1
+2026-10-13T22:21:59.6272001Z   EXTRA_ENV: 
+2026-10-13T22:21:59.6272156Z ##[endgroup]
+2026-10-13T22:21:59.6791899Z ci-playwright: mode=--browser-identity browsers=chromium
+2026-10-13T22:21:59.6901100Z ##[group]Run echo "version=$(pnpm exec playwright --version | awk '{print $NF}')" >> "$GITHUB_OUTPUT"
+2026-10-13T22:21:59.6901647Z [36;1mecho "version=$(pnpm exec playwright --version | awk '{print $NF}')" >> "$GITHUB_OUTPUT"[0m
+2026-10-13T22:21:59.6958141Z shell: /usr/bin/bash -e {0}
+2026-10-13T22:21:59.6958354Z env:
+2026-10-13T22:21:59.6958522Z   GOTOOLCHAIN: local
+2026-10-13T22:21:59.6958722Z   GOFLAGS: -mod=readonly
+2026-10-13T22:21:59.6958949Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+2026-10-13T22:21:59.6959192Z   MODE: --browser-identity
+2026-10-13T22:21:59.6959404Z   LC_SWEEP_WORKERS: 1
+2026-10-13T22:21:59.6959576Z   EXTRA_ENV: 
+2026-10-13T22:21:59.6959737Z ##[endgroup]
+2026-10-13T22:22:00.3449476Z ##[group]Run sudo mkdir -p "$PLAYWRIGHT_BROWSERS_PATH" && sudo chown "$(id -u):$(id -g)" "$PLAYWRIGHT_BROWSERS_PATH"
+2026-10-13T22:22:00.3450067Z [36;1msudo mkdir -p "$PLAYWRIGHT_BROWSERS_PATH" && sudo chown "$(id -u):$(id -g)" "$PLAYWRIGHT_BROWSERS_PATH"[0m
+2026-10-13T22:22:00.3507757Z shell: /usr/bin/bash -e {0}
+2026-10-13T22:22:00.3507967Z env:
+2026-10-13T22:22:00.3508134Z   GOTOOLCHAIN: local
+2026-10-13T22:22:00.3508323Z   GOFLAGS: -mod=readonly
+2026-10-13T22:22:00.3508547Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+2026-10-13T22:22:00.3508791Z   MODE: --browser-identity
+2026-10-13T22:22:00.3508974Z   LC_SWEEP_WORKERS: 1
+2026-10-13T22:22:00.3509144Z   EXTRA_ENV: 
+2026-10-13T22:22:00.3509305Z ##[endgroup]
+2026-10-13T22:22:00.3809528Z ##[group]Run actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25
+2026-10-13T22:22:00.3809842Z with:
+2026-10-13T22:22:00.3810028Z   path: /opt/ms-playwright
+2026-10-13T22:22:00.3810250Z   key: playwright-Linux-X64-1.63.0-chromium
+2026-10-13T22:22:00.3810540Z   restore-keys: playwright-Linux-X64-1.63.0-chromium-webkit
+2026-10-13T22:22:00.3810812Z   enableCrossOsArchive: false
+2026-10-13T22:22:00.3811021Z   fail-on-cache-miss: false
+2026-10-13T22:22:00.3811201Z   lookup-only: false
+2026-10-13T22:22:00.3811369Z env:
+2026-10-13T22:22:00.3811521Z   GOTOOLCHAIN: local
+2026-10-13T22:22:00.3811690Z   GOFLAGS: -mod=readonly
+2026-10-13T22:22:00.3811901Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+2026-10-13T22:22:00.3812135Z   MODE: --browser-identity
+2026-10-13T22:22:00.3812321Z   LC_SWEEP_WORKERS: 1
+2026-10-13T22:22:00.3813007Z   EXTRA_ENV: 
+2026-10-13T22:22:00.3813185Z ##[endgroup]
+2026-10-13T22:22:00.5491685Z Cache hit for: playwright-Linux-X64-1.63.0-chromium
+2026-10-13T22:22:01.6040286Z Received 234881024 of 383377779 (61.3%), 224.0 MBs/sec
+2026-10-13T22:22:02.1125896Z Received 383377779 of 383377779 (100.0%), 242.3 MBs/sec
+2026-10-13T22:22:02.1127592Z Cache Size: ~366 MB (383377779 B)
+2026-10-13T22:22:02.1186189Z [command]/usr/bin/tar -xf /home/runner/work/_temp/ea03d3ca-a05c-4a65-8964-2799ed974c4e/cache.tzst -P -C /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1 --use-compress-program unzstd
+2026-10-13T22:22:03.5278196Z Cache restored successfully
+2026-10-13T22:22:03.5490803Z Cache restored from key: playwright-Linux-X64-1.63.0-chromium
+2026-10-13T22:22:03.5669293Z ##[group]Run read -r -a browsers <<< "$BROWSERS"
+2026-10-13T22:22:03.5669631Z [36;1mread -r -a browsers <<< "$BROWSERS"[0m
+2026-10-13T22:22:03.5669956Z [36;1mbash scripts/dev/ci-playwright-install.sh "${browsers[@]}"[0m
+2026-10-13T22:22:03.5726477Z shell: /usr/bin/bash -e {0}
+2026-10-13T22:22:03.5726704Z env:
+2026-10-13T22:22:03.5726881Z   GOTOOLCHAIN: local
+2026-10-13T22:22:03.5727077Z   GOFLAGS: -mod=readonly
+2026-10-13T22:22:03.5727303Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+2026-10-13T22:22:03.5727556Z   MODE: --browser-identity
+2026-10-13T22:22:03.5728008Z   LC_SWEEP_WORKERS: 1
+2026-10-13T22:22:03.5728188Z   EXTRA_ENV: 
+2026-10-13T22:22:03.5728353Z   BROWSERS: chromium
+2026-10-13T22:22:03.5728534Z ##[endgroup]
+2026-10-13T22:22:03.6282707Z ci-playwright-install: dependencies attempt=1/3 browsers=chromium limit=240s kill-after=15s
+2026-10-13T22:22:04.0284898Z Installing dependencies...
+2026-10-13T22:22:04.3300443Z Get:1 https://packages.microsoft.com/ubuntu/24.04/prod noble InRelease [3600 B]
+2026-10-13T22:22:04.3547177Z Get:2 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+2026-10-13T22:22:04.3745575Z Hit:3 http://azure.archive.ubuntu.com/ubuntu noble InRelease
+2026-10-13T22:22:04.3753641Z Get:4 http://azure.archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]
+2026-10-13T22:22:04.4065531Z Get:5 http://azure.archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]
+2026-10-13T22:22:04.4112842Z Get:6 http://azure.archive.ubuntu.com/ubuntu noble-security InRelease [126 kB]
+2026-10-13T22:22:04.4582652Z Get:7 https://packages.microsoft.com/ubuntu/24.04/prod noble/main amd64 Packages [575 kB]
+2026-10-13T22:22:04.5372334Z Get:8 https://packages.microsoft.com/ubuntu/24.04/prod noble/main arm64 Packages [517 kB]
+2026-10-13T22:22:04.5537078Z Get:9 https://packages.microsoft.com/ubuntu/24.04/prod noble/main all Packages [640 B]
+2026-10-13T22:22:04.5645028Z Get:10 https://packages.microsoft.com/ubuntu/24.04/prod noble/main armhf Packages [12.3 kB]
+2026-10-13T22:22:04.5881376Z Get:11 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages [1397 kB]
+2026-10-13T22:22:04.6153801Z Get:12 http://azure.archive.ubuntu.com/ubuntu noble-updates/main Translation-en [308 kB]
+2026-10-13T22:22:04.6253800Z Get:13 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages [1702 kB]
+2026-10-13T22:22:04.6644960Z Get:14 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe Translation-en [342 kB]
+2026-10-13T22:22:04.6834283Z Get:15 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages [1805 kB]
+2026-10-13T22:22:04.6959224Z Get:16 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted Translation-en [411 kB]
+2026-10-13T22:22:04.7103717Z Get:17 http://azure.archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Packages [50.7 kB]
+2026-10-13T22:22:04.7196861Z Get:18 http://azure.archive.ubuntu.com/ubuntu noble-updates/multiverse Translation-en [14.0 kB]
+2026-10-13T22:22:04.7203102Z Get:19 http://azure.archive.ubuntu.com/ubuntu noble-backports/multiverse amd64 Packages [748 B]
+2026-10-13T22:22:04.7213625Z Get:20 http://azure.archive.ubuntu.com/ubuntu noble-security/main amd64 Packages [1145 kB]
+2026-10-13T22:22:04.7827872Z Get:21 http://azure.archive.ubuntu.com/ubuntu noble-security/main Translation-en [230 kB]
+2026-10-13T22:22:04.7864933Z Get:22 http://azure.archive.ubuntu.com/ubuntu noble-security/universe amd64 Packages [1221 kB]
+2026-10-13T22:22:04.7994553Z Get:23 http://azure.archive.ubuntu.com/ubuntu noble-security/universe Translation-en [246 kB]
+2026-10-13T22:22:04.8009963Z Get:24 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted amd64 Packages [1713 kB]
+2026-10-13T22:22:04.8193970Z Get:25 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted Translation-en [392 kB]
+2026-10-13T22:22:04.8374917Z Get:26 http://azure.archive.ubuntu.com/ubuntu noble-security/multiverse amd64 Packages [45.4 kB]
+2026-10-13T22:22:04.8385174Z Get:27 http://azure.archive.ubuntu.com/ubuntu noble-security/multiverse Translation-en [12.1 kB]
+2026-10-13T22:22:14.4164114Z Fetched 12.5 MB in 1s (9456 kB/s)
+2026-10-13T22:22:15.1338545Z Reading package lists...
+2026-10-13T22:22:15.1546281Z Reading package lists...
+2026-10-13T22:22:15.3604501Z Building dependency tree...
+2026-10-13T22:22:15.3610823Z Reading state information...
+2026-10-13T22:22:15.5037089Z libasound2t64 is already the newest version (1.2.11-1ubuntu0.3).
+2026-10-13T22:22:15.5037926Z libasound2t64 set to manually installed.
+2026-10-13T22:22:15.5038559Z libatk-bridge2.0-0t64 is already the newest version (2.52.0-1build1).
+2026-10-13T22:22:15.5039686Z libatk-bridge2.0-0t64 set to manually installed.
+2026-10-13T22:22:15.5040375Z libatk1.0-0t64 is already the newest version (2.52.0-1build1).
+2026-10-13T22:22:15.5040955Z libatk1.0-0t64 set to manually installed.
+2026-10-13T22:22:15.5041573Z libatspi2.0-0t64 is already the newest version (2.52.0-1build1).
+2026-10-13T22:22:15.5042155Z libatspi2.0-0t64 set to manually installed.
+2026-10-13T22:22:15.5042897Z libcairo2 is already the newest version (1.18.0-3build1).
+2026-10-13T22:22:15.5043347Z libcairo2 set to manually installed.
+2026-10-13T22:22:15.5043832Z libcups2t64 is already the newest version (2.4.7-1.2ubuntu7.14).
+2026-10-13T22:22:15.5044263Z libcups2t64 set to manually installed.
+2026-10-13T22:22:15.5044603Z libdbus-1-3 is already the newest version (1.14.10-4ubuntu4.1).
+2026-10-13T22:22:15.5044929Z libdbus-1-3 set to manually installed.
+2026-10-13T22:22:15.5045272Z libdrm2 is already the newest version (2.4.125-1ubuntu0.1~24.04.2).
+2026-10-13T22:22:15.5045600Z libdrm2 set to manually installed.
+2026-10-13T22:22:15.5045936Z libgbm1 is already the newest version (25.2.8-0ubuntu0.24.04.4).
+2026-10-13T22:22:15.5046258Z libgbm1 set to manually installed.
+2026-10-13T22:22:15.5046587Z libglib2.0-0t64 is already the newest version (2.80.0-6ubuntu3.9).
+2026-10-13T22:22:15.5046920Z libglib2.0-0t64 set to manually installed.
+2026-10-13T22:22:15.5047287Z libnspr4 is already the newest version (2:4.35-1.1build1).
+2026-10-13T22:22:15.5047615Z libnspr4 set to manually installed.
+2026-10-13T22:22:15.5047948Z libnss3 is already the newest version (2:3.98-1ubuntu0.2).
+2026-10-13T22:22:15.5048258Z libnss3 set to manually installed.
+2026-10-13T22:22:15.5048605Z libpango-1.0-0 is already the newest version (1.52.1+ds-1build1).
+2026-10-13T22:22:15.5048941Z libpango-1.0-0 set to manually installed.
+2026-10-13T22:22:15.5049262Z libxcb1 is already the newest version (1.15-1ubuntu2).
+2026-10-13T22:22:15.5049556Z libxcb1 set to manually installed.
+2026-10-13T22:22:15.5049891Z libxcomposite1 is already the newest version (1:0.4.5-1build3).
+2026-10-13T22:22:15.5050237Z libxcomposite1 set to manually installed.
+2026-10-13T22:22:15.5050567Z libxdamage1 is already the newest version (1:1.1.6-1build1).
+2026-10-13T22:22:15.5050878Z libxdamage1 set to manually installed.
+2026-10-13T22:22:15.5051207Z libxext6 is already the newest version (2:1.3.4-1build2).
+2026-10-13T22:22:15.5051506Z libxext6 set to manually installed.
+2026-10-13T22:22:15.5051827Z libxfixes3 is already the newest version (1:6.0.0-2build1).
+2026-10-13T22:22:15.5052139Z libxfixes3 set to manually installed.
+2026-10-13T22:22:15.5052639Z libxkbcommon0 is already the newest version (1.6.0-1build1).
+2026-10-13T22:22:15.5052993Z libxkbcommon0 set to manually installed.
+2026-10-13T22:22:15.5053337Z libxrandr2 is already the newest version (2:1.5.2-2build1).
+2026-10-13T22:22:15.5053652Z libxrandr2 set to manually installed.
+2026-10-13T22:22:15.5053969Z xvfb is already the newest version (2:21.1.12-1ubuntu1.8).
+2026-10-13T22:22:15.5054418Z fonts-noto-color-emoji is already the newest version (2.047-0ubuntu0.24.04.1).
+2026-10-13T22:22:15.5054871Z libfontconfig1 is already the newest version (2.15.0-1.1ubuntu2).
+2026-10-13T22:22:15.5055206Z libfontconfig1 set to manually installed.
+2026-10-13T22:22:15.5055544Z fonts-liberation is already the newest version (1:2.1.5-3).
+2026-10-13T22:22:15.5055862Z fonts-liberation set to manually installed.
+2026-10-13T22:22:15.5056426Z The following additional packages will be installed:
+2026-10-13T22:22:15.5056794Z   libx11-data libx11-xcb1 xfonts-encodings xfonts-utils
+2026-10-13T22:22:15.5057080Z Recommended packages:
+2026-10-13T22:22:15.5057329Z   fonts-ipafont-mincho fonts-tlwg-loma
+2026-10-13T22:22:15.5759482Z The following NEW packages will be installed:
+2026-10-13T22:22:15.5760356Z   fonts-freefont-ttf fonts-ipafont-gothic fonts-tlwg-loma-otf fonts-unifont
+2026-10-13T22:22:15.5767684Z   fonts-wqy-zenhei xfonts-cyrillic xfonts-encodings xfonts-scalable
+2026-10-13T22:22:15.5768208Z   xfonts-utils
+2026-10-13T22:22:15.5772171Z The following packages will be upgraded:
+2026-10-13T22:22:15.5776109Z   libfreetype6 libx11-6 libx11-data libx11-xcb1
+2026-10-13T22:22:15.5925324Z 4 upgraded, 9 newly installed, 0 to remove and 25 not upgraded.
+2026-10-13T22:22:15.5925737Z Need to get 22.3 MB of archives.
+2026-10-13T22:22:15.5926109Z After this operation, 79.6 MB of additional disk space will be used.
+2026-10-13T22:22:15.5926547Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+2026-10-13T22:22:15.7763682Z Get:2 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 fonts-ipafont-gothic all 00303-21ubuntu1 [3513 kB]
+2026-10-13T22:22:16.5586445Z Get:3 http://azure.archive.ubuntu.com/ubuntu noble-security/main amd64 libx11-6 amd64 2:1.8.7-1ubuntu0.1 [653 kB]
+2026-10-13T22:22:16.6517846Z Get:4 http://azure.archive.ubuntu.com/ubuntu noble-security/main amd64 libx11-xcb1 amd64 2:1.8.7-1ubuntu0.1 [7796 B]
+2026-10-13T22:22:16.7341747Z Get:5 http://azure.archive.ubuntu.com/ubuntu noble-security/main amd64 libx11-data all 2:1.8.7-1ubuntu0.1 [116 kB]
+2026-10-13T22:22:16.8178578Z Get:6 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 fonts-freefont-ttf all 20211204+svn4273-2 [5641 kB]
+2026-10-13T22:22:17.0288094Z Get:7 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 fonts-tlwg-loma-otf all 1:0.7.3-1 [107 kB]
+2026-10-13T22:22:17.1117616Z Get:8 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 fonts-unifont all 1:15.1.01-1build1 [2993 kB]
+2026-10-13T22:22:17.2252770Z Get:9 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 fonts-wqy-zenhei all 0.9.45-8 [7472 kB]
+2026-10-13T22:22:17.5017066Z Get:10 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libfreetype6 amd64 2.13.2+dfsg-1ubuntu0.2 [403 kB]
+2026-10-13T22:22:17.5869016Z Get:11 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 xfonts-encodings all 1:1.0.5-0ubuntu2 [578 kB]
+2026-10-13T22:22:17.6736014Z Get:12 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 xfonts-utils amd64 1:7.7+6build3 [94.4 kB]
+2026-10-13T22:22:17.7561344Z Get:13 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 xfonts-cyrillic all 1:1.0.5+nmu1 [384 kB]
+2026-10-13T22:22:17.8410233Z Get:14 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 xfonts-scalable all 1:1.0.3-1.3 [304 kB]
+2026-10-13T22:22:18.2476629Z Fetched 22.3 MB in 2s (9854 kB/s)
+2026-10-13T22:22:18.3370459Z Selecting previously unselected package fonts-ipafont-gothic.
+2026-10-13T22:22:18.5374849Z (Reading database ... 
+2026-10-13T22:22:18.5375407Z (Reading database ... 5%
+2026-10-13T22:22:18.5375953Z (Reading database ... 10%
+2026-10-13T22:22:18.5376344Z (Reading database ... 15%
+2026-10-13T22:22:18.5376687Z (Reading database ... 20%
+2026-10-13T22:22:18.5377025Z (Reading database ... 25%
+2026-10-13T22:22:18.5377313Z (Reading database ... 30%
+2026-10-13T22:22:18.5377513Z (Reading database ... 35%
+2026-10-13T22:22:18.5377715Z (Reading database ... 40%
+2026-10-13T22:22:18.5377913Z (Reading database ... 45%
+2026-10-13T22:22:18.5378114Z (Reading database ... 50%
+2026-10-13T22:22:18.5775993Z (Reading database ... 55%
+2026-10-13T22:22:19.2610000Z (Reading database ... 60%
+2026-10-13T22:22:19.8077037Z (Reading database ... 65%
+2026-10-13T22:22:20.2044793Z (Reading database ... 70%
+2026-10-13T22:22:20.7682941Z (Reading database ... 75%
+2026-10-13T22:22:21.7648222Z (Reading database ... 80%
+2026-10-13T22:22:22.6055874Z (Reading database ... 85%
+2026-10-13T22:22:23.5167880Z (Reading database ... 90%
+2026-10-13T22:22:24.2630968Z (Reading database ... 95%
+2026-10-13T22:22:24.2631301Z (Reading database ... 100%
+2026-10-13T22:22:24.2631683Z (Reading database ... 203191 files and directories currently installed.)
+2026-10-13T22:22:24.2674693Z Preparing to unpack .../00-fonts-ipafont-gothic_00303-21ubuntu1_all.deb ...
+2026-10-13T22:22:24.2749195Z Unpacking fonts-ipafont-gothic (00303-21ubuntu1) ...
+2026-10-13T22:22:24.5082288Z Preparing to unpack .../01-libx11-6_2%3a1.8.7-1ubuntu0.1_amd64.deb ...
+2026-10-13T22:22:24.5148636Z Unpacking libx11-6:amd64 (2:1.8.7-1ubuntu0.1) over (2:1.8.7-1build1) ...
+2026-10-13T22:22:24.5597800Z Preparing to unpack .../02-libx11-xcb1_2%3a1.8.7-1ubuntu0.1_amd64.deb ...
+2026-10-13T22:22:24.5733626Z Unpacking libx11-xcb1:amd64 (2:1.8.7-1ubuntu0.1) over (2:1.8.7-1build1) ...
+2026-10-13T22:22:24.6162279Z Preparing to unpack .../03-libx11-data_2%3a1.8.7-1ubuntu0.1_all.deb ...
+2026-10-13T22:22:24.6275287Z Unpacking libx11-data (2:1.8.7-1ubuntu0.1) over (2:1.8.7-1build1) ...
+2026-10-13T22:22:24.7882623Z Selecting previously unselected package fonts-freefont-ttf.
+2026-10-13T22:22:24.7996778Z Preparing to unpack .../04-fonts-freefont-ttf_20211204+svn4273-2_all.deb ...
+2026-10-13T22:22:24.8002632Z Unpacking fonts-freefont-ttf (20211204+svn4273-2) ...
+2026-10-13T22:22:24.8835734Z Selecting previously unselected package fonts-tlwg-loma-otf.
+2026-10-13T22:22:24.8948156Z Preparing to unpack .../05-fonts-tlwg-loma-otf_1%3a0.7.3-1_all.deb ...
+2026-10-13T22:22:24.8954525Z Unpacking fonts-tlwg-loma-otf (1:0.7.3-1) ...
+2026-10-13T22:22:25.0067102Z Selecting previously unselected package fonts-unifont.
+2026-10-13T22:22:25.0178838Z Preparing to unpack .../06-fonts-unifont_1%3a15.1.01-1build1_all.deb ...
+2026-10-13T22:22:25.0184397Z Unpacking fonts-unifont (1:15.1.01-1build1) ...
+2026-10-13T22:22:25.3309621Z Selecting previously unselected package fonts-wqy-zenhei.
+2026-10-13T22:22:25.3424113Z Preparing to unpack .../07-fonts-wqy-zenhei_0.9.45-8_all.deb ...
+2026-10-13T22:22:25.3512921Z Unpacking fonts-wqy-zenhei (0.9.45-8) ...
+2026-10-13T22:22:25.8056351Z Preparing to unpack .../08-libfreetype6_2.13.2+dfsg-1ubuntu0.2_amd64.deb ...
+2026-10-13T22:22:25.8072898Z Unpacking libfreetype6:amd64 (2.13.2+dfsg-1ubuntu0.2) over (2.13.2+dfsg-1ubuntu0.1) ...
+2026-10-13T22:22:25.8288499Z Selecting previously unselected package xfonts-encodings.
+2026-10-13T22:22:25.8403016Z Preparing to unpack .../09-xfonts-encodings_1%3a1.0.5-0ubuntu2_all.deb ...
+2026-10-13T22:22:25.8408882Z Unpacking xfonts-encodings (1:1.0.5-0ubuntu2) ...
+2026-10-13T22:22:25.8644703Z Selecting previously unselected package xfonts-utils.
+2026-10-13T22:22:25.8756198Z Preparing to unpack .../10-xfonts-utils_1%3a7.7+6build3_amd64.deb ...
+2026-10-13T22:22:25.8762242Z Unpacking xfonts-utils (1:7.7+6build3) ...
+2026-10-13T22:22:25.9412076Z Selecting previously unselected package xfonts-cyrillic.
+2026-10-13T22:22:25.9524484Z Preparing to unpack .../11-xfonts-cyrillic_1%3a1.0.5+nmu1_all.deb ...
+2026-10-13T22:22:25.9530793Z Unpacking xfonts-cyrillic (1:1.0.5+nmu1) ...
+2026-10-13T22:22:25.9796434Z Selecting previously unselected package xfonts-scalable.
+2026-10-13T22:22:25.9907886Z Preparing to unpack .../12-xfonts-scalable_1%3a1.0.3-1.3_all.deb ...
+2026-10-13T22:22:25.9912652Z Unpacking xfonts-scalable (1:1.0.3-1.3) ...
+2026-10-13T22:22:26.0320345Z Setting up fonts-wqy-zenhei (0.9.45-8) ...
+2026-10-13T22:22:26.0419953Z Setting up fonts-freefont-ttf (20211204+svn4273-2) ...
+2026-10-13T22:22:26.0433316Z Setting up fonts-tlwg-loma-otf (1:0.7.3-1) ...
+2026-10-13T22:22:26.0446994Z Setting up libfreetype6:amd64 (2.13.2+dfsg-1ubuntu0.2) ...
+2026-10-13T22:22:26.0461004Z Setting up libx11-data (2:1.8.7-1ubuntu0.1) ...
+2026-10-13T22:22:26.0473830Z Setting up xfonts-encodings (1:1.0.5-0ubuntu2) ...
+2026-10-13T22:22:26.0495090Z Setting up fonts-ipafont-gothic (00303-21ubuntu1) ...
+2026-10-13T22:22:26.0550482Z update-alternatives: using /usr/share/fonts/opentype/ipafont-gothic/ipag.ttf to provide /usr/share/fonts/truetype/fonts-japanese-gothic.ttf (fonts-japanese-gothic.ttf) in auto mode
+2026-10-13T22:22:26.0567379Z Setting up libx11-6:amd64 (2:1.8.7-1ubuntu0.1) ...
+2026-10-13T22:22:26.0613273Z Setting up fonts-unifont (1:15.1.01-1build1) ...
+2026-10-13T22:22:26.0630311Z Setting up libx11-xcb1:amd64 (2:1.8.7-1ubuntu0.1) ...
+2026-10-13T22:22:26.0647890Z Setting up xfonts-utils (1:7.7+6build3) ...
+2026-10-13T22:22:26.0700220Z Setting up xfonts-cyrillic (1:1.0.5+nmu1) ...
+2026-10-13T22:22:26.0996671Z Setting up xfonts-scalable (1:1.0.3-1.3) ...
+2026-10-13T22:22:26.1273588Z Processing triggers for libc-bin (2.39-0ubuntu8.9) ...
+2026-10-13T22:22:28.2782348Z Processing triggers for man-db (2.12.0-4build2) ...
+2026-10-13T22:22:28.2805429Z Not building database; man-db/auto-update is not 'true'.
+2026-10-13T22:22:28.2816074Z Processing triggers for fontconfig (2.15.0-1.1ubuntu2) ...
+2026-10-13T22:22:30.9785806Z 
+2026-10-13T22:22:30.9786471Z Running kernel seems to be up-to-date.
+2026-10-13T22:22:30.9786784Z 
+2026-10-13T22:22:30.9786935Z Restarting services...
+2026-10-13T22:22:30.9853487Z  systemctl restart php8.3-fpm.service
+2026-10-13T22:22:31.0851308Z 
+2026-10-13T22:22:31.0852916Z No containers need to be restarted.
+2026-10-13T22:22:31.0853151Z 
+2026-10-13T22:22:31.0853492Z No user sessions are running outdated binaries.
+2026-10-13T22:22:31.0853782Z 
+2026-10-13T22:22:31.0854197Z No VM guests are running outdated hypervisor (qemu) binaries on this host.
+2026-10-13T22:22:32.5678998Z ci-playwright-install: browsers=chromium elapsed=29s
+2026-10-13T22:22:32.5716812Z ##[group]Run docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+2026-10-13T22:22:32.5717425Z [36;1mdocker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280[0m
+2026-10-13T22:22:32.5773988Z shell: /usr/bin/bash -e {0}
+2026-10-13T22:22:32.5774205Z env:
+2026-10-13T22:22:32.5774378Z   GOTOOLCHAIN: local
+2026-10-13T22:22:32.5774580Z   GOFLAGS: -mod=readonly
+2026-10-13T22:22:32.5774818Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+2026-10-13T22:22:32.5775074Z   MODE: --browser-identity
+2026-10-13T22:22:32.5775273Z   LC_SWEEP_WORKERS: 1
+2026-10-13T22:22:32.5775457Z   EXTRA_ENV: 
+2026-10-13T22:22:32.5775623Z ##[endgroup]
+2026-10-13T22:22:36.5460258Z docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280: Pulling from library/postgres
+2026-10-13T22:22:36.9240452Z 6310eb16bf42: Pulling fs layer
+2026-10-13T22:22:36.9241028Z 6463c6b5c703: Pulling fs layer
+2026-10-13T22:22:36.9241551Z 8d6422da287d: Pulling fs layer
+2026-10-13T22:22:36.9241980Z 2fc0e69f8d7d: Pulling fs layer
+2026-10-13T22:22:36.9242381Z 5fa29c524b4e: Pulling fs layer
+2026-10-13T22:22:36.9242996Z ace4b5b96a91: Pulling fs layer
+2026-10-13T22:22:36.9243383Z af2a6480a058: Pulling fs layer
+2026-10-13T22:22:36.9244134Z 5ee6c6ca7fd9: Pulling fs layer
+2026-10-13T22:22:36.9244850Z c5694bff1357: Pulling fs layer
+2026-10-13T22:22:36.9245398Z aedab7177504: Pulling fs layer
+2026-10-13T22:22:36.9246113Z a4635eaec9b8: Pulling fs layer
+2026-10-13T22:22:36.9246943Z 46e663abc8f5: Pulling fs layer
+2026-10-13T22:22:36.9247636Z 1bb54e8f7727: Pulling fs layer
+2026-10-13T22:22:36.9248437Z 2fc0e69f8d7d: Waiting
+2026-10-13T22:22:36.9249089Z 5fa29c524b4e: Waiting
+2026-10-13T22:22:36.9250014Z ace4b5b96a91: Waiting
+2026-10-13T22:22:36.9260838Z af2a6480a058: Waiting
+2026-10-13T22:22:36.9261165Z 5ee6c6ca7fd9: Waiting
+2026-10-13T22:22:36.9261848Z c5694bff1357: Waiting
+2026-10-13T22:22:36.9262147Z a4635eaec9b8: Waiting
+2026-10-13T22:22:36.9262374Z aedab7177504: Waiting
+2026-10-13T22:22:36.9262801Z 1bb54e8f7727: Waiting
+2026-10-13T22:22:36.9263218Z 46e663abc8f5: Waiting
+2026-10-13T22:22:36.9524984Z 6463c6b5c703: Download complete
+2026-10-13T22:22:36.9830087Z 8d6422da287d: Verifying Checksum
+2026-10-13T22:22:36.9831405Z 8d6422da287d: Download complete
+2026-10-13T22:22:36.9944545Z 2fc0e69f8d7d: Verifying Checksum
+2026-10-13T22:22:36.9950134Z 2fc0e69f8d7d: Download complete
+2026-10-13T22:22:37.0409283Z ace4b5b96a91: Verifying Checksum
+2026-10-13T22:22:37.0413700Z ace4b5b96a91: Download complete
+2026-10-13T22:22:37.0419937Z 6310eb16bf42: Verifying Checksum
+2026-10-13T22:22:37.0420446Z 6310eb16bf42: Download complete
+2026-10-13T22:22:37.0451939Z 5fa29c524b4e: Verifying Checksum
+2026-10-13T22:22:37.0452382Z 5fa29c524b4e: Download complete
+2026-10-13T22:22:37.0672820Z 5ee6c6ca7fd9: Verifying Checksum
+2026-10-13T22:22:37.0673308Z 5ee6c6ca7fd9: Download complete
+2026-10-13T22:22:37.0697324Z af2a6480a058: Verifying Checksum
+2026-10-13T22:22:37.0698095Z af2a6480a058: Download complete
+2026-10-13T22:22:37.0934077Z aedab7177504: Verifying Checksum
+2026-10-13T22:22:37.0934617Z aedab7177504: Download complete
+2026-10-13T22:22:37.0943806Z a4635eaec9b8: Verifying Checksum
+2026-10-13T22:22:37.0944487Z a4635eaec9b8: Download complete
+2026-10-13T22:22:37.1280198Z 46e663abc8f5: Download complete
+2026-10-13T22:22:37.1285108Z 1bb54e8f7727: Verifying Checksum
+2026-10-13T22:22:37.1285500Z 1bb54e8f7727: Download complete
+2026-10-13T22:22:37.4102341Z c5694bff1357: Verifying Checksum
+2026-10-13T22:22:37.4103673Z c5694bff1357: Download complete
+2026-10-13T22:22:38.1019473Z 6310eb16bf42: Pull complete
+2026-10-13T22:22:43.0231775Z 6463c6b5c703: Pull complete
+2026-10-13T22:22:43.3693019Z 8d6422da287d: Pull complete
+2026-10-13T22:22:43.4965690Z 2fc0e69f8d7d: Pull complete
+2026-10-13T22:22:44.1186656Z 5fa29c524b4e: Pull complete
+2026-10-13T22:22:44.1926759Z ace4b5b96a91: Pull complete
+2026-10-13T22:22:44.1993600Z af2a6480a058: Pull complete
+2026-10-13T22:22:44.2056298Z 5ee6c6ca7fd9: Pull complete
+2026-10-13T22:22:48.3413311Z c5694bff1357: Pull complete
+2026-10-13T22:22:48.3506070Z aedab7177504: Pull complete
+2026-10-13T22:22:48.3578828Z a4635eaec9b8: Pull complete
+2026-10-13T22:22:48.3648364Z 46e663abc8f5: Pull complete
+2026-10-13T22:22:48.3890425Z 1bb54e8f7727: Pull complete
+2026-10-13T22:22:48.3964123Z Digest: sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+2026-10-13T22:22:48.3972965Z Status: Downloaded newer image for postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+2026-10-13T22:22:48.3981336Z docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+2026-10-13T22:22:48.4032735Z ##[group]Run set -o pipefail
+2026-10-13T22:22:48.4033172Z [36;1mset -o pipefail[0m
+2026-10-13T22:22:48.4033503Z [36;1mmkdir -p output/ci-gates[0m
+2026-10-13T22:22:48.4034158Z [36;1m# Only LC_* names with plain values: an inject-fail run of a new gate must not be able to set arbitrary env.[0m
+2026-10-13T22:22:48.4034819Z [36;1mfor kv in $EXTRA_ENV; do[0m
+2026-10-13T22:22:48.4035387Z [36;1m  [[ "$kv" =~ ^LC_[A-Z0-9_]+=[A-Za-z0-9._:-]*$ ]] || { echo "refusing extra_env entry: $kv" >&2; exit 2; }[0m
+2026-10-13T22:22:48.4036046Z [36;1m  export "$kv"; echo "extra_env: ${kv%%=*} set"[0m
+2026-10-13T22:22:48.4036445Z [36;1mdone[0m
+2026-10-13T22:22:48.4036871Z [36;1m# Explicit dispatch only: inject a real source fault before native PG[0m
+2026-10-13T22:22:48.4037509Z [36;1m# setup. The ordinary gate keeps its verdict and must go red.[0m
+2026-10-13T22:22:48.4037999Z [36;1mif [[ -n "${LC_OA_MUTATION:-}" ]]; then[0m
+2026-10-13T22:22:48.4038497Z [36;1m  [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]] || exit 2[0m
+2026-10-13T22:22:48.4039040Z [36;1m  python3 tests/foundation/order_attempt_mutation.py[0m
+2026-10-13T22:22:48.4039471Z [36;1mfi[0m
+2026-10-13T22:22:48.4039740Z [36;1mlog_root=output/ci-gates[0m
+2026-10-13T22:22:48.4040092Z [36;1mcase "$MODE" in[0m
+2026-10-13T22:22:48.4040461Z [36;1m  --browser*|--stripe-browser*|--ops-disk-guard)[0m
+2026-10-13T22:22:48.4040897Z [36;1m    mkdir -p output/playwright[0m
+2026-10-13T22:22:48.4041481Z [36;1m    export LC_BROWSER_EVIDENCE_ROOT="$(mktemp -d "$PWD/output/playwright/run.XXXXXXXX")"[0m
+2026-10-13T22:22:48.4042173Z [36;1m    log_root="$LC_BROWSER_EVIDENCE_ROOT/ci-gates"[0m
+2026-10-13T22:22:48.4043085Z [36;1m    mkdir -p "$log_root"[0m
+2026-10-13T22:22:48.4043392Z [36;1m    ;;[0m
+2026-10-13T22:22:48.4043643Z [36;1mesac[0m
+2026-10-13T22:22:48.4044034Z [36;1mlog="$log_root/$(printf '%s' "$MODE" | tr -c 'A-Za-z0-9_-' '_').log"[0m
+2026-10-13T22:22:48.4044502Z [36;1mcase "$MODE" in[0m
+2026-10-13T22:22:48.4044926Z [36;1m  foundation) bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;[0m
+2026-10-13T22:22:48.4045787Z [36;1m  shard:unit) LC_FOUNDATION_PKGS="$(go list ./... | grep -v '/tests/foundation$' | tr '\n' ' ')" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;[0m
+2026-10-13T22:22:48.4046963Z [36;1m  # A balanced group of scripts/dev/shard-plan.json: an anchored explicit -run list, or (the catch-all) -skip of every other group's tests.[0m
+2026-10-13T22:22:48.4048600Z [36;1m  shard:g[0-9][0-9]) LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="$(node scripts/dev/shard-plan.mjs run "${MODE#shard:}")" LC_FOUNDATION_SKIP="$(node scripts/dev/shard-plan.mjs skip "${MODE#shard:}")" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;[0m
+2026-10-13T22:22:48.4050515Z [36;1m  shard:*)    LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="${MODE#shard:}" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;[0m
+2026-10-13T22:22:48.4051534Z [36;1m  focused:*)  LC_FOCUSED_TIMEOUT=7200s bash scripts/dev/test-focused.sh "${MODE#focused:}" 2>&1 | tee "$log" ;;[0m
+2026-10-13T22:22:48.4052775Z [36;1m  # One slice of the sweep / visual lint (tests/ui/sweep-shard-lib.mjs): its own PG, fixture and store, so click-sweep runs its single worker race-free.[0m
+2026-10-13T22:22:48.4053880Z [36;1m  --browser-click-sweep@*|--browser-visual-lint@*) LC_SWEEP_SHARD="${MODE##*@}" xvfb-run -a bash scripts/dev/test-local.sh "${MODE%@*}" 2>&1 | tee "$log" ;;[0m
+2026-10-13T22:22:48.4054926Z [36;1m  # Some browser suites run headed on purpose (MOU03 native bfcache/visibility); the runner has no display.[0m
+2026-10-13T22:22:48.4055648Z [36;1m  # Xvfb comes with `playwright install --with-deps`.[0m
+2026-10-13T22:22:48.4056377Z [36;1m  --browser*|--stripe-browser*) xvfb-run -a bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$log" ;;[0m
+2026-10-13T22:22:48.4057126Z [36;1m  --*)        bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$log" ;;[0m
+2026-10-13T22:22:48.4057868Z [36;1m  *) echo "unknown mode: $MODE" >&2; exit 2 ;;[0m
+2026-10-13T22:22:48.4058247Z [36;1mesac[0m
+2026-10-13T22:22:48.4126426Z shell: /usr/bin/bash -e {0}
+2026-10-13T22:22:48.4126653Z env:
+2026-10-13T22:22:48.4126836Z   GOTOOLCHAIN: local
+2026-10-13T22:22:48.4127043Z   GOFLAGS: -mod=readonly
+2026-10-13T22:22:48.4127280Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+2026-10-13T22:22:48.4127541Z   MODE: --browser-identity
+2026-10-13T22:22:48.4127742Z   LC_SWEEP_WORKERS: 1
+2026-10-13T22:22:48.4127919Z   EXTRA_ENV: 
+2026-10-13T22:22:48.4128096Z ##[endgroup]
+2026-10-13T22:22:49.2696583Z 
+2026-10-13T22:22:49.2697445Z > live-commerce-workspace@ build:admin /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+2026-10-13T22:22:49.2698012Z > pnpm --filter @live-commerce/admin build
+2026-10-13T22:22:49.2698197Z 
+2026-10-13T22:22:49.5029500Z 
+2026-10-13T22:22:49.5030447Z > @live-commerce/admin@ build /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/apps/admin
+2026-10-13T22:22:49.5031126Z > next build && node ../../scripts/dev/package-admin.mjs
+2026-10-13T22:22:49.5031330Z 
+2026-10-13T22:22:49.7855856Z ▲ Next.js 16.3.5 (Turbopack)
+2026-10-13T22:22:49.8097691Z ✓ Running next.config.ts took 24ms
+2026-10-13T22:22:49.8099257Z ⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+2026-10-13T22:22:49.8246847Z Attention: Next.js now collects completely anonymous telemetry regarding usage.
+2026-10-13T22:22:49.8247791Z This information is used to shape Next.js' roadmap and prioritize features.
+2026-10-13T22:22:49.8250704Z You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+2026-10-13T22:22:49.8251720Z https://nextjs.org/telemetry
+2026-10-13T22:22:49.8251946Z 
+2026-10-13T22:22:49.8383538Z 
+2026-10-13T22:22:49.8777958Z   Creating an optimized production build ...
+2026-10-13T22:22:59.2393922Z ✓ Compiled successfully in 8.7s
+2026-10-13T22:22:59.2433015Z   Running TypeScript ...
+2026-10-13T22:23:00.2246886Z   Finished TypeScript in 982ms ...
+2026-10-13T22:23:00.2265794Z   Collecting page data using 3 workers ...
+2026-10-13T22:23:00.8714022Z   Generating static pages using 3 workers (0/15) ...
+2026-10-13T22:23:00.8959752Z   Generating static pages using 3 workers (3/15) 
+2026-10-13T22:23:00.9725584Z   Generating static pages using 3 workers (7/15) 
+2026-10-13T22:23:00.9814681Z   Generating static pages using 3 workers (11/15) 
+2026-10-13T22:23:00.9896357Z ✓ Generating static pages using 3 workers (15/15) in 119ms
+2026-10-13T22:23:00.9928710Z   Finalizing page optimization ...
+2026-10-13T22:23:01.4135504Z 
+2026-10-13T22:23:01.4158234Z Route (app)
+2026-10-13T22:23:01.4158825Z ┌ ○ /_not-found
+2026-10-13T22:23:01.4159134Z ├ ƒ /[locale]
+2026-10-13T22:23:01.4159383Z ├ ƒ /[locale]/ads
+2026-10-13T22:23:01.4159631Z ├ ƒ /[locale]/ads/attribution
+2026-10-13T22:23:01.4159943Z ├ ƒ /[locale]/billing
+2026-10-13T22:23:01.4160275Z ├ ƒ /[locale]/collections
+2026-10-13T22:23:01.4160652Z ├ ƒ /[locale]/customers
+2026-10-13T22:23:01.4161028Z ├ ƒ /[locale]/customers/[customer]
+2026-10-13T22:23:01.4161462Z ├ ƒ /[locale]/customers/import
+2026-10-13T22:23:01.4161819Z ├ ƒ /[locale]/design
+2026-10-13T22:23:01.4162159Z ├ ƒ /[locale]/finance
+2026-10-13T22:23:01.4162676Z ├ ƒ /[locale]/finance/reports
+2026-10-13T22:23:01.4163055Z ├ ƒ /[locale]/inventory
+2026-10-13T22:23:01.4163404Z ├ ƒ /[locale]/invite/[token]
+2026-10-13T22:23:01.4163754Z ├ ƒ /[locale]/messages
+2026-10-13T22:23:01.4164067Z ├ ƒ /[locale]/orders
+2026-10-13T22:23:01.4164469Z ├ ƒ /[locale]/orders/cvs-print
+2026-10-13T22:23:01.4164836Z ├ ƒ /[locale]/orders/new
+2026-10-13T22:23:01.4165171Z ├ ƒ /[locale]/products
+2026-10-13T22:23:01.4165480Z ├ ƒ /[locale]/products/[product]
+2026-10-13T22:23:01.4165744Z ├ ƒ /[locale]/products/import
+2026-10-13T22:23:01.4165995Z ├ ƒ /[locale]/promotions
+2026-10-13T22:23:01.4166225Z ├ ƒ /[locale]/reset
+2026-10-13T22:23:01.4166436Z ├ ƒ /[locale]/returns
+2026-10-13T22:23:01.4166652Z ├ ƒ /[locale]/settings
+2026-10-13T22:23:01.4167128Z ├ ƒ /[locale]/settings/operations
+2026-10-13T22:23:01.4167446Z ├ ƒ /[locale]/settings/payments/card
+2026-10-13T22:23:01.4167735Z ├ ƒ /[locale]/settings/settlements
+2026-10-13T22:23:01.4167985Z ├ ƒ /[locale]/signup
+2026-10-13T22:23:01.4168195Z ├ ƒ /[locale]/studio
+2026-10-13T22:23:01.4168414Z ├ ƒ /[locale]/studio/claims
+2026-10-13T22:23:01.4168656Z ├ ƒ /[locale]/studio/console
+2026-10-13T22:23:01.4168900Z ├ ƒ /[locale]/studio/settings
+2026-10-13T22:23:01.4169124Z ├ ƒ /[locale]/team
+2026-10-13T22:23:01.4169348Z ├ ƒ /api/ads/meta/callback
+2026-10-13T22:23:01.4169585Z ├ ƒ /api/ads/meta/connect
+2026-10-13T22:23:01.4169814Z ├ ƒ /api/auth/callback
+2026-10-13T22:23:01.4170019Z ├ ƒ /api/auth/login
+2026-10-13T22:23:01.4170235Z ├ ƒ /api/auth/logout
+2026-10-13T22:23:01.4170486Z ├ ƒ /api/auth/password/login
+2026-10-13T22:23:01.4170727Z ├ ƒ /api/auth/password/reset
+2026-10-13T22:23:01.4170962Z ├ ƒ /api/auth/password/signup
+2026-10-13T22:23:01.4171208Z ├ ƒ /api/auth/password/verify
+2026-10-13T22:23:01.4171447Z ├ ƒ /api/meta/callback
+2026-10-13T22:23:01.4171657Z ├ ƒ /api/meta/connect
+2026-10-13T22:23:01.4171912Z ├ ƒ /api/onboarding/initial-store
+2026-10-13T22:23:01.4172148Z ├ ƒ /api/stores
+2026-10-13T22:23:01.4172402Z ├ ƒ /api/stores/[store]/[...resource]
+2026-10-13T22:23:01.4172974Z ├ ƒ /api/stores/[store]/customers
+2026-10-13T22:23:01.4173380Z ├ ƒ /api/stores/[store]/customers/[customer]/historical-orders
+2026-10-13T22:23:01.4173773Z ├ ƒ /api/stores/[store]/customers/[customer]/notes
+2026-10-13T22:23:01.4174203Z ├ ƒ /api/stores/[store]/customers/[customer]/notes/[note]
+2026-10-13T22:23:01.4174631Z ├ ƒ /api/stores/[store]/customers/[customer]/tags
+2026-10-13T22:23:01.4174962Z ├ ƒ /api/stores/[store]/customers/tags
+2026-10-13T22:23:01.4175272Z ├ ƒ /api/stores/[store]/customers/tags/[tag]
+2026-10-13T22:23:01.4175614Z ├ ƒ /api/stores/[store]/imports/[param]/[action]
+2026-10-13T22:23:01.4176042Z ├ ƒ /api/stores/[store]/live-sessions/[session]/claims/blocklist
+2026-10-13T22:23:01.4176786Z ├ ƒ /api/stores/[store]/live-sessions/[session]/claims/blocklist/check
+2026-10-13T22:23:01.4177424Z ├ ƒ /api/stores/[store]/live-sessions/[session]/claims/blocklist/entries/[entry]
+2026-10-13T22:23:01.4177878Z ├ ƒ /api/stores/[store]/live-sessions/[session]/reminders
+2026-10-13T22:23:01.4178251Z ├ ƒ /api/stores/[store]/live-settings/sold-out-reply
+2026-10-13T22:23:01.4178579Z ├ ƒ /api/stores/[store]/message-templates
+2026-10-13T22:23:01.4178903Z ├ ƒ /api/stores/[store]/orders/export
+2026-10-13T22:23:01.4179271Z ├ ƒ /api/stores/[store]/orders/pick-list
+2026-10-13T22:23:01.4179751Z ├ ƒ /api/stores/[store]/reports/[report]
+2026-10-13T22:23:01.4180057Z ├ ƒ /api/stores/[store]/shipments/cvs-batch
+2026-10-13T22:23:01.4180366Z ├ ƒ /api/stores/[store]/tools/[...resource]
+2026-10-13T22:23:01.4180625Z ├ ƒ /api/team/[action]
+2026-10-13T22:23:01.4180856Z ├ ƒ /site/[locale]/[page]
+2026-10-13T22:23:01.4181076Z ├ ƒ /site/robots.txt
+2026-10-13T22:23:01.4181293Z └ ƒ /site/sitemap.xml
+2026-10-13T22:23:01.4181410Z 
+2026-10-13T22:23:01.4181415Z 
+2026-10-13T22:23:01.4181548Z ƒ Proxy (Middleware)
+2026-10-13T22:23:01.4181655Z 
+2026-10-13T22:23:01.4181823Z ○  (Static)   prerendered as static content
+2026-10-13T22:23:01.4182128Z ƒ  (Dynamic)  server-rendered on demand
+2026-10-13T22:23:01.4182285Z 
+2026-10-13T22:23:01.5649484Z Packaged standalone admin server and static assets.
+2026-10-13T22:23:04.1927094Z go: downloading github.com/jackc/pgx/v5 v5.11.0
+2026-10-13T22:23:04.4676149Z go: downloading github.com/riverqueue/river v0.40.0
+2026-10-13T22:23:04.4676996Z go: downloading github.com/riverqueue/river/riverdriver/riverpgxv5 v0.40.0
+2026-10-13T22:23:04.4677714Z go: downloading github.com/riverqueue/river/rivertype v0.40.0
+2026-10-13T22:23:04.4985794Z go: downloading github.com/riverqueue/river/riverdriver v0.40.0
+2026-10-13T22:23:04.5676850Z go: downloading golang.org/x/crypto v0.57.0
+2026-10-13T22:23:04.6213959Z go: downloading github.com/jackc/pgpassfile v1.0.0
+2026-10-13T22:23:04.6214733Z go: downloading github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761
+2026-10-13T22:23:04.6408980Z go: downloading golang.org/x/text v0.42.0
+2026-10-13T22:23:04.6693269Z go: downloading github.com/jackc/puddle/v2 v2.2.2
+2026-10-13T22:23:04.7149042Z go: downloading github.com/riverqueue/river/rivershared v0.40.0
+2026-10-13T22:23:04.7707106Z go: downloading golang.org/x/image v0.46.0
+2026-10-13T22:23:04.9957003Z go: downloading golang.org/x/net v0.60.0
+2026-10-13T22:23:05.0702219Z go: downloading github.com/coreos/go-oidc/v3 v3.21.0
+2026-10-13T22:23:05.0705740Z go: downloading golang.org/x/oauth2 v0.37.0
+2026-10-13T22:23:05.1089224Z go: downloading github.com/tidwall/gjson v1.19.0
+2026-10-13T22:23:05.1193451Z go: downloading github.com/tidwall/sjson v1.2.5
+2026-10-13T22:23:05.1350352Z go: downloading golang.org/x/sync v0.23.0
+2026-10-13T22:23:05.1555969Z go: downloading golang.org/x/sys v0.48.0
+2026-10-13T22:23:05.1837233Z go: downloading github.com/go-jose/go-jose/v4 v4.1.4
+2026-10-13T22:23:05.1841769Z go: downloading github.com/tidwall/match v1.2.0
+2026-10-13T22:23:05.1863230Z go: downloading github.com/tidwall/pretty v1.2.1
+2026-10-13T22:23:05.2281340Z go: downloading github.com/stretchr/testify v1.11.1
+2026-10-13T22:23:05.2295154Z go: downloading go.uber.org/goleak v1.3.0
+2026-10-13T22:23:05.3270186Z go: downloading gopkg.in/yaml.v3 v3.0.1
+2026-10-13T22:23:05.3273214Z go: downloading github.com/pmezard/go-difflib v1.0.0
+2026-10-13T22:23:05.3273601Z go: downloading github.com/davecgh/go-spew v1.1.1
+2026-10-13T22:24:13.1978824Z === RUN   TestMerchantAccountAPIProcessRestart
+2026-10-13T22:24:38.3643515Z     account_process_test.go:235: PASS: actual API PIDs 12000 -> 12010, same isolated PG and key config; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/account-process-20261013T222414.945209758
+2026-10-13T22:24:38.4106873Z --- PASS: TestMerchantAccountAPIProcessRestart (25.21s)
+2026-10-13T22:24:38.4107806Z === RUN   TestBrowserIdentityRealChain
+2026-10-13T22:24:43.2554211Z     browser_identity_chain_test.go:143: Go transport POST /v1/identity/login/start -> 200
+2026-10-13T22:24:43.2808356Z     browser_identity_chain_test.go:143: Go transport POST /v1/identity/login/complete -> 200
+2026-10-13T22:24:43.3216309Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:43.6269217Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:43.8100655Z     browser_identity_chain_test.go:143: Go transport POST /v1/identity/initial-store -> 200
+2026-10-13T22:24:43.8303343Z     browser_identity_chain_test.go:143: Go transport POST /v1/identity/initial-store -> 200
+2026-10-13T22:24:43.8425812Z     browser_identity_chain_test.go:143: Go transport POST /v1/identity/initial-store -> 409
+2026-10-13T22:24:43.8529945Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:43.8985796Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:43.9022263Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:43.9713382Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:43.9810941Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.0152747Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/dashboard -> 200
+2026-10-13T22:24:44.0185029Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.0276031Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.0386486Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/meta/health -> 404
+2026-10-13T22:24:44.0450402Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.0511788Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/billing/standing -> 200
+2026-10-13T22:24:44.0747773Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/warehouses -> 200
+2026-10-13T22:24:44.1064239Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.1160970Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/catalog-ledger -> 200
+2026-10-13T22:24:44.1475057Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.1501796Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/warehouses -> 200
+2026-10-13T22:24:44.1606067Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.1721798Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.1781472Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.2054835Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.2166142Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.2311708Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.2480320Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.2531370Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.2621677Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.2661678Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 409
+2026-10-13T22:24:44.2751832Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.2793269Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts/a02f6bc1-3593-49c8-a373-0a8b88c3c7a6 -> 200
+2026-10-13T22:24:44.2893924Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.2974018Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts/a02f6bc1-3593-49c8-a373-0a8b88c3c7a6/rotate -> 200
+2026-10-13T22:24:44.3092902Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.3141182Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts/a02f6bc1-3593-49c8-a373-0a8b88c3c7a6/rotate -> 200
+2026-10-13T22:24:44.3258419Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.3308652Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts/a02f6bc1-3593-49c8-a373-0a8b88c3c7a6/rotate -> 409
+2026-10-13T22:24:44.3403050Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.3439191Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.3534931Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.3556046Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 422
+2026-10-13T22:24:44.3636292Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.3882726Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.3927368Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.4255988Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.4357619Z     browser_identity_chain_test.go:143: Go transport PUT /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/markets/99999999-9999-4999-8999-999999999999/countries/TW/payment-methods/payuni_credit -> 200
+2026-10-13T22:24:44.4446455Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.4485375Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/markets/99999999-9999-4999-8999-999999999999/countries/TW/payment-methods/payuni_credit -> 200
+2026-10-13T22:24:44.4574001Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.4615122Z     browser_identity_chain_test.go:143: Go transport PUT /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/markets/99999999-9999-4999-8999-999999999999/countries/TW/payment-methods/payuni_credit -> 200
+2026-10-13T22:24:44.4699713Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.4747373Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/markets/99999999-9999-4999-8999-999999999999/countries/TW/payment-methods/payuni_credit/inspect -> 200
+2026-10-13T22:24:44.4829223Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.4872265Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/markets/99999999-9999-4999-8999-999999999999/countries/TW/payment-methods/payuni_credit/inspect -> 200
+2026-10-13T22:24:44.5058920Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.6026660Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.6106842Z     browser_identity_chain_test.go:143: Go transport PUT /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/markets/99999999-9999-4999-8999-999999999999/countries/TW/payment-methods/payuni_credit -> 200
+2026-10-13T22:24:44.6196129Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.6232358Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/markets/99999999-9999-4999-8999-999999999999/countries/TW/payment-methods/payuni_credit -> 200
+2026-10-13T22:24:44.6319205Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.6344601Z     browser_identity_chain_test.go:143: Go transport PUT /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/markets/99999999-9999-4999-8999-999999999999/countries/TW/payment-methods/payuni_credit -> 409
+2026-10-13T22:24:44.6435605Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.6478221Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.6567807Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.6615101Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.6717234Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.6760769Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.6847549Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.6892656Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.6975716Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.7019556Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.7101231Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.7142731Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.7224824Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.7267165Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.7346037Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.7387937Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.7462931Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.7502165Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.7575306Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.7614049Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.7690809Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.7733598Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.7818417Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.7859647Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.7935661Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.7977131Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.8061490Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.8104948Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.8188261Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.8228427Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.8304393Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.8348129Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.8446052Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.8489627Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.8577240Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.8619425Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.8699498Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.8742197Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.8822308Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.8863599Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.8946527Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.8987118Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.9073589Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.9130913Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.9213423Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.9254192Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.9336775Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.9376124Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.9447518Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.9485037Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.9559707Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.9599369Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.9673953Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.9713874Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.9786603Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.9826543Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:44.9908058Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:44.9949582Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:45.0035254Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.0077190Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:45.0151940Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.0192380Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:45.0263680Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.0302710Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:45.0371648Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.0414425Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:45.0489851Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.0531586Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:45.0606905Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.0647128Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:45.0725628Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.0765530Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:45.0839849Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.0878244Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:45.0956460Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.0997079Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:45.1071681Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.1112904Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:45.1190050Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.1229839Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:45.1397365Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.1439670Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:45.1512163Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.1549234Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:45.1627564Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.1667995Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:45.1743067Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.1787823Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:45.1874708Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.1915500Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:45.1991592Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.2032113Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:45.2109071Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.2150609Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:45.2233304Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.2275654Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:45.2356611Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.2395091Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:45.2466137Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.2503610Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:45.2572044Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.2613025Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:45.2686242Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.2726358Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:45.2796507Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.2837432Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 200
+2026-10-13T22:24:45.2918507Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.2940551Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts -> 429
+2026-10-13T22:24:45.3017049Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:45.3049227Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/bf06d2ae-1397-4aa4-a290-ff8c05bb4456/provider-accounts/a02f6bc1-3593-49c8-a373-0a8b88c3c7a6 -> 200
+2026-10-13T22:24:45.3144252Z     browser_identity_chain_test.go:143: Go transport POST /v1/identity/logout -> 204
+2026-10-13T22:24:45.3243908Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 401
+2026-10-13T22:24:45.4522261Z     browser_identity_chain_test.go:43: PASS: browser -> Next -> Go -> real PG, signed MOCK IdP; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/identity-real-20261013T222438.518516556
+2026-10-13T22:24:45.4625036Z --- PASS: TestBrowserIdentityRealChain (7.05s)
+2026-10-13T22:24:45.4626017Z === RUN   TestBrowserSettingsWizardRealChain
+2026-10-13T22:24:47.4524167Z     browser_identity_chain_test.go:143: Go transport POST /v1/identity/login/start -> 200
+2026-10-13T22:24:47.4755957Z     browser_identity_chain_test.go:143: Go transport POST /v1/identity/login/complete -> 200
+2026-10-13T22:24:47.4949145Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:47.7073528Z     browser_identity_chain_test.go:143: Go transport POST /v1/identity/initial-store -> 200
+2026-10-13T22:24:47.7674948Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:47.7738163Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:47.8438272Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:47.8526425Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:47.8815023Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/dashboard -> 200
+2026-10-13T22:24:47.8840956Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:47.9050711Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/meta/health -> 404
+2026-10-13T22:24:47.9052011Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:47.9129089Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/billing/standing -> 200
+2026-10-13T22:24:47.9695275Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:48.0144837Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:48.0177306Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:48.0234287Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:48.0284843Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/provider-accounts -> 200
+2026-10-13T22:24:48.0289492Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets -> 200
+2026-10-13T22:24:48.0382330Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:48.0469002Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:48.0473859Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:48.0501005Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:48.0515643Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/meta/health -> 404
+2026-10-13T22:24:48.0560006Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:48.0569996Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:48.0571466Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/billing/standing -> 200
+2026-10-13T22:24:48.0573573Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/storefront/domains -> 200
+2026-10-13T22:24:48.0575036Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/storefront -> 200
+2026-10-13T22:24:48.0582977Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/meta/health -> 404
+2026-10-13T22:24:48.0584403Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/meta-connect/status -> 404
+2026-10-13T22:24:48.8533145Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:48.8690847Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/provider-accounts -> 200
+2026-10-13T22:24:48.8870015Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:48.9884915Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:48.9950121Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:48.9963727Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.0095865Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets -> 200
+2026-10-13T22:24:49.0128420Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/provider-accounts -> 200
+2026-10-13T22:24:49.0490942Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.0494462Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.0657595Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.0704889Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/meta/health -> 404
+2026-10-13T22:24:49.0707385Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/storefront/domains -> 200
+2026-10-13T22:24:49.0709084Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/meta-connect/status -> 404
+2026-10-13T22:24:49.0753251Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.0830651Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.0832236Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/billing/standing -> 200
+2026-10-13T22:24:49.0958783Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/storefront -> 200
+2026-10-13T22:24:49.0987507Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.1006823Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/meta/health -> 404
+2026-10-13T22:24:49.1474242Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.1543791Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/provider-accounts -> 409
+2026-10-13T22:24:49.2304632Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.2358744Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/provider-accounts -> 200
+2026-10-13T22:24:49.3273227Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.3353859Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets -> 200
+2026-10-13T22:24:49.3537386Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.3554168Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.3626103Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/delivery-services -> 200
+2026-10-13T22:24:49.3633620Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/payment-methods -> 200
+2026-10-13T22:24:49.4806802Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.4940339Z     browser_identity_chain_test.go:143: Go transport PUT /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/payment-methods/payuni_credit -> 200
+2026-10-13T22:24:49.6107438Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.6150097Z     browser_identity_chain_test.go:143: Go transport PUT /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/payment-methods/payuni_credit -> 200
+2026-10-13T22:24:49.7637328Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.7713887Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/payment-methods/payuni_credit/inspect -> 200
+2026-10-13T22:24:49.7730440Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.8483402Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.8503855Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.8504982Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.8506520Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.8510020Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.8577582Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/provider-accounts -> 200
+2026-10-13T22:24:49.8617370Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets -> 200
+2026-10-13T22:24:49.8620099Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/payment-methods -> 200
+2026-10-13T22:24:49.8695885Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/delivery-services -> 200
+2026-10-13T22:24:49.8968528Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.9039098Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/meta/health -> 404
+2026-10-13T22:24:49.9044045Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.9045104Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.9045990Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.9046873Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.9048171Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/meta-connect/status -> 404
+2026-10-13T22:24:49.9053527Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:49.9068242Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/meta/health -> 404
+2026-10-13T22:24:49.9092827Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/billing/standing -> 200
+2026-10-13T22:24:49.9103092Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/storefront -> 200
+2026-10-13T22:24:49.9126087Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/storefront/domains -> 200
+2026-10-13T22:24:50.0417671Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.0436163Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets -> 200
+2026-10-13T22:24:50.0522446Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.0562229Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/payment-methods/payuni_credit -> 200
+2026-10-13T22:24:50.0635478Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.0768369Z     browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/provider-accounts -> 200
+2026-10-13T22:24:50.0844764Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.0879795Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/provider-accounts -> 200
+2026-10-13T22:24:50.0953850Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.1048301Z     browser_identity_chain_test.go:143: Go transport PUT /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/payment-methods/payuni_credit -> 200
+2026-10-13T22:24:50.1258423Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.1461301Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.1534055Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.1553706Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.1606932Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.1615182Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.1648721Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets -> 200
+2026-10-13T22:24:50.1674213Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/provider-accounts -> 200
+2026-10-13T22:24:50.1690251Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/payment-methods -> 200
+2026-10-13T22:24:50.1712113Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/delivery-services -> 200
+2026-10-13T22:24:50.2002343Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.2004324Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.2013230Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.2014813Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.2016234Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.2018339Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.2067270Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/meta/health -> 404
+2026-10-13T22:24:50.2088733Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/meta-connect/status -> 404
+2026-10-13T22:24:50.2114517Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/meta/health -> 404
+2026-10-13T22:24:50.2120790Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/storefront -> 200
+2026-10-13T22:24:50.2122991Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/storefront/domains -> 200
+2026-10-13T22:24:50.2125832Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/billing/standing -> 200
+2026-10-13T22:24:50.2156974Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.2210341Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/provider-accounts/a4e8076a-725e-43ad-824c-14aa3ae2fe53 -> 200
+2026-10-13T22:24:50.3476050Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.3661243Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.3731311Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.3848712Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.3854478Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.3855876Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.3861606Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets -> 200
+2026-10-13T22:24:50.3890409Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/provider-accounts -> 200
+2026-10-13T22:24:50.3920660Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.3926260Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/delivery-services -> 200
+2026-10-13T22:24:50.3928945Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/payment-methods -> 200
+2026-10-13T22:24:50.4005561Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.4022136Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.4110135Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/meta/health -> 404
+2026-10-13T22:24:50.4154913Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.4169305Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.4170671Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/meta-connect/status -> 404
+2026-10-13T22:24:50.4214142Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/storefront -> 200
+2026-10-13T22:24:50.4228715Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.4238705Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/billing/standing -> 200
+2026-10-13T22:24:50.4240560Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/storefront/domains -> 200
+2026-10-13T22:24:50.4242236Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/meta/health -> 404
+2026-10-13T22:24:50.5679036Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.5902078Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.5954982Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.6027151Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.6028088Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.6041839Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.6069220Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets -> 200
+2026-10-13T22:24:50.6125048Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/payment-methods -> 200
+2026-10-13T22:24:50.6183935Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/delivery-services -> 200
+2026-10-13T22:24:50.6194082Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.6195293Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.6196684Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/provider-accounts -> 200
+2026-10-13T22:24:50.6243025Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.6290206Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/meta/health -> 404
+2026-10-13T22:24:50.6318061Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.6343980Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/billing/standing -> 200
+2026-10-13T22:24:50.6388793Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.6408083Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.6433286Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/meta-connect/status -> 404
+2026-10-13T22:24:50.6443885Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/storefront/domains -> 200
+2026-10-13T22:24:50.6457841Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.6459344Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/storefront -> 200
+2026-10-13T22:24:50.6461008Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/meta/health -> 404
+2026-10-13T22:24:50.6475764Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/provider-accounts/a4e8076a-725e-43ad-824c-14aa3ae2fe53 -> 200
+2026-10-13T22:24:50.8782891Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.8801883Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.8838066Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets -> 200
+2026-10-13T22:24:50.8857994Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/provider-accounts -> 200
+2026-10-13T22:24:50.8956619Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.8958459Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:50.9000135Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/delivery-services -> 200
+2026-10-13T22:24:50.9003989Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/payment-methods -> 200
+2026-10-13T22:24:51.0439819Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:51.1356005Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:51.1473493Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:51.1482101Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:51.1510253Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/provider-accounts -> 200
+2026-10-13T22:24:51.1520052Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets -> 200
+2026-10-13T22:24:51.1560875Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:51.1659846Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:51.1661149Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:51.1662143Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:51.1663412Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:51.1694000Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/meta/health -> 404
+2026-10-13T22:24:51.1695745Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:51.1729402Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/storefront/domains -> 200
+2026-10-13T22:24:51.1757100Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/meta/health -> 404
+2026-10-13T22:24:51.1834179Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/billing/standing -> 200
+2026-10-13T22:24:51.1836517Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/storefront -> 200
+2026-10-13T22:24:51.1842105Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/meta-connect/status -> 404
+2026-10-13T22:24:51.2726717Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:51.2730115Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:51.2813682Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/delivery-services -> 200
+2026-10-13T22:24:51.2824291Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/payment-methods -> 200
+2026-10-13T22:24:51.4140083Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:51.4163848Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:51.4213320Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/payment-methods -> 200
+2026-10-13T22:24:51.4237809Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/delivery-services -> 200
+2026-10-13T22:24:51.4633607Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:51.4691064Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/logistics/ecpay -> 404
+2026-10-13T22:24:51.4693056Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:51.4694407Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:51.4695437Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:51.4733898Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:51.4743880Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/logistics/cvs-settings -> 404
+2026-10-13T22:24:51.4768610Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/bank-transfer-settings -> 200
+2026-10-13T22:24:51.4780494Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/notification-settings -> 200
+2026-10-13T22:24:51.4787180Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/cash-on-delivery-settings -> 200
+2026-10-13T22:24:51.5313835Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:51.5325604Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/logistics/ecpay -> 404
+2026-10-13T22:24:51.5459105Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:51.5475882Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:51.5513682Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/delivery-services/home/policy -> 404
+2026-10-13T22:24:51.5528708Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/delivery-services/home -> 404
+2026-10-13T22:24:51.8261074Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:51.8346517Z     browser_identity_chain_test.go:143: Go transport PUT /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/delivery-services/home/policy -> 200
+2026-10-13T22:24:52.1138458Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:52.1230709Z     browser_identity_chain_test.go:143: Go transport PUT /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/delivery-services/home -> 200
+2026-10-13T22:24:52.1921992Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:52.2727765Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:52.2844253Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:52.2857369Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:52.2858512Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:52.2859572Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:52.2860646Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:52.2946386Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:52.3010394Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/delivery-services/home -> 200
+2026-10-13T22:24:52.3070240Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/delivery-services/home/policy -> 200
+2026-10-13T22:24:52.3073398Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/payment-methods -> 200
+2026-10-13T22:24:52.3075415Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/provider-accounts -> 200
+2026-10-13T22:24:52.3077432Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets/1b8b47cf-a2c0-4b88-aadf-e92f33b70b55/countries/TW/delivery-services -> 200
+2026-10-13T22:24:52.3125575Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:52.3145305Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/meta/health -> 404
+2026-10-13T22:24:52.3271313Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:52.3305391Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:52.3313347Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:52.3320167Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:52.3345210Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:52.3360912Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/meta/health -> 404
+2026-10-13T22:24:52.3364498Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/markets -> 200
+2026-10-13T22:24:52.3393599Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/meta-connect/status -> 404
+2026-10-13T22:24:52.3394936Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/billing/standing -> 200
+2026-10-13T22:24:52.3421134Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/storefront -> 200
+2026-10-13T22:24:52.3431749Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/storefront/domains -> 200
+2026-10-13T22:24:52.3468714Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:52.3508162Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/provider-accounts/a4e8076a-725e-43ad-824c-14aa3ae2fe53 -> 200
+2026-10-13T22:24:52.3968278Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+2026-10-13T22:24:52.3972333Z     browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/14adc14e-a63b-4979-be24-b8e7eb4c7e49/logistics/ecpay -> 404
+2026-10-13T22:24:52.5809446Z     browser_identity_chain_test.go:143: Go transport POST /v1/identity/logout -> 204
+2026-10-13T22:24:52.7730077Z     browser_identity_chain_test.go:47: PASS: browser -> Next -> Go -> real PG, signed MOCK IdP; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/settings-real-20261013T222445.518528500
+2026-10-13T22:24:52.7868075Z --- PASS: TestBrowserSettingsWizardRealChain (7.32s)
+2026-10-13T22:24:52.7900970Z PASS
+2026-10-13T22:24:53.7999349Z ok  	livecommerce/tests/foundation	40.689s
+2026-10-13T22:24:54.1169129Z PASS: isolated PG + signed MOCK IdP browser chain; fixture removed at exit.
+2026-10-13T22:24:55.3090597Z ##[group]Run grep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log | head -200 || true
+2026-10-13T22:24:55.3091288Z [36;1mgrep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log | head -200 || true[0m
+2026-10-13T22:24:55.3147792Z shell: /usr/bin/bash -e {0}
+2026-10-13T22:24:55.3148003Z env:
+2026-10-13T22:24:55.3148184Z   GOTOOLCHAIN: local
+2026-10-13T22:24:55.3148465Z   GOFLAGS: -mod=readonly
+2026-10-13T22:24:55.3148755Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+2026-10-13T22:24:55.3149004Z   MODE: --browser-identity
+2026-10-13T22:24:55.3149204Z   LC_SWEEP_WORKERS: 1
+2026-10-13T22:24:55.3149377Z   EXTRA_ENV: 
+2026-10-13T22:24:55.3149539Z ##[endgroup]
+2026-10-13T22:24:55.3233800Z grep: output/ci-gates/*.log: No such file or directory
+2026-10-13T22:24:55.3280556Z ##[group]Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+2026-10-13T22:24:55.3280872Z with:
+2026-10-13T22:24:55.3281042Z   name: gate-browser-identity
+2026-10-13T22:24:55.3281276Z   path: output/ci-gates/
+output/playwright/
+
+2026-10-13T22:24:55.3281506Z   retention-days: 14
+2026-10-13T22:24:55.3281685Z   if-no-files-found: ignore
+2026-10-13T22:24:55.3281883Z   compression-level: 6
+2026-10-13T22:24:55.3282070Z   overwrite: false
+2026-10-13T22:24:55.3282263Z   include-hidden-files: false
+2026-10-13T22:24:55.3282452Z env:
+2026-10-13T22:24:55.3282842Z   GOTOOLCHAIN: local
+2026-10-13T22:24:55.3283031Z   GOFLAGS: -mod=readonly
+2026-10-13T22:24:55.3283247Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+2026-10-13T22:24:55.3283487Z   MODE: --browser-identity
+2026-10-13T22:24:55.3283682Z   LC_SWEEP_WORKERS: 1
+2026-10-13T22:24:55.3283853Z   EXTRA_ENV: 
+2026-10-13T22:24:55.3284019Z ##[endgroup]
+2026-10-13T22:24:55.4612388Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2026-10-13T22:24:55.4614687Z The least common ancestor is /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output. This will be the root directory of the artifact
+2026-10-13T22:24:55.4615778Z With the provided path, there will be 15 files uploaded
+2026-10-13T22:24:55.4619031Z Artifact name is valid!
+2026-10-13T22:24:55.4619428Z Root directory input is valid!
+2026-10-13T22:24:55.6919542Z Beginning upload of artifact content to blob storage
+2026-10-13T22:24:56.5799567Z Uploaded bytes 8388608
+2026-10-13T22:24:56.7445152Z Uploaded bytes 14517827
+2026-10-13T22:24:56.7594777Z Finished uploading artifact content to blob storage!
+2026-10-13T22:24:56.7595578Z SHA256 digest of uploaded artifact zip is 335e4849fb39e9fd088b3ede24198f19b39a188567984db71418be0128b4d49a
+2026-10-13T22:24:56.7597201Z Finalizing artifact upload
+2026-10-13T22:24:57.0020523Z Artifact gate-browser-identity.zip successfully finalized. Artifact ID 11856320010
+2026-10-13T22:24:57.0021336Z Artifact gate-browser-identity has been successfully uploaded! Final size is 14517827 bytes. Artifact ID is 11856320010
+2026-10-13T22:24:57.0025192Z Artifact download URL: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38476605638/artifacts/11856320010
+2026-10-13T22:24:57.0824715Z Post job cleanup.
+2026-10-13T22:24:57.1822584Z (node:12392) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-13T22:24:57.1823381Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-13T22:24:57.1949779Z Post job cleanup.
+2026-10-13T22:24:57.3099917Z Post job cleanup.
+2026-10-13T22:24:57.3802669Z [command]/usr/bin/git version
+2026-10-13T22:24:57.3836546Z git version 2.55.0
+2026-10-13T22:24:57.3866728Z Temporarily overriding HOME='/home/runner/work/_temp/7d82b319-b2eb-47ba-b4ee-1a679e72688f' before making global git config changes
+2026-10-13T22:24:57.3867957Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-13T22:24:57.3871554Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+2026-10-13T22:24:57.3904703Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-13T22:24:57.3935058Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-13T22:24:57.4182167Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-13T22:24:57.4211716Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-13T22:24:57.4531019Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-13T22:24:57.4580429Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-13T22:24:57.5070069Z Cleaning up orphan processes
+2026-10-13T22:24:57.5380773Z Terminate orphan process: pid (11877) (sleep)

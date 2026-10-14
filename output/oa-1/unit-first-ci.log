@@ -1,0 +1,716 @@
+gate (shard:unit)	Set up job	﻿2026-10-13T19:57:12.5946774Z Current runner version: '2.337.0'
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5974085Z ##[group]Runner Image Provisioner
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5975514Z Hosted Compute Agent
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5976164Z Version: 20261002.596
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5976872Z Commit: c3d12f3313a95f25162a1503be624f3b0617f8c0
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5977678Z Build Date: 2026-10-02T22:28:27Z
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5978387Z Worker ID: {1d09f9c9-e0f9-446a-937b-0fbf74a10042}
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5979091Z Region: westus
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5979702Z Cloud: Azure
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5980279Z ##[endgroup]
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5982293Z ##[group]Operating System
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5983061Z Ubuntu
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5983578Z 24.04.5
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5984174Z LTS
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5985132Z ##[endgroup]
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5985768Z ##[group]Runner Image
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5986400Z Image: ubuntu-24.04
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5986979Z Version: 20261004.327.1
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5988122Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/Ubuntu2404-Readme.md
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5989949Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261004.327
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5990935Z ##[endgroup]
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5992084Z ##[group]GITHUB_TOKEN Permissions
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5994050Z Contents: read
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5994999Z Metadata: read
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5995666Z ##[endgroup]
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5997928Z Secret source: Actions
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5999005Z Cache mode: write
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.5999751Z Prepare workflow directory
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.6572293Z Prepare all required actions
+gate (shard:unit)	Set up job	2026-10-13T19:57:12.6628079Z Getting action download info
+gate (shard:unit)	Set up job	2026-10-13T19:57:13.0257280Z Download action repository 'actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09' (SHA:fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09)
+gate (shard:unit)	Set up job	2026-10-13T19:57:13.1455376Z Download action repository 'actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16' (SHA:924ae3a1cded613372ab5595356fb5720e22ba16)
+gate (shard:unit)	Set up job	2026-10-13T19:57:13.6031955Z Download action repository 'actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444' (SHA:a0853c24544627f65ddf259abe73b1d18a591444)
+gate (shard:unit)	Set up job	2026-10-13T19:57:13.7023290Z Download action repository 'actions/cache@caa296126883cff596d87d8935842f9db880ef25' (SHA:caa296126883cff596d87d8935842f9db880ef25)
+gate (shard:unit)	Set up job	2026-10-13T19:57:13.8076165Z Download action repository 'actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f' (SHA:b7c566a772e6b6bfb58ed0dc250532a479d7789f)
+gate (shard:unit)	Set up job	2026-10-13T19:57:14.1457321Z Complete job name: gate (shard:unit)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	﻿2026-10-13T19:57:14.2474451Z ##[group]Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.2476615Z with:
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.2477519Z   persist-credentials: false
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.2478509Z   fetch-depth: 0
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.2479501Z   repository: humaux/live_commerce_architecture_v1
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.2487609Z   token: ***
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.2488473Z   ssh-strict: true
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.2489351Z   ssh-user: git
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.2490201Z   clean: true
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.2491115Z   sparse-checkout-cone-mode: true
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.2492142Z   fetch-tags: false
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.2493056Z   show-progress: true
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.2493947Z   lfs: false
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.2495127Z   submodules: false
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.2496116Z   set-safe-directory: true
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.2497133Z   allow-unsafe-pr-checkout: false
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.2498590Z env:
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.2499434Z   GOTOOLCHAIN: go1.27.2
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.2500387Z   GOFLAGS: -mod=readonly
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.2501428Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.2502631Z   MODE: shard:unit
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.2503512Z   LC_SWEEP_WORKERS: 1
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.2504409Z   EXTRA_ENV: 
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.2505433Z ##[endgroup]
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3587314Z Syncing repository: humaux/live_commerce_architecture_v1
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3590390Z ##[group]Getting Git version info
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3592155Z Working directory is '/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1'
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3595309Z [command]/usr/bin/git version
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3667784Z git version 2.55.0
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3722954Z ##[endgroup]
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3739876Z Temporarily overriding HOME='/home/runner/work/_temp/3add3c39-5bdc-49ed-a52f-09abbe99c603' before making global git config changes
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3744133Z Adding repository directory to the temporary git global config as a safe directory
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3749209Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3804321Z Deleting the contents of '/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1'
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3808853Z ##[group]Initializing the repository
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3812912Z [command]/usr/bin/git init /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3951202Z hint: Using 'master' as the name for the initial branch. This default branch name
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3955308Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3959065Z hint: to use in all of your new repositories, which will suppress this warning,
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3961900Z hint: call:
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3963504Z hint:
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3966041Z hint: 	git config --global init.defaultBranch <name>
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3969353Z hint:
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3971590Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3975240Z hint: 'development'. The just-created branch can be renamed via this command:
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3977863Z hint:
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3979421Z hint: 	git branch -m <name>
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3981021Z hint:
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3983310Z hint: Disable this message with "git config set advice.defaultBranchName false"
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3988049Z Initialized empty Git repository in /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/.git/
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.3992737Z [command]/usr/bin/git remote add origin https://github.com/humaux/live_commerce_architecture_v1
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.4030956Z ##[endgroup]
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.4033447Z ##[group]Disabling automatic garbage collection
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.4035787Z [command]/usr/bin/git config --local gc.auto 0
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.4071273Z ##[endgroup]
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.4073700Z ##[group]Setting up auth
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.4083944Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.4123033Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.4539416Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.4576131Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.4803259Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.4839537Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.5073444Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.5116209Z ##[endgroup]
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.5118975Z ##[group]Fetching the repository
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:14.5129381Z [command]/usr/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6932428Z From https://github.com/humaux/live_commerce_architecture_v1
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6936667Z  * [new branch]        checkout-go-20260924    -> origin/checkout-go-20260924
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6940744Z  * [new branch]        checkout-sql-20260924   -> origin/checkout-sql-20260924
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6942041Z  * [new branch]        claude/gallant-bohr-9rs3yo -> origin/claude/gallant-bohr-9rs3yo
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6942983Z  * [new branch]        codex/account-intake-http-20260924 -> origin/codex/account-intake-http-20260924
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6943951Z  * [new branch]        codex/admin-assets      -> origin/codex/admin-assets
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6944919Z  * [new branch]        codex/admin-fixture     -> origin/codex/admin-fixture
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6945918Z  * [new branch]        codex/admin-ledger      -> origin/codex/admin-ledger
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6947115Z  * [new branch]        codex/admin-ledger-tests -> origin/codex/admin-ledger-tests
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6948193Z  * [new branch]        codex/admin-pagination  -> origin/codex/admin-pagination
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6949251Z  * [new branch]        codex/admin-transport-tests -> origin/codex/admin-transport-tests
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6950295Z  * [new branch]        codex/buyer-history-backend -> origin/codex/buyer-history-backend
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6951336Z  * [new branch]        codex/catalog-inventory -> origin/codex/catalog-inventory
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6952448Z  * [new branch]        codex/catalog-inventory-tests -> origin/codex/catalog-inventory-tests
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6953703Z  * [new branch]        codex/commerce-buyer-payment-assembly-gate-20260925 -> origin/codex/commerce-buyer-payment-assembly-gate-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6955169Z  * [new branch]        codex/commerce-buyer-payment-browser-tests-20260925 -> origin/codex/commerce-buyer-payment-browser-tests-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6956203Z  * [new branch]        codex/commerce-buyer-payment-http-20260925 -> origin/codex/commerce-buyer-payment-http-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6957296Z  * [new branch]        codex/commerce-buyer-payment-pg-20260925 -> origin/codex/commerce-buyer-payment-pg-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6958454Z  * [new branch]        codex/commerce-buyer-payment-public-20260925 -> origin/codex/commerce-buyer-payment-public-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6959571Z  * [new branch]        codex/commerce-buyer-payment-public-tests-20260925 -> origin/codex/commerce-buyer-payment-public-tests-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6960721Z  * [new branch]        codex/commerce-buyer-payment-ui-controller-20260925 -> origin/codex/commerce-buyer-payment-ui-controller-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6961599Z  * [new branch]        codex/commerce-hosted-go-20260925 -> origin/codex/commerce-hosted-go-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6962290Z  * [new branch]        codex/commerce-hosted-pg-20260925 -> origin/codex/commerce-hosted-pg-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6963188Z  * [new branch]        codex/engineering-maintenance -> origin/codex/engineering-maintenance
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6964029Z  * [new branch]        codex/expiry-runtime-go -> origin/codex/expiry-runtime-go
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6964950Z  * [new branch]        codex/expiry-runtime-pg -> origin/codex/expiry-runtime-pg
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6965577Z  * [new branch]        codex/foundation-platform -> origin/codex/foundation-platform
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6966147Z  * [new branch]        codex/foundation-tests  -> origin/codex/foundation-tests
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6966689Z  * [new branch]        codex/locale-routing    -> origin/codex/locale-routing
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6967380Z  * [new branch]        codex/merchant-orders-bff -> origin/codex/merchant-orders-bff
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6968303Z  * [new branch]        codex/merchant-orders-bff-test -> origin/codex/merchant-orders-bff-test
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6968916Z  * [new branch]        codex/merchant-orders-go -> origin/codex/merchant-orders-go
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6969468Z  * [new branch]        codex/merchant-orders-pg -> origin/codex/merchant-orders-pg
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6970133Z  * [new branch]        codex/merchant-settings-http-20260924 -> origin/codex/merchant-settings-http-20260924
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6970746Z  * [new branch]        codex/oidclogin         -> origin/codex/oidclogin
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6971330Z  * [new branch]        codex/payment-capture-go-20260924 -> origin/codex/payment-capture-go-20260924
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6972215Z  * [new branch]        codex/payment-capture-sql-20260924 -> origin/codex/payment-capture-sql-20260924
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6972863Z  * [new branch]        codex/payment-query-20260924 -> origin/codex/payment-query-20260924
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6973558Z  * [new branch]        codex/payment-runtime-pg-gate-20260925 -> origin/codex/payment-runtime-pg-gate-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6974243Z  * [new branch]        codex/payment-start-20260924 -> origin/codex/payment-start-20260924
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6975210Z  * [new branch]        codex/payment-worker-runtime-20260925 -> origin/codex/payment-worker-runtime-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6975917Z  * [new branch]        codex/pr32-email-envelope-red -> origin/codex/pr32-email-envelope-red
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6976509Z  * [new branch]        codex/pr32-intent-ci-red -> origin/codex/pr32-intent-ci-red
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6977073Z  * [new branch]        codex/pr32-lock-scope-red -> origin/codex/pr32-lock-scope-red
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6977681Z  * [new branch]        codex/pr32-price-correct-red -> origin/codex/pr32-price-correct-red
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6978334Z  * [new branch]        codex/pr32-price-reason-red -> origin/codex/pr32-price-reason-red
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6978912Z  * [new branch]        codex/pr32-r5-red       -> origin/codex/pr32-r5-red
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6979540Z  * [new branch]        codex/pr32-recovery-replay-red -> origin/codex/pr32-recovery-replay-red
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6980180Z  * [new branch]        codex/pr32-reservation-red -> origin/codex/pr32-reservation-red
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6980789Z  * [new branch]        codex/pr32-server-intent-red -> origin/codex/pr32-server-intent-red
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6981387Z  * [new branch]        codex/pr32-settled-ui-red -> origin/codex/pr32-settled-ui-red
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6982078Z  * [new branch]        codex/published-resolver-go-20260925 -> origin/codex/published-resolver-go-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6982825Z  * [new branch]        codex/settings-discovery-20260924 -> origin/codex/settings-discovery-20260924
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6983553Z  * [new branch]        codex/settings-documenter-20260925 -> origin/codex/settings-documenter-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6984361Z  * [new branch]        codex/settings-ledger-regression-20260924 -> origin/codex/settings-ledger-regression-20260924
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6985423Z  * [new branch]        codex/settings-ui-20260924 -> origin/codex/settings-ui-20260924
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6986191Z  * [new branch]        codex/t03-browser-bff   -> origin/codex/t03-browser-bff
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6986775Z  * [new branch]        codex/t03-buyer-capability -> origin/codex/t03-buyer-capability
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6987469Z  * [new branch]        commerce/allocation-config-20260924 -> origin/commerce/allocation-config-20260924
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6988374Z  * [new branch]        commerce/browser-input-cleanup-fault-tests-20260927 -> origin/commerce/browser-input-cleanup-fault-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6989303Z  * [new branch]        commerce/browser-input-config-20260927 -> origin/commerce/browser-input-config-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6990161Z  * [new branch]        commerce/browser-input-config-tests-20260927 -> origin/commerce/browser-input-config-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6991124Z  * [new branch]        commerce/browser-input-delivery-acceptance-20260927 -> origin/commerce/browser-input-delivery-acceptance-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6992057Z  * [new branch]        commerce/browser-input-execution-20260927 -> origin/commerce/browser-input-execution-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6992959Z  * [new branch]        commerce/browser-input-execution-tests-20260927 -> origin/commerce/browser-input-execution-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6993887Z  * [new branch]        commerce/browser-input-fault-tests-20260927 -> origin/commerce/browser-input-fault-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6995077Z  * [new branch]        commerce/browser-input-holds-tests-20260927 -> origin/commerce/browser-input-holds-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6996150Z  * [new branch]        commerce/browser-input-http-tests-20260927 -> origin/commerce/browser-input-http-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6997071Z  * [new branch]        commerce/browser-input-plan-fault-tests-20260927 -> origin/commerce/browser-input-plan-fault-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6997984Z  * [new branch]        commerce/browser-input-studio-read-20260927 -> origin/commerce/browser-input-studio-read-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6998830Z  * [new branch]        commerce/browser-input-token-go-20260927 -> origin/commerce/browser-input-token-go-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.6999631Z  * [new branch]        commerce/brw07-composite-go-20260928 -> origin/commerce/brw07-composite-go-20260928
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7000409Z  * [new branch]        commerce/brw07-composite-sql-20260928 -> origin/commerce/brw07-composite-sql-20260928
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7001130Z  * [new branch]        commerce/buyer-catalog-20260925 -> origin/commerce/buyer-catalog-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7001863Z  * [new branch]        commerce/buyer-design-record-20260925 -> origin/commerce/buyer-design-record-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7002615Z  * [new branch]        commerce/buyer-destination-20260924 -> origin/commerce/buyer-destination-20260924
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7003479Z  * [new branch]        commerce/buyer-history-browser-extension-20260925 -> origin/commerce/buyer-history-browser-extension-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7004421Z  * [new branch]        commerce/buyer-history-design-record-20260925 -> origin/commerce/buyer-history-design-record-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7005337Z  * [new branch]        commerce/buyer-http-20260925 -> origin/commerce/buyer-http-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7005995Z  * [new branch]        commerce/buyer-options-20260925 -> origin/commerce/buyer-options-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7006774Z  * [new branch]        commerce/buyer-order-design-record-20260925 -> origin/commerce/buyer-order-design-record-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7007568Z  * [new branch]        commerce/buyer-order-gate-20260925 -> origin/commerce/buyer-order-gate-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7008304Z  * [new branch]        commerce/buyer-projections-20260925 -> origin/commerce/buyer-projections-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7009032Z  * [new branch]        commerce/buyer-public-bff-20260925 -> origin/commerce/buyer-public-bff-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7009767Z  * [new branch]        commerce/buyer-registration-20260925 -> origin/commerce/buyer-registration-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7010634Z  * [new branch]        commerce/checkout-quote-20260920 -> origin/commerce/checkout-quote-20260920
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7011319Z  * [new branch]        commerce/delivery-config-20260920 -> origin/commerce/delivery-config-20260920
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7012016Z  * [new branch]        commerce/legacy-family-go-20260926 -> origin/commerce/legacy-family-go-20260926
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7012798Z  * [new branch]        commerce/legacy-family-integration-20260926 -> origin/commerce/legacy-family-integration-20260926
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7013607Z  * [new branch]        commerce/legacy-family-tests-20260926 -> origin/commerce/legacy-family-tests-20260926
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7014413Z  * [new branch]        commerce/legacy-maintenance-tests-20260926 -> origin/commerce/legacy-maintenance-tests-20260926
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7015710Z  * [new branch]        commerce/legacy-upgrade-tests-20260926 -> origin/commerce/legacy-upgrade-tests-20260926
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7016767Z  * [new branch]        commerce/live-draft-go-20260927 -> origin/commerce/live-draft-go-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7018183Z  * [new branch]        commerce/live-draft-tests-20260927 -> origin/commerce/live-draft-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7019673Z  * [new branch]        commerce/livekit-input-tests-20260927 -> origin/commerce/livekit-input-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7021258Z  * [new branch]        commerce/livekit-input-wire-20260927 -> origin/commerce/livekit-input-wire-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7023153Z  * [new branch]        commerce/livekit-material-go-20260927 -> origin/commerce/livekit-material-go-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7024977Z  * [new branch]        commerce/livekit-material-tests-20260927 -> origin/commerce/livekit-material-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7026553Z  * [new branch]        commerce/livekit-protocol-go-20260927 -> origin/commerce/livekit-protocol-go-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7028141Z  * [new branch]        commerce/livekit-protocol-tests-20260927 -> origin/commerce/livekit-protocol-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7029410Z  * [new branch]        commerce/livekit-room-go-20260927 -> origin/commerce/livekit-room-go-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7030177Z  * [new branch]        commerce/livekit-room-tests-20260927 -> origin/commerce/livekit-room-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7030893Z  * [new branch]        commerce/local-recovery-20260927 -> origin/commerce/local-recovery-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7031684Z  * [new branch]        commerce/local-recovery-independent-20260927 -> origin/commerce/local-recovery-independent-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7032542Z  * [new branch]        commerce/local-recovery-tests-20260927 -> origin/commerce/local-recovery-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7033391Z  * [new branch]        commerce/lri-additive-event-snapshot-20260927 -> origin/commerce/lri-additive-event-snapshot-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7034217Z  * [new branch]        commerce/media-authority-sql-20260927 -> origin/commerce/media-authority-sql-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7035641Z  * [new branch]        commerce/media-authority-tests-20260927 -> origin/commerce/media-authority-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7036622Z  * [new branch]        commerce/media-execution-20260927 -> origin/commerce/media-execution-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7037422Z  * [new branch]        commerce/media-execution-tests-20260927 -> origin/commerce/media-execution-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7038199Z  * [new branch]        commerce/media-input-source-20260927 -> origin/commerce/media-input-source-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7038957Z  * [new branch]        commerce/media-input-tests-20260927 -> origin/commerce/media-input-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7039686Z  * [new branch]        commerce/media-login-source-20260927 -> origin/commerce/media-login-source-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7040411Z  * [new branch]        commerce/media-login-tests-20260927 -> origin/commerce/media-login-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7041077Z  * [new branch]        commerce/media-plan-20260927 -> origin/commerce/media-plan-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7041959Z  * [new branch]        commerce/media-plan-tests-20260927 -> origin/commerce/media-plan-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7042900Z  * [new branch]        commerce/media-recovery-observer-20260927 -> origin/commerce/media-recovery-observer-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7043761Z  * [new branch]        commerce/media-recovery-tests-20260927 -> origin/commerce/media-recovery-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7044485Z  * [new branch]        commerce/media-runtime-20260927 -> origin/commerce/media-runtime-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7045499Z  * [new branch]        commerce/media-runtime-tests-20260927 -> origin/commerce/media-runtime-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7046197Z  * [new branch]        commerce/media-stop-20260927 -> origin/commerce/media-stop-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7046864Z  * [new branch]        commerce/media-stop-tests-20260927 -> origin/commerce/media-stop-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7047611Z  * [new branch]        commerce/merchant-buyer-joint-20260925 -> origin/commerce/merchant-buyer-joint-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7048432Z  * [new branch]        commerce/merchant-orders-c-tests-20260927 -> origin/commerce/merchant-orders-c-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7049245Z  * [new branch]        commerce/merchant-orders-c-ui-20260927 -> origin/commerce/merchant-orders-c-ui-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7050048Z  * [new branch]        commerce/merchant-purchase-entry-20260925 -> origin/commerce/merchant-purchase-entry-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7051070Z  * [new branch]        commerce/merchant-purchase-entry-ui-20260925 -> origin/commerce/merchant-purchase-entry-ui-20260925
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7051863Z  * [new branch]        commerce/meta-consumer-go-20260926 -> origin/commerce/meta-consumer-go-20260926
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7052684Z  * [new branch]        commerce/meta-consumer-prefixed-repro-20260926 -> origin/commerce/meta-consumer-prefixed-repro-20260926
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7053544Z  * [new branch]        commerce/meta-consumer-tests-20260926 -> origin/commerce/meta-consumer-tests-20260926
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7054257Z  * [new branch]        commerce/meta-inbox-go-20260926 -> origin/commerce/meta-inbox-go-20260926
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7055244Z  * [new branch]        commerce/meta-inbox-tests-20260926 -> origin/commerce/meta-inbox-tests-20260926
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7056144Z  * [new branch]        commerce/meta-isolation-go-20260926 -> origin/commerce/meta-isolation-go-20260926
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7057642Z  * [new branch]        commerce/meta-payload-20260926 -> origin/commerce/meta-payload-20260926
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7058989Z  * [new branch]        commerce/meta-payload-tests-20260926 -> origin/commerce/meta-payload-tests-20260926
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7060264Z  * [new branch]        commerce/meta-protocol-20260926 -> origin/commerce/meta-protocol-20260926
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7061522Z  * [new branch]        commerce/meta-protocol-tests-20260926 -> origin/commerce/meta-protocol-tests-20260926
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7062733Z  * [new branch]        commerce/meta-runtime-go-20260926 -> origin/commerce/meta-runtime-go-20260926
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7064257Z  * [new branch]        commerce/meta-runtime-isolation-tests-20260926 -> origin/commerce/meta-runtime-isolation-tests-20260926
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7065573Z  * [new branch]        commerce/meta-runtime-tests-20260926 -> origin/commerce/meta-runtime-tests-20260926
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7066781Z  * [new branch]        commerce/orders-native-visibility-tests-20260927 -> origin/commerce/orders-native-visibility-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7067644Z  * [new branch]        commerce/pickup-source-20260924 -> origin/commerce/pickup-source-20260924
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7068633Z  * [new branch]        commerce/pricing-20260920 -> origin/commerce/pricing-20260920
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7069523Z  * [new branch]        commerce/r04-local-input-20260927 -> origin/commerce/r04-local-input-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7070369Z  * [new branch]        commerce/r04-local-input-tests-20260927 -> origin/commerce/r04-local-input-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7071893Z  * [new branch]        commerce/seed-pool-lifetime-20260927 -> origin/commerce/seed-pool-lifetime-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7072972Z  * [new branch]        commerce/startup-diagnostics-20260927 -> origin/commerce/startup-diagnostics-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7074023Z  * [new branch]        commerce/studio-b-ui-20260927 -> origin/commerce/studio-b-ui-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7074849Z  * [new branch]        commerce/studio-bff-source-20260927 -> origin/commerce/studio-bff-source-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7075590Z  * [new branch]        commerce/studio-bff-tests-20260927 -> origin/commerce/studio-bff-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7076320Z  * [new branch]        commerce/studio-input-tests-20260927 -> origin/commerce/studio-input-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7077406Z  * [new branch]        commerce/studio-native-device-tests-20260927 -> origin/commerce/studio-native-device-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7078609Z  * [new branch]        commerce/studio-source-20260927 -> origin/commerce/studio-source-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7079488Z  * [new branch]        commerce/studio-tests-20260927 -> origin/commerce/studio-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7080163Z  * [new branch]        commerce/studio-ui-tests-20260927 -> origin/commerce/studio-ui-tests-20260927
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7080868Z  * [new branch]        commerce/t03-design-record-20260920 -> origin/commerce/t03-design-record-20260920
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7081557Z  * [new branch]        commerce/t06-dispatcher-20260920 -> origin/commerce/t06-dispatcher-20260920
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7082479Z  * [new branch]        commerce/t06-operation-service-20260920 -> origin/commerce/t06-operation-service-20260920
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7083155Z  * [new branch]        commerce/wizard-20260920 -> origin/commerce/wizard-20260920
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7083681Z  * [new branch]        int/lc-u1-shell         -> origin/int/lc-u1-shell
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7084207Z  * [new branch]        int/product-media-v2-ui -> origin/int/product-media-v2-ui
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7085050Z  * [new branch]        int/storefront-card-gutter -> origin/int/storefront-card-gutter
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7085701Z  * [new branch]        int/w1-01u-banner       -> origin/int/w1-01u-banner
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7086230Z  * [new branch]        int/w3-u1b-picklist-ui  -> origin/int/w3-u1b-picklist-ui
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7086713Z  * [new branch]        main                    -> origin/main
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7087257Z  * [new branch]        merchant-accounts-go-20260924 -> origin/merchant-accounts-go-20260924
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7087893Z  * [new branch]        payment-methods-go-20260924 -> origin/payment-methods-go-20260924
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7088474Z  * [new branch]        payuni-wire-go-20260924 -> origin/payuni-wire-go-20260924
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7088986Z  * [new branch]        r3/integration          -> origin/r3/integration
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7089572Z  * [new branch]        unit/browser-evidence-untracked -> origin/unit/browser-evidence-untracked
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7090222Z  * [new branch]        unit/cancel-closes-work-item -> origin/unit/cancel-closes-work-item
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7090841Z  * [new branch]        unit/cart-refresh-generation -> origin/unit/cart-refresh-generation
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7091423Z  * [new branch]        unit/ci-actions-node24  -> origin/unit/ci-actions-node24
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7091958Z  * [new branch]        unit/ci-browser-linux   -> origin/unit/ci-browser-linux
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7092479Z  * [new branch]        unit/ci-contract-drift  -> origin/unit/ci-contract-drift
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7093004Z  * [new branch]        unit/ci-dedupe-serial   -> origin/unit/ci-dedupe-serial
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7093593Z  * [new branch]        unit/ci-playwright-deps-cache -> origin/unit/ci-playwright-deps-cache
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7094162Z  * [new branch]        unit/ci-pr-gates        -> origin/unit/ci-pr-gates
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7094923Z  * [new branch]        unit/ci-pr-modes-coverage -> origin/unit/ci-pr-modes-coverage
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7095560Z  * [new branch]        unit/ci-select-backend-browser -> origin/unit/ci-select-backend-browser
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7096282Z  * [new branch]        unit/ci-speed           -> origin/unit/ci-speed
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7096783Z  * [new branch]        unit/delivery-report    -> origin/unit/delivery-report
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7097320Z  * [new branch]        unit/delivery-report-r2 -> origin/unit/delivery-report-r2
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7097850Z  * [new branch]        unit/deploy-prep-r3     -> origin/unit/deploy-prep-r3
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7098427Z  * [new branch]        unit/deploy-prep-r3-p2  -> origin/unit/deploy-prep-r3-p2
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7098954Z  * [new branch]        unit/e2e-price-regex    -> origin/unit/e2e-price-regex
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7099493Z  * [new branch]        unit/ext-agent-anthropic -> origin/unit/ext-agent-anthropic
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7100136Z  * [new branch]        unit/fix-ads-draft-midnight-flake -> origin/unit/fix-ads-draft-midnight-flake
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7100826Z  * [new branch]        unit/fix-manual-order-regen-race -> origin/unit/fix-manual-order-regen-race
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7101483Z  * [new branch]        unit/fix-merchant-buyer-pmv2 -> origin/unit/fix-merchant-buyer-pmv2
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7102065Z  * [new branch]        unit/fix-meta-ads-ma09a -> origin/unit/fix-meta-ads-ma09a
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7102637Z  * [new branch]        unit/fix-report-funnel-clock -> origin/unit/fix-report-funnel-clock
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7103248Z  * [new branch]        unit/fix-settings-real-flake -> origin/unit/fix-settings-real-flake
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7104047Z  * [new branch]        unit/fix-storefront-chips-stream -> origin/unit/fix-storefront-chips-stream
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7105080Z  * [new branch]        unit/fix-untracked-stripe-capture -> origin/unit/fix-untracked-stripe-capture
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7105739Z  * [new branch]        unit/followups-polish-1 -> origin/unit/followups-polish-1
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7106288Z  * [new branch]        unit/gate-dep-register  -> origin/unit/gate-dep-register
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7106820Z  * [new branch]        unit/gate-port-retry    -> origin/unit/gate-port-retry
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7107621Z  * [new branch]        unit/lc-a3-print-idempotency -> origin/unit/lc-a3-print-idempotency
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7108234Z  * [new branch]        unit/lc-b2-deletion-eviction -> origin/unit/lc-b2-deletion-eviction
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7108815Z  * [new branch]        unit/lc-b3b-buyer-panel -> origin/unit/lc-b3b-buyer-panel
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7109358Z  * [new branch]        unit/lc-b7-console-read -> origin/unit/lc-b7-console-read
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7109905Z  * [new branch]        unit/lc-r2-c3-print-purge -> origin/unit/lc-r2-c3-print-purge
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7110431Z  * [new branch]        unit/lc-u1-shell        -> origin/unit/lc-u1-shell
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7110962Z  * [new branch]        unit/lc-u2a-comment-stream -> origin/unit/lc-u2a-comment-stream
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7111516Z  * [new branch]        unit/lc-u2b-inbox-page  -> origin/unit/lc-u2b-inbox-page
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7112186Z  * [new branch]        unit/lc-u2b2-customer-link -> origin/unit/lc-u2b2-customer-link
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7112792Z  * [new branch]        unit/lc-u3-create-order-drawer -> origin/unit/lc-u3-create-order-drawer
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7113451Z  * [new branch]        unit/live-price-keep-on-pause -> origin/unit/live-price-keep-on-pause
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7114126Z  * [new branch]        unit/matrix-coverage-v2-evidence -> origin/unit/matrix-coverage-v2-evidence
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7114966Z  * [new branch]        unit/matrix-coverage-v2-execution -> origin/unit/matrix-coverage-v2-execution
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7115709Z  * [new branch]        unit/matrix-ledger-enforce -> origin/unit/matrix-ledger-enforce
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7116314Z  * [new branch]        unit/oa-1-order-attempt-core -> origin/unit/oa-1-order-attempt-core
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7116914Z  * [new branch]        unit/ops-01b-store-suspend -> origin/unit/ops-01b-store-suspend
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7117491Z  * [new branch]        unit/ops-02b-support-grant -> origin/unit/ops-02b-support-grant
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7118362Z  * [new branch]        unit/order-attempt-contract -> origin/unit/order-attempt-contract
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7119059Z  * [new branch]        unit/order-gate-bo01-race -> origin/unit/order-gate-bo01-race
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7119632Z  * [new branch]        unit/pay-rm1-remove-payuni -> origin/unit/pay-rm1-remove-payuni
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7120205Z  * [new branch]        unit/perf-dashboard-todos -> origin/unit/perf-dashboard-todos
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7120761Z  * [new branch]        unit/pr1-ui-followups   -> origin/unit/pr1-ui-followups
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7121349Z  * [new branch]        unit/product-media-v2-backend -> origin/unit/product-media-v2-backend
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7121938Z  * [new branch]        unit/ruleset-acceptance -> origin/unit/ruleset-acceptance
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7122558Z  * [new branch]        unit/scope-revoke-404   -> origin/unit/scope-revoke-404
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7123139Z  * [new branch]        unit/security-go-1272-xnet-060 -> origin/unit/security-go-1272-xnet-060
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7123817Z  * [new branch]        unit/settlement-resolve -> origin/unit/settlement-resolve
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7124453Z  * [new branch]        unit/storefront-image-cap -> origin/unit/storefront-image-cap
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7125121Z  * [new branch]        unit/tz-audit           -> origin/unit/tz-audit
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7125603Z  * [new branch]        unit/ux-harden-r1       -> origin/unit/ux-harden-r1
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7126289Z  * [new branch]        unit/visual-polish-r1   -> origin/unit/visual-polish-r1
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7126871Z  * [new branch]        unit/w3-03b-checkout-reminder -> origin/unit/w3-03b-checkout-reminder
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7127967Z  * [new branch]        unit/w3-04b-sold-out-reply -> origin/unit/w3-04b-sold-out-reply
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7128758Z  * [new branch]        unit/w3-05b-blocklist   -> origin/unit/w3-05b-blocklist
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7129797Z  * [new branch]        unit/w3-06b-keyword-tools -> origin/unit/w3-06b-keyword-tools
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7130544Z  * [new branch]        unit/w3-07b-parcel-merge -> origin/unit/w3-07b-parcel-merge
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7131077Z  * [new branch]        unit/w3-08b-returns     -> origin/unit/w3-08b-returns
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7131628Z  * [new branch]        unit/w3-u2-live-settings-ui -> origin/unit/w3-u2-live-settings-ui
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7132251Z  * [new branch]        unit/w3-u3-comment-label-print -> origin/unit/w3-u3-comment-label-print
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7133136Z  * [new branch]        unit/w3-u4-parcel-merge-ui -> origin/unit/w3-u4-parcel-merge-ui
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7133877Z  * [new branch]        unit/w3-u5-returns-ui   -> origin/unit/w3-u5-returns-ui
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7135113Z  * [new branch]        unit/w4-02b-payuni-activation -> origin/unit/w4-02b-payuni-activation
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7135857Z  * [new branch]        unit/w4-s1-platform-stripe -> origin/unit/w4-s1-platform-stripe
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7136473Z  * [new branch]        unit/w4-s2-platform-settlement -> origin/unit/w4-s2-platform-settlement
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7137148Z  * [new branch]        unit/w4-u1-payment-activation-ui -> origin/unit/w4-u1-payment-activation-ui
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7137775Z  * [new branch]        unit/w5-02b-customer-import -> origin/unit/w5-02b-customer-import
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7138407Z  * [new branch]        unit/w5-03b-order-history-import -> origin/unit/w5-03b-order-history-import
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7139033Z  * [new branch]        unit/w5-u1-import-wizard-ui -> origin/unit/w5-u1-import-wizard-ui
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7139583Z  * [new branch]        unit/w6-02b-reports     -> origin/unit/w6-02b-reports
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7140154Z  * [new branch]        unit/w6-05b-operations-ledger -> origin/unit/w6-05b-operations-ledger
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7140759Z  * [new branch]        unit/w6-06b-ads-unbind  -> origin/unit/w6-06b-ads-unbind
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7141500Z  * [new branch]        unit/w6-u1-customers-reports-ui -> origin/unit/w6-u1-customers-reports-ui
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7142386Z  * [new branch]        unit/w6-u2-ops-ledger-ads-ui -> origin/unit/w6-u2-ops-ledger-ads-ui
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7143876Z [command]/usr/bin/git branch --list --remote origin/unit/oa-1-order-attempt-core
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7144398Z   origin/unit/oa-1-order-attempt-core
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7145603Z [command]/usr/bin/git rev-parse refs/remotes/origin/unit/oa-1-order-attempt-core
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7146074Z 054d325f063654220e88fee1456e482e337f8c79
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7146908Z ##[endgroup]
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7147345Z ##[group]Determining the checkout info
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7147812Z ##[endgroup]
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7148103Z [command]/usr/bin/git sparse-checkout disable
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7148931Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7167234Z ##[group]Checking out the ref
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:23.7171280Z [command]/usr/bin/git checkout --progress --force -B unit/oa-1-order-attempt-core refs/remotes/origin/unit/oa-1-order-attempt-core
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:24.7444362Z Updating files:  54% (6430/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:24.7580358Z Updating files:  55% (6501/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:24.7728576Z Updating files:  56% (6619/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:24.7910346Z Updating files:  57% (6737/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:24.8381243Z Updating files:  58% (6856/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:24.8810191Z Updating files:  59% (6974/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:24.8894991Z Updating files:  60% (7092/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:24.8980095Z Updating files:  61% (7210/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:24.9035759Z Updating files:  62% (7328/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:24.9379068Z Updating files:  63% (7446/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:24.9490307Z Updating files:  64% (7565/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:24.9769260Z Updating files:  65% (7683/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:24.9891484Z Updating files:  66% (7801/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.0053520Z Updating files:  67% (7919/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.0168820Z Updating files:  68% (8037/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.0411046Z Updating files:  69% (8156/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.0497120Z Updating files:  70% (8274/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.0787136Z Updating files:  71% (8392/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.0896668Z Updating files:  72% (8510/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.1075782Z Updating files:  73% (8628/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.1505169Z Updating files:  74% (8747/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.1626287Z Updating files:  75% (8865/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.1719030Z Updating files:  76% (8983/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.1892826Z Updating files:  77% (9101/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.2000927Z Updating files:  78% (9219/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.2171567Z Updating files:  79% (9338/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.2243028Z Updating files:  80% (9456/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.2358390Z Updating files:  81% (9574/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.2433006Z Updating files:  82% (9692/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.2553599Z Updating files:  83% (9810/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.2716006Z Updating files:  84% (9928/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.2816414Z Updating files:  85% (10047/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.2971392Z Updating files:  86% (10165/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.3035865Z Updating files:  87% (10283/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.3092536Z Updating files:  88% (10401/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.3168658Z Updating files:  89% (10519/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.3231603Z Updating files:  90% (10638/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.3344147Z Updating files:  91% (10756/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.3491784Z Updating files:  92% (10874/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.3680786Z Updating files:  93% (10992/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.3787895Z Updating files:  94% (11110/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.3894642Z Updating files:  95% (11229/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.4048794Z Updating files:  96% (11347/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.4205920Z Updating files:  97% (11465/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.4354314Z Updating files:  98% (11583/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.4494438Z Updating files:  99% (11701/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.4495270Z Updating files: 100% (11819/11819)
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.4495860Z Updating files: 100% (11819/11819), done.
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.4628445Z Switched to a new branch 'unit/oa-1-order-attempt-core'
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.4634888Z branch 'unit/oa-1-order-attempt-core' set up to track 'origin/unit/oa-1-order-attempt-core'.
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.4714399Z ##[endgroup]
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.4770059Z [command]/usr/bin/git log -1 --format=%H
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.4801356Z 054d325f063654220e88fee1456e482e337f8c79
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.4813848Z ##[group]Removing auth
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.4819415Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.4858051Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.5100134Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.5132664Z http.https://github.com/.extraheader
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.5144241Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.5182739Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.5441922Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.5475568Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+gate (shard:unit)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:25.5710970Z ##[endgroup]
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	﻿2026-10-13T19:57:25.5946732Z ##[group]Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:25.5947133Z with:
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:25.5947340Z   go-version-file: go.mod
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:25.5947571Z   cache: false
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:25.5947772Z   check-latest: false
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:25.5950174Z   token: ***
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:25.5950384Z env:
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:25.5950567Z   GOTOOLCHAIN: go1.27.2
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:25.5950806Z   GOFLAGS: -mod=readonly
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:25.5951074Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:25.5951364Z   MODE: shard:unit
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:25.5951569Z   LC_SWEEP_WORKERS: 1
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:25.5951771Z   EXTRA_ENV: 
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:25.5951953Z ##[endgroup]
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:25.7268694Z Setup go version spec 1.27.2
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:25.7282152Z Attempting to download 1.27.2...
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:26.3233548Z matching 1.27.2...
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:26.3261992Z Acquiring 1.27.2 from https://github.com/actions/go-versions/releases/download/1.27.2-37875086547/go-1.27.2-linux-x64.tar.gz
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:26.8245374Z Extracting Go...
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:26.8361066Z [command]/usr/bin/tar xz --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/6023f143-cbbf-4b5b-8798-668c715ca4c8 -f /home/runner/work/_temp/87ec9d85-b5cd-4b0d-a0f4-ddc69c4fb05a
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:28.5291579Z Successfully extracted go to /home/runner/work/_temp/6023f143-cbbf-4b5b-8798-668c715ca4c8
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:28.5292142Z Adding to the cache ...
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.4409975Z Successfully cached go to /opt/hostedtoolcache/go/1.27.2/x64
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.4413228Z Added go to the path
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.4416016Z Successfully set up Go version 1.27.2
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.4632366Z go version go1.27.2 linux/amd64
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.4632602Z 
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.4632908Z ##[group]go env
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6084482Z AR='ar'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6085192Z CC='gcc'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6085539Z CGO_CFLAGS='-O2 -g'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6085926Z CGO_CPPFLAGS=''
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6086260Z CGO_CXXFLAGS='-O2 -g'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6086620Z CGO_ENABLED='1'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6086933Z CGO_FFLAGS='-O2 -g'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6087283Z CGO_LDFLAGS='-O2 -g'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6087607Z CXX='g++'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6087913Z GCCGO='gccgo'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6088219Z GO111MODULE=''
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6088524Z GOAMD64='v1'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6088831Z GOARCH='amd64'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6089137Z GOAUTH='netrc'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6089548Z GOBIN='/home/runner/go/bin'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6089984Z GOCACHE='/home/runner/.cache/go-build'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6090417Z GOCACHEPROG=''
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6090724Z GODEBUG=''
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6091098Z GOENV='/home/runner/.config/go/env'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6091515Z GOEXE=''
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6091815Z GOEXPERIMENT=''
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6092129Z GOFIPS140='off'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6092462Z GOFLAGS='-mod=readonly'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6093564Z GOGCCFLAGS='-fPIC -m64 -pthread -Wl,--no-gc-sections -fmessage-length=0 -ffile-prefix-map=/tmp/go-build2583347139=/tmp/go-build -gno-record-gcc-switches'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6094932Z GOHOSTARCH='amd64'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6095271Z GOHOSTOS='linux'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6095591Z GOINSECURE=''
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6096226Z GOMOD='/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/go.mod'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6097001Z GOMODCACHE='/home/runner/go/pkg/mod'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6097503Z GONOPROXY=''
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6097804Z GONOSUMDB=''
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6098106Z GOOS='linux'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6098433Z GOPACKAGESDRIVER=''
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6098792Z GOPATH='/home/runner/go'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6099162Z GOPRIVATE=''
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6099568Z GOPROXY='https://proxy.golang.org,direct'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6100102Z GOROOT='/opt/hostedtoolcache/go/1.27.2/x64'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6100587Z GOSUMDB='sum.golang.org'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6100965Z GOTELEMETRY='local'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6101391Z GOTELEMETRYDIR='/home/runner/.config/go/telemetry'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6102214Z GOTMPDIR=''
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6102533Z GOTOOLCHAIN='local'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6103298Z GOTOOLDIR='/opt/hostedtoolcache/go/1.27.2/x64/pkg/tool/linux_amd64'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6103887Z GOVCS=''
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6104202Z GOVERSION='go1.27.2'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6104740Z GOWORK=''
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6105080Z PKG_CONFIG='pkg-config'
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6105311Z 
+gate (shard:unit)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T19:57:34.6105831Z ##[endgroup]
+gate (shard:unit)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	﻿2026-10-13T19:57:34.6325107Z ##[group]Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+gate (shard:unit)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T19:57:34.6325524Z with:
+gate (shard:unit)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T19:57:34.6325716Z   node-version: 24
+gate (shard:unit)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T19:57:34.6325948Z   package-manager-cache: false
+gate (shard:unit)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T19:57:34.6326199Z   always-auth: false
+gate (shard:unit)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T19:57:34.6326407Z   check-latest: false
+gate (shard:unit)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T19:57:34.6328741Z   token: ***
+gate (shard:unit)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T19:57:34.6328936Z env:
+gate (shard:unit)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T19:57:34.6329117Z   GOTOOLCHAIN: local
+gate (shard:unit)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T19:57:34.6329335Z   GOFLAGS: -mod=readonly
+gate (shard:unit)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T19:57:34.6329603Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (shard:unit)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T19:57:34.6329911Z   MODE: shard:unit
+gate (shard:unit)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T19:57:34.6330114Z   LC_SWEEP_WORKERS: 1
+gate (shard:unit)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T19:57:34.6330318Z   EXTRA_ENV: 
+gate (shard:unit)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T19:57:34.6330504Z ##[endgroup]
+gate (shard:unit)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T19:57:34.7861746Z Found in cache @ /opt/hostedtoolcache/node/24.21.0/x64
+gate (shard:unit)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T19:57:34.7867130Z (node:2469) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+gate (shard:unit)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T19:57:34.7867988Z (Use `node --trace-deprecation ...` to show where the warning was created)
+gate (shard:unit)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T19:57:34.7870283Z ##[group]Environment details
+gate (shard:unit)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T19:57:35.2326789Z node: v24.21.0
+gate (shard:unit)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T19:57:35.2327243Z npm: 11.19.0
+gate (shard:unit)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T19:57:35.2327581Z yarn: 1.22.22
+gate (shard:unit)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T19:57:35.2328286Z ##[endgroup]
+gate (shard:unit)	Node dependencies (frozen lockfile)	﻿2026-10-13T19:57:35.2465563Z ##[group]Run corepack enable
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:35.2465952Z [36;1mcorepack enable[0m
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:35.2466271Z [36;1mpnpm install --frozen-lockfile --ignore-scripts[0m
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:35.2758427Z shell: /usr/bin/bash -e {0}
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:35.2758749Z env:
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:35.2758962Z   GOTOOLCHAIN: local
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:35.2759205Z   GOFLAGS: -mod=readonly
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:35.2759487Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:35.2759795Z   MODE: shard:unit
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:35.2760007Z   LC_SWEEP_WORKERS: 1
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:35.2760222Z   EXTRA_ENV: 
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:35.2760439Z ##[endgroup]
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:35.4077366Z ! Corepack is about to download https://registry.npmjs.org/pnpm/-/pnpm-10.33.0.tgz
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:37.9455859Z Scope: all 6 workspace projects
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:37.9766207Z Lockfile is up to date, resolution step is skipped
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:37.9943474Z Progress: resolved 1, reused 0, downloaded 0, added 0
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:38.0104158Z Packages: +49
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:38.0106689Z +++++++++++++++++++++++++++++++++++++++++++++++++
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:38.9956799Z Progress: resolved 49, reused 0, downloaded 33, added 32
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:39.9953018Z Progress: resolved 49, reused 0, downloaded 45, added 45
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:40.7786262Z Progress: resolved 49, reused 0, downloaded 49, added 49, done
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:40.8682393Z 
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:40.8683597Z devDependencies:
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:40.8685045Z + @playwright/test 1.63.0
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:40.8685557Z + axe-core 4.13.0
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:40.8686001Z + livekit-client 2.22.3
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:40.8686430Z + prettier 3.9.8
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:40.8686856Z + typescript 7.0.2
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:40.8687406Z + typescript-api <- typescript 6.0.3
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:40.8687895Z 
+gate (shard:unit)	Node dependencies (frozen lockfile)	2026-10-13T19:57:40.8848775Z Done in 3.3s using pnpm v10.33.0
+gate (shard:unit)	Browser requirements from registry	﻿2026-10-13T19:57:40.9494100Z ##[group]Run node scripts/dev/ci-playwright-browsers.mjs "$MODE"
+gate (shard:unit)	Browser requirements from registry	2026-10-13T19:57:40.9494943Z [36;1mnode scripts/dev/ci-playwright-browsers.mjs "$MODE"[0m
+gate (shard:unit)	Browser requirements from registry	2026-10-13T19:57:40.9566616Z shell: /usr/bin/bash -e {0}
+gate (shard:unit)	Browser requirements from registry	2026-10-13T19:57:40.9566877Z env:
+gate (shard:unit)	Browser requirements from registry	2026-10-13T19:57:40.9567071Z   GOTOOLCHAIN: local
+gate (shard:unit)	Browser requirements from registry	2026-10-13T19:57:40.9567305Z   GOFLAGS: -mod=readonly
+gate (shard:unit)	Browser requirements from registry	2026-10-13T19:57:40.9567583Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (shard:unit)	Browser requirements from registry	2026-10-13T19:57:40.9568079Z   MODE: shard:unit
+gate (shard:unit)	Browser requirements from registry	2026-10-13T19:57:40.9568286Z   LC_SWEEP_WORKERS: 1
+gate (shard:unit)	Browser requirements from registry	2026-10-13T19:57:40.9568500Z   EXTRA_ENV: 
+gate (shard:unit)	Browser requirements from registry	2026-10-13T19:57:40.9568687Z ##[endgroup]
+gate (shard:unit)	Browser requirements from registry	2026-10-13T19:57:41.0206825Z ci-playwright: mode=shard:unit browsers=none
+gate (shard:unit)	Download pinned test image	﻿2026-10-13T19:57:41.0340657Z ##[group]Run docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:41.0341985Z [36;1mdocker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280[0m
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:41.0419613Z shell: /usr/bin/bash -e {0}
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:41.0419868Z env:
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:41.0420055Z   GOTOOLCHAIN: local
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:41.0420272Z   GOFLAGS: -mod=readonly
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:41.0420545Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:41.0420842Z   MODE: shard:unit
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:41.0421049Z   LC_SWEEP_WORKERS: 1
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:41.0421251Z   EXTRA_ENV: 
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:41.0421437Z ##[endgroup]
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:41.8801978Z docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280: Pulling from library/postgres
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.1320422Z 6310eb16bf42: Pulling fs layer
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.1321114Z 6463c6b5c703: Pulling fs layer
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.1321969Z 8d6422da287d: Pulling fs layer
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.1323154Z 2fc0e69f8d7d: Pulling fs layer
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.1323998Z 5fa29c524b4e: Pulling fs layer
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.1325261Z ace4b5b96a91: Pulling fs layer
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.1326422Z af2a6480a058: Pulling fs layer
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.1327414Z 5ee6c6ca7fd9: Pulling fs layer
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.1328077Z c5694bff1357: Pulling fs layer
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.1328529Z aedab7177504: Pulling fs layer
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.1328891Z a4635eaec9b8: Pulling fs layer
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.1329355Z 46e663abc8f5: Pulling fs layer
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.1329649Z 1bb54e8f7727: Pulling fs layer
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.1329921Z 2fc0e69f8d7d: Waiting
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.1330317Z 5fa29c524b4e: Waiting
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.1330582Z ace4b5b96a91: Waiting
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.1330804Z af2a6480a058: Waiting
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.1331036Z 5ee6c6ca7fd9: Waiting
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.1331310Z a4635eaec9b8: Waiting
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.1331650Z 46e663abc8f5: Waiting
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.1331883Z c5694bff1357: Waiting
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.1332106Z aedab7177504: Waiting
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.1332327Z 1bb54e8f7727: Waiting
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.3510951Z 6463c6b5c703: Verifying Checksum
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.3511562Z 6463c6b5c703: Download complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.3863924Z 8d6422da287d: Verifying Checksum
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.3866216Z 8d6422da287d: Download complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.4550728Z 6310eb16bf42: Verifying Checksum
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.4552687Z 6310eb16bf42: Download complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.5704310Z 2fc0e69f8d7d: Download complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.6276860Z 5fa29c524b4e: Verifying Checksum
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.6278085Z 5fa29c524b4e: Download complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.6871021Z ace4b5b96a91: Download complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.7689276Z af2a6480a058: Verifying Checksum
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.7689858Z af2a6480a058: Download complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.8500193Z 5ee6c6ca7fd9: Verifying Checksum
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.8502264Z 5ee6c6ca7fd9: Download complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:42.9871830Z aedab7177504: Download complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:43.0718455Z a4635eaec9b8: Verifying Checksum
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:43.0719264Z a4635eaec9b8: Download complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:43.2028091Z 46e663abc8f5: Verifying Checksum
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:43.2028861Z 46e663abc8f5: Download complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:43.3002483Z c5694bff1357: Verifying Checksum
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:43.3003223Z c5694bff1357: Download complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:43.3012733Z 1bb54e8f7727: Verifying Checksum
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:43.3013517Z 1bb54e8f7727: Download complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:43.5472537Z 6310eb16bf42: Pull complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:46.5951607Z 6463c6b5c703: Pull complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:46.7619843Z 8d6422da287d: Pull complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:46.7966350Z 2fc0e69f8d7d: Pull complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:47.0917465Z 5fa29c524b4e: Pull complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:47.1626736Z ace4b5b96a91: Pull complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:47.1695215Z af2a6480a058: Pull complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:47.1795544Z 5ee6c6ca7fd9: Pull complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:50.2114718Z c5694bff1357: Pull complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:50.2366045Z aedab7177504: Pull complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:50.2477946Z a4635eaec9b8: Pull complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:50.2564399Z 46e663abc8f5: Pull complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:50.2651284Z 1bb54e8f7727: Pull complete
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:50.2690016Z Digest: sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:50.2701957Z Status: Downloaded newer image for postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+gate (shard:unit)	Download pinned test image	2026-10-13T19:57:50.2709960Z docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+gate (shard:unit)	OA1 formatter evidence	﻿2026-10-13T19:57:50.2762950Z ##[group]Run mkdir -p output/ci-gates
+gate (shard:unit)	OA1 formatter evidence	2026-10-13T19:57:50.2763311Z [36;1mmkdir -p output/ci-gates[0m
+gate (shard:unit)	OA1 formatter evidence	2026-10-13T19:57:50.2763699Z [36;1mgit rev-parse HEAD > output/ci-gates/formatter-source-sha.txt[0m
+gate (shard:unit)	OA1 formatter evidence	2026-10-13T19:57:50.2764465Z [36;1mgofmt -d internal/orderattempt internal/inbox/order_attempt_notification.go tests/foundation/order_attempt*.go > output/ci-gates/oa1-gofmt.patch[0m
+gate (shard:unit)	OA1 formatter evidence	2026-10-13T19:57:50.2828083Z shell: /usr/bin/bash -e {0}
+gate (shard:unit)	OA1 formatter evidence	2026-10-13T19:57:50.2828327Z env:
+gate (shard:unit)	OA1 formatter evidence	2026-10-13T19:57:50.2828515Z   GOTOOLCHAIN: local
+gate (shard:unit)	OA1 formatter evidence	2026-10-13T19:57:50.2828738Z   GOFLAGS: -mod=readonly
+gate (shard:unit)	OA1 formatter evidence	2026-10-13T19:57:50.2828998Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (shard:unit)	OA1 formatter evidence	2026-10-13T19:57:50.2829280Z   MODE: shard:unit
+gate (shard:unit)	OA1 formatter evidence	2026-10-13T19:57:50.2829482Z   LC_SWEEP_WORKERS: 1
+gate (shard:unit)	OA1 formatter evidence	2026-10-13T19:57:50.2829689Z   EXTRA_ENV: 
+gate (shard:unit)	OA1 formatter evidence	2026-10-13T19:57:50.2829877Z ##[endgroup]
+gate (shard:unit)	OA1 formatter evidence	2026-10-13T19:57:50.3310552Z ##[error]Process completed with exit code 1.
+gate (shard:unit)	Failure summary	﻿2026-10-13T19:57:50.3363604Z ##[group]Run grep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log | head -200 || true
+gate (shard:unit)	Failure summary	2026-10-13T19:57:50.3364815Z [36;1mgrep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log | head -200 || true[0m
+gate (shard:unit)	Failure summary	2026-10-13T19:57:50.3429234Z shell: /usr/bin/bash -e {0}
+gate (shard:unit)	Failure summary	2026-10-13T19:57:50.3429493Z env:
+gate (shard:unit)	Failure summary	2026-10-13T19:57:50.3429685Z   GOTOOLCHAIN: local
+gate (shard:unit)	Failure summary	2026-10-13T19:57:50.3429915Z   GOFLAGS: -mod=readonly
+gate (shard:unit)	Failure summary	2026-10-13T19:57:50.3430183Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (shard:unit)	Failure summary	2026-10-13T19:57:50.3430471Z   MODE: shard:unit
+gate (shard:unit)	Failure summary	2026-10-13T19:57:50.3430672Z   LC_SWEEP_WORKERS: 1
+gate (shard:unit)	Failure summary	2026-10-13T19:57:50.3430873Z   EXTRA_ENV: 
+gate (shard:unit)	Failure summary	2026-10-13T19:57:50.3431067Z ##[endgroup]
+gate (shard:unit)	Failure summary	2026-10-13T19:57:50.3529621Z grep: output/ci-gates/*.log: No such file or directory
+gate (shard:unit)	Failure summary	2026-10-13T19:57:50.3530488Z grep: output/playwright/*/ci-gates/*.log: No such file or directory
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	﻿2026-10-13T19:57:50.3584149Z ##[group]Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:50.3584878Z with:
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:50.3585146Z   name: gate-shard_unit
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:50.3585413Z   path: output/ci-gates/
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	output/playwright/
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:50.3585725Z   retention-days: 14
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:50.3585944Z   if-no-files-found: ignore
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:50.3586182Z   compression-level: 6
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:50.3586390Z   overwrite: false
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:50.3586605Z   include-hidden-files: false
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:50.3586842Z env:
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:50.3587023Z   GOTOOLCHAIN: local
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:50.3587231Z   GOFLAGS: -mod=readonly
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:50.3587491Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:50.3587788Z   MODE: shard:unit
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:50.3587990Z   LC_SWEEP_WORKERS: 1
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:50.3588197Z   EXTRA_ENV: 
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:50.3588384Z ##[endgroup]
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:50.5416026Z Multiple search paths detected. Calculating the least common ancestor of all paths
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:50.5418764Z The least common ancestor is /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output. This will be the root directory of the artifact
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:50.5420315Z With the provided path, there will be 2 files uploaded
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:50.5421797Z Artifact name is valid!
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:50.5422357Z Root directory input is valid!
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:50.9511014Z Beginning upload of artifact content to blob storage
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:51.3252508Z Uploaded bytes 40651
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:51.4007102Z Finished uploading artifact content to blob storage!
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:51.4008523Z SHA256 digest of uploaded artifact zip is d1d5acb97c90e5255b290ea685cdb3e90bcf9bb95bc4728dbcd6f2bf86e85c4c
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:51.4009588Z Finalizing artifact upload
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:51.8115154Z Artifact gate-shard_unit.zip successfully finalized. Artifact ID 11844862379
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:51.8126209Z Artifact gate-shard_unit has been successfully uploaded! Final size is 40651 bytes. Artifact ID is 11844862379
+gate (shard:unit)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T19:57:51.8132376Z Artifact download URL: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38458877458/artifacts/11844862379
+gate (shard:unit)	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	﻿2026-10-13T19:57:51.8320459Z Post job cleanup.
+gate (shard:unit)	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:51.9161714Z [command]/usr/bin/git version
+gate (shard:unit)	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:51.9208386Z git version 2.55.0
+gate (shard:unit)	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:51.9250296Z Temporarily overriding HOME='/home/runner/work/_temp/4c03eab9-f76e-4cbc-98af-b0b8971fffed' before making global git config changes
+gate (shard:unit)	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:51.9251913Z Adding repository directory to the temporary git global config as a safe directory
+gate (shard:unit)	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:51.9256021Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+gate (shard:unit)	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:51.9299878Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+gate (shard:unit)	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:51.9339952Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+gate (shard:unit)	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:51.9630348Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+gate (shard:unit)	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:51.9680922Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+gate (shard:unit)	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:51.9969511Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+gate (shard:unit)	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T19:57:52.0011695Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+gate (shard:unit)	Complete job	﻿2026-10-13T19:57:52.0467244Z Cleaning up orphan processes

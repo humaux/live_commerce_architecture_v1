@@ -1,0 +1,845 @@
+gate (focused:^TestOrderAttemptNotification)	Set up job	﻿2026-10-13T23:48:25.8364476Z Current runner version: '2.337.0'
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8389487Z ##[group]Runner Image Provisioner
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8390365Z Hosted Compute Agent
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8390892Z Version: 20261002.596
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8391473Z Commit: c3d12f3313a95f25162a1503be624f3b0617f8c0
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8392154Z Build Date: 2026-10-02T22:28:27Z
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8392961Z Worker ID: {65f7d8cf-88c7-4372-bfcc-8a13349e4bd5}
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8393604Z Region: westus3
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8394159Z Cloud: Azure
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8394675Z ##[endgroup]
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8396529Z ##[group]Operating System
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8397116Z Ubuntu
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8397609Z 24.04.5
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8398067Z LTS
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8398546Z ##[endgroup]
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8399053Z ##[group]Runner Image
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8399593Z Image: ubuntu-24.04
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8400088Z Version: 20261004.327.1
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8401083Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/Ubuntu2404-Readme.md
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8402692Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261004.327
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8403735Z ##[endgroup]
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8404792Z ##[group]GITHUB_TOKEN Permissions
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8406693Z Contents: read
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8407218Z Metadata: read
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8407782Z ##[endgroup]
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8409983Z Secret source: Actions
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8410911Z Cache mode: write
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8411531Z Prepare workflow directory
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.8982067Z Prepare all required actions
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:25.9031756Z Getting action download info
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:26.2269917Z Download action repository 'actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09' (SHA:fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09)
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:26.3028826Z Download action repository 'actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16' (SHA:924ae3a1cded613372ab5595356fb5720e22ba16)
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:27.1104648Z Download action repository 'actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444' (SHA:a0853c24544627f65ddf259abe73b1d18a591444)
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:27.3775264Z Download action repository 'actions/cache@caa296126883cff596d87d8935842f9db880ef25' (SHA:caa296126883cff596d87d8935842f9db880ef25)
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:27.5829778Z Download action repository 'actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f' (SHA:b7c566a772e6b6bfb58ed0dc250532a479d7789f)
+gate (focused:^TestOrderAttemptNotification)	Set up job	2026-10-13T23:48:27.7931287Z Complete job name: gate (focused:^TestOrderAttemptNotification)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	﻿2026-10-13T23:48:27.8673399Z ##[group]Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.8674789Z with:
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.8675263Z   persist-credentials: false
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.8675835Z   fetch-depth: 0
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.8676404Z   repository: humaux/live_commerce_architecture_v1
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.8683312Z   token: ***
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.8683767Z   ssh-strict: true
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.8684231Z   ssh-user: git
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.8684714Z   clean: true
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.8685193Z   sparse-checkout-cone-mode: true
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.8685804Z   fetch-tags: false
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.8686296Z   show-progress: true
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.8686767Z   lfs: false
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.8687193Z   submodules: false
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.8687665Z   set-safe-directory: true
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.8688243Z   allow-unsafe-pr-checkout: false
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.8689088Z env:
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.8689498Z   GOTOOLCHAIN: go1.27.2
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.8690028Z   GOFLAGS: -mod=readonly
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.8690640Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.8691507Z   MODE: focused:^TestOrderAttemptNotification
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.8692207Z   LC_SWEEP_WORKERS: 1
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.8692674Z   EXTRA_ENV: 
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.8693208Z ##[endgroup]
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9698146Z Syncing repository: humaux/live_commerce_architecture_v1
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9701872Z ##[group]Getting Git version info
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9704698Z Working directory is '/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1'
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9708678Z [command]/usr/bin/git version
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9728831Z git version 2.55.0
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9750576Z ##[endgroup]
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9765243Z Temporarily overriding HOME='/home/runner/work/_temp/ec964766-f31b-498d-a978-6046580bf5ba' before making global git config changes
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9769498Z Adding repository directory to the temporary git global config as a safe directory
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9773601Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9829043Z Deleting the contents of '/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1'
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9832603Z ##[group]Initializing the repository
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9836042Z [command]/usr/bin/git init /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9928470Z hint: Using 'master' as the name for the initial branch. This default branch name
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9931621Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9934390Z hint: to use in all of your new repositories, which will suppress this warning,
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9936468Z hint: call:
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9937391Z hint:
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9938628Z hint: 	git config --global init.defaultBranch <name>
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9940201Z hint:
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9941740Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9944392Z hint: 'development'. The just-created branch can be renamed via this command:
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9946488Z hint:
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9947356Z hint: 	git branch -m <name>
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9948398Z hint:
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9949936Z hint: Disable this message with "git config set advice.defaultBranchName false"
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9956089Z Initialized empty Git repository in /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/.git/
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9961593Z [command]/usr/bin/git remote add origin https://github.com/humaux/live_commerce_architecture_v1
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9992836Z ##[endgroup]
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9994557Z ##[group]Disabling automatic garbage collection
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:27.9996161Z [command]/usr/bin/git config --local gc.auto 0
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:28.0024733Z ##[endgroup]
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:28.0026502Z ##[group]Setting up auth
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:28.0029788Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:28.0058068Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:28.0388912Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:28.0421442Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:28.0618449Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:28.0648198Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:28.0829007Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:28.0860864Z ##[endgroup]
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:28.0861795Z ##[group]Fetching the repository
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:28.0872424Z [command]/usr/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7529987Z From https://github.com/humaux/live_commerce_architecture_v1
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7531331Z  * [new branch]        checkout-go-20260924    -> origin/checkout-go-20260924
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7533035Z  * [new branch]        checkout-sql-20260924   -> origin/checkout-sql-20260924
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7534073Z  * [new branch]        claude/gallant-bohr-9rs3yo -> origin/claude/gallant-bohr-9rs3yo
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7535139Z  * [new branch]        codex/account-intake-http-20260924 -> origin/codex/account-intake-http-20260924
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7535781Z  * [new branch]        codex/admin-assets      -> origin/codex/admin-assets
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7536305Z  * [new branch]        codex/admin-fixture     -> origin/codex/admin-fixture
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7536846Z  * [new branch]        codex/admin-ledger      -> origin/codex/admin-ledger
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7537369Z  * [new branch]        codex/admin-ledger-tests -> origin/codex/admin-ledger-tests
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7537955Z  * [new branch]        codex/admin-pagination  -> origin/codex/admin-pagination
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7538528Z  * [new branch]        codex/admin-transport-tests -> origin/codex/admin-transport-tests
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7539171Z  * [new branch]        codex/buyer-history-backend -> origin/codex/buyer-history-backend
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7539746Z  * [new branch]        codex/catalog-inventory -> origin/codex/catalog-inventory
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7540337Z  * [new branch]        codex/catalog-inventory-tests -> origin/codex/catalog-inventory-tests
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7541183Z  * [new branch]        codex/commerce-buyer-payment-assembly-gate-20260925 -> origin/codex/commerce-buyer-payment-assembly-gate-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7542236Z  * [new branch]        codex/commerce-buyer-payment-browser-tests-20260925 -> origin/codex/commerce-buyer-payment-browser-tests-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7543452Z  * [new branch]        codex/commerce-buyer-payment-http-20260925 -> origin/codex/commerce-buyer-payment-http-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7544331Z  * [new branch]        codex/commerce-buyer-payment-pg-20260925 -> origin/codex/commerce-buyer-payment-pg-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7545186Z  * [new branch]        codex/commerce-buyer-payment-public-20260925 -> origin/codex/commerce-buyer-payment-public-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7546101Z  * [new branch]        codex/commerce-buyer-payment-public-tests-20260925 -> origin/codex/commerce-buyer-payment-public-tests-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7547296Z  * [new branch]        codex/commerce-buyer-payment-ui-controller-20260925 -> origin/codex/commerce-buyer-payment-ui-controller-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7548250Z  * [new branch]        codex/commerce-hosted-go-20260925 -> origin/codex/commerce-hosted-go-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7549248Z  * [new branch]        codex/commerce-hosted-pg-20260925 -> origin/codex/commerce-hosted-pg-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7549913Z  * [new branch]        codex/engineering-maintenance -> origin/codex/engineering-maintenance
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7550971Z  * [new branch]        codex/expiry-runtime-go -> origin/codex/expiry-runtime-go
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7551519Z  * [new branch]        codex/expiry-runtime-pg -> origin/codex/expiry-runtime-pg
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7552090Z  * [new branch]        codex/foundation-platform -> origin/codex/foundation-platform
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7552640Z  * [new branch]        codex/foundation-tests  -> origin/codex/foundation-tests
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7554429Z  * [new branch]        codex/locale-routing    -> origin/codex/locale-routing
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7555302Z  * [new branch]        codex/merchant-orders-bff -> origin/codex/merchant-orders-bff
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7556262Z  * [new branch]        codex/merchant-orders-bff-test -> origin/codex/merchant-orders-bff-test
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7557247Z  * [new branch]        codex/merchant-orders-go -> origin/codex/merchant-orders-go
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7558240Z  * [new branch]        codex/merchant-orders-pg -> origin/codex/merchant-orders-pg
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7559407Z  * [new branch]        codex/merchant-settings-http-20260924 -> origin/codex/merchant-settings-http-20260924
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7560462Z  * [new branch]        codex/oidclogin         -> origin/codex/oidclogin
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7561235Z  * [new branch]        codex/payment-capture-go-20260924 -> origin/codex/payment-capture-go-20260924
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7561912Z  * [new branch]        codex/payment-capture-sql-20260924 -> origin/codex/payment-capture-sql-20260924
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7562555Z  * [new branch]        codex/payment-query-20260924 -> origin/codex/payment-query-20260924
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7563544Z  * [new branch]        codex/payment-runtime-pg-gate-20260925 -> origin/codex/payment-runtime-pg-gate-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7564243Z  * [new branch]        codex/payment-start-20260924 -> origin/codex/payment-start-20260924
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7564944Z  * [new branch]        codex/payment-worker-runtime-20260925 -> origin/codex/payment-worker-runtime-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7565707Z  * [new branch]        codex/pr32-email-envelope-red -> origin/codex/pr32-email-envelope-red
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7566293Z  * [new branch]        codex/pr32-intent-ci-red -> origin/codex/pr32-intent-ci-red
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7566855Z  * [new branch]        codex/pr32-lock-scope-red -> origin/codex/pr32-lock-scope-red
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7567518Z  * [new branch]        codex/pr32-price-correct-red -> origin/codex/pr32-price-correct-red
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7568111Z  * [new branch]        codex/pr32-price-reason-red -> origin/codex/pr32-price-reason-red
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7568651Z  * [new branch]        codex/pr32-r5-red       -> origin/codex/pr32-r5-red
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7569227Z  * [new branch]        codex/pr32-recovery-replay-red -> origin/codex/pr32-recovery-replay-red
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7569842Z  * [new branch]        codex/pr32-reservation-red -> origin/codex/pr32-reservation-red
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7570435Z  * [new branch]        codex/pr32-server-intent-red -> origin/codex/pr32-server-intent-red
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7571016Z  * [new branch]        codex/pr32-settled-ui-red -> origin/codex/pr32-settled-ui-red
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7571700Z  * [new branch]        codex/published-resolver-go-20260925 -> origin/codex/published-resolver-go-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7572442Z  * [new branch]        codex/settings-discovery-20260924 -> origin/codex/settings-discovery-20260924
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7573304Z  * [new branch]        codex/settings-documenter-20260925 -> origin/codex/settings-documenter-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7574086Z  * [new branch]        codex/settings-ledger-regression-20260924 -> origin/codex/settings-ledger-regression-20260924
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7574804Z  * [new branch]        codex/settings-ui-20260924 -> origin/codex/settings-ui-20260924
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7575500Z  * [new branch]        codex/t03-browser-bff   -> origin/codex/t03-browser-bff
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7576072Z  * [new branch]        codex/t03-buyer-capability -> origin/codex/t03-buyer-capability
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7576763Z  * [new branch]        commerce/allocation-config-20260924 -> origin/commerce/allocation-config-20260924
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7577648Z  * [new branch]        commerce/browser-input-cleanup-fault-tests-20260927 -> origin/commerce/browser-input-cleanup-fault-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7578677Z  * [new branch]        commerce/browser-input-config-20260927 -> origin/commerce/browser-input-config-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7579526Z  * [new branch]        commerce/browser-input-config-tests-20260927 -> origin/commerce/browser-input-config-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7580468Z  * [new branch]        commerce/browser-input-delivery-acceptance-20260927 -> origin/commerce/browser-input-delivery-acceptance-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7581378Z  * [new branch]        commerce/browser-input-execution-20260927 -> origin/commerce/browser-input-execution-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7582260Z  * [new branch]        commerce/browser-input-execution-tests-20260927 -> origin/commerce/browser-input-execution-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7583362Z  * [new branch]        commerce/browser-input-fault-tests-20260927 -> origin/commerce/browser-input-fault-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7584241Z  * [new branch]        commerce/browser-input-holds-tests-20260927 -> origin/commerce/browser-input-holds-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7585181Z  * [new branch]        commerce/browser-input-http-tests-20260927 -> origin/commerce/browser-input-http-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7586065Z  * [new branch]        commerce/browser-input-plan-fault-tests-20260927 -> origin/commerce/browser-input-plan-fault-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7586953Z  * [new branch]        commerce/browser-input-studio-read-20260927 -> origin/commerce/browser-input-studio-read-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7588248Z  * [new branch]        commerce/browser-input-token-go-20260927 -> origin/commerce/browser-input-token-go-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7589637Z  * [new branch]        commerce/brw07-composite-go-20260928 -> origin/commerce/brw07-composite-go-20260928
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7590680Z  * [new branch]        commerce/brw07-composite-sql-20260928 -> origin/commerce/brw07-composite-sql-20260928
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7591406Z  * [new branch]        commerce/buyer-catalog-20260925 -> origin/commerce/buyer-catalog-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7592532Z  * [new branch]        commerce/buyer-design-record-20260925 -> origin/commerce/buyer-design-record-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7594218Z  * [new branch]        commerce/buyer-destination-20260924 -> origin/commerce/buyer-destination-20260924
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7595110Z  * [new branch]        commerce/buyer-history-browser-extension-20260925 -> origin/commerce/buyer-history-browser-extension-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7596086Z  * [new branch]        commerce/buyer-history-design-record-20260925 -> origin/commerce/buyer-history-design-record-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7596870Z  * [new branch]        commerce/buyer-http-20260925 -> origin/commerce/buyer-http-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7597907Z  * [new branch]        commerce/buyer-options-20260925 -> origin/commerce/buyer-options-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7599193Z  * [new branch]        commerce/buyer-order-design-record-20260925 -> origin/commerce/buyer-order-design-record-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7600152Z  * [new branch]        commerce/buyer-order-gate-20260925 -> origin/commerce/buyer-order-gate-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7600907Z  * [new branch]        commerce/buyer-projections-20260925 -> origin/commerce/buyer-projections-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7601620Z  * [new branch]        commerce/buyer-public-bff-20260925 -> origin/commerce/buyer-public-bff-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7602338Z  * [new branch]        commerce/buyer-registration-20260925 -> origin/commerce/buyer-registration-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7603461Z  * [new branch]        commerce/checkout-quote-20260920 -> origin/commerce/checkout-quote-20260920
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7604192Z  * [new branch]        commerce/delivery-config-20260920 -> origin/commerce/delivery-config-20260920
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7605023Z  * [new branch]        commerce/legacy-family-go-20260926 -> origin/commerce/legacy-family-go-20260926
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7605788Z  * [new branch]        commerce/legacy-family-integration-20260926 -> origin/commerce/legacy-family-integration-20260926
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7606587Z  * [new branch]        commerce/legacy-family-tests-20260926 -> origin/commerce/legacy-family-tests-20260926
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7607369Z  * [new branch]        commerce/legacy-maintenance-tests-20260926 -> origin/commerce/legacy-maintenance-tests-20260926
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7608167Z  * [new branch]        commerce/legacy-upgrade-tests-20260926 -> origin/commerce/legacy-upgrade-tests-20260926
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7608873Z  * [new branch]        commerce/live-draft-go-20260927 -> origin/commerce/live-draft-go-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7609539Z  * [new branch]        commerce/live-draft-tests-20260927 -> origin/commerce/live-draft-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7610246Z  * [new branch]        commerce/livekit-input-tests-20260927 -> origin/commerce/livekit-input-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7611001Z  * [new branch]        commerce/livekit-input-wire-20260927 -> origin/commerce/livekit-input-wire-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7611858Z  * [new branch]        commerce/livekit-material-go-20260927 -> origin/commerce/livekit-material-go-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7612621Z  * [new branch]        commerce/livekit-material-tests-20260927 -> origin/commerce/livekit-material-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7613663Z  * [new branch]        commerce/livekit-protocol-go-20260927 -> origin/commerce/livekit-protocol-go-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7614437Z  * [new branch]        commerce/livekit-protocol-tests-20260927 -> origin/commerce/livekit-protocol-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7615282Z  * [new branch]        commerce/livekit-room-go-20260927 -> origin/commerce/livekit-room-go-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7615995Z  * [new branch]        commerce/livekit-room-tests-20260927 -> origin/commerce/livekit-room-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7616685Z  * [new branch]        commerce/local-recovery-20260927 -> origin/commerce/local-recovery-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7617448Z  * [new branch]        commerce/local-recovery-independent-20260927 -> origin/commerce/local-recovery-independent-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7618251Z  * [new branch]        commerce/local-recovery-tests-20260927 -> origin/commerce/local-recovery-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7619080Z  * [new branch]        commerce/lri-additive-event-snapshot-20260927 -> origin/commerce/lri-additive-event-snapshot-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7620398Z  * [new branch]        commerce/media-authority-sql-20260927 -> origin/commerce/media-authority-sql-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7621180Z  * [new branch]        commerce/media-authority-tests-20260927 -> origin/commerce/media-authority-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7622059Z  * [new branch]        commerce/media-execution-20260927 -> origin/commerce/media-execution-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7623107Z  * [new branch]        commerce/media-execution-tests-20260927 -> origin/commerce/media-execution-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7623860Z  * [new branch]        commerce/media-input-source-20260927 -> origin/commerce/media-input-source-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7624709Z  * [new branch]        commerce/media-input-tests-20260927 -> origin/commerce/media-input-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7625641Z  * [new branch]        commerce/media-login-source-20260927 -> origin/commerce/media-login-source-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7626394Z  * [new branch]        commerce/media-login-tests-20260927 -> origin/commerce/media-login-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7627063Z  * [new branch]        commerce/media-plan-20260927 -> origin/commerce/media-plan-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7627920Z  * [new branch]        commerce/media-plan-tests-20260927 -> origin/commerce/media-plan-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7628712Z  * [new branch]        commerce/media-recovery-observer-20260927 -> origin/commerce/media-recovery-observer-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7629499Z  * [new branch]        commerce/media-recovery-tests-20260927 -> origin/commerce/media-recovery-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7630212Z  * [new branch]        commerce/media-runtime-20260927 -> origin/commerce/media-runtime-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7631065Z  * [new branch]        commerce/media-runtime-tests-20260927 -> origin/commerce/media-runtime-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7632104Z  * [new branch]        commerce/media-stop-20260927 -> origin/commerce/media-stop-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7633313Z  * [new branch]        commerce/media-stop-tests-20260927 -> origin/commerce/media-stop-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7634537Z  * [new branch]        commerce/merchant-buyer-joint-20260925 -> origin/commerce/merchant-buyer-joint-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7635962Z  * [new branch]        commerce/merchant-orders-c-tests-20260927 -> origin/commerce/merchant-orders-c-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7636845Z  * [new branch]        commerce/merchant-orders-c-ui-20260927 -> origin/commerce/merchant-orders-c-ui-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7637638Z  * [new branch]        commerce/merchant-purchase-entry-20260925 -> origin/commerce/merchant-purchase-entry-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7638912Z  * [new branch]        commerce/merchant-purchase-entry-ui-20260925 -> origin/commerce/merchant-purchase-entry-ui-20260925
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7639681Z  * [new branch]        commerce/meta-consumer-go-20260926 -> origin/commerce/meta-consumer-go-20260926
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7640478Z  * [new branch]        commerce/meta-consumer-prefixed-repro-20260926 -> origin/commerce/meta-consumer-prefixed-repro-20260926
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7641285Z  * [new branch]        commerce/meta-consumer-tests-20260926 -> origin/commerce/meta-consumer-tests-20260926
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7641977Z  * [new branch]        commerce/meta-inbox-go-20260926 -> origin/commerce/meta-inbox-go-20260926
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7642647Z  * [new branch]        commerce/meta-inbox-tests-20260926 -> origin/commerce/meta-inbox-tests-20260926
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7643717Z  * [new branch]        commerce/meta-isolation-go-20260926 -> origin/commerce/meta-isolation-go-20260926
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7644476Z  * [new branch]        commerce/meta-payload-20260926 -> origin/commerce/meta-payload-20260926
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7645164Z  * [new branch]        commerce/meta-payload-tests-20260926 -> origin/commerce/meta-payload-tests-20260926
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7645839Z  * [new branch]        commerce/meta-protocol-20260926 -> origin/commerce/meta-protocol-20260926
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7646529Z  * [new branch]        commerce/meta-protocol-tests-20260926 -> origin/commerce/meta-protocol-tests-20260926
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7647231Z  * [new branch]        commerce/meta-runtime-go-20260926 -> origin/commerce/meta-runtime-go-20260926
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7648042Z  * [new branch]        commerce/meta-runtime-isolation-tests-20260926 -> origin/commerce/meta-runtime-isolation-tests-20260926
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7648838Z  * [new branch]        commerce/meta-runtime-tests-20260926 -> origin/commerce/meta-runtime-tests-20260926
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7649654Z  * [new branch]        commerce/orders-native-visibility-tests-20260927 -> origin/commerce/orders-native-visibility-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7650431Z  * [new branch]        commerce/pickup-source-20260924 -> origin/commerce/pickup-source-20260924
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7651033Z  * [new branch]        commerce/pricing-20260920 -> origin/commerce/pricing-20260920
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7651652Z  * [new branch]        commerce/r04-local-input-20260927 -> origin/commerce/r04-local-input-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7652367Z  * [new branch]        commerce/r04-local-input-tests-20260927 -> origin/commerce/r04-local-input-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7653470Z  * [new branch]        commerce/seed-pool-lifetime-20260927 -> origin/commerce/seed-pool-lifetime-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7654205Z  * [new branch]        commerce/startup-diagnostics-20260927 -> origin/commerce/startup-diagnostics-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7654883Z  * [new branch]        commerce/studio-b-ui-20260927 -> origin/commerce/studio-b-ui-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7655556Z  * [new branch]        commerce/studio-bff-source-20260927 -> origin/commerce/studio-bff-source-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7656248Z  * [new branch]        commerce/studio-bff-tests-20260927 -> origin/commerce/studio-bff-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7656948Z  * [new branch]        commerce/studio-input-tests-20260927 -> origin/commerce/studio-input-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7657739Z  * [new branch]        commerce/studio-native-device-tests-20260927 -> origin/commerce/studio-native-device-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7658472Z  * [new branch]        commerce/studio-source-20260927 -> origin/commerce/studio-source-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7659106Z  * [new branch]        commerce/studio-tests-20260927 -> origin/commerce/studio-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7659739Z  * [new branch]        commerce/studio-ui-tests-20260927 -> origin/commerce/studio-ui-tests-20260927
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7660406Z  * [new branch]        commerce/t03-design-record-20260920 -> origin/commerce/t03-design-record-20260920
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7661201Z  * [new branch]        commerce/t06-dispatcher-20260920 -> origin/commerce/t06-dispatcher-20260920
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7661915Z  * [new branch]        commerce/t06-operation-service-20260920 -> origin/commerce/t06-operation-service-20260920
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7662571Z  * [new branch]        commerce/wizard-20260920 -> origin/commerce/wizard-20260920
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7663229Z  * [new branch]        int/lc-u1-shell         -> origin/int/lc-u1-shell
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7663744Z  * [new branch]        int/product-media-v2-ui -> origin/int/product-media-v2-ui
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7664315Z  * [new branch]        int/storefront-card-gutter -> origin/int/storefront-card-gutter
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7664842Z  * [new branch]        int/w1-01u-banner       -> origin/int/w1-01u-banner
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7665347Z  * [new branch]        int/w3-u1b-picklist-ui  -> origin/int/w3-u1b-picklist-ui
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7665822Z  * [new branch]        main                    -> origin/main
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7666352Z  * [new branch]        merchant-accounts-go-20260924 -> origin/merchant-accounts-go-20260924
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7666969Z  * [new branch]        payment-methods-go-20260924 -> origin/payment-methods-go-20260924
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7667533Z  * [new branch]        payuni-wire-go-20260924 -> origin/payuni-wire-go-20260924
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7668087Z  * [new branch]        r3/integration          -> origin/r3/integration
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7668744Z  * [new branch]        unit/browser-evidence-untracked -> origin/unit/browser-evidence-untracked
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7669382Z  * [new branch]        unit/cancel-closes-work-item -> origin/unit/cancel-closes-work-item
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7669943Z  * [new branch]        unit/card-pay-flake     -> origin/unit/card-pay-flake
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7670530Z  * [new branch]        unit/cart-refresh-generation -> origin/unit/cart-refresh-generation
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7671162Z  * [new branch]        unit/ci-actions-node24  -> origin/unit/ci-actions-node24
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7671686Z  * [new branch]        unit/ci-browser-linux   -> origin/unit/ci-browser-linux
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7672311Z  * [new branch]        unit/ci-contract-drift  -> origin/unit/ci-contract-drift
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7673015Z  * [new branch]        unit/ci-dedupe-serial   -> origin/unit/ci-dedupe-serial
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7673531Z  * [new branch]        unit/ci-drift-factory   -> origin/unit/ci-drift-factory
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7674111Z  * [new branch]        unit/ci-playwright-deps-cache -> origin/unit/ci-playwright-deps-cache
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7674782Z  * [new branch]        unit/ci-pr-gates        -> origin/unit/ci-pr-gates
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7675335Z  * [new branch]        unit/ci-pr-modes-coverage -> origin/unit/ci-pr-modes-coverage
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7676223Z  * [new branch]        unit/ci-select-backend-browser -> origin/unit/ci-select-backend-browser
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7677226Z  * [new branch]        unit/ci-speed           -> origin/unit/ci-speed
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7678116Z  * [new branch]        unit/delivery-report    -> origin/unit/delivery-report
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7678762Z  * [new branch]        unit/delivery-report-r2 -> origin/unit/delivery-report-r2
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7679287Z  * [new branch]        unit/deploy-prep-r3     -> origin/unit/deploy-prep-r3
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7679853Z  * [new branch]        unit/deploy-prep-r3-p2  -> origin/unit/deploy-prep-r3-p2
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7680664Z  * [new branch]        unit/e2e-price-regex    -> origin/unit/e2e-price-regex
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7681523Z  * [new branch]        unit/ext-agent-anthropic -> origin/unit/ext-agent-anthropic
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7682635Z  * [new branch]        unit/fix-ads-draft-midnight-flake -> origin/unit/fix-ads-draft-midnight-flake
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7683923Z  * [new branch]        unit/fix-manual-order-regen-race -> origin/unit/fix-manual-order-regen-race
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7685035Z  * [new branch]        unit/fix-merchant-buyer-pmv2 -> origin/unit/fix-merchant-buyer-pmv2
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7686320Z  * [new branch]        unit/fix-meta-ads-ma09a -> origin/unit/fix-meta-ads-ma09a
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7687499Z  * [new branch]        unit/fix-report-funnel-clock -> origin/unit/fix-report-funnel-clock
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7688549Z  * [new branch]        unit/fix-settings-real-flake -> origin/unit/fix-settings-real-flake
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7689812Z  * [new branch]        unit/fix-storefront-chips-stream -> origin/unit/fix-storefront-chips-stream
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7690498Z  * [new branch]        unit/fix-untracked-stripe-capture -> origin/unit/fix-untracked-stripe-capture
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7691119Z  * [new branch]        unit/followups-polish-1 -> origin/unit/followups-polish-1
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7691645Z  * [new branch]        unit/gate-dep-register  -> origin/unit/gate-dep-register
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7692163Z  * [new branch]        unit/gate-port-retry    -> origin/unit/gate-port-retry
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7692878Z  * [new branch]        unit/lc-a3-print-idempotency -> origin/unit/lc-a3-print-idempotency
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7693552Z  * [new branch]        unit/lc-b2-deletion-eviction -> origin/unit/lc-b2-deletion-eviction
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7694117Z  * [new branch]        unit/lc-b3b-buyer-panel -> origin/unit/lc-b3b-buyer-panel
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7694633Z  * [new branch]        unit/lc-b7-console-read -> origin/unit/lc-b7-console-read
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7695500Z  * [new branch]        unit/lc-r2-c3-print-purge -> origin/unit/lc-r2-c3-print-purge
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7696347Z  * [new branch]        unit/lc-u1-shell        -> origin/unit/lc-u1-shell
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7697239Z  * [new branch]        unit/lc-u2a-comment-stream -> origin/unit/lc-u2a-comment-stream
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7698047Z  * [new branch]        unit/lc-u2b-inbox-page  -> origin/unit/lc-u2b-inbox-page
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7698594Z  * [new branch]        unit/lc-u2b2-customer-link -> origin/unit/lc-u2b2-customer-link
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7699194Z  * [new branch]        unit/lc-u3-create-order-drawer -> origin/unit/lc-u3-create-order-drawer
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7699844Z  * [new branch]        unit/live-price-keep-on-pause -> origin/unit/live-price-keep-on-pause
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7700484Z  * [new branch]        unit/matrix-coverage-v2-evidence -> origin/unit/matrix-coverage-v2-evidence
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7701146Z  * [new branch]        unit/matrix-coverage-v2-execution -> origin/unit/matrix-coverage-v2-execution
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7701769Z  * [new branch]        unit/matrix-ledger-enforce -> origin/unit/matrix-ledger-enforce
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7702349Z  * [new branch]        unit/oa-1-order-attempt-core -> origin/unit/oa-1-order-attempt-core
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7703378Z  * [new branch]        unit/ops-01b-store-suspend -> origin/unit/ops-01b-store-suspend
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7703943Z  * [new branch]        unit/ops-02b-support-grant -> origin/unit/ops-02b-support-grant
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7704574Z  * [new branch]        unit/order-attempt-contract -> origin/unit/order-attempt-contract
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7705210Z  * [new branch]        unit/order-gate-bo01-race -> origin/unit/order-gate-bo01-race
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7706117Z  * [new branch]        unit/pay-rm1-remove-payuni -> origin/unit/pay-rm1-remove-payuni
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7707074Z  * [new branch]        unit/perf-dashboard-todos -> origin/unit/perf-dashboard-todos
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7708006Z  * [new branch]        unit/pr1-ui-followups   -> origin/unit/pr1-ui-followups
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7708943Z  * [new branch]        unit/product-media-v2-backend -> origin/unit/product-media-v2-backend
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7709883Z  * [new branch]        unit/ruleset-acceptance -> origin/unit/ruleset-acceptance
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7710881Z  * [new branch]        unit/scope-revoke-404   -> origin/unit/scope-revoke-404
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7711899Z  * [new branch]        unit/security-go-1272-xnet-060 -> origin/unit/security-go-1272-xnet-060
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7713116Z  * [new branch]        unit/settlement-resolve -> origin/unit/settlement-resolve
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7714070Z  * [new branch]        unit/storefront-image-cap -> origin/unit/storefront-image-cap
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7715175Z  * [new branch]        unit/tz-audit           -> origin/unit/tz-audit
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7716067Z  * [new branch]        unit/ux-harden-r1       -> origin/unit/ux-harden-r1
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7716977Z  * [new branch]        unit/visual-polish-r1   -> origin/unit/visual-polish-r1
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7717905Z  * [new branch]        unit/w3-03b-checkout-reminder -> origin/unit/w3-03b-checkout-reminder
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7718919Z  * [new branch]        unit/w3-04b-sold-out-reply -> origin/unit/w3-04b-sold-out-reply
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7719936Z  * [new branch]        unit/w3-05b-blocklist   -> origin/unit/w3-05b-blocklist
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7720953Z  * [new branch]        unit/w3-06b-keyword-tools -> origin/unit/w3-06b-keyword-tools
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7721936Z  * [new branch]        unit/w3-07b-parcel-merge -> origin/unit/w3-07b-parcel-merge
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7723035Z  * [new branch]        unit/w3-08b-returns     -> origin/unit/w3-08b-returns
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7723926Z  * [new branch]        unit/w3-u2-live-settings-ui -> origin/unit/w3-u2-live-settings-ui
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7724541Z  * [new branch]        unit/w3-u3-comment-label-print -> origin/unit/w3-u3-comment-label-print
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7725129Z  * [new branch]        unit/w3-u4-parcel-merge-ui -> origin/unit/w3-u4-parcel-merge-ui
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7725661Z  * [new branch]        unit/w3-u5-returns-ui   -> origin/unit/w3-u5-returns-ui
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7726215Z  * [new branch]        unit/w4-02b-payuni-activation -> origin/unit/w4-02b-payuni-activation
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7726841Z  * [new branch]        unit/w4-s1-platform-stripe -> origin/unit/w4-s1-platform-stripe
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7727436Z  * [new branch]        unit/w4-s2-platform-settlement -> origin/unit/w4-s2-platform-settlement
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7728066Z  * [new branch]        unit/w4-u1-payment-activation-ui -> origin/unit/w4-u1-payment-activation-ui
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7729118Z  * [new branch]        unit/w5-02b-customer-import -> origin/unit/w5-02b-customer-import
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7730178Z  * [new branch]        unit/w5-03b-order-history-import -> origin/unit/w5-03b-order-history-import
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7730877Z  * [new branch]        unit/w5-u1-import-wizard-ui -> origin/unit/w5-u1-import-wizard-ui
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7731410Z  * [new branch]        unit/w6-02b-reports     -> origin/unit/w6-02b-reports
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7731959Z  * [new branch]        unit/w6-05b-operations-ledger -> origin/unit/w6-05b-operations-ledger
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7732689Z  * [new branch]        unit/w6-06b-ads-unbind  -> origin/unit/w6-06b-ads-unbind
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7733504Z  * [new branch]        unit/w6-u1-customers-reports-ui -> origin/unit/w6-u1-customers-reports-ui
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7734120Z  * [new branch]        unit/w6-u2-ops-ledger-ads-ui -> origin/unit/w6-u2-ops-ledger-ads-ui
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7735612Z [command]/usr/bin/git branch --list --remote origin/unit/oa-1-order-attempt-core
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7736163Z   origin/unit/oa-1-order-attempt-core
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7737132Z [command]/usr/bin/git rev-parse refs/remotes/origin/unit/oa-1-order-attempt-core
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7737736Z 55c401a23a765c829168d95d3067cc59de3b93cc
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7738759Z ##[endgroup]
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7739275Z ##[group]Determining the checkout info
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7739790Z ##[endgroup]
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7740147Z [command]/usr/bin/git sparse-checkout disable
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7741102Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7742126Z ##[group]Checking out the ref
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:34.7743044Z [command]/usr/bin/git checkout --progress --force -B unit/oa-1-order-attempt-core refs/remotes/origin/unit/oa-1-order-attempt-core
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:35.7890105Z Updating files:  56% (6815/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:35.8081005Z Updating files:  57% (6847/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:35.8476331Z Updating files:  58% (6967/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:35.8891078Z Updating files:  59% (7087/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:35.9051075Z Updating files:  60% (7207/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:35.9130948Z Updating files:  61% (7327/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:35.9174215Z Updating files:  62% (7447/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:35.9409826Z Updating files:  63% (7567/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:35.9580424Z Updating files:  64% (7688/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:35.9791551Z Updating files:  65% (7808/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:35.9984323Z Updating files:  66% (7928/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.0115948Z Updating files:  67% (8048/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.0220643Z Updating files:  68% (8168/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.0331864Z Updating files:  69% (8288/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.0521792Z Updating files:  70% (8408/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.0778494Z Updating files:  71% (8528/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.0865295Z Updating files:  72% (8648/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.1012900Z Updating files:  73% (8769/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.1383598Z Updating files:  74% (8889/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.1577941Z Updating files:  75% (9009/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.1652631Z Updating files:  76% (9129/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.1808782Z Updating files:  77% (9249/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.1895409Z Updating files:  78% (9369/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.2003497Z Updating files:  79% (9489/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.2041279Z Updating files:  80% (9609/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.2155505Z Updating files:  81% (9729/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.2213651Z Updating files:  82% (9850/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.2320169Z Updating files:  83% (9970/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.2463056Z Updating files:  84% (10090/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.2546312Z Updating files:  85% (10210/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.2687601Z Updating files:  86% (10330/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.2733771Z Updating files:  87% (10450/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.2772355Z Updating files:  88% (10570/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.2829798Z Updating files:  89% (10690/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.2876412Z Updating files:  90% (10810/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.2972083Z Updating files:  91% (10931/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.3104841Z Updating files:  92% (11051/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.3275769Z Updating files:  93% (11171/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.3363533Z Updating files:  94% (11291/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.3454359Z Updating files:  95% (11411/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.3590014Z Updating files:  96% (11531/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.3725098Z Updating files:  97% (11651/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.3855821Z Updating files:  98% (11771/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.3971344Z Updating files:  99% (11891/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.3971843Z Updating files: 100% (12011/12011)
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.3972537Z Updating files: 100% (12011/12011), done.
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.4106393Z Switched to a new branch 'unit/oa-1-order-attempt-core'
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.4111786Z branch 'unit/oa-1-order-attempt-core' set up to track 'origin/unit/oa-1-order-attempt-core'.
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.4157343Z ##[endgroup]
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.4198190Z [command]/usr/bin/git log -1 --format=%H
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.4220953Z 55c401a23a765c829168d95d3067cc59de3b93cc
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.4231266Z ##[group]Removing auth
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.4236199Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.4262025Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.4450558Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.4474880Z http.https://github.com/.extraheader
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.4480946Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.4515184Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.4707197Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.4731920Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+gate (focused:^TestOrderAttemptNotification)	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:48:36.4912285Z ##[endgroup]
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	﻿2026-10-13T23:48:36.5111110Z ##[group]Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:36.5111486Z with:
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:36.5111689Z   go-version-file: go.mod
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:36.5111903Z   cache: false
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:36.5112097Z   check-latest: false
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:36.5114568Z   token: ***
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:36.5114756Z env:
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:36.5114939Z   GOTOOLCHAIN: go1.27.2
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:36.5115165Z   GOFLAGS: -mod=readonly
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:36.5115418Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:36.5115729Z   MODE: focused:^TestOrderAttemptNotification
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:36.5116014Z   LC_SWEEP_WORKERS: 1
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:36.5116217Z   EXTRA_ENV: 
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:36.5116396Z ##[endgroup]
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:36.6361839Z Setup go version spec 1.27.2
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:36.6374677Z Attempting to download 1.27.2...
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:37.6001519Z matching 1.27.2...
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:37.6027006Z Acquiring 1.27.2 from https://github.com/actions/go-versions/releases/download/1.27.2-37875086547/go-1.27.2-linux-x64.tar.gz
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:38.1858638Z Extracting Go...
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:38.2032068Z [command]/usr/bin/tar xz --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/37ed5ce4-d0fa-442f-977e-6a2fe459c621 -f /home/runner/work/_temp/d36831a4-1673-4474-9bb2-470873accc48
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:39.7033621Z Successfully extracted go to /home/runner/work/_temp/37ed5ce4-d0fa-442f-977e-6a2fe459c621
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:39.7034093Z Adding to the cache ...
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:44.9779924Z Successfully cached go to /opt/hostedtoolcache/go/1.27.2/x64
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:44.9782859Z Added go to the path
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:44.9785799Z Successfully set up Go version 1.27.2
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:44.9964228Z go version go1.27.2 linux/amd64
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:44.9964471Z 
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:44.9964757Z ##[group]go env
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1096716Z AR='ar'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1097071Z CC='gcc'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1097325Z CGO_CFLAGS='-O2 -g'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1097545Z CGO_CPPFLAGS=''
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1097756Z CGO_CXXFLAGS='-O2 -g'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1097986Z CGO_ENABLED='1'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1098177Z CGO_FFLAGS='-O2 -g'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1098474Z CGO_LDFLAGS='-O2 -g'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1098766Z CXX='g++'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1099017Z GCCGO='gccgo'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1099207Z GO111MODULE=''
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1099393Z GOAMD64='v1'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1099578Z GOARCH='amd64'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1099862Z GOAUTH='netrc'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1100181Z GOBIN='/home/runner/go/bin'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1100581Z GOCACHE='/home/runner/.cache/go-build'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1100992Z GOCACHEPROG=''
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1101301Z GODEBUG=''
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1101613Z GOENV='/home/runner/.config/go/env'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1102083Z GOEXE=''
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1102415Z GOEXPERIMENT=''
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1102931Z GOFIPS140='off'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1103285Z GOFLAGS='-mod=readonly'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1104209Z GOGCCFLAGS='-fPIC -m64 -pthread -Wl,--no-gc-sections -fmessage-length=0 -ffile-prefix-map=/tmp/go-build247654626=/tmp/go-build -gno-record-gcc-switches'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1104844Z GOHOSTARCH='amd64'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1105066Z GOHOSTOS='linux'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1105255Z GOINSECURE=''
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1105618Z GOMOD='/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/go.mod'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1106057Z GOMODCACHE='/home/runner/go/pkg/mod'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1106295Z GONOPROXY=''
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1106472Z GONOSUMDB=''
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1106653Z GOOS='linux'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1106841Z GOPACKAGESDRIVER=''
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1107055Z GOPATH='/home/runner/go'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1107264Z GOPRIVATE=''
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1107512Z GOPROXY='https://proxy.golang.org,direct'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1107813Z GOROOT='/opt/hostedtoolcache/go/1.27.2/x64'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1108306Z GOSUMDB='sum.golang.org'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1108542Z GOTELEMETRY='local'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1108791Z GOTELEMETRYDIR='/home/runner/.config/go/telemetry'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1109077Z GOTMPDIR=''
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1109270Z GOTOOLCHAIN='local'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1109683Z GOTOOLDIR='/opt/hostedtoolcache/go/1.27.2/x64/pkg/tool/linux_amd64'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1110010Z GOVCS=''
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1110192Z GOVERSION='go1.27.2'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1110395Z GOWORK=''
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1110588Z PKG_CONFIG='pkg-config'
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1110734Z 
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	2026-10-13T23:48:45.1111069Z ##[endgroup]
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	﻿2026-10-13T23:48:45.1279452Z ##[group]Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T23:48:45.1279827Z with:
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T23:48:45.1280019Z   node-version: 24
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T23:48:45.1280239Z   package-manager-cache: false
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T23:48:45.1280482Z   always-auth: false
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T23:48:45.1280686Z   check-latest: false
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T23:48:45.1283222Z   token: ***
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T23:48:45.1283419Z env:
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T23:48:45.1283600Z   GOTOOLCHAIN: local
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T23:48:45.1283814Z   GOFLAGS: -mod=readonly
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T23:48:45.1284062Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T23:48:45.1284376Z   MODE: focused:^TestOrderAttemptNotification
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T23:48:45.1284645Z   LC_SWEEP_WORKERS: 1
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T23:48:45.1284838Z   EXTRA_ENV: 
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T23:48:45.1285017Z ##[endgroup]
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T23:48:45.2725581Z Found in cache @ /opt/hostedtoolcache/node/24.21.0/x64
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T23:48:45.2729647Z (node:2463) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T23:48:45.2730409Z (Use `node --trace-deprecation ...` to show where the warning was created)
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T23:48:45.2732074Z ##[group]Environment details
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T23:48:45.6379610Z node: v24.21.0
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T23:48:45.6380090Z npm: 11.19.0
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T23:48:45.6380491Z yarn: 1.22.22
+gate (focused:^TestOrderAttemptNotification)	Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T23:48:45.6381111Z ##[endgroup]
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	﻿2026-10-13T23:48:45.6491198Z ##[group]Run corepack enable
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:45.6491584Z [36;1mcorepack enable[0m
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:45.6491915Z [36;1mpnpm install --frozen-lockfile --ignore-scripts[0m
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:45.6673221Z shell: /usr/bin/bash -e {0}
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:45.6673546Z env:
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:45.6673757Z   GOTOOLCHAIN: local
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:45.6673984Z   GOFLAGS: -mod=readonly
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:45.6674258Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:45.6674583Z   MODE: focused:^TestOrderAttemptNotification
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:45.6674887Z   LC_SWEEP_WORKERS: 1
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:45.6675096Z   EXTRA_ENV: 
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:45.6675284Z ##[endgroup]
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:45.8558799Z ! Corepack is about to download https://registry.npmjs.org/pnpm/-/pnpm-10.33.0.tgz
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:47.0182589Z Scope: all 6 workspace projects
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:47.0475818Z Lockfile is up to date, resolution step is skipped
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:47.0661520Z Progress: resolved 1, reused 0, downloaded 0, added 0
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:47.0810792Z Packages: +49
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:47.0844727Z +++++++++++++++++++++++++++++++++++++++++++++++++
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:48.0804266Z Progress: resolved 49, reused 0, downloaded 43, added 25
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:49.0809156Z Progress: resolved 49, reused 0, downloaded 48, added 48
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:49.5504885Z Progress: resolved 49, reused 0, downloaded 49, added 49, done
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:49.6303505Z 
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:49.6304313Z devDependencies:
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:49.6304989Z + @playwright/test 1.63.0
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:49.6305434Z + axe-core 4.13.0
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:49.6305817Z + livekit-client 2.22.3
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:49.6306182Z + prettier 3.9.8
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:49.6306540Z + typescript 7.0.2
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:49.6307044Z + typescript-api <- typescript 6.0.3
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:49.6307305Z 
+gate (focused:^TestOrderAttemptNotification)	Node dependencies (frozen lockfile)	2026-10-13T23:48:49.6422899Z Done in 2.9s using pnpm v10.33.0
+gate (focused:^TestOrderAttemptNotification)	Browser requirements from registry	﻿2026-10-13T23:48:49.6755482Z ##[group]Run node scripts/dev/ci-playwright-browsers.mjs "$MODE"
+gate (focused:^TestOrderAttemptNotification)	Browser requirements from registry	2026-10-13T23:48:49.6755969Z [36;1mnode scripts/dev/ci-playwright-browsers.mjs "$MODE"[0m
+gate (focused:^TestOrderAttemptNotification)	Browser requirements from registry	2026-10-13T23:48:49.6794118Z shell: /usr/bin/bash -e {0}
+gate (focused:^TestOrderAttemptNotification)	Browser requirements from registry	2026-10-13T23:48:49.6794391Z env:
+gate (focused:^TestOrderAttemptNotification)	Browser requirements from registry	2026-10-13T23:48:49.6794590Z   GOTOOLCHAIN: local
+gate (focused:^TestOrderAttemptNotification)	Browser requirements from registry	2026-10-13T23:48:49.6794807Z   GOFLAGS: -mod=readonly
+gate (focused:^TestOrderAttemptNotification)	Browser requirements from registry	2026-10-13T23:48:49.6795068Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (focused:^TestOrderAttemptNotification)	Browser requirements from registry	2026-10-13T23:48:49.6795385Z   MODE: focused:^TestOrderAttemptNotification
+gate (focused:^TestOrderAttemptNotification)	Browser requirements from registry	2026-10-13T23:48:49.6795654Z   LC_SWEEP_WORKERS: 1
+gate (focused:^TestOrderAttemptNotification)	Browser requirements from registry	2026-10-13T23:48:49.6795853Z   EXTRA_ENV: 
+gate (focused:^TestOrderAttemptNotification)	Browser requirements from registry	2026-10-13T23:48:49.6796036Z ##[endgroup]
+gate (focused:^TestOrderAttemptNotification)	Browser requirements from registry	2026-10-13T23:48:49.7142036Z ci-playwright: mode=focused:^TestOrderAttemptNotification browsers=none
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	﻿2026-10-13T23:48:49.7256472Z ##[group]Run docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:49.7257193Z [36;1mdocker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280[0m
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:49.7294748Z shell: /usr/bin/bash -e {0}
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:49.7295008Z env:
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:49.7295201Z   GOTOOLCHAIN: local
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:49.7295415Z   GOFLAGS: -mod=readonly
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:49.7295683Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:49.7295998Z   MODE: focused:^TestOrderAttemptNotification
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:49.7296281Z   LC_SWEEP_WORKERS: 1
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:49.7296481Z   EXTRA_ENV: 
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:49.7296663Z ##[endgroup]
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.3692918Z docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280: Pulling from library/postgres
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.5864430Z 6310eb16bf42: Pulling fs layer
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.5864952Z 6463c6b5c703: Pulling fs layer
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.5865368Z 8d6422da287d: Pulling fs layer
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.5865702Z 2fc0e69f8d7d: Pulling fs layer
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.5866082Z 5fa29c524b4e: Pulling fs layer
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.5866402Z ace4b5b96a91: Pulling fs layer
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.5866723Z af2a6480a058: Pulling fs layer
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.5867035Z 5ee6c6ca7fd9: Pulling fs layer
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.5867355Z c5694bff1357: Pulling fs layer
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.5867684Z aedab7177504: Pulling fs layer
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.5867996Z a4635eaec9b8: Pulling fs layer
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.5868366Z 46e663abc8f5: Pulling fs layer
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.5868687Z 1bb54e8f7727: Pulling fs layer
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.5868976Z 2fc0e69f8d7d: Waiting
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.5869273Z 5fa29c524b4e: Waiting
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.5869542Z ace4b5b96a91: Waiting
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.5869817Z af2a6480a058: Waiting
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.5870081Z 5ee6c6ca7fd9: Waiting
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.5870336Z c5694bff1357: Waiting
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.5870603Z aedab7177504: Waiting
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.5870859Z a4635eaec9b8: Waiting
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.5871124Z 46e663abc8f5: Waiting
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.5871382Z 1bb54e8f7727: Waiting
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.7535602Z 6463c6b5c703: Verifying Checksum
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.7536251Z 6463c6b5c703: Download complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.7870837Z 8d6422da287d: Verifying Checksum
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.7871822Z 8d6422da287d: Download complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.8447393Z 6310eb16bf42: Verifying Checksum
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.8448086Z 6310eb16bf42: Download complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.9318350Z 2fc0e69f8d7d: Verifying Checksum
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.9319022Z 2fc0e69f8d7d: Download complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.9806464Z 5fa29c524b4e: Verifying Checksum
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:50.9807250Z 5fa29c524b4e: Download complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:51.0218669Z ace4b5b96a91: Verifying Checksum
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:51.0219347Z ace4b5b96a91: Download complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:51.0996091Z af2a6480a058: Verifying Checksum
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:51.0997491Z af2a6480a058: Download complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:51.1477426Z 5ee6c6ca7fd9: Verifying Checksum
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:51.1477918Z 5ee6c6ca7fd9: Download complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:51.2664456Z aedab7177504: Download complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:51.3149381Z a4635eaec9b8: Verifying Checksum
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:51.3150052Z a4635eaec9b8: Download complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:51.4478219Z 46e663abc8f5: Verifying Checksum
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:51.4478865Z 46e663abc8f5: Download complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:51.4857737Z 1bb54e8f7727: Verifying Checksum
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:51.4859051Z 1bb54e8f7727: Download complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:51.5228088Z c5694bff1357: Verifying Checksum
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:51.5228740Z c5694bff1357: Download complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:51.8099629Z 6310eb16bf42: Pull complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:54.4307305Z 6463c6b5c703: Pull complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:54.5748481Z 8d6422da287d: Pull complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:54.6059822Z 2fc0e69f8d7d: Pull complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:54.8404810Z 5fa29c524b4e: Pull complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:54.8956272Z ace4b5b96a91: Pull complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:54.9014968Z af2a6480a058: Pull complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:54.9089605Z 5ee6c6ca7fd9: Pull complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:57.5703332Z c5694bff1357: Pull complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:57.6246865Z aedab7177504: Pull complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:57.6338874Z a4635eaec9b8: Pull complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:57.6409864Z 46e663abc8f5: Pull complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:57.6482395Z 1bb54e8f7727: Pull complete
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:57.6514421Z Digest: sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:57.6522141Z Status: Downloaded newer image for postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+gate (focused:^TestOrderAttemptNotification)	Download pinned test image	2026-10-13T23:48:57.6529743Z docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+gate (focused:^TestOrderAttemptNotification)	Gate	﻿2026-10-13T23:48:57.6575444Z ##[group]Run set -o pipefail
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6575772Z [36;1mset -o pipefail[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6576015Z [36;1mmkdir -p output/ci-gates[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6576474Z [36;1m# Only LC_* names with plain values: an inject-fail run of a new gate must not be able to set arbitrary env.[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6576926Z [36;1mfor kv in $EXTRA_ENV; do[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6577317Z [36;1m  [[ "$kv" =~ ^LC_[A-Z0-9_]+=[A-Za-z0-9._:-]*$ ]] || { echo "refusing extra_env entry: $kv" >&2; exit 2; }[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6577744Z [36;1m  export "$kv"; echo "extra_env: ${kv%%=*} set"[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6578019Z [36;1mdone[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6578316Z [36;1m# Explicit dispatch only: inject a real source fault before native PG[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6578754Z [36;1m# setup. The ordinary gate keeps its verdict and must go red.[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6579123Z [36;1mif [[ -n "${LC_OA_MUTATION:-}" ]]; then[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6579456Z [36;1m  [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]] || exit 2[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6579875Z [36;1m  python3 tests/foundation/order_attempt_mutation.py[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6580171Z [36;1mfi[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6580362Z [36;1mlog_root=output/ci-gates[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6580601Z [36;1mcase "$MODE" in[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6580865Z [36;1m  --browser*|--stripe-browser*|--ops-disk-guard)[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6581174Z [36;1m    mkdir -p output/playwright[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6581583Z [36;1m    export LC_BROWSER_EVIDENCE_ROOT="$(mktemp -d "$PWD/output/playwright/run.XXXXXXXX")"[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6582036Z [36;1m    log_root="$LC_BROWSER_EVIDENCE_ROOT/ci-gates"[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6582332Z [36;1m    mkdir -p "$log_root"[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6582561Z [36;1m    ;;[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6583074Z [36;1mesac[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6583425Z [36;1mlog="$log_root/$(printf '%s' "$MODE" | tr -c 'A-Za-z0-9_-' '_').log"[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6583758Z [36;1mcase "$MODE" in[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6584063Z [36;1m  foundation) bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6584693Z [36;1m  shard:unit) LC_FOUNDATION_PKGS="$(go list ./... | grep -v '/tests/foundation$' | tr '\n' ' ')" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6585517Z [36;1m  # A balanced group of scripts/dev/shard-plan.json: an anchored explicit -run list, or (the catch-all) -skip of every other group's tests.[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6586656Z [36;1m  shard:g[0-9][0-9]) LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="$(node scripts/dev/shard-plan.mjs run "${MODE#shard:}")" LC_FOUNDATION_SKIP="$(node scripts/dev/shard-plan.mjs skip "${MODE#shard:}")" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6587965Z [36;1m  shard:*)    LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="${MODE#shard:}" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6588693Z [36;1m  focused:*)  LC_FOCUSED_TIMEOUT=7200s bash scripts/dev/test-focused.sh "${MODE#focused:}" 2>&1 | tee "$log" ;;[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6589486Z [36;1m  # One slice of the sweep / visual lint (tests/ui/sweep-shard-lib.mjs): its own PG, fixture and store, so click-sweep runs its single worker race-free.[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6590391Z [36;1m  --browser-click-sweep@*|--browser-visual-lint@*) LC_SWEEP_SHARD="${MODE##*@}" xvfb-run -a bash scripts/dev/test-local.sh "${MODE%@*}" 2>&1 | tee "$log" ;;[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6591157Z [36;1m  # Some browser suites run headed on purpose (MOU03 native bfcache/visibility); the runner has no display.[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6591660Z [36;1m  # Xvfb comes with `playwright install --with-deps`.[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6592167Z [36;1m  --browser*|--stripe-browser*) xvfb-run -a bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$log" ;;[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6592985Z [36;1m  --*)        bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$log" ;;[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6593468Z [36;1m  *) echo "unknown mode: $MODE" >&2; exit 2 ;;[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6593884Z [36;1mesac[0m
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6630685Z shell: /usr/bin/bash -e {0}
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6630943Z env:
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6631135Z   GOTOOLCHAIN: local
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6631351Z   GOFLAGS: -mod=readonly
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6631602Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6631917Z   MODE: focused:^TestOrderAttemptNotification
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6632191Z   LC_SWEEP_WORKERS: 1
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6632387Z   EXTRA_ENV: 
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:57.6632565Z ##[endgroup]
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:59.3546634Z go: downloading github.com/jackc/pgx/v5 v5.11.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:59.5513259Z go: downloading github.com/riverqueue/river v0.40.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:59.5514387Z go: downloading github.com/riverqueue/river/riverdriver/riverpgxv5 v0.40.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:59.5518971Z go: downloading github.com/riverqueue/river/rivertype v0.40.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:59.5703249Z go: downloading github.com/riverqueue/river/riverdriver v0.40.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:59.6206102Z go: downloading golang.org/x/crypto v0.57.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:59.6843962Z go: downloading github.com/jackc/pgpassfile v1.0.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:59.6851229Z go: downloading github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:59.7093246Z go: downloading golang.org/x/text v0.42.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:59.7093774Z go: downloading github.com/jackc/puddle/v2 v2.2.2
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:59.7200418Z go: downloading github.com/riverqueue/river/rivershared v0.40.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:59.7628880Z go: downloading golang.org/x/image v0.46.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:48:59.9981785Z go: downloading golang.org/x/net v0.60.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:49:00.1684851Z go: downloading github.com/coreos/go-oidc/v3 v3.21.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:49:00.1685628Z go: downloading golang.org/x/oauth2 v0.37.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:49:00.1943578Z go: downloading golang.org/x/sync v0.23.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:49:00.1944627Z go: downloading github.com/tidwall/gjson v1.19.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:49:00.1959325Z go: downloading github.com/tidwall/sjson v1.2.5
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:49:00.2179459Z go: downloading golang.org/x/sys v0.48.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:49:00.2197105Z go: downloading github.com/go-jose/go-jose/v4 v4.1.4
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:49:00.2207875Z go: downloading github.com/stretchr/testify v1.11.1
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:49:00.2234442Z go: downloading go.uber.org/goleak v1.3.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:49:00.2556251Z go: downloading github.com/tidwall/match v1.2.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:49:00.2645458Z go: downloading github.com/tidwall/pretty v1.2.1
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:49:00.2733955Z go: downloading github.com/davecgh/go-spew v1.1.1
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:49:00.2778662Z go: downloading github.com/pmezard/go-difflib v1.0.0
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:49:00.2912563Z go: downloading gopkg.in/yaml.v3 v3.0.1
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:17.4570449Z === RUN   TestOrderAttemptNotificationExecutorReadyNativeJobTransaction
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:17.4571891Z === RUN   TestOrderAttemptNotificationExecutorReadyNativeJobTransaction/runtime
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:20.6773287Z === RUN   TestOrderAttemptNotificationExecutorReadyNativeJobTransaction/claims-worker
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:21.9015964Z --- PASS: TestOrderAttemptNotificationExecutorReadyNativeJobTransaction (4.44s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:21.9020122Z     --- PASS: TestOrderAttemptNotificationExecutorReadyNativeJobTransaction/runtime (3.22s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:21.9022018Z     --- PASS: TestOrderAttemptNotificationExecutorReadyNativeJobTransaction/claims-worker (1.23s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:21.9029845Z === RUN   TestOrderAttemptNotificationExecutorAEADDependencyRetainsPending
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:23.0597470Z --- PASS: TestOrderAttemptNotificationExecutorAEADDependencyRetainsPending (1.16s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:23.0598835Z === RUN   TestOrderAttemptNotificationOriginPin
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:23.0599731Z === RUN   TestOrderAttemptNotificationOriginPin/switch_origin
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:24.4531361Z === RUN   TestOrderAttemptNotificationOriginPin/same_origin_version
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:25.8317040Z --- PASS: TestOrderAttemptNotificationOriginPin (2.77s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:25.8320170Z     --- PASS: TestOrderAttemptNotificationOriginPin/switch_origin (1.39s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:25.8321528Z     --- PASS: TestOrderAttemptNotificationOriginPin/same_origin_version (1.38s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:25.8328893Z === RUN   TestOrderAttemptNotificationResumeWorkerCommitsCurrentVoid
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:25.8330598Z === RUN   TestOrderAttemptNotificationResumeWorkerCommitsCurrentVoid/permission
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:27.0937477Z === RUN   TestOrderAttemptNotificationResumeWorkerCommitsCurrentVoid/binding
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:28.3371637Z === RUN   TestOrderAttemptNotificationResumeWorkerCommitsCurrentVoid/window
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:29.6712000Z --- PASS: TestOrderAttemptNotificationResumeWorkerCommitsCurrentVoid (3.84s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:29.6714177Z     --- PASS: TestOrderAttemptNotificationResumeWorkerCommitsCurrentVoid/permission (1.26s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:29.6715894Z     --- PASS: TestOrderAttemptNotificationResumeWorkerCommitsCurrentVoid/binding (1.24s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:29.6716748Z     --- PASS: TestOrderAttemptNotificationResumeWorkerCommitsCurrentVoid/window (1.33s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:29.6717400Z === RUN   TestOrderAttemptNotificationResumeLateRefusalRollsBackThenVoid
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:31.0035391Z --- PASS: TestOrderAttemptNotificationResumeLateRefusalRollsBackThenVoid (1.33s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:31.0036550Z === RUN   TestOrderAttemptNotificationNoBindingVoidNativeAndRollback
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:31.6820516Z --- PASS: TestOrderAttemptNotificationNoBindingVoidNativeAndRollback (0.68s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:31.6821664Z === RUN   TestOrderAttemptNotificationNotRequestedHasNoEffects
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:32.3177196Z --- PASS: TestOrderAttemptNotificationNotRequestedHasNoEffects (0.64s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:32.3178332Z === RUN   TestOrderAttemptNotificationCurrentRefusalWithoutBrowserSession
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:32.3179510Z === RUN   TestOrderAttemptNotificationCurrentRefusalWithoutBrowserSession/permission
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:32.9511924Z === RUN   TestOrderAttemptNotificationCurrentRefusalWithoutBrowserSession/window
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:33.5862562Z --- PASS: TestOrderAttemptNotificationCurrentRefusalWithoutBrowserSession (1.27s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:33.5867723Z     --- PASS: TestOrderAttemptNotificationCurrentRefusalWithoutBrowserSession/permission (0.63s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:33.5870161Z     --- PASS: TestOrderAttemptNotificationCurrentRefusalWithoutBrowserSession/window (0.64s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:33.5873555Z === RUN   TestOrderAttemptNotificationStrictMaterialAndNullOperationChecks
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:34.2419809Z --- PASS: TestOrderAttemptNotificationStrictMaterialAndNullOperationChecks (0.66s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:34.2421778Z === RUN   TestOrderAttemptNotificationPrivateAuthority
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:34.2505637Z --- PASS: TestOrderAttemptNotificationPrivateAuthority (0.01s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:34.8459130Z === RUN   TestOrderAttemptNotificationRequiresExactHeldPlan
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:34.8460158Z --- PASS: TestOrderAttemptNotificationRequiresExactHeldPlan (0.59s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:34.8461765Z === RUN   TestOrderAttemptNotificationStorefrontOriginCurrentEligibility
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:35.4697859Z === RUN   TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/configured
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:35.4719506Z === RUN   TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/unpublished
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:35.4738878Z === RUN   TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/store_disabled
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:35.4759284Z === RUN   TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/tenant_disabled
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:35.4779246Z === RUN   TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/expired
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:35.4800655Z === RUN   TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/future_proof
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:35.4824035Z === RUN   TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/ambiguous
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:35.4921332Z --- PASS: TestOrderAttemptNotificationStorefrontOriginCurrentEligibility (0.65s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:35.4922913Z     --- PASS: TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/configured (0.00s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:35.4924774Z     --- PASS: TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/unpublished (0.00s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:35.4926966Z     --- PASS: TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/store_disabled (0.00s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:35.4929132Z     --- PASS: TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/tenant_disabled (0.00s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:35.4930838Z     --- PASS: TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/expired (0.00s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:35.4932575Z     --- PASS: TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/future_proof (0.00s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:35.4934575Z     --- PASS: TestOrderAttemptNotificationStorefrontOriginCurrentEligibility/ambiguous (0.00s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:35.4936023Z === RUN   TestOrderAttemptNotificationReadyNativeActualCrypto
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:36.6255338Z --- PASS: TestOrderAttemptNotificationReadyNativeActualCrypto (1.13s)
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:36.6270447Z PASS
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:37.6358127Z ok  	livecommerce/tests/foundation	20.292s
+gate (focused:^TestOrderAttemptNotification)	Gate	2026-10-13T23:50:37.8007425Z test-focused: top-level PASS=13 FAIL=0 SKIP=0 exit=0
+gate (focused:^TestOrderAttemptNotification)	Failure summary	﻿2026-10-13T23:50:37.9712228Z ##[group]Run grep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log | head -200 || true
+gate (focused:^TestOrderAttemptNotification)	Failure summary	2026-10-13T23:50:37.9713295Z [36;1mgrep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log | head -200 || true[0m
+gate (focused:^TestOrderAttemptNotification)	Failure summary	2026-10-13T23:50:37.9750055Z shell: /usr/bin/bash -e {0}
+gate (focused:^TestOrderAttemptNotification)	Failure summary	2026-10-13T23:50:37.9750338Z env:
+gate (focused:^TestOrderAttemptNotification)	Failure summary	2026-10-13T23:50:37.9750529Z   GOTOOLCHAIN: local
+gate (focused:^TestOrderAttemptNotification)	Failure summary	2026-10-13T23:50:37.9750751Z   GOFLAGS: -mod=readonly
+gate (focused:^TestOrderAttemptNotification)	Failure summary	2026-10-13T23:50:37.9751011Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (focused:^TestOrderAttemptNotification)	Failure summary	2026-10-13T23:50:37.9751322Z   MODE: focused:^TestOrderAttemptNotification
+gate (focused:^TestOrderAttemptNotification)	Failure summary	2026-10-13T23:50:37.9751589Z   LC_SWEEP_WORKERS: 1
+gate (focused:^TestOrderAttemptNotification)	Failure summary	2026-10-13T23:50:37.9751797Z   EXTRA_ENV: 
+gate (focused:^TestOrderAttemptNotification)	Failure summary	2026-10-13T23:50:37.9751980Z ##[endgroup]
+gate (focused:^TestOrderAttemptNotification)	Failure summary	2026-10-13T23:50:37.9816982Z grep: output/playwright/*/ci-gates/*.log: No such file or directory
+gate (focused:^TestOrderAttemptNotification)	Failure summary	2026-10-13T23:50:37.9817538Z test-focused: top-level PASS=13 FAIL=0 SKIP=0 exit=0
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	﻿2026-10-13T23:50:37.9866836Z ##[group]Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:37.9867224Z with:
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:37.9867466Z   name: gate-focused_TestOrderAttemptNotification
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:37.9867792Z   path: output/ci-gates/
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	output/playwright/
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:37.9868069Z   retention-days: 14
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:37.9868297Z   if-no-files-found: ignore
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:37.9868531Z   compression-level: 6
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:37.9868734Z   overwrite: false
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:37.9868935Z   include-hidden-files: false
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:37.9869151Z env:
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:37.9869322Z   GOTOOLCHAIN: local
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:37.9869524Z   GOFLAGS: -mod=readonly
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:37.9869765Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:37.9870196Z   MODE: focused:^TestOrderAttemptNotification
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:37.9870463Z   LC_SWEEP_WORKERS: 1
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:37.9870660Z   EXTRA_ENV: 
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:37.9870846Z ##[endgroup]
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:38.1435175Z Multiple search paths detected. Calculating the least common ancestor of all paths
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:38.1437851Z The least common ancestor is /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output. This will be the root directory of the artifact
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:38.1439263Z With the provided path, there will be 1 file uploaded
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:38.1445320Z Artifact name is valid!
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:38.1446421Z Root directory input is valid!
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:38.4914929Z Beginning upload of artifact content to blob storage
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:38.7164115Z Uploaded bytes 1320
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:38.7723369Z Finished uploading artifact content to blob storage!
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:38.7724902Z SHA256 digest of uploaded artifact zip is 5b459c3780f40208cb9e937b102aa32d8b6bf3f7dbdcae85d4d5430f8c7a9f69
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:38.7726908Z Finalizing artifact upload
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:39.1266081Z Artifact gate-focused_TestOrderAttemptNotification.zip successfully finalized. Artifact ID 11859338316
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:39.1268051Z Artifact gate-focused_TestOrderAttemptNotification has been successfully uploaded! Final size is 1320 bytes. Artifact ID is 11859338316
+gate (focused:^TestOrderAttemptNotification)	Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f	2026-10-13T23:50:39.1271731Z Artifact download URL: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38486157297/artifacts/11859338316
+gate (focused:^TestOrderAttemptNotification)	Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	﻿2026-10-13T23:50:39.1436348Z Post job cleanup.
+gate (focused:^TestOrderAttemptNotification)	Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T23:50:39.2620104Z (node:8642) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+gate (focused:^TestOrderAttemptNotification)	Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444	2026-10-13T23:50:39.2620876Z (Use `node --trace-deprecation ...` to show where the warning was created)
+gate (focused:^TestOrderAttemptNotification)	Post Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16	﻿2026-10-13T23:50:39.2769191Z Post job cleanup.
+gate (focused:^TestOrderAttemptNotification)	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	﻿2026-10-13T23:50:39.4108296Z Post job cleanup.
+gate (focused:^TestOrderAttemptNotification)	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:50:39.4968163Z [command]/usr/bin/git version
+gate (focused:^TestOrderAttemptNotification)	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:50:39.5005532Z git version 2.55.0
+gate (focused:^TestOrderAttemptNotification)	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:50:39.5041919Z Temporarily overriding HOME='/home/runner/work/_temp/0f153c99-1c2d-416c-844f-02856d1ae597' before making global git config changes
+gate (focused:^TestOrderAttemptNotification)	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:50:39.5044330Z Adding repository directory to the temporary git global config as a safe directory
+gate (focused:^TestOrderAttemptNotification)	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:50:39.5047906Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+gate (focused:^TestOrderAttemptNotification)	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:50:39.5081757Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+gate (focused:^TestOrderAttemptNotification)	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:50:39.5113291Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+gate (focused:^TestOrderAttemptNotification)	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:50:39.5337525Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+gate (focused:^TestOrderAttemptNotification)	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:50:39.5367093Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+gate (focused:^TestOrderAttemptNotification)	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:50:39.5596092Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+gate (focused:^TestOrderAttemptNotification)	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-13T23:50:39.5625775Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+gate (focused:^TestOrderAttemptNotification)	Complete job	﻿2026-10-13T23:50:39.5992085Z Cleaning up orphan processes
+gate (focused:^TestOrderAttemptNotification)	Complete job	2026-10-13T23:50:39.6259402Z Terminate orphan process: pid (8461) (sleep)

@@ -1,0 +1,624 @@
+{
+  "run_id": 38476605638,
+  "source_sha": "0bdb85d359aff8fd544086513e1daf4d879d91fe",
+  "collected_at": "2026-10-13 23:06:54 UTC",
+  "complete": false,
+  "jobs": [
+    {
+      "completed_at": "2026-10-13T22:18:51Z",
+      "conclusion": "success",
+      "id": 115568718543,
+      "name": "plan",
+      "started_at": "2026-10-13T22:18:37Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:18:51Z",
+      "conclusion": "skipped",
+      "id": 115569818416,
+      "name": "deploy",
+      "started_at": "2026-10-13T22:18:52Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:41:10Z",
+      "conclusion": "success",
+      "id": 115569818670,
+      "name": "gate (shard:unit)",
+      "started_at": "2026-10-13T22:31:02Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:25:00Z",
+      "conclusion": "success",
+      "id": 115569818687,
+      "name": "gate (--browser-identity)",
+      "started_at": "2026-10-13T22:21:33Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:40:03Z",
+      "conclusion": "success",
+      "id": 115569818829,
+      "name": "gate (--browser-ads-attribution)",
+      "started_at": "2026-10-13T22:35:25Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:40:30Z",
+      "conclusion": "success",
+      "id": 115569818872,
+      "name": "gate (--browser-click-sweep@1/10)",
+      "started_at": "2026-10-13T22:21:32Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:52:55Z",
+      "conclusion": "success",
+      "id": 115569818961,
+      "name": "gate (shard:g03)",
+      "started_at": "2026-10-13T22:40:04Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:51:54Z",
+      "conclusion": "success",
+      "id": 115569818977,
+      "name": "gate (--browser-store-domains)",
+      "started_at": "2026-10-13T22:48:38Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:27:07Z",
+      "conclusion": "success",
+      "id": 115569818979,
+      "name": "gate (--browser-studio-ui)",
+      "started_at": "2026-10-13T22:22:54Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:38:13Z",
+      "conclusion": "success",
+      "id": 115569819027,
+      "name": "gate (--browser-click-sweep@2/10)",
+      "started_at": "2026-10-13T22:21:55Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T23:02:46Z",
+      "conclusion": "success",
+      "id": 115569819029,
+      "name": "gate (--browser-click-sweep@4/10)",
+      "started_at": "2026-10-13T22:44:36Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:53:38Z",
+      "conclusion": "success",
+      "id": 115569819037,
+      "name": "gate (--browser-admin-shell)",
+      "started_at": "2026-10-13T22:50:51Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:35:23Z",
+      "conclusion": "success",
+      "id": 115569819058,
+      "name": "gate (--browser-design)",
+      "started_at": "2026-10-13T22:32:09Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:45:22Z",
+      "conclusion": "success",
+      "id": 115569819067,
+      "name": "gate (--browser-visual-lint@2/4)",
+      "started_at": "2026-10-13T22:33:56Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:29:54Z",
+      "conclusion": "success",
+      "id": 115569819105,
+      "name": "gate (--browser-home-cod)",
+      "started_at": "2026-10-13T22:26:33Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:43:29Z",
+      "conclusion": "success",
+      "id": 115569819109,
+      "name": "gate (--browser-e2e)",
+      "started_at": "2026-10-13T22:40:16Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:55:16Z",
+      "conclusion": "success",
+      "id": 115569819136,
+      "name": "gate (--browser-buyer)",
+      "started_at": "2026-10-13T22:52:46Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:26:58Z",
+      "conclusion": "success",
+      "id": 115569819165,
+      "name": "gate (--browser-refund-fulfilment)",
+      "started_at": "2026-10-13T22:23:09Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:29:13Z",
+      "conclusion": "success",
+      "id": 115569819169,
+      "name": "gate (--browser-studio-bff)",
+      "started_at": "2026-10-13T22:26:59Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:44:33Z",
+      "conclusion": "success",
+      "id": 115569819179,
+      "name": "gate (--browser-visual-lint@1/4)",
+      "started_at": "2026-10-13T22:33:30Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:51:43Z",
+      "conclusion": "success",
+      "id": 115569819202,
+      "name": "gate (--browser-input-delivery)",
+      "started_at": "2026-10-13T22:48:59Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:31:11Z",
+      "conclusion": "success",
+      "id": 115569819205,
+      "name": "gate (--browser-promotions)",
+      "started_at": "2026-10-13T22:28:14Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:54:17Z",
+      "conclusion": "success",
+      "id": 115569819219,
+      "name": "gate (--browser-claim-checkout)",
+      "started_at": "2026-10-13T22:50:34Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:49:53Z",
+      "conclusion": "failure",
+      "id": 115569819233,
+      "name": "gate (shard:g02)",
+      "started_at": "2026-10-13T22:38:14Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:44:09Z",
+      "conclusion": "success",
+      "id": 115569819238,
+      "name": "gate (--browser-payment)",
+      "started_at": "2026-10-13T22:41:12Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:48:57Z",
+      "conclusion": "success",
+      "id": 115569819294,
+      "name": "gate (--browser-click-sweep@6/10)",
+      "started_at": "2026-10-13T22:31:15Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:49:16Z",
+      "conclusion": "success",
+      "id": 115569819313,
+      "name": "gate (--browser-card-payments)",
+      "started_at": "2026-10-13T22:45:30Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:43:52Z",
+      "conclusion": "failure",
+      "id": 115569819317,
+      "name": "gate (shard:g06)",
+      "started_at": "2026-10-13T22:32:23Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:47:47Z",
+      "conclusion": "failure",
+      "id": 115569819318,
+      "name": "gate (shard:g04)",
+      "started_at": "2026-10-13T22:36:02Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569819323,
+      "name": "gate (shard:g05)",
+      "started_at": "2026-10-13T22:52:04Z",
+      "status": "in_progress"
+    },
+    {
+      "completed_at": "2026-10-13T22:53:43Z",
+      "conclusion": "success",
+      "id": 115569819348,
+      "name": "gate (--browser-catalog-media)",
+      "started_at": "2026-10-13T22:50:41Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569819379,
+      "name": "gate (--browser-click-sweep@10/10)",
+      "started_at": "2026-10-13T22:49:18Z",
+      "status": "in_progress"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569819385,
+      "name": "gate (--browser-visual-lint@4/4)",
+      "started_at": "2026-10-13T22:51:46Z",
+      "status": "in_progress"
+    },
+    {
+      "completed_at": "2026-10-13T22:57:31Z",
+      "conclusion": "success",
+      "id": 115569819493,
+      "name": "gate (--live-browser-input)",
+      "started_at": "2026-10-13T22:53:20Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:59:15Z",
+      "conclusion": "success",
+      "id": 115569819527,
+      "name": "gate (--browser-click-sweep@3/10)",
+      "started_at": "2026-10-13T22:40:31Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:52:44Z",
+      "conclusion": "failure",
+      "id": 115569819627,
+      "name": "gate (shard:g07)",
+      "started_at": "2026-10-13T22:40:32Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:54:33Z",
+      "conclusion": "success",
+      "id": 115569819677,
+      "name": "gate (--browser-password-auth)",
+      "started_at": "2026-10-13T22:50:10Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:58:00Z",
+      "conclusion": "success",
+      "id": 115569819680,
+      "name": "gate (--browser-tracking-backfill)",
+      "started_at": "2026-10-13T22:54:05Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569819687,
+      "name": "gate (shard:g08)",
+      "started_at": "2026-10-13T23:02:48Z",
+      "status": "in_progress"
+    },
+    {
+      "completed_at": "2026-10-13T22:58:12Z",
+      "conclusion": "success",
+      "id": 115569819709,
+      "name": "gate (--browser-merchant-buyer)",
+      "started_at": "2026-10-13T22:55:12Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:56:47Z",
+      "conclusion": "success",
+      "id": 115569819751,
+      "name": "gate (--browser-admin-legacy)",
+      "started_at": "2026-10-13T22:53:39Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:57:44Z",
+      "conclusion": "success",
+      "id": 115569819791,
+      "name": "gate (--browser-live-claims)",
+      "started_at": "2026-10-13T22:54:35Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569819811,
+      "name": "gate (--browser-click-sweep@9/10)",
+      "started_at": "2026-10-13T22:54:56Z",
+      "status": "in_progress"
+    },
+    {
+      "completed_at": "2026-10-13T23:05:34Z",
+      "conclusion": "success",
+      "id": 115569819816,
+      "name": "gate (--browser-platform-site)",
+      "started_at": "2026-10-13T23:02:29Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569819826,
+      "name": "gate (--browser-inbox)",
+      "started_at": "2026-10-13T23:02:32Z",
+      "status": "in_progress"
+    },
+    {
+      "completed_at": "2026-10-13T22:56:39Z",
+      "conclusion": "success",
+      "id": 115569819843,
+      "name": "gate (--browser-merchant-orders-ui)",
+      "started_at": "2026-10-13T22:52:57Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:46:29Z",
+      "conclusion": "success",
+      "id": 115569819892,
+      "name": "gate (--browser-meta-health-ui)",
+      "started_at": "2026-10-13T22:43:22Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T22:58:37Z",
+      "conclusion": "success",
+      "id": 115569819896,
+      "name": "gate (--browser-storefront-publish)",
+      "started_at": "2026-10-13T22:55:17Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-13T23:04:37Z",
+      "conclusion": "success",
+      "id": 115569819901,
+      "name": "gate (--browser-live-console)",
+      "started_at": "2026-10-13T22:56:40Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569819903,
+      "name": "gate (--browser-click-sweep@7/10)",
+      "started_at": "2026-10-13T22:18:52Z",
+      "status": "queued"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569819936,
+      "name": "gate (--browser-webkit)",
+      "started_at": "2026-10-13T22:58:10Z",
+      "status": "in_progress"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569819942,
+      "name": "gate (--browser-meta-ads)",
+      "started_at": "2026-10-13T22:18:52Z",
+      "status": "queued"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569819994,
+      "name": "gate (--browser-checkout-offline)",
+      "started_at": "2026-10-13T22:18:52Z",
+      "status": "queued"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569820027,
+      "name": "gate (--browser-customers-billing)",
+      "started_at": "2026-10-13T22:18:52Z",
+      "status": "queued"
+    },
+    {
+      "completed_at": "2026-10-13T23:00:54Z",
+      "conclusion": "success",
+      "id": 115569820045,
+      "name": "gate (--browser-manual-order)",
+      "started_at": "2026-10-13T22:58:01Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569820047,
+      "name": "gate (--browser-buyer-comms)",
+      "started_at": "2026-10-13T22:18:52Z",
+      "status": "queued"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569820073,
+      "name": "gate (--browser-visual-lint@3/4)",
+      "started_at": "2026-10-13T23:00:01Z",
+      "status": "in_progress"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569820077,
+      "name": "gate (--browser-click-sweep@8/10)",
+      "started_at": "2026-10-13T22:59:17Z",
+      "status": "in_progress"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569820115,
+      "name": "gate (shard:g09)",
+      "started_at": "2026-10-13T23:04:38Z",
+      "status": "in_progress"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569820202,
+      "name": "gate (--browser-cvs)",
+      "started_at": "2026-10-13T22:18:52Z",
+      "status": "queued"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569820215,
+      "name": "gate (shard:g01)",
+      "started_at": "2026-10-13T22:18:52Z",
+      "status": "queued"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569820238,
+      "name": "gate (--browser-storefront)",
+      "started_at": "2026-10-13T22:18:52Z",
+      "status": "queued"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569820243,
+      "name": "gate (--browser-merchant-orders-bff)",
+      "started_at": "2026-10-13T22:18:52Z",
+      "status": "queued"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569820253,
+      "name": "gate (--browser-order)",
+      "started_at": "2026-10-13T22:18:52Z",
+      "status": "queued"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569820271,
+      "name": "gate (--browser-click-sweep@5/10)",
+      "started_at": "2026-10-13T22:18:52Z",
+      "status": "queued"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569820570,
+      "name": "gate (shard:g10)",
+      "started_at": "2026-10-13T22:18:52Z",
+      "status": "queued"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569821419,
+      "name": "gate (--browser-reports)",
+      "started_at": "2026-10-13T22:18:52Z",
+      "status": "queued"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569821429,
+      "name": "gate (--browser-meta-connect)",
+      "started_at": "2026-10-13T22:18:52Z",
+      "status": "queued"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569821455,
+      "name": "gate (--browser-migration-import)",
+      "started_at": "2026-10-13T22:18:52Z",
+      "status": "queued"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569821496,
+      "name": "gate (--browser-product-editor)",
+      "started_at": "2026-10-13T22:18:52Z",
+      "status": "queued"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569821501,
+      "name": "gate (--browser-live-settings)",
+      "started_at": "2026-10-13T22:18:52Z",
+      "status": "queued"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569821521,
+      "name": "gate (--browser-returns-ui)",
+      "started_at": "2026-10-13T22:18:52Z",
+      "status": "queued"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569821535,
+      "name": "gate (--browser-ops-polish)",
+      "started_at": "2026-10-13T22:18:52Z",
+      "status": "queued"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569821630,
+      "name": "gate (--browser-operations-ads)",
+      "started_at": "2026-10-13T22:18:52Z",
+      "status": "queued"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569821689,
+      "name": "gate (--browser-picklist)",
+      "started_at": "2026-10-13T22:18:52Z",
+      "status": "queued"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569821802,
+      "name": "gate (--browser-product-media-v2)",
+      "started_at": "2026-10-13T22:18:52Z",
+      "status": "queued"
+    },
+    {
+      "completed_at": null,
+      "conclusion": null,
+      "id": 115569821834,
+      "name": "gate (--browser-catalog-core)",
+      "started_at": "2026-10-13T22:18:52Z",
+      "status": "queued"
+    }
+  ]
+}

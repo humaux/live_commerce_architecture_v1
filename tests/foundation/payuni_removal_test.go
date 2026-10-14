@@ -9,6 +9,7 @@
 //
 // Used by: scripts/dev/test-focused.sh '^TestRemovePayuniNotify' (local gate); CI full foundation suite.
 // Invariants: never delete data silently — RM02 pins the RAISE-over-seeded-rows refusal (22023).
+// Historical post-River consumers stay held until their root dependencies exist; RM02 releases only 0161.
 // Status: REAL_PG (no provider is called; seeded rows are synthetic).
 package foundation_test
 
@@ -201,7 +202,7 @@ func TestRemovePayuniNotifyRM02SeededDataBlocks(t *testing.T) {
 	ctx := context.Background()
 	// Every migration from 0161 on is pre-marked so the DB stays at the 0160 state; unmark() releases only 0161,
 	// so later migrations (0162, ...) stay skipped and never run on the half-built schema.
-	versions := rmVersions("0161", "zzz")
+	versions := rmVersions("0161", "0023")
 	n0161 := 0
 	for _, v := range versions {
 		if strings.HasPrefix(v, "0161_") {
@@ -212,6 +213,9 @@ func TestRemovePayuniNotifyRM02SeededDataBlocks(t *testing.T) {
 		t.Fatalf("expected exactly one 0161_* removal migration (first from 0161 on), got %v", versions)
 	}
 	sums := rmChecksums(t, versions)
+	if _, ok := sums["post_river/0023_order_attempt_jobs.sql"]; !ok {
+		t.Fatal("0160 baseline must hold the post-River order-attempt consumer with its unavailable root dependencies")
+	}
 	db := mciStartPG(t)
 	rmSkipLedger(t, db, sums)
 	if err := migrations.Apply(ctx, db); err != nil {
@@ -219,6 +223,9 @@ func TestRemovePayuniNotifyRM02SeededDataBlocks(t *testing.T) {
 	}
 	if rmReg(t, db, "to_regclass", "payments.payuni_notify_receipts") == "" {
 		t.Fatal("0160-state baseline lacks the notify receiver — the skip ledger is wrong")
+	}
+	if n := countRows(t, db, `SELECT count(*) FROM pg_roles WHERE rolname='commerce_order_attempt_owner'`); n != 0 {
+		t.Fatal("0160-state baseline unexpectedly applied the later order-attempt identity migration")
 	}
 	unmark := func() {
 		mustExec(t, db, `DELETE FROM public.lc_schema_migrations WHERE version LIKE '0161_%'`)

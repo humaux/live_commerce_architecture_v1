@@ -263,6 +263,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		add(wr, "claims.lines", "UPDATE", "applied_version")
 		// live-tools 0092: claims.live_prices / preview_live_prices read the offer SKU and live price.
 		add(wr, "live.offers", "SELECT", "tenant_id", "store_id", "id", "session_id", "keyword", "active", "sku_id", "live_price_minor")
+		// 0175: exact lock-only column for the C1 claim-origin FOR SHARE path.
+		add(wr, "live.offers", "UPDATE", "active")
 		add(wr, "identity.sessions", "SELECT", "token_hash", "principal_id", "audience", "revoked_at", "expires_at")
 		// 0105 (R4S-01): the consumption ledger (written only by claims.consume_live_prices), order state for the held-use sum
 		// and the buyer's own quote lines (no order snapshot, no destination, no PII).
@@ -270,6 +272,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		add(wr, "claims.live_price_uses", "INSERT", "tenant_id", "store_id", "bundle_id", "offer_id", "order_id", "quantity", "unit_price_minor")
 		add(wr, "checkout.orders", "SELECT", "tenant_id", "store_id", "owner_id", "id", "creator_session_id", "quote_id", "commercial_state", "created_at")
 		add(wr, "storefront.quotes", "SELECT", "tenant_id", "store_id", "owner_id", "id", "snapshot")
+		// order-attempt-v1 §1: 0185's domain helper proves exact native order/quote provenance; no coordinator table rights.
+		add(wr, "checkout.orders", "SELECT", "create_attempt_id")
+		add(wr, "storefront.quotes", "SELECT", "create_attempt_id", "creator_session_id")
 		// meta-claims-intake-v1 §4.3 rows (exactly; the contract is the source, not the migration).
 		const ci, iw = "commerce_claims_intake", "commerce_integration_writer"
 		add(ci, "live.offers", "SELECT", cols("live.offers")...)
@@ -402,7 +407,11 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				"claims.for_buyer_scope", "claims.for_buyer_peer_state", "claims.for_buyer_lines", "claims.for_buyer_begin", "claims.for_buyer_finish",
 				"claims.for_buyer_release", "claims.bind_merchant_origin_grant",
 				// 0147 (W6-02B): the two report seams it owns (EXECUTE: commerce_auth only).
-				"claims.report_order_bundles", "claims.report_funnel_bundles"})
+				"claims.report_order_bundles", "claims.report_funnel_bundles",
+				// order-attempt-v1 §1: owned private domain helpers (0175/0180/0185), callable only by the coordinator.
+				"claims.order_attempt_admission_origins", "claims.order_attempt_release_admission", "claims.order_attempt_lock_origins", "claims.order_attempt_complete_origins",
+				// 0172/0178: exact C1/current-xid accessors used by those helpers; no direct attempt-table rights.
+				"ops.order_attempt_admission_context", "ops.order_attempt_fence_context", "ops.order_attempt_execution_context"})
 		lcSameSet(t, "schema claims ACL", lcStrings(t, f.owner, `SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END||' '||a.privilege_type
 			FROM pg_namespace n CROSS JOIN LATERAL aclexplode(n.nspacl) a WHERE n.nspname='claims' AND a.grantee<>n.nspowner`),
 			[]string{"commerce_buyer_runtime USAGE", "commerce_claims_writer USAGE", "commerce_runtime USAGE",
@@ -417,7 +426,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				// 0113 R6: the checkout definer freezes anonymous claim provenance.
 				"commerce_checkout_writer USAGE",
 				// 0113 D9: ads reads domain-owned aggregate/source definers only.
-				"commerce_ads_writer USAGE", "commerce_media_writer USAGE"})
+				"commerce_ads_writer USAGE", "commerce_media_writer USAGE",
+				// order-attempt-v1 §1 / 0175: the coordinator resolves only its exact granted domain helpers.
+				"commerce_order_attempt_owner USAGE"})
 		var usage []bool
 		if err := f.owner.QueryRow(ctx, `SELECT ARRAY[has_schema_privilege('commerce_claims_writer','live','USAGE'),has_schema_privilege('commerce_claims_writer','identity','USAGE'),
 			has_schema_privilege('commerce_claims_writer','claims','USAGE')]`).Scan(&usage); err != nil || !usage[0] || !usage[1] || !usage[2] {
@@ -451,6 +462,15 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 	t.Run("definers", func(t *testing.T) {
 		type fnRow struct{ name, args, result, owner, config, volatility, comment, acl, caller string }
 		want := map[string]fnRow{
+			// order-attempt-v1 §1: exact domain-owned helpers, PUBLIC revoked, coordinator-only additional EXECUTE (0175/0180/0185).
+			"order_attempt_admission_origins": {args: "p_attempt uuid, p_selection jsonb", result: "jsonb", volatility: "v",
+				acl: "commerce_claims_writer:EXECUTE,commerce_order_attempt_owner:EXECUTE", comment: "claims C1 internal helper: coordinator only, exact candidate/hash and peer/permission checks, sorted domain locks, server live prices per origin, creator-bound reservation/grant execute_by; no C2 effects or provider calls."},
+			"order_attempt_release_admission": {args: "p_attempt uuid, p_generation bigint", result: "integer", volatility: "v",
+				acl: "commerce_claims_writer:EXECUTE,commerce_order_attempt_owner:EXECUTE", comment: "Private abort admission cleanup: exact fenced attempt/request/hash/original owner/principal; sorted bundle/reservation/grant locks, only pending order-null reservations and unused unbound grants. Retains audit; no unrelated-order gate or compensation."},
+			"order_attempt_lock_origins": {args: "p_attempt uuid, p_plan_plaintext text", result: "text", volatility: "v",
+				acl: "commerce_claims_writer:EXECUTE,commerce_order_attempt_owner:EXECUTE", comment: "Private C2 claim prefix after retained owner locks: exact current-xid plan, sorted bundle/line/reservation/grant locks, original aggregate allowance and native admission custody/deadline. Returns active including manual empty set; typed refusal for unavailable origins. No current Place, session, offer price/active, catalog, order or business writes. Coordinator EXECUTE only."},
+			"order_attempt_complete_origins": {args: "p_attempt uuid, p_plan_plaintext text, p_order uuid", result: "void", volatility: "v",
+				acl: "commerce_claims_writer:EXECUTE,commerce_order_attempt_owner:EXECUTE", comment: "Private C2 claim completion after native attempt Begin under retained prefix: exact native creator/quote owner, frozen ordinal/origin/quantity/price, aggregate live uses only, original accepted-event/source audit including no-live origins, every selected reservation placed, used grants consumed and unused grants expired retaining audit. No earlier lock reacquisition, current Place/window/offer gates, internal commit, receipt or settlement. Coordinator EXECUTE only."},
 			"issue_link": {args: "p_auth_hash bytea, p_store uuid, p_session uuid, p_bundle uuid, p_expected_generation bigint, p_new_hash bytea, p_release boolean",
 				result: "TABLE(generation bigint, expires_at timestamp with time zone, released boolean)", volatility: "v", acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
 			"mark_applied": {args: "p_bundle uuid, p_offers uuid[], p_versions bigint[]", result: "integer", volatility: "v", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_buyer_runtime"},
@@ -591,12 +611,15 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		// 0148 (LC-B7) adds exactly one: console_session_facts.
 		// 0165 (LC-B3b) adds exactly three: buyer_panel_claims, orders_of_bundles, session_peer_linked.
 		// 0129 (LC-B6) adds exactly seven: for_buyer_scope, for_buyer_peer_state, for_buyer_lines, for_buyer_begin, for_buyer_finish, for_buyer_release, bind_merchant_origin_grant.
-		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 46 {
-			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its forty-six (incl. two 0147 report seams) functions (previous twenty-one + two 0118 attribution seams + four 0123 comment read-through definers + one 0130 pick-list seam + seven 0129 for-buyer definers + one 0148 console facts helper + five 0154 blocklist definers/predicates + three 0165 buyer-panel projections)", n)
+		// order-attempt-v1 §1 / 0175/0180/0185 add exactly four functions, no owned tables or schemas.
+		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 50 {
+			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its fifty functions (previous forty-six including two 0147 report seams + four OA1 domain helpers from 0175/0180/0185)", n)
 		}
 		denied := lcStrings(t, f.owner, `SELECT r.rolname||' '||p.proname FROM pg_roles r CROSS JOIN pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 			WHERE n.nspname='claims' AND r.rolname LIKE 'commerce\_%' AND has_function_privilege(r.oid,p.oid,'EXECUTE')
 			  AND NOT (r.rolname='commerce_claims_writer' OR (r.rolname='commerce_runtime' AND p.proname='issue_link')
+			       -- order-attempt-v1 §1 / 0175/0180/0185: only these four private helpers, never a schema-wide or runtime exception.
+			       OR (r.rolname='commerce_order_attempt_owner' AND p.proname IN ('order_attempt_admission_origins','order_attempt_release_admission','order_attempt_lock_origins','order_attempt_complete_origins'))
 			       OR (r.rolname='commerce_buyer_runtime' AND p.proname IN ('preview_link','redeem_link','mark_applied','live_prices','preview_live_prices'))
 			       -- 0103 D1: checkout.Begin's RevalidateQuote; commerce_hosted_runtime inherits commerce_checkout_runtime (0025)
 			       OR (r.rolname IN ('commerce_checkout_runtime','commerce_hosted_runtime') AND p.proname='live_prices')
