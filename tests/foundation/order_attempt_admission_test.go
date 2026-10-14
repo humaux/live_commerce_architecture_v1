@@ -125,11 +125,13 @@ func TestOrderAttemptAdmissionRequiresExactCASAndPlacementGrant(t *testing.T) {
 			defer tx.Rollback(context.Background())
 			var first oaAdmission
 			firstKey := "oa-first-" + randomUUID()
+			// Freeze the request once: each fixture call generates fresh origin IDs.
+			selection := oaFactsSelection(e)
 			if mode == "generation-stale" {
 				// A future generation also fails the previous-terminal check. Use
 				// an actually advanced scope and the old zero-generation CAS so
 				// only the current-generation check gives the typed refusal.
-				first, err = oaPrepare(tx, e, scope, firstKey, oaFactsSelection(e))
+				first, err = oaPrepare(tx, e, scope, firstKey, selection)
 				if err != nil || first.Replay || first.State != "PENDING" || first.Generation != scope.Generation+1 || first.ScopeID != scope.ScopeID || first.AttemptID == "" {
 					t.Fatal("real first prepare must advance the scope before stale CAS", err)
 				}
@@ -146,7 +148,7 @@ func TestOrderAttemptAdmissionRequiresExactCASAndPlacementGrant(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			_, err = oaPrepare(tx, e, scope, "oa-refuse-"+randomUUID(), oaFactsSelection(e))
+			_, err = oaPrepare(tx, e, scope, "oa-refuse-"+randomUUID(), selection)
 			var pgerr *pgconn.PgError
 			if !errors.As(err, &pgerr) || pgerr.Code != want {
 				t.Fatalf("C1 %s refused incorrectly: %v", mode, err)
@@ -167,7 +169,7 @@ func TestOrderAttemptAdmissionRequiresExactCASAndPlacementGrant(t *testing.T) {
 				if err != nil || current.ScopeID != scope.ScopeID || current.Generation != first.Generation || current.AttemptID == nil || *current.AttemptID != first.AttemptID {
 					t.Fatal("stale CAS altered the winning scope authority", err)
 				}
-				replay, replayErr := oaPrepare(tx, e, scope, firstKey, oaFactsSelection(e))
+				replay, replayErr := oaPrepare(tx, e, scope, firstKey, selection)
 				if replayErr != nil || !replay.Replay || replay.AttemptID != first.AttemptID || replay.Generation != first.Generation || replay.State != first.State {
 					t.Fatal("stale CAS altered the exact-key winning attempt", replayErr)
 				}

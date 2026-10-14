@@ -208,12 +208,14 @@ func TestOrderAttemptClaimAdmissionOriginsDeadlineAndLegacyFence(t *testing.T) {
 	}
 	oaStateExec(t, tx, `RESET ROLE`)
 	var reservations, grants int
+	// This unfinished C1 fixture has no sealed provenance yet. Use its known
+	// authenticated principal for the exact digest; an absent JSON field is NULL.
 	if err := tx.QueryRow(context.Background(), `SELECT
 	 (SELECT count(*) FROM inbox.order_for_buyer r JOIN ops.order_attempts a ON a.attempt_id=r.create_attempt_id
 	 WHERE a.attempt_id=$1 AND r.request_id=a.attempt_id AND r.buyer_id=a.buyer_owner_id AND r.tenant_id=a.tenant_id AND r.store_id=a.store_id
-	 AND r.expires_at=a.execute_by AND r.request_hash=sha256(convert_to('order-attempt-custody/v1|'||a.tenant_id::text||'|'||a.store_id::text||'|'||a.attempt_id::text||'|'||a.intent_generation::text||'|'||a.buyer_owner_id::text||'|'||(a.admission_provenance->>'principal_id')::uuid::text,'UTF8')) AND r.state='pending'),
+	 AND r.expires_at=a.execute_by AND r.principal_id=$2::uuid AND r.request_hash=sha256(convert_to('order-attempt-custody/v1|'||a.tenant_id::text||'|'||a.store_id::text||'|'||a.attempt_id::text||'|'||a.intent_generation::text||'|'||a.buyer_owner_id::text||'|'||$2::uuid::text,'UTF8')) AND r.state='pending'),
 	 (SELECT count(*) FROM claims.merchant_origin_grants g JOIN ops.order_attempts a ON a.attempt_id=g.create_attempt_id
-	 WHERE a.attempt_id=$1 AND g.request_id=a.attempt_id AND g.buyer_id=a.buyer_owner_id AND g.expires_at=a.execute_by)`, attempt).Scan(&reservations, &grants); err != nil || reservations != 2 || grants != 2 {
+	 WHERE a.attempt_id=$1 AND g.request_id=a.attempt_id AND g.buyer_id=a.buyer_owner_id AND g.expires_at=a.execute_by)`, attempt, e.p.f.principalA).Scan(&reservations, &grants); err != nil || reservations != 2 || grants != 2 {
 		t.Fatalf("exact owner/deadline/count binding: reservations=%d grants=%d err=%v", reservations, grants, err)
 	}
 	// Storefront must not borrow the still-unbound attempt grant, even for its owner.
