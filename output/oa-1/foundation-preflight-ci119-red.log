@@ -1,0 +1,47 @@
+foundation	Dependency map is current	﻿2026-10-14T00:13:12.3101879Z ##[group]Run bash scripts/dev/depmap.sh --check
+foundation	Dependency map is current	2026-10-14T00:13:12.3102351Z [36;1mbash scripts/dev/depmap.sh --check[0m
+foundation	Dependency map is current	2026-10-14T00:13:12.3166192Z shell: /usr/bin/bash -e {0}
+foundation	Dependency map is current	2026-10-14T00:13:12.3166597Z env:
+foundation	Dependency map is current	2026-10-14T00:13:12.3166864Z   GOTOOLCHAIN: local
+foundation	Dependency map is current	2026-10-14T00:13:12.3167097Z   GOFLAGS: -mod=readonly
+foundation	Dependency map is current	2026-10-14T00:13:12.3167379Z ##[endgroup]
+foundation	Dependency map is current	2026-10-14T00:13:12.5385151Z go: downloading github.com/riverqueue/river v0.40.0
+foundation	Dependency map is current	2026-10-14T00:13:12.5403616Z go: downloading github.com/riverqueue/river/riverdriver/riverpgxv5 v0.40.0
+foundation	Dependency map is current	2026-10-14T00:13:12.5538842Z go: downloading github.com/jackc/pgx/v5 v5.11.0
+foundation	Dependency map is current	2026-10-14T00:13:12.6858046Z go: downloading github.com/riverqueue/river/riverdriver v0.40.0
+foundation	Dependency map is current	2026-10-14T00:13:12.7642467Z go: downloading golang.org/x/image v0.46.0
+foundation	Dependency map is current	2026-10-14T00:13:12.7774022Z go: downloading golang.org/x/text v0.42.0
+foundation	Dependency map is current	2026-10-14T00:13:12.7809712Z go: downloading golang.org/x/crypto v0.57.0
+foundation	Dependency map is current	2026-10-14T00:13:13.0056115Z go: downloading golang.org/x/net v0.60.0
+foundation	Dependency map is current	2026-10-14T00:13:13.1154990Z go: downloading github.com/jackc/puddle/v2 v2.2.2
+foundation	Dependency map is current	2026-10-14T00:13:13.1342501Z go: downloading github.com/riverqueue/river/rivershared v0.40.0
+foundation	Dependency map is current	2026-10-14T00:13:13.1755388Z go: downloading github.com/riverqueue/river/rivertype v0.40.0
+foundation	Dependency map is current	2026-10-14T00:13:13.2007422Z go: downloading github.com/coreos/go-oidc/v3 v3.21.0
+foundation	Dependency map is current	2026-10-14T00:13:13.2365097Z go: downloading golang.org/x/oauth2 v0.37.0
+foundation	Dependency map is current	2026-10-14T00:13:13.2684745Z go: downloading github.com/jackc/pgpassfile v1.0.0
+foundation	Dependency map is current	2026-10-14T00:13:13.2843671Z go: downloading github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761
+foundation	Dependency map is current	2026-10-14T00:13:13.3235650Z go: downloading golang.org/x/sys v0.48.0
+foundation	Dependency map is current	2026-10-14T00:13:13.3780443Z go: downloading golang.org/x/sync v0.23.0
+foundation	Dependency map is current	2026-10-14T00:13:13.3782291Z go: downloading github.com/tidwall/gjson v1.19.0
+foundation	Dependency map is current	2026-10-14T00:13:13.3783257Z go: downloading github.com/tidwall/sjson v1.2.5
+foundation	Dependency map is current	2026-10-14T00:13:13.4091132Z go: downloading github.com/go-jose/go-jose/v4 v4.1.4
+foundation	Dependency map is current	2026-10-14T00:13:13.4189642Z go: downloading github.com/stretchr/testify v1.11.1
+foundation	Dependency map is current	2026-10-14T00:13:13.4192015Z go: downloading go.uber.org/goleak v1.3.0
+foundation	Dependency map is current	2026-10-14T00:13:13.4549506Z go: downloading github.com/tidwall/match v1.2.0
+foundation	Dependency map is current	2026-10-14T00:13:13.4632870Z go: downloading github.com/tidwall/pretty v1.2.1
+foundation	Dependency map is current	2026-10-14T00:13:13.4678854Z go: downloading github.com/davecgh/go-spew v1.1.1
+foundation	Dependency map is current	2026-10-14T00:13:13.4813173Z go: downloading github.com/pmezard/go-difflib v1.0.0
+foundation	Dependency map is current	2026-10-14T00:13:13.4889147Z go: downloading gopkg.in/yaml.v3 v3.0.1
+foundation	Dependency map is current	2026-10-14T00:13:14.0440087Z depmap: docs/engineering/dependency-map.md is stale; run: bash scripts/dev/depmap.sh
+foundation	Dependency map is current	2026-10-14T00:13:14.0462323Z --- docs/engineering/dependency-map.md	2026-10-14 00:12:54.638154614 +0000
+foundation	Dependency map is current	2026-10-14T00:13:14.0463202Z +++ /tmp/tmp.4HtGN6Yx9r	2026-10-14 00:13:14.038027726 +0000
+foundation	Dependency map is current	2026-10-14T00:13:14.0463784Z @@ -23,7 +23,7 @@
+foundation	Dependency map is current	2026-10-14T00:13:14.0464373Z  
+foundation	Dependency map is current	2026-10-14T00:13:14.0464726Z  ## `cmd/api`
+foundation	Dependency map is current	2026-10-14T00:13:14.0465113Z  
+foundation	Dependency map is current	2026-10-14T00:13:14.0467387Z -Purpose: live-console-v1 §2.3/§2.4 (unit LC-B2) — the API-side comment read-through assembly: the bridge client (shared 32-byte bearer against the claims-worker's internal bridge listener) plus the optional Meta payload keyring for the Instagram webhook fallback (social.read_comment_events → the API decrypts, §2.4).
+foundation	Dependency map is current	2026-10-14T00:13:14.0468967Z +Purpose: refuse API startup when buyer participants use a different physical database.
+foundation	Dependency map is current	2026-10-14T00:13:14.0469422Z  
+foundation	Dependency map is current	2026-10-14T00:13:14.0473007Z  - Depends on (internal): `internal/ads`, `internal/attribution`, `internal/billing`, `internal/buyer`, `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/fulfillment`, `internal/httpapi`, `internal/httperror`, `internal/identity`, `internal/identityhttp`, `internal/inbox`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta/oauth`, `internal/integrations/meta/pagetoken`, `internal/integrations/meta_ads`, `internal/integrations/metabridge`, `internal/integrations/psp/stripe`, `internal/integrations/shipping/ecpay`, `internal/live`, `internal/mail`, `internal/merchanttools`, `internal/metaconnect`, `internal/msgtemplates`, `internal/oidclogin`, `internal/payments`, `internal/payments/stripewebhook`, `internal/platform`, `internal/tlsask`
+foundation	Dependency map is current	2026-10-14T00:13:14.0478503Z  - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
+foundation	Dependency map is current	2026-10-14T00:13:14.0492642Z ##[error]Process completed with exit code 1.

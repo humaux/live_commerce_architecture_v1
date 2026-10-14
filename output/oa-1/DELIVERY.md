@@ -845,3 +845,30 @@ Exact logs: `foundation-d599-scanner-red.log`, `plan-d599-scanner-red.log`.
 unchanged scanner's current PR plan/Foundation receipts with errors=0, followed
 by all required gates and independent acceptance. Whole-unit status: NOT READY.
 All local tests/builds/formatters/PG remain NOT_RUN (owner CI-only).
+
+Registered on exact `ab62e460072debc497bd56ee12a3afb22128d157`:
+
+- CI119 `38488758453`: normal `focused:^TestOrderAttempt` (full native group),
+  `focused:^TestBuyerHTTPAPIAssemblyRealPoolCleanup$`, and model/CI-only authoring.
+  Jobs `115609018709`, `115609018782`, `115609018839`; pending.
+- CI120 `38488762513`: `api-preflight-bypass` mutation and unchanged
+  `focused:^TestOrderAttemptProcessAPIRejectsSplitBuyerPools$`, job
+  `115609117886`; expected causal RED, pending. No ordinary PR calibration env.
+- PR Gates `38488720080`, plan `115608564962`: **GREEN**, unchanged scanner
+  **errors=0**, `plan-preflight-green-ci119.log:521`. This closes the original
+  71-error probe/factory cause in the actual required plan, without a scanner
+  patch. Full required result remains pending.
+- PR Foundation `38488720074`, job `115608584842`: RED in dependency-map
+  metadata; native/Node/check-gates steps NOT_RUN. Exact CI-generated difference
+  is the one `cmd/api` package-doc line in
+  `foundation-preflight-ci119-red.log:39–46`; applied verbatim to the generated
+  file, without a local generator. The temporary authoring step is removed
+  from the final workflow; its already registered dispatch remains pinned to
+  `ab62e4600` and will supply format/metadata artifacts. Final required runs
+  will verify the committed map and source normally.
+
+Independent static preflight review found no concrete issue (E1, Humaux
+`7fc60421-44c2-4a8c-9408-78ee6052ef4d`). It is not runtime acceptance.
+The physical probe proves the trusted configured routing at startup; future
+retargeting remains governed by the existing deployment primary pin.
+Final required Foundation and all selected modes remain pending, NOT READY.
