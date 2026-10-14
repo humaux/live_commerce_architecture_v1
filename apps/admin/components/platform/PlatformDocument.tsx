@@ -1,3 +1,6 @@
+// Purpose: Renders the platform legal/contact documents and the About page, with the single-source company facts block.
+// Depends on: lib/company (company facts, paths, ownership sentence), lib/platform-copy, lib/platform-legal.
+// Used by: app/(public)/site/[locale]/[page]/page.tsx.
 import {
   company,
   companyConfig,

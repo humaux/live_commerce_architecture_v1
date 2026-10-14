@@ -1,3 +1,6 @@
+// Purpose: Localized UI copy (zh-TW, zh-CN, en) for the public platform site: home, nav, about paragraphs, company labels.
+// Depends on: lib/company types only.
+// Used by: components/platform/*, app/(public)/site/[locale]/*.
 import type { PlatformLocale, PlatformPage } from "./company";
 
 type Copy = {
