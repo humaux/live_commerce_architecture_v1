@@ -727,6 +727,8 @@ test.describe("PE-FIX-1 media failure, recovery and editor lock", () => {
   const ec = productEditorCopy["zh-TW"];
   const page_ = "admin editor (zh-TW/1440) PE-FIX-1";
   const imagesPath = `/api/stores/${store}/products/${product.id}/images`;
+  // FIXTURE matcher: route by pathname — a bare path string is matched against the full URL (host + ?role=…) and never fires.
+  const imagesRoute = (url: URL) => url.pathname === imagesPath;
   const editorURL = `${origin}/zh-TW/products/${product.id}?store=${store}`;
   const smallDetail = () =>
     manifest.files.detail.filter(
@@ -807,7 +809,7 @@ test.describe("PE-FIX-1 media failure, recovery and editor lock", () => {
     );
 
     // FIXTURE: the edge answers 413 with a non-JSON body.
-    await page.route(imagesPath, (route) =>
+    await page.route(imagesRoute, (route) =>
       route.request().method() === "POST"
         ? route.fulfill({
             status: 413,
@@ -896,7 +898,7 @@ test.describe("PE-FIX-1 media failure, recovery and editor lock", () => {
     );
     await page.getByTestId("product-save").click();
     expect((await restored).status()).toBe(200);
-    await page.unroute(imagesPath);
+    await page.unroute(imagesRoute);
   });
 
   test("a batch of three continues after the failed second file and names it", async ({
@@ -909,7 +911,7 @@ test.describe("PE-FIX-1 media failure, recovery and editor lock", () => {
     const before = await page.getByTestId("photo-row-detail").count();
     // FIXTURE: only the second upload of the batch is refused; the others reach the real backend.
     let seen = 0;
-    await page.route(imagesPath, (route) => {
+    await page.route(imagesRoute, (route) => {
       if (route.request().method() !== "POST") return route.fallback();
       return ++seen === 2
         ? route.fulfill({
@@ -950,7 +952,7 @@ test.describe("PE-FIX-1 media failure, recovery and editor lock", () => {
       "2/3 saved and the failed file named; saved photos survive reload",
       `${before} -> ${before + 2}`,
     );
-    await page.unroute(imagesPath);
+    await page.unroute(imagesRoute);
     // Cleanup through the real delete button so the harness readback still sees six detail images.
     await removeDetail(page, before + 2);
     await removeDetail(page, before + 1);
@@ -965,7 +967,7 @@ test.describe("PE-FIX-1 media failure, recovery and editor lock", () => {
     const renamed = `${original} PE2`;
     const documentPath = `/api/stores/${store}/products/${product.id}/document`;
     // FIXTURE: the image-list read fails; every other request reaches the real backend.
-    await page.route(imagesPath, (route) =>
+    await page.route(imagesRoute, (route) =>
       route.request().method() === "GET"
         ? route.fulfill({
             status: 500,
@@ -991,7 +993,7 @@ test.describe("PE-FIX-1 media failure, recovery and editor lock", () => {
       (await saved).status(),
       "save is sent although the image list is unknown",
     ).toBe(200);
-    await page.unroute(imagesPath);
+    await page.unroute(imagesRoute);
     await page.reload();
     await expect(
       page.getByTestId("product-name"),
@@ -1026,7 +1028,7 @@ test.describe("PE-FIX-1 media failure, recovery and editor lock", () => {
     // FIXTURE: hold the upload open so the editor stays locked, then refuse it.
     let release!: () => void;
     const gate = new Promise<void>((resolve) => (release = resolve));
-    await page.route(imagesPath, async (route) => {
+    await page.route(imagesRoute, async (route) => {
       if (route.request().method() !== "POST") return route.fallback();
       await gate;
       return route.fulfill({
@@ -1075,7 +1077,7 @@ test.describe("PE-FIX-1 media failure, recovery and editor lock", () => {
       page.getByTestId("product-leave-blocked"),
       "message clears once the upload settles",
     ).toHaveCount(0);
-    await page.unroute(imagesPath);
+    await page.unroute(imagesRoute);
   });
 });
 
