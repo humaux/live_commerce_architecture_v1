@@ -2,6 +2,7 @@
 // Depends on: isolated mrFixture roles and buyerintegration cmd/api child gate.
 // Used by: OA1 focused CI; no production settings or database are forwarded.
 // Invariants: same database names cannot substitute for actual physical pool proof.
+
 package foundation_test
 
 import (

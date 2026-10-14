@@ -2,6 +2,7 @@
 // Depends on: captured buyerConfig and validation-only retained ManualOrders API.
 // Used by: run after factory cleanup is registered and before handler assembly.
 // Invariants: disabled is a no-op; enabled fails closed; factory and pool ownership stay intact.
+
 package main
 
 import "context"

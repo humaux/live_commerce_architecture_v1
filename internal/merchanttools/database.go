@@ -2,6 +2,7 @@
 // Depends on: buyer, checkout and platform physical database proof.
 // Used by: API startup after unchanged buyer factory assembly.
 // Invariants: all participants share main's physical database; validation owns no pools.
+
 package merchanttools
 
 import (

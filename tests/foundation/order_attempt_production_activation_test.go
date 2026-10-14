@@ -14,7 +14,7 @@ import (
 )
 
 // This packaging pin complements the actual disabled claims-worker process lane
-// in TestOrderAttemptWorkerEnabledProcess. It does not claim to run Compose or a
+// in TestOrderAttemptWorkerEnabledProcessNativeReady. It does not run Compose or a
 // process: native execution/cleanup remains that gate's independent obligation.
 func TestOrderAttemptProductionActivationRemainsDisabled(t *testing.T) {
 	body, err := os.ReadFile(filepath.Join("..", "..", "deploy", "compose.yml"))

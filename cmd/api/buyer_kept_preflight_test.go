@@ -2,6 +2,7 @@
 // Depends on: buyerKeptDatabasePreflight startup seam.
 // Used by: OA1 cmd/api unit CI.
 // Invariants: disabled needs no dependencies; enabled cannot accept absent held pools.
+
 package main
 
 import (

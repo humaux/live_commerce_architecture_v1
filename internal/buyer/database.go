@@ -2,6 +2,7 @@
 // Depends on: platform physical database proof and the service's private issuer pool.
 // Used by: merchanttools startup validation.
 // Invariants: no credentials or pool getters; callers retain ownership of both pools.
+
 package buyer
 
 import (

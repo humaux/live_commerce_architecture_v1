@@ -4,6 +4,7 @@
 // Depends on: captured fixture DSNs, API factory and PostgreSQL connection readback.
 // Used by: TestBuyerKeptPoolPreflightActualFactory isolated foundation child.
 // Invariants: held participants match main DB; all cleanup preserves main connection.
+
 package main
 
 import (
