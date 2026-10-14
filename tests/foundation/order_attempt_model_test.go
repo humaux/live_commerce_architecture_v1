@@ -476,6 +476,9 @@ func TestOrderAttemptModelOracleMutations(t *testing.T) {
 			switch name {
 			case "drop_lock":
 				before.drafts[0] = oaModelDraft{}
+				// A legal crash/release clears both draft and fence. The mutant
+				// then commits the old effects without reacquiring either one.
+				before.attempts[0].executionLocks = 0
 			case "partial_C2":
 				after = pending
 				after.attempts[0].effects[0] = 1

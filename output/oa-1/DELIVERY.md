@@ -1070,3 +1070,44 @@ No local test, build, formatter, script runner, server, container or PG was run.
 Current required gates, current mutation receipts and independent delta review
 are pending: **NOT READY**. The existing 15-minute same-thread heartbeat remains
 the wakeup owner; CI jobs stay SHA-pinned and budgets/thresholds unchanged.
+# Round-1 consolidated continuation: CI128 regression receipts
+
+Source `c957c1dd34894f0fcaa3796fc71a3b8da3881435`, normal workflow-dispatch
+CI128 `38499039933`, no calibration environment:
+
+- Native job `115641520845`: **RED, PASS=3 FAIL=7**, raw
+  `round1-native-ci128.log:751`. C1 shared-key concurrency passes. The valid
+  native C2 continuations fail because `0189` terminal facts still compared the
+  old selection digest after `0184` changed its Begin receipt to the non-PII
+  six-field custody digest. The fix aligns only that receipt predicate;
+  all remaining native terminal proofs stay intact.
+- Model job `115641520814`: **RED, PASS=4 FAIL=1**,
+  `round1-model-ci128.log:785`. The existing `drop_lock` mutant cleared its draft
+  but left the newly modelled fence, so the independent observer correctly
+  rejected the mutant's *baseline*. It did not escape the oracle. Clear both
+  draft and fence to represent a legal crash, then require the unchanged
+  transition oracle to reject a commit without reacquiring either one.
+- Erasure job `115641520804`: **RED, PASS=1 FAIL=1**,
+  `erasure-barrier-ci128.log:727`. The C2-first test returns
+  ABORTED(payment_unavailable) **before erasure starts**. Source-supported cause:
+  isolated stock price 1250, quantity five and COD surcharge 3500 yield 9750
+  minor TWD, rejected by native whole-TWD rules. Prepare a whole-TWD price using
+  `catalog.SetSKUPrice` before C1 and positively assert the frozen total. Both
+  `pg_blocking_pids` edges, commercial-proof predicates and 8-second budget remain.
+  Erasure-first private-owner and linked-customer cases pass.
+- Actual kept-pool job `115641520823`: **GREEN, PASS=1 FAIL=0 exit=0**,
+  `kept-pool-green-ci128.log:724`; this is real cross-pool proof for the kept
+  factory pools, independently of the short-lived preflight.
+- Production pin job `115641520869`: **RED, PASS=0 FAIL=1**, both API and worker
+  subcases, `production-pin-red-ci128.log:720–729`. Set a literal disabled flag
+  in each production Compose service until the explicitly deferred OA2
+  notification/cancel cutover is independently accepted. Native CI opt-in stays
+  available; there is no deployment or runtime-budget change.
+
+CI129 `38499182388` is separately registered on the same exact c957 source for
+the correctly named native PT-disposition tests plus isolated sweep/crash/resume
+coverage. It is not a green receipt and is not replaced by a subset. No local
+test, build, formatter, dev server or PG was run. These regression fixes await
+fresh CI; the complete unit is **NOT_READY**. Permanent plan-key-loss authority
+still awaits the owner's requested contract clarification; local ring absence
+remains retryable PENDING and cannot justify PLAN_UNAVAILABLE.

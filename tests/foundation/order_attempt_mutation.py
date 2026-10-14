@@ -30,6 +30,16 @@ def main():
         raise SystemExit("OA mutations run only in disposable GitHub CI checkouts")
     name = os.environ.get("LC_OA_MUTATION", "")
     edits = {
+        "production-enable-api": [(
+            "deploy/compose.yml",
+            '      LC_ORDER_ATTEMPT_ENABLED: "0"\n      COMMERCE_IDENTITY_ENABLED:',
+            '      LC_ORDER_ATTEMPT_ENABLED: "1"\n      COMMERCE_IDENTITY_ENABLED:',
+        )],
+        "production-enable-worker": [(
+            "deploy/compose.yml",
+            '      LC_ORDER_ATTEMPT_ENABLED: "0"\n      # Two logins, two authorities, one database:',
+            '      LC_ORDER_ATTEMPT_ENABLED: "1"\n      # Two logins, two authorities, one database:',
+        )],
         "api-preflight-bypass": [(
             "cmd/api/main.go",
             "\tif err = buyerDatabasePreflight(startup, buyerConfig, pool); err != nil {\n"

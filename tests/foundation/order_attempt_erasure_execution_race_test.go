@@ -19,6 +19,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
+	"livecommerce/internal/catalog"
 	"livecommerce/internal/claims"
 	"livecommerce/internal/customers"
 	"livecommerce/internal/fulfillment"
@@ -52,6 +53,24 @@ func oaAreaIsolated(t *testing.T) *lbuEnv {
 	e.origin = "https://oa-area-" + strings.ReplaceAll(randomUUID(), "-", "") + ".example"
 	bhPublish(t, e.p.bcHarness, e.origin, e.tenant(), e.store())
 	return e
+}
+
+// COD accepts whole TWD only. The shared stock seed is 1250 minor units;
+// prepare this positive fixture through the native price writer before C1.
+func oaAreaWholeTWDPrice(t *testing.T, e *lbuEnv) {
+	t.Helper()
+	e.grantCreator("catalog:write")
+	ctx := context.Background()
+	var version int64
+	if err := e.p.f.owner.QueryRow(ctx, `SELECT version FROM catalog.skus WHERE tenant_id=$1 AND store_id=$2 AND id=$3`, e.tenant(), e.store(), e.money).Scan(&version); err != nil {
+		t.Fatal("native COD price prerequisite", err)
+	}
+	priced, err := t04Scoped(ctx, e.p.f, e.token(), e.store(), "catalog:write", func(tx pgx.Tx, scope platform.Scope) (catalog.SKU, error) {
+		return catalog.SetSKUPrice(ctx, tx, scope, t04Key("oa-cod-whole-twd"), e.money, catalog.PriceInput{PriceMinor: 1300, ExpectedVersion: version})
+	})
+	if err != nil || priced.PriceMinor != 1300 || priced.Version != version+1 {
+		t.Fatal("native COD whole-TWD price control", err)
+	}
 }
 
 func oaAreaRuntime(t *testing.T, e *lbuEnv) (*pgxpool.Pool, int32) {
@@ -146,8 +165,12 @@ func oaAreaCommercialSnapshot(t *testing.T, e *lbuEnv, attempt string) []byte {
 func TestOrderAttemptC2FenceBeforeErasureRetainsCommercialProof(t *testing.T) {
 	e := oaAreaIsolated(t)
 	e.grantCreator("customers:privacy")
+	oaAreaWholeTWDPrice(t, e)
 	a := oaAllocationAdmit(t, e, oaBeginSelection(t, e, "cash_on_delivery", "duplicate-origins"))
 	plan, _ := oaMaterialPlan(t, e, oaServiceKeys(t), a.AttemptID)
+	if plan.Calculation.TotalMinor <= 0 || plan.Calculation.TotalMinor%100 != 0 {
+		t.Fatal("frozen COD amount must reach the execution/erasure barrier")
+	}
 	var indexed bool
 	if err := e.p.f.owner.QueryRow(context.Background(), `SELECT state='PENDING' AND plan_ciphertext IS NOT NULL
 	 AND EXISTS(SELECT 1 FROM ops.order_attempt_subjects s WHERE s.attempt_id=a.attempt_id)

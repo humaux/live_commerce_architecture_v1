@@ -62,7 +62,8 @@ BEGIN
   OR NOT EXISTS(SELECT 1 FROM checkout.command_results c WHERE c.tenant_id=tenant AND c.store_id=store
    AND c.owner_id=buyer_id AND c.operation='checkout.begin' AND c.idempotency_key=p_attempt::text
    AND c.order_id=o.id AND c.creator_kind='order_attempt' AND c.create_attempt_id=p_attempt
-   AND c.creator_session_id IS NULL AND c.request_hash=sha256(convert_to((plan->'facts'->'selection')::text,'UTF8'))
+   AND c.creator_session_id IS NULL AND c.request_hash=sha256(convert_to('order-attempt-custody/v1|'||tenant::text||'|'||store::text||'|'||p_attempt::text
+    ||'|'||(binding->>'generation')::bigint::text||'|'||buyer_id::text||'|'||(binding->>'principal_id')::uuid::text,'UTF8'))
    AND c.response=jsonb_build_object('order_id',o.id,'reservation_id',o.id,'generation',1,
     'expires_at',o.expires_at,'job_id',o.job_id,'payment_mode',mode,'commercial_state',state))
   OR NOT EXISTS(SELECT 1 FROM checkout.order_pay_entries e WHERE e.tenant_id=tenant AND e.store_id=store

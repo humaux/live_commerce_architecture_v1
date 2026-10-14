@@ -88,10 +88,14 @@ func TestOrderAttemptNativeMaxPerOrderRevocationSealsLimitExceeded(t *testing.T)
 
 func TestOrderAttemptNativeOfflineCapacitySealsLimitExceeded(t *testing.T) {
 	e := oaAreaIsolated(t)
+	oaAreaWholeTWDPrice(t, e)
 	e.cvsSettings(tcvAllChains, true, "20000", 1)
 	selection := oaBeginSelection(t, e, "cash_on_delivery", "duplicate-origins")
 	a := oaAllocationAdmit(t, e, selection)
 	plan, _ := oaMaterialPlan(t, e, oaServiceKeys(t), a.AttemptID)
+	if plan.Calculation.TotalMinor <= 0 || plan.Calculation.TotalMinor%100 != 0 {
+		t.Fatal("native capacity control requires a valid whole-TWD COD amount")
+	}
 	// A different authenticated principal admits and completes a different owner
 	// after this C1. Its real native order fills the store's offline capacity.
 	token, principal := e.tcvEnv.member("catalog:read", "inventory:reserve", "orders:read")
