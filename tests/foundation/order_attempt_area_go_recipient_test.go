@@ -19,6 +19,15 @@ import (
 )
 
 func TestOrderAttemptAreaGoAuthenticatedRecipientRefusalCommitsVoid(t *testing.T) {
+	oaAreaGoAuthenticatedRecipient(t, false)
+}
+
+func TestOrderAttemptAreaGoAuthenticatedMessageInvariantRetainsPending(t *testing.T) {
+	oaAreaGoAuthenticatedRecipient(t, true)
+}
+
+func oaAreaGoAuthenticatedRecipient(t *testing.T, invalidMessage bool) {
+	t.Helper()
 	e := lbuNew(t)
 	session, offer := e.session("A1", ltgLive, 5)
 	bundle := e.h.accepted(t, session, "", "recipient-"+t04Tag(), "A1+2").BundleID
@@ -28,6 +37,7 @@ func TestOrderAttemptAreaGoAuthenticatedRecipientRefusalCommitsVoid(t *testing.T
 	selection := oaClaimSelection(e, []string{bundle}, []string{offer.ID}, conversation)
 	selection["send_payment_link"] = true
 	a := oaAllocationAdmit(t, e, selection)
+	originalIntent := oaSweepIntent(t, e, a.AttemptID)
 	plan, _ := oaMaterialPlan(t, e, oaServiceKeys(t), a.AttemptID)
 	pool := miPool(t, e.p.f, "commerce_claims_worker")
 	s := oaNotificationResumeScenario{oaCrashScenario: oaCrashScenario{
@@ -86,6 +96,13 @@ func TestOrderAttemptAreaGoAuthenticatedRecipientRefusalCommitsVoid(t *testing.T
 		t.Fatal("signed baseline lacks its native sender/recipient")
 	}
 	delete(unit, "sender")
+	if invalidMessage {
+		message, ok := unit["message"].(map[string]any)
+		if !ok {
+			t.Fatal("signed baseline lacks a native message")
+		}
+		message["mid"] = ""
+	}
 	plain, err := json.Marshal(unit)
 	if err != nil {
 		t.Fatal(err)
@@ -156,6 +173,24 @@ func TestOrderAttemptAreaGoAuthenticatedRecipientRefusalCommitsVoid(t *testing.T
 		event, e.tenant(), e.store(), faultHash, faultNonce, faultCiphertext, a.AttemptID, conversation).Scan(&exactFault)
 	if err != nil || !exactFault {
 		t.Fatalf("authenticated historical recipient fault not installed: exact=%v err=%v", exactFault, err)
+	}
+	if invalidMessage {
+		out, executionErr := s.executor.Execute(ctx, "", "", a.AttemptID, a.Generation)
+		if executionErr == nil || out.State != "" || len(out.Receipt) != 0 {
+			t.Fatal("a malformed message must not become a recipient-only VOID")
+		}
+		oaExecutorNoEffects(t, e, a)
+		if oaSweepIntent(t, e, a.AttemptID) != originalIntent {
+			t.Fatal("message invariant failure changed frozen admission")
+		}
+		var pending bool
+		err = e.p.f.owner.QueryRow(ctx, `SELECT a.state='PENDING' AND a.receipt IS NULL AND a.order_id IS NULL
+		 AND coalesce((SELECT jsonb_agg(id ORDER BY id) FROM river.river_job WHERE kind='external_operation_v1'),'[]'::jsonb)=$2::jsonb
+		 FROM ops.order_attempts a WHERE a.attempt_id=$1`, a.AttemptID, string(s.externalJobsBefore)).Scan(&pending)
+		if err != nil || !pending {
+			t.Fatalf("message invariant must retain PENDING and exact external job set: pending=%v err=%v", pending, err)
+		}
+		return
 	}
 	// This shared oracle retains every native claim, source, hold, pay-entry,
 	// expiry, audit and immutable receipt assertion, plus the exact job-ID set.
