@@ -1,0 +1,155 @@
+HARNESS-POOL-RELEASE native RED receipt
+head=a6d47a64a65d29f2d98922e507abe11d30f1c9de
+run=https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38508131962 attempt=1
+job=115670973680 actual=2026-10-14T03:52:53Z..2026-10-14T03:55:39Z conclusion=failure
+artifact=11869066888 digest=sha256:a4723ab74ab7fa522870f63f97a291e2fd3a9bc127c214a86d196a788721538e
+raw_job_sha256=4c439b50c8d66debdf4348a5ef2887243c294a7d998bb29ef2fa3eb23c667f66
+body below is the complete downloaded gate log; local runtime NOT_RUN.
+Deliberate native family demand proves the new guard, not a historical instantaneous peak.
+
+
+> live-commerce-workspace@ build:admin /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 28ms
+⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 10.1s
+  Running TypeScript ...
+  Finished TypeScript in 1836ms ...
+  Collecting page data using 3 workers ...
+  Generating static pages using 3 workers (0/15) ...
+  Generating static pages using 3 workers (3/15) 
+  Generating static pages using 3 workers (7/15) 
+  Generating static pages using 3 workers (11/15) 
+✓ Generating static pages using 3 workers (15/15) in 163ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/ads
+├ ƒ /[locale]/ads/attribution
+├ ƒ /[locale]/billing
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/customers
+├ ƒ /[locale]/customers/[customer]
+├ ƒ /[locale]/customers/import
+├ ƒ /[locale]/design
+├ ƒ /[locale]/finance
+├ ƒ /[locale]/finance/reports
+├ ƒ /[locale]/inventory
+├ ƒ /[locale]/invite/[token]
+├ ƒ /[locale]/messages
+├ ƒ /[locale]/orders
+├ ƒ /[locale]/orders/cvs-print
+├ ƒ /[locale]/orders/new
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[product]
+├ ƒ /[locale]/products/import
+├ ƒ /[locale]/promotions
+├ ƒ /[locale]/reset
+├ ƒ /[locale]/returns
+├ ƒ /[locale]/settings
+├ ƒ /[locale]/settings/operations
+├ ƒ /[locale]/settings/payments/card
+├ ƒ /[locale]/settings/settlements
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/studio
+├ ƒ /[locale]/studio/claims
+├ ƒ /[locale]/studio/console
+├ ƒ /[locale]/studio/settings
+├ ƒ /[locale]/team
+├ ƒ /api/ads/meta/callback
+├ ƒ /api/ads/meta/connect
+├ ƒ /api/auth/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/password/login
+├ ƒ /api/auth/password/reset
+├ ƒ /api/auth/password/signup
+├ ƒ /api/auth/password/verify
+├ ƒ /api/meta/callback
+├ ƒ /api/meta/connect
+├ ƒ /api/onboarding/initial-store
+├ ƒ /api/stores
+├ ƒ /api/stores/[store]/[...resource]
+├ ƒ /api/stores/[store]/customers
+├ ƒ /api/stores/[store]/customers/[customer]/historical-orders
+├ ƒ /api/stores/[store]/customers/[customer]/notes
+├ ƒ /api/stores/[store]/customers/[customer]/notes/[note]
+├ ƒ /api/stores/[store]/customers/[customer]/tags
+├ ƒ /api/stores/[store]/customers/tags
+├ ƒ /api/stores/[store]/customers/tags/[tag]
+├ ƒ /api/stores/[store]/imports/[param]/[action]
+├ ƒ /api/stores/[store]/live-sessions/[session]/claims/blocklist
+├ ƒ /api/stores/[store]/live-sessions/[session]/claims/blocklist/check
+├ ƒ /api/stores/[store]/live-sessions/[session]/claims/blocklist/entries/[entry]
+├ ƒ /api/stores/[store]/live-sessions/[session]/reminders
+├ ƒ /api/stores/[store]/live-settings/sold-out-reply
+├ ƒ /api/stores/[store]/message-templates
+├ ƒ /api/stores/[store]/orders/export
+├ ƒ /api/stores/[store]/orders/pick-list
+├ ƒ /api/stores/[store]/reports/[report]
+├ ƒ /api/stores/[store]/shipments/cvs-batch
+├ ƒ /api/stores/[store]/tools/[...resource]
+├ ƒ /api/team/[action]
+├ ƒ /site/[locale]/[page]
+├ ƒ /site/robots.txt
+└ ƒ /site/sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packaged standalone admin server and static assets.
+go: downloading github.com/jackc/pgx/v5 v5.11.0
+go: downloading github.com/riverqueue/river v0.40.0
+go: downloading github.com/riverqueue/river/riverdriver/riverpgxv5 v0.40.0
+go: downloading github.com/riverqueue/river/rivertype v0.40.0
+go: downloading github.com/riverqueue/river/riverdriver v0.40.0
+go: downloading golang.org/x/crypto v0.57.0
+go: downloading github.com/jackc/pgpassfile v1.0.0
+go: downloading github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761
+go: downloading golang.org/x/text v0.42.0
+go: downloading github.com/jackc/puddle/v2 v2.2.2
+go: downloading github.com/riverqueue/river/rivershared v0.40.0
+go: downloading golang.org/x/image v0.46.0
+go: downloading golang.org/x/net v0.60.0
+go: downloading github.com/coreos/go-oidc/v3 v3.21.0
+go: downloading golang.org/x/oauth2 v0.37.0
+go: downloading github.com/tidwall/gjson v1.19.0
+go: downloading github.com/tidwall/sjson v1.2.5
+go: downloading golang.org/x/sync v0.23.0
+go: downloading golang.org/x/sys v0.48.0
+go: downloading github.com/go-jose/go-jose/v4 v4.1.4
+go: downloading github.com/tidwall/match v1.2.0
+go: downloading github.com/tidwall/pretty v1.2.1
+go: downloading github.com/stretchr/testify v1.11.1
+go: downloading go.uber.org/goleak v1.3.0
+go: downloading gopkg.in/yaml.v3 v3.0.1
+go: downloading github.com/davecgh/go-spew v1.1.1
+go: downloading github.com/pmezard/go-difflib v1.0.0
+=== RUN   TestBrowserTrackingBackfill
+=== RUN   TestBrowserTrackingBackfill/setup-pool-headroom
+    browser_tracking_backfill_test.go:30: headroom workload barrier: client_backends=55 usable=57 margin=3 owned_pools=12 held=53
+    browser_tracking_backfill_test.go:30: PG capacity headroom exceeded: observed=56 limit=54 max=60 reserved=0 super=3 margin=3
+--- FAIL: TestBrowserTrackingBackfill (7.09s)
+    --- FAIL: TestBrowserTrackingBackfill/setup-pool-headroom (7.09s)
+FAIL
+FAIL	livecommerce/tests/foundation	7.209s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

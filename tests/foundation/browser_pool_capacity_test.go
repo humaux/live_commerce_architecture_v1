@@ -8,10 +8,12 @@ package foundation_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/puddle/v2"
 )
 
 func harnessPoolHeadroomRegression(t *testing.T) {
@@ -84,5 +86,25 @@ func harnessPoolHeadroomRegression(t *testing.T) {
 	release()
 	// Phase boundary: acquisition handles are returned, but native idle backends
 	// remain owned by the setup pools until their lifetimes are correctly ended.
+	protected := []*pgxpool.Pool{f.owner, f.runtime}
+	harnessReleaseSetupPools(t, protected, pools)
+	harnessReleaseSetupPools(t, protected, pools) // real pools: Close remains idempotent
+	for i, pool := range pools {
+		conn, err := pool.Acquire(ctx)
+		if conn != nil {
+			conn.Release()
+		}
+		if !errors.Is(err, puddle.ErrClosedPool) {
+			t.Fatalf("setup pool %d did not report closed", i)
+		}
+	}
+	for _, pool := range protected {
+		var one int
+		if err := pool.QueryRow(ctx, "SELECT 1").Scan(&one); err != nil || one != 1 {
+			t.Fatal("setup release closed a protected live pool")
+		}
+	}
+	after := read()
+	t.Logf("headroom after release: client_backends=%d limit=%d", after.ClientBackends, after.limit())
 	harnessWatchCapacity(t, f.owner)
 }
