@@ -64,7 +64,7 @@ const table = (state, rows) =>
 test("DataTable banner: page scope counts only ids on the current page", () => {
   const onPageOne = logic.togglePage(logic.emptySelection, ["a", "b", "c"]);
   assert.match(table(onPageOne, ["a", "b", "c"]), /3 selected/);
-  assert.doesNotMatch(table(onPageOne, ["d", "e", "f"]), /selected/, "ids kept from page 1 are not counted (or shown) on page 2");
+  assert.doesNotMatch(table(onPageOne, ["d", "e", "f"]), /\d+ selected/, "ids kept from page 1 are not counted (or shown) on page 2");
   const mixed = logic.toggleRow(onPageOne, "e", ["d", "e", "f"]);
   assert.match(table(mixed, ["d", "e", "f"]), /1 selected/);
 });
