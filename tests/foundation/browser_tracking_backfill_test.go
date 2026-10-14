@@ -27,6 +27,9 @@ func TestBrowserTrackingBackfill(t *testing.T) {
 	if os.Getenv("LC_BROWSER_TRACKING_BACKFILL") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
 		t.Fatal("use scripts/dev/test-local.sh --browser-tracking-backfill")
 	}
+	if !t.Run("setup-pool-headroom", harnessPoolHeadroomRegression) {
+		return
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 9*time.Minute)
 	defer cancel()
 	e := rfxNew(t)
