@@ -1,0 +1,8 @@
+# Purpose: preserve unchanged controlled GREEN CI artifact bytes below these headers.
+# Depends on: Gates38462736944 job115521966196 exact9f1179f0464d8df6b1b6817778d8c135c6ad2ec3 artifact11846133440, original SHA256 3a869dca4b3887d6c97b2bf02a47aa0ac9972be6a80181f2710b53a4cb312175.
+# Used by: CARD-PAY-FLAKE reviewers; MOCK vendor, real Go/Next/PG, eight one-attempt primary contexts.
+▲ Next.js 16.3.5
+- Local:         http://127.0.0.1:44673
+- Network:       http://127.0.0.1:44673
+✓ Ready in 98ms
+✓ Running next.config.ts took 33ms

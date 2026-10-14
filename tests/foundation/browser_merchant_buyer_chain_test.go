@@ -21,6 +21,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/identity"
 	"livecommerce/internal/identityhttp"
@@ -77,6 +79,9 @@ func TestBrowserMerchantBuyerRealChain(t *testing.T) {
 	mux.Handle("/v1/identity/", private)
 	mux.Handle("/", httpapi.NewHandler(h.f.runtime, httpapi.Options{SessionStoreList: true}))
 	var productWrites, skuWrites atomic.Int32
+	// Merchant authority and the live buyer service retain their distinct pools.
+	harnessReleaseSetupPools(t, []*pgxpool.Pool{h.f.owner, h.f.runtime, h.a.runtime, h.a.issuer, h.pool, authority}, []*pgxpool.Pool{h.a.identity, h.worker, h.expiry})
+	harnessWatchCapacity(t, h.f.owner)
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// The new UI creates the product and SKU atomically. Count the submitted SKU entries,
 		// preserving the original exactly-one-product / exactly-one-SKU assertion below.

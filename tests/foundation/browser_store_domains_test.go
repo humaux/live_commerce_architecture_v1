@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"livecommerce/internal/buyerhttp"
 	"livecommerce/internal/command"
@@ -109,6 +110,9 @@ func TestBrowserStoreDomains(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle("/v1/identity/", private)
 	mux.Handle("/", httpapi.NewHandler(h.f.runtime, httpapi.Options{SessionStoreList: true, StoreBaseDomain: baseDomain}))
+	// /verify needs the verifier; identity and buyer HTTP retain their own pools.
+	harnessReleaseSetupPools(t, []*pgxpool.Pool{h.f.owner, h.f.runtime, h.a.runtime, h.a.issuer, h.pool, authority, verifier}, []*pgxpool.Pool{h.a.identity, h.worker, h.expiry})
+	harnessWatchCapacity(t, h.f.owner)
 	api := httptest.NewServer(mux)
 	t.Cleanup(api.Close)
 

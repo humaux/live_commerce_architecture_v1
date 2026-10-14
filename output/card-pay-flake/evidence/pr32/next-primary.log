@@ -1,0 +1,8 @@
+# Purpose: preserve original failed collector gate evidence from 38396909805 job115298159245 artifact11814201567.
+# Depends on: GitHub CI MOCK buyer fixture; original bytes SHA256 6e527a086394621f3a047a0ec42eda524bb9f2aa85d694106d185c80fb4daa1d.
+# Used by: output/card-pay-flake/DELIVERY.md; historical evidence only, not current acceptance.
+▲ Next.js 16.3.5
+- Local:         http://127.0.0.1:38475
+- Network:       http://127.0.0.1:38475
+✓ Ready in 79ms
+✓ Running next.config.ts took 29ms

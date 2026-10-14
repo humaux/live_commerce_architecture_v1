@@ -1,6 +1,6 @@
 // Purpose: buyer half of the W4-U1 gate: the platform-collector disclosure line (contract stripe-platform-account-v1 §5) on the real order payment page in zh-TW, zh-CN and en, and its absence when the hosted view returns no collector.
-// Depends on: @playwright/test (via ./browser-engine.mjs), node http/https/net/crypto/child_process, openssl (throwaway TLS edge), apps/storefront next start; harness env: LC_CD_EVIDENCE, LC_CD_ORIGIN, LC_CD_ORDER, LC_CD_BUYER_TOKEN, LC_CD_EXPECT, LC_CD_PHASE, LC_CD_DISPLAY_NAME, LC_CD_PREVIEW, COMMERCE_BUYER_* (set by tests/foundation/browser_card_payments_test.go)
-// Used by: tests/foundation/browser_card_payments_test.go (cpbrBuyerNode), scripts/dev/test-local.sh (--browser-card-payments)
+// Depends on: @playwright/test (via ./browser-engine.mjs), node http/https/net/crypto/child_process, openssl (throwaway TLS edge), apps/storefront next start; harness env: LC_CD_EVIDENCE, LC_CD_ORIGIN, LC_CD_ORDER, LC_CD_BUYER_TOKEN, LC_CD_EXPECT, LC_CD_PHASE, LC_CD_DISPLAY_NAME, LC_CD_PREVIEW, LC_CD_CONCURRENT, COMMERCE_BUYER_* (set by tests/foundation/browser_card_payments_test.go)
+// Used by: tests/foundation/browser_card_payments_test.go (cpbrBuyerNode), scripts/dev/test-local.sh (--browser-card-payments, including single and eight-context primary reads)
 // Same sealed-cookie / TLS-edge technique as refund-buyer.mjs: production storefront Next -> private buyerhttp -> isolated PG. Evidence class: BROWSER, MOCK Stripe.
 // BFF -> Go: GET /api/buyer/orders/{id}/payment -> /v1/buyer/orders/{id}/payment (checkout.hosted_payment_view_v2, `collector` only for derived connections).
 // LC_CD_EXPECT:
@@ -29,6 +29,9 @@ const env = (name) => {
 const root = process.cwd(), evidence = env("LC_CD_EVIDENCE"), origin = env("LC_CD_ORIGIN"), host = new URL(origin).host;
 const orderID = env("LC_CD_ORDER"), buyerToken = env("LC_CD_BUYER_TOKEN"), expectation = env("LC_CD_EXPECT"), phase = env("LC_CD_PHASE");
 const cookieKey = env("COMMERCE_BUYER_COOKIE_KEY");
+const concurrent = process.env.LC_CD_CONCURRENT === "8" ? 8 : 1;
+assert(!process.env.LC_CD_CONCURRENT || process.env.LC_CD_CONCURRENT === "8", "invalid concurrent fixture size");
+assert(concurrent === 1 || expectation === "primary", "concurrency applies only to the primary read-only case");
 assert(["unpaid", "paid", "primary"].includes(expectation));
 const displayName = expectation === "primary" ? "" : env("LC_CD_DISPLAY_NAME"), preview = expectation === "primary" ? "" : env("LC_CD_PREVIEW");
 const leak = /(?:acct_|sk_(?:live|test)_|rk_(?:live|test)_|pk_(?:live|test)_|whsec_)[A-Za-z0-9]/;
@@ -85,14 +88,20 @@ async function context(mobile) {
   return c;
 }
 const manifest = path.join(evidence, "screenshots.json");
+let manifestWrite = Promise.resolve();
 async function shot(page, name, locale, viewport) {
   const file = path.join(evidence, `${name}-${locale}-${viewport}.png`);
   await page.screenshot({ path: file, fullPage: true });
   // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `horizontal overflow at ${viewport} ${locale}`);
-  let list = []; try { list = JSON.parse(await readFile(manifest, "utf8")); } catch { /* first */ }
-  list.push({ File: path.basename(file), Sha256: createHash("sha256").update(await readFile(file)).digest("hex"), Locale: locale, Viewport: viewport });
-  await writeFile(manifest, JSON.stringify(list, null, 2));
+  // Independent contexts share one evidence manifest; serialize its read/append/write, not the buyer flows.
+  const hash = createHash("sha256").update(await readFile(file)).digest("hex");
+  manifestWrite = manifestWrite.then(async () => {
+    let list = []; try { list = JSON.parse(await readFile(manifest, "utf8")); } catch { /* first */ }
+    list.push({ File: path.basename(file), Sha256: hash, Locale: locale, Viewport: viewport });
+    await writeFile(manifest, JSON.stringify(list, null, 2));
+  });
+  await manifestWrite;
 }
 async function openOrder(page, locale) {
   await page.goto(`${origin}/${locale}/checkout`); // the order history lives on the checkout page (storefront shell)
@@ -101,6 +110,7 @@ async function openOrder(page, locale) {
   await expect(page.getByTestId("order-id")).toHaveText(orderID);
   await page.getByTestId("payment-status").waitFor({ timeout: 15_000 }); // the payment block renders after its own fetch
 }
+
 // the buyer payment view through the storefront BFF (the same request the page makes)
 async function paymentView(page) {
   // G-UI8 audit [READ/MEASURE]: same-origin GET read of server state through the BFF (no state change) (payment view)
@@ -167,15 +177,24 @@ try {
   const locales = expectation === "unpaid" ? ["zh-TW", "zh-CN", "en"] : expectation === "paid" ? ["zh-TW", "en"] : ["en"];
   for (const locale of locales) {
     for (const mobile of expectation === "unpaid" ? [false, true] : [false]) {
-      const c = await context(mobile);
-      const page = await c.newPage();
-      await openOrder(page, locale);
-      await check(page, locale);
-      await shot(page, `collector-${expectation}`, locale, mobile ? "mobile" : "desktop");
-      await c.close();
+      // These are independent buyer contexts, each making one attempt, rather than retries of a failed flow.
+      const outcomes = await Promise.allSettled(Array.from({ length: concurrent }, async (_, buyer) => {
+        const c = await context(mobile);
+        const page = await c.newPage();
+        try {
+          await openOrder(page, locale);
+          await check(page, locale);
+          await shot(page, `collector-${expectation}${concurrent > 1 ? `-${buyer}` : ""}`, locale, mobile ? "mobile" : "desktop");
+          console.log(`PASS collector-flow phase=${phase} context=${buyer} locale=${locale} viewport=${mobile ? "mobile" : "desktop"}`);
+        } finally {
+          await c.close();
+        }
+      }));
+      const failures = outcomes.filter((result) => result.status === "rejected");
+      if (failures.length) throw new AggregateError(failures.map((result) => result.reason), `collector ${expectation}: ${failures.length}/${concurrent} independent buyer flows failed`);
     }
   }
-  console.log(`PASS collector-buyer ${expectation}: ${locales.join(", ")}`);
+  console.log(`PASS collector-buyer ${expectation} phase=${phase} contexts=${concurrent}: ${locales.join(", ")}`);
 } finally {
   for (const c of contexts) await c.close().catch(() => {});
   await browser?.close().catch(() => {});

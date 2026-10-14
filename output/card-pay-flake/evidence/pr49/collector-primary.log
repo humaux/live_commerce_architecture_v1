@@ -1,0 +1,21 @@
+# Purpose: preserve original failed collector gate evidence from 38442137263 attempt1 job115451390406 artifact11836252831.
+# Depends on: GitHub CI MOCK buyer fixture; original bytes SHA256 6f47f073c994664af39e8beb5cbbf21f7bd04d130cf8d77bbaabb70ba53422c0.
+# Used by: output/card-pay-flake/DELIVERY.md; historical evidence only, not current acceptance.
+browser engine: chromium
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for locator('button[data-order-id="953b1a90-b71c-41bd-9371-866778dfd4d1"]')
+
+    at openOrder (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:100:60)
+    at async file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/collector-buyer.mjs:172:7 {
+  log: [
+    `  - waiting for locator('button[data-order-id="953b1a90-b71c-41bd-9371-866778dfd4d1"]')`
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.21.0

@@ -1,0 +1,55 @@
+HARNESS-POOL-RELEASE capacity unit receipt
+head=a6d47a64a65d29f2d98922e507abe11d30f1c9de run=38508131962 attempt=1
+job=115670973733 actual=2026-10-14T03:52:48Z..2026-10-14T03:54:49Z conclusion=success
+artifact=11868568824 digest=sha256:49ceeda83b95e5d01e9878a5ffe8d2b2d63b1c8a2acf6d1cf1a58d88c71e01cf
+raw_job_sha256=a631d916ff3dffbb24e4b1219164351bfebdfcf6ce2e61a0c9f6123792221d15
+body below is the complete downloaded gate log; local runtime NOT_RUN.
+
+go: downloading github.com/jackc/pgx/v5 v5.11.0
+go: downloading github.com/riverqueue/river v0.40.0
+go: downloading github.com/riverqueue/river/riverdriver/riverpgxv5 v0.40.0
+go: downloading github.com/riverqueue/river/rivertype v0.40.0
+go: downloading github.com/riverqueue/river/riverdriver v0.40.0
+go: downloading golang.org/x/crypto v0.57.0
+go: downloading github.com/jackc/pgpassfile v1.0.0
+go: downloading github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761
+go: downloading golang.org/x/text v0.42.0
+go: downloading github.com/jackc/puddle/v2 v2.2.2
+go: downloading github.com/riverqueue/river/rivershared v0.40.0
+go: downloading golang.org/x/image v0.46.0
+go: downloading golang.org/x/net v0.60.0
+go: downloading github.com/coreos/go-oidc/v3 v3.21.0
+go: downloading golang.org/x/oauth2 v0.37.0
+go: downloading github.com/tidwall/gjson v1.19.0
+go: downloading github.com/tidwall/sjson v1.2.5
+go: downloading golang.org/x/sync v0.23.0
+go: downloading golang.org/x/sys v0.48.0
+go: downloading github.com/go-jose/go-jose/v4 v4.1.4
+go: downloading github.com/stretchr/testify v1.11.1
+go: downloading go.uber.org/goleak v1.3.0
+go: downloading github.com/tidwall/match v1.2.0
+go: downloading github.com/tidwall/pretty v1.2.1
+go: downloading github.com/davecgh/go-spew v1.1.1
+go: downloading github.com/pmezard/go-difflib v1.0.0
+go: downloading gopkg.in/yaml.v3 v3.0.1
+=== RUN   TestHarnessPoolCapacityBoundary
+=== RUN   TestHarnessPoolCapacityBoundary/1
+=== RUN   TestHarnessPoolCapacityBoundary/54
+=== RUN   TestHarnessPoolCapacityBoundary/55
+--- PASS: TestHarnessPoolCapacityBoundary (0.00s)
+    --- PASS: TestHarnessPoolCapacityBoundary/1 (0.00s)
+    --- PASS: TestHarnessPoolCapacityBoundary/54 (0.00s)
+    --- PASS: TestHarnessPoolCapacityBoundary/55 (0.00s)
+=== RUN   TestHarnessPoolCapacityObservationFailureIsSticky
+=== RUN   TestHarnessPoolCapacityObservationFailureIsSticky/query
+=== RUN   TestHarnessPoolCapacityObservationFailureIsSticky/invalid
+=== RUN   TestHarnessPoolCapacityObservationFailureIsSticky/reserved
+=== RUN   TestHarnessPoolCapacityObservationFailureIsSticky/breach
+--- PASS: TestHarnessPoolCapacityObservationFailureIsSticky (0.00s)
+    --- PASS: TestHarnessPoolCapacityObservationFailureIsSticky/query (0.00s)
+    --- PASS: TestHarnessPoolCapacityObservationFailureIsSticky/invalid (0.00s)
+    --- PASS: TestHarnessPoolCapacityObservationFailureIsSticky/reserved (0.00s)
+    --- PASS: TestHarnessPoolCapacityObservationFailureIsSticky/breach (0.00s)
+PASS
+ok  	livecommerce/tests/foundation	1.098s
+test-focused: top-level PASS=2 FAIL=0 SKIP=0 exit=0

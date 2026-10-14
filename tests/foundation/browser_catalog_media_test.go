@@ -25,6 +25,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"livecommerce/internal/buyerhttp"
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/identity"
@@ -130,6 +132,9 @@ func TestBrowserCatalogMedia(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle("/v1/identity/", private)
 	mux.Handle("/", httpapi.NewHandler(f.runtime, httpapi.Options{SessionStoreList: true}))
+	// Keep merchant authority, shared fixtures and every buyer service dependency live.
+	harnessReleaseSetupPools(t, []*pgxpool.Pool{h.f.owner, h.f.runtime, h.a.runtime, h.a.issuer, h.pool, authority}, []*pgxpool.Pool{h.a.identity, h.worker, h.expiry})
+	harnessWatchCapacity(t, h.f.owner)
 	api := httptest.NewServer(mux)
 	t.Cleanup(api.Close)
 

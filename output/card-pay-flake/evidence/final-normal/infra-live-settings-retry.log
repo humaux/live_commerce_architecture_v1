@@ -1,0 +1,7 @@
+# Purpose: preserve selected unchanged CI retry checkout and browser-verdict lines after the Go proxy setup refusal.
+# Depends on: Gates38466746876 attempt2 job115558114647; original full job SHA256552db5ceaaf9eb1d9f32429b6739e9aefc192afd1c91ede964bda1691fa8c22b; original lines409 and1120-1126.
+# Used by: CARD-PAY-FLAKE reviewers; excerpt only, not a new card execution or evidence of a product fix in live-settings.
+2026-10-13T21:49:40.4875275Z HEAD is now at 9dd9998a Merge 46c21310accd6498e21e0e28ab8ce90b4ec63094 into 256e9740ced9c5de05a83f58eb9f4c79a231b7b2
+2026-10-13T21:51:31.1351702Z === RUN   TestBrowserLiveSettingsUIRealChain
+2026-10-13T21:52:00.6302629Z --- PASS: TestBrowserLiveSettingsUIRealChain (29.49s)
+2026-10-13T21:52:00.6313156Z PASS

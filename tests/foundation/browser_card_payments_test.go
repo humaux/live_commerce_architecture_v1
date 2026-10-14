@@ -2,6 +2,9 @@
 
 package foundation_test
 
+// Purpose: exercise merchant card activation and buyer collector disclosure through real browser/API/PG boundaries.
+// Depends on: isolated pslEnv payment fixtures, buyerhttp, production Next builds and collector-buyer.mjs.
+// Used by: the --browser-card-payments CI gate, including its permanent eight-context read regression; never contacts Stripe or a production database.
 // W4-U1 (docs/delivery/units/w4-u1-payment-activation-ui.md; contracts/stripe-platform-account-v1.md §0.3, §2, §3.3, §5, §6.4): real browsers.
 //
 // Stack: an isolated PG 18 container (rfx harness), the real payment worker and the independent Stripe fake (merchant A and the platform store
@@ -27,6 +30,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"livecommerce/internal/buyerhttp"
 	"livecommerce/internal/httpapi"
 )
@@ -36,6 +41,27 @@ func cpbrRequire(t *testing.T) {
 	if os.Getenv("LC_BROWSER_CARD_PAYMENTS_ACCEPTANCE") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
 		t.Fatal("use scripts/dev/test-local.sh --browser-card-payments")
 	}
+}
+
+// cpbrReleaseSetupPools ends fixture-only lifetimes before buyer requests can grow their live pools.
+// Keep A/P buyer runtime, issuer and checkout pools, the hosted service and all shared/live workers.
+// Copies in the seeded orders alias these families; pointer deduplication also preserves cleanup safety.
+func cpbrReleaseSetupPools(t *testing.T, e *pslEnv) {
+	t.Helper()
+	protected := []*pgxpool.Pool{
+		e.f.owner, e.f.runtime,
+		e.a.a.runtime, e.a.a.issuer, e.a.pool,
+		e.plat.p.a.runtime, e.plat.p.a.issuer, e.plat.p.pool,
+		e.hosted, e.pool, e.ingress,
+	}
+	var setupOnly []*pgxpool.Pool
+	for _, p := range []psHarness{e.a, e.b, e.c, e.plat.p, e.ox1.s.p} {
+		setupOnly = append(setupOnly, p.a.identity, p.worker, p.expiry)
+	}
+	for _, p := range []psHarness{e.b, e.c, e.ox1.s.p} {
+		setupOnly = append(setupOnly, p.a.runtime, p.a.issuer, p.pool)
+	}
+	harnessReleaseSetupPools(t, protected, setupOnly)
 }
 
 // cpbrBuyerNode starts the real buyerhttp handler for the store of p and runs tests/storefront/collector-buyer.mjs against the production
@@ -51,9 +77,9 @@ func cpbrBuyerNode(t *testing.T, ctx context.Context, e *pslEnv, p psHarness, or
 	if err != nil {
 		t.Fatalf("buyer HTTP constructor: %v", err)
 	}
-	server := httptest.NewServer(handler)
-	t.Cleanup(server.Close)
 	mustExec(t, e.f.owner, `UPDATE catalog.products SET name='Synthetic browser collector product',description='Synthetic acceptance fixture' WHERE id=$1`, p.stock.product.ID)
+	server := httptest.NewServer(handler)
+	defer server.Close()
 	values := map[string]string{"COMMERCE_BUYER_WEB_ENABLED": "1", "COMMERCE_BUYER_API_ORIGIN": server.URL, "COMMERCE_BUYER_DEMO_LABEL": "1", "COMMERCE_BUYER_BFF_KEY": bffKey,
 		"COMMERCE_BUYER_COOKIE_KEY": base64.RawURLEncoding.EncodeToString(randomBytes(32)), "COMMERCE_BUYER_SESSION_TTL": "3600",
 		"LC_CD_EVIDENCE": evidence, "LC_CD_ORIGIN": storefrontOrigin, "LC_CD_ORDER": order, "LC_CD_BUYER_TOKEN": p.cap.Token, "LC_CD_EXPECT": expect, "LC_CD_PHASE": phase}
@@ -165,6 +191,9 @@ func TestBrowserCardPayments(t *testing.T) {
 	}
 	cbbrShots(t, evidence, 14, "en", "zh-TW")
 	t.Logf("W4-U1 BROWSER (MOCK Stripe): admin half passed (card-payments + settlements); screenshots hashed; evidence=%s", evidence)
+	cpbrReleaseSetupPools(t, e)
+	// Observe the post-release buyer browser phase; this does not cover setup peaks.
+	harnessWatchCapacity(t, e.f.owner)
 
 	// ---- buyer half: the §5 disclosure on the real order payment page ----
 	summary := e.read(t, e.a)
@@ -180,6 +209,9 @@ func TestBrowserCardPayments(t *testing.T) {
 	cpbrBuyerNode(t, ctx, e, unpaid, unpaid.hold.OrderID, "unpaid", "unpaid", "https://buyer-a.example", evidence, derived)
 	cpbrBuyerNode(t, ctx, e, e.oa1.s.p, e.oa1.order, "paid", "paid", "https://buyer-a.example", evidence, derived)
 	cpbrBuyerNode(t, ctx, e, e.op1.s.p, e.op1.order, "primary", "primary", "https://buyer-p.example", evidence, nil)
+	// Every normal card gate also exercises eight independent, one-attempt reads of the same synthetic order.
+	// The single-context case above stays intact; this guard needs no workflow opt-in and shares no retry state.
+	cpbrBuyerNode(t, ctx, e, e.op1.s.p, e.op1.order, "primary", "primary-concurrent", "https://buyer-p.example", evidence, map[string]string{"LC_CD_CONCURRENT": "8"})
 	cbbrShots(t, evidence, 24, "en", "zh-TW")
 	t.Logf("W4-U1 BROWSER buyer half passed (disclosure present above the pay button and on the paid page, absent for a primary connection); evidence=%s", evidence)
 }

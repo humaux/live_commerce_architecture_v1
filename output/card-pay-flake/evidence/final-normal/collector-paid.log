@@ -1,0 +1,7 @@
+# Purpose: preserve unchanged normal card-payments CI artifact bytes below these headers.
+# Depends on: Gates38466746876 attempt1 job115536760460 head46c21310accd6498e21e0e28ab8ce90b4ec63094 artifact11850574995; original SHA256 ece35180d11a5d8c79355c31e31ce864cde9cf019cfc2a01bd2a1d437a5c7f27.
+# Used by: CARD-PAY-FLAKE reviewers; Stripe MOCK, real Go/Next/PG; original single plus eight permanent one-attempt primary contexts.
+browser engine: chromium
+PASS collector-flow phase=paid context=0 locale=zh-TW viewport=desktop
+PASS collector-flow phase=paid context=0 locale=en viewport=desktop
+PASS collector-buyer paid phase=paid contexts=1: zh-TW, en

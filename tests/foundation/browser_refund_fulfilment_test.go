@@ -39,6 +39,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"livecommerce/internal/buyerhttp"
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/identity"
@@ -297,6 +298,11 @@ func TestBrowserManualFulfilment(t *testing.T) {
 	e.ensureStock(t, ship)
 	drafts := sstMoreHold(t, ship.s.p) // a DRAFT order: never eligible, must be absent from the export
 	restricted, _ := e.member(t, ship, "orders:read")
+	// Copied orders share this family; retain the buyer pools for the later buyer half.
+	harnessReleaseSetupPools(t,
+		[]*pgxpool.Pool{e.f.owner, e.f.runtime, e.pool, e.hosted, e.ingress, ship.s.p.a.runtime, ship.s.p.a.issuer, ship.s.p.pool},
+		[]*pgxpool.Pool{ship.s.p.a.identity, ship.s.p.worker, ship.s.p.expiry})
+	harnessWatchCapacity(t, e.f.owner)
 	root, _ := filepath.Abs("../..")
 	evidence := brfEvidence(t, root, "manual-fulfilment")
 	stack := brfStartAdmin(t, ctx, e, ship.s.p.f.principalA, evidence)
@@ -335,6 +341,11 @@ func TestBrowserRefund(t *testing.T) {
 		e.startWorker(t)
 		order := e.payInStore(t, e.storeFor(t))
 		restricted, _ := e.member(t, order, "orders:read") // no payments:refund
+		// Both later buyer phases still borrow runtime, issuer and checkout from this family.
+		harnessReleaseSetupPools(t,
+			[]*pgxpool.Pool{e.f.owner, e.f.runtime, e.pool, e.hosted, e.ingress, order.s.p.a.runtime, order.s.p.a.issuer, order.s.p.pool},
+			[]*pgxpool.Pool{order.s.p.a.identity, order.s.p.worker, order.s.p.expiry})
+		harnessWatchCapacity(t, e.f.owner)
 		root, _ := filepath.Abs("../..")
 		evidence := brfEvidence(t, root, "refund")
 		// The buyer script settles the held-pending partial refund through this scalar control endpoint.

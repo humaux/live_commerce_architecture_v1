@@ -1,0 +1,8 @@
+# Purpose: preserve successful Next startup preceding the failed primary browser flow.
+# Depends on: Gates38460385850 head aa9177af162f96dc979d2c25b2afc1be2c0b8898, job115513839541, artifact11845358883.
+# Used by: CARD-PAY-FLAKE reviewers; original Next log follows unchanged.
+▲ Next.js 16.3.5
+- Local:         http://127.0.0.1:33581
+- Network:       http://127.0.0.1:33581
+✓ Ready in 93ms
+✓ Running next.config.ts took 28ms

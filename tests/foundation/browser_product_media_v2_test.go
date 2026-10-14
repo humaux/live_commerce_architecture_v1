@@ -42,6 +42,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"livecommerce/internal/buyerhttp"
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/identity"
@@ -240,6 +241,9 @@ func TestBrowserProductMediaV2RealUpload(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle("/v1/identity/", private)
 	mux.Handle("/", httpapi.NewHandler(f.runtime, httpapi.Options{SessionStoreList: true}))
+	// Upload/browser services retain the buyer pools and separate merchant authority.
+	harnessReleaseSetupPools(t, []*pgxpool.Pool{h.f.owner, h.f.runtime, h.a.runtime, h.a.issuer, h.pool, authority}, []*pgxpool.Pool{h.a.identity, h.worker, h.expiry})
+	harnessWatchCapacity(t, h.f.owner)
 	api := httptest.NewServer(mux)
 	t.Cleanup(api.Close)
 

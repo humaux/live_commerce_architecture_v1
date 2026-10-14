@@ -11,6 +11,8 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // Real Chromium -> test-owned TLS edge -> production Next -> private Go -> PG.
@@ -21,6 +23,9 @@ func TestBrowserBuyerRealChain(t *testing.T) {
 		t.Fatal("use scripts/dev/test-local.sh --browser-buyer")
 	}
 	h := bhSetup(t)
+	// Only these audited setup pools are unused by the live buyer handler.
+	harnessReleaseSetupPools(t, []*pgxpool.Pool{h.f.owner, h.f.runtime, h.a.runtime, h.a.issuer, h.pool}, []*pgxpool.Pool{h.a.identity, h.worker, h.expiry})
+	harnessWatchCapacity(t, h.f.owner)
 	// Visual acceptance uses declared synthetic catalog content through the real
 	// database/API. No public fixture route or fabricated production claims.
 	mustExec(t, h.f.owner, `UPDATE catalog.products SET name='帆布收納袋（兩入組）',description='一組兩入，方便分類收納日常小物。' WHERE id=$1`, h.stock.product.ID)

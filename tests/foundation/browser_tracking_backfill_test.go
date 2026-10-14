@@ -21,11 +21,19 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func TestBrowserTrackingBackfill(t *testing.T) {
 	if os.Getenv("LC_BROWSER_TRACKING_BACKFILL") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
 		t.Fatal("use scripts/dev/test-local.sh --browser-tracking-backfill")
+	}
+	if !t.Run("setup-pool-headroom", harnessPoolHeadroomRegression) {
+		return
+	}
+	if !t.Run("stripe-mock-pool-lifetime", harnessStripeMockPoolLifetime) {
+		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 9*time.Minute)
 	defer cancel()
@@ -45,6 +53,15 @@ func TestBrowserTrackingBackfill(t *testing.T) {
 	foreign := e.storeFor(t)
 	ids["foreign"] = foreign.order
 	_, viewerPrincipal := e.member(t, base, "orders:read")
+	// This merchant-only browser phase borrows no pools from either setup family.
+	harnessReleaseSetupPools(t,
+		[]*pgxpool.Pool{e.f.owner, e.f.runtime, e.pool, e.hosted, e.ingress},
+		[]*pgxpool.Pool{
+			base.s.p.a.runtime, base.s.p.a.issuer, base.s.p.a.identity, base.s.p.pool, base.s.p.worker, base.s.p.expiry,
+			foreign.s.p.a.runtime, foreign.s.p.a.issuer, foreign.s.p.a.identity, foreign.s.p.pool, foreign.s.p.worker, foreign.s.p.expiry,
+		})
+	// Observe the actual fixture and browser lifetime, independently of the headroom subtest.
+	harnessWatchCapacity(t, e.f.owner)
 	controlKey := randomToken()
 	var observationsMu sync.Mutex
 	type observation struct {
