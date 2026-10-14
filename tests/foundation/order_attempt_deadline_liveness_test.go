@@ -205,10 +205,13 @@ func TestOrderAttemptDeadlineRealClaimPeriodicLiveness(t *testing.T) {
 	if err != nil || next.State != "PENDING" || next.Replay || next.ScopeID != a.ScopeID || next.Generation != a.Generation+1 || next.AttemptID == a.AttemptID {
 		t.Fatal("released genuine claim could not be admitted by explicit next CAS", err)
 	}
-	if _, err = svc.Abort(ctx, relogin, e.store(), next.AttemptID, next.Generation, "PLAN_UNAVAILABLE"); err != nil {
+	nextPlan, _ := oaMaterialPlan(t, e, keys, next.AttemptID)
+	completed, err := oaExecutorNew(t, pool, keys).Execute(ctx, "", "", next.AttemptID, next.Generation)
+	if err != nil {
 		t.Fatal(err)
 	}
-	old, err := svc.Abort(ctx, relogin, e.store(), a.AttemptID, a.Generation, "PLAN_UNAVAILABLE")
+	oaExecutorCommitted(t, e, next, nextPlan, completed, 2)
+	old, err := svc.Abort(ctx, relogin, e.store(), a.AttemptID, a.Generation, "EXPIRED")
 	if err != nil {
 		t.Fatal(err)
 	}

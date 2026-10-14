@@ -457,16 +457,25 @@ func TestOrderAttemptExecutorPlanRotationAndMissingOriginalKey(t *testing.T) {
 			}
 			executor := oaExecutorNew(t, miPool(t, e.p.f, "commerce_claims_worker"), rotated)
 			got, err := executor.Execute(context.Background(), "", "", a.AttemptID, a.Generation)
-			if err != nil {
-				t.Fatal("native continuation after plan-ring rotation", err)
-			}
 			if retain {
+				if err != nil {
+					t.Fatal("native continuation after retained plan-ring rotation", err)
+				}
 				oaExecutorCommitted(t, e, a, plan, got, 5)
 			} else {
-				oaExecutorAborted(t, e, a, got, "PLAN_UNAVAILABLE")
+				var retryable *orderattempt.AdmissionError
+				if !errors.As(err, &retryable) || retryable.Code() != "order_attempt_retryable" || retryable.OutcomeUnknown() || got.State != "" || len(got.Receipt) != 0 {
+					t.Fatal("a process-local missing key cannot settle the admitted attempt", err)
+				}
+				oaExecutorNoEffects(t, e, a)
+				got, err = oaExecutorNew(t, miPool(t, e.p.f, "commerce_claims_worker"), oaServiceKeys(t)).Execute(context.Background(), "", "", a.AttemptID, a.Generation)
+				if err != nil {
+					t.Fatal("the process retaining the key must still complete this attempt", err)
+				}
+				oaExecutorCommitted(t, e, a, plan, got, 5)
 				again, err := executor.Execute(context.Background(), "", "", a.AttemptID, a.Generation)
 				if err != nil {
-					t.Fatal("terminal key-loss receipt must replay without the lost key", err)
+					t.Fatal("terminal committed receipt must replay without a local key", err)
 				}
 				oaExecutorSameReceipt(t, got, again)
 			}

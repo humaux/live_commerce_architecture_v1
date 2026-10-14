@@ -3,7 +3,7 @@
 // River InsertTx and fixture-owned PG trigger barriers; no provider or product hooks.
 // Used by: parent-owned OA1 CI and A2-M1 mutation acceptance.
 // Invariants: key row before C1 locks, permanent markers, exact replay, global
-// reference refusal without disclosure, and independent permanent-loss cleanup.
+// reference refusal without disclosure; local key skew cannot authorize settlement.
 package foundation_test
 
 import (
@@ -137,7 +137,8 @@ func TestOrderAttemptKeyRetirementReferencedAndUnmarkedLoss(t *testing.T) {
 	if err = e.p.f.owner.QueryRow(context.Background(), `SELECT retired_at IS NULL FROM ops.order_attempt_plan_key_versions WHERE key_version=$1`, version).Scan(&active); err != nil || !active {
 		t.Fatal("refusal retired a referenced version", err)
 	}
-	// No admin retirement marker is prerequisite for definitive key-loss cleanup.
+	// A missing process-local key is not loss authority, even while the registry
+	// row is locked. It cannot release the reference or permit retirement.
 	missing := oaKeyRing(t, "a2-other-"+randomUUID())
 	executor := oaExecutorNew(t, miPool(t, e.p.f, "commerce_claims_worker"), missing)
 	keyHolder, err := e.p.f.owner.Begin(context.Background())
@@ -147,16 +148,30 @@ func TestOrderAttemptKeyRetirementReferencedAndUnmarkedLoss(t *testing.T) {
 	defer keyHolder.Rollback(context.Background())
 	oaStateExec(t, keyHolder, `SELECT key_version FROM ops.order_attempt_plan_key_versions WHERE key_version=$1 FOR UPDATE`, version)
 	lost, err := executor.Execute(context.Background(), "", "", a.AttemptID, a.Generation)
-	if err != nil {
-		t.Fatal("unmarked permanent loss must retain worker cleanup", err)
+	var retryable *orderattempt.AdmissionError
+	if !errors.As(err, &retryable) || retryable.Code() != "order_attempt_retryable" || retryable.OutcomeUnknown() || lost.State != "" || len(lost.Receipt) != 0 {
+		t.Fatal("local ring skew cannot authorize permanent loss", err)
 	}
-	oaExecutorAborted(t, e, a, lost, "PLAN_UNAVAILABLE")
+	oaExecutorNoEffects(t, e, a)
+	if !bytes.Equal(before, oaKeySnapshot(t, e, a.ScopeID)) {
+		t.Fatal("local ring skew changed admitted authority or its job")
+	}
 	if err = keyHolder.Rollback(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	result, err = oaKeyRetire(context.Background(), admin, version)
+	oaKeyError(t, result, err, "PT409", "plan_key_referenced")
+	// Another process still has the admitted key. Completing the original C2
+	// releases the PENDING reference; this is not a synthetic loss declaration.
+	plan, _ := oaMaterialPlan(t, e, oaKeyRing(t, version), a.AttemptID)
+	lost, err = oaExecutorNew(t, miPool(t, e.p.f, "commerce_claims_worker"), oaKeyRing(t, version)).Execute(context.Background(), "", "", a.AttemptID, a.Generation)
+	if err != nil {
+		t.Fatal("retained original key must complete the admitted attempt", err)
+	}
+	oaExecutorCommitted(t, e, a, plan, lost, 5)
+	result, err = oaKeyRetire(context.Background(), admin, version)
 	if err != nil || result != "retired" {
-		t.Fatal("last reference cleanup must allow retirement", err)
+		t.Fatal("terminal C2 must allow retirement after the last reference", err)
 	}
 	var marker []byte
 	if err = e.p.f.owner.QueryRow(context.Background(), `SELECT to_jsonb(v) FROM ops.order_attempt_plan_key_versions v WHERE key_version=$1 AND retired_at IS NOT NULL`, version).Scan(&marker); err != nil {
