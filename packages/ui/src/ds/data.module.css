@@ -26,11 +26,9 @@
 .table [data-align="end"] { text-align: end; font-variant-numeric: tabular-nums; }
 /* a wrap column takes the spare width and breaks long names; the rest keep their natural one-line width */
 .table td[data-wrap="true"] { min-width: 160px; white-space: normal; overflow-wrap: anywhere; }
-/* Shrink-to-fit every column except the free-text (wrap) column, which takes the spare width; an explicit Column.width still wins
-   (inline style). Without this the auto layout handed spare width to the thumbnail column and squeezed the actions cell so its
-   buttons spilled over the status badge (gallery lint R3/R6, 2026-10-15). */
-.table th:not([data-wrap]), .table td:not([data-wrap="true"]) { width: 1%; }
-.table th[data-wrap], .table td[data-wrap="true"] { width: auto; }
+/* The actions cell shrinks to its (inline-flex, nowrap) buttons so they never spill over the status column; other columns keep their
+   natural width, and a fixed-size column (thumbnail) sets Column.width. A global 1% rule collapsed price/stock headers (gallery R6). */
+.table th[data-actions], .table td[data-actions] { width: 1%; }
 .table th.selectCell, .table td.selectCell { width: 44px; min-width: 44px; padding-inline: var(--ds-space-2) !important; text-align: center; }
 .check { display: block; width: 18px; height: 18px; margin: 0 auto; accent-color: var(--ds-primary); cursor: pointer; }
 .thumb { display: block; width: 64px; height: 64px; border: 1px solid var(--ds-border); border-radius: var(--ds-radius-md); background: var(--ds-surface-muted); object-fit: cover; }
